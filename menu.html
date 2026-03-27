@@ -1046,10 +1046,10 @@
 
     document.getElementById('topbar-datetime').innerHTML =
       `<span class="topbar-datetime-main">${dow} ${dd}.${mm}.${yyyy}&nbsp;&nbsp;ore ${hh}:${min}:${ss}</span>` +
-      `<span class="topbar-sep">–</span>` 
-      `<span class="topbar-tz">(${tz.offset}) Roma (${tz.label})</span>`;+
       `<span class="topbar-sep">–</span>` +
-      `<span class="topbar-turno ${tipoClass}" title="${tipoIcon} ${turno.orario}">${turno.label}</span>`;
+      `<span class="topbar-turno ${tipoClass}" title="${tipoIcon} ${turno.orario}">${turno.label}</span>` +
+      `<span class="topbar-sep">–</span>` +
+      `<span class="topbar-tz">(${tz.offset}) Roma (${tz.label})</span>`;
 
     const lu = document.getElementById('last-update');
     if (lu) lu.textContent = `${hh}:${min}`;
