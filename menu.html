@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VVF – Sala Operativa</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-void:    #050810;
+    --bg-deep:    #080d1a;
+    --bg-panel:   #0c1222;
+    --bg-card:    #111827;
+    --border:     #1a2540;
+    --border-lit: #1e3a6e;
+    --accent:     #1a56db;
+    --accent-bright: #2d7aff;
+    --accent-glow: rgba(29, 86, 219, 0.35);
+    --accent-dim: #0f3a8f;
+    --steel:      #8da0bb;
+    --muted:      #4a5c77;
+    --text:       #c8d8ef;
+    --text-dim:   #7a92b0;
+    --white:      #e8f0fc;
+    --warning:    #e85d00;
+    --danger:     #c0392b;
+    --ok:         #0e7a4a;
+    --ok-bright:  #10b981;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg-void);
+    font-family: 'Barlow', sans-serif;
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ─── TOPBAR ─── */
+  .topbar {
+    background: var(--bg-deep);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    position: relative;
+    overflow: hidden;
+  }
+  .topbar::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(
+      90deg,
+      transparent 0, transparent 40px,
+      rgba(29,86,219,0.03) 40px, rgba(29,86,219,0.03) 41px
+    );
+    pointer-events: none;
+  }
+  .topbar-left { display: flex; gap: 2rem; }
+  .topbar-center {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 0.7rem;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.72rem; font-weight: 600;
+    letter-spacing: 0.09em; text-transform: uppercase;
+    color: var(--text);
+    white-space: nowrap;
+    background: rgba(34,197,94,0.07);
+    border: 1px solid rgba(34,197,94,0.38);
+    border-radius: 3px;
+    padding: 2px 14px;
+    box-shadow: 0 0 12px rgba(34,197,94,0.12), inset 0 0 8px rgba(34,197,94,0.04);
+  }
+  .topbar-datetime-main { color: #22c55e; font-weight: 700; letter-spacing: 0.11em; text-shadow: 0 0 10px rgba(34,197,94,0.5); }
+  .topbar-sep { color: #22c55e; margin: 0 0.2rem; opacity: 0.45; }
+  .topbar-turno {
+    color: #22c55e;
+    font-size: 0.68rem; font-weight: 700;
+    letter-spacing: 0.1em;
+    text-shadow: 0 0 8px rgba(34,197,94,0.5);
+  }
+  .topbar-turno.turno-mattina { color: #22c55e; }
+  .topbar-turno.turno-notte   { color: #22c55e; }
+  .topbar-tz { color: #22c55e; font-size: 0.68rem; font-weight: 400; opacity: 0.82; text-shadow: 0 0 8px rgba(34,197,94,0.35); }
+  .topbar-right-cluster { display: flex; align-items: center; }
+  .topbar-item { display: flex; align-items: center; gap: 0.4rem; }
+  .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--ok-bright);
+    box-shadow: 0 0 6px var(--ok-bright);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  .dot.warn { background: var(--warning); box-shadow: 0 0 6px var(--warning); }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  .topbar-time { font-weight: 600; color: var(--text-dim); letter-spacing: 0.12em; }
+
+  /* ─── HEADER ─── */
+  header {
+    background: linear-gradient(180deg, var(--bg-deep) 0%, var(--bg-panel) 100%);
+    border-bottom: 1px solid var(--border-lit);
+    padding: 0 2.5rem;
+    height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow:
+      0 1px 0 rgba(29,86,219,0.15),
+      0 4px 24px rgba(0,0,0,0.6);
+  }
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, var(--accent) 30%, var(--accent-bright) 50%, var(--accent) 70%, transparent 100%);
+    opacity: 0.6;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 1.1rem;
+    text-decoration: none;
+  }
+  .brand-emblem {
+    width: 46px; height: 46px;
+    border: 1.5px solid var(--accent);
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--bg-deep) 0%, #0a1530 100%);
+    position: relative;
+    flex-shrink: 0;
+    box-shadow: 0 0 16px var(--accent-glow), inset 0 0 10px rgba(29,86,219,0.1);
+  }
+  .brand-emblem svg {
+    width: 28px; height: 28px;
+    fill: none;
+    stroke: var(--accent-bright);
+    stroke-width: 1.4;
+    filter: drop-shadow(0 0 4px var(--accent-bright));
+  }
+  .brand-emblem::before {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border: 1px solid rgba(29,86,219,0.2);
+    border-radius: 2px;
+  }
+  .brand-text { display: flex; flex-direction: column; }
+  .brand-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900;
+    font-size: 1.25rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--white);
+    line-height: 1;
+  }
+  .brand-subtitle {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 300;
+    font-size: 0.65rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--accent-bright);
+    margin-top: 2px;
+    opacity: 0.85;
+  }
+
+  /* ─── NAV PRINCIPALE ─── */
+  nav.main-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.15rem;
+    height: 100%;
+  }
+
+  .nav-item {
+    position: relative;
+    height: 100%;
+    display: flex;
+    align-items: center;
+  }
+
+  .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0 1.05rem;
+    height: 100%;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.2s, background 0.2s;
+    white-space: nowrap;
+    border: none; background: none;
+  }
+  .nav-link svg {
+    width: 14px; height: 14px;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    fill: none;
+    flex-shrink: 0;
+    opacity: 0.75;
+    transition: opacity 0.2s;
+  }
+  .nav-link .chevron {
+    width: 10px; height: 10px;
+    stroke-width: 2;
+    margin-left: 0.15rem;
+    transition: transform 0.25s;
+  }
+
+  .nav-item:hover > .nav-link,
+  .nav-item.active > .nav-link {
+    color: var(--white);
+    background: rgba(29,86,219,0.08);
+  }
+  .nav-item:hover > .nav-link svg { opacity: 1; }
+  .nav-item.active > .nav-link { color: var(--accent-bright); }
+  .nav-item.active > .nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent-bright);
+    box-shadow: 0 0 8px var(--accent-bright);
+  }
+  .nav-item:hover > .nav-link .chevron { transform: rotate(180deg); }
+
+  /* ─── DROPDOWN ─── */
+  .dropdown {
+    position: absolute;
+    top: calc(100% + 1px);
+    left: 0;
+    min-width: 240px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-lit);
+    border-top: 2px solid var(--accent);
+    box-shadow:
+      0 16px 48px rgba(0,0,0,0.7),
+      0 0 0 1px rgba(29,86,219,0.08);
+    opacity: 0;
+    transform: translateY(-8px);
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+    z-index: 200;
+  }
+  .nav-item:hover .dropdown {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+  .dropdown-group {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .dropdown-group:last-child { border-bottom: none; }
+  .dropdown-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    padding: 0.4rem 1.1rem 0.3rem;
+    opacity: 0.8;
+  }
+  .dropdown-link {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.55rem 1.1rem;
+    font-size: 0.82rem;
+    font-weight: 400;
+    color: var(--text-dim);
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s, padding-left 0.15s;
+  }
+  .dropdown-link svg {
+    width: 13px; height: 13px;
+    stroke: currentColor; stroke-width: 1.8; fill: none;
+    flex-shrink: 0; opacity: 0.7;
+  }
+  .dropdown-link:hover {
+    background: rgba(29,86,219,0.12);
+    color: var(--white);
+    padding-left: 1.4rem;
+  }
+  .dropdown-link:hover svg { opacity: 1; }
+  .dropdown-badge {
+    margin-left: auto;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding: 1px 6px;
+    border-radius: 2px;
+    text-transform: uppercase;
+  }
+  .badge-live { background: rgba(200,30,30,0.2); color: #f87171; border: 1px solid rgba(200,30,30,0.3); }
+  .badge-new  { background: rgba(16,185,129,0.15); color: var(--ok-bright); border: 1px solid rgba(16,185,129,0.25); }
+  .badge-sec  { background: rgba(29,86,219,0.15); color: var(--accent-bright); border: 1px solid rgba(29,86,219,0.25); }
+
+  /* ─── HEADER RIGHT ─── */
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .icon-btn {
+    width: 34px; height: 34px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg-card);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+  }
+  .icon-btn svg {
+    width: 15px; height: 15px;
+    stroke: var(--steel); stroke-width: 1.8; fill: none;
+  }
+  .icon-btn:hover { border-color: var(--accent); background: rgba(29,86,219,0.1); }
+  .icon-btn:hover svg { stroke: var(--accent-bright); }
+  .notif-dot {
+    position: absolute;
+    top: 5px; right: 5px;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #f87171;
+    border: 1.5px solid var(--bg-panel);
+    box-shadow: 0 0 6px rgba(248,113,113,0.7);
+  }
+  .divider { width: 1px; height: 28px; background: var(--border); }
+  .user-chip {
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0 0.7rem 0 0.4rem;
+    height: 34px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg-card);
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .user-chip:hover { border-color: var(--border-lit); }
+  .user-avatar {
+    width: 24px; height: 24px;
+    border-radius: 3px;
+    background: linear-gradient(135deg, var(--accent-dim) 0%, var(--accent) 100%);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.7rem; font-weight: 700;
+    color: var(--white);
+    letter-spacing: 0.05em;
+  }
+  .user-info { display: flex; flex-direction: column; }
+  .user-name {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.75rem; font-weight: 600;
+    letter-spacing: 0.06em;
+    color: var(--text); line-height: 1;
+  }
+  .user-role {
+    font-size: 0.6rem; color: var(--muted);
+    letter-spacing: 0.05em; line-height: 1;
+    margin-top: 1px;
+  }
+
+  /* ─── SECONDARY NAV (breadcrumb + tabs) ─── */
+  .secondary-nav {
+    background: var(--bg-panel);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2.5rem;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .breadcrumb {
+    display: flex; align-items: center; gap: 0.4rem;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .breadcrumb a { color: var(--muted); text-decoration: none; transition: color 0.2s; }
+  .breadcrumb a:hover { color: var(--accent-bright); }
+  .breadcrumb .sep { color: var(--border-lit); }
+  .breadcrumb .current { color: var(--text-dim); }
+  .tab-bar {
+    display: flex; align-items: center; gap: 0; height: 100%;
+  }
+  .tab {
+    display: flex; align-items: center; gap: 0.4rem;
+    padding: 0 1rem;
+    height: 100%;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.72rem; font-weight: 600;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent-bright); border-bottom-color: var(--accent-bright); }
+  .tab-count {
+    background: rgba(29,86,219,0.2);
+    color: var(--accent-bright);
+    font-size: 0.58rem; font-weight: 700;
+    padding: 1px 5px; border-radius: 2px;
+  }
+
+  /* ─── DEMO BODY ─── */
+  .demo-body {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 0;
+    min-height: calc(100vh - 142px);
+  }
+
+  /* Sidebar */
+  .sidebar {
+    background: var(--bg-deep);
+    border-right: 1px solid var(--border);
+    padding: 1.5rem 0;
+  }
+  .sidebar-section { margin-bottom: 1.5rem; }
+  .sidebar-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.6rem; font-weight: 700;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--accent); opacity: 0.75;
+    padding: 0 1.2rem 0.5rem;
+  }
+  .sidebar-link {
+    display: flex; align-items: center; gap: 0.65rem;
+    padding: 0.55rem 1.2rem;
+    font-size: 0.8rem; color: var(--text-dim);
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s;
+    border-left: 2px solid transparent;
+  }
+  .sidebar-link svg {
+    width: 13px; height: 13px;
+    stroke: currentColor; stroke-width: 1.8; fill: none;
+    opacity: 0.65; flex-shrink: 0;
+  }
+  .sidebar-link:hover { background: rgba(29,86,219,0.08); color: var(--text); border-left-color: var(--border-lit); }
+  .sidebar-link.active { background: rgba(29,86,219,0.12); color: var(--accent-bright); border-left-color: var(--accent-bright); }
+  .sidebar-link.active svg { opacity: 1; }
+  .sidebar-stat {
+    margin-left: auto;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.65rem; font-weight: 700;
+    padding: 1px 5px; border-radius: 2px;
+  }
+  .stat-alert { background: rgba(200,30,30,0.2); color: #f87171; }
+  .stat-ok    { background: rgba(16,185,129,0.15); color: var(--ok-bright); }
+  .stat-muted { background: rgba(74,92,119,0.25); color: var(--muted); }
+
+  /* Main content area */
+  .main-content {
+    background: var(--bg-void);
+    padding: 2rem;
+  }
+  .content-placeholder {
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    padding: 3rem;
+    text-align: center;
+    color: var(--muted);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .content-placeholder .big {
+    font-size: 2rem; font-weight: 900;
+    color: var(--border-lit);
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+
+  /* ─── STATUS BAR ─── */
+  .statusbar {
+    background: var(--bg-deep);
+    border-top: 1px solid var(--border);
+    padding: 0 2.5rem;
+    height: 28px;
+    display: flex; align-items: center;
+    justify-content: space-between;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    position: fixed; bottom: 0; left: 0; right: 0;
+    z-index: 100;
+  }
+  .statusbar-left, .statusbar-right { display: flex; align-items: center; gap: 1.5rem; }
+  .status-item { display: flex; align-items: center; gap: 0.4rem; }
+  .status-ok   { color: var(--ok-bright); }
+  .status-warn { color: var(--warning); }
+  .status-err  { color: #f87171; }
+
+  /* ─── MOBILE MENU TOGGLE ─── */
+  .hamburger {
+    display: none;
+    flex-direction: column; gap: 4px;
+    cursor: pointer; padding: 4px;
+  }
+  .hamburger span {
+    display: block; width: 20px; height: 1.5px;
+    background: var(--steel); border-radius: 1px;
+    transition: transform 0.25s, opacity 0.25s;
+  }
+
+  @media (max-width: 960px) {
+    .main-nav { display: none; }
+    .hamburger { display: flex; }
+    .demo-body { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .secondary-nav { padding: 0 1rem; }
+    header { padding: 0 1.2rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-item"><span class="dot"></span>SISTEMA OPERATIVO ATTIVO</span>
+    <span class="topbar-item"><span class="dot warn"></span>3 INTERVENTI IN CORSO</span>
+  </div>
+  <div class="topbar-center" id="topbar-datetime">
+    <!-- popolato da JS -->
+  </div>
+  <div class="topbar-right-cluster">
+    <span class="topbar-item">CODICE: SO-2026-0327</span>
+  </div>
+</div>
+
+<!-- HEADER PRINCIPALE -->
+<header>
+  <a class="brand" href="#">
+    <div class="brand-emblem">
+      <!-- Fiamma VVF stilizzata -->
+      <svg viewBox="0 0 28 32" xmlns="http://www.w3.org/2000/svg">
+        <path d="M14 2 C10 8 6 10 8 16 C9 19 12 21 14 21 C16 21 19 19 20 16 C22 10 18 8 14 2Z" stroke-linejoin="round"/>
+        <path d="M10 14 C9 17 10 20 12 22 C13 23 14 23 14 23 C14 23 15 23 16 22 C18 20 19 17 18 14" stroke-linecap="round" opacity="0.6"/>
+        <circle cx="14" cy="25" r="2.5" stroke-width="1.2"/>
+        <line x1="14" y1="27.5" x2="14" y2="30" stroke-linecap="round"/>
+        <line x1="8" y1="28" x2="14" y2="30" stroke-linecap="round"/>
+        <line x1="20" y1="28" x2="14" y2="30" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="brand-text">
+      <span class="brand-title">VVF · SALA OPERATIVA</span>
+      <span class="brand-subtitle">Corpo Nazionale Vigili del Fuoco</span>
+    </div>
+  </a>
+
+  <nav class="main-nav" role="navigation" aria-label="Navigazione principale">
+
+    <!-- DASHBOARD -->
+    <div class="nav-item active">
+      <a class="nav-link" href="#">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </a>
+    </div>
+
+    <!-- INTERVENTI -->
+    <div class="nav-item">
+      <button class="nav-link" aria-haspopup="true">
+        <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        Interventi
+        <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="dropdown">
+        <div class="dropdown-group">
+          <div class="dropdown-label">In corso</div>
+          <a class="dropdown-link" href="#">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Interventi attivi
+            <span class="dropdown-badge badge-live">3 live</span>
+          </a>
+          <a class="dropdown-link" href="#">
+            <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013 10.79a19.79 19.79 0 01-3.07-8.67A2 2 0 011.9 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+            Richiesta soccorso
+          </a>
+          <a class="dropdown-link" href="#">
+            <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            Allocazione squadre
+          </a>
+        </div>
+        <div class="dropdown-group">
+          <div class="dropdown-label">Storico</div>
+          <a class="dropdown-link" href="#">
+            <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Registro interventi
+          </a>
+          <a class="dropdown-link" href="#">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Report & statistiche
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- MEZZI & RISORSE -->
+    <div class="nav-item">
+      <button class="nav-link" aria-haspopup="true">
+        <svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        Mezzi & Risorse
+        <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="dropdown">
+        <div class="dropdown-group">
+          <div class="dropdown-label">Flotta veicoli</div>
+          <a class="dropdown-link" href="#">
+            <svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+            Stato mezzi
+            <span class="dropdown-badge badge-new">aggiornato</span>
+          </a>
+          <a class="dropdown-link" href="#">
+            <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            Dotazioni speciali
+          </a>
+          <a class="dropdown-link" href="#">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14"/><path d="M4.93 4.93a10 10 0 000 14.14"/></svg>
+            Manutenzione
+          </a>
+        </div>
+        <div class="dropdown-group">
+          <div class="dropdown-label">Personale</div>
+          <a class="dropdown-link" href="#">
+            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+            Squadre operative
+          </a>
+          <a class="dropdown-link" href="#">
+            <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Turni & reperibilità
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARTOGRAFIA -->
+    <div class="nav-item">
+      <button class="nav-link" aria-haspopup="true">
+        <svg viewBox="0 0 24 24"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+        Cartografia
+        <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="dropdown">
+        <div class="dropdown-group">
+          <div class="dropdown-label">Mappe operative</div>
+          <a class="dropdown-link" href="#">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="10" r="3"/><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 10-16 0c0 3 2.7 6.9 8 11.7z"/></svg>
+            Mappa interventi
+          </a>
+          <a class="dropdown-link" href="#">
+            <svg viewBox="0 0 24 24"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/></svg>
+            GIS – rischio territorio
+          </a>
+          <a class="dropdown-link" href="#">
+            <svg viewBox="0 0 24 24"><path d="M3 3h18v18H3z"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18" opacity="0.5"/></svg>
+            Idrantistica
+          </a>
+        </div>
+        <div class="dropdown-group">
+          <div class="dropdown-label">Scenari</div>
+          <a class="dropdown-link" href="#">
+            <svg viewBox="0 0 24 24"><path d="M8.56 2.9A7 7 0 0121 10v4a4 4 0 01-4 4H7a4 4 0 01-4-4V10A7 7 0 018.56 2.9z"/></svg>
+            Piani di emergenza
+          </a>
+          <a class="dropdown-link" href="#">
+            <svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+            Zone rischio industriale
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- COMUNICAZIONI -->
+    <div class="nav-item">
+      <button class="nav-link" aria-haspopup="true">
+        <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013 10.79a19.79 19.79 0 01-3.07-8.67A2 2 0 011.9 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+        Comunicazioni
+        <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="dropdown">
+        <div class="dropdown-group">
+          <div class="dropdown-label">Radio & telefonia</div>
+          <a class="dropdown-link" href="#">
+            <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Canali radio attivi
+            <span class="dropdown-badge badge-live">live</span>
+          </a>
+          <a class="dropdown-link" href="#">
+            <svg viewBox="0 0 24 24"><path d="M15.05 5A5 5 0 0119 8.95M15.05 1A9 9 0 0123 8.94M1 1l22 22"/><path d="M16.72 11.06A10.94 10.94 0 0119 12.55M5 5a10.99 10.99 0 003.63 7.34"/></svg>
+            Rete TeTRA
+          </a>
+          <a class="dropdown-link" href="#">
+            <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            Messaggistica interna
+          </a>
+        </div>
+        <div class="dropdown-group">
+          <div class="dropdown-label">Allertamento</div>
+          <a class="dropdown-link" href="#">
+            <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+            Allerta meteo
+          </a>
+          <a class="dropdown-link" href="#">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Bollettini DPC
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- AMMINISTRAZIONE -->
+    <div class="nav-item">
+      <button class="nav-link" aria-haspopup="true">
+        <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Amministrazione
+        <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="dropdown">
+        <div class="dropdown-group">
+          <div class="dropdown-label">Gestione</div>
+          <a class="dropdown-link" href="#">
+            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+            Gestione utenti
+            <span class="dropdown-badge badge-sec">admin</span>
+          </a>
+          <a class="dropdown-link" href="#">
+            <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            Configurazione sistema
+          </a>
+          <a class="dropdown-link" href="#">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            Documentazione
+          </a>
+        </div>
+        <div class="dropdown-group">
+          <div class="dropdown-label">Log & audit</div>
+          <a class="dropdown-link" href="#">
+            <svg viewBox="0 0 24 24"><path d="M9 9H4a2 2 0 00-2 2v9a2 2 0 002 2h16a2 2 0 002-2V11a2 2 0 00-2-2h-5"/><polyline points="9 3 9 9 15 9 15 3"/></svg>
+            Log di sistema
+          </a>
+          <a class="dropdown-link" href="#">
+            <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Monitoraggio accessi
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </nav>
+
+  <!-- Right Controls -->
+  <div class="header-right">
+    <div class="icon-btn" title="Cerca">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </div>
+    <div class="icon-btn" title="Notifiche">
+      <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+      <span class="notif-dot"></span>
+    </div>
+    <div class="icon-btn" title="Impostazioni">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
+    </div>
+    <div class="divider"></div>
+    <div class="user-chip" title="Profilo operatore">
+      <div class="user-avatar">MR</div>
+      <div class="user-info">
+        <span class="user-name">M. Rossi</span>
+        <span class="user-role">Capo Sala · 1° Turno</span>
+      </div>
+    </div>
+    <div class="hamburger" id="ham" aria-label="Menu mobile" role="button" tabindex="0">
+      <span></span><span></span><span></span>
+    </div>
+  </div>
+</header>
+
+<!-- SECONDARY NAV -->
+<div class="secondary-nav">
+  <div class="breadcrumb">
+    <a href="#">SO Nazionale</a>
+    <span class="sep">›</span>
+    <a href="#">Dashboard</a>
+    <span class="sep">›</span>
+    <span class="current">Panoramica operativa</span>
+  </div>
+  <div class="tab-bar">
+    <a class="tab active" href="#">Panoramica <span class="tab-count">5</span></a>
+    <a class="tab" href="#">Mappa live</a>
+    <a class="tab" href="#">Interventi <span class="tab-count">3</span></a>
+    <a class="tab" href="#">Squadre</a>
+    <a class="tab" href="#">Comunicazioni</a>
+  </div>
+</div>
+
+<!-- DEMO BODY -->
+<div class="demo-body">
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-title">Navigazione rapida</div>
+      <a class="sidebar-link active" href="#">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard generale
+      </a>
+      <a class="sidebar-link" href="#">
+        <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Interventi attivi
+        <span class="sidebar-stat stat-alert">3</span>
+      </a>
+      <a class="sidebar-link" href="#">
+        <svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+        Mezzi disponibili
+        <span class="sidebar-stat stat-ok">12</span>
+      </a>
+      <a class="sidebar-link" href="#">
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        Personale in servizio
+        <span class="sidebar-stat stat-ok">24</span>
+      </a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">Allerte attive</div>
+      <a class="sidebar-link" href="#">
+        <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Allerta incendio boschivo
+        <span class="sidebar-stat stat-alert">!</span>
+      </a>
+      <a class="sidebar-link" href="#">
+        <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
+        Allerta meteo arancione
+        <span class="sidebar-stat stat-alert">!</span>
+      </a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">Distaccamenti</div>
+      <a class="sidebar-link" href="#">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="10" r="3"/><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 10-16 0c0 3 2.7 6.9 8 11.7z"/></svg>
+        Sede Centrale
+        <span class="sidebar-stat stat-ok">●</span>
+      </a>
+      <a class="sidebar-link" href="#">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="10" r="3"/><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 10-16 0c0 3 2.7 6.9 8 11.7z"/></svg>
+        Distaccamento Nord
+        <span class="sidebar-stat stat-muted">—</span>
+      </a>
+      <a class="sidebar-link" href="#">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="10" r="3"/><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 10-16 0c0 3 2.7 6.9 8 11.7z"/></svg>
+        Distaccamento Sud
+        <span class="sidebar-stat stat-ok">●</span>
+      </a>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="content-placeholder">
+      <span class="big">◉</span>
+      AREA CONTENUTO PRINCIPALE<br>
+      Il corpo delle pagine del sito viene caricato qui.<br>
+      Il menu soprastante è completamente funzionale.
+    </div>
+  </main>
+</div>
+
+<!-- STATUS BAR -->
+<div class="statusbar">
+  <div class="statusbar-left">
+    <span class="status-item status-ok">
+      <span class="dot" style="width:5px;height:5px;background:var(--ok-bright)"></span>
+      Sistema operativo
+    </span>
+    <span class="status-item">Versione: 4.2.1</span>
+    <span class="status-item">Ambiente: Produzione</span>
+  </div>
+  <div class="statusbar-right">
+    <span class="status-item status-warn">3 interventi attivi</span>
+    <span class="status-item">Ultimo aggiornamento: <span id="last-update">--:--</span></span>
+    <span class="status-item">Utente: M.Rossi · SO-01</span>
+  </div>
+</div>
+
+<script>
+  /*
+   * TURNI VVF – Ciclo reale 4 squadre (A, B, C, D)
+   * ─────────────────────────────────────────────────
+   * Ogni squadra lavora su cicli di 8 turni da 12h:
+   *   Mattina (M)  08:00–20:00
+   *   Notte   (N)  20:00–08:00
+   *
+   * Ciclo per squadra (8 slot da 12h = 4 giorni):
+   *   slot 0: M  |  slot 1: M  |  slot 2: N  |  slot 3: N
+   *   slot 4: R  |  slot 5: R  |  slot 6: R  |  slot 7: R
+   *
+   * Le 4 squadre sono sfasate di 2 slot l'una dall'altra.
+   *
+   * ANCORA REALE verificata:
+   *   Venerdì 27 marzo 2026, ore 23:35 (locale Roma, CET)  → Turno B  Notte
+   *   Quel momento in UTC = 27/03/2026 22:35 UTC
+   *   Slot 20h del 27/03 = inizio turno notte → ancorato a B
+   *
+   * Numero turno (1, 2, 3):
+   *   Il suffisso numerico ruota ogni 8 giorni (durata ciclo completo per una squadra).
+   *   Viene calcolato come indice 0-2 del ciclo di 3 ripetizioni del pattern da 8 giorni.
+   *
+   * Nota: il turno "notte" iniziato alle 20:00 del 27/03 appartiene alla
+   * giornata operativa del 27/03 anche se prosegue fino alle 08:00 del 28/03.
+   */
+
+  const GIORNI_IT = ['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
+
+  // ── PUNTO DI ANCORAGGIO ──────────────────────────────────────────────────────
+  // 27/03/2026 20:00 CET = 27/03/2026 19:00 UTC → inizio slot "Notte" squadra B
+  // Usiamo UTC per il calcolo, poi convertiamo in ora locale per la visualizzazione.
+  // Slot 0 di questo ancoraggio = B-Notte.
+  // Le 4 squadre a questo slot hanno queste fasi nel ciclo:
+  //   B → slot 2 (N = primo turno notte)
+  //   C → slot 4 (R)
+  //   D → slot 6 (R)
+  //   A → slot 0 (M) … ma A non è in servizio a questo anchor → verifica:
+  //     se B è a slot 2 del suo ciclo, A è sfasata -2 → slot 0 → Mattina (già finita)
+  //
+  // Definiamo ANCHOR_UTC come il momento esatto 27/03/2026 19:00:00 UTC
+  // (= 20:00 CET), inizio del turno notte B.
+  // ─────────────────────────────────────────────────────────────────────────────
+  const ANCHOR_UTC = Date.UTC(2026, 2, 27, 19, 0, 0); // mese 2 = marzo (0-based)
+
+  // Durata di un mezzo-giorno in ms
+  const HALF_DAY_MS = 12 * 3600 * 1000;
+
+  // Ciclo per ogni squadra (8 slot da 12h)
+  const PATTERN = ['M','M','N','N','R','R','R','R'];
+
+  // Squadre in ordine; B ha fase 2 all'anchor, poi C=4, D=6, A=0
+  // Mappatura: squadra → fase di partenza all'anchor
+  const SQUADRA_OFFSET = { B: 2, C: 4, D: 6, A: 0 };
+  const SQUADRE_ORDER  = ['A','B','C','D'];
+
+  // Numero turno (1-3): ciclo di 3 su 24 giorni (3 × ciclo-8-slot)
+  // Ancorato: all'anchor lo slot globale = 0 → B è al suo slot 2.
+  // Usare il numero di cicli completi da 8-slot (da anchor) per determinare il suffisso.
+  function getTurno(date) {
+    const nowUTC  = date.getTime();
+    const deltaMS = nowUTC - ANCHOR_UTC;
+    // Numero intero di slot da 12h trascorsi dall'anchor (può essere negativo per date passate)
+    const slotGlobale = Math.floor(deltaMS / HALF_DAY_MS);
+
+    // Per ogni squadra calcola il suo slot corrente nel ciclo
+    let squadraAttiva = null;
+    let tipoAttivo    = 'M';
+
+    for (const sq of SQUADRE_ORDER) {
+      const faseAnchor = SQUADRA_OFFSET[sq];
+      // Slot corrente della squadra nel suo ciclo 0-7
+      const slotCorrente = ((faseAnchor + slotGlobale) % 8 + 8) % 8;
+      if (PATTERN[slotCorrente] === 'M' || PATTERN[slotCorrente] === 'N') {
+        squadraAttiva = sq;
+        tipoAttivo    = PATTERN[slotCorrente];
+        break; // la prima squadra "in turno" trovata è quella attiva
+      }
+    }
+
+    // Numero progressivo 1-3: ogni ciclo da 8 slot la stessa squadra fa 1 turno.
+    // Contiamo quanti cicli completi da 8 slot sono passati dall'anchor per la squadra B
+    // (l'altra non importa, il numero è uguale per tutte nello stesso periodo).
+    const cicliDaAnchor = Math.floor(
+      ((SQUADRA_OFFSET[squadraAttiva] + slotGlobale) % 8 + 8) % 8 === 0
+        ? Math.floor((SQUADRA_OFFSET[squadraAttiva] + slotGlobale) / 8)
+        : Math.floor((SQUADRA_OFFSET[squadraAttiva] + slotGlobale) / 8)
+    );
+    // Numero turno 1-3 basato su cicli totali da anchor globale / 3
+    const n = (((Math.floor(slotGlobale / 8)) % 3) + 3) % 3 + 1;
+
+    return {
+      label:  `Turno ${squadraAttiva}${n}`,
+      tipo:   tipoAttivo,
+      orario: tipoAttivo === 'M' ? '08:00 – 20:00' : '20:00 – 08:00',
+    };
+  }
+
+  function getTimezone(date) {
+    const jan = new Date(date.getFullYear(), 0, 1);
+    const jul = new Date(date.getFullYear(), 6, 1);
+    const stdOffset = Math.max(jan.getTimezoneOffset(), jul.getTimezoneOffset());
+    const isDST = date.getTimezoneOffset() < stdOffset;
+    return isDST
+      ? { label: 'CEST', offset: 'GMT+02:00' }
+      : { label: 'CET',  offset: 'GMT+01:00' };
+  }
+
+  function pad2(n) { return String(n).padStart(2,'0'); }
+
+  function updateTopbar() {
+    const now  = new Date();
+    const dow  = GIORNI_IT[now.getDay()];
+    const dd   = pad2(now.getDate());
+    const mm   = pad2(now.getMonth() + 1);
+    const yyyy = now.getFullYear();
+    const hh   = pad2(now.getHours());
+    const min  = pad2(now.getMinutes());
+    const ss   = pad2(now.getSeconds());
+    const tz   = getTimezone(now);
+    const turno = getTurno(now);
+
+    const tipoClass = turno.tipo === 'M' ? 'turno-mattina' : 'turno-notte';
+    const tipoIcon  = turno.tipo === 'M' ? '☀' : '☽';
+
+    document.getElementById('topbar-datetime').innerHTML =
+      `<span class="topbar-datetime-main">${dow} ${dd}.${mm}.${yyyy}&nbsp;&nbsp;ore ${hh}:${min}:${ss}</span>` +
+      `<span class="topbar-sep">–</span>` 
+      `<span class="topbar-tz">(${tz.offset}) Roma (${tz.label})</span>`;+
+      `<span class="topbar-sep">–</span>` +
+      `<span class="topbar-turno ${tipoClass}" title="${tipoIcon} ${turno.orario}">${turno.label}</span>`
+
+    const lu = document.getElementById('last-update');
+    if (lu) lu.textContent = `${hh}:${min}`;
+  }
+
+  updateTopbar();
+  setInterval(updateTopbar, 1000);
+</script>
+</body>
+</html>
