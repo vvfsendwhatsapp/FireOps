@@ -1,10 +1,2190 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <title>Pagina di Prova</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FireOps VVF — Smart Emergency Management</title>
+  <link rel="icon" type="image/png" href="images/logo.png">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    /* ═══════════════════════════════════════════════
+       ROOT VARIABLES — PALETTE OPERATIVA
+    ═══════════════════════════════════════════════ */
+    :root {
+      --bg-base:      #060a12;
+      --bg-panel:     #0b1220;
+      --bg-card:      #0e1628;
+      --bg-inset:     #111e35;
+      --bg-hover:     #162440;
+      --border-dim:   #162033;
+      --border:       #1e3352;
+      --border-hi:    #2a4d7a;
+      --accent:       #1a8cff;
+      --accent-dim:   #0f5fa8;
+      --accent-glow:  rgba(26,140,255,0.25);
+      --orange:       #ff7b00;
+      --orange-dim:   rgba(255,123,0,0.2);
+      --green:        #00cc77;
+      --green-dim:    rgba(0,204,119,0.15);
+      --red:          #ff3d3d;
+      --red-dim:      rgba(255,61,61,0.15);
+      --yellow:       #ffd600;
+      --text-hi:      #e8f0fc;
+      --text-mid:     #8aaac8;
+      --text-low:     #445f7a;
+      --font-hud:     'Orbitron', monospace;
+      --font-ui:      'Rajdhani', sans-serif;
+      --font-mono:    'Share Tech Mono', monospace;
+      --radius:       5px;
+      --shadow:       0 8px 32px rgba(0,0,0,0.6);
+    }
+
+    /* ═══════════════════════════════════════════════
+       RESET + BASE
+    ═══════════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg-base);
+      color: var(--text-hi);
+      font-family: var(--font-ui);
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Subtle scan-line atmosphere */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(
+        0deg, transparent, transparent 3px,
+        rgba(0,0,0,0.04) 3px, rgba(0,0,0,0.04) 4px
+      );
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg-base); }
+    ::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 3px; }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ═══════════════════════════════════════════════
+       POPUP
+    ═══════════════════════════════════════════════ */
+    #popup-overlay {
+      position: fixed; inset: 0;
+      background: rgba(2,6,14,0.95);
+      backdrop-filter: blur(6px);
+      z-index: 8000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .popup-box {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-hi);
+      border-radius: 10px;
+      padding: 36px 40px;
+      width: min(480px, 92vw);
+      box-shadow: 0 24px 80px rgba(0,0,0,0.85), 0 0 50px rgba(26,140,255,0.12);
+      animation: popIn .3s ease;
+    }
+
+    @keyframes popIn {
+      from { opacity:0; transform: scale(.94) translateY(10px); }
+      to   { opacity:1; transform: scale(1) translateY(0); }
+    }
+
+    .popup-head {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    .popup-head img {
+      height: 56px;
+      object-fit: contain;
+      filter: drop-shadow(0 0 12px var(--accent-glow));
+    }
+
+    .popup-head .app-name {
+      font-family: var(--font-hud);
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 4px;
+      color: var(--text-hi);
+      text-shadow: 0 0 20px var(--accent-glow);
+    }
+
+    .popup-head .payoff {
+      font-size: 11px;
+      letter-spacing: 5px;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .popup-box h3 {
+      font-family: var(--font-hud);
+      font-size: 11px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--text-mid);
+      margin-bottom: 10px;
+    }
+
+    .popup-note {
+      font-size: 13px;
+      color: var(--text-low);
+      margin-bottom: 18px;
+    }
+
+    #popup-select {
+      width: 100%;
+      background: var(--bg-inset);
+      border: 1px solid var(--border-hi);
+      border-radius: var(--radius);
+      color: var(--text-hi);
+      font-family: var(--font-mono);
+      font-size: 15px;
+      padding: 12px 14px;
+      margin-bottom: 20px;
+      cursor: pointer;
+    }
+
+    #popup-select:focus { outline: none; border-color: var(--accent); }
+
+    #popup-confirm {
+      width: 100%;
+      padding: 14px;
+      background: var(--accent);
+      border: none;
+      border-radius: var(--radius);
+      color: #fff;
+      font-family: var(--font-hud);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background .2s, box-shadow .2s;
+    }
+
+    #popup-confirm:hover {
+      background: #2196f3;
+      box-shadow: 0 0 24px var(--accent-glow);
+    }
+
+    /* ═══════════════════════════════════════════════
+       HEADER
+    ═══════════════════════════════════════════════ */
+    #header {
+      position: sticky; top: 0; z-index: 500;
+      background: linear-gradient(180deg, #0b1525 0%, #060a12 100%);
+      border-bottom: 1px solid var(--border-hi);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .hdr-logo {
+      height: 44px;
+      width: 44px;
+      object-fit: contain;
+      flex-shrink: 0;
+      filter: drop-shadow(0 0 8px rgba(26,140,255,.4));
+    }
+
+    .hdr-logo-fallback {
+      height: 44px; width: 44px; flex-shrink: 0;
+      background: var(--accent-dim);
+      border: 1px solid var(--accent);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-hud);
+      font-size: 12px; font-weight: 900; color: #fff;
+      letter-spacing: 1px;
+    }
+
+    .hdr-brand { flex: 1; min-width: 0; }
+
+    .hdr-brand .title {
+      font-family: var(--font-hud);
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 4px;
+      color: var(--text-hi);
+      text-shadow: 0 0 18px rgba(26,140,255,.35);
+      white-space: nowrap;
+    }
+
+    .hdr-brand .payoff {
+      font-size: 10px;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .hdr-clock {
+      text-align: right;
+      font-family: var(--font-mono);
+      flex-shrink: 0;
+    }
+
+    .hdr-clock .datetime {
+      font-size: 11px;
+      color: var(--text-mid);
+      line-height: 1.4;
+    }
+
+    .hdr-clock .turno {
+      font-size: 16px;
+      font-weight: bold;
+      color: var(--orange);
+      letter-spacing: 2px;
+    }
+
+    .hdr-comando {
+      flex-shrink: 0;
+      background: var(--bg-inset);
+      border: 1px solid var(--border-hi);
+      border-radius: var(--radius);
+      padding: 7px 12px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--accent);
+      cursor: pointer;
+      transition: all .2s;
+      display: flex; align-items: center; gap: 6px;
+      max-width: 160px;
+    }
+
+    .hdr-comando:hover { background: var(--accent-dim); color: #fff; }
+
+    .hdr-comando .label {
+      font-size: 9px; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--text-low);
+      display: block; line-height: 1;
+    }
+
+    .hdr-comando .value {
+      font-size: 13px; color: var(--accent);
+      display: block; line-height: 1.2;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    .status-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--green);
+      flex-shrink: 0;
+      animation: blink 2.2s infinite;
+    }
+
+    @keyframes blink {
+      0%,100% { opacity:1; } 55% { opacity:.2; }
+    }
+
+    /* ═══════════════════════════════════════════════
+       NAVIGATION
+    ═══════════════════════════════════════════════ */
+    #nav {
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+      padding: 0 20px;
+      display: flex;
+      gap: 1px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    #nav::-webkit-scrollbar { display: none; }
+
+    .nav-btn {
+      flex-shrink: 0;
+      background: none; border: none;
+      color: var(--text-low);
+      font-family: var(--font-ui);
+      font-size: 12px; font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 11px 15px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: color .2s;
+      border-bottom: 2px solid transparent;
+      position: relative; top: 1px;
+      display: flex; align-items: center; gap: 6px;
+    }
+
+    .nav-btn:hover { color: var(--text-mid); }
+
+    .nav-btn.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    .nav-btn .ico { font-size: 14px; }
+
+    /* ═══════════════════════════════════════════════
+       MAIN + TABS
+    ═══════════════════════════════════════════════ */
+    #main {
+      padding: 22px 20px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .tab { display: none; }
+    .tab.active {
+      display: block;
+      animation: fadeUp .2s ease;
+    }
+
+    @keyframes fadeUp {
+      from { opacity:0; transform: translateY(6px); }
+      to   { opacity:1; transform: translateY(0); }
+    }
+
+    /* ═══════════════════════════════════════════════
+       CARD
+    ═══════════════════════════════════════════════ */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-family: var(--font-hud);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border-dim);
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    .section-head {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .section-head h2 {
+      font-family: var(--font-hud);
+      font-size: 16px; letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+
+    /* ═══════════════════════════════════════════════
+       FORM ELEMENTS
+    ═══════════════════════════════════════════════ */
+    .form-row { margin-bottom: 14px; }
+
+    label {
+      display: block;
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      color: var(--text-mid);
+      margin-bottom: 5px;
+    }
+
+    input[type=text], input[type=number], input[type=tel],
+    input[type=url], input[type=email],
+    textarea, select {
+      width: 100%;
+      background: var(--bg-inset);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-hi);
+      font-family: var(--font-ui); font-size: 15px;
+      padding: 10px 12px;
+      transition: border-color .2s;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      outline: none; border-color: var(--accent);
+    }
+
+    textarea { resize: vertical; min-height: 90px; }
+
+    /* ═══════════════════════════════════════════════
+       BUTTONS
+    ═══════════════════════════════════════════════ */
+    .btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 9px 18px; border: none; border-radius: var(--radius);
+      font-family: var(--font-ui); font-size: 13px;
+      font-weight: 700; letter-spacing: 1px;
+      text-transform: uppercase; cursor: pointer;
+      transition: all .2s; text-decoration: none !important;
+    }
+
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: #2196f3; box-shadow: 0 0 18px var(--accent-glow); }
+
+    .btn-secondary {
+      background: var(--bg-inset); color: var(--text-mid);
+      border: 1px solid var(--border-hi);
+    }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+    .btn-wa  { background: #1db954; color:#fff; }
+    .btn-wa:hover { background: #22d360; }
+
+    .btn-tg  { background: #0088cc; color:#fff; }
+    .btn-tg:hover { background: #0099e6; }
+
+    .btn-copy { background: var(--bg-inset); border: 1px solid var(--border-hi); color: var(--text-mid); }
+    .btn-copy:hover { border-color: var(--green); color: var(--green); }
+
+    .btn-sm { padding: 6px 12px; font-size: 11px; }
+
+    .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+
+    /* ═══════════════════════════════════════════════
+       GRID
+    ═══════════════════════════════════════════════ */
+    .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    @media (max-width: 900px) { .g2,.g3 { grid-template-columns: 1fr; } }
+
+    /* ═══════════════════════════════════════════════
+       TABLE
+    ═══════════════════════════════════════════════ */
+    .table-wrap { overflow-x: auto; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+
+    th {
+      background: var(--bg-inset);
+      font-family: var(--font-hud); font-size: 9px;
+      letter-spacing: 2px; text-transform: uppercase;
+      color: var(--accent); padding: 10px 12px;
+      text-align: left; border-bottom: 1px solid var(--border-hi);
+    }
+
+    td {
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--border-dim);
+      vertical-align: middle;
+    }
+
+    tr:hover td { background: rgba(26,140,255,0.04); }
+
+    /* ═══════════════════════════════════════════════
+       BADGE
+    ═══════════════════════════════════════════════ */
+    .badge {
+      display: inline-block; padding: 2px 8px; border-radius: 3px;
+      font-size: 10px; font-weight: 700; letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .badge-blue   { background: rgba(26,140,255,.15); color: var(--accent);  border:1px solid rgba(26,140,255,.3); }
+    .badge-green  { background: var(--green-dim);      color: var(--green);   border:1px solid rgba(0,204,119,.3); }
+    .badge-orange { background: var(--orange-dim);     color: var(--orange);  border:1px solid rgba(255,123,0,.3); }
+    .badge-red    { background: var(--red-dim);        color: var(--red);     border:1px solid rgba(255,61,61,.3); }
+
+    /* ═══════════════════════════════════════════════
+       TAB: WHATSAPP / TELEGRAM (HOME)
+    ═══════════════════════════════════════════════ */
+    .msg-template-grid {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px;
+    }
+
+    .tpl-btn {
+      background: var(--bg-inset); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 6px 12px;
+      color: var(--text-mid); font-family: var(--font-ui);
+      font-size: 12px; cursor: pointer; transition: all .2s;
+    }
+
+    .tpl-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    .char-count {
+      font-family: var(--font-mono); font-size: 11px;
+      color: var(--text-low); text-align: right; margin-top: 4px;
+    }
+
+    /* ═══════════════════════════════════════════════
+       TAB: CONVERSIONE
+    ═══════════════════════════════════════════════ */
+    .conv-result {
+      background: var(--bg-inset); border: 1px solid var(--border-hi);
+      border-radius: var(--radius); padding: 14px 18px;
+      font-family: var(--font-mono); font-size: 22px;
+      color: var(--green); text-align: center; margin-top: 12px;
+      min-height: 54px;
+    }
+
+    /* ═══════════════════════════════════════════════
+       TAB: RADIO
+    ═══════════════════════════════════════════════ */
+    .radio-row {
+      display: flex; align-items: center; gap: 14px;
+      padding: 11px 14px;
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius);
+      background: var(--bg-inset);
+      margin-bottom: 6px;
+      transition: border-color .15s;
+    }
+
+    .radio-row:hover { border-color: var(--border-hi); }
+
+    .radio-freq {
+      font-family: var(--font-mono); font-size: 17px;
+      color: var(--green); min-width: 110px; flex-shrink: 0;
+    }
+
+    .radio-sep { width: 1px; background: var(--border); align-self: stretch; flex-shrink: 0; }
+    .radio-info { flex: 1; }
+    .radio-name { font-weight: 700; font-size: 14px; }
+    .radio-desc { font-size: 12px; color: var(--text-mid); }
+
+    .phone-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 14px;
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius);
+      background: var(--bg-inset);
+      margin-bottom: 6px;
+    }
+
+    .phone-number {
+      font-family: var(--font-mono); font-size: 16px;
+      color: var(--accent); min-width: 140px; flex-shrink: 0;
+    }
+
+    /* ═══════════════════════════════════════════════
+       TAB: QRCODE
+    ═══════════════════════════════════════════════ */
+    #qr-output {
+      display: flex; justify-content: center; align-items: center;
+      padding: 24px; min-height: 200px;
+    }
+
+    #qr-output canvas, #qr-output img {
+      border: 10px solid #fff; border-radius: 4px;
+    }
+
+    #qr-placeholder {
+      color: var(--text-low); font-family: var(--font-mono);
+      font-size: 13px; text-align: center;
+    }
+
+    /* ═══════════════════════════════════════════════
+       TAB: TURNARIO
+    ═══════════════════════════════════════════════ */
+    .turno-now-box {
+      display: flex; align-items: center; gap: 20px;
+      background: var(--bg-inset); border: 1px solid var(--orange);
+      border-radius: 8px; padding: 18px 22px; margin-bottom: 20px;
+      box-shadow: 0 0 20px rgba(255,123,0,.12);
+    }
+
+    .turno-now-label {
+      font-family: var(--font-hud); font-size: 42px;
+      font-weight: 900; color: var(--orange);
+      letter-spacing: 3px; line-height: 1;
+    }
+
+    .turno-now-info { flex: 1; }
+    .turno-now-info .tn-desc { color: var(--text-mid); font-size: 13px; }
+    .turno-now-info .tn-shift { font-family: var(--font-mono); font-size: 16px; color: var(--text-hi); }
+
+    .cal-grid {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+
+    .cal-dh {
+      font-family: var(--font-hud); font-size: 9px;
+      letter-spacing: 2px; text-transform: uppercase;
+      color: var(--text-low); text-align: center; padding: 6px 2px;
+    }
+
+    .cal-cell {
+      background: var(--bg-inset); border: 1px solid var(--border-dim);
+      border-radius: 4px; padding: 6px 4px; text-align: center;
+      font-size: 11px; transition: border-color .15s;
+    }
+
+    .cal-cell .cd { color: var(--text-low); font-size: 10px; }
+    .cal-cell .cs { font-family: var(--font-mono); font-size: 13px; font-weight: bold; }
+    .cal-cell .ct { font-size: 9px; color: var(--text-low); }
+    .cal-cell.today { border-color: var(--orange); background: rgba(255,123,0,.08); }
+    .cal-cell.today .cd { color: var(--orange); }
+
+    .turno-legend {
+      display: flex; gap: 12px; flex-wrap: wrap; margin-top: 14px;
+    }
+
+    .tl-item {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; color: var(--text-mid);
+    }
+
+    .tl-dot {
+      width: 12px; height: 12px; border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    /* ═══════════════════════════════════════════════
+       TAB: CMR
+    ═══════════════════════════════════════════════ */
+    .cmr-list {
+      display: flex; flex-direction: column; gap: 8px;
+    }
+
+    .cmr-item {
+      display: flex; align-items: center; gap: 14px;
+      background: var(--bg-inset); border: 1px solid var(--border-dim);
+      border-radius: var(--radius); padding: 14px 16px;
+      cursor: pointer; transition: border-color .2s;
+    }
+
+    .cmr-item:hover { border-color: var(--accent); }
+
+    .cmr-icon { font-size: 24px; flex-shrink: 0; }
+    .cmr-name { font-weight: 700; font-size: 15px; }
+    .cmr-desc { font-size: 12px; color: var(--text-mid); }
+    .cmr-arrow { margin-left: auto; color: var(--text-low); font-size: 18px; }
+
+    /* ═══════════════════════════════════════════════
+       LINK UTILI
+    ═══════════════════════════════════════════════ */
+    .link-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 14px;
+      background: var(--bg-inset); border: 1px solid var(--border-dim);
+      border-radius: var(--radius); margin-bottom: 6px;
+      transition: border-color .15s;
+      text-decoration: none !important; color: inherit;
+    }
+
+    .link-item:hover { border-color: var(--accent); }
+    .link-item .li-ico { font-size: 20px; flex-shrink: 0; }
+    .link-item .li-name { font-weight: 700; font-size: 14px; color: var(--text-hi); }
+    .link-item .li-desc { font-size: 12px; color: var(--text-mid); }
+    .link-item .li-url  { font-family: var(--font-mono); font-size: 11px; color: var(--accent); margin-top: 2px; }
+
+    /* ═══════════════════════════════════════════════
+       CONTATTI
+    ═══════════════════════════════════════════════ */
+    .contact-card {
+      background: var(--bg-inset); border: 1px solid var(--border-dim);
+      border-radius: var(--radius); padding: 14px 16px;
+      margin-bottom: 8px;
+    }
+
+    .contact-card .cc-name { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+    .contact-card .cc-role { font-size: 12px; color: var(--accent); letter-spacing: 1px; text-transform: uppercase; }
+    .contact-card .cc-phones { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px; }
+    .contact-card .cc-phone {
+      font-family: var(--font-mono); font-size: 14px;
+      color: var(--text-mid); display: flex; align-items: center; gap: 4px;
+    }
+
+    /* ═══════════════════════════════════════════════
+       RESPONSIVE
+    ═══════════════════════════════════════════════ */
+    @media (max-width: 640px) {
+      .hdr-brand .payoff { display: none; }
+      .hdr-clock .datetime { display: none; }
+      .hdr-clock .turno { font-size: 13px; }
+      .cal-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+  </style>
 </head>
+
 <body>
-    <h1>ciao</h1>
+
+<!-- ══════════════════════════════════════════════════
+     POPUP — SELEZIONE COMANDO
+══════════════════════════════════════════════════ -->
+<div id="popup-overlay">
+  <div class="popup-box">
+    <div class="popup-head">
+      <img src="images/logo.png" alt="FireOps VVF" onerror="this.style.display='none'">
+      <div class="app-name">FireOps VVF</div>
+      <div class="payoff">Smart Emergency Management</div>
+    </div>
+    <h3>Seleziona Comando</h3>
+    <p class="popup-note">Scegli il Comando di appartenenza. La selezione rimarrà attiva per tutta la sessione.</p>
+    <select id="popup-select">
+      <option value="">⏳ Caricamento comandi...</option>
+    </select>
+    <button id="popup-confirm" onclick="confirmComando()">Conferma e Accedi ›</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     HEADER
+══════════════════════════════════════════════════ -->
+<header id="header">
+  <img src="images/logo.png" alt="Logo" class="hdr-logo" onerror="this.outerHTML='<div class=\'hdr-logo-fallback\'>VVF</div>'">
+  <div class="hdr-brand">
+    <div class="title">FireOps VVF</div>
+    <div class="payoff">Smart Emergency Management</div>
+  </div>
+  <div class="hdr-clock">
+    <div class="datetime" id="hdr-datetime">—</div>
+    <div class="turno" id="hdr-turno">—</div>
+  </div>
+  <div class="hdr-comando" onclick="resetComando()" title="Clicca per cambiare comando">
+    <span class="status-dot"></span>
+    <div>
+      <span class="label">Comando</span>
+      <span class="value" id="hdr-comando-val">—</span>
+    </div>
+  </div>
+</header>
+
+<!-- ══════════════════════════════════════════════════
+     NAVIGATION
+══════════════════════════════════════════════════ -->
+<nav id="nav">
+  <button class="nav-btn active" data-tab="whatsapp" onclick="switchTab(this,'whatsapp')">
+    <span class="ico">💬</span> WhatsApp / Telegram
+  </button>
+  <button class="nav-btn" data-tab="links" onclick="switchTab(this,'links')">
+    <span class="ico">🔗</span> Link Utili
+  </button>
+  <button class="nav-btn" data-tab="contacts" onclick="switchTab(this,'contacts')">
+    <span class="ico">📞</span> Contatti Comando
+  </button>
+  <button class="nav-btn" data-tab="converter" onclick="switchTab(this,'converter')">
+    <span class="ico">⚖️</span> Conversione
+  </button>
+  <button class="nav-btn" data-tab="radio" onclick="switchTab(this,'radio')">
+    <span class="ico">📻</span> Radio &amp; Telefoni
+  </button>
+  <button class="nav-btn" data-tab="qrcode" onclick="switchTab(this,'qrcode')">
+    <span class="ico">⬛</span> QR Code
+  </button>
+  <button class="nav-btn" data-tab="turnario" onclick="switchTab(this,'turnario')">
+    <span class="ico">📅</span> Turnario
+  </button>
+  <button class="nav-btn" data-tab="cmr" onclick="switchTab(this,'cmr')">
+    <span class="ico">📋</span> Moduli CMR
+  </button>
+</nav>
+
+<!-- ══════════════════════════════════════════════════
+     MAIN CONTENT
+══════════════════════════════════════════════════ -->
+<main id="main">
+
+  <!-- ─── TAB 1: WhatsApp / Telegram ─── -->
+  <div class="tab active" id="tab-whatsapp">
+    <div class="section-head">
+      <span style="font-size:22px">💬</span>
+      <h2>Messaggi WhatsApp &amp; Telegram</h2>
+    </div>
+
+    <div class="g2">
+      <div class="card">
+        <div class="card-title">✏️ Componi Messaggio</div>
+
+        <div class="form-row">
+          <label>Template rapido</label>
+          <div class="msg-template-grid" id="tpl-grid">
+            <button class="tpl-btn" onclick="setTpl('🚒 INTERVENTO in corso - Personale richiesto in sede. Presentarsi immediatamente.')">🚒 Intervento</button>
+            <button class="tpl-btn" onclick="setTpl('⚠️ ATTENZIONE: riunione urgente convocata per oggi. Rispondere con conferma presenze.')">⚠️ Riunione</button>
+            <button class="tpl-btn" onclick="setTpl('🔴 ALLERTA METEO livello [X] per la giornata di [DATA]. Mantenere presidio costante.')">🔴 Allerta Meteo</button>
+            <button class="tpl-btn" onclick="setTpl('ℹ️ COMUNICAZIONE di servizio: [inserire testo]')">ℹ️ Comunicazione</button>
+            <button class="tpl-btn" onclick="setTpl('🛡️ CAMBIO TURNO: squada [X] termina servizio. Squadra [Y] prende servizio. Ore [HH:MM]')">🛡️ Cambio Turno</button>
+            <button class="tpl-btn" onclick="setTpl('📊 REPORT giornaliero: Interventi [N] | Personale presente [N] | Note: [inserire]')">📊 Report</button>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label>Testo Messaggio</label>
+          <textarea id="msg-text" rows="6" placeholder="Scrivi il messaggio oppure seleziona un template sopra..." oninput="updateCharCount()"></textarea>
+          <div class="char-count" id="char-count">0 caratteri</div>
+        </div>
+
+        <div class="form-row">
+          <label>Destinatario (numero con prefisso o username Telegram)</label>
+          <input type="text" id="msg-dest" placeholder="+39 333 1234567 oppure @username_telegram">
+        </div>
+
+        <div class="btn-row">
+          <button class="btn btn-wa" onclick="sendWhatsApp()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.117.553 4.103 1.52 5.827L0 24l6.35-1.503A11.954 11.954 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.907 0-3.7-.513-5.249-1.407l-.375-.222-3.88.919.974-3.79-.244-.387A9.944 9.944 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+            Invia WhatsApp
+          </button>
+          <button class="btn btn-tg" onclick="sendTelegram()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L6.26 14.4l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.556 2.186z"/></svg>
+            Invia Telegram
+          </button>
+          <button class="btn btn-copy" onclick="copyMsg()">
+            📋 Copia
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📜 Storico Messaggi Inviati</div>
+        <div id="msg-history" style="max-height:360px;overflow-y:auto;">
+          <div style="color:var(--text-low);font-size:13px;padding:20px 0;text-align:center;">
+            Nessun messaggio inviato in questa sessione
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── TAB 2: Link Utili ─── -->
+  <div class="tab" id="tab-links">
+    <div class="section-head">
+      <span style="font-size:22px">🔗</span>
+      <h2>Link Utili</h2>
+    </div>
+
+    <div class="g2">
+      <div class="card">
+        <div class="card-title">🏛️ Istituzionali VVF</div>
+        <a class="link-item" href="https://www.vigilfuoco.it" target="_blank">
+          <span class="li-ico">🔥</span>
+          <div><div class="li-name">Portale VVF Nazionale</div><div class="li-url">vigilfuoco.it</div></div>
+        </a>
+        <a class="link-item" href="https://intranet.vigilfuoco.it" target="_blank">
+          <span class="li-ico">🏠</span>
+          <div><div class="li-name">Intranet Nazionale VVF</div><div class="li-url">intranet.vigilfuoco.it</div></div>
+        </a>
+        <a class="link-item" href="https://www.regione.emilia-romagna.it/protezione-civile" target="_blank">
+          <span class="li-ico">🛡️</span>
+          <div><div class="li-name">Protezione Civile Emilia-Romagna</div><div class="li-url">regione.emilia-romagna.it</div></div>
+        </a>
+        <a class="link-item" href="https://allertameteo.regione.emilia-romagna.it" target="_blank">
+          <span class="li-ico">⛈️</span>
+          <div><div class="li-name">Allerta Meteo ER</div><div class="li-url">allertameteo.regione.emilia-romagna.it</div></div>
+        </a>
+        <a class="link-item" href="https://www.meteoam.it" target="_blank">
+          <span class="li-ico">🌤️</span>
+          <div><div class="li-name">Meteo Aeronautica Militare</div><div class="li-url">meteoam.it</div></div>
+        </a>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🗺️ Cartografia e Supporto</div>
+        <a class="link-item" href="https://www.google.com/maps" target="_blank">
+          <span class="li-ico">📍</span>
+          <div><div class="li-name">Google Maps</div><div class="li-url">maps.google.com</div></div>
+        </a>
+        <a class="link-item" href="https://www.openstreetmap.org" target="_blank">
+          <span class="li-ico">🗺️</span>
+          <div><div class="li-name">OpenStreetMap</div><div class="li-url">openstreetmap.org</div></div>
+        </a>
+        <a class="link-item" href="https://sit.regione.emilia-romagna.it" target="_blank">
+          <span class="li-ico">🌍</span>
+          <div><div class="li-name">SIT Regione ER (GIS)</div><div class="li-url">sit.regione.emilia-romagna.it</div></div>
+        </a>
+        <a class="link-item" href="https://www.arpae.it" target="_blank">
+          <span class="li-ico">🔬</span>
+          <div><div class="li-name">ARPAE Emilia-Romagna</div><div class="li-url">arpae.it</div></div>
+        </a>
+        <a class="link-item" href="https://www.112.it" target="_blank">
+          <span class="li-ico">🆘</span>
+          <div><div class="li-name">NUE 112</div><div class="li-url">112.it</div></div>
+        </a>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📚 Normativa e Documenti</div>
+        <a class="link-item" href="https://www.normattiva.it" target="_blank">
+          <span class="li-ico">📜</span>
+          <div><div class="li-name">Normattiva (leggi italiane)</div><div class="li-url">normattiva.it</div></div>
+        </a>
+        <a class="link-item" href="https://www.gazzettaufficiale.it" target="_blank">
+          <span class="li-ico">📰</span>
+          <div><div class="li-name">Gazzetta Ufficiale</div><div class="li-url">gazzettaufficiale.it</div></div>
+        </a>
+        <a class="link-item" href="https://www.salute.gov.it/imgs/C_17_normativa_1964_allegato.pdf" target="_blank">
+          <span class="li-ico">🩺</span>
+          <div><div class="li-name">Pronto Soccorso - Normativa</div><div class="li-url">salute.gov.it</div></div>
+        </a>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🔧 Strumenti Tecnici</div>
+        <a class="link-item" href="https://www.cnvvf.it/it/sicurezza-sul-lavoro.html" target="_blank">
+          <span class="li-ico">🧯</span>
+          <div><div class="li-name">CNVVF Sicurezza sul Lavoro</div><div class="li-url">cnvvf.it</div></div>
+        </a>
+        <a class="link-item" href="https://www.aci.it/i-servizi/visura-telematica.html" target="_blank">
+          <span class="li-ico">🚗</span>
+          <div><div class="li-name">ACI Visura Veicoli</div><div class="li-url">aci.it</div></div>
+        </a>
+        <a class="link-item" href="https://www.istat.it" target="_blank">
+          <span class="li-ico">📊</span>
+          <div><div class="li-name">ISTAT</div><div class="li-url">istat.it</div></div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── TAB 3: Contatti Comando ─── -->
+  <div class="tab" id="tab-contacts">
+    <div class="section-head">
+      <span style="font-size:22px">📞</span>
+      <h2>Contatti Comando</h2>
+    </div>
+
+    <div class="g2">
+      <div class="card">
+        <div class="card-title">👮 Dirigenza</div>
+        <div class="contact-card">
+          <div class="cc-role">Comandante</div>
+          <div class="cc-name">— Inserire nominativo —</div>
+          <div class="cc-phones">
+            <span class="cc-phone">📞 +39 051 000 0000</span>
+            <span class="cc-phone">📱 +39 333 000 0000</span>
+          </div>
+        </div>
+        <div class="contact-card">
+          <div class="cc-role">Vice Comandante</div>
+          <div class="cc-name">— Inserire nominativo —</div>
+          <div class="cc-phones">
+            <span class="cc-phone">📞 +39 051 000 0001</span>
+          </div>
+        </div>
+        <div class="contact-card">
+          <div class="cc-role">Capo Ufficio Operativo</div>
+          <div class="cc-name">— Inserire nominativo —</div>
+          <div class="cc-phones">
+            <span class="cc-phone">📞 +39 051 000 0002</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🆘 Numeri di Emergenza</div>
+        <div class="contact-card">
+          <div class="cc-role">Sala Operativa Comando</div>
+          <div class="cc-name">Centrale Operativa VVF</div>
+          <div class="cc-phones">
+            <span class="cc-phone">📞 115</span>
+            <span class="cc-phone">📞 +39 051 000 0010</span>
+          </div>
+        </div>
+        <div class="contact-card">
+          <div class="cc-role">Emergenza Sanitaria</div>
+          <div class="cc-name">AUSL / 118</div>
+          <div class="cc-phones">
+            <span class="cc-phone">📞 118</span>
+          </div>
+        </div>
+        <div class="contact-card">
+          <div class="cc-role">Carabinieri</div>
+          <div class="cc-name">Stazione locale</div>
+          <div class="cc-phones">
+            <span class="cc-phone">📞 112</span>
+          </div>
+        </div>
+        <div class="contact-card">
+          <div class="cc-role">Protezione Civile Regionale</div>
+          <div class="cc-name">AGENZIA REGIONALE ER</div>
+          <div class="cc-phones">
+            <span class="cc-phone">📞 +39 051 000 0020</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🏢 Distaccamenti</div>
+        <div class="contact-card">
+          <div class="cc-role">Distaccamento A</div>
+          <div class="cc-name">— Inserire nome distaccamento —</div>
+          <div class="cc-phones">
+            <span class="cc-phone">📞 +39 051 000 0030</span>
+          </div>
+        </div>
+        <div class="contact-card">
+          <div class="cc-role">Distaccamento B</div>
+          <div class="cc-name">— Inserire nome distaccamento —</div>
+          <div class="cc-phones">
+            <span class="cc-phone">📞 +39 051 000 0031</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🔧 Uffici Tecnici</div>
+        <div class="contact-card">
+          <div class="cc-role">Ufficio Prevenzione Incendi</div>
+          <div class="cc-name">—</div>
+          <div class="cc-phones"><span class="cc-phone">📞 +39 051 000 0040</span></div>
+        </div>
+        <div class="contact-card">
+          <div class="cc-role">Ufficio Personale</div>
+          <div class="cc-name">—</div>
+          <div class="cc-phones"><span class="cc-phone">📞 +39 051 000 0041</span></div>
+        </div>
+        <div class="contact-card">
+          <div class="cc-role">Ufficio Logistica / Mezzi</div>
+          <div class="cc-name">—</div>
+          <div class="cc-phones"><span class="cc-phone">📞 +39 051 000 0042</span></div>
+        </div>
+      </div>
+    </div>
+    <p style="font-size:12px;color:var(--text-low);margin-top:8px;">⚙️ I dati di contatto sono configurabili modificando questa sezione nel file HTML oppure caricando un CSV apposito.</p>
+  </div>
+
+  <!-- ─── TAB 4: Conversione ─── -->
+  <div class="tab" id="tab-converter">
+    <div class="section-head">
+      <span style="font-size:22px">⚖️</span>
+      <h2>Conversione Unità di Misura</h2>
+    </div>
+
+    <div class="g2">
+      <!-- Temperatura -->
+      <div class="card">
+        <div class="card-title">🌡️ Temperatura</div>
+        <div class="form-row">
+          <label>Valore</label>
+          <input type="number" id="temp-val" placeholder="Es. 100" oninput="convertTemp()">
+        </div>
+        <div class="form-row">
+          <label>Da</label>
+          <select id="temp-from" onchange="convertTemp()">
+            <option value="C">°C — Celsius</option>
+            <option value="F">°F — Fahrenheit</option>
+            <option value="K">K — Kelvin</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>A</label>
+          <select id="temp-to" onchange="convertTemp()">
+            <option value="F">°F — Fahrenheit</option>
+            <option value="C">°C — Celsius</option>
+            <option value="K">K — Kelvin</option>
+          </select>
+        </div>
+        <div class="conv-result" id="temp-result">—</div>
+      </div>
+
+      <!-- Lunghezza -->
+      <div class="card">
+        <div class="card-title">📏 Lunghezza</div>
+        <div class="form-row">
+          <label>Valore</label>
+          <input type="number" id="len-val" placeholder="Es. 1000" oninput="convertLen()">
+        </div>
+        <div class="form-row">
+          <label>Da</label>
+          <select id="len-from" onchange="convertLen()">
+            <option value="m">m — Metro</option>
+            <option value="km">km — Chilometro</option>
+            <option value="cm">cm — Centimetro</option>
+            <option value="mm">mm — Millimetro</option>
+            <option value="ft">ft — Piede</option>
+            <option value="in">in — Pollice</option>
+            <option value="mi">mi — Miglio</option>
+            <option value="nmi">nmi — Miglio nautico</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>A</label>
+          <select id="len-to" onchange="convertLen()">
+            <option value="km">km — Chilometro</option>
+            <option value="m">m — Metro</option>
+            <option value="cm">cm — Centimetro</option>
+            <option value="mm">mm — Millimetro</option>
+            <option value="ft">ft — Piede</option>
+            <option value="in">in — Pollice</option>
+            <option value="mi">mi — Miglio</option>
+            <option value="nmi">nmi — Miglio nautico</option>
+          </select>
+        </div>
+        <div class="conv-result" id="len-result">—</div>
+      </div>
+
+      <!-- Peso / Massa -->
+      <div class="card">
+        <div class="card-title">⚖️ Peso / Massa</div>
+        <div class="form-row">
+          <label>Valore</label>
+          <input type="number" id="wgt-val" placeholder="Es. 50" oninput="convertWgt()">
+        </div>
+        <div class="form-row">
+          <label>Da</label>
+          <select id="wgt-from" onchange="convertWgt()">
+            <option value="kg">kg — Chilogrammo</option>
+            <option value="g">g — Grammo</option>
+            <option value="t">t — Tonnellata</option>
+            <option value="lb">lb — Libbra</option>
+            <option value="oz">oz — Oncia</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>A</label>
+          <select id="wgt-to" onchange="convertWgt()">
+            <option value="lb">lb — Libbra</option>
+            <option value="kg">kg — Chilogrammo</option>
+            <option value="g">g — Grammo</option>
+            <option value="t">t — Tonnellata</option>
+            <option value="oz">oz — Oncia</option>
+          </select>
+        </div>
+        <div class="conv-result" id="wgt-result">—</div>
+      </div>
+
+      <!-- Pressione -->
+      <div class="card">
+        <div class="card-title">💨 Pressione</div>
+        <div class="form-row">
+          <label>Valore</label>
+          <input type="number" id="pres-val" placeholder="Es. 1.5" oninput="convertPres()">
+        </div>
+        <div class="form-row">
+          <label>Da</label>
+          <select id="pres-from" onchange="convertPres()">
+            <option value="bar">bar</option>
+            <option value="atm">atm — Atmosfera</option>
+            <option value="pa">Pa — Pascal</option>
+            <option value="kpa">kPa — Kilopascal</option>
+            <option value="mpa">MPa — Megapascal</option>
+            <option value="psi">psi</option>
+            <option value="mmhg">mmHg — Torr</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>A</label>
+          <select id="pres-to" onchange="convertPres()">
+            <option value="psi">psi</option>
+            <option value="bar">bar</option>
+            <option value="atm">atm — Atmosfera</option>
+            <option value="pa">Pa — Pascal</option>
+            <option value="kpa">kPa — Kilopascal</option>
+            <option value="mpa">MPa — Megapascal</option>
+            <option value="mmhg">mmHg — Torr</option>
+          </select>
+        </div>
+        <div class="conv-result" id="pres-result">—</div>
+      </div>
+
+      <!-- Volume -->
+      <div class="card">
+        <div class="card-title">💧 Volume</div>
+        <div class="form-row">
+          <label>Valore</label>
+          <input type="number" id="vol-val" placeholder="Es. 1000" oninput="convertVol()">
+        </div>
+        <div class="form-row">
+          <label>Da</label>
+          <select id="vol-from" onchange="convertVol()">
+            <option value="l">L — Litro</option>
+            <option value="m3">m³ — Metro cubo</option>
+            <option value="ml">mL — Millilitro</option>
+            <option value="gal">gal — Gallone (US)</option>
+            <option value="ft3">ft³ — Piede cubo</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>A</label>
+          <select id="vol-to" onchange="convertVol()">
+            <option value="m3">m³ — Metro cubo</option>
+            <option value="l">L — Litro</option>
+            <option value="ml">mL — Millilitro</option>
+            <option value="gal">gal — Gallone (US)</option>
+            <option value="ft3">ft³ — Piede cubo</option>
+          </select>
+        </div>
+        <div class="conv-result" id="vol-result">—</div>
+      </div>
+
+      <!-- Velocità -->
+      <div class="card">
+        <div class="card-title">💨 Velocità</div>
+        <div class="form-row">
+          <label>Valore</label>
+          <input type="number" id="spd-val" placeholder="Es. 90" oninput="convertSpd()">
+        </div>
+        <div class="form-row">
+          <label>Da</label>
+          <select id="spd-from" onchange="convertSpd()">
+            <option value="kmh">km/h</option>
+            <option value="ms">m/s</option>
+            <option value="mph">mph</option>
+            <option value="kn">kn — Nodi</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>A</label>
+          <select id="spd-to" onchange="convertSpd()">
+            <option value="ms">m/s</option>
+            <option value="kmh">km/h</option>
+            <option value="mph">mph</option>
+            <option value="kn">kn — Nodi</option>
+          </select>
+        </div>
+        <div class="conv-result" id="spd-result">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── TAB 5: Radio & Telefoni ─── -->
+  <div class="tab" id="tab-radio">
+    <div class="section-head">
+      <span style="font-size:22px">📻</span>
+      <h2>Canali Radio &amp; Numeri di Telefono</h2>
+    </div>
+    <div class="g2">
+      <div class="card">
+        <div class="card-title">📡 Canali Radio VVF</div>
+        <div class="radio-row">
+          <div class="radio-freq">160.250</div>
+          <div class="radio-sep"></div>
+          <div class="radio-info">
+            <div class="radio-name">Canale Nazionale VVF</div>
+            <div class="radio-desc">Frequenza principale di coordinamento nazionale</div>
+          </div>
+          <span class="badge badge-orange">VHF</span>
+        </div>
+        <div class="radio-row">
+          <div class="radio-freq">160.775</div>
+          <div class="radio-sep"></div>
+          <div class="radio-info">
+            <div class="radio-name">Canale Regionale ER</div>
+            <div class="radio-desc">Coordinamento Emilia-Romagna</div>
+          </div>
+          <span class="badge badge-blue">VHF</span>
+        </div>
+        <div class="radio-row">
+          <div class="radio-freq">162.100</div>
+          <div class="radio-sep"></div>
+          <div class="radio-info">
+            <div class="radio-name">Canale Locale Comando</div>
+            <div class="radio-desc">Operativo Comando locale</div>
+          </div>
+          <span class="badge badge-green">VHF</span>
+        </div>
+        <div class="radio-row">
+          <div class="radio-freq">450.000</div>
+          <div class="radio-sep"></div>
+          <div class="radio-info">
+            <div class="radio-name">Canale UHF Operativo</div>
+            <div class="radio-desc">Operazioni in edifici / tunnel</div>
+          </div>
+          <span class="badge badge-blue">UHF</span>
+        </div>
+        <div class="radio-row">
+          <div class="radio-freq">156.800</div>
+          <div class="radio-sep"></div>
+          <div class="radio-info">
+            <div class="radio-name">Canale 16 VHF Marino</div>
+            <div class="radio-desc">Distress &amp; Calling (standard IMO)</div>
+          </div>
+          <span class="badge badge-red">VHF</span>
+        </div>
+        <p style="font-size:11px;color:var(--text-low);margin-top:10px;">⚙️ Le frequenze sono indicative. Aggiornare con i canali assegnati al proprio Comando.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">☎️ Numeri Utili di Servizio</div>
+        <div class="phone-row">
+          <div class="phone-number">115</div>
+          <div><div style="font-weight:700">Vigili del Fuoco</div><div style="font-size:12px;color:var(--text-mid)">Emergenza incendio / soccorso</div></div>
+          <span class="badge badge-red">EMERG</span>
+        </div>
+        <div class="phone-row">
+          <div class="phone-number">118</div>
+          <div><div style="font-weight:700">Emergenza Sanitaria</div><div style="font-size:12px;color:var(--text-mid)">SUEM / 118</div></div>
+          <span class="badge badge-red">EMERG</span>
+        </div>
+        <div class="phone-row">
+          <div class="phone-number">112</div>
+          <div><div style="font-weight:700">Numero Unico Europeo</div><div style="font-size:12px;color:var(--text-mid)">NUE 112 — Carabinieri</div></div>
+          <span class="badge badge-red">EMERG</span>
+        </div>
+        <div class="phone-row">
+          <div class="phone-number">113</div>
+          <div><div style="font-weight:700">Polizia di Stato</div><div style="font-size:12px;color:var(--text-mid)">Pronto intervento Polizia</div></div>
+          <span class="badge badge-orange">EMERG</span>
+        </div>
+        <div class="phone-row">
+          <div class="phone-number">117</div>
+          <div><div style="font-weight:700">Guardia di Finanza</div><div style="font-size:12px;color:var(--text-mid)">Pronto intervento GdF</div></div>
+          <span class="badge badge-orange">EMERG</span>
+        </div>
+        <div class="phone-row">
+          <div class="phone-number">1515</div>
+          <div><div style="font-weight:700">Corpo Forestale / CUFA</div><div style="font-size:12px;color:var(--text-mid)">Incendi boschivi, emergenze ambientali</div></div>
+          <span class="badge badge-green">AMBIENTE</span>
+        </div>
+        <div class="phone-row">
+          <div class="phone-number">1522</div>
+          <div><div style="font-weight:700">Antiviolenza Donne</div><div style="font-size:12px;color:var(--text-mid)">Supporto sociale in intervento</div></div>
+          <span class="badge badge-blue">SOCIALE</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── TAB 6: QR Code ─── -->
+  <div class="tab" id="tab-qrcode">
+    <div class="section-head">
+      <span style="font-size:22px">⬛</span>
+      <h2>Generatore QR Code</h2>
+    </div>
+    <div class="g2">
+      <div class="card">
+        <div class="card-title">⚙️ Configurazione</div>
+        <div class="form-row">
+          <label>Tipo contenuto</label>
+          <select id="qr-type" onchange="updateQrPlaceholder()">
+            <option value="text">Testo libero</option>
+            <option value="url">URL / Link</option>
+            <option value="tel">Numero di telefono</option>
+            <option value="email">Indirizzo e-mail</option>
+            <option value="wifi">WiFi (SSID:PASSWORD)</option>
+            <option value="vcard">vCard (Nome:Telefono:Email)</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Contenuto</label>
+          <textarea id="qr-content" rows="4" placeholder="Inserisci il testo da codificare..."></textarea>
+        </div>
+        <div class="form-row">
+          <label>Dimensione (px)</label>
+          <select id="qr-size">
+            <option value="128">128 × 128 — Piccolo</option>
+            <option value="200" selected>200 × 200 — Medio</option>
+            <option value="300">300 × 300 — Grande</option>
+            <option value="400">400 × 400 — XL</option>
+          </select>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="generateQr()">⬛ Genera QR Code</button>
+          <button class="btn btn-secondary" onclick="downloadQr()">💾 Scarica PNG</button>
+          <button class="btn btn-secondary" onclick="clearQr()">🗑️ Pulisci</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">🖼️ Anteprima</div>
+        <div id="qr-output">
+          <div id="qr-placeholder">
+            <div style="font-size:48px;margin-bottom:10px">⬛</div>
+            Il QR Code apparirà qui
+          </div>
+        </div>
+        <div id="qr-info" style="text-align:center;font-size:12px;color:var(--text-low);margin-top:8px;font-family:var(--font-mono);display:none;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── TAB 7: Turnario ─── -->
+  <div class="tab" id="tab-turnario">
+    <div class="section-head">
+      <span style="font-size:22px">📅</span>
+      <h2>Turnario VVF — 12/24/12/48</h2>
+    </div>
+
+    <div class="turno-now-box">
+      <div class="turno-now-label" id="tn-label">—</div>
+      <div class="turno-now-info">
+        <div class="tn-shift" id="tn-shift">—</div>
+        <div class="tn-desc" id="tn-desc">—</div>
+      </div>
+      <div style="text-align:right;font-family:var(--font-mono);font-size:12px;color:var(--text-low)">
+        Pattern: 12h lavoro<br>24h riposo<br>12h lavoro<br>48h riposo
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📅 Calendario Mensile — <span id="cal-month-label"></span></div>
+      <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
+        <button class="btn btn-secondary btn-sm" onclick="calPrevMonth()">◀ Mese prec.</button>
+        <span id="cal-month-nav" style="font-family:var(--font-hud);font-size:13px;letter-spacing:2px;color:var(--accent)"></span>
+        <button class="btn btn-secondary btn-sm" onclick="calNextMonth()">Mese succ. ▶</button>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+      <div class="turno-legend" id="turno-legend"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">⚙️ Configurazione Turnazione</div>
+      <p style="font-size:13px;color:var(--text-mid);margin-bottom:12px;">
+        Il turnario è calcolato automaticamente a partire dalla data di riferimento sotto indicata.
+        Adattare le squadre e la data di riferimento al proprio Comando.
+      </p>
+      <div class="g3">
+        <div class="form-row">
+          <label>Data di riferimento</label>
+          <input type="datetime-local" id="turno-ref-date" onchange="saveConfig()">
+        </div>
+        <div class="form-row">
+          <label>Squadra al riferimento</label>
+          <select id="turno-ref-squad" onchange="saveConfig()">
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Squadre (separate da virgola)</label>
+          <input type="text" id="turno-squads-input" onchange="saveConfig()" placeholder="A1,B1,C1,D1,A2,B2,C2,D2">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── TAB 8: Moduli CMR ─── -->
+  <div class="tab" id="tab-cmr">
+    <div class="section-head">
+      <span style="font-size:22px">📋</span>
+      <h2>Moduli CMR &amp; Operativi</h2>
+    </div>
+
+    <div class="g2">
+      <div class="card">
+        <div class="card-title">📋 Moduli Disponibili</div>
+        <div class="cmr-list">
+          <div class="cmr-item" onclick="openCmr('cri')">
+            <div class="cmr-icon">🔴</div>
+            <div><div class="cmr-name">CRI — Comunicazione Rischio Incendio</div><div class="cmr-desc">Segnalazione rischio incendio a strutture ricettive e attività produttive</div></div>
+            <div class="cmr-arrow">›</div>
+          </div>
+          <div class="cmr-item" onclick="openCmr('int')">
+            <div class="cmr-icon">🚒</div>
+            <div><div class="cmr-name">Rapporto Intervento</div><div class="cmr-desc">Scheda tecnica di intervento operativo</div></div>
+            <div class="cmr-arrow">›</div>
+          </div>
+          <div class="cmr-item" onclick="openCmr('prei')">
+            <div class="cmr-icon">🏗️</div>
+            <div><div class="cmr-name">PREI — Prevenzione Incendi</div><div class="cmr-desc">Verifica prevenzione incendi attività soggette</div></div>
+            <div class="cmr-arrow">›</div>
+          </div>
+          <div class="cmr-item" onclick="openCmr('saf')">
+            <div class="cmr-icon">⛑️</div>
+            <div><div class="cmr-name">Sicurezza sul Lavoro</div><div class="cmr-desc">Modulo ispezione cantieri e attività lavorative</div></div>
+            <div class="cmr-arrow">›</div>
+          </div>
+          <div class="cmr-item" onclick="openCmr('cmr')">
+            <div class="cmr-icon">📡</div>
+            <div><div class="cmr-name">CMR — Colonna Mobile Regionale</div><div class="cmr-desc">Moduli di richiesta e coordinamento Colonna Mobile</div></div>
+            <div class="cmr-arrow">›</div>
+          </div>
+          <div class="cmr-item" onclick="openCmr('verp')">
+            <div class="cmr-icon">🏠</div>
+            <div><div class="cmr-name">Verbale Pericolosità Edificio</div><div class="cmr-desc">Valutazione agibilità post-evento</div></div>
+            <div class="cmr-arrow">›</div>
+          </div>
+          <div class="cmr-item" onclick="openCmr('amb')">
+            <div class="cmr-icon">☣️</div>
+            <div><div class="cmr-name">Scheda Rischio NBCR</div><div class="cmr-desc">Nucleare, Biologico, Chimico, Radiologico</div></div>
+            <div class="cmr-arrow">›</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="cmr-form-area">
+        <div class="card-title" id="cmr-form-title">📋 Seleziona un modulo</div>
+        <div id="cmr-form-body">
+          <div style="color:var(--text-low);text-align:center;padding:40px 20px;font-size:13px;">
+            Seleziona un modulo dalla lista a sinistra per compilarlo.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ══════════════════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════════════════ -->
+<script>
+/* ════════════════════════════════════
+   TURNARIO CONFIGURATION
+   Personalizzare con i dati del Comando
+════════════════════════════════════ */
+const DEFAULT_TURNO_CONFIG = {
+  // Data/ora di riferimento: inizio del turno B3 (Ven 27/03/2026 20:00 CET)
+  refDate: '2026-03-27T19:00:00Z',  // UTC
+  refIndex: 7,                       // Indice di 'B3' nell'array squads
+  squads: ['A1','A2','B1','B2','C1','C2','D1','B3','D2','A3','B4','C3','D3','C4','A4'],
+  shiftHours: 12
+};
+
+let turnoConfig = { ...DEFAULT_TURNO_CONFIG };
+
+// Colori per le squadre nel calendario
+const SQUAD_COLORS = {
+  A:'#1a8cff', B:'#ff7b00', C:'#00cc77', D:'#ffd600',
+  default:'#8aaac8'
+};
+
+function getSquadColor(squad) {
+  const letter = squad.charAt(0).toUpperCase();
+  return SQUAD_COLORS[letter] || SQUAD_COLORS.default;
+}
+
+function getCurrentSquadAt(date) {
+  const refMs = new Date(turnoConfig.refDate).getTime();
+  const ms = date.getTime() - refMs;
+  const hours = ms / 3600000;
+  const slots = Math.floor(hours / turnoConfig.shiftHours);
+  const n = turnoConfig.squads.length;
+  const idx = ((turnoConfig.refIndex + slots) % n + n) % n;
+  return turnoConfig.squads[idx];
+}
+
+/* ════════════════════════════════════
+   CLOCK
+════════════════════════════════════ */
+const GIORNO_IT = ['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
+const MESE_IT  = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+
+function pad(n){ return String(n).padStart(2,'0'); }
+
+function updateClock(){
+  const now = new Date();
+  const gg  = GIORNO_IT[now.getDay()];
+  const dd  = pad(now.getDate());
+  const mm  = pad(now.getMonth()+1);
+  const yyyy= now.getFullYear();
+  const hh  = pad(now.getHours());
+  const mi  = pad(now.getMinutes());
+  const off = -now.getTimezoneOffset()/60;
+  const tz  = off>=0 ? `+${pad(off*100)}` : `-${pad(Math.abs(off*100))}`;
+  const isCET= off===1, isCEST=off===2;
+  const tzName= isCEST?'CEST':isCET?'CET':'UTC'+tz;
+
+  document.getElementById('hdr-datetime').innerHTML =
+    `${gg} ${dd}.${mm}.${yyyy} ore ${hh}:${mi}<br>(GMT${tz}) Roma (${tzName})`;
+
+  const turno = getCurrentSquadAt(now);
+  const shiftType = now.getHours()>=8 && now.getHours()<20 ? '🌤 Diurno 08-20' : '🌙 Notturno 20-08';
+  document.getElementById('hdr-turno').textContent = `Turno ${turno}`;
+
+  // Aggiorna anche il box turno nel tab
+  const tnEl = document.getElementById('tn-label');
+  if(tnEl){ tnEl.textContent = turno; tnEl.style.color = getSquadColor(turno); }
+  const tsEl = document.getElementById('tn-shift');
+  if(tsEl) tsEl.textContent = shiftType;
+  const tdEl = document.getElementById('tn-desc');
+  if(tdEl) tdEl.textContent = `${gg} ${dd} ${MESE_IT[now.getMonth()]} ${yyyy} — ${hh}:${mi} — (GMT${tz}) Roma`;
+}
+
+setInterval(updateClock,1000);
+updateClock();
+
+/* ════════════════════════════════════
+   POPUP — COMANDO
+════════════════════════════════════ */
+let comandoSelezionato = sessionStorage.getItem('fireops_comando') || '';
+
+async function loadComandi(){
+  const sel = document.getElementById('popup-select');
+  try {
+    const res = await fetch('db/comandi.csv');
+    if(!res.ok) throw new Error('CSV non trovato');
+    const txt = await res.text();
+    const lines = txt.split('\n').filter(l=>l.trim());
+    sel.innerHTML = '<option value="">— Seleziona —</option>';
+    lines.forEach((line, i) => {
+      if(i===0 && line.toLowerCase().includes('comando')) return; // skip header
+      const cols = line.split(',');
+      const val  = (cols[0]||'').trim().replace(/^"|"$/g,'');
+      if(val){
+        const opt  = document.createElement('option');
+        opt.value  = val;
+        opt.textContent = val;
+        sel.appendChild(opt);
+      }
+    });
+  } catch(e) {
+    // Fallback demo data
+    sel.innerHTML = `
+      <option value="">— Seleziona —</option>
+      <option value="Bologna">Comando VVF Bologna</option>
+      <option value="Modena">Comando VVF Modena</option>
+      <option value="Reggio Emilia">Comando VVF Reggio Emilia</option>
+      <option value="Parma">Comando VVF Parma</option>
+      <option value="Ferrara">Comando VVF Ferrara</option>
+      <option value="Ravenna">Comando VVF Ravenna</option>
+      <option value="Forlì-Cesena">Comando VVF Forlì-Cesena</option>
+      <option value="Rimini">Comando VVF Rimini</option>
+      <option value="Piacenza">Comando VVF Piacenza</option>
+    `;
+  }
+  if(comandoSelezionato) {
+    sel.value = comandoSelezionato;
+    document.getElementById('popup-overlay').style.display='none';
+    setComandoDisplay(comandoSelezionato);
+  }
+}
+
+function confirmComando(){
+  const v = document.getElementById('popup-select').value;
+  if(!v){ alert('Seleziona un Comando prima di proseguire.'); return; }
+  comandoSelezionato = v;
+  sessionStorage.setItem('fireops_comando', v);
+  document.getElementById('popup-overlay').style.display='none';
+  setComandoDisplay(v);
+}
+
+function setComandoDisplay(v){
+  document.getElementById('hdr-comando-val').textContent = v;
+}
+
+function resetComando(){
+  sessionStorage.removeItem('fireops_comando');
+  comandoSelezionato = '';
+  document.getElementById('popup-select').value='';
+  document.getElementById('popup-overlay').style.display='flex';
+}
+
+loadComandi();
+
+/* ════════════════════════════════════
+   TAB NAVIGATION
+════════════════════════════════════ */
+function switchTab(btn, tabId) {
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-'+tabId).classList.add('active');
+  if(tabId==='turnario') renderCalendar();
+}
+
+/* ════════════════════════════════════
+   WHATSAPP / TELEGRAM
+════════════════════════════════════ */
+let msgHistory = [];
+
+function setTpl(txt){
+  document.getElementById('msg-text').value = txt;
+  updateCharCount();
+}
+
+function updateCharCount(){
+  const n = document.getElementById('msg-text').value.length;
+  document.getElementById('char-count').textContent = n + ' caratteri';
+}
+
+function getMsg(){
+  return document.getElementById('msg-text').value.trim();
+}
+
+function getDest(){
+  return document.getElementById('msg-dest').value.trim();
+}
+
+function sendWhatsApp(){
+  const msg = getMsg();
+  if(!msg){ alert('Inserisci un messaggio.'); return; }
+  const dest = getDest().replace(/\s+/g,'').replace(/^\+/,'');
+  const url = dest
+    ? `https://wa.me/${dest}?text=${encodeURIComponent(msg)}`
+    : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+  window.open(url,'_blank');
+  logMsg('WhatsApp', msg, dest);
+}
+
+function sendTelegram(){
+  const msg = getMsg();
+  if(!msg){ alert('Inserisci un messaggio.'); return; }
+  const dest = getDest();
+  const url = dest && dest.startsWith('@')
+    ? `https://t.me/${dest.replace('@','')}?text=${encodeURIComponent(msg)}`
+    : `https://t.me/share/url?url=&text=${encodeURIComponent(msg)}`;
+  window.open(url,'_blank');
+  logMsg('Telegram', msg, dest);
+}
+
+function copyMsg(){
+  const msg = getMsg();
+  if(!msg){ alert('Inserisci un messaggio.'); return; }
+  navigator.clipboard.writeText(msg).then(()=>{
+    alert('✅ Messaggio copiato negli appunti!');
+  });
+}
+
+function logMsg(ch, msg, dest){
+  const d = new Date();
+  msgHistory.unshift({ ch, msg, dest, time: d.toLocaleTimeString('it-IT') });
+  renderHistory();
+}
+
+function renderHistory(){
+  const el = document.getElementById('msg-history');
+  if(!msgHistory.length){
+    el.innerHTML='<div style="color:var(--text-low);font-size:13px;padding:20px 0;text-align:center;">Nessun messaggio inviato</div>';
+    return;
+  }
+  el.innerHTML = msgHistory.map(m=>`
+    <div style="padding:10px;border-bottom:1px solid var(--border-dim);font-size:13px;">
+      <div style="display:flex;gap:8px;margin-bottom:4px;">
+        <span class="badge badge-${m.ch==='WhatsApp'?'green':'blue'}">${m.ch}</span>
+        <span style="color:var(--text-low);font-family:var(--font-mono)">${m.time}</span>
+        ${m.dest?`<span style="color:var(--text-mid)">${m.dest}</span>`:''}
+      </div>
+      <div style="color:var(--text-mid);white-space:pre-wrap;">${m.msg.substring(0,100)}${m.msg.length>100?'…':''}</div>
+    </div>
+  `).join('');
+}
+
+/* ════════════════════════════════════
+   CONVERSIONE
+════════════════════════════════════ */
+function fmt(n){
+  if(isNaN(n)||!isFinite(n)) return '—';
+  return n % 1 === 0 ? n.toLocaleString('it-IT') : parseFloat(n.toPrecision(8)).toLocaleString('it-IT');
+}
+
+// Temperatura
+function convertTemp(){
+  const v=parseFloat(document.getElementById('temp-val').value);
+  const f=document.getElementById('temp-from').value;
+  const t=document.getElementById('temp-to').value;
+  if(isNaN(v)){ document.getElementById('temp-result').textContent='—'; return; }
+  let c;
+  if(f==='C') c=v; else if(f==='F') c=(v-32)*5/9; else c=v-273.15;
+  let r;
+  if(t==='C') r=c; else if(t==='F') r=c*9/5+32; else r=c+273.15;
+  document.getElementById('temp-result').textContent = fmt(r) + ' ' + (t==='K'?'K':'°'+t);
+}
+
+// Lunghezza
+const LEN_TO_M = { m:1, km:1000, cm:.01, mm:.001, ft:.3048, in:.0254, mi:1609.344, nmi:1852 };
+function convertLen(){
+  const v=parseFloat(document.getElementById('len-val').value);
+  const f=document.getElementById('len-from').value;
+  const t=document.getElementById('len-to').value;
+  if(isNaN(v)){ document.getElementById('len-result').textContent='—'; return; }
+  const r=v*LEN_TO_M[f]/LEN_TO_M[t];
+  document.getElementById('len-result').textContent = fmt(r) + ' ' + t;
+}
+
+// Peso
+const WGT_TO_KG = { kg:1, g:.001, t:1000, lb:.453592, oz:.0283495 };
+function convertWgt(){
+  const v=parseFloat(document.getElementById('wgt-val').value);
+  const f=document.getElementById('wgt-from').value;
+  const t=document.getElementById('wgt-to').value;
+  if(isNaN(v)){ document.getElementById('wgt-result').textContent='—'; return; }
+  const r=v*WGT_TO_KG[f]/WGT_TO_KG[t];
+  document.getElementById('wgt-result').textContent = fmt(r) + ' ' + t;
+}
+
+// Pressione
+const PRES_TO_PA = { pa:1, kpa:1000, mpa:1e6, bar:1e5, atm:101325, psi:6894.76, mmhg:133.322 };
+function convertPres(){
+  const v=parseFloat(document.getElementById('pres-val').value);
+  const f=document.getElementById('pres-from').value;
+  const t=document.getElementById('pres-to').value;
+  if(isNaN(v)){ document.getElementById('pres-result').textContent='—'; return; }
+  const r=v*PRES_TO_PA[f]/PRES_TO_PA[t];
+  document.getElementById('pres-result').textContent = fmt(r) + ' ' + t;
+}
+
+// Volume
+const VOL_TO_L = { l:1, m3:1000, ml:.001, gal:3.78541, ft3:28.3168 };
+function convertVol(){
+  const v=parseFloat(document.getElementById('vol-val').value);
+  const f=document.getElementById('vol-from').value;
+  const t=document.getElementById('vol-to').value;
+  if(isNaN(v)){ document.getElementById('vol-result').textContent='—'; return; }
+  const r=v*VOL_TO_L[f]/VOL_TO_L[t];
+  document.getElementById('vol-result').textContent = fmt(r) + ' ' + t;
+}
+
+// Velocità
+const SPD_TO_MS = { ms:1, kmh:1/3.6, mph:0.44704, kn:0.514444 };
+function convertSpd(){
+  const v=parseFloat(document.getElementById('spd-val').value);
+  const f=document.getElementById('spd-from').value;
+  const t=document.getElementById('spd-to').value;
+  if(isNaN(v)){ document.getElementById('spd-result').textContent='—'; return; }
+  const r=v*SPD_TO_MS[f]/SPD_TO_MS[t];
+  document.getElementById('spd-result').textContent = fmt(r) + ' ' + t;
+}
+
+/* ════════════════════════════════════
+   QR CODE
+════════════════════════════════════ */
+let qrInstance = null;
+
+function updateQrPlaceholder(){
+  const type = document.getElementById('qr-type').value;
+  const ph = {
+    text: 'Inserisci testo libero...',
+    url: 'https://esempio.it/pagina',
+    tel: '+39 333 1234567',
+    email: 'email@esempio.it',
+    wifi: 'WIFI:T:WPA;S:NomeRete;P:Password;;',
+    vcard: 'BEGIN:VCARD\nVERSION:3.0\nFN:Mario Rossi\nTEL:+39333000000\nEMAIL:m.rossi@vvf.it\nEND:VCARD'
+  };
+  document.getElementById('qr-content').placeholder = ph[type]||'';
+}
+
+function generateQr(){
+  const content = document.getElementById('qr-content').value.trim();
+  if(!content){ alert('Inserisci un contenuto da codificare.'); return; }
+  const size    = parseInt(document.getElementById('qr-size').value);
+  const type    = document.getElementById('qr-type').value;
+
+  let data = content;
+  if(type==='tel' && !content.startsWith('tel:')) data='tel:'+content;
+  if(type==='email' && !content.startsWith('mailto:')) data='mailto:'+content;
+
+  const out = document.getElementById('qr-output');
+  out.innerHTML='';
+  document.getElementById('qr-placeholder') && (document.getElementById('qr-placeholder').style.display='none');
+
+  const div=document.createElement('div');
+  out.appendChild(div);
+
+  try {
+    qrInstance = new QRCode(div,{
+      text: data, width:size, height:size,
+      colorDark:'#000000', colorLight:'#ffffff',
+      correctLevel: QRCode.CorrectLevel.H
+    });
+    const info = document.getElementById('qr-info');
+    info.style.display='block';
+    info.textContent = `${data.length} caratteri · ${size}×${size}px`;
+  } catch(e) {
+    out.innerHTML='<div style="color:var(--red);padding:20px;">Errore nella generazione del QR. Verifica il contenuto.</div>';
+  }
+}
+
+function downloadQr(){
+  const canvas = document.querySelector('#qr-output canvas');
+  if(!canvas){ alert('Genera prima un QR Code.'); return; }
+  const a=document.createElement('a');
+  a.download='qrcode_fireops.png';
+  a.href=canvas.toDataURL('image/png');
+  a.click();
+}
+
+function clearQr(){
+  document.getElementById('qr-output').innerHTML=`
+    <div id="qr-placeholder">
+      <div style="font-size:48px;margin-bottom:10px">⬛</div>
+      Il QR Code apparirà qui
+    </div>`;
+  document.getElementById('qr-info').style.display='none';
+  document.getElementById('qr-content').value='';
+  qrInstance=null;
+}
+
+/* ════════════════════════════════════
+   TURNARIO — CALENDARIO
+════════════════════════════════════ */
+let calYear = new Date().getFullYear();
+let calMonth= new Date().getMonth();
+
+function renderCalendar(){
+  // Config fields
+  const refD = document.getElementById('turno-ref-date');
+  const refS = document.getElementById('turno-ref-squad');
+  const sqIn = document.getElementById('turno-squads-input');
+
+  if(!refD.value){
+    // Convert UTC ref to local datetime-local input format
+    const d = new Date(turnoConfig.refDate);
+    const local = new Date(d.getTime() - d.getTimezoneOffset()*60000)
+                    .toISOString().slice(0,16);
+    refD.value = local;
+  }
+
+  if(sqIn && !sqIn.value) sqIn.value = turnoConfig.squads.join(',');
+
+  // Populate squad select
+  if(refS && refS.options.length === 0){
+    turnoConfig.squads.forEach((s,i)=>{
+      const o=document.createElement('option');
+      o.value=i; o.textContent=s;
+      if(i===turnoConfig.refIndex) o.selected=true;
+      refS.appendChild(o);
+    });
+  }
+
+  const now     = new Date();
+  const label   = `${MESE_IT[calMonth]} ${calYear}`;
+  document.getElementById('cal-month-label').textContent = label;
+  document.getElementById('cal-month-nav').textContent = label;
+
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+
+  // Day headers (Mon-Sun)
+  ['Lun','Mar','Mer','Gio','Ven','Sab','Dom'].forEach(d=>{
+    const dh=document.createElement('div');
+    dh.className='cal-dh'; dh.textContent=d; grid.appendChild(dh);
+  });
+
+  const first = new Date(calYear, calMonth, 1);
+  const last  = new Date(calYear, calMonth+1, 0);
+  let startDow = first.getDay(); // 0=Sun
+  if(startDow===0) startDow=7;  // Monday-first
+  startDow--;
+
+  for(let i=0;i<startDow;i++){
+    const e=document.createElement('div'); grid.appendChild(e);
+  }
+
+  const squadsUsed = new Set();
+
+  for(let d=1;d<=last.getDate();d++){
+    // Day shift (8:00)
+    const dayDate  = new Date(calYear, calMonth, d, 8);
+    // Night shift (20:00)
+    const nightDate= new Date(calYear, calMonth, d, 20);
+
+    const daySquad  = getCurrentSquadAt(dayDate);
+    const nightSquad= getCurrentSquadAt(nightDate);
+
+    squadsUsed.add(daySquad); squadsUsed.add(nightSquad);
+
+    const isToday = d===now.getDate() && calMonth===now.getMonth() && calYear===now.getFullYear();
+
+    const cell = document.createElement('div');
+    cell.className='cal-cell'+(isToday?' today':'');
+    cell.innerHTML=`
+      <div class="cd">${pad(d)}</div>
+      <div class="cs" style="color:${getSquadColor(daySquad)}" title="Diurno 08-20">☀ ${daySquad}</div>
+      <div class="cs" style="color:${getSquadColor(nightSquad)}" title="Notturno 20-08">🌙 ${nightSquad}</div>
+    `;
+    grid.appendChild(cell);
+  }
+
+  // Legend
+  const leg = document.getElementById('turno-legend');
+  leg.innerHTML = '';
+  [...squadsUsed].sort().forEach(sq=>{
+    const item=document.createElement('div');
+    item.className='tl-item';
+    item.innerHTML=`<div class="tl-dot" style="background:${getSquadColor(sq)}"></div><span>Turno ${sq}</span>`;
+    leg.appendChild(item);
+  });
+}
+
+function calPrevMonth(){
+  calMonth--; if(calMonth<0){ calMonth=11; calYear--; } renderCalendar();
+}
+function calNextMonth(){
+  calMonth++; if(calMonth>11){ calMonth=0; calYear++; } renderCalendar();
+}
+
+function saveConfig(){
+  const refDateVal = document.getElementById('turno-ref-date').value;
+  const refIdxVal  = parseInt(document.getElementById('turno-ref-squad').value)||0;
+  const squadsRaw  = document.getElementById('turno-squads-input').value;
+
+  if(refDateVal){
+    turnoConfig.refDate = new Date(refDateVal).toISOString();
+  }
+  turnoConfig.refIndex = refIdxVal;
+  if(squadsRaw){
+    turnoConfig.squads = squadsRaw.split(',').map(s=>s.trim()).filter(Boolean);
+    // Rebuild select
+    const sel = document.getElementById('turno-ref-squad');
+    sel.innerHTML='';
+    turnoConfig.squads.forEach((s,i)=>{
+      const o=document.createElement('option');
+      o.value=i; o.textContent=s;
+      if(i===turnoConfig.refIndex) o.selected=true;
+      sel.appendChild(o);
+    });
+  }
+  renderCalendar();
+  updateClock();
+}
+
+/* ════════════════════════════════════
+   MODULI CMR
+════════════════════════════════════ */
+const CMR_DEFS = {
+  cri: {
+    title:'🔴 Comunicazione Rischio Incendio',
+    fields:[
+      {id:'cri_data',label:'Data Ispezione',type:'date'},
+      {id:'cri_ora',label:'Ora',type:'time'},
+      {id:'cri_attivita',label:'Denominazione Attività',type:'text'},
+      {id:'cri_indirizzo',label:'Indirizzo',type:'text'},
+      {id:'cri_titolare',label:'Titolare / Responsabile',type:'text'},
+      {id:'cri_cfp',label:'Categoria Fire Prevention',type:'text'},
+      {id:'cri_rischio',label:'Livello di Rischio',type:'select',
+        opts:['Basso','Medio','Elevato','Altissimo']},
+      {id:'cri_note',label:'Note / Prescrizioni',type:'textarea'},
+    ]
+  },
+  int: {
+    title:'🚒 Rapporto Intervento',
+    fields:[
+      {id:'int_data',label:'Data Intervento',type:'date'},
+      {id:'int_ora',label:'Ora Allarme',type:'time'},
+      {id:'int_codice',label:'Codice Intervento',type:'text'},
+      {id:'int_tipo',label:'Tipo Intervento',type:'select',
+        opts:['Incendio','Soccorso Tecnico','NBCR','Rischio Idrogeologico','Incidente Stradale','Altro']},
+      {id:'int_luogo',label:'Luogo / Comune',type:'text'},
+      {id:'int_mezzi',label:'Mezzi Impiegati',type:'text'},
+      {id:'int_pers',label:'Personale N°',type:'number'},
+      {id:'int_turno',label:'Turno',type:'text'},
+      {id:'int_desc',label:'Descrizione Intervento',type:'textarea'},
+      {id:'int_esito',label:'Esito',type:'select',
+        opts:['Risolto','In corso','Abbandonato','Falso Allarme']},
+    ]
+  },
+  prei: {
+    title:'🏗️ Prevenzione Incendi',
+    fields:[
+      {id:'prei_data',label:'Data Sopralluogo',type:'date'},
+      {id:'prei_attivita',label:'Attività (N° DM)',type:'text'},
+      {id:'prei_denominazione',label:'Denominazione',type:'text'},
+      {id:'prei_indirizzo',label:'Indirizzo Completo',type:'text'},
+      {id:'prei_prev',label:'N° Pratica Prevenzione Incendi',type:'text'},
+      {id:'prei_cpi',label:'N° CPI',type:'text'},
+      {id:'prei_scadenza',label:'Scadenza CPI',type:'date'},
+      {id:'prei_esito',label:'Esito Sopralluogo',type:'select',
+        opts:['Conforme','Non Conforme','Parzialmente Conforme','Sopralluogo Sospeso']},
+      {id:'prei_prescrizioni',label:'Prescrizioni',type:'textarea'},
+    ]
+  },
+  saf: {
+    title:'⛑️ Sicurezza sul Lavoro',
+    fields:[
+      {id:'saf_data',label:'Data Ispezione',type:'date'},
+      {id:'saf_tipo',label:'Tipo Attività',type:'select',
+        opts:['Cantiere','Industria','Artigianato','Uffici','Altro']},
+      {id:'saf_ragione',label:'Ragione Sociale',type:'text'},
+      {id:'saf_piva',label:'P. IVA / Codice Fiscale',type:'text'},
+      {id:'saf_n_lav',label:'N° Lavoratori presenti',type:'number'},
+      {id:'saf_dpi',label:'DPI Verificati',type:'textarea'},
+      {id:'saf_note',label:'Irregolarità / Note',type:'textarea'},
+    ]
+  },
+  cmr: {
+    title:'📡 Colonna Mobile Regionale',
+    fields:[
+      {id:'cmr_data',label:'Data Richiesta',type:'date'},
+      {id:'cmr_ora',label:'Ora',type:'time'},
+      {id:'cmr_richiedente',label:'Comando Richiedente',type:'text'},
+      {id:'cmr_evento',label:'Tipo Evento',type:'select',
+        opts:['Alluvione','Terremoto','Incendio Boschivo','Neve/Ghiaccio','Altro']},
+      {id:'cmr_comune',label:'Comune Interessato',type:'text'},
+      {id:'cmr_prov',label:'Provincia',type:'text'},
+      {id:'cmr_moduli',label:'Moduli/Risorse Richieste',type:'textarea'},
+      {id:'cmr_coordinatore',label:'Funzionario Coordinatore',type:'text'},
+      {id:'cmr_note',label:'Note Operative',type:'textarea'},
+    ]
+  },
+  verp: {
+    title:'🏠 Verbale Pericolosità Edificio',
+    fields:[
+      {id:'verp_data',label:'Data Sopralluogo',type:'date'},
+      {id:'verp_indirizzo',label:'Indirizzo Edificio',type:'text'},
+      {id:'verp_tipo',label:'Tipo Struttura',type:'select',
+        opts:['Residenziale','Commerciale','Industriale','Scolastica','Ospedaliera','Pubblica']},
+      {id:'verp_piani',label:'N° Piani',type:'number'},
+      {id:'verp_anno',label:'Anno Costruzione (approx)',type:'number'},
+      {id:'verp_danno',label:'Tipo Danno',type:'select',
+        opts:['Incendio','Terremoto','Alluvione','Esplosione','Cedimento Strutturale','Altro']},
+      {id:'verp_agibilita',label:'Giudizio Agibilità',type:'select',
+        opts:['Agibile (A)','Temporaneamente Inagibile (B)','Parzialmente Inagibile (C)','Inagibile (E)']},
+      {id:'verp_note',label:'Note Tecniche',type:'textarea'},
+    ]
+  },
+  amb: {
+    title:'☣️ Scheda Rischio NBCR',
+    fields:[
+      {id:'amb_data',label:'Data Evento',type:'date'},
+      {id:'amb_ora',label:'Ora',type:'time'},
+      {id:'amb_tipo',label:'Tipo Rischio',type:'select',
+        opts:['Nucleare (N)','Biologico (B)','Chimico (C)','Radiologico (R)']},
+      {id:'amb_luogo',label:'Luogo / Indirizzo',type:'text'},
+      {id:'amb_sostanza',label:'Sostanza / Agente (se noto)',type:'text'},
+      {id:'amb_coinvolti',label:'N° Persone Potenzialmente Esposte',type:'number'},
+      {id:'amb_dpi',label:'DPI Utilizzati',type:'select',
+        opts:['Livello A (massima protezione)','Livello B','Livello C','Nessuno']},
+      {id:'amb_notificato',label:'Enti Notificati',type:'text'},
+      {id:'amb_desc',label:'Descrizione Evento',type:'textarea'},
+    ]
+  }
+};
+
+function openCmr(id){
+  const def = CMR_DEFS[id];
+  if(!def) return;
+  document.getElementById('cmr-form-title').textContent = def.title;
+
+  let html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">';
+  def.fields.forEach(f=>{
+    let inp='';
+    if(f.type==='textarea'){
+      html+='</div><div class="form-row" style="grid-column:1/-1">';
+      inp=`<textarea id="${f.id}" rows="3"></textarea>`;
+      html+=`<label>${f.label}</label>${inp}</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">`;
+      return;
+    }
+    if(f.type==='select'){
+      inp=`<select id="${f.id}">
+        ${f.opts.map(o=>`<option>${o}</option>`).join('')}
+      </select>`;
+    } else {
+      inp=`<input type="${f.type}" id="${f.id}">`;
+    }
+    html+=`<div class="form-row"><label>${f.label}</label>${inp}</div>`;
+  });
+  html+='</div>';
+  html+=`
+    <div class="btn-row" style="margin-top:16px;">
+      <button class="btn btn-primary" onclick="printCmr('${id}')">🖨️ Stampa / Esporta</button>
+      <button class="btn btn-secondary" onclick="resetCmr('${id}')">🗑️ Azzera</button>
+    </div>`;
+
+  document.getElementById('cmr-form-body').innerHTML=html;
+}
+
+function resetCmr(id){
+  openCmr(id);
+}
+
+function printCmr(id){
+  const def=CMR_DEFS[id];
+  let lines=`FIREOPS VVF — ${def.title}\nComando: ${comandoSelezionato}\nData stampa: ${new Date().toLocaleString('it-IT')}\n${'═'.repeat(50)}\n`;
+  def.fields.forEach(f=>{
+    const el=document.getElementById(f.id);
+    if(el) lines+=`${f.label}: ${el.value||'—'}\n`;
+  });
+  const w=window.open('','_blank','width=700,height=900');
+  w.document.write(`<html><head><title>${def.title}</title><style>
+    body{font-family:Courier,monospace;padding:30px;background:#fff;color:#000;font-size:13px;}
+    pre{white-space:pre-wrap;}
+  </style></head><body><pre>${lines}</pre></body></html>`);
+  w.document.close();
+  w.print();
+}
+
+/* ════════════════════════════════════
+   INIT
+════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', ()=>{
+  // Autofill today date/time in CMR base fields
+  const today = new Date().toISOString().split('T')[0];
+});
+</script>
 </body>
 </html>
