@@ -356,7 +356,38 @@
         .code-bar { background: var(--bg-main); padding: 10px; border-radius: 6px; border: 2px solid var(--accent-blue); text-align: center; margin-bottom: 8px; }
         .code-text { font-family: monospace; font-size: 1.8rem; font-weight: bold; color: #fff; }
         .code-desc { font-size: 0.75rem; color: var(--accent-amber); font-weight: bold; }
-        .notes-preview { font-size: 0.75rem; color: var(--accent-green); font-weight: 600; margin-top: 6px; background: rgba(34, 197, 94, 0.1); padding: 6px; border-radius: 4px; border: 1px dashed var(--accent-green); word-break: break-word; }
+        
+        .notes-preview-container {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 6px;
+        }
+        .notes-preview { 
+            font-size: 0.75rem; 
+            color: var(--accent-green); 
+            font-weight: 600; 
+            background: rgba(34, 197, 94, 0.1); 
+            padding: 8px; 
+            border-radius: 4px; 
+            border: 1px dashed var(--accent-green); 
+            white-space: pre-line;
+            line-height: 1.4;
+            font-family: monospace;
+        }
+        .btn-copy-notes {
+            background: var(--accent-green);
+            color: #000;
+            border: none;
+            padding: 6px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            text-align: center;
+        }
+        .btn-copy-notes:hover { opacity: 0.85; }
 
         .grid-levels { display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; margin-top: 8px; }
         .btn-lvl { background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-secondary); padding: 8px 0; border-radius: 4px; font-weight: bold; text-align: center; cursor: pointer; font-size: 0.85rem; }
@@ -369,6 +400,22 @@
         .btn-lvl[data-lvl="E"].active { background: var(--accent-purple); }
 
         .script-box { background: var(--bg-main); border-left: 3px solid var(--accent-blue); padding: 6px 8px; border-radius: 0 4px 4px 0; margin-bottom: 6px; font-size: 0.78rem; color: #cbd5e1; }
+
+        /* CAMPO NOTE OPERATIVE AGGIUNTIVO */
+        .custom-note-input {
+            width: 100%;
+            height: 50px;
+            background: var(--bg-main);
+            border: 1px solid var(--border-color);
+            color: #fff;
+            padding: 6px 8px;
+            border-radius: 4px;
+            font-size: 0.78rem;
+            resize: none;
+            outline: none;
+            margin-top: 4px;
+        }
+        .custom-note-input:focus { border-color: var(--accent-purple); }
 
         /* STILI SPECIFICI SCHEDE DATABASE COMANDO E MESSAGGISTICA */
         .info-card-box {
@@ -599,7 +646,13 @@
                         <button class="btn-lvl" data-lvl="E" onclick="manualSetLevel('E')">E</button>
                     </div>
 
-                    <div class="notes-preview" id="cadNotesDisplay">NOTE CAD: ...</div>
+                    <span class="section-label">Note Operative / Evento:</span>
+                    <textarea id="customNoteInput" class="custom-note-input" placeholder="Inserisci annotazioni specifiche per la sala operativa..." oninput="updateDisplay()"></textarea>
+
+                    <div class="notes-preview-container">
+                        <div class="notes-preview" id="cadNotesDisplay">...</div>
+                        <button class="btn-copy-notes" onclick="copyNotesToClipboard()">📋 Copia Note CAD</button>
+                    </div>
                 </div>
 
                 <div class="panel" style="flex: 1;">
@@ -702,7 +755,7 @@
             "Como", "Cosenza", "Cremona", "Crotone", "Cuneo", "Enna", "Fermo", "Ferrara", "Firenze", "Foggia", 
             "Forlì-Cesena", "Frosinone", "Genova", "Gorizia", "Grosseto", "Imperia", "Isernia", "La Spezia", 
             "L'Aquila", "Latina", "Lecce", "Lecco", "Livorno", "Lodi", "Lucca", "Macerata", "Mantova", 
-            "Massa-Carrara", "Matera", "Messina", "Milano", "Modena", "MONZA E DELLA BRIANZA", "Napoli", "Novara", 
+            "Massa-Carrara", "Matera", "Messina", "Milano", "Modena", "Monza e della Brianza", "Napoli", "Novara", 
             "Nuoro", "Oristano", "Padova", "Palermo", "Parma", "Pavia", "Perugia", "Pesaro e Urbino", "Pescara", 
             "Piacenza", "Pisa", "Pistoia", "Pordenone", "Potenza", "Prato", "Ragusa", "Ravenna", "Reggio Calabria", 
             "Reggio Emilia", "Rieti", "Rimini", "Roma", "Rovigo", "Salerno", "Sassari", "Savona", "Siena", 
@@ -923,7 +976,7 @@
                 case 'ZH':
                     title = `🚒 *消防队 ${comando}* 🚒`;
                     msgAuto = `自动生成的消息。`;
-                    usage = `请使用此号码向我们发送您的位置、照片、视频或事件信息。`;
+                    usage = `请使用此号码向您发送您的位置、照片、视频或事件信息。`;
                     warning = `*这不是紧急呼叫号码*\n未经授权请勿用于其他目的。`;
                     emergencyCall = `如需紧急救援，请拨打\n☎️🆘️\n*1 1 2*\n🇪🇺🇮🇹`;
                     stepsHeader = `发送您的位置：`;
@@ -1135,6 +1188,37 @@
             updateDisplay();
         }
 
+        function getFormattedNotesText() {
+            const now = new Date();
+            const timeStr = now.toTimeString().split(' ')[0]; // HH:MM:SS
+            const statusText = document.getElementById('personStatus').options[document.getElementById('personStatus').selectedIndex].text;
+            
+            let answeredYes = [];
+            if (selectedProto.kq) {
+                selectedProto.kq.forEach(q => {
+                    if (kqAnswers[q.id] === "SI") answeredYes.push(q.text);
+                });
+            }
+
+            const customNote = document.getElementById('customNoteInput').value.trim();
+
+            let lines = [];
+            lines.push(`Orario: ${timeStr}`);
+            lines.push(`Protocollo: ${selectedProto.name}`);
+            lines.push(`Codice CAD: ${selectedProto.id}-${currentLevel}-1${(numPeople === '>5' || numVehicles === '>5' || numPeople > 1 || numVehicles > 1) ? 'M' : 'S'}`);
+            lines.push(`Persone coinvolte: ${numPeople} (${statusText})`);
+            lines.push(`Mezzi/veicoli coinvolti: ${numVehicles}`);
+            
+            if (answeredYes.length > 0) {
+                lines.push(`Domande chiave (Sì): ${answeredYes.join('; ')}`);
+            }
+            if (customNote !== "") {
+                lines.push(`Annotazioni: ${customNote}`);
+            }
+
+            return lines.join('\n');
+        }
+
         function updateDisplay() {
             let suffix = (numPeople === '>5' || numVehicles === '>5' || numPeople > 1 || numVehicles > 1) ? 'M' : 'S';
             if (numPeople === '>5') suffix = 'MCI';
@@ -1154,26 +1238,14 @@
             const comandoSel = document.getElementById('comandoSelect').value;
             const comandoTxt = comandoSel ? comandoSel : "NON SELEZIONATO";
             
-            // LETTURA DATI DA DATABASE / GITHUB SIMULATO
             let dbInfo = dbComandiVVF[comandoSel] || {
                 address: "Indirizzo non censito in DB",
                 duty: "Capo Turno Ordinario",
                 phoneDefault: "060000"
             };
 
-            const statusText = document.getElementById('personStatus').options[document.getElementById('personStatus').selectedIndex].text;
-            
-            let answeredYes = [];
-            if (selectedProto.kq) {
-                selectedProto.kq.forEach(q => {
-                    if (kqAnswers[q.id] === "SI") answeredYes.push(q.text);
-                });
-            }
-
-            let note = `NOTE CAD: [COMANDO: ${comandoTxt}] | [PERS: ${numPeople} - ${statusText.toUpperCase()}] | [MEZZI: ${numVehicles}]`;
-            if (answeredYes.length > 0) note += ` | [ALERT: ${answeredYes.join('; ')}]`;
-
-            document.getElementById('cadNotesDisplay').innerText = note;
+            // Aggiornamento anteprima note con a capo, senza quadre, senza "NOTE CAD", con orario e dettagli specifici
+            document.getElementById('cadNotesDisplay').innerText = getFormattedNotesText();
 
             // Aggiornamento dati Scheda 2 (Database Info Comando)
             document.getElementById('infoComandoName').innerText = comandoTxt;
@@ -1187,6 +1259,20 @@
             const currentLangCode = document.getElementById('langSelect').value;
             document.getElementById('msgLangTag').innerText = currentLangCode;
             document.getElementById('msgPreviewArea').value = buildMessageText();
+        }
+
+        function copyNotesToClipboard() {
+            const textToCopy = getFormattedNotesText();
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const btn = document.querySelector('.btn-copy-notes');
+                const originalText = btn.innerText;
+                btn.innerText = "✅ Note Copiate negli Appunti!";
+                setTimeout(() => {
+                    btn.innerText = originalText;
+                }, 2000);
+            }).catch(err => {
+                alert("Errore durante la copia negli appunti: " + err);
+            });
         }
 
         // INIT
