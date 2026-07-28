@@ -1,1 +1,1200 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FPDS Dashboard Operativa - VVF</title>
+    <style>
+        :root {
+            --bg-main: #0b0f17;
+            --bg-card: #161e2e;
+            --border-color: #26334d;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --accent-blue: #3b82f6;
+            --accent-green: #22c55e;
+            --accent-red: #ef4444;
+            --accent-amber: #f59e0b;
+            --accent-purple: #a855f7;
+            --accent-omega: #64748b;
+            
+            /* Colori distintivi per le 3 sezioni principali */
+            --color-sec1: #3b82f6; /* Blu: Evento & Protocollo */
+            --color-sec2: #f59e0b; /* Ambra: Quantità & KQ */
+            --color-sec3: #a855f7; /* Viola: Priorità, CAD & PDI */
+            --color-sec4: #22c55e; /* Verde: Info Comando */
+            --color-sec5: #06b6d4; /* Ciano: Messaggistica */
 
+            --whatsapp-color: #25D366;
+            --telegram-color: #0088cc;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        html, body {
+            width: 100%;
+            height: 100vh;
+            background: var(--bg-main);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            overflow: hidden;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* MODALE POPUP SELEZIONE COMANDO */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(11, 15, 23, 0.95);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .modal-box {
+            background: var(--bg-card);
+            border: 2px solid var(--accent-blue);
+            border-radius: 12px;
+            padding: 24px;
+            width: 90%;
+            max-width: 450px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+
+        .modal-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--accent-blue);
+            margin-bottom: 8px;
+        }
+
+        .modal-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+
+        .modal-select {
+            width: 100%;
+            background: var(--bg-main);
+            border: 1px solid var(--border-color);
+            color: #fff;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            outline: none;
+            margin-bottom: 20px;
+        }
+
+        .modal-btn {
+            background: var(--accent-blue);
+            color: #fff;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        .modal-btn:disabled {
+            background: var(--border-color);
+            color: var(--text-secondary);
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        .modal-btn:not(:disabled):hover { background: #2563eb; }
+
+        /* HEADER SUPERIORE COMPATTO */
+        .app-header {
+            width: 100%;
+            flex-shrink: 0;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding: 0 4px 6px 4px;
+            margin-bottom: 6px;
+            gap: 8px;
+        }
+        .app-title { font-size: 0.95rem; font-weight: bold; color: var(--accent-blue); white-space: nowrap; }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--bg-card);
+            padding: 2px 6px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+
+        .input-label {
+            font-size: 0.7rem;
+            font-weight: bold;
+            color: var(--accent-amber);
+            text-transform: uppercase;
+        }
+
+        .header-select, .header-input {
+            background: var(--bg-main);
+            border: 1px solid var(--border-color);
+            color: #fff;
+            padding: 4px 6px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            outline: none;
+        }
+        .header-select:focus, .header-input:focus { border-color: var(--accent-blue); }
+
+        /* PULSANTI MESSAGGISTICA */
+        .msg-buttons {
+            display: flex;
+            gap: 4px;
+        }
+        .btn-msg {
+            border: none;
+            color: #fff;
+            padding: 5px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: opacity 0.2s;
+            text-decoration: none;
+        }
+        .btn-msg:hover { opacity: 0.85; }
+        .btn-wa { background-color: var(--whatsapp-color); }
+        .btn-tg { background-color: var(--telegram-color); }
+
+        /* NAVIGAZIONE A SCHEDE CON COLORI DISTINTIVI E WIZARD */
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            flex-shrink: 0;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 6px;
+            gap: 8px;
+            overflow-x: auto;
+        }
+
+        .tabs-nav {
+            display: flex;
+            gap: 6px;
+        }
+
+        .tab-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .tab-btn:hover { color: #fff; }
+        
+        /* Assegnazione colori dinamici alle schede */
+        .tab-btn[data-target="tab-wizard"].active { background: var(--color-sec1); color: #fff; border-color: var(--color-sec1); }
+        .tab-btn[data-target="tab-comando"].active { background: var(--color-sec4); color: #fff; border-color: var(--color-sec4); }
+        .tab-btn[data-target="tab-messaggistica"].active { background: var(--color-sec5); color: #fff; border-color: var(--color-sec5); }
+
+        /* WIZARD CONTROLS (AVANTI / INDIETRO) */
+        .wizard-nav-bar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            padding: 3px 8px;
+            border-radius: 6px;
+        }
+        .wizard-title-indicator {
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: var(--color-sec1);
+            text-transform: uppercase;
+        }
+        .btn-wizard {
+            background: var(--bg-main);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-wizard:hover:not(:disabled) { background: var(--accent-blue); border-color: var(--accent-blue); }
+        .btn-wizard:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* CONTENITORE SCHEDE */
+        .dashboard-container {
+            display: flex;
+            width: 100%;
+            flex: 1;
+            min-height: 0;
+            position: relative;
+        }
+
+        .tab-content {
+            display: none;
+            width: 100%;
+            height: 100%;
+            gap: 10px;
+        }
+        .tab-content.active {
+            display: flex;
+        }
+
+        .panel {
+            flex: 1;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .panel-scrollable { overflow-y: auto; }
+
+        .panel-header {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            font-weight: bold;
+            color: var(--accent-blue);
+            margin-bottom: 8px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .search-box { 
+            width: 100%; 
+            background: var(--bg-main); 
+            border: 1px solid var(--border-color); 
+            color: #fff; 
+            padding: 8px; 
+            border-radius: 4px; 
+            font-size: 0.85rem; 
+            margin-bottom: 8px; 
+            outline: none;
+            flex-shrink: 0;
+        }
+        .search-box:focus { border-color: var(--accent-blue); }
+
+        .proto-opt-list { display: flex; flex-direction: column; gap: 3px; padding-right: 2px; }
+
+        .opt-btn-label {
+            display: flex;
+            align-items: center;
+            background: var(--bg-main);
+            border: 1px solid var(--border-color);
+            padding: 6px 8px;
+            border-radius: 5px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: all 0.1s ease;
+        }
+        .opt-btn-label:hover { border-color: var(--accent-blue); color: #fff; }
+        .opt-btn-label input[type="radio"] { margin-right: 8px; accent-color: var(--accent-blue); cursor: pointer; }
+        .opt-btn-label.active { background: rgba(59, 130, 246, 0.2); border-color: var(--accent-blue); color: #fff; }
+
+        .section-label { font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; margin: 8px 0 3px 0; font-weight: bold; }
+        .btn-group { display: flex; gap: 2px; margin-bottom: 6px; width: 100%; }
+        .btn-opt { flex: 1; background: var(--bg-main); border: 1px solid var(--border-color); color: #fff; padding: 6px 0; border-radius: 4px; font-weight: bold; font-size: 0.8rem; cursor: pointer; text-align: center; }
+        .btn-opt.active { background: var(--accent-blue); border-color: var(--accent-blue); }
+        .btn-opt.zero-active { background: var(--accent-omega); border-color: var(--accent-omega); }
+
+        .status-select { width: 100%; background: var(--bg-main); border: 1px solid var(--border-color); color: #fff; padding: 6px; border-radius: 4px; font-size: 0.8rem; margin-bottom: 8px; }
+
+        .kq-container-box { margin-top: 10px; border-top: 1px dashed var(--border-color); padding-top: 8px; overflow-y: auto; flex: 1; }
+        .kq-item { background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 6px; padding: 8px; margin-bottom: 6px; }
+        .kq-text { font-size: 0.78rem; margin-bottom: 6px; font-weight: 500; }
+        .kq-options { display: flex; gap: 6px; }
+        .btn-yn { flex: 1; padding: 4px 0; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-secondary); border-radius: 4px; font-weight: bold; font-size: 0.75rem; cursor: pointer; text-align: center; }
+        .btn-yn.yes.active { background: var(--accent-red); color: #fff; border-color: var(--accent-red); }
+        .btn-yn.no.active { background: var(--accent-green); color: #fff; border-color: var(--accent-green); }
+
+        .code-bar { background: var(--bg-main); padding: 10px; border-radius: 6px; border: 2px solid var(--accent-blue); text-align: center; margin-bottom: 8px; }
+        .code-text { font-family: monospace; font-size: 1.8rem; font-weight: bold; color: #fff; }
+        .code-desc { font-size: 0.75rem; color: var(--accent-amber); font-weight: bold; }
+        .notes-preview { font-size: 0.75rem; color: var(--accent-green); font-weight: 600; margin-top: 6px; background: rgba(34, 197, 94, 0.1); padding: 6px; border-radius: 4px; border: 1px dashed var(--accent-green); word-break: break-word; }
+
+        .grid-levels { display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; margin-top: 8px; }
+        .btn-lvl { background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-secondary); padding: 8px 0; border-radius: 4px; font-weight: bold; text-align: center; cursor: pointer; font-size: 0.85rem; }
+        .btn-lvl.active { border-color: #fff; color: #fff; }
+        .btn-lvl[data-lvl="Ω"].active { background: var(--accent-omega); }
+        .btn-lvl[data-lvl="A"].active { background: var(--accent-blue); }
+        .btn-lvl[data-lvl="B"].active { background: var(--accent-amber); color: #000; }
+        .btn-lvl[data-lvl="C"].active { background: #f97316; }
+        .btn-lvl[data-lvl="D"].active { background: var(--accent-red); }
+        .btn-lvl[data-lvl="E"].active { background: var(--accent-purple); }
+
+        .script-box { background: var(--bg-main); border-left: 3px solid var(--accent-blue); padding: 6px 8px; border-radius: 0 4px 4px 0; margin-bottom: 6px; font-size: 0.78rem; color: #cbd5e1; }
+
+        /* STILI SPECIFICI SCHEDE DATABASE COMANDO E MESSAGGISTICA */
+        .info-card-box {
+            background: var(--bg-main);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 8px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.8rem;
+        }
+        .info-row:last-child { border-bottom: none; }
+        .info-label { color: var(--text-secondary); font-weight: 600; }
+        .info-val { color: var(--text-primary); font-weight: bold; }
+
+        .preview-textarea {
+            width: 100%;
+            height: calc(100% - 30px);
+            background: var(--bg-main);
+            border: 1px solid var(--border-color);
+            color: #e2e8f0;
+            padding: 10px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.8rem;
+            resize: none;
+            outline: none;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- MODALE POPUP SELEZIONE COMANDO INIZIALE -->
+    <div id="comandoModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-title">🔥 SELEZIONA COMANDO VVF</div>
+            <div class="modal-subtitle">Scegli il Comando di appartenenza per configurare la dashboard e i messaggi di testo.</div>
+            <select id="modalComandoSelect" class="modal-select" onchange="onModalSelectChange()"></select>
+            <button id="modalConfirmBtn" class="modal-btn" disabled onclick="confirmComandoSelection()">CONFERMA E ACCEDI</button>
+        </div>
+    </div>
+
+    <!-- HEADER SUPERIORE COMPATTO -->
+    <div class="app-header">
+        <div class="app-title">🔥 FPDS CENTRALE OPERATIVA</div>
+        
+        <div class="header-controls">
+            <!-- SELETTORE COMANDO -->
+            <div class="input-group">
+                <span class="input-label">Comando:</span>
+                <select id="comandoSelect" class="header-select" onchange="updateDisplay()"></select>
+            </div>
+
+            <!-- PREFISSO INTERNAZIONALE -->
+            <div class="input-group">
+                <span class="input-label">Prefisso:</span>
+                <select id="prefixSelect" class="header-select" onchange="updateDisplay()">
+                    <option value="39">+39 (IT)</option>
+                    <option value="33">+33 (FR)</option>
+                    <option value="49">+49 (DE)</option>
+                    <option value="44">+44 (UK)</option>
+                    <option value="34">+34 (ES)</option>
+                    <option value="41">+41 (CH)</option>
+                    <option value="43">+43 (AT)</option>
+                    <option value="380">+380 (UA)</option>
+                    <option value="7">+7 (RU)</option>
+                    <option value="355">+355 (AL)</option>
+                    <option value="86">+86 (CN)</option>
+                    <option value="1">+1 (US/CA)</option>
+                </select>
+            </div>
+
+            <!-- NUMERO DI TELEFONO -->
+            <div class="input-group">
+                <span class="input-label">Tel:</span>
+                <input type="tel" id="phoneInput" class="header-input" placeholder="3331234567" style="width: 105px;" oninput="updateDisplay()">
+            </div>
+
+            <!-- MENU LINGUE COMPLETO -->
+            <div class="input-group">
+                <span class="input-label">Lingua:</span>
+                <select id="langSelect" class="header-select" onchange="updateDisplay()">
+                    <option value="IT">IT 🇮🇹 Italiano</option>
+                    <option value="EN">EN 🇬🇧/🇮🇪 Inglese</option>
+                    <option value="FR">FR 🇫🇷 Francese</option>
+                    <option value="DE">DE 🇩🇪 Tedesco</option>
+                    <option value="ES">ES 🇪🇸 Spagnolo</option>
+                    <option value="NL">NL 🇳🇱 Olandese</option>
+                    <option value="SL">SL 🇸🇮 Sloveno</option>
+                    <option value="SK">SK 🇸🇰 Slovacco</option>
+                    <option value="BG">BG 🇧🇬 Bulgaro</option>
+                    <option value="CS">CS 🇨🇿 Ceco</option>
+                    <option value="HR">HR 🇭🇷 Croato</option>
+                    <option value="DA">DA 🇩🇰 Danese</option>
+                    <option value="ET">ET 🇪🇪 Estone</option>
+                    <option value="FI">FI 🇫🇮 Finlandese</option>
+                    <option value="EL">EL 🇬🇷 Greco</option>
+                    <option value="HU">HU 🇭🇺 Ungherese</option>
+                    <option value="GA">GA 🇮🇪 Irlandese</option>
+                    <option value="LV">LV 🇱🇻 Lettone</option>
+                    <option value="LT">LT 🇱🇹 Lituano</option>
+                    <option value="MT">MT 🇲🇹 Maltese</option>
+                    <option value="PL">PL 🇵🇱 Polacco</option>
+                    <option value="PT">PT 🇵🇹 Portoghese</option>
+                    <option value="RO">RO 🇷🇴 Rumeno</option>
+                    <option value="SV">SV 🇸🇪 Svedese</option>
+                    <option value="RU">RU 🇷🇺 Russo</option>
+                    <option value="ZH">ZH 🇨🇳 Cinese</option>
+                    <option value="AR">AR 🇸🇦 Arabo</option>
+                    <option value="SQ">SQ 🇦🇱 Albanese</option>
+                    <option value="UKR">UA 🇺🇦 Ucraino</option>
+                </select>
+            </div>
+
+            <!-- PULSANTI INVIO MESSAGGI -->
+            <div class="msg-buttons">
+                <button class="btn-msg btn-wa" onclick="sendMsg('webwa')">📱 Web.WA</button>
+                <button class="btn-msg btn-wa" onclick="sendMsg('wadesk')">💻 WA Desk</button>
+                <button class="btn-msg btn-tg" onclick="sendMsg('tgdesk')">✈️ Telegram</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- BARRA DI NAVIGAZIONE A 3 SCHEDE PRINCIPALI + CONTROLLI WIZARD -->
+    <div class="nav-container">
+        <div class="tabs-nav">
+            <button class="tab-btn active" data-target="tab-wizard" onclick="switchMainTab('tab-wizard', this)">📊 1. Gestione Protocollo & Evento</button>
+            <button class="tab-btn" data-target="tab-comando" onclick="switchMainTab('tab-comando', this)">🏛️ 2. Database & Info Comando</button>
+            <button class="tab-btn" data-target="tab-messaggistica" onclick="switchMainTab('tab-messaggistica', this)">💬 3. Messaggistica & Testo</button>
+        </div>
+
+        <!-- CONTROLLI WIZARD (AVANTI / INDIETRO PER LE SOTTO-SCHEDE 1, 2, 3) -->
+        <div class="wizard-nav-bar" id="wizardNavBar">
+            <span class="wizard-title-indicator" id="wizardStepIndicator">1. Evento & Protocollo</span>
+            <button class="btn-wizard" id="prevStepBtn" onclick="changeWizardStep(-1)" disabled>◀ Indietro</button>
+            <button class="btn-wizard" id="nextStepBtn" onclick="changeWizardStep(1)">Avanti ▶</button>
+        </div>
+    </div>
+
+    <!-- CONTENITORE PRINCIPALE DELLE SCHEDE -->
+    <div class="dashboard-container">
+
+        <!-- SCHEDA 1: WIZARD GRUPPO (Raggruppa le prime 3 sotto-sezioni con transizione fluida) -->
+        <div id="tab-wizard" class="tab-content active">
+            
+            <!-- SOTTO-SCHEDA A: EVENTO & PROTOCOLLO -->
+            <div id="subtab-1" class="tab-content active" style="width: 100%; height: 100%;">
+                <div class="panel panel-scrollable" style="flex: 1;">
+                    <div class="panel-header" style="color: var(--color-sec1);">
+                        <span>Tipologia Evento (Protocolli)</span>
+                        <span id="protoCountTag" style="color:var(--accent-amber);">34 Totali</span>
+                    </div>
+                    <input type="text" class="search-box" placeholder="🔍 Cerca per num. o parola chiave..." onkeyup="filterProtocols(this.value)">
+                    <div class="proto-opt-list" id="protocolList"></div>
+                </div>
+            </div>
+
+            <!-- SOTTO-SCHEDA B: QUANTITÀ & DOMANDE -->
+            <div id="subtab-2" class="tab-content" style="width: 100%; height: 100%;">
+                <div class="panel" style="flex: 1;">
+                    <div class="panel-header" style="color: var(--color-sec2);">
+                        <span>Quantità & Domande Chiave</span>
+                        <span id="activeProtoTag" style="color:var(--accent-amber);">PROT. 51</span>
+                    </div>
+
+                    <span class="section-label">Persone Coinvolte / Ferite:</span>
+                    <div class="btn-group" id="peopleGroup">
+                        <button class="btn-opt zero-active" onclick="setPeople(0, this)">0</button>
+                        <button class="btn-opt" onclick="setPeople(1, this)">1</button>
+                        <button class="btn-opt" onclick="setPeople(2, this)">2</button>
+                        <button class="btn-opt" onclick="setPeople(3, this)">3</button>
+                        <button class="btn-opt" onclick="setPeople(4, this)">4</button>
+                        <button class="btn-opt" onclick="setPeople(5, this)">5</button>
+                        <button class="btn-opt" onclick="setPeople('>5', this)">>5</button>
+                    </div>
+
+                    <span class="section-label">Stato Persone:</span>
+                    <select id="personStatus" class="status-select" onchange="onStatusChange()">
+                        <option value="none">0 Persone / Solo cose</option>
+                        <option value="unharmed">Incolumi / Non in pericolo</option>
+                        <option value="trapped">Intrappolate / Impedite</option>
+                        <option value="pinned">Incastrate (Lamiere/Macerie)</option>
+                        <option value="critical">Incoscienti / Gravi / Pericolo Vita</option>
+                    </select>
+
+                    <span class="section-label">Mezzi / Veicoli Coinvolti:</span>
+                    <div class="btn-group" id="vehiclesGroup">
+                        <button class="btn-opt zero-active" onclick="setVehicles(0, this)">0</button>
+                        <button class="btn-opt active" onclick="setVehicles(1, this)">1</button>
+                        <button class="btn-opt" onclick="setVehicles(2, this)">2</button>
+                        <button class="btn-opt" onclick="setVehicles(3, this)">3</button>
+                        <button class="btn-opt" onclick="setVehicles(4, this)">4</button>
+                        <button class="btn-opt" onclick="setVehicles(5, this)">5</button>
+                        <button class="btn-opt" onclick="setVehicles('>5', this)">>5</button>
+                    </div>
+
+                    <div class="kq-container-box">
+                        <span class="section-label" style="display:block; margin-bottom:6px;">Key Questions (Domande Chiave):</span>
+                        <div id="kqContainer"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SOTTO-SCHEDA C: PRIORITÀ, CAD & PDI -->
+            <div id="subtab-3" class="tab-content" style="width: 100%; height: 100%; gap: 10px;">
+                <div class="panel" style="flex: 1;">
+                    <div class="panel-header" style="color: var(--color-sec3);">
+                        <span>Priorità & Codice CAD</span>
+                    </div>
+                    <div class="code-bar">
+                        <div class="code-text" id="codeDisplay">51-Ω-1S</div>
+                        <div class="code-desc" id="codeDescDisplay">LIVELLO Ω (OMEGA)</div>
+                    </div>
+
+                    <span class="section-label" style="text-align: center;">Forzatura Manuale Livello:</span>
+                    <div class="grid-levels">
+                        <button class="btn-lvl active" data-lvl="Ω" onclick="manualSetLevel('Ω')">Ω</button>
+                        <button class="btn-lvl" data-lvl="A" onclick="manualSetLevel('A')">A</button>
+                        <button class="btn-lvl" data-lvl="B" onclick="manualSetLevel('B')">B</button>
+                        <button class="btn-lvl" data-lvl="C" onclick="manualSetLevel('C')">C</button>
+                        <button class="btn-lvl" data-lvl="D" onclick="manualSetLevel('D')">D</button>
+                        <button class="btn-lvl" data-lvl="E" onclick="manualSetLevel('E')">E</button>
+                    </div>
+
+                    <div class="notes-preview" id="cadNotesDisplay">NOTE CAD: ...</div>
+                </div>
+
+                <div class="panel" style="flex: 1;">
+                    <div class="panel-header" style="color: var(--color-sec3);">
+                        <span>Istruzioni PDI / PAI</span>
+                    </div>
+                    <div id="pdiContainer" style="overflow-y: auto; flex: 1;"></div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- SCHEDA 2: DATABASE & INFORMAZIONI COMANDO -->
+        <div id="tab-comando" class="tab-content">
+            <div class="panel panel-scrollable" style="flex: 1;">
+                <div class="panel-header" style="color: var(--color-sec4);">
+                    <span>🏛️ Database & Dettagli Comando VVF Selezionato</span>
+                    <span id="dbSourceTag" style="font-size: 0.65rem; color: var(--accent-green);">GitHub DB: Sincronizzato</span>
+                </div>
+                <div class="info-card-box">
+                    <div class="info-row">
+                        <span class="info-label">Comando Attivo:</span>
+                        <span class="info-val" id="infoComandoName">Non Selezionato</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Sede / Indirizzo Operativo (DB):</span>
+                        <span class="info-val" id="infoComandoAddress">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Capo Turno / Sala Operativa (DB):</span>
+                        <span class="info-val" id="infoComandoDuty">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Numero di Contatto (Tel):</span>
+                        <span class="info-val" id="infoComandoPhone">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Prefisso Internazionale:</span>
+                        <span class="info-val" id="infoComandoPrefix">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Lingua Interfaccia / Msg:</span>
+                        <span class="info-val" id="infoComandoLang">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Stato Connessione DB (GitHub):</span>
+                        <span class="info-val" style="color: var(--accent-green);">🟢 Online (json source ready)</span>
+                    </div>
+                </div>
+                <div class="script-box">
+                    💡 **Nota Database:** Le informazioni anagrafiche, le sedi e i referenti dei Comandi VVF vengono recuperate in tempo reale tramite file JSON ospitato su repository GitHub.
+                </div>
+            </div>
+        </div>
+
+        <!-- SCHEDA 3: MESSAGGISTICA & TESTO -->
+        <div id="tab-messaggistica" class="tab-content">
+            <div class="panel" style="flex: 1;">
+                <div class="panel-header" style="color: var(--color-sec5);">
+                    <span>💬 Anteprima Testo Messaggio Multilingua</span>
+                    <span style="color: var(--accent-amber);" id="msgLangTag">IT</span>
+                </div>
+                <textarea id="msgPreviewArea" class="preview-textarea" readonly></textarea>
+            </div>
+            <div class="panel" style="flex: 0 0 280px;">
+                <div class="panel-header" style="color: var(--color-sec5);">
+                    <span>Azioni Rapide Invio</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <button class="btn-msg btn-wa" style="padding: 10px; justify-content: center; font-size: 0.85rem;" onclick="sendMsg('webwa')">📱 Apri su Web WhatsApp</button>
+                    <button class="btn-msg btn-wa" style="padding: 10px; justify-content: center; font-size: 0.85rem;" onclick="sendMsg('wadesk')">💻 Apri su WhatsApp Desktop</button>
+                    <button class="btn-msg btn-tg" style="padding: 10px; justify-content: center; font-size: 0.85rem;" onclick="sendMsg('tgdesk')">✈️ Condividi su Telegram</button>
+                </div>
+                <div class="script-box" style="margin-top: 12px;">
+                    ⚠️ Assicurarsi che il numero di telefono nell'header contenga prefisso e numero corretti prima di procedere all'invio.
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // DATABASE SIMULATO DA GITHUB (struttura JSON estendibile)
+        const dbComandiVVF = {
+            "ROMA": { address: "Via Solferino 15, Roma", duty: "Dirigente Superiore Turno A", phoneDefault: "064441" },
+            "MILANO": { address: "Via La Spezia 37, Milano", duty: "Primo Dirigente Turno B", phoneDefault: "025831" },
+            "NAPOLI": { address: "Via De Amicis 33, Napoli", duty: "Primo Dirigente Turno C", phoneDefault: "081543" },
+            "TORINO": { address: "Corso Regina Margherita 330, Torino", duty: "Primo Dirigente Turno A", phoneDefault: "011436" },
+            "BOLOGNA": { address: "Viale Berti Pichat 2/4, Bologna", duty: "Primo Dirigente Turno B", phoneDefault: "051242" },
+            "FIRENZE": { address: "Via La Farina 57, Firenze", duty: "Primo Dirigente Turno C", phoneDefault: "055572" },
+            "VENEZIA": { address: "Isola Nuova del Tronchetto 1, Venezia", duty: "Primo Dirigente Turno A", phoneDefault: "041528" },
+            "GENOVA": { address: "Corso Dante 3, Genova", duty: "Primo Dirigente Turno B", phoneDefault: "010535" },
+            "PALERMO": { address: "Via Giacomo Cusmano 38, Palermo", duty: "Primo Dirigente Turno C", phoneDefault: "091616" }
+        };
+
+        const comandiVVF = [
+            "Agrigento", "Alessandria", "Ancona", "Aosta", "Arezzo", "Ascoli Piceno", "Asti", "Avellino", "Bari", 
+            "Barletta-Andria-Trani", "Belluno", "Benevento", "Bergamo", "Biella", "Bologna", "Bolzano", "Brescia", 
+            "Brindisi", "Cagliari", "Caltanissetta", "Campobasso", "Caserta", "Catania", "Catanzaro", "Chieti", 
+            "Como", "Cosenza", "Cremona", "Crotone", "Cuneo", "Enna", "Fermo", "Ferrara", "Firenze", "Foggia", 
+            "Forlì-Cesena", "Frosinone", "Genova", "Gorizia", "Grosseto", "Imperia", "Isernia", "La Spezia", 
+            "L'Aquila", "Latina", "Lecce", "Lecco", "Livorno", "Lodi", "Lucca", "Macerata", "Mantova", 
+            "Massa-Carrara", "Matera", "Messina", "Milano", "Modena", "MONZA E DELLA BRIANZA", "Napoli", "Novara", 
+            "Nuoro", "Oristano", "Padova", "Palermo", "Parma", "Pavia", "Perugia", "Pesaro e Urbino", "Pescara", 
+            "Piacenza", "Pisa", "Pistoia", "Pordenone", "Potenza", "Prato", "Ragusa", "Ravenna", "Reggio Calabria", 
+            "Reggio Emilia", "Rieti", "Rimini", "Roma", "Rovigo", "Salerno", "Sassari", "Savona", "Siena", 
+            "Siracusa", "Sondrio", "Sud Sardegna", "Taranto", "Teramo", "Terni", "Torino", "Trapani", "Trento", 
+            "Treviso", "Trieste", "Udine", "Varese", "Venezia", "Verbano-Cusio-Ossola", "Vercelli", "Verona", 
+            "Vibo Valentia", "Vicenza", "Viterbo"
+        ];
+
+        const protocols = [
+            { id: 51, name: "51 - Aeromobile in Emergenza", keywords: ["aereo", "aeroplano", "elicottero", "pista", "caduto"], pdi: ["Allontanarsi dall'area di impatto.", "Evitare inalazione di fumi tossici."], kq: [{ id: "q1", text: "Aeromobile precipitato o in fiamme?", forceLvl: "E" }, { id: "q2", text: "Persone bloccate all'interno?", forceLvl: "D" }] },
+            { id: 52, name: "52 - Incendio Vegetazione", keywords: ["bosco", "sterpaglia", "prato", "alberi", "campo"], pdi: ["Allontanarsi dalla traiettoria del vento.", "Non tentare di spegnere se il fuoco supera le ginocchia."], kq: [{ id: "q1", text: "Fuoco minaccia abitazioni?", forceLvl: "D" }, { id: "q2", text: "Persone circondate dal fuoco?", forceLvl: "E" }] },
+            { id: 53, name: "53 - Allagamento / Calamità", keywords: ["acqua", "fiume", "esondazione", "fango", "scantinato"], pdi: ["Staccare la corrente se all'asciutto.", "Portarsi ai piani alti."], kq: [{ id: "q1", text: "Persone bloccate dall'acqua?", forceLvl: "D" }, { id: "q2", text: "Corrente d'acqua travolgente?", forceLvl: "E" }] },
+            { id: 54, name: "54 - Incendio Fluviale / Marittimo", keywords: ["barca", "nave", "porto", "fiume", "natante"], pdi: ["Indossare giubbotti di salvataggio.", "Abbandonare l'imbarcazione se fumo denso."], kq: [{ id: "q1", text: "Persone in acqua?", forceLvl: "E" }, { id: "q2", text: "Esplosione o perdita carburante in acqua?", forceLvl: "D" }] },
+            { id: 55, name: "55 - Incendio Mezzo di Trasporto", keywords: ["camion", "autobus", "treno", "vagone", "mezzo"], pdi: ["Allontanarsi almeno 50 metri.", "Non respirare il fumo."], kq: [{ id: "q1", text: "Passeggeri bloccati a bordo?", forceLvl: "E" }, { id: "q2", text: "Presente carico merci pericolose (Hazmat)?", forceLvl: "D" }] },
+            { id: 56, name: "56 - Crollo Strutturale / Macerie", keywords: ["crollo", "muro", "soffitto", "palazzina", "macerie"], pdi: ["Non entrare nella zona di crollo.", "Mantenere il silenzio per sentire voci."], kq: [{ id: "q1", text: "Persone sepolte dalle macerie?", forceLvl: "E" }, { id: "q2", text: "Fuga gas in corso nel crollo?", forceLvl: "D" }] },
+            { id: 57, name: "57 - Esplosione / Scoppio", keywords: ["bomba", "boato", "scoppio", "detonazione"], pdi: ["Allontanarsi ed evitare vetri instabili.", "Proteggere le vie aeree."], kq: [{ id: "q1", text: "Fiamme e feriti gravi sul posto?", forceLvl: "E" }, { id: "q2", text: "Rischio secondo scoppio?", forceLvl: "D" }] },
+            { id: 58, name: "58 - Incidente Stradale", keywords: ["auto", "scontro", "veicolo", "carambola", "strada"], pdi: ["Spegnere i motori.", "Mantenere le quattro frecce accese."], kq: [{ id: "q1", text: "Persone incastrate nelle lamiere?", forceLvl: "D" }, { id: "q2", text: "Feriti svenuti / gravi?", forceLvl: "E" }] },
+            { id: 59, name: "59 - Soccorso a Persona / Casa", keywords: ["porta chiusa", "anziano", "non risponde", "bloccato casa"], pdi: ["Non forzare se c'è rischio caduta.", "Attendere la squadra con le chiavi se possibile."], kq: [{ id: "q1", text: "Persona all'interno non risponde e malata?", forceLvl: "D" }, { id: "q2", text: "Fuga gas o odore di bruciato nell'alloggio?", forceLvl: "D" }] },
+            { id: 60, name: "60 - Fuga Gas / Sostanze Tossiche", keywords: ["gas", "metano", "gpl", "odore", "tubo", "perdita"], pdi: ["Non azionare interruttori o fiamme.", "Aprire finestre ed evacuare."], kq: [{ id: "q1", text: "Persone svenute o intossicate?", forceLvl: "E" }, { id: "q2", text: "Forte sibilo da serbatoio/rete?", forceLvl: "D" }] },
+            { id: 61, name: "61 - Sostanze Pericolose (HAZMAT)", keywords: ["chimico", "acido", "cisterna", "tossico", "veleno"], pdi: ["Allontanarsi controvento.", "Non toccare i liquidi sversati."], kq: [{ id: "q1", text: "Persone a contatto con ustioni o difficoltà respiratorie?", forceLvl: "E" }, { id: "q2", text: "Sversamento in corso vicino ad abitazioni?", forceLvl: "D" }] },
+            { id: 62, name: "62 - Ascensore Bloccato", keywords: ["ascensore", "montacarichi", "incastrati", "vano"], pdi: ["Rimanere calmi, l'aria non manca.", "Non tentare di uscire da soli."], kq: [{ id: "q1", text: "Persone colte da malore / panico grave?", forceLvl: "D" }, { id: "q2", text: "Cabina inclinata o cavi sfilacciati?", forceLvl: "D" }] },
+            { id: 63, name: "63 - Incendio Canna Fumaria / Tetto", keywords: ["camino", "tetto", "canna fumaria", "faville"], pdi: ["Chiudere lo sportello del camino.", "Non gettare acqua dall'alto."], kq: [{ id: "q1", text: "Fumo denso negli appartamenti sottostanti?", forceLvl: "D" }, { id: "q2", text: "Tetto in legno già in fiamme?", forceLvl: "D" }] },
+            { id: 64, name: "64 - Incendio Industriale / Capannone", keywords: ["fabbrica", "capannone", "deposito", "magazzino"], pdi: ["Evacuare l'area seguendo le vie di fuga.", "Allontanarsi dai fumi."], kq: [{ id: "q1", text: "Operatori / persone intrappolate?", forceLvl: "E" }, { id: "q2", text: "Presenza di bombole / solventi?", forceLvl: "D" }] },
+            { id: 65, name: "65 - Incendio Mezzo Agricolo / Forestale", keywords: ["trattore", "trebbia", "fieno", "pagliaio"], pdi: ["Staccare eventuali rimorchi se sicuro.", "Allontanarsi dal fumo."], kq: [{ id: "q1", text: "Persona incastrata sotto il mezzo?", forceLvl: "E" }, { id: "q2", text: "Incendio esteso a depositi adiacenti?", forceLvl: "D" }] },
+            { id: 66, name: "66 - Rischio Elettrico / Trasformatore", keywords: ["corrente", "traliccio", "cabina", "fili", "scossa"], pdi: ["Non avvicinarsi ai cavi a terra.", "Mantenere almeno 10 metri di distanza."], kq: [{ id: "q1", text: "Persona fulminata / a contatto con cavo?", forceLvl: "E" }, { id: "q2", text: "Fiamme su cabina o trasformatore?", forceLvl: "D" }] },
+            { id: 67, name: "67 - Recupero / Soccorso in Acqua", keywords: ["annegamento", "lago", "fiume", "mare", "canale"], pdi: ["Lanciare un salvagente o corda.", "Non tuffarsi se non addestrati."], kq: [{ id: "q1", text: "Persona scomparsa sott'acqua?", forceLvl: "E" }, { id: "q2", text: "Persona aggrappata a ostacolo in corrente?", forceLvl: "D" }] },
+            { id: 68, name: "68 - Soccorso Speleo / Alpino / Quota", keywords: ["montagna", "grotta", "dirupo", "scogliera", "parete"], pdi: ["Coprirsi e proteggersi dal freddo.", "Non muoversi dal punto visibile."], kq: [{ id: "q1", text: "Persona precipitata in dirupo?", forceLvl: "E" }, { id: "q2", text: "Infortuni con impossibilità di movimento?", forceLvl: "D" }] },
+            { id: 69, name: "69 - Incendio Struttura / Civile", keywords: ["casa", "appartamento", "fumo", "edificio"], pdi: ["Evacuare chiudendo le porte.", "Non usare ascensori."], kq: [{ id: "q1", text: "Persone intrappolate all'interno?", forceLvl: "E" }, { id: "q2", text: "Ustioni gravi o intossicati?", forceLvl: "E" }] },
+            { id: 70, name: "70 - Minaccia Crollo Elementi Costruttivi", keywords: ["cornicione", "tegole", "palo", "insegna", "pericolante"], pdi: ["Delimitare l'area sottostante.", "Non sostare sotto la verticale."], kq: [{ id: "q1", text: "Rischio caduta imminente su strada trafficata?", forceLvl: "D" }] },
+            { id: 71, name: "71 - Incendio Discarica / Rifiuti", keywords: ["immondizia", "cassonetto", "rifiuti", "discarica"], pdi: ["Chiudere le finestre nelle vicinanze.", "Evitare l'inalazione."], kq: [{ id: "q1", text: "Fumo tossico verso ospedali/scuole?", forceLvl: "D" }] },
+            { id: 72, name: "72 - Apertura Varchi / Assistenza", keywords: ["varco", "sblocco", "cancello", "porta"], pdi: ["Attendere l'arrivo della squadra."], kq: [{ id: "q1", text: "Urgenza sanitaria all'interno?", forceLvl: "D" }] },
+            { id: 73, name: "73 - Bonifica Insetti Pericolosi", keywords: ["vespe", "calabroni", "nido", "favo"], pdi: ["Allontanarsi dal nido.", "Chiudere le finestre."], kq: [{ id: "q1", text: "Persona punta con shock anafilattico?", forceLvl: "E" }] },
+            { id: 74, name: "74 - Recupero Animali", keywords: ["cane", "gatto", "animale", "incastrato", "pozzo"], pdi: ["Non innervosire l'animale.", "Coprirlo se aggressivo."], kq: [{ id: "q1", text: "Animale pericoloso libero in area pubblica?", forceLvl: "D" }] },
+            { id: 75, name: "75 - Dissesto Idrogeologico / Frana", keywords: ["frana", "smottamento", "roccia", "fango"], pdi: ["Allontanarsi dal fronte di frana.", "Non percorrere strade lesionate."], kq: [{ id: "q1", text: "Abitazioni travolte dalla frana?", forceLvl: "E" }] },
+            { id: 76, name: "76 - Incendio Galleria / Tunnel", keywords: ["galleria", "tunnel", "sotterraneo"], pdi: ["Abbandonare il veicolo e seguire les uscite di emergenza."], kq: [{ id: "q1", text: "Persone bloccate nel fumo?", forceLvl: "E" }] },
+            { id: 77, name: "77 - Recupero Beni / Oggetti Pericolanti", keywords: ["recupero", "bene", "cassaforte", "documenti"], pdi: ["Attendere indicazioni dai Vigili del Fuoco."], kq: [] },
+            { id: 78, name: "78 - Supporto Elisotteri / Eliporto", keywords: ["elisoccorso", "atterraggio", "eliporto", "elicottero"], pdi: ["Sgomberare l'area da oggetti leggeri."], kq: [] },
+            { id: 79, name: "79 - Incendio Trasformatore / Centralina", keywords: ["centralina", "quadro elettrico", "fumo nero"], pdi: ["Non usare acqua sulle apparecchiature."], kq: [{ id: "q1", text: "Fiamme estese ad edifici adiacenti?", forceLvl: "D" }] },
+            { id: 80, name: "80 - Incidente Ferroviario", keywords: ["treno", "binari", "deragliamento", "stazione"], pdi: ["Non camminare sui binari.", "Allontanarsi dalla linea."], kq: [{ id: "q1", text: "Deragliamento con svariati feriti?", forceLvl: "E" }] },
+            { id: 81, name: "81 - Ricerca Persona Scomparsa", keywords: ["scomparso", "perso", "ricerca", "bosco"], pdi: ["Raccogliere indumenti con l'odore della persona."], kq: [{ id: "q1", text: "Persona anziana / bambino al freddo?", forceLvl: "D" }] },
+            { id: 82, name: "82 - Presidio / Assistenza Manifestazioni", keywords: ["servizio", "standby", "festa", "presidio"], pdi: ["Mantenere le comunicazioni radio aperte."], kq: [] },
+            { id: 83, name: "83 - Rischio Radiologico / Nucleare", keywords: ["radiazioni", "nucleare", "isotopi", "laboratorio"], pdi: ["Rimanere al chiuso.", "Chiudere i sistemi di ventilazione."], kq: [{ id: "q1", text: "Sversamento accertato di materiale radiogeno?", forceLvl: "E" }] },
+            { id: 84, name: "84 - Eventi Meteo Avversi / Vento Forte", keywords: ["tromba d'aria", "vento", "bufera", "tempesta"], pdi: ["Rimanere in luoghi chiusi lontano da vetrate."], kq: [{ id: "q1", text: "Alberi o strutture cadute su veicoli occupati?", forceLvl: "E" }] }
+        ];
+
+        let selectedProto = protocols[7]; 
+        let numPeople = 0;
+        let numVehicles = 1;
+        let kqAnswers = {};
+        let currentLevel = "Ω";
+        let isManualLevel = false;
+        let currentWizardStep = 1;
+
+        function switchMainTab(tabId, btn) {
+            document.querySelectorAll('.dashboard-container > .tab-content').forEach(tc => tc.classList.remove('active'));
+            document.querySelectorAll('.tabs-nav .tab-btn').forEach(tb => tb.classList.remove('active'));
+            
+            document.getElementById(tabId).classList.add('active');
+            btn.classList.add('active');
+
+            const wizardNav = document.getElementById('wizardNavBar');
+            if (tabId === 'tab-wizard') {
+                wizardNav.style.display = 'flex';
+                updateWizardView();
+            } else {
+                wizardNav.style.display = 'none';
+            }
+        }
+
+        function changeWizardStep(direction) {
+            currentWizardStep += direction;
+            if (currentWizardStep < 1) currentWizardStep = 1;
+            if (currentWizardStep > 3) currentWizardStep = 3;
+            updateWizardView();
+        }
+
+        function updateWizardView() {
+            document.querySelectorAll('#tab-wizard > .tab-content').forEach(sub => sub.classList.remove('active'));
+            document.getElementById(`subtab-${currentWizardStep}`).classList.add('active');
+
+            const titles = {
+                1: "1. Evento & Protocollo",
+                2: "2. Quantità & KQ",
+                3: "3. Priorità, CAD & PDI"
+            };
+            const colors = {
+                1: "var(--color-sec1)",
+                2: "var(--color-sec2)",
+                3: "var(--color-sec3)"
+            };
+
+            const indicator = document.getElementById('wizardStepIndicator');
+            indicator.innerText = titles[currentWizardStep];
+            indicator.style.color = colors[currentWizardStep];
+
+            document.getElementById('prevStepBtn').disabled = (currentWizardStep === 1);
+            document.getElementById('nextStepBtn').disabled = (currentWizardStep === 3);
+        }
+
+        function initComandoDropdowns() {
+            const defaultOption = `<option value="">-- Seleziona il Comando --</option>`;
+            const optionsHtml = defaultOption + comandiVVF.map(c => `<option value="${c.toUpperCase()}">${c.toUpperCase()}</option>`).join('');
+            
+            const headerSelect = document.getElementById('comandoSelect');
+            const modalSelect = document.getElementById('modalComandoSelect');
+            
+            headerSelect.innerHTML = optionsHtml;
+            modalSelect.innerHTML = optionsHtml;
+            
+            headerSelect.value = "";
+            modalSelect.value = "";
+        }
+
+        function onModalSelectChange() {
+            const val = document.getElementById('modalComandoSelect').value;
+            const btn = document.getElementById('modalConfirmBtn');
+            btn.disabled = (val === "");
+        }
+
+        function confirmComandoSelection() {
+            const selected = document.getElementById('modalComandoSelect').value;
+            if (!selected) return;
+            
+            document.getElementById('comandoSelect').value = selected;
+            document.getElementById('comandoModal').style.display = 'none';
+            updateDisplay();
+        }
+
+        function buildMessageText() {
+            const comandoSel = document.getElementById('comandoSelect').value;
+            const comando = comandoSel ? comandoSel : "NON SELEZIONATO";
+            const lang = document.getElementById('langSelect').value;
+
+            let title = `🚒 *Fire Brigade ${comando}* 🚒`;
+            let msgAuto = `Automatically generated message.`;
+            let usage = `Use this number to send us your location, photos, videos or other information regarding the event reported.`;
+            let warning = `*THIS IS NOT AN EMERGENCY NUMBER*\nand do NOT use it for other purposes without authorization.`;
+            let emergencyCall = `For all emergency requests call\n☎️🆘️\n*1 1 2*\n🇪🇺🇮🇹`;
+            let stepsHeader = `To send your location:`;
+            let s1 = `1. Tap "Paperclip" (Android) 📎 or "Plus" (Apple) ➕`;
+            let s2 = `2. Select "Location" ⛳`;
+            let s3 = `3. Allow location access if prompted 🆗️`;
+            let s4 = `4. Wait a few seconds for precision ⏰`;
+            let s5 = `5. Tap "Send your current location" 🎯`;
+            let footer = `*Stay safe and keep the phone line free.*`;
+
+            switch (lang) {
+                case 'IT':
+                    title = `🚒 *Vigili del Fuoco ${comando}* 🚒`;
+                    msgAuto = `Messaggio generato automaticamente.`;
+                    usage = `Utilizzi questo numero per inviarci posizione, foto, video o altre informazioni dell'evento che ci ha comunicato.`;
+                    warning = `*QUESTO NON È UN NUMERO PER LE EMERGENZE*\ne NON lo utilizzi per altri scopi o in altre occasioni senza la nostra autorizzazione.`;
+                    emergencyCall = `Per tutte le richieste di soccorso chiami il\n☎️🆘️\n*1 1 2*\n🇪🇺🇮🇹`;
+                    stepsHeader = `Per l'invio delle coordinate:`;
+                    s1 = `1. Clicchi sulla "graffetta" (Android) 📎 o sul "più" (Apple) ➕`;
+                    s2 = `2. Clicchi su "Posizione" ⛳`;
+                    s3 = `3. Se necessario segua le indicazioni per consentire l'accesso alla posizione 🆗️`;
+                    s4 = `4. Attenda qualche istante per aumentare la precisione ⏰`;
+                    s5 = `5. Clicchi su "Posizione attuale" 🎯`;
+                    footer = `*Rimanga al sicuro, nella posizione che ci ha condiviso e lasci libera la linea telefonica.*`;
+                    break;
+                case 'FR':
+                    title = `🚒 *Sapeurs-Pompiers ${comando}* 🚒`;
+                    msgAuto = `Message généré automatiquement.`;
+                    usage = `Utilisez ce numéro pour nous envoyer votre position, des photos, vidéos ou d'autres informations sur l'événement.`;
+                    warning = `*CECI N'EST PAS UN NUMÉRO D'URGENCE*\nNe l'utilisez pas à d'autres fins sans autorisation.`;
+                    emergencyCall = `Pour toute demande de secours, appelez le\n☎️🆘️\n*1 1 2*\n🇪🇺🇮🇹`;
+                    stepsHeader = `Pour envoyer votre position:`;
+                    s1 = `1. Appuyez sur le "Trombone" (Android) 📎 ou le "Plus" (Apple) ➕`;
+                    s2 = `2. Cliquez sur "Localisation" ⛳`;
+                    s3 = `3. Autorisez l'accès à la géolocalisation 🆗️`;
+                    s4 = `4. Attendez quelques secondes pour la précision ⏰`;
+                    s5 = `5. Cliquez sur "Envoyer votre position actuelle" 🎯`;
+                    footer = `*Restez en sécurité et laissez la ligne libre.*`;
+                    break;
+                case 'DE':
+                    title = `🚒 *Feuerwehr ${comando}* 🚒`;
+                    msgAuto = `Automatisch generierte Nachricht.`;
+                    usage = `Nutzen Sie diese Nummer, um uns Ihren Standort, Fotos, Videos oder Infos zum Vorfall zu senden.`;
+                    warning = `*DIES IST KEINE NOTRUFNUMMER*\nNicht für andere Zwecke ohne Genehmigung nutzen.`;
+                    emergencyCall = `Für Notfälle wählen Sie bitte sofort\n☎️🆘️\n*1 1 2*\n🇪🇺🇮🇹`;
+                    stepsHeader = `Standort senden:`;
+                    s1 = `1. Auf "Büroklammer" (Android) 📎 oder "Plus" (Apple) ➕ tippen`;
+                    s2 = `2. "Standort" auswählen ⛳`;
+                    s3 = `3. Standortzugriff erlauben 🆗️`;
+                    s4 = `4. Einen Moment warten für höhere Genauigkeit ⏰`;
+                    s5 = `5. "Aktuellen Standort senden" tippen 🎯`;
+                    footer = `*Bleiben Sie in Sicherheit und halten Sie die Leitung frei.*`;
+                    break;
+                case 'ES':
+                    title = `🚒 *Bomberos ${comando}* 🚒`;
+                    msgAuto = `Mensaje generado automáticamente.`;
+                    usage = `Utilice este número para enviarnos su ubicación, fotos, videos u otra información del incidente.`;
+                    warning = `*ESTE NO ES UN NÚMERO DE EMERGENCIA*\nNo lo utilice para otros fines sin autorización.`;
+                    emergencyCall = `Para cualquier solicitud de emergencia llame al\n☎️🆘️\n*1 1 2*\n🇪🇺🇮🇹`;
+                    stepsHeader = `Para enviar su ubicación:`;
+                    s1 = `1. Toque el "Clip" (Android) 📎 o el "Más" (Apple) ➕`;
+                    s2 = `2. Seleccione "Ubicación" ⛳`;
+                    s3 = `3. Permita el acceso a la ubicación 🆗️`;
+                    s4 = `4. Espere unos segundos para mayor precisión ⏰`;
+                    s5 = `5. Toque "Enviar mi ubicación actual" 🎯`;
+                    footer = `*Permanezca a salvo y mantenga la línea libre.*`;
+                    break;
+                case 'RU':
+                    title = `🚒 *Пожарная служба ${comando}* 🚒`;
+                    msgAuto = `Автоматически сгенерированное сообщение.`;
+                    usage = `Используйте этот номер для отправки геопозиции, фото, видео или информации о происшествии.`;
+                    warning = `*ЭТО НЕ НОМЕР ЭКСТРЕННОЙ СЛУЖБЫ*\nНе используйте его для других целей без разрешения.`;
+                    emergencyCall = `Для вызова экстренных служб звоните\n☎️🆘️\n*1 1 2*\n🇪🇺🇮🇹`;
+                    stepsHeader = `Чтобы отправить геопозицию:`;
+                    s1 = `1. Нажмите "Скрепка" (Android) 📎 или "Плюс" (Apple) ➕`;
+                    s2 = `2. Выберите "Геопозиция" ⛳`;
+                    s3 = `3. Разрешите доступ к местоположению 🆗️`;
+                    s4 = `4. Подождите несколько секунд для точности ⏰`;
+                    s5 = `5. Нажмите "Отправить текущую геопозицию" 🎯`;
+                    footer = `*Оставайтесь в безопасности и освободите линию.*`;
+                    break;
+                case 'ZH':
+                    title = `🚒 *消防队 ${comando}* 🚒`;
+                    msgAuto = `自动生成的消息。`;
+                    usage = `请使用此号码向我们发送您的位置、照片、视频或事件信息。`;
+                    warning = `*这不是紧急呼叫号码*\n未经授权请勿用于其他目的。`;
+                    emergencyCall = `如需紧急救援，请拨打\n☎️🆘️\n*1 1 2*\n🇪🇺🇮🇹`;
+                    stepsHeader = `发送您的位置：`;
+                    s1 = `1. 点击“回形针”(Android) 📎 或“加号”(Apple) ➕`;
+                    s2 = `2. 选择“位置” ⛳`;
+                    s3 = `3. 允许获取位置权限 🆗️`;
+                    s4 = `4. 等待几秒钟以提高精度 ⏰`;
+                    s5 = `5. 点击“发送您当前的位置” 🎯`;
+                    footer = `*请保持安全，并保持电话线路通畅。*`;
+                    break;
+                case 'AR':
+                    title = `🚒 *فرقة الإطفاء ${comando}* 🚒`;
+                    msgAuto = `رسالة تم إنشاؤها تلقائيًا.`;
+                    usage = `استخدم هذا الرقم لإرسال موقعك أو الصور أو الفيديوهات أو أي معلومات تتعلق بالحادث.`;
+                    warning = `*هذا ليس رقم طوارئ*\nولا تستخدمه لأغراض أخرى دون إذن.`;
+                    emergencyCall = `لجميع طلبات الطوارئ اتصل بـ\n☎️🆘️\n*1 1 2*\n🇪🇺🇮🇹`;
+                    stepsHeader = `لإرسال موقعك:`;
+                    s1 = `1. اضغط على المشبك (Android) 📎 أو الزائد (Apple) ➕`;
+                    s2 = `2. اختر "الموقع" ⛳`;
+                    s3 = `3. اسمح بالوصول إلى الموقع 🆗️`;
+                    s4 = `4. انتظر بضع ثوانٍ لزيادة الدقة ⏰`;
+                    s5 = `5. اضغط على "إرسال موقعك الحالي" 🎯`;
+                    footer = `*ابقَ آمنًا واترك الخط الهاتفي فارغًا.*`;
+                    break;
+                default:
+                    break;
+            }
+
+            return `${title}\n\n${msgAuto}\n\n${usage}\n\n${warning}\n\n${emergencyCall}\n\n${stepsHeader}\n${s1}\n${s2}\n${s3}\n${s4}\n${s5}\n\n${footer}`;
+        }
+
+        function sendMsg(type) {
+            const comandoSel = document.getElementById('comandoSelect').value;
+            if (!comandoSel) {
+                alert("⚠️ Selezionare prima un Comando Vigili del Fuoco!");
+                return;
+            }
+
+            const prefix = document.getElementById('prefixSelect').value;
+            const phone = document.getElementById('phoneInput').value.replace(/\D/g, '');
+            const fullPhone = prefix + phone;
+            
+            const rawText = buildMessageText();
+            const encodedText = encodeURIComponent(rawText);
+
+            if (!phone) {
+                alert("⚠️ Inserire un numero di telefono prima di inviare!");
+                return;
+            }
+
+            let url = "";
+            if (type === 'webwa') {
+                url = `https://web.whatsapp.com/send?phone=${fullPhone}&text=${encodedText}`;
+            } else if (type === 'wadesk') {
+                url = `https://wa.me/${fullPhone}?text=${encodedText}`;
+            } else if (type === 'tgdesk') {
+                url = `https://t.me/share/url?url=&text=${encodedText}`;
+            }
+
+            window.open(url, '_blank');
+        }
+
+        function renderProtocols(list = protocols) {
+            const container = document.getElementById('protocolList');
+            document.getElementById('protoCountTag').innerText = `${list.length} Visibili`;
+
+            if (list.length === 0) {
+                container.innerHTML = '<div style="color:var(--text-secondary); font-size:0.75rem; padding: 6px;">Nessuna tipologia trovata.</div>';
+                return;
+            }
+
+            container.innerHTML = list.map(p => `
+                <label class="opt-btn-label ${p.id === selectedProto.id ? 'active' : ''}">
+                    <input type="radio" name="protoOption" value="${p.id}" ${p.id === selectedProto.id ? 'checked' : ''} onchange="selectProtocol(${p.id})">
+                    <span>${p.name}</span>
+                </label>
+            `).join('');
+        }
+
+        function filterProtocols(text) {
+            const query = text.toLowerCase().trim();
+            const filtered = protocols.filter(p => 
+                p.name.toLowerCase().includes(query) || 
+                p.id.toString().includes(query) ||
+                (p.keywords && p.keywords.some(k => k.includes(query)))
+            );
+            renderProtocols(filtered);
+        }
+
+        function selectProtocol(id) {
+            selectedProto = protocols.find(p => p.id === id);
+            document.getElementById('activeProtoTag').innerText = `PROT. ${selectedProto.id}`;
+            kqAnswers = {};
+            isManualLevel = false;
+            renderProtocols(protocols);
+            renderKQ();
+            renderPDI();
+            calculateAndRender();
+        }
+
+        function renderKQ() {
+            const container = document.getElementById('kqContainer');
+            if (!selectedProto.kq || selectedProto.kq.length === 0) {
+                container.innerHTML = '<div style="color:var(--text-secondary); font-size:0.75rem;">Nessuna domanda specifica per questo protocollo.</div>';
+                return;
+            }
+
+            container.innerHTML = selectedProto.kq.map(q => {
+                const ans = kqAnswers[q.id] || "NO";
+                return `
+                    <div class="kq-item">
+                        <div class="kq-text">${q.text}</div>
+                        <div class="kq-options">
+                            <button class="btn-yn yes ${ans === 'SI' ? 'active' : ''}" onclick="setKQ('${q.id}', 'SI')">SI</button>
+                            <button class="btn-yn no ${ans === 'NO' ? 'active' : ''}" onclick="setKQ('${q.id}', 'NO')">NO</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function setKQ(qId, val) {
+            kqAnswers[qId] = val;
+            isManualLevel = false;
+            renderKQ();
+            calculateAndRender();
+        }
+
+        function renderPDI() {
+            document.getElementById('pdiContainer').innerHTML = selectedProto.pdi.map(text => `
+                <div class="script-box">"${text}"</div>
+            `).join('');
+        }
+
+        function setPeople(val, btn) {
+            numPeople = val;
+            document.querySelectorAll('#peopleGroup .btn-opt').forEach(b => b.classList.remove('active', 'zero-active'));
+            btn.classList.add(val === 0 ? 'zero-active' : 'active');
+
+            const statusSelect = document.getElementById('personStatus');
+            if (val === 0) statusSelect.value = "none";
+            else if (statusSelect.value === "none") statusSelect.value = "unharmed";
+
+            isManualLevel = false;
+            calculateAndRender();
+        }
+
+        function onStatusChange() {
+            const statusSelect = document.getElementById('personStatus');
+            if (statusSelect.value === "none") {
+                numPeople = 0;
+                document.querySelectorAll('#peopleGroup .btn-opt').forEach(b => b.classList.remove('active', 'zero-active'));
+                document.querySelectorAll('#peopleGroup .btn-opt')[0].classList.add('zero-active');
+            } else if (numPeople === 0) {
+                numPeople = 1;
+                document.querySelectorAll('#peopleGroup .btn-opt').forEach(b => b.classList.remove('active', 'zero-active'));
+                document.querySelectorAll('#peopleGroup .btn-opt')[1].classList.add('active');
+            }
+
+            isManualLevel = false;
+            calculateAndRender();
+        }
+
+        function setVehicles(val, btn) {
+            numVehicles = val;
+            document.querySelectorAll('#vehiclesGroup .btn-opt').forEach(b => b.classList.remove('active', 'zero-active'));
+            btn.classList.add(val === 0 ? 'zero-active' : 'active');
+            calculateAndRender();
+        }
+
+        function manualSetLevel(lvl) {
+            currentLevel = lvl;
+            isManualLevel = true;
+            highlightLevelBtn(lvl);
+            updateDisplay();
+        }
+
+        function highlightLevelBtn(lvl) {
+            document.querySelectorAll('.btn-lvl').forEach(b => {
+                b.classList.toggle('active', b.getAttribute('data-lvl') === lvl);
+            });
+        }
+
+        function calculateAndRender() {
+            if (!isManualLevel) {
+                const status = document.getElementById('personStatus').value;
+
+                if (numPeople === 0) currentLevel = "Ω";
+                else if (status === "critical") currentLevel = "E";
+                else if (status === "pinned") currentLevel = "D";
+                else if (status === "trapped") currentLevel = "C";
+                else currentLevel = "B";
+
+                if (numPeople > 0 || currentLevel !== "Ω") {
+                    const levelHierarchy = { "Ω": 0, "A": 1, "B": 2, "C": 3, "D": 4, "E": 5 };
+                    if (selectedProto.kq) {
+                        selectedProto.kq.forEach(q => {
+                            if (kqAnswers[q.id] === "SI" && q.forceLvl) {
+                                if (levelHierarchy[q.forceLvl] > levelHierarchy[currentLevel]) {
+                                    currentLevel = q.forceLvl;
+                                }
+                            }
+                        });
+                    }
+                }
+            }
+
+            highlightLevelBtn(currentLevel);
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            let suffix = (numPeople === '>5' || numVehicles === '>5' || numPeople > 1 || numVehicles > 1) ? 'M' : 'S';
+            if (numPeople === '>5') suffix = 'MCI';
+
+            document.getElementById('codeDisplay').innerText = `${selectedProto.id}-${currentLevel}-1${suffix}`;
+
+            const levelDescs = {
+                "Ω": "LIVELLO Ω - Nessun Ferito",
+                "A": "LIVELLO A - Basso Rischio",
+                "B": "LIVELLO B - Medio Rischio",
+                "C": "LIVELLO C - Persone Intrappolate",
+                "D": "LIVELLO D - Incastrati / Grave Pericolo",
+                "E": "LIVELLO E - Incoscienti / Imminente Pericolo Vita"
+            };
+            document.getElementById('codeDescDisplay').innerText = levelDescs[currentLevel] || "";
+
+            const comandoSel = document.getElementById('comandoSelect').value;
+            const comandoTxt = comandoSel ? comandoSel : "NON SELEZIONATO";
+            
+            // LETTURA DATI DA DATABASE / GITHUB SIMULATO
+            let dbInfo = dbComandiVVF[comandoSel] || {
+                address: "Indirizzo non censito in DB",
+                duty: "Capo Turno Ordinario",
+                phoneDefault: "060000"
+            };
+
+            const statusText = document.getElementById('personStatus').options[document.getElementById('personStatus').selectedIndex].text;
+            
+            let answeredYes = [];
+            if (selectedProto.kq) {
+                selectedProto.kq.forEach(q => {
+                    if (kqAnswers[q.id] === "SI") answeredYes.push(q.text);
+                });
+            }
+
+            let note = `NOTE CAD: [COMANDO: ${comandoTxt}] | [PERS: ${numPeople} - ${statusText.toUpperCase()}] | [MEZZI: ${numVehicles}]`;
+            if (answeredYes.length > 0) note += ` | [ALERT: ${answeredYes.join('; ')}]`;
+
+            document.getElementById('cadNotesDisplay').innerText = note;
+
+            // Aggiornamento dati Scheda 2 (Database Info Comando)
+            document.getElementById('infoComandoName').innerText = comandoTxt;
+            document.getElementById('infoComandoAddress').innerText = dbInfo.address;
+            document.getElementById('infoComandoDuty').innerText = dbInfo.duty;
+            document.getElementById('infoComandoPhone').innerText = document.getElementById('phoneInput').value ? document.getElementById('phoneInput').value : dbInfo.phoneDefault + " (Predefinito DB)";
+            document.getElementById('infoComandoPrefix').innerText = "+" + document.getElementById('prefixSelect').value;
+            document.getElementById('infoComandoLang').innerText = document.getElementById('langSelect').options[document.getElementById('langSelect').selectedIndex].text;
+
+            // Aggiornamento dati Scheda 3 (Messaggistica)
+            const currentLangCode = document.getElementById('langSelect').value;
+            document.getElementById('msgLangTag').innerText = currentLangCode;
+            document.getElementById('msgPreviewArea').value = buildMessageText();
+        }
+
+        // INIT
+        initComandoDropdowns();
+        renderProtocols();
+        renderKQ();
+        renderPDI();
+        calculateAndRender();
+    </script>
+</body>
+</html>
