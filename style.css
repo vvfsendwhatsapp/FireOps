@@ -270,3 +270,68 @@ body {
 .riepilogo-box a:hover {
     text-decoration: underline;
 }
+
+/* POPUP DATI COMANDO/DIREZIONE */
+.popup-dati {
+    position: fixed;
+    z-index: 3000;
+    background: var(--surface-color);
+    border: 1px solid var(--primary-color);
+    border-radius: 8px;
+    padding: 15px;
+    min-width: 220px;
+    max-width: 300px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.7);
+    font-size: 13px;
+}
+
+.popup-dati h5 {
+    color: var(--primary-color);
+    font-size: 14px;
+    margin-bottom: 10px;
+    padding-right: 20px;
+}
+
+.popup-dati table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.popup-dati th,
+.popup-dati td {
+    padding: 4px 6px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 12px;
+}
+
+.popup-dati th {
+    color: var(--text-muted);
+    font-weight: normal;
+    width: 40%;
+}
+
+.popup-dati .popup-close {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-weight: bold;
+    font-size: 16px;
+    line-height: 1;
+}
+
+.popup-dati .popup-close:hover {
+    color: var(--primary-color);
+}
+
+.cliccabile {
+    cursor: pointer;
+    text-decoration: underline dotted;
+    text-underline-offset: 3px;
+}
+
+.cliccabile:hover {
+    color: var(--primary-color);
+}
