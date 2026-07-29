@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FireOps VVF</title>
+    <link rel="icon" type="image/png" href="images/logo.png">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- MODALE SELEZIONE COMANDO (Bloccante) -->
+    <div id="modal-comando" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Selezione Comando VVF Corrente</h2>
+            <p>Seleziona il comando operativo per accedere al sistema:</p>
+            <select id="select-comando">
+                <option value="" disabled selected>Caricamento comandi in corso...</option>
+            </select>
+            <button id="btn-conferma-comando" disabled>Conferma e Accedi</button>
+        </div>
+    </div>
+
+    <!-- INTESTAZIONE SUPERIORE -->
+    <header class="app-header">
+        <div class="header-left">
+            <img src="images/logo.png" alt="Logo VVF" class="site-logo">
+            <div class="site-titles">
+                <h1>FireOps VVF</h1>
+                <span class="subtitle">Smart Emergency Management</span>
+            </div>
+        </div>
+        
+        <div class="header-center">
+            <div class="info-box">
+                <span class="label">Comando:</span>
+                <span id="display-comando" class="value">-</span>
+            </div>
+            <div class="info-box">
+                <span class="label">Data / Ora (CEST):</span>
+                <span id="display-datetime" class="value">--/--/---- --:--:--</span>
+            </div>
+            <div class="info-box">
+                <span class="label">Turno VVF:</span>
+                <span id="display-turno" class="value">-</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- MENU FISSO IN ALTO -->
+    <nav class="sticky-nav">
+        <ul>
+            <li><a href="#messaggistica">Messaggistica</a></li>
+            <li><a href="#info-comando">Info Comando</a></li>
+            <li><a href="#gestione-fpds">Gestione Interventi FPDS</a></li>
+            <li><a href="#contatti">Contatti Altri Comandi</a></li>
+            <li><a href="#convertitore">Convertitore</a></li>
+            <li><a href="#radio-telefoni">Radio e Telefoni</a></li>
+            <li><a href="#qrcode">QrCode</a></li>
+            <li><a href="#turnario">Turnario</a></li>
+            <li><a href="#moduli-cmr">Moduli CMR</a></li>
+        </ul>
+    </nav>
+
+    <!-- CONTENUTO PRINCIPALE -->
+    <main class="main-content">
+        <section id="home">
+            <h2>Sala Operativa - Dashboard Principale</h2>
+            <p>Seleziona una voce dal menu in alto per navigare nelle sezioni operative.</p>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
