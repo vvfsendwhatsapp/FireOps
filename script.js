@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const displayComando = document.getElementById("display-comando");
     
     // 1. Caricamento e parsing del file comandi.json
-    fetch("db/comandi.json")
+    fetch("/db/comandi.json")
         .then(response => {
             if (!response.ok) throw new Error("Impossibile trovare il file comandi.json");
             return response.json();
