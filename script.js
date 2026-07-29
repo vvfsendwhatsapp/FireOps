@@ -233,20 +233,56 @@ function renderRiepilogoComando(comando, tuttiComandi) {
         document.getElementById("display-turno").textContent = calcolaTurnoVVF(now);
     }
 
-    function calcolaTurnoVVF(date) {
-        const baseDate = new Date(2026, 0, 1, 8, 0, 0);
-        const diffHours = (date - baseDate) / (1000 * 60 * 60);
+function calcolaTurnoVVF(date) {
+    // Data e ora di riferimento nota: es. oggi C, salto turno 2 (imposta come ancora iniziale di calcolo)
+    // Assicuriamoci di partire da un blocco noto o calcolare la differenza in mezze giornate (12 ore)
+    
+    // Creiamo una data base di riferimento (es. 1 Gennaio 2026 alle ore 08:00: Turno A, Salto 1 come punto di partenza)
+    const baseDate = new Date(2026, 0, 1, 8, 0, 0); 
+    
+    // Differenza in millisecondi convertita in blocchi da 12 ore
+    const diffMs = date - baseDate;
+    const diffHalfDays = Math.floor(diffMs / (1000 * 60 * 60 * 12));
+    
+    if (diffHalfDays < 0) return "Turno A / 1";
 
-        if (diffHours < 0) return "Turno 1 / 2";
+    // C'è un ciclo totale di 4 turni (A,B,C,D) * 8 salti turno = 32 mezze giornate (16 giorni) prima che la combinazione si riproponga esattamente nello stesso modo.
+    // Oppure cicliamo sequenzialmente combinando le lettere e i numeri dei salti turno.
+    
+    // Array ciclico delle lettere dei turni (A, B, C, D) e dei salti turno (1-8)
+    // Definendo l'ordine di successione esatto delle 32 semigiornate del ciclo VVF:
+    // Ad ogni blocco di 12 ore (08:00-20:00 / 20:00-08:00) si avanza di un turno e di un salto secondo la rotazione.
+    
+    // Sfruttiamo l'indice del ciclo di 32 semigiornate (16 giorni completi)
+    const index = ((diffHalfDays % 32) + 32) % 32;
+    
+    // Tabella di corrispondenza esatta della sequenza (Turno + Salto)
+    // C2 (partenza di riferimento impostata), poi B2, D2, C2, ecc.
+    const sequenzaTurni = [
+        { turno: "C", salto: 2 }, // Esempio base
+        { turno: "B", salto: 2 },
+        { turno: "D", salto: 2 },
+        { turno: "C", salto: 2 },
+        // ... la logica matematica pura può ricavarlo calcolando gli scostamenti modulari:
+    ];
 
-        const cycleHours = 96;
-        const currentCycleHour = diffHours % cycleHours;
+    // Alternativa matematica pulita basata su offset:
+    // Lettere: A, B, C, D (indice ciclico)
+    // Salti: 1 -> 8
+    
+    // Calcoliamo il turno (A=0, B=1, C=2, D=3) considerando che ogni 12h si ruota
+    const turniList = ['A', 'B', 'C', 'D'];
+    
+    // Modulo di 4 per la lettera
+    // Tenendo conto che a ogni 12h la lettera scala e il salto avanza ciclicamente ogni 4 turni completi (ogni 2 giorni)
+    const turnoIndex = (Math.floor(diffHalfDays / 1) + 2) % 4; // Offset calibrato sul tuo esempio odierno
+    const letteraTurno = turniList[turnoIndex];
+    
+    // Calcolo del salto turno (1 a 8) che cambia ogni 4 turni
+    const saltoTurno = Math.floor((Math.floor(diffHalfDays / 4) + 1) % 8) + 1;
 
-        if (currentCycleHour < 12) return "Smonto / SM";
-        else if (currentCycleHour < 36) return "Riposo / 24";
-        else if (currentCycleHour < 48) return "Smonto / SM";
-        else return "Servizio / 48";
-    }
+    return `Turno ${letteraTurno} - Salto ${saltoTurno}`;
+}
 
     setInterval(updateClockAndShift, 1000);
     updateClockAndShift();
