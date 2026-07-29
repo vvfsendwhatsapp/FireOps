@@ -103,13 +103,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     </tbody>
                 </table>
 
-                <h4>Comandi Limitrofi</h4>
+                <h4>TABELLA COMANDI LIMITROFI</h4>
                 <table class="riepilogo-tabella-limitrofi">
                     <thead>
                         <tr>
                             <th>Comando</th>
                             <th>CH COM</th>
-                            <th>Direzione Collegata</th>
+                            <th>Direzione Correlata</th>
                             <th>CH DIR</th>
                         </tr>
                     </thead>
