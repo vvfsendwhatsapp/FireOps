@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const displayComando = document.getElementById("display-comando");
     
     // Caricamento pulito del file JSON (senza logiche da CSV)
-    fetch("db/comandi.json")
+    fetch("/FireOps/db/comandi.json")
         .then(response => {
             if (!response.ok) throw new Error("Impossibile trovare il file db/comandi.json");
             return response.json();
