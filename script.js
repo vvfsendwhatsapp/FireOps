@@ -1,47 +1,30 @@
 document.addEventListener("DOMContentLoaded", () => {
     const modal = document.getElementById("modal-comando");
-    const selectComando = document.getElementById("select-comando");
+    const selectComando = document.getElementById("comando-select"); // Allineato con il tuo HTML
     const btnConferma = document.getElementById("btn-conferma-comando");
     const displayComando = document.getElementById("display-comando");
     
-    // 1. Caricamento e parsing del file comandi.csv
-    fetch("db/comandi.csv")
+    // 1. Caricamento e parsing del file comandi.json
+    fetch("comandi.json")
         .then(response => {
-            if (!response.ok) throw new Error("Impossibile trovare il file comandi.csv");
-            return response.text();
+            if (!response.ok) throw new Error("Impossibile trovare il file comandi.json");
+            return response.json();
         })
-        .then(data => {
-            const lines = data.split("\n");
-            let columnIndex = -1;
-            
-            // Analisi dell'intestazione per trovare la colonna "Comando"
-            if (lines.length > 0) {
-                const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, ''));
-                columnIndex = headers.findIndex(h => h.toLowerCase() === "Comando");
-            }
-
-            if (columnIndex === -1) {
-                throw new Error("Colonna 'Comando' non trovata nel file CSV");
-            }
-
+        .then(comandi => {
             // Popolamento della select
             selectComando.innerHTML = '<option value="" disabled selected>-- Seleziona Comando --</option>';
             
-            for (let i = 1; i < lines.length; i++) {
-                const line = lines[i].trim();
-                if (line) {
-                    // Gestione base per eventuali virgolette nel CSV
-                    const cols = line.split(",").map(c => c.trim().replace(/^"|"$/g, ''));
-                    const comandoVal = cols[columnIndex];
-                    
-                    if (comandoVal) {
-                        const option = document.createElement("option");
-                        option.value = comandoVal;
-                        option.textContent = comandoVal;
-                        selectComando.appendChild(option);
-                    }
+            comandi.forEach(comando => {
+                const option = document.createElement("option");
+                // Adatta la proprietà in base a come è chiamato il nome nel JSON (es. comando.nome o comando.Comando)
+                const nomeComando = comando.nome || comando.Comando || comando.id;
+                
+                if (nomeComando) {
+                    option.value = nomeComando;
+                    option.textContent = nomeComando;
+                    selectComando.appendChild(option);
                 }
-            }
+            });
             
             selectComando.disabled = false;
         })
@@ -70,7 +53,6 @@ document.addEventListener("DOMContentLoaded", () => {
     function updateClockAndShift() {
         const now = new Date();
         
-        // Formattazione Data e Ora in tempo reale con fuso orario CEST/CET gestito nativamente
         const options = { 
             timeZone: 'Europe/Rome', 
             year: 'numeric', 
@@ -85,28 +67,20 @@ document.addEventListener("DOMContentLoaded", () => {
         const formatter = new Intl.DateTimeFormat('it-IT', options);
         document.getElementById("display-datetime").textContent = formatter.format(now);
 
-        // Calcolo Turno VVF (12/24/12/48)
-        // Data di riferimento nota (es. un giorno in cui il turno A o B era attivo)
-        // Regola standard ciclica a 4 turni (A, B, C, D) con sequenza 12 smonto/24/12 smonto/48
         document.getElementById("display-turno").textContent = calcolaTurnoVVF(now);
     }
 
     function calcolaTurnoVVF(date) {
-        // Data ancora di riferimento fissa (es. 1 Gennaio 2026 a mezzanotte)
         const baseDate = new Date(2026, 0, 1, 8, 0, 0); 
         const diffHours = (date - baseDate) / (1000 * 60 * 60);
         
-        if (diffHours < 0) return "Turno 1 / 2"; // Gestione date antecedenti
+        if (diffHours < 0) return "Turno 1 / 2";
         
-        // Ciclo totale di rotazione standard VVF (96 ore = 4 giorni)
         const cycleHours = 96;
         const currentCycleHour = diffHours % cycleHours;
         
-        // Semplificazione indicativa dello stato turno basata sulle fasce orarie standard 08:00 - 20:00 (Smonto/Notte)
-        // Restituisce una stringa chiara dello stato turno corrente
-        const hour = date.getHours();
         if (currentCycleHour < 12) return "Smonto / SM";
-        else if (currentCycleHour < 36) return "Ripposo / 24";
+        else if (currentCycleHour < 36) return "Riposo / 24";
         else if (currentCycleHour < 48) return "Smonto / SM";
         else return "Servizio / 48";
     }
