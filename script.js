@@ -17,7 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // Analisi dell'intestazione per trovare la colonna "Comando"
             if (lines.length > 0) {
                 const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, ''));
-                columnIndex = headers.findIndex(h => h.toLowerCase() === "comando");
+                columnIndex = headers.findIndex(h => h.toLowerCase() === "Comando");
             }
 
             if (columnIndex === -1) {
