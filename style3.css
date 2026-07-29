@@ -1,8 +1,11 @@
 :root {
-    --primary-color: #b30000;
-    --dark-color: #1a1a1a;
-    --light-bg: #f4f4f4;
-    --border-color: #ddd;
+    --primary-color: #ffd700;    /* Giallo oro riposante per accenti/importanti */
+    --dark-color: #121212;       /* Nero profondo di sfondo principale */
+    --surface-color: #1e1e1e;    /* Grigio scuro per box, card e header */
+    --light-bg: #181818;         /* Sfondo generale del body */
+    --border-color: #333333;     /* Grigio scuro per i bordi */
+    --text-main: #e0e0e0;        /* Grigio chiaro/bianco sporco per testi principali */
+    --text-muted: #aaaaaa;       /* Grigio medio per etichette e sottotitoli */
 }
 
 * {
