@@ -1,22 +1,23 @@
 document.addEventListener("DOMContentLoaded", () => {
     const modal = document.getElementById("modal-comando");
-    const selectComando = document.getElementById("comando-select"); // Allineato con il tuo HTML
+    const selectComando = document.getElementById("comando-select");
     const btnConferma = document.getElementById("btn-conferma-comando");
     const displayComando = document.getElementById("display-comando");
     
-    // 1. Caricamento e parsing del file comandi.json
-    fetch("/db/comandi.json")
+    // Caricamento pulito del file JSON (senza logiche da CSV)
+    fetch("db/comandi.json")
         .then(response => {
-            if (!response.ok) throw new Error("Impossibile trovare il file comandi.json");
+            if (!response.ok) throw new Error("Impossibile trovare il file db/comandi.json");
             return response.json();
         })
         .then(comandi => {
-            // Popolamento della select
+            // Pulisce e popola la select direttamente con gli elementi del JSON
             selectComando.innerHTML = '<option value="" disabled selected>-- Seleziona Comando --</option>';
             
             comandi.forEach(comando => {
                 const option = document.createElement("option");
-                // Adatta la proprietà in base a come è chiamato il nome nel JSON (es. comando.nome o comando.Comando)
+                
+                // Cerca la proprietà giusta dentro l'oggetto JSON (adatta se si chiama diversamente)
                 const nomeComando = comando.nome || comando.Comando || comando.id;
                 
                 if (nomeComando) {
@@ -29,7 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
             selectComando.disabled = false;
         })
         .catch(error => {
-            console.error("Errore:", error);
+            console.error("Errore nel fetch del JSON:", error);
             selectComando.innerHTML = '<option value="" disabled selected>Errore caricamento comandi</option>';
         });
 
@@ -49,10 +50,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // 2. Orologio in tempo reale in CEST e Turno VVF 12/24/12/48
+    // Orologio in tempo reale e Turno VVF
     function updateClockAndShift() {
         const now = new Date();
-        
         const options = { 
             timeZone: 'Europe/Rome', 
             year: 'numeric', 
@@ -66,7 +66,6 @@ document.addEventListener("DOMContentLoaded", () => {
         
         const formatter = new Intl.DateTimeFormat('it-IT', options);
         document.getElementById("display-datetime").textContent = formatter.format(now);
-
         document.getElementById("display-turno").textContent = calcolaTurnoVVF(now);
     }
 
