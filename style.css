@@ -200,3 +200,73 @@ body {
     padding: 20px;
     color: var(--text-main);
 }
+
+/* RIEPILOGO COMANDO */
+.riepilogo-comando {
+    margin-top: 20px;
+}
+
+.riepilogo-box {
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+    max-width: 700px;
+}
+
+.riepilogo-box h3 {
+    color: var(--primary-color);
+    margin-bottom: 15px;
+    font-size: 18px;
+}
+
+.riepilogo-box h4 {
+    color: var(--primary-color);
+    margin: 20px 0 10px;
+    font-size: 15px;
+    text-transform: uppercase;
+}
+
+.riepilogo-tabella,
+.riepilogo-tabella-limitrofi {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.riepilogo-tabella th,
+.riepilogo-tabella td,
+.riepilogo-tabella-limitrofi th,
+.riepilogo-tabella-limitrofi td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border-color);
+    text-align: left;
+}
+
+.riepilogo-tabella th {
+    color: var(--text-muted);
+    width: 40%;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 12px;
+}
+
+.riepilogo-tabella-limitrofi th {
+    color: var(--primary-color);
+    background: var(--dark-color);
+    text-transform: uppercase;
+    font-size: 12px;
+}
+
+.riepilogo-tabella-limitrofi td {
+    color: var(--text-main);
+}
+
+.riepilogo-box a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.riepilogo-box a:hover {
+    text-decoration: underline;
+}
