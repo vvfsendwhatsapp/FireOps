@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
     const modal = document.getElementById("modal-comando");
-    const selectComando = document.getElementById("comando-select");
+    const selectComando = document.getElementById("select-comando");
     const btnConferma = document.getElementById("btn-conferma-comando");
     const displayComando = document.getElementById("display-comando");
     
