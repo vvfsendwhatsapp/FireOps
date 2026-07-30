@@ -292,9 +292,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         container.innerHTML = `
             <div class="riepilogo-box">
-                <h3>Comando VVF ${comando.Comando}</h3>
+                <h3>Informazioni generali</h3>
 
-                <h4 class="sezione-toggle" data-target="sezione-comando">Sala Operativa Comando</h4>
+                <h4 class="sezione-toggle" data-target="sezione-comando">Info Comando ${comando.Comando}</h4>
                 <table id="sezione-comando" class="riepilogo-tabella sezione-contenuto">
                     <tbody>
                         <tr><th>Indirizzo</th><td>${creaLinkMaps(comando["Indirizzo Completo"], comando["Coordinate"])}</td></tr>
@@ -310,7 +310,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     </tbody>
                 </table>
 
-                <h4 class="sezione-toggle" data-target="sezione-direzione">Direzione VVF ${comando["Direzione VVF"] || "-"}</h4>
+                <h4 class="sezione-toggle" data-target="sezione-direzione">Info Direzione ${comando["Direzione VVF"] || "-"}</h4>
                 <table id="sezione-direzione" class="riepilogo-tabella sezione-contenuto">
                     <tbody>
                         <tr><th>Indirizzo</th><td>${creaLinkMaps(comando["Indirizzo Direzione"], coordinateDirezione)}</td></tr>
@@ -324,7 +324,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     </tbody>
                 </table>
 
-                <h4 class="sezione-toggle" data-target="sezione-con">CON — Centro Operativo Nazionale</h4>
+                <h4 class="sezione-toggle" data-target="sezione-con">Info CON — Centro Operativo Nazionale</h4>
                 <table id="sezione-con" class="riepilogo-tabella sezione-contenuto">
                     <tbody>
                         <tr><th>Indirizzo</th><td>${creaLinkMaps(comando["Indirizzo CON"], coordinateCon)}</td></tr>
@@ -335,7 +335,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     </tbody>
                 </table>
 
-                <h4 class="sezione-toggle" data-target="sezione-socav">SOCAV — Assistenza al Volo</h4>
+                <h4 class="sezione-toggle" data-target="sezione-socav">Info SOCAV — Assistenza al Volo</h4>
                 <table id="sezione-socav" class="riepilogo-tabella sezione-contenuto">
                     <tbody>
                         <tr><th>Indirizzo</th><td>${creaLinkMaps(comando["Indirizzo SOCAV"], coordinateSocav)}</td></tr>
