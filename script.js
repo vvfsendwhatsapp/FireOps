@@ -24,11 +24,11 @@ document.addEventListener("DOMContentLoaded", () => {
             return r.json();
         }),
         fetch("/FireOps/db/CON.json").then(r => {
-            if (!r.ok) throw new Error("Impossibile trovare con.json");
+            if (!r.ok) throw new Error("Impossibile trovare CON.json");
             return r.json();
         }),
         fetch("/FireOps/db/SOCAV.json").then(r => {
-            if (!r.ok) throw new Error("Impossibile trovare socav.json");
+            if (!r.ok) throw new Error("Impossibile trovare SOCAV.json");
             return r.json();
         })
     ])
