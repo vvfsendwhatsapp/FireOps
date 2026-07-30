@@ -35,7 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             // Controlla se c'è già un comando salvato da una sessione precedente
-            const comandoSalvato = localStorage.getItem(CHIAVE_STORAGE);
+            const comandoSalvato = sessionStorage.getItem(CHIAVE_STORAGE);
             if (comandoSalvato && comandiData.some(c => c.Comando === comandoSalvato)) {
                 attivaComando(comandoSalvato);
                 modal.style.display = "none";
@@ -47,9 +47,9 @@ document.addEventListener("DOMContentLoaded", () => {
             selectComando.innerHTML = '<option value="" disabled selected>Errore caricamento comandi</option>';
         });
 
-    // Attiva un comando: aggiorna header, salva in localStorage, ridisegna il riepilogo
+    // Attiva un comando: aggiorna header, salva in sessionStorage, ridisegna il riepilogo
     function attivaComando(nomeComando) {
-        localStorage.setItem(CHIAVE_STORAGE, nomeComando);
+        sessionStorage.setItem(CHIAVE_STORAGE, nomeComando);
         selectComandoHeader.value = nomeComando;
 
         const comandoSelezionato = comandiData.find(c => c.Comando === nomeComando);
