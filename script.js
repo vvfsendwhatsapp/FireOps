@@ -1,11 +1,15 @@
 document.addEventListener("DOMContentLoaded", () => {
     const modal = document.getElementById("modal-comando");
+    const modalContent = modal.querySelector(".modal-content");
+    const modalClose = modal.querySelector(".modal-close");
     const selectComando = document.getElementById("select-comando");
     const btnConferma = document.getElementById("btn-conferma-comando");
-    const selectComandoHeader = document.getElementById("select-comando-header");
+    const displayComando = document.getElementById("display-comando");
+    const btnCambiaComando = document.getElementById("btn-cambia-comando");
 
     const CHIAVE_STORAGE = "fireops_comando_selezionato";
     let comandiData = [];
+    let modalChiudibile = false; // true solo quando riaperto manualmente col pulsante ☰
 
     fetch("/FireOps/db/comandi.json")
         .then(response => {
@@ -15,7 +19,6 @@ document.addEventListener("DOMContentLoaded", () => {
         .then(comandi => {
             comandiData = comandi;
 
-            // Popola la select del modale (primo accesso)
             selectComando.innerHTML = '<option value="" disabled selected>-- Seleziona Comando --</option>';
             comandi.forEach(c => {
                 const option = document.createElement("option");
@@ -25,38 +28,60 @@ document.addEventListener("DOMContentLoaded", () => {
             });
             selectComando.disabled = false;
 
-            // Popola la select dell'header (per cambio successivo)
-            selectComandoHeader.innerHTML = '<option value="">-- Cambia --</option>';
-            comandi.forEach(c => {
-                const option = document.createElement("option");
-                option.value = c.Comando;
-                option.textContent = c.Comando;
-                selectComandoHeader.appendChild(option);
-            });
-
-            // Controlla se c'è già un comando salvato da una sessione precedente
             const comandoSalvato = sessionStorage.getItem(CHIAVE_STORAGE);
             if (comandoSalvato && comandiData.some(c => c.Comando === comandoSalvato)) {
                 attivaComando(comandoSalvato);
                 modal.style.display = "none";
             }
-            // Altrimenti il modale resta visibile per la prima selezione
         })
         .catch(error => {
             console.error("Errore nel fetch del JSON:", error);
             selectComando.innerHTML = '<option value="" disabled selected>Errore caricamento comandi</option>';
         });
 
-    // Attiva un comando: aggiorna header, salva in sessionStorage, ridisegna il riepilogo
     function attivaComando(nomeComando) {
         sessionStorage.setItem(CHIAVE_STORAGE, nomeComando);
-        selectComandoHeader.value = nomeComando;
+        displayComando.textContent = nomeComando;
 
         const comandoSelezionato = comandiData.find(c => c.Comando === nomeComando);
         renderRiepilogoComando(comandoSelezionato, comandiData);
     }
 
-    // Prima selezione, dal modale bloccante
+    // Apre il modale in modalità "cambio comando" (chiudibile)
+    function apriModaleCambioComando() {
+        modalChiudibile = true;
+        modalContent.classList.add("chiudibile");
+
+        const comandoAttuale = sessionStorage.getItem(CHIAVE_STORAGE);
+        if (comandoAttuale) {
+            selectComando.value = comandoAttuale;
+            btnConferma.disabled = false;
+        }
+
+        modal.style.display = "flex";
+    }
+
+    // Chiude il modale solo se è stato aperto manualmente (mai alla prima selezione obbligatoria)
+    function chiudiModaleSeConsentito() {
+        if (!modalChiudibile) return;
+        modal.style.display = "none";
+        modalContent.classList.remove("chiudibile");
+        modalChiudibile = false;
+    }
+
+    btnCambiaComando.addEventListener("click", apriModaleCambioComando);
+    modalClose.addEventListener("click", chiudiModaleSeConsentito);
+
+    // Chiude cliccando sull'overlay fuori dal box (solo se chiudibile)
+    modal.addEventListener("click", (e) => {
+        if (e.target === modal) chiudiModaleSeConsentito();
+    });
+
+    // Chiude con ESC (solo se chiudibile)
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") chiudiModaleSeConsentito();
+    });
+
     selectComando.addEventListener("change", () => {
         if (selectComando.value) btnConferma.disabled = false;
     });
@@ -66,13 +91,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (scelto) {
             attivaComando(scelto);
             modal.style.display = "none";
-        }
-    });
-
-    // Cambio comando successivo, dalla select nell'header
-    selectComandoHeader.addEventListener("change", () => {
-        if (selectComandoHeader.value) {
-            attivaComando(selectComandoHeader.value);
+            modalContent.classList.remove("chiudibile");
+            modalChiudibile = false;
         }
     });
 
