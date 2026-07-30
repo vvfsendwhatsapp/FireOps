@@ -522,3 +522,15 @@ html.comando-gia-scelto #modal-comando {
 .indirizzo-link:hover {
     color: var(--primary-color);
 }
+
+.telefono-cliccabile,
+.email-cliccabile {
+    cursor: pointer;
+    color: #0056b3;
+    text-decoration: underline;
+}
+
+.telefono-cliccabile:hover,
+.email-cliccabile:hover {
+    color: #003366;
+}
