@@ -215,23 +215,23 @@ function renderRiepilogoComando(comando, tuttiComandi) {
 }
 
     // Orologio in tempo reale e Turno VVF
-    function updateClockAndShift() {
-        //const now = new Date();
-        const options = {
-            timeZone: 'Europe/Rome',
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: false
-        };
+function updateClockAndShift() {
+    const now = new Date();
+    const options = {
+        timeZone: 'Europe/Rome',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    };
 
-        const formatter = new Intl.DateTimeFormat('it-IT', options);
-        document.getElementById("display-datetime").textContent = formatter.format(now);
-        document.getElementById("display-turno").textContent = calcolaTurnoVVF(now);
-    }
+    const formatter = new Intl.DateTimeFormat('it-IT', options);
+    document.getElementById("display-datetime").textContent = formatter.format(now);
+    document.getElementById("display-turno").textContent = calcolaTurnoVVF();
+}
 
 // Sequenza dei turni: 32 giorni × 3 fasce giornaliere (8h + 12h + 4h)
 const SEQUENZA_TURNI = ["A4", "C4", "B4", "B4", "D4", "C4", "C4", "A5", "D4", "D4", "B5", "A5", "A5", "C5", "B5", "B5", "D5", "C5", "C5", "A6", "D5", "D5", "B6", "A6", "A6", "C6", "B6", "B6", "D6", "C6", "C6", "A7", "D6", "D6", "B7", "A7", "A7", "C7", "B7", "B7", "D7", "C7", "C7", "A8", "D7", "D7", "B8", "A8", "A8", "C8", "B8", "B8", "D8", "C8", "C8", "A1", "D8", "D8", "B1", "A1", "A1", "C1", "B1", "B1", "D1", "C1", "C1", "A2", "D1", "D1", "B2", "A2", "A2", "C2", "B2", "B2", "D2", "C2", "C2", "A3", "D2", "D2", "B3", "A3", "A3", "C3", "B3", "B3", "D3", "C3", "C3", "A4", "D3", "D3", "B4", "A4"];
