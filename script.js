@@ -23,11 +23,11 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!r.ok) throw new Error("Impossibile trovare direzioni.json");
             return r.json();
         }),
-        fetch("/FireOps/db/con.json").then(r => {
+        fetch("/FireOps/db/CON.json").then(r => {
             if (!r.ok) throw new Error("Impossibile trovare con.json");
             return r.json();
         }),
-        fetch("/FireOps/db/socav.json").then(r => {
+        fetch("/FireOps/db/SOCAV.json").then(r => {
             if (!r.ok) throw new Error("Impossibile trovare socav.json");
             return r.json();
         })
