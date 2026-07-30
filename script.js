@@ -282,7 +282,7 @@ function updateClockAndShift() {
 
     const formatter = new Intl.DateTimeFormat('it-IT', options);
     document.getElementById("display-datetime").textContent = formatter.format(now);
-    document.getElementById("display-turno").textContent = calcolaTurnoVVF();
+    document.getElementById("display-turno").textContent = `Turno ${calcolaTurnoVVF()}`;
 }
 
 // Sequenza dei turni: 32 giorni × 3 fasce giornaliere (8h + 12h + 4h)
