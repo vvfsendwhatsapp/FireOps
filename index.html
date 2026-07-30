@@ -6,6 +6,13 @@
     <title>FireOps VVF</title>
     <link rel="icon" type="image/png" href="images/logo.png">
     <link rel="stylesheet" href="style.css">
+    <script>
+    // Controllo sincrono PRIMA del rendering: se c'è già un comando in sessione,
+    // nascondo il modale via classe CSS, così non lampeggia mai a schermo.
+    if (sessionStorage.getItem('fireops_comando_selezionato')) {
+        document.documentElement.classList.add('comando-gia-scelto');
+    }
+</script>
 </head>
 <body>
 
