@@ -347,6 +347,43 @@ body {
     max-width: 180px;
 }
 
+.btn-icon-hamburger {
+    background: none;
+    border: none;
+    color: var(--text-main);
+    font-size: 16px;
+    cursor: pointer;
+    margin-left: 8px;
+    padding: 0 4px;
+    line-height: 1;
+}
+
+.btn-icon-hamburger:hover {
+    color: var(--primary-color);
+}
+
+.modal-content {
+    position: relative;
+}
+
+.modal-close {
+    position: absolute;
+    top: 10px;
+    right: 14px;
+    cursor: pointer;
+    font-size: 22px;
+    color: var(--text-muted);
+    display: none; /* visibile solo quando il modale è "chiudibile" */
+    line-height: 1;
+}
+
+.modal-close:hover {
+    color: var(--primary-color);
+}
+
+.modal-content.chiudibile .modal-close {
+    display: block;
+}
 /* Nasconde il modale immediatamente se il comando è già in sessione (evita flash) */
 html.comando-gia-scelto #modal-comando {
     display: none;
