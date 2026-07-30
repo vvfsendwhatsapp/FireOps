@@ -335,3 +335,14 @@ body {
 .cliccabile:hover {
     color: var(--primary-color);
 }
+
+.header-select {
+    background: var(--dark-color);
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: bold;
+    padding: 3px 6px;
+    max-width: 180px;
+}
