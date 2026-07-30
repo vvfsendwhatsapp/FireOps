@@ -41,8 +41,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function attivaComando(nomeComando) {
         sessionStorage.setItem(CHIAVE_STORAGE, nomeComando);
-        displayComando.textContent = nomeComando;
+        displayComando.textContent = `Sala Operativa Comando VVF ${nomeComando}`;
 
+        const homeNomeComando = document.getElementById("home-nome-comando");
+        if (homeNomeComando) homeNomeComando.textContent = nomeComando;
+        
         const comandoSelezionato = comandiData.find(c => c.Comando === nomeComando);
         renderRiepilogoComando(comandoSelezionato, comandiData);
     }
