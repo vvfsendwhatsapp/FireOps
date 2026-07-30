@@ -123,7 +123,6 @@ function mostraPopupDati(event, titolo, righeHTML) {
     let top = rect.bottom + 8;
     let left = rect.left;
 
-    // Evita che esca dallo schermo a destra/in basso
     const larghezzaStimata = 300;
     if (left + larghezzaStimata > window.innerWidth) {
         left = window.innerWidth - larghezzaStimata - 10;
@@ -139,6 +138,11 @@ function mostraPopupDati(event, titolo, righeHTML) {
     `;
 
     document.body.appendChild(popup);
+
+    // Attiva il click-to-copy anche sui telefoni dentro il popup
+    popup.querySelectorAll(".telefono-cliccabile").forEach(el => {
+        el.addEventListener("click", (e) => copiaTelefono(e, el.dataset.telefono));
+    });
 }
 
 // Chiude il popup cliccando fuori o con ESC
@@ -154,12 +158,12 @@ function popupDatiComando(event, c) {
         ? `<a href="${c["Intranet Comando"]}" target="_blank" rel="noopener">Apri</a>` : "-";
 
     const righe = `
-        <tr><th>CH RADIO</th><td>${c["Canale Radio Comando"] || "-"}</td></tr>
-        <tr><th>TEL SO</th><td>${c["Telefono SO Comando"] || "-"}</td></tr>
+        <tr><th>CH SO COM</th><td>${c["Canale Radio Comando"] || "-"}</td></tr>
+        <tr><th>TEL SO COM</th><td><span class="telefono-cliccabile" data-telefono="${c["Telefono SO Comando"] || ''}">${c["Telefono SO Comando"] || "-"}</span></td></tr>
         <tr><th>SITO WEB</th><td>${sitoWeb}</td></tr>
         <tr><th>INTRANET</th><td>${intranet}</td></tr>
         <tr><th>DIREZIONE</th><td>${c["Direzione VVF"] || "-"}</td></tr>
-        <tr><th>TEL SO DIR</th><td>${c["Telefono SO Direzione"] || "-"}</td></tr>
+        <tr><th>TEL SO DIR</th><td><span class="telefono-cliccabile" data-telefono="${c["Telefono SO Direzione"] || ''}">${c["Telefono SO Direzione"] || "-"}</span></td></tr>
         <tr><th>CH DIR</th><td>${c["Canale Radio Direzione"] || "-"}</td></tr>
     `;
     mostraPopupDati(event, `Comando: ${c.Comando}`, righe);
@@ -168,7 +172,7 @@ function popupDatiComando(event, c) {
 function popupDatiDirezione(event, c) {
     const righe = `
         <tr><th>DIREZIONE</th><td>${c["Direzione VVF"] || "-"}</td></tr>
-        <tr><th>TEL SO DIR</th><td>${c["Telefono SO Direzione"] || "-"}</td></tr>
+        <tr><th>TEL SO DIR</th><td><span class="telefono-cliccabile" data-telefono="${c["Telefono SO Direzione"] || ''}">${c["Telefono SO Direzione"] || "-"}</span></td></tr>
         <tr><th>CH DIR</th><td>${c["Canale Radio Direzione"] || "-"}</td></tr>
         <tr><th>EMAIL SO DIR</th><td>${c["email SO Direzione"] || "-"}</td></tr>
         <tr><th>PEC SO DIR</th><td>${c["PEC SO Direzione"] || "-"}</td></tr>
@@ -248,12 +252,12 @@ function renderRiepilogoComando(comando, tuttiComandi) {
             <table class="riepilogo-tabella">
                 <tbody>
                     <tr><th>CH VHF COM</th><td>${comando["Canale Radio Comando"] || "-"}</td></tr>
-                    <tr><th>TEL SO COM</th><td>${comando["Telefono SO Comando"] || "-"}</td></tr>
+                    <tr><th>TEL SO COM</th><td><span class="telefono-cliccabile" data-telefono="${comando["Telefono SO Comando"] || ''}">${comando["Telefono SO Comando"] || "-"}</span></td></tr>
                     <tr><th>Sito WEB</th><td>${sitoWeb}</td></tr>
                     <tr><th>Intranet</th><td>${intranet}</td></tr>
                     <tr><th>Direzione</th><td class="cliccabile" data-direzione-di="${comando.Comando}">${comando["Direzione VVF"] || "-"}</td></tr>
                     <tr><th>CH VHF DIR</th><td>${comando["Canale Radio Direzione"] || "-"}</td></tr>
-                    <tr><th>TEL SO DIR</th><td>${comando["Telefono SO Direzione"] || "-"}</td></tr>
+                    <tr><th>TEL SO DIR</th><td><span class="telefono-cliccabile" data-telefono="${comando["Telefono SO Direzione"] || ''}">${comando["Telefono SO Direzione"] || "-"}</span></td></tr>
                 </tbody>
             </table>
 
@@ -289,6 +293,10 @@ function renderRiepilogoComando(comando, tuttiComandi) {
             const c = trovaComandoPerNome(nome, tuttiComandi);
             if (c) popupDatiDirezione(e, c);
         });
+    });
+
+    container.querySelectorAll(".telefono-cliccabile").forEach(el => {
+        el.addEventListener("click", (e) => copiaTelefono(e, el.dataset.telefono));
     });
 }
 
