@@ -55,7 +55,6 @@ Promise.all([
 
     const comandoSelezionato = comandiData.find(c => c.Comando === nomeComando);
     }
-}
                           
 function renderRiepilogoComando(comando, tuttiComandi, tutteDirezioni) {
     const container = document.getElementById("riepilogo-comando");
