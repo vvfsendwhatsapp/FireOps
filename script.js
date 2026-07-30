@@ -300,7 +300,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         <tr><th>Indirizzo</th><td>${creaLinkMaps(comando["Indirizzo Completo"], comando["Coordinate"])}</td></tr>
                         <tr><th>TEL SO COM</th><td><span class="telefono-cliccabile" data-telefono="${comando["Telefono SO Comando"] || ''}">${comando["Telefono SO Comando"] || "-"}</span></td></tr>
                         <tr><th>CH VHF COM</th><td>${comando["Canale Radio Comando"] || "-"}</td></tr>
-                        <tr><th>CHS Comando</th><td>${comando["CHS Comando"] || "-"}</td></tr>
+                        <tr><th>CHS SO COM</th><td>${comando["CHS Comando"] || "-"}</td></tr>
                         <tr><th>Email SO Comando</th><td>${comando["email SO Comando"] || "-"}</td></tr>
                         <tr><th>PEC SO Comando</th><td>${comando["PEC SO Comando"] || "-"}</td></tr>
                         <tr><th>Email Comando</th><td>${comando["email Comando"] || "-"}</td></tr>
@@ -316,7 +316,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         <tr><th>Indirizzo</th><td>${creaLinkMaps(comando["Indirizzo Direzione"], coordinateDirezione)}</td></tr>
                         <tr><th>TEL SO DIR</th><td><span class="telefono-cliccabile" data-telefono="${comando["Telefono SO Direzione"] || ''}">${comando["Telefono SO Direzione"] || "-"}</span></td></tr>
                         <tr><th>CH VHF DIR</th><td>${comando["Canale Radio Direzione"] || "-"}</td></tr>
-                        <tr><th>CHS Direzione</th><td>${comando["CHS Direzione"] || "-"}</td></tr>
+                        <tr><th>CHS SO DIR</th><td>${comando["CHS Direzione"] || "-"}</td></tr>
                         <tr><th>Email SO Direzione</th><td>${comando["email SO Direzione"] || "-"}</td></tr>
                         <tr><th>PEC SO Direzione</th><td>${comando["PEC SO Direzione"] || "-"}</td></tr>
                         <tr><th>Email Direzione</th><td>${comando["email Direzione"] || "-"}</td></tr>
