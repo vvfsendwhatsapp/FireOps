@@ -139,11 +139,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Genera l'HTML per un campo email o telefono copiabile
-    function creaCampoCopiabile(valore, tipo) {
-        if (!valore || valore === '-') return '-';
-        const classeCss = tipo === 'telefono' ? 'telefono-cliccabile' : 'email-cliccabile';
-        return `<span class="${classeCss}" data-copia="${valore}">${valore}</span>`;
-    }
+// Genera l'HTML per un campo email o telefono copiabile
+function creaCampoCopiabile(valore, tipo) {
+    if (!valore || valore === '-') return '-';
+
+    const classeCss = tipo === 'telefono' ? 'telefono-cliccabile' : 'email-cliccabile';
+    
+    // Se è un telefono, formatta con '0' iniziale e senza spazi per la copia
+    const valoreCopia = tipo === 'telefono' ? formattaTelefonoPerCopia(valore) : valore;
+
+    return `<span class="${classeCss}" data-copia="${valoreCopia}">${valore}</span>`;
+}
 
     // Chiude qualsiasi popup aperto
     function chiudiPopupDati() {
@@ -468,3 +474,19 @@ document.addEventListener("DOMContentLoaded", () => {
     setInterval(updateClockAndShift, 1000);
     updateClockAndShift();
 });
+
+// Pulisce e formatta il numero di telefono per la copia:
+// rimuove gli spazi e assicura che inizi con uno '0' (se non presente)
+function formattaTelefonoPerCopia(telefono) {
+    if (!telefono || telefono === '-') return '';
+    
+    // Rimuove tutti gli spazi
+    let pulito = telefono.replace(/\s+/g, '');
+
+    // Se non inizia già con '0' e non è un prefisso internazionale (+), aggiunge lo '0'
+    if (!pulito.startsWith('0') && !pulito.startsWith('+')) {
+        pulito = '0' + pulito;
+    }
+
+    return pulito;
+}
