@@ -235,7 +235,7 @@ function renderRiepilogoComando(comando, tuttiComandi) {
                         <th>Comando</th>
                         <th>CH VHF COM</th>
                         <th>Direzione</th>
-                        <th>CH DIR</th>
+                        <th>CH VHF DIR</th>
                     </tr>
                 </thead>
                 <tbody>
