@@ -505,7 +505,7 @@ html.comando-gia-scelto #modal-comando {
 }
 
 .sezione-contenuto {
-    display: none;
+    display: table;
     margin-bottom: 10px;
 }
 
