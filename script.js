@@ -248,7 +248,7 @@ function renderRiepilogoComando(comando, tuttiComandi) {
 
 container.innerHTML = `
     <div class="riepilogo-box">
-        <h4>Sala Operativa - Comando VVF ${comando.Comando}</h4>
+        <h4>Comando VVF ${comando.Comando}</h4>
         <table class="riepilogo-tabella">
             <tbody>
                 <tr><th>CH VHF COM</th><td>${comando["Canale Radio Comando"] || "-"}</td></tr>
@@ -258,7 +258,7 @@ container.innerHTML = `
             </tbody>
         </table>
 
-        <h4>Direzione <span style="font-size:11px; color: var(--text-muted); text-transform:none;"></span></h4>
+        <h4>Direzione Regionale<span style="font-size:11px; color: var(--text-muted); text-transform:none;"></span></h4>
         <table class="riepilogo-tabella">
             <tbody>
                 <tr><th>Direzione</th><td class="cliccabile" data-direzione-di="${comando.Comando}">${comando["Direzione VVF"] || "-"}</td></tr>
