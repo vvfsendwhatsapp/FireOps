@@ -480,3 +480,45 @@ html.comando-gia-scelto #modal-comando {
     border-radius: 4px;
     letter-spacing: 0.5px;
 }
+
+.riepilogo-box h4.sezione-toggle {
+    color: var(--dark-color);
+    background: var(--primary-color);
+    margin: 20px 0 0;
+    padding: 6px 12px;
+    font-size: 14px;
+    font-weight: bold;
+    text-transform: uppercase;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.sezione-toggle::before {
+    content: "▶ ";
+    display: inline-block;
+}
+
+.sezione-toggle.aperta::before {
+    content: "▼ ";
+}
+
+.sezione-contenuto {
+    display: none;
+    margin-bottom: 10px;
+}
+
+.sezione-contenuto.aperta {
+    display: table;
+}
+
+.indirizzo-link {
+    color: var(--text-main);
+    text-decoration: underline dotted;
+    text-underline-offset: 3px;
+}
+
+.indirizzo-link:hover {
+    color: var(--primary-color);
+}
