@@ -177,6 +177,32 @@ function popupDatiDirezione(event, c) {
     mostraPopupDati(event, `Direzione: ${c["Direzione VVF"]}`, righe);
 }
 
+// Copia un numero di telefono negli appunti e mostra un feedback visivo
+function copiaTelefono(event, numero) {
+    event.stopPropagation();
+    if (!numero || numero === '-') return;
+
+    const numeroPulito = numero.replace(/\s+/g, ' ').trim();
+
+    navigator.clipboard.writeText(numeroPulito)
+        .then(() => mostraFeedbackCopia(event, '✓ Copiato'))
+        .catch(() => mostraFeedbackCopia(event, '✗ Errore copia'));
+}
+
+// Mostra un piccolo badge temporaneo vicino al punto cliccato
+function mostraFeedbackCopia(event, testo) {
+    const badge = document.createElement('div');
+    badge.className = 'copia-feedback';
+    badge.textContent = testo;
+
+    const rect = event.target.getBoundingClientRect();
+    badge.style.top = `${rect.top - 30}px`;
+    badge.style.left = `${rect.left}px`;
+
+    document.body.appendChild(badge);
+    setTimeout(() => badge.remove(), 1200);
+}
+
 // Cerca un comando per nome esatto all'interno dell'elenco completo
 function trovaComandoPerNome(nome, lista) {
     return lista.find(c => c.Comando === nome);
