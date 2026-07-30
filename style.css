@@ -388,3 +388,45 @@ body {
 html.comando-gia-scelto #modal-comando {
     display: none;
 }
+
+/* HEADER: ora tre zone (sinistra, centro, destra) */
+.header-right {
+    display: flex;
+    align-items: center;
+}
+
+.btn-icon-hamburger {
+    background: var(--dark-color);
+    border: 1px solid var(--primary-color);
+    color: var(--primary-color);
+    font-size: 22px;
+    cursor: pointer;
+    padding: 8px 16px;
+    border-radius: 4px;
+    transition: background 0.2s, color 0.2s;
+    line-height: 1;
+}
+
+.btn-icon-hamburger:hover {
+    background: var(--primary-color);
+    color: var(--dark-color);
+}
+
+/* VALORI EVIDENZIATI: comando, orario, turno più grandi e con colori distinti */
+.info-box .value {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.valore-comando {
+    color: var(--primary-color); /* giallo oro */
+}
+
+.valore-orario {
+    color: #4fc3f7; /* azzurro, per distinguerlo dal giallo del comando */
+}
+
+.valore-turno {
+    color: #ff6b35; /* arancione acceso, massima visibilità per il turno */
+    font-size: 20px; /* leggermente più grande, è il dato più critico da vedere a colpo d'occhio */
+}
