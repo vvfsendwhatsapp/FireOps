@@ -310,7 +310,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     </tbody>
                 </table>
 
-                <h4 class="sezione-toggle" data-target="sezione-direzione">Direzione VVF ${comando.Comando}">${comando["Direzione VVF"] || "-"}</h4>
+                <h4 class="sezione-toggle" data-target="sezione-direzione">Direzione VVF ${comando["Direzione VVF"] || "-"}</h4>
                 <table id="sezione-direzione" class="riepilogo-tabella sezione-contenuto">
                     <tbody>
                         <tr><th>Direzione</th><td class="cliccabile" data-direzione-di="${comando.Comando}">${comando["Direzione VVF"] || "-"}</td></tr>
