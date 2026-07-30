@@ -430,3 +430,7 @@ html.comando-gia-scelto #modal-comando {
     color: #ff6b35; /* arancione acceso, massima visibilità per il turno */
     font-size: 20px; /* leggermente più grande, è il dato più critico da vedere a colpo d'occhio */
 }
+
+#home-nome-comando {
+    color: var(--primary-color);
+}
