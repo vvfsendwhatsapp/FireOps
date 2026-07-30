@@ -344,7 +344,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     </tbody>
                 </table>
 
-<h4 class="sezione-toggle aperta" data-target="sezione-limitrofi">Comandi Limitrofi</h4>
+<h4>Comandi Limitrofi</h4>
             <table id="sezione-limitrofi" class="riepilogo-tabella-limitrofi sezione-contenuto aperta">
                 <thead>
                     <tr>
