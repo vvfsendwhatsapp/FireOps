@@ -224,7 +224,7 @@ document.addEventListener("DOMContentLoaded", () => {
         event.stopPropagation();
         if (!numero || numero === '-') return;
 
-        const numeroPulito = numero.replace(/\s+/g, ' ').trim();
+        const numeroPulito = "0" + numero.replace(/\s+/g, ' ').trim();
 
         navigator.clipboard.writeText(numeroPulito)
             .then(() => mostraFeedbackCopia(event, '✓ Copiato'))
