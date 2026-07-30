@@ -313,7 +313,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 <h4 class="sezione-toggle" data-target="sezione-direzione">Direzione VVF ${comando["Direzione VVF"] || "-"}</h4>
                 <table id="sezione-direzione" class="riepilogo-tabella sezione-contenuto">
                     <tbody>
-                        <tr><th>Direzione</th><td class="cliccabile" data-direzione-di="${comando.Comando}">${comando["Direzione VVF"] || "-"}</td></tr>
                         <tr><th>Indirizzo</th><td>${creaLinkMaps(comando["Indirizzo Direzione"], coordinateDirezione)}</td></tr>
                         <tr><th>TEL SO DIR</th><td><span class="telefono-cliccabile" data-telefono="${comando["Telefono SO Direzione"] || ''}">${comando["Telefono SO Direzione"] || "-"}</span></td></tr>
                         <tr><th>CH VHF DIR</th><td>${comando["Canale Radio Direzione"] || "-"}</td></tr>
