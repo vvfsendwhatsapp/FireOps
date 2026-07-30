@@ -248,8 +248,6 @@ function renderRiepilogoComando(comando, tuttiComandi) {
 
 container.innerHTML = `
     <div class="riepilogo-box">
-        <h3>Dati principali</h3>
-
         <h4>Sala Operativa - Comando VVF ${comando.Comando}</h4>
         <table class="riepilogo-tabella">
             <tbody>
@@ -260,7 +258,7 @@ container.innerHTML = `
             </tbody>
         </table>
 
-        <h4>Direzione <span style="font-size:11px; color: var(--text-muted); text-transform:none;">(clicca il nome per dettagli)</span></h4>
+        <h4>Direzione <span style="font-size:11px; color: var(--text-muted); text-transform:none;"></span></h4>
         <table class="riepilogo-tabella">
             <tbody>
                 <tr><th>Direzione</th><td class="cliccabile" data-direzione-di="${comando.Comando}">${comando["Direzione VVF"] || "-"}</td></tr>
@@ -280,7 +278,7 @@ container.innerHTML = `
             </tbody>
         </table>
 
-        <h4>SOCAV — Assistenza al Volo</h4>
+        <h4>SOCAV — Sala Operativa per il Coordinamento e l'Assistenza al Volo</h4>
         <table class="riepilogo-tabella">
             <tbody>
                 <tr><th>TEL SOCAV</th><td><span class="telefono-cliccabile" data-telefono="${comando["Telefono SOCAV"] || ''}">${comando["Telefono SOCAV"] || "-"}</span></td></tr>
