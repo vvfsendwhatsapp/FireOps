@@ -2,9 +2,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const modal = document.getElementById("modal-comando");
     const selectComando = document.getElementById("select-comando");
     const btnConferma = document.getElementById("btn-conferma-comando");
-    const displayComando = document.getElementById("display-comando");
+    const selectComandoHeader = document.getElementById("select-comando-header");
 
-    let comandiData = []; // teniamo l'intero elenco in memoria per i lookup dei limitrofi
+    const CHIAVE_STORAGE = "fireops_comando_selezionato";
+    let comandiData = [];
 
     fetch("/FireOps/db/comandi.json")
         .then(response => {
@@ -14,36 +15,64 @@ document.addEventListener("DOMContentLoaded", () => {
         .then(comandi => {
             comandiData = comandi;
 
+            // Popola la select del modale (primo accesso)
             selectComando.innerHTML = '<option value="" disabled selected>-- Seleziona Comando --</option>';
-
-            comandi.forEach(comando => {
+            comandi.forEach(c => {
                 const option = document.createElement("option");
-                option.value = comando.Comando;
-                option.textContent = comando.Comando;
+                option.value = c.Comando;
+                option.textContent = c.Comando;
                 selectComando.appendChild(option);
             });
-
             selectComando.disabled = false;
+
+            // Popola la select dell'header (per cambio successivo)
+            selectComandoHeader.innerHTML = '<option value="">-- Cambia --</option>';
+            comandi.forEach(c => {
+                const option = document.createElement("option");
+                option.value = c.Comando;
+                option.textContent = c.Comando;
+                selectComandoHeader.appendChild(option);
+            });
+
+            // Controlla se c'è già un comando salvato da una sessione precedente
+            const comandoSalvato = localStorage.getItem(CHIAVE_STORAGE);
+            if (comandoSalvato && comandiData.some(c => c.Comando === comandoSalvato)) {
+                attivaComando(comandoSalvato);
+                modal.style.display = "none";
+            }
+            // Altrimenti il modale resta visibile per la prima selezione
         })
         .catch(error => {
             console.error("Errore nel fetch del JSON:", error);
             selectComando.innerHTML = '<option value="" disabled selected>Errore caricamento comandi</option>';
         });
 
+    // Attiva un comando: aggiorna header, salva in localStorage, ridisegna il riepilogo
+    function attivaComando(nomeComando) {
+        localStorage.setItem(CHIAVE_STORAGE, nomeComando);
+        selectComandoHeader.value = nomeComando;
+
+        const comandoSelezionato = comandiData.find(c => c.Comando === nomeComando);
+        renderRiepilogoComando(comandoSelezionato, comandiData);
+    }
+
+    // Prima selezione, dal modale bloccante
     selectComando.addEventListener("change", () => {
-        if (selectComando.value) {
-            btnConferma.disabled = false;
-        }
+        if (selectComando.value) btnConferma.disabled = false;
     });
 
     btnConferma.addEventListener("click", () => {
         const scelto = selectComando.value;
         if (scelto) {
-            displayComando.textContent = scelto;
+            attivaComando(scelto);
             modal.style.display = "none";
+        }
+    });
 
-            const comandoSelezionato = comandiData.find(c => c.Comando === scelto);
-            renderRiepilogoComando(comandoSelezionato, comandiData);
+    // Cambio comando successivo, dalla select nell'header
+    selectComandoHeader.addEventListener("change", () => {
+        if (selectComandoHeader.value) {
+            attivaComando(selectComandoHeader.value);
         }
     });
 
