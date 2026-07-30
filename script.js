@@ -216,7 +216,7 @@ function renderRiepilogoComando(comando, tuttiComandi) {
 
     // Orologio in tempo reale e Turno VVF
     function updateClockAndShift() {
-        const now = new Date();
+        //const now = new Date();
         const options = {
             timeZone: 'Europe/Rome',
             year: 'numeric',
@@ -233,41 +233,66 @@ function renderRiepilogoComando(comando, tuttiComandi) {
         document.getElementById("display-turno").textContent = calcolaTurnoVVF(now);
     }
 
-function calcolaTurnoVVF(date) {
-    // Ancoriamo il calcolo a una data e ora di riferimento certa.
-    // Usiamo come base OGGI (29 Luglio 2026 alle ore 08:00) in cui sappiamo che c'è il Turno C - Salto 2.
-    // (Nota: su JavaScript i mesi vanno da 0 a 11, quindi 6 = Luglio)
-    const baseDate = new Date(2026, 6, 29, 8, 0, 0); 
-    
-    // Differenza in millisecondi rispetto alla base
-    const diffMs = date - baseDate;
-    
-    // Calcoliamo quanti blocchi da 12 ore sono trascorsi (cambio turno alle 08:00 e alle 20:00)
-    // Se l'orario corrente è prima delle 08:00 ma dopo la mezzanotte, fa ancora parte del turno della notte precedente.
-    let diffHalfDays = Math.floor(diffMs / (1000 * 60 * 60 * 12));
-    
-    // Sequenza fissa e ordinata dei 4 turni (A, B, C, D)
-    const turniList = ['A', 'B', 'C', 'D'];
-    
-    // Indice di partenza del turno base (Oggi alle 08:00 c'è il Turno C -> indice 2)
-    const baseTurnoIndex = 3; 
-    
-    // Calcolo del Turno corrente (Avanza di 1 ogni 12 ore)
-    const turnoIndex = (baseTurnoIndex + diffHalfDays) % 4;
-    const letteraTurno = turniList[(turnoIndex + 4) % 4];
-    
-    // Calcolo del Salto Turno (da 1 a 8)
-    // Il salto turno avanza di 1 ogni volta che il ciclo dei 4 turni si ripete (cioè ogni 4 blocchi di 12 ore = 2 giorni)
-    const baseSalto = 3; // Salto di partenza noto per oggi
-    const cicliSalto = Math.floor(diffHalfDays / 4);
-    
-    // Formula modulare da 1 a 8 per il salto turno
-    let saltoTurno = ((baseSalto - 1 + cicliSalto) % 8) + 1;
-    if (saltoTurno <= 0) saltoTurno += 8;
+// Sequenza dei turni: 32 giorni × 3 fasce giornaliere (8h + 12h + 4h)
+const SEQUENZA_TURNI = ["A4", "C4", "B4", "B4", "D4", "C4", "C4", "A5", "D4", "D4", "B5", "A5", "A5", "C5", "B5", "B5", "D5", "C5", "C5", "A6", "D5", "D5", "B6", "A6", "A6", "C6", "B6", "B6", "D6", "C6", "C6", "A7", "D6", "D6", "B7", "A7", "A7", "C7", "B7", "B7", "D7", "C7", "C7", "A8", "D7", "D7", "B8", "A8", "A8", "C8", "B8", "B8", "D8", "C8", "C8", "A1", "D8", "D8", "B1", "A1", "A1", "C1", "B1", "B1", "D1", "C1", "C1", "A2", "D1", "D1", "B2", "A2", "A2", "C2", "B2", "B2", "D2", "C2", "C2", "A3", "D2", "D2", "B3", "A3", "A3", "C3", "B3", "B3", "D3", "C3", "C3", "A4", "D3", "D3", "B4", "A4"];
 
-    return `Turno ${letteraTurno} - Salto ${saltoTurno}`;
+const GIORNI_CICLO = 32;
+const MS_AL_GIORNO = 24 * 60 * 60 * 1000;
+
+// Riferimento: 26/01/2026 00:00 ora civile di Roma = inizio ciclo (A4)
+const RIFERIMENTO_CICLO_MS = Date.UTC(2026, 0, 26, 0, 0, 0);
+
+// Estrae i componenti orari civili di Roma per un istante, indipendentemente
+// dal fuso orario del dispositivo dell'utente
+function getComponentiRoma(date) {
+    const fmt = new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Europe/Rome',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        hour12: false
+    });
+    const parts = fmt.formatToParts(date);
+    const get = tipo => parts.find(p => p.type === tipo).value;
+
+    return {
+        year: parseInt(get('year'), 10),
+        month: parseInt(get('month'), 10),
+        day: parseInt(get('day'), 10),
+        hour: parseInt(get('hour'), 10) % 24, // alcuni browser danno "24" per mezzanotte
+        minute: parseInt(get('minute'), 10),
+        second: parseInt(get('second'), 10)
+    };
 }
 
+// Converte i componenti civili in pseudo-timestamp a 24h fisse per giorno,
+// per non farsi sballare dal cambio ora legale/solare
+function pseudoTimestamp(componenti) {
+    return Date.UTC(
+        componenti.year, componenti.month - 1, componenti.day,
+        componenti.hour, componenti.minute, componenti.second
+    );
+}
+
+// Calcola il turno VVF corrente (sempre "adesso", nessun parametro da passare)
+function calcolaTurnoVVF() {
+    const adesso = new Date();
+    const componentiRoma = getComponentiRoma(adesso);
+    const oraPseudo = pseudoTimestamp(componentiRoma);
+
+    const diffGiorni = (oraPseudo - RIFERIMENTO_CICLO_MS) / MS_AL_GIORNO;
+    const posizioneCiclo = ((diffGiorni % GIORNI_CICLO) + GIORNI_CICLO) % GIORNI_CICLO;
+
+    const giornoIndex = Math.floor(posizioneCiclo);
+    const fraz = posizioneCiclo - giornoIndex;
+
+    let fasciaIndex;
+    if (fraz < 1 / 3) fasciaIndex = 0;       // 00:00 - 08:00 Roma
+    else if (fraz < 5 / 6) fasciaIndex = 1;  // 08:00 - 20:00 Roma
+    else fasciaIndex = 2;                     // 20:00 - 24:00 Roma
+
+    const slotIndex = giornoIndex * 3 + fasciaIndex;
+    return SEQUENZA_TURNI[slotIndex] || "N/D";
+}
     setInterval(updateClockAndShift, 1000);
     updateClockAndShift();
 });
