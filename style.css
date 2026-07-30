@@ -135,6 +135,7 @@ body {
 .header-center {
     display: flex;
     gap: 20px;
+    flex-wrap: nowrap; /* impedisce che i box vadano a capo su riga nuova */
 }
 
 .info-box {
@@ -145,6 +146,8 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
+    white-space: nowrap; /* impedisce che il testo dentro il singolo box vada a capo */
+    flex-shrink: 0; /* evita che il box si schiacci comprimendo il testo */
 }
 
 .info-box .label {
