@@ -344,20 +344,20 @@ document.addEventListener("DOMContentLoaded", () => {
                     </tbody>
                 </table>
 
-<h4>Comandi Limitrofi</h4>
-            <table id="sezione-limitrofi" class="riepilogo-tabella-limitrofi sezione-contenuto aperta">
-                <thead>
-                    <tr>
-                        <th>Comando</th>
-                        <th>CH VHF COM</th>
-                        <th>Direzione</th>
-                        <th>CH VHF DIR</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${limitrofiRighe || '<tr><td colspan="4">Nessun comando limitrofo disponibile</td></tr>'}
-                </tbody>
-            </table>
+                <h4>Comandi Limitrofi</h4>
+                <table id="sezione-limitrofi" class="riepilogo-tabella-limitrofi sezione-contenuto aperta">
+                    <thead>
+                        <tr>
+                            <th>Comando</th>
+                            <th>CH VHF COM</th>
+                            <th>Direzione</th>
+                            <th>CH VHF DIR</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${limitrofiRighe || '<tr><td colspan="4">Nessun comando limitrofo disponibile</td></tr>'}
+                    </tbody>
+                </table>
             </div>
         `;
 
