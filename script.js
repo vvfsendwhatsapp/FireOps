@@ -215,16 +215,16 @@ function renderRiepilogoComando(comando, tuttiComandi) {
 
     container.innerHTML = `
         <div class="riepilogo-box">
-            <h3>Riepilogo Comando: ${comando.Comando}</h3>
+            <h3>Sala Operativa - Comando VVF ${comando.Comando}</h3>
             <table class="riepilogo-tabella">
                 <tbody>
-                    <tr><th>CH RADIO</th><td>${comando["Canale Radio Comando"] || "-"}</td></tr>
-                    <tr><th>TEL SO</th><td>${comando["Telefono SO Comando"] || "-"}</td></tr>
-                    <tr><th>SITO WEB</th><td>${sitoWeb}</td></tr>
-                    <tr><th>INTRANET</th><td>${intranet}</td></tr>
-                    <tr><th>DIREZIONE COLLEGATA</th><td class="cliccabile" data-direzione-di="${comando.Comando}">${comando["Direzione VVF"] || "-"}</td></tr>
+                    <tr><th>CH VHF COM</th><td>${comando["Canale Radio Comando"] || "-"}</td></tr>
+                    <tr><th>TEL SO COM</th><td>${comando["Telefono SO Comando"] || "-"}</td></tr>
+                    <tr><th>Sito WEB</th><td>${sitoWeb}</td></tr>
+                    <tr><th>Intranet</th><td>${intranet}</td></tr>
+                    <tr><th>Direzione</th><td class="cliccabile" data-direzione-di="${comando.Comando}">${comando["Direzione VVF"] || "-"}</td></tr>
+                    <tr><th>CH VHF DIR</th><td>${comando["Canale Radio Direzione"] || "-"}</td></tr>
                     <tr><th>TEL SO DIR</th><td>${comando["Telefono SO Direzione"] || "-"}</td></tr>
-                    <tr><th>CH DIR</th><td>${comando["Canale Radio Direzione"] || "-"}</td></tr>
                 </tbody>
             </table>
 
@@ -233,8 +233,8 @@ function renderRiepilogoComando(comando, tuttiComandi) {
                 <thead>
                     <tr>
                         <th>Comando</th>
-                        <th>CH COM</th>
-                        <th>Direzione Collegata</th>
+                        <th>CH VHF COM</th>
+                        <th>Direzione</th>
                         <th>CH DIR</th>
                     </tr>
                 </thead>
