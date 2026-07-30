@@ -46,15 +46,17 @@ Promise.all([
     selectComando.innerHTML = '<option value="" disabled selected>Errore caricamento comandi</option>';
 });
 
-    function attivaComando(nomeComando) {
+function attivaComando(nomeComando) {
     sessionStorage.setItem(CHIAVE_STORAGE, nomeComando);
     displayComando.textContent = `Sala Operativa - Comando VVF ${nomeComando}`;
 
     const homeNomeComando = document.getElementById("home-nome-comando");
-    if (homeNomeComando) homeNomeComando.textContent = nomeComando;
+    if (homeNomeComando) {
+        homeNomeComando.textContent = nomeComando;
+    }
 
     const comandoSelezionato = comandiData.find(c => c.Comando === nomeComando);
-    }
+}
                           
 function renderRiepilogoComando(comando, tuttiComandi, tutteDirezioni) {
     const container = document.getElementById("riepilogo-comando");
