@@ -324,7 +324,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     </tbody>
                 </table>
 
-                <h4 class="sezione-toggle" data-target="sezione-con">Info CON — Centro Operativo Nazionale</h4>
+                <h4 class="sezione-toggle" data-target="sezione-con">Info CON - Centro Operativo Nazionale</h4>
                 <table id="sezione-con" class="riepilogo-tabella sezione-contenuto">
                     <tbody>
                         <tr><th>Indirizzo</th><td>${creaLinkMaps(comando["Indirizzo CON"], coordinateCon)}</td></tr>
@@ -335,7 +335,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     </tbody>
                 </table>
 
-                <h4 class="sezione-toggle" data-target="sezione-socav">Info SOCAV — Assistenza al Volo</h4>
+                <h4 class="sezione-toggle" data-target="sezione-socav">Info SOCAV - Assistenza al Volo</h4>
                 <table id="sezione-socav" class="riepilogo-tabella sezione-contenuto">
                     <tbody>
                         <tr><th>Indirizzo</th><td>${creaLinkMaps(comando["Indirizzo SOCAV"], coordinateSocav)}</td></tr>
