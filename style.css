@@ -468,3 +468,15 @@ html.comando-gia-scelto #modal-comando {
     70% { opacity: 1; transform: translateY(0); }
     100% { opacity: 0; transform: translateY(-10px); }
 }
+
+.riepilogo-box h4 {
+    color: var(--dark-color);
+    background: var(--primary-color);
+    margin: 20px 0 10px;
+    padding: 6px 12px;
+    font-size: 14px;
+    font-weight: bold;
+    text-transform: uppercase;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+}
