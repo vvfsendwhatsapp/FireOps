@@ -269,19 +269,12 @@ function renderRiepilogoComando(comando, tuttiComandi) {
     // Orologio in tempo reale e Turno VVF
 function updateClockAndShift() {
     const now = new Date();
-    const options = {
-        timeZone: 'Europe/Rome',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false
-    };
+    const c = getComponentiRoma(now);
 
-    const formatter = new Intl.DateTimeFormat('it-IT', options);
-    document.getElementById("display-datetime").textContent = formatter.format(now);
+    const pad = n => String(n).padStart(2, '0');
+    const dataFormattata = `${pad(c.day)}.${pad(c.month)}.${c.year} - ${pad(c.hour)}:${pad(c.minute)}:${pad(c.second)}`;
+
+    document.getElementById("display-datetime").textContent = dataFormattata;
     document.getElementById("display-turno").textContent = `Turno ${calcolaTurnoVVF()}`;
 }
 
