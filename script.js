@@ -7,58 +7,213 @@ document.addEventListener("DOMContentLoaded", () => {
     const displayComando = document.getElementById("display-comando");
     const btnCambiaComando = document.getElementById("btn-cambia-comando");
 
-const CHIAVE_STORAGE = "fireops_comando_selezionato";
-let comandiData = [];
-let direzioniData = [];
-let modalChiudibile = false;
+    const CHIAVE_STORAGE = "fireops_comando_selezionato";
+    let comandiData = [];
+    let modalChiudibile = false; // true solo quando riaperto manualmente col pulsante ☰
 
-Promise.all([
-    fetch("/FireOps/db/comandi.json").then(r => {
-        if (!r.ok) throw new Error("Impossibile trovare comandi.json");
-        return r.json();
-    }),
-    fetch("/FireOps/db/direzioni.json").then(r => {
-        if (!r.ok) throw new Error("Impossibile trovare direzioni.json");
-        return r.json();
-    })
-])
-.then(([comandi, direzioni]) => {
-    comandiData = comandi;
-    direzioniData = direzioni;
+    fetch("/FireOps/db/comandi.json")
+        .then(response => {
+            if (!response.ok) throw new Error("Impossibile trovare il file db/comandi.json");
+            return response.json();
+        })
+        .then(comandi => {
+            comandiData = comandi;
 
-    selectComando.innerHTML = '<option value="" disabled selected>-- Seleziona Comando --</option>';
-    comandi.forEach(c => {
-        const option = document.createElement("option");
-        option.value = c.Comando;
-        option.textContent = c.Comando;
-        selectComando.appendChild(option);
-    });
-    selectComando.disabled = false;
+            selectComando.innerHTML = '<option value="" disabled selected>-- Seleziona Comando --</option>';
+            comandi.forEach(c => {
+                const option = document.createElement("option");
+                option.value = c.Comando;
+                option.textContent = c.Comando;
+                selectComando.appendChild(option);
+            });
+            selectComando.disabled = false;
 
-    const comandoSalvato = sessionStorage.getItem(CHIAVE_STORAGE);
-    if (comandoSalvato && comandiData.some(c => c.Comando === comandoSalvato)) {
-        attivaComando(comandoSalvato);
-        modal.style.display = "none";
+            const comandoSalvato = sessionStorage.getItem(CHIAVE_STORAGE);
+            if (comandoSalvato && comandiData.some(c => c.Comando === comandoSalvato)) {
+                attivaComando(comandoSalvato);
+                modal.style.display = "none";
+            }
+        })
+        .catch(error => {
+            console.error("Errore nel fetch del JSON:", error);
+            selectComando.innerHTML = '<option value="" disabled selected>Errore caricamento comandi</option>';
+        });
+
+    function attivaComando(nomeComando) {
+        sessionStorage.setItem(CHIAVE_STORAGE, nomeComando);
+        displayComando.textContent = `Sala Operativa - Comando VVF ${nomeComando}`;
+
+        const homeNomeComando = document.getElementById("home-nome-comando");
+        if (homeNomeComando) homeNomeComando.textContent = nomeComando;
+        
+        const comandoSelezionato = comandiData.find(c => c.Comando === nomeComando);
+        renderRiepilogoComando(comandoSelezionato, comandiData);
     }
-})
-.catch(error => {
-    console.error("Errore nel caricamento dei dati:", error);
-    selectComando.innerHTML = '<option value="" disabled selected>Errore caricamento comandi</option>';
+
+    // Apre il modale in modalità "cambio comando" (chiudibile)
+    function apriModaleCambioComando() {
+        modalChiudibile = true;
+        modalContent.classList.add("chiudibile");
+
+        const comandoAttuale = sessionStorage.getItem(CHIAVE_STORAGE);
+        if (comandoAttuale) {
+            selectComando.value = comandoAttuale;
+            btnConferma.disabled = false;
+        }
+
+        modal.style.display = "flex";
+    }
+
+    // Chiude il modale solo se è stato aperto manualmente (mai alla prima selezione obbligatoria)
+    function chiudiModaleSeConsentito() {
+        if (!modalChiudibile) return;
+        modal.style.display = "none";
+        modalContent.classList.remove("chiudibile");
+        modalChiudibile = false;
+    }
+
+    btnCambiaComando.addEventListener("click", apriModaleCambioComando);
+    modalClose.addEventListener("click", chiudiModaleSeConsentito);
+
+    // Chiude cliccando sull'overlay fuori dal box (solo se chiudibile)
+    modal.addEventListener("click", (e) => {
+        if (e.target === modal) chiudiModaleSeConsentito();
+    });
+
+    // Chiude con ESC (solo se chiudibile)
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") chiudiModaleSeConsentito();
+    });
+
+    selectComando.addEventListener("change", () => {
+        if (selectComando.value) btnConferma.disabled = false;
+    });
+
+    btnConferma.addEventListener("click", () => {
+        const scelto = selectComando.value;
+        if (scelto) {
+            attivaComando(scelto);
+            modal.style.display = "none";
+            modalContent.classList.remove("chiudibile");
+            modalChiudibile = false;
+        }
+    });
+
+    // Cerca un comando per nome esatto all'interno dell'elenco completo
+    function trovaComandoPerNome(nome, lista) {
+        return lista.find(c => c.Comando === nome);
+    }
+
+    // Costruisce e inserisce il riepilogo dati del comando nella dashboard// Chiude qualsiasi popup aperto
+function chiudiPopupDati() {
+    const esistente = document.getElementById("popup-dati-attivo");
+    if (esistente) esistente.remove();
+}
+
+// Mostra un popup con dati di un comando o direzione, ancorato vicino al click
+function mostraPopupDati(event, titolo, righeHTML) {
+    event.stopPropagation();
+    chiudiPopupDati();
+
+    const popup = document.createElement("div");
+    popup.className = "popup-dati";
+    popup.id = "popup-dati-attivo";
+
+    const rect = event.target.getBoundingClientRect();
+    let top = rect.bottom + 8;
+    let left = rect.left;
+
+    const larghezzaStimata = 300;
+    if (left + larghezzaStimata > window.innerWidth) {
+        left = window.innerWidth - larghezzaStimata - 10;
+    }
+
+    popup.style.top = `${top}px`;
+    popup.style.left = `${left}px`;
+
+    popup.innerHTML = `
+        <span class="popup-close" onclick="chiudiPopupDati()">&times;</span>
+        <h5>${titolo}</h5>
+        <table>${righeHTML}</table>
+    `;
+
+    document.body.appendChild(popup);
+
+    // Attiva il click-to-copy anche sui telefoni dentro il popup
+    popup.querySelectorAll(".telefono-cliccabile").forEach(el => {
+        el.addEventListener("click", (e) => copiaTelefono(e, el.dataset.telefono));
+    });
+}
+
+// Chiude il popup cliccando fuori o con ESC
+document.addEventListener("click", chiudiPopupDati);
+document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") chiudiPopupDati();
 });
 
-function attivaComando(nomeComando) {
-    sessionStorage.setItem(CHIAVE_STORAGE, nomeComando);
-    displayComando.textContent = `Sala Operativa - Comando VVF ${nomeComando}`;
+function popupDatiComando(event, c) {
+    const sitoWeb = c["sito web Comando"]
+        ? `<a href="${c["sito web Comando"]}" target="_blank" rel="noopener">Apri</a>` : "-";
+    const intranet = c["Intranet Comando"]
+        ? `<a href="${c["Intranet Comando"]}" target="_blank" rel="noopener">Apri</a>` : "-";
 
-    const homeNomeComando = document.getElementById("home-nome-comando");
-    if (homeNomeComando) {
-        homeNomeComando.textContent = nomeComando;
-    }
-
-    const comandoSelezionato = comandiData.find(c => c.Comando === nomeComando);
+    const righe = `
+        <tr><th>CH SO COM</th><td>${c["Canale Radio Comando"] || "-"}</td></tr>
+        <tr><th>TEL SO COM</th><td><span class="telefono-cliccabile" data-telefono="${c["Telefono SO Comando"] || ''}">${c["Telefono SO Comando"] || "-"}</span></td></tr>
+        <tr><th>SITO WEB</th><td>${sitoWeb}</td></tr>
+        <tr><th>INTRANET</th><td>${intranet}</td></tr>
+        <tr><th>DIREZIONE</th><td>${c["Direzione VVF"] || "-"}</td></tr>
+        <tr><th>TEL SO DIR</th><td><span class="telefono-cliccabile" data-telefono="${c["Telefono SO Direzione"] || ''}">${c["Telefono SO Direzione"] || "-"}</span></td></tr>
+        <tr><th>CH DIR</th><td>${c["Canale Radio Direzione"] || "-"}</td></tr>
+    `;
+    mostraPopupDati(event, `Comando: ${c.Comando}`, righe);
 }
-                          
-function renderRiepilogoComando(comando, tuttiComandi, tutteDirezioni) {
+
+function popupDatiDirezione(event, c) {
+    const righe = `
+        <tr><th>DIREZIONE</th><td>${c["Direzione VVF"] || "-"}</td></tr>
+        <tr><th>TEL SO DIR</th><td><span class="telefono-cliccabile" data-telefono="${c["Telefono SO Direzione"] || ''}">${c["Telefono SO Direzione"] || "-"}</span></td></tr>
+        <tr><th>CH DIR</th><td>${c["Canale Radio Direzione"] || "-"}</td></tr>
+        <tr><th>EMAIL SO DIR</th><td>${c["email SO Direzione"] || "-"}</td></tr>
+        <tr><th>PEC SO DIR</th><td>${c["PEC SO Direzione"] || "-"}</td></tr>
+        <tr><th>INDIRIZZO DIR</th><td>${c["Indirizzo Direzione"] || "-"}</td></tr>
+    `;
+    mostraPopupDati(event, `Direzione: ${c["Direzione VVF"]}`, righe);
+}
+
+// Copia un numero di telefono negli appunti e mostra un feedback visivo
+function copiaTelefono(event, numero) {
+    event.stopPropagation();
+    if (!numero || numero === '-') return;
+
+    const numeroPulito = numero.replace(/\s+/g, ' ').trim();
+
+    navigator.clipboard.writeText(numeroPulito)
+        .then(() => mostraFeedbackCopia(event, '✓ Copiato'))
+        .catch(() => mostraFeedbackCopia(event, '✗ Errore copia'));
+}
+
+// Mostra un piccolo badge temporaneo vicino al punto cliccato
+function mostraFeedbackCopia(event, testo) {
+    const badge = document.createElement('div');
+    badge.className = 'copia-feedback';
+    badge.textContent = testo;
+
+    const rect = event.target.getBoundingClientRect();
+    badge.style.top = `${rect.top - 30}px`;
+    badge.style.left = `${rect.left}px`;
+
+    document.body.appendChild(badge);
+    setTimeout(() => badge.remove(), 1200);
+}
+
+// Cerca un comando per nome esatto all'interno dell'elenco completo
+function trovaComandoPerNome(nome, lista) {
+    return lista.find(c => c.Comando === nome);
+}
+
+// Costruisce e inserisce il riepilogo dati del comando nella dashboard
+function renderRiepilogoComando(comando, tuttiComandi) {
     const container = document.getElementById("riepilogo-comando");
     if (!container) return;
 
@@ -66,9 +221,6 @@ function renderRiepilogoComando(comando, tuttiComandi, tutteDirezioni) {
         container.innerHTML = "<p>Dati comando non disponibili.</p>";
         return;
     }
-
-    const direzioneCollegata = trovaDirezionePerNome(comando["Direzione VVF"], tutteDirezioni);
-    const coordinateDirezione = direzioneCollegata ? direzioneCollegata["Coordinate DIR"] : null;
 
     const limitrofiNomi = (comando["Concatena Comandi Confinanti"] || "")
         .split(";")
@@ -94,78 +246,65 @@ function renderRiepilogoComando(comando, tuttiComandi, tutteDirezioni) {
     const intranet = comando["Intranet Comando"]
         ? `<a href="${comando["Intranet Comando"]}" target="_blank" rel="noopener">Apri intranet</a>` : "-";
 
-    container.innerHTML = `
-        <div class="riepilogo-box">
-            <h3>Sala Operativa - Comando VVF ${comando.Comando}</h3>
+container.innerHTML = `
+    <div class="riepilogo-box">
+        <h4>Sala Operativa - Comando VVF ${comando.Comando}</h4>
+        <table class="riepilogo-tabella">
+            <tbody>
+                <tr><th>CH VHF COM</th><td>${comando["Canale Radio Comando"] || "-"}</td></tr>
+                <tr><th>TEL SO COM</th><td><span class="telefono-cliccabile" data-telefono="${comando["Telefono SO Comando"] || ''}">${comando["Telefono SO Comando"] || "-"}</span></td></tr>
+                <tr><th>Sito WEB</th><td>${sitoWeb}</td></tr>
+                <tr><th>Intranet</th><td>${intranet}</td></tr>
+            </tbody>
+        </table>
 
-            <h4 class="sezione-toggle" data-target="sezione-comando">Comando</h4>
-            <table id="sezione-comando" class="riepilogo-tabella sezione-contenuto">
-                <tbody>
-                    <tr><th>Indirizzo</th><td>${renderIndirizzoLink(comando["Indirizzo Completo"], comando["Coordinate"])}</td></tr>
-                    <tr><th>TEL SO COM</th><td><span class="telefono-cliccabile" data-telefono="${comando["Telefono SO Comando"] || ''}">${comando["Telefono SO Comando"] || "-"}</span></td></tr>
-                    <tr><th>CH VHF COM</th><td>${comando["Canale Radio Comando"] || "-"}</td></tr>
-                    <tr><th>CHS Comando</th><td>${comando["CHS Comando"] || "-"}</td></tr>
-                    <tr><th>Email SO Comando</th><td>${comando["email SO Comando"] || "-"}</td></tr>
-                    <tr><th>PEC SO Comando</th><td>${comando["PEC SO Comando"] || "-"}</td></tr>
-                    <tr><th>Email Comando</th><td>${comando["email Comando"] || "-"}</td></tr>
-                    <tr><th>PEC Comando</th><td>${comando["PEC Comando"] || "-"}</td></tr>
-                    <tr><th>Sito WEB</th><td>${sitoWeb}</td></tr>
-                    <tr><th>Intranet</th><td>${intranet}</td></tr>
-                </tbody>
-            </table>
+        <h4>Direzione <span style="font-size:11px; color: var(--text-muted); text-transform:none;"></span></h4>
+        <table class="riepilogo-tabella">
+            <tbody>
+                <tr><th>Direzione</th><td class="cliccabile" data-direzione-di="${comando.Comando}">${comando["Direzione VVF"] || "-"}</td></tr>
+                <tr><th>CH VHF DIR</th><td>${comando["Canale Radio Direzione"] || "-"}</td></tr>
+                <tr><th>TEL SO DIR</th><td><span class="telefono-cliccabile" data-telefono="${comando["Telefono SO Direzione"] || ''}">${comando["Telefono SO Direzione"] || "-"}</span></td></tr>
+            </tbody>
+        </table>
 
-            <h4 class="sezione-toggle" data-target="sezione-direzione">Direzione VVF</h4>
-            <table id="sezione-direzione" class="riepilogo-tabella sezione-contenuto">
-                <tbody>
-                    <tr><th>Direzione</th><td class="cliccabile" data-direzione-di="${comando.Comando}">${comando["Direzione VVF"] || "-"}</td></tr>
-                    <tr><th>Indirizzo</th><td>${renderIndirizzoLink(comando["Indirizzo Direzione"], coordinateDirezione)}</td></tr>
-                    <tr><th>TEL SO DIR</th><td><span class="telefono-cliccabile" data-telefono="${comando["Telefono SO Direzione"] || ''}">${comando["Telefono SO Direzione"] || "-"}</span></td></tr>
-                    <tr><th>CH VHF DIR</th><td>${comando["Canale Radio Direzione"] || "-"}</td></tr>
-                    <tr><th>CHS Direzione</th><td>${comando["CHS Direzione"] || "-"}</td></tr>
-                    <tr><th>Email SO Direzione</th><td>${comando["email SO Direzione"] || "-"}</td></tr>
-                    <tr><th>PEC SO Direzione</th><td>${comando["PEC SO Direzione"] || "-"}</td></tr>
-                    <tr><th>Email Direzione</th><td>${comando["email Direzione"] || "-"}</td></tr>
-                    <tr><th>PEC Direzione</th><td>${comando["PEC Direzione"] || "-"}</td></tr>
-                </tbody>
-            </table>
+        <h4>CON — Centro Operativo Nazionale</h4>
+        <table class="riepilogo-tabella">
+            <tbody>
+                <tr><th>CH VHF CON</th><td>${comando["Canale Radio CON"] || "-"}</td></tr>
+                <tr><th>CHS CON</th><td>${comando["CHS CON"] || "-"}</td></tr>
+                <tr><th>TEL SO CON</th><td><span class="telefono-cliccabile" data-telefono="${comando["Telefono SO CON"] || ''}">${comando["Telefono SO CON"] || "-"}</span></td></tr>
+                <tr><th>Email SO CON</th><td>${comando["email SO CON"] || "-"}</td></tr>
+                <tr><th>Indirizzo CON</th><td>${comando["Indirizzo CON"] || "-"}</td></tr>
+            </tbody>
+        </table>
 
-            <h4 class="sezione-toggle" data-target="sezione-con">CON — Centro Operativo Nazionale</h4>
-            <table id="sezione-con" class="riepilogo-tabella sezione-contenuto">
-                <tbody>
-                    <tr><th>Indirizzo</th><td>${renderIndirizzoLink(comando["Indirizzo CON"], null)}</td></tr>
-                    <tr><th>TEL SO CON</th><td><span class="telefono-cliccabile" data-telefono="${comando["Telefono SO CON"] || ''}">${comando["Telefono SO CON"] || "-"}</span></td></tr>
-                    <tr><th>CH VHF CON</th><td>${comando["Canale Radio CON"] || "-"}</td></tr>
-                    <tr><th>CHS CON</th><td>${comando["CHS CON"] || "-"}</td></tr>
-                    <tr><th>Email SO CON</th><td>${comando["email SO CON"] || "-"}</td></tr>
-                </tbody>
-            </table>
+        <h4>SOCAV — Sala Operativa per il Coordinamento e l'Assistenza al Volo</h4>
+        <table class="riepilogo-tabella">
+            <tbody>
+                <tr><th>TEL SOCAV</th><td><span class="telefono-cliccabile" data-telefono="${comando["Telefono SOCAV"] || ''}">${comando["Telefono SOCAV"] || "-"}</span></td></tr>
+                <tr><th>Email SOCAV</th><td>${comando["email SOCAV"] || "-"}</td></tr>
+                <tr><th>Indirizzo SOCAV</th><td>${comando["Indirizzo SOCAV"] || "-"}</td></tr>
+            </tbody>
+        </table>
 
-            <h4 class="sezione-toggle" data-target="sezione-socav">SOCAV — Assistenza al Volo</h4>
-            <table id="sezione-socav" class="riepilogo-tabella sezione-contenuto">
-                <tbody>
-                    <tr><th>Indirizzo</th><td>${renderIndirizzoLink(comando["Indirizzo SOCAV"], null)}</td></tr>
-                    <tr><th>TEL SOCAV</th><td><span class="telefono-cliccabile" data-telefono="${comando["Telefono SOCAV"] || ''}">${comando["Telefono SOCAV"] || "-"}</span></td></tr>
-                    <tr><th>Email SOCAV</th><td>${comando["email SOCAV"] || "-"}</td></tr>
-                </tbody>
-            </table>
+        <h4>Comandi Limitrofi <span style="font-size:11px; color: var(--text-muted); text-transform:none;"></span></h4>
+        <table class="riepilogo-tabella-limitrofi">
+            <thead>
+                <tr>
+                    <th>Comando</th>
+                    <th>CH VHF COM</th>
+                    <th>Direzione</th>
+                    <th>CH VHF DIR</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${limitrofiRighe || '<tr><td colspan="4">Nessun comando limitrofo disponibile</td></tr>'}
+            </tbody>
+        </table>
+    </div>
+`;
 
-            <h4 class="sezione-toggle" data-target="sezione-limitrofi">Comandi Limitrofi</h4>
-            <table id="sezione-limitrofi" class="riepilogo-tabella-limitrofi sezione-contenuto">
-                <thead>
-                    <tr>
-                        <th>Comando</th>
-                        <th>CH VHF COM</th>
-                        <th>Direzione</th>
-                        <th>CH VHF DIR</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${limitrofiRighe || '<tr><td colspan="4">Nessun comando limitrofo disponibile</td></tr>'}
-                </tbody>
-            </table>
-        </div>
-    `;
-
+    // Delega gli eventi di click una sola volta per tutto il container
     container.querySelectorAll("[data-comando]").forEach(el => {
         el.addEventListener("click", (e) => {
             const nome = el.dataset.comando;
@@ -184,14 +323,6 @@ function renderRiepilogoComando(comando, tuttiComandi, tutteDirezioni) {
 
     container.querySelectorAll(".telefono-cliccabile").forEach(el => {
         el.addEventListener("click", (e) => copiaTelefono(e, el.dataset.telefono));
-    });
-
-    // Sezioni comprimibili: chiuse di default (nessuna classe "aperta" iniziale)
-    container.querySelectorAll(".sezione-toggle").forEach(header => {
-        const contenuto = document.getElementById(header.dataset.target);
-        if (contenuto) {
-            header.addEventListener("click", () => toggleSezione(header, contenuto));
-        }
     });
 }
 
