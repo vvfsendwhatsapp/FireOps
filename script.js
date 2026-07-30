@@ -138,6 +138,13 @@ document.addEventListener("DOMContentLoaded", () => {
         return `<a href="${url}" target="_blank" rel="noopener" class="indirizzo-link">${testoIndirizzo}</a>`;
     }
 
+    // Genera l'HTML per un campo email o telefono copiabile
+    function creaCampoCopiabile(valore, tipo) {
+        if (!valore || valore === '-') return '-';
+        const classeCss = tipo === 'telefono' ? 'telefono-cliccabile' : 'email-cliccabile';
+        return `<span class="${classeCss}" data-copia="${valore}">${valore}</span>`;
+    }
+
     // Chiude qualsiasi popup aperto
     function chiudiPopupDati() {
         const esistente = document.getElementById("popup-dati-attivo");
@@ -173,9 +180,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         document.body.appendChild(popup);
 
-        // Attiva il click-to-copy anche sui telefoni dentro il popup
-        popup.querySelectorAll(".telefono-cliccabile").forEach(el => {
-            el.addEventListener("click", (e) => copiaTelefono(e, el.dataset.telefono));
+        // Attiva il click-to-copy dentro il popup per telefoni ed email
+        popup.querySelectorAll(".telefono-cliccabile, .email-cliccabile").forEach(el => {
+            el.addEventListener("click", (e) => copiaTesto(e, el.dataset.copia));
         });
     }
 
@@ -194,11 +201,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const righe = `
             <tr><th>Indirizzo</th><td>${creaLinkMaps(c["Indirizzo Completo"], c["Coordinate"])}</td></tr>
             <tr><th>CH VHF COM</th><td>${c["Canale Radio Comando"] || "-"}</td></tr>
-            <tr><th>TEL SO COM</th><td><span class="telefono-cliccabile" data-telefono="${c["Telefono SO Comando"] || ''}">${c["Telefono SO Comando"] || "-"}</span></td></tr>
+            <tr><th>TEL SO COM</th><td>${creaCampoCopiabile(c["Telefono SO Comando"], 'telefono')}</td></tr>
             <tr><th>SITO WEB</th><td>${sitoWeb}</td></tr>
             <tr><th>INTRANET</th><td>${intranet}</td></tr>
             <tr><th>DIREZIONE</th><td>${c["Direzione VVF"] || "-"}</td></tr>
-            <tr><th>TEL SO DIR</th><td><span class="telefono-cliccabile" data-telefono="${c["Telefono SO Direzione"] || ''}">${c["Telefono SO Direzione"] || "-"}</span></td></tr>
+            <tr><th>TEL SO DIR</th><td>${creaCampoCopiabile(c["Telefono SO Direzione"], 'telefono')}</td></tr>
             <tr><th>CH DIR</th><td>${c["Canale Radio Direzione"] || "-"}</td></tr>
         `;
         mostraPopupDati(event, `Comando: ${c.Comando}`, righe);
@@ -211,22 +218,20 @@ document.addEventListener("DOMContentLoaded", () => {
         const righe = `
             <tr><th>DIREZIONE</th><td>${c["Direzione VVF"] || "-"}</td></tr>
             <tr><th>Indirizzo</th><td>${creaLinkMaps(c["Indirizzo Direzione"], coordinateDirezione)}</td></tr>
-            <tr><th>TEL SO DIR</th><td><span class="telefono-cliccabile" data-telefono="${c["Telefono SO Direzione"] || ''}">${c["Telefono SO Direzione"] || "-"}</span></td></tr>
+            <tr><th>TEL SO DIR</th><td>${creaCampoCopiabile(c["Telefono SO Direzione"], 'telefono')}</td></tr>
             <tr><th>CH DIR</th><td>${c["Canale Radio Direzione"] || "-"}</td></tr>
-            <tr><th>EMAIL SO DIR</th><td>${c["email SO Direzione"] || "-"}</td></tr>
-            <tr><th>PEC SO DIR</th><td>${c["PEC SO Direzione"] || "-"}</td></tr>
+            <tr><th>EMAIL SO DIR</th><td>${creaCampoCopiabile(c["email SO Direzione"], 'email')}</td></tr>
+            <tr><th>PEC SO DIR</th><td>${creaCampoCopiabile(c["PEC SO Direzione"], 'email')}</td></tr>
         `;
         mostraPopupDati(event, `Direzione: ${c["Direzione VVF"]}`, righe);
     }
 
-    // Copia un numero di telefono negli appunti e mostra un feedback visivo
-    function copiaTelefono(event, numero) {
+    // Copia un testo negli appunti e mostra un feedback visivo
+    function copiaTesto(event, testo) {
         event.stopPropagation();
-        if (!numero || numero === '-') return;
+        if (!testo || testo === '-') return;
 
-        const numeroPulito = "0" + numero.replace(/\s+/g, ' ').trim();
-
-        navigator.clipboard.writeText(numeroPulito)
+        navigator.clipboard.writeText(testo)
             .then(() => mostraFeedbackCopia(event, '✓ Copiato'))
             .catch(() => mostraFeedbackCopia(event, '✗ Errore copia'));
     }
@@ -298,13 +303,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 <table id="sezione-comando" class="riepilogo-tabella sezione-contenuto">
                     <tbody>
                         <tr><th>Indirizzo</th><td>${creaLinkMaps(comando["Indirizzo Completo"], comando["Coordinate"])}</td></tr>
-                        <tr><th>TEL SO COM</th><td><span class="telefono-cliccabile" data-telefono="${comando["Telefono SO Comando"] || ''}">${comando["Telefono SO Comando"] || "-"}</span></td></tr>
+                        <tr><th>TEL SO COM</th><td>${creaCampoCopiabile(comando["Telefono SO Comando"], 'telefono')}</td></tr>
                         <tr><th>CH VHF COM</th><td>${comando["Canale Radio Comando"] || "-"}</td></tr>
                         <tr><th>CHS SO COM</th><td>${comando["CHS Comando"] || "-"}</td></tr>
-                        <tr><th>Email SO Comando</th><td>${comando["email SO Comando"] || "-"}</td></tr>
-                        <tr><th>PEC SO Comando</th><td>${comando["PEC SO Comando"] || "-"}</td></tr>
-                        <tr><th>Email Comando</th><td>${comando["email Comando"] || "-"}</td></tr>
-                        <tr><th>PEC Comando</th><td>${comando["PEC Comando"] || "-"}</td></tr>
+                        <tr><th>Email SO Comando</th><td>${creaCampoCopiabile(comando["email SO Comando"], 'email')}</td></tr>
+                        <tr><th>PEC SO Comando</th><td>${creaCampoCopiabile(comando["PEC SO Comando"], 'email')}</td></tr>
+                        <tr><th>Email Comando</th><td>${creaCampoCopiabile(comando["email Comando"], 'email')}</td></tr>
+                        <tr><th>PEC Comando</th><td>${creaCampoCopiabile(comando["PEC Comando"], 'email')}</td></tr>
                         <tr><th>Sito WEB</th><td>${sitoWeb}</td></tr>
                         <tr><th>Intranet</th><td>${intranet}</td></tr>
                     </tbody>
@@ -314,13 +319,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 <table id="sezione-direzione" class="riepilogo-tabella sezione-contenuto">
                     <tbody>
                         <tr><th>Indirizzo</th><td>${creaLinkMaps(comando["Indirizzo Direzione"], coordinateDirezione)}</td></tr>
-                        <tr><th>TEL SO DIR</th><td><span class="telefono-cliccabile" data-telefono="${comando["Telefono SO Direzione"] || ''}">${comando["Telefono SO Direzione"] || "-"}</span></td></tr>
+                        <tr><th>TEL SO DIR</th><td>${creaCampoCopiabile(comando["Telefono SO Direzione"], 'telefono')}</td></tr>
                         <tr><th>CH VHF DIR</th><td>${comando["Canale Radio Direzione"] || "-"}</td></tr>
                         <tr><th>CHS SO DIR</th><td>${comando["CHS Direzione"] || "-"}</td></tr>
-                        <tr><th>Email SO Direzione</th><td>${comando["email SO Direzione"] || "-"}</td></tr>
-                        <tr><th>PEC SO Direzione</th><td>${comando["PEC SO Direzione"] || "-"}</td></tr>
-                        <tr><th>Email Direzione</th><td>${comando["email Direzione"] || "-"}</td></tr>
-                        <tr><th>PEC Direzione</th><td>${comando["PEC Direzione"] || "-"}</td></tr>
+                        <tr><th>Email SO Direzione</th><td>${creaCampoCopiabile(comando["email SO Direzione"], 'email')}</td></tr>
+                        <tr><th>PEC SO Direzione</th><td>${creaCampoCopiabile(comando["PEC SO Direzione"], 'email')}</td></tr>
+                        <tr><th>Email Direzione</th><td>${creaCampoCopiabile(comando["email Direzione"], 'email')}</td></tr>
+                        <tr><th>PEC Direzione</th><td>${creaCampoCopiabile(comando["PEC Direzione"], 'email')}</td></tr>
                     </tbody>
                 </table>
 
@@ -328,10 +333,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 <table id="sezione-con" class="riepilogo-tabella sezione-contenuto">
                     <tbody>
                         <tr><th>Indirizzo</th><td>${creaLinkMaps(comando["Indirizzo CON"], coordinateCon)}</td></tr>
-                        <tr><th>TEL SO CON</th><td><span class="telefono-cliccabile" data-telefono="${comando["Telefono SO CON"] || ''}">${comando["Telefono SO CON"] || "-"}</span></td></tr>
+                        <tr><th>TEL SO CON</th><td>${creaCampoCopiabile(comando["Telefono SO CON"], 'telefono')}</td></tr>
                         <tr><th>CH VHF CON</th><td>${comando["Canale Radio CON"] || "-"}</td></tr>
                         <tr><th>CHS CON</th><td>${comando["CHS CON"] || "-"}</td></tr>
-                        <tr><th>Email SO CON</th><td>${comando["email SO CON"] || "-"}</td></tr>
+                        <tr><th>Email SO CON</th><td>${creaCampoCopiabile(comando["email SO CON"], 'email')}</td></tr>
                     </tbody>
                 </table>
 
@@ -339,8 +344,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 <table id="sezione-socav" class="riepilogo-tabella sezione-contenuto">
                     <tbody>
                         <tr><th>Indirizzo</th><td>${creaLinkMaps(comando["Indirizzo SOCAV"], coordinateSocav)}</td></tr>
-                        <tr><th>TEL SOCAV</th><td><span class="telefono-cliccabile" data-telefono="${comando["Telefono SOCAV"] || ''}">${comando["Telefono SOCAV"] || "-"}</span></td></tr>
-                        <tr><th>Email SOCAV</th><td>${comando["email SOCAV"] || "-"}</td></tr>
+                        <tr><th>TEL SOCAV</th><td>${creaCampoCopiabile(comando["Telefono SOCAV"], 'telefono')}</td></tr>
+                        <tr><th>Email SOCAV</th><td>${creaCampoCopiabile(comando["email SOCAV"], 'email')}</td></tr>
                     </tbody>
                 </table>
 
@@ -361,7 +366,7 @@ document.addEventListener("DOMContentLoaded", () => {
             </div>
         `;
 
-        // Delega gli eventi di click una sola volta per tutto il container
+        // Delegazione eventi click nel riepilogo
         container.querySelectorAll("[data-comando]").forEach(el => {
             el.addEventListener("click", (e) => {
                 const nome = el.dataset.comando;
@@ -378,11 +383,12 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         });
 
-        container.querySelectorAll(".telefono-cliccabile").forEach(el => {
-            el.addEventListener("click", (e) => copiaTelefono(e, el.dataset.telefono));
+        // Gestisce la copia sia per i telefoni che per le email
+        container.querySelectorAll(".telefono-cliccabile, .email-cliccabile").forEach(el => {
+            el.addEventListener("click", (e) => copiaTesto(e, el.dataset.copia));
         });
 
-        // Sezioni comprimibili: chiuse di default (nessuna classe "aperta" iniziale)
+        // Sezioni comprimibili
         container.querySelectorAll(".sezione-toggle").forEach(header => {
             const contenuto = document.getElementById(header.dataset.target);
             if (contenuto) {
@@ -412,8 +418,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // Riferimento: 26/01/2026 00:00 ora civile di Roma = inizio ciclo (A4)
     const RIFERIMENTO_CICLO_MS = Date.UTC(2026, 0, 26, 0, 0, 0);
 
-    // Estrae i componenti orari civili di Roma per un istante, indipendentemente
-    // dal fuso orario del dispositivo dell'utente
     function getComponentiRoma(date) {
         const fmt = new Intl.DateTimeFormat('en-GB', {
             timeZone: 'Europe/Rome',
@@ -428,14 +432,12 @@ document.addEventListener("DOMContentLoaded", () => {
             year: parseInt(get('year'), 10),
             month: parseInt(get('month'), 10),
             day: parseInt(get('day'), 10),
-            hour: parseInt(get('hour'), 10) % 24, // alcuni browser danno "24" per mezzanotte
+            hour: parseInt(get('hour'), 10) % 24,
             minute: parseInt(get('minute'), 10),
             second: parseInt(get('second'), 10)
         };
     }
 
-    // Converte i componenti civili in pseudo-timestamp a 24h fisse per giorno,
-    // per non farsi sballare dal cambio ora legale/solare
     function pseudoTimestamp(componenti) {
         return Date.UTC(
             componenti.year, componenti.month - 1, componenti.day,
@@ -443,7 +445,6 @@ document.addEventListener("DOMContentLoaded", () => {
         );
     }
 
-    // Calcola il turno VVF corrente (sempre "adesso", nessun parametro da passare)
     function calcolaTurnoVVF() {
         const adesso = new Date();
         const componentiRoma = getComponentiRoma(adesso);
@@ -458,7 +459,7 @@ document.addEventListener("DOMContentLoaded", () => {
         let fasciaIndex;
         if (fraz < 1 / 3) fasciaIndex = 0;       // 00:00 - 08:00 Roma
         else if (fraz < 5 / 6) fasciaIndex = 1;  // 08:00 - 20:00 Roma
-        else fasciaIndex = 2;                     // 20:00 - 24:00 Roma
+        else fasciaIndex = 2;                    // 20:00 - 24:00 Roma
 
         const slotIndex = giornoIndex * 3 + fasciaIndex;
         return SEQUENZA_TURNI[slotIndex] || "N/D";
