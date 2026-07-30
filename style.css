@@ -437,3 +437,34 @@ html.comando-gia-scelto #modal-comando {
 #home-nome-comando {
     color: var(--primary-color);
 }
+
+.telefono-cliccabile {
+    cursor: pointer;
+    text-decoration: underline dotted;
+    text-underline-offset: 3px;
+    color: var(--text-main);
+}
+
+.telefono-cliccabile:hover {
+    color: var(--primary-color);
+}
+
+.copia-feedback {
+    position: fixed;
+    z-index: 4000;
+    background: var(--primary-color);
+    color: var(--dark-color);
+    font-size: 12px;
+    font-weight: bold;
+    padding: 4px 10px;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    pointer-events: none;
+    animation: fadeOutUp 1.2s ease forwards;
+}
+
+@keyframes fadeOutUp {
+    0% { opacity: 1; transform: translateY(0); }
+    70% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-10px); }
+}
