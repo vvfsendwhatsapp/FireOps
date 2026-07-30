@@ -30,31 +30,34 @@
     </div>
 
     <!-- INTESTAZIONE SUPERIORE -->
-    <header class="app-header">
-        <div class="header-left">
-            <img src="images/logo.png" alt="Logo VVF" class="site-logo">
-            <div class="site-titles">
-                <h1>FireOps VVF</h1>
-                <span class="subtitle">Smart Emergency Management</span>
-            </div>
+  <header class="app-header">
+    <div class="header-left">
+        <img src="images/logo.png" alt="Logo VVF" class="site-logo">
+        <div class="site-titles">
+            <h1>FireOps VVF</h1>
+            <span class="subtitle">Smart Emergency Management</span>
         </div>
-        
-        <div class="header-center">
-<div class="info-box">
-    <span class="label">Comando:</span>
-    <span id="display-comando" class="value">-</span>
-    <button id="btn-cambia-comando" class="btn-icon-hamburger" title="Cambia comando">☰</button>
-</div>
-            <div class="info-box">
-                <span class="label">Data / Ora (CEST):</span>
-                <span id="display-datetime" class="value">--/--/---- --:--:--</span>
-            </div>
-            <div class="info-box">
-                <span class="label">Turno VVF:</span>
-                <span id="display-turno" class="value">-</span>
-            </div>
+    </div>
+    
+    <div class="header-center">
+        <div class="info-box">
+            <span class="label">Comando:</span>
+            <span id="display-comando" class="value valore-comando">-</span>
         </div>
-    </header>
+        <div class="info-box">
+            <span class="label">Data / Ora (CEST):</span>
+            <span id="display-datetime" class="value valore-orario">--/--/---- --:--:--</span>
+        </div>
+        <div class="info-box">
+            <span class="label">Turno VVF:</span>
+            <span id="display-turno" class="value valore-turno">-</span>
+        </div>
+    </div>
+
+    <div class="header-right">
+        <button id="btn-cambia-comando" class="btn-icon-hamburger" title="Cambia comando">☰</button>
+    </div>
+</header>
 
     <!-- MENU FISSO IN ALTO -->
     <nav class="sticky-nav">
