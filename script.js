@@ -287,7 +287,7 @@ container.innerHTML = `
             </tbody>
         </table>
 
-        <h4>Comandi Limitrofi <span style="font-size:11px; color: var(--text-muted); text-transform:none;">(clicca per dettagli)</span></h4>
+        <h4>Comandi Limitrofi <span style="font-size:11px; color: var(--text-muted); text-transform:none;"></span></h4>
         <table class="riepilogo-tabella-limitrofi">
             <thead>
                 <tr>
