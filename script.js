@@ -246,37 +246,65 @@ function renderRiepilogoComando(comando, tuttiComandi) {
     const intranet = comando["Intranet Comando"]
         ? `<a href="${comando["Intranet Comando"]}" target="_blank" rel="noopener">Apri intranet</a>` : "-";
 
-    container.innerHTML = `
-        <div class="riepilogo-box">
-            <h3>Sala Operativa - Comando VVF ${comando.Comando}</h3>
-            <table class="riepilogo-tabella">
-                <tbody>
-                    <tr><th>CH VHF COM</th><td>${comando["Canale Radio Comando"] || "-"}</td></tr>
-                    <tr><th>TEL SO COM</th><td><span class="telefono-cliccabile" data-telefono="${comando["Telefono SO Comando"] || ''}">${comando["Telefono SO Comando"] || "-"}</span></td></tr>
-                    <tr><th>Sito WEB</th><td>${sitoWeb}</td></tr>
-                    <tr><th>Intranet</th><td>${intranet}</td></tr>
-                    <tr><th>Direzione</th><td class="cliccabile" data-direzione-di="${comando.Comando}">${comando["Direzione VVF"] || "-"}</td></tr>
-                    <tr><th>CH VHF DIR</th><td>${comando["Canale Radio Direzione"] || "-"}</td></tr>
-                    <tr><th>TEL SO DIR</th><td><span class="telefono-cliccabile" data-telefono="${comando["Telefono SO Direzione"] || ''}">${comando["Telefono SO Direzione"] || "-"}</span></td></tr>
-                </tbody>
-            </table>
+container.innerHTML = `
+    <div class="riepilogo-box">
+        <h3>Dati principali</h3>
 
-            <h4>Comandi Limitrofi <span style="font-size:11px; color: var(--text-muted); text-transform:none;">(clicca per dettagli)</span></h4>
-            <table class="riepilogo-tabella-limitrofi">
-                <thead>
-                    <tr>
-                        <th>Comando</th>
-                        <th>CH VHF COM</th>
-                        <th>Direzione</th>
-                        <th>CH VHF DIR</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${limitrofiRighe || '<tr><td colspan="4">Nessun comando limitrofo disponibile</td></tr>'}
-                </tbody>
-            </table>
-        </div>
-    `;
+        <h4>Sala Operativa - Comando VVF ${comando.Comando}</h4>
+        <table class="riepilogo-tabella">
+            <tbody>
+                <tr><th>CH VHF COM</th><td>${comando["Canale Radio Comando"] || "-"}</td></tr>
+                <tr><th>TEL SO COM</th><td><span class="telefono-cliccabile" data-telefono="${comando["Telefono SO Comando"] || ''}">${comando["Telefono SO Comando"] || "-"}</span></td></tr>
+                <tr><th>Sito WEB</th><td>${sitoWeb}</td></tr>
+                <tr><th>Intranet</th><td>${intranet}</td></tr>
+            </tbody>
+        </table>
+
+        <h4>Direzione <span style="font-size:11px; color: var(--text-muted); text-transform:none;">(clicca il nome per dettagli)</span></h4>
+        <table class="riepilogo-tabella">
+            <tbody>
+                <tr><th>Direzione</th><td class="cliccabile" data-direzione-di="${comando.Comando}">${comando["Direzione VVF"] || "-"}</td></tr>
+                <tr><th>CH VHF DIR</th><td>${comando["Canale Radio Direzione"] || "-"}</td></tr>
+                <tr><th>TEL SO DIR</th><td><span class="telefono-cliccabile" data-telefono="${comando["Telefono SO Direzione"] || ''}">${comando["Telefono SO Direzione"] || "-"}</span></td></tr>
+            </tbody>
+        </table>
+
+        <h4>CON — Centro Operativo Nazionale</h4>
+        <table class="riepilogo-tabella">
+            <tbody>
+                <tr><th>CH VHF CON</th><td>${comando["Canale Radio CON"] || "-"}</td></tr>
+                <tr><th>CHS CON</th><td>${comando["CHS CON"] || "-"}</td></tr>
+                <tr><th>TEL SO CON</th><td><span class="telefono-cliccabile" data-telefono="${comando["Telefono SO CON"] || ''}">${comando["Telefono SO CON"] || "-"}</span></td></tr>
+                <tr><th>Email SO CON</th><td>${comando["email SO CON"] || "-"}</td></tr>
+                <tr><th>Indirizzo CON</th><td>${comando["Indirizzo CON"] || "-"}</td></tr>
+            </tbody>
+        </table>
+
+        <h4>SOCAV — Assistenza al Volo</h4>
+        <table class="riepilogo-tabella">
+            <tbody>
+                <tr><th>TEL SOCAV</th><td><span class="telefono-cliccabile" data-telefono="${comando["Telefono SOCAV"] || ''}">${comando["Telefono SOCAV"] || "-"}</span></td></tr>
+                <tr><th>Email SOCAV</th><td>${comando["email SOCAV"] || "-"}</td></tr>
+                <tr><th>Indirizzo SOCAV</th><td>${comando["Indirizzo SOCAV"] || "-"}</td></tr>
+            </tbody>
+        </table>
+
+        <h4>Comandi Limitrofi <span style="font-size:11px; color: var(--text-muted); text-transform:none;">(clicca per dettagli)</span></h4>
+        <table class="riepilogo-tabella-limitrofi">
+            <thead>
+                <tr>
+                    <th>Comando</th>
+                    <th>CH VHF COM</th>
+                    <th>Direzione</th>
+                    <th>CH VHF DIR</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${limitrofiRighe || '<tr><td colspan="4">Nessun comando limitrofo disponibile</td></tr>'}
+            </tbody>
+        </table>
+    </div>
+`;
 
     // Delega gli eventi di click una sola volta per tutto il container
     container.querySelectorAll("[data-comando]").forEach(el => {
