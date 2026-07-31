@@ -14,6 +14,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let socavData = null; // record singolo, nazionale
     let prefissiData = []; // elenco prefissi internazionali
     let lingueData = [];   // elenco lingue disponibili per Messaggistica
+    let moduliCMRData = []; // elenco moduli della Circolare EM-01/2020 (Colonne Mobili Regionali)
     let modalChiudibile = false; // true solo quando riaperto manualmente col pulsante ☰
 
     Promise.all([
@@ -40,15 +41,20 @@ document.addEventListener("DOMContentLoaded", () => {
         fetch("/FireOps/db/lingue.json").then(r => {
             if (!r.ok) throw new Error("Impossibile trovare lingue.json");
             return r.json();
+        }),
+        fetch("/FireOps/db/moduliCMR.json").then(r => {
+            if (!r.ok) throw new Error("Impossibile trovare moduliCMR.json");
+            return r.json();
         })
     ])
-    .then(([comandi, direzioni, con, socav, prefissi, lingue]) => {
+    .then(([comandi, direzioni, con, socav, prefissi, lingue, moduliCMR]) => {
         comandiData = comandi;
         direzioniData = direzioni;
         conData = Array.isArray(con) ? con[0] : con;
         socavData = Array.isArray(socav) ? socav[0] : socav;
         prefissiData = prefissi;
         lingueData = lingue;
+        moduliCMRData = moduliCMR;
 
         selectComando.innerHTML = '<option value="" disabled selected>-- Seleziona Comando --</option>';
         comandi.forEach(c => {
@@ -62,6 +68,9 @@ document.addEventListener("DOMContentLoaded", () => {
         // Popola i selettori della pagina Messaggistica (prefisso e lingua)
         popolaSelectPrefissoMsg(prefissiData);
         popolaSelectLinguaMsg(lingueData);
+
+        // Popola il selettore ricercabile della pagina Moduli CMR
+        popolaSelectModuloCMR(moduliCMRData);
 
         const comandoSalvato = sessionStorage.getItem(CHIAVE_STORAGE);
         if (comandoSalvato && comandiData.some(c => c.Comando === comandoSalvato)) {
@@ -483,6 +492,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const LINGUA_PREDEFINITA = "it";    // Italiano
 
     // ==========================================================
+    // PAGINA MODULI CMR: ricerca modulo per Descrizione + riepilogo dati
+    // ==========================================================
+    const inputModuloCMR = document.getElementById("cmr-modulo-input");
+    const hiddenModuloCMR = document.getElementById("cmr-modulo");
+    const dropdownModuloCMR = document.getElementById("cmr-modulo-dropdown");
+
+    // ==========================================================
     // COMBOBOX RICERCABILE: input di testo + lista filtrata a comparsa,
     // usato per Prefisso internazionale e Lingua messaggio (utile con
     // elenchi lunghi, specialmente su mobile).
@@ -683,6 +699,62 @@ document.addEventListener("DOMContentLoaded", () => {
         generaMessaggioMessaggistica();
     }
     window.popolaSelectLinguaMsg = popolaSelectLinguaMsg;
+
+    // Popola il campo ricercabile dei moduli CMR (cerca per Descrizione)
+    function popolaSelectModuloCMR(listaModuli) {
+        if (!inputModuloCMR) return;
+
+        creaComboRicercabile({
+            input: inputModuloCMR,
+            hidden: hiddenModuloCMR,
+            dropdown: dropdownModuloCMR,
+            elenco: listaModuli,
+            cercaValore: m => m["Numero progressivo del modulo pianificato"],
+            mostraTesto: m => m["Descrizione"],
+            onScelta: (modulo) => renderRiepilogoModuloCMR(modulo)
+        });
+    }
+    window.popolaSelectModuloCMR = popolaSelectModuloCMR;
+
+    // Costruisce la tabella di riepilogo del modulo CMR selezionato, cercandolo nel JSON
+    function renderRiepilogoModuloCMR(modulo) {
+        const container = document.getElementById("riepilogo-modulo-cmr");
+        if (!container) return;
+
+        if (!modulo) {
+            container.innerHTML = "";
+            return;
+        }
+
+        const campo = valore => (valore && String(valore).trim()) ? valore : "-";
+        const coloreModulo = modulo["Colore"] || "var(--primary-color)";
+        const codiceCompleto = [modulo["Codice Tipologia Modulo"], modulo["Codice Modulo"]].filter(Boolean).join(".");
+
+        container.innerHTML = `
+            <div class="riepilogo-box">
+                <h4 class="cmr-titolo-modulo" style="border-left-color: ${coloreModulo};">
+                    ${codiceCompleto} — ${campo(modulo["Denominazione modulo"])}
+                </h4>
+                <table class="riepilogo-tabella">
+                    <tbody>
+                        <tr><th>Numero modulo</th><td>${campo(modulo["Numero progressivo del modulo pianificato"])}</td></tr>
+                        <tr><th>Tipo modulo</th><td>${campo(modulo["Tipo Modulo"])}</td></tr>
+                        <tr><th>Denominazione internazionale</th><td>${campo(modulo["Denominazione internazionale secondo meccanismo europeo (se applicabile)"])}</td></tr>
+                        <tr><th>Compiti e funzioni</th><td>${campo(modulo["Compiti e funzioni"])}</td></tr>
+                        <tr><th>Capacità</th><td>${campo(modulo["Capacità"])}</td></tr>
+                        <tr><th>Componenti principali</th><td>${campo(modulo["Componenti principali"])}</td></tr>
+                        <tr><th>Autosufficienza mobilitazione</th><td>${campo(modulo["Autosufficienza mobilitazione"])}</td></tr>
+                        <tr><th>Automezzi predisposti</th><td>${campo(modulo["Tipologia e numero di automezzi predisposti"])}</td></tr>
+                        <tr><th>Equipaggio</th><td>${campo(modulo["Equipaggio (numero componenti)"])}</td></tr>
+                        <tr><th>Trasporto con mezzo aereo</th><td>${campo(modulo["Pianificazione per trasporto con mezzo aereo"])}</td></tr>
+                        <tr><th>Approvvigionamento a regime</th><td>${campo(modulo["Esigenze di approvvigionamento a regime"])}</td></tr>
+                        <tr><th>Dimensioni, pesi e ingombri</th><td>${campo(modulo["Dimensioni, pesi e ingombri (utili per l’imbarco o il trasporto mediante mezzi aerei)"])}</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+    window.renderRiepilogoModuloCMR = renderRiepilogoModuloCMR;
 
     // ==========================================================
     // VALIDAZIONE CAMPI MESSAGGISTICA: evidenzia i campi mancanti

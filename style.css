@@ -254,6 +254,21 @@ body {
     font-size: 18px;
 }
 
+/* Box più largo per le pagine con tabelle di riepilogo più ricche (es. Moduli CMR) */
+.pagina-box-larga {
+    max-width: 900px;
+}
+
+/* Sottotitolo normativo sotto il titolo di pagina (es. riferimento a circolare) */
+.pagina-sottotitolo {
+    color: var(--text-muted);
+    font-size: 13px;
+    line-height: 1.5;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color);
+}
+
 .pagina-nota {
     color: var(--text-muted);
     font-size: 13px;
@@ -517,6 +532,18 @@ body {
 
 .riepilogo-box a:hover {
     text-decoration: underline;
+}
+
+/* Titolo del modulo CMR selezionato: barra colorata a sinistra secondo il "Colore" del modulo */
+.cmr-titolo-modulo {
+    background: var(--dark-color);
+    color: var(--text-main);
+    border-left: 6px solid var(--primary-color);
+    padding: 10px 14px;
+    margin: 10px 0 15px;
+    font-size: 15px;
+    font-weight: bold;
+    border-radius: 4px;
 }
 
 /* POPUP DATI COMANDO/DIREZIONE */

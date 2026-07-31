@@ -190,9 +190,23 @@
 
         <!-- MODULI CMR -->
         <section id="moduli-cmr" class="page-section">
-            <div class="pagina-box">
+            <div class="pagina-box pagina-box-larga">
                 <h3>Moduli CMR</h3>
-                <p class="pagina-nota">Sezione in costruzione.</p>
+                <p class="pagina-sottotitolo">
+                    Circolare EM-01/2020<br>
+                    Riorganizzazione delle Colonne Mobili Regionali<br>
+                    e del dispositivo di mobilitazione per calamità nazionale.
+                </p>
+
+                <label for="cmr-modulo-input">Cerca modulo</label>
+                <div class="combo-wrapper">
+                    <input type="text" id="cmr-modulo-input" class="combo-input" placeholder="Cerca per descrizione..." autocomplete="off">
+                    <input type="hidden" id="cmr-modulo">
+                    <span class="combo-arrow" aria-hidden="true"></span>
+                    <div id="cmr-modulo-dropdown" class="combo-dropdown"></div>
+                </div>
+
+                <div id="riepilogo-modulo-cmr" class="riepilogo-modulo-cmr"></div>
             </div>
         </section>
 
