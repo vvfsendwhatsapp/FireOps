@@ -523,310 +523,669 @@ document.addEventListener("DOMContentLoaded", () => {
     // Lingue non presenti in questo elenco ricadono automaticamente sull'italiano.
     const TRADUZIONI_MESSAGGIO = {
         it: `🚒 *Vigili del Fuoco {{COMANDO}}* 🚒
+
 Messaggio generato automaticamente.
+
 Utilizzi questo numero per inviarci posizione, foto, video o altre informazioni dell'evento che ci ha comunicato.
+
 *QUESTO NON È UN NUMERO PER LE EMERGENZE*
 e NON lo utilizzi per altri scopi o in altre occasioni senza la nostra autorizzazione.
+
 Per tutte le richieste di soccorso chiami il
 ☎️🆘️
 *{{NUM}}*
 🇪🇺🇮🇹
+
 Per l'invio delle coordinate:
 1. Clicchi sulla "graffetta" (Android) 📎 o sul "più" (Apple) ➕
 2. Clicchi su "Posizione" ⛳
 3. Se necessario segua le indicazioni del dispositivo per consentire a WhatsApp di accedere alla posizione 🆗️
 4. Attenda qualche istante per aumentare la precisione ⏰
 5. Clicchi su "Posizione attuale" 🎯
+
 *Rimanga al sicuro, nella posizione che ci ha condiviso e lasci libera la linea telefonica.*`,
 
-        en: `🚒 *Fire Department {{COMANDO}}* 🚒
+        en: `🚒 *Fire Brigade {{COMANDO}}* 🚒
+
 Automatically generated message.
-Please use this number to send us the location, photos, videos or other information about the event you reported.
+
+Please use this number to send us your location, photos, videos, or other information about the incident you reported.
+
 *THIS IS NOT AN EMERGENCY NUMBER*
-Do NOT use it for other purposes or on other occasions without our authorization.
-For all emergency assistance requests call
-☎️🆘️
-*{{NUM}}*
-🇪🇺🇮🇹
-To send your coordinates:
-1. Tap the "paperclip" (Android) 📎 or the "plus" (Apple) ➕
-2. Tap "Location" ⛳
-3. If needed, follow your device's instructions to allow WhatsApp to access your location 🆗️
-4. Wait a few moments to improve accuracy ⏰
-5. Tap "Current location" 🎯
-*Stay safe, remain at the location you shared with us, and keep the phone line free.*`,
+and DO NOT use it for any other purpose or occasion without our permission.
 
-        fr: `🚒 *Sapeurs-Pompiers {{COMANDO}}* 🚒
-Message généré automatiquement.
-Utilisez ce numéro pour nous envoyer la position, des photos, vidéos ou d'autres informations sur l'événement que vous nous avez signalé.
-*CE N'EST PAS UN NUMÉRO D'URGENCE*
-Ne l'utilisez PAS à d'autres fins ou en d'autres occasions sans notre autorisation.
-Pour toute demande de secours, appelez le
+For all emergency requests, call
 ☎️🆘️
 *{{NUM}}*
 🇪🇺🇮🇹
-Pour envoyer vos coordonnées :
-1. Appuyez sur le "trombone" (Android) 📎 ou sur le "plus" (Apple) ➕
-2. Appuyez sur "Position" ⛳
-3. Si nécessaire, suivez les indications de votre appareil pour autoriser WhatsApp à accéder à votre position 🆗️
-4. Patientez quelques instants pour améliorer la précision ⏰
-5. Appuyez sur "Position actuelle" 🎯
-*Restez en sécurité, à l'endroit que vous avez partagé, et laissez la ligne téléphonique libre.*`,
 
-        de: `🚒 *Feuerwehr {{COMANDO}}* 🚒
-Automatisch generierte Nachricht.
-Nutzen Sie diese Nummer, um uns den Standort, Fotos, Videos oder weitere Informationen zu dem gemeldeten Ereignis zu senden.
-*DIES IST KEINE NOTRUFNUMMER*
-Verwenden Sie sie NICHT für andere Zwecke oder bei anderen Gelegenheiten ohne unsere Genehmigung.
-Für alle Notfälle rufen Sie bitte
-☎️🆘️
-*{{NUM}}*
-🇪🇺🇮🇹
-So senden Sie Ihren Standort:
-1. Tippen Sie auf die "Büroklammer" (Android) 📎 oder das "Plus" (Apple) ➕
-2. Tippen Sie auf "Standort" ⛳
-3. Folgen Sie bei Bedarf den Anweisungen Ihres Geräts, um WhatsApp den Zugriff auf Ihren Standort zu erlauben 🆗️
-4. Warten Sie einen Moment, um die Genauigkeit zu verbessern ⏰
-5. Tippen Sie auf "Aktueller Standort" 🎯
-*Bleiben Sie sicher, an dem Ort, den Sie uns mitgeteilt haben, und halten Sie die Telefonleitung frei.*`,
+To send coordinates:
+1. Click on the "paperclip" (Android) 📎 or the "plus" (Apple) ➕
+2. Click on "Location" ⛳
+3. If necessary, follow the device's prompts to allow WhatsApp to access your location 🆗️
+4. Wait a few moments to increase accuracy ⏰
+5. Click on "Current Location" 🎯
+
+*Stay safe, in the location you shared with us, and keep your phone line free.*`,
 
         es: `🚒 *Bomberos {{COMANDO}}* 🚒
-Mensaje generado automáticamente.
-Utilice este número para enviarnos la ubicación, fotos, vídeos u otra información sobre el evento que nos ha comunicado.
-*ESTE NO ES UN NÚMERO DE EMERGENCIAS*
-NO lo utilice para otros fines ni en otras ocasiones sin nuestra autorización.
-Para cualquier solicitud de auxilio llame al
-☎️🆘️
-*{{NUM}}*
-🇪🇺🇮🇹
-Para enviar sus coordenadas:
-1. Toque el "clip" (Android) 📎 o el "más" (Apple) ➕
-2. Toque "Ubicación" ⛳
-3. Si es necesario, siga las indicaciones de su dispositivo para permitir que WhatsApp acceda a su ubicación 🆗️
-4. Espere unos instantes para mejorar la precisión ⏰
-5. Toque "Ubicación actual" 🎯
-*Manténgase a salvo, en el lugar que nos ha compartido, y deje libre la línea telefónica.*`,
 
-        pt: `🚒 *Bombeiros {{COMANDO}}* 🚒
-Mensagem gerada automaticamente.
-Utilize este número para nos enviar a localização, fotos, vídeos ou outras informações sobre o evento que nos comunicou.
-*ESTE NÃO É UM NÚMERO DE EMERGÊNCIA*
-NÃO o utilize para outros fins ou em outras ocasiões sem a nossa autorização.
-Para qualquer pedido de socorro ligue para
+Mensaje generado automáticamente.
+
+Utilice este número para enviarnos su ubicación, fotos, videos u otra información sobre el incidente que reportó.
+
+*ESTE NO ES UN NÚMERO DE EMERGENCIA*
+y NO lo utilice para ningún otro propósito o ocasión sin nuestra autorización.
+
+Para cualquier solicitud de emergencia, llame al
 ☎️🆘️
 *{{NUM}}*
 🇪🇺🇮🇹
-Para enviar as suas coordenadas:
-1. Toque no "clipe" (Android) 📎 ou no "mais" (Apple) ➕
-2. Toque em "Localização" ⛳
-3. Se necessário, siga as indicações do dispositivo para permitir que o WhatsApp aceda à sua localização 🆗️
-4. Aguarde alguns instantes para aumentar a precisão ⏰
-5. Toque em "Localização atual" 🎯
-*Mantenha-se em segurança, no local que partilhou connosco, e deixe a linha telefónica livre.*`,
+
+Para enviar coordenadas:
+1. Haga clic en el icono del clip (Android) 📎 o en el signo más (+) (Apple) ➕
+2. Haga clic en "Ubicación" ⛳
+3. Si es necesario, siga las instrucciones del dispositivo para permitir que WhatsApp acceda a su ubicación 🆗️
+4. Espere unos instantes para que la ubicación sea más precisa ⏰
+5. Haga clic en "Ubicación actual" 🎯
+
+*Manténgase a salvo en la ubicación que nos indicó y mantenga su línea telefónica libre.*`,
+
+        fr: `🚒 *Service d'incendie {{COMANDO}}* 🚒
+
+Message automatique.
+
+Veuillez utiliser ce numéro pour nous envoyer votre position, des photos, des vidéos ou toute autre information concernant l'incident que vous avez signalé.
+
+*CECI N'EST PAS UN NUMÉRO D'URGENCE*
+
+et NE L'UTILISEZ PAS à d'autres fins sans notre autorisation.
+
+Pour toute urgence, appelez le
+☎️🆘️
+
+*{{NUM}}*
+
+🇪🇺🇮🇹
+
+Pour envoyer vos coordonnées :
+
+1. Cliquez sur le trombone (Android) 📎 ou le plus (Apple) ➕
+
+2. Cliquez sur « Position » ⛳
+
+3. Si nécessaire, suivez les instructions de votre appareil pour autoriser WhatsApp à accéder à votre position 🆗️
+
+4. Patientez quelques instants pour une meilleure précision ⏰
+
+5. Cliquez sur « Position actuelle » 🎯
+
+*Restez en sécurité à l’endroit que vous nous avez indiqué et assurez-vous que votre ligne téléphonique est libre.*
+
+Crédit : VVFsendWhatsApp
+
+Vendredi 31 juillet 2026, 12 h 04 - Équipe A3`,
+
+        sq: `🚒 *Brigada e Zjarrfikësve {{COMANDO}}* 🚒
+
+Mesazh i gjeneruar automatikisht.
+
+Ju lutemi përdorni këtë numër për të na dërguar vendndodhjen tuaj, fotot, videot ose informacione të tjera në lidhje me incidentin që raportuat.
+
+*KY NUK ËSHTË NJË NUMËR URGJENCE*
+dhe MOS e përdorni për asnjë qëllim ose rast tjetër pa lejen tonë.
+
+Për të gjitha kërkesat emergjente, telefononi
+☎️🆘️
+*{{NUM}}*
+🇪🇺🇮🇹
+
+Për të dërguar koordinatat:
+1. Klikoni mbi "kapësen e letrës" (Android) 📎 ose "plus" (Apple) ➕
+2. Klikoni mbi "Vendndodhjen" ⛳
+3. Nëse është e nevojshme, ndiqni udhëzimet e pajisjes për të lejuar WhatsApp të hyjë në vendndodhjen tuaj 🆗️
+4. Prisni disa momente për të rritur saktësinë ⏰
+5. Klikoni mbi "Vendndodhja aktuale" 🎯
+
+*Qëndroni të sigurt, në vendndodhjen që keni ndarë me ne, dhe mbajeni linjën tuaj telefonike të lirë.*`,
 
         ar: `🚒 *فرقة الإطفاء {{COMANDO}}* 🚒
-رسالة تم إنشاؤها تلقائيًا.
-يرجى استخدام هذا الرقم لإرسال الموقع أو الصور أو مقاطع الفيديو أو أي معلومات أخرى حول الحادث الذي أبلغتمونا به.
+
+رسالة مُولّدة تلقائيًا.
+
+يُرجى استخدام هذا الرقم لإرسال موقعك، أو صورك، أو مقاطع الفيديو الخاصة بك، أو أي معلومات أخرى حول الحادث الذي أبلغت عنه.
+
 *هذا ليس رقم طوارئ*
-لا تستخدموه لأغراض أخرى أو في مناسبات أخرى دون إذننا.
-لطلبات الإنقاذ اتصلوا بالرقم
+ولا تستخدمه لأي غرض آخر أو في أي مناسبة أخرى دون إذننا.
+
+
+لجميع طلبات الطوارئ، اتصل على
+
 ☎️🆘️
 *{{NUM}}*
 🇪🇺🇮🇹
+
 لإرسال الإحداثيات:
-1. اضغطوا على "المشبك" (أندرويد) 📎 أو على "زائد" (أبل) ➕
-2. اضغطوا على "الموقع" ⛳
-3. عند الحاجة اتبعوا تعليمات جهازكم للسماح لواتساب بالوصول إلى موقعكم 🆗️
-4. انتظروا لحظات لتحسين الدقة ⏰
-5. اضغطوا على "الموقع الحالي" 🎯
-*ابقوا آمنين، في المكان الذي شاركتموه معنا، واتركوا الخط الهاتفي متاحًا.*`,
 
-        ro: `🚒 *Pompierii {{COMANDO}}* 🚒
-Mesaj generat automat.
-Vă rugăm să folosiți acest număr pentru a ne trimite locația, fotografii, videoclipuri sau alte informații despre evenimentul comunicat.
-*ACESTA NU ESTE UN NUMĂR DE URGENȚĂ*
-NU îl folosiți în alte scopuri sau în alte ocazii fără autorizarea noastră.
-Pentru orice solicitare de ajutor sunați la
+١. انقر على رمز المشبك (أندرويد) 📎 أو رمز الزائد (آبل) ➕
+
+٢. انقر على "الموقع" ⛳
+
+٣. إذا لزم الأمر، اتبع تعليمات جهازك للسماح لتطبيق واتساب بالوصول إلى موقعك 🆗️
+
+٤. انتظر لحظات لزيادة دقة الموقع ⏰
+
+٥. انقر على "الموقع الحالي" 🎯
+
+*ابقَ آمنًا في الموقع الذي شاركته معنا، وتأكد من خلو خط هاتفك.*`,
+
+        bg: `🚒 *Пожарна бригада {{COMANDO}}* 🚒
+
+Автоматично генерирано съобщение.
+
+Моля, използвайте този номер, за да ни изпратите вашето местоположение, снимки, видеоклипове или друга информация за инцидента, за който съобщихте.
+
+*ТОВА НЕ Е НОМЕР ЗА СПЕШНИ СЛУЧАИ*
+и НЕ го използвайте за други цели или случаи без наше разрешение.
+
+За всички спешни заявки, обадете се на
 ☎️🆘️
 *{{NUM}}*
 🇪🇺🇮🇹
-Pentru a trimite coordonatele:
-1. Atingeți "agrafa" (Android) 📎 sau "plus" (Apple) ➕
-2. Atingeți "Locație" ⛳
-3. Dacă este necesar, urmați indicațiile dispozitivului pentru a permite WhatsApp să acceseze locația 🆗️
-4. Așteptați câteva momente pentru a îmbunătăți precizia ⏰
-5. Atingeți "Locația curentă" 🎯
-*Rămâneți în siguranță, la locația pe care ne-ați comunicat-o, și lăsați linia telefonică liberă.*`,
 
-        sq: `🚒 *Zjarrfikësit {{COMANDO}}* 🚒
-Mesazh i krijuar automatikisht.
-Përdorni këtë numër për të na dërguar pozicionin, fotografi, video ose informacione të tjera për ngjarjen që na keni raportuar.
-*KY NUK ËSHTË NUMËR EMERGJENCE*
-MOS e përdorni për qëllime të tjera ose në raste të tjera pa autorizimin tonë.
-Për çdo kërkesë ndihme telefononi
+За да изпратите координати:
+1. Кликнете върху „кламер“ (Android) 📎 или „плюс“ (Apple) ➕
+2. Кликнете върху „Местоположение“ ⛳
+3. Ако е необходимо, следвайте инструкциите на устройството, за да позволите на WhatsApp достъп до вашето местоположение 🆗️
+4. Изчакайте няколко минути, за да увеличите точността ⏰
+5. Кликнете върху „Текущо местоположение“ 🎯
+
+*Бъдете в безопасност, на мястото, което споделихте с нас, и дръжте телефонната си линия свободна.*`,
+
+        cs: `🚒 *Hasičský sbor {{COMANDO}}* 🚒
+
+Automaticky generovaná zpráva.
+
+Použijte prosím toto číslo k zaslání vaší polohy, fotografií, videí nebo dalších informací o incidentu, který jste nahlásili.
+
+*TOTO NENÍ ČÍSLO PRO NOUZOVÉ VOLITELNÉ SITUACE*
+a NEPOUŽÍVEJTE ho k žádnému jinému účelu ani příležitosti bez našeho svolení.
+
+V případě nouze volejte
 ☎️🆘️
 *{{NUM}}*
 🇪🇺🇮🇹
-Për të dërguar koordinatat:
-1. Prekni "kapësen" (Android) 📎 ose "plus" (Apple) ➕
-2. Prekni "Vendndodhja" ⛳
-3. Nëse është e nevojshme, ndiqni udhëzimet e pajisjes për t'i lejuar WhatsApp të aksesojë vendndodhjen tuaj 🆗️
-4. Prisni pak çaste për të përmirësuar saktësinë ⏰
-5. Prekni "Vendndodhja aktuale" 🎯
-*Qëndroni të sigurt, në vendndodhjen që na keni ndarë, dhe mbani linjën telefonike të lirë.*`,
 
-        ru: `🚒 *Пожарная служба {{COMANDO}}* 🚒
-Автоматически сформированное сообщение.
-Используйте этот номер, чтобы отправить нам местоположение, фото, видео или другую информацию о сообщённом происшествии.
-*ЭТО НЕ НОМЕР ЭКСТРЕННОЙ СЛУЖБЫ*
-НЕ используйте его для иных целей или в иных случаях без нашего разрешения.
-По всем вопросам, требующим помощи, звоните
+Odeslání souřadnic:
+1. Klikněte na „sponku“ (Android) 📎 nebo „plus“ (Apple) ➕
+2. Klikněte na „Poloha“ ⛳
+3. V případě potřeby postupujte podle pokynů na zařízení, abyste povolili aplikaci WhatsApp přístup k vaší poloze 🆗️
+4. Pro zvýšení přesnosti chvíli počkejte ⏰
+5. Klikněte na „Aktuální poloha“ 🎯
+
+*Zůstaňte v bezpečí, na místě, které jste s námi sdíleli, a mějte volnou telefonní linku.*`,
+
+        "zh-CN": `🚒 *消 防 队 {{COMANDO}}* 🚒
+
+自 动 生 成 的 消 息 。
+
+使 用 此 号 码 向 我 们 发 送 您 与 我 们 交 流 的 活 动 的 位 置，照 片，视 频 或 其 他 信 息 。
+
+*这 不 是 紧 急 号 码*
+未 经 我 们 的 允 许，请 勿 将 其 用 于 任 何 其 他 目 的 或 在 其 他 场 合 使 用 。
+
+对 于 所 有 遇 险 电 话，请 致 电
 ☎️🆘️
 *{{NUM}}*
 🇪🇺🇮🇹
-Чтобы отправить координаты:
-1. Нажмите на "скрепку" (Android) 📎 или на "плюс" (Apple) ➕
-2. Нажмите "Геопозиция" ⛳
-3. При необходимости следуйте указаниям устройства, чтобы разрешить WhatsApp доступ к местоположению 🆗️
-4. Подождите немного для повышения точности ⏰
-5. Нажмите "Текущее местоположение" 🎯
-*Оставайтесь в безопасности, в том месте, которое вы нам сообщили, и не занимайте телефонную линию.*`,
 
-        uk: `🚒 *Пожежна служба {{COMANDO}}* 🚒
-Автоматично згенероване повідомлення.
-Використовуйте цей номер, щоб надіслати нам місцезнаходження, фото, відео чи іншу інформацію про подію, про яку ви повідомили.
-*ЦЕ НЕ НОМЕР ЕКСТРЕНОЇ СЛУЖБИ*
-НЕ використовуйте його з іншою метою або в інших випадках без нашого дозволу.
-Для будь-якого запиту про допомогу телефонуйте
+发 送 坐 标：
+1. 单 击 “回 形 针”（Android）📎 或 “加 号”（Apple）➕
+2. 单 击“位置” ⛳
+3. 如 有 必 要，请 按 照 设 备 的 说 明 进 行 操 作，以 允 许 WhatsApp 访 问 您 的 位 置 location️
+4. 等 待 片 刻 以 提 高 准 确 性 ⏰
+5. 单 击 “当 前 位 置” 🎯
+
+*请 确 保 与 您 共 享 的 位 置 安 全，并 保 持 电 话 线 畅 通 。*`,
+
+        hr: `🚒 *Vatrogasna brigada {{COMANDO}}* 🚒
+
+Automatski generirana poruka.
+
+Molimo vas da nam na ovaj broj pošaljete svoju lokaciju, fotografije, videozapise ili druge informacije o incidentu koji ste prijavili.
+
+*OVO NIJE BROJ ZA HITNE SLUČAJEVE*
+i NE KORISTITE ga ni u koju drugu svrhu ili prigodu bez našeg dopuštenja.
+
+Za sve hitne zahtjeve nazovite
 ☎️🆘️
 *{{NUM}}*
 🇪🇺🇮🇹
-Щоб надіслати координати:
-1. Натисніть на "скріпку" (Android) 📎 або на "плюс" (Apple) ➕
-2. Натисніть "Місцезнаходження" ⛳
-3. За потреби виконайте вказівки пристрою, щоб дозволити WhatsApp доступ до місцезнаходження 🆗️
-4. Зачекайте кілька секунд для покращення точності ⏰
-5. Натисніть "Поточне місцезнаходження" 🎯
-*Залишайтеся в безпеці, там, де ви нам повідомили, і тримайте телефонну лінію вільною.*`,
 
-        "zh-CN": `🚒 *{{COMANDO}}消防队* 🚒
-自动生成的消息。
-请使用此号码向我们发送您所报告事件的位置、照片、视频或其他信息。
-*这不是紧急电话号码*
-未经我们许可，请勿用于其他目的或场合。
-如需求助，请拨打
+Za slanje koordinata:
+1. Kliknite na "spajalicu" (Android) 📎 ili "plus" (Apple) ➕
+2. Kliknite na "Lokacija" ⛳
+3. Ako je potrebno, slijedite upute uređaja kako biste WhatsAppu omogućili pristup vašoj lokaciji 🆗️
+4. Pričekajte nekoliko trenutaka kako biste povećali točnost ⏰
+5. Kliknite na "Trenutna lokacija" 🎯
+
+*Ostanite sigurni, na lokaciji koju ste podijelili s nama i neka vaša telefonska linija bude slobodna.*`,
+
+        da: `🚒 *Brandvæsen {{COMANDO}}* 🚒
+
+Automatisk genereret besked.
+
+Brug venligst dette nummer til at sende os din placering, fotos, videoer eller andre oplysninger om den hændelse, du har rapporteret.
+
+*DETTE ER IKKE ET NØDNUMMER*
+og brug det IKKE til andre formål eller lejligheder uden vores tilladelse.
+
+Ved alle nødsituationer, ring
 ☎️🆘️
 *{{NUM}}*
 🇪🇺🇮🇹
-发送坐标的方法：
-1. 点击"回形针"（安卓）📎 或"加号"（苹果）➕
-2. 点击"位置" ⛳
-3. 如有需要，请按照设备提示允许WhatsApp访问您的位置 🆗️
-4. 请稍候片刻以提高定位精度 ⏰
-5. 点击"当前位置" 🎯
-*请留在您与我们分享的位置，保持安全，并保持电话线畅通。*`,
 
-        hi: `🚒 *अग्निशमन सेवा {{COMANDO}}* 🚒
-यह संदेश स्वचालित रूप से तैयार किया गया है।
-इस नंबर का उपयोग हमें स्थान, फ़ोटो, वीडियो या घटना से संबंधित अन्य जानकारी भेजने के लिए करें।
-*यह आपातकालीन नंबर नहीं है*
-हमारी अनुमति के बिना इसका उपयोग किसी अन्य उद्देश्य या अवसर के लिए न करें।
-किसी भी सहायता अनुरोध के लिए कॉल करें
+Sådan sender du koordinater:
+1. Klik på "papirklipsen" (Android) 📎 eller "plusset" (Apple) ➕
+2. Klik på "Placering" ⛳
+3. Følg om nødvendigt enhedens instruktioner for at give WhatsApp adgang til din placering 🆗️
+4. Vent et par øjeblikke for at øge nøjagtigheden ⏰
+5. Klik på "Aktuel placering" 🎯
+
+*Vær sikker på den placering, du delte med os, og hold din telefonlinje fri.*`,
+
+        et: `🚒 *Tuletõrje {{COMANDO}}* 🚒
+
+Automaatselt genereeritud sõnum.
+
+Palun kasutage seda numbrit, et saata meile oma asukoht, fotod, videod või muu teave teatatud juhtumi kohta.
+
+*SEE EI OLE HÄDAABINUMBER*
+ja ÄRGE kasutage seda muul eesmärgil ega sündmusel ilma meie loata.
+
+Kõikide hädaolukordade korral helistage numbril
 ☎️🆘️
 *{{NUM}}*
 🇪🇺🇮🇹
-अपने निर्देशांक भेजने के लिए:
-1. "पेपरक्लिप" (Android) 📎 या "प्लस" (Apple) ➕ पर टैप करें
-2. "स्थान" पर टैप करें ⛳
-3. यदि आवश्यक हो, तो WhatsApp को अपने स्थान तक पहुँचने की अनुमति देने के लिए डिवाइस के निर्देशों का पालन करें 🆗️
-4. सटीकता बढ़ाने के लिए कुछ क्षण प्रतीक्षा करें ⏰
-5. "वर्तमान स्थान" पर टैप करें 🎯
-*सुरक्षित रहें, जिस स्थान की जानकारी आपने हमें दी है वहीं रहें, और फोन लाइन खाली रखें।*`,
 
-        ur: `🚒 *فائر بریگیڈ {{COMANDO}}* 🚒
-یہ پیغام خودکار طور پر تیار کیا گیا ہے۔
-براہ کرم اس نمبر کو ہمیں محل وقوع، تصاویر، ویڈیوز یا واقعے سے متعلق دیگر معلومات بھیجنے کے لیے استعمال کریں۔
-*یہ ایمرجنسی نمبر نہیں ہے*
-ہماری اجازت کے بغیر اسے کسی اور مقصد یا موقع کے لیے استعمال نہ کریں۔
-کسی بھی امدادی درخواست کے لیے کال کریں
+Koordinaatide saatmiseks:
+1. Klõpsake kirjaklambril (Android) 📎 või plussmärgil (Apple) ➕
+2. Klõpsake valikul „Asukoht” ⛳
+3. Vajadusel järgige seadme juhiseid, et lubada WhatsAppil teie asukohale juurde pääseda 🆗️
+4. Oodake täpsuse suurendamiseks paar hetke ⏰
+5. Klõpsake valikul „Praegune asukoht” 🎯
+
+*Jääge turvaliselt meiega jagatud asukohas ja hoidke oma telefoniliin vaba.*`,
+
+        fi: `🚒 *Palokunta KKKKKKK* 🚒
+
+Automaattisesti luotu viesti.
+
+Käytä tätä numeroa lähettääksesi meille sijaintisi, valokuvia, videoita tai muita tietoja ilmoittamastasi tapahtumasta.
+
+*TÄMÄ EI OLE HÄTÄNUMERO*
+ÄLÄKÄ käytä sitä mihinkään muuhun tarkoitukseen tai tilanteeseen ilman lupaamme.
+
+Hätätilanteissa soita numeroon
 ☎️🆘️
 *{{NUM}}*
 🇪🇺🇮🇹
-اپنی لوکیشن بھیجنے کے لیے:
-1. "پیپر کلپ" (Android) 📎 یا "پلس" (Apple) ➕ پر ٹیپ کریں
-2. "لوکیشن" پر ٹیپ کریں ⛳
-3. ضرورت پڑنے پر واٹس ایپ کو اپنی لوکیشن تک رسائی دینے کے لیے آلے کی ہدایات پر عمل کریں 🆗️
-4. درستگی بہتر بنانے کے لیے چند لمحے انتظار کریں ⏰
-5. "موجودہ لوکیشن" پر ٹیپ کریں 🎯
-*محفوظ رہیں، اسی جگہ جہاں آپ نے ہمیں بتایا، اور فون لائن خالی رکھیں۔*`,
 
-        bn: `🚒 *দমকল বাহিনী {{COMANDO}}* 🚒
-এই বার্তাটি স্বয়ংক্রিয়ভাবে তৈরি করা হয়েছে।
-আপনি যে ঘটনার কথা জানিয়েছেন সে সম্পর্কে অবস্থান, ছবি, ভিডিও বা অন্যান্য তথ্য পাঠাতে এই নম্বরটি ব্যবহার করুন।
-*এটি জরুরি নম্বর নয়*
-আমাদের অনুমতি ছাড়া অন্য কোনো উদ্দেশ্যে বা অন্য কোনো সময়ে এটি ব্যবহার করবেন না।
-যেকোনো সাহায্যের জন্য কল করুন
+Lähetä koordinaatit seuraavasti:
+1. Napsauta "paperiliitintä" (Android) 📎 tai "plus"-merkkiä (Apple) ➕
+2. Napsauta "Sijainti" ⛳
+3. Tarvittaessa seuraa laitteen ohjeita, jotta WhatsApp voi käyttää sijaintiasi 🆗️
+4. Odota hetki tarkkuuden lisäämiseksi ⏰
+5. Napsauta "Nykyinen sijainti" 🎯
+
+*Pysy turvassa jakamassasi sijainnissa ja pidä puhelinlinjasi vapaana.*`,
+
+        el: `🚒 *Πυροσβεστική Υπηρεσία {{COMANDO}}* 🚒
+
+Αυτόματα δημιουργημένο μήνυμα.
+
+Χρησιμοποιήστε αυτόν τον αριθμό για να μας στείλετε την τοποθεσία σας, φωτογραφίες, βίντεο ή άλλες πληροφορίες σχετικά με το περιστατικό που αναφέρατε.
+
+*ΑΥΤΟΣ ΔΕΝ ΕΙΝΑΙ ΑΡΙΘΜΟΣ ΕΚΤΑΚΤΗΣ ΑΝΑΓΚΗΣ*
+και ΜΗΝ τον χρησιμοποιείτε για κανέναν άλλο σκοπό ή περίσταση χωρίς την άδειά μας.
+
+Για όλα τα αιτήματα έκτακτης ανάγκης, καλέστε
 ☎️🆘️
 *{{NUM}}*
 🇪🇺🇮🇹
-আপনার অবস্থান পাঠাতে:
-1. "পেপারক্লিপ" (Android) 📎 বা "প্লাস" (Apple) ➕ চাপুন
-2. "অবস্থান" চাপুন ⛳
-3. প্রয়োজনে, WhatsApp-কে আপনার অবস্থান অ্যাক্সেস করার অনুমতি দিতে ডিভাইসের নির্দেশাবলী অনুসরণ করুন 🆗️
-4. নির্ভুলতা বাড়াতে কিছুক্ষণ অপেক্ষা করুন ⏰
-5. "বর্তমান অবস্থান" চাপুন 🎯
-*নিরাপদ থাকুন, আপনি যে স্থানের কথা আমাদের জানিয়েছেন সেখানেই থাকুন, এবং ফোন লাইন খালি রাখুন।*`,
 
-        tr: `🚒 *İtfaiye {{COMANDO}}* 🚒
-Bu mesaj otomatik olarak oluşturulmuştur.
-Bize bildirdiğiniz olayla ilgili konum, fotoğraf, video veya diğer bilgileri göndermek için bu numarayı kullanın.
-*BU BİR ACİL DURUM NUMARASI DEĞİLDİR*
-İzniniz olmadan başka amaçlarla veya başka durumlarda KULLANMAYIN.
-Her türlü yardım talebi için arayın
+Για να στείλετε συντεταγμένες:
+1. Κάντε κλικ στον "συνδετήρα" (Android) 📎 ή στο "συν" (Apple) ➕
+2. Κάντε κλικ στην "Τοποθεσία" ⛳
+3. Εάν είναι απαραίτητο, ακολουθήστε τις οδηγίες της συσκευής για να επιτρέψετε στο WhatsApp να έχει πρόσβαση στην τοποθεσία σας 🆗️
+4. Περιμένετε λίγα λεπτά για να αυξήσετε την ακρίβεια ⏰
+5. Κάντε κλικ στην "Τρέχουσα τοποθεσία" 🎯
+
+*Μείνετε ασφαλείς, στην τοποθεσία που μας κοινοποιήσατε, και κρατήστε την τηλεφωνική σας γραμμή ελεύθερη.*`,
+
+        ga: `🚒 *Briogáid Dóiteáin {{COMANDO}}* 🚒
+
+Teachtaireacht a ghintear go huathoibríoch.
+
+Úsáid an uimhir seo le do shuíomh, grianghraif, físeáin, nó faisnéis eile faoin eachtra a thuairiscigh tú a sheoladh chugainn.
+
+*NÍ UIMHIR ÉIGEANDÁLA É SEO*
+agus NÁ húsáid í chun aon chríche nó ócáide eile gan ár gcead.
+
+I gcás gach iarratais éigeandála, glaoigh ar
 ☎️🆘️
 *{{NUM}}*
 🇪🇺🇮🇹
-Konumunuzu göndermek için:
-1. Android'de "ataç" 📎 veya Apple'da "artı" ➕ simgesine dokunun
-2. "Konum" seçeneğine dokunun ⛳
-3. Gerekirse WhatsApp'ın konumunuza erişmesine izin vermek için cihazınızın talimatlarını izleyin 🆗️
-4. Doğruluğu artırmak için birkaç saniye bekleyin ⏰
-5. "Mevcut konum" seçeneğine dokunun 🎯
-*Güvende kalın, bize bildirdiğiniz konumda bekleyin ve telefon hattını boş tutun.*`,
 
-        pl: `🚒 *Straż Pożarna {{COMANDO}}* 🚒
-Wiadomość wygenerowana automatycznie.
-Prosimy używać tego numeru, aby przesłać nam lokalizację, zdjęcia, filmy lub inne informacje dotyczące zgłoszonego zdarzenia.
-*TO NIE JEST NUMER ALARMOWY*
-NIE używajcie go w innych celach ani przy innych okazjach bez naszej zgody.
-W przypadku każdej prośby o pomoc dzwońcie pod numer
+Chun comhordanáidí a sheoladh:
+1. Cliceáil ar an "gearrthóg páipéir" (Android) 📎 nó an "móide" (Apple) ➕
+2. Cliceáil ar "Suíomh" ⛳
+3. Más gá, lean leideanna an fheiste chun ligean do WhatsApp rochtain a fháil ar do shuíomh 🆗️
+4. Fan cúpla nóiméad chun cruinneas a mhéadú ⏰
+5. Cliceáil ar "Suíomh Reatha" 🎯
+
+*Fan sábháilte, sa suíomh a roinn tú linn, agus coinnigh do líne teileafóin saor.*`,
+
+        lv: `🚒 *Ugunsdzēsības brigāde {{COMANDO}}* 🚒
+
+Automātiski ģenerēts ziņojums.
+
+Lūdzu, izmantojiet šo numuru, lai nosūtītu mums savu atrašanās vietu, fotoattēlus, videoklipus vai citu informāciju par ziņoto incidentu.
+
+*ŠIS NAV ĀRKĀRTAS NUMURS*
+un NEIZMANTOJIET to nekādiem citiem mērķiem vai gadījumiem bez mūsu atļaujas.
+
+Visiem ārkārtas pieprasījumiem zvaniet uz numuru
 ☎️🆘️
 *{{NUM}}*
 🇪🇺🇮🇹
-Aby wysłać współrzędne:
-1. Dotknijcie "spinacza" (Android) 📎 lub "plusa" (Apple) ➕
-2. Dotknijcie "Lokalizacja" ⛳
-3. W razie potrzeby postępujcie zgodnie ze wskazówkami urządzenia, aby zezwolić WhatsApp na dostęp do lokalizacji 🆗️
-4. Poczekajcie chwilę, aby zwiększyć dokładność ⏰
-5. Dotknijcie "Aktualna lokalizacja" 🎯
-*Pozostańcie bezpieczni, w miejscu, które nam wskazaliście, i zostawcie linię telefoniczną wolną.*`,
+
+Lai nosūtītu koordinātas:
+1. Noklikšķiniet uz "saspraudes" (Android) 📎 vai "plus" (Apple) ➕
+2. Noklikšķiniet uz "Atrašanās vieta" ⛳
+3. Ja nepieciešams, izpildiet ierīces norādījumus, lai atļautu WhatsApp piekļūt jūsu atrašanās vietai 🆗️
+4. Uzgaidiet dažas minūtes, lai palielinātu precizitāti ⏰
+5. Noklikšķiniet uz "Pašreizējā atrašanās vieta" 🎯
+
+*Esiet drošībā, atrodieties atrašanās vietā, kuru kopīgojāt ar mums, un turiet tālruņa līniju brīvu.*`,
+
+        lt: `🚒 *Ugniagesių brigada {{COMANDO}}* 🚒
+
+Automatiškai sugeneruotas pranešimas.
+
+Prašome naudoti šį numerį, jei norite atsiųsti mums savo buvimo vietą, nuotraukas, vaizdo įrašus ar kitą informaciją apie įvykį, apie kurį pranešėte.
+
+*TAI NĖRA PAGALBOS NUMERIS*
+ir NENAUDOKITE jo jokiais kitais tikslais ar progomis be mūsų leidimo.
+
+Dėl visų skubių užklausų skambinkite
+☎️🆘️
+*{{NUM}}*
+🇪🇺🇮🇹
+
+Norėdami išsiųsti koordinates:
+1. Spustelėkite „sąvaržėlę“ („Android“) 📎 arba „pliusą“ („Apple“) ➕
+2. Spustelėkite „Vieta“ ⛳
+3. Jei reikia, vykdykite įrenginio nurodymus, kad leistumėte „WhatsApp“ pasiekti jūsų buvimo vietą 🆗️
+4. Palaukite kelias minutes, kad padidintumėte tikslumą ⏰
+5. Spustelėkite „Dabartinė vieta“ 🎯
+
+*Būkite saugūs, toje vietoje, kurią su mumis pasidalinote, ir palaikykite telefono liniją laisvą.*`,
+
+        mt: `🚒 *Brigata tat-Tifi tan-Nar {{COMANDO}}C* 🚒
+
+Messaġġ iġġenerat awtomatikament.
+
+Jekk jogħġbok uża dan in-numru biex tibgħatilna l-post tiegħek, ritratti, vidjows, jew informazzjoni oħra dwar l-inċident li rrappurtajt.
+
+*DAN MHUX NUMRU TA' EMERĠENZA*
+u TUŻAHX għal xi skop jew okkażjoni oħra mingħajr il-permess tagħna.
+
+Għal kull talba ta' emerġenza, ċempel
+☎️🆘️
+*{{NUM}}*
+🇪🇺🇮🇹
+
+Biex tibgħat koordinati:
+1. Ikklikkja fuq il-"paperclip" (Android) 📎 jew il-"plus" (Apple) ➕
+2. Ikklikkja fuq "Location" ⛳
+3. Jekk meħtieġ, segwi l-istruzzjonijiet tal-apparat biex tippermetti lil WhatsApp jaċċessa l-lokazzjoni tiegħek 🆗️
+4. Stenna ftit mumenti biex iżżid il-preċiżjoni ⏰
+5. Ikklikkja fuq "Current Location" 🎯
+
+*Ibqa' sigur, fil-lokazzjoni li qsamt magħna, u żomm il-linja tat-telefon tiegħek ħielsa.*`,
 
         nl: `🚒 *Brandweer {{COMANDO}}* 🚒
+
 Automatisch gegenereerd bericht.
-Gebruik dit nummer om ons de locatie, foto's, video's of andere informatie over het gemelde incident te sturen.
+
+Gebruik dit nummer om ons uw locatie, foto's, video's of andere informatie over het gemelde incident te sturen.
+
 *DIT IS GEEN NOODNUMMER*
-Gebruik het NIET voor andere doeleinden of bij andere gelegenheden zonder onze toestemming.
-Bel voor elke hulpvraag naar
+en gebruik het NIET voor andere doeleinden of gelegenheden zonder onze toestemming.
+
+Voor alle noodgevallen, bel
 ☎️🆘️
 *{{NUM}}*
 🇪🇺🇮🇹
-Om uw coördinaten te verzenden:
-1. Tik op de "paperclip" (Android) 📎 of de "plus" (Apple) ➕
-2. Tik op "Locatie" ⛳
-3. Volg indien nodig de instructies van uw apparaat om WhatsApp toegang te geven tot uw locatie 🆗️
-4. Wacht even om de nauwkeurigheid te verbeteren ⏰
-5. Tik op "Huidige locatie" 🎯
-*Blijf veilig op de locatie die u met ons heeft gedeeld en houd de telefoonlijn vrij.*`
+
+Om coördinaten te verzenden:
+1. Klik op het paperclip-icoon (Android) 📎 of het plusteken (Apple) ➕
+2. Klik op 'Locatie' ⛳
+3. Volg indien nodig de aanwijzingen van uw apparaat om WhatsApp toegang te geven tot uw locatie 🆗️
+4. Wacht even voor een nauwkeurigere locatie ⏰
+5. Klik op 'Huidige locatie' 🎯
+
+*Blijf veilig op de locatie die u met ons hebt gedeeld en houd uw telefoonlijn vrij.*`,
+
+        pl: `🚒 *Straż Pożarna {{COMANDO}}* 🚒
+
+Wiadomość generowana automatycznie.
+
+Użyj tego numeru, aby przesłać nam swoją lokalizację, zdjęcia, filmy lub inne informacje dotyczące zgłoszonego zdarzenia.
+
+*TO NIE JEST NUMER ALARMOWY*
+i NIE UŻYWAJ go w żadnym innym celu ani z żadnej innej okazji bez naszej zgody.
+
+W nagłych wypadkach prosimy dzwonić pod numer
+☎️🆘️
+*{{NUM}}*
+🇪🇺🇮🇹
+
+Aby wysłać współrzędne:
+1. Kliknij „spinacz” (Android) 📎 lub „plus” (Apple) ➕
+2. Kliknij „Lokalizacja” ⛳
+3. W razie potrzeby postępuj zgodnie z instrukcjami urządzenia, aby zezwolić WhatsApp na dostęp do Twojej lokalizacji 🆗️
+4. Odczekaj chwilę, aby zwiększyć dokładność ⏰
+5. Kliknij „Aktualna lokalizacja” 🎯
+
+*Bądź bezpieczny w podanej nam lokalizacji i nie wyłączaj telefonu.*`,
+
+        pt: `🚒 *Corpo de Bombeiros {{COMANDO}}* 🚒
+
+Mensagem gerada automaticamente.
+
+Por favor, utilize este número para nos enviar sua localização, fotos, vídeos ou outras informações sobre o incidente que você relatou.
+
+*ESTE NÃO É UM NÚMERO DE EMERGÊNCIA*
+e NÃO o utilize para qualquer outra finalidade ou ocasião sem nossa permissão.
+
+Para todas as solicitações de emergência, ligue para
+☎️🆘️
+*{{NUM}}*
+🇪🇺🇮🇹
+
+Para enviar as coordenadas:
+1. Clique no ícone de clipe de papel (Android) 📎 ou no ícone de mais (Apple) ➕
+2. Clique em "Localização" ⛳
+3. Se necessário, siga as instruções do dispositivo para permitir que o WhatsApp acesse sua localização 🆗️
+4. Aguarde alguns instantes para aumentar a precisão ⏰
+5. Clique em "Localização atual" 🎯
+
+*Mantenha-se em segurança, no local que você compartilhou conosco, e mantenha sua linha telefônica livre.*`,
+
+        ro: `🚒 *Brigada de Pompieri {{COMANDO}}C* 🚒
+
+Mesaj generat automat.
+
+Vă rugăm să folosiți acest număr pentru a ne trimite locația dvs., fotografii, videoclipuri sau alte informații despre incidentul pe care l-ați raportat.
+
+*ACESTA NU ESTE UN NUMĂR DE URGENȚĂ*
+și NU îl utilizați în niciun alt scop sau ocazie fără permisiunea noastră.
+
+Pentru toate solicitările de urgență, sunați
+☎️🆘️
+*{{NUM}}*
+🇪🇺🇮🇹
+
+Pentru a trimite coordonate:
+1. Faceți clic pe „agrafă” (Android) 📎 sau pe „plus” (Apple) ➕
+2. Faceți clic pe „Locație” ⛳
+3. Dacă este necesar, urmați instrucțiunile dispozitivului pentru a permite WhatsApp să acceseze locația dvs. 🆗️
+4. Așteptați câteva momente pentru a crește precizia ⏰
+5. Faceți clic pe „Locație curentă” 🎯
+
+*Rămâneți în siguranță, în locația pe care ați partajat-o cu noi și păstrați-vă linia telefonică liberă.*`,
+
+        ru: `🚒 *Номер телефона пожарной охраны* 🚒
+
+Автоматически сгенерированное сообщение.
+
+Пожалуйста, используйте этот номер, чтобы отправить нам ваше местоположение, фотографии, видео или другую информацию об инциденте, о котором вы сообщили.
+
+*ЭТО НЕ НОМЕР ДЛЯ ЭКСТРЕННЫХ СИТУАЦИЙ*
+и НЕ ИСПОЛЬЗУЙТЕ ЕГО ДЛЯ КАКИХ-ЛИБО ДРУГИХ ЦЕЛЕЙ БЕЗ НАШЕГО РАЗРЕШЕНИЯ.
+
+
+Для всех экстренных случаев звоните:
+☎️🆘️
+*Н-Н-Н*
+🇪🇺🇮🇹
+
+Чтобы отправить координаты:
+1. Нажмите на значок «скрепка» (Android) 📎 или «плюс» (Apple) ➕
+2. Нажмите на «Местоположение» ⛳
+3. При необходимости следуйте инструкциям устройства, чтобы разрешить WhatsApp доступ к вашему местоположению 🆗️
+4. Подождите несколько минут для повышения точности ⏰
+5. Нажмите на «Текущее местоположение» 🎯
+
+*Оставайтесь в безопасности, в указанном вами местоположении, и держите телефонную линию свободной.*`,
+
+        sk: `🚒 *Hasičský zbor {{COMANDO}}* 🚒
+
+Automaticky vygenerovaná správa.
+
+Použite toto číslo na zaslanie vašej polohy, fotografií, videí alebo iných informácií o incidente, ktorý ste nahlásili.
+
+*TOTO NIE JE NÚDZOVÉ ČÍSLO*
+a NEPOUŽÍVAJTE ho na žiadny iný účel ani príležitosť bez nášho súhlasu.
+
+V prípade všetkých núdzových požiadaviek volajte na číslo
+☎️🆘️
+*{{NUM}}*
+🇪🇺🇮🇹
+
+Ak chcete odoslať súradnice:
+1. Kliknite na „sponku“ (Android) 📎 alebo „plus“ (Apple) ➕
+2. Kliknite na „Poloha“ ⛳
+3. V prípade potreby postupujte podľa pokynov na zariadení, aby ste povolili aplikácii WhatsApp prístup k vašej polohe 🆗️
+4. Počkajte chvíľu, aby ste zvýšili presnosť ⏰
+5. Kliknite na „Aktuálna poloha“ 🎯
+
+*Zostaňte v bezpečí, na mieste, ktoré ste s nami zdieľali, a majte voľnú telefónnu linku.*`,
+
+        sl: `🚒 *Gasilska brigada {{COMANDO}}* 🚒
+
+Samodejno ustvarjeno sporočilo.
+
+Prosimo, uporabite to številko, da nam pošljete svojo lokacijo, fotografije, videoposnetke ali druge informacije o incidentu, ki ste ga prijavili.
+
+*TO NI ŠTEVILKA ZA NUJNE PRIMERE*
+in je NE uporabljajte za noben drug namen ali priložnost brez našega dovoljenja.
+
+Za vse nujne primere pokličite
+☎️🆘️
+*{{NUM}}*
+🇪🇺🇮🇹
+
+Za pošiljanje koordinat:
+1. Kliknite na "sponko za papir" (Android) 📎 ali "plus" (Apple) ➕
+2. Kliknite na "Lokacija" ⛳
+3. Po potrebi sledite navodilom naprave, da WhatsAppu omogočite dostop do vaše lokacije 🆗️
+4. Počakajte nekaj trenutkov, da povečate natančnost ⏰
+5. Kliknite na "Trenutna lokacija" 🎯
+
+*Ostanite varni na lokaciji, ki ste jo delili z nami, in imejte telefonsko linijo prosto.*`,
+
+        sv: `🚒 *Brandkåren {{COMANDO}}* 🚒
+
+Automatiskt genererat meddelande.
+
+Använd detta nummer för att skicka oss din plats, foton, videor eller annan information om den händelse du rapporterade.
+
+*DETTA ÄR INTE ETT NÖDNUMMER*
+och ANVÄND det INTE för något annat ändamål eller tillfälle utan vårt tillstånd.
+
+För alla nödförfrågningar, ring
+☎️🆘️
+*{{NUM}}*
+🇪🇺🇮🇹
+
+För att skicka koordinater:
+1. Klicka på "gem" (Android) 📎 eller "plus" (Apple) ➕
+2. Klicka på "Plats" ⛳
+3. Om det behövs, följ enhetens anvisningar för att tillåta WhatsApp att komma åt din plats 🆗️
+4. Vänta några ögonblick för att öka noggrannheten ⏰
+5. Klicka på "Nuvarande plats" 🎯
+
+*Var säker på den plats du delade med oss ​​och håll din telefonlinje ledig.*`,
+
+        de: `🚒 *Feuerwehr {{COMANDO}}* 🚒
+
+Automatisch generierte Nachricht.
+
+Bitte nutzen Sie diese Nummer, um uns Ihren Standort, Fotos, Videos oder andere Informationen zu dem von Ihnen gemeldeten Vorfall zu senden.
+
+*DIES IST KEINE NOTRUFNUMMER*
+und verwenden Sie sie NICHT ohne unsere Genehmigung für andere Zwecke oder Anlässe.
+
+Für alle Notfälle rufen Sie bitte an:
+
+☎️🆘️
+*{{NUM}}*
+🇪🇺🇮🇹
+
+So senden Sie Ihre Koordinaten:
+1. Tippen Sie auf die Büroklammer (Android) 📎 oder das Pluszeichen (Apple) ➕.
+2. Tippen Sie auf „Standort“ ⛳.
+3. Folgen Sie gegebenenfalls den Anweisungen Ihres Geräts, um WhatsApp den Zugriff auf Ihren Standort zu erlauben 🆗️.
+4. Warten Sie einen Moment, um die Genauigkeit zu erhöhen ⏰.
+5. Tippen Sie auf „Aktueller Standort“ 🎯.
+
+*Bleiben Sie an dem Ort, den Sie uns mitgeteilt haben, und halten Sie Ihre Telefonleitung frei.*`,
+
+        hu: `🚒 *Tűzoltóság {{COMANDO}}* 🚒
+
+Automatikusan generált üzenet.
+
+Kérjük, ezt a számot használja, ha tartózkodási helyét, fotóit, videóit vagy egyéb információkat szeretne küldeni nekünk a jelentett incidensről.
+
+*EZ NEM SÜRGŐSSÉGI SZÁM*
+és NE használja semmilyen más célra vagy alkalomra az engedélyünk nélkül.
+
+Minden vészhelyzeti kérés esetén hívja a következő számot:
+☎️🆘️
+*{{NUM}}*
+🇪🇺🇮🇹
+
+Koordináták küldéséhez:
+1. Kattintson a "gemkapocs" (Android) 📎 vagy a "plusz" (Apple) ikonra ➕
+2. Kattintson a "Helyszín" ⛳ elemre
+3. Szükség esetén kövesse az eszköz utasításait, hogy engedélyezze a WhatsAppnak a tartózkodási helyének elérését 🆗️
+4. Várjon néhány percet a pontosság növelése érdekében ⏰
+5. Kattintson a "Jelenlegi tartózkodási hely" 🎯 elemre
+
+*Maradjon biztonságban, a velünk megosztott helyen, és tartsa szabadon a telefonvonalát.*`
     };
 
     // Costruisce il corpo del messaggio sostituendo Comando e numero emergenza,
