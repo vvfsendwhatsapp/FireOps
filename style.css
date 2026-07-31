@@ -439,7 +439,7 @@ body {
 
 /* RIEPILOGO COMANDO */
 .riepilogo-comando {
-    margin-top: 20px;
+    margin-top: 0; /* stesso spazio dal menu delle altre pagine (.pagina-box), niente margine extra */
 }
 
 .riepilogo-box {
