@@ -680,7 +680,7 @@ Para enviar coordenadas:
 
 *Manténgase a salvo en la ubicación que nos indicó y mantenga su línea telefónica libre.*`,
 
-        fr: `🚒 *Service d'incendie {{COMANDO}}* 🚒
+        fr: `🚒 *Sapeur Pompiers {{COMANDO}}* 🚒
 
 Message automatique.
 
