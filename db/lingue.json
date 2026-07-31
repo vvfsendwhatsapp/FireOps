@@ -1,13 +1,8 @@
 [
-  { "lingua": "Afrikaans", "code": "af" },
   { "lingua": "Albanese", "code": "sq" },
   { "lingua": "Arabo", "code": "ar" },
-  { "lingua": "Armeno", "code": "hy" },
-  { "lingua": "Azero", "code": "az" },
-  { "lingua": "Bengalese", "code": "bn" },
   { "lingua": "Bosniaco", "code": "bs" },
   { "lingua": "Bulgaro", "code": "bg" },
-  { "lingua": "Catalano", "code": "ca" },
   { "lingua": "Cinese (Semplificato)", "code": "zh-CN" },
   { "lingua": "Cinese (Tradizionale)", "code": "zh-TW" },
   { "lingua": "Coreano", "code": "ko" },
