@@ -15,6 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let prefissiData = []; // elenco prefissi internazionali
     let lingueData = [];   // elenco lingue disponibili per Messaggistica
     let moduliCMRData = []; // elenco moduli della Circolare EM-01/2020 (Colonne Mobili Regionali)
+    let linkUtiliData = []; // elenco link utili organizzati per tema, per la pagina "Link Utili"
     let modalChiudibile = false; // true solo quando riaperto manualmente col pulsante ☰
 
     Promise.all([
@@ -45,9 +46,13 @@ document.addEventListener("DOMContentLoaded", () => {
         fetch("/FireOps/db/moduliCMR.json").then(r => {
             if (!r.ok) throw new Error("Impossibile trovare moduliCMR.json");
             return r.json();
+        }),
+        fetch("/FireOps/db/linkUtili.json").then(r => {
+            if (!r.ok) throw new Error("Impossibile trovare linkUtili.json");
+            return r.json();
         })
     ])
-    .then(([comandi, direzioni, con, socav, prefissi, lingue, moduliCMR]) => {
+    .then(([comandi, direzioni, con, socav, prefissi, lingue, moduliCMR, linkUtili]) => {
         comandiData = comandi;
         direzioniData = direzioni;
         conData = Array.isArray(con) ? con[0] : con;
@@ -55,6 +60,7 @@ document.addEventListener("DOMContentLoaded", () => {
         prefissiData = prefissi;
         lingueData = lingue;
         moduliCMRData = moduliCMR;
+        linkUtiliData = linkUtili;
 
         selectComando.innerHTML = '<option value="" disabled selected>-- Seleziona Comando --</option>';
         comandi.forEach(c => {
@@ -71,6 +77,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Popola il selettore ricercabile della pagina Moduli CMR
         popolaSelectModuloCMR(moduliCMRData);
+
+        // Costruisce i pulsanti della pagina Link Utili
+        renderLinkUtili(linkUtiliData);
 
         const comandoSalvato = sessionStorage.getItem(CHIAVE_STORAGE);
         if (comandoSalvato && comandiData.some(c => c.Comando === comandoSalvato)) {
@@ -768,6 +777,64 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Mostra subito la tabella con le sole etichette, ancora prima che i dati siano caricati
     renderRiepilogoModuloCMR(null);
+
+    // ==========================================================
+    // PAGINA LINK UTILI: pulsanti ai vari siti raggruppati per tema
+    // ==========================================================
+
+    // Raggruppa l'elenco piatto del JSON in { Categoria: { Sottocategoria: [voci] } },
+    // preservando l'ordine di comparsa così come arrivano dal file
+    function raggruppaLinkUtili(elenco) {
+        const gruppi = new Map();
+        elenco.forEach(voce => {
+            const categoria = voce["Categoria"] || "Altro";
+            const sottocategoria = voce["Sottocategoria"] || "";
+            if (!gruppi.has(categoria)) gruppi.set(categoria, new Map());
+            const sottogruppi = gruppi.get(categoria);
+            if (!sottogruppi.has(sottocategoria)) sottogruppi.set(sottocategoria, []);
+            sottogruppi.get(sottocategoria).push(voce);
+        });
+        return gruppi;
+    }
+
+    // Costruisce i pulsanti della pagina Link Utili, raggruppati per Categoria e Sottocategoria.
+    // I link senza URL compilato vengono mostrati disabilitati (dato non ancora inserito nel JSON).
+    function renderLinkUtili(elenco) {
+        const container = document.getElementById("link-utili-contenuto");
+        if (!container) return;
+
+        if (!elenco || elenco.length === 0) {
+            container.innerHTML = "<p class=\"pagina-nota\">Nessun link disponibile.</p>";
+            return;
+        }
+
+        const gruppi = raggruppaLinkUtili(elenco);
+        let html = "";
+
+        gruppi.forEach((sottogruppi, categoria) => {
+            html += `<h4 class="link-utili-categoria">${categoria}</h4>`;
+
+            sottogruppi.forEach((voci, sottocategoria) => {
+                if (sottocategoria) {
+                    html += `<h5 class="link-utili-sottocategoria">${sottocategoria}</h5>`;
+                }
+
+                html += `<div class="link-utili-griglia">`;
+                voci.forEach(voce => {
+                    const url = (voce["URL"] || "").trim();
+                    if (url) {
+                        html += `<a class="link-utili-pulsante" href="${url}" target="_blank" rel="noopener">${voce["Nome"]}</a>`;
+                    } else {
+                        html += `<span class="link-utili-pulsante link-utili-pulsante-disabilitato" title="URL non ancora inserito">${voce["Nome"]}</span>`;
+                    }
+                });
+                html += `</div>`;
+            });
+        });
+
+        container.innerHTML = html;
+    }
+    window.renderLinkUtili = renderLinkUtili;
 
     // ==========================================================
     // VALIDAZIONE CAMPI MESSAGGISTICA: evidenzia i campi mancanti

@@ -566,6 +566,70 @@ body {
     background: transparent;
 }
 
+/* PAGINA LINK UTILI: intestazioni di tema/sottotema e griglia di pulsanti */
+.link-utili-categoria {
+    color: var(--dark-color);
+    background: var(--primary-color);
+    margin: 24px 0 12px;
+    padding: 6px 12px;
+    font-size: 15px;
+    font-weight: bold;
+    text-transform: uppercase;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+}
+
+.link-utili-categoria:first-child {
+    margin-top: 0;
+}
+
+.link-utili-sottocategoria {
+    color: var(--text-muted);
+    margin: 14px 0 8px;
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.link-utili-griglia {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+.link-utili-pulsante {
+    display: inline-block;
+    padding: 9px 14px;
+    background: var(--dark-color);
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 13px;
+    text-decoration: none;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.link-utili-pulsante:hover {
+    background: var(--primary-color);
+    color: var(--dark-color);
+    border-color: var(--primary-color);
+}
+
+/* Voci senza URL ancora inserito nel JSON: visibili ma non cliccabili */
+.link-utili-pulsante-disabilitato {
+    cursor: not-allowed;
+    color: var(--text-muted);
+    opacity: 0.5;
+}
+
+.link-utili-pulsante-disabilitato:hover {
+    background: var(--dark-color);
+    color: var(--text-muted);
+    border-color: var(--border-color);
+}
+
 /* POPUP DATI COMANDO/DIREZIONE */
 .popup-dati {
     position: fixed;
