@@ -562,12 +562,37 @@ document.addEventListener("DOMContentLoaded", () => {
             dropdown.classList.add("aperto");
         }
 
+        // Apre sempre l'elenco COMPLETO, ignorando il testo/la voce già selezionata:
+        // usata quando il campo riceve il focus e quando si clicca sulla freccetta,
+        // così si può sfogliare tutta la lista anche con una voce già scelta.
+        function apriDropdownCompleta() {
+            renderOpzioni("");
+            dropdown.classList.add("aperto");
+        }
+
         function chiudiDropdown() {
             dropdown.classList.remove("aperto");
         }
 
         input.addEventListener("input", apriDropdown);
-        input.addEventListener("focus", apriDropdown);
+        input.addEventListener("focus", apriDropdownCompleta);
+
+        const wrapperCombo = input.closest(".combo-wrapper");
+        const frecciaCombo = wrapperCombo ? wrapperCombo.querySelector(".combo-arrow") : null;
+
+        if (frecciaCombo) {
+            frecciaCombo.addEventListener("mousedown", (e) => {
+                // preventDefault: evita che il click sulla freccetta tolga il focus
+                // dall'input (che chiuderebbe subito il dropdown appena aperto)
+                e.preventDefault();
+                if (dropdown.classList.contains("aperto")) {
+                    chiudiDropdown();
+                } else {
+                    input.focus();
+                    apriDropdownCompleta();
+                }
+            });
+        }
 
         // Navigazione da tastiera identica a quella del select "Comando":
         // frecce per scorrere le voci, Invio per confermare quella evidenziata.
@@ -579,14 +604,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 input.blur();
             } else if (e.key === "ArrowDown") {
                 e.preventDefault();
-                if (!dropdownAperto) { apriDropdown(); return; }
+                if (!dropdownAperto) { apriDropdownCompleta(); return; }
                 if (ultimoFiltrati.length > 0) {
                     indiceAttivo = (indiceAttivo + 1) % ultimoFiltrati.length;
                     aggiornaEvidenziazione();
                 }
             } else if (e.key === "ArrowUp") {
                 e.preventDefault();
-                if (!dropdownAperto) { apriDropdown(); return; }
+                if (!dropdownAperto) { apriDropdownCompleta(); return; }
                 if (ultimoFiltrati.length > 0) {
                     indiceAttivo = (indiceAttivo - 1 + ultimoFiltrati.length) % ultimoFiltrati.length;
                     aggiornaEvidenziazione();
@@ -601,7 +626,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         document.addEventListener("click", (e) => {
-            if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+            if (!input.contains(e.target) && !dropdown.contains(e.target) && !(frecciaCombo && frecciaCombo.contains(e.target))) {
                 chiudiDropdown();
             }
         });

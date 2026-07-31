@@ -303,23 +303,35 @@ body {
     border-color: var(--primary-color);
 }
 
-/* Freccetta a discesa per i combo ricercabili (prefisso e lingua) */
-.combo-wrapper::after {
-    content: "";
+/* Freccetta a discesa per i combo ricercabili (prefisso e lingua): elemento reale
+   e cliccabile (non più un ::after decorativo), per poter aprire l'elenco completo */
+.combo-arrow {
     position: absolute;
-    top: 50%;
-    right: 12px;
+    top: 0;
+    right: 0;
+    width: 34px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.combo-arrow::before {
+    content: "";
     width: 0;
     height: 0;
     border-left: 5px solid transparent;
     border-right: 5px solid transparent;
     border-top: 6px solid var(--text-muted);
-    transform: translateY(-50%);
-    pointer-events: none; /* la freccetta non blocca i click sull'input */
     transition: border-top-color 0.2s, transform 0.2s;
 }
 
-.combo-wrapper:focus-within::after {
+.combo-wrapper:focus-within .combo-arrow::before {
+    border-top-color: var(--primary-color);
+}
+
+.combo-arrow:hover::before {
     border-top-color: var(--primary-color);
 }
 
