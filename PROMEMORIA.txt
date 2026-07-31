@@ -1,2 +1,3 @@
 giorno nella data!!!
 e fuso orario roma cest!
+spostare link bollettino vicino radar meteo!
