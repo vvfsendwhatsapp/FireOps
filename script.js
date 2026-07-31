@@ -47,6 +47,9 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         selectComando.disabled = false;
 
+        // Popola anche il selettore "destinatario rapido" della pagina Messaggistica
+        popolaSelectDestinatarioMsg(comandiData);
+
         const comandoSalvato = sessionStorage.getItem(CHIAVE_STORAGE);
         if (comandoSalvato && comandiData.some(c => c.Comando === comandoSalvato)) {
             attivaComando(comandoSalvato);
@@ -139,17 +142,16 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Genera l'HTML per un campo email o telefono copiabile
-// Genera l'HTML per un campo email o telefono copiabile
-function creaCampoCopiabile(valore, tipo) {
-    if (!valore || valore === '-') return '-';
+    function creaCampoCopiabile(valore, tipo) {
+        if (!valore || valore === '-') return '-';
 
-    const classeCss = tipo === 'telefono' ? 'telefono-cliccabile' : 'email-cliccabile';
-    
-    // Se è un telefono, formatta con '0' iniziale e senza spazi per la copia
-    const valoreCopia = tipo === 'telefono' ? formattaTelefonoPerCopia(valore) : valore;
+        const classeCss = tipo === 'telefono' ? 'telefono-cliccabile' : 'email-cliccabile';
 
-    return `<span class="${classeCss}" data-copia="${valoreCopia}">${valore}</span>`;
-}
+        // Se è un telefono, formatta con '0' iniziale e senza spazi per la copia
+        const valoreCopia = tipo === 'telefono' ? formattaTelefonoPerCopia(valore) : valore;
+
+        return `<span class="${classeCss}" data-copia="${valoreCopia}">${valore}</span>`;
+    }
 
     // Chiude qualsiasi popup aperto
     function chiudiPopupDati() {
@@ -403,6 +405,133 @@ function creaCampoCopiabile(valore, tipo) {
         });
     }
 
+    // ==========================================================
+    // NAVIGAZIONE A SCHEDE (SPA): mostra/nasconde le sezioni
+    // in base all'hash dell'URL, senza ricaricare la pagina
+    // ==========================================================
+    const paginaSections = document.querySelectorAll(".page-section");
+    const navLinks = document.querySelectorAll(".sticky-nav a[data-page]");
+
+    function mostraPagina(idPagina) {
+        const idValido = document.getElementById(idPagina) ? idPagina : "homepage";
+
+        paginaSections.forEach(sezione => {
+            sezione.classList.toggle("attiva", sezione.id === idValido);
+        });
+
+        navLinks.forEach(link => {
+            link.classList.toggle("attivo", link.dataset.page === idValido);
+        });
+
+        // Chiude eventuali popup rimasti aperti quando si cambia pagina
+        chiudiPopupDati();
+    }
+
+    window.addEventListener("hashchange", () => {
+        const idPagina = window.location.hash.replace("#", "") || "homepage";
+        mostraPagina(idPagina);
+    });
+
+    // Mostra subito la pagina corretta all'apertura (rispetta un eventuale hash nell'URL)
+    const idPaginaIniziale = window.location.hash.replace("#", "") || "homepage";
+    mostraPagina(idPaginaIniziale);
+
+    // ==========================================================
+    // PAGINA MESSAGGISTICA: componi un messaggio e invialo
+    // tramite WhatsApp o Telegram
+    // ==========================================================
+    const selectDestinatarioMsg = document.getElementById("msg-destinatario");
+    const inputNumeroMsg = document.getElementById("msg-numero");
+    const textareaMsg = document.getElementById("msg-testo");
+    const btnInviaWhatsapp = document.getElementById("btn-invia-whatsapp");
+    const btnInviaTelegram = document.getElementById("btn-invia-telegram");
+
+    // Popola il menu a tendina "destinatario rapido" con i Comandi disponibili
+    function popolaSelectDestinatarioMsg(listaComandi) {
+        if (!selectDestinatarioMsg) return;
+
+        selectDestinatarioMsg.innerHTML = '<option value="">-- Inserimento manuale --</option>';
+        listaComandi.forEach(c => {
+            if (!c["Telefono SO Comando"]) return; // mostra solo chi ha un numero disponibile
+            const opt = document.createElement("option");
+            opt.value = c.Comando;
+            opt.textContent = `${c.Comando} (SO Comando)`;
+            selectDestinatarioMsg.appendChild(opt);
+        });
+    }
+    // Espone la funzione al di fuori di questo blocco, così può essere richiamata
+    // dopo il caricamento dei dati nel Promise.all iniziale
+    window.popolaSelectDestinatarioMsg = popolaSelectDestinatarioMsg;
+
+    if (selectDestinatarioMsg) {
+        selectDestinatarioMsg.addEventListener("change", () => {
+            const nomeComando = selectDestinatarioMsg.value;
+            if (!nomeComando) return;
+
+            const comandoTrovato = comandiData.find(c => c.Comando === nomeComando);
+            if (comandoTrovato && comandoTrovato["Telefono SO Comando"]) {
+                inputNumeroMsg.value = formattaTelefonoPerCopia(comandoTrovato["Telefono SO Comando"]);
+            }
+        });
+    }
+
+    // Converte un numero italiano (es. "0123456789" o "+39 012 345 6789")
+    // nel formato internazionale richiesto da wa.me (solo cifre, senza "+", con prefisso 39)
+    function formattaNumeroWhatsapp(numero) {
+        if (!numero) return "";
+
+        let pulito = numero.replace(/[^\d+]/g, "");
+
+        if (pulito.startsWith("+")) {
+            pulito = pulito.slice(1);
+        }
+        if (pulito.startsWith("0")) {
+            pulito = "39" + pulito.slice(1);
+        } else if (!pulito.startsWith("39")) {
+            pulito = "39" + pulito;
+        }
+
+        return pulito;
+    }
+
+    if (btnInviaWhatsapp) {
+        btnInviaWhatsapp.addEventListener("click", () => {
+            const testo = textareaMsg.value.trim();
+            if (!testo) {
+                alert("Scrivi un messaggio prima di inviarlo.");
+                return;
+            }
+
+            const numero = inputNumeroMsg.value.trim();
+            const testoCodificato = encodeURIComponent(testo);
+
+            const url = numero
+                ? `https://wa.me/${formattaNumeroWhatsapp(numero)}?text=${testoCodificato}`
+                : `https://api.whatsapp.com/send?text=${testoCodificato}`;
+
+            window.open(url, "_blank", "noopener");
+        });
+    }
+
+    if (btnInviaTelegram) {
+        btnInviaTelegram.addEventListener("click", () => {
+            const testo = textareaMsg.value.trim();
+            if (!testo) {
+                alert("Scrivi un messaggio prima di inviarlo.");
+                return;
+            }
+
+            // Telegram non permette, per privacy, di aprire una chat diretta
+            // partendo da un numero di telefono via link web pubblico.
+            // Si apre quindi la finestra di condivisione: sarà l'utente a
+            // scegliere il contatto o il gruppo a cui inviare il messaggio.
+            const testoCodificato = encodeURIComponent(testo);
+            const url = `https://t.me/share/url?url=&text=${testoCodificato}`;
+
+            window.open(url, "_blank", "noopener");
+        });
+    }
+
     // Orologio in tempo reale e Turno VVF
     function updateClockAndShift() {
         const now = new Date();
@@ -479,7 +608,7 @@ function creaCampoCopiabile(valore, tipo) {
 // rimuove gli spazi e assicura che inizi con uno '0' (se non presente)
 function formattaTelefonoPerCopia(telefono) {
     if (!telefono || telefono === '-') return '';
-    
+
     // Rimuove tutti gli spazi
     let pulito = telefono.replace(/\s+/g, '');
 
