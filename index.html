@@ -59,24 +59,118 @@
     <!-- MENU FISSO IN ALTO -->
     <nav class="sticky-nav">
         <ul>
-            <li><a href="#homepage">Home page</a></li>
-            <li><a href="#messaggistica">Messaggistica</a></li>
-            <li><a href="#info-comando">Info Altro Comando</a></li>
-            <li><a href="#gestione-fpds">Gestione Interventi FPDS</a></li>
-            <li><a href="#contatti">Contatti Altri Comandi</a></li>
-            <li><a href="#convertitore">Convertitore</a></li>
-            <li><a href="#radio-telefoni">Radio e Telefoni</a></li>
-            <li><a href="#qrcode">QrCode</a></li>
-            <li><a href="#turnario">Turnario</a></li>
-            <li><a href="#moduli-cmr">Moduli CMR</a></li>
+            <li><a href="#homepage" data-page="homepage">Home page</a></li>
+            <li><a href="#messaggistica" data-page="messaggistica">Messaggistica</a></li>
+            <li><a href="#info-comando" data-page="info-comando">Info Altro Comando</a></li>
+            <li><a href="#gestione-fpds" data-page="gestione-fpds">Gestione Interventi FPDS</a></li>
+            <li><a href="#contatti" data-page="contatti">Contatti Altri Comandi</a></li>
+            <li><a href="#convertitore" data-page="convertitore">Convertitore</a></li>
+            <li><a href="#radio-telefoni" data-page="radio-telefoni">Radio e Telefoni</a></li>
+            <li><a href="#qrcode" data-page="qrcode">QrCode</a></li>
+            <li><a href="#turnario" data-page="turnario">Turnario</a></li>
+            <li><a href="#moduli-cmr" data-page="moduli-cmr">Moduli CMR</a></li>
         </ul>
     </nav>
 
     <!-- CONTENUTO PRINCIPALE -->
     <main class="main-content">
-        <section id="home">
+
+        <!-- HOME -->
+        <section id="homepage" class="page-section attiva">
             <div id="riepilogo-comando" class="riepilogo-comando"></div>
         </section>
+
+        <!-- MESSAGGISTICA -->
+        <section id="messaggistica" class="page-section">
+            <div class="pagina-box">
+                <h3>Messaggistica</h3>
+                <p class="pagina-nota">
+                    Componi il messaggio e invialo tramite WhatsApp o Telegram.
+                    Per Telegram, per motivi di privacy della piattaforma, dovrai scegliere tu il contatto/gruppo destinatario una volta aperta l'app.
+                </p>
+
+                <label for="msg-destinatario">Destinatario rapido (facoltativo)</label>
+                <select id="msg-destinatario">
+                    <option value="">-- Inserimento manuale --</option>
+                </select>
+
+                <label for="msg-numero">Numero WhatsApp (facoltativo)</label>
+                <input type="text" id="msg-numero" placeholder="Es. 0123456789 oppure +39...">
+
+                <label for="msg-testo">Messaggio</label>
+                <textarea id="msg-testo" rows="6" placeholder="Scrivi qui il messaggio da inviare..."></textarea>
+
+                <div class="msg-azioni">
+                    <button id="btn-invia-whatsapp" class="btn-whatsapp" type="button">Invia con WhatsApp</button>
+                    <button id="btn-invia-telegram" class="btn-telegram" type="button">Invia con Telegram</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- INFO ALTRO COMANDO -->
+        <section id="info-comando" class="page-section">
+            <div class="pagina-box">
+                <h3>Info Altro Comando</h3>
+                <p class="pagina-nota">Sezione in costruzione.</p>
+            </div>
+        </section>
+
+        <!-- GESTIONE INTERVENTI FPDS -->
+        <section id="gestione-fpds" class="page-section">
+            <div class="pagina-box">
+                <h3>Gestione Interventi FPDS</h3>
+                <p class="pagina-nota">Sezione in costruzione.</p>
+            </div>
+        </section>
+
+        <!-- CONTATTI ALTRI COMANDI -->
+        <section id="contatti" class="page-section">
+            <div class="pagina-box">
+                <h3>Contatti Altri Comandi</h3>
+                <p class="pagina-nota">Sezione in costruzione.</p>
+            </div>
+        </section>
+
+        <!-- CONVERTITORE -->
+        <section id="convertitore" class="page-section">
+            <div class="pagina-box">
+                <h3>Convertitore</h3>
+                <p class="pagina-nota">Sezione in costruzione.</p>
+            </div>
+        </section>
+
+        <!-- RADIO E TELEFONI -->
+        <section id="radio-telefoni" class="page-section">
+            <div class="pagina-box">
+                <h3>Radio e Telefoni</h3>
+                <p class="pagina-nota">Sezione in costruzione.</p>
+            </div>
+        </section>
+
+        <!-- QRCODE -->
+        <section id="qrcode" class="page-section">
+            <div class="pagina-box">
+                <h3>QrCode</h3>
+                <p class="pagina-nota">Sezione in costruzione.</p>
+            </div>
+        </section>
+
+        <!-- TURNARIO -->
+        <section id="turnario" class="page-section">
+            <div class="pagina-box">
+                <h3>Turnario</h3>
+                <p class="pagina-nota">Sezione in costruzione.</p>
+            </div>
+        </section>
+
+        <!-- MODULI CMR -->
+        <section id="moduli-cmr" class="page-section">
+            <div class="pagina-box">
+                <h3>Moduli CMR</h3>
+                <p class="pagina-nota">Sezione in costruzione.</p>
+            </div>
+        </section>
+
     </main>
 
     <script src="script.js"></script>
