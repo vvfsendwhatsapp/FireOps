@@ -490,6 +490,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function creaComboRicercabile({ input, hidden, dropdown, elenco, cercaValore, mostraTesto, onScelta }) {
         let elencoCorrente = elenco;
         let ultimoFiltrati = elenco;
+        let indiceAttivo = -1; // voce evidenziata nella lista filtrata (come il cursore di un select nativo)
 
         function filtra(testo) {
             const filtro = (testo || "").trim().toLowerCase();
@@ -502,6 +503,7 @@ document.addEventListener("DOMContentLoaded", () => {
             dropdown.innerHTML = "";
 
             if (ultimoFiltrati.length === 0) {
+                indiceAttivo = -1;
                 const vuoto = document.createElement("div");
                 vuoto.className = "combo-opzione-vuota";
                 vuoto.textContent = "Nessun risultato";
@@ -509,9 +511,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            ultimoFiltrati.forEach(item => {
+            // Alla riapertura evidenzia la voce già selezionata (se ancora presente nel
+            // filtro), altrimenti la prima: proprio come farebbe un <select> nativo.
+            const indiceValoreCorrente = hidden.value
+                ? ultimoFiltrati.findIndex(item => cercaValore(item) === hidden.value)
+                : -1;
+            indiceAttivo = indiceValoreCorrente >= 0 ? indiceValoreCorrente : 0;
+
+            ultimoFiltrati.forEach((item, i) => {
                 const opz = document.createElement("div");
-                opz.className = "combo-opzione";
+                opz.className = "combo-opzione" + (i === indiceAttivo ? " combo-opzione-attiva" : "");
                 opz.textContent = mostraTesto(item);
                 // mousedown (non click): scatta prima del blur dell'input, altrimenti
                 // il dropdown si chiuderebbe prima che il click venga registrato
@@ -519,8 +528,26 @@ document.addEventListener("DOMContentLoaded", () => {
                     e.preventDefault();
                     selezionaVoce(item);
                 });
+                // Passando col mouse, l'evidenziazione segue anche il puntatore
+                opz.addEventListener("mouseenter", () => {
+                    indiceAttivo = i;
+                    aggiornaEvidenziazione();
+                });
                 dropdown.appendChild(opz);
             });
+
+            aggiornaEvidenziazione();
+        }
+
+        // Aggiorna solo la classe "attiva" sulle voci già renderizzate, senza ridisegnare
+        // tutta la lista: usata dalla navigazione a tastiera e dal passaggio del mouse.
+        function aggiornaEvidenziazione() {
+            const opzioni = dropdown.querySelectorAll(".combo-opzione");
+            opzioni.forEach((el, i) => {
+                el.classList.toggle("combo-opzione-attiva", i === indiceAttivo);
+            });
+            const attiva = opzioni[indiceAttivo];
+            if (attiva) attiva.scrollIntoView({ block: "nearest" });
         }
 
         function selezionaVoce(item) {
@@ -542,13 +569,34 @@ document.addEventListener("DOMContentLoaded", () => {
         input.addEventListener("input", apriDropdown);
         input.addEventListener("focus", apriDropdown);
 
+        // Navigazione da tastiera identica a quella del select "Comando":
+        // frecce per scorrere le voci, Invio per confermare quella evidenziata.
         input.addEventListener("keydown", (e) => {
+            const dropdownAperto = dropdown.classList.contains("aperto");
+
             if (e.key === "Escape") {
                 chiudiDropdown();
                 input.blur();
+            } else if (e.key === "ArrowDown") {
+                e.preventDefault();
+                if (!dropdownAperto) { apriDropdown(); return; }
+                if (ultimoFiltrati.length > 0) {
+                    indiceAttivo = (indiceAttivo + 1) % ultimoFiltrati.length;
+                    aggiornaEvidenziazione();
+                }
+            } else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                if (!dropdownAperto) { apriDropdown(); return; }
+                if (ultimoFiltrati.length > 0) {
+                    indiceAttivo = (indiceAttivo - 1 + ultimoFiltrati.length) % ultimoFiltrati.length;
+                    aggiornaEvidenziazione();
+                }
             } else if (e.key === "Enter") {
                 e.preventDefault();
-                if (ultimoFiltrati.length > 0) selezionaVoce(ultimoFiltrati[0]);
+                if (ultimoFiltrati.length > 0) {
+                    const scelta = ultimoFiltrati[indiceAttivo >= 0 ? indiceAttivo : 0];
+                    selezionaVoce(scelta);
+                }
             }
         });
 

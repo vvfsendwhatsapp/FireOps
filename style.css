@@ -354,6 +354,12 @@ body {
     color: var(--dark-color);
 }
 
+/* Voce evidenziata dalla navigazione a tastiera (frecce), come il cursore di un select nativo */
+.combo-opzione-attiva {
+    background: var(--primary-color);
+    color: var(--dark-color);
+}
+
 .combo-opzione-vuota {
     padding: 8px 10px;
     font-size: 13px;
