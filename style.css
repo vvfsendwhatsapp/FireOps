@@ -261,6 +261,21 @@ body {
     resize: vertical;
 }
 
+.msg-riga-campi {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.msg-campo {
+    flex: 1;
+    min-width: 160px;
+}
+
+.msg-campo label {
+    margin-top: 0;
+}
+
 .msg-azioni {
     display: flex;
     gap: 15px;

@@ -12,6 +12,8 @@ document.addEventListener("DOMContentLoaded", () => {
     let direzioniData = [];
     let conData = null;   // record singolo, nazionale
     let socavData = null; // record singolo, nazionale
+    let prefissiData = []; // elenco prefissi internazionali
+    let lingueData = [];   // elenco lingue disponibili per Messaggistica
     let modalChiudibile = false; // true solo quando riaperto manualmente col pulsante ☰
 
     Promise.all([
@@ -30,13 +32,23 @@ document.addEventListener("DOMContentLoaded", () => {
         fetch("/FireOps/db/SOCAV.json").then(r => {
             if (!r.ok) throw new Error("Impossibile trovare SOCAV.json");
             return r.json();
+        }),
+        fetch("/FireOps/db/prefissi.json").then(r => {
+            if (!r.ok) throw new Error("Impossibile trovare prefissi.json");
+            return r.json();
+        }),
+        fetch("/FireOps/db/lingue.json").then(r => {
+            if (!r.ok) throw new Error("Impossibile trovare lingue.json");
+            return r.json();
         })
     ])
-    .then(([comandi, direzioni, con, socav]) => {
+    .then(([comandi, direzioni, con, socav, prefissi, lingue]) => {
         comandiData = comandi;
         direzioniData = direzioni;
         conData = Array.isArray(con) ? con[0] : con;
         socavData = Array.isArray(socav) ? socav[0] : socav;
+        prefissiData = prefissi;
+        lingueData = lingue;
 
         selectComando.innerHTML = '<option value="" disabled selected>-- Seleziona Comando --</option>';
         comandi.forEach(c => {
@@ -47,8 +59,9 @@ document.addEventListener("DOMContentLoaded", () => {
         });
         selectComando.disabled = false;
 
-        // Popola anche il selettore "destinatario rapido" della pagina Messaggistica
-        popolaSelectDestinatarioMsg(comandiData);
+        // Popola i selettori della pagina Messaggistica (prefisso e lingua)
+        popolaSelectPrefissoMsg(prefissiData);
+        popolaSelectLinguaMsg(lingueData);
 
         const comandoSalvato = sessionStorage.getItem(CHIAVE_STORAGE);
         if (comandoSalvato && comandiData.some(c => c.Comando === comandoSalvato)) {
@@ -70,6 +83,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const comandoSelezionato = comandiData.find(c => c.Comando === nomeComando);
         renderRiepilogoComando(comandoSelezionato, comandiData, direzioniData, conData, socavData);
+
+        // Il messaggio precompilato dipende dal Comando attivo: lo rigenero
+        generaMessaggioMessaggistica();
     }
 
     // Apre il modale in modalità "cambio comando" (chiudibile)
@@ -425,6 +441,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Chiude eventuali popup rimasti aperti quando si cambia pagina
         chiudiPopupDati();
+
+        // Entrando in Messaggistica, il cursore va subito sul campo "Numero"
+        if (idValido === "messaggistica") {
+            const inputNumero = document.getElementById("msg-numero");
+            if (inputNumero) {
+                setTimeout(() => inputNumero.focus(), 50);
+            }
+        }
     }
 
     window.addEventListener("hashchange", () => {
@@ -437,98 +461,486 @@ document.addEventListener("DOMContentLoaded", () => {
     mostraPagina(idPaginaIniziale);
 
     // ==========================================================
-    // PAGINA MESSAGGISTICA: componi un messaggio e invialo
-    // tramite WhatsApp o Telegram
+    // PAGINA MESSAGGISTICA: messaggio precompilato multilingua
+    // + invio tramite WhatsApp Web, WhatsApp Desktop o Telegram
     // ==========================================================
-    const selectDestinatarioMsg = document.getElementById("msg-destinatario");
+    const selectPrefissoMsg = document.getElementById("msg-prefisso");
+    const selectLinguaMsg = document.getElementById("msg-lingua");
     const inputNumeroMsg = document.getElementById("msg-numero");
     const textareaMsg = document.getElementById("msg-testo");
-    const btnInviaWhatsapp = document.getElementById("btn-invia-whatsapp");
+    const btnWhatsappWeb = document.getElementById("btn-whatsapp-web");
+    const btnWhatsappApp = document.getElementById("btn-whatsapp-app");
     const btnInviaTelegram = document.getElementById("btn-invia-telegram");
 
-    // Popola il menu a tendina "destinatario rapido" con i Comandi disponibili
-    function popolaSelectDestinatarioMsg(listaComandi) {
-        if (!selectDestinatarioMsg) return;
+    const PREFISSO_PREDEFINITO = "39";  // Italia
+    const LINGUA_PREDEFINITA = "it";    // Italiano
 
-        selectDestinatarioMsg.innerHTML = '<option value="">-- Inserimento manuale --</option>';
-        listaComandi.forEach(c => {
-            if (!c["Telefono SO Comando"]) return; // mostra solo chi ha un numero disponibile
+    // Popola il menu a tendina dei prefissi internazionali (default: 39 - Italia)
+    function popolaSelectPrefissoMsg(listaPrefissi) {
+        if (!selectPrefissoMsg) return;
+
+        selectPrefissoMsg.innerHTML = "";
+        listaPrefissi.forEach(p => {
             const opt = document.createElement("option");
-            opt.value = c.Comando;
-            opt.textContent = `${c.Comando} (SO Comando)`;
-            selectDestinatarioMsg.appendChild(opt);
+            opt.value = p.Valore;
+            opt.textContent = p.Prefissi;
+            selectPrefissoMsg.appendChild(opt);
         });
-    }
-    // Espone la funzione al di fuori di questo blocco, così può essere richiamata
-    // dopo il caricamento dei dati nel Promise.all iniziale
-    window.popolaSelectDestinatarioMsg = popolaSelectDestinatarioMsg;
 
-    if (selectDestinatarioMsg) {
-        selectDestinatarioMsg.addEventListener("change", () => {
-            const nomeComando = selectDestinatarioMsg.value;
-            if (!nomeComando) return;
-
-            const comandoTrovato = comandiData.find(c => c.Comando === nomeComando);
-            if (comandoTrovato && comandoTrovato["Telefono SO Comando"]) {
-                inputNumeroMsg.value = formattaTelefonoPerCopia(comandoTrovato["Telefono SO Comando"]);
-            }
-        });
-    }
-
-    // Converte un numero italiano (es. "0123456789" o "+39 012 345 6789")
-    // nel formato internazionale richiesto da wa.me (solo cifre, senza "+", con prefisso 39)
-    function formattaNumeroWhatsapp(numero) {
-        if (!numero) return "";
-
-        let pulito = numero.replace(/[^\d+]/g, "");
-
-        if (pulito.startsWith("+")) {
-            pulito = pulito.slice(1);
+        if (listaPrefissi.some(p => p.Valore === PREFISSO_PREDEFINITO)) {
+            selectPrefissoMsg.value = PREFISSO_PREDEFINITO;
         }
-        if (pulito.startsWith("0")) {
-            pulito = "39" + pulito.slice(1);
-        } else if (!pulito.startsWith("39")) {
-            pulito = "39" + pulito;
+    }
+    window.popolaSelectPrefissoMsg = popolaSelectPrefissoMsg;
+
+    // Popola il menu a tendina delle lingue disponibili (default: Italiano)
+    function popolaSelectLinguaMsg(listaLingue) {
+        if (!selectLinguaMsg) return;
+
+        selectLinguaMsg.innerHTML = "";
+        listaLingue.forEach(l => {
+            const opt = document.createElement("option");
+            opt.value = l.code;
+            opt.textContent = l.lingua;
+            selectLinguaMsg.appendChild(opt);
+        });
+
+        if (listaLingue.some(l => l.code === LINGUA_PREDEFINITA)) {
+            selectLinguaMsg.value = LINGUA_PREDEFINITA;
         }
 
-        return pulito;
+        // Alla prima generazione disponibile, genera subito il messaggio
+        generaMessaggioMessaggistica();
+    }
+    window.popolaSelectLinguaMsg = popolaSelectLinguaMsg;
+
+    if (selectLinguaMsg) {
+        selectLinguaMsg.addEventListener("change", generaMessaggioMessaggistica);
     }
 
-    if (btnInviaWhatsapp) {
-        btnInviaWhatsapp.addEventListener("click", () => {
-            const testo = textareaMsg.value.trim();
-            if (!testo) {
-                alert("Scrivi un messaggio prima di inviarlo.");
+    // Testi del messaggio tradotti (solo il corpo istruttivo: il footer con
+    // data/ora/turno resta sempre in italiano, essendo un dato operativo).
+    // Lingue non presenti in questo elenco ricadono automaticamente sull'italiano.
+    const TRADUZIONI_MESSAGGIO = {
+        it: `🚒 *Vigili del Fuoco {{COMANDO}}* 🚒
+Messaggio generato automaticamente.
+Utilizzi questo numero per inviarci posizione, foto, video o altre informazioni dell'evento che ci ha comunicato.
+*QUESTO NON È UN NUMERO PER LE EMERGENZE*
+e NON lo utilizzi per altri scopi o in altre occasioni senza la nostra autorizzazione.
+Per tutte le richieste di soccorso chiami il
+☎️🆘️
+*{{NUM}}*
+🇪🇺🇮🇹
+Per l'invio delle coordinate:
+1. Clicchi sulla "graffetta" (Android) 📎 o sul "più" (Apple) ➕
+2. Clicchi su "Posizione" ⛳
+3. Se necessario segua le indicazioni del dispositivo per consentire a WhatsApp di accedere alla posizione 🆗️
+4. Attenda qualche istante per aumentare la precisione ⏰
+5. Clicchi su "Posizione attuale" 🎯
+*Rimanga al sicuro, nella posizione che ci ha condiviso e lasci libera la linea telefonica.*`,
+
+        en: `🚒 *Fire Department {{COMANDO}}* 🚒
+Automatically generated message.
+Please use this number to send us the location, photos, videos or other information about the event you reported.
+*THIS IS NOT AN EMERGENCY NUMBER*
+Do NOT use it for other purposes or on other occasions without our authorization.
+For all emergency assistance requests call
+☎️🆘️
+*{{NUM}}*
+🇪🇺🇮🇹
+To send your coordinates:
+1. Tap the "paperclip" (Android) 📎 or the "plus" (Apple) ➕
+2. Tap "Location" ⛳
+3. If needed, follow your device's instructions to allow WhatsApp to access your location 🆗️
+4. Wait a few moments to improve accuracy ⏰
+5. Tap "Current location" 🎯
+*Stay safe, remain at the location you shared with us, and keep the phone line free.*`,
+
+        fr: `🚒 *Sapeurs-Pompiers {{COMANDO}}* 🚒
+Message généré automatiquement.
+Utilisez ce numéro pour nous envoyer la position, des photos, vidéos ou d'autres informations sur l'événement que vous nous avez signalé.
+*CE N'EST PAS UN NUMÉRO D'URGENCE*
+Ne l'utilisez PAS à d'autres fins ou en d'autres occasions sans notre autorisation.
+Pour toute demande de secours, appelez le
+☎️🆘️
+*{{NUM}}*
+🇪🇺🇮🇹
+Pour envoyer vos coordonnées :
+1. Appuyez sur le "trombone" (Android) 📎 ou sur le "plus" (Apple) ➕
+2. Appuyez sur "Position" ⛳
+3. Si nécessaire, suivez les indications de votre appareil pour autoriser WhatsApp à accéder à votre position 🆗️
+4. Patientez quelques instants pour améliorer la précision ⏰
+5. Appuyez sur "Position actuelle" 🎯
+*Restez en sécurité, à l'endroit que vous avez partagé, et laissez la ligne téléphonique libre.*`,
+
+        de: `🚒 *Feuerwehr {{COMANDO}}* 🚒
+Automatisch generierte Nachricht.
+Nutzen Sie diese Nummer, um uns den Standort, Fotos, Videos oder weitere Informationen zu dem gemeldeten Ereignis zu senden.
+*DIES IST KEINE NOTRUFNUMMER*
+Verwenden Sie sie NICHT für andere Zwecke oder bei anderen Gelegenheiten ohne unsere Genehmigung.
+Für alle Notfälle rufen Sie bitte
+☎️🆘️
+*{{NUM}}*
+🇪🇺🇮🇹
+So senden Sie Ihren Standort:
+1. Tippen Sie auf die "Büroklammer" (Android) 📎 oder das "Plus" (Apple) ➕
+2. Tippen Sie auf "Standort" ⛳
+3. Folgen Sie bei Bedarf den Anweisungen Ihres Geräts, um WhatsApp den Zugriff auf Ihren Standort zu erlauben 🆗️
+4. Warten Sie einen Moment, um die Genauigkeit zu verbessern ⏰
+5. Tippen Sie auf "Aktueller Standort" 🎯
+*Bleiben Sie sicher, an dem Ort, den Sie uns mitgeteilt haben, und halten Sie die Telefonleitung frei.*`,
+
+        es: `🚒 *Bomberos {{COMANDO}}* 🚒
+Mensaje generado automáticamente.
+Utilice este número para enviarnos la ubicación, fotos, vídeos u otra información sobre el evento que nos ha comunicado.
+*ESTE NO ES UN NÚMERO DE EMERGENCIAS*
+NO lo utilice para otros fines ni en otras ocasiones sin nuestra autorización.
+Para cualquier solicitud de auxilio llame al
+☎️🆘️
+*{{NUM}}*
+🇪🇺🇮🇹
+Para enviar sus coordenadas:
+1. Toque el "clip" (Android) 📎 o el "más" (Apple) ➕
+2. Toque "Ubicación" ⛳
+3. Si es necesario, siga las indicaciones de su dispositivo para permitir que WhatsApp acceda a su ubicación 🆗️
+4. Espere unos instantes para mejorar la precisión ⏰
+5. Toque "Ubicación actual" 🎯
+*Manténgase a salvo, en el lugar que nos ha compartido, y deje libre la línea telefónica.*`,
+
+        pt: `🚒 *Bombeiros {{COMANDO}}* 🚒
+Mensagem gerada automaticamente.
+Utilize este número para nos enviar a localização, fotos, vídeos ou outras informações sobre o evento que nos comunicou.
+*ESTE NÃO É UM NÚMERO DE EMERGÊNCIA*
+NÃO o utilize para outros fins ou em outras ocasiões sem a nossa autorização.
+Para qualquer pedido de socorro ligue para
+☎️🆘️
+*{{NUM}}*
+🇪🇺🇮🇹
+Para enviar as suas coordenadas:
+1. Toque no "clipe" (Android) 📎 ou no "mais" (Apple) ➕
+2. Toque em "Localização" ⛳
+3. Se necessário, siga as indicações do dispositivo para permitir que o WhatsApp aceda à sua localização 🆗️
+4. Aguarde alguns instantes para aumentar a precisão ⏰
+5. Toque em "Localização atual" 🎯
+*Mantenha-se em segurança, no local que partilhou connosco, e deixe a linha telefónica livre.*`,
+
+        ar: `🚒 *فرقة الإطفاء {{COMANDO}}* 🚒
+رسالة تم إنشاؤها تلقائيًا.
+يرجى استخدام هذا الرقم لإرسال الموقع أو الصور أو مقاطع الفيديو أو أي معلومات أخرى حول الحادث الذي أبلغتمونا به.
+*هذا ليس رقم طوارئ*
+لا تستخدموه لأغراض أخرى أو في مناسبات أخرى دون إذننا.
+لطلبات الإنقاذ اتصلوا بالرقم
+☎️🆘️
+*{{NUM}}*
+🇪🇺🇮🇹
+لإرسال الإحداثيات:
+1. اضغطوا على "المشبك" (أندرويد) 📎 أو على "زائد" (أبل) ➕
+2. اضغطوا على "الموقع" ⛳
+3. عند الحاجة اتبعوا تعليمات جهازكم للسماح لواتساب بالوصول إلى موقعكم 🆗️
+4. انتظروا لحظات لتحسين الدقة ⏰
+5. اضغطوا على "الموقع الحالي" 🎯
+*ابقوا آمنين، في المكان الذي شاركتموه معنا، واتركوا الخط الهاتفي متاحًا.*`,
+
+        ro: `🚒 *Pompierii {{COMANDO}}* 🚒
+Mesaj generat automat.
+Vă rugăm să folosiți acest număr pentru a ne trimite locația, fotografii, videoclipuri sau alte informații despre evenimentul comunicat.
+*ACESTA NU ESTE UN NUMĂR DE URGENȚĂ*
+NU îl folosiți în alte scopuri sau în alte ocazii fără autorizarea noastră.
+Pentru orice solicitare de ajutor sunați la
+☎️🆘️
+*{{NUM}}*
+🇪🇺🇮🇹
+Pentru a trimite coordonatele:
+1. Atingeți "agrafa" (Android) 📎 sau "plus" (Apple) ➕
+2. Atingeți "Locație" ⛳
+3. Dacă este necesar, urmați indicațiile dispozitivului pentru a permite WhatsApp să acceseze locația 🆗️
+4. Așteptați câteva momente pentru a îmbunătăți precizia ⏰
+5. Atingeți "Locația curentă" 🎯
+*Rămâneți în siguranță, la locația pe care ne-ați comunicat-o, și lăsați linia telefonică liberă.*`,
+
+        sq: `🚒 *Zjarrfikësit {{COMANDO}}* 🚒
+Mesazh i krijuar automatikisht.
+Përdorni këtë numër për të na dërguar pozicionin, fotografi, video ose informacione të tjera për ngjarjen që na keni raportuar.
+*KY NUK ËSHTË NUMËR EMERGJENCE*
+MOS e përdorni për qëllime të tjera ose në raste të tjera pa autorizimin tonë.
+Për çdo kërkesë ndihme telefononi
+☎️🆘️
+*{{NUM}}*
+🇪🇺🇮🇹
+Për të dërguar koordinatat:
+1. Prekni "kapësen" (Android) 📎 ose "plus" (Apple) ➕
+2. Prekni "Vendndodhja" ⛳
+3. Nëse është e nevojshme, ndiqni udhëzimet e pajisjes për t'i lejuar WhatsApp të aksesojë vendndodhjen tuaj 🆗️
+4. Prisni pak çaste për të përmirësuar saktësinë ⏰
+5. Prekni "Vendndodhja aktuale" 🎯
+*Qëndroni të sigurt, në vendndodhjen që na keni ndarë, dhe mbani linjën telefonike të lirë.*`,
+
+        ru: `🚒 *Пожарная служба {{COMANDO}}* 🚒
+Автоматически сформированное сообщение.
+Используйте этот номер, чтобы отправить нам местоположение, фото, видео или другую информацию о сообщённом происшествии.
+*ЭТО НЕ НОМЕР ЭКСТРЕННОЙ СЛУЖБЫ*
+НЕ используйте его для иных целей или в иных случаях без нашего разрешения.
+По всем вопросам, требующим помощи, звоните
+☎️🆘️
+*{{NUM}}*
+🇪🇺🇮🇹
+Чтобы отправить координаты:
+1. Нажмите на "скрепку" (Android) 📎 или на "плюс" (Apple) ➕
+2. Нажмите "Геопозиция" ⛳
+3. При необходимости следуйте указаниям устройства, чтобы разрешить WhatsApp доступ к местоположению 🆗️
+4. Подождите немного для повышения точности ⏰
+5. Нажмите "Текущее местоположение" 🎯
+*Оставайтесь в безопасности, в том месте, которое вы нам сообщили, и не занимайте телефонную линию.*`,
+
+        uk: `🚒 *Пожежна служба {{COMANDO}}* 🚒
+Автоматично згенероване повідомлення.
+Використовуйте цей номер, щоб надіслати нам місцезнаходження, фото, відео чи іншу інформацію про подію, про яку ви повідомили.
+*ЦЕ НЕ НОМЕР ЕКСТРЕНОЇ СЛУЖБИ*
+НЕ використовуйте його з іншою метою або в інших випадках без нашого дозволу.
+Для будь-якого запиту про допомогу телефонуйте
+☎️🆘️
+*{{NUM}}*
+🇪🇺🇮🇹
+Щоб надіслати координати:
+1. Натисніть на "скріпку" (Android) 📎 або на "плюс" (Apple) ➕
+2. Натисніть "Місцезнаходження" ⛳
+3. За потреби виконайте вказівки пристрою, щоб дозволити WhatsApp доступ до місцезнаходження 🆗️
+4. Зачекайте кілька секунд для покращення точності ⏰
+5. Натисніть "Поточне місцезнаходження" 🎯
+*Залишайтеся в безпеці, там, де ви нам повідомили, і тримайте телефонну лінію вільною.*`,
+
+        "zh-CN": `🚒 *{{COMANDO}}消防队* 🚒
+自动生成的消息。
+请使用此号码向我们发送您所报告事件的位置、照片、视频或其他信息。
+*这不是紧急电话号码*
+未经我们许可，请勿用于其他目的或场合。
+如需求助，请拨打
+☎️🆘️
+*{{NUM}}*
+🇪🇺🇮🇹
+发送坐标的方法：
+1. 点击"回形针"（安卓）📎 或"加号"（苹果）➕
+2. 点击"位置" ⛳
+3. 如有需要，请按照设备提示允许WhatsApp访问您的位置 🆗️
+4. 请稍候片刻以提高定位精度 ⏰
+5. 点击"当前位置" 🎯
+*请留在您与我们分享的位置，保持安全，并保持电话线畅通。*`,
+
+        hi: `🚒 *अग्निशमन सेवा {{COMANDO}}* 🚒
+यह संदेश स्वचालित रूप से तैयार किया गया है।
+इस नंबर का उपयोग हमें स्थान, फ़ोटो, वीडियो या घटना से संबंधित अन्य जानकारी भेजने के लिए करें।
+*यह आपातकालीन नंबर नहीं है*
+हमारी अनुमति के बिना इसका उपयोग किसी अन्य उद्देश्य या अवसर के लिए न करें।
+किसी भी सहायता अनुरोध के लिए कॉल करें
+☎️🆘️
+*{{NUM}}*
+🇪🇺🇮🇹
+अपने निर्देशांक भेजने के लिए:
+1. "पेपरक्लिप" (Android) 📎 या "प्लस" (Apple) ➕ पर टैप करें
+2. "स्थान" पर टैप करें ⛳
+3. यदि आवश्यक हो, तो WhatsApp को अपने स्थान तक पहुँचने की अनुमति देने के लिए डिवाइस के निर्देशों का पालन करें 🆗️
+4. सटीकता बढ़ाने के लिए कुछ क्षण प्रतीक्षा करें ⏰
+5. "वर्तमान स्थान" पर टैप करें 🎯
+*सुरक्षित रहें, जिस स्थान की जानकारी आपने हमें दी है वहीं रहें, और फोन लाइन खाली रखें।*`,
+
+        ur: `🚒 *فائر بریگیڈ {{COMANDO}}* 🚒
+یہ پیغام خودکار طور پر تیار کیا گیا ہے۔
+براہ کرم اس نمبر کو ہمیں محل وقوع، تصاویر، ویڈیوز یا واقعے سے متعلق دیگر معلومات بھیجنے کے لیے استعمال کریں۔
+*یہ ایمرجنسی نمبر نہیں ہے*
+ہماری اجازت کے بغیر اسے کسی اور مقصد یا موقع کے لیے استعمال نہ کریں۔
+کسی بھی امدادی درخواست کے لیے کال کریں
+☎️🆘️
+*{{NUM}}*
+🇪🇺🇮🇹
+اپنی لوکیشن بھیجنے کے لیے:
+1. "پیپر کلپ" (Android) 📎 یا "پلس" (Apple) ➕ پر ٹیپ کریں
+2. "لوکیشن" پر ٹیپ کریں ⛳
+3. ضرورت پڑنے پر واٹس ایپ کو اپنی لوکیشن تک رسائی دینے کے لیے آلے کی ہدایات پر عمل کریں 🆗️
+4. درستگی بہتر بنانے کے لیے چند لمحے انتظار کریں ⏰
+5. "موجودہ لوکیشن" پر ٹیپ کریں 🎯
+*محفوظ رہیں، اسی جگہ جہاں آپ نے ہمیں بتایا، اور فون لائن خالی رکھیں۔*`,
+
+        bn: `🚒 *দমকল বাহিনী {{COMANDO}}* 🚒
+এই বার্তাটি স্বয়ংক্রিয়ভাবে তৈরি করা হয়েছে।
+আপনি যে ঘটনার কথা জানিয়েছেন সে সম্পর্কে অবস্থান, ছবি, ভিডিও বা অন্যান্য তথ্য পাঠাতে এই নম্বরটি ব্যবহার করুন।
+*এটি জরুরি নম্বর নয়*
+আমাদের অনুমতি ছাড়া অন্য কোনো উদ্দেশ্যে বা অন্য কোনো সময়ে এটি ব্যবহার করবেন না।
+যেকোনো সাহায্যের জন্য কল করুন
+☎️🆘️
+*{{NUM}}*
+🇪🇺🇮🇹
+আপনার অবস্থান পাঠাতে:
+1. "পেপারক্লিপ" (Android) 📎 বা "প্লাস" (Apple) ➕ চাপুন
+2. "অবস্থান" চাপুন ⛳
+3. প্রয়োজনে, WhatsApp-কে আপনার অবস্থান অ্যাক্সেস করার অনুমতি দিতে ডিভাইসের নির্দেশাবলী অনুসরণ করুন 🆗️
+4. নির্ভুলতা বাড়াতে কিছুক্ষণ অপেক্ষা করুন ⏰
+5. "বর্তমান অবস্থান" চাপুন 🎯
+*নিরাপদ থাকুন, আপনি যে স্থানের কথা আমাদের জানিয়েছেন সেখানেই থাকুন, এবং ফোন লাইন খালি রাখুন।*`,
+
+        tr: `🚒 *İtfaiye {{COMANDO}}* 🚒
+Bu mesaj otomatik olarak oluşturulmuştur.
+Bize bildirdiğiniz olayla ilgili konum, fotoğraf, video veya diğer bilgileri göndermek için bu numarayı kullanın.
+*BU BİR ACİL DURUM NUMARASI DEĞİLDİR*
+İzniniz olmadan başka amaçlarla veya başka durumlarda KULLANMAYIN.
+Her türlü yardım talebi için arayın
+☎️🆘️
+*{{NUM}}*
+🇪🇺🇮🇹
+Konumunuzu göndermek için:
+1. Android'de "ataç" 📎 veya Apple'da "artı" ➕ simgesine dokunun
+2. "Konum" seçeneğine dokunun ⛳
+3. Gerekirse WhatsApp'ın konumunuza erişmesine izin vermek için cihazınızın talimatlarını izleyin 🆗️
+4. Doğruluğu artırmak için birkaç saniye bekleyin ⏰
+5. "Mevcut konum" seçeneğine dokunun 🎯
+*Güvende kalın, bize bildirdiğiniz konumda bekleyin ve telefon hattını boş tutun.*`,
+
+        pl: `🚒 *Straż Pożarna {{COMANDO}}* 🚒
+Wiadomość wygenerowana automatycznie.
+Prosimy używać tego numeru, aby przesłać nam lokalizację, zdjęcia, filmy lub inne informacje dotyczące zgłoszonego zdarzenia.
+*TO NIE JEST NUMER ALARMOWY*
+NIE używajcie go w innych celach ani przy innych okazjach bez naszej zgody.
+W przypadku każdej prośby o pomoc dzwońcie pod numer
+☎️🆘️
+*{{NUM}}*
+🇪🇺🇮🇹
+Aby wysłać współrzędne:
+1. Dotknijcie "spinacza" (Android) 📎 lub "plusa" (Apple) ➕
+2. Dotknijcie "Lokalizacja" ⛳
+3. W razie potrzeby postępujcie zgodnie ze wskazówkami urządzenia, aby zezwolić WhatsApp na dostęp do lokalizacji 🆗️
+4. Poczekajcie chwilę, aby zwiększyć dokładność ⏰
+5. Dotknijcie "Aktualna lokalizacja" 🎯
+*Pozostańcie bezpieczni, w miejscu, które nam wskazaliście, i zostawcie linię telefoniczną wolną.*`,
+
+        nl: `🚒 *Brandweer {{COMANDO}}* 🚒
+Automatisch gegenereerd bericht.
+Gebruik dit nummer om ons de locatie, foto's, video's of andere informatie over het gemelde incident te sturen.
+*DIT IS GEEN NOODNUMMER*
+Gebruik het NIET voor andere doeleinden of bij andere gelegenheden zonder onze toestemming.
+Bel voor elke hulpvraag naar
+☎️🆘️
+*{{NUM}}*
+🇪🇺🇮🇹
+Om uw coördinaten te verzenden:
+1. Tik op de "paperclip" (Android) 📎 of de "plus" (Apple) ➕
+2. Tik op "Locatie" ⛳
+3. Volg indien nodig de instructies van uw apparaat om WhatsApp toegang te geven tot uw locatie 🆗️
+4. Wacht even om de nauwkeurigheid te verbeteren ⏰
+5. Tik op "Huidige locatie" 🎯
+*Blijf veilig op de locatie die u met ons heeft gedeeld en houd de telefoonlijn vrij.*`
+    };
+
+    // Costruisce il corpo del messaggio sostituendo Comando e numero emergenza,
+    // ricadendo sull'italiano se la lingua scelta non ha ancora una traduzione
+    function costruisciCorpoMessaggio(codiceLingua, nomeComando, numeroEmergenzaFormattato) {
+        const modello = TRADUZIONI_MESSAGGIO[codiceLingua] || TRADUZIONI_MESSAGGIO.it;
+        return modello
+            .split("{{COMANDO}}").join(nomeComando.toUpperCase())
+            .split("{{NUM}}").join(numeroEmergenzaFormattato);
+    }
+
+    // Calcola lo scarto orario attuale di Roma rispetto a UTC (1 = CET, 2 = CEST)
+    function calcolaOffsetRoma(data) {
+        const utc = new Date(data.toLocaleString("en-US", { timeZone: "UTC" }));
+        const roma = new Date(data.toLocaleString("en-US", { timeZone: "Europe/Rome" }));
+        return Math.round((roma - utc) / (1000 * 60 * 60));
+    }
+
+    // Costruisce il piè di pagina (sempre in italiano): credito, data/ora/turno, fuso orario
+    function costruisciPieDiPaginaMessaggio() {
+        const adesso = new Date();
+        const componenti = getComponentiRoma(adesso);
+        const pad = n => String(n).padStart(2, "0");
+
+        const nomeGiorno = new Intl.DateTimeFormat("it-IT", { weekday: "long", timeZone: "Europe/Rome" }).format(adesso);
+        const nomeGiornoMaiuscolo = nomeGiorno.charAt(0).toUpperCase() + nomeGiorno.slice(1);
+
+        const dataFormattata = `${pad(componenti.day)}.${pad(componenti.month)}.${componenti.year}`;
+        const oraFormattata = `${pad(componenti.hour)}:${pad(componenti.minute)}`;
+        const turno = calcolaTurnoVVF();
+
+        const offsetOre = calcolaOffsetRoma(adesso);
+        const etichettaFuso = offsetOre === 2 ? "CEST" : "CET";
+
+        return `credit by VVFsendWhatsApp\n${nomeGiornoMaiuscolo} ${dataFormattata} ore ${oraFormattata} - Turno ${turno}\n(GMT+0${offsetOre}.00) Roma (${etichettaFuso})`;
+    }
+
+    // Rigenera il messaggio completo nella textarea, in base al Comando attivo e alla lingua scelta
+    function generaMessaggioMessaggistica() {
+        if (!textareaMsg || !selectLinguaMsg) return;
+
+        const nomeComandoAttivo = sessionStorage.getItem(CHIAVE_STORAGE);
+        const comandoAttivo = comandiData.find(c => c.Comando === nomeComandoAttivo);
+
+        if (!comandoAttivo) {
+            textareaMsg.value = "Seleziona prima un Comando dalla schermata iniziale per generare il messaggio.";
+            return;
+        }
+
+        const codiceLingua = selectLinguaMsg.value || LINGUA_PREDEFINITA;
+        const valoreEmergenza = comandoAttivo["115/NUE OUT"] || "112";
+        const numeroEmergenzaFormattato = String(valoreEmergenza).split("").join(" ");
+
+        const corpo = costruisciCorpoMessaggio(codiceLingua, comandoAttivo.Comando, numeroEmergenzaFormattato);
+        const pieDiPagina = costruisciPieDiPaginaMessaggio();
+
+        textareaMsg.value = `${corpo}\n${pieDiPagina}`;
+    }
+    window.generaMessaggioMessaggistica = generaMessaggioMessaggistica;
+
+    // Compone il numero completo (prefisso + numero) ripulito da spazi/simboli
+    function numeroCompletoPulito() {
+        const prefisso = (selectPrefissoMsg && selectPrefissoMsg.value || "").replace(/\D/g, "");
+        const numero = (inputNumeroMsg && inputNumeroMsg.value || "").replace(/\D/g, "");
+        return { prefisso, numero };
+    }
+
+    if (btnWhatsappWeb) {
+        btnWhatsappWeb.addEventListener("click", () => {
+            const { prefisso, numero } = numeroCompletoPulito();
+            if (!numero) {
+                alert("Inserisci un numero di telefono valido.");
                 return;
             }
-
-            const numero = inputNumeroMsg.value.trim();
-            const testoCodificato = encodeURIComponent(testo);
-
-            const url = numero
-                ? `https://wa.me/${formattaNumeroWhatsapp(numero)}?text=${testoCodificato}`
-                : `https://api.whatsapp.com/send?text=${testoCodificato}`;
-
+            const testoCodificato = encodeURIComponent(textareaMsg.value);
+            // WhatsApp vuole il prefisso senza "+" (es. 39...)
+            const url = `https://web.whatsapp.com/send?phone=${prefisso}${numero}&text=${testoCodificato}`;
             window.open(url, "_blank", "noopener");
+        });
+    }
+
+    if (btnWhatsappApp) {
+        btnWhatsappApp.addEventListener("click", () => {
+            const { prefisso, numero } = numeroCompletoPulito();
+            if (!numero) {
+                alert("Inserisci un numero di telefono valido.");
+                return;
+            }
+            const testoCodificato = encodeURIComponent(textareaMsg.value);
+            // WhatsApp Desktop (app installata) tramite protocollo whatsapp://
+            window.location.href = `whatsapp://send?phone=${prefisso}${numero}&text=${testoCodificato}`;
         });
     }
 
     if (btnInviaTelegram) {
         btnInviaTelegram.addEventListener("click", () => {
-            const testo = textareaMsg.value.trim();
-            if (!testo) {
-                alert("Scrivi un messaggio prima di inviarlo.");
+            const testo = textareaMsg.value;
+            if (!testo.trim()) {
+                alert("Il messaggio è vuoto.");
                 return;
             }
 
-            // Telegram non permette, per privacy, di aprire una chat diretta
-            // partendo da un numero di telefono via link web pubblico.
-            // Si apre quindi la finestra di condivisione: sarà l'utente a
-            // scegliere il contatto o il gruppo a cui inviare il messaggio.
-            const testoCodificato = encodeURIComponent(testo);
-            const url = `https://t.me/share/url?url=&text=${testoCodificato}`;
+            // Copia sempre il testo negli appunti: Telegram non supporta
+            // testo precompilato quando si apre una chat da numero di telefono
+            navigator.clipboard.writeText(testo).catch(() => {});
 
-            window.open(url, "_blank", "noopener");
+            const { prefisso, numero } = numeroCompletoPulito();
+            if (numero) {
+                // Telegram richiede il "+" davanti al numero completo
+                window.open(`https://t.me/+${prefisso}${numero}`, "_blank", "noopener");
+            } else {
+                // Nessun numero indicato: apre la condivisione generica con testo precompilato
+                window.open(`https://t.me/share/url?url=&text=${encodeURIComponent(testo)}`, "_blank", "noopener");
+            }
         });
     }
 
