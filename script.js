@@ -464,8 +464,14 @@ document.addEventListener("DOMContentLoaded", () => {
     // PAGINA MESSAGGISTICA: messaggio precompilato multilingua
     // + invio tramite WhatsApp Web, WhatsApp Desktop o Telegram
     // ==========================================================
-    const selectPrefissoMsg = document.getElementById("msg-prefisso");
-    const selectLinguaMsg = document.getElementById("msg-lingua");
+    const inputPrefissoMsg = document.getElementById("msg-prefisso-input");
+    const hiddenPrefissoMsg = document.getElementById("msg-prefisso");
+    const dropdownPrefissoMsg = document.getElementById("msg-prefisso-dropdown");
+
+    const inputLinguaMsg = document.getElementById("msg-lingua-input");
+    const hiddenLinguaMsg = document.getElementById("msg-lingua");
+    const dropdownLinguaMsg = document.getElementById("msg-lingua-dropdown");
+
     const inputNumeroMsg = document.getElementById("msg-numero");
     const textareaMsg = document.getElementById("msg-testo");
     const btnWhatsappWeb = document.getElementById("btn-whatsapp-web");
@@ -475,48 +481,131 @@ document.addEventListener("DOMContentLoaded", () => {
     const PREFISSO_PREDEFINITO = "39";  // Italia
     const LINGUA_PREDEFINITA = "it";    // Italiano
 
-    // Popola il menu a tendina dei prefissi internazionali (default: 39 - Italia)
-    function popolaSelectPrefissoMsg(listaPrefissi) {
-        if (!selectPrefissoMsg) return;
+    // ==========================================================
+    // COMBOBOX RICERCABILE: input di testo + lista filtrata a comparsa,
+    // usato per Prefisso internazionale e Lingua messaggio (utile con
+    // elenchi lunghi, specialmente su mobile).
+    // ==========================================================
+    function creaComboRicercabile({ input, hidden, dropdown, elenco, cercaValore, mostraTesto, onScelta }) {
+        let elencoCorrente = elenco;
+        let ultimoFiltrati = elenco;
 
-        selectPrefissoMsg.innerHTML = "";
-        listaPrefissi.forEach(p => {
-            const opt = document.createElement("option");
-            opt.value = p.Valore;
-            opt.textContent = p.Prefissi;
-            selectPrefissoMsg.appendChild(opt);
+        function filtra(testo) {
+            const filtro = (testo || "").trim().toLowerCase();
+            if (!filtro) return elencoCorrente;
+            return elencoCorrente.filter(item => mostraTesto(item).toLowerCase().includes(filtro));
+        }
+
+        function renderOpzioni(testo) {
+            ultimoFiltrati = filtra(testo);
+            dropdown.innerHTML = "";
+
+            if (ultimoFiltrati.length === 0) {
+                const vuoto = document.createElement("div");
+                vuoto.className = "combo-opzione-vuota";
+                vuoto.textContent = "Nessun risultato";
+                dropdown.appendChild(vuoto);
+                return;
+            }
+
+            ultimoFiltrati.forEach(item => {
+                const opz = document.createElement("div");
+                opz.className = "combo-opzione";
+                opz.textContent = mostraTesto(item);
+                // mousedown (non click): scatta prima del blur dell'input, altrimenti
+                // il dropdown si chiuderebbe prima che il click venga registrato
+                opz.addEventListener("mousedown", (e) => {
+                    e.preventDefault();
+                    selezionaVoce(item);
+                });
+                dropdown.appendChild(opz);
+            });
+        }
+
+        function selezionaVoce(item) {
+            hidden.value = cercaValore(item);
+            input.value = mostraTesto(item);
+            chiudiDropdown();
+            if (onScelta) onScelta(item);
+        }
+
+        function apriDropdown() {
+            renderOpzioni(input.value);
+            dropdown.classList.add("aperto");
+        }
+
+        function chiudiDropdown() {
+            dropdown.classList.remove("aperto");
+        }
+
+        input.addEventListener("input", apriDropdown);
+        input.addEventListener("focus", apriDropdown);
+
+        input.addEventListener("keydown", (e) => {
+            if (e.key === "Escape") {
+                chiudiDropdown();
+                input.blur();
+            } else if (e.key === "Enter") {
+                e.preventDefault();
+                if (ultimoFiltrati.length > 0) selezionaVoce(ultimoFiltrati[0]);
+            }
+        });
+
+        document.addEventListener("click", (e) => {
+            if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+                chiudiDropdown();
+            }
+        });
+
+        return {
+            impostaValore(valore) {
+                const trovato = elencoCorrente.find(item => cercaValore(item) === valore);
+                if (trovato) selezionaVoce(trovato);
+            }
+        };
+    }
+
+    // Popola il campo ricercabile dei prefissi internazionali (default: 39 - Italia)
+    function popolaSelectPrefissoMsg(listaPrefissi) {
+        if (!inputPrefissoMsg) return;
+
+        const comboPrefisso = creaComboRicercabile({
+            input: inputPrefissoMsg,
+            hidden: hiddenPrefissoMsg,
+            dropdown: dropdownPrefissoMsg,
+            elenco: listaPrefissi,
+            cercaValore: p => p.Valore,
+            mostraTesto: p => p.Prefissi
         });
 
         if (listaPrefissi.some(p => p.Valore === PREFISSO_PREDEFINITO)) {
-            selectPrefissoMsg.value = PREFISSO_PREDEFINITO;
+            comboPrefisso.impostaValore(PREFISSO_PREDEFINITO);
         }
     }
     window.popolaSelectPrefissoMsg = popolaSelectPrefissoMsg;
 
-    // Popola il menu a tendina delle lingue disponibili (default: Italiano)
+    // Popola il campo ricercabile delle lingue disponibili (default: Italiano)
     function popolaSelectLinguaMsg(listaLingue) {
-        if (!selectLinguaMsg) return;
+        if (!inputLinguaMsg) return;
 
-        selectLinguaMsg.innerHTML = "";
-        listaLingue.forEach(l => {
-            const opt = document.createElement("option");
-            opt.value = l.code;
-            opt.textContent = l.lingua;
-            selectLinguaMsg.appendChild(opt);
+        const comboLingua = creaComboRicercabile({
+            input: inputLinguaMsg,
+            hidden: hiddenLinguaMsg,
+            dropdown: dropdownLinguaMsg,
+            elenco: listaLingue,
+            cercaValore: l => l.code,
+            mostraTesto: l => l.lingua,
+            onScelta: generaMessaggioMessaggistica
         });
 
         if (listaLingue.some(l => l.code === LINGUA_PREDEFINITA)) {
-            selectLinguaMsg.value = LINGUA_PREDEFINITA;
+            comboLingua.impostaValore(LINGUA_PREDEFINITA);
         }
 
         // Alla prima generazione disponibile, genera subito il messaggio
         generaMessaggioMessaggistica();
     }
     window.popolaSelectLinguaMsg = popolaSelectLinguaMsg;
-
-    if (selectLinguaMsg) {
-        selectLinguaMsg.addEventListener("change", generaMessaggioMessaggistica);
-    }
 
     // Testi del messaggio tradotti (solo il corpo istruttivo: il footer con
     // data/ora/turno resta sempre in italiano, essendo un dato operativo).
@@ -1225,7 +1314,7 @@ Koordináták küldéséhez:
 
     // Rigenera il messaggio completo nella textarea, in base al Comando attivo e alla lingua scelta
     function generaMessaggioMessaggistica() {
-        if (!textareaMsg || !selectLinguaMsg) return;
+        if (!textareaMsg || !hiddenLinguaMsg) return;
 
         const nomeComandoAttivo = sessionStorage.getItem(CHIAVE_STORAGE);
         const comandoAttivo = comandiData.find(c => c.Comando === nomeComandoAttivo);
@@ -1235,7 +1324,7 @@ Koordináták küldéséhez:
             return;
         }
 
-        const codiceLingua = selectLinguaMsg.value || LINGUA_PREDEFINITA;
+        const codiceLingua = hiddenLinguaMsg.value || LINGUA_PREDEFINITA;
         const valoreEmergenza = comandoAttivo["115/NUE OUT"] || "112";
         const numeroEmergenzaFormattato = String(valoreEmergenza).split("").join(" ");
 
@@ -1248,7 +1337,7 @@ Koordináták küldéséhez:
 
     // Compone il numero completo (prefisso + numero) ripulito da spazi/simboli
     function numeroCompletoPulito() {
-        const prefisso = (selectPrefissoMsg && selectPrefissoMsg.value || "").replace(/\D/g, "");
+        const prefisso = (hiddenPrefissoMsg && hiddenPrefissoMsg.value || "").replace(/\D/g, "");
         const numero = (inputNumeroMsg && inputNumeroMsg.value || "").replace(/\D/g, "");
         return { prefisso, numero };
     }
