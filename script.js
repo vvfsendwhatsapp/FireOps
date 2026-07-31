@@ -1491,7 +1491,7 @@ Koordináták küldéséhez:
         const nomeGiornoMaiuscolo = nomeGiorno.charAt(0).toUpperCase() + nomeGiorno.slice(1);
 
         const dataFormattata = `${pad(componenti.day)}.${pad(componenti.month)}.${componenti.year}`;
-        const oraFormattata = `${pad(componenti.hour)}:${pad(componenti.minute)}`;
+        const oraFormattata = `${pad(componenti.hour)}:${pad(componenti.minute)}:${pad(componenti.second)}`;
         const turno = calcolaTurnoVVF();
 
         const offsetOre = calcolaOffsetRoma(adesso);
@@ -1542,6 +1542,7 @@ Koordináták küldéséhez:
     if (btnWhatsappWeb) {
         btnWhatsappWeb.addEventListener("click", () => {
             if (!validaCampiMessaggistica().tuttiCompilati) return;
+            generaMessaggioMessaggistica(); // aggiorna l'orario (con i secondi) al momento dell'invio
             const { prefisso, numero } = numeroCompletoPulito();
             if (!numero) {
                 alert("Inserisci un numero di telefono valido.");
@@ -1557,6 +1558,7 @@ Koordináták küldéséhez:
     if (btnWhatsappApp) {
         btnWhatsappApp.addEventListener("click", () => {
             if (!validaCampiMessaggistica().tuttiCompilati) return;
+            generaMessaggioMessaggistica(); // aggiorna l'orario (con i secondi) al momento dell'invio
             const { prefisso, numero } = numeroCompletoPulito();
             if (!numero) {
                 alert("Inserisci un numero di telefono valido.");
@@ -1571,6 +1573,7 @@ Koordináták küldéséhez:
     if (btnInviaTelegram) {
         btnInviaTelegram.addEventListener("click", () => {
             if (!validaCampiMessaggistica().tuttiCompilati) return;
+            generaMessaggioMessaggistica(); // aggiorna l'orario (con i secondi) al momento dell'invio
             const testo = textareaMsg.value;
             if (!testo.trim()) {
                 alert("Il messaggio è vuoto.");
