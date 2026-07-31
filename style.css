@@ -6,6 +6,11 @@
     --border-color: #333333;     /* Grigio scuro per i bordi */
     --text-main: #e0e0e0;        /* Grigio chiaro/bianco sporco per testi principali */
     --text-muted: #aaaaaa;       /* Grigio medio per etichette e sottotitoli */
+    --danger-color: #ff4d4d;     /* Rosso per campi obbligatori mancanti */
+    --header-height: 80px;       /* Altezza header su schermi normali */
+    --header-height-tablet: 130px; /* Altezza header quando va a capo (tablet) */
+    --header-height-mobile: 150px; /* Altezza header quando va a capo (mobile) */
+    --nav-height: 46px;          /* Altezza indicativa del menu sticky */
 }
 
 * {
@@ -106,17 +111,25 @@ body {
     align-items: center;
     padding: 0 20px;
     z-index: 1000;
+    gap: 15px;
 }
 
 .header-left {
     display: flex;
     align-items: center;
     gap: 15px;
+    flex-shrink: 0; /* logo e titolo non si schiacciano mai */
+    min-width: 0;
 }
 
 .site-logo {
     height: 50px;
     width: auto;
+    flex-shrink: 0;
+}
+
+.site-titles {
+    min-width: 0;
 }
 
 .site-titles h1 {
@@ -124,18 +137,26 @@ body {
     color: var(--primary-color);
     text-transform: uppercase;
     letter-spacing: 1px;
+    white-space: nowrap;
 }
 
 .site-titles .subtitle {
     font-size: 12px;
     color: var(--text-muted);
     font-weight: bold;
+    white-space: nowrap;
 }
 
 .header-center {
     display: flex;
     gap: 20px;
     flex-wrap: nowrap; /* impedisce che i box vadano a capo su riga nuova */
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-x: auto; /* su schermi stretti scorre invece di schiacciare il resto */
+    overflow-y: hidden;
+    scrollbar-width: thin;
+    justify-content: center;
 }
 
 .info-box {
@@ -269,6 +290,7 @@ body {
 .combo-input {
     width: 100%;
     padding: 10px;
+    padding-right: 34px; /* spazio per la freccetta */
     background-color: var(--dark-color);
     color: var(--text-main);
     border: 1px solid var(--border-color);
@@ -279,6 +301,26 @@ body {
 .combo-input:focus {
     outline: none;
     border-color: var(--primary-color);
+}
+
+/* Freccetta a discesa per i combo ricercabili (prefisso e lingua) */
+.combo-wrapper::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 6px solid var(--text-muted);
+    transform: translateY(-50%);
+    pointer-events: none; /* la freccetta non blocca i click sull'input */
+    transition: border-top-color 0.2s, transform 0.2s;
+}
+
+.combo-wrapper:focus-within::after {
+    border-top-color: var(--primary-color);
 }
 
 .combo-dropdown {
@@ -340,6 +382,17 @@ body {
     margin-top: 0;
 }
 
+/* Campi obbligatori mancanti (prefisso, numero, lingua): bordo ed etichetta rossi */
+.campo-mancante {
+    border-color: var(--danger-color) !important;
+    box-shadow: 0 0 0 1px var(--danger-color);
+}
+
+.campo-mancante::placeholder {
+    color: var(--danger-color);
+    opacity: 0.8;
+}
+
 .msg-azioni {
     display: flex;
     gap: 15px;
@@ -361,6 +414,11 @@ body {
 
 .msg-azioni button:hover {
     opacity: 0.9;
+}
+
+.msg-azioni button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
 }
 
 .btn-whatsapp {
@@ -565,6 +623,7 @@ html.comando-gia-scelto #modal-comando {
 .header-right {
     display: flex;
     align-items: center;
+    flex-shrink: 0;
 }
 
 .btn-icon-hamburger {
@@ -702,4 +761,110 @@ html.comando-gia-scelto #modal-comando {
 .telefono-cliccabile:hover,
 .email-cliccabile:hover {
     color: #003366;
+}
+
+/* FOOTER: CONTATORE ACCESSI + CREDITS */
+.app-footer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding: 16px 20px 24px;
+    color: var(--text-muted);
+    font-size: 12px;
+    border-top: 1px solid var(--border-color);
+    margin-top: 20px;
+}
+
+.footer-contatore {
+    color: var(--text-muted);
+}
+
+.footer-credits {
+    color: var(--text-muted);
+    font-weight: bold;
+}
+
+.footer-credits::before {
+    content: "•";
+    margin-right: 16px;
+    color: var(--border-color);
+}
+
+/* ==========================================================
+   RESPONSIVE: l'header non si schiaccia più su schermi stretti.
+   Sotto i 900px il blocco centrale (comando/orario/turno) va a
+   capo su una riga propria e l'header diventa più alto: si
+   riadattano di conseguenza il padding del body e la posizione
+   del menu sticky, così nulla resta nascosto sotto l'header.
+   ========================================================== */
+@media (max-width: 900px) {
+    .app-header {
+        flex-wrap: wrap;
+        height: auto;
+        min-height: var(--header-height-tablet);
+        padding: 10px 15px;
+    }
+
+    .header-center {
+        order: 3;
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .header-right {
+        order: 2;
+    }
+
+    body {
+        padding-top: var(--header-height-tablet);
+    }
+
+    .sticky-nav {
+        top: var(--header-height-tablet);
+    }
+}
+
+@media (max-width: 520px) {
+    .site-titles .subtitle {
+        display: none;
+    }
+
+    .site-titles h1 {
+        font-size: 16px;
+    }
+
+    .site-logo {
+        height: 34px;
+    }
+
+    .app-header {
+        min-height: var(--header-height-mobile);
+        gap: 8px;
+    }
+
+    .info-box {
+        padding: 4px 8px;
+    }
+
+    .info-box .value {
+        font-size: 14px;
+    }
+
+    .valore-turno {
+        font-size: 15px;
+    }
+
+    body {
+        padding-top: var(--header-height-mobile);
+    }
+
+    .sticky-nav {
+        top: var(--header-height-mobile);
+    }
+
+    .msg-azioni button {
+        min-width: 140px;
+    }
 }

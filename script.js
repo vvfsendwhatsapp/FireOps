@@ -448,6 +448,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (inputNumero) {
                 setTimeout(() => inputNumero.focus(), 50);
             }
+            validaCampiMessaggistica();
         }
     }
 
@@ -575,12 +576,15 @@ document.addEventListener("DOMContentLoaded", () => {
             dropdown: dropdownPrefissoMsg,
             elenco: listaPrefissi,
             cercaValore: p => p.Valore,
-            mostraTesto: p => p.Prefissi
+            mostraTesto: p => p.Prefissi,
+            onScelta: validaCampiMessaggistica
         });
 
         if (listaPrefissi.some(p => p.Valore === PREFISSO_PREDEFINITO)) {
             comboPrefisso.impostaValore(PREFISSO_PREDEFINITO);
         }
+
+        validaCampiMessaggistica();
     }
     window.popolaSelectPrefissoMsg = popolaSelectPrefissoMsg;
 
@@ -606,6 +610,32 @@ document.addEventListener("DOMContentLoaded", () => {
         generaMessaggioMessaggistica();
     }
     window.popolaSelectLinguaMsg = popolaSelectLinguaMsg;
+
+    // ==========================================================
+    // VALIDAZIONE CAMPI MESSAGGISTICA: evidenzia i campi mancanti
+    // (prefisso, numero, lingua) e abilita/disabilita i pulsanti di invio
+    // ==========================================================
+    function validaCampiMessaggistica() {
+        const prefissoOk = !!(hiddenPrefissoMsg && hiddenPrefissoMsg.value);
+        const numeroOk = !!(inputNumeroMsg && inputNumeroMsg.value.trim());
+        const linguaOk = !!(hiddenLinguaMsg && hiddenLinguaMsg.value);
+
+        if (inputPrefissoMsg) inputPrefissoMsg.classList.toggle("campo-mancante", !prefissoOk);
+        if (inputNumeroMsg) inputNumeroMsg.classList.toggle("campo-mancante", !numeroOk);
+        if (inputLinguaMsg) inputLinguaMsg.classList.toggle("campo-mancante", !linguaOk);
+
+        const tuttiCompilati = prefissoOk && numeroOk && linguaOk;
+        [btnWhatsappWeb, btnWhatsappApp, btnInviaTelegram].forEach(btn => {
+            if (btn) btn.disabled = !tuttiCompilati;
+        });
+
+        return { prefissoOk, numeroOk, linguaOk, tuttiCompilati };
+    }
+    window.validaCampiMessaggistica = validaCampiMessaggistica;
+
+    if (inputNumeroMsg) {
+        inputNumeroMsg.addEventListener("input", validaCampiMessaggistica);
+    }
 
     // Testi del messaggio tradotti (solo il corpo istruttivo: il footer con
     // data/ora/turno resta sempre in italiano, essendo un dato operativo).
@@ -697,23 +727,23 @@ Pour toute urgence, appelez le
 
 🇪🇺🇮🇹
 
-Pour envoyer vos coordonnées :
+Pour envoyer vos coordonnées :
 
 1. Cliquez sur le trombone (Android) 📎 ou le plus (Apple) ➕
 
-2. Cliquez sur « Position » ⛳
+2. Cliquez sur « Position » ⛳
 
 3. Si nécessaire, suivez les instructions de votre appareil pour autoriser WhatsApp à accéder à votre position 🆗️
 
 4. Patientez quelques instants pour une meilleure précision ⏰
 
-5. Cliquez sur « Position actuelle » 🎯
+5. Cliquez sur « Position actuelle » 🎯
 
-*Restez en sécurité à l’endroit que vous nous avez indiqué et assurez-vous que votre ligne téléphonique est libre.*
+*Restez en sécurité à l'endroit que vous nous avez indiqué et assurez-vous que votre ligne téléphonique est libre.*
 
-Crédit : VVFsendWhatsApp
+Crédit : VVFsendWhatsApp
 
-Vendredi 31 juillet 2026, 12 h 04 - Équipe A3`,
+Vendredi 31 juillet 2026, 12 h 04 - Équipe A3`,
 
         sq: `🚒 *Brigada e Zjarrfikësve {{COMANDO}}* 🚒
 
@@ -874,7 +904,7 @@ Ved alle nødsituationer, ring
 *{{NUM}}*
 🇪🇺🇮🇹
 
-Sådan sender du koordinater:
+S�dan sender du koordinater:
 1. Klik på "papirklipsen" (Android) 📎 eller "plusset" (Apple) ➕
 2. Klik på "Placering" ⛳
 3. Følg om nødvendigt enhedens instruktioner for at give WhatsApp adgang til din placering 🆗️
@@ -899,10 +929,10 @@ Kõikide hädaolukordade korral helistage numbril
 
 Koordinaatide saatmiseks:
 1. Klõpsake kirjaklambril (Android) 📎 või plussmärgil (Apple) ➕
-2. Klõpsake valikul „Asukoht” ⛳
+2. Klõpsake valikul „Asukoht" ⛳
 3. Vajadusel järgige seadme juhiseid, et lubada WhatsAppil teie asukohale juurde pääseda 🆗️
 4. Oodake täpsuse suurendamiseks paar hetke ⏰
-5. Klõpsake valikul „Praegune asukoht” 🎯
+5. Klõpsake valikul „Praegune asukoht" 🎯
 
 *Jääge turvaliselt meiega jagatud asukohas ja hoidke oma telefoniliin vaba.*`,
 
@@ -1246,10 +1276,10 @@ Für alle Notfälle rufen Sie bitte an:
 
 So senden Sie Ihre Koordinaten:
 1. Tippen Sie auf die Büroklammer (Android) 📎 oder das Pluszeichen (Apple) ➕.
-2. Tippen Sie auf „Standort“ ⛳.
+2. Tippen Sie auf „Standort" ⛳.
 3. Folgen Sie gegebenenfalls den Anweisungen Ihres Geräts, um WhatsApp den Zugriff auf Ihren Standort zu erlauben 🆗️.
 4. Warten Sie einen Moment, um die Genauigkeit zu erhöhen ⏰.
-5. Tippen Sie auf „Aktueller Standort“ 🎯.
+5. Tippen Sie auf „Aktueller Standort" 🎯.
 
 *Bleiben Sie an dem Ort, den Sie uns mitgeteilt haben, und halten Sie Ihre Telefonleitung frei.*`,
 
@@ -1312,9 +1342,18 @@ Koordináták küldéséhez:
         return `credit by VVFsendWhatsApp\n${nomeGiornoMaiuscolo} ${dataFormattata} ore ${oraFormattata} - Turno ${turno}\n(GMT+0${offsetOre}.00) Roma (${etichettaFuso})`;
     }
 
-    // Rigenera il messaggio completo nella textarea, in base al Comando attivo e alla lingua scelta
+    // Rigenera il messaggio completo nella textarea, in base al Comando attivo e alla lingua scelta.
+    // Se la lingua non è ancora stata scelta, l'anteprima resta vuota (non compare).
     function generaMessaggioMessaggistica() {
         if (!textareaMsg || !hiddenLinguaMsg) return;
+
+        const stato = validaCampiMessaggistica();
+
+        if (!stato.linguaOk) {
+            textareaMsg.value = "";
+            textareaMsg.placeholder = "Seleziona una lingua per generare l'anteprima del messaggio.";
+            return;
+        }
 
         const nomeComandoAttivo = sessionStorage.getItem(CHIAVE_STORAGE);
         const comandoAttivo = comandiData.find(c => c.Comando === nomeComandoAttivo);
@@ -1344,6 +1383,7 @@ Koordináták küldéséhez:
 
     if (btnWhatsappWeb) {
         btnWhatsappWeb.addEventListener("click", () => {
+            if (!validaCampiMessaggistica().tuttiCompilati) return;
             const { prefisso, numero } = numeroCompletoPulito();
             if (!numero) {
                 alert("Inserisci un numero di telefono valido.");
@@ -1358,6 +1398,7 @@ Koordináták küldéséhez:
 
     if (btnWhatsappApp) {
         btnWhatsappApp.addEventListener("click", () => {
+            if (!validaCampiMessaggistica().tuttiCompilati) return;
             const { prefisso, numero } = numeroCompletoPulito();
             if (!numero) {
                 alert("Inserisci un numero di telefono valido.");
@@ -1371,6 +1412,7 @@ Koordináták küldéséhez:
 
     if (btnInviaTelegram) {
         btnInviaTelegram.addEventListener("click", () => {
+            if (!validaCampiMessaggistica().tuttiCompilati) return;
             const testo = textareaMsg.value;
             if (!testo.trim()) {
                 alert("Il messaggio è vuoto.");
@@ -1462,6 +1504,52 @@ Koordináták küldéséhez:
 
     setInterval(updateClockAndShift, 1000);
     updateClockAndShift();
+
+    // ==========================================================
+    // FOCUS INIZIALE SU "COMANDO" + CONFERMA CON INVIO (Enter)
+    // ==========================================================
+    // Alla prima apertura, e ogni volta che il modale viene riaperto per
+    // cambiare comando, il focus va subito sul select in modo da poter
+    // digitare le prime lettere del nome del Comando per trovarlo rapidamente.
+    // Premendo Invio, se un Comando è selezionato, si conferma ed entra.
+    function focusSelectComando() {
+        setTimeout(() => selectComando.focus(), 50);
+    }
+
+    selectComando.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            if (!btnConferma.disabled) btnConferma.click();
+        }
+    });
+
+    // Focus quando il modale compare/riappare (osserva i cambi di display inline)
+    const osservatoreModale = new MutationObserver(() => {
+        if (modal.style.display === "flex") focusSelectComando();
+    });
+    osservatoreModale.observe(modal, { attributes: true, attributeFilter: ["style"] });
+
+    // Se il modale è già visibile al caricamento (nessun comando salvato in sessione), porta subito il focus
+    if (modal.style.display !== "none") {
+        focusSelectComando();
+    }
+
+    // ==========================================================
+    // CONTATORE ACCESSI + CREDITS
+    // ==========================================================
+    (function contatoreAccessi() {
+        const displayContatore = document.getElementById("display-contatore-accessi");
+        if (!displayContatore) return;
+
+        fetch("https://abacus.jasoncameron.dev/hit/fireops-vvf-pel/accessi")
+            .then(r => r.json())
+            .then(dati => {
+                displayContatore.textContent = `Accessi: ${dati.value}`;
+            })
+            .catch(() => {
+                displayContatore.textContent = "Accessi: N/D";
+            });
+    })();
 });
 
 // Pulisce e formatta il numero di telefono per la copia:
