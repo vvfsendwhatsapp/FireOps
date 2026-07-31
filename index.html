@@ -85,25 +85,43 @@
             <div class="pagina-box">
                 <h3>Messaggistica</h3>
                 <p class="pagina-nota">
-                    Componi il messaggio e invialo tramite WhatsApp o Telegram.
-                    Per Telegram, per motivi di privacy della piattaforma, dovrai scegliere tu il contatto/gruppo destinatario una volta aperta l'app.
+                    Il messaggio viene generato automaticamente in base al Comando attivo e alla lingua selezionata
+                    (resta comunque modificabile a mano prima dell'invio).
                 </p>
 
-                <label for="msg-destinatario">Destinatario rapido (facoltativo)</label>
-                <select id="msg-destinatario">
-                    <option value="">-- Inserimento manuale --</option>
-                </select>
-
-                <label for="msg-numero">Numero WhatsApp (facoltativo)</label>
-                <input type="text" id="msg-numero" placeholder="Es. 0123456789 oppure +39...">
+                <div class="msg-riga-campi">
+                    <div class="msg-campo">
+                        <label for="msg-prefisso">Prefisso internazionale</label>
+                        <select id="msg-prefisso">
+                            <option value="" disabled selected>Caricamento...</option>
+                        </select>
+                    </div>
+                    <div class="msg-campo">
+                        <label for="msg-numero">Numero di telefono</label>
+                        <input type="tel" id="msg-numero" placeholder="Es. 3331234567" autocomplete="off">
+                    </div>
+                    <div class="msg-campo">
+                        <label for="msg-lingua">Lingua messaggio</label>
+                        <select id="msg-lingua">
+                            <option value="" disabled selected>Caricamento...</option>
+                        </select>
+                    </div>
+                </div>
 
                 <label for="msg-testo">Messaggio</label>
-                <textarea id="msg-testo" rows="6" placeholder="Scrivi qui il messaggio da inviare..."></textarea>
+                <textarea id="msg-testo" rows="16"></textarea>
 
                 <div class="msg-azioni">
-                    <button id="btn-invia-whatsapp" class="btn-whatsapp" type="button">Invia con WhatsApp</button>
-                    <button id="btn-invia-telegram" class="btn-telegram" type="button">Invia con Telegram</button>
+                    <button id="btn-whatsapp-web" class="btn-whatsapp" type="button">📱 WhatsApp Web</button>
+                    <button id="btn-whatsapp-app" class="btn-whatsapp" type="button">💻 WhatsApp Desktop</button>
+                    <button id="btn-invia-telegram" class="btn-telegram" type="button">✈️ Telegram</button>
                 </div>
+
+                <p class="pagina-nota">
+                    Telegram non permette di aprire una chat con testo precompilato partendo dal numero di telefono:
+                    il messaggio viene copiato automaticamente negli appunti e si apre il contatto (se disponibile con questo numero),
+                    basterà incollarlo nella chat.
+                </p>
             </div>
         </section>
 
