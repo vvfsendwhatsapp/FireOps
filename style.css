@@ -546,6 +546,15 @@ body {
     border-radius: 4px;
 }
 
+/* La tabella di riepilogo del modulo CMR occupa tutta la larghezza della pagina
+   (900px, come .pagina-box-larga), non i 700px pensati per il riepilogo comando */
+.riepilogo-modulo-cmr .riepilogo-box {
+    max-width: none;
+    padding: 0;
+    border: none;
+    background: transparent;
+}
+
 /* POPUP DATI COMANDO/DIREZIONE */
 .popup-dati {
     position: fixed;
