@@ -194,7 +194,9 @@ document.addEventListener("DOMContentLoaded", () => {
         popup.id = "popup-dati-attivo";
 
         const rect = event.target.getBoundingClientRect();
-        let top = rect.bottom + 8;
+        // Ancorato dal basso: si apre "crescendo" verso l'alto sopra l'elemento cliccato,
+        // senza bisogno di conoscere in anticipo l'altezza del popup
+        let bottom = window.innerHeight - rect.top + 8;
         let left = rect.left;
 
         const larghezzaStimata = 300;
@@ -202,7 +204,7 @@ document.addEventListener("DOMContentLoaded", () => {
             left = window.innerWidth - larghezzaStimata - 10;
         }
 
-        popup.style.top = `${top}px`;
+        popup.style.bottom = `${bottom}px`;
         popup.style.left = `${left}px`;
 
         popup.innerHTML = `
