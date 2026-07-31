@@ -394,6 +394,17 @@ body {
     font-style: italic;
 }
 
+/* Voce segnaposto in cima all'elenco completo (es. "-- Seleziona modulo --"),
+   puramente indicativa: non cliccabile, come l'opzione di default del select "Comando" */
+.combo-opzione-placeholder {
+    padding: 8px 10px;
+    font-size: 13px;
+    color: var(--text-muted);
+    font-style: italic;
+    border-bottom: 1px solid var(--border-color);
+    pointer-events: none;
+}
+
 /* Anteprima messaggio: testo in grigio, non editabile ma selezionabile/copiabile */
 #msg-testo {
     color: var(--text-muted);
@@ -474,7 +485,7 @@ body {
     border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 20px;
-    max-width: 700px;
+    max-width: 900px;
 }
 
 .riepilogo-box h3 {

@@ -503,7 +503,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // usato per Prefisso internazionale e Lingua messaggio (utile con
     // elenchi lunghi, specialmente su mobile).
     // ==========================================================
-    function creaComboRicercabile({ input, hidden, dropdown, elenco, cercaValore, mostraTesto, onScelta }) {
+    function creaComboRicercabile({ input, hidden, dropdown, elenco, cercaValore, mostraTesto, onScelta, placeholderOpzione }) {
         let elencoCorrente = elenco;
         let ultimoFiltrati = elenco;
         let indiceAttivo = -1; // voce evidenziata nella lista filtrata (come il cursore di un select nativo)
@@ -517,6 +517,15 @@ document.addEventListener("DOMContentLoaded", () => {
         function renderOpzioni(testo) {
             ultimoFiltrati = filtra(testo);
             dropdown.innerHTML = "";
+
+            // Voce segnaposto non selezionabile (es. "-- Seleziona modulo --"), mostrata solo
+            // quando si sfoglia l'elenco completo, come il default del select "Comando"
+            if (placeholderOpzione && !(testo || "").trim()) {
+                const placeholder = document.createElement("div");
+                placeholder.className = "combo-opzione-placeholder";
+                placeholder.textContent = placeholderOpzione;
+                dropdown.appendChild(placeholder);
+            }
 
             if (ultimoFiltrati.length === 0) {
                 indiceAttivo = -1;
@@ -711,6 +720,7 @@ document.addEventListener("DOMContentLoaded", () => {
             elenco: listaModuli,
             cercaValore: m => m["Numero progressivo del modulo pianificato"],
             mostraTesto: m => m["Descrizione"],
+            placeholderOpzione: "-- Seleziona modulo --",
             onScelta: (modulo) => renderRiepilogoModuloCMR(modulo)
         });
     }
