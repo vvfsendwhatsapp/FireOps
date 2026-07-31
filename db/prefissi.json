@@ -1,0 +1,1102 @@
+ [
+  {
+    "Prefissi": "1 - USA, Canada, Rep.Dominicana",
+    "Valore": "1",
+    "Stati": "USA, Canada, Rep.Dominicana"
+  },
+  {
+    "Prefissi": "7 - Federazione Russa",
+    "Valore": "7",
+    "Stati": "Federazione Russa"
+  },
+  {
+    "Prefissi": "20 - Egitto",
+    "Valore": "20",
+    "Stati": "Egitto"
+  },
+  {
+    "Prefissi": "27 - Sudafrica",
+    "Valore": "27",
+    "Stati": "Sudafrica"
+  },
+  {
+    "Prefissi": "30 - Grecia",
+    "Valore": "30",
+    "Stati": "Grecia"
+  },
+  {
+    "Prefissi": "31 - Paesi Bassi (Olanda)",
+    "Valore": "31",
+    "Stati": "Paesi Bassi (Olanda)"
+  },
+  {
+    "Prefissi": "32 - Belgio",
+    "Valore": "32",
+    "Stati": "Belgio"
+  },
+  {
+    "Prefissi": "33 - Francia",
+    "Valore": "33",
+    "Stati": "Francia"
+  },
+  {
+    "Prefissi": "34 - Spagna",
+    "Valore": "34",
+    "Stati": "Spagna"
+  },
+  {
+    "Prefissi": "36 - Ungheria",
+    "Valore": "36",
+    "Stati": "Ungheria"
+  },
+  {
+    "Prefissi": "39 - Italia",
+    "Valore": "39",
+    "Stati": "Italia"
+  },
+  {
+    "Prefissi": "40 - Romania",
+    "Valore": "40",
+    "Stati": "Romania"
+  },
+  {
+    "Prefissi": "41 - Svizzera",
+    "Valore": "41",
+    "Stati": "Svizzera"
+  },
+  {
+    "Prefissi": "43 - Austria",
+    "Valore": "43",
+    "Stati": "Austria"
+  },
+  {
+    "Prefissi": "44 - Gran Bretagna",
+    "Valore": "44",
+    "Stati": "Gran Bretagna"
+  },
+  {
+    "Prefissi": "45 - Danimarca",
+    "Valore": "45",
+    "Stati": "Danimarca"
+  },
+  {
+    "Prefissi": "46 - Svezia",
+    "Valore": "46",
+    "Stati": "Svezia"
+  },
+  {
+    "Prefissi": "47 - Norvegia",
+    "Valore": "47",
+    "Stati": "Norvegia"
+  },
+  {
+    "Prefissi": "48 - Polonia",
+    "Valore": "48",
+    "Stati": "Polonia"
+  },
+  {
+    "Prefissi": "49 - Germania",
+    "Valore": "49",
+    "Stati": "Germania"
+  },
+  {
+    "Prefissi": "51 - Perù",
+    "Valore": "51",
+    "Stati": "Perù"
+  },
+  {
+    "Prefissi": "52 - Messico",
+    "Valore": "52",
+    "Stati": "Messico"
+  },
+  {
+    "Prefissi": "53 - Cuba",
+    "Valore": "53",
+    "Stati": "Cuba"
+  },
+  {
+    "Prefissi": "54 - Argentina",
+    "Valore": "54",
+    "Stati": "Argentina"
+  },
+  {
+    "Prefissi": "55 - Brasile",
+    "Valore": "55",
+    "Stati": "Brasile"
+  },
+  {
+    "Prefissi": "56 - Cile",
+    "Valore": "56",
+    "Stati": "Cile"
+  },
+  {
+    "Prefissi": "57 - Colombia",
+    "Valore": "57",
+    "Stati": "Colombia"
+  },
+  {
+    "Prefissi": "58 - Venezuela",
+    "Valore": "58",
+    "Stati": "Venezuela"
+  },
+  {
+    "Prefissi": "60 - Malesia",
+    "Valore": "60",
+    "Stati": "Malesia"
+  },
+  {
+    "Prefissi": "61 - Australia",
+    "Valore": "61",
+    "Stati": "Australia"
+  },
+  {
+    "Prefissi": "62 - Indonesia",
+    "Valore": "62",
+    "Stati": "Indonesia"
+  },
+  {
+    "Prefissi": "63 - Filippine",
+    "Valore": "63",
+    "Stati": "Filippine"
+  },
+  {
+    "Prefissi": "64 - Nuova Zelanda",
+    "Valore": "64",
+    "Stati": "Nuova Zelanda"
+  },
+  {
+    "Prefissi": "65 - Singapore",
+    "Valore": "65",
+    "Stati": "Singapore"
+  },
+  {
+    "Prefissi": "66 - Thailandia",
+    "Valore": "66",
+    "Stati": "Thailandia"
+  },
+  {
+    "Prefissi": "81 - Giappone",
+    "Valore": "81",
+    "Stati": "Giappone"
+  },
+  {
+    "Prefissi": "82 - Corea del Sud",
+    "Valore": "82",
+    "Stati": "Corea del Sud"
+  },
+  {
+    "Prefissi": "84 - Vietnam",
+    "Valore": "84",
+    "Stati": "Vietnam"
+  },
+  {
+    "Prefissi": "86 - Cina",
+    "Valore": "86",
+    "Stati": "Cina"
+  },
+  {
+    "Prefissi": "90 - Turchia",
+    "Valore": "90",
+    "Stati": "Turchia"
+  },
+  {
+    "Prefissi": "91 - India",
+    "Valore": "91",
+    "Stati": "India"
+  },
+  {
+    "Prefissi": "92 - Pakistan",
+    "Valore": "92",
+    "Stati": "Pakistan"
+  },
+  {
+    "Prefissi": "93 - Afghanistan",
+    "Valore": "93",
+    "Stati": "Afghanistan"
+  },
+  {
+    "Prefissi": "94 - Sri Lanka",
+    "Valore": "94",
+    "Stati": "Sri Lanka"
+  },
+  {
+    "Prefissi": "98 - Iran",
+    "Valore": "98",
+    "Stati": "Iran"
+  },
+  {
+    "Prefissi": "212 - Marocco",
+    "Valore": "212",
+    "Stati": "Marocco"
+  },
+  {
+    "Prefissi": "213 - Algeria",
+    "Valore": "213",
+    "Stati": "Algeria"
+  },
+  {
+    "Prefissi": "216 - Tunisia",
+    "Valore": "216",
+    "Stati": "Tunisia"
+  },
+  {
+    "Prefissi": "218 - Libia",
+    "Valore": "218",
+    "Stati": "Libia"
+  },
+  {
+    "Prefissi": "220 - Gambia",
+    "Valore": "220",
+    "Stati": "Gambia"
+  },
+  {
+    "Prefissi": "221 - Senegal",
+    "Valore": "221",
+    "Stati": "Senegal"
+  },
+  {
+    "Prefissi": "222 - Mauritania",
+    "Valore": "222",
+    "Stati": "Mauritania"
+  },
+  {
+    "Prefissi": "223 - Mali",
+    "Valore": "223",
+    "Stati": "Mali"
+  },
+  {
+    "Prefissi": "224 - Guinea",
+    "Valore": "224",
+    "Stati": "Guinea"
+  },
+  {
+    "Prefissi": "225 - Costa d’Avorio",
+    "Valore": "225",
+    "Stati": "Costa d’Avorio"
+  },
+  {
+    "Prefissi": "226 - Burkina Faso",
+    "Valore": "226",
+    "Stati": "Burkina Faso"
+  },
+  {
+    "Prefissi": "228 - Togo",
+    "Valore": "228",
+    "Stati": "Togo"
+  },
+  {
+    "Prefissi": "229 - Benin",
+    "Valore": "229",
+    "Stati": "Benin"
+  },
+  {
+    "Prefissi": "230 - Mauritius",
+    "Valore": "230",
+    "Stati": "Mauritius"
+  },
+  {
+    "Prefissi": "231 - Liberia",
+    "Valore": "231",
+    "Stati": "Liberia"
+  },
+  {
+    "Prefissi": "232 - Sierra Leone",
+    "Valore": "232",
+    "Stati": "Sierra Leone"
+  },
+  {
+    "Prefissi": "233 - Ghana",
+    "Valore": "233",
+    "Stati": "Ghana"
+  },
+  {
+    "Prefissi": "234 - Nigeria",
+    "Valore": "234",
+    "Stati": "Nigeria"
+  },
+  {
+    "Prefissi": "235 - Ciad",
+    "Valore": "235",
+    "Stati": "Ciad"
+  },
+  {
+    "Prefissi": "236 - Rep. Centrafrica",
+    "Valore": "236",
+    "Stati": "Rep. Centrafrica"
+  },
+  {
+    "Prefissi": "237 - Camerun",
+    "Valore": "237",
+    "Stati": "Camerun"
+  },
+  {
+    "Prefissi": "238 - Capo Verde",
+    "Valore": "238",
+    "Stati": "Capo Verde"
+  },
+  {
+    "Prefissi": "239 - Sao Tomè e Principe",
+    "Valore": "239",
+    "Stati": "Sao Tomè e Principe"
+  },
+  {
+    "Prefissi": "240 - Guinea Ecuatoriale",
+    "Valore": "240",
+    "Stati": "Guinea Ecuatoriale"
+  },
+  {
+    "Prefissi": "241 - Gabon",
+    "Valore": "241",
+    "Stati": "Gabon"
+  },
+  {
+    "Prefissi": "242 - Congo",
+    "Valore": "242",
+    "Stati": "Congo"
+  },
+  {
+    "Prefissi": "243 - Rep. Democratica del Congo",
+    "Valore": "243",
+    "Stati": "Rep. Democratica del Congo"
+  },
+  {
+    "Prefissi": "244 - Angola",
+    "Valore": "244",
+    "Stati": "Angola"
+  },
+  {
+    "Prefissi": "245 - Guinea Bissau",
+    "Valore": "245",
+    "Stati": "Guinea Bissau"
+  },
+  {
+    "Prefissi": "246 - Diego Garcia",
+    "Valore": "246",
+    "Stati": "Diego Garcia"
+  },
+  {
+    "Prefissi": "247 - Ascensione",
+    "Valore": "247",
+    "Stati": "Ascensione"
+  },
+  {
+    "Prefissi": "248 - Seychelles",
+    "Valore": "248",
+    "Stati": "Seychelles"
+  },
+  {
+    "Prefissi": "249 - Sudan",
+    "Valore": "249",
+    "Stati": "Sudan"
+  },
+  {
+    "Prefissi": "250 - Ruanda",
+    "Valore": "250",
+    "Stati": "Ruanda"
+  },
+  {
+    "Prefissi": "251 - Etiopia",
+    "Valore": "251",
+    "Stati": "Etiopia"
+  },
+  {
+    "Prefissi": "252 - Somalia",
+    "Valore": "252",
+    "Stati": "Somalia"
+  },
+  {
+    "Prefissi": "253 - Gibuti",
+    "Valore": "253",
+    "Stati": "Gibuti"
+  },
+  {
+    "Prefissi": "254 - Kenia",
+    "Valore": "254",
+    "Stati": "Kenia"
+  },
+  {
+    "Prefissi": "255 - Tanzania",
+    "Valore": "255",
+    "Stati": "Tanzania"
+  },
+  {
+    "Prefissi": "256 - Uganda",
+    "Valore": "256",
+    "Stati": "Uganda"
+  },
+  {
+    "Prefissi": "257 - Burundi",
+    "Valore": "257",
+    "Stati": "Burundi"
+  },
+  {
+    "Prefissi": "258 - Mozambico",
+    "Valore": "258",
+    "Stati": "Mozambico"
+  },
+  {
+    "Prefissi": "260 - Zambia",
+    "Valore": "260",
+    "Stati": "Zambia"
+  },
+  {
+    "Prefissi": "261 - Madagascar",
+    "Valore": "261",
+    "Stati": "Madagascar"
+  },
+  {
+    "Prefissi": "262 - Reunion (Francia)",
+    "Valore": "262",
+    "Stati": "Reunion (Francia)"
+  },
+  {
+    "Prefissi": "263 - Zimbabwe",
+    "Valore": "263",
+    "Stati": "Zimbabwe"
+  },
+  {
+    "Prefissi": "264 - Namibia",
+    "Valore": "264",
+    "Stati": "Namibia"
+  },
+  {
+    "Prefissi": "265 - Malawi",
+    "Valore": "265",
+    "Stati": "Malawi"
+  },
+  {
+    "Prefissi": "266 - Lesotho",
+    "Valore": "266",
+    "Stati": "Lesotho"
+  },
+  {
+    "Prefissi": "267 - Botswana",
+    "Valore": "267",
+    "Stati": "Botswana"
+  },
+  {
+    "Prefissi": "268 - Swaziland",
+    "Valore": "268",
+    "Stati": "Swaziland"
+  },
+  {
+    "Prefissi": "269 - Comore",
+    "Valore": "269",
+    "Stati": "Comore"
+  },
+  {
+    "Prefissi": "290 - Saint Elena",
+    "Valore": "290",
+    "Stati": "Saint Elena"
+  },
+  {
+    "Prefissi": "291 - Eritrea",
+    "Valore": "291",
+    "Stati": "Eritrea"
+  },
+  {
+    "Prefissi": "297 - Aruba",
+    "Valore": "297",
+    "Stati": "Aruba"
+  },
+  {
+    "Prefissi": "298 - Isole Fær Oer",
+    "Valore": "298",
+    "Stati": "Isole Fær Oer"
+  },
+  {
+    "Prefissi": "299 - Groenlandia",
+    "Valore": "299",
+    "Stati": "Groenlandia"
+  },
+  {
+    "Prefissi": "350 - Gibilterra",
+    "Valore": "350",
+    "Stati": "Gibilterra"
+  },
+  {
+    "Prefissi": "351 - Portogallo",
+    "Valore": "351",
+    "Stati": "Portogallo"
+  },
+  {
+    "Prefissi": "352 - Lussemburgo",
+    "Valore": "352",
+    "Stati": "Lussemburgo"
+  },
+  {
+    "Prefissi": "353 - Irlanda",
+    "Valore": "353",
+    "Stati": "Irlanda"
+  },
+  {
+    "Prefissi": "354 - Islanda",
+    "Valore": "354",
+    "Stati": "Islanda"
+  },
+  {
+    "Prefissi": "355 - Albania",
+    "Valore": "355",
+    "Stati": "Albania"
+  },
+  {
+    "Prefissi": "356 - Malta",
+    "Valore": "356",
+    "Stati": "Malta"
+  },
+  {
+    "Prefissi": "357 - Cipro",
+    "Valore": "357",
+    "Stati": "Cipro"
+  },
+  {
+    "Prefissi": "358 - Finlandia",
+    "Valore": "358",
+    "Stati": "Finlandia"
+  },
+  {
+    "Prefissi": "359 - Bulgaria",
+    "Valore": "359",
+    "Stati": "Bulgaria"
+  },
+  {
+    "Prefissi": "370 - Lituania",
+    "Valore": "370",
+    "Stati": "Lituania"
+  },
+  {
+    "Prefissi": "371 - Lettonia",
+    "Valore": "371",
+    "Stati": "Lettonia"
+  },
+  {
+    "Prefissi": "372 - Estonia",
+    "Valore": "372",
+    "Stati": "Estonia"
+  },
+  {
+    "Prefissi": "373 - Moldavia",
+    "Valore": "373",
+    "Stati": "Moldavia"
+  },
+  {
+    "Prefissi": "374 - Armenia",
+    "Valore": "374",
+    "Stati": "Armenia"
+  },
+  {
+    "Prefissi": "375 - Bielorussia",
+    "Valore": "375",
+    "Stati": "Bielorussia"
+  },
+  {
+    "Prefissi": "376 - Andorra",
+    "Valore": "376",
+    "Stati": "Andorra"
+  },
+  {
+    "Prefissi": "377 - Monaco (Principato di)",
+    "Valore": "377",
+    "Stati": "Monaco (Principato di)"
+  },
+  {
+    "Prefissi": "380 - Ucraina",
+    "Valore": "380",
+    "Stati": "Ucraina"
+  },
+  {
+    "Prefissi": "381 - Yugoslavia",
+    "Valore": "381",
+    "Stati": "Yugoslavia"
+  },
+  {
+    "Prefissi": "385 - Croazia",
+    "Valore": "385",
+    "Stati": "Croazia"
+  },
+  {
+    "Prefissi": "386 - Slovenia",
+    "Valore": "386",
+    "Stati": "Slovenia"
+  },
+  {
+    "Prefissi": "387 - Bosnia Erzegovina",
+    "Valore": "387",
+    "Stati": "Bosnia Erzegovina"
+  },
+  {
+    "Prefissi": "389 - Macedonia",
+    "Valore": "389",
+    "Stati": "Macedonia"
+  },
+  {
+    "Prefissi": "420 - Rep. Ceca",
+    "Valore": "420",
+    "Stati": "Rep. Ceca"
+  },
+  {
+    "Prefissi": "421 - Slovacchia",
+    "Valore": "421",
+    "Stati": "Slovacchia"
+  },
+  {
+    "Prefissi": "423 - Liechtenstein",
+    "Valore": "423",
+    "Stati": "Liechtenstein"
+  },
+  {
+    "Prefissi": "500 - Isole Falkland",
+    "Valore": "500",
+    "Stati": "Isole Falkland"
+  },
+  {
+    "Prefissi": "501 - Belize",
+    "Valore": "501",
+    "Stati": "Belize"
+  },
+  {
+    "Prefissi": "502 - Guatemala",
+    "Valore": "502",
+    "Stati": "Guatemala"
+  },
+  {
+    "Prefissi": "503 - El Salvador",
+    "Valore": "503",
+    "Stati": "El Salvador"
+  },
+  {
+    "Prefissi": "504 - Honduras",
+    "Valore": "504",
+    "Stati": "Honduras"
+  },
+  {
+    "Prefissi": "505 - Nicaragua",
+    "Valore": "505",
+    "Stati": "Nicaragua"
+  },
+  {
+    "Prefissi": "506 - Costarica",
+    "Valore": "506",
+    "Stati": "Costarica"
+  },
+  {
+    "Prefissi": "507 - Panama",
+    "Valore": "507",
+    "Stati": "Panama"
+  },
+  {
+    "Prefissi": "508 - Saint Pierre e Miquelon",
+    "Valore": "508",
+    "Stati": "Saint Pierre e Miquelon"
+  },
+  {
+    "Prefissi": "509 - Haiti",
+    "Valore": "509",
+    "Stati": "Haiti"
+  },
+  {
+    "Prefissi": "590 - Guadalupa",
+    "Valore": "590",
+    "Stati": "Guadalupa"
+  },
+  {
+    "Prefissi": "591 - Bolivia",
+    "Valore": "591",
+    "Stati": "Bolivia"
+  },
+  {
+    "Prefissi": "592 - Guyana",
+    "Valore": "592",
+    "Stati": "Guyana"
+  },
+  {
+    "Prefissi": "593 - Ecuador",
+    "Valore": "593",
+    "Stati": "Ecuador"
+  },
+  {
+    "Prefissi": "594 - Guyana Francese",
+    "Valore": "594",
+    "Stati": "Guyana Francese"
+  },
+  {
+    "Prefissi": "595 - Paraguay",
+    "Valore": "595",
+    "Stati": "Paraguay"
+  },
+  {
+    "Prefissi": "596 - Martinica",
+    "Valore": "596",
+    "Stati": "Martinica"
+  },
+  {
+    "Prefissi": "598 - Uruguay",
+    "Valore": "598",
+    "Stati": "Uruguay"
+  },
+  {
+    "Prefissi": "599 - Antille Olandesi",
+    "Valore": "599",
+    "Stati": "Antille Olandesi"
+  },
+  {
+    "Prefissi": "670 - Isole Marianne",
+    "Valore": "670",
+    "Stati": "Isole Marianne"
+  },
+  {
+    "Prefissi": "671 - Guam",
+    "Valore": "671",
+    "Stati": "Guam"
+  },
+  {
+    "Prefissi": "672 - Isole Norfolk",
+    "Valore": "672",
+    "Stati": "Isole Norfolk"
+  },
+  {
+    "Prefissi": "673 - Brunei",
+    "Valore": "673",
+    "Stati": "Brunei"
+  },
+  {
+    "Prefissi": "675 - Papua Nuova Guinea",
+    "Valore": "675",
+    "Stati": "Papua Nuova Guinea"
+  },
+  {
+    "Prefissi": "676 - Tonga",
+    "Valore": "676",
+    "Stati": "Tonga"
+  },
+  {
+    "Prefissi": "677 - Isole Salomone",
+    "Valore": "677",
+    "Stati": "Isole Salomone"
+  },
+  {
+    "Prefissi": "678 - Vanuato",
+    "Valore": "678",
+    "Stati": "Vanuato"
+  },
+  {
+    "Prefissi": "679 - Figi",
+    "Valore": "679",
+    "Stati": "Figi"
+  },
+  {
+    "Prefissi": "680 - Palau",
+    "Valore": "680",
+    "Stati": "Palau"
+  },
+  {
+    "Prefissi": "681 - Wallis e Futuna",
+    "Valore": "681",
+    "Stati": "Wallis e Futuna"
+  },
+  {
+    "Prefissi": "682 - Cook",
+    "Valore": "682",
+    "Stati": "Cook"
+  },
+  {
+    "Prefissi": "683 - Niue",
+    "Valore": "683",
+    "Stati": "Niue"
+  },
+  {
+    "Prefissi": "684 - Samoa Americane",
+    "Valore": "684",
+    "Stati": "Samoa Americane"
+  },
+  {
+    "Prefissi": "685 - Samoa Occidentale",
+    "Valore": "685",
+    "Stati": "Samoa Occidentale"
+  },
+  {
+    "Prefissi": "686 - Kiribati",
+    "Valore": "686",
+    "Stati": "Kiribati"
+  },
+  {
+    "Prefissi": "687 - Nuova Caledonia",
+    "Valore": "687",
+    "Stati": "Nuova Caledonia"
+  },
+  {
+    "Prefissi": "688 - Tuvalu",
+    "Valore": "688",
+    "Stati": "Tuvalu"
+  },
+  {
+    "Prefissi": "689 - Polinesia Francese",
+    "Valore": "689",
+    "Stati": "Polinesia Francese"
+  },
+  {
+    "Prefissi": "692 - Isole Marshall",
+    "Valore": "692",
+    "Stati": "Isole Marshall"
+  },
+  {
+    "Prefissi": "737 - Tajikistan",
+    "Valore": "737",
+    "Stati": "Tajikistan"
+  },
+  {
+    "Prefissi": "850 - Corea del Nord",
+    "Valore": "850",
+    "Stati": "Corea del Nord"
+  },
+  {
+    "Prefissi": "852 - Hong Kong",
+    "Valore": "852",
+    "Stati": "Hong Kong"
+  },
+  {
+    "Prefissi": "853 - Macao",
+    "Valore": "853",
+    "Stati": "Macao"
+  },
+  {
+    "Prefissi": "855 - Cambogia",
+    "Valore": "855",
+    "Stati": "Cambogia"
+  },
+  {
+    "Prefissi": "856 - Laos",
+    "Valore": "856",
+    "Stati": "Laos"
+  },
+  {
+    "Prefissi": "880 - Bangladesh",
+    "Valore": "880",
+    "Stati": "Bangladesh"
+  },
+  {
+    "Prefissi": "886 - Taiwan",
+    "Valore": "886",
+    "Stati": "Taiwan"
+  },
+  {
+    "Prefissi": "960 - Maldive",
+    "Valore": "960",
+    "Stati": "Maldive"
+  },
+  {
+    "Prefissi": "961 - Libano",
+    "Valore": "961",
+    "Stati": "Libano"
+  },
+  {
+    "Prefissi": "962 - Giordania",
+    "Valore": "962",
+    "Stati": "Giordania"
+  },
+  {
+    "Prefissi": "963 - Siria",
+    "Valore": "963",
+    "Stati": "Siria"
+  },
+  {
+    "Prefissi": "964 - Iraq",
+    "Valore": "964",
+    "Stati": "Iraq"
+  },
+  {
+    "Prefissi": "965 - Kuwait",
+    "Valore": "965",
+    "Stati": "Kuwait"
+  },
+  {
+    "Prefissi": "966 - Arabia Saudita",
+    "Valore": "966",
+    "Stati": "Arabia Saudita"
+  },
+  {
+    "Prefissi": "967 - Yemen",
+    "Valore": "967",
+    "Stati": "Yemen"
+  },
+  {
+    "Prefissi": "968 - Oman",
+    "Valore": "968",
+    "Stati": "Oman"
+  },
+  {
+    "Prefissi": "971 - Emirati Arabi Uniti",
+    "Valore": "971",
+    "Stati": "Emirati Arabi Uniti"
+  },
+  {
+    "Prefissi": "972 - Israele",
+    "Valore": "972",
+    "Stati": "Israele"
+  },
+  {
+    "Prefissi": "973 - Bahrein",
+    "Valore": "973",
+    "Stati": "Bahrein"
+  },
+  {
+    "Prefissi": "974 - Qatar",
+    "Valore": "974",
+    "Stati": "Qatar"
+  },
+  {
+    "Prefissi": "975 - Bhutan",
+    "Valore": "975",
+    "Stati": "Bhutan"
+  },
+  {
+    "Prefissi": "976 - Mongolia",
+    "Valore": "976",
+    "Stati": "Mongolia"
+  },
+  {
+    "Prefissi": "977 - Nepal",
+    "Valore": "977",
+    "Stati": "Nepal"
+  },
+  {
+    "Prefissi": "993 - Turkmenistan",
+    "Valore": "993",
+    "Stati": "Turkmenistan"
+  },
+  {
+    "Prefissi": "994 - Azerbaigian",
+    "Valore": "994",
+    "Stati": "Azerbaigian"
+  },
+  {
+    "Prefissi": "995 - Georgia",
+    "Valore": "995",
+    "Stati": "Georgia"
+  },
+  {
+    "Prefissi": "996 - Kazakistan",
+    "Valore": "996",
+    "Stati": "Kazakistan"
+  },
+  {
+    "Prefissi": "996 - Kirghizstan",
+    "Valore": "996",
+    "Stati": "Kirghizstan"
+  },
+  {
+    "Prefissi": "998 - Uzbekistan",
+    "Valore": "998",
+    "Stati": "Uzbekistan"
+  },
+  {
+    "Prefissi": "1242 - Bahamas",
+    "Valore": "1242",
+    "Stati": "Bahamas"
+  },
+  {
+    "Prefissi": "1246 - Barbados",
+    "Valore": "1246",
+    "Stati": "Barbados"
+  },
+  {
+    "Prefissi": "1264 - Anguilla",
+    "Valore": "1264",
+    "Stati": "Anguilla"
+  },
+  {
+    "Prefissi": "1268 - Antigua e Barbuda",
+    "Valore": "1268",
+    "Stati": "Antigua e Barbuda"
+  },
+  {
+    "Prefissi": "1284 - Isole Vergini (GBR)",
+    "Valore": "1284",
+    "Stati": "Isole Vergini (GBR)"
+  },
+  {
+    "Prefissi": "1340 - Isole Vergini (U.S.)",
+    "Valore": "1340",
+    "Stati": "Isole Vergini (U.S.)"
+  },
+  {
+    "Prefissi": "1345 - Isole Cayman",
+    "Valore": "1345",
+    "Stati": "Isole Cayman"
+  },
+  {
+    "Prefissi": "1441 - Bermuda",
+    "Valore": "1441",
+    "Stati": "Bermuda"
+  },
+  {
+    "Prefissi": "1473 - Grenada",
+    "Valore": "1473",
+    "Stati": "Grenada"
+  },
+  {
+    "Prefissi": "1649 - Turks e Caicos",
+    "Valore": "1649",
+    "Stati": "Turks e Caicos"
+  },
+  {
+    "Prefissi": "1664 - Montserrat",
+    "Valore": "1664",
+    "Stati": "Montserrat"
+  },
+  {
+    "Prefissi": "1758 - Santa Lucia",
+    "Valore": "1758",
+    "Stati": "Santa Lucia"
+  },
+  {
+    "Prefissi": "1767 - Dominica",
+    "Valore": "1767",
+    "Stati": "Dominica"
+  },
+  {
+    "Prefissi": "1784 - Saint Vincent",
+    "Valore": "1784",
+    "Stati": "Saint Vincent"
+  },
+  {
+    "Prefissi": "1787 - Porto Rico",
+    "Valore": "1787",
+    "Stati": "Porto Rico"
+  },
+  {
+    "Prefissi": "1868 - Trinidad e Tobago",
+    "Valore": "1868",
+    "Stati": "Trinidad e Tobago"
+  },
+  {
+    "Prefissi": "1869 - Saint Kitts e Nevis",
+    "Valore": "1869",
+    "Stati": "Saint Kitts e Nevis"
+  },
+  {
+    "Prefissi": "1876 - Giamaica",
+    "Valore": "1876",
+    "Stati": "Giamaica"
+  },
+  {
+    "Prefissi": "967 - Yemen",
+    "Valore": "967",
+    "Stati": "Yemen"
+  },
+  {
+    "Prefissi": "381 - Yugoslavia",
+    "Valore": "381",
+    "Stati": "Yugoslavia"
+  },
+  {
+    "Prefissi": "260 - Zambia",
+    "Valore": "260",
+    "Stati": "Zambia"
+  },
+  {
+    "Prefissi": "263 - Zimbabwe",
+    "Valore": "263",
+    "Stati": "Zimbabwe"
+  }
+]
