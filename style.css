@@ -250,6 +250,7 @@ body {
 
 .pagina-box select,
 .pagina-box input[type="text"],
+.pagina-box input[type="tel"],
 .pagina-box textarea {
     width: 100%;
     padding: 10px;
