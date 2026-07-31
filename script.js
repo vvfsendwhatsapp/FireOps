@@ -726,45 +726,46 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     window.popolaSelectModuloCMR = popolaSelectModuloCMR;
 
-    // Costruisce la tabella di riepilogo del modulo CMR selezionato, cercandolo nel JSON
+    // Costruisce la tabella di riepilogo del modulo CMR selezionato, cercandolo nel JSON.
+    // Se nessun modulo è ancora selezionato, mostra comunque la tabella con le sole etichette.
     function renderRiepilogoModuloCMR(modulo) {
         const container = document.getElementById("riepilogo-modulo-cmr");
         if (!container) return;
 
-        if (!modulo) {
-            container.innerHTML = "";
-            return;
-        }
-
         const campo = valore => (valore && String(valore).trim()) ? valore : "-";
-        const coloreModulo = modulo["Colore"] || "var(--primary-color)";
-        const codiceCompleto = [modulo["Codice Tipologia Modulo"], modulo["Codice Modulo"]].filter(Boolean).join(".");
+        const get = chiave => modulo ? campo(modulo[chiave]) : "-";
+        const coloreModulo = modulo ? (modulo["Colore"] || "var(--primary-color)") : "var(--border-color)";
+        const codiceCompleto = modulo ? [modulo["Codice Tipologia Modulo"], modulo["Codice Modulo"]].filter(Boolean).join(".") : "";
+        const titolo = modulo ? `${codiceCompleto} — ${campo(modulo["Denominazione modulo"])}` : "Nessun modulo selezionato";
 
         container.innerHTML = `
             <div class="riepilogo-box">
                 <h4 class="cmr-titolo-modulo" style="border-left-color: ${coloreModulo};">
-                    ${codiceCompleto} — ${campo(modulo["Denominazione modulo"])}
+                    ${titolo}
                 </h4>
                 <table class="riepilogo-tabella">
                     <tbody>
-                        <tr><th>Numero modulo</th><td>${campo(modulo["Numero progressivo del modulo pianificato"])}</td></tr>
-                        <tr><th>Tipo modulo</th><td>${campo(modulo["Tipo Modulo"])}</td></tr>
-                        <tr><th>Denominazione internazionale</th><td>${campo(modulo["Denominazione internazionale secondo meccanismo europeo (se applicabile)"])}</td></tr>
-                        <tr><th>Compiti e funzioni</th><td>${campo(modulo["Compiti e funzioni"])}</td></tr>
-                        <tr><th>Capacità</th><td>${campo(modulo["Capacità"])}</td></tr>
-                        <tr><th>Componenti principali</th><td>${campo(modulo["Componenti principali"])}</td></tr>
-                        <tr><th>Autosufficienza mobilitazione</th><td>${campo(modulo["Autosufficienza mobilitazione"])}</td></tr>
-                        <tr><th>Automezzi predisposti</th><td>${campo(modulo["Tipologia e numero di automezzi predisposti"])}</td></tr>
-                        <tr><th>Equipaggio</th><td>${campo(modulo["Equipaggio (numero componenti)"])}</td></tr>
-                        <tr><th>Trasporto con mezzo aereo</th><td>${campo(modulo["Pianificazione per trasporto con mezzo aereo"])}</td></tr>
-                        <tr><th>Approvvigionamento a regime</th><td>${campo(modulo["Esigenze di approvvigionamento a regime"])}</td></tr>
-                        <tr><th>Dimensioni, pesi e ingombri</th><td>${campo(modulo["Dimensioni, pesi e ingombri (utili per l’imbarco o il trasporto mediante mezzi aerei)"])}</td></tr>
+                        <tr><th>Numero modulo</th><td>${get("Numero progressivo del modulo pianificato")}</td></tr>
+                        <tr><th>Tipo modulo</th><td>${get("Tipo Modulo")}</td></tr>
+                        <tr><th>Denominazione internazionale</th><td>${get("Denominazione internazionale secondo meccanismo europeo (se applicabile)")}</td></tr>
+                        <tr><th>Compiti e funzioni</th><td>${get("Compiti e funzioni")}</td></tr>
+                        <tr><th>Capacità</th><td>${get("Capacità")}</td></tr>
+                        <tr><th>Componenti principali</th><td>${get("Componenti principali")}</td></tr>
+                        <tr><th>Autosufficienza mobilitazione</th><td>${get("Autosufficienza mobilitazione")}</td></tr>
+                        <tr><th>Automezzi predisposti</th><td>${get("Tipologia e numero di automezzi predisposti")}</td></tr>
+                        <tr><th>Equipaggio</th><td>${get("Equipaggio (numero componenti)")}</td></tr>
+                        <tr><th>Trasporto con mezzo aereo</th><td>${get("Pianificazione per trasporto con mezzo aereo")}</td></tr>
+                        <tr><th>Approvvigionamento a regime</th><td>${get("Esigenze di approvvigionamento a regime")}</td></tr>
+                        <tr><th>Dimensioni, pesi e ingombri</th><td>${get("Dimensioni, pesi e ingombri (utili per l’imbarco o il trasporto mediante mezzi aerei)")}</td></tr>
                     </tbody>
                 </table>
             </div>
         `;
     }
     window.renderRiepilogoModuloCMR = renderRiepilogoModuloCMR;
+
+    // Mostra subito la tabella con le sole etichette, ancora prima che i dati siano caricati
+    renderRiepilogoModuloCMR(null);
 
     // ==========================================================
     // VALIDAZIONE CAMPI MESSAGGISTICA: evidenzia i campi mancanti
