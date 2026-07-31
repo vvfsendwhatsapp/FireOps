@@ -640,3 +640,7 @@ html.comando-gia-scelto #modal-comando {
 .email-cliccabile:hover {
     color: #003366;
 }
+
+#msg-testo {
+    cursor: default;
+}
