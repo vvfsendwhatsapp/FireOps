@@ -1102,14 +1102,20 @@ html.comando-gia-scelto #modal-comando {
     padding-left: 14px;
 }
 
-.riepilogo-box-consultazione h3,
-.riepilogo-box-consultazione h4 {
+.riepilogo-box-consultazione h3 {
     color: #4fc3f7;
 }
 
-.riepilogo-box-consultazione h4.sezione-toggle {
+.riepilogo-box-consultazione h4 {
     background: #4fc3f7;
     color: var(--dark-color);
+    padding: 6px 12px;
+    border-radius: 4px;
+}
+
+.riepilogo-box-consultazione .riepilogo-tabella-limitrofi th {
+    color: #4fc3f7;
+    background: var(--dark-color);
 }
 
 .sezione-toggle::before {
