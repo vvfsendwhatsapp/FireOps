@@ -72,9 +72,10 @@
   { "Categoria": "Funzioni Intranet DipVVF", "Sottocategoria": "Varie", "Nome": "Webmail Vigilfuoco", "URL": "https://webmail.vigilfuoco.it" },
   { "Categoria": "Funzioni Intranet DipVVF", "Sottocategoria": "Varie", "Nome": "Legalmail Vigilfuoco (PEC)", "URL": "https://webmail.cert.vigilfuoco.it/webmail/?ts=1690996532#/login" },
   { "Categoria": "Funzioni Intranet DipVVF", "Sottocategoria": "Varie", "Nome": "Normattiva", "URL": "https://www.normattiva.it/" },
-  { "Categoria": "Funzioni Intranet DipVVF", "Sottocategoria": "Varie", "Nome": "VigilfuocoTV", "URL": "http://www.vigilfuoco.tv" },
-  { "Categoria": "Funzioni Intranet DipVVF", "Sottocategoria": "Varie", "Nome": "MediaigilfuocoTV", "URL": "http://media.vigilfuoco.tv" },
   { "Categoria": "Funzioni Intranet DipVVF", "Sottocategoria": "Varie", "Nome": "ArubaSignOnline", "URL": "https://arubasign.arubapec.it/asonline/" },
+  
+  { "Categoria": "Comunicazione in Emergenza", "Sottocategoria": "Varie", "Nome": "VigilfuocoTV", "URL": "http://www.vigilfuoco.tv" },
+  { "Categoria": "Comunicazione in Emergenza", "Sottocategoria": "Varie", "Nome": "MediavigilfuocoTV", "URL": "http://media.vigilfuoco.tv" },
 
   { "Categoria": "Varie", "Sottocategoria": "", "Nome": "Google.it", "URL": "https://www.google.it" },
   { "Categoria": "Varie", "Sottocategoria": "", "Nome": "Google Drive", "URL": "https://drive.google.com/drive/my-drive" },
