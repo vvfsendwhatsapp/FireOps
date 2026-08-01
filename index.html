@@ -248,6 +248,59 @@
             </div>
         </section>
 
+        <!-- SOSTANZE PERICOLOSE (Schede ICSC ILO/OMS) -->
+        <section id="sostanze-pericolose" class="page-section">
+            <div class="pagina-box pagina-box-larga">
+                <h3>Sostanze Pericolose — Schede ICSC (ILO/OMS)</h3>
+                <p class="pagina-nota">
+                    Ricerca sul database internazionale delle Schede Internazionali di Sicurezza Chimica
+                    (International Chemical Safety Cards, ILO/OMS).
+                </p>
+                <p class="pagina-nota">
+                    ✅ "Nome chimico o sinonimo" e "Numero scheda ICSC" cercano su un database locale (~1690 schede)
+                    e aprono sempre la scheda esatta. Il <strong>CAS</strong> è verificato manualmente (fonte per fonte)
+                    per 449 sostanze: se lo digiti e corrisponde, apri direttamente la scheda giusta.
+                    ⚠️ Per le sostanze non ancora verificate e per il numero UN, la ricerca viene inviata al sito ILO
+                    (best-effort): se il filtro non viene riconosciuto, mostrerà l'elenco completo, comunque consultabile lì.
+                </p>
+
+                <div class="msg-riga-campi">
+                    <div class="msg-campo combo-campo">
+                        <label for="icsc-nome-input">Nome chimico o sinonimo</label>
+                        <div class="combo-wrapper">
+                            <input type="text" id="icsc-nome-input" class="combo-input" placeholder="Cerca per nome o sinonimo..." autocomplete="off">
+                            <input type="hidden" id="icsc-nome">
+                            <span class="combo-arrow" aria-hidden="true"></span>
+                            <div id="icsc-nome-dropdown" class="combo-dropdown"></div>
+                        </div>
+                    </div>
+                    <div class="msg-campo">
+                        <label for="icsc-cas">Numero CAS</label>
+                        <input type="text" id="icsc-cas" placeholder="Es. 67-64-1" autocomplete="off">
+                    </div>
+                    <div class="msg-campo">
+                        <label for="icsc-un">Numero UN</label>
+                        <input type="text" id="icsc-un" placeholder="Es. 1090" autocomplete="off">
+                    </div>
+                </div>
+                <div class="msg-riga-campi">
+                    <div class="msg-campo">
+                        <label for="icsc-numero">Numero scheda ICSC</label>
+                        <input type="text" id="icsc-numero" placeholder="Es. 0087" autocomplete="off">
+                    </div>
+                    <div class="msg-campo" style="flex: 2;">
+                        <label for="icsc-testo">Ricerca testuale libera</label>
+                        <input type="text" id="icsc-testo" placeholder="Cerca in tutto il testo delle schede..." autocomplete="off">
+                    </div>
+                </div>
+
+                <div class="msg-azioni">
+                    <button id="btn-cerca-icsc" class="btn-whatsapp" type="button">🧪 Cerca scheda ICSC</button>
+                    <button id="btn-reset-icsc" class="btn-toggle-radar" type="button">✖️ Pulisci campi</button>
+                </div>
+            </div>
+        </section>
+
     </main>
 
     <!-- FOOTER: CONTATORE ACCESSI + CREDITS -->

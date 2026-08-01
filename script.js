@@ -16,6 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let lingueData = [];   // elenco lingue disponibili per Messaggistica
     let moduliCMRData = []; // elenco moduli della Circolare EM-01/2020 (Colonne Mobili Regionali)
     let linkUtiliData = []; // elenco link utili organizzati per tema, per la pagina "Link Utili"
+    let sostanzePericoloseData = []; // database locale schede ICSC (numero, nome, sinonimi)
     let modalChiudibile = false; // true solo quando riaperto manualmente col pulsante ☰
 
     Promise.all([
@@ -98,6 +99,22 @@ document.addEventListener("DOMContentLoaded", () => {
         console.error("Errore nel caricamento dei dati:", error);
         selectComando.innerHTML = '<option value="" disabled selected>Errore caricamento comandi</option>';
     });
+
+    // Database locale delle schede ICSC: caricato separatamente e non bloccante.
+    // Se questo file manca o fallisce, il resto dell'app (Comandi, Link Utili, ecc.)
+    // continua a funzionare normalmente: la ricerca ICSC per nome resta solo "best-effort"
+    fetch("/FireOps/db/sostanzePericolose.json")
+        .then(r => {
+            if (!r.ok) throw new Error("Impossibile trovare sostanzePericolose.json");
+            return r.json();
+        })
+        .then(dati => {
+            sostanzePericoloseData = dati;
+            popolaComboSostanzePericolose(sostanzePericoloseData);
+        })
+        .catch(err => {
+            console.error("Database sostanze pericolose non disponibile:", err);
+        });
 
     function attivaComando(nomeComando) {
         sessionStorage.setItem(CHIAVE_STORAGE, nomeComando);
@@ -958,7 +975,8 @@ document.addEventListener("DOMContentLoaded", () => {
         { id: "radio-telefoni", label: "Radio e Telefoni" },
         { id: "qrcode", label: "QrCode" },
         { id: "turnario", label: "Turnario" },
-        { id: "moduli-cmr", label: "Moduli CMR" }
+        { id: "moduli-cmr", label: "Moduli CMR" },
+        { id: "sostanze-pericolose", label: "Sostanze pericolose" }
     ];
 
     const magazzinoPagine = document.getElementById("magazzino-pagine");
@@ -1374,6 +1392,90 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Mostra subito la tabella con le sole etichette, ancora prima che i dati siano caricati
     renderRiepilogoModuloCMR(null);
+
+    // ==========================================================
+    // PAGINA "SOSTANZE PERICOLOSE": ricerca sul database ICSC (ILO/OMS)
+    // ==========================================================
+    // Unico pattern confermato con certezza: link diretto a una scheda nota
+    // (showcard.display?p_card_id=NNNN). Gli altri parametri di ricerca (nome,
+    // CAS, UN, testo libero) non sono documentati pubblicamente dall'ILO: usiamo
+    // i nomi più plausibili, ma se il sito non li riconosce mostrerà comunque
+    // l'elenco completo delle schede (mai un link rotto).
+    const inputIcscNomeInput = document.getElementById("icsc-nome-input");
+    const hiddenIcscNome = document.getElementById("icsc-nome");
+    const dropdownIcscNome = document.getElementById("icsc-nome-dropdown");
+    const inputIcscCas = document.getElementById("icsc-cas");
+    const inputIcscUn = document.getElementById("icsc-un");
+    const inputIcscNumero = document.getElementById("icsc-numero");
+    const inputIcscTesto = document.getElementById("icsc-testo");
+    const btnCercaIcsc = document.getElementById("btn-cerca-icsc");
+    const btnResetIcsc = document.getElementById("btn-reset-icsc");
+
+    // Popola il combo ricercabile locale (nome/sinonimo -> numero scheda ICSC).
+    // Filtra e mostra sia sul nome sia sui sinonimi, così una ricerca per sinonimo trova comunque la sostanza
+    function popolaComboSostanzePericolose(lista) {
+        if (!inputIcscNomeInput || !lista || lista.length === 0) return;
+
+        creaComboRicercabile({
+            input: inputIcscNomeInput,
+            hidden: hiddenIcscNome,
+            dropdown: dropdownIcscNome,
+            elenco: lista,
+            cercaValore: s => s.Numero,
+            mostraTesto: s => {
+                const cas = s.CAS ? ` [CAS ${s.CAS}]` : "";
+                return s.Sinonimi ? `${s.Nome}${cas} — ${s.Sinonimi}` : `${s.Nome}${cas}`;
+            }
+        });
+    }
+
+    if (btnCercaIcsc) {
+        btnCercaIcsc.addEventListener("click", () => {
+            // Priorità 1: sostanza trovata nel database locale (nome/sinonimo) -> link diretto garantito
+            const numeroLocale = (hiddenIcscNome && hiddenIcscNome.value || "").trim();
+            if (numeroLocale) {
+                window.open(`https://chemicalsafety.ilo.org/dyn/icsc/showcard.display?p_lang=it&p_card_id=${numeroLocale}&p_version=2`, "_blank", "noopener");
+                return;
+            }
+
+            // Priorità 2: numero scheda ICSC inserito manualmente -> link diretto garantito
+            const numeroManuale = (inputIcscNumero.value || "").trim();
+            if (numeroManuale) {
+                const numeroPadded = numeroManuale.replace(/\D/g, "").padStart(4, "0");
+                window.open(`https://chemicalsafety.ilo.org/dyn/icsc/showcard.display?p_lang=it&p_card_id=${numeroPadded}&p_version=2`, "_blank", "noopener");
+                return;
+            }
+
+            // Priorità 3: CAS inserito manualmente, ma già presente e verificato nel database locale -> link diretto garantito
+            const casManuale = (inputIcscCas.value || "").trim();
+            if (casManuale) {
+                const trovato = sostanzePericoloseData.find(s => s.CAS && s.CAS === casManuale);
+                if (trovato) {
+                    window.open(`https://chemicalsafety.ilo.org/dyn/icsc/showcard.display?p_lang=it&p_card_id=${trovato.Numero}&p_version=2`, "_blank", "noopener");
+                    return;
+                }
+            }
+
+            // Altrimenti invia i filtri compilati alla ricerca del sito ILO (best-effort)
+            const parametri = new URLSearchParams({ p_lang: "it" });
+            if (inputIcscNomeInput.value.trim()) parametri.set("p_substance_name", inputIcscNomeInput.value.trim());
+            if (inputIcscCas.value.trim()) parametri.set("p_cas_no", inputIcscCas.value.trim());
+            if (inputIcscUn.value.trim()) parametri.set("p_un_no", inputIcscUn.value.trim());
+            if (inputIcscTesto.value.trim()) parametri.set("p_free_text", inputIcscTesto.value.trim());
+
+            window.open(`https://chemicalsafety.ilo.org/dyn/icsc/showcard.listcards3?${parametri.toString()}`, "_blank", "noopener");
+        });
+    }
+
+    if (btnResetIcsc) {
+        btnResetIcsc.addEventListener("click", () => {
+            if (hiddenIcscNome) hiddenIcscNome.value = "";
+            [inputIcscNomeInput, inputIcscCas, inputIcscUn, inputIcscNumero, inputIcscTesto].forEach(campo => {
+                if (campo) campo.value = "";
+            });
+            if (inputIcscNomeInput) inputIcscNomeInput.focus();
+        });
+    }
 
     // ==========================================================
     // PAGINA LINK UTILI: pulsanti ai vari siti raggruppati per tema
