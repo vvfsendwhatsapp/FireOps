@@ -343,19 +343,14 @@ body {
     font-weight: bold;
 }
 
-.mappa-meteo-layout {
-    display: flex;
-    gap: 20px;
-    flex-wrap: wrap;
-}
-
 .mappa-comando {
-    flex: 2 1 400px;
-    height: 480px;
+    width: 100%;
+    height: 420px;
     border-radius: 8px;
     overflow: hidden;
     border: 1px solid var(--border-color);
     background: var(--dark-color);
+    position: relative; /* riferimento per crocino centrale ed etichetta radar */
 }
 
 /* Leaflet inserisce i propri controlli/tile con z-index bassi: nessun conflitto con header/nav fissi */
@@ -457,62 +452,23 @@ body {
     pointer-events: none;
 }
 
-.meteo-comando {
-    flex: 1 1 220px;
-    background: var(--dark-color);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 18px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    gap: 4px;
-}
-
-.meteo-icona {
-    font-size: 40px;
-    line-height: 1;
-    margin-bottom: 4px;
-}
-
-.meteo-temp {
-    font-size: 34px;
-    font-weight: bold;
-    color: var(--primary-color);
-    line-height: 1;
-}
-
-.meteo-descrizione {
-    font-size: 14px;
-    color: var(--text-main);
-    margin-top: 4px;
-}
-
-.meteo-dettaglio {
-    font-size: 11px;
-    color: var(--text-muted);
-    margin-top: 8px;
-    line-height: 1.5;
-}
-
-/* Striscia con le previsioni orarie per le prossime 6 ore */
+/* Striscia con le previsioni orarie per le prossime 12 ore: griglia che si adatta
+   alla larghezza del riquadro, senza mai richiedere lo scroll orizzontale */
 .meteo-orario {
-    display: flex;
-    gap: 8px;
-    overflow-x: auto;
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 6px;
     padding-top: 16px;
     margin-top: 16px;
     border-top: 1px solid var(--border-color);
 }
 
 .meteo-ora-card {
-    flex: 0 0 68px;
+    min-width: 0;
     background: var(--dark-color);
     border: 1px solid var(--border-color);
     border-radius: 6px;
-    padding: 8px 4px;
+    padding: 8px 2px;
     text-align: center;
 }
 
@@ -1227,6 +1183,10 @@ html.comando-gia-scelto #modal-comando {
     .homepage-layout {
         flex-direction: column;
     }
+
+    .meteo-orario {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
 }
 
 @media (max-width: 520px) {
@@ -1274,5 +1234,31 @@ html.comando-gia-scelto #modal-comando {
     .mappa-comando {
         height: 280px;
         flex-basis: 100%;
+    }
+
+    .meteo-orario {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 5px;
+    }
+
+    .meteo-ora-card {
+        padding: 6px 2px;
+    }
+
+    .meteo-ora-etichetta {
+        font-size: 10px;
+    }
+
+    .meteo-ora-icona {
+        font-size: 17px;
+        margin: 3px 0;
+    }
+
+    .meteo-ora-temp {
+        font-size: 12px;
+    }
+
+    .meteo-ora-pioggia {
+        font-size: 9px;
     }
 }

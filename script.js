@@ -525,20 +525,20 @@ document.addEventListener("DOMContentLoaded", () => {
     function aggiornaMeteoComando(comando) {
         const coord = estraiCoordinate(comando);
         if (!coord) {
-            const contenitoreMeteo = document.getElementById("meteo-comando");
-            if (contenitoreMeteo) contenitoreMeteo.innerHTML = '<p class="pagina-nota">Coordinate del Comando non disponibili.</p>';
+            const contenitoreOrario = document.getElementById("meteo-orario");
+            if (contenitoreOrario) contenitoreOrario.innerHTML = '<p class="pagina-nota">Coordinate del Comando non disponibili.</p>';
             return;
         }
         aggiornaMeteoPerCoordinate(coord);
     }
 
-    // Scarica e mostra il meteo in tempo reale per una coppia di coordinate qualsiasi
+    // Scarica e mostra le previsioni orarie (12 ore) per una coppia di coordinate qualsiasi
     // (usata sia per il Comando attivo sia per il centro corrente della mappa)
     function aggiornaMeteoPerCoordinate(coord) {
-        const contenitoreMeteo = document.getElementById("meteo-comando");
-        if (!contenitoreMeteo || !coord) return;
+        const contenitoreOrario = document.getElementById("meteo-orario");
+        if (!contenitoreOrario || !coord) return;
 
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=${coord.lat}&longitude=${coord.lng}&current=temperature_2m,relative_humidity_2m,apparent_temperature,wind_speed_10m,weather_code&hourly=temperature_2m,weather_code,precipitation_probability&forecast_hours=6&timezone=auto`;
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${coord.lat}&longitude=${coord.lng}&hourly=temperature_2m,weather_code,precipitation_probability&forecast_hours=12&timezone=auto`;
 
         fetch(url)
             .then(r => {
@@ -546,27 +546,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 return r.json();
             })
             .then(dati => {
-                const c = dati.current;
-                if (!c) throw new Error("Dati meteo non disponibili");
-                const [icona, descrizione] = descrizioneMeteo(c.weather_code);
-
-                contenitoreMeteo.innerHTML = `
-                    <div class="meteo-icona">${icona}</div>
-                    <div class="meteo-temp">${Math.round(c.temperature_2m)}°C</div>
-                    <div class="meteo-descrizione">${descrizione}</div>
-                    <div class="meteo-dettaglio">Percepita ${Math.round(c.apparent_temperature)}°C · Umidità ${Math.round(c.relative_humidity_2m)}% · Vento ${Math.round(c.wind_speed_10m)} km/h</div>
-                `;
-
+                if (!dati.hourly) throw new Error("Dati meteo non disponibili");
                 renderMeteoOrario(dati.hourly);
             })
             .catch(() => {
-                contenitoreMeteo.innerHTML = '<p class="pagina-nota">Meteo non disponibile al momento.</p>';
-                const contenitoreOrario = document.getElementById("meteo-orario");
-                if (contenitoreOrario) contenitoreOrario.innerHTML = "";
+                contenitoreOrario.innerHTML = '<p class="pagina-nota">Meteo non disponibile al momento.</p>';
             });
     }
 
-    // Mostra la striscia con le previsioni orarie per le prossime 6 ore
+
+    // Mostra la striscia con le previsioni orarie per le prossime 12 ore
     function renderMeteoOrario(hourly) {
         const container = document.getElementById("meteo-orario");
         if (!container) return;
