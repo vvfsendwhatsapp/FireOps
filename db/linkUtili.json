@@ -68,11 +68,12 @@
   { "Categoria": "Funzioni Intranet DipVVF", "Sottocategoria": "Varie", "Nome": "SIPEC-Web", "URL": "http://gestionepersonale.dipvvf.it" },
   { "Categoria": "Funzioni Intranet DipVVF", "Sottocategoria": "Varie", "Nome": "STAT-Ri-Web", "URL": "https://statri-web.dipvvf.it/" },
   { "Categoria": "Funzioni Intranet DipVVF", "Sottocategoria": "Varie", "Nome": "Track Gestione Vestiario", "URL": "http://pacweb.dipvvf.it/track/" },
-  { "Categoria": "Funzioni Intranet DipVVF", "Sottocategoria": "Varie", "Nome": "Vigili@", "URL": "http://protocollo.dipvvf.it" },
-  { "Categoria": "Funzioni Intranet DipVVF", "Sottocategoria": "Varie", "Nome": "Webmail Vigilfuoco", "URL": "https://webmail.vigilfuoco.it" },
-  { "Categoria": "Funzioni Intranet DipVVF", "Sottocategoria": "Varie", "Nome": "Legalmail Vigilfuoco (PEC)", "URL": "https://webmail.cert.vigilfuoco.it/webmail/?ts=1690996532#/login" },
   { "Categoria": "Funzioni Intranet DipVVF", "Sottocategoria": "Varie", "Nome": "Normattiva", "URL": "https://www.normattiva.it/" },
   { "Categoria": "Funzioni Intranet DipVVF", "Sottocategoria": "Varie", "Nome": "ArubaSignOnline", "URL": "https://arubasign.arubapec.it/asonline/" },
+  
+  { "Categoria": "Funzioni Intranet DipVVF", "Sottocategoria": "Mail", "Nome": "Vigili@", "URL": "http://protocollo.dipvvf.it" },
+  { "Categoria": "Funzioni Intranet DipVVF", "Sottocategoria": "Mail", "Nome": "Webmail Vigilfuoco", "URL": "https://webmail.vigilfuoco.it" },
+  { "Categoria": "Funzioni Intranet DipVVF", "Sottocategoria": "Mail", "Nome": "Legalmail Vigilfuoco (PEC)", "URL": "https://webmail.cert.vigilfuoco.it/webmail/?ts=1690996532#/login" },
   
   { "Categoria": "Comunicazione in Emergenza", "Sottocategoria": "Varie", "Nome": "VigilfuocoTV", "URL": "http://www.vigilfuoco.tv" },
   { "Categoria": "Comunicazione in Emergenza", "Sottocategoria": "Varie", "Nome": "MediavigilfuocoTV", "URL": "http://media.vigilfuoco.tv" },
