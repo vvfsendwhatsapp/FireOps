@@ -171,6 +171,9 @@ document.addEventListener("DOMContentLoaded", () => {
     // ==========================================================
     let mappaComandoLeaflet = null;
     let markerComandoLeaflet = null;
+    let coordinateComandoAttivo = null; // ultime coordinate del Comando, per il pulsante "Torna al Comando"
+    const ZOOM_VISTA_COMANDO = 11;   // zoom di dettaglio usato quando si seleziona/aggiorna il Comando
+    const ZOOM_RITORNO_COMANDO = 11; // zoom più ampio usato dal pulsante "Torna al Comando"
     let layerBaseLeaflet = null;      // layer di sfondo attivo (grigia o OSM)
     let stileMappaAttuale = "grigia"; // stile di sfondo scelto dall'utente
     let crocinoCentroMappa = null;    // overlay fisso col mirino che indica il centro inquadratura
@@ -238,8 +241,10 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
+        coordinateComandoAttivo = coord; // memorizzate per il pulsante "Torna al Comando"
+
         if (!mappaComandoLeaflet) {
-            mappaComandoLeaflet = L.map("mappa-comando").setView([coord.lat, coord.lng], 13);
+            mappaComandoLeaflet = L.map("mappa-comando").setView([coord.lat, coord.lng], ZOOM_VISTA_COMANDO);
             impostaStileMappa(stileMappaAttuale);
             markerComandoLeaflet = L.marker([coord.lat, coord.lng], { icon: iconaCasermaVVF() }).addTo(mappaComandoLeaflet);
 
@@ -253,8 +258,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 const centro = mappaComandoLeaflet.getCenter();
                 aggiornaMeteoPerCoordinate({ lat: centro.lat, lng: centro.lng });
             });
+
+            // Click sulla mappa: la ricentra dolcemente sul punto cliccato, senza cambiare zoom
+            mappaComandoLeaflet.on("click", (e) => {
+                mappaComandoLeaflet.panTo(e.latlng);
+            });
         } else {
-            mappaComandoLeaflet.setView([coord.lat, coord.lng], 13);
+            mappaComandoLeaflet.setView([coord.lat, coord.lng], ZOOM_VISTA_COMANDO);
             markerComandoLeaflet.setLatLng([coord.lat, coord.lng]);
             // Se la mappa era nascosta (cambio pagina) le dimensioni interne vanno ricalcolate
             setTimeout(() => mappaComandoLeaflet.invalidateSize(), 100);
@@ -313,6 +323,15 @@ document.addEventListener("DOMContentLoaded", () => {
     if (btnStileMappa) {
         btnStileMappa.addEventListener("click", () => {
             impostaStileMappa(stileMappaAttuale === "grigia" ? "osm" : "grigia");
+        });
+    }
+
+    // Ricentra la mappa sul Comando attivo con uno zoom più ampio (vista d'insieme)
+    const btnTornaComando = document.getElementById("btn-torna-comando");
+    if (btnTornaComando) {
+        btnTornaComando.addEventListener("click", () => {
+            if (!mappaComandoLeaflet || !coordinateComandoAttivo) return;
+            mappaComandoLeaflet.setView([coordinateComandoAttivo.lat, coordinateComandoAttivo.lng], ZOOM_RITORNO_COMANDO);
         });
     }
 
