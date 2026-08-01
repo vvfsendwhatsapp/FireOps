@@ -997,6 +997,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 paginaSinistra = idAttualeLato;
             }
         } else {
+            // La pagina che c'era prima in questo pannello torna nel magazzino nascosto,
+            // altrimenti resterebbe incolonnata sotto quella nuova
+            spostaSezione(idAttualeLato, "magazzino");
             spostaSezione(nuovoId, lato);
             if (lato === "sinistra") paginaSinistra = nuovoId;
             else paginaDestra = nuovoId;
