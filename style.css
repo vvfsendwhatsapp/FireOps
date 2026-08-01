@@ -1113,6 +1113,11 @@ html.comando-gia-scelto #modal-comando {
     border-radius: 4px;
 }
 
+.riepilogo-box-consultazione h4.sezione-toggle {
+    background: #4fc3f7;
+    color: var(--dark-color);
+}
+
 .riepilogo-box-consultazione .riepilogo-tabella-limitrofi th {
     color: #4fc3f7;
     background: var(--dark-color);
