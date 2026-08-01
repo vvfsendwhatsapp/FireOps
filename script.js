@@ -105,6 +105,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Il messaggio precompilato dipende dal Comando attivo: lo rigenero
         generaMessaggioMessaggistica();
+
+        // I link mappa (Mappe > SAR) puntano alle coordinate del Comando attivo: li rigenero
+        if (linkUtiliData.length > 0) renderLinkUtili(linkUtiliData);
     }
 
     // Apre il modale in modalità "cambio comando" (chiudibile)
@@ -1352,6 +1355,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Costruisce i pulsanti della pagina Link Utili, raggruppati per Categoria e Sottocategoria.
     // I link senza URL compilato vengono mostrati disabilitati (dato non ancora inserito nel JSON).
+    // Sostituisce i segnaposto {{LAT}} e {{LNG}} nell'URL con le coordinate del Comando
+    // attualmente attivo (letto da sessionStorage), così i link mappa puntano sempre
+    // alla zona giusta invece di un punto fisso. Se non c'è ancora un Comando attivo
+    // o l'URL non contiene segnaposto, restituisce l'URL invariato.
+    function sostituisciCoordinateUrl(url) {
+        if (!url || (!url.includes("{{LAT}}") && !url.includes("{{LNG}}"))) return url;
+
+        const nomeComandoAttivo = sessionStorage.getItem(CHIAVE_STORAGE);
+        const comandoAttivo = comandiData.find(c => c.Comando === nomeComandoAttivo);
+        const coord = estraiCoordinate(comandoAttivo);
+        if (!coord) return "";
+
+        return url.split("{{LAT}}").join(coord.lat).split("{{LNG}}").join(coord.lng);
+    }
+
     function renderLinkUtili(elenco) {
         const container = document.getElementById("link-utili-contenuto");
         if (!container) return;
@@ -1374,7 +1392,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 html += `<div class="link-utili-griglia">`;
                 voci.forEach(voce => {
-                    const url = (voce["URL"] || "").trim();
+                    const url = sostituisciCoordinateUrl((voce["URL"] || "").trim());
                     if (url) {
                         html += `<a class="link-utili-pulsante" href="${url}" target="_blank" rel="noopener">${voce["Nome"]}</a>`;
                     } else {
