@@ -809,10 +809,21 @@ body {
     text-transform: uppercase;
     border-radius: 4px;
     letter-spacing: 0.5px;
+    cursor: pointer;
+    user-select: none;
 }
 
 .link-utili-categoria:first-child {
     margin-top: 0;
+}
+
+/* Contenuto di ogni categoria: collassato di default, si apre cliccando sul titolo */
+.link-utili-categoria-contenuto {
+    display: none;
+}
+
+.link-utili-categoria-contenuto.aperta {
+    display: block;
 }
 
 .link-utili-sottocategoria {
@@ -1082,6 +1093,23 @@ html.comando-gia-scelto #modal-comando {
     letter-spacing: 0.5px;
     cursor: pointer;
     user-select: none;
+}
+
+/* Info Altro Comando: accento azzurro al posto del giallo, per non confonderlo
+   a colpo d'occhio col riepilogo del Comando attivo (sempre giallo) */
+.riepilogo-box-consultazione {
+    border-left: 3px solid #4fc3f7;
+    padding-left: 14px;
+}
+
+.riepilogo-box-consultazione h3,
+.riepilogo-box-consultazione h4 {
+    color: #4fc3f7;
+}
+
+.riepilogo-box-consultazione h4.sezione-toggle {
+    background: #4fc3f7;
+    color: var(--dark-color);
 }
 
 .sezione-toggle::before {

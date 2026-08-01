@@ -765,7 +765,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Costruisce e inserisce il riepilogo dati del comando nella dashboard
-    function renderRiepilogoComando(comando, tuttiComandi, tutteDirezioni, con, socav, idContenitore = "riepilogo-comando") {
+    function renderRiepilogoComando(comando, tuttiComandi, tutteDirezioni, con, socav, idContenitore = "riepilogo-comando", accentoAlternativo = false) {
         const container = document.getElementById(idContenitore);
         if (!container) return;
 
@@ -808,8 +808,10 @@ document.addEventListener("DOMContentLoaded", () => {
         const intranet = comando["Intranet Comando"]
             ? `<a href="${comando["Intranet Comando"]}" target="_blank" rel="noopener">Apri intranet</a>` : "-";
 
+        const classeBox = accentoAlternativo ? "riepilogo-box riepilogo-box-consultazione" : "riepilogo-box";
+
         container.innerHTML = `
-            <div class="riepilogo-box">
+            <div class="${classeBox}">
                 <h3>Informazioni generali</h3>
 
                 <h4 class="sezione-toggle" data-target="${p}-sezione-comando">Info Comando ${comando.Comando}</h4>
@@ -933,7 +935,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         select.addEventListener("change", () => {
             const comandoScelto = trovaComandoPerNome(select.value, comandiData);
-            renderRiepilogoComando(comandoScelto, comandiData, direzioniData, conData, socavData, "riepilogo-altro-comando");
+            renderRiepilogoComando(comandoScelto, comandiData, direzioniData, conData, socavData, "riepilogo-altro-comando", true);
         });
     }
 
@@ -1420,9 +1422,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const gruppi = raggruppaLinkUtili(elenco);
         let html = "";
+        let indiceCategoria = 0;
 
         gruppi.forEach((sottogruppi, categoria) => {
-            html += `<h4 class="link-utili-categoria">${categoria}</h4>`;
+            const idContenuto = `link-utili-categoria-${indiceCategoria++}`;
+            html += `<h4 class="link-utili-categoria sezione-toggle" data-target="${idContenuto}">${categoria}</h4>`;
+            html += `<div id="${idContenuto}" class="link-utili-categoria-contenuto">`;
 
             sottogruppi.forEach((voci, sottocategoria) => {
                 if (sottocategoria) {
@@ -1440,9 +1445,19 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
                 html += `</div>`;
             });
+
+            html += `</div>`;
         });
 
         container.innerHTML = html;
+
+        // Ogni categoria si apre/chiude cliccando sul titolo (parte collassata di default)
+        container.querySelectorAll(".sezione-toggle").forEach(header => {
+            const contenuto = document.getElementById(header.dataset.target);
+            if (contenuto) {
+                header.addEventListener("click", () => toggleSezione(header, contenuto));
+            }
+        });
     }
     window.renderLinkUtili = renderLinkUtili;
 
