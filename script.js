@@ -101,6 +101,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const comandoSelezionato = comandiData.find(c => c.Comando === nomeComando);
         renderRiepilogoComando(comandoSelezionato, comandiData, direzioniData, conData, socavData);
+        aggiornaMappaEMeteo(comandoSelezionato);
 
         // Il messaggio precompilato dipende dal Comando attivo: lo rigenero
         generaMessaggioMessaggistica();
@@ -163,6 +164,331 @@ document.addEventListener("DOMContentLoaded", () => {
     // Cerca una direzione per nome esatto all'interno dell'elenco completo
     function trovaDirezionePerNome(nome, lista) {
         return lista.find(d => d["Direzione VVF"] === nome);
+    }
+
+    // ==========================================================
+    // MAPPA E METEO DEL COMANDO ATTIVO (Leaflet + Open-Meteo, senza chiave API)
+    // ==========================================================
+    let mappaComandoLeaflet = null;
+    let markerComandoLeaflet = null;
+    let radarMeteoAttivo = false;
+    let radarInPausa = false;
+    let radarFotogrammi = []; // [{ layer, data }] dal più vecchio al più recente, ultima ora
+    let radarIndiceCorrente = 0;
+    let radarTimeoutAnimazione = null;
+    let radarEtichettaOrario = null;
+    let intervalloMeteo = null;
+    let intervalloRadar = null;
+
+    // Interpretazione sintetica dei WMO Weather Code restituiti da Open-Meteo
+    const METEO_CODICI = {
+        0: ["☀️", "Sereno"],
+        1: ["🌤️", "Prevalentemente sereno"],
+        2: ["⛅", "Parzialmente nuvoloso"],
+        3: ["☁️", "Nuvoloso"],
+        45: ["🌫️", "Nebbia"],
+        48: ["🌫️", "Nebbia con brina"],
+        51: ["🌦️", "Pioviggine debole"],
+        53: ["🌦️", "Pioviggine moderata"],
+        55: ["🌧️", "Pioviggine intensa"],
+        56: ["🌧️", "Pioviggine gelata debole"],
+        57: ["🌧️", "Pioviggine gelata intensa"],
+        61: ["🌧️", "Pioggia debole"],
+        63: ["🌧️", "Pioggia moderata"],
+        65: ["🌧️", "Pioggia forte"],
+        66: ["🌧️", "Pioggia gelata debole"],
+        67: ["🌧️", "Pioggia gelata forte"],
+        71: ["🌨️", "Neve debole"],
+        73: ["🌨️", "Neve moderata"],
+        75: ["❄️", "Neve forte"],
+        77: ["❄️", "Granelli di neve"],
+        80: ["🌦️", "Rovesci di pioggia deboli"],
+        81: ["🌧️", "Rovesci di pioggia moderati"],
+        82: ["⛈️", "Rovesci di pioggia violenti"],
+        85: ["🌨️", "Rovesci di neve deboli"],
+        86: ["❄️", "Rovesci di neve forti"],
+        95: ["⛈️", "Temporale"],
+        96: ["⛈️", "Temporale con grandine debole"],
+        99: ["⛈️", "Temporale con grandine forte"]
+    };
+
+    function descrizioneMeteo(codice) {
+        return METEO_CODICI[codice] || ["🌡️", "Condizioni non disponibili"];
+    }
+
+    // Estrae { lat, lng } dal campo "Coordinate" del comando (formato testuale "lat, lng")
+    function estraiCoordinate(comando) {
+        if (!comando || !comando["Coordinate"]) return null;
+        const parti = comando["Coordinate"].split(",").map(s => parseFloat(s.trim()));
+        if (parti.length !== 2 || parti.some(n => Number.isNaN(n))) return null;
+        return { lat: parti[0], lng: parti[1] };
+    }
+
+    // Crea la mappa Leaflet al primo utilizzo, altrimenti la ricentra sul nuovo Comando
+    function aggiornaMappaComando(comando) {
+        const contenitoreMappa = document.getElementById("mappa-comando");
+        if (!contenitoreMappa || typeof L === "undefined") return;
+
+        const coord = estraiCoordinate(comando);
+        if (!coord) {
+            contenitoreMappa.innerHTML = '<p class="pagina-nota">Coordinate del Comando non disponibili.</p>';
+            return;
+        }
+
+        if (!mappaComandoLeaflet) {
+            mappaComandoLeaflet = L.map("mappa-comando").setView([coord.lat, coord.lng], 13);
+            L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                maxZoom: 19,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            }).addTo(mappaComandoLeaflet);
+            markerComandoLeaflet = L.marker([coord.lat, coord.lng]).addTo(mappaComandoLeaflet);
+        } else {
+            mappaComandoLeaflet.setView([coord.lat, coord.lng], 13);
+            markerComandoLeaflet.setLatLng([coord.lat, coord.lng]);
+            // Se la mappa era nascosta (cambio pagina) le dimensioni interne vanno ricalcolate
+            setTimeout(() => mappaComandoLeaflet.invalidateSize(), 100);
+        }
+        markerComandoLeaflet.bindPopup(`Comando VVF ${comando.Comando}`);
+    }
+
+    // ==========================================================
+    // RADAR METEO ANIMATO (ultima ora, un fotogramma ogni 5 minuti)
+    // ==========================================================
+    // Layer "radar:vmi" (Vertical Maximum Intensity) del servizio WMS Protezione Civile.
+    // Il radar produce un nuovo campione ogni 5 minuti: costruiamo 12 fotogrammi (ultima ora)
+    // e li facciamo scorrere in loop cambiandone solo l'opacità, senza dover riscaricare
+    // le tile ad ogni passo dell'animazione.
+
+    // Arrotonda un istante al multiplo di 5 minuti precedente (i campioni radar cadono su questi minuti)
+    function arrotondaAi5Minuti(data) {
+        const cinqueMinutiMs = 5 * 60 * 1000;
+        return new Date(Math.floor(data.getTime() / cinqueMinutiMs) * cinqueMinutiMs);
+    }
+
+    // Genera gli istanti degli ultimi N fotogrammi radar (5 minuti di passo), dal più vecchio al più recente
+    function generaIstantiRadar(numeroFotogrammi) {
+        const ultimoIstante = arrotondaAi5Minuti(new Date());
+        const istanti = [];
+        for (let i = numeroFotogrammi - 1; i >= 0; i--) {
+            istanti.push(new Date(ultimoIstante.getTime() - i * 5 * 60 * 1000));
+        }
+        return istanti;
+    }
+
+    // Etichetta con l'orario del fotogramma radar attualmente mostrato, sovrapposta alla mappa
+    function creaEtichettaOrarioRadar() {
+        if (radarEtichettaOrario) return radarEtichettaOrario;
+        const contenitoreMappa = document.getElementById("mappa-comando");
+        if (!contenitoreMappa) return null;
+        radarEtichettaOrario = document.createElement("div");
+        radarEtichettaOrario.className = "radar-etichetta-orario";
+        contenitoreMappa.appendChild(radarEtichettaOrario);
+        return radarEtichettaOrario;
+    }
+
+    function mostraOrarioFotogramma(data) {
+        const etichetta = creaEtichettaOrarioRadar();
+        if (!etichetta) return;
+        const ora = data.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Rome" });
+        etichetta.textContent = `Radar ${ora}`;
+        etichetta.style.display = "block";
+    }
+
+    function nascondiEtichettaOrarioRadar() {
+        if (radarEtichettaOrario) radarEtichettaOrario.style.display = "none";
+    }
+
+    // Crea i 12 fotogrammi (uno per ogni istante) e li aggiunge tutti alla mappa,
+    // ma visibili (opacità piena) solo l'ultimo: l'animazione poi alterna l'opacità tra i layer già caricati
+    function creaFotogrammiRadar() {
+        rimuoviFotogrammiRadar();
+
+        const istanti = generaIstantiRadar(12);
+        radarFotogrammi = istanti.map((data, i) => {
+            const layer = L.tileLayer.wms("https://radar-geowebcache.protezionecivile.it/service/wms", {
+                layers: "radar:vmi",
+                format: "image/png",
+                transparent: true,
+                version: "1.1.1",
+                time: data.toISOString(),
+                opacity: i === istanti.length - 1 ? 0.65 : 0,
+                attribution: "Radar meteo &copy; Dipartimento Protezione Civile"
+            });
+            layer.addTo(mappaComandoLeaflet);
+            return { layer, data };
+        });
+
+        radarIndiceCorrente = radarFotogrammi.length - 1; // parte mostrando il fotogramma più recente
+        mostraOrarioFotogramma(radarFotogrammi[radarIndiceCorrente].data);
+    }
+
+    function rimuoviFotogrammiRadar() {
+        radarFotogrammi.forEach(f => {
+            if (mappaComandoLeaflet) mappaComandoLeaflet.removeLayer(f.layer);
+        });
+        radarFotogrammi = [];
+    }
+
+    // Fa scorrere i fotogrammi in loop: passo normale tra un fotogramma e l'altro,
+    // pausa più lunga sull'ultimo (il più recente) prima di ripartire dal più vecchio
+    function avviaAnimazioneRadar() {
+        fermaAnimazioneRadar();
+        const DURATA_FOTOGRAMMA_MS = 450;
+        const PAUSA_FOTOGRAMMA_RECENTE_MS = 1600;
+
+        function passoSuccessivo() {
+            if (radarFotogrammi.length === 0) return;
+
+            radarFotogrammi[radarIndiceCorrente].layer.setOpacity(0);
+            radarIndiceCorrente = (radarIndiceCorrente + 1) % radarFotogrammi.length;
+            radarFotogrammi[radarIndiceCorrente].layer.setOpacity(0.65);
+            mostraOrarioFotogramma(radarFotogrammi[radarIndiceCorrente].data);
+
+            const suFotogrammaRecente = radarIndiceCorrente === radarFotogrammi.length - 1;
+            radarTimeoutAnimazione = setTimeout(passoSuccessivo, suFotogrammaRecente ? PAUSA_FOTOGRAMMA_RECENTE_MS : DURATA_FOTOGRAMMA_MS);
+        }
+
+        radarTimeoutAnimazione = setTimeout(passoSuccessivo, PAUSA_FOTOGRAMMA_RECENTE_MS);
+    }
+
+    function fermaAnimazioneRadar() {
+        if (radarTimeoutAnimazione) clearTimeout(radarTimeoutAnimazione);
+        radarTimeoutAnimazione = null;
+    }
+
+    const btnToggleRadar = document.getElementById("btn-toggle-radar");
+    const btnPausaRadar = document.getElementById("btn-pausa-radar");
+
+    if (btnPausaRadar) {
+        btnPausaRadar.addEventListener("click", () => {
+            if (!radarMeteoAttivo) return;
+
+            radarInPausa = !radarInPausa;
+            btnPausaRadar.classList.toggle("attivo", radarInPausa);
+            btnPausaRadar.textContent = radarInPausa ? "▶️ Riprendi" : "⏸️ Pausa";
+
+            if (radarInPausa) {
+                fermaAnimazioneRadar();
+            } else {
+                avviaAnimazioneRadar();
+            }
+        });
+    }
+
+    if (btnToggleRadar) {
+        btnToggleRadar.addEventListener("click", () => {
+            if (!mappaComandoLeaflet) return;
+
+            radarMeteoAttivo = !radarMeteoAttivo;
+            btnToggleRadar.classList.toggle("attivo", radarMeteoAttivo);
+
+            if (radarMeteoAttivo) {
+                radarInPausa = false;
+                if (btnPausaRadar) {
+                    btnPausaRadar.style.display = "inline-block";
+                    btnPausaRadar.classList.remove("attivo");
+                    btnPausaRadar.textContent = "⏸️ Pausa";
+                }
+
+                creaFotogrammiRadar();
+                avviaAnimazioneRadar();
+
+                // Ogni 5 minuti arriva un nuovo campione radar: ricostruisce i 12 fotogrammi
+                // in modo che la finestra "ultima ora" resti sempre aggiornata. Se l'animazione
+                // è in pausa, i fotogrammi vengono comunque rinfrescati ma la riproduzione resta ferma.
+                if (intervalloRadar) clearInterval(intervalloRadar);
+                intervalloRadar = setInterval(() => {
+                    if (!radarMeteoAttivo) return;
+                    creaFotogrammiRadar();
+                    if (!radarInPausa) avviaAnimazioneRadar();
+                }, 5 * 60 * 1000);
+            } else {
+                fermaAnimazioneRadar();
+                rimuoviFotogrammiRadar();
+                nascondiEtichettaOrarioRadar();
+                if (intervalloRadar) clearInterval(intervalloRadar);
+
+                radarInPausa = false;
+                if (btnPausaRadar) btnPausaRadar.style.display = "none";
+            }
+        });
+    }
+
+    // Scarica e mostra il meteo in tempo reale per le coordinate del Comando attivo
+    function aggiornaMeteoComando(comando) {
+        const contenitoreMeteo = document.getElementById("meteo-comando");
+        if (!contenitoreMeteo) return;
+
+        const coord = estraiCoordinate(comando);
+        if (!coord) {
+            contenitoreMeteo.innerHTML = '<p class="pagina-nota">Coordinate del Comando non disponibili.</p>';
+            return;
+        }
+
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${coord.lat}&longitude=${coord.lng}&current=temperature_2m,relative_humidity_2m,apparent_temperature,wind_speed_10m,weather_code&hourly=temperature_2m,weather_code,precipitation_probability&forecast_hours=6&timezone=auto`;
+
+        fetch(url)
+            .then(r => {
+                if (!r.ok) throw new Error("Errore meteo");
+                return r.json();
+            })
+            .then(dati => {
+                const c = dati.current;
+                if (!c) throw new Error("Dati meteo non disponibili");
+                const [icona, descrizione] = descrizioneMeteo(c.weather_code);
+
+                contenitoreMeteo.innerHTML = `
+                    <div class="meteo-icona">${icona}</div>
+                    <div class="meteo-temp">${Math.round(c.temperature_2m)}°C</div>
+                    <div class="meteo-descrizione">${descrizione}</div>
+                    <div class="meteo-dettaglio">Percepita ${Math.round(c.apparent_temperature)}°C · Umidità ${Math.round(c.relative_humidity_2m)}% · Vento ${Math.round(c.wind_speed_10m)} km/h</div>
+                `;
+
+                renderMeteoOrario(dati.hourly);
+            })
+            .catch(() => {
+                contenitoreMeteo.innerHTML = '<p class="pagina-nota">Meteo non disponibile al momento.</p>';
+                const contenitoreOrario = document.getElementById("meteo-orario");
+                if (contenitoreOrario) contenitoreOrario.innerHTML = "";
+            });
+    }
+
+    // Mostra la striscia con le previsioni orarie per le prossime 6 ore
+    function renderMeteoOrario(hourly) {
+        const container = document.getElementById("meteo-orario");
+        if (!container) return;
+
+        if (!hourly || !Array.isArray(hourly.time) || hourly.time.length === 0) {
+            container.innerHTML = "";
+            return;
+        }
+
+        let html = "";
+        hourly.time.forEach((iso, i) => {
+            const ora = iso.slice(11, 16); // estrae "HH:MM" dal formato ISO restituito da Open-Meteo
+            const [icona] = descrizioneMeteo(hourly.weather_code[i]);
+            const temp = Math.round(hourly.temperature_2m[i]);
+            const probabilitaPioggia = Array.isArray(hourly.precipitation_probability) ? hourly.precipitation_probability[i] : null;
+
+            html += `
+                <div class="meteo-ora-card">
+                    <div class="meteo-ora-etichetta">${ora}</div>
+                    <div class="meteo-ora-icona">${icona}</div>
+                    <div class="meteo-ora-temp">${temp}°</div>
+                    ${probabilitaPioggia !== null ? `<div class="meteo-ora-pioggia">💧 ${probabilitaPioggia}%</div>` : ""}
+                </div>`;
+        });
+
+        container.innerHTML = html;
+    }
+
+    // Aggiorna mappa e meteo per il Comando attivo, e avvia il refresh periodico del meteo
+    function aggiornaMappaEMeteo(comando) {
+        aggiornaMappaComando(comando);
+        aggiornaMeteoComando(comando);
+
+        if (intervalloMeteo) clearInterval(intervalloMeteo);
+        intervalloMeteo = setInterval(() => aggiornaMeteoComando(comando), 10 * 60 * 1000); // ogni 10 minuti
     }
 
     // Costruisce un link "naviga con Google Maps" a partire da un indirizzo testuale e una stringa di coordinate "lat, lng"
@@ -469,6 +795,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 setTimeout(() => inputNumero.focus(), 50);
             }
             validaCampiMessaggistica();
+        }
+
+        // Tornando in Home, la mappa Leaflet potrebbe essere stata inizializzata mentre
+        // era nascosta (display:none): ricalcola le dimensioni interne, altrimenti resta rotta
+        if (idValido === "homepage" && mappaComandoLeaflet) {
+            setTimeout(() => mappaComandoLeaflet.invalidateSize(), 100);
         }
     }
 
@@ -1129,7 +1461,7 @@ Ved alle nødsituationer, ring
 *{{NUM}}*
 🇪🇺🇮🇹
 
-S�dan sender du koordinater:
+S dan sender du koordinater:
 1. Klik på "papirklipsen" (Android) 📎 eller "plusset" (Apple) ➕
 2. Klik på "Placering" ⛳
 3. Følg om nødvendigt enhedens instruktioner for at give WhatsApp adgang til din placering 🆗️
@@ -1668,7 +2000,14 @@ Koordináták küldéséhez:
         const c = getComponentiRoma(now);
 
         const pad = n => String(n).padStart(2, '0');
-        const dataFormattata = `${pad(c.day)}.${pad(c.month)}.${c.year} - ${pad(c.hour)}:${pad(c.minute)}:${pad(c.second)}`;
+
+        const nomeGiorno = new Intl.DateTimeFormat("it-IT", { weekday: "short", timeZone: "Europe/Rome" }).format(now);
+        const nomeGiornoMaiuscolo = nomeGiorno.charAt(0).toUpperCase() + nomeGiorno.slice(1).replace(".", "");
+
+        const offsetOre = calcolaOffsetRoma(now);
+        const etichettaFuso = offsetOre === 2 ? "CEST" : "CET";
+
+        const dataFormattata = `${nomeGiornoMaiuscolo} ${pad(c.day)}.${pad(c.month)}.${c.year} - ${pad(c.hour)}:${pad(c.minute)}:${pad(c.second)} ${etichettaFuso}`;
 
         document.getElementById("display-datetime").textContent = dataFormattata;
         document.getElementById("display-turno").textContent = `Turno ${calcolaTurnoVVF()}`;

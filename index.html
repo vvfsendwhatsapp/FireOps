@@ -6,6 +6,7 @@
     <title>FireOps VVF</title>
     <link rel="icon" type="image/png" href="images/logo.png">
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
     <script>
     // Controllo sincrono PRIMA del rendering: se c'è già un comando in sessione,
     // nascondo il modale via classe CSS, così non lampeggia mai a schermo.
@@ -77,7 +78,35 @@
 
         <!-- HOME -->
         <section id="homepage" class="page-section attiva">
-            <div id="riepilogo-comando" class="riepilogo-comando"></div>
+            <div class="homepage-layout">
+
+                <!-- COLONNA SINISTRA: INFO COMANDO -->
+                <div class="homepage-colonna homepage-colonna-sinistra">
+                    <div id="riepilogo-comando" class="riepilogo-comando"></div>
+                </div>
+
+                <!-- COLONNA DESTRA: MAPPA E METEO -->
+                <div class="homepage-colonna homepage-colonna-destra">
+                    <div class="pagina-box mappa-meteo-box">
+                        <div class="mappa-meteo-header">
+                            <h3>Mappa e Meteo Comando</h3>
+                            <div class="mappa-meteo-azioni">
+                                <button id="btn-toggle-radar" class="btn-toggle-radar" type="button">🌧️ Radar meteo</button>
+                                <button id="btn-pausa-radar" class="btn-toggle-radar" type="button" style="display:none;">⏸️ Pausa</button>
+                                <a class="btn-toggle-radar link-bollettino" href="https://mappe.protezionecivile.gov.it/it/mappe-rischi/bollettino-di-criticita/" target="_blank" rel="noopener">🌐 Bollettino di Criticità</a>
+                            </div>
+                        </div>
+                        <div class="mappa-meteo-layout">
+                            <div id="mappa-comando" class="mappa-comando"></div>
+                            <div id="meteo-comando" class="meteo-comando">
+                                <p class="pagina-nota">Seleziona un Comando per visualizzare mappa e meteo.</p>
+                            </div>
+                        </div>
+                        <div id="meteo-orario" class="meteo-orario"></div>
+                    </div>
+                </div>
+
+            </div>
         </section>
 
         <!-- MESSAGGISTICA -->
@@ -217,6 +246,7 @@
         <span class="footer-credits">By Andrea Pelizza</span>
     </footer>
 
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="script.js"></script>
 </body>
 </html>
