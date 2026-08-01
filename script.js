@@ -1129,7 +1129,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // usato per Prefisso internazionale e Lingua messaggio (utile con
     // elenchi lunghi, specialmente su mobile).
     // ==========================================================
-    function creaComboRicercabile({ input, hidden, dropdown, elenco, cercaValore, mostraTesto, onScelta, placeholderOpzione }) {
+    function creaComboRicercabile({ input, hidden, dropdown, elenco, cercaValore, mostraTesto, testoRicerca, testoSelezionato, onScelta, placeholderOpzione }) {
         let elencoCorrente = elenco;
         let ultimoFiltrati = elenco;
         let indiceAttivo = -1; // voce evidenziata nella lista filtrata (come il cursore di un select nativo)
@@ -1137,7 +1137,8 @@ document.addEventListener("DOMContentLoaded", () => {
         function filtra(testo) {
             const filtro = (testo || "").trim().toLowerCase();
             if (!filtro) return elencoCorrente;
-            return elencoCorrente.filter(item => mostraTesto(item).toLowerCase().includes(filtro));
+            const ottieniTestoRicerca = testoRicerca || mostraTesto;
+            return elencoCorrente.filter(item => ottieniTestoRicerca(item).toLowerCase().includes(filtro));
         }
 
         function renderOpzioni(testo) {
@@ -1203,7 +1204,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         function selezionaVoce(item) {
             hidden.value = cercaValore(item);
-            input.value = mostraTesto(item);
+            input.value = testoSelezionato ? testoSelezionato(item) : mostraTesto(item);
             chiudiDropdown();
             if (onScelta) onScelta(item);
         }
@@ -1225,7 +1226,12 @@ document.addEventListener("DOMContentLoaded", () => {
             dropdown.classList.remove("aperto");
         }
 
-        input.addEventListener("input", apriDropdown);
+        input.addEventListener("input", () => {
+            // Digitare invalida la selezione precedente finché non se ne sceglie una nuova:
+            // altrimenti il campo nascosto resterebbe collegato alla vecchia voce
+            hidden.value = "";
+            apriDropdown();
+        });
         input.addEventListener("focus", apriDropdownCompleta);
 
         const wrapperCombo = input.closest(".combo-wrapper");
@@ -1422,10 +1428,20 @@ document.addEventListener("DOMContentLoaded", () => {
             dropdown: dropdownIcscNome,
             elenco: lista,
             cercaValore: s => s.Numero,
+            // Testo mostrato nella tendina: compatto, troncato se troppo lungo (i sinonimi
+            // possono essere numerosi) per non rendere la lista illeggibile
             mostraTesto: s => {
                 const cas = s.CAS ? ` [CAS ${s.CAS}]` : "";
-                return s.Sinonimi ? `${s.Nome}${cas} — ${s.Sinonimi}` : `${s.Nome}${cas}`;
-            }
+                const base = `${s.Nome}${cas}`;
+                if (!s.Sinonimi) return base;
+                const riga = `${base} — ${s.Sinonimi}`;
+                return riga.length > 110 ? riga.slice(0, 107) + "…" : riga;
+            },
+            // Testo usato per la ricerca: sempre completo (nome, CAS, tutti i sinonimi),
+            // anche quando la riga mostrata è troncata
+            testoRicerca: s => `${s.Nome} ${s.CAS || ""} ${s.Sinonimi || ""}`,
+            // Dopo la selezione il campo mostra solo il nome pulito, non l'intera riga di ricerca
+            testoSelezionato: s => s.Nome
         });
     }
 
