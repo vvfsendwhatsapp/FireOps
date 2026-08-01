@@ -351,7 +351,7 @@ body {
 
 .mappa-comando {
     flex: 2 1 400px;
-    height: 350px;
+    height: 480px;
     border-radius: 8px;
     overflow: hidden;
     border: 1px solid var(--border-color);
@@ -362,6 +362,46 @@ body {
 .mappa-comando .leaflet-container {
     background: var(--dark-color);
     font-family: Arial, sans-serif;
+}
+
+/* Marker personalizzato: badge circolare col logo VVF a forma di segnaposto "caserma" */
+.marker-caserma {
+    background: transparent;
+    border: none;
+}
+
+.marker-caserma-cerchio {
+    width: 42px;
+    height: 42px;
+    background: var(--surface-color);
+    border: 3px solid var(--primary-color);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.7);
+}
+
+.marker-caserma-cerchio img {
+    width: 76%;
+    height: 76%;
+    object-fit: contain;
+}
+
+.marker-caserma-punta {
+    width: 0;
+    height: 0;
+    margin: -3px auto 0;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-top: 13px solid var(--primary-color);
+}
+
+.meteo-nota-centro {
+    margin-top: 10px;
+    margin-bottom: 0;
+    font-size: 11px;
 }
 
 /* Etichetta con l'orario del fotogramma radar in riproduzione, sovrapposta in alto a destra sulla mappa */
@@ -1195,7 +1235,7 @@ html.comando-gia-scelto #modal-comando {
     }
 
     .mappa-comando {
-        height: 250px;
+        height: 280px;
         flex-basis: 100%;
     }
 }

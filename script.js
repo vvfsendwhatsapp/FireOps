@@ -237,11 +237,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (!mappaComandoLeaflet) {
             mappaComandoLeaflet = L.map("mappa-comando").setView([coord.lat, coord.lng], 13);
-            L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-                maxZoom: 19,
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png", {
+                maxZoom: 20,
+                subdomains: "abcd",
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
             }).addTo(mappaComandoLeaflet);
-            markerComandoLeaflet = L.marker([coord.lat, coord.lng]).addTo(mappaComandoLeaflet);
+            markerComandoLeaflet = L.marker([coord.lat, coord.lng], { icon: iconaCasermaVVF() }).addTo(mappaComandoLeaflet);
+
+            // Il meteo mostrato segue il centro della mappa: se l'utente la sposta,
+            // le previsioni si aggiornano sulla nuova zona inquadrata
+            mappaComandoLeaflet.on("moveend", () => {
+                const centro = mappaComandoLeaflet.getCenter();
+                aggiornaMeteoPerCoordinate({ lat: centro.lat, lng: centro.lng });
+            });
         } else {
             mappaComandoLeaflet.setView([coord.lat, coord.lng], 13);
             markerComandoLeaflet.setLatLng([coord.lat, coord.lng]);
@@ -249,6 +257,17 @@ document.addEventListener("DOMContentLoaded", () => {
             setTimeout(() => mappaComandoLeaflet.invalidateSize(), 100);
         }
         markerComandoLeaflet.bindPopup(`Comando VVF ${comando.Comando}`);
+    }
+
+    // Icona del marker: badge circolare col logo VVF, a forma di caserma/segnaposto
+    function iconaCasermaVVF() {
+        return L.divIcon({
+            className: "marker-caserma",
+            html: '<div class="marker-caserma-cerchio"><img src="images/logo.png" alt="Comando VVF"></div><div class="marker-caserma-punta"></div>',
+            iconSize: [44, 56],
+            iconAnchor: [22, 56],
+            popupAnchor: [0, -52]
+        });
     }
 
     // ==========================================================
@@ -416,14 +435,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Scarica e mostra il meteo in tempo reale per le coordinate del Comando attivo
     function aggiornaMeteoComando(comando) {
-        const contenitoreMeteo = document.getElementById("meteo-comando");
-        if (!contenitoreMeteo) return;
-
         const coord = estraiCoordinate(comando);
         if (!coord) {
-            contenitoreMeteo.innerHTML = '<p class="pagina-nota">Coordinate del Comando non disponibili.</p>';
+            const contenitoreMeteo = document.getElementById("meteo-comando");
+            if (contenitoreMeteo) contenitoreMeteo.innerHTML = '<p class="pagina-nota">Coordinate del Comando non disponibili.</p>';
             return;
         }
+        aggiornaMeteoPerCoordinate(coord);
+    }
+
+    // Scarica e mostra il meteo in tempo reale per una coppia di coordinate qualsiasi
+    // (usata sia per il Comando attivo sia per il centro corrente della mappa)
+    function aggiornaMeteoPerCoordinate(coord) {
+        const contenitoreMeteo = document.getElementById("meteo-comando");
+        if (!contenitoreMeteo || !coord) return;
 
         const url = `https://api.open-meteo.com/v1/forecast?latitude=${coord.lat}&longitude=${coord.lng}&current=temperature_2m,relative_humidity_2m,apparent_temperature,wind_speed_10m,weather_code&hourly=temperature_2m,weather_code,precipitation_probability&forecast_hours=6&timezone=auto`;
 
@@ -488,7 +513,14 @@ document.addEventListener("DOMContentLoaded", () => {
         aggiornaMeteoComando(comando);
 
         if (intervalloMeteo) clearInterval(intervalloMeteo);
-        intervalloMeteo = setInterval(() => aggiornaMeteoComando(comando), 10 * 60 * 1000); // ogni 10 minuti
+        intervalloMeteo = setInterval(() => {
+            const centro = mappaComandoLeaflet ? mappaComandoLeaflet.getCenter() : null;
+            if (centro) {
+                aggiornaMeteoPerCoordinate({ lat: centro.lat, lng: centro.lng });
+            } else {
+                aggiornaMeteoComando(comando);
+            }
+        }, 10 * 60 * 1000); // ogni 10 minuti
     }
 
     // Costruisce un link "naviga con Google Maps" a partire da un indirizzo testuale e una stringa di coordinate "lat, lng"
