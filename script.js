@@ -78,6 +78,9 @@ document.addEventListener("DOMContentLoaded", () => {
         // Popola il selettore ricercabile della pagina Moduli CMR
         popolaSelectModuloCMR(moduliCMRData);
 
+        // Popola il selettore rapido della pagina "Info Altro Comando"
+        popolaSelectAltroComando(comandiData);
+
         // Costruisce i pulsanti della pagina Link Utili
         renderLinkUtili(linkUtiliData);
 
@@ -758,14 +761,19 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Costruisce e inserisce il riepilogo dati del comando nella dashboard
-    function renderRiepilogoComando(comando, tuttiComandi, tutteDirezioni, con, socav) {
-        const container = document.getElementById("riepilogo-comando");
+    function renderRiepilogoComando(comando, tuttiComandi, tutteDirezioni, con, socav, idContenitore = "riepilogo-comando") {
+        const container = document.getElementById(idContenitore);
         if (!container) return;
 
         if (!comando) {
             container.innerHTML = "<p>Dati comando non disponibili.</p>";
             return;
         }
+
+        // Prefisso usato per rendere univoci gli ID interni (sezioni comprimibili):
+        // necessario perché lo stesso riepilogo può comparire in più contenitori insieme
+        // (es. un pannello sullo split-screen e un altro), e gli ID devono restare unici nel DOM
+        const p = idContenitore;
 
         const direzioneCollegata = trovaDirezionePerNome(comando["Direzione VVF"], tutteDirezioni);
         const coordinateDirezione = direzioneCollegata ? direzioneCollegata["Coordinate DIR"] : null;
@@ -800,8 +808,8 @@ document.addEventListener("DOMContentLoaded", () => {
             <div class="riepilogo-box">
                 <h3>Informazioni generali</h3>
 
-                <h4 class="sezione-toggle" data-target="sezione-comando">Info Comando ${comando.Comando}</h4>
-                <table id="sezione-comando" class="riepilogo-tabella sezione-contenuto">
+                <h4 class="sezione-toggle" data-target="${p}-sezione-comando">Info Comando ${comando.Comando}</h4>
+                <table id="${p}-sezione-comando" class="riepilogo-tabella sezione-contenuto">
                     <tbody>
                         <tr><th>Indirizzo</th><td>${creaLinkMaps(comando["Indirizzo Completo"], comando["Coordinate"])}</td></tr>
                         <tr><th>TEL SO COM</th><td>${creaCampoCopiabile(comando["Telefono SO Comando"], 'telefono')}</td></tr>
@@ -816,8 +824,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     </tbody>
                 </table>
 
-                <h4 class="sezione-toggle" data-target="sezione-direzione">Info Direzione ${comando["Direzione VVF"] || "-"}</h4>
-                <table id="sezione-direzione" class="riepilogo-tabella sezione-contenuto">
+                <h4 class="sezione-toggle" data-target="${p}-sezione-direzione">Info Direzione ${comando["Direzione VVF"] || "-"}</h4>
+                <table id="${p}-sezione-direzione" class="riepilogo-tabella sezione-contenuto">
                     <tbody>
                         <tr><th>Indirizzo</th><td>${creaLinkMaps(comando["Indirizzo Direzione"], coordinateDirezione)}</td></tr>
                         <tr><th>TEL SO DIR</th><td>${creaCampoCopiabile(comando["Telefono SO Direzione"], 'telefono')}</td></tr>
@@ -830,8 +838,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     </tbody>
                 </table>
 
-                <h4 class="sezione-toggle" data-target="sezione-con">Info CON - Centro Operativo Nazionale</h4>
-                <table id="sezione-con" class="riepilogo-tabella sezione-contenuto">
+                <h4 class="sezione-toggle" data-target="${p}-sezione-con">Info CON - Centro Operativo Nazionale</h4>
+                <table id="${p}-sezione-con" class="riepilogo-tabella sezione-contenuto">
                     <tbody>
                         <tr><th>Indirizzo</th><td>${creaLinkMaps(comando["Indirizzo CON"], coordinateCon)}</td></tr>
                         <tr><th>TEL SO CON</th><td>${creaCampoCopiabile(comando["Telefono SO CON"], 'telefono')}</td></tr>
@@ -841,8 +849,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     </tbody>
                 </table>
 
-                <h4 class="sezione-toggle" data-target="sezione-socav">Info SOCAV - Assistenza al Volo</h4>
-                <table id="sezione-socav" class="riepilogo-tabella sezione-contenuto">
+                <h4 class="sezione-toggle" data-target="${p}-sezione-socav">Info SOCAV - Assistenza al Volo</h4>
+                <table id="${p}-sezione-socav" class="riepilogo-tabella sezione-contenuto">
                     <tbody>
                         <tr><th>Indirizzo</th><td>${creaLinkMaps(comando["Indirizzo SOCAV"], coordinateSocav)}</td></tr>
                         <tr><th>TEL SOCAV</th><td>${creaCampoCopiabile(comando["Telefono SOCAV"], 'telefono')}</td></tr>
@@ -851,7 +859,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 </table>
 
                 <h4>Comandi Limitrofi</h4>
-                <table id="sezione-limitrofi" class="riepilogo-tabella-limitrofi sezione-contenuto aperta">
+                <table id="${p}-sezione-limitrofi" class="riepilogo-tabella-limitrofi sezione-contenuto aperta">
                     <thead>
                         <tr>
                             <th>Comando</th>
@@ -895,6 +903,32 @@ document.addEventListener("DOMContentLoaded", () => {
             if (contenuto) {
                 header.addEventListener("click", () => toggleSezione(header, contenuto));
             }
+        });
+    }
+
+    // ==========================================================
+    // PAGINA "INFO ALTRO COMANDO": consultazione rapida dei dati di un
+    // qualsiasi Comando dall'elenco a tendina, senza toccare il Comando
+    // attivo di sessione (quello impostato dal menu ☰)
+    // ==========================================================
+    function popolaSelectAltroComando(lista) {
+        const select = document.getElementById("altro-comando-select");
+        if (!select) return;
+
+        select.innerHTML = '<option value="" disabled selected>-- Seleziona un Comando --</option>';
+        lista
+            .slice()
+            .sort((a, b) => a.Comando.localeCompare(b.Comando, "it"))
+            .forEach(c => {
+                const opzione = document.createElement("option");
+                opzione.value = c.Comando;
+                opzione.textContent = c.Comando;
+                select.appendChild(opzione);
+            });
+
+        select.addEventListener("change", () => {
+            const comandoScelto = trovaComandoPerNome(select.value, comandiData);
+            renderRiepilogoComando(comandoScelto, comandiData, direzioniData, conData, socavData, "riepilogo-altro-comando");
         });
     }
 

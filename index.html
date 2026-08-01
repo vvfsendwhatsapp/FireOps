@@ -92,7 +92,7 @@
         <section id="mappa-meteo" class="page-section">
             <div class="pagina-box mappa-meteo-box">
                 <div class="mappa-meteo-header">
-                    <h3>Mappa e Meteo</h3>
+                    <h3>Mappa e Meteo Comando</h3>
                     <div class="mappa-meteo-azioni">
                         <button id="btn-stile-mappa" class="btn-toggle-radar" type="button">🗺️ OSM</button>
                         <button id="btn-torna-comando" class="btn-toggle-radar" type="button">🏠 Comando</button>
@@ -162,9 +162,19 @@
 
         <!-- INFO ALTRO COMANDO -->
         <section id="info-comando" class="page-section">
-            <div class="pagina-box">
+            <div class="pagina-box pagina-box-larga">
                 <h3>Info Altro Comando</h3>
-                <p class="pagina-nota">Sezione in costruzione.</p>
+                <p class="pagina-nota">
+                    Consulta rapidamente i dati di qualsiasi Comando senza cambiare il Comando attivo
+                    dal menu ☰: la scelta qui sotto è solo una consultazione, non modifica la sessione.
+                </p>
+
+                <label for="altro-comando-select">Comando da consultare</label>
+                <select id="altro-comando-select">
+                    <option value="" disabled selected>-- Seleziona un Comando --</option>
+                </select>
+
+                <div id="riepilogo-altro-comando" class="riepilogo-comando"></div>
             </div>
         </section>
 

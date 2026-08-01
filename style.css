@@ -708,6 +708,10 @@ body {
     margin-top: 0; /* stesso spazio dal menu delle altre pagine (.pagina-box), niente margine extra */
 }
 
+.pagina-box .riepilogo-comando {
+    margin-top: 20px; /* respiro quando compare sotto un selettore (es. Info Altro Comando) */
+}
+
 .riepilogo-box {
     background: var(--surface-color);
     border: 1px solid var(--border-color);
