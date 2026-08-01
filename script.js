@@ -315,7 +315,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         stileMappaAttuale = stile;
         if (btnStileMappa) {
-            btnStileMappa.textContent = stile === "grigia" ? "🗺️ Vista OSM" : "🗺️ Vista Grigia";
+            btnStileMappa.textContent = stile === "grigia" ? "🗺️ OSM" : "🗺️ Grigia";
         }
     }
 
