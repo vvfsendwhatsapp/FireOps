@@ -10,7 +10,6 @@
     --header-height: 80px;       /* Altezza header su schermi normali */
     --header-height-tablet: 130px; /* Altezza header quando va a capo (tablet) */
     --header-height-mobile: 150px; /* Altezza header quando va a capo (mobile) */
-    --nav-height: 46px;          /* Altezza indicativa del menu sticky */
 }
 
 * {
@@ -23,7 +22,7 @@
 body {
     background-color: var(--light-bg);
     color: var(--text-main);
-    padding-top: 130px; /* Spazio per header e menu fissi */
+    padding-top: var(--header-height); /* Spazio per l'header fisso */
 }
 
 /* MODALE COMANDO */
@@ -183,45 +182,70 @@ body {
     color: var(--text-main);
 }
 
-/* MENU FISSO */
-.sticky-nav {
-    position: fixed;
-    top: 80px;
-    left: 0;
-    width: 100%;
-    background-color: var(--dark-color);
-    z-index: 999;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-    border-bottom: 1px solid var(--border-color);
-}
-
-.sticky-nav ul {
-    list-style: none;
+/* SPLIT SCREEN: due pannelli indipendenti, ciascuno con il proprio selettore di pagina */
+.split-screen {
     display: flex;
-    justify-content: flex-start;
-    overflow-x: auto;
-    white-space: nowrap;
-    padding: 0 10px;
+    gap: 16px;
+    align-items: flex-start;
 }
 
-.sticky-nav li a {
-    display: block;
-    color: var(--text-main);
-    padding: 12px 15px;
-    text-decoration: none;
-    font-size: 13px;
+.pannello {
+    flex: 1 1 0;
+    min-width: 0; /* evita overflow di tabelle/mappa dentro il flex item */
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    /* Altezza fissa che riempie lo schermo sotto l'header, ogni pannello scorre per conto proprio */
+    height: calc(100vh - var(--header-height) - 40px);
+}
+
+.pannello-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.pannello-etichetta {
+    font-size: 11px;
+    color: var(--text-muted);
     text-transform: uppercase;
-    transition: background 0.2s, color 0.2s;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
-.sticky-nav li a:hover {
-    background-color: var(--primary-color);
-    color: var(--dark-color);
+.pannello-select {
+    flex: 1 1 auto;
+    min-width: 0;
+    background: var(--dark-color);
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: bold;
+    padding: 6px 8px;
 }
 
-.sticky-nav li a.attivo {
-    background-color: var(--primary-color);
-    color: var(--dark-color);
+.pannello-corpo {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 16px;
+}
+
+/* Dentro un pannello i box occupano tutto lo spazio disponibile, non più un valore fisso */
+.pannello-corpo .pagina-box,
+.pannello-corpo .pagina-box-larga,
+.pannello-corpo .riepilogo-box {
+    max-width: none;
+}
+
+/* Magazzino: contiene le pagine non assegnate a nessun pannello, sempre invisibile */
+.magazzino-pagine {
+    display: none;
 }
 
 /* CONTENUTO */
@@ -230,12 +254,7 @@ body {
     color: var(--text-main);
 }
 
-/* GESTIONE PAGINE / SCHEDE (SPA) */
 .page-section {
-    display: none;
-}
-
-.page-section.attiva {
     display: block;
 }
 
@@ -269,29 +288,7 @@ body {
     border-bottom: 1px solid var(--border-color);
 }
 
-/* HOMEPAGE: layout a due colonne (sinistra info comando, destra mappa/meteo) */
-.homepage-layout {
-    display: flex;
-    align-items: flex-start;
-    gap: 20px;
-    margin-bottom: 20px;
-}
-
-.homepage-colonna {
-    flex: 1 1 0;
-    min-width: 0; /* evita overflow di tabelle/mappa dentro il flex item */
-}
-
-.homepage-colonna-sinistra .riepilogo-comando,
-.homepage-colonna-sinistra .riepilogo-box {
-    max-width: none; /* la colonna, non un valore fisso, definisce la larghezza */
-}
-
-.homepage-colonna-destra .mappa-meteo-box {
-    max-width: none; /* la colonna, non un valore fisso, definisce la larghezza: la mappa occupa tutta la metà destra */
-}
-
-/* MAPPA E METEO COMANDO (homepage) */
+/* MAPPA E METEO COMANDO */
 .mappa-meteo-box {
     margin-bottom: 0;
 }
@@ -1181,12 +1178,13 @@ html.comando-gia-scelto #modal-comando {
         padding-top: var(--header-height-tablet);
     }
 
-    .sticky-nav {
-        top: var(--header-height-tablet);
+    .split-screen {
+        flex-direction: column;
     }
 
-    .homepage-layout {
-        flex-direction: column;
+    .pannello {
+        height: auto;
+        max-height: 70vh;
     }
 
     .meteo-orario {
@@ -1234,10 +1232,6 @@ html.comando-gia-scelto #modal-comando {
 
     body {
         padding-top: var(--header-height-mobile);
-    }
-
-    .sticky-nav {
-        top: var(--header-height-mobile);
     }
 
     .msg-azioni button {

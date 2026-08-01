@@ -57,55 +57,55 @@
     </div>
 </header>
 
-    <!-- MENU FISSO IN ALTO -->
-    <nav class="sticky-nav">
-        <ul>
-            <li><a href="#homepage" data-page="homepage">Home page</a></li>
-            <li><a href="#messaggistica" data-page="messaggistica">Messaggistica</a></li>
-            <li><a href="#info-comando" data-page="info-comando">Info Altro Comando</a></li>
-            <li><a href="#gestione-fpds" data-page="gestione-fpds">Gestione Interventi FPDS</a></li>
-            <li><a href="#contatti" data-page="contatti">Link Utili</a></li>
-            <li><a href="#convertitore" data-page="convertitore">Convertitore</a></li>
-            <li><a href="#radio-telefoni" data-page="radio-telefoni">Radio e Telefoni</a></li>
-            <li><a href="#qrcode" data-page="qrcode">QrCode</a></li>
-            <li><a href="#turnario" data-page="turnario">Turnario</a></li>
-            <li><a href="#moduli-cmr" data-page="moduli-cmr">Moduli CMR</a></li>
-        </ul>
-    </nav>
-
-    <!-- CONTENUTO PRINCIPALE -->
+    <!-- CONTENUTO PRINCIPALE: schermo diviso in due pannelli indipendenti -->
     <main class="main-content">
 
-        <!-- HOME -->
-        <section id="homepage" class="page-section attiva">
-            <div class="homepage-layout">
-
-                <!-- COLONNA SINISTRA: INFO COMANDO -->
-                <div class="homepage-colonna homepage-colonna-sinistra">
-                    <div id="riepilogo-comando" class="riepilogo-comando"></div>
+        <div class="split-screen">
+            <div class="pannello" id="pannello-sinistra">
+                <div class="pannello-toolbar">
+                    <label for="select-pannello-sinistra" class="pannello-etichetta">Pannello sinistro</label>
+                    <select id="select-pannello-sinistra" class="pannello-select"></select>
                 </div>
+                <div class="pannello-corpo" id="corpo-sinistra"></div>
+            </div>
 
-                <!-- COLONNA DESTRA: MAPPA E METEO -->
-                <div class="homepage-colonna homepage-colonna-destra">
-                    <div class="pagina-box mappa-meteo-box">
-                        <div class="mappa-meteo-header">
-                            <h3>Mappa e Meteo Comando</h3>
-                            <div class="mappa-meteo-azioni">
-                                <button id="btn-stile-mappa" class="btn-toggle-radar" type="button">🗺️ OSM</button>
-                                <button id="btn-torna-comando" class="btn-toggle-radar" type="button">🏠 Comando</button>
-                                <button id="btn-toggle-radar" class="btn-toggle-radar" type="button">🌧️ Radar</button>
-                                <button id="btn-pausa-radar" class="btn-toggle-radar" type="button" style="display:none;">⏸️ Pausa</button>
-                                <a class="btn-toggle-radar link-bollettino" href="https://mappe.protezionecivile.gov.it/it/mappe-rischi/bollettino-di-criticita/" target="_blank" rel="noopener">🌐 Bollettino</a>
-                            </div>
-                        </div>
-                        <div id="mappa-comando" class="mappa-comando"></div>
-                        <p class="pagina-nota meteo-nota-centro">📍 Il meteo mostrato segue il centro della mappa: spostala per vedere le previsioni di un'altra zona.</p>
-                        <div id="meteo-orario" class="meteo-orario">
-                            <p class="pagina-nota">Seleziona un Comando per visualizzare le previsioni.</p>
-                        </div>
+            <div class="pannello" id="pannello-destra">
+                <div class="pannello-toolbar">
+                    <label for="select-pannello-destra" class="pannello-etichetta">Pannello destro</label>
+                    <select id="select-pannello-destra" class="pannello-select"></select>
+                </div>
+                <div class="pannello-corpo" id="corpo-destra"></div>
+            </div>
+        </div>
+
+        <!-- MAGAZZINO PAGINE: contiene le sezioni non assegnate a nessun pannello.
+             Ogni pagina esiste una sola volta nel DOM e viene spostata (non duplicata)
+             dentro il pannello che la mostra, così ID e listener restano unici. -->
+        <div id="magazzino-pagine" class="magazzino-pagine"></div>
+
+        <!-- HOME -->
+        <section id="homepage" class="page-section">
+            <div id="riepilogo-comando" class="riepilogo-comando"></div>
+        </section>
+
+        <!-- MAPPA E METEO -->
+        <section id="mappa-meteo" class="page-section">
+            <div class="pagina-box mappa-meteo-box">
+                <div class="mappa-meteo-header">
+                    <h3>Mappa e Meteo Comando</h3>
+                    <div class="mappa-meteo-azioni">
+                        <button id="btn-stile-mappa" class="btn-toggle-radar" type="button">🗺️ OSM</button>
+                        <button id="btn-torna-comando" class="btn-toggle-radar" type="button">🏠 Comando</button>
+                        <button id="btn-toggle-radar" class="btn-toggle-radar" type="button">🌧️ Radar</button>
+                        <button id="btn-pausa-radar" class="btn-toggle-radar" type="button" style="display:none;">⏸️ Pausa</button>
+                        <a class="btn-toggle-radar link-bollettino" href="https://mappe.protezionecivile.gov.it/it/mappe-rischi/bollettino-di-criticita/" target="_blank" rel="noopener">🌐 Bollettino</a>
                     </div>
                 </div>
-
+                <div id="mappa-comando" class="mappa-comando"></div>
+                <p class="pagina-nota meteo-nota-centro">📍 Il meteo mostrato segue il centro della mappa: spostala per vedere le previsioni di un'altra zona.</p>
+                <div id="meteo-orario" class="meteo-orario">
+                    <p class="pagina-nota">Seleziona un Comando per visualizzare le previsioni.</p>
+                </div>
             </div>
         </section>
 

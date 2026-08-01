@@ -896,50 +896,140 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ==========================================================
-    // NAVIGAZIONE A SCHEDE (SPA): mostra/nasconde le sezioni
-    // in base all'hash dell'URL, senza ricaricare la pagina
+    // SPLIT SCREEN: due pannelli indipendenti, ciascuno mostra una pagina.
+    // Le sezioni esistono una sola volta nel DOM (niente ID duplicati): vengono
+    // spostate (appendChild) dentro il pannello che le mostra, o parcheggiate
+    // nel "magazzino" nascosto quando non sono assegnate a nessun pannello.
+    // Selezionare in un pannello una pagina già aperta nell'altro fa scambiare
+    // automaticamente le due pagine, così restano sempre univoche.
     // ==========================================================
-    const paginaSections = document.querySelectorAll(".page-section");
-    const navLinks = document.querySelectorAll(".sticky-nav a[data-page]");
+    const CATALOGO_PAGINE = [
+        { id: "homepage", label: "Home page" },
+        { id: "mappa-meteo", label: "Mappa e Meteo" },
+        { id: "messaggistica", label: "Messaggistica" },
+        { id: "info-comando", label: "Info Altro Comando" },
+        { id: "gestione-fpds", label: "Gestione Interventi FPDS" },
+        { id: "contatti", label: "Link Utili" },
+        { id: "convertitore", label: "Convertitore" },
+        { id: "radio-telefoni", label: "Radio e Telefoni" },
+        { id: "qrcode", label: "QrCode" },
+        { id: "turnario", label: "Turnario" },
+        { id: "moduli-cmr", label: "Moduli CMR" }
+    ];
 
-    function mostraPagina(idPagina) {
-        const idValido = document.getElementById(idPagina) ? idPagina : "homepage";
+    const magazzinoPagine = document.getElementById("magazzino-pagine");
+    const selectPannelloSinistra = document.getElementById("select-pannello-sinistra");
+    const selectPannelloDestra = document.getElementById("select-pannello-destra");
+    const corpoSinistra = document.getElementById("corpo-sinistra");
+    const corpoDestra = document.getElementById("corpo-destra");
 
-        paginaSections.forEach(sezione => {
-            sezione.classList.toggle("attiva", sezione.id === idValido);
+    let paginaSinistra = "homepage";
+    let paginaDestra = "mappa-meteo";
+
+    function contenitorePerLato(lato) {
+        if (lato === "sinistra") return corpoSinistra;
+        if (lato === "destra") return corpoDestra;
+        return magazzinoPagine;
+    }
+
+    // Sposta la sezione (esistente una sola volta nel DOM) dentro il contenitore del lato indicato
+    function spostaSezione(idPagina, lato) {
+        const sezione = document.getElementById(idPagina);
+        const contenitore = contenitorePerLato(lato);
+        if (sezione && contenitore) contenitore.appendChild(sezione);
+    }
+
+    function popolaSelettorePannello(select) {
+        if (!select) return;
+        select.innerHTML = "";
+        CATALOGO_PAGINE.forEach(pagina => {
+            const opzione = document.createElement("option");
+            opzione.value = pagina.id;
+            opzione.textContent = pagina.label;
+            select.appendChild(opzione);
         });
+    }
 
-        navLinks.forEach(link => {
-            link.classList.toggle("attivo", link.dataset.page === idValido);
-        });
+    function aggiornaSelettori() {
+        if (selectPannelloSinistra) selectPannelloSinistra.value = paginaSinistra;
+        if (selectPannelloDestra) selectPannelloDestra.value = paginaDestra;
+    }
 
-        // Chiude eventuali popup rimasti aperti quando si cambia pagina
+    // Effetti collaterali dovuti al comparire di una pagina in un pannello
+    // (stesso comportamento che prima aveva il cambio scheda unico)
+    function eseguiEffettiPagina(idPagina) {
         chiudiPopupDati();
 
-        // Entrando in Messaggistica, il cursore va subito sul campo "Numero"
-        if (idValido === "messaggistica") {
+        if (idPagina === "messaggistica") {
             const inputNumero = document.getElementById("msg-numero");
-            if (inputNumero) {
-                setTimeout(() => inputNumero.focus(), 50);
-            }
+            if (inputNumero) setTimeout(() => inputNumero.focus(), 50);
             validaCampiMessaggistica();
         }
 
-        // Tornando in Home, la mappa Leaflet potrebbe essere stata inizializzata mentre
-        // era nascosta (display:none): ricalcola le dimensioni interne, altrimenti resta rotta
-        if (idValido === "homepage" && mappaComandoLeaflet) {
+        // La mappa Leaflet potrebbe essere stata inizializzata mentre il suo pannello
+        // era nel magazzino nascosto: ricalcola le dimensioni, altrimenti resta rotta
+        if (idPagina === "mappa-meteo" && mappaComandoLeaflet) {
             setTimeout(() => mappaComandoLeaflet.invalidateSize(), 100);
         }
     }
 
-    window.addEventListener("hashchange", () => {
-        const idPagina = window.location.hash.replace("#", "") || "homepage";
-        mostraPagina(idPagina);
-    });
+    // Assegna una pagina a un pannello ("sinistra"/"destra"). Se la pagina scelta
+    // è già mostrata nell'altro pannello, le due pagine si scambiano di posto:
+    // così non possono mai coincidere.
+    function assegnaPagina(lato, nuovoId) {
+        if (!document.getElementById(nuovoId)) return;
 
-    // Mostra subito la pagina corretta all'apertura (rispetta un eventuale hash nell'URL)
-    const idPaginaIniziale = window.location.hash.replace("#", "") || "homepage";
-    mostraPagina(idPaginaIniziale);
+        const altroLato = lato === "sinistra" ? "destra" : "sinistra";
+        const idAttualeLato = lato === "sinistra" ? paginaSinistra : paginaDestra;
+        const idAttualeAltro = lato === "sinistra" ? paginaDestra : paginaSinistra;
+
+        if (nuovoId === idAttualeLato) return; // nessun cambiamento
+
+        if (nuovoId === idAttualeAltro) {
+            // Scambio: la pagina che era in questo pannello va nell'altro, e viceversa
+            spostaSezione(idAttualeLato, altroLato);
+            spostaSezione(nuovoId, lato);
+            if (lato === "sinistra") {
+                paginaSinistra = nuovoId;
+                paginaDestra = idAttualeLato;
+            } else {
+                paginaDestra = nuovoId;
+                paginaSinistra = idAttualeLato;
+            }
+        } else {
+            spostaSezione(nuovoId, lato);
+            if (lato === "sinistra") paginaSinistra = nuovoId;
+            else paginaDestra = nuovoId;
+        }
+
+        aggiornaSelettori();
+        eseguiEffettiPagina(nuovoId);
+    }
+
+    if (selectPannelloSinistra) {
+        popolaSelettorePannello(selectPannelloSinistra);
+        selectPannelloSinistra.addEventListener("change", () => {
+            assegnaPagina("sinistra", selectPannelloSinistra.value);
+        });
+    }
+
+    if (selectPannelloDestra) {
+        popolaSelettorePannello(selectPannelloDestra);
+        selectPannelloDestra.addEventListener("change", () => {
+            assegnaPagina("destra", selectPannelloDestra.value);
+        });
+    }
+
+    // Assegnazione iniziale: Home a sinistra, Mappa e Meteo a destra.
+    // Tutte le altre pagine restano parcheggiate nel magazzino nascosto.
+    CATALOGO_PAGINE.forEach(pagina => {
+        if (pagina.id !== paginaSinistra && pagina.id !== paginaDestra && magazzinoPagine) {
+            spostaSezione(pagina.id, "magazzino");
+        }
+    });
+    spostaSezione(paginaSinistra, "sinistra");
+    spostaSezione(paginaDestra, "destra");
+    aggiornaSelettori();
 
     // ==========================================================
     // PAGINA MESSAGGISTICA: messaggio precompilato multilingua
