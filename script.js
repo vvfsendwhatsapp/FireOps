@@ -79,7 +79,11 @@ document.addEventListener("DOMContentLoaded", () => {
         popolaSelectModuloCMR(moduliCMRData);
 
         // Popola il selettore rapido della pagina "Info Altro Comando"
-        popolaSelectAltroComando(comandiData);
+        try {
+            popolaSelectAltroComando(comandiData);
+        } catch (err) {
+            console.error("Errore nel popolare il selettore Info Altro Comando:", err);
+        }
 
         // Costruisce i pulsanti della pagina Link Utili
         renderLinkUtili(linkUtiliData);
@@ -916,9 +920,10 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!select) return;
 
         select.innerHTML = '<option value="" disabled selected>-- Seleziona un Comando --</option>';
-        lista
+        (lista || [])
+            .filter(c => c && c.Comando) // scarta eventuali righe senza nome Comando valido
             .slice()
-            .sort((a, b) => a.Comando.localeCompare(b.Comando, "it"))
+            .sort((a, b) => String(a.Comando).localeCompare(String(b.Comando), "it"))
             .forEach(c => {
                 const opzione = document.createElement("option");
                 opzione.value = c.Comando;
