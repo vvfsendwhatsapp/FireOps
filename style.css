@@ -404,6 +404,43 @@ body {
     font-size: 11px;
 }
 
+/* Crocino centrale: mirino fisso al centro della mappa con le coordinate inquadrate */
+.crocino-centro-mappa {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 650; /* sopra tile/radar/marker (fino a ~600), sotto i controlli Leaflet (1000) */
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.crocino-svg .crocino-linea {
+    stroke: var(--primary-color);
+    stroke-width: 2;
+    filter: drop-shadow(0 0 2px rgba(0,0,0,0.8));
+}
+
+.crocino-svg .crocino-cerchio {
+    fill: none;
+    stroke: var(--primary-color);
+    stroke-width: 1.5;
+    filter: drop-shadow(0 0 2px rgba(0,0,0,0.8));
+}
+
+.crocino-coordinate {
+    margin-top: 4px;
+    background: rgba(18, 18, 18, 0.85);
+    color: var(--primary-color);
+    font-size: 11px;
+    font-weight: bold;
+    padding: 3px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
 /* Etichetta con l'orario del fotogramma radar in riproduzione, sovrapposta in alto a destra sulla mappa */
 .radar-etichetta-orario {
     display: none;

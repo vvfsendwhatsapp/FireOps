@@ -171,6 +171,9 @@ document.addEventListener("DOMContentLoaded", () => {
     // ==========================================================
     let mappaComandoLeaflet = null;
     let markerComandoLeaflet = null;
+    let layerBaseLeaflet = null;      // layer di sfondo attivo (grigia o OSM)
+    let stileMappaAttuale = "grigia"; // stile di sfondo scelto dall'utente
+    let crocinoCentroMappa = null;    // overlay fisso col mirino che indica il centro inquadratura
     let radarMeteoAttivo = false;
     let radarInPausa = false;
     let radarFotogrammi = []; // [{ layer, data }] dal più vecchio al più recente, ultima ora
@@ -237,12 +240,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (!mappaComandoLeaflet) {
             mappaComandoLeaflet = L.map("mappa-comando").setView([coord.lat, coord.lng], 13);
-            L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png", {
-                maxZoom: 20,
-                subdomains: "abcd",
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-            }).addTo(mappaComandoLeaflet);
+            impostaStileMappa(stileMappaAttuale);
             markerComandoLeaflet = L.marker([coord.lat, coord.lng], { icon: iconaCasermaVVF() }).addTo(mappaComandoLeaflet);
+
+            aggiornaCoordinateCentroMappa();
+            // Coordinate aggiornate in tempo reale durante il trascinamento (leggero, solo testo)
+            mappaComandoLeaflet.on("move", aggiornaCoordinateCentroMappa);
 
             // Il meteo mostrato segue il centro della mappa: se l'utente la sposta,
             // le previsioni si aggiornano sulla nuova zona inquadrata
@@ -268,6 +271,83 @@ document.addEventListener("DOMContentLoaded", () => {
             iconAnchor: [22, 56],
             popupAnchor: [0, -52]
         });
+    }
+
+    // ==========================================================
+    // STILE DI SFONDO DELLA MAPPA (grigia in stile Windy oppure OpenStreetMap classica)
+    // ==========================================================
+    const STILI_MAPPA = {
+        grigia: {
+            url: "https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png",
+            opzioni: {
+                maxZoom: 20,
+                subdomains: "abcd",
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+            }
+        },
+        osm: {
+            url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+            opzioni: {
+                maxZoom: 19,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }
+        }
+    };
+
+    // Sostituisce il layer di sfondo mantenendo mirino/marker/radar sopra di esso
+    function impostaStileMappa(stile) {
+        if (!mappaComandoLeaflet || !STILI_MAPPA[stile]) return;
+
+        if (layerBaseLeaflet) mappaComandoLeaflet.removeLayer(layerBaseLeaflet);
+        const conf = STILI_MAPPA[stile];
+        layerBaseLeaflet = L.tileLayer(conf.url, conf.opzioni).addTo(mappaComandoLeaflet);
+        layerBaseLeaflet.bringToBack();
+
+        stileMappaAttuale = stile;
+        if (btnStileMappa) {
+            btnStileMappa.textContent = stile === "grigia" ? "🗺️ Vista OSM" : "🗺️ Vista Grigia";
+        }
+    }
+
+    const btnStileMappa = document.getElementById("btn-stile-mappa");
+    if (btnStileMappa) {
+        btnStileMappa.addEventListener("click", () => {
+            impostaStileMappa(stileMappaAttuale === "grigia" ? "osm" : "grigia");
+        });
+    }
+
+    // ==========================================================
+    // CROCINO CENTRALE: mirino fisso al centro della mappa con le coordinate inquadrate
+    // ==========================================================
+    function creaCrocinoCentroMappa() {
+        if (crocinoCentroMappa) return crocinoCentroMappa;
+        const contenitoreMappa = document.getElementById("mappa-comando");
+        if (!contenitoreMappa) return null;
+
+        crocinoCentroMappa = document.createElement("div");
+        crocinoCentroMappa.className = "crocino-centro-mappa";
+        crocinoCentroMappa.innerHTML = `
+            <svg class="crocino-svg" width="26" height="26" viewBox="0 0 26 26">
+                <line class="crocino-linea" x1="13" y1="0" x2="13" y2="9"></line>
+                <line class="crocino-linea" x1="13" y1="17" x2="13" y2="26"></line>
+                <line class="crocino-linea" x1="0" y1="13" x2="9" y2="13"></line>
+                <line class="crocino-linea" x1="17" y1="13" x2="26" y2="13"></line>
+                <circle class="crocino-cerchio" cx="13" cy="13" r="3"></circle>
+            </svg>
+            <div class="crocino-coordinate"></div>
+        `;
+        contenitoreMappa.appendChild(crocinoCentroMappa);
+        return crocinoCentroMappa;
+    }
+
+    function aggiornaCoordinateCentroMappa() {
+        if (!mappaComandoLeaflet) return;
+        const crocino = creaCrocinoCentroMappa();
+        if (!crocino) return;
+
+        const centro = mappaComandoLeaflet.getCenter();
+        const etichetta = crocino.querySelector(".crocino-coordinate");
+        if (etichetta) etichetta.textContent = `${centro.lat.toFixed(5)}, ${centro.lng.toFixed(5)}`;
     }
 
     // ==========================================================
@@ -331,7 +411,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 version: "1.1.1",
                 time: data.toISOString(),
                 opacity: i === istanti.length - 1 ? 0.65 : 0,
-                attribution: "Radar meteo &copy; Dipartimento Protezione Civile"
+                attribution: "Radar meteo &copy; Dipartimento Protezione Civile",
+                // Il mosaico radar nazionale ha una risoluzione nativa limitata (~1 km):
+                // tileSize 512 chiede immagini più definite al servizio, mentre maxNativeZoom
+                // evita di richiedere tile oltre la risoluzione reale (Leaflet ingrandisce
+                // l'ultimo fotogramma valido invece di mostrare tile vuote o a scacchiera)
+                tileSize: 512,
+                zoomOffset: -1,
+                maxNativeZoom: 9,
+                minZoom: 3
             });
             layer.addTo(mappaComandoLeaflet);
             return { layer, data };
