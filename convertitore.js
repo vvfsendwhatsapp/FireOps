@@ -516,14 +516,31 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!modalitaPercorsoAttiva || !coordinateTargetCorrenti) return;
             calcolaEDisegnaPercorso(e.latlng.lat, e.latlng.lng);
         });
+
+        // FIX PRINCIPALE per il riquadro grigio scuro: la mappa viene creata
+        // subito, ma se in quel momento il contenitore è ancora nascosto nel
+        // magazzino (display:none su un antenato) Leaflet la inizializza a
+        // dimensione 0x0 e non carica alcuna tile. Il tentativo precedente
+        // (invalidateSize legato all'evento "change" dei due select) dipende
+        // dall'ordine in cui si registrano i listener rispetto a script.js:
+        // troppo fragile. Un ResizeObserver sul contenitore stesso è
+        // indipendente da quell'ordine: scatta ogni volta che il riquadro
+        // passa da 0x0 alle sue dimensioni reali (cioè esattamente quando il
+        // pannello che lo contiene diventa visibile), qualunque sia la causa.
+        if (typeof ResizeObserver !== "undefined") {
+            const osservatoreDimensione = new ResizeObserver(() => {
+                if (coordMappaLeaflet) coordMappaLeaflet.invalidateSize();
+            });
+            osservatoreDimensione.observe(contenitore);
+        }
     }
 
     // Crea la mappa SUBITO (vista di default sull'Italia), non solo al primo
     // "Converti": prima veniva creata tardi, e se la pagina era ancora
     // nascosta nel magazzino (non assegnata a un pannello) Leaflet la
     // inizializzava a dimensione zero e restava vuota anche dopo. Ora esiste
-    // fin da subito e viene semplicemente ridimensionata (invalidateSize)
-    // quando il pannello che la contiene diventa visibile.
+    // fin da subito e il ResizeObserver sopra la ridisegna appena il
+    // pannello che la contiene diventa visibile.
     assicuraMappaCoordInizializzata();
 
     function centraMappaSulTarget(lat, lon) {
