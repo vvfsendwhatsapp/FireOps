@@ -518,6 +518,14 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // Crea la mappa SUBITO (vista di default sull'Italia), non solo al primo
+    // "Converti": prima veniva creata tardi, e se la pagina era ancora
+    // nascosta nel magazzino (non assegnata a un pannello) Leaflet la
+    // inizializzava a dimensione zero e restava vuota anche dopo. Ora esiste
+    // fin da subito e viene semplicemente ridimensionata (invalidateSize)
+    // quando il pannello che la contiene diventa visibile.
+    assicuraMappaCoordInizializzata();
+
     function centraMappaSulTarget(lat, lon) {
         assicuraMappaCoordInizializzata();
         if (!coordMappaLeaflet) return;
