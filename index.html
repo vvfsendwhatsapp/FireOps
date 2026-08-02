@@ -203,15 +203,20 @@
         </section>
 
         <!-- CONVERTITORE COORDINATE -->
-        <section id="convertitore" class="page-section">
+<!-- =========================================================
+     SOSTITUISCI l'intera <section id="convertitore" ...>...</section>
+     esistente in index.html con questa.
+     ========================================================= -->
+<section id="convertitore" class="page-section">
     <div class="pagina-box pagina-box-larga">
         <h3>Convertitore Coordinate</h3>
         <p class="pagina-nota">
             Datum WGS84. Inserisci le coordinate nel formato scelto e converti: la mappa si centra
             automaticamente a zoom 15. Puoi poi cliccare sulla mappa per calcolare un percorso
-            (BRouter) da quel punto fino alle coordinate inserite.
+            (BRouter) da quel punto fino alle coordinate inserite. Tutti i valori in uscita sono
+            cliccabili per copiarli.
         </p>
- 
+
         <label for="coord-formato-input">Formato coordinate in ingresso</label>
         <select id="coord-formato-input">
             <option value="dd">Gradi decimali (DD.dddddd)</option>
@@ -220,7 +225,7 @@
             <option value="olc">OLC / Plus Code</option>
             <option value="utm">UTM</option>
         </select>
- 
+
         <div id="coord-input-dd" class="coord-input-gruppo">
             <div class="msg-riga-campi">
                 <div class="msg-campo">
@@ -233,7 +238,7 @@
                 </div>
             </div>
         </div>
- 
+
         <div id="coord-input-dmm" class="coord-input-gruppo" style="display:none;">
             <div class="msg-riga-campi">
                 <div class="msg-campo">
@@ -246,7 +251,7 @@
                 </div>
             </div>
         </div>
- 
+
         <div id="coord-input-dms" class="coord-input-gruppo" style="display:none;">
             <div class="msg-riga-campi">
                 <div class="msg-campo">
@@ -259,7 +264,7 @@
                 </div>
             </div>
         </div>
- 
+
         <div id="coord-input-olc" class="coord-input-gruppo" style="display:none;">
             <label for="coord-olc">Codice OLC / Plus Code (completo)</label>
             <input type="text" id="coord-olc" placeholder="8FQFF57Q+MX" autocomplete="off">
@@ -268,7 +273,7 @@
                 "F57Q+MX Milano" richiedono una località di riferimento e qui non sono supportati.
             </p>
         </div>
- 
+
         <div id="coord-input-utm" class="coord-input-gruppo" style="display:none;">
             <div class="msg-riga-campi">
                 <div class="msg-campo" style="max-width:90px;">
@@ -292,13 +297,13 @@
                 </div>
             </div>
         </div>
- 
+
         <div class="msg-azioni">
             <button id="btn-coord-converti" class="btn-whatsapp" type="button">📐 Converti e mostra su mappa</button>
         </div>
- 
+
         <p id="coord-errore" class="pagina-nota" style="display:none; color:var(--danger-color);"></p>
- 
+
         <div id="coord-risultati" class="riepilogo-comando" style="display:none;">
             <div class="riepilogo-box">
                 <table class="riepilogo-tabella">
@@ -308,13 +313,43 @@
                         <tr><th>DD MM SS.ss</th><td id="coord-out-dms">-</td></tr>
                         <tr><th>OLC</th><td id="coord-out-olc">-</td></tr>
                         <tr><th>UTM</th><td id="coord-out-utm">-</td></tr>
-                        <tr><th>Formato coordinate SO115</th><td id="coord-out-so115">-</td></tr>
+                        <tr><th>SO115 — Longitudine</th><td id="coord-out-so115-lon">-</td></tr>
+                        <tr><th>SO115 — Latitudine</th><td id="coord-out-so115-lat">-</td></tr>
                         <tr><th>Toponimo</th><td id="coord-out-toponimo">-</td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
- 
+
+        <!-- MESSAGGIO ALLE SQUADRE VF: stesso pattern della pagina Messaggistica -->
+        <div class="mappa-meteo-header" style="margin-top:18px;">
+            <h4 style="margin:0; color:var(--primary-color); text-transform:uppercase; font-size:14px;">Invia coordinate alla squadra</h4>
+        </div>
+        <div class="msg-riga-campi">
+            <div class="msg-campo combo-campo">
+                <label for="coord-msg-prefisso-input">Prefisso internazionale</label>
+                <div class="combo-wrapper">
+                    <input type="text" id="coord-msg-prefisso-input" class="combo-input" placeholder="Cerca prefisso o paese..." autocomplete="off">
+                    <input type="hidden" id="coord-msg-prefisso">
+                    <span class="combo-arrow" aria-hidden="true"></span>
+                    <div id="coord-msg-prefisso-dropdown" class="combo-dropdown"></div>
+                </div>
+            </div>
+            <div class="msg-campo">
+                <label for="coord-msg-numero">Numero di telefono squadra</label>
+                <input type="tel" id="coord-msg-numero" placeholder="Es. 3331234567" autocomplete="off">
+            </div>
+        </div>
+
+        <label for="coord-msg-testo">Anteprima messaggio</label>
+        <textarea id="coord-msg-testo" rows="16" readonly placeholder="Converti prima delle coordinate per generare il messaggio."></textarea>
+
+        <div class="msg-azioni">
+            <button id="coord-btn-whatsapp-web" class="btn-whatsapp" type="button" disabled>📱 WhatsApp Web</button>
+            <button id="coord-btn-whatsapp-app" class="btn-whatsapp" type="button" disabled>💻 WhatsApp Desktop</button>
+            <button id="coord-btn-invia-telegram" class="btn-telegram" type="button" disabled>✈️ Telegram</button>
+        </div>
+
         <div class="mappa-meteo-header" style="margin-top:18px;">
             <h4 style="margin:0; color:var(--primary-color); text-transform:uppercase; font-size:14px;">Mappa</h4>
             <div class="mappa-meteo-azioni">
@@ -324,10 +359,16 @@
                 </select>
                 <button id="btn-coord-percorso" class="btn-toggle-radar" type="button">🧭 Crea percorso (clic su mappa)</button>
                 <button id="btn-coord-annulla-percorso" class="btn-toggle-radar" type="button" style="display:none;">✖ Annulla percorso</button>
+                <button id="btn-coord-scarica-kml" class="btn-toggle-radar" type="button" disabled>⬇️ Scarica KML</button>
+                <button id="btn-coord-copia-mappa" class="btn-toggle-radar" type="button">📋 Copia mappa</button>
             </div>
         </div>
         <div id="coord-mappa" class="mappa-comando"></div>
         <p class="pagina-nota" id="coord-percorso-info"></p>
+        <p class="pagina-nota">🟨 Pallino giallo = Squadra VF (partenza percorso) — 🟥 Pallino rosso = Target intervento. Percorso in rosso.</p>
+
+        <canvas id="coord-grafico-altimetria" width="700" height="180" style="display:none; width:100%; max-width:100%; background:var(--dark-color); border:1px solid var(--border-color); border-radius:8px; margin-top:10px;"></canvas>
+        <p class="pagina-nota" id="coord-altimetria-nota" style="display:none;"></p>
     </div>
 </section>
 

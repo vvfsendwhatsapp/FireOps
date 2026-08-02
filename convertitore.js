@@ -2,16 +2,13 @@
 // FireOps VVF — CONVERTITORE COORDINATE
 // File indipendente: da includere in index.html DOPO <script src="script.js">
 //     <script src="convertitore.js"></script>
-// Non modifica né dipende dall'interno di script.js: usa solo il DOM
-// condiviso e i propri event listener.
 // ==========================================================
 document.addEventListener("DOMContentLoaded", () => {
 
     // ==========================================================
     // OPEN LOCATION CODE (Plus Codes) — porting fedele dall'algoritmo
-    // ufficiale Google (openlocationcode, Apache 2.0), verificato riga per
-    // riga contro la libreria Python di riferimento (encode/decode su
-    // Zurigo, Sydney, Milano, Oxford: risultati identici).
+    // ufficiale Google (openlocationcode, Apache 2.0), verificato contro
+    // la libreria Python di riferimento (Zurigo, Sydney, Milano, Oxford).
     // ==========================================================
     const OLC_SEPARATOR = "+";
     const OLC_SEPARATOR_POSITION = 8;
@@ -176,8 +173,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ==========================================================
     // UTM (WGS84) — formule standard di Snyder, verificate contro la
-    // libreria Python "utm" di riferimento (Milano, Oxford, Sydney:
-    // scarto sub-millimetrico, zone/lettere identiche).
+    // libreria Python "utm" (Milano, Oxford, Sydney: scarto submillimetrico).
     // ==========================================================
     const UTM_A = 6378137.0;
     const UTM_F = 1 / 298.257223563;
@@ -268,8 +264,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // ==========================================================
     // PARSING CAMPI DI INGRESSO (DD, DMM, DMS)
     // ==========================================================
-
-    // Estrae segno (N/E positivo, S/W o "-" negativo) e ripulisce il testo
     function estraiSegnoEPulisci(testo) {
         testo = testo.trim().toUpperCase();
         let segno = 1;
@@ -307,7 +301,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ==========================================================
-    // FORMATTAZIONE OUTPUT
+    // FORMATTAZIONE OUTPUT (tabella risultati)
     // ==========================================================
     function formattaDD(lat, lon) {
         return `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
@@ -338,22 +332,52 @@ document.addEventListener("DOMContentLoaded", () => {
         const u = latLonToUtm(lat, lon);
         return `${u.zona}${u.lettera} ${Math.round(u.est)} ${Math.round(u.nord)}`;
     }
-    // Formato di uscita SO115: lat/lon INVERTITI (lon prima), virgola al
-    // posto del punto decimale — richiesto specificamente dalla Sala
-    // Operativa 115, non è uno standard esterno.
-    function formattaSO115(lat, lon) {
-        const lonStr = lon.toFixed(6).replace(".", ",");
-        const latStr = lat.toFixed(6).replace(".", ",");
-        return `${lonStr} ${latStr}`;
+    function formattaSO115Lon(lon) { return lon.toFixed(6).replace(".", ","); }
+    function formattaSO115Lat(lat) { return lat.toFixed(6).replace(".", ","); }
+
+    // ==========================================================
+    // FORMATTAZIONE PER IL MESSAGGIO ALLE SQUADRE (template Sala Operativa)
+    // ==========================================================
+    function segnoLettera(valore, lettere) {
+        // Il segno nel template è sempre "+": la direzione è già indicata dalla
+        // lettera (N/S/E/W), un "-" insieme a "S" o "W" sarebbe ridondante/errato.
+        return { segno: "+", lettera: valore >= 0 ? lettere[0] : lettere[1] };
+    }
+    function formattaDdMessaggio(lat, lon) {
+        const sLat = segnoLettera(lat, "NS"), sLon = segnoLettera(lon, "EW");
+        const gLat = String(Math.floor(Math.abs(lat))).padStart(2, "0");
+        const gLon = String(Math.floor(Math.abs(lon))).padStart(3, "0");
+        const decLat = (Math.abs(lat) - Math.floor(Math.abs(lat))).toFixed(6).slice(2);
+        const decLon = (Math.abs(lon) - Math.floor(Math.abs(lon))).toFixed(6).slice(2);
+        return `Lat ${sLat.lettera} ${sLat.segno}${gLat}.${decLat}° - Lon ${sLon.lettera} ${sLon.segno}${gLon}.${decLon}°`;
+    }
+    function formattaDMmMessaggio(lat, lon) {
+        const sLat = segnoLettera(lat, "NS"), sLon = segnoLettera(lon, "EW");
+        function parte(valore, cifreGradi) {
+            const v = Math.abs(valore);
+            const gradi = String(Math.floor(v)).padStart(cifreGradi, "0");
+            const minuti = ((v - Math.floor(v)) * 60).toFixed(4).padStart(7, "0");
+            return { gradi, minuti };
+        }
+        const pLat = parte(lat, 2), pLon = parte(lon, 3);
+        return `Lat ${sLat.lettera} ${sLat.segno}${pLat.gradi}° ${pLat.minuti}' - Lon ${sLon.lettera} ${sLon.segno}${pLon.gradi}° ${pLon.minuti}'`;
+    }
+    function formattaDMSsMessaggio(lat, lon) {
+        const sLat = segnoLettera(lat, "NS"), sLon = segnoLettera(lon, "EW");
+        function parte(valore, cifreGradi) {
+            const v = Math.abs(valore);
+            const gradi = String(Math.floor(v)).padStart(cifreGradi, "0");
+            const minutiTot = (v - Math.floor(v)) * 60;
+            const minuti = String(Math.floor(minutiTot)).padStart(2, "0");
+            const secondi = ((minutiTot - Math.floor(minutiTot)) * 60).toFixed(2).padStart(5, "0");
+            return { gradi, minuti, secondi };
+        }
+        const pLat = parte(lat, 2), pLon = parte(lon, 3);
+        return `Lat ${sLat.lettera} ${sLat.segno}${pLat.gradi}° ${pLat.minuti}' ${pLat.secondi}" - Lon ${sLon.lettera} ${sLon.segno}${pLon.gradi}° ${pLon.minuti}' ${pLon.secondi}"`;
     }
 
     // ==========================================================
-    // GEOCODING INVERSO: toponimo via Nominatim (OSM), con fallback su
-    // Overpass per cercare un sentiero/traccia vicino se non c'è nulla di
-    // abitato (zone impervie, tipiche degli interventi SAR).
-    // NOTA: Nominatim ha una policy d'uso (max ~1 richiesta/sec, uso
-    // leggero): per un volume alto di richieste andrebbe affiancato un
-    // server di geocoding proprio.
+    // GEOCODING INVERSO (Nominatim + fallback Overpass su sentieri)
     // ==========================================================
     async function geocodingInverso(lat, lon) {
         try {
@@ -375,7 +399,6 @@ document.addEventListener("DOMContentLoaded", () => {
             console.error("Geocoding inverso (Nominatim) non disponibile:", err);
         }
 
-        // Fallback: cerca un sentiero/traccia entro 300m via Overpass
         try {
             const query = `[out:json][timeout:10];way(around:300,${lat},${lon})[highway~"^(path|track|footway|bridleway)$"];out tags center 5;`;
             const risposta2 = await fetch("https://overpass-api.de/api/interpreter", {
@@ -394,6 +417,176 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         return "Toponimo non disponibile";
+    }
+
+    // ==========================================================
+    // COPIA NEGLI APPUNTI + FEEDBACK VISIVO
+    // ==========================================================
+    function copiaTestoConFeedback(event, testo) {
+        event.stopPropagation();
+        if (!testo) return;
+        navigator.clipboard.writeText(testo)
+            .then(() => mostraFeedbackCopiaCoord(event, "✓ Copiato"))
+            .catch(() => mostraFeedbackCopiaCoord(event, "✗ Errore copia"));
+    }
+    function mostraFeedbackCopiaCoord(event, testo) {
+        const badge = document.createElement("div");
+        badge.className = "copia-feedback";
+        badge.textContent = testo;
+        const rect = event.target.getBoundingClientRect();
+        badge.style.top = `${rect.top - 30}px`;
+        badge.style.left = `${rect.left}px`;
+        document.body.appendChild(badge);
+        setTimeout(() => badge.remove(), 1200);
+    }
+    function rendiCopiabile(elemento, testo) {
+        if (!elemento) return;
+        elemento.textContent = testo;
+        elemento.classList.add("cliccabile");
+        elemento.onclick = (e) => copiaTestoConFeedback(e, testo);
+    }
+
+    // ==========================================================
+    // TURNO VVF + DATA/ORA ROMA — duplicato da script.js perché
+    // convertitore.js è indipendente e non condivide il suo stato interno.
+    // ==========================================================
+    const SEQUENZA_TURNI = ["A4", "C4", "B4", "B4", "D4", "C4", "C4", "A5", "D4", "D4", "B5", "A5", "A5", "C5", "B5", "B5", "D5", "C5", "C5", "A6", "D5", "D5", "B6", "A6", "A6", "C6", "B6", "B6", "D6", "C6", "C6", "A7", "D6", "D6", "B7", "A7", "A7", "C7", "B7", "B7", "D7", "C7", "C7", "A8", "D7", "D7", "B8", "A8", "A8", "C8", "B8", "B8", "D8", "C8", "C8", "A1", "D8", "D8", "B1", "A1", "A1", "C1", "B1", "B1", "D1", "C1", "C1", "A2", "D1", "D1", "B2", "A2", "A2", "C2", "B2", "B2", "D2", "C2", "C2", "A3", "D2", "D2", "B3", "A3", "A3", "C3", "B3", "B3", "D3", "C3", "C3", "A4", "D3", "D3", "B4", "A4"];
+    const GIORNI_CICLO = 32;
+    const MS_AL_GIORNO = 24 * 60 * 60 * 1000;
+    const RIFERIMENTO_CICLO_MS = Date.UTC(2026, 0, 26, 0, 0, 0);
+
+    function getComponentiRomaCoord(date) {
+        const fmt = new Intl.DateTimeFormat("en-GB", {
+            timeZone: "Europe/Rome",
+            year: "numeric", month: "2-digit", day: "2-digit",
+            hour: "2-digit", minute: "2-digit", second: "2-digit",
+            hour12: false,
+        });
+        const parts = fmt.formatToParts(date);
+        const get = tipo => parts.find(p => p.type === tipo).value;
+        return {
+            year: parseInt(get("year"), 10), month: parseInt(get("month"), 10), day: parseInt(get("day"), 10),
+            hour: parseInt(get("hour"), 10) % 24, minute: parseInt(get("minute"), 10), second: parseInt(get("second"), 10),
+        };
+    }
+    function calcolaOffsetRomaCoord(data) {
+        const utc = new Date(data.toLocaleString("en-US", { timeZone: "UTC" }));
+        const roma = new Date(data.toLocaleString("en-US", { timeZone: "Europe/Rome" }));
+        return Math.round((roma - utc) / (1000 * 60 * 60));
+    }
+    function calcolaTurnoVVFCoord() {
+        const adesso = new Date();
+        const c = getComponentiRomaCoord(adesso);
+        const oraPseudo = Date.UTC(c.year, c.month - 1, c.day, c.hour, c.minute, c.second);
+        const diffGiorni = (oraPseudo - RIFERIMENTO_CICLO_MS) / MS_AL_GIORNO;
+        const posizioneCiclo = ((diffGiorni % GIORNI_CICLO) + GIORNI_CICLO) % GIORNI_CICLO;
+        const giornoIndex = Math.floor(posizioneCiclo);
+        const fraz = posizioneCiclo - giornoIndex;
+        let fasciaIndex;
+        if (fraz < 1 / 3) fasciaIndex = 0;
+        else if (fraz < 5 / 6) fasciaIndex = 1;
+        else fasciaIndex = 2;
+        return SEQUENZA_TURNI[giornoIndex * 3 + fasciaIndex] || "N/D";
+    }
+    function costruisciPieDiPaginaCoord() {
+        const adesso = new Date();
+        const c = getComponentiRomaCoord(adesso);
+        const pad = n => String(n).padStart(2, "0");
+        const nomeGiorno = new Intl.DateTimeFormat("it-IT", { weekday: "long", timeZone: "Europe/Rome" }).format(adesso);
+        const nomeGiornoMaiuscolo = nomeGiorno.charAt(0).toUpperCase() + nomeGiorno.slice(1);
+        const dataFormattata = `${pad(c.day)}.${pad(c.month)}.${c.year}`;
+        const oraFormattata = `${pad(c.hour)}:${pad(c.minute)}:${pad(c.second)}`;
+        const turno = calcolaTurnoVVFCoord();
+        const offsetOre = calcolaOffsetRomaCoord(adesso);
+        const etichettaFuso = offsetOre === 2 ? "CEST" : "CET";
+        return `credit by VVFsendWhatsApp\n${nomeGiornoMaiuscolo} ${dataFormattata} ore ${oraFormattata} - Turno ${turno}\n(GMT+0${offsetOre}.00) Roma (${etichettaFuso})`;
+    }
+
+    // ==========================================================
+    // COMBOBOX RICERCABILE (duplicata da script.js, usata per il prefisso)
+    // ==========================================================
+    function creaComboRicercabileCoord({ input, hidden, dropdown, elenco, cercaValore, mostraTesto, testoRicerca, testoSelezionato, onScelta }) {
+        let ultimoFiltrati = elenco;
+        let indiceAttivo = -1;
+
+        function filtra(testo) {
+            const filtro = (testo || "").trim().toLowerCase();
+            if (!filtro) return elenco;
+            const ottieniTesto = testoRicerca || mostraTesto;
+            return elenco.filter(item => ottieniTesto(item).toLowerCase().includes(filtro));
+        }
+        function renderOpzioni(testo) {
+            ultimoFiltrati = filtra(testo);
+            dropdown.innerHTML = "";
+            if (ultimoFiltrati.length === 0) {
+                indiceAttivo = -1;
+                const vuoto = document.createElement("div");
+                vuoto.className = "combo-opzione-vuota";
+                vuoto.textContent = "Nessun risultato";
+                dropdown.appendChild(vuoto);
+                return;
+            }
+            const indiceValoreCorrente = hidden.value ? ultimoFiltrati.findIndex(item => cercaValore(item) === hidden.value) : -1;
+            indiceAttivo = indiceValoreCorrente >= 0 ? indiceValoreCorrente : 0;
+            ultimoFiltrati.forEach((item, i) => {
+                const opz = document.createElement("div");
+                opz.className = "combo-opzione" + (i === indiceAttivo ? " combo-opzione-attiva" : "");
+                opz.textContent = mostraTesto(item);
+                opz.addEventListener("mousedown", (e) => { e.preventDefault(); selezionaVoce(item); });
+                opz.addEventListener("mouseenter", () => { indiceAttivo = i; aggiornaEvidenziazione(); });
+                dropdown.appendChild(opz);
+            });
+            aggiornaEvidenziazione();
+        }
+        function aggiornaEvidenziazione() {
+            const opzioni = dropdown.querySelectorAll(".combo-opzione");
+            opzioni.forEach((el, i) => el.classList.toggle("combo-opzione-attiva", i === indiceAttivo));
+            const attiva = opzioni[indiceAttivo];
+            if (attiva) attiva.scrollIntoView({ block: "nearest" });
+        }
+        function selezionaVoce(item) {
+            hidden.value = cercaValore(item);
+            input.value = testoSelezionato ? testoSelezionato(item) : mostraTesto(item);
+            chiudiDropdown();
+            if (onScelta) onScelta(item);
+        }
+        function apriDropdown() { renderOpzioni(input.value); dropdown.classList.add("aperto"); }
+        function apriDropdownCompleta() { renderOpzioni(""); dropdown.classList.add("aperto"); }
+        function chiudiDropdown() { dropdown.classList.remove("aperto"); }
+
+        input.addEventListener("input", () => { hidden.value = ""; apriDropdown(); });
+        input.addEventListener("focus", apriDropdownCompleta);
+
+        const wrapperCombo = input.closest(".combo-wrapper");
+        const frecciaCombo = wrapperCombo ? wrapperCombo.querySelector(".combo-arrow") : null;
+        if (frecciaCombo) {
+            frecciaCombo.addEventListener("mousedown", (e) => {
+                e.preventDefault();
+                if (dropdown.classList.contains("aperto")) chiudiDropdown();
+                else { input.focus(); apriDropdownCompleta(); }
+            });
+        }
+        input.addEventListener("keydown", (e) => {
+            const aperto = dropdown.classList.contains("aperto");
+            if (e.key === "Escape") { chiudiDropdown(); input.blur(); }
+            else if (e.key === "ArrowDown") {
+                e.preventDefault();
+                if (!aperto) { apriDropdownCompleta(); return; }
+                if (ultimoFiltrati.length > 0) { indiceAttivo = (indiceAttivo + 1) % ultimoFiltrati.length; aggiornaEvidenziazione(); }
+            } else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                if (!aperto) { apriDropdownCompleta(); return; }
+                if (ultimoFiltrati.length > 0) { indiceAttivo = (indiceAttivo - 1 + ultimoFiltrati.length) % ultimoFiltrati.length; aggiornaEvidenziazione(); }
+            } else if (e.key === "Enter") {
+                e.preventDefault();
+                if (ultimoFiltrati.length > 0) selezionaVoce(ultimoFiltrati[indiceAttivo >= 0 ? indiceAttivo : 0]);
+            }
+        });
+        document.addEventListener("click", (e) => {
+            if (!input.contains(e.target) && !dropdown.contains(e.target) && !(frecciaCombo && frecciaCombo.contains(e.target))) chiudiDropdown();
+        });
+
+        return { impostaValore(valore) { const trovato = elenco.find(item => cercaValore(item) === valore); if (trovato) selezionaVoce(trovato); } };
     }
 
     // ==========================================================
@@ -424,16 +617,10 @@ document.addEventListener("DOMContentLoaded", () => {
         elErrore.style.display = "block";
         if (elRisultati) elRisultati.style.display = "none";
     }
+    function nascondiErrore() { if (elErrore) elErrore.style.display = "none"; }
 
-    function nascondiErrore() {
-        if (elErrore) elErrore.style.display = "none";
-    }
-
-    // Legge i campi in base al formato selezionato e ritorna {lat, lon} in
-    // decimale, o null se non validi (mostra un messaggio d'errore specifico)
     function leggiCoordinateSelezionate() {
         const formato = selectFormato ? selectFormato.value : "dd";
-
         if (formato === "dd") {
             const lat = parseDDField(document.getElementById("coord-dd-lat").value);
             const lon = parseDDField(document.getElementById("coord-dd-lon").value);
@@ -483,14 +670,20 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ==========================================================
-    // MAPPA LEAFLET DEDICATA ALLA SCHEDA CONVERTITORE
+    // MAPPA LEAFLET — target intervento ROSSO, squadra VF GIALLO,
+    // percorso ROSSO.
     // ==========================================================
+    const COLORE_TARGET = "#AF2B1E";
+    const COLORE_SQUADRA = "#ffd700";
+    const COLORE_PERCORSO = "#AF2B1E";
+
     let coordMappaLeaflet = null;
     let coordMarkerTarget = null;
     let coordMarkerPartenza = null;
     let coordLineaPercorso = null;
-    let coordinateTargetCorrenti = null; // { lat, lon } del punto convertito
+    let coordinateTargetCorrenti = null;
     let modalitaPercorsoAttiva = false;
+    let ultimoGeojsonPercorso = null;
 
     function iconaMarkerGenerica(colore) {
         return L.divIcon({
@@ -517,16 +710,6 @@ document.addEventListener("DOMContentLoaded", () => {
             calcolaEDisegnaPercorso(e.latlng.lat, e.latlng.lng);
         });
 
-        // FIX PRINCIPALE per il riquadro grigio scuro: la mappa viene creata
-        // subito, ma se in quel momento il contenitore è ancora nascosto nel
-        // magazzino (display:none su un antenato) Leaflet la inizializza a
-        // dimensione 0x0 e non carica alcuna tile. Il tentativo precedente
-        // (invalidateSize legato all'evento "change" dei due select) dipende
-        // dall'ordine in cui si registrano i listener rispetto a script.js:
-        // troppo fragile. Un ResizeObserver sul contenitore stesso è
-        // indipendente da quell'ordine: scatta ogni volta che il riquadro
-        // passa da 0x0 alle sue dimensioni reali (cioè esattamente quando il
-        // pannello che lo contiene diventa visibile), qualunque sia la causa.
         if (typeof ResizeObserver !== "undefined") {
             const osservatoreDimensione = new ResizeObserver(() => {
                 if (coordMappaLeaflet) coordMappaLeaflet.invalidateSize();
@@ -535,25 +718,11 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // Crea la mappa SUBITO (vista di default sull'Italia), non solo al primo
-    // "Converti": prima veniva creata tardi, e se la pagina era ancora
-    // nascosta nel magazzino (non assegnata a un pannello) Leaflet la
-    // inizializzava a dimensione zero e restava vuota anche dopo. Ora esiste
-    // fin da subito e il ResizeObserver sopra la ridisegna appena il
-    // pannello che la contiene diventa visibile.
     assicuraMappaCoordInizializzata();
 
-    // ==========================================================
-    // Centra la mappa sul Comando attivo (invece della vista Italia intera)
-    // appena le coordinate sono disponibili. convertitore.js è indipendente
-    // da script.js: non condivide comandiData, quindi legge da sé
-    // comandi.json e la chiave di sessionStorage col nome del Comando
-    // attivo (stessa chiave usata da script.js). Se qualcosa fallisce
-    // (Comando non ancora scelto, file non raggiungibile) la mappa resta
-    // semplicemente sulla vista Italia di partenza: nessun errore bloccante.
-    // ==========================================================
     const CHIAVE_STORAGE_COMANDO = "fireops_comando_selezionato";
     const ZOOM_INIZIALE_COMANDO = 12;
+    let comandoAttivoCache = null;
 
     function estraiCoordinateComando(comando) {
         if (!comando || !comando["Coordinate"]) return null;
@@ -568,12 +737,13 @@ document.addEventListener("DOMContentLoaded", () => {
             const nomeComandoAttivo = sessionStorage.getItem(CHIAVE_STORAGE_COMANDO);
             if (!nomeComandoAttivo) return;
             const comandoAttivo = (comandiJson || []).find(c => c.Comando === nomeComandoAttivo);
+            comandoAttivoCache = comandoAttivo || null;
             const coord = estraiCoordinateComando(comandoAttivo);
-            if (!coord || !coordMappaLeaflet) return;
-            coordMappaLeaflet.setView([coord.lat, coord.lon], ZOOM_INIZIALE_COMANDO);
+            if (coord && coordMappaLeaflet) coordMappaLeaflet.setView([coord.lat, coord.lon], ZOOM_INIZIALE_COMANDO);
+            aggiornaAnteprimaMessaggioCoordinate();
         })
         .catch(err => {
-            console.error("Convertitore: impossibile centrare la mappa sul Comando attivo, resto sulla vista Italia:", err);
+            console.error("Convertitore: impossibile leggere il Comando attivo, resto sulla vista Italia:", err);
         });
 
     function centraMappaSulTarget(lat, lon) {
@@ -584,20 +754,19 @@ document.addEventListener("DOMContentLoaded", () => {
         coordMappaLeaflet.setView([lat, lon], 15);
 
         if (coordMarkerTarget) coordMappaLeaflet.removeLayer(coordMarkerTarget);
-        coordMarkerTarget = L.marker([lat, lon], { icon: iconaMarkerGenerica("#ffd700") })
+        coordMarkerTarget = L.marker([lat, lon], { icon: iconaMarkerGenerica(COLORE_TARGET) })
             .addTo(coordMappaLeaflet)
-            .bindPopup("Punto convertito");
+            .bindPopup("Target intervento");
 
         setTimeout(() => coordMappaLeaflet.invalidateSize(), 100);
     }
 
     // ==========================================================
-    // ROUTING BRouter: calcola il percorso dal punto cliccato sulla mappa
-    // fino alle coordinate convertite (target), lo disegna e mostra
-    // distanza/tempo stimati.
+    // ROUTING BRouter + KML + grafico altimetria
     // ==========================================================
     const elInfoPercorso = document.getElementById("coord-percorso-info");
     const selectProfiloPercorso = document.getElementById("coord-profilo-percorso");
+    const btnScaricaKml = document.getElementById("btn-coord-scarica-kml");
 
     async function calcolaEDisegnaPercorso(latPartenza, lonPartenza) {
         if (!coordinateTargetCorrenti || !coordMappaLeaflet) return;
@@ -605,21 +774,23 @@ document.addEventListener("DOMContentLoaded", () => {
         const profilo = selectProfiloPercorso ? selectProfiloPercorso.value : "trekking";
 
         if (coordMarkerPartenza) coordMappaLeaflet.removeLayer(coordMarkerPartenza);
-        coordMarkerPartenza = L.marker([latPartenza, lonPartenza], { icon: iconaMarkerGenerica("#4fc3f7") })
+        coordMarkerPartenza = L.marker([latPartenza, lonPartenza], { icon: iconaMarkerGenerica(COLORE_SQUADRA) })
             .addTo(coordMappaLeaflet)
-            .bindPopup("Partenza percorso");
+            .bindPopup("Squadra VF");
 
         if (elInfoPercorso) elInfoPercorso.textContent = "Calcolo percorso in corso…";
+        if (btnScaricaKml) btnScaricaKml.disabled = true;
 
         try {
             const url = `https://brouter.de/brouter?lonlats=${lonPartenza},${latPartenza}|${lonArrivo},${latArrivo}&profile=${profilo}&alternativeidx=0&format=geojson`;
             const risposta = await fetch(url);
             if (!risposta.ok) throw new Error("HTTP " + risposta.status);
             const geojson = await risposta.json();
+            ultimoGeojsonPercorso = geojson;
 
             if (coordLineaPercorso) coordMappaLeaflet.removeLayer(coordLineaPercorso);
             coordLineaPercorso = L.geoJSON(geojson, {
-                style: { color: "#ffd700", weight: 5, opacity: 0.85 },
+                style: { color: COLORE_PERCORSO, weight: 5, opacity: 0.85 },
             }).addTo(coordMappaLeaflet);
 
             coordMappaLeaflet.fitBounds(coordLineaPercorso.getBounds(), { padding: [30, 30] });
@@ -630,16 +801,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
             let testoInfo = "Percorso calcolato";
             if (!Number.isNaN(lunghezzaM)) testoInfo += ` — ${(lunghezzaM / 1000).toFixed(2)} km`;
-            if (!Number.isNaN(tempoS)) {
-                const minuti = Math.round(tempoS / 60);
-                testoInfo += ` — circa ${minuti} min`;
-            }
+            if (!Number.isNaN(tempoS)) testoInfo += ` — circa ${Math.round(tempoS / 60)} min`;
             if (elInfoPercorso) elInfoPercorso.textContent = testoInfo;
+
+            if (btnScaricaKml) btnScaricaKml.disabled = false;
+            disegnaGraficoAltimetria(geojson);
         } catch (err) {
             console.error("Errore routing BRouter:", err);
+            ultimoGeojsonPercorso = null;
             if (elInfoPercorso) {
                 elInfoPercorso.textContent = "Impossibile calcolare il percorso (servizio BRouter non raggiungibile o punto fuori copertura).";
             }
+            nascondiGraficoAltimetria("Percorso non calcolato: nessun dato altimetrico disponibile.");
         }
     }
 
@@ -667,12 +840,327 @@ document.addEventListener("DOMContentLoaded", () => {
             if (coordLineaPercorso) { coordMappaLeaflet.removeLayer(coordLineaPercorso); coordLineaPercorso = null; }
             if (coordMarkerPartenza) { coordMappaLeaflet.removeLayer(coordMarkerPartenza); coordMarkerPartenza = null; }
             if (elInfoPercorso) elInfoPercorso.textContent = "";
+            ultimoGeojsonPercorso = null;
+            if (btnScaricaKml) btnScaricaKml.disabled = true;
+            nascondiGraficoAltimetria("");
+        });
+    }
+
+    function costruisciKml(geojson, nomePercorso) {
+        const coords = (geojson.features && geojson.features[0] && geojson.features[0].geometry && geojson.features[0].geometry.coordinates) || [];
+        const coordinateTesto = coords.map(c => `${c[0]},${c[1]},${c[2] || 0}`).join(" ");
+        return `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>${nomePercorso}</name>
+    <Placemark>
+      <name>${nomePercorso}</name>
+      <Style><LineStyle><color>ff1E2BAF</color><width>4</width></LineStyle></Style>
+      <LineString>
+        <tessellate>1</tessellate>
+        <coordinates>${coordinateTesto}</coordinates>
+      </LineString>
+    </Placemark>
+  </Document>
+</kml>`;
+    }
+
+    if (btnScaricaKml) {
+        btnScaricaKml.disabled = true;
+        btnScaricaKml.addEventListener("click", () => {
+            if (!ultimoGeojsonPercorso) return;
+            const kml = costruisciKml(ultimoGeojsonPercorso, "Percorso FireOps VVF");
+            const blob = new Blob([kml], { type: "application/vnd.google-earth.kml+xml" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "percorso-fireops.kml";
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+    }
+
+    // Grafico altimetria (canvas, nessuna libreria esterna). Dipende dal
+    // fatto che BRouter includa la quota (terzo valore delle coordinate)
+    // nella risposta: non verificabile dall'ambiente di sviluppo
+    // (brouter.de non raggiungibile da qui). Se assente, mostra un
+    // messaggio invece di un grafico vuoto o rotto.
+    function nascondiGraficoAltimetria(messaggio) {
+        const canvas = document.getElementById("coord-grafico-altimetria");
+        const nota = document.getElementById("coord-altimetria-nota");
+        if (canvas) canvas.style.display = "none";
+        if (nota) {
+            nota.textContent = messaggio || "";
+            nota.style.display = messaggio ? "block" : "none";
+        }
+    }
+
+    function disegnaGraficoAltimetria(geojson) {
+        const canvas = document.getElementById("coord-grafico-altimetria");
+        if (!canvas) return;
+
+        const coords = (geojson.features && geojson.features[0] && geojson.features[0].geometry && geojson.features[0].geometry.coordinates) || [];
+        const conQuota = coords.filter(c => Array.isArray(c) && c.length >= 3 && !Number.isNaN(parseFloat(c[2])));
+
+        if (conQuota.length < 2) {
+            nascondiGraficoAltimetria("Dati altimetrici non disponibili per questo percorso (BRouter non li ha forniti).");
+            return;
+        }
+
+        canvas.style.display = "block";
+        const nota = document.getElementById("coord-altimetria-nota");
+        if (nota) nota.style.display = "none";
+
+        const ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        function distanzaKm(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
+
+        let distanzaTot = 0;
+        const punti = [{ d: 0, ele: parseFloat(conQuota[0][2]) }];
+        for (let i = 1; i < conQuota.length; i++) {
+            distanzaTot += distanzaKm(conQuota[i - 1][1], conQuota[i - 1][0], conQuota[i][1], conQuota[i][0]);
+            punti.push({ d: distanzaTot, ele: parseFloat(conQuota[i][2]) });
+        }
+
+        const eleMin = Math.min(...punti.map(p => p.ele));
+        const eleMax = Math.max(...punti.map(p => p.ele));
+        const margine = 32;
+        const w = canvas.width - margine * 2;
+        const h = canvas.height - margine * 2;
+
+        ctx.strokeStyle = "#333333";
+        ctx.strokeRect(margine, margine, w, h);
+
+        ctx.beginPath();
+        punti.forEach((p, i) => {
+            const x = margine + (distanzaTot > 0 ? (p.d / distanzaTot) * w : 0);
+            const y = margine + h - ((p.ele - eleMin) / ((eleMax - eleMin) || 1)) * h;
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        });
+        ctx.strokeStyle = "#ffd700";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.fillStyle = "#aaaaaa";
+        ctx.font = "11px Arial";
+        ctx.fillText(`${Math.round(eleMax)} m`, 4, margine + 4);
+        ctx.fillText(`${Math.round(eleMin)} m`, 4, margine + h);
+        ctx.fillText("0 km", margine, canvas.height - 6);
+        ctx.fillText(`${distanzaTot.toFixed(1)} km`, margine + w - 34, canvas.height - 6);
+    }
+
+    // ==========================================================
+    // "COPIA MAPPA COME IMMAGINE" via Screen Capture nativa. Le tile OSM
+    // non hanno intestazioni CORS: qualunque lettura via canvas (html2canvas,
+    // leaflet-image...) produce un'immagine vuota per policy di sicurezza
+    // del browser, non per un bug qui. L'unica via affidabile cattura i
+    // pixel realmente disegnati a schermo (permesso nativo del browser).
+    // Funziona su Chrome/Edge. Il formato scritto negli appunti è PNG
+    // (unico supportato in modo affidabile dalla Clipboard API): identico
+    // visivamente a un JPG una volta incollato.
+    // ==========================================================
+    const btnCopiaMappa = document.getElementById("btn-coord-copia-mappa");
+
+    async function copiaMappaComeImmagine() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+            alert("Il browser non supporta la cattura schermo necessaria per questa funzione (serve Chrome o Edge aggiornati).");
+            return;
+        }
+        const contenitoreMappa = document.getElementById("coord-mappa");
+        if (!contenitoreMappa) return;
+
+        let stream;
+        try {
+            stream = await navigator.mediaDevices.getDisplayMedia({
+                video: { displaySurface: "browser" },
+                preferCurrentTab: true,
+            });
+        } catch (err) {
+            return;
+        }
+
+        try {
+            const video = document.createElement("video");
+            video.srcObject = stream;
+            await video.play();
+            await new Promise(r => requestAnimationFrame(r));
+
+            const rect = contenitoreMappa.getBoundingClientRect();
+            const scalaX = video.videoWidth / window.innerWidth;
+            const scalaY = video.videoHeight / window.innerHeight;
+
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.max(1, Math.round(rect.width * scalaX));
+            canvas.height = Math.max(1, Math.round(rect.height * scalaY));
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(
+                video,
+                rect.left * scalaX, rect.top * scalaY, rect.width * scalaX, rect.height * scalaY,
+                0, 0, canvas.width, canvas.height
+            );
+
+            stream.getTracks().forEach(t => t.stop());
+
+            canvas.toBlob(async (blob) => {
+                if (!blob) { alert("Impossibile generare l'immagine della mappa."); return; }
+                try {
+                    await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+                    alert("Mappa copiata negli appunti: incollala con Ctrl+V (o Cmd+V) dove ti serve.");
+                } catch (err) {
+                    console.error("Copia negli appunti non riuscita, scarico il file come alternativa:", err);
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "mappa-coordinate.png";
+                    a.click();
+                    URL.revokeObjectURL(url);
+                }
+            }, "image/png");
+        } catch (err) {
+            console.error("Errore durante la cattura della mappa:", err);
+            stream.getTracks().forEach(t => t.stop());
+        }
+    }
+
+    if (btnCopiaMappa) {
+        btnCopiaMappa.addEventListener("click", copiaMappaComeImmagine);
+    }
+
+    // ==========================================================
+    // MESSAGGIO ALLE SQUADRE VF: prefisso + numero + 3 pulsanti di invio
+    // ==========================================================
+    const inputMsgPrefisso = document.getElementById("coord-msg-prefisso-input");
+    const hiddenMsgPrefisso = document.getElementById("coord-msg-prefisso");
+    const dropdownMsgPrefisso = document.getElementById("coord-msg-prefisso-dropdown");
+    const inputMsgNumero = document.getElementById("coord-msg-numero");
+    const textareaMsg = document.getElementById("coord-msg-testo");
+    const btnMsgWhatsappWeb = document.getElementById("coord-btn-whatsapp-web");
+    const btnMsgWhatsappApp = document.getElementById("coord-btn-whatsapp-app");
+    const btnMsgTelegram = document.getElementById("coord-btn-invia-telegram");
+
+    const PREFISSO_PREDEFINITO_COORD = "39";
+
+    function validaCampiMessaggioCoord() {
+        const prefissoOk = !!(hiddenMsgPrefisso && hiddenMsgPrefisso.value);
+        const numeroOk = !!(inputMsgNumero && inputMsgNumero.value.trim());
+        if (inputMsgPrefisso) inputMsgPrefisso.classList.toggle("campo-mancante", !prefissoOk);
+        if (inputMsgNumero) inputMsgNumero.classList.toggle("campo-mancante", !numeroOk);
+        const tuttiCompilati = prefissoOk && numeroOk && !!coordinateTargetCorrenti && !!comandoAttivoCache;
+        [btnMsgWhatsappWeb, btnMsgWhatsappApp, btnMsgTelegram].forEach(btn => { if (btn) btn.disabled = !tuttiCompilati; });
+        return { prefissoOk, numeroOk, tuttiCompilati };
+    }
+
+    function costruisciMessaggioCoordinate() {
+        if (!comandoAttivoCache) return "Seleziona prima un Comando dalla schermata iniziale per generare il messaggio.";
+        if (!coordinateTargetCorrenti) return "Converti prima delle coordinate per generare il messaggio.";
+
+        const { lat, lon } = coordinateTargetCorrenti;
+        const nomeComando = (comandoAttivoCache.Comando || "").toUpperCase();
+        const valoreEmergenza = comandoAttivoCache["115/NUE OUT"] || "112";
+        const numeroEmergenzaFormattato = String(valoreEmergenza).split("").join(" ");
+        const canale = comandoAttivoCache["Canale Radio Comando"] || "-";
+
+        const righe = [
+            `🚒 *Vigili del Fuoco ${nomeComando}* 🚒`,
+            "Questo è un messaggio generato automaticamente.",
+            "Per tutte le richieste di soccorso chiami il",
+            "☎️🆘️",
+            `*${numeroEmergenzaFormattato}*`,
+            "🇪🇺🇮🇹",
+            `*Canale Radio Provinciale VHF: ${canale}*`,
+            "*Coordinate Intervento:*",
+            "*Dd*",
+            formattaDdMessaggio(lat, lon),
+            "*DMm*",
+            formattaDMmMessaggio(lat, lon),
+            "*DMSs*",
+            formattaDMSsMessaggio(lat, lon),
+            "*Open Location Code*",
+            olcEncode(lat, lon, 11),
+            "*Appunti*",
+            formattaDD(lat, lon),
+            costruisciPieDiPaginaCoord(),
+        ];
+        return righe.join("\n");
+    }
+
+    function aggiornaAnteprimaMessaggioCoordinate() {
+        if (!textareaMsg) return;
+        textareaMsg.value = costruisciMessaggioCoordinate();
+        validaCampiMessaggioCoord();
+    }
+
+    if (inputMsgPrefisso && hiddenMsgPrefisso && dropdownMsgPrefisso) {
+        fetch("/FireOps/db/prefissi.json")
+            .then(r => (r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status))))
+            .then(listaPrefissi => {
+                const combo = creaComboRicercabileCoord({
+                    input: inputMsgPrefisso,
+                    hidden: hiddenMsgPrefisso,
+                    dropdown: dropdownMsgPrefisso,
+                    elenco: listaPrefissi,
+                    cercaValore: p => p.Valore,
+                    mostraTesto: p => p.Prefissi,
+                    onScelta: validaCampiMessaggioCoord,
+                });
+                if (listaPrefissi.some(p => p.Valore === PREFISSO_PREDEFINITO_COORD)) {
+                    combo.impostaValore(PREFISSO_PREDEFINITO_COORD);
+                }
+                validaCampiMessaggioCoord();
+            })
+            .catch(err => console.error("Convertitore: prefissi.json non disponibile:", err));
+    }
+
+    if (inputMsgNumero) inputMsgNumero.addEventListener("input", validaCampiMessaggioCoord);
+
+    function numeroCompletoPulitoCoord() {
+        const prefisso = (hiddenMsgPrefisso && hiddenMsgPrefisso.value || "").replace(/\D/g, "");
+        const numero = (inputMsgNumero && inputMsgNumero.value || "").replace(/\D/g, "");
+        return { prefisso, numero };
+    }
+
+    if (btnMsgWhatsappWeb) {
+        btnMsgWhatsappWeb.addEventListener("click", () => {
+            if (!validaCampiMessaggioCoord().tuttiCompilati) return;
+            aggiornaAnteprimaMessaggioCoordinate();
+            const { prefisso, numero } = numeroCompletoPulitoCoord();
+            if (!numero) { alert("Inserisci un numero di telefono valido."); return; }
+            const testoCodificato = encodeURIComponent(textareaMsg.value);
+            window.open(`https://web.whatsapp.com/send?phone=${prefisso}${numero}&text=${testoCodificato}`, "_blank", "noopener");
+        });
+    }
+    if (btnMsgWhatsappApp) {
+        btnMsgWhatsappApp.addEventListener("click", () => {
+            if (!validaCampiMessaggioCoord().tuttiCompilati) return;
+            aggiornaAnteprimaMessaggioCoordinate();
+            const { prefisso, numero } = numeroCompletoPulitoCoord();
+            if (!numero) { alert("Inserisci un numero di telefono valido."); return; }
+            const testoCodificato = encodeURIComponent(textareaMsg.value);
+            window.location.href = `whatsapp://send?phone=${prefisso}${numero}&text=${testoCodificato}`;
+        });
+    }
+    if (btnMsgTelegram) {
+        btnMsgTelegram.addEventListener("click", () => {
+            if (!validaCampiMessaggioCoord().tuttiCompilati) return;
+            aggiornaAnteprimaMessaggioCoordinate();
+            const testo = textareaMsg.value;
+            if (!testo.trim()) { alert("Il messaggio è vuoto."); return; }
+            navigator.clipboard.writeText(testo).catch(() => {});
+            const { prefisso, numero } = numeroCompletoPulitoCoord();
+            if (numero) window.open(`https://t.me/+${prefisso}${numero}`, "_blank", "noopener");
+            else window.open(`https://t.me/share/url?url=&text=${encodeURIComponent(testo)}`, "_blank", "noopener");
         });
     }
 
     // ==========================================================
-    // PULSANTE "CONVERTI": legge il formato scelto, calcola tutti gli
-    // altri formati, aggiorna la mappa e avvia il geocoding inverso
+    // PULSANTE "CONVERTI"
     // ==========================================================
     const btnConverti = document.getElementById("btn-coord-converti");
 
@@ -688,53 +1176,39 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            document.getElementById("coord-out-dd").textContent = formattaDD(lat, lon);
-            document.getElementById("coord-out-dmm").textContent = formattaDMM(lat, lon);
-            document.getElementById("coord-out-dms").textContent = formattaDMS(lat, lon);
+            rendiCopiabile(document.getElementById("coord-out-dd"), formattaDD(lat, lon));
+            rendiCopiabile(document.getElementById("coord-out-dmm"), formattaDMM(lat, lon));
+            rendiCopiabile(document.getElementById("coord-out-dms"), formattaDMS(lat, lon));
             try {
-                document.getElementById("coord-out-olc").textContent = olcEncode(lat, lon, 11);
+                rendiCopiabile(document.getElementById("coord-out-olc"), olcEncode(lat, lon, 11));
             } catch (err) {
-                document.getElementById("coord-out-olc").textContent = "Non calcolabile";
+                const el = document.getElementById("coord-out-olc");
+                if (el) { el.textContent = "Non calcolabile"; el.classList.remove("cliccabile"); el.onclick = null; }
             }
-            document.getElementById("coord-out-utm").textContent = formattaUTMTesto(lat, lon);
-            document.getElementById("coord-out-so115").textContent = formattaSO115(lat, lon);
+            rendiCopiabile(document.getElementById("coord-out-utm"), formattaUTMTesto(lat, lon));
+            rendiCopiabile(document.getElementById("coord-out-so115-lon"), formattaSO115Lon(lon));
+            rendiCopiabile(document.getElementById("coord-out-so115-lat"), formattaSO115Lat(lat));
 
             const elToponimo = document.getElementById("coord-out-toponimo");
-            elToponimo.textContent = "Ricerca in corso…";
+            if (elToponimo) { elToponimo.textContent = "Ricerca in corso…"; elToponimo.classList.remove("cliccabile"); elToponimo.onclick = null; }
 
             if (elRisultati) elRisultati.style.display = "block";
 
             centraMappaSulTarget(lat, lon);
+            aggiornaAnteprimaMessaggioCoordinate();
 
-            // Reset modalità percorso ad ogni nuova conversione
             modalitaPercorsoAttiva = false;
             if (btnPercorso) btnPercorso.classList.remove("attivo");
             if (btnAnnullaPercorso) btnAnnullaPercorso.style.display = "none";
             if (coordLineaPercorso && coordMappaLeaflet) { coordMappaLeaflet.removeLayer(coordLineaPercorso); coordLineaPercorso = null; }
             if (coordMarkerPartenza && coordMappaLeaflet) { coordMappaLeaflet.removeLayer(coordMarkerPartenza); coordMarkerPartenza = null; }
             if (elInfoPercorso) elInfoPercorso.textContent = "";
+            ultimoGeojsonPercorso = null;
+            if (btnScaricaKml) btnScaricaKml.disabled = true;
+            nascondiGraficoAltimetria("");
 
             const toponimo = await geocodingInverso(lat, lon);
-            elToponimo.textContent = toponimo;
+            rendiCopiabile(elToponimo, toponimo);
         });
     }
-
-    // ==========================================================
-    // Ricalcola le dimensioni della mappa quando la pagina "Convertitore"
-    // diventa visibile in uno dei due pannelli split-screen (la mappa
-    // Leaflet, se inizializzata mentre nascosta, ha dimensioni 0x0 finché
-    // non viene forzata a ricalcolarle).
-    // ==========================================================
-    function forzaRicalcoloMappaSeVisibile() {
-        const sezione = document.getElementById("convertitore");
-        if (!sezione || !coordMappaLeaflet) return;
-        if (sezione.offsetParent !== null) {
-            setTimeout(() => coordMappaLeaflet.invalidateSize(), 150);
-        }
-    }
-
-    const selSinistra = document.getElementById("select-pannello-sinistra");
-    const selDestra = document.getElementById("select-pannello-destra");
-    if (selSinistra) selSinistra.addEventListener("change", forzaRicalcoloMappaSeVisibile);
-    if (selDestra) selDestra.addEventListener("change", forzaRicalcoloMappaSeVisibile);
 });
