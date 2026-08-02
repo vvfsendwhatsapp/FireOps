@@ -543,6 +543,39 @@ document.addEventListener("DOMContentLoaded", () => {
     // pannello che la contiene diventa visibile.
     assicuraMappaCoordInizializzata();
 
+    // ==========================================================
+    // Centra la mappa sul Comando attivo (invece della vista Italia intera)
+    // appena le coordinate sono disponibili. convertitore.js è indipendente
+    // da script.js: non condivide comandiData, quindi legge da sé
+    // comandi.json e la chiave di sessionStorage col nome del Comando
+    // attivo (stessa chiave usata da script.js). Se qualcosa fallisce
+    // (Comando non ancora scelto, file non raggiungibile) la mappa resta
+    // semplicemente sulla vista Italia di partenza: nessun errore bloccante.
+    // ==========================================================
+    const CHIAVE_STORAGE_COMANDO = "fireops_comando_selezionato";
+    const ZOOM_INIZIALE_COMANDO = 12;
+
+    function estraiCoordinateComando(comando) {
+        if (!comando || !comando["Coordinate"]) return null;
+        const parti = comando["Coordinate"].split(",").map(s => parseFloat(s.trim()));
+        if (parti.length !== 2 || parti.some(n => Number.isNaN(n))) return null;
+        return { lat: parti[0], lon: parti[1] };
+    }
+
+    fetch("/FireOps/db/comandi.json")
+        .then(r => (r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status))))
+        .then(comandiJson => {
+            const nomeComandoAttivo = sessionStorage.getItem(CHIAVE_STORAGE_COMANDO);
+            if (!nomeComandoAttivo) return;
+            const comandoAttivo = (comandiJson || []).find(c => c.Comando === nomeComandoAttivo);
+            const coord = estraiCoordinateComando(comandoAttivo);
+            if (!coord || !coordMappaLeaflet) return;
+            coordMappaLeaflet.setView([coord.lat, coord.lon], ZOOM_INIZIALE_COMANDO);
+        })
+        .catch(err => {
+            console.error("Convertitore: impossibile centrare la mappa sul Comando attivo, resto sulla vista Italia:", err);
+        });
+
     function centraMappaSulTarget(lat, lon) {
         assicuraMappaCoordInizializzata();
         if (!coordMappaLeaflet) return;
