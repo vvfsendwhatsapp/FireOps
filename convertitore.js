@@ -1,0 +1,682 @@
+// ==========================================================
+// FireOps VVF — CONVERTITORE COORDINATE
+// File indipendente: da includere in index.html DOPO <script src="script.js">
+//     <script src="convertitore.js"></script>
+// Non modifica né dipende dall'interno di script.js: usa solo il DOM
+// condiviso e i propri event listener.
+// ==========================================================
+document.addEventListener("DOMContentLoaded", () => {
+
+    // ==========================================================
+    // OPEN LOCATION CODE (Plus Codes) — porting fedele dall'algoritmo
+    // ufficiale Google (openlocationcode, Apache 2.0), verificato riga per
+    // riga contro la libreria Python di riferimento (encode/decode su
+    // Zurigo, Sydney, Milano, Oxford: risultati identici).
+    // ==========================================================
+    const OLC_SEPARATOR = "+";
+    const OLC_SEPARATOR_POSITION = 8;
+    const OLC_PADDING_CHAR = "0";
+    const OLC_CODE_ALPHABET = "23456789CFGHJMPQRVWX";
+    const OLC_ENCODING_BASE = OLC_CODE_ALPHABET.length;
+    const OLC_LATITUDE_MAX = 90;
+    const OLC_LONGITUDE_MAX = 180;
+    const OLC_MAX_DIGIT_COUNT = 15;
+    const OLC_PAIR_CODE_LENGTH = 10;
+    const OLC_PAIR_FIRST_PLACE_VALUE = Math.pow(OLC_ENCODING_BASE, OLC_PAIR_CODE_LENGTH / 2 - 1);
+    const OLC_PAIR_PRECISION = Math.pow(OLC_ENCODING_BASE, 3);
+    const OLC_GRID_CODE_LENGTH = OLC_MAX_DIGIT_COUNT - OLC_PAIR_CODE_LENGTH;
+    const OLC_GRID_COLUMNS = 4;
+    const OLC_GRID_ROWS = 5;
+    const OLC_GRID_LAT_FIRST_PLACE_VALUE = Math.pow(OLC_GRID_ROWS, OLC_GRID_CODE_LENGTH - 1);
+    const OLC_GRID_LNG_FIRST_PLACE_VALUE = Math.pow(OLC_GRID_COLUMNS, OLC_GRID_CODE_LENGTH - 1);
+    const OLC_FINAL_LAT_PRECISION = OLC_PAIR_PRECISION * Math.pow(OLC_GRID_ROWS, OLC_MAX_DIGIT_COUNT - OLC_PAIR_CODE_LENGTH);
+    const OLC_FINAL_LNG_PRECISION = OLC_PAIR_PRECISION * Math.pow(OLC_GRID_COLUMNS, OLC_MAX_DIGIT_COUNT - OLC_PAIR_CODE_LENGTH);
+
+    function olcClipLatitude(lat) { return Math.min(90, Math.max(-90, lat)); }
+    function olcNormalizeLongitude(lng) {
+        while (lng < -180) lng += 360;
+        while (lng >= 180) lng -= 360;
+        return lng;
+    }
+    function olcComputeLatitudePrecision(codeLength) {
+        if (codeLength <= 10) return Math.pow(20, Math.floor(codeLength / -2 + 2));
+        return Math.pow(20, -3) / Math.pow(OLC_GRID_ROWS, codeLength - 10);
+    }
+    function intDiv(a, b) { return Math.floor(a / b); }
+
+    function olcEncode(latitude, longitude, codeLength) {
+        codeLength = codeLength || OLC_PAIR_CODE_LENGTH;
+        if (codeLength < 2 || (codeLength < OLC_PAIR_CODE_LENGTH && codeLength % 2 === 1)) {
+            throw new Error("Lunghezza OLC non valida: " + codeLength);
+        }
+        codeLength = Math.min(codeLength, OLC_MAX_DIGIT_COUNT);
+
+        latitude = olcClipLatitude(latitude);
+        longitude = olcNormalizeLongitude(longitude);
+        if (latitude === 90) latitude -= olcComputeLatitudePrecision(codeLength);
+
+        let code = "";
+        let latVal = Math.trunc(Math.round((latitude + OLC_LATITUDE_MAX) * OLC_FINAL_LAT_PRECISION * 1e6) / 1e6);
+        let lngVal = Math.trunc(Math.round((longitude + OLC_LONGITUDE_MAX) * OLC_FINAL_LNG_PRECISION * 1e6) / 1e6);
+
+        if (codeLength > OLC_PAIR_CODE_LENGTH) {
+            for (let i = 0; i < OLC_MAX_DIGIT_COUNT - OLC_PAIR_CODE_LENGTH; i++) {
+                const latDigit = latVal % OLC_GRID_ROWS;
+                const lngDigit = lngVal % OLC_GRID_COLUMNS;
+                code = OLC_CODE_ALPHABET[latDigit * OLC_GRID_COLUMNS + lngDigit] + code;
+                latVal = intDiv(latVal, OLC_GRID_ROWS);
+                lngVal = intDiv(lngVal, OLC_GRID_COLUMNS);
+            }
+        } else {
+            latVal = intDiv(latVal, Math.pow(OLC_GRID_ROWS, OLC_GRID_CODE_LENGTH));
+            lngVal = intDiv(lngVal, Math.pow(OLC_GRID_COLUMNS, OLC_GRID_CODE_LENGTH));
+        }
+
+        for (let i = 0; i < OLC_PAIR_CODE_LENGTH / 2; i++) {
+            code = OLC_CODE_ALPHABET[lngVal % OLC_ENCODING_BASE] + code;
+            code = OLC_CODE_ALPHABET[latVal % OLC_ENCODING_BASE] + code;
+            latVal = intDiv(latVal, OLC_ENCODING_BASE);
+            lngVal = intDiv(lngVal, OLC_ENCODING_BASE);
+        }
+
+        code = code.slice(0, OLC_SEPARATOR_POSITION) + OLC_SEPARATOR + code.slice(OLC_SEPARATOR_POSITION);
+        if (codeLength >= OLC_SEPARATOR_POSITION) return code.slice(0, codeLength + 1);
+        return code.slice(0, codeLength) + OLC_PADDING_CHAR.repeat(OLC_SEPARATOR_POSITION - codeLength) + OLC_SEPARATOR;
+    }
+
+    function olcIsValid(code) {
+        const sep = code.indexOf(OLC_SEPARATOR);
+        if ((code.match(/\+/g) || []).length > 1) return false;
+        if (code.length === 1) return false;
+        if (sep === -1 || sep > OLC_SEPARATOR_POSITION || sep % 2 === 1) return false;
+
+        const pad = code.indexOf(OLC_PADDING_CHAR);
+        if (pad !== -1) {
+            if (sep < OLC_SEPARATOR_POSITION) return false;
+            if (pad === 0) return false;
+            const rpad = code.lastIndexOf(OLC_PADDING_CHAR) + 1;
+            const pads = code.slice(pad, rpad);
+            if (pads.length % 2 === 1 || [...pads].some(c => c !== OLC_PADDING_CHAR)) return false;
+            if (!code.endsWith(OLC_SEPARATOR)) return false;
+        }
+        if (code.length - sep - 1 === 1) return false;
+
+        const sepPad = OLC_SEPARATOR + OLC_PADDING_CHAR;
+        for (const ch of code) {
+            if (OLC_CODE_ALPHABET.indexOf(ch.toUpperCase()) === -1 && sepPad.indexOf(ch) === -1) return false;
+        }
+        return true;
+    }
+    function olcIsShort(code) {
+        if (!olcIsValid(code)) return false;
+        const sep = code.indexOf(OLC_SEPARATOR);
+        return sep >= 0 && sep < OLC_SEPARATOR_POSITION;
+    }
+    function olcIsFull(code) {
+        if (!olcIsValid(code)) return false;
+        if (olcIsShort(code)) return false;
+        const firstLatValue = OLC_CODE_ALPHABET.indexOf(code[0].toUpperCase()) * OLC_ENCODING_BASE;
+        if (firstLatValue >= OLC_LATITUDE_MAX * 2) return false;
+        if (code.length > 1) {
+            const firstLngValue = OLC_CODE_ALPHABET.indexOf(code[1].toUpperCase()) * OLC_ENCODING_BASE;
+            if (firstLngValue >= OLC_LONGITUDE_MAX * 2) return false;
+        }
+        return true;
+    }
+
+    function olcDecode(code) {
+        if (!olcIsFull(code)) throw new Error("Codice OLC non valido o non completo: " + code);
+        code = code.replace(/[+0]/g, "").toUpperCase().slice(0, OLC_MAX_DIGIT_COUNT);
+
+        let normalLat = -OLC_LATITUDE_MAX * OLC_PAIR_PRECISION;
+        let normalLng = -OLC_LONGITUDE_MAX * OLC_PAIR_PRECISION;
+        let gridLat = 0, gridLng = 0;
+
+        const digits = Math.min(code.length, OLC_PAIR_CODE_LENGTH);
+        let pv = OLC_PAIR_FIRST_PLACE_VALUE;
+        for (let i = 0; i < digits; i += 2) {
+            normalLat += OLC_CODE_ALPHABET.indexOf(code[i]) * pv;
+            normalLng += OLC_CODE_ALPHABET.indexOf(code[i + 1]) * pv;
+            if (i < digits - 2) pv = intDiv(pv, OLC_ENCODING_BASE);
+        }
+
+        let latPrecision = pv / OLC_PAIR_PRECISION;
+        let lngPrecision = pv / OLC_PAIR_PRECISION;
+
+        if (code.length > OLC_PAIR_CODE_LENGTH) {
+            let rowpv = OLC_GRID_LAT_FIRST_PLACE_VALUE;
+            let colpv = OLC_GRID_LNG_FIRST_PLACE_VALUE;
+            const digits2 = Math.min(code.length, OLC_MAX_DIGIT_COUNT);
+            for (let i = OLC_PAIR_CODE_LENGTH; i < digits2; i++) {
+                const digitVal = OLC_CODE_ALPHABET.indexOf(code[i]);
+                const row = Math.floor(digitVal / OLC_GRID_COLUMNS);
+                const col = digitVal % OLC_GRID_COLUMNS;
+                gridLat += row * rowpv;
+                gridLng += col * colpv;
+                if (i < digits2 - 1) {
+                    rowpv = intDiv(rowpv, OLC_GRID_ROWS);
+                    colpv = intDiv(colpv, OLC_GRID_COLUMNS);
+                }
+            }
+            latPrecision = rowpv / OLC_FINAL_LAT_PRECISION;
+            lngPrecision = colpv / OLC_FINAL_LNG_PRECISION;
+        }
+
+        const lat = normalLat / OLC_PAIR_PRECISION + gridLat / OLC_FINAL_LAT_PRECISION;
+        const lng = normalLng / OLC_PAIR_PRECISION + gridLng / OLC_FINAL_LNG_PRECISION;
+        const round14 = x => Math.round(x * 1e14) / 1e14;
+        const latLo = round14(lat), lngLo = round14(lng);
+        const latHi = round14(lat + latPrecision), lngHi = round14(lng + lngPrecision);
+
+        return {
+            latitudeCenter: Math.min(latLo + (latHi - latLo) / 2, OLC_LATITUDE_MAX),
+            longitudeCenter: Math.min(lngLo + (lngHi - lngLo) / 2, OLC_LONGITUDE_MAX),
+        };
+    }
+
+    // ==========================================================
+    // UTM (WGS84) — formule standard di Snyder, verificate contro la
+    // libreria Python "utm" di riferimento (Milano, Oxford, Sydney:
+    // scarto sub-millimetrico, zone/lettere identiche).
+    // ==========================================================
+    const UTM_A = 6378137.0;
+    const UTM_F = 1 / 298.257223563;
+    const UTM_E2 = UTM_F * (2 - UTM_F);
+    const UTM_K0 = 0.9996;
+    const DEG2RAD = Math.PI / 180;
+    const RAD2DEG = 180 / Math.PI;
+
+    function utmZoneLetterFromLat(lat) {
+        const lettere = "CDEFGHJKLMNPQRSTUVWX";
+        if (lat < -80 || lat > 84) return null;
+        const idx = Math.floor((lat + 80) / 8);
+        return lettere[Math.min(idx, lettere.length - 1)];
+    }
+
+    function latLonToUtm(lat, lon) {
+        const zone = Math.floor((lon + 180) / 6) + 1;
+        const lon0 = ((zone - 1) * 6 - 180 + 3) * DEG2RAD;
+        const latRad = lat * DEG2RAD, lonRad = lon * DEG2RAD;
+
+        const ep2 = UTM_E2 / (1 - UTM_E2);
+        const N = UTM_A / Math.sqrt(1 - UTM_E2 * Math.sin(latRad) ** 2);
+        const T = Math.tan(latRad) ** 2;
+        const C = ep2 * Math.cos(latRad) ** 2;
+        const A = Math.cos(latRad) * (lonRad - lon0);
+
+        const M = UTM_A * (
+            (1 - UTM_E2 / 4 - 3 * UTM_E2 ** 2 / 64 - 5 * UTM_E2 ** 3 / 256) * latRad
+            - (3 * UTM_E2 / 8 + 3 * UTM_E2 ** 2 / 32 + 45 * UTM_E2 ** 3 / 1024) * Math.sin(2 * latRad)
+            + (15 * UTM_E2 ** 2 / 256 + 45 * UTM_E2 ** 3 / 1024) * Math.sin(4 * latRad)
+            - (35 * UTM_E2 ** 3 / 3072) * Math.sin(6 * latRad)
+        );
+
+        let easting = UTM_K0 * N * (
+            A + (1 - T + C) * A ** 3 / 6
+            + (5 - 18 * T + T ** 2 + 72 * C - 58 * ep2) * A ** 5 / 120
+        ) + 500000;
+
+        let northing = UTM_K0 * (
+            M + N * Math.tan(latRad) * (
+                A ** 2 / 2
+                + (5 - T + 9 * C + 4 * C ** 2) * A ** 4 / 24
+                + (61 - 58 * T + T ** 2 + 600 * C - 330 * ep2) * A ** 6 / 720
+            )
+        );
+        if (lat < 0) northing += 10000000;
+
+        return { zona: zone, lettera: utmZoneLetterFromLat(lat), emisfero: lat < 0 ? "S" : "N", est: easting, nord: northing };
+    }
+
+    function utmToLatLon(zone, emisfero, easting, northing) {
+        const e1 = (1 - Math.sqrt(1 - UTM_E2)) / (1 + Math.sqrt(1 - UTM_E2));
+        const x = easting - 500000;
+        let y = northing;
+        if (emisfero === "S") y -= 10000000;
+
+        const M = y / UTM_K0;
+        const mu = M / (UTM_A * (1 - UTM_E2 / 4 - 3 * UTM_E2 ** 2 / 64 - 5 * UTM_E2 ** 3 / 256));
+
+        const phi1 = mu
+            + (3 * e1 / 2 - 27 * e1 ** 3 / 32) * Math.sin(2 * mu)
+            + (21 * e1 ** 2 / 16 - 55 * e1 ** 4 / 32) * Math.sin(4 * mu)
+            + (151 * e1 ** 3 / 96) * Math.sin(6 * mu)
+            + (1097 * e1 ** 4 / 512) * Math.sin(8 * mu);
+
+        const ep2 = UTM_E2 / (1 - UTM_E2);
+        const C1 = ep2 * Math.cos(phi1) ** 2;
+        const T1 = Math.tan(phi1) ** 2;
+        const N1 = UTM_A / Math.sqrt(1 - UTM_E2 * Math.sin(phi1) ** 2);
+        const R1 = UTM_A * (1 - UTM_E2) / Math.pow(1 - UTM_E2 * Math.sin(phi1) ** 2, 1.5);
+        const D = x / (N1 * UTM_K0);
+
+        const lat = phi1 - (N1 * Math.tan(phi1) / R1) * (
+            D ** 2 / 2
+            - (5 + 3 * T1 + 10 * C1 - 4 * C1 ** 2 - 9 * ep2) * D ** 4 / 24
+            + (61 + 90 * T1 + 298 * C1 + 45 * T1 ** 2 - 252 * ep2 - 3 * C1 ** 2) * D ** 6 / 720
+        );
+
+        const lon0 = ((zone - 1) * 6 - 180 + 3) * DEG2RAD;
+        const lon = lon0 + (
+            D - (1 + 2 * T1 + C1) * D ** 3 / 6
+            + (5 - 2 * C1 + 28 * T1 - 3 * C1 ** 2 + 8 * ep2 + 24 * T1 ** 2) * D ** 5 / 120
+        ) / Math.cos(phi1);
+
+        return { lat: lat * RAD2DEG, lon: lon * RAD2DEG };
+    }
+
+    // ==========================================================
+    // PARSING CAMPI DI INGRESSO (DD, DMM, DMS)
+    // ==========================================================
+
+    // Estrae segno (N/E positivo, S/W o "-" negativo) e ripulisce il testo
+    function estraiSegnoEPulisci(testo) {
+        testo = testo.trim().toUpperCase();
+        let segno = 1;
+        if (/[SW]\s*$/.test(testo)) segno = -1;
+        if (/^-/.test(testo.replace(/[NSEW\s]/g, ""))) segno = -1;
+        testo = testo.replace(/[NSEW]/g, "").replace(/-/g, "").trim();
+        return { testo, segno };
+    }
+
+    function parseDDField(testoInput) {
+        const { testo, segno } = estraiSegnoEPulisci(testoInput);
+        const numero = parseFloat(testo.replace(",", "."));
+        if (Number.isNaN(numero)) return null;
+        return numero * segno;
+    }
+
+    function parseDMMField(testoInput) {
+        const { testo, segno } = estraiSegnoEPulisci(testoInput);
+        const pulito = testo.replace(/[°'′]/g, " ").replace(/,/g, ".").trim();
+        const parti = pulito.split(/\s+/).filter(Boolean);
+        if (parti.length < 2) return null;
+        const gradi = parseFloat(parti[0]), minuti = parseFloat(parti[1]);
+        if (Number.isNaN(gradi) || Number.isNaN(minuti)) return null;
+        return (gradi + minuti / 60) * segno;
+    }
+
+    function parseDMSField(testoInput) {
+        const { testo, segno } = estraiSegnoEPulisci(testoInput);
+        const pulito = testo.replace(/[°'′"″]/g, " ").replace(/,/g, ".").trim();
+        const parti = pulito.split(/\s+/).filter(Boolean);
+        if (parti.length < 3) return null;
+        const gradi = parseFloat(parti[0]), minuti = parseFloat(parti[1]), secondi = parseFloat(parti[2]);
+        if ([gradi, minuti, secondi].some(Number.isNaN)) return null;
+        return (gradi + minuti / 60 + secondi / 3600) * segno;
+    }
+
+    // ==========================================================
+    // FORMATTAZIONE OUTPUT
+    // ==========================================================
+    function formattaDD(lat, lon) {
+        return `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+    }
+    function dmmSingolo(valore, lettere) {
+        const lettera = valore >= 0 ? lettere[0] : lettere[1];
+        const v = Math.abs(valore);
+        const gradi = Math.floor(v);
+        const minuti = (v - gradi) * 60;
+        return `${gradi}° ${minuti.toFixed(4)}' ${lettera}`;
+    }
+    function formattaDMM(lat, lon) {
+        return `${dmmSingolo(lat, "NS")}, ${dmmSingolo(lon, "EW")}`;
+    }
+    function dmsSingolo(valore, lettere) {
+        const lettera = valore >= 0 ? lettere[0] : lettere[1];
+        const v = Math.abs(valore);
+        const gradi = Math.floor(v);
+        const minutiTot = (v - gradi) * 60;
+        const minuti = Math.floor(minutiTot);
+        const secondi = (minutiTot - minuti) * 60;
+        return `${gradi}° ${minuti}' ${secondi.toFixed(2)}" ${lettera}`;
+    }
+    function formattaDMS(lat, lon) {
+        return `${dmsSingolo(lat, "NS")}, ${dmsSingolo(lon, "EW")}`;
+    }
+    function formattaUTMTesto(lat, lon) {
+        const u = latLonToUtm(lat, lon);
+        return `${u.zona}${u.lettera} ${Math.round(u.est)} ${Math.round(u.nord)}`;
+    }
+    // Formato di uscita SO115: lat/lon INVERTITI (lon prima), virgola al
+    // posto del punto decimale — richiesto specificamente dalla Sala
+    // Operativa 115, non è uno standard esterno.
+    function formattaSO115(lat, lon) {
+        const lonStr = lon.toFixed(6).replace(".", ",");
+        const latStr = lat.toFixed(6).replace(".", ",");
+        return `${lonStr} ${latStr}`;
+    }
+
+    // ==========================================================
+    // GEOCODING INVERSO: toponimo via Nominatim (OSM), con fallback su
+    // Overpass per cercare un sentiero/traccia vicino se non c'è nulla di
+    // abitato (zone impervie, tipiche degli interventi SAR).
+    // NOTA: Nominatim ha una policy d'uso (max ~1 richiesta/sec, uso
+    // leggero): per un volume alto di richieste andrebbe affiancato un
+    // server di geocoding proprio.
+    // ==========================================================
+    async function geocodingInverso(lat, lon) {
+        try {
+            const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=16&addressdetails=1&accept-language=it`;
+            const risposta = await fetch(url);
+            if (risposta.ok) {
+                const dati = await risposta.json();
+                if (dati && !dati.error) {
+                    const a = dati.address || {};
+                    const nome = a.hamlet || a.village || a.town || a.city || a.suburb || a.locality || a.county;
+                    if (nome) {
+                        const extra = a.county && a.county !== nome ? ` (${a.county})` : "";
+                        return nome + extra;
+                    }
+                    if (dati.display_name) return dati.display_name.split(",").slice(0, 2).join(",").trim();
+                }
+            }
+        } catch (err) {
+            console.error("Geocoding inverso (Nominatim) non disponibile:", err);
+        }
+
+        // Fallback: cerca un sentiero/traccia entro 300m via Overpass
+        try {
+            const query = `[out:json][timeout:10];way(around:300,${lat},${lon})[highway~"^(path|track|footway|bridleway)$"];out tags center 5;`;
+            const risposta2 = await fetch("https://overpass-api.de/api/interpreter", {
+                method: "POST",
+                body: "data=" + encodeURIComponent(query),
+            });
+            if (risposta2.ok) {
+                const dati2 = await risposta2.json();
+                const elementi = dati2.elements || [];
+                const conNome = elementi.find(e => e.tags && e.tags.name);
+                if (conNome) return `Vicino al sentiero "${conNome.tags.name}"`;
+                if (elementi.length > 0) return "Vicino a un sentiero/traccia non denominato";
+            }
+        } catch (err) {
+            console.error("Fallback Overpass non disponibile:", err);
+        }
+
+        return "Toponimo non disponibile";
+    }
+
+    // ==========================================================
+    // UI: selezione formato in ingresso, lettura campi, conversione
+    // ==========================================================
+    const selectFormato = document.getElementById("coord-formato-input");
+    const gruppiInput = {
+        dd: document.getElementById("coord-input-dd"),
+        dmm: document.getElementById("coord-input-dmm"),
+        dms: document.getElementById("coord-input-dms"),
+        olc: document.getElementById("coord-input-olc"),
+        utm: document.getElementById("coord-input-utm"),
+    };
+    const elErrore = document.getElementById("coord-errore");
+    const elRisultati = document.getElementById("coord-risultati");
+
+    if (selectFormato) {
+        selectFormato.addEventListener("change", () => {
+            Object.entries(gruppiInput).forEach(([chiave, el]) => {
+                if (el) el.style.display = chiave === selectFormato.value ? "block" : "none";
+            });
+        });
+    }
+
+    function mostraErrore(messaggio) {
+        if (!elErrore) return;
+        elErrore.textContent = messaggio;
+        elErrore.style.display = "block";
+        if (elRisultati) elRisultati.style.display = "none";
+    }
+
+    function nascondiErrore() {
+        if (elErrore) elErrore.style.display = "none";
+    }
+
+    // Legge i campi in base al formato selezionato e ritorna {lat, lon} in
+    // decimale, o null se non validi (mostra un messaggio d'errore specifico)
+    function leggiCoordinateSelezionate() {
+        const formato = selectFormato ? selectFormato.value : "dd";
+
+        if (formato === "dd") {
+            const lat = parseDDField(document.getElementById("coord-dd-lat").value);
+            const lon = parseDDField(document.getElementById("coord-dd-lon").value);
+            if (lat === null || lon === null) { mostraErrore("Coordinate decimali non valide. Esempio: 45.464204"); return null; }
+            return { lat, lon };
+        }
+        if (formato === "dmm") {
+            const lat = parseDMMField(document.getElementById("coord-dmm-lat").value);
+            const lon = parseDMMField(document.getElementById("coord-dmm-lon").value);
+            if (lat === null || lon === null) { mostraErrore("Coordinate gradi/primi non valide. Esempio: 45 27.8522 N"); return null; }
+            return { lat, lon };
+        }
+        if (formato === "dms") {
+            const lat = parseDMSField(document.getElementById("coord-dms-lat").value);
+            const lon = parseDMSField(document.getElementById("coord-dms-lon").value);
+            if (lat === null || lon === null) { mostraErrore("Coordinate gradi/primi/secondi non valide. Esempio: 45 27 51.1 N"); return null; }
+            return { lat, lon };
+        }
+        if (formato === "olc") {
+            const codice = (document.getElementById("coord-olc").value || "").trim();
+            if (!codice) { mostraErrore("Inserisci un codice OLC/Plus Code."); return null; }
+            try {
+                if (!olcIsFull(codice)) {
+                    mostraErrore("Codice OLC non completo: serve il codice pieno (8-11 caratteri prima del +), non un codice breve.");
+                    return null;
+                }
+                const decodificato = olcDecode(codice);
+                return { lat: decodificato.latitudeCenter, lon: decodificato.longitudeCenter };
+            } catch (err) {
+                mostraErrore("Codice OLC non valido: " + err.message);
+                return null;
+            }
+        }
+        if (formato === "utm") {
+            const zona = parseInt(document.getElementById("coord-utm-zona").value, 10);
+            const emisfero = document.getElementById("coord-utm-emisfero").value;
+            const est = parseFloat((document.getElementById("coord-utm-est").value || "").replace(",", "."));
+            const nord = parseFloat((document.getElementById("coord-utm-nord").value || "").replace(",", "."));
+            if (!zona || zona < 1 || zona > 60 || Number.isNaN(est) || Number.isNaN(nord)) {
+                mostraErrore("Coordinate UTM non valide. Controlla zona, Est e Nord.");
+                return null;
+            }
+            const risultato = utmToLatLon(zona, emisfero, est, nord);
+            return { lat: risultato.lat, lon: risultato.lon };
+        }
+        return null;
+    }
+
+    // ==========================================================
+    // MAPPA LEAFLET DEDICATA ALLA SCHEDA CONVERTITORE
+    // ==========================================================
+    let coordMappaLeaflet = null;
+    let coordMarkerTarget = null;
+    let coordMarkerPartenza = null;
+    let coordLineaPercorso = null;
+    let coordinateTargetCorrenti = null; // { lat, lon } del punto convertito
+    let modalitaPercorsoAttiva = false;
+
+    function iconaMarkerGenerica(colore) {
+        return L.divIcon({
+            className: "",
+            html: `<div style="width:18px;height:18px;border-radius:50%;background:${colore};border:2px solid #121212;box-shadow:0 0 6px rgba(0,0,0,.6);"></div>`,
+            iconSize: [18, 18],
+            iconAnchor: [9, 9],
+        });
+    }
+
+    function assicuraMappaCoordInizializzata() {
+        if (coordMappaLeaflet) return;
+        const contenitore = document.getElementById("coord-mappa");
+        if (!contenitore || typeof L === "undefined") return;
+
+        coordMappaLeaflet = L.map("coord-mappa").setView([41.9, 12.5], 6);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        }).addTo(coordMappaLeaflet);
+
+        coordMappaLeaflet.on("click", (e) => {
+            if (!modalitaPercorsoAttiva || !coordinateTargetCorrenti) return;
+            calcolaEDisegnaPercorso(e.latlng.lat, e.latlng.lng);
+        });
+    }
+
+    function centraMappaSulTarget(lat, lon) {
+        assicuraMappaCoordInizializzata();
+        if (!coordMappaLeaflet) return;
+
+        coordinateTargetCorrenti = { lat, lon };
+        coordMappaLeaflet.setView([lat, lon], 15);
+
+        if (coordMarkerTarget) coordMappaLeaflet.removeLayer(coordMarkerTarget);
+        coordMarkerTarget = L.marker([lat, lon], { icon: iconaMarkerGenerica("#ffd700") })
+            .addTo(coordMappaLeaflet)
+            .bindPopup("Punto convertito");
+
+        setTimeout(() => coordMappaLeaflet.invalidateSize(), 100);
+    }
+
+    // ==========================================================
+    // ROUTING BRouter: calcola il percorso dal punto cliccato sulla mappa
+    // fino alle coordinate convertite (target), lo disegna e mostra
+    // distanza/tempo stimati.
+    // ==========================================================
+    const elInfoPercorso = document.getElementById("coord-percorso-info");
+    const selectProfiloPercorso = document.getElementById("coord-profilo-percorso");
+
+    async function calcolaEDisegnaPercorso(latPartenza, lonPartenza) {
+        if (!coordinateTargetCorrenti || !coordMappaLeaflet) return;
+        const { lat: latArrivo, lon: lonArrivo } = coordinateTargetCorrenti;
+        const profilo = selectProfiloPercorso ? selectProfiloPercorso.value : "trekking";
+
+        if (coordMarkerPartenza) coordMappaLeaflet.removeLayer(coordMarkerPartenza);
+        coordMarkerPartenza = L.marker([latPartenza, lonPartenza], { icon: iconaMarkerGenerica("#4fc3f7") })
+            .addTo(coordMappaLeaflet)
+            .bindPopup("Partenza percorso");
+
+        if (elInfoPercorso) elInfoPercorso.textContent = "Calcolo percorso in corso…";
+
+        try {
+            const url = `https://brouter.de/brouter?lonlats=${lonPartenza},${latPartenza}|${lonArrivo},${latArrivo}&profile=${profilo}&alternativeidx=0&format=geojson`;
+            const risposta = await fetch(url);
+            if (!risposta.ok) throw new Error("HTTP " + risposta.status);
+            const geojson = await risposta.json();
+
+            if (coordLineaPercorso) coordMappaLeaflet.removeLayer(coordLineaPercorso);
+            coordLineaPercorso = L.geoJSON(geojson, {
+                style: { color: "#ffd700", weight: 5, opacity: 0.85 },
+            }).addTo(coordMappaLeaflet);
+
+            coordMappaLeaflet.fitBounds(coordLineaPercorso.getBounds(), { padding: [30, 30] });
+
+            const proprieta = (geojson.features && geojson.features[0] && geojson.features[0].properties) || {};
+            const lunghezzaM = parseFloat(proprieta["track-length"]);
+            const tempoS = parseFloat(proprieta["total-time"]);
+
+            let testoInfo = "Percorso calcolato";
+            if (!Number.isNaN(lunghezzaM)) testoInfo += ` — ${(lunghezzaM / 1000).toFixed(2)} km`;
+            if (!Number.isNaN(tempoS)) {
+                const minuti = Math.round(tempoS / 60);
+                testoInfo += ` — circa ${minuti} min`;
+            }
+            if (elInfoPercorso) elInfoPercorso.textContent = testoInfo;
+        } catch (err) {
+            console.error("Errore routing BRouter:", err);
+            if (elInfoPercorso) {
+                elInfoPercorso.textContent = "Impossibile calcolare il percorso (servizio BRouter non raggiungibile o punto fuori copertura).";
+            }
+        }
+    }
+
+    const btnPercorso = document.getElementById("btn-coord-percorso");
+    const btnAnnullaPercorso = document.getElementById("btn-coord-annulla-percorso");
+
+    if (btnPercorso) {
+        btnPercorso.addEventListener("click", () => {
+            if (!coordinateTargetCorrenti) {
+                mostraErrore("Converti prima delle coordinate: serve un punto di arrivo per calcolare il percorso.");
+                return;
+            }
+            modalitaPercorsoAttiva = true;
+            btnPercorso.classList.add("attivo");
+            btnAnnullaPercorso.style.display = "inline-block";
+            if (elInfoPercorso) elInfoPercorso.textContent = "Clicca un punto sulla mappa: verrà calcolato il percorso fino al punto convertito.";
+        });
+    }
+
+    if (btnAnnullaPercorso) {
+        btnAnnullaPercorso.addEventListener("click", () => {
+            modalitaPercorsoAttiva = false;
+            btnPercorso.classList.remove("attivo");
+            btnAnnullaPercorso.style.display = "none";
+            if (coordLineaPercorso) { coordMappaLeaflet.removeLayer(coordLineaPercorso); coordLineaPercorso = null; }
+            if (coordMarkerPartenza) { coordMappaLeaflet.removeLayer(coordMarkerPartenza); coordMarkerPartenza = null; }
+            if (elInfoPercorso) elInfoPercorso.textContent = "";
+        });
+    }
+
+    // ==========================================================
+    // PULSANTE "CONVERTI": legge il formato scelto, calcola tutti gli
+    // altri formati, aggiorna la mappa e avvia il geocoding inverso
+    // ==========================================================
+    const btnConverti = document.getElementById("btn-coord-converti");
+
+    if (btnConverti) {
+        btnConverti.addEventListener("click", async () => {
+            nascondiErrore();
+            const coordinate = leggiCoordinateSelezionate();
+            if (!coordinate) return;
+
+            const { lat, lon } = coordinate;
+            if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+                mostraErrore("Coordinate fuori range (latitudine -90/90, longitudine -180/180).");
+                return;
+            }
+
+            document.getElementById("coord-out-dd").textContent = formattaDD(lat, lon);
+            document.getElementById("coord-out-dmm").textContent = formattaDMM(lat, lon);
+            document.getElementById("coord-out-dms").textContent = formattaDMS(lat, lon);
+            try {
+                document.getElementById("coord-out-olc").textContent = olcEncode(lat, lon, 11);
+            } catch (err) {
+                document.getElementById("coord-out-olc").textContent = "Non calcolabile";
+            }
+            document.getElementById("coord-out-utm").textContent = formattaUTMTesto(lat, lon);
+            document.getElementById("coord-out-so115").textContent = formattaSO115(lat, lon);
+
+            const elToponimo = document.getElementById("coord-out-toponimo");
+            elToponimo.textContent = "Ricerca in corso…";
+
+            if (elRisultati) elRisultati.style.display = "block";
+
+            centraMappaSulTarget(lat, lon);
+
+            // Reset modalità percorso ad ogni nuova conversione
+            modalitaPercorsoAttiva = false;
+            if (btnPercorso) btnPercorso.classList.remove("attivo");
+            if (btnAnnullaPercorso) btnAnnullaPercorso.style.display = "none";
+            if (coordLineaPercorso && coordMappaLeaflet) { coordMappaLeaflet.removeLayer(coordLineaPercorso); coordLineaPercorso = null; }
+            if (coordMarkerPartenza && coordMappaLeaflet) { coordMappaLeaflet.removeLayer(coordMarkerPartenza); coordMarkerPartenza = null; }
+            if (elInfoPercorso) elInfoPercorso.textContent = "";
+
+            const toponimo = await geocodingInverso(lat, lon);
+            elToponimo.textContent = toponimo;
+        });
+    }
+
+    // ==========================================================
+    // Ricalcola le dimensioni della mappa quando la pagina "Convertitore"
+    // diventa visibile in uno dei due pannelli split-screen (la mappa
+    // Leaflet, se inizializzata mentre nascosta, ha dimensioni 0x0 finché
+    // non viene forzata a ricalcolarle).
+    // ==========================================================
+    function forzaRicalcoloMappaSeVisibile() {
+        const sezione = document.getElementById("convertitore");
+        if (!sezione || !coordMappaLeaflet) return;
+        if (sezione.offsetParent !== null) {
+            setTimeout(() => coordMappaLeaflet.invalidateSize(), 150);
+        }
+    }
+
+    const selSinistra = document.getElementById("select-pannello-sinistra");
+    const selDestra = document.getElementById("select-pannello-destra");
+    if (selSinistra) selSinistra.addEventListener("change", forzaRicalcoloMappaSeVisibile);
+    if (selDestra) selDestra.addEventListener("change", forzaRicalcoloMappaSeVisibile);
+});

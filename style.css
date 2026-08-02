@@ -1385,3 +1385,23 @@ html.comando-gia-scelto #modal-comando {
     font-style: italic;
     font-weight: 500;
 }
+
+/* ==========================================================
+   CONVERTITORE COORDINATE — CSS aggiuntiva
+   Riusa quasi tutto da style.css esistente (.pagina-box, .msg-riga-campi,
+   .riepilogo-tabella, .btn-toggle-radar, .mappa-comando). L'unica classe
+   nuova è .attivo sul pulsante percorso, che probabilmente esiste già
+   (usata da .btn-toggle-radar.attivo per il radar) — se sì, questo blocco
+   non serve. Aggiungilo solo se .btn-toggle-radar.attivo non è già in
+   style.css.
+   ========================================================== */
+.btn-toggle-radar.attivo {
+    background: var(--primary-color);
+    color: var(--dark-color);
+    border-color: var(--primary-color);
+    font-weight: bold;
+}
+
+.coord-input-gruppo label {
+    margin-top: 10px;
+}

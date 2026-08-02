@@ -194,13 +194,142 @@
             </div>
         </section>
 
-        <!-- CONVERTITORE -->
-        <section id="convertitore" class="page-section">
+        <!-- CONVERTITORE UNITA DI MISURA -->
+        <section id="convertitoreunita" class="page-section">
             <div class="pagina-box">
-                <h3>Convertitore</h3>
+                <h3>Convertitore unità</h3>
                 <p class="pagina-nota">Sezione in costruzione.</p>
             </div>
         </section>
+
+        <!-- CONVERTITORE COORDINATE -->
+        <section id="convertitore" class="page-section">
+    <div class="pagina-box pagina-box-larga">
+        <h3>Convertitore Coordinate</h3>
+        <p class="pagina-nota">
+            Datum WGS84. Inserisci le coordinate nel formato scelto e converti: la mappa si centra
+            automaticamente a zoom 15. Puoi poi cliccare sulla mappa per calcolare un percorso
+            (BRouter) da quel punto fino alle coordinate inserite.
+        </p>
+ 
+        <label for="coord-formato-input">Formato coordinate in ingresso</label>
+        <select id="coord-formato-input">
+            <option value="dd">Gradi decimali (DD.dddddd)</option>
+            <option value="dmm">Gradi e primi decimali (DD MM.mmmm)</option>
+            <option value="dms">Gradi primi secondi (DD MM SS.ss)</option>
+            <option value="olc">OLC / Plus Code</option>
+            <option value="utm">UTM</option>
+        </select>
+ 
+        <div id="coord-input-dd" class="coord-input-gruppo">
+            <div class="msg-riga-campi">
+                <div class="msg-campo">
+                    <label for="coord-dd-lat">Latitudine</label>
+                    <input type="text" id="coord-dd-lat" placeholder="45.464204" autocomplete="off">
+                </div>
+                <div class="msg-campo">
+                    <label for="coord-dd-lon">Longitudine</label>
+                    <input type="text" id="coord-dd-lon" placeholder="9.189982" autocomplete="off">
+                </div>
+            </div>
+        </div>
+ 
+        <div id="coord-input-dmm" class="coord-input-gruppo" style="display:none;">
+            <div class="msg-riga-campi">
+                <div class="msg-campo">
+                    <label for="coord-dmm-lat">Latitudine (gradi primi.decimi)</label>
+                    <input type="text" id="coord-dmm-lat" placeholder="45 27.8522 N" autocomplete="off">
+                </div>
+                <div class="msg-campo">
+                    <label for="coord-dmm-lon">Longitudine (gradi primi.decimi)</label>
+                    <input type="text" id="coord-dmm-lon" placeholder="9 11.3989 E" autocomplete="off">
+                </div>
+            </div>
+        </div>
+ 
+        <div id="coord-input-dms" class="coord-input-gruppo" style="display:none;">
+            <div class="msg-riga-campi">
+                <div class="msg-campo">
+                    <label for="coord-dms-lat">Latitudine (gradi primi secondi)</label>
+                    <input type="text" id="coord-dms-lat" placeholder="45 27 51.1 N" autocomplete="off">
+                </div>
+                <div class="msg-campo">
+                    <label for="coord-dms-lon">Longitudine (gradi primi secondi)</label>
+                    <input type="text" id="coord-dms-lon" placeholder="9 11 23.9 E" autocomplete="off">
+                </div>
+            </div>
+        </div>
+ 
+        <div id="coord-input-olc" class="coord-input-gruppo" style="display:none;">
+            <label for="coord-olc">Codice OLC / Plus Code (completo)</label>
+            <input type="text" id="coord-olc" placeholder="8FQFF57Q+MX" autocomplete="off">
+            <p class="pagina-nota">
+                Serve il codice completo (8-11 caratteri prima del "+"): i codici brevi tipo
+                "F57Q+MX Milano" richiedono una località di riferimento e qui non sono supportati.
+            </p>
+        </div>
+ 
+        <div id="coord-input-utm" class="coord-input-gruppo" style="display:none;">
+            <div class="msg-riga-campi">
+                <div class="msg-campo" style="max-width:90px;">
+                    <label for="coord-utm-zona">Zona</label>
+                    <input type="text" id="coord-utm-zona" placeholder="32" autocomplete="off">
+                </div>
+                <div class="msg-campo" style="max-width:110px;">
+                    <label for="coord-utm-emisfero">Emisfero</label>
+                    <select id="coord-utm-emisfero">
+                        <option value="N">Nord</option>
+                        <option value="S">Sud</option>
+                    </select>
+                </div>
+                <div class="msg-campo">
+                    <label for="coord-utm-est">Est (Easting)</label>
+                    <input type="text" id="coord-utm-est" placeholder="514852" autocomplete="off">
+                </div>
+                <div class="msg-campo">
+                    <label for="coord-utm-nord">Nord (Northing)</label>
+                    <input type="text" id="coord-utm-nord" placeholder="5034537" autocomplete="off">
+                </div>
+            </div>
+        </div>
+ 
+        <div class="msg-azioni">
+            <button id="btn-coord-converti" class="btn-whatsapp" type="button">📐 Converti e mostra su mappa</button>
+        </div>
+ 
+        <p id="coord-errore" class="pagina-nota" style="display:none; color:var(--danger-color);"></p>
+ 
+        <div id="coord-risultati" class="riepilogo-comando" style="display:none;">
+            <div class="riepilogo-box">
+                <table class="riepilogo-tabella">
+                    <tbody>
+                        <tr><th>DD.dddddd</th><td id="coord-out-dd">-</td></tr>
+                        <tr><th>DD MM.mmmm</th><td id="coord-out-dmm">-</td></tr>
+                        <tr><th>DD MM SS.ss</th><td id="coord-out-dms">-</td></tr>
+                        <tr><th>OLC</th><td id="coord-out-olc">-</td></tr>
+                        <tr><th>UTM</th><td id="coord-out-utm">-</td></tr>
+                        <tr><th>Formato coordinate SO115</th><td id="coord-out-so115">-</td></tr>
+                        <tr><th>Toponimo</th><td id="coord-out-toponimo">-</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+ 
+        <div class="mappa-meteo-header" style="margin-top:18px;">
+            <h4 style="margin:0; color:var(--primary-color); text-transform:uppercase; font-size:14px;">Mappa</h4>
+            <div class="mappa-meteo-azioni">
+                <select id="coord-profilo-percorso" class="header-select">
+                    <option value="trekking">🥾 A piedi / sentiero</option>
+                    <option value="car-fast">🚗 Automezzo</option>
+                </select>
+                <button id="btn-coord-percorso" class="btn-toggle-radar" type="button">🧭 Crea percorso (clic su mappa)</button>
+                <button id="btn-coord-annulla-percorso" class="btn-toggle-radar" type="button" style="display:none;">✖ Annulla percorso</button>
+            </div>
+        </div>
+        <div id="coord-mappa" class="mappa-comando"></div>
+        <p class="pagina-nota" id="coord-percorso-info"></p>
+    </div>
+</section>
 
         <!-- RADIO E TELEFONI -->
         <section id="radio-telefoni" class="page-section">
