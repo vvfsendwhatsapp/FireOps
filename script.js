@@ -964,14 +964,15 @@ document.addEventListener("DOMContentLoaded", () => {
     // Selezionare in un pannello una pagina già aperta nell'altro fa scambiare
     // automaticamente le due pagine, così restano sempre univoche.
     // ==========================================================
-    const CATALOGO_PAGINE = [
+        const CATALOGO_PAGINE = [
         { id: "homepage", label: "Home page" },
         { id: "mappa-meteo", label: "Mappa e Meteo" },
         { id: "messaggistica", label: "Messaggistica" },
         { id: "info-comando", label: "Info Altro Comando" },
         { id: "gestione-fpds", label: "Gestione Interventi FPDS" },
         { id: "contatti", label: "Link Utili" },
-        { id: "convertitore", label: "Convertitore" },
+        { id: "convertitoreunita", label: "Convertitore Unità" },
+        { id: "convertitore", label: "Convertitore Coordinate" },
         { id: "radio-telefoni", label: "Radio e Telefoni" },
         { id: "qrcode", label: "QrCode" },
         { id: "turnario", label: "Turnario" },
