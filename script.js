@@ -103,9 +103,9 @@ document.addEventListener("DOMContentLoaded", () => {
     // Database locale delle schede ICSC: caricato separatamente e non bloccante.
     // Se questo file manca o fallisce, il resto dell'app (Comandi, Link Utili, ecc.)
     // continua a funzionare normalmente: la ricerca ICSC per nome resta solo "best-effort"
-    fetch("/FireOps/db/sostanzePericolose.json")
+    fetch("/FireOps/db/sostanzepericolose.json")
         .then(r => {
-            if (!r.ok) throw new Error("Impossibile trovare sostanzePericolose.json");
+            if (!r.ok) throw new Error("Impossibile trovare sostanzepericolose.json");
             return r.json();
         })
         .then(dati => {
