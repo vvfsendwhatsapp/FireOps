@@ -1416,32 +1416,76 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Popola il combo di ricerca unico: filtra su nome, sinonimi, CAS e numero scheda insieme.
     // Selezionando un risultato si apre subito la scheda, nessun pulsante "Cerca" necessario.
-    function popolaComboSostanzePericolose(lista) {
-        if (!inputIcscCerca || !lista || lista.length === 0) return;
-
-        creaComboRicercabile({
-            input: inputIcscCerca,
-            hidden: hiddenIcscCerca,
-            dropdown: dropdownIcscCerca,
-            elenco: lista,
-            cercaValore: s => s.Numero,
-            // Testo mostrato nella tendina: compatto, troncato se troppo lungo (i sinonimi
-            // possono essere numerosi) per non rendere la lista illeggibile
-            mostraTesto: s => {
-                const cas = s.CAS ? ` [CAS ${s.CAS}]` : "";
-                const base = `${s.Numero} — ${s.Nome}${cas}`;
-                if (!s.Sinonimi) return base;
-                const riga = `${base} — ${s.Sinonimi}`;
-                return riga.length > 110 ? riga.slice(0, 107) + "…" : riga;
-            },
-            // Testo usato per la ricerca: sempre completo (numero, nome, CAS, tutti i sinonimi)
-            testoRicerca: s => `${s.Numero} ${s.Nome} ${s.CAS || ""} ${s.Sinonimi || ""}`,
-            // Dopo la selezione il campo mostra solo il nome pulito, non l'intera riga di ricerca
-            testoSelezionato: s => s.Nome,
-            // Selezionata la sostanza, la scheda si apre subito: nessun pulsante "Cerca" necessario
-            onScelta: s => apriSchedaIcsc(s.Numero)
-        });
+function popolaComboSostanzePericolose(lista) {
+    if (!inputIcscCerca || !lista || lista.length === 0) return;
+ 
+    creaComboRicercabile({
+        input: inputIcscCerca,
+        hidden: hiddenIcscCerca,
+        dropdown: dropdownIcscCerca,
+        elenco: lista,
+        cercaValore: s => s.Numero,
+        mostraTesto: s => {
+            const cas = s.CAS ? ` [CAS ${s.CAS}]` : "";
+            const base = `${s.Numero} — ${s.Nome}${cas}`;
+            if (!s.Sinonimi) return base;
+            const riga = `${base} — ${s.Sinonimi}`;
+            return riga.length > 110 ? riga.slice(0, 107) + "…" : riga;
+        },
+        testoRicerca: s => `${s.Numero} ${s.Nome} ${s.CAS || ""} ${s.Sinonimi || ""}`,
+        testoSelezionato: s => s.Nome,
+        // Selezionata la sostanza: apre la scheda ILO E mostra il badge ONU/Kemler (se presente)
+        onScelta: s => {
+            apriSchedaIcsc(s.Numero);
+            renderIcscSelezionata(s);
+        }
+    });
+}
+window.popolaComboSostanzePericolose = popolaComboSostanzePericolose;
+ 
+// Mostra nome sostanza + chip ONU/Kemler/Classe ADR sotto la ricerca.
+// Il campo "onu" è opzionale: se assente (sostanza non ancora abbinata a un
+// numero ADR) mostra chip "assente" invece di lasciare uno spazio vuoto muto.
+// "onu.verificato" distingue un match automatico (da controllare) da uno
+// confermato a mano: non trattarli mai come equivalenti in UI.
+function renderIcscSelezionata(sostanza) {
+    const container = document.getElementById("icsc-scheda-selezionata");
+    if (!container) return;
+ 
+    if (!sostanza) {
+        container.innerHTML = "";
+        return;
     }
+ 
+    const onu = sostanza.onu;
+    let chipOnu, chipKemler, chipClasse = "";
+ 
+    if (onu && onu.numero) {
+        const stato = onu.verificato ? "verificato" : "da-verificare";
+        const tooltip = onu.verificato
+            ? `Verificato${onu.fonte ? " — " + onu.fonte : ""}`
+            : `Importato automaticamente${onu.tipo_match ? " (" + onu.tipo_match + ")" : ""} — controllare prima dell'uso operativo`;
+ 
+        chipOnu = `<span class="onu-kemler-chip ${stato}" title="${tooltip}">ONU <span class="val">${onu.numero}</span></span>`;
+ 
+        chipKemler = onu.kemler
+            ? `<span class="onu-kemler-chip ${stato}" title="${tooltip}">Kemler <span class="val">${onu.kemler}</span></span>`
+            : `<span class="onu-kemler-chip da-verificare" title="Kemler non verificato — consultare Tabella A ADR colonna 20">Kemler <span class="val">?</span></span>`;
+ 
+        if (onu.classe_adr) {
+            chipClasse = `<span class="onu-kemler-chip ${stato}">Classe ADR <span class="val">${onu.classe_adr}</span></span>`;
+        }
+    } else {
+        chipOnu = `<span class="onu-kemler-chip assente">ONU non disponibile</span>`;
+        chipKemler = `<span class="onu-kemler-chip assente">Kemler non disponibile</span>`;
+    }
+ 
+    container.innerHTML = `
+        <div class="icsc-scheda-nome">Selezionata: <strong>${sostanza.Nome}</strong> (scheda ${sostanza.Numero})</div>
+        <div class="onu-kemler-block">${chipOnu}${chipKemler}${chipClasse}</div>
+    `;
+}
+window.renderIcscSelezionata = renderIcscSelezionata;
 
     // Fallback: quando la sostanza digitata non è nel database locale (CAS non ancora
     // verificato, UN number, sinonimo non censito...), prova comunque la ricerca online

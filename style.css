@@ -1312,3 +1312,76 @@ html.comando-gia-scelto #modal-comando {
         font-size: 9px;
     }
 }
+
+/* ==========================================================
+   SCHEDA SOSTANZA SELEZIONATA — badge ONU / Kemler
+   Da incollare in style.css, usa le variabili --primary-color,
+   --danger-color, --dark-color già definite in :root.
+   ========================================================== */
+.icsc-scheda-selezionata {
+    margin: 14px 0;
+}
+
+.icsc-scheda-selezionata:empty {
+    display: none;
+}
+
+.icsc-scheda-nome {
+    font-size: 14px;
+    color: var(--text-main);
+    margin-bottom: 8px;
+}
+
+.icsc-scheda-nome strong {
+    color: var(--primary-color);
+}
+
+.onu-kemler-block {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.onu-kemler-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    border: 1px solid transparent;
+}
+
+.onu-kemler-chip .val {
+    font-family: "Courier New", monospace;
+    font-weight: 700;
+}
+
+/* Da verificare manualmente (import automatico dal match ADR) */
+.onu-kemler-chip.da-verificare {
+    background: rgba(255, 215, 0, 0.12);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+.onu-kemler-chip.da-verificare::before {
+    content: "⚠ ";
+}
+
+/* Confermato a mano */
+.onu-kemler-chip.verificato {
+    background: rgba(46, 160, 67, 0.15);
+    border-color: #4ade80;
+    color: #4ade80;
+}
+
+/* Dato assente: mai un vuoto silenzioso */
+.onu-kemler-chip.assente {
+    background: var(--dark-color);
+    border-color: var(--border-color);
+    color: var(--text-muted);
+    font-style: italic;
+    font-weight: 500;
+}
