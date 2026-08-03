@@ -1018,45 +1018,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (selectPannelloDestra) selectPannelloDestra.value = paginaDestra;
     }
 
-    // ==========================================================
-// FULLSCREEN PER PAGINA: alcune pagine (Convertitore Coordinate,
-// Mappa e Meteo, Sostanze Pericolose) possono espandersi a tutto
-// schermo cliccando su ⛶. Un secondo click (🗗) le riporta al
-// normale layout split-screen. Per estenderlo ad altre pagine basta
-// aggiungere un bottone con class="btn-fullscreen-pagina" nel loro header.
-// ==========================================================
-function toggleFullscreenPagina(pulsante) {
-    const pannello = pulsante.closest(".pannello");
-    if (!pannello) return;
-
-    const splitScreenEl = document.querySelector(".split-screen");
-    const inFullscreen = pannello.classList.toggle("pannello-fullscreen");
-
-    if (splitScreenEl) splitScreenEl.classList.toggle("ha-pannello-fullscreen", inFullscreen);
-
-    pulsante.textContent = inFullscreen ? "🗗" : "⛶";
-    pulsante.title = inFullscreen ? "Esci da schermo intero" : "Schermo intero";
-
-    // Le mappe Leaflet (Mappa e Meteo, Convertitore Coordinate) ricalcolano
-    // le dimensioni al resize della finestra: un evento sintetico le
-    // aggiorna dopo il cambio di layout, senza dover accedere alle
-    // variabili interne di convertitore.js (file separato)
-    setTimeout(() => window.dispatchEvent(new Event("resize")), 150);
-}
-
-document.querySelectorAll(".btn-fullscreen-pagina").forEach(pulsante => {
-    pulsante.addEventListener("click", () => toggleFullscreenPagina(pulsante));
-});
-
-// ESC esce dal fullscreen pagina, se attivo
-document.addEventListener("keydown", (e) => {
-    if (e.key !== "Escape") return;
-    const pannelloAttivo = document.querySelector(".pannello.pannello-fullscreen");
-    if (!pannelloAttivo) return;
-    const pulsanteAttivo = pannelloAttivo.querySelector(".btn-fullscreen-pagina");
-    if (pulsanteAttivo) toggleFullscreenPagina(pulsanteAttivo);
-});
-
     // Effetti collaterali dovuti al comparire di una pagina in un pannello
     // (stesso comportamento che prima aveva il cambio scheda unico)
     function eseguiEffettiPagina(idPagina) {
