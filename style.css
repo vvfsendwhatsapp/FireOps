@@ -10,6 +10,7 @@
     --header-height: 80px;       /* Altezza header su schermi normali */
     --header-height-tablet: 130px; /* Altezza header quando va a capo (tablet) */
     --header-height-mobile: 150px; /* Altezza header quando va a capo (mobile) */
+    --subheader-height: 52px;
 }
 
 * {
@@ -22,7 +23,7 @@
 body {
     background-color: var(--light-bg);
     color: var(--text-main);
-    padding-top: var(--header-height); /* Spazio per l'header fisso */
+    padding-top: calc(var(--header-height) + var(--subheader-height));
 }
 
 /* MODALE COMANDO */
@@ -113,6 +114,33 @@ body {
     gap: 15px;
 }
 
+/* BARRA FISSA CON I DUE SELETTORI PANNELLO: sotto l'header, sempre visibile,
+   non scorre mai perché è fixed come l'header stesso */
+.app-subheader {
+    position: fixed;
+    top: var(--header-height);
+    left: 0;
+    width: 100%;
+    height: var(--subheader-height);
+    background-color: var(--surface-color);
+    border-bottom: 3px solid var(--primary-color);
+    display: flex;
+    z-index: 999; /* sotto l'header (1000) */
+}
+
+.subheader-pannello {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 14px;
+}
+
+.subheader-pannello:first-child {
+    border-right: 1px solid var(--border-color);
+}
+
 .header-left {
     display: flex;
     align-items: center;
@@ -191,23 +219,13 @@ body {
 
 .pannello {
     flex: 1 1 0;
-    min-width: 0; /* evita overflow di tabelle/mappa dentro il flex item */
+    min-width: 0;
     background: var(--surface-color);
     border: 1px solid var(--border-color);
     border-radius: 8px;
     display: flex;
     flex-direction: column;
-    /* Altezza fissa che riempie lo schermo sotto l'header, ogni pannello scorre per conto proprio */
-    height: calc(100vh - var(--header-height) - 40px);
-}
-
-.pannello-toolbar {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 14px;
-    border-bottom: 1px solid var(--border-color);
-    flex-shrink: 0;
+    height: calc(100vh - var(--header-height) - var(--subheader-height) - 40px);
 }
 
 .pannello-etichetta {

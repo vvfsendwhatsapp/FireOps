@@ -70,23 +70,27 @@
     </div>  
 </header>
 
+<!-- BARRA FISSA: selettori pagina per pannello sinistro/destro -->
+<div class="app-subheader">
+    <div class="subheader-pannello">
+        <label for="select-pannello-sinistra" class="pannello-etichetta">Pannello sinistro</label>
+        <select id="select-pannello-sinistra" class="pannello-select"></select>
+    </div>
+    <div class="subheader-pannello">
+        <label for="select-pannello-destra" class="pannello-etichetta">Pannello destro</label>
+        <select id="select-pannello-destra" class="pannello-select"></select>
+    </div>
+</div>
+
     <!-- CONTENUTO PRINCIPALE: schermo diviso in due pannelli indipendenti -->
     <main class="main-content">
 
         <div class="split-screen">
             <div class="pannello" id="pannello-sinistra">
-                <div class="pannello-toolbar">
-                    <label for="select-pannello-sinistra" class="pannello-etichetta">Pannello sinistro</label>
-                    <select id="select-pannello-sinistra" class="pannello-select"></select>
-                </div>
                 <div class="pannello-corpo" id="corpo-sinistra"></div>
             </div>
 
             <div class="pannello" id="pannello-destra">
-                <div class="pannello-toolbar">
-                    <label for="select-pannello-destra" class="pannello-etichetta">Pannello destro</label>
-                    <select id="select-pannello-destra" class="pannello-select"></select>
-                </div>
                 <div class="pannello-corpo" id="corpo-destra"></div>
             </div>
         </div>
