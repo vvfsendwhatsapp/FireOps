@@ -1084,6 +1084,36 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+// ==========================================================
+    // FULLSCREEN PER PAGINA (solo Convertitore Coordinate, per ora)
+    // ==========================================================
+    function toggleFullscreenPagina(pulsante) {
+        const pannello = pulsante.closest(".pannello");
+        if (!pannello) return;
+
+        const splitScreenEl = document.querySelector(".split-screen");
+        const inFullscreen = pannello.classList.toggle("pannello-fullscreen");
+
+        if (splitScreenEl) splitScreenEl.classList.toggle("ha-pannello-fullscreen", inFullscreen);
+        document.body.classList.toggle("fullscreen-attivo", inFullscreen);
+
+        pulsante.textContent = inFullscreen ? "🗗 Riduci" : "⛶ Espandi";
+        pulsante.title = inFullscreen ? "Riduci a schermo normale" : "Espandi a schermo intero";
+
+        const colonnaInput = document.getElementById("coord-input-colonna");
+        const ancoraInput = document.getElementById("coord-input-ancora");
+        const colonnaDati = document.getElementById("coord-tab-content-dati");
+        if (colonnaInput && ancoraInput && colonnaDati) {
+            if (inFullscreen) {
+                colonnaDati.insertBefore(colonnaInput, colonnaDati.firstChild);
+            } else {
+                ancoraInput.parentNode.insertBefore(colonnaInput, ancoraInput.nextSibling);
+            }
+        }
+
+        setTimeout(() => window.dispatchEvent(new Event("resize")), 150);
+    }
+
     document.querySelectorAll(".btn-fullscreen-pagina").forEach(pulsante => {
         pulsante.addEventListener("click", () => toggleFullscreenPagina(pulsante));
     });
@@ -1095,18 +1125,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const pulsanteAttivo = pannelloAttivo.querySelector(".btn-fullscreen-pagina");
         if (pulsanteAttivo) toggleFullscreenPagina(pulsanteAttivo);
     });
-
-document.querySelectorAll(".btn-fullscreen-pagina").forEach(pulsante => {
-    pulsante.addEventListener("click", () => toggleFullscreenPagina(pulsante));
-});
-
-document.addEventListener("keydown", (e) => {
-    if (e.key !== "Escape") return;
-    const pannelloAttivo = document.querySelector(".pannello.pannello-fullscreen");
-    if (!pannelloAttivo) return;
-    const pulsanteAttivo = pannelloAttivo.querySelector(".btn-fullscreen-pagina");
-    if (pulsanteAttivo) toggleFullscreenPagina(pulsanteAttivo);
-});
 
 // ==========================================================
 // MODALE AIUTO E CONTATTI
