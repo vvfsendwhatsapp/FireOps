@@ -159,8 +159,6 @@ body {
     font-size: 18px;
     font-weight: bold;
     padding: 10px 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
 }
 
 .subheader-pannello .pannello-select:focus {
@@ -1582,4 +1580,9 @@ html.comando-gia-scelto #modal-comando {
 .mappa-meteo-header,
 .pagina-box-header {
     justify-content: flex-end;
+}
+
+.leaflet-top,
+.leaflet-bottom {
+    z-index: 900 !important; /* sotto header (1000) e modali (2000) */
 }

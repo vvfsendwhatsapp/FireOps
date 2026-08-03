@@ -829,8 +829,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         container.innerHTML = `
             <div class="${classeBox}">
-                <h3>Informazioni generali</h3>
-
                 <h4 class="sezione-toggle" data-target="${p}-sezione-comando">Info Comando ${comando.Comando}</h4>
                 <table id="${p}-sezione-comando" class="riepilogo-tabella sezione-contenuto">
                     <tbody>
@@ -964,16 +962,16 @@ document.addEventListener("DOMContentLoaded", () => {
     // Selezionare in un pannello una pagina già aperta nell'altro fa scambiare
     // automaticamente le due pagine, così restano sempre univoche.
     // ==========================================================
-        const CATALOGO_PAGINE = [
-        { id: "homepage", label: "Home page" },
-        { id: "mappa-meteo", label: "Mappa e Meteo" },
+    const CATALOGO_PAGINE = [
+        { id: "homepage", label: "Home page - Informazioni generali comando" },
+        { id: "mappa-meteo", label: "Mappa e meteo" },
         { id: "messaggistica", label: "Messaggistica" },
-        { id: "info-comando", label: "Info Altro Comando" },
-        { id: "gestione-fpds", label: "Gestione Interventi FPDS" },
-        { id: "contatti", label: "Link Utili" },
-        { id: "convertitoreunita", label: "Convertitore Unità" },
-        { id: "convertitore", label: "Convertitore Coordinate" },
-        { id: "radio-telefoni", label: "Radio e Telefoni" },
+        { id: "info-comando", label: "Info altro comando" },
+        { id: "gestione-fpds", label: "Gestione interventi FPDS" },
+        { id: "contatti", label: "Link utili" },
+        { id: "convertitoreunita", label: "Convertitore unità" },
+        { id: "convertitore", label: "Convertitore coordinate" },
+        { id: "radio-telefoni", label: "Radio e telefoni" },
         { id: "qrcode", label: "QrCode" },
         { id: "turnario", label: "Turnario" },
         { id: "moduli-cmr", label: "Moduli CMR" },
