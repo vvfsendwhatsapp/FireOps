@@ -1499,3 +1499,16 @@ html.comando-gia-scelto #modal-comando {
 .split-screen.ha-pannello-fullscreen .pannello:not(.pannello-fullscreen) {
     display: none;
 }
+
+.pannello-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-bottom: 3px solid var(--primary-color); /* riga gialla, come l'header */
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 900; /* sotto l'header (1000), sopra il resto del pannello */
+    background: var(--surface-color);
+}
