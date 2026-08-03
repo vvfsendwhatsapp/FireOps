@@ -1179,6 +1179,36 @@ function aggiornaAnteprimaMessaggioCoordinate() {
             .catch(err => console.error("Convertitore: prefissi.json non disponibile:", err));
     }
 
+    // ==========================================================
+    // COMBO COMUNE (scheda Indirizzo): autocompletamento da comuni.json,
+    // con CAP compilato automaticamente alla selezione
+    // ==========================================================
+    const inputComuneIndirizzo = document.getElementById("coord-indirizzo-comune-input");
+    const hiddenComuneIndirizzo = document.getElementById("coord-indirizzo-comune");
+    const dropdownComuneIndirizzo = document.getElementById("coord-indirizzo-comune-dropdown");
+    const inputCapIndirizzo = document.getElementById("coord-indirizzo-cap");
+
+    if (inputComuneIndirizzo && hiddenComuneIndirizzo && dropdownComuneIndirizzo) {
+        fetch("/FireOps/db/comuni.json")
+            .then(r => (r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status))))
+            .then(listaComuni => {
+                creaComboRicercabileCoord({
+                    input: inputComuneIndirizzo,
+                    hidden: hiddenComuneIndirizzo,
+                    dropdown: dropdownComuneIndirizzo,
+                    elenco: listaComuni,
+                    cercaValore: c => c.Comune,
+                    mostraTesto: c => `${c.Comune} (${c["Sigla Provincia"] || c.Provincia || "?"})`,
+                    testoSelezionato: c => c.Comune,
+                    // Alla selezione, riempie subito il CAP corrispondente
+                    onScelta: c => {
+                        if (inputCapIndirizzo && c.CAP) inputCapIndirizzo.value = c.CAP;
+                    }
+                });
+            })
+            .catch(err => console.error("Convertitore: comuni.json non disponibile:", err));
+    }
+
     if (inputMsgNumero) inputMsgNumero.addEventListener("input", validaCampiMessaggioCoord);
 
     function numeroCompletoPulitoCoord() {

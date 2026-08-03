@@ -370,22 +370,23 @@
                                 <div class="msg-riga-campi">
                                     <div class="msg-campo">
                                         <label for="coord-indirizzo-via">Indirizzo</label>
-                                        <input type="text" id="coord-indirizzo-via" placeholder="Via Roma 10"
-                                            autocomplete="off">
+                                        <input type="text" id="coord-indirizzo-via" placeholder="Via Roma 10" autocomplete="off">
                                     </div>
-                                    <div class="msg-campo">
-                                        <label for="coord-indirizzo-comune">Comune</label>
-                                        <input type="text" id="coord-indirizzo-comune" placeholder="Agrigento"
-                                            autocomplete="off">
+                                    <div class="msg-campo combo-campo">
+                                        <label for="coord-indirizzo-comune-input">Comune</label>
+                                        <div class="combo-wrapper">
+                                            <input type="text" id="coord-indirizzo-comune-input" class="combo-input" placeholder="Cerca comune..." autocomplete="off">
+                                            <input type="hidden" id="coord-indirizzo-comune">
+                                            <span class="combo-arrow" aria-hidden="true"></span>
+                                            <div id="coord-indirizzo-comune-dropdown" class="combo-dropdown"></div>
+                                        </div>
                                     </div>
                                     <div class="msg-campo" style="max-width:110px;">
                                         <label for="coord-indirizzo-cap">CAP</label>
-                                        <input type="text" id="coord-indirizzo-cap" placeholder="92100"
-                                            autocomplete="off">
+                                        <input type="text" id="coord-indirizzo-cap" placeholder="92100" autocomplete="off">
                                     </div>
                                 </div>
-                                <p class="pagina-nota">Compila almeno un campo. Più informazioni dai, più preciso è il
-                                    risultato.</p>
+                                <p class="pagina-nota">Seleziona il comune dall'elenco: il CAP si compila da solo (resta comunque modificabile a mano se serve). Indirizzo facoltativo, ma aiuta la precisione.</p>
                             </div>
 
                             <div class="msg-azioni">
