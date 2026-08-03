@@ -1711,35 +1711,27 @@ html.comando-gia-scelto #modal-comando {
     display: none;
 }
 
-/* La colonna non disegna più il proprio bordo superiore: lo fornisce
-   il titolo, così non ci sono due bordi sovrapposti/disallineati */
-.pannello-fullscreen #coord-tab-content-dati,
-.pannello-fullscreen #coord-tab-content-mappa,
-.pannello-fullscreen #coord-tab-content-messaggio {
-    padding-top: 0;
-    border-top: none;
-}
-
+/* Il titolo torna a essere una semplice etichetta SOPRA la colonna,
+   senza bordo/sfondo proprio: la colonna riprende il suo bordo normale
+   (quello già definito da .pannello-fullscreen #coord-tab-content-*) */
 .pannello-fullscreen .coord-colonna-titolo {
     display: block;
-    background: var(--dark-color);
+    background: transparent;
+    border: none;
     color: var(--text-muted);
-    border: 1px solid var(--border-color);
-    border-radius: 7px 7px 0 0;
-    padding: 10px 14px;
     font-size: 12px;
     font-weight: bold;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     text-align: center;
-    margin: 0 -14px 14px -14px; /* -14px = stesso valore del padding orizzontale della colonna, per toccare esattamente i bordi */
+    margin: 0 0 10px;
+    padding: 0;
 }
 
-/* Colonna attiva: titolo giallo, coerente col resto dell'evidenziazione */
+/* Colonna attiva: il titolo si accende in giallo (il bordo della colonna
+   già diventa giallo tramite .coord-colonna-attiva, definito altrove) */
 .pannello-fullscreen .coord-colonna-attiva > .coord-colonna-titolo {
     color: var(--primary-color);
-    border-color: var(--primary-color);
-    background: var(--surface-color);
 }
 
 .coord-comando-badge {
