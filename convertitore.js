@@ -621,6 +621,25 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // ==========================================================
+    // QUOTA DEL PUNTO CONVERTITO: Open-Meteo elevation API, stessa fonte
+    // già usata per il meteo nel resto dell'app (nessuna chiave richiesta).
+    // ==========================================================
+    async function recuperaQuota(lat, lon) {
+        try {
+            const url = `https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lon}`;
+            const risposta = await fetch(url);
+            if (!risposta.ok) throw new Error("HTTP " + risposta.status);
+            const dati = await risposta.json();
+            const valore = Array.isArray(dati.elevation) ? dati.elevation[0] : null;
+            if (valore === null || valore === undefined || Number.isNaN(valore)) return "Quota non disponibile";
+            return `${Math.round(valore)} m s.l.m.`;
+        } catch (err) {
+            console.error("Convertitore: quota non disponibile:", err);
+            return "Quota non disponibile";
+        }
+    }
+
     function mostraErrore(messaggio) {
         if (!elErrore) return;
         elErrore.textContent = messaggio;
@@ -1135,6 +1154,9 @@ document.addEventListener("DOMContentLoaded", () => {
             const elToponimo = document.getElementById("coord-out-toponimo");
             if (elToponimo) { elToponimo.textContent = "Ricerca in corso…"; elToponimo.classList.remove("cliccabile"); elToponimo.onclick = null; }
 
+            const elQuota = document.getElementById("coord-out-quota");
+            if (elQuota) { elQuota.textContent = "Ricerca in corso…"; elQuota.classList.remove("cliccabile"); elQuota.onclick = null; }
+
             if (elRisultati) elRisultati.style.display = "block";
             const elDatiNotaVuota = document.getElementById("coord-dati-nota-vuota");
             if (elDatiNotaVuota) elDatiNotaVuota.style.display = "none";
@@ -1152,8 +1174,12 @@ document.addEventListener("DOMContentLoaded", () => {
             if (btnScaricaKml) btnScaricaKml.disabled = true;
             nascondiGraficoAltimetria("");
 
-            const toponimo = await geocodingInverso(lat, lon);
+            const [toponimo, quota] = await Promise.all([
+                geocodingInverso(lat, lon),
+                recuperaQuota(lat, lon),
+            ]);
             rendiCopiabile(elToponimo, toponimo);
+            rendiCopiabile(elQuota, quota);
         });
     }
 
