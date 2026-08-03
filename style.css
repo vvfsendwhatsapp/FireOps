@@ -1707,26 +1707,39 @@ html.comando-gia-scelto #modal-comando {
     }
 }
 
-/* In vista ridotta il titolo è ridondante con la scheda attiva: nascosto */
 .coord-colonna-titolo {
     display: none;
 }
 
-/* In vista espansa (3 colonne affiancate) torna visibile, con lo stesso
-   stile "a linguetta" della scheda attiva in vista ridotta */
+/* La colonna non disegna più il proprio bordo superiore: lo fornisce
+   il titolo, così non ci sono due bordi sovrapposti/disallineati */
+.pannello-fullscreen #coord-tab-content-dati,
+.pannello-fullscreen #coord-tab-content-mappa,
+.pannello-fullscreen #coord-tab-content-messaggio {
+    padding-top: 0;
+    border-top: none;
+}
+
 .pannello-fullscreen .coord-colonna-titolo {
     display: block;
-    background: var(--surface-color);
-    color: var(--primary-color);
-    border: 1px solid var(--primary-color);
-    border-radius: 10px 10px 0 0;
-    padding: 9px 20px;
-    font-size: 13px;
+    background: var(--dark-color);
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+    border-radius: 7px 7px 0 0;
+    padding: 10px 14px;
+    font-size: 12px;
     font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
     text-align: center;
-    text-transform: none;
-    letter-spacing: normal;
-    margin: -14px -14px 14px -14px; /* fonde il titolo col bordo superiore della colonna */
+    margin: 0 -14px 14px -14px; /* -14px = stesso valore del padding orizzontale della colonna, per toccare esattamente i bordi */
+}
+
+/* Colonna attiva: titolo giallo, coerente col resto dell'evidenziazione */
+.pannello-fullscreen .coord-colonna-attiva > .coord-colonna-titolo {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+    background: var(--surface-color);
 }
 
 .coord-comando-badge {
