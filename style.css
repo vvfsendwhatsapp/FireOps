@@ -1711,21 +1711,14 @@ html.comando-gia-scelto #modal-comando {
     display: none;
 }
 
-/* Il titolo torna a essere una semplice etichetta SOPRA la colonna,
-   senza bordo/sfondo proprio: la colonna riprende il suo bordo normale
-   (quello già definito da .pannello-fullscreen #coord-tab-content-*) */
+/* In fullscreen il titolo diventa una "linguetta" identica a .coord-tab-btn
+   (stessa classe, stesso stile), solo staccata dalla colonna invece che
+   fusa con essa: bordo arrotondato su tutti e 4 gli angoli, non solo sopra */
 .pannello-fullscreen .coord-colonna-titolo {
-    display: block;
-    background: transparent;
-    border: none;
-    color: var(--text-muted);
-    font-size: 12px;
-    font-weight: bold;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    text-align: center;
-    margin: 0 0 10px;
-    padding: 0;
+    display: inline-block;
+    top: 0;
+    border-radius: 10px;
+    margin: 0 0 14px;
 }
 
 /* Colonna attiva: il titolo si accende in giallo (il bordo della colonna
