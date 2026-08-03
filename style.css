@@ -1711,15 +1711,23 @@ html.comando-gia-scelto #modal-comando {
     display: none;
 }
 
-/* La linguetta sporge sopra il bordo superiore del riquadro: margine
-   negativo che la solleva a cavallo del bordo, come le schede della
-   vista ridotta sopra .coord-tab-corpo */
+/* Il bordo superiore lo disegna il titolo, non la colonna: evita doppi bordi */
+.pannello-fullscreen #coord-tab-content-dati,
+.pannello-fullscreen #coord-tab-content-mappa,
+.pannello-fullscreen #coord-tab-content-messaggio {
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+}
+
+/* Etichetta della colonna: stesso stile della scheda (.coord-tab-btn,
+   ereditato), ma larga quanto la colonna e saldata sopra di essa */
 .pannello-fullscreen .coord-colonna-titolo {
-    display: inline-block;
-    position: relative;
-    margin: -30px 0 14px 14px;
-    border-radius: 10px;
-    z-index: 2;
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    border-radius: 8px 8px 0 0;
+    text-align: center;
+    margin: 0 0 14px;
 }
 
 /* Colonna attiva: il titolo si accende in giallo (il bordo della colonna
