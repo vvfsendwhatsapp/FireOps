@@ -1029,7 +1029,9 @@ document.addEventListener("DOMContentLoaded", () => {
             "☎️🆘️",
             `*${numeroEmergenzaFormattato}*`,
             "🇪🇺🇮🇹",
+            "",
             `*Canale Radio Provinciale VHF: ${canale}*`,
+            "",
             "*Coordinate Intervento:*",
             "*Dd*",
             formattaDdMessaggio(lat, lon),
@@ -1041,6 +1043,7 @@ document.addEventListener("DOMContentLoaded", () => {
             olcEncode(lat, lon, 11),
             "*Appunti*",
             formattaDD(lat, lon),
+            "",
             costruisciPieDiPaginaCoord(),
         ];
         return righe.join("\n");
