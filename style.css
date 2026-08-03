@@ -1047,6 +1047,7 @@ html.comando-gia-scelto #modal-comando {
     display: flex;
     align-items: center;
     flex-shrink: 0;
+    gap: 10px; /* NUOVO: spazio tra ❓ e ☰ */
 }
 
 .btn-icon-hamburger {
