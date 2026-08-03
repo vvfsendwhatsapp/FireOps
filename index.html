@@ -299,84 +299,86 @@
         <p id="coord-errore" class="pagina-nota" style="display:none; color:var(--danger-color);"></p>
  
         <!-- ===================================================
-             SOTTOSCHEDE ORIZZONTALI: Dati / Mappa / Messaggio
+             SOTTOSCHEDE STILE CHROME: Dati / Mappa / Messaggio
              =================================================== -->
-        <div class="mappa-meteo-azioni" style="margin-top:20px; padding-top:14px; border-top:1px solid var(--border-color);">
-            <button type="button" class="coord-tab-btn btn-toggle-radar attivo" data-tab="dati">📋 Dati</button>
-            <button type="button" class="coord-tab-btn btn-toggle-radar" data-tab="mappa">🗺️ Mappa</button>
-            <button type="button" class="coord-tab-btn btn-toggle-radar" data-tab="messaggio">✉️ Messaggio</button>
+        <div class="coord-tab-bar">
+            <button type="button" class="coord-tab-btn attivo" data-tab="dati">📋 Dati</button>
+            <button type="button" class="coord-tab-btn" data-tab="mappa">🗺️ Mappa</button>
+            <button type="button" class="coord-tab-btn" data-tab="messaggio">✉️ Messaggio</button>
         </div>
  
-        <!-- SCHEDA: DATI -->
-        <div id="coord-tab-content-dati" style="display:block; margin-top:14px;">
-            <div id="coord-risultati" class="riepilogo-comando" style="display:none;">
-                <div class="riepilogo-box">
-                    <table class="riepilogo-tabella">
-                        <tbody>
-                            <tr><th>DD.dddddd</th><td id="coord-out-dd">-</td></tr>
-                            <tr><th>DD MM.mmmm</th><td id="coord-out-dmm">-</td></tr>
-                            <tr><th>DD MM SS.ss</th><td id="coord-out-dms">-</td></tr>
-                            <tr><th>OLC</th><td id="coord-out-olc">-</td></tr>
-                            <tr><th>UTM</th><td id="coord-out-utm">-</td></tr>
-                            <tr><th>SO115 — Longitudine</th><td id="coord-out-so115-lon">-</td></tr>
-                            <tr><th>SO115 — Latitudine</th><td id="coord-out-so115-lat">-</td></tr>
-                            <tr><th>Toponimo</th><td id="coord-out-toponimo">-</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <p class="pagina-nota" id="coord-dati-nota-vuota">Converti delle coordinate per vedere qui tutti i formati (cliccabili per copiarli).</p>
-        </div>
- 
-        <!-- SCHEDA: MAPPA -->
-        <div id="coord-tab-content-mappa" style="display:none; margin-top:14px;">
-            <div class="mappa-meteo-header">
-                <h4 style="margin:0; color:var(--primary-color); text-transform:uppercase; font-size:14px;">Mappa</h4>
-                <div class="mappa-meteo-azioni">
-                    <select id="coord-profilo-percorso" class="header-select">
-                        <option value="trekking">🥾 A piedi / sentiero</option>
-                        <option value="car-fast">🚗 Automezzo</option>
-                    </select>
-                    <button id="btn-coord-percorso" class="btn-toggle-radar" type="button">🧭 Crea percorso (clic su mappa)</button>
-                    <button id="btn-coord-annulla-percorso" class="btn-toggle-radar" type="button" style="display:none;">✖ Annulla percorso</button>
-                    <button id="btn-coord-scarica-kml" class="btn-toggle-radar" type="button" disabled>⬇️ Scarica KML</button>
-                    <button id="btn-coord-copia-mappa" class="btn-toggle-radar" type="button">📋 Copia mappa</button>
-                </div>
-            </div>
-            <div id="coord-mappa" class="mappa-comando"></div>
-            <p class="pagina-nota" id="coord-percorso-info"></p>
-            <p class="pagina-nota">🟨 Pallino giallo = Squadra VF (partenza percorso) — 🟥 Pallino rosso = Target intervento. Percorso in rosso.</p>
- 
-            <canvas id="coord-grafico-altimetria" width="700" height="180" style="display:none; width:100%; max-width:100%; background:var(--dark-color); border:1px solid var(--border-color); border-radius:8px; margin-top:10px;"></canvas>
-            <p class="pagina-nota" id="coord-altimetria-nota" style="display:none;"></p>
-        </div>
- 
-        <!-- SCHEDA: MESSAGGIO -->
-        <div id="coord-tab-content-messaggio" style="display:none; margin-top:14px;">
-            <p class="pagina-nota">Invia le coordinate convertite a una squadra VVF via WhatsApp o Telegram, con lo stesso formato usato in Sala Operativa.</p>
-            <div class="msg-riga-campi">
-                <div class="msg-campo combo-campo">
-                    <label for="coord-msg-prefisso-input">Prefisso internazionale</label>
-                    <div class="combo-wrapper">
-                        <input type="text" id="coord-msg-prefisso-input" class="combo-input" placeholder="Cerca prefisso o paese..." autocomplete="off">
-                        <input type="hidden" id="coord-msg-prefisso">
-                        <span class="combo-arrow" aria-hidden="true"></span>
-                        <div id="coord-msg-prefisso-dropdown" class="combo-dropdown"></div>
+        <div class="coord-tab-corpo">
+            <!-- SCHEDA: DATI -->
+            <div id="coord-tab-content-dati" style="display:block;">
+                <div id="coord-risultati" class="riepilogo-comando" style="display:none;">
+                    <div class="riepilogo-box">
+                        <table class="riepilogo-tabella">
+                            <tbody>
+                                <tr><th>DD.dddddd</th><td id="coord-out-dd">-</td></tr>
+                                <tr><th>DD MM.mmmm</th><td id="coord-out-dmm">-</td></tr>
+                                <tr><th>DD MM SS.ss</th><td id="coord-out-dms">-</td></tr>
+                                <tr><th>OLC</th><td id="coord-out-olc">-</td></tr>
+                                <tr><th>UTM</th><td id="coord-out-utm">-</td></tr>
+                                <tr><th>SO115 — Longitudine</th><td id="coord-out-so115-lon">-</td></tr>
+                                <tr><th>SO115 — Latitudine</th><td id="coord-out-so115-lat">-</td></tr>
+                                <tr><th>Toponimo</th><td id="coord-out-toponimo">-</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-                <div class="msg-campo">
-                    <label for="coord-msg-numero">Numero di telefono squadra</label>
-                    <input type="tel" id="coord-msg-numero" placeholder="Es. 3331234567" autocomplete="off">
-                </div>
+                <p class="pagina-nota" id="coord-dati-nota-vuota">Converti delle coordinate per vedere qui tutti i formati (cliccabili per copiarli).</p>
             </div>
  
-            <label for="coord-msg-testo">Anteprima messaggio</label>
-            <textarea id="coord-msg-testo" rows="16" readonly placeholder="Converti prima delle coordinate per generare il messaggio."></textarea>
+            <!-- SCHEDA: MAPPA -->
+            <div id="coord-tab-content-mappa" style="display:none;">
+                <div class="mappa-meteo-header">
+                    <h4 style="margin:0; color:var(--primary-color); text-transform:uppercase; font-size:14px;">Mappa</h4>
+                    <div class="mappa-meteo-azioni">
+                        <select id="coord-profilo-percorso" class="header-select">
+                            <option value="trekking">🥾 A piedi / sentiero</option>
+                            <option value="car-fast">🚗 Automezzo</option>
+                        </select>
+                        <button id="btn-coord-percorso" class="btn-toggle-radar" type="button">🧭 Crea percorso (clic su mappa)</button>
+                        <button id="btn-coord-annulla-percorso" class="btn-toggle-radar" type="button" style="display:none;">✖ Annulla percorso</button>
+                        <button id="btn-coord-scarica-kml" class="btn-toggle-radar" type="button" disabled>⬇️ Scarica KML</button>
+                    </div>
+                </div>
+                <div id="coord-mappa" class="mappa-comando"></div>
+                <p class="pagina-nota" id="coord-percorso-info"></p>
+                <p class="pagina-nota">🟨 Pallino giallo = Squadra VF (partenza percorso) — 🟥 Pallino rosso = Target intervento. Percorso in rosso.</p>
  
-            <div class="msg-azioni">
-                <button id="coord-btn-whatsapp-web" class="btn-whatsapp" type="button" disabled>📱 WhatsApp Web</button>
-                <button id="coord-btn-whatsapp-app" class="btn-whatsapp" type="button" disabled>💻 WhatsApp Desktop</button>
-                <button id="coord-btn-invia-telegram" class="btn-telegram" type="button" disabled>✈️ Telegram</button>
+                <canvas id="coord-grafico-altimetria" width="700" height="180" style="display:none; width:100%; max-width:100%; background:var(--dark-color); border:1px solid var(--border-color); border-radius:8px; margin-top:10px;"></canvas>
+                <p class="pagina-nota" id="coord-altimetria-nota" style="display:none;"></p>
+            </div>
+ 
+            <!-- SCHEDA: MESSAGGIO -->
+            <div id="coord-tab-content-messaggio" style="display:none;">
+                <p class="pagina-nota" id="coord-msg-comando-info">Nessun Comando attivo — selezionalo dalla schermata iniziale (☰).</p>
+                <p class="pagina-nota">Invia le coordinate convertite a una squadra VVF via WhatsApp o Telegram, con lo stesso formato usato in Sala Operativa.</p>
+                <div class="msg-riga-campi">
+                    <div class="msg-campo combo-campo">
+                        <label for="coord-msg-prefisso-input">Prefisso internazionale</label>
+                        <div class="combo-wrapper">
+                            <input type="text" id="coord-msg-prefisso-input" class="combo-input" placeholder="Cerca prefisso o paese..." autocomplete="off">
+                            <input type="hidden" id="coord-msg-prefisso">
+                            <span class="combo-arrow" aria-hidden="true"></span>
+                            <div id="coord-msg-prefisso-dropdown" class="combo-dropdown"></div>
+                        </div>
+                    </div>
+                    <div class="msg-campo">
+                        <label for="coord-msg-numero">Numero di telefono squadra</label>
+                        <input type="tel" id="coord-msg-numero" placeholder="Es. 3331234567" autocomplete="off">
+                    </div>
+                </div>
+ 
+                <label for="coord-msg-testo">Anteprima messaggio</label>
+                <textarea id="coord-msg-testo" rows="16" readonly placeholder="Converti prima delle coordinate per generare il messaggio."></textarea>
+ 
+                <div class="msg-azioni">
+                    <button id="coord-btn-whatsapp-web" class="btn-whatsapp" type="button" disabled>📱 WhatsApp Web</button>
+                    <button id="coord-btn-whatsapp-app" class="btn-whatsapp" type="button" disabled>💻 WhatsApp Desktop</button>
+                    <button id="coord-btn-invia-telegram" class="btn-telegram" type="button" disabled>✈️ Telegram</button>
+                </div>
             </div>
         </div>
     </div>
