@@ -1100,17 +1100,6 @@ document.addEventListener("DOMContentLoaded", () => {
         pulsante.textContent = inFullscreen ? "🗗 Riduci" : "⛶ Espandi";
         pulsante.title = inFullscreen ? "Riduci a schermo normale" : "Espandi a schermo intero";
 
-        const colonnaInput = document.getElementById("coord-input-colonna");
-        const ancoraInput = document.getElementById("coord-input-ancora");
-        const colonnaDati = document.getElementById("coord-tab-content-dati");
-        if (colonnaInput && ancoraInput && colonnaDati) {
-            if (inFullscreen) {
-                colonnaDati.insertBefore(colonnaInput, colonnaDati.firstChild);
-            } else {
-                ancoraInput.parentNode.insertBefore(colonnaInput, ancoraInput.nextSibling);
-            }
-        }
-
         setTimeout(() => window.dispatchEvent(new Event("resize")), 150);
     }
 

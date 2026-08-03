@@ -231,8 +231,20 @@
                     <button class="btn-toggle-radar btn-fullscreen-pagina" type="button" title="Espandi a schermo intero">⛶ Espandi</button>
                 </div>
         
-                <div id="coord-input-ancora"></div>
-                <div id="coord-input-colonna">
+                <!-- ===================================================
+                    SOTTOSCHEDE STILE CHROME: Dati / Mappa / Messaggio
+                    =================================================== -->
+                <div class="coord-tab-bar">
+                    <button type="button" class="coord-tab-btn attivo" data-tab="dati">📋 Dati</button>
+                    <button type="button" class="coord-tab-btn" data-tab="mappa">🗺️ Mappa</button>
+                    <button type="button" class="coord-tab-btn" data-tab="messaggio">✉️ Messaggio a squadre VVF</button>
+                </div>
+        
+                <div class="coord-tab-corpo">
+                    <!-- SCHEDA: DATI -->
+                    <div id="coord-tab-content-dati" style="display:block;">
+                        <h4 class="coord-colonna-titolo">Dati</h4>
+                                        <div id="coord-input-colonna">
 
                 <label for="coord-formato-input">Formato coordinate in ingresso</label>
                 <select id="coord-formato-input">
@@ -352,20 +364,6 @@
                 <p id="coord-errore" class="pagina-nota" style="display:none; color:var(--danger-color);"></p>
 
                 </div> <!-- chiusura #coord-input-colonna -->
-        
-                <!-- ===================================================
-                    SOTTOSCHEDE STILE CHROME: Dati / Mappa / Messaggio
-                    =================================================== -->
-                <div class="coord-tab-bar">
-                    <button type="button" class="coord-tab-btn attivo" data-tab="dati">📋 Dati</button>
-                    <button type="button" class="coord-tab-btn" data-tab="mappa">🗺️ Mappa</button>
-                    <button type="button" class="coord-tab-btn" data-tab="messaggio">✉️ Messaggio a squadre VVF</button>
-                </div>
-        
-                <div class="coord-tab-corpo">
-                    <!-- SCHEDA: DATI -->
-                    <div id="coord-tab-content-dati" style="display:block;">
-                        <h4 class="coord-colonna-titolo">Dati</h4>
                         <div id="coord-risultati" class="riepilogo-comando" style="display:none;">
                             <div class="riepilogo-box">
                                 <table class="riepilogo-tabella">
