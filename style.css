@@ -1627,3 +1627,34 @@ html.comando-gia-scelto #modal-comando {
 .pannello-fullscreen .mappa-comando {
     height: 65vh;
 }
+
+.pagina-box-header-con-nota {
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+}
+
+.pagina-box-header-con-nota .pagina-nota-inline {
+    margin-bottom: 0;
+    flex: 1 1 auto;
+    display: block; /* la regola generale nasconde solo gli h3, questa resta visibile */
+}
+
+.pagina-box-header-con-nota .btn-fullscreen-pagina {
+    flex-shrink: 0;
+}
+
+@media (max-width: 900px) {
+    body.fullscreen-attivo .app-subheader {
+        display: none;
+    }
+
+    body.fullscreen-attivo .pannello.pannello-fullscreen {
+        top: var(--header-height);
+        height: calc(100vh - var(--header-height));
+    }
+
+    .pannello-fullscreen .coord-tab-corpo {
+        grid-template-columns: 1fr;
+    }
+}

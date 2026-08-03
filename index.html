@@ -222,15 +222,17 @@
         <!-- CONVERTITORE COORDINATE -->
         <section id="convertitore" class="page-section">
             <div class="pagina-box pagina-box-larga">
-                <div class="pagina-box-header">
-                    <h3>Convertitore Coordinate</h3>
-                    <button class="btn-toggle-radar btn-fullscreen-pagina" type="button" title="Schermo intero">⛶ Espandi</button>
+                <div class="pagina-box-header pagina-box-header-con-nota">
+                    <p class="pagina-nota pagina-nota-inline">
+                        Datum WGS84. Inserisci le coordinate nel formato scelto e converti: la mappa si centra
+                        automaticamente a zoom 15. Tutti i valori in uscita sono cliccabili per copiarli.
+                    </p>
+                    <button class="btn-toggle-radar btn-fullscreen-pagina" type="button" title="Espandi a schermo intero">⛶ Espandi</button>
                 </div>
-                <p class="pagina-nota">
-                    Datum WGS84. Inserisci le coordinate nel formato scelto e converti: la mappa si centra
-                    automaticamente a zoom 15. Tutti i valori in uscita sono cliccabili per copiarli.
-                </p>
         
+                <div id="coord-input-ancora"></div>
+                <div id="coord-input-colonna">
+
                 <label for="coord-formato-input">Formato coordinate in ingresso</label>
                 <select id="coord-formato-input">
                     <option value="dd">Gradi decimali (DD.dddddd)</option>
@@ -238,6 +240,8 @@
                     <option value="dms">Gradi primi secondi (DD MM SS.ss)</option>
                     <option value="olc">OLC / Plus Code</option>
                     <option value="utm">UTM</option>
+                    <option value="libero">Testo libero (incolla da Google Maps, ecc.)</option>
+                    <option value="indirizzo">Indirizzo (geocoding)</option>
                 </select>
         
                 <div id="coord-input-dd" class="coord-input-gruppo">
@@ -311,12 +315,42 @@
                         </div>
                     </div>
                 </div>
+
+                <div id="coord-input-libero" class="coord-input-gruppo" style="display:none;">
+                    <label for="coord-libero-testo">Incolla coordinate (qualsiasi formato)</label>
+                    <input type="text" id="coord-libero-testo" placeholder="Es: 45.464204, 9.189982 — oppure un link Google Maps" autocomplete="off">
+                    <p class="pagina-nota">
+                        Riconosce coppie decimali (45.464, 9.189), link Google Maps con "@lat,lon" e formato
+                        gradi/primi/secondi con N/S/E/W. Per i link brevi (maps.app.goo.gl) apri prima il link
+                        per farteli espandere dal browser, poi incolla l'URL completo.
+                    </p>
+                </div>
+
+                <div id="coord-input-indirizzo" class="coord-input-gruppo" style="display:none;">
+                    <div class="msg-riga-campi">
+                        <div class="msg-campo">
+                            <label for="coord-indirizzo-via">Indirizzo</label>
+                            <input type="text" id="coord-indirizzo-via" placeholder="Via Roma 10" autocomplete="off">
+                        </div>
+                        <div class="msg-campo">
+                            <label for="coord-indirizzo-comune">Comune</label>
+                            <input type="text" id="coord-indirizzo-comune" placeholder="Agrigento" autocomplete="off">
+                        </div>
+                        <div class="msg-campo" style="max-width:110px;">
+                            <label for="coord-indirizzo-cap">CAP</label>
+                            <input type="text" id="coord-indirizzo-cap" placeholder="92100" autocomplete="off">
+                        </div>
+                    </div>
+                    <p class="pagina-nota">Compila almeno un campo. Più informazioni dai, più preciso è il risultato.</p>
+                </div>
         
                 <div class="msg-azioni">
                     <button id="btn-coord-converti" class="btn-whatsapp" type="button">📐 Converti e scorri tar le schede</button>
                 </div>
         
                 <p id="coord-errore" class="pagina-nota" style="display:none; color:var(--danger-color);"></p>
+
+                </div> <!-- chiusura #coord-input-colonna -->
         
                 <!-- ===================================================
                     SOTTOSCHEDE STILE CHROME: Dati / Mappa / Messaggio

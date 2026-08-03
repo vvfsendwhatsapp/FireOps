@@ -1084,25 +1084,17 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // ==========================================================
-// FULLSCREEN PER PAGINA (solo Convertitore Coordinate, per ora)
-// ==========================================================
-function toggleFullscreenPagina(pulsante) {
-    const pannello = pulsante.closest(".pannello");
-    if (!pannello) return;
+    document.querySelectorAll(".btn-fullscreen-pagina").forEach(pulsante => {
+        pulsante.addEventListener("click", () => toggleFullscreenPagina(pulsante));
+    });
 
-    const splitScreenEl = document.querySelector(".split-screen");
-    const inFullscreen = pannello.classList.toggle("pannello-fullscreen");
-
-    if (splitScreenEl) splitScreenEl.classList.toggle("ha-pannello-fullscreen", inFullscreen);
-
-    pulsante.textContent = inFullscreen ? "🗗 Riduci" : "⛶ Espandi";
-    pulsante.title = inFullscreen ? "Esci da schermo intero" : "Schermo intero";
-
-    // Leaflet ascolta il resize della window: un evento sintetico basta
-    // ad aggiornare la mappa del Convertitore senza toccare convertitore.js
-    setTimeout(() => window.dispatchEvent(new Event("resize")), 150);
-}
+    document.addEventListener("keydown", (e) => {
+        if (e.key !== "Escape") return;
+        const pannelloAttivo = document.querySelector(".pannello.pannello-fullscreen");
+        if (!pannelloAttivo) return;
+        const pulsanteAttivo = pannelloAttivo.querySelector(".btn-fullscreen-pagina");
+        if (pulsanteAttivo) toggleFullscreenPagina(pulsanteAttivo);
+    });
 
 document.querySelectorAll(".btn-fullscreen-pagina").forEach(pulsante => {
     pulsante.addEventListener("click", () => toggleFullscreenPagina(pulsante));
@@ -2610,3 +2602,4 @@ function formattaTelefonoPerCopia(telefono) {
 
     return pulito;
 }
+

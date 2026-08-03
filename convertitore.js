@@ -300,6 +300,45 @@ document.addEventListener("DOMContentLoaded", () => {
         return (gradi + minuti / 60 + secondi / 3600) * segno;
     }
 
+    // Riconoscimento automatico da testo incollato: coppie decimali, link Google
+// Maps (con "@lat,lon"), formato "?q=lat,lon", oppure DMS con N/S/E/W.
+// Best-effort: non copre TUTTI i formati possibili (es. link brevi
+// maps.app.goo.gl non si possono espandere lato client per via del CORS).
+function parseTestoLibero(testo) {
+    testo = (testo || "").trim();
+    if (!testo) return null;
+
+    const matchChiocciola = testo.match(/@(-?\d{1,3}\.\d+),\s*(-?\d{1,3}\.\d+)/);
+    if (matchChiocciola) {
+        return { lat: parseFloat(matchChiocciola[1]), lon: parseFloat(matchChiocciola[2]) };
+    }
+
+    const matchQuery = testo.match(/[?&]q=(-?\d{1,3}\.\d+),\s*(-?\d{1,3}\.\d+)/);
+    if (matchQuery) {
+        return { lat: parseFloat(matchQuery[1]), lon: parseFloat(matchQuery[2]) };
+    }
+
+    const matchDecimale = testo.match(/^(-?\d{1,3}(?:[.,]\d+)?)\s*[,;\s]\s*(-?\d{1,3}(?:[.,]\d+)?)$/);
+    if (matchDecimale) {
+        const lat = parseFloat(matchDecimale[1].replace(",", "."));
+        const lon = parseFloat(matchDecimale[2].replace(",", "."));
+        if (!Number.isNaN(lat) && !Number.isNaN(lon)) return { lat, lon };
+    }
+
+    const partiDMS = testo.match(/\d{1,3}[°\s]+\d{1,2}['\s]+\d{1,2}(?:\.\d+)?["\s]*[NSEW]/gi);
+    if (partiDMS && partiDMS.length === 2) {
+        const lat = partiDMS.find(p => /[NS]/i.test(p));
+        const lon = partiDMS.find(p => /[EW]/i.test(p));
+        if (lat && lon) {
+            const latVal = parseDMSField(lat);
+            const lonVal = parseDMSField(lon);
+            if (latVal !== null && lonVal !== null) return { lat: latVal, lon: lonVal };
+        }
+    }
+
+    return null;
+}
+
     // ==========================================================
     // FORMATTAZIONE OUTPUT (tabella risultati)
     // ==========================================================
@@ -427,6 +466,25 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         return "Toponimo non disponibile";
+    }
+
+    // Geocoding diretto (indirizzo → coordinate), stesso servizio Nominatim
+    // già usato per il geocoding inverso. Nessuna chiave richiesta.
+    async function geocodificaIndirizzo(via, comune, cap) {
+        if (!via && !comune && !cap) return null;
+
+        const parametri = new URLSearchParams({ format: "jsonv2", limit: "1", countrycodes: "it" });
+        if (via) parametri.set("street", via);
+        if (comune) parametri.set("city", comune);
+        if (cap) parametri.set("postalcode", cap);
+
+        const url = `https://nominatim.openstreetmap.org/search?${parametri.toString()}`;
+        const risposta = await fetch(url);
+        if (!risposta.ok) throw new Error("HTTP " + risposta.status);
+        const dati = await risposta.json();
+        if (!Array.isArray(dati) || dati.length === 0) return null;
+
+        return { lat: parseFloat(dati[0].lat), lon: parseFloat(dati[0].lon) };
     }
 
     // ==========================================================
@@ -609,6 +667,8 @@ document.addEventListener("DOMContentLoaded", () => {
         dms: document.getElementById("coord-input-dms"),
         olc: document.getElementById("coord-input-olc"),
         utm: document.getElementById("coord-input-utm"),
+        libero: document.getElementById("coord-input-libero"),       // NUOVO
+        indirizzo: document.getElementById("coord-input-indirizzo"), // NUOVO
     };
     const elErrore = document.getElementById("coord-errore");
     const elRisultati = document.getElementById("coord-risultati");
@@ -700,6 +760,13 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             const risultato = utmToLatLon(zona, emisfero, est, nord);
             return { lat: risultato.lat, lon: risultato.lon };
+        }
+        if (formato === "libero") {
+            const testo = (document.getElementById("coord-libero-testo").value || "").trim();
+            if (!testo) { mostraErrore("Incolla un testo con delle coordinate."); return null; }
+            const risultato = parseTestoLibero(testo);
+            if (!risultato) { mostraErrore("Formato non riconosciuto. Prova con 'lat, lon' decimali o un link Google Maps."); return null; }
+            return risultato;
         }
         return null;
     }
@@ -1139,11 +1206,37 @@ document.addEventListener("DOMContentLoaded", () => {
     // ==========================================================
     const btnConverti = document.getElementById("btn-coord-converti");
 
-    if (btnConverti) {
+if (btnConverti) {
         btnConverti.addEventListener("click", async () => {
             nascondiErrore();
-            const coordinate = leggiCoordinateSelezionate();
-            if (!coordinate) return;
+
+            const formatoScelto = selectFormato ? selectFormato.value : "dd";
+            let coordinate = null;
+
+            if (formatoScelto === "indirizzo") {
+                const via = (document.getElementById("coord-indirizzo-via").value || "").trim();
+                const comune = (document.getElementById("coord-indirizzo-comune").value || "").trim();
+                const cap = (document.getElementById("coord-indirizzo-cap").value || "").trim();
+
+                if (!via && !comune && !cap) {
+                    mostraErrore("Inserisci almeno uno tra indirizzo, comune o CAP.");
+                    return;
+                }
+                try {
+                    coordinate = await geocodificaIndirizzo(via, comune, cap);
+                } catch (err) {
+                    console.error("Geocoding indirizzo non disponibile:", err);
+                    mostraErrore("Servizio di geocoding non raggiungibile al momento.");
+                    return;
+                }
+                if (!coordinate) {
+                    mostraErrore("Indirizzo non trovato. Prova a essere più specifico.");
+                    return;
+                }
+            } else {
+                coordinate = leggiCoordinateSelezionate();
+                if (!coordinate) return;
+            }
 
             const { lat, lon } = coordinate;
             if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
