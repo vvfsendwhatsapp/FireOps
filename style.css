@@ -1484,6 +1484,20 @@ html.comando-gia-scelto #modal-comando {
     margin-bottom: 0;
 }
 
+.pannello-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-bottom: 3px solid var(--primary-color); /* riga gialla, come l'header */
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 900; /* sotto l'header (1000), sopra il resto del pannello */
+    background: var(--surface-color);
+}
+
+
 /* FULLSCREEN PER PAGINA: il pannello che la contiene copre tutto lo schermo */
 .pannello.pannello-fullscreen {
     position: fixed;
@@ -1500,15 +1514,14 @@ html.comando-gia-scelto #modal-comando {
     display: none;
 }
 
-.pannello-toolbar {
+.pagina-box-header {
     display: flex;
+    justify-content: space-between;
     align-items: center;
     gap: 10px;
-    padding: 10px 14px;
-    border-bottom: 3px solid var(--primary-color); /* riga gialla, come l'header */
-    flex-shrink: 0;
-    position: sticky;
-    top: 0;
-    z-index: 900; /* sotto l'header (1000), sopra il resto del pannello */
-    background: var(--surface-color);
+    margin-bottom: 15px;
+}
+
+.pagina-box-header h3 {
+    margin-bottom: 0;
 }
