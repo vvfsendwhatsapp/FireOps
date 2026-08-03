@@ -633,11 +633,17 @@ document.addEventListener("DOMContentLoaded", () => {
             const dati = await risposta.json();
             const valore = Array.isArray(dati.elevation) ? dati.elevation[0] : null;
             if (valore === null || valore === undefined || Number.isNaN(valore)) return "Quota non disponibile";
-            return `${Math.round(valore)} mslm`;
+            return `${Math.round(valore)} m s.l.m.`;
         } catch (err) {
             console.error("Convertitore: quota non disponibile:", err);
             return "Quota non disponibile";
         }
+    }
+
+    // Link di navigazione Google Maps verso il punto convertito (stesso
+    // pattern del "creaLinkMaps" già usato in script.js per i Comandi)
+    function urlGoogleMapsNavigazione(lat, lon) {
+        return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving&dir_action=navigate`;
     }
 
     function mostraErrore(messaggio) {
@@ -1045,6 +1051,9 @@ document.addEventListener("DOMContentLoaded", () => {
             "*Appunti*",
             formattaDD(lat, lon),
             "",
+            "*Naviga con Google Maps*",
+            urlGoogleMapsNavigazione(lat, lon),
+            "",
             costruisciPieDiPaginaCoord(),
         ];
         return righe.join("\n");
@@ -1154,6 +1163,11 @@ document.addEventListener("DOMContentLoaded", () => {
             rendiCopiabile(document.getElementById("coord-out-utm"), formattaUTMTesto(lat, lon));
             rendiCopiabile(document.getElementById("coord-out-so115-lon"), formattaSO115Lon(lon));
             rendiCopiabile(document.getElementById("coord-out-so115-lat"), formattaSO115Lat(lat));
+
+            const elMaps = document.getElementById("coord-out-maps");
+            if (elMaps) {
+                elMaps.innerHTML = `<a href="${urlGoogleMapsNavigazione(lat, lon)}" target="_blank" rel="noopener" class="indirizzo-link">🧭 Naviga con Google Maps</a>`;
+            }
 
             const elToponimo = document.getElementById("coord-out-toponimo");
             if (elToponimo) { elToponimo.textContent = "Ricerca in corso…"; elToponimo.classList.remove("cliccabile"); elToponimo.onclick = null; }
