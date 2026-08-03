@@ -10,7 +10,7 @@
     --header-height: 80px;       /* Altezza header su schermi normali */
     --header-height-tablet: 130px; /* Altezza header quando va a capo (tablet) */
     --header-height-mobile: 150px; /* Altezza header quando va a capo (mobile) */
-    --subheader-height: 52px;
+    --subheader-height: 64px;
 }
 
 * {
@@ -133,12 +133,39 @@ body {
     min-width: 0;
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 0 14px;
+    gap: 12px;
+    padding: 0 20px;
 }
 
 .subheader-pannello:first-child {
     border-right: 1px solid var(--border-color);
+}
+
+.subheader-pannello .pannello-etichetta {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.subheader-pannello .pannello-select {
+    flex: 1 1 auto;
+    min-width: 0;
+    background: var(--dark-color);
+    color: var(--primary-color);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 18px;
+    font-weight: bold;
+    padding: 10px 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.subheader-pannello .pannello-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
 }
 
 .header-left {
@@ -1539,4 +1566,20 @@ html.comando-gia-scelto #modal-comando {
 
 .pagina-box-header h3 {
     margin-bottom: 0;
+}
+
+/* I titoli di pagina non servono più: la barra fissa in alto (select
+   pannello sinistro/destro) mostra già il nome della pagina attiva */
+.pagina-box > h3,
+.pagina-box-larga > h3,
+.mappa-meteo-header h3,
+.pagina-box-header h3 {
+    display: none;
+}
+
+/* Con il titolo nascosto, i pulsanti azione si spostano tutti a destra
+   invece di restare "orfani" al centro per via del giustifica-spazio */
+.mappa-meteo-header,
+.pagina-box-header {
+    justify-content: flex-end;
 }
