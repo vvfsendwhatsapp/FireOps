@@ -683,6 +683,59 @@ function parseTestoLibero(testo) {
     }
 
     // ==========================================================
+    // PERSISTENZA FORM: i dati inseriti (qualsiasi formato) e il formato
+    // scelto sopravvivono a un refresh/F5, salvati in sessionStorage
+    // ==========================================================
+    const CAMPI_PERSISTENTI_COORD = [
+        "coord-formato-input",
+        "coord-dd-lat", "coord-dd-lon",
+        "coord-dmm-lat", "coord-dmm-lon",
+        "coord-dms-lat", "coord-dms-lon",
+        "coord-olc",
+        "coord-utm-zona", "coord-utm-emisfero", "coord-utm-est", "coord-utm-nord",
+        "coord-libero-testo",
+        "coord-indirizzo-via", "coord-indirizzo-comune-input", "coord-indirizzo-comune", "coord-indirizzo-cap"
+    ];
+    const CHIAVE_STORAGE_FORM_COORD = "fireops_coord_form_stato";
+
+    function salvaStatoFormCoord() {
+        try {
+            const stato = {};
+            CAMPI_PERSISTENTI_COORD.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) stato[id] = el.value;
+            });
+            sessionStorage.setItem(CHIAVE_STORAGE_FORM_COORD, JSON.stringify(stato));
+        } catch (err) {}
+    }
+
+    function ripristinaStatoFormCoord() {
+        try {
+            const stato = JSON.parse(sessionStorage.getItem(CHIAVE_STORAGE_FORM_COORD));
+            if (!stato) return;
+            CAMPI_PERSISTENTI_COORD.forEach(id => {
+                const el = document.getElementById(id);
+                if (el && stato[id] !== undefined) el.value = stato[id];
+            });
+            if (selectFormato && stato["coord-formato-input"]) {
+                Object.entries(gruppiInput).forEach(([chiave, el]) => {
+                    if (el) el.style.display = chiave === stato["coord-formato-input"] ? "block" : "none";
+                });
+            }
+        } catch (err) {}
+    }
+
+    ripristinaStatoFormCoord();
+
+    // Delega un solo listener sull'intero form: copre tutti i campi presenti
+    // (compreso quello nascosto della combo Comune) senza doverli agganciare uno per uno
+    const contenitoreFormCoord = document.getElementById("coord-input-colonna");
+    if (contenitoreFormCoord) {
+        contenitoreFormCoord.addEventListener("input", salvaStatoFormCoord);
+        contenitoreFormCoord.addEventListener("change", salvaStatoFormCoord);
+    }
+
+    // ==========================================================
     // QUOTA DEL PUNTO CONVERTITO: Open-Meteo elevation API, stessa fonte
     // già usata per il meteo nel resto dell'app (nessuna chiave richiesta).
     // ==========================================================
@@ -1364,13 +1417,18 @@ function aggiornaAnteprimaMessaggioCoordinate() {
         messaggio: document.getElementById("coord-tab-content-messaggio"),
     };
 
-    function impostaSchedaColonnaAttiva(chiave) {
+    const CHIAVE_STORAGE_TAB_COORD = "fireops_coord_tab_attiva";
+
+    function impostaSchedaColonnaAttiva(chiave, salva = true) {
         pulsantiScheda.forEach(p => p.classList.toggle("attivo", p.dataset.tab === chiave));
         Object.entries(contenutiScheda).forEach(([k, el]) => {
             if (!el) return;
-            el.style.display = k === chiave ? "block" : "none"; // usato in modalità ridotta
-            el.classList.toggle("coord-colonna-attiva", k === chiave); // usato in modalità espansa
+            el.style.display = k === chiave ? "block" : "none";
+            el.classList.toggle("coord-colonna-attiva", k === chiave);
         });
+        if (salva) {
+            try { sessionStorage.setItem(CHIAVE_STORAGE_TAB_COORD, chiave); } catch (err) {}
+        }
     }
 
     pulsantiScheda.forEach(pulsante => {
@@ -1383,5 +1441,10 @@ function aggiornaAnteprimaMessaggioCoordinate() {
         if (el) el.addEventListener("click", () => impostaSchedaColonnaAttiva(chiave));
     });
 
-    impostaSchedaColonnaAttiva("dati"); // stato iniziale
+    let tabInizialeCoord = "dati";
+    try {
+        const tabSalvata = sessionStorage.getItem(CHIAVE_STORAGE_TAB_COORD);
+        if (tabSalvata && contenutiScheda[tabSalvata]) tabInizialeCoord = tabSalvata;
+    } catch (err) {}
+    impostaSchedaColonnaAttiva(tabInizialeCoord, false); // false: non ri-salvare quello che abbiamo appena letto
 });

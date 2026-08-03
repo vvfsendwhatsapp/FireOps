@@ -984,8 +984,21 @@ document.addEventListener("DOMContentLoaded", () => {
     const corpoSinistra = document.getElementById("corpo-sinistra");
     const corpoDestra = document.getElementById("corpo-destra");
 
-    let paginaSinistra = "homepage";
-    let paginaDestra = "mappa-meteo";
+const CHIAVE_STORAGE_PANNELLI = "fireops_pagine_pannelli";
+
+    let paginePannelliSalvate = null;
+    try { paginePannelliSalvate = JSON.parse(sessionStorage.getItem(CHIAVE_STORAGE_PANNELLI)); } catch (err) {}
+
+    let paginaSinistra = (paginePannelliSalvate && document.getElementById(paginePannelliSalvate.sinistra))
+        ? paginePannelliSalvate.sinistra : "homepage";
+    let paginaDestra = (paginePannelliSalvate && document.getElementById(paginePannelliSalvate.destra))
+        ? paginePannelliSalvate.destra : "mappa-meteo";
+
+    function salvaPaginePannelli() {
+        try {
+            sessionStorage.setItem(CHIAVE_STORAGE_PANNELLI, JSON.stringify({ sinistra: paginaSinistra, destra: paginaDestra }));
+        } catch (err) {}
+    }
 
     function contenitorePerLato(lato) {
         if (lato === "sinistra") return corpoSinistra;
@@ -1067,6 +1080,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         aggiornaSelettori();
+        salvaPaginePannelli();
         eseguiEffettiPagina(nuovoId);
     }
 
@@ -1149,6 +1163,7 @@ document.addEventListener("keydown", (e) => {
     spostaSezione(paginaSinistra, "sinistra");
     spostaSezione(paginaDestra, "destra");
     aggiornaSelettori();
+    salvaPaginePannelli();
 
     // ==========================================================
     // PAGINA MESSAGGISTICA: messaggio precompilato multilingua
