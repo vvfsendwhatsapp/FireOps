@@ -1405,3 +1405,53 @@ html.comando-gia-scelto #modal-comando {
 .coord-input-gruppo label {
     margin-top: 10px;
 }
+
+.coord-tab-bar {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    margin-top: 20px;
+    padding: 8px 4px 0;
+}
+ 
+.coord-tab-btn {
+    background: var(--dark-color);
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+    border-bottom: none;
+    border-radius: 10px 10px 0 0;
+    padding: 9px 20px;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    position: relative;
+    top: 1px; /* le inattive "scendono" leggermente sotto il bordo del corpo */
+    transition: background 0.15s, color 0.15s, top 0.1s;
+}
+ 
+.coord-tab-btn:hover:not(.attivo) {
+    color: var(--text-main);
+    background: #232323;
+}
+ 
+/* La scheda attiva "si fonde" col corpo sottostante: stesso colore di
+   sfondo, bordo dorato, e sale di un pixel per coprire la linea di
+   separazione — esattamente il comportamento dei tab di Chrome. */
+.coord-tab-btn.attivo {
+    background: var(--surface-color);
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+    border-bottom: 1px solid var(--surface-color);
+    top: 1px;
+    z-index: 2;
+}
+ 
+.coord-tab-corpo {
+    background: var(--surface-color);
+    border: 1px solid var(--primary-color);
+    border-radius: 0 8px 8px 8px;
+    padding: 18px;
+    margin-top: -1px;
+    position: relative;
+    z-index: 1;
+}
