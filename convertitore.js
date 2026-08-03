@@ -633,7 +633,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const dati = await risposta.json();
             const valore = Array.isArray(dati.elevation) ? dati.elevation[0] : null;
             if (valore === null || valore === undefined || Number.isNaN(valore)) return "Quota non disponibile";
-            return `${Math.round(valore)} m s.l.m.`;
+            return `${Math.round(valore)} mslm`;
         } catch (err) {
             console.error("Convertitore: quota non disponibile:", err);
             return "Quota non disponibile";
