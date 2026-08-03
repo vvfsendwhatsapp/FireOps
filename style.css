@@ -1658,3 +1658,29 @@ html.comando-gia-scelto #modal-comando {
         grid-template-columns: 1fr;
     }
 }
+
+.coord-colonna-titolo {
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    margin: 0 0 12px;
+}
+
+.coord-comando-badge {
+    color: var(--text-muted);
+    font-weight: bold;
+}
+
+.coord-header-note-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1 1 auto;
+}
+
+/* Colonna attiva in modalità espansa: bordo giallo */
+.pannello-fullscreen .coord-colonna-attiva {
+    border-color: var(--primary-color) !important;
+}

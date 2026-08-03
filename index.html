@@ -225,7 +225,8 @@
                 <div class="pagina-box-header pagina-box-header-con-nota">
                     <p class="pagina-nota pagina-nota-inline">
                         Datum WGS84. Inserisci le coordinate nel formato scelto e converti: la mappa si centra
-                        automaticamente a zoom 15. Tutti i valori in uscita sono cliccabili per copiarli.
+                        automaticamente a zoom 15. Tutti i valori in uscita sono cliccabili per copiarli. Puoi anche
+                        cliccare direttamente sulla mappa per generarle da un punto.
                     </p>
                     <button class="btn-toggle-radar btn-fullscreen-pagina" type="button" title="Espandi a schermo intero">⛶ Espandi</button>
                 </div>
@@ -356,14 +357,15 @@
                     SOTTOSCHEDE STILE CHROME: Dati / Mappa / Messaggio
                     =================================================== -->
                 <div class="coord-tab-bar">
-                    <button type="button" class="coord-tab-btn attivo" data-tab="dati">📋 Dati convertiti</button>
-                    <button type="button" class="coord-tab-btn" data-tab="mappa">🗺️ Mappa e pianificatore percorso</button>
-                    <button type="button" class="coord-tab-btn" data-tab="messaggio">✉️ Messaggio invio coordinate</button>
+                    <button type="button" class="coord-tab-btn attivo" data-tab="dati">📋 Dati</button>
+                    <button type="button" class="coord-tab-btn" data-tab="mappa">🗺️ Mappa</button>
+                    <button type="button" class="coord-tab-btn" data-tab="messaggio">✉️ Messaggio a squadre VVF</button>
                 </div>
         
                 <div class="coord-tab-corpo">
                     <!-- SCHEDA: DATI -->
                     <div id="coord-tab-content-dati" style="display:block;">
+                        <h4 class="coord-colonna-titolo">Dati</h4>
                         <div id="coord-risultati" class="riepilogo-comando" style="display:none;">
                             <div class="riepilogo-box">
                                 <table class="riepilogo-tabella">
@@ -388,7 +390,7 @@
                     <!-- SCHEDA: MAPPA -->
                     <div id="coord-tab-content-mappa" style="display:none;">
                         <div class="mappa-meteo-header">
-                            <h4 style="margin:0; color:var(--primary-color); text-transform:uppercase; font-size:14px;">Mappa</h4>
+                            <h4 class="coord-colonna-titolo" style="margin:0;">Mappa</h4>
                             <div class="mappa-meteo-azioni">
                                 <select id="coord-profilo-percorso" class="header-select">
                                     <option value="trekking">🥾 A piedi / sentiero</option>
@@ -409,6 +411,7 @@
         
                     <!-- SCHEDA: MESSAGGIO -->
                     <div id="coord-tab-content-messaggio" style="display:none;">
+                        <h4 class="coord-colonna-titolo">Invia messaggio a squadre VVF</h4>
                         <p class="pagina-nota" id="coord-msg-comando-info">Nessun Comando attivo — selezionalo dalla schermata iniziale (☰).</p>
                         <p class="pagina-nota">Invia le coordinate convertite a una squadra VVF via WhatsApp o Telegram, con lo stesso formato usato in Sala Operativa.</p>
                         <div class="msg-riga-campi">

@@ -808,8 +808,13 @@ function parseTestoLibero(testo) {
         }).addTo(coordMappaLeaflet);
 
         coordMappaLeaflet.on("click", (e) => {
-            if (!modalitaPercorsoAttiva || !coordinateTargetCorrenti) return;
-            calcolaEDisegnaPercorso(e.latlng.lat, e.latlng.lng);
+            if (modalitaPercorsoAttiva && coordinateTargetCorrenti) {
+                calcolaEDisegnaPercorso(e.latlng.lat, e.latlng.lng);
+                return;
+            }
+            // Fuori dalla modalità "crea percorso": il click sulla mappa
+            // vale come conversione diretta, usando il punto cliccato
+            elaboraCoordinateConvertite(e.latlng.lat, e.latlng.lng);
         });
 
         if (typeof ResizeObserver !== "undefined") {
@@ -1126,7 +1131,7 @@ function parseTestoLibero(testo) {
         return righe.join("\n");
     }
 
-    function aggiornaAnteprimaMessaggioCoordinate() {
+function aggiornaAnteprimaMessaggioCoordinate() {
         if (!textareaMsg) return;
         textareaMsg.value = costruisciMessaggioCoordinate();
         validaCampiMessaggioCoord();
@@ -1138,6 +1143,8 @@ function parseTestoLibero(testo) {
                 : "Nessun Comando attivo — selezionalo dalla schermata iniziale (☰).";
         }
     }
+
+    aggiornaAnteprimaMessaggioCoordinate(); // stato iniziale: già "Nessun Comando attivo..." finché non arriva il fetch
 
     if (inputMsgPrefisso && hiddenMsgPrefisso && dropdownMsgPrefisso) {
         fetch("/FireOps/db/prefissi.json")
@@ -1206,7 +1213,7 @@ function parseTestoLibero(testo) {
     // ==========================================================
     const btnConverti = document.getElementById("btn-coord-converti");
 
-if (btnConverti) {
+    if (btnConverti) {
         btnConverti.addEventListener("click", async () => {
             nascondiErrore();
 
@@ -1238,64 +1245,75 @@ if (btnConverti) {
                 if (!coordinate) return;
             }
 
-            const { lat, lon } = coordinate;
-            if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
-                mostraErrore("Coordinate fuori range (latitudine -90/90, longitudine -180/180).");
-                return;
-            }
-
-            rendiCopiabile(document.getElementById("coord-out-dd"), formattaDDUscita(lat, lon));
-            rendiCopiabile(document.getElementById("coord-out-dmm"), formattaDMM(lat, lon));
-            rendiCopiabile(document.getElementById("coord-out-dms"), formattaDMS(lat, lon));
-            try {
-                rendiCopiabile(document.getElementById("coord-out-olc"), olcEncode(lat, lon, 11));
-            } catch (err) {
-                const el = document.getElementById("coord-out-olc");
-                if (el) { el.textContent = "Non calcolabile"; el.classList.remove("cliccabile"); el.onclick = null; }
-            }
-            rendiCopiabile(document.getElementById("coord-out-utm"), formattaUTMTesto(lat, lon));
-            rendiCopiabile(document.getElementById("coord-out-so115-lon"), formattaSO115Lon(lon));
-            rendiCopiabile(document.getElementById("coord-out-so115-lat"), formattaSO115Lat(lat));
-
-            const elMaps = document.getElementById("coord-out-maps");
-            if (elMaps) {
-                elMaps.innerHTML = `<a href="${urlGoogleMapsNavigazione(lat, lon)}" target="_blank" rel="noopener" class="indirizzo-link">🧭 Naviga con Google Maps</a>`;
-            }
-
-            const elToponimo = document.getElementById("coord-out-toponimo");
-            if (elToponimo) { elToponimo.textContent = "Ricerca in corso…"; elToponimo.classList.remove("cliccabile"); elToponimo.onclick = null; }
-
-            const elQuota = document.getElementById("coord-out-quota");
-            if (elQuota) { elQuota.textContent = "Ricerca in corso…"; elQuota.classList.remove("cliccabile"); elQuota.onclick = null; }
-
-            if (elRisultati) elRisultati.style.display = "block";
-            const elDatiNotaVuota = document.getElementById("coord-dati-nota-vuota");
-            if (elDatiNotaVuota) elDatiNotaVuota.style.display = "none";
-
-            centraMappaSulTarget(lat, lon);
-            aggiornaAnteprimaMessaggioCoordinate();
-
-            modalitaPercorsoAttiva = false;
-            if (btnPercorso) btnPercorso.classList.remove("attivo");
-            if (btnAnnullaPercorso) btnAnnullaPercorso.style.display = "none";
-            if (coordLineaPercorso && coordMappaLeaflet) { coordMappaLeaflet.removeLayer(coordLineaPercorso); coordLineaPercorso = null; }
-            if (coordMarkerPartenza && coordMappaLeaflet) { coordMappaLeaflet.removeLayer(coordMarkerPartenza); coordMarkerPartenza = null; }
-            if (elInfoPercorso) elInfoPercorso.textContent = "";
-            ultimoGeojsonPercorso = null;
-            if (btnScaricaKml) btnScaricaKml.disabled = true;
-            nascondiGraficoAltimetria("");
-
-            const [toponimo, quota] = await Promise.all([
-                geocodingInverso(lat, lon),
-                recuperaQuota(lat, lon),
-            ]);
-            rendiCopiabile(elToponimo, toponimo);
-            rendiCopiabile(elQuota, quota);
+            await elaboraCoordinateConvertite(coordinate.lat, coordinate.lon);
         });
     }
 
-    // ==========================================================
-    // SOTTOSCHEDE ORIZZONTALI: Dati / Mappa / Messaggio
+    // Logica di rendering condivisa: usata sia dal pulsante "Converti" sia
+    // dal click diretto sulla mappa (che passa già una coppia lat/lon)
+    async function elaboraCoordinateConvertite(lat, lon) {
+        nascondiErrore();
+
+        if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+            mostraErrore("Coordinate fuori range (latitudine -90/90, longitudine -180/180).");
+            return;
+        }
+
+        rendiCopiabile(document.getElementById("coord-out-dd"), formattaDDUscita(lat, lon));
+        rendiCopiabile(document.getElementById("coord-out-dmm"), formattaDMM(lat, lon));
+        rendiCopiabile(document.getElementById("coord-out-dms"), formattaDMS(lat, lon));
+        try {
+            rendiCopiabile(document.getElementById("coord-out-olc"), olcEncode(lat, lon, 11));
+        } catch (err) {
+            const el = document.getElementById("coord-out-olc");
+            if (el) { el.textContent = "Non calcolabile"; el.classList.remove("cliccabile"); el.onclick = null; }
+        }
+        rendiCopiabile(document.getElementById("coord-out-utm"), formattaUTMTesto(lat, lon));
+        rendiCopiabile(document.getElementById("coord-out-so115-lon"), formattaSO115Lon(lon));
+        rendiCopiabile(document.getElementById("coord-out-so115-lat"), formattaSO115Lat(lat));
+
+        const elMaps = document.getElementById("coord-out-maps");
+        if (elMaps) {
+            elMaps.innerHTML = `<a href="${urlGoogleMapsNavigazione(lat, lon)}" target="_blank" rel="noopener" class="indirizzo-link">🧭 Naviga con Google Maps</a>`;
+        }
+
+        const elToponimo = document.getElementById("coord-out-toponimo");
+        if (elToponimo) { elToponimo.textContent = "Ricerca in corso…"; elToponimo.classList.remove("cliccabile"); elToponimo.onclick = null; }
+
+        const elQuota = document.getElementById("coord-out-quota");
+        if (elQuota) { elQuota.textContent = "Ricerca in corso…"; elQuota.classList.remove("cliccabile"); elQuota.onclick = null; }
+
+        if (elRisultati) elRisultati.style.display = "block";
+        const elDatiNotaVuota = document.getElementById("coord-dati-nota-vuota");
+        if (elDatiNotaVuota) elDatiNotaVuota.style.display = "none";
+
+        centraMappaSulTarget(lat, lon);
+        aggiornaAnteprimaMessaggioCoordinate();
+
+        modalitaPercorsoAttiva = false;
+        if (btnPercorso) btnPercorso.classList.remove("attivo");
+        if (btnAnnullaPercorso) btnAnnullaPercorso.style.display = "none";
+        if (coordLineaPercorso && coordMappaLeaflet) { coordMappaLeaflet.removeLayer(coordLineaPercorso); coordLineaPercorso = null; }
+        if (coordMarkerPartenza && coordMappaLeaflet) { coordMappaLeaflet.removeLayer(coordMarkerPartenza); coordMarkerPartenza = null; }
+        if (elInfoPercorso) elInfoPercorso.textContent = "";
+        ultimoGeojsonPercorso = null;
+        if (btnScaricaKml) btnScaricaKml.disabled = true;
+        nascondiGraficoAltimetria("");
+
+        const [toponimo, quota] = await Promise.all([
+            geocodingInverso(lat, lon),
+            recuperaQuota(lat, lon),
+        ]);
+        rendiCopiabile(elToponimo, toponimo);
+        rendiCopiabile(elQuota, quota);
+    }
+
+// ==========================================================
+    // SCHEDA/COLONNA ATTIVA: Dati / Mappa / Messaggio.
+    // Un'unica funzione gestisce sia il cambio scheda in modalità ridotta
+    // sia l'evidenziazione col bordo giallo della colonna attiva quando
+    // il pannello è espanso (le 3 colonne sono tutte visibili insieme,
+    // ma solo una è "quella su cui stiamo lavorando").
     // ==========================================================
     const pulsantiScheda = document.querySelectorAll(".coord-tab-btn");
     const contenutiScheda = {
@@ -1303,17 +1321,25 @@ if (btnConverti) {
         mappa: document.getElementById("coord-tab-content-mappa"),
         messaggio: document.getElementById("coord-tab-content-messaggio"),
     };
-    pulsantiScheda.forEach(pulsante => {
-        pulsante.addEventListener("click", () => {
-            pulsantiScheda.forEach(p => p.classList.remove("attivo"));
-            pulsante.classList.add("attivo");
-            Object.entries(contenutiScheda).forEach(([chiave, el]) => {
-                if (el) el.style.display = chiave === pulsante.dataset.tab ? "block" : "none";
-            });
-            // Cambiando scheda la mappa può passare da nascosta a visibile:
-            // il ResizeObserver già presente su #coord-mappa gestisce da solo
-            // il ridisegno delle tile in questo caso (stesso meccanismo usato
-            // per i pannelli split-screen).
+
+    function impostaSchedaColonnaAttiva(chiave) {
+        pulsantiScheda.forEach(p => p.classList.toggle("attivo", p.dataset.tab === chiave));
+        Object.entries(contenutiScheda).forEach(([k, el]) => {
+            if (!el) return;
+            el.style.display = k === chiave ? "block" : "none"; // usato in modalità ridotta
+            el.classList.toggle("coord-colonna-attiva", k === chiave); // usato in modalità espansa
         });
+    }
+
+    pulsantiScheda.forEach(pulsante => {
+        pulsante.addEventListener("click", () => impostaSchedaColonnaAttiva(pulsante.dataset.tab));
     });
+
+    // In modalità espansa la barra schede è nascosta, ma le 3 colonne
+    // restano cliccabili per spostare l'evidenziazione tra loro
+    Object.entries(contenutiScheda).forEach(([chiave, el]) => {
+        if (el) el.addEventListener("click", () => impostaSchedaColonnaAttiva(chiave));
+    });
+
+    impostaSchedaColonnaAttiva("dati"); // stato iniziale
 });
