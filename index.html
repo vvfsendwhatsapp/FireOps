@@ -267,6 +267,7 @@
                                 <option value="dms">Gradi primi secondi (DD MM SS.ss)</option>
                                 <option value="olc">OLC / Plus Code</option>
                                 <option value="utm">UTM</option>
+                                <option value="mappa">Scelta su mappa (clic diretto)</option>
                                 <option value="libero">Testo libero (incolla da Google Maps, ecc.)</option>
                                 <option value="indirizzo">Indirizzo (geocoding)</option>
                             </select>
@@ -346,7 +347,12 @@
                                     </div>
                                 </div>
                             </div>
-
+                            <div id="coord-input-mappa" class="coord-input-gruppo" style="display:none;">
+                                <p class="pagina-nota">
+                                    Vai alla scheda "Mappa" e clicca direttamente sul punto desiderato: le coordinate
+                                    vengono generate automaticamente da quel click. Nessun campo da compilare qui.
+                                </p>
+                            </div>
                             <div id="coord-input-libero" class="coord-input-gruppo" style="display:none;">
                                 <label for="coord-libero-testo">Incolla coordinate (qualsiasi formato)</label>
                                 <input type="text" id="coord-libero-testo"
@@ -445,20 +451,19 @@
 
                     <!-- SCHEDA: MAPPA -->
                     <div id="coord-tab-content-mappa" style="display:none;">
-                        <div class="mappa-meteo-header">
-                            <h4 class="coord-colonna-titolo" style="margin:0;">Mappa</h4>
-                            <div class="mappa-meteo-azioni">
-                                <select id="coord-profilo-percorso" class="header-select">
-                                    <option value="trekking">🥾 A piedi / sentiero</option>
-                                    <option value="car-fast">🚗 Automezzo</option>
-                                </select>
-                                <button id="btn-coord-percorso" class="btn-toggle-radar" type="button">🧭 Crea percorso
-                                    (clic su mappa)</button>
-                                <button id="btn-coord-annulla-percorso" class="btn-toggle-radar" type="button"
-                                    style="display:none;">✖ Annulla percorso</button>
-                                <button id="btn-coord-scarica-kml" class="btn-toggle-radar" type="button" disabled>⬇️
-                                    Scarica KML</button>
-                            </div>
+
+                        <h4 class="coord-colonna-titolo" style="margin:0;">Mappa</h4>
+                        <div class="mappa-meteo-azioni">
+                            <select id="coord-profilo-percorso" class="header-select">
+                                <option value="trekking">🥾 A piedi / sentiero</option>
+                                <option value="car-fast">🚗 Automezzo</option>
+                            </select>
+                            <button id="btn-coord-percorso" class="btn-toggle-radar" type="button">🧭 Crea percorso
+                                (clic su mappa)</button>
+                            <button id="btn-coord-annulla-percorso" class="btn-toggle-radar" type="button"
+                                style="display:none;">✖ Annulla percorso</button>
+                            <button id="btn-coord-scarica-kml" class="btn-toggle-radar" type="button" disabled>⬇️
+                                Scarica KML</button>
                         </div>
                         <div id="coord-mappa" class="mappa-comando"></div>
                         <p class="pagina-nota" id="coord-percorso-info"></p>

@@ -667,6 +667,7 @@ function parseTestoLibero(testo) {
         dms: document.getElementById("coord-input-dms"),
         olc: document.getElementById("coord-input-olc"),
         utm: document.getElementById("coord-input-utm"),
+        mappa: document.getElementById("coord-input-mappa"),
         libero: document.getElementById("coord-input-libero"),       // NUOVO
         indirizzo: document.getElementById("coord-input-indirizzo"), // NUOVO
     };
@@ -761,6 +762,10 @@ function parseTestoLibero(testo) {
             const risultato = utmToLatLon(zona, emisfero, est, nord);
             return { lat: risultato.lat, lon: risultato.lon };
         }
+        if (formato === "mappa") {
+            mostraErrore("Clicca direttamente su un punto della mappa (scheda \"Mappa\") per generare le coordinate.");
+            return null;
+        }
         if (formato === "libero") {
             const testo = (document.getElementById("coord-libero-testo").value || "").trim();
             if (!testo) { mostraErrore("Incolla un testo con delle coordinate."); return null; }
@@ -808,12 +813,19 @@ function parseTestoLibero(testo) {
         }).addTo(coordMappaLeaflet);
 
         coordMappaLeaflet.on("click", (e) => {
+            // Secondo punto di "Crea percorso": funziona sempre, indipendentemente
+            // dal formato selezionato nel menù a tendina
             if (modalitaPercorsoAttiva && coordinateTargetCorrenti) {
                 calcolaEDisegnaPercorso(e.latlng.lat, e.latlng.lng);
                 return;
             }
-            // Fuori dalla modalità "crea percorso": il click sulla mappa
-            // vale come conversione diretta, usando il punto cliccato
+
+            // Altrimenti il click genera coordinate SOLO se è selezionato
+            // esplicitamente il formato "Scelta su mappa": con qualsiasi altro
+            // formato (DD, UTM, indirizzo...) il click sulla mappa non fa nulla
+            const formatoAttuale = selectFormato ? selectFormato.value : "dd";
+            if (formatoAttuale !== "mappa") return;
+
             elaboraCoordinateConvertite(e.latlng.lat, e.latlng.lng);
         });
 
