@@ -1,15 +1,26 @@
 :root {
-    --primary-color: #ffd700;    /* Giallo oro riposante per accenti/importanti */
-    --dark-color: #121212;       /* Nero profondo di sfondo principale */
-    --surface-color: #1e1e1e;    /* Grigio scuro per box, card e header */
-    --light-bg: #181818;         /* Sfondo generale del body */
-    --border-color: #333333;     /* Grigio scuro per i bordi */
-    --text-main: #e0e0e0;        /* Grigio chiaro/bianco sporco per testi principali */
-    --text-muted: #aaaaaa;       /* Grigio medio per etichette e sottotitoli */
-    --danger-color: #AF2B1E;     /* Rosso RAL3000 per campi obbligatori mancanti */
-    --header-height: 80px;       /* Altezza header su schermi normali */
-    --header-height-tablet: 130px; /* Altezza header quando va a capo (tablet) */
-    --header-height-mobile: 150px; /* Altezza header quando va a capo (mobile) */
+    --primary-color: #ffd700;
+    /* Giallo oro riposante per accenti/importanti */
+    --dark-color: #121212;
+    /* Nero profondo di sfondo principale */
+    --surface-color: #1e1e1e;
+    /* Grigio scuro per box, card e header */
+    --light-bg: #181818;
+    /* Sfondo generale del body */
+    --border-color: #333333;
+    /* Grigio scuro per i bordi */
+    --text-main: #e0e0e0;
+    /* Grigio chiaro/bianco sporco per testi principali */
+    --text-muted: #aaaaaa;
+    /* Grigio medio per etichette e sottotitoli */
+    --danger-color: #AF2B1E;
+    /* Rosso RAL3000 per campi obbligatori mancanti */
+    --header-height: 80px;
+    /* Altezza header su schermi normali */
+    --header-height-tablet: 130px;
+    /* Altezza header quando va a capo (tablet) */
+    --header-height-mobile: 150px;
+    /* Altezza header quando va a capo (mobile) */
     --subheader-height: 64px;
 }
 
@@ -46,7 +57,7 @@ body {
     border-radius: 8px;
     width: 400px;
     max-width: 90%;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
     text-align: center;
     border: 1px solid var(--border-color);
 }
@@ -125,7 +136,8 @@ body {
     background-color: var(--surface-color);
     border-bottom: 3px solid var(--primary-color);
     display: flex;
-    z-index: 999; /* sotto l'header (1000) */
+    z-index: 999;
+    /* sotto l'header (1000) */
 }
 
 .subheader-pannello {
@@ -170,7 +182,8 @@ body {
     display: flex;
     align-items: center;
     gap: 15px;
-    flex-shrink: 0; /* logo e titolo non si schiacciano mai */
+    flex-shrink: 0;
+    /* logo e titolo non si schiacciano mai */
     min-width: 0;
 }
 
@@ -202,10 +215,12 @@ body {
 .header-center {
     display: flex;
     gap: 20px;
-    flex-wrap: nowrap; /* impedisce che i box vadano a capo su riga nuova */
+    flex-wrap: nowrap;
+    /* impedisce che i box vadano a capo su riga nuova */
     flex: 1 1 auto;
     min-width: 0;
-    overflow-x: auto; /* su schermi stretti scorre invece di schiacciare il resto */
+    overflow-x: auto;
+    /* su schermi stretti scorre invece di schiacciare il resto */
     overflow-y: hidden;
     scrollbar-width: thin;
     justify-content: center;
@@ -219,8 +234,10 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    white-space: nowrap; /* impedisce che il testo dentro il singolo box vada a capo */
-    flex-shrink: 0; /* evita che il box si schiacci comprimendo il testo */
+    white-space: nowrap;
+    /* impedisce che il testo dentro il singolo box vada a capo */
+    flex-shrink: 0;
+    /* evita che il box si schiacci comprimendo il testo */
 }
 
 .info-box .label {
@@ -392,7 +409,8 @@ body {
     overflow: hidden;
     border: 1px solid var(--border-color);
     background: var(--dark-color);
-    position: relative; /* riferimento per crocino centrale ed etichetta radar */
+    position: relative;
+    /* riferimento per crocino centrale ed etichetta radar */
 }
 
 /* Leaflet inserisce i propri controlli/tile con z-index bassi: nessun conflitto con header/nav fissi */
@@ -417,7 +435,7 @@ body {
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.7);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.7);
 }
 
 .marker-caserma-cerchio img {
@@ -447,7 +465,8 @@ body {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    z-index: 650; /* sopra tile/radar/marker (fino a ~600), sotto i controlli Leaflet (1000) */
+    z-index: 650;
+    /* sopra tile/radar/marker (fino a ~600), sotto i controlli Leaflet (1000) */
     pointer-events: none;
     display: flex;
     flex-direction: column;
@@ -457,14 +476,14 @@ body {
 .crocino-svg .crocino-linea {
     stroke: var(--primary-color);
     stroke-width: 2;
-    filter: drop-shadow(0 0 2px rgba(0,0,0,0.8));
+    filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.8));
 }
 
 .crocino-svg .crocino-cerchio {
     fill: none;
     stroke: var(--primary-color);
     stroke-width: 1.5;
-    filter: drop-shadow(0 0 2px rgba(0,0,0,0.8));
+    filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.8));
 }
 
 .crocino-coordinate {
@@ -573,7 +592,8 @@ body {
 .combo-input {
     width: 100%;
     padding: 10px;
-    padding-right: 34px; /* spazio per la freccetta */
+    padding-right: 34px;
+    /* spazio per la freccetta */
     background-color: var(--dark-color);
     color: var(--text-main);
     border: 1px solid var(--border-color);
@@ -630,7 +650,7 @@ body {
     border: 1px solid var(--border-color);
     border-radius: 4px;
     z-index: 500;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
 }
 
 .combo-dropdown.aperto {
@@ -748,11 +768,13 @@ body {
 
 /* RIEPILOGO COMANDO */
 .riepilogo-comando {
-    margin-top: 0; /* stesso spazio dal menu delle altre pagine (.pagina-box), niente margine extra */
+    margin-top: 0;
+    /* stesso spazio dal menu delle altre pagine (.pagina-box), niente margine extra */
 }
 
 .pagina-box .riepilogo-comando {
-    margin-top: 20px; /* respiro quando compare sotto un selettore (es. Info Altro Comando) */
+    margin-top: 20px;
+    /* respiro quando compare sotto un selettore (es. Info Altro Comando) */
 }
 
 .riepilogo-box {
@@ -926,7 +948,7 @@ body {
     padding: 15px;
     min-width: 220px;
     max-width: 300px;
-    box-shadow: 0 6px 24px rgba(0,0,0,0.7);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.7);
     font-size: 13px;
 }
 
@@ -1026,7 +1048,8 @@ body {
     cursor: pointer;
     font-size: 22px;
     color: var(--text-muted);
-    display: none; /* visibile solo quando il modale è "chiudibile" */
+    display: none;
+    /* visibile solo quando il modale è "chiudibile" */
     line-height: 1;
 }
 
@@ -1037,6 +1060,7 @@ body {
 .modal-content.chiudibile .modal-close {
     display: block;
 }
+
 /* Nasconde il modale immediatamente se il comando è già in sessione (evita flash) */
 html.comando-gia-scelto #modal-comando {
     display: none;
@@ -1047,7 +1071,8 @@ html.comando-gia-scelto #modal-comando {
     display: flex;
     align-items: center;
     flex-shrink: 0;
-    gap: 10px; /* NUOVO: spazio tra ❓ e ☰ */
+    gap: 10px;
+    /* NUOVO: spazio tra ❓ e ☰ */
 }
 
 .btn-icon-hamburger {
@@ -1074,16 +1099,20 @@ html.comando-gia-scelto #modal-comando {
 }
 
 .valore-comando {
-    color: var(--primary-color); /* giallo oro */
+    color: var(--primary-color);
+    /* giallo oro */
 }
 
 .valore-orario {
-    color: #4fc3f7; /* azzurro, per distinguerlo dal giallo del comando */
+    color: #4fc3f7;
+    /* azzurro, per distinguerlo dal giallo del comando */
 }
 
 .valore-turno {
-    color: #ff6b35; /* arancione acceso, massima visibilità per il turno */
-    font-size: 20px; /* leggermente più grande, è il dato più critico da vedere a colpo d'occhio */
+    color: #ff6b35;
+    /* arancione acceso, massima visibilità per il turno */
+    font-size: 20px;
+    /* leggermente più grande, è il dato più critico da vedere a colpo d'occhio */
 }
 
 #home-nome-comando {
@@ -1110,15 +1139,26 @@ html.comando-gia-scelto #modal-comando {
     font-weight: bold;
     padding: 4px 10px;
     border-radius: 4px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
     pointer-events: none;
     animation: fadeOutUp 1.2s ease forwards;
 }
 
 @keyframes fadeOutUp {
-    0% { opacity: 1; transform: translateY(0); }
-    70% { opacity: 1; transform: translateY(0); }
-    100% { opacity: 0; transform: translateY(-10px); }
+    0% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    70% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
 }
 
 .riepilogo-box h4 {
@@ -1418,6 +1458,7 @@ html.comando-gia-scelto #modal-comando {
     border-color: var(--primary-color);
     color: var(--primary-color);
 }
+
 .onu-kemler-chip.da-verificare::before {
     content: "⚠ ";
 }
@@ -1465,7 +1506,7 @@ html.comando-gia-scelto #modal-comando {
     margin-top: 20px;
     padding: 8px 4px 0;
 }
- 
+
 .coord-tab-btn {
     background: var(--dark-color);
     color: var(--text-muted);
@@ -1477,15 +1518,17 @@ html.comando-gia-scelto #modal-comando {
     font-weight: bold;
     cursor: pointer;
     position: relative;
-    top: 1px; /* le inattive "scendono" leggermente sotto il bordo del corpo */
+    top: 1px;
     transition: background 0.15s, color 0.15s, top 0.1s;
+    flex: 1 1 0;
+    text-align: center;
 }
- 
+
 .coord-tab-btn:hover:not(.attivo) {
     color: var(--text-main);
     background: #232323;
 }
- 
+
 /* La scheda attiva "si fonde" col corpo sottostante: stesso colore di
    sfondo, bordo dorato, e sale di un pixel per coprire la linea di
    separazione — esattamente il comportamento dei tab di Chrome. */
@@ -1497,7 +1540,7 @@ html.comando-gia-scelto #modal-comando {
     top: 1px;
     z-index: 2;
 }
- 
+
 .coord-tab-corpo {
     background: var(--surface-color);
     border: 1px solid var(--primary-color);
@@ -1518,7 +1561,8 @@ html.comando-gia-scelto #modal-comando {
     flex-shrink: 0;
     position: sticky;
     top: 0;
-    z-index: 900; /* sotto l'header (1000), sopra il resto del pannello */
+    z-index: 900;
+    /* sotto l'header (1000), sopra il resto del pannello */
     background: var(--surface-color);
 }
 
@@ -1577,8 +1621,8 @@ html.comando-gia-scelto #modal-comando {
 
 /* I titoli di pagina non servono più: la barra fissa in alto (select
    pannello sinistro/destro) mostra già il nome della pagina attiva */
-.pagina-box > h3,
-.pagina-box-larga > h3,
+.pagina-box>h3,
+.pagina-box-larga>h3,
 .mappa-meteo-header h3,
 .pagina-box-header h3 {
     display: none;
@@ -1593,7 +1637,8 @@ html.comando-gia-scelto #modal-comando {
 
 .leaflet-top,
 .leaflet-bottom {
-    z-index: 900 !important; /* sotto header (1000) e modali (2000) */
+    z-index: 900 !important;
+    /* sotto header (1000) e modali (2000) */
 }
 
 /* Convertitore Coordinate espanso: le 3 schede diventano 3 colonne
@@ -1616,12 +1661,14 @@ html.comando-gia-scelto #modal-comando {
 .pannello-fullscreen #coord-tab-content-dati,
 .pannello-fullscreen #coord-tab-content-mappa,
 .pannello-fullscreen #coord-tab-content-messaggio {
-    display: block !important; /* sovrascrive lo style inline che i tab impostano via JS */
+    display: block !important;
+    /* sovrascrive lo style inline che i tab impostano via JS */
     border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 14px;
     background: var(--surface-color);
-    min-width: 0; /* evita overflow di tabelle/mappa dentro la colonna grid */
+    min-width: 0;
+    /* evita overflow di tabelle/mappa dentro la colonna grid */
 }
 
 .pannello-fullscreen .mappa-comando {
@@ -1637,7 +1684,8 @@ html.comando-gia-scelto #modal-comando {
 .pagina-box-header-con-nota .pagina-nota-inline {
     margin-bottom: 0;
     flex: 1 1 auto;
-    display: block; /* la regola generale nasconde solo gli h3, questa resta visibile */
+    display: block;
+    /* la regola generale nasconde solo gli h3, questa resta visibile */
 }
 
 .pagina-box-header-con-nota .btn-fullscreen-pagina {
@@ -1659,13 +1707,26 @@ html.comando-gia-scelto #modal-comando {
     }
 }
 
+/* In vista ridotta il titolo è ridondante con la scheda attiva: nascosto */
 .coord-colonna-titolo {
-    color: var(--text-muted);
-    text-transform: uppercase;
-    font-size: 12px;
+    display: none;
+}
+
+/* In vista espansa (3 colonne affiancate) torna visibile, con lo stesso
+   stile "a linguetta" della scheda attiva in vista ridotta */
+.pannello-fullscreen .coord-colonna-titolo {
+    display: block;
+    background: var(--surface-color);
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
+    border-radius: 10px 10px 0 0;
+    padding: 9px 20px;
+    font-size: 13px;
     font-weight: bold;
-    letter-spacing: 0.5px;
-    margin: 0 0 12px;
+    text-align: center;
+    text-transform: none;
+    letter-spacing: normal;
+    margin: -14px -14px 14px -14px; /* fonde il titolo col bordo superiore della colonna */
 }
 
 .coord-comando-badge {
