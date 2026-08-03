@@ -1125,6 +1125,62 @@ document.addEventListener("keydown", (e) => {
         });
     }
 
+    // ==========================================================
+// FULLSCREEN PER PAGINA (solo Convertitore Coordinate, per ora)
+// ==========================================================
+function toggleFullscreenPagina(pulsante) {
+    const pannello = pulsante.closest(".pannello");
+    if (!pannello) return;
+
+    const splitScreenEl = document.querySelector(".split-screen");
+    const inFullscreen = pannello.classList.toggle("pannello-fullscreen");
+
+    if (splitScreenEl) splitScreenEl.classList.toggle("ha-pannello-fullscreen", inFullscreen);
+
+    pulsante.textContent = inFullscreen ? "🗗" : "⛶";
+    pulsante.title = inFullscreen ? "Esci da schermo intero" : "Schermo intero";
+
+    // Leaflet ascolta il resize della window: un evento sintetico basta
+    // ad aggiornare la mappa del Convertitore senza toccare convertitore.js
+    setTimeout(() => window.dispatchEvent(new Event("resize")), 150);
+}
+
+document.querySelectorAll(".btn-fullscreen-pagina").forEach(pulsante => {
+    pulsante.addEventListener("click", () => toggleFullscreenPagina(pulsante));
+});
+
+document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    const pannelloAttivo = document.querySelector(".pannello.pannello-fullscreen");
+    if (!pannelloAttivo) return;
+    const pulsanteAttivo = pannelloAttivo.querySelector(".btn-fullscreen-pagina");
+    if (pulsanteAttivo) toggleFullscreenPagina(pulsanteAttivo);
+});
+
+// ==========================================================
+// MODALE AIUTO E CONTATTI
+// ==========================================================
+const btnHelp = document.getElementById("btn-help");
+const modalHelp = document.getElementById("modal-help");
+const modalHelpClose = document.getElementById("modal-help-close");
+
+if (btnHelp && modalHelp) {
+    btnHelp.addEventListener("click", () => { modalHelp.style.display = "flex"; });
+}
+if (modalHelpClose && modalHelp) {
+    modalHelpClose.addEventListener("click", () => { modalHelp.style.display = "none"; });
+}
+if (modalHelp) {
+    modalHelp.addEventListener("click", (e) => {
+        if (e.target === modalHelp) modalHelp.style.display = "none";
+    });
+}
+document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && modalHelp && modalHelp.style.display === "flex") {
+        modalHelp.style.display = "none";
+    }
+});
+
     // Assegnazione iniziale: Home a sinistra, Mappa e Meteo a destra.
     // Tutte le altre pagine restano parcheggiate nel magazzino nascosto.
     CATALOGO_PAGINE.forEach(pagina => {
