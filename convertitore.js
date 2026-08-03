@@ -1041,6 +1041,7 @@ document.addEventListener("DOMContentLoaded", () => {
             formattaDMSsMessaggio(lat, lon),
             "*Open Location Code*",
             olcEncode(lat, lon, 11),
+            "",
             "*Appunti*",
             formattaDD(lat, lon),
             "",
