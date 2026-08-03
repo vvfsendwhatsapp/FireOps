@@ -1096,7 +1096,7 @@ function toggleFullscreenPagina(pulsante) {
 
     if (splitScreenEl) splitScreenEl.classList.toggle("ha-pannello-fullscreen", inFullscreen);
 
-    pulsante.textContent = inFullscreen ? "🗗" : "⛶";
+    pulsante.textContent = inFullscreen ? "🗗 Riduci" : "⛶ Espandi";
     pulsante.title = inFullscreen ? "Esci da schermo intero" : "Schermo intero";
 
     // Leaflet ascolta il resize della window: un evento sintetico basta
