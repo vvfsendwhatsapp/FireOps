@@ -1711,14 +1711,15 @@ html.comando-gia-scelto #modal-comando {
     display: none;
 }
 
-/* In fullscreen il titolo diventa una "linguetta" identica a .coord-tab-btn
-   (stessa classe, stesso stile), solo staccata dalla colonna invece che
-   fusa con essa: bordo arrotondato su tutti e 4 gli angoli, non solo sopra */
+/* La linguetta sporge sopra il bordo superiore del riquadro: margine
+   negativo che la solleva a cavallo del bordo, come le schede della
+   vista ridotta sopra .coord-tab-corpo */
 .pannello-fullscreen .coord-colonna-titolo {
     display: inline-block;
-    top: 0;
+    position: relative;
+    margin: -30px 0 14px 14px;
     border-radius: 10px;
-    margin: 0 0 14px;
+    z-index: 2;
 }
 
 /* Colonna attiva: il titolo si accende in giallo (il bordo della colonna
