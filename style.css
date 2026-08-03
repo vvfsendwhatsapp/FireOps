@@ -1455,3 +1455,47 @@ html.comando-gia-scelto #modal-comando {
     position: relative;
     z-index: 1;
 }
+
+/* Toolbar dei pannelli: sempre visibile, sopra la riga gialla dell'header */
+.pannello-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 900; /* sotto l'header (1000), sopra il resto del pannello */
+    background: var(--surface-color);
+}
+
+/* Header di pagina con titolo + pulsante fullscreen affiancati
+   (riusabile per Sostanze Pericolose, Convertitore Coordinate, ecc.) */
+.pagina-box-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.pagina-box-header h3 {
+    margin-bottom: 0;
+}
+
+/* FULLSCREEN PER PAGINA: il pannello che la contiene copre tutto lo schermo */
+.pannello.pannello-fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 2500;
+    border-radius: 0;
+}
+
+/* Mentre un pannello è a schermo intero, l'altro si nasconde */
+.split-screen.ha-pannello-fullscreen .pannello:not(.pannello-fullscreen) {
+    display: none;
+}
