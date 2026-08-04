@@ -145,31 +145,23 @@
                 </p>
 
                 <div class="msg-riga-campi">
-                    <div class="msg-campo combo-campo">
-                        <label for="msg-prefisso-input">Prefisso internazionale</label>
-                        <div class="combo-wrapper">
-                            <input type="text" id="msg-prefisso-input" class="combo-input"
-                                placeholder="Cerca prefisso o paese..." autocomplete="off">
-                            <input type="hidden" id="msg-prefisso">
-                            <span class="combo-arrow" aria-hidden="true"></span>
-                            <div id="msg-prefisso-dropdown" class="combo-dropdown"></div>
-                        </div>
-                    </div>
                     <div class="msg-campo">
-                        <label for="msg-numero">Numero di telefono</label>
-                        <input type="tel" id="msg-numero" placeholder="Es. 3331234567" autocomplete="off">
+                        <label for="coord-indirizzo-via">Indirizzo</label>
+                        <input type="text" id="coord-indirizzo-via" placeholder="Via Roma 10" autocomplete="off">
                     </div>
                     <div class="msg-campo combo-campo">
-                        <label for="msg-lingua-input">Lingua messaggio</label>
+                        <label for="coord-indirizzo-comune-input">Comune</label>
                         <div class="combo-wrapper">
-                            <input type="text" id="msg-lingua-input" class="combo-input" placeholder="Cerca lingua..."
-                                autocomplete="off">
-                            <input type="hidden" id="msg-lingua">
+                            <input type="text" id="coord-indirizzo-comune-input" class="combo-input"
+                                placeholder="Cerca comune..." autocomplete="off">
+                            <input type="hidden" id="coord-indirizzo-comune">
                             <span class="combo-arrow" aria-hidden="true"></span>
-                            <div id="msg-lingua-dropdown" class="combo-dropdown"></div>
+                            <div id="coord-indirizzo-comune-dropdown" class="combo-dropdown"></div>
                         </div>
                     </div>
                 </div>
+                <p class="pagina-nota">Seleziona il comune dall'elenco. Indirizzo facoltativo, ma aiuta la precisione.
+                </p>
 
                 <label for="msg-testo">Anteprima messaggio</label>
                 <textarea id="msg-testo" rows="16" readonly></textarea>

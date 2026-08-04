@@ -470,13 +470,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Geocoding diretto (indirizzo → coordinate), stesso servizio Nominatim
     // già usato per il geocoding inverso. Nessuna chiave richiesta.
-    async function geocodificaIndirizzo(via, comune, cap) {
-        if (!via && !comune && !cap) return null;
+    async function geocodificaIndirizzo(via, comune) {
+        if (!via && !comune) return null;
 
         const parametri = new URLSearchParams({ format: "jsonv2", limit: "1", countrycodes: "it" });
         if (via) parametri.set("street", via);
         if (comune) parametri.set("city", comune);
-        if (cap) parametri.set("postalcode", cap);
 
         const url = `https://nominatim.openstreetmap.org/search?${parametri.toString()}`;
         const risposta = await fetch(url);
@@ -694,7 +693,7 @@ document.addEventListener("DOMContentLoaded", () => {
         "coord-olc",
         "coord-utm-zona", "coord-utm-emisfero", "coord-utm-est", "coord-utm-nord",
         "coord-libero-testo",
-        "coord-indirizzo-via", "coord-indirizzo-comune-input", "coord-indirizzo-comune", "coord-indirizzo-cap"
+        "coord-indirizzo-via", "coord-indirizzo-comune-input", "coord-indirizzo-comune"
     ];
     const CHIAVE_STORAGE_FORM_COORD = "fireops_coord_form_stato";
 
@@ -1318,14 +1317,13 @@ document.addEventListener("DOMContentLoaded", () => {
             if (formatoScelto === "indirizzo") {
                 const via = (document.getElementById("coord-indirizzo-via").value || "").trim();
                 const comune = (document.getElementById("coord-indirizzo-comune").value || "").trim();
-                const cap = (document.getElementById("coord-indirizzo-cap").value || "").trim();
 
-                if (!via && !comune && !cap) {
-                    mostraErrore("Inserisci almeno uno tra indirizzo, comune o CAP.");
+                if (!via && !comune) {
+                    mostraErrore("Inserisci almeno indirizzo o comune.");
                     return;
                 }
                 try {
-                    coordinate = await geocodificaIndirizzo(via, comune, cap);
+                    coordinate = await geocodificaIndirizzo(via, comune);
                 } catch (err) {
                     console.error("Geocoding indirizzo non disponibile:", err);
                     mostraErrore("Servizio di geocoding non raggiungibile al momento.");
