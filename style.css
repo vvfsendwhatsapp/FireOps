@@ -1740,7 +1740,9 @@ html.comando-gia-scelto #modal-comando {
    resto del contenuto resta comodamente dentro il padding normale */
 .pannello-fullscreen .coord-colonna-titolo {
     display: block;
-    margin: -14px -14px 14px -14px;
+    /* -15px = 14px di padding + 1px di bordo della colonna: solo così
+       il titolo tocca esattamente il bordo ESTERNO, non quello interno */
+    margin: -15px -15px 14px -15px;
     padding: 10px 14px;
     text-align: center;
     border-radius: 8px 8px 0 0;
