@@ -660,6 +660,12 @@ document.addEventListener("DOMContentLoaded", () => {
     // UI: selezione formato in ingresso, lettura campi, conversione
     // ==========================================================
     const selectFormato = document.getElementById("coord-formato-input");
+    function aggiornaTestoBottoneConverti() {
+    const btn = document.getElementById("btn-coord-converti");
+    if (!btn || !selectFormato) return;
+    btn.textContent = selectFormato.value === "mappa"
+        ? "🗺️ Vai alla mappa"
+        : "📐 Converti e scopri le funzioni a lato";
     const gruppiInput = {
         dd: document.getElementById("coord-input-dd"),
         dmm: document.getElementById("coord-input-dmm"),
@@ -674,12 +680,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const elRisultati = document.getElementById("coord-risultati");
 
     if (selectFormato) {
-        selectFormato.addEventListener("change", () => {
-            Object.entries(gruppiInput).forEach(([chiave, el]) => {
-                if (el) el.style.display = chiave === selectFormato.value ? "block" : "none";
-            });
+    selectFormato.addEventListener("change", () => {
+        Object.entries(gruppiInput).forEach(([chiave, el]) => {
+            if (el) el.style.display = chiave === selectFormato.value ? "block" : "none";
         });
-    }
+        aggiornaTestoBottoneConverti(); // NUOVO
+    });
+}
 
     // ==========================================================
     // PERSISTENZA FORM: i dati inseriti (qualsiasi formato) e il formato
@@ -720,11 +727,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 Object.entries(gruppiInput).forEach(([chiave, el]) => {
                     if (el) el.style.display = chiave === stato["coord-formato-input"] ? "block" : "none";
                 });
+    aggiornaTestoBottoneConverti();
             }
         } catch (err) { }
     }
 
     ripristinaStatoFormCoord();
+    aggiornaTestoBottoneConverti();
 
     // Delega un solo listener sull'intero form: copre tutti i campi presenti
     // (compreso quello nascosto della combo Comune) senza doverli agganciare uno per uno
@@ -1473,6 +1482,10 @@ if (btnToggleAltimetria && wrapperAltimetria) {
             nascondiErrore();
 
             const formatoScelto = selectFormato ? selectFormato.value : "dd";
+        if (formatoScelto === "mappa") {
+            impostaSchedaColonnaAttiva("mappa");
+            return;
+        }
             let coordinate = null;
 
             if (formatoScelto === "indirizzo") {

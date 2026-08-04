@@ -1855,3 +1855,11 @@ html.comando-gia-scelto #modal-comando {
     letter-spacing: 0.5px;
     margin: 0 0 14px;
 }
+
+/* Tutte le etichette della riga controlli-mappa riservano la stessa
+   altezza (due righe), anche quando il testo ci sta su una sola: così
+   select e pulsanti partono tutti dalla stessa linea verticale */
+.coord-mappa-controlli .msg-campo label {
+    display: block;
+    min-height: 28px;
+}
