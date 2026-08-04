@@ -1484,12 +1484,14 @@ if (btnToggleAltimetria && wrapperAltimetria) {
     if (btnConverti) {
         btnConverti.addEventListener("click", async () => {
             nascondiErrore();
-
             const formatoScelto = selectFormato ? selectFormato.value : "dd";
-        if (formatoScelto === "mappa") {
-            impostaSchedaColonnaAttiva("mappa");
-            return;
-        }
+            console.log("CLICK — formatoScelto:", formatoScelto); // DEBUG TEMPORANEO
+            if (formatoScelto === "mappa") {
+                console.log("CLICK — entrato nel branch mappa, chiamo impostaSchedaColonnaAttiva"); // DEBUG TEMPORANEO
+                impostaSchedaColonnaAttiva("mappa");
+                console.log("CLICK — chiamata fatta"); // DEBUG TEMPORANEO
+                return;
+            }
             let coordinate = null;
 
             if (formatoScelto === "indirizzo") {
