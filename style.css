@@ -1614,15 +1614,8 @@ html.comando-gia-scelto #modal-comando {
     align-items: start;
 }
 
-.coord-titoli-riga {
+.coord-colonna-titolo {
     display: none;
-}
-
-.pannello-fullscreen .coord-titoli-riga {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-    grid-column: 1 / -1;
 }
 
 .pannello-fullscreen .coord-colonna-titolo {
@@ -1656,12 +1649,6 @@ html.comando-gia-scelto #modal-comando {
     padding: 14px;
     background: var(--surface-color);
     min-width: 0;
-}
-
-.pannello-fullscreen #coord-tab-content-dati.coord-colonna-attiva,
-.pannello-fullscreen #coord-tab-content-mappa.coord-colonna-attiva,
-.pannello-fullscreen #coord-tab-content-messaggio.coord-colonna-attiva {
-    border-color: var(--primary-color) !important;
 }
 
 .pannello-fullscreen .mappa-comando {
