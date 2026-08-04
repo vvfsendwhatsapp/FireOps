@@ -1661,7 +1661,9 @@ html.comando-gia-scelto #modal-comando {
 .pannello-fullscreen #coord-tab-content-dati,
 .pannello-fullscreen #coord-tab-content-mappa,
 .pannello-fullscreen #coord-tab-content-messaggio {
-    display: block !important; /* sovrascrive lo style inline che i tab impostano via JS in vista ridotta */
+    display: block !important;
+    position: relative;
+    box-sizing: border-box;
     border: 1px solid var(--border-color);
     border-radius: 0 0 8px 8px;
     padding: 14px;
@@ -1726,7 +1728,11 @@ html.comando-gia-scelto #modal-comando {
    resto del contenuto resta comodamente dentro il padding normale */
 .pannello-fullscreen .coord-colonna-titolo {
     display: block;
-    border: none; /* il bordo lo disegna solo la colonna, mai il titolo: niente più doppio bordo */
+    position: relative;
+    z-index: 3;
+    box-sizing: border-box;
+    width: calc(100% + 30px);
+    border: none;
     margin: -15px -15px 14px -15px;
     padding: 10px 14px;
     text-align: center;
