@@ -1623,8 +1623,10 @@ html.comando-gia-scelto #modal-comando {
     background: var(--dark-color);
     color: var(--text-muted);
     border: 1px solid var(--border-color);
-    border-bottom: none; /* niente bordo qui: lo disegna la colonna sotto, altrimenti si vede doppio */
-    border-radius: 8px 8px 0 0; /* arrotondato SOLO in alto */
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
     padding: 9px 20px;
     font-size: 13px;
     font-weight: bold;
