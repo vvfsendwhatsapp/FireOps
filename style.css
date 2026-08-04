@@ -1526,10 +1526,10 @@ html.comando-gia-scelto #modal-comando {
 }
 
 .coord-tab-btn.attivo {
-    background: var(--surface-color);
+    background: var(--dark-color);
     color: var(--primary-color);
     border-color: var(--primary-color);
-    border-bottom: 1px solid var(--surface-color);
+    border-bottom: 1px solid var(--dark-color);
     top: 1px;
     z-index: 2;
 }
