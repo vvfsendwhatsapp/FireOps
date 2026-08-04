@@ -255,293 +255,230 @@
                 </div>
 
                 <div class="coord-tab-corpo">
-                    <!-- SCHEDA: DATI -->
-                    <div class="coord-colonna-wrapper">
+
+                    <!-- Riga dei tre titoli, allineata e separata dai contenuti -->
+                    <div class="coord-titoli-riga">
                         <h4 class="coord-colonna-titolo coord-tab-btn" data-tab="dati">📋 Dati</h4>
-                        <div id="coord-tab-content-dati" style="display:block;">
+                        <h4 class="coord-colonna-titolo coord-tab-btn" data-tab="mappa">🗺️ Mappa</h4>
+                        <h4 class="coord-colonna-titolo coord-tab-btn" data-tab="messaggio">✉️ Messaggio a squadre VVF
+                        </h4>
+                    </div>
 
-                            <div id="coord-input-colonna">
-                                <label for="coord-formato-input">Formato coordinate in ingresso</label>
-                                <select id="coord-formato-input">
-                                    <option value="dd">Gradi decimali (DD.dddddd)</option>
-                                    <option value="dmm">Gradi e primi decimali (DD MM.mmmm)</option>
-                                    <option value="dms">Gradi primi secondi (DD MM SS.ss)</option>
-                                    <option value="olc">OLC / Plus Code</option>
-                                    <option value="utm">UTM</option>
-                                    <option value="mappa">Scelta su mappa (clic diretto)</option>
-                                    <option value="libero">Testo libero (incolla da Google Maps, ecc.)</option>
-                                    <option value="indirizzo">Indirizzo (geocoding)</option>
-                                </select>
+                    <!-- SCHEDA: DATI -->
+                    <div id="coord-tab-content-dati" style="display:block;">
 
-                                <div id="coord-input-dd" class="coord-input-gruppo">
-                                    <div class="msg-riga-campi">
-                                        <div class="msg-campo">
-                                            <label for="coord-dd-lat">Latitudine</label>
-                                            <input type="text" id="coord-dd-lat" placeholder="45.464204"
-                                                autocomplete="off">
-                                        </div>
-                                        <div class="msg-campo">
-                                            <label for="coord-dd-lon">Longitudine</label>
-                                            <input type="text" id="coord-dd-lon" placeholder="9.189982"
-                                                autocomplete="off">
-                                        </div>
+                        <div id="coord-input-colonna">
+                            <label for="coord-formato-input">Formato coordinate in ingresso</label>
+                            <select id="coord-formato-input">
+                                <option value="dd">Gradi decimali (DD.dddddd)</option>
+                                <option value="dmm">Gradi e primi decimali (DD MM.mmmm)</option>
+                                <option value="dms">Gradi primi secondi (DD MM SS.ss)</option>
+                                <option value="olc">OLC / Plus Code</option>
+                                <option value="utm">UTM</option>
+                                <option value="mappa">Scelta su mappa (clic diretto)</option>
+                                <option value="libero">Testo libero (incolla da Google Maps, ecc.)</option>
+                                <option value="indirizzo">Indirizzo (geocoding)</option>
+                            </select>
+
+                            <div id="coord-input-dd" class="coord-input-gruppo">
+                                <div class="msg-riga-campi">
+                                    <div class="msg-campo">
+                                        <label for="coord-dd-lat">Latitudine</label>
+                                        <input type="text" id="coord-dd-lat" placeholder="45.464204" autocomplete="off">
                                     </div>
-                                </div>
-
-                                <div id="coord-input-dmm" class="coord-input-gruppo" style="display:none;">
-                                    <div class="msg-riga-campi">
-                                        <div class="msg-campo">
-                                            <label for="coord-dmm-lat">Latitudine (gradi primi.decimi)</label>
-                                            <input type="text" id="coord-dmm-lat" placeholder="45 27.8522 N"
-                                                autocomplete="off">
-                                        </div>
-                                        <div class="msg-campo">
-                                            <label for="coord-dmm-lon">Longitudine (gradi primi.decimi)</label>
-                                            <input type="text" id="coord-dmm-lon" placeholder="9 11.3989 E"
-                                                autocomplete="off">
-                                        </div>
+                                    <div class="msg-campo">
+                                        <label for="coord-dd-lon">Longitudine</label>
+                                        <input type="text" id="coord-dd-lon" placeholder="9.189982" autocomplete="off">
                                     </div>
-                                </div>
-
-                                <div id="coord-input-dms" class="coord-input-gruppo" style="display:none;">
-                                    <div class="msg-riga-campi">
-                                        <div class="msg-campo">
-                                            <label for="coord-dms-lat">Latitudine (gradi primi secondi)</label>
-                                            <input type="text" id="coord-dms-lat" placeholder="45 27 51.1 N"
-                                                autocomplete="off">
-                                        </div>
-                                        <div class="msg-campo">
-                                            <label for="coord-dms-lon">Longitudine (gradi primi secondi)</label>
-                                            <input type="text" id="coord-dms-lon" placeholder="9 11 23.9 E"
-                                                autocomplete="off">
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div id="coord-input-olc" class="coord-input-gruppo" style="display:none;">
-                                    <label for="coord-olc">Codice OLC / Plus Code (completo)</label>
-                                    <input type="text" id="coord-olc" placeholder="8FQFF57Q+MX" autocomplete="off">
-                                    <p class="pagina-nota">
-                                        Serve il codice completo (8-11 caratteri prima del "+"): i codici brevi tipo
-                                        "F57Q+MX Milano" richiedono una località di riferimento e qui non sono
-                                        supportati.
-                                    </p>
-                                </div>
-
-                                <div id="coord-input-utm" class="coord-input-gruppo" style="display:none;">
-                                    <div class="msg-riga-campi">
-                                        <div class="msg-campo" style="max-width:90px;">
-                                            <label for="coord-utm-zona">Zona</label>
-                                            <input type="text" id="coord-utm-zona" placeholder="32" autocomplete="off">
-                                        </div>
-                                        <div class="msg-campo" style="max-width:110px;">
-                                            <label for="coord-utm-emisfero">Emisfero</label>
-                                            <select id="coord-utm-emisfero">
-                                                <option value="N">Nord</option>
-                                                <option value="S">Sud</option>
-                                            </select>
-                                        </div>
-                                        <div class="msg-campo">
-                                            <label for="coord-utm-est">Est (Easting)</label>
-                                            <input type="text" id="coord-utm-est" placeholder="514852"
-                                                autocomplete="off">
-                                        </div>
-                                        <div class="msg-campo">
-                                            <label for="coord-utm-nord">Nord (Northing)</label>
-                                            <input type="text" id="coord-utm-nord" placeholder="5034537"
-                                                autocomplete="off">
-                                        </div>
-                                    </div>
-                                </div>
-                                <div id="coord-input-mappa" class="coord-input-gruppo" style="display:none;">
-                                    <p class="pagina-nota">
-                                        Vai alla scheda "Mappa" e clicca direttamente sul punto desiderato: le
-                                        coordinate
-                                        vengono generate automaticamente da quel click. Nessun campo da compilare qui.
-                                    </p>
-                                </div>
-                                <div id="coord-input-libero" class="coord-input-gruppo" style="display:none;">
-                                    <label for="coord-libero-testo">Incolla coordinate (qualsiasi formato)</label>
-                                    <input type="text" id="coord-libero-testo"
-                                        placeholder="Es: 45.464204, 9.189982 — oppure un link Google Maps"
-                                        autocomplete="off">
-                                    <p class="pagina-nota">
-                                        Riconosce coppie decimali (45.464, 9.189), link Google Maps con "@lat,lon" e
-                                        formato
-                                        gradi/primi/secondi con N/S/E/W. Per i link brevi (maps.app.goo.gl) apri prima
-                                        il
-                                        link
-                                        per farteli espandere dal browser, poi incolla l'URL completo.
-                                    </p>
-                                </div>
-
-                                <div id="coord-input-indirizzo" class="coord-input-gruppo" style="display:none;">
-                                    <div class="msg-riga-campi">
-                                        <div class="msg-campo">
-                                            <label for="coord-indirizzo-via">Indirizzo</label>
-                                            <input type="text" id="coord-indirizzo-via" placeholder="Via Roma 10"
-                                                autocomplete="off">
-                                        </div>
-                                        <div class="msg-campo combo-campo">
-                                            <label for="coord-indirizzo-comune-input">Comune</label>
-                                            <div class="combo-wrapper">
-                                                <input type="text" id="coord-indirizzo-comune-input" class="combo-input"
-                                                    placeholder="Cerca comune..." autocomplete="off">
-                                                <input type="hidden" id="coord-indirizzo-comune">
-                                                <span class="combo-arrow" aria-hidden="true"></span>
-                                                <div id="coord-indirizzo-comune-dropdown" class="combo-dropdown"></div>
-                                            </div>
-                                        </div>
-                                        <div class="msg-campo" style="max-width:110px;">
-                                            <label for="coord-indirizzo-cap">CAP</label>
-                                            <input type="text" id="coord-indirizzo-cap" placeholder="92100"
-                                                autocomplete="off">
-                                        </div>
-                                    </div>
-                                    <p class="pagina-nota">Seleziona il comune dall'elenco: il CAP si compila da solo
-                                        (resta comunque modificabile a mano se serve). Indirizzo facoltativo, ma aiuta
-                                        la precisione.</p>
-                                </div>
-
-                                <div class="msg-azioni">
-                                    <button id="btn-coord-converti" class="btn-whatsapp" type="button">📐 Converti e
-                                        scopri
-                                        le funzioni a lato</button>
-                                </div>
-
-                                <p id="coord-errore" class="pagina-nota"
-                                    style="display:none; color:var(--danger-color);">
-                                </p>
-
-                            </div> <!-- chiusura #coord-input-colonna -->
-                            <div id="coord-risultati" class="riepilogo-comando" style="display:none;">
-                                <div class="riepilogo-box">
-                                    <table class="riepilogo-tabella">
-                                        <tbody>
-                                            <tr>
-                                                <th>DD.dddddd</th>
-                                                <td id="coord-out-dd">-</td>
-                                            </tr>
-                                            <tr>
-                                                <th>DD MM.mmmm</th>
-                                                <td id="coord-out-dmm">-</td>
-                                            </tr>
-                                            <tr>
-                                                <th>DD MM SS.ss</th>
-                                                <td id="coord-out-dms">-</td>
-                                            </tr>
-                                            <tr>
-                                                <th>OLC</th>
-                                                <td id="coord-out-olc">-</td>
-                                            </tr>
-                                            <tr>
-                                                <th>UTM</th>
-                                                <td id="coord-out-utm">-</td>
-                                            </tr>
-                                            <tr>
-                                                <th>SO115 — Longitudine</th>
-                                                <td id="coord-out-so115-lon">-</td>
-                                            </tr>
-                                            <tr>
-                                                <th>SO115 — Latitudine</th>
-                                                <td id="coord-out-so115-lat">-</td>
-                                            </tr>
-                                            <tr>
-                                                <th>Quota</th>
-                                                <td id="coord-out-quota">-</td>
-                                            </tr>
-                                            <tr>
-                                                <th>Google Maps</th>
-                                                <td id="coord-out-maps">-</td>
-                                            </tr>
-                                            <tr>
-                                                <th>Toponimo</th>
-                                                <td id="coord-out-toponimo">-</td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
                                 </div>
                             </div>
-                            <p class="pagina-nota" id="coord-dati-nota-vuota">Converti delle coordinate per vedere qui
-                                tutti
-                                i formati (cliccabili per copiarli).</p>
+
+                            <div id="coord-input-dmm" class="coord-input-gruppo" style="display:none;">
+                                <div class="msg-riga-campi">
+                                    <div class="msg-campo">
+                                        <label for="coord-dmm-lat">Latitudine (gradi primi.decimi)</label>
+                                        <input type="text" id="coord-dmm-lat" placeholder="45 27.8522 N"
+                                            autocomplete="off">
+                                    </div>
+                                    <div class="msg-campo">
+                                        <label for="coord-dmm-lon">Longitudine (gradi primi.decimi)</label>
+                                        <input type="text" id="coord-dmm-lon" placeholder="9 11.3989 E"
+                                            autocomplete="off">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="coord-input-dms" class="coord-input-gruppo" style="display:none;">
+                                <div class="msg-riga-campi">
+                                    <div class="msg-campo">
+                                        <label for="coord-dms-lat">Latitudine (gradi primi secondi)</label>
+                                        <input type="text" id="coord-dms-lat" placeholder="45 27 51.1 N"
+                                            autocomplete="off">
+                                    </div>
+                                    <div class="msg-campo">
+                                        <label for="coord-dms-lon">Longitudine (gradi primi secondi)</label>
+                                        <input type="text" id="coord-dms-lon" placeholder="9 11 23.9 E"
+                                            autocomplete="off">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="coord-input-olc" class="coord-input-gruppo" style="display:none;">
+                                <label for="coord-olc">Codice OLC / Plus Code (completo)</label>
+                                <input type="text" id="coord-olc" placeholder="8FQFF57Q+MX" autocomplete="off">
+                                <p class="pagina-nota">
+                                    Serve il codice completo (8-11 caratteri prima del "+"): i codici brevi tipo
+                                    "F57Q+MX Milano" richiedono una località di riferimento e qui non sono supportati.
+                                </p>
+                            </div>
+
+                            <div id="coord-input-utm" class="coord-input-gruppo" style="display:none;">
+                                <div class="msg-riga-campi">
+                                    <div class="msg-campo" style="max-width:90px;">
+                                        <label for="coord-utm-zona">Zona</label>
+                                        <input type="text" id="coord-utm-zona" placeholder="32" autocomplete="off">
+                                    </div>
+                                    <div class="msg-campo" style="max-width:110px;">
+                                        <label for="coord-utm-emisfero">Emisfero</label>
+                                        <select id="coord-utm-emisfero">
+                                            <option value="N">Nord</option>
+                                            <option value="S">Sud</option>
+                                        </select>
+                                    </div>
+                                    <div class="msg-campo">
+                                        <label for="coord-utm-est">Est (Easting)</label>
+                                        <input type="text" id="coord-utm-est" placeholder="514852" autocomplete="off">
+                                    </div>
+                                    <div class="msg-campo">
+                                        <label for="coord-utm-nord">Nord (Northing)</label>
+                                        <input type="text" id="coord-utm-nord" placeholder="5034537" autocomplete="off">
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="coord-input-mappa" class="coord-input-gruppo" style="display:none;">
+                                <p class="pagina-nota">
+                                    Vai alla scheda "Mappa" e clicca direttamente sul punto desiderato: le coordinate
+                                    vengono generate automaticamente da quel click. Nessun campo da compilare qui.
+                                </p>
+                            </div>
+                            <div id="coord-input-libero" class="coord-input-gruppo" style="display:none;">
+                                <label for="coord-libero-testo">Incolla coordinate (qualsiasi formato)</label>
+                                <input type="text" id="coord-libero-testo"
+                                    placeholder="Es: 45.464204, 9.189982 — oppure un link Google Maps"
+                                    autocomplete="off">
+                                <p class="pagina-nota">
+                                    Riconosce coppie decimali (45.464, 9.189), link Google Maps con "@lat,lon" e formato
+                                    gradi/primi/secondi con N/S/E/W. Per i link brevi (maps.app.goo.gl) apri prima il
+                                    link
+                                    per farteli espandere dal browser, poi incolla l'URL completo.
+                                </p>
+                            </div>
+
+                            <div id="coord-input-indirizzo" class="coord-input-gruppo" style="display:none;">
+                                <div class="msg-riga-campi">
+                                    <div class="msg-campo">
+                                        <label for="coord-indirizzo-via">Indirizzo</label>
+                                        <input type="text" id="coord-indirizzo-via" placeholder="Via Roma 10"
+                                            autocomplete="off">
+                                    </div>
+                                    <div class="msg-campo combo-campo">
+                                        <label for="coord-indirizzo-comune-input">Comune</label>
+                                        <div class="combo-wrapper">
+                                            <input type="text" id="coord-indirizzo-comune-input" class="combo-input"
+                                                placeholder="Cerca comune..." autocomplete="off">
+                                            <input type="hidden" id="coord-indirizzo-comune">
+                                            <span class="combo-arrow" aria-hidden="true"></span>
+                                            <div id="coord-indirizzo-comune-dropdown" class="combo-dropdown"></div>
+                                        </div>
+                                    </div>
+                                    <div class="msg-campo" style="max-width:110px;">
+                                        <label for="coord-indirizzo-cap">CAP</label>
+                                        <input type="text" id="coord-indirizzo-cap" placeholder="92100"
+                                            autocomplete="off">
+                                    </div>
+                                </div>
+                                <p class="pagina-nota">Seleziona il comune dall'elenco: il CAP si compila da solo
+                                    (resta comunque modificabile a mano se serve). Indirizzo facoltativo, ma aiuta la
+                                    precisione.</p>
+                            </div>
+
+                            <div class="msg-azioni">
+                                <button id="btn-coord-converti" class="btn-whatsapp" type="button">📐 Converti e scopri
+                                    le funzioni a lato</button>
+                            </div>
+
+                            <p id="coord-errore" class="pagina-nota" style="display:none; color:var(--danger-color);">
+                            </p>
+
+                        </div> <!-- chiusura #coord-input-colonna -->
+                        <div id="coord-risultati" class="riepilogo-comando" style="display:none;">
+                            <div class="riepilogo-box">
+                                <table class="riepilogo-tabella">
+                                    <tbody>
+                                        <tr>
+                                            <th>DD.dddddd</th>
+                                            <td id="coord-out-dd">-</td>
+                                        </tr>
+                                        <tr>
+                                            <th>DD MM.mmmm</th>
+                                            <td id="coord-out-dmm">-</td>
+                                        </tr>
+                                        <tr>
+                                            <th>DD MM SS.ss</th>
+                                            <td id="coord-out-dms">-</td>
+                                        </tr>
+                                        <tr>
+                                            <th>OLC</th>
+                                            <td id="coord-out-olc">-</td>
+                                        </tr>
+                                        <tr>
+                                            <th>UTM</th>
+                                            <td id="coord-out-utm">-</td>
+                                        </tr>
+                                        <tr>
+                                            <th>SO115 — Longitudine</th>
+                                            <td id="coord-out-so115-lon">-</td>
+                                        </tr>
+                                        <tr>
+                                            <th>SO115 — Latitudine</th>
+                                            <td id="coord-out-so115-lat">-</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Quota</th>
+                                            <td id="coord-out-quota">-</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Google Maps</th>
+                                            <td id="coord-out-maps">-</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Toponimo</th>
+                                            <td id="coord-out-toponimo">-</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
+                        <p class="pagina-nota" id="coord-dati-nota-vuota">Converti delle coordinate per vedere qui tutti
+                            i formati (cliccabili per copiarli).</p>
                     </div>
 
                     <!-- SCHEDA: MAPPA -->
-                    <div class="coord-colonna-wrapper">
-                        <h4 class="coord-colonna-titolo coord-tab-btn" data-tab="mappa">🗺️ Mappa</h4>
-                        <div id="coord-tab-content-mappa" style="display:none;">
-                            <div class="mappa-meteo-azioni">
-                                <select id="coord-profilo-percorso" class="header-select">
-                                    <option value="trekking">🥾 A piedi / sentiero</option>
-                                    <option value="car-fast">🚗 Automezzo</option>
-                                </select>
-                                <button id="btn-coord-percorso" class="btn-toggle-radar" type="button">🧭 Crea percorso
-                                    (clic su mappa)</button>
-                                <button id="btn-coord-annulla-percorso" class="btn-toggle-radar" type="button"
-                                    style="display:none;">✖ Annulla percorso</button>
-                                <button id="btn-coord-scarica-kml" class="btn-toggle-radar" type="button" disabled>⬇️
-                                    Scarica KML</button>
-                            </div>
-                            <div id="coord-mappa" class="mappa-comando"></div>
-                            <p class="pagina-nota" id="coord-percorso-info"></p>
-                            <p class="pagina-nota">🟨 Pallino giallo = Squadra VF (partenza percorso) — 🟥 Pallino rosso
-                                =
-                                Target intervento. Percorso in rosso.</p>
-
-                            <canvas id="coord-grafico-altimetria" width="700" height="180"
-                                style="display:none; width:100%; max-width:100%; background:var(--dark-color); border:1px solid var(--border-color); border-radius:8px; margin-top:10px;"></canvas>
-                            <p class="pagina-nota" id="coord-altimetria-nota" style="display:none;"></p>
+                    <div id="coord-tab-content-mappa" style="display:none;">
+                        <div class="mappa-meteo-azioni">
+                            <select id="coord-profilo-percorso" class="header-select">
+                                <option value="trekking">🥾 A piedi / sentiero</option>
+                                <option value="car-fast">🚗 Automezzo</option>
+                            </select>
+                            <button id="btn-coord-percorso" class="btn-toggle-radar" type="button">🧭 Crea percorso
+                                (clic su mappa)</button>
+                            <button id="btn-coord-annulla-percorso" class="btn-toggle-radar" type="button"
+                                style="display:none;">✖ Annulla percorso</button>
+                            <button id="btn-coord-scarica-kml" class="btn-toggle-radar" type="button" disabled>⬇️
+                                Scarica KML</button>
                         </div>
-                    </div>
-
-                    <!-- SCHEDA: MESSAGGIO -->
-                    <div class="coord-colonna-wrapper">
-                        <h4 class="coord-colonna-titolo coord-tab-btn" data-tab="messaggio">✉️ Messaggio a squadre VVF
-                        </h4>
-                        <div id="coord-tab-content-messaggio" style="display:none;">
-                            <p class="pagina-nota" id="coord-msg-comando-info">Nessun Comando attivo — selezionalo dalla
-                                schermata iniziale (☰).</p>
-                            <p class="pagina-nota">Invia le coordinate convertite a una squadra VVF via WhatsApp o
-                                Telegram,
-                                con lo stesso formato usato in Sala Operativa.</p>
-                            <div class="msg-riga-campi">
-                                <div class="msg-campo combo-campo">
-                                    <label for="coord-msg-prefisso-input">Prefisso internazionale</label>
-                                    <div class="combo-wrapper">
-                                        <input type="text" id="coord-msg-prefisso-input" class="combo-input"
-                                            placeholder="Cerca prefisso o paese..." autocomplete="off">
-                                        <input type="hidden" id="coord-msg-prefisso">
-                                        <span class="combo-arrow" aria-hidden="true"></span>
-                                        <div id="coord-msg-prefisso-dropdown" class="combo-dropdown"></div>
-                                    </div>
-                                </div>
-                                <div class="msg-campo">
-                                    <label for="coord-msg-numero">Numero di telefono squadra</label>
-                                    <input type="tel" id="coord-msg-numero" placeholder="Es. 3331234567"
-                                        autocomplete="off">
-                                </div>
-                            </div>
-
-                            <label for="coord-msg-testo">Anteprima messaggio</label>
-                            <textarea id="coord-msg-testo" rows="16" readonly
-                                placeholder="Converti prima delle coordinate per generare il messaggio."></textarea>
-
-                            <div class="msg-azioni">
-                                <button id="coord-btn-whatsapp-web" class="btn-whatsapp" type="button" disabled>📱
-                                    WhatsApp
-                                    Web</button>
-                                <button id="coord-btn-whatsapp-app" class="btn-whatsapp" type="button" disabled>💻
-                                    WhatsApp
-                                    Desktop</button>
-                                <button id="coord-btn-invia-telegram" class="btn-telegram" type="button" disabled>✈️
-                                    Telegram</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                        <div id="coord-mappa" class="mappa-comando"></div>
+                        <p </div>
         </section>
 
         <!-- RADIO E TELEFONI -->
