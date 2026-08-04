@@ -1736,7 +1736,7 @@ html.comando-gia-scelto #modal-comando {
     margin: -15px -15px 14px -15px;
     padding: 10px 14px;
     text-align: center;
-    border-radius: 8px 8px 8px 8px;
+    border-radius: 8px 8px 0 0;
 }
 
 .pannello-fullscreen .coord-colonna-attiva > .coord-colonna-titolo {
