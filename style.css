@@ -1824,3 +1824,34 @@ html.comando-gia-scelto #modal-comando {
     font-weight: bold;
     margin-bottom: 4px;
 }
+
+/* Il controllo +/- di Leaflet si sposta dall'angolo in alto a sinistra
+   al centro verticale del lato sinistro, su tutte le mappe dell'app */
+.mappa-comando .leaflet-top.leaflet-left {
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+/* Il select "Modalità di spostamento" ora eredita lo stile standard
+   (.pagina-box select), quindi niente CSS dedicato da aggiungere per lui.
+   Servono invece questi due ritocchi: */
+
+/* Pulsanti azione mappa (Traccia percorso, Annulla, Esporta KML): stessa
+   altezza/font-size degli elementi delle altre due colonne */
+.coord-mappa-azione-campo .btn-toggle-radar {
+    width: 100%;
+    padding: 10px 16px;
+    font-size: 14px;
+}
+
+/* Sottotitolo "Restituzione grafica e pianificazione percorso": stesso
+   stile delle etichette di campo (es. "FORMATO COORDINATE IN INGRESSO"),
+   non più una taglia a sé stante */
+.coord-mappa-sottotitolo {
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0 0 14px;
+}
