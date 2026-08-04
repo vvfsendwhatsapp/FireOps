@@ -1526,10 +1526,10 @@ html.comando-gia-scelto #modal-comando {
 }
 
 .coord-tab-btn.attivo {
-    background: var(--dark-color);
+    background: var(--surface-color);
     color: var(--primary-color);
     border-color: var(--primary-color);
-    border-bottom: 1px solid var(--dark-color);
+    border-bottom: 1px solid var(--surface-color);
     top: 1px;
     z-index: 2;
 }
@@ -1634,7 +1634,13 @@ html.comando-gia-scelto #modal-comando {
 }
 
 .pannello-fullscreen .coord-colonna-titolo.attivo {
-    background: var(--dark-color);
+    background: var(--surface-color);
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.pannello-fullscreen .coord-colonna.attiva .coord-colonna-titolo {
+    background: var(--surface-color);
     color: var(--primary-color);
     border-color: var(--primary-color);
 }
@@ -1645,7 +1651,7 @@ html.comando-gia-scelto #modal-comando {
     display: block !important;
     flex: 1 1 auto;
     border: 1px solid var(--border-color);
-    border-radius: 0 0 8px 8px; /* arrotondato SOLO in basso */
+    border-radius: 0 0 8px 8px;
     padding: 14px;
     background: var(--surface-color);
     min-width: 0;
@@ -1720,4 +1726,41 @@ html.comando-gia-scelto #modal-comando {
     flex-direction: column;
     gap: 4px;
     flex: 1 1 auto;
+}
+
+/* Angoli concavi stile browser: due piccoli "morsi" curvi che collegano
+   visivamente la scheda attiva al corpo sottostante, come le schede di Chrome */
+.coord-tab-btn.attivo,
+.pannello-fullscreen .coord-colonna-titolo.attivo,
+.pannello-fullscreen .coord-colonna.attiva .coord-colonna-titolo {
+    position: relative;
+    overflow: visible;
+}
+
+.coord-tab-btn.attivo::before,
+.coord-tab-btn.attivo::after,
+.pannello-fullscreen .coord-colonna-titolo.attivo::before,
+.pannello-fullscreen .coord-colonna-titolo.attivo::after,
+.pannello-fullscreen .coord-colonna.attiva .coord-colonna-titolo::before,
+.pannello-fullscreen .coord-colonna.attiva .coord-colonna-titolo::after {
+    content: "";
+    position: absolute;
+    bottom: -1px;
+    width: 10px;
+    height: 10px;
+    z-index: 3;
+}
+
+.coord-tab-btn.attivo::before,
+.pannello-fullscreen .coord-colonna-titolo.attivo::before,
+.pannello-fullscreen .coord-colonna.attiva .coord-colonna-titolo::before {
+    left: -10px;
+    background: radial-gradient(circle at top left, transparent 70%, var(--surface-color) 71%);
+}
+
+.coord-tab-btn.attivo::after,
+.pannello-fullscreen .coord-colonna-titolo.attivo::after,
+.pannello-fullscreen .coord-colonna.attiva .coord-colonna-titolo::after {
+    right: -10px;
+    background: radial-gradient(circle at top right, transparent 70%, var(--surface-color) 71%);
 }
