@@ -1765,3 +1765,12 @@ html.comando-gia-scelto #modal-comando {
     gap: 4px;
     flex: 1 1 auto;
 }
+
+.pagina-nota {
+    color: var(--text-muted);
+    font-size: 13px;
+    margin-bottom: 15px;
+    line-height: 1.4;
+    text-align: justify; /* NUOVO: allinea sia a sinistra che a destra, spaziando le parole */
+    text-justify: inter-word; /* distribuisce lo spazio extra tra le parole, non tra le lettere */
+}
