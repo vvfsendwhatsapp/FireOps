@@ -853,6 +853,21 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // Freccia direzionale: punta verso il target, ruotata secondo l'azimut
+// calcolato (0° = Nord, in senso orario, coerente con calcolaAzimut)
+function iconaFrecciaDirezione(colore, azimutGradi) {
+    return L.divIcon({
+        className: "",
+        html: `<div style="width:26px;height:26px;transform:rotate(${azimutGradi}deg);display:flex;align-items:center;justify-content:center;">
+                    <svg width="22" height="22" viewBox="0 0 22 22" style="filter:drop-shadow(0 0 3px rgba(0,0,0,.7));">
+                        <polygon points="11,1 20,20 11,15 2,20" fill="${colore}" stroke="#121212" stroke-width="1.5" stroke-linejoin="round"/>
+                    </svg>
+                </div>`,
+        iconSize: [26, 26],
+        iconAnchor: [13, 13],
+    });
+}
+
     function assicuraMappaCoordInizializzata() {
         if (coordMappaLeaflet) return;
         const contenitore = document.getElementById("coord-mappa");
@@ -1038,28 +1053,28 @@ async function disegnaLineaDiretta(latPartenza, lonPartenza, latArrivo, lonArriv
 }
 
     async function calcolaEDisegnaPercorso(latPartenza, lonPartenza) {
-        if (!coordinateTargetCorrenti || !coordMappaLeaflet) return;
-        const { lat: latArrivo, lon: lonArrivo } = coordinateTargetCorrenti;
-        const profilo = selectProfiloPercorso ? selectProfiloPercorso.value : "trekking";
+    if (!coordinateTargetCorrenti || !coordMappaLeaflet) return;
+    const { lat: latArrivo, lon: lonArrivo } = coordinateTargetCorrenti;
+    const profilo = selectProfiloPercorso ? selectProfiloPercorso.value : "trekking";
 
-        if (coordMarkerPartenza) coordMappaLeaflet.removeLayer(coordMarkerPartenza);
-        coordMarkerPartenza = L.marker([latPartenza, lonPartenza], { icon: iconaMarkerGenerica(COLORE_SQUADRA) })
-            .addTo(coordMappaLeaflet)
-            .bindPopup("Squadra VF");
+    // Azimut e distanza in linea d'aria: calcolati SUBITO, servono anche
+    // per orientare la freccia del marker di partenza
+    const azimut = calcolaAzimut(latPartenza, lonPartenza, latArrivo, lonArrivo);
+    const distanzaAriaKm = distanzaKmHaversine(latPartenza, lonPartenza, latArrivo, lonArrivo);
 
-        // NUOVO: azimut e distanza in linea d'aria, calcolati subito e sempre,
-        // indipendentemente da quale profilo di percorso è selezionato
-        const azimut = calcolaAzimut(latPartenza, lonPartenza, latArrivo, lonArrivo);
-        const distanzaAriaKm = distanzaKmHaversine(latPartenza, lonPartenza, latArrivo, lonArrivo);
+    if (coordMarkerPartenza) coordMappaLeaflet.removeLayer(coordMarkerPartenza);
+    coordMarkerPartenza = L.marker([latPartenza, lonPartenza], { icon: iconaFrecciaDirezione(COLORE_SQUADRA, azimut) })
+        .addTo(coordMappaLeaflet)
+        .bindPopup("Squadra VF");
 
-        if (elInfoPercorso) elInfoPercorso.textContent = "Calcolo percorso in corso…";
-        aggiornaOverlayPercorso(null, { azimut, distanzaAriaKm, lineaDiretta: profilo === "linea-diretta" });
-        if (btnScaricaKml) btnScaricaKml.disabled = true;
+    if (elInfoPercorso) elInfoPercorso.textContent = "Calcolo percorso in corso…";
+    aggiornaOverlayPercorso(null, { azimut, distanzaAriaKm, lineaDiretta: profilo === "linea-diretta" });
+    if (btnScaricaKml) btnScaricaKml.disabled = true;
 
-        if (profilo === "linea-diretta") {
-            await disegnaLineaDiretta(latPartenza, lonPartenza, latArrivo, lonArrivo, azimut, distanzaAriaKm);
-            return;
-        }
+    if (profilo === "linea-diretta") {
+        await disegnaLineaDiretta(latPartenza, lonPartenza, latArrivo, lonArrivo, azimut, distanzaAriaKm);
+        return;
+    }
 
         try {
             const url = `https://brouter.de/brouter?lonlats=${lonPartenza},${latPartenza}|${lonArrivo},${latArrivo}&profile=${profilo}&alternativeidx=0&format=geojson`;
