@@ -1720,18 +1720,6 @@ html.comando-gia-scelto #modal-comando {
     display: none;
 }
 
-/* La colonna torna ad avere padding normale su tutti i lati (14px, come
-   la regola base .pannello-fullscreen #coord-tab-content-* già impostava):
-   niente più margini extra sui figli, che così restano correttamente
-   dentro i confini della colonna */
-.pannello-fullscreen #coord-tab-content-dati,
-.pannello-fullscreen #coord-tab-content-mappa,
-.pannello-fullscreen #coord-tab-content-messaggio {
-    border-top: none;
-    border-radius: 0 0 8px 8px;
-    padding: 14px;
-}
-
 /* Il titolo "sfonda" verso l'esterno con un margine negativo ESATTAMENTE
    pari al padding della colonna (14px): tocca i bordi, mentre tutto il
    resto del contenuto resta comodamente dentro il padding normale */
