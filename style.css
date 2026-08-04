@@ -1515,10 +1515,11 @@ html.comando-gia-scelto #modal-comando {
     cursor: pointer;
     position: relative;
     top: 1px;
+    z-index: 1;
     transition: background 0.15s, color 0.15s, top 0.1s;
     flex: 1 1 0;
     text-align: center;
-    margin-left: -1px; /* sovrappone il bordo sinistro su quello destro della scheda precedente */
+    margin-left: -1px;
 }
 
 .coord-tab-btn:first-child {
@@ -1536,7 +1537,7 @@ html.comando-gia-scelto #modal-comando {
     border-color: var(--primary-color);
     border-bottom: 1px solid var(--surface-color);
     top: 1px;
-    z-index: 2;
+    z-index: 1;
 }
 
 .coord-tab-corpo {
@@ -1725,3 +1726,10 @@ html.comando-gia-scelto #modal-comando {
     flex: 1 1 auto;
 }
 
+.coord-tab-vicino-dopo-attiva {
+    border-top-left-radius: 0;
+}
+
+.coord-tab-vicino-prima-attiva {
+    border-top-right-radius: 0;
+}
