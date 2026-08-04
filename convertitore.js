@@ -301,43 +301,43 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Riconoscimento automatico da testo incollato: coppie decimali, link Google
-// Maps (con "@lat,lon"), formato "?q=lat,lon", oppure DMS con N/S/E/W.
-// Best-effort: non copre TUTTI i formati possibili (es. link brevi
-// maps.app.goo.gl non si possono espandere lato client per via del CORS).
-function parseTestoLibero(testo) {
-    testo = (testo || "").trim();
-    if (!testo) return null;
+    // Maps (con "@lat,lon"), formato "?q=lat,lon", oppure DMS con N/S/E/W.
+    // Best-effort: non copre TUTTI i formati possibili (es. link brevi
+    // maps.app.goo.gl non si possono espandere lato client per via del CORS).
+    function parseTestoLibero(testo) {
+        testo = (testo || "").trim();
+        if (!testo) return null;
 
-    const matchChiocciola = testo.match(/@(-?\d{1,3}\.\d+),\s*(-?\d{1,3}\.\d+)/);
-    if (matchChiocciola) {
-        return { lat: parseFloat(matchChiocciola[1]), lon: parseFloat(matchChiocciola[2]) };
-    }
-
-    const matchQuery = testo.match(/[?&]q=(-?\d{1,3}\.\d+),\s*(-?\d{1,3}\.\d+)/);
-    if (matchQuery) {
-        return { lat: parseFloat(matchQuery[1]), lon: parseFloat(matchQuery[2]) };
-    }
-
-    const matchDecimale = testo.match(/^(-?\d{1,3}(?:[.,]\d+)?)\s*[,;\s]\s*(-?\d{1,3}(?:[.,]\d+)?)$/);
-    if (matchDecimale) {
-        const lat = parseFloat(matchDecimale[1].replace(",", "."));
-        const lon = parseFloat(matchDecimale[2].replace(",", "."));
-        if (!Number.isNaN(lat) && !Number.isNaN(lon)) return { lat, lon };
-    }
-
-    const partiDMS = testo.match(/\d{1,3}[°\s]+\d{1,2}['\s]+\d{1,2}(?:\.\d+)?["\s]*[NSEW]/gi);
-    if (partiDMS && partiDMS.length === 2) {
-        const lat = partiDMS.find(p => /[NS]/i.test(p));
-        const lon = partiDMS.find(p => /[EW]/i.test(p));
-        if (lat && lon) {
-            const latVal = parseDMSField(lat);
-            const lonVal = parseDMSField(lon);
-            if (latVal !== null && lonVal !== null) return { lat: latVal, lon: lonVal };
+        const matchChiocciola = testo.match(/@(-?\d{1,3}\.\d+),\s*(-?\d{1,3}\.\d+)/);
+        if (matchChiocciola) {
+            return { lat: parseFloat(matchChiocciola[1]), lon: parseFloat(matchChiocciola[2]) };
         }
-    }
 
-    return null;
-}
+        const matchQuery = testo.match(/[?&]q=(-?\d{1,3}\.\d+),\s*(-?\d{1,3}\.\d+)/);
+        if (matchQuery) {
+            return { lat: parseFloat(matchQuery[1]), lon: parseFloat(matchQuery[2]) };
+        }
+
+        const matchDecimale = testo.match(/^(-?\d{1,3}(?:[.,]\d+)?)\s*[,;\s]\s*(-?\d{1,3}(?:[.,]\d+)?)$/);
+        if (matchDecimale) {
+            const lat = parseFloat(matchDecimale[1].replace(",", "."));
+            const lon = parseFloat(matchDecimale[2].replace(",", "."));
+            if (!Number.isNaN(lat) && !Number.isNaN(lon)) return { lat, lon };
+        }
+
+        const partiDMS = testo.match(/\d{1,3}[°\s]+\d{1,2}['\s]+\d{1,2}(?:\.\d+)?["\s]*[NSEW]/gi);
+        if (partiDMS && partiDMS.length === 2) {
+            const lat = partiDMS.find(p => /[NS]/i.test(p));
+            const lon = partiDMS.find(p => /[EW]/i.test(p));
+            if (lat && lon) {
+                const latVal = parseDMSField(lat);
+                const lonVal = parseDMSField(lon);
+                if (latVal !== null && lonVal !== null) return { lat: latVal, lon: lonVal };
+            }
+        }
+
+        return null;
+    }
 
     // ==========================================================
     // FORMATTAZIONE OUTPUT (tabella risultati)
@@ -706,7 +706,7 @@ function parseTestoLibero(testo) {
                 if (el) stato[id] = el.value;
             });
             sessionStorage.setItem(CHIAVE_STORAGE_FORM_COORD, JSON.stringify(stato));
-        } catch (err) {}
+        } catch (err) { }
     }
 
     function ripristinaStatoFormCoord() {
@@ -722,7 +722,7 @@ function parseTestoLibero(testo) {
                     if (el) el.style.display = chiave === stato["coord-formato-input"] ? "block" : "none";
                 });
             }
-        } catch (err) {}
+        } catch (err) { }
     }
 
     ripristinaStatoFormCoord();
@@ -1196,7 +1196,7 @@ function parseTestoLibero(testo) {
         return righe.join("\n");
     }
 
-function aggiornaAnteprimaMessaggioCoordinate() {
+    function aggiornaAnteprimaMessaggioCoordinate() {
         if (!textareaMsg) return;
         textareaMsg.value = costruisciMessaggioCoordinate();
         validaCampiMessaggioCoord();
@@ -1296,7 +1296,7 @@ function aggiornaAnteprimaMessaggioCoordinate() {
             aggiornaAnteprimaMessaggioCoordinate();
             const testo = textareaMsg.value;
             if (!testo.trim()) { alert("Il messaggio è vuoto."); return; }
-            navigator.clipboard.writeText(testo).catch(() => {});
+            navigator.clipboard.writeText(testo).catch(() => { });
             const { prefisso, numero } = numeroCompletoPulitoCoord();
             if (numero) window.open(`https://t.me/+${prefisso}${numero}`, "_blank", "noopener");
             else window.open(`https://t.me/share/url?url=&text=${encodeURIComponent(testo)}`, "_blank", "noopener");
@@ -1403,7 +1403,7 @@ function aggiornaAnteprimaMessaggioCoordinate() {
         rendiCopiabile(elQuota, quota);
     }
 
-// ==========================================================
+    // ==========================================================
     // SCHEDA/COLONNA ATTIVA: Dati / Mappa / Messaggio.
     // Un'unica funzione gestisce sia il cambio scheda in modalità ridotta
     // sia l'evidenziazione col bordo giallo della colonna attiva quando
@@ -1420,17 +1420,17 @@ function aggiornaAnteprimaMessaggioCoordinate() {
     const CHIAVE_STORAGE_TAB_COORD = "fireops_coord_tab_attiva";
 
     function impostaSchedaColonnaAttiva(chiave, salva = true) {
-    pulsantiScheda.forEach(p => p.classList.toggle("attivo", p.dataset.tab === chiave));
-    Object.entries(contenutiScheda).forEach(([k, el]) => {
-        if (!el) return;
-        el.style.display = k === chiave ? "block" : "none";
-        const wrapper = el.closest(".coord-colonna-wrapper");
-        if (wrapper) wrapper.classList.toggle("attiva", k === chiave);
-    });
-    if (salva) {
-        try { sessionStorage.setItem(CHIAVE_STORAGE_TAB_COORD, chiave); } catch (err) {}
+        pulsantiScheda.forEach(p => p.classList.toggle("attivo", p.dataset.tab === chiave));
+        Object.entries(contenutiScheda).forEach(([k, el]) => {
+            if (!el) return;
+            el.style.display = k === chiave ? "block" : "none";
+            const wrapper = el.closest(".coord-colonna-wrapper");
+            if (wrapper) wrapper.classList.toggle("attiva", k === chiave);
+        });
+        if (salva) {
+            try { sessionStorage.setItem(CHIAVE_STORAGE_TAB_COORD, chiave); } catch (err) { }
+        }
     }
-}
 
     pulsantiScheda.forEach(pulsante => {
         pulsante.addEventListener("click", () => impostaSchedaColonnaAttiva(pulsante.dataset.tab));
@@ -1446,6 +1446,6 @@ function aggiornaAnteprimaMessaggioCoordinate() {
     try {
         const tabSalvata = sessionStorage.getItem(CHIAVE_STORAGE_TAB_COORD);
         if (tabSalvata && contenutiScheda[tabSalvata]) tabInizialeCoord = tabSalvata;
-    } catch (err) {}
+    } catch (err) { }
     impostaSchedaColonnaAttiva(tabInizialeCoord, false); // false: non ri-salvare quello che abbiamo appena letto
 });
