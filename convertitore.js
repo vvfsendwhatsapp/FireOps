@@ -674,20 +674,37 @@ document.addEventListener("DOMContentLoaded", () => {
     const elErrore = document.getElementById("coord-errore");
     const elRisultati = document.getElementById("coord-risultati");
 
-    function aggiornaTestoBottoneConverti() {
-        const btn = document.getElementById("btn-coord-converti");
-        if (!btn || !selectFormato) return;
-        btn.textContent = selectFormato.value === "mappa"
-            ? "🗺️ Vai alla mappa"
-            : "📐 Converti e scopri le funzioni a lato";
+    function tuttiCampiCompilatiPerFormato(formato) {
+    const val = id => (document.getElementById(id)?.value || "").trim();
+    switch (formato) {
+        case "dd": return !!(val("coord-dd-lat") && val("coord-dd-lon"));
+        case "dmm": return !!(val("coord-dmm-lat") && val("coord-dmm-lon"));
+        case "dms": return !!(val("coord-dms-lat") && val("coord-dms-lon"));
+        case "olc": return !!val("coord-olc");
+        case "utm": return !!(val("coord-utm-zona") && val("coord-utm-est") && val("coord-utm-nord"));
+        case "mappa": return true; // nessun campo da compilare: si va direttamente alla mappa
+        case "libero": return !!val("coord-libero-testo");
+        case "indirizzo": return !!(val("coord-indirizzo-via") || val("coord-indirizzo-comune"));
+        default: return false;
     }
+}
+
+function aggiornaBottoneConverti() {
+    const btn = document.getElementById("btn-coord-converti");
+    if (!btn || !selectFormato) return;
+    const formato = selectFormato.value;
+    btn.textContent = formato === "mappa"
+        ? "🗺️ Vai alla mappa"
+        : "📐 Converti e scopri le funzioni a lato";
+    btn.disabled = !tuttiCampiCompilatiPerFormato(formato);
+}
 
     if (selectFormato) {
         selectFormato.addEventListener("change", () => {
             Object.entries(gruppiInput).forEach(([chiave, el]) => {
                 if (el) el.style.display = chiave === selectFormato.value ? "block" : "none";
             });
-            aggiornaTestoBottoneConverti();
+            aggiornaBottoneConverti();
         });
     }
 
@@ -730,21 +747,21 @@ document.addEventListener("DOMContentLoaded", () => {
                 Object.entries(gruppiInput).forEach(([chiave, el]) => {
                     if (el) el.style.display = chiave === stato["coord-formato-input"] ? "block" : "none";
                 });
-    aggiornaTestoBottoneConverti();
+    aggiornaBottoneConverti();
             }
         } catch (err) { }
     }
 
     ripristinaStatoFormCoord();
-    aggiornaTestoBottoneConverti();
+    aggiornaBottoneConverti();
 
     // Delega un solo listener sull'intero form: copre tutti i campi presenti
     // (compreso quello nascosto della combo Comune) senza doverli agganciare uno per uno
     const contenitoreFormCoord = document.getElementById("coord-input-colonna");
-    if (contenitoreFormCoord) {
-        contenitoreFormCoord.addEventListener("input", salvaStatoFormCoord);
-        contenitoreFormCoord.addEventListener("change", salvaStatoFormCoord);
-    }
+if (contenitoreFormCoord) {
+    contenitoreFormCoord.addEventListener("input", () => { salvaStatoFormCoord(); aggiornaBottoneConverti(); });
+    contenitoreFormCoord.addEventListener("change", () => { salvaStatoFormCoord(); aggiornaBottoneConverti(); });
+}
 
     // ==========================================================
     // QUOTA DEL PUNTO CONVERTITO: Open-Meteo elevation API, stessa fonte
@@ -1129,26 +1146,28 @@ async function disegnaLineaDiretta(latPartenza, lonPartenza, latArrivo, lonArriv
     const btnPercorso = document.getElementById("btn-coord-percorso");
     const btnAnnullaPercorso = document.getElementById("btn-coord-annulla-percorso");
 
-    if (btnPercorso) {
-        btnPercorso.addEventListener("click", () => {
-            if (!coordinateTargetCorrenti) {
-                mostraErrore("Converti prima delle coordinate: serve un punto di arrivo per calcolare il percorso.");
-                return;
-            }
-            modalitaPercorsoAttiva = true;
-            btnPercorso.classList.add("attivo");
-            btnAnnullaPercorso.style.display = "inline-block";
-            if (elInfoPercorso) elInfoPercorso.textContent = "Clicca un punto sulla mappa: verrà calcolato il percorso fino al punto convertito.";
-        });
-    }
+    const contenitoreControlliPercorsoAttivo = document.getElementById("coord-mappa-controlli-percorso-attivo");
+
+if (btnPercorso) {
+    btnPercorso.addEventListener("click", () => {
+        if (!coordinateTargetCorrenti) {
+            mostraErrore("Converti prima delle coordinate: serve un punto di arrivo per calcolare il percorso.");
+            return;
+        }
+        modalitaPercorsoAttiva = true;
+        btnPercorso.classList.add("attivo");
+        if (contenitoreControlliPercorsoAttivo) contenitoreControlliPercorsoAttivo.classList.add("visibile");
+        if (elInfoPercorso) elInfoPercorso.textContent = "Clicca un punto sulla mappa: verrà calcolato il percorso fino al punto convertito.";
+    });
+}
 
     if (btnAnnullaPercorso) {
-        btnAnnullaPercorso.addEventListener("click", () => {
-            modalitaPercorsoAttiva = false;
-            btnPercorso.classList.remove("attivo");
-            btnAnnullaPercorso.style.display = "none";
-            if (coordLineaPercorso) { coordMappaLeaflet.removeLayer(coordLineaPercorso); coordLineaPercorso = null; }
-            if (coordMarkerPartenza) { coordMappaLeaflet.removeLayer(coordMarkerPartenza); coordMarkerPartenza = null; }
+    btnAnnullaPercorso.addEventListener("click", () => {
+        modalitaPercorsoAttiva = false;
+        btnPercorso.classList.remove("attivo");
+        if (contenitoreControlliPercorsoAttivo) contenitoreControlliPercorsoAttivo.classList.remove("visibile");
+        if (coordLineaPercorso) { coordMappaLeaflet.removeLayer(coordLineaPercorso); coordLineaPercorso = null; }
+        if (coordMarkerPartenza) { coordMappaLeaflet.removeLayer(coordMarkerPartenza); coordMarkerPartenza = null; }
             if (elInfoPercorso) elInfoPercorso.textContent = "";
             ultimoGeojsonPercorso = null;
             if (btnScaricaKml) btnScaricaKml.disabled = true;
@@ -1199,11 +1218,7 @@ async function disegnaLineaDiretta(latPartenza, lonPartenza, latArrivo, lonArriv
 function nascondiGraficoAltimetria(messaggio) {
     const canvas = document.getElementById("coord-grafico-altimetria");
     const nota = document.getElementById("coord-altimetria-nota");
-    const btnToggle = document.getElementById("btn-toggle-altimetria");
-    const wrapper = document.getElementById("coord-altimetria-wrapper");
     if (canvas) canvas.style.display = "none";
-    if (wrapper) wrapper.style.display = "none";
-    if (btnToggle) { btnToggle.style.display = "none"; btnToggle.textContent = "📈 Mostra grafico altimetria"; }
     if (nota) {
         nota.textContent = messaggio || "";
         nota.style.display = messaggio ? "block" : "none";
@@ -1212,7 +1227,6 @@ function nascondiGraficoAltimetria(messaggio) {
 
 function disegnaGraficoAltimetria(geojson) {
     const canvas = document.getElementById("coord-grafico-altimetria");
-    const btnToggle = document.getElementById("btn-toggle-altimetria");
     if (!canvas) return null;
     const coords = (geojson.features && geojson.features[0] && geojson.features[0].geometry && geojson.features[0].geometry.coordinates) || [];
     const conQuota = coords.filter(c => Array.isArray(c) && c.length >= 3 && !Number.isNaN(parseFloat(c[2])));
@@ -1240,9 +1254,7 @@ function disegnaGraficoAltimetria(geojson) {
         punti.push({ d: distanzaTot, ele: eleAttuale });
     }
 
-    // Il grafico resta chiuso di default: il pulsante compare, l'utente
-    // lo apre solo se vuole consultarlo
-    if (btnToggle) btnToggle.style.display = "inline-block";
+    // Il grafico è automatico: appena disponibile compare subito sotto la mappa
     const nota = document.getElementById("coord-altimetria-nota");
     if (nota) nota.style.display = "none";
 
@@ -1298,16 +1310,6 @@ function disegnaGraficoAltimetria(geojson) {
     ctx.fillText("km", canvas.width - 22, margine + h + 30);
 
     return { dislivelloPositivo: Math.round(dislivelloPositivo), dislivelloNegativo: Math.round(dislivelloNegativo) };
-}
-
-const btnToggleAltimetria = document.getElementById("btn-toggle-altimetria");
-const wrapperAltimetria = document.getElementById("coord-altimetria-wrapper");
-if (btnToggleAltimetria && wrapperAltimetria) {
-    btnToggleAltimetria.addEventListener("click", () => {
-        const aperto = wrapperAltimetria.style.display !== "none";
-        wrapperAltimetria.style.display = aperto ? "none" : "block";
-        btnToggleAltimetria.textContent = aperto ? "📈 Mostra grafico altimetria" : "📉 Nascondi grafico altimetria";
-    });
 }
 
     // ==========================================================
@@ -1423,14 +1425,15 @@ if (btnToggleAltimetria && wrapperAltimetria) {
             .then(r => (r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status))))
             .then(listaComuni => {
                 creaComboRicercabileCoord({
-                    input: inputComuneIndirizzo,
-                    hidden: hiddenComuneIndirizzo,
-                    dropdown: dropdownComuneIndirizzo,
-                    elenco: listaComuni,
-                    cercaValore: c => c["Denominazione (Italiana e straniera)"],
-                    mostraTesto: c => `${c["Denominazione (Italiana e straniera)"]} (${c["Sigla automobilistica"] || "?"})`,
-                    testoSelezionato: c => `${c["Denominazione (Italiana e straniera)"]} (${c["Sigla automobilistica"] || "?"})`
-                });
+    input: inputComuneIndirizzo,
+    hidden: hiddenComuneIndirizzo,
+    dropdown: dropdownComuneIndirizzo,
+    elenco: listaComuni,
+    cercaValore: c => c["Denominazione (Italiana e straniera)"],
+    mostraTesto: c => `${c["Denominazione (Italiana e straniera)"]} (${c["Sigla automobilistica"] || "?"})`,
+    testoSelezionato: c => `${c["Denominazione (Italiana e straniera)"]} (${c["Sigla automobilistica"] || "?"})`,
+    onScelta: aggiornaBottoneConverti
+});
             })
             .catch(err => console.error("Convertitore: comuni.json non disponibile:", err));
     }
@@ -1563,7 +1566,7 @@ if (btnToggleAltimetria && wrapperAltimetria) {
 
         modalitaPercorsoAttiva = false;
         if (btnPercorso) btnPercorso.classList.remove("attivo");
-        if (btnAnnullaPercorso) btnAnnullaPercorso.style.display = "none";
+        if (contenitoreControlliPercorsoAttivo) contenitoreControlliPercorsoAttivo.classList.remove("visibile");
         if (coordLineaPercorso && coordMappaLeaflet) { coordMappaLeaflet.removeLayer(coordLineaPercorso); coordLineaPercorso = null; }
         if (coordMarkerPartenza && coordMappaLeaflet) { coordMappaLeaflet.removeLayer(coordMarkerPartenza); coordMarkerPartenza = null; }
         if (elInfoPercorso) elInfoPercorso.textContent = "";

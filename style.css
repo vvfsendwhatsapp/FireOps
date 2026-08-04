@@ -1851,3 +1851,19 @@ html.comando-gia-scelto #modal-comando {
     display: block;
     min-height: 28px;
 }
+
+.coord-mappa-controlli-percorso-attivo {
+    display: none;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.coord-mappa-controlli-percorso-attivo.visibile {
+    display: flex;
+}
+
+.coord-mappa-controlli-percorso-attivo .btn-toggle-radar {
+    flex: 1;
+    padding: 10px 16px;
+    font-size: 14px;
+}
