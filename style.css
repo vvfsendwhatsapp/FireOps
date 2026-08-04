@@ -1535,9 +1535,9 @@ html.comando-gia-scelto #modal-comando {
     background: var(--surface-color);
     color: var(--primary-color);
     border-color: var(--primary-color);
-    border-bottom: 1px solid var(--surface-color);
+    border-bottom: 1px solid var(--primary-color); /* bordo giallo completo, su tutti i lati */
     top: 1px;
-    z-index: 1;
+    z-index: 3;
 }
 
 .coord-tab-corpo {
