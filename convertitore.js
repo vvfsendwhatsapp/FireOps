@@ -939,6 +939,83 @@ document.addEventListener("DOMContentLoaded", () => {
     const selectProfiloPercorso = document.getElementById("coord-profilo-percorso");
     const btnScaricaKml = document.getElementById("btn-coord-scarica-kml");
 
+    function distanzaKmHaversine(lat1, lon1, lat2, lon2) {
+        const R = 6371;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function aggiornaOverlayPercorso(messaggioSemplice, dati) {
+        const overlay = document.getElementById("coord-mappa-overlay-percorso");
+        if (!overlay) return;
+        if (messaggioSemplice) {
+            overlay.style.display = "block";
+            overlay.innerHTML = `<div class="coord-mappa-overlay-riga">${messaggioSemplice}</div>`;
+            return;
+        }
+        if (!dati) { overlay.style.display = "none"; overlay.innerHTML = ""; return; }
+        const righe = [dati.lineaDiretta
+            ? `<div class="coord-mappa-overlay-titolo">📏 Linea diretta</div>`
+            : `<div class="coord-mappa-overlay-titolo">🧭 Percorso</div>`];
+        if (dati.distanzaKm !== null && dati.distanzaKm !== undefined) {
+            righe.push(`<div class="coord-mappa-overlay-riga">Distanza: ${dati.distanzaKm.toFixed(2)} km</div>`);
+        }
+        if (dati.tempoMin !== null && dati.tempoMin !== undefined) {
+            righe.push(`<div class="coord-mappa-overlay-riga">Tempo: circa ${dati.tempoMin} min</div>`);
+        }
+        if (dati.dislivelloPositivo !== null && dati.dislivelloPositivo !== undefined) {
+            righe.push(`<div class="coord-mappa-overlay-riga">D+ ${dati.dislivelloPositivo} m &nbsp; D− ${dati.dislivelloNegativo} m</div>`);
+        }
+        overlay.style.display = "block";
+        overlay.innerHTML = righe.join("");
+    }
+
+    async function disegnaLineaDiretta(latPartenza, lonPartenza, latArrivo, lonArrivo) {
+        if (coordLineaPercorso) coordMappaLeaflet.removeLayer(coordLineaPercorso);
+        coordLineaPercorso = L.polyline(
+            [[latPartenza, lonPartenza], [latArrivo, lonArrivo]],
+            { color: COLORE_PERCORSO, weight: 4, opacity: 0.85, dashArray: "8 6" }
+        ).addTo(coordMappaLeaflet);
+        coordMappaLeaflet.fitBounds(coordLineaPercorso.getBounds(), { padding: [30, 30] });
+
+        const distanzaKm = distanzaKmHaversine(latPartenza, lonPartenza, latArrivo, lonArrivo);
+
+        // GeoJSON minimo a 2 punti: riusa l'infrastruttura KML esistente
+        ultimoGeojsonPercorso = {
+            type: "FeatureCollection",
+            features: [{
+                type: "Feature",
+                properties: { "track-length": distanzaKm * 1000 },
+                geometry: { type: "LineString", coordinates: [[lonPartenza, latPartenza], [lonArrivo, latArrivo]] },
+            }],
+        };
+        if (btnScaricaKml) btnScaricaKml.disabled = false;
+
+        nascondiGraficoAltimetria("Linea diretta: nessun profilo altimetrico (è una distanza in linea d'aria, non un percorso reale).");
+        aggiornaOverlayPercorso("Recupero quote in corso…");
+        if (elInfoPercorso) elInfoPercorso.textContent = `Linea diretta — ${distanzaKm.toFixed(2)} km`;
+
+        try {
+            const [rP, rA] = await Promise.all([
+                fetch(`https://api.open-meteo.com/v1/elevation?latitude=${latPartenza}&longitude=${lonPartenza}`).then(r => r.json()),
+                fetch(`https://api.open-meteo.com/v1/elevation?latitude=${latArrivo}&longitude=${lonArrivo}`).then(r => r.json()),
+            ]);
+            const eleP = Array.isArray(rP.elevation) ? rP.elevation[0] : null;
+            const eleA = Array.isArray(rA.elevation) ? rA.elevation[0] : null;
+            const diff = (eleP !== null && eleA !== null) ? Math.round(eleA - eleP) : null;
+            aggiornaOverlayPercorso(null, {
+                distanzaKm, tempoMin: null, lineaDiretta: true,
+                dislivelloPositivo: diff !== null ? Math.max(diff, 0) : null,
+                dislivelloNegativo: diff !== null ? Math.max(-diff, 0) : null,
+            });
+        } catch (err) {
+            console.error("Quote linea diretta non disponibili:", err);
+            aggiornaOverlayPercorso(null, { distanzaKm, tempoMin: null, lineaDiretta: true, dislivelloPositivo: null, dislivelloNegativo: null });
+        }
+    }
+
     async function calcolaEDisegnaPercorso(latPartenza, lonPartenza) {
         if (!coordinateTargetCorrenti || !coordMappaLeaflet) return;
         const { lat: latArrivo, lon: lonArrivo } = coordinateTargetCorrenti;
@@ -950,7 +1027,13 @@ document.addEventListener("DOMContentLoaded", () => {
             .bindPopup("Squadra VF");
 
         if (elInfoPercorso) elInfoPercorso.textContent = "Calcolo percorso in corso…";
+        aggiornaOverlayPercorso("Calcolo percorso in corso…");
         if (btnScaricaKml) btnScaricaKml.disabled = true;
+
+        if (profilo === "linea-diretta") {
+            await disegnaLineaDiretta(latPartenza, lonPartenza, latArrivo, lonArrivo);
+            return;
+        }
 
         try {
             const url = `https://brouter.de/brouter?lonlats=${lonPartenza},${latPartenza}|${lonArrivo},${latArrivo}&profile=${profilo}&alternativeidx=0&format=geojson`;
@@ -958,31 +1041,32 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!risposta.ok) throw new Error("HTTP " + risposta.status);
             const geojson = await risposta.json();
             ultimoGeojsonPercorso = geojson;
-
             if (coordLineaPercorso) coordMappaLeaflet.removeLayer(coordLineaPercorso);
-            coordLineaPercorso = L.geoJSON(geojson, {
-                style: { color: COLORE_PERCORSO, weight: 5, opacity: 0.85 },
-            }).addTo(coordMappaLeaflet);
-
+            coordLineaPercorso = L.geoJSON(geojson, { style: { color: COLORE_PERCORSO, weight: 5, opacity: 0.85 } }).addTo(coordMappaLeaflet);
             coordMappaLeaflet.fitBounds(coordLineaPercorso.getBounds(), { padding: [30, 30] });
 
             const proprieta = (geojson.features && geojson.features[0] && geojson.features[0].properties) || {};
             const lunghezzaM = parseFloat(proprieta["track-length"]);
             const tempoS = parseFloat(proprieta["total-time"]);
+            const risultatoAltimetria = disegnaGraficoAltimetria(geojson);
+
+            aggiornaOverlayPercorso(null, {
+                distanzaKm: !Number.isNaN(lunghezzaM) ? lunghezzaM / 1000 : null,
+                tempoMin: !Number.isNaN(tempoS) ? Math.round(tempoS / 60) : null,
+                dislivelloPositivo: risultatoAltimetria ? risultatoAltimetria.dislivelloPositivo : null,
+                dislivelloNegativo: risultatoAltimetria ? risultatoAltimetria.dislivelloNegativo : null,
+            });
 
             let testoInfo = "Percorso calcolato";
             if (!Number.isNaN(lunghezzaM)) testoInfo += ` — ${(lunghezzaM / 1000).toFixed(2)} km`;
             if (!Number.isNaN(tempoS)) testoInfo += ` — circa ${Math.round(tempoS / 60)} min`;
             if (elInfoPercorso) elInfoPercorso.textContent = testoInfo;
-
             if (btnScaricaKml) btnScaricaKml.disabled = false;
-            disegnaGraficoAltimetria(geojson);
         } catch (err) {
             console.error("Errore routing BRouter:", err);
             ultimoGeojsonPercorso = null;
-            if (elInfoPercorso) {
-                elInfoPercorso.textContent = "Impossibile calcolare il percorso (servizio BRouter non raggiungibile o punto fuori copertura).";
-            }
+            if (elInfoPercorso) elInfoPercorso.textContent = "Impossibile calcolare il percorso (servizio BRouter non raggiungibile o punto fuori copertura).";
+            aggiornaOverlayPercorso("Percorso non calcolabile.");
             nascondiGraficoAltimetria("Percorso non calcolato: nessun dato altimetrico disponibile.");
         }
     }
