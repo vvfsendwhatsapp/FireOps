@@ -1740,18 +1740,18 @@ html.comando-gia-scelto #modal-comando {
 
 .coord-tab-bar .coord-tab-btn.attivo::before {
     left: -10px;
-    background: radial-gradient(circle at top right,
+    background: radial-gradient(circle at bottom right,
         transparent 9px,
         var(--primary-color) 9px,
         var(--primary-color) 10px,
-        var(--surface-color) 10px);
+        var(--light-bg) 10px);
 }
 
 .coord-tab-bar .coord-tab-btn.attivo::after {
     right: -10px;
-    background: radial-gradient(circle at top left,
+    background: radial-gradient(circle at bottom left,
         transparent 9px,
         var(--primary-color) 9px,
         var(--primary-color) 10px,
-        var(--surface-color) 10px);
+        var(--light-bg) 10px);
 }
