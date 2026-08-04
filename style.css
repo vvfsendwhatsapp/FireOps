@@ -1498,7 +1498,7 @@ html.comando-gia-scelto #modal-comando {
 .coord-tab-bar {
     display: flex;
     align-items: flex-end;
-    gap: 4px;
+    gap: 0;
     margin-top: 20px;
     padding: 8px 4px 0;
 }
@@ -1518,6 +1518,11 @@ html.comando-gia-scelto #modal-comando {
     transition: background 0.15s, color 0.15s, top 0.1s;
     flex: 1 1 0;
     text-align: center;
+    margin-left: -1px; /* sovrappone il bordo sinistro su quello destro della scheda precedente */
+}
+
+.coord-tab-btn:first-child {
+    margin-left: 0; /* la prima scheda non ha nulla da sovrapporre */
 }
 
 .coord-tab-btn:hover:not(.attivo) {
@@ -1720,38 +1725,3 @@ html.comando-gia-scelto #modal-comando {
     flex: 1 1 auto;
 }
 
-/* Taglio a becco stile Chrome: SOLO sulla scheda ridotta (dove serve
-   davvero, per via delle schede adiacenti). Doppio gradiente radiale:
-   anello sottile color primary (continua il bordo) + riempimento
-   surface-color (si fonde con lo sfondo dietro la barra schede) */
-.coord-tab-bar .coord-tab-btn.attivo {
-    position: relative;
-}
-
-.coord-tab-bar .coord-tab-btn.attivo::before,
-.coord-tab-bar .coord-tab-btn.attivo::after {
-    content: "";
-    position: absolute;
-    bottom: -1px;
-    width: 10px;
-    height: 10px;
-    z-index: 3;
-}
-
-.coord-tab-bar .coord-tab-btn.attivo::before {
-    left: -10px;
-    background: radial-gradient(circle at bottom right,
-        transparent 9px,
-        var(--primary-color) 9px,
-        var(--primary-color) 10px,
-        var(--light-bg) 10px);
-}
-
-.coord-tab-bar .coord-tab-btn.attivo::after {
-    right: -10px;
-    background: radial-gradient(circle at bottom left,
-        transparent 9px,
-        var(--primary-color) 9px,
-        var(--primary-color) 10px,
-        var(--light-bg) 10px);
-}
