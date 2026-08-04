@@ -1634,13 +1634,7 @@ html.comando-gia-scelto #modal-comando {
 }
 
 .pannello-fullscreen .coord-colonna-titolo.attivo {
-    background: var(--surface-color);
-    color: var(--primary-color);
-    border-color: var(--primary-color);
-}
-
-.pannello-fullscreen .coord-colonna.attiva .coord-colonna-titolo {
-    background: var(--surface-color);
+    background: var(--dark-color);
     color: var(--primary-color);
     border-color: var(--primary-color);
 }
@@ -1710,10 +1704,6 @@ html.comando-gia-scelto #modal-comando {
     .pannello-fullscreen .coord-tab-corpo {
         grid-template-columns: 1fr;
     }
-
-    .pannello-fullscreen .coord-titoli-riga {
-        grid-template-columns: 1fr;
-    }
 }
 
 .coord-comando-badge {
@@ -1728,21 +1718,16 @@ html.comando-gia-scelto #modal-comando {
     flex: 1 1 auto;
 }
 
-/* Angoli concavi stile browser: due piccoli "morsi" curvi che collegano
-   visivamente la scheda attiva al corpo sottostante, come le schede di Chrome */
-.coord-tab-btn.attivo,
-.pannello-fullscreen .coord-colonna-titolo.attivo,
-.pannello-fullscreen .coord-colonna.attiva .coord-colonna-titolo {
+/* Taglio a becco stile Chrome: SOLO sulla scheda ridotta (dove serve
+   davvero, per via delle schede adiacenti). Doppio gradiente radiale:
+   anello sottile color primary (continua il bordo) + riempimento
+   surface-color (si fonde con lo sfondo dietro la barra schede) */
+.coord-tab-btn.attivo {
     position: relative;
-    overflow: visible;
 }
 
 .coord-tab-btn.attivo::before,
-.coord-tab-btn.attivo::after,
-.pannello-fullscreen .coord-colonna-titolo.attivo::before,
-.pannello-fullscreen .coord-colonna-titolo.attivo::after,
-.pannello-fullscreen .coord-colonna.attiva .coord-colonna-titolo::before,
-.pannello-fullscreen .coord-colonna.attiva .coord-colonna-titolo::after {
+.coord-tab-btn.attivo::after {
     content: "";
     position: absolute;
     bottom: -1px;
@@ -1751,16 +1736,20 @@ html.comando-gia-scelto #modal-comando {
     z-index: 3;
 }
 
-.coord-tab-btn.attivo::before,
-.pannello-fullscreen .coord-colonna-titolo.attivo::before,
-.pannello-fullscreen .coord-colonna.attiva .coord-colonna-titolo::before {
+.coord-tab-btn.attivo::before {
     left: -10px;
-    background: radial-gradient(circle at top left, transparent 70%, var(--surface-color) 71%);
+    background: radial-gradient(circle at top right,
+        transparent 9px,
+        var(--primary-color) 9px,
+        var(--primary-color) 10px,
+        var(--surface-color) 10px);
 }
 
-.coord-tab-btn.attivo::after,
-.pannello-fullscreen .coord-colonna-titolo.attivo::after,
-.pannello-fullscreen .coord-colonna.attiva .coord-colonna-titolo::after {
+.coord-tab-btn.attivo::after {
     right: -10px;
-    background: radial-gradient(circle at top right, transparent 70%, var(--surface-color) 71%);
+    background: radial-gradient(circle at top left,
+        transparent 9px,
+        var(--primary-color) 9px,
+        var(--primary-color) 10px,
+        var(--surface-color) 10px);
 }
