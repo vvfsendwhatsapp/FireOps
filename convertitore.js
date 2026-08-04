@@ -1448,20 +1448,3 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (err) { }
     impostaSchedaColonnaAttiva(tabInizialeCoord, false); // false: non ri-salvare quello che abbiamo appena letto
 });
-
-function aggiornaAngoliScheda() {
-    const barraSchede = document.querySelector(".coord-tab-bar");
-    if (!barraSchede) return;
-    const schede = Array.from(barraSchede.querySelectorAll(".coord-tab-btn"));
-    schede.forEach((scheda, i) => {
-        scheda.classList.remove("coord-tab-vicino-dopo-attiva", "coord-tab-vicino-prima-attiva");
-        const precedente = schede[i - 1];
-        const successiva = schede[i + 1];
-        if (precedente && precedente.classList.contains("attivo")) {
-            scheda.classList.add("coord-tab-vicino-dopo-attiva");
-        }
-        if (successiva && successiva.classList.contains("attivo")) {
-            scheda.classList.add("coord-tab-vicino-prima-attiva");
-        }
-    });
-}
