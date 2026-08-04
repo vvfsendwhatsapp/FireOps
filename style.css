@@ -1509,6 +1509,12 @@ html.comando-gia-scelto #modal-comando {
     border: 1px solid var(--border-color);
     border-bottom: none;
     border-radius: 10px 10px 0 0;
+    /* Azzera esplicitamente gli angoli inferiori: la sola scorciatoia
+       sopra a volte lascia un frammento di bordo laterale visibile
+       quando border-bottom è "none" (stesso bug già risolto sui titoli
+       colonna in fullscreen, qui mai applicato alla barra ridotta) */
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
     padding: 9px 20px;
     font-size: 13px;
     font-weight: bold;
