@@ -1661,14 +1661,11 @@ html.comando-gia-scelto #modal-comando {
 .pannello-fullscreen #coord-tab-content-dati,
 .pannello-fullscreen #coord-tab-content-mappa,
 .pannello-fullscreen #coord-tab-content-messaggio {
-    display: block !important;
-    /* sovrascrive lo style inline che i tab impostano via JS */
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: 0 0 8px 8px;
     padding: 14px;
-    background: var(--surface-color);
-    min-width: 0;
-    /* evita overflow di tabelle/mappa dentro la colonna grid */
+    /* niente più "border-top: none": il bordo torna intero su tutti i
+       lati, il titolo (senza bordo proprio) vi si "incastra" dentro
+       tramite il margine negativo, senza mai creare una seconda linea */
 }
 
 .pannello-fullscreen .mappa-comando {
@@ -1740,8 +1737,7 @@ html.comando-gia-scelto #modal-comando {
    resto del contenuto resta comodamente dentro il padding normale */
 .pannello-fullscreen .coord-colonna-titolo {
     display: block;
-    /* -15px = 14px di padding + 1px di bordo della colonna: solo così
-       il titolo tocca esattamente il bordo ESTERNO, non quello interno */
+    border: none; /* il bordo lo disegna solo la colonna, mai il titolo: niente più doppio bordo */
     margin: -15px -15px 14px -15px;
     padding: 10px 14px;
     text-align: center;
