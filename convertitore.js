@@ -1485,11 +1485,8 @@ if (btnToggleAltimetria && wrapperAltimetria) {
         btnConverti.addEventListener("click", async () => {
             nascondiErrore();
             const formatoScelto = selectFormato ? selectFormato.value : "dd";
-            console.log("CLICK — formatoScelto:", formatoScelto); // DEBUG TEMPORANEO
             if (formatoScelto === "mappa") {
-                console.log("CLICK — entrato nel branch mappa, chiamo impostaSchedaColonnaAttiva"); // DEBUG TEMPORANEO
                 impostaSchedaColonnaAttiva("mappa");
-                console.log("CLICK — chiamata fatta"); // DEBUG TEMPORANEO
                 return;
             }
             let coordinate = null;
@@ -1598,6 +1595,8 @@ if (btnToggleAltimetria && wrapperAltimetria) {
     const CHIAVE_STORAGE_TAB_COORD = "fireops_coord_tab_attiva";
 
     function impostaSchedaColonnaAttiva(chiave, salva = true) {
+        console.log("impostaSchedaColonnaAttiva chiamata con:", chiave); // DEBUG TEMPORANEO
+        console.log("contenutiScheda:", contenutiScheda); // DEBUG TEMPORANEO
         pulsantiScheda.forEach(p => p.classList.toggle("attivo", p.dataset.tab === chiave));
         const corpoSchede = document.querySelector(".coord-tab-corpo");
         if (corpoSchede) {
@@ -1607,8 +1606,10 @@ if (btnToggleAltimetria && wrapperAltimetria) {
             else if (chiave === "messaggio") corpoSchede.classList.add("corpo-tab-ultimo-attivo");
         }
         Object.entries(contenutiScheda).forEach(([k, el]) => {
+            console.log("Controllo scheda:", k, "elemento esiste:", !!el); // DEBUG TEMPORANEO
             if (!el) return;
             el.style.display = k === chiave ? "block" : "none";
+            console.log("Impostato display di", k, "a", el.style.display); // DEBUG TEMPORANEO
             const colonna = el.closest(".coord-colonna");
             if (colonna) colonna.classList.toggle("attiva", k === chiave);
         });
