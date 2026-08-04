@@ -660,12 +660,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // UI: selezione formato in ingresso, lettura campi, conversione
     // ==========================================================
     const selectFormato = document.getElementById("coord-formato-input");
-    function aggiornaTestoBottoneConverti() {
-    const btn = document.getElementById("btn-coord-converti");
-    if (!btn || !selectFormato) return;
-    btn.textContent = selectFormato.value === "mappa"
-        ? "🗺️ Vai alla mappa"
-        : "📐 Converti e scopri le funzioni a lato";
+
     const gruppiInput = {
         dd: document.getElementById("coord-input-dd"),
         dmm: document.getElementById("coord-input-dmm"),
@@ -673,20 +668,28 @@ document.addEventListener("DOMContentLoaded", () => {
         olc: document.getElementById("coord-input-olc"),
         utm: document.getElementById("coord-input-utm"),
         mappa: document.getElementById("coord-input-mappa"),
-        libero: document.getElementById("coord-input-libero"),       // NUOVO
-        indirizzo: document.getElementById("coord-input-indirizzo"), // NUOVO
+        libero: document.getElementById("coord-input-libero"),
+        indirizzo: document.getElementById("coord-input-indirizzo"),
     };
     const elErrore = document.getElementById("coord-errore");
     const elRisultati = document.getElementById("coord-risultati");
 
+    function aggiornaTestoBottoneConverti() {
+        const btn = document.getElementById("btn-coord-converti");
+        if (!btn || !selectFormato) return;
+        btn.textContent = selectFormato.value === "mappa"
+            ? "🗺️ Vai alla mappa"
+            : "📐 Converti e scopri le funzioni a lato";
+    }
+
     if (selectFormato) {
-    selectFormato.addEventListener("change", () => {
-        Object.entries(gruppiInput).forEach(([chiave, el]) => {
-            if (el) el.style.display = chiave === selectFormato.value ? "block" : "none";
+        selectFormato.addEventListener("change", () => {
+            Object.entries(gruppiInput).forEach(([chiave, el]) => {
+                if (el) el.style.display = chiave === selectFormato.value ? "block" : "none";
+            });
+            aggiornaTestoBottoneConverti();
         });
-        aggiornaTestoBottoneConverti(); // NUOVO
-    });
-}
+    }
 
     // ==========================================================
     // PERSISTENZA FORM: i dati inseriti (qualsiasi formato) e il formato
