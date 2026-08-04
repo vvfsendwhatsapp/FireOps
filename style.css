@@ -1537,7 +1537,7 @@ html.comando-gia-scelto #modal-comando {
     border-color: var(--primary-color);
     border-bottom: 1px solid var(--surface-color);
     top: 1px;
-    z-index: 1;
+    z-index: 3;
 }
 
 .coord-tab-corpo {
