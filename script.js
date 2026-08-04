@@ -126,13 +126,16 @@ document.addEventListener("DOMContentLoaded", () => {
         const comandoSelezionato = comandiData.find(c => c.Comando === nomeComando);
         renderRiepilogoComando(comandoSelezionato, comandiData, direzioniData, conData, socavData);
         aggiornaMappaEMeteo(comandoSelezionato);
-
         // Il messaggio precompilato dipende dal Comando attivo: lo rigenero
         generaMessaggioMessaggistica();
-
         // I link mappa (Mappe > SAR) puntano alle coordinate del Comando attivo: li rigenero
         if (linkUtiliData.length > 0) renderLinkUtili(linkUtiliData);
-    }
+        // NUOVO: unica fonte di verità del Comando attivo, condivisa con convertitore.js
+        // (che non deve più rifare un proprio fetch indipendente, sempre a rischio di
+        // disallineamento/timing rispetto a questo, l'unico punto che gestisce davvero la selezione)
+        window.FireOpsComandoAttivo = comandoSelezionato || null;
+        document.dispatchEvent(new CustomEvent("fireops:comando-attivo-cambiato", { detail: comandoSelezionato }));
+}
 
     // Apre il modale in modalità "cambio comando" (chiudibile)
     function apriModaleCambioComando() {

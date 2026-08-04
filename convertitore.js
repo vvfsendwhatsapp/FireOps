@@ -936,31 +936,32 @@ function iconaFrecciaDirezione(colore, azimutGradi) {
 
     assicuraMappaCoordInizializzata();
 
-    const CHIAVE_STORAGE_COMANDO = "fireops_comando_selezionato";
     const ZOOM_INIZIALE_COMANDO = 12;
-    let comandoAttivoCache = null;
+let comandoAttivoCache = window.FireOpsComandoAttivo || null;
 
-    function estraiCoordinateComando(comando) {
-        if (!comando || !comando["Coordinate"]) return null;
-        const parti = comando["Coordinate"].split(",").map(s => parseFloat(s.trim()));
-        if (parti.length !== 2 || parti.some(n => Number.isNaN(n))) return null;
-        return { lat: parti[0], lon: parti[1] };
-    }
+function estraiCoordinateComando(comando) {
+    if (!comando || !comando["Coordinate"]) return null;
+    const parti = comando["Coordinate"].split(",").map(s => parseFloat(s.trim()));
+    if (parti.length !== 2 || parti.some(n => Number.isNaN(n))) return null;
+    return { lat: parti[0], lon: parti[1] };
+}
 
-    fetch("/FireOps/db/comandi.json")
-        .then(r => (r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status))))
-        .then(comandiJson => {
-            const nomeComandoAttivo = sessionStorage.getItem(CHIAVE_STORAGE_COMANDO);
-            if (!nomeComandoAttivo) return;
-            const comandoAttivo = (comandiJson || []).find(c => c.Comando === nomeComandoAttivo);
-            comandoAttivoCache = comandoAttivo || null;
-            const coord = estraiCoordinateComando(comandoAttivo);
-            if (coord && coordMappaLeaflet) coordMappaLeaflet.setView([coord.lat, coord.lon], ZOOM_INIZIALE_COMANDO);
-            aggiornaAnteprimaMessaggioCoordinate();
-        })
-        .catch(err => {
-            console.error("Convertitore: impossibile leggere il Comando attivo, resto sulla vista Italia:", err);
-        });
+function applicaComandoAttivo(comando) {
+    comandoAttivoCache = comando || null;
+    const coord = estraiCoordinateComando(comando);
+    if (coord && coordMappaLeaflet) coordMappaLeaflet.setView([coord.lat, coord.lon], ZOOM_INIZIALE_COMANDO);
+    aggiornaAnteprimaMessaggioCoordinate();
+}
+
+// Se script.js ha già impostato il Comando attivo prima che questo script
+// finisca di caricarsi, il valore è già qui: nessun fetch, nessuna attesa
+if (comandoAttivoCache) applicaComandoAttivo(comandoAttivoCache);
+
+// Se il Comando viene selezionato/cambiato DOPO, questo evento mantiene
+// sincronizzato convertitore.js con l'unica fonte di verità di script.js
+document.addEventListener("fireops:comando-attivo-cambiato", (e) => {
+    applicaComandoAttivo(e.detail);
+});
 
     function centraMappaSulTarget(lat, lon) {
         assicuraMappaCoordInizializzata();
