@@ -4,91 +4,141 @@
       "nome": "Centro Aviazione ed Hangar Nazionale - Ciampino",
       "citta": "Roma",
       "latitudine": 41.7994,
-      "longitudine": 12.5949
+      "longitudine": 12.5949,
+      "telefono": "06 79340529",
+      "fax": "06 79340708",
+      "email": null,
+      "note": "Email dedicata non pubblicata; contatto generale Ufficio coordinamento servizio aereo: em.soccorsoaereo@vigilfuoco.it"
     },
     {
       "nome": "Reparto Volo VVF Bari",
       "citta": "Bari",
       "latitudine": 41.1378,
-      "longitudine": 16.7606
+      "longitudine": 16.7606,
+      "telefono": "080 5316134",
+      "fax": null,
+      "email": "nucleo.eli.ba@vigilfuoco.it"
     },
     {
       "nome": "Reparto Volo VVF Pescara",
       "citta": "Pescara",
       "latitudine": 42.4422,
-      "longitudine": 14.1883
+      "longitudine": 14.1883,
+      "telefono": "085 52707",
+      "fax": "085 4316734",
+      "email": "nucleo.eli.pe@vigilfuoco.it"
     },
     {
       "nome": "Reparto Volo VVF Salerno",
       "citta": "Pontecagnano Faiano (Salerno)",
       "latitudine": 40.6231,
-      "longitudine": 14.9122
+      "longitudine": 14.9122,
+      "telefono": "0828 53712",
+      "fax": null,
+      "email": null
     },
     {
       "nome": "Reparto Volo VVF Torino",
       "citta": "San Maurizio Canavese (Torino)",
       "latitudine": 45.1925,
-      "longitudine": 7.6019
+      "longitudine": 7.6019,
+      "telefono": null,
+      "fax": null,
+      "email": null,
+      "note": "Recapiti diretti non pubblicati sul sito ufficiale; fa riferimento al Comando VV.F. di Torino"
     },
     {
       "nome": "Reparto Volo VVF Lamezia Terme",
       "citta": "Lamezia Terme",
       "latitudine": 38.9056,
-      "longitudine": 16.2417
+      "longitudine": 16.2417,
+      "telefono": null,
+      "fax": null,
+      "email": null,
+      "note": "Recapiti diretti non pubblicati sul sito ufficiale; fa riferimento alla Direzione Regionale VV.F. Calabria"
     },
     {
       "nome": "Reparto Volo VVF Genova",
       "citta": "Genova",
       "latitudine": 44.4133,
-      "longitudine": 8.8375
+      "longitudine": 8.8375,
+      "telefono": "010 6503636",
+      "fax": null,
+      "email": "nucleo.eli.ge@vigilfuoco.it"
     },
     {
       "nome": "Reparto Volo VVF Venezia",
       "citta": "Venezia (Tessera)",
       "latitudine": 45.5053,
-      "longitudine": 12.3519
+      "longitudine": 12.3519,
+      "telefono": "041 5415333",
+      "fax": "041 5415512",
+      "email": null
     },
     {
       "nome": "Reparto Volo VVF Bologna",
       "citta": "Bologna",
       "latitudine": 44.5354,
-      "longitudine": 11.2887
+      "longitudine": 11.2887,
+      "telefono": "0828 365235",
+      "fax": null,
+      "email": "nucleo.eli.bo@vigilfuoco.it",
+      "note": "ATTENZIONE: numero riportato testualmente dal sito ufficiale vigilfuoco.it, ma il prefisso 0828 è quello di Salerno, non di Bologna (051) - probabile refuso nella pagina ufficiale, da verificare prima dell'uso"
     },
     {
       "nome": "Reparto Volo VVF Arezzo",
       "citta": "Arezzo (Molin Bianco)",
       "latitudine": 43.4552,
-      "longitudine": 11.8474
+      "longitudine": 11.8474,
+      "telefono": "0575 355800",
+      "fax": "0575 21282",
+      "email": "nucleo.eli.ar@vigilfuoco.it"
     },
     {
       "nome": "Reparto Volo VVF Cecina",
       "citta": "Cecina Mare (Livorno)",
       "latitudine": 43.2985,
-      "longitudine": 10.5075
+      "longitudine": 10.5075,
+      "telefono": "0586 623700",
+      "fax": null,
+      "email": null
     },
     {
       "nome": "Reparto Volo VVF Catania",
       "citta": "Catania (Fontanarossa)",
       "latitudine": 37.4668,
-      "longitudine": 15.0664
+      "longitudine": 15.0664,
+      "telefono": "095 348179",
+      "fax": "095 348179",
+      "email": null
     },
     {
       "nome": "Reparto Volo VVF Sassari",
       "citta": "Alghero-Fertilia (Sassari)",
       "latitudine": 40.6321,
-      "longitudine": 8.2908
+      "longitudine": 8.2908,
+      "telefono": "079 935030",
+      "fax": null,
+      "email": null
     },
     {
       "nome": "Reparto Volo VVF Malpensa",
       "citta": "Somma Lombardo (Varese)",
       "latitudine": 45.6306,
-      "longitudine": 8.7231
+      "longitudine": 8.7231,
+      "telefono": "0331 241653",
+      "fax": null,
+      "email": "nucleo.eli.va@vigilfuoco.it"
     },
     {
       "nome": "Reparto Volo VVF Rieti",
       "citta": "Rieti",
       "latitudine": 42.4267,
-      "longitudine": 12.85
+      "longitudine": 12.85,
+      "telefono": null,
+      "fax": null,
+      "email": null,
+      "note": "Recapiti diretti non pubblicati sul sito ufficiale; secondo fonti sindacali del settore la sede ha avuto vicende organizzative incerte negli ultimi anni"
     }
   ]
 }
