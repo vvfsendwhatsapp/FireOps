@@ -1249,7 +1249,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     elenco: listaComuni,
                     cercaValore: c => c["Denominazione (Italiana e straniera)"],
                     mostraTesto: c => `${c["Denominazione (Italiana e straniera)"]} (${c["Sigla automobilistica"] || "?"})`,
-                    testoSelezionato: c => c["Denominazione (Italiana e straniera)"]
+                    testoSelezionato: c => `${c["Denominazione (Italiana e straniera)"]} (${c["Sigla automobilistica"] || "?"})`
                 });
             })
             .catch(err => console.error("Convertitore: comuni.json non disponibile:", err));
