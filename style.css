@@ -1672,8 +1672,21 @@ html.comando-gia-scelto #modal-comando {
 }
 
 .pannello-fullscreen .mappa-comando {
-    height: 65vh;
+    height: 40vh;
 }
+
+/* La textarea "Anteprima messaggio" ha rows="16" fisso nell'HTML (pensato
+   per la larghezza piena): in colonna stretta diventa troppo alta, la
+   forziamo più bassa e comunque ridimensionabile a mano dall'utente */
+.pannello-fullscreen #coord-msg-testo {
+    height: 180px;
+}
+
+/* Anche il grafico altimetria, se presente, si adatta meglio a colonna stretta */
+.pannello-fullscreen #coord-grafico-altimetria {
+    height: 120px !important;
+}
+</code>
 
 .pagina-box-header-con-nota {
     justify-content: space-between;
