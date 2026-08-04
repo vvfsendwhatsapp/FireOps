@@ -1532,13 +1532,12 @@ html.comando-gia-scelto #modal-comando {
 }
 
 .coord-tab-btn.attivo {
-    background: var(--primary-color);
-    color: var(--dark-color);
+    background: var(--surface-color);
+    color: var(--primary-color);
     border-color: var(--primary-color);
     border-bottom: 1px solid var(--surface-color);
     top: 1px;
-    z-index: 3;
-}
+    z-index: 1;
 }
 
 .coord-tab-corpo {
