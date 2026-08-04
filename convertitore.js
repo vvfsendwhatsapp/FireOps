@@ -1236,24 +1236,24 @@ document.addEventListener("DOMContentLoaded", () => {
     // con CAP compilato automaticamente alla selezione
     // ==========================================================
     const inputComuneIndirizzo = document.getElementById("coord-indirizzo-comune-input");
-const hiddenComuneIndirizzo = document.getElementById("coord-indirizzo-comune");
-const dropdownComuneIndirizzo = document.getElementById("coord-indirizzo-comune-dropdown");
-if (inputComuneIndirizzo && hiddenComuneIndirizzo && dropdownComuneIndirizzo) {
-    fetch("/FireOps/db/comuni.json")
-        .then(r => (r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status))))
-        .then(listaComuni => {
-            creaComboRicercabileCoord({
-                input: inputComuneIndirizzo,
-                hidden: hiddenComuneIndirizzo,
-                dropdown: dropdownComuneIndirizzo,
-                elenco: listaComuni,
-                cercaValore: c => c["Denominazione (Italiana e straniera)"],
-                mostraTesto: c => `${c["Denominazione (Italiana e straniera)"]} (${c["Sigla automobilistica"] || "?"})`,
-                testoSelezionato: c => c["Denominazione (Italiana e straniera)"]
-            });
-        })
-        .catch(err => console.error("Convertitore: comuni.json non disponibile:", err));
-}
+    const hiddenComuneIndirizzo = document.getElementById("coord-indirizzo-comune");
+    const dropdownComuneIndirizzo = document.getElementById("coord-indirizzo-comune-dropdown");
+    if (inputComuneIndirizzo && hiddenComuneIndirizzo && dropdownComuneIndirizzo) {
+        fetch("/FireOps/db/comuni.json")
+            .then(r => (r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status))))
+            .then(listaComuni => {
+                creaComboRicercabileCoord({
+                    input: inputComuneIndirizzo,
+                    hidden: hiddenComuneIndirizzo,
+                    dropdown: dropdownComuneIndirizzo,
+                    elenco: listaComuni,
+                    cercaValore: c => c["Denominazione (Italiana e straniera)"],
+                    mostraTesto: c => `${c["Denominazione (Italiana e straniera)"]} (${c["Sigla automobilistica"] || "?"})`,
+                    testoSelezionato: c => c["Denominazione (Italiana e straniera)"]
+                });
+            })
+            .catch(err => console.error("Convertitore: comuni.json non disponibile:", err));
+    }
 
     if (inputMsgNumero) inputMsgNumero.addEventListener("input", validaCampiMessaggioCoord);
 
