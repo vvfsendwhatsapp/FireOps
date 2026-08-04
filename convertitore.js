@@ -1482,10 +1482,11 @@ if (btnToggleAltimetria && wrapperAltimetria) {
     const btnConverti = document.getElementById("btn-coord-converti");
 
     if (btnConverti) {
-        btnConverti.addEventListener("click", async () => {
+        btnConverti.addEventListener("click", async (event) => {
             nascondiErrore();
             const formatoScelto = selectFormato ? selectFormato.value : "dd";
             if (formatoScelto === "mappa") {
+                event.stopPropagation();
                 impostaSchedaColonnaAttiva("mappa");
                 return;
             }
@@ -1595,8 +1596,6 @@ if (btnToggleAltimetria && wrapperAltimetria) {
     const CHIAVE_STORAGE_TAB_COORD = "fireops_coord_tab_attiva";
 
     function impostaSchedaColonnaAttiva(chiave, salva = true) {
-        console.log("impostaSchedaColonnaAttiva chiamata con:", chiave); // DEBUG TEMPORANEO
-        console.log("contenutiScheda:", contenutiScheda); // DEBUG TEMPORANEO
         pulsantiScheda.forEach(p => p.classList.toggle("attivo", p.dataset.tab === chiave));
         const corpoSchede = document.querySelector(".coord-tab-corpo");
         if (corpoSchede) {
@@ -1606,10 +1605,8 @@ if (btnToggleAltimetria && wrapperAltimetria) {
             else if (chiave === "messaggio") corpoSchede.classList.add("corpo-tab-ultimo-attivo");
         }
         Object.entries(contenutiScheda).forEach(([k, el]) => {
-            console.log("Controllo scheda:", k, "elemento esiste:", !!el); // DEBUG TEMPORANEO
             if (!el) return;
             el.style.display = k === chiave ? "block" : "none";
-            console.log("Impostato display di", k, "a", el.style.display); // DEBUG TEMPORANEO
             const colonna = el.closest(".coord-colonna");
             if (colonna) colonna.classList.toggle("attiva", k === chiave);
         });
