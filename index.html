@@ -457,74 +457,102 @@
                     <div class="coord-colonna" data-colonna="mappa">
                         <h4 class="coord-colonna-titolo coord-tab-btn" data-tab="mappa">🗺️ Mappa</h4>
                         <div id="coord-tab-content-mappa" style="display:none;">
-                            <div class="mappa-meteo-azioni">
-                                <select id="coord-profilo-percorso" class="header-select">
-                                    <option value="trekking">🥾 A piedi / sentiero</option>
-                                    <option value="car-fast">🚗 Automezzo</option>
-                                </select>
-                                <button id="btn-coord-percorso" class="btn-toggle-radar" type="button">🧭 Crea percorso
-                                    (clic su mappa)</button>
-                                <button id="btn-coord-annulla-percorso" class="btn-toggle-radar" type="button"
-                                    style="display:none;">✖ Annulla percorso</button>
-                                <button id="btn-coord-scarica-kml" class="btn-toggle-radar" type="button" disabled>⬇️
-                                    Scarica KML</button>
+                            <p class="coord-mappa-sottotitolo">Restituzione grafica e pianificazione percorso</p>
+                            <div class="coord-mappa-controlli">
+                                <div class="msg-campo">
+                                    <label for="coord-profilo-percorso">Modalità di spostamento</label>
+                                    <select id="coord-profilo-percorso" class="header-select">
+                                        <option value="trekking">🥾 A piedi / sentiero</option>
+                                        <option value="car-fast">🚗 Automezzo</option>
+                                        <option value="linea-diretta">📏 Linea diretta (misura distanza)</option>
+                                    </select>
+                                </div>
+                                <div class="msg-campo coord-mappa-azione-campo">
+                                    <label>&nbsp;</label>
+                                    <button id="btn-coord-percorso" class="btn-toggle-radar" type="button">🧭 Traccia
+                                        percorso (clic sulla mappa)</button>
+                                </div>
+                                <div class="msg-campo coord-mappa-azione-campo">
+                                    <label>&nbsp;</label>
+                                    <button id="btn-coord-annulla-percorso" class="btn-toggle-radar" type="button"
+                                        style="display:none;">✖ Annulla percorso</button>
+                                </div>
+                                <div class="msg-campo coord-mappa-azione-campo">
+                                    <label>&nbsp;</label>
+                                    <button id="btn-coord-scarica-kml" class="btn-toggle-radar" type="button"
+                                        disabled>⬇️ Esporta KML</button>
+                                </div>
                             </div>
-                            <div id="coord-mappa" class="mappa-comando"></div>
-                            <p class="pagina-nota" id="coord-percorso-info"></p>
-                            <p class="pagina-nota">🟨 Pallino giallo = Squadra VF (partenza percorso) — 🟥 Pallino rosso
-                                =
-                                Target intervento. Percorso in rosso.</p>
 
-                            <canvas id="coord-grafico-altimetria" width="700" height="180"
-                                style="display:none; width:100%; max-width:100%; background:var(--dark-color); border:1px solid var(--border-color); border-radius:8px; margin-top:10px;"></canvas>
+                            <div class="coord-mappa-wrapper">
+                                <div id="coord-mappa" class="mappa-comando"></div>
+                                <div id="coord-mappa-overlay-percorso"
+                                    class="coord-mappa-overlay coord-mappa-overlay-sx" style="display:none;"></div>
+
+                                <div class="coord-mappa-overlay coord-mappa-overlay-dx">
+                                    <div class="coord-mappa-legenda-voce"><span class="coord-mappa-pallino"
+                                            style="background:#ffd700;"></span> Squadra VF</div>
+                                    <div class="coord-mappa-legenda-voce"><span class="coord-mappa-pallino"
+                                            style="background:#AF2B1E;"></span> Target intervento</div>
+                                </div>
+                            </div> <!-- chiusura .coord-mappa-wrapper -->
+                            <p class="pagina-nota" id="coord-percorso-info"></p>
+                            <button id="btn-toggle-altimetria" class="btn-toggle-radar" type="button"
+                                style="display:none; margin-top:10px;">📈 Mostra grafico altimetria</button>
+                            <div id="coord-altimetria-wrapper" style="display:none;">
+                                <canvas id="coord-grafico-altimetria" width="700" height="200"
+                                    style="width:100%; max-width:100%; background:var(--dark-color); border:1px solid var(--border-color); border-radius:8px; margin-top:10px;"></canvas>
+                            </div>
                             <p class="pagina-nota" id="coord-altimetria-nota" style="display:none;"></p>
                         </div>
                     </div>
+                </div>
 
-                    <!-- SCHEDA/COLONNA: MESSAGGIO -->
-                    <div class="coord-colonna" data-colonna="messaggio">
-                        <h4 class="coord-colonna-titolo coord-tab-btn" data-tab="messaggio">✉️ Messaggio a squadre VVF
-                        </h4>
-                        <div id="coord-tab-content-messaggio" style="display:none;">
-                            <p class="pagina-nota" id="coord-msg-comando-info">Nessun Comando attivo — selezionalo dalla
-                                schermata iniziale (☰).</p>
-                            <p class="pagina-nota">Invia le coordinate convertite a una squadra VVF via WhatsApp o
-                                Telegram,
-                                con lo stesso formato usato in Sala Operativa.</p>
-                            <div class="msg-riga-campi">
-                                <div class="msg-campo combo-campo">
-                                    <label for="coord-msg-prefisso-input">Prefisso internazionale</label>
-                                    <div class="combo-wrapper">
-                                        <input type="text" id="coord-msg-prefisso-input" class="combo-input"
-                                            placeholder="Cerca prefisso o paese..." autocomplete="off">
-                                        <input type="hidden" id="coord-msg-prefisso">
-                                        <span class="combo-arrow" aria-hidden="true"></span>
-                                        <div id="coord-msg-prefisso-dropdown" class="combo-dropdown"></div>
-                                    </div>
-                                </div>
-                                <div class="msg-campo">
-                                    <label for="coord-msg-numero">Numero di telefono squadra</label>
-                                    <input type="tel" id="coord-msg-numero" placeholder="Es. 3331234567"
-                                        autocomplete="off">
+                <!-- SCHEDA/COLONNA: MESSAGGIO -->
+                <div class="coord-colonna" data-colonna="messaggio">
+                    <h4 class="coord-colonna-titolo coord-tab-btn" data-tab="messaggio">✉️ Messaggio a squadre
+                        VVF
+                    </h4>
+                    <div id="coord-tab-content-messaggio" style="display:none;">
+                        <p class="pagina-nota" id="coord-msg-comando-info">Nessun Comando attivo — selezionalo
+                            dalla
+                            schermata iniziale (☰).</p>
+                        <p class="pagina-nota">Invia le coordinate convertite a una squadra VVF via WhatsApp o
+                            Telegram,
+                            con lo stesso formato usato in Sala Operativa.</p>
+                        <div class="msg-riga-campi">
+                            <div class="msg-campo combo-campo">
+                                <label for="coord-msg-prefisso-input">Prefisso internazionale</label>
+                                <div class="combo-wrapper">
+                                    <input type="text" id="coord-msg-prefisso-input" class="combo-input"
+                                        placeholder="Cerca prefisso o paese..." autocomplete="off">
+                                    <input type="hidden" id="coord-msg-prefisso">
+                                    <span class="combo-arrow" aria-hidden="true"></span>
+                                    <div id="coord-msg-prefisso-dropdown" class="combo-dropdown"></div>
                                 </div>
                             </div>
-
-                            <label for="coord-msg-testo">Anteprima messaggio</label>
-                            <textarea id="coord-msg-testo" rows="16" readonly
-                                placeholder="Converti prima delle coordinate per generare il messaggio."></textarea>
-
-                            <div class="msg-azioni">
-                                <button id="coord-btn-whatsapp-web" class="btn-whatsapp" type="button" disabled>📱
-                                    WhatsApp Web</button>
-                                <button id="coord-btn-whatsapp-app" class="btn-whatsapp" type="button" disabled>💻
-                                    WhatsApp Desktop</button>
-                                <button id="coord-btn-invia-telegram" class="btn-telegram" type="button" disabled>✈️
-                                    Telegram</button>
+                            <div class="msg-campo">
+                                <label for="coord-msg-numero">Numero di telefono squadra</label>
+                                <input type="tel" id="coord-msg-numero" placeholder="Es. 3331234567" autocomplete="off">
                             </div>
                         </div>
-                    </div>
 
+                        <label for="coord-msg-testo">Anteprima messaggio</label>
+                        <textarea id="coord-msg-testo" rows="16" readonly
+                            placeholder="Converti prima delle coordinate per generare il messaggio."></textarea>
+
+                        <div class="msg-azioni">
+                            <button id="coord-btn-whatsapp-web" class="btn-whatsapp" type="button" disabled>📱
+                                WhatsApp Web</button>
+                            <button id="coord-btn-whatsapp-app" class="btn-whatsapp" type="button" disabled>💻
+                                WhatsApp Desktop</button>
+                            <button id="coord-btn-invia-telegram" class="btn-telegram" type="button" disabled>✈️
+                                Telegram</button>
+                        </div>
+                    </div>
                 </div>
+
+            </div>
             </div>
         </section>
 

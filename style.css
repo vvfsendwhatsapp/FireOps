@@ -1749,3 +1749,78 @@ html.comando-gia-scelto #modal-comando {
 .coord-tab-vicino-prima-attiva {
     border-top-right-radius: 0;
 }
+
+.coord-mappa-sottotitolo {
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0 0 14px;
+}
+
+.coord-mappa-controlli {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-bottom: 15px;
+}
+
+.coord-mappa-azione-campo {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+
+.coord-mappa-wrapper {
+    position: relative;
+}
+
+.coord-mappa-overlay {
+    position: absolute;
+    z-index: 700;
+    background: rgba(18, 18, 18, 0.9);
+    border: 1px solid var(--primary-color);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: var(--text-main);
+    pointer-events: none;
+    max-width: 220px;
+}
+
+.coord-mappa-overlay-sx { top: 8px; left: 8px; }
+.coord-mappa-overlay-dx { top: 8px; right: 8px; }
+
+.coord-mappa-legenda-voce {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.coord-mappa-legenda-voce + .coord-mappa-legenda-voce {
+    margin-top: 4px;
+}
+
+.coord-mappa-pallino {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.coord-mappa-overlay-riga {
+    white-space: nowrap;
+}
+
+.coord-mappa-overlay-riga + .coord-mappa-overlay-riga {
+    margin-top: 2px;
+}
+
+.coord-mappa-overlay-titolo {
+    color: var(--primary-color);
+    font-weight: bold;
+    margin-bottom: 4px;
+}
