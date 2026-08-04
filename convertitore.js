@@ -892,21 +892,22 @@ function iconaFrecciaDirezione(colore, azimutGradi) {
         }).addTo(coordMappaLeaflet);
 
         coordMappaLeaflet.on("click", (e) => {
-            // Secondo punto di "Crea percorso": funziona sempre, indipendentemente
-            // dal formato selezionato nel menù a tendina
-            if (modalitaPercorsoAttiva && coordinateTargetCorrenti) {
-                calcolaEDisegnaPercorso(e.latlng.lat, e.latlng.lng);
-                return;
-            }
-
-            // Altrimenti il click genera coordinate SOLO se è selezionato
-            // esplicitamente il formato "Scelta su mappa": con qualsiasi altro
-            // formato (DD, UTM, indirizzo...) il click sulla mappa non fa nulla
-            const formatoAttuale = selectFormato ? selectFormato.value : "dd";
-            if (formatoAttuale !== "mappa") return;
-
-            elaboraCoordinateConvertite(e.latlng.lat, e.latlng.lng);
-        });
+    // Secondo punto di "Crea percorso": funziona sempre, indipendentemente
+    // dal formato selezionato nel menù a tendina
+    if (modalitaPercorsoAttiva && coordinateTargetCorrenti) {
+        calcolaEDisegnaPercorso(e.latlng.lat, e.latlng.lng);
+        return;
+    }
+    // Altrimenti il click genera coordinate SOLO se è selezionato
+    // esplicitamente il formato "Scelta su mappa": con qualsiasi altro
+    // formato (DD, UTM, indirizzo...) il click sulla mappa non fa nulla
+    const formatoAttuale = selectFormato ? selectFormato.value : "dd";
+    if (formatoAttuale !== "mappa") return;
+    elaboraCoordinateConvertite(e.latlng.lat, e.latlng.lng);
+    // Dopo il click, torna automaticamente sulla scheda Dati per mostrare
+    // subito tutti i formati convertiti e i dati aggiornati
+    impostaSchedaColonnaAttiva("dati");
+});
 
         if (typeof ResizeObserver !== "undefined") {
             const osservatoreDimensione = new ResizeObserver(() => {
