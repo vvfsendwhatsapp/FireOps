@@ -1662,10 +1662,8 @@ html.comando-gia-scelto #modal-comando {
 .pannello-fullscreen #coord-tab-content-mappa,
 .pannello-fullscreen #coord-tab-content-messaggio {
     display: block !important;
-    position: relative;
-    box-sizing: border-box;
     border: 1px solid var(--border-color);
-    border-radius: 0 0 8px 8px;
+    border-radius: 8px;
     padding: 14px;
     background: var(--surface-color);
     min-width: 0;
@@ -1723,24 +1721,24 @@ html.comando-gia-scelto #modal-comando {
     display: none;
 }
 
-/* Il titolo "sfonda" verso l'esterno con un margine negativo ESATTAMENTE
-   pari al padding della colonna (14px): tocca i bordi, mentre tutto il
-   resto del contenuto resta comodamente dentro il padding normale */
 .pannello-fullscreen .coord-colonna-titolo {
     display: block;
-    position: relative;
-    z-index: 3;
-    box-sizing: border-box;
-    width: calc(100% + 30px);
-    border: none;
-    margin: -15px -15px 14px -15px;
-    padding: 10px 14px;
+    background: var(--dark-color);
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 9px 20px;
+    font-size: 13px;
+    font-weight: bold;
     text-align: center;
-    border-radius: 8px 8px 0 0;
+    text-transform: none;
+    margin: 0 0 10px 0;
 }
 
 .pannello-fullscreen .coord-colonna-attiva > .coord-colonna-titolo {
+    background: var(--surface-color);
     color: var(--primary-color);
+    border-color: var(--primary-color);
 }
 
 .pannello-fullscreen .coord-colonna-attiva {
