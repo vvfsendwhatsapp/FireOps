@@ -1661,11 +1661,12 @@ html.comando-gia-scelto #modal-comando {
 .pannello-fullscreen #coord-tab-content-dati,
 .pannello-fullscreen #coord-tab-content-mappa,
 .pannello-fullscreen #coord-tab-content-messaggio {
+    display: block !important; /* sovrascrive lo style inline che i tab impostano via JS in vista ridotta */
+    border: 1px solid var(--border-color);
     border-radius: 0 0 8px 8px;
     padding: 14px;
-    /* niente più "border-top: none": il bordo torna intero su tutti i
-       lati, il titolo (senza bordo proprio) vi si "incastra" dentro
-       tramite il margine negativo, senza mai creare una seconda linea */
+    background: var(--surface-color);
+    min-width: 0;
 }
 
 .pannello-fullscreen .mappa-comando {
