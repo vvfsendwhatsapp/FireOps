@@ -1658,15 +1658,65 @@ html.comando-gia-scelto #modal-comando {
     background: transparent;
 }
 
+/* Il grid ora si applica ai wrapper (etichetta+box), non più direttamente ai box */
+.pannello-fullscreen .coord-tab-corpo {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-top: 0;
+    border: none;
+    padding: 0;
+    background: transparent;
+}
+
+.coord-colonna-wrapper {
+    display: contents; /* in vista ridotta il wrapper "sparisce": i suoi figli restano nel flusso normale, come se non esistesse */
+}
+
+.pannello-fullscreen .coord-colonna-wrapper {
+    display: flex; /* in vista espansa torna un vero contenitore: etichetta sopra, box sotto */
+    flex-direction: column;
+}
+
+.coord-colonna-titolo {
+    display: none; /* nascosto in vista ridotta: c'è già la scheda in alto */
+}
+
+.pannello-fullscreen .coord-colonna-titolo {
+    display: block;
+    background: var(--dark-color);
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 9px 20px;
+    font-size: 13px;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
 .pannello-fullscreen #coord-tab-content-dati,
 .pannello-fullscreen #coord-tab-content-mappa,
 .pannello-fullscreen #coord-tab-content-messaggio {
     display: block !important;
+    flex: 1 1 auto;
     border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 14px;
     background: var(--surface-color);
     min-width: 0;
+}
+
+.pannello-fullscreen .coord-colonna-wrapper.attiva .coord-colonna-titolo {
+    background: var(--surface-color);
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.pannello-fullscreen .coord-colonna-wrapper.attiva #coord-tab-content-dati,
+.pannello-fullscreen .coord-colonna-wrapper.attiva #coord-tab-content-mappa,
+.pannello-fullscreen .coord-colonna-wrapper.attiva #coord-tab-content-messaggio {
+    border-color: var(--primary-color) !important;
 }
 
 .pannello-fullscreen .mappa-comando {
@@ -1715,30 +1765,6 @@ html.comando-gia-scelto #modal-comando {
     .pannello-fullscreen .coord-tab-corpo {
         grid-template-columns: 1fr;
     }
-}
-
-.coord-colonna-titolo {
-    display: none;
-}
-
-.pannello-fullscreen .coord-colonna-titolo {
-    display: block;
-    background: var(--dark-color);
-    color: var(--text-muted);
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
-    padding: 9px 20px;
-    font-size: 13px;
-    font-weight: bold;
-    text-align: center;
-    text-transform: none;
-    margin: 0 0 10px 0;
-}
-
-.pannello-fullscreen .coord-colonna-attiva > .coord-colonna-titolo {
-    background: var(--surface-color);
-    color: var(--primary-color);
-    border-color: var(--primary-color);
 }
 
 .pannello-fullscreen .coord-colonna-attiva {
