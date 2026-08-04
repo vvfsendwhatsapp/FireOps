@@ -1711,31 +1711,42 @@ html.comando-gia-scelto #modal-comando {
     display: none;
 }
 
-/* Il bordo superiore lo disegna il titolo, non la colonna: evita doppi bordi */
+/* La colonna non ha più padding proprio: lo zero-out garantisce che il
+   titolo, essendo il primo figlio, tocchi sempre i bordi esterni senza
+   bisogno di calcolare margini negativi */
 .pannello-fullscreen #coord-tab-content-dati,
 .pannello-fullscreen #coord-tab-content-mappa,
 .pannello-fullscreen #coord-tab-content-messaggio {
     border-top: none;
     border-radius: 0 0 8px 8px;
+    padding: 0 0 14px 0;
 }
 
+/* Il titolo è il primo figlio della colonna: piena larghezza naturale,
+   nessun margine negativo da calcolare */
 .pannello-fullscreen .coord-colonna-titolo {
-    display: block !important;
-    box-sizing: border-box !important;
-    border-radius: 8px 8px 0 0 !important;
-    text-align: center !important;
-    /* Margini laterali negativi pari al padding della colonna (14px):
-       "esce" dall'area di contenuto e tocca i bordi esterni del riquadro */
-    margin: 0 -14px 14px -14px !important;
-    padding: 9px 20px !important; /* stesso padding di .coord-tab-btn, riaffermato per sicurezza */
-    top: 0 !important;
-    flex: none !important;
+    display: block;
+    margin: 0 0 14px 0;
+    padding: 10px 14px;
+    text-align: center;
+    border-radius: 8px 8px 0 0;
 }
 
-/* Colonna attiva: il titolo si accende in giallo (il bordo della colonna
-   già diventa giallo tramite .coord-colonna-attiva, definito altrove) */
+/* Tutto il resto del contenuto della colonna (form, tabella, mappa...)
+   riceve il padding laterale che prima stava sulla colonna intera */
+.pannello-fullscreen #coord-tab-content-dati > *:not(.coord-colonna-titolo),
+.pannello-fullscreen #coord-tab-content-mappa > *:not(.coord-colonna-titolo),
+.pannello-fullscreen #coord-tab-content-messaggio > *:not(.coord-colonna-titolo) {
+    margin-left: 14px;
+    margin-right: 14px;
+}
+
 .pannello-fullscreen .coord-colonna-attiva > .coord-colonna-titolo {
     color: var(--primary-color);
+}
+
+.pannello-fullscreen .coord-colonna-attiva {
+    border-color: var(--primary-color) !important;
 }
 
 .coord-comando-badge {
@@ -1748,9 +1759,4 @@ html.comando-gia-scelto #modal-comando {
     flex-direction: column;
     gap: 4px;
     flex: 1 1 auto;
-}
-
-/* Colonna attiva in modalità espansa: bordo giallo */
-.pannello-fullscreen .coord-colonna-attiva {
-    border-color: var(--primary-color) !important;
 }
