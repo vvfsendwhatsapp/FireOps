@@ -1726,7 +1726,11 @@ html.comando-gia-scelto #modal-comando {
    nessun margine negativo da calcolare */
 .pannello-fullscreen .coord-colonna-titolo {
     display: block;
-    margin: 0 0 14px 0;
+    /* -1px su lati e sinistra/destra: sovrappone esattamente il bordo
+       proprio del titolo (ereditato da .coord-tab-btn) al bordo della
+       colonna sottostante, così le due linee coincidono invece di
+       apparire sfalsate di 1px */
+    margin: 0 -1px 14px -1px;
     padding: 10px 14px;
     text-align: center;
     border-radius: 8px 8px 0 0;
