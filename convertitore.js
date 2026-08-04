@@ -1098,6 +1098,7 @@ document.addEventListener("DOMContentLoaded", () => {
             ultimoGeojsonPercorso = null;
             if (btnScaricaKml) btnScaricaKml.disabled = true;
             nascondiGraficoAltimetria("");
+            aggiornaOverlayPercorso(null, null);
         });
     }
 
@@ -1140,79 +1141,125 @@ document.addEventListener("DOMContentLoaded", () => {
     // nella risposta: non verificabile dall'ambiente di sviluppo
     // (brouter.de non raggiungibile da qui). Se assente, mostra un
     // messaggio invece di un grafico vuoto o rotto.
-    function nascondiGraficoAltimetria(messaggio) {
-        const canvas = document.getElementById("coord-grafico-altimetria");
-        const nota = document.getElementById("coord-altimetria-nota");
-        if (canvas) canvas.style.display = "none";
-        if (nota) {
-            nota.textContent = messaggio || "";
-            nota.style.display = messaggio ? "block" : "none";
-        }
+function nascondiGraficoAltimetria(messaggio) {
+    const canvas = document.getElementById("coord-grafico-altimetria");
+    const nota = document.getElementById("coord-altimetria-nota");
+    const btnToggle = document.getElementById("btn-toggle-altimetria");
+    const wrapper = document.getElementById("coord-altimetria-wrapper");
+    if (canvas) canvas.style.display = "none";
+    if (wrapper) wrapper.style.display = "none";
+    if (btnToggle) { btnToggle.style.display = "none"; btnToggle.textContent = "📈 Mostra grafico altimetria"; }
+    if (nota) {
+        nota.textContent = messaggio || "";
+        nota.style.display = messaggio ? "block" : "none";
+    }
+}
+
+function disegnaGraficoAltimetria(geojson) {
+    const canvas = document.getElementById("coord-grafico-altimetria");
+    const btnToggle = document.getElementById("btn-toggle-altimetria");
+    if (!canvas) return null;
+    const coords = (geojson.features && geojson.features[0] && geojson.features[0].geometry && geojson.features[0].geometry.coordinates) || [];
+    const conQuota = coords.filter(c => Array.isArray(c) && c.length >= 3 && !Number.isNaN(parseFloat(c[2])));
+    if (conQuota.length < 2) {
+        nascondiGraficoAltimetria("Dati altimetrici non disponibili per questo percorso (BRouter non li ha forniti).");
+        return null;
     }
 
-    function disegnaGraficoAltimetria(geojson) {
-        const canvas = document.getElementById("coord-grafico-altimetria");
-        if (!canvas) return;
+    function distanzaKm(lat1, lon1, lat2, lon2) {
+        const R = 6371;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
 
-        const coords = (geojson.features && geojson.features[0] && geojson.features[0].geometry && geojson.features[0].geometry.coordinates) || [];
-        const conQuota = coords.filter(c => Array.isArray(c) && c.length >= 3 && !Number.isNaN(parseFloat(c[2])));
+    let distanzaTot = 0;
+    const punti = [{ d: 0, ele: parseFloat(conQuota[0][2]) }];
+    let dislivelloPositivo = 0, dislivelloNegativo = 0;
+    for (let i = 1; i < conQuota.length; i++) {
+        distanzaTot += distanzaKm(conQuota[i - 1][1], conQuota[i - 1][0], conQuota[i][1], conQuota[i][0]);
+        const eleAttuale = parseFloat(conQuota[i][2]);
+        const diff = eleAttuale - punti[punti.length - 1].ele;
+        if (diff > 0) dislivelloPositivo += diff; else dislivelloNegativo += Math.abs(diff);
+        punti.push({ d: distanzaTot, ele: eleAttuale });
+    }
 
-        if (conQuota.length < 2) {
-            nascondiGraficoAltimetria("Dati altimetrici non disponibili per questo percorso (BRouter non li ha forniti).");
-            return;
-        }
+    // Il grafico resta chiuso di default: il pulsante compare, l'utente
+    // lo apre solo se vuole consultarlo
+    if (btnToggle) btnToggle.style.display = "inline-block";
+    const nota = document.getElementById("coord-altimetria-nota");
+    if (nota) nota.style.display = "none";
 
-        canvas.style.display = "block";
-        const nota = document.getElementById("coord-altimetria-nota");
-        if (nota) nota.style.display = "none";
+    canvas.style.display = "block";
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        const ctx = canvas.getContext("2d");
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const eleMin = Math.min(...punti.map(p => p.ele));
+    const eleMax = Math.max(...punti.map(p => p.ele));
+    const margine = 34;
+    const margineBasso = 44;
+    const w = canvas.width - margine * 2;
+    const h = canvas.height - margine - margineBasso;
 
-        function distanzaKm(lat1, lon1, lat2, lon2) {
-            const R = 6371;
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
-            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        }
+    ctx.strokeStyle = "#333333";
+    ctx.strokeRect(margine, margine, w, h);
 
-        let distanzaTot = 0;
-        const punti = [{ d: 0, ele: parseFloat(conQuota[0][2]) }];
-        for (let i = 1; i < conQuota.length; i++) {
-            distanzaTot += distanzaKm(conQuota[i - 1][1], conQuota[i - 1][0], conQuota[i][1], conQuota[i][0]);
-            punti.push({ d: distanzaTot, ele: parseFloat(conQuota[i][2]) });
-        }
+    // Progressivi chilometrici: passo adattivo in base alla lunghezza totale
+    let passoKm = 1;
+    if (distanzaTot > 40) passoKm = 10;
+    else if (distanzaTot > 15) passoKm = 5;
+    else if (distanzaTot > 6) passoKm = 2;
+    else if (distanzaTot < 2) passoKm = 0.5;
 
-        const eleMin = Math.min(...punti.map(p => p.ele));
-        const eleMax = Math.max(...punti.map(p => p.ele));
-        const margine = 32;
-        const w = canvas.width - margine * 2;
-        const h = canvas.height - margine * 2;
-
-        ctx.strokeStyle = "#333333";
-        ctx.strokeRect(margine, margine, w, h);
-
+    ctx.font = "10px Arial";
+    ctx.textAlign = "center";
+    for (let km = passoKm; km < distanzaTot; km += passoKm) {
+        const x = margine + (km / distanzaTot) * w;
+        ctx.strokeStyle = "rgba(255,255,255,0.08)";
         ctx.beginPath();
-        punti.forEach((p, i) => {
-            const x = margine + (distanzaTot > 0 ? (p.d / distanzaTot) * w : 0);
-            const y = margine + h - ((p.ele - eleMin) / ((eleMax - eleMin) || 1)) * h;
-            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-        });
-        ctx.strokeStyle = "#ffd700";
-        ctx.lineWidth = 2;
+        ctx.moveTo(x, margine);
+        ctx.lineTo(x, margine + h);
         ctx.stroke();
-
-        ctx.fillStyle = "#aaaaaa";
-        ctx.font = "11px Arial";
-        ctx.fillText(`${Math.round(eleMax)} m`, 4, margine + 4);
-        ctx.fillText(`${Math.round(eleMin)} m`, 4, margine + h);
-        ctx.fillText("0 km", margine, canvas.height - 6);
-        ctx.fillText(`${distanzaTot.toFixed(1)} km`, margine + w - 34, canvas.height - 6);
+        ctx.fillStyle = "#888888";
+        ctx.fillText(km % 1 === 0 ? `${km}` : km.toFixed(1), x, margine + h + 14);
     }
+    ctx.textAlign = "left";
 
-    // Pulsante "Copia mappa" rimosso su richiesta: la cattura schermo nativa
-    // non dava risultati sufficientemente affidabili da giustificarla.
+    ctx.beginPath();
+    punti.forEach((p, i) => {
+        const x = margine + (distanzaTot > 0 ? (p.d / distanzaTot) * w : 0);
+        const y = margine + h - ((p.ele - eleMin) / ((eleMax - eleMin) || 1)) * h;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = "#ffd700";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.fillStyle = "#aaaaaa";
+    ctx.font = "11px Arial";
+    ctx.fillText(`${Math.round(eleMax)} m`, 4, margine + 4);
+    ctx.fillText(`${Math.round(eleMin)} m`, 4, margine + h);
+    ctx.fillText("km", canvas.width - 22, margine + h + 30);
+
+    return { dislivelloPositivo: Math.round(dislivelloPositivo), dislivelloNegativo: Math.round(dislivelloNegativo) };
+}
+
+ctx.fillText(`${Math.round(eleMin)} m`, 4, margine + h);
+    ctx.fillText("km", canvas.width - 22, margine + h + 30);
+
+    return { dislivelloPositivo: Math.round(dislivelloPositivo), dislivelloNegativo: Math.round(dislivelloNegativo) };
+}
+
+const btnToggleAltimetria = document.getElementById("btn-toggle-altimetria");
+const wrapperAltimetria = document.getElementById("coord-altimetria-wrapper");
+if (btnToggleAltimetria && wrapperAltimetria) {
+    btnToggleAltimetria.addEventListener("click", () => {
+        const aperto = wrapperAltimetria.style.display !== "none";
+        wrapperAltimetria.style.display = aperto ? "none" : "block";
+        btnToggleAltimetria.textContent = aperto ? "📈 Mostra grafico altimetria" : "📉 Nascondi grafico altimetria";
+    });
+}
 
     // ==========================================================
     // MESSAGGIO ALLE SQUADRE VF: prefisso + numero + 3 pulsanti di invio
@@ -1470,7 +1517,7 @@ document.addEventListener("DOMContentLoaded", () => {
         ultimoGeojsonPercorso = null;
         if (btnScaricaKml) btnScaricaKml.disabled = true;
         nascondiGraficoAltimetria("");
-
+        aggiornaOverlayPercorso(null, null);
         const [toponimo, quota] = await Promise.all([
             geocodingInverso(lat, lon),
             recuperaQuota(lat, lon),
