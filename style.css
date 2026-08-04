@@ -1634,7 +1634,7 @@ html.comando-gia-scelto #modal-comando {
 }
 
 .pannello-fullscreen .coord-colonna-titolo.attivo {
-    background: var(--surface-color);
+    background: var(--dark-color);
     color: var(--primary-color);
     border-color: var(--primary-color);
 }
@@ -1664,7 +1664,7 @@ html.comando-gia-scelto #modal-comando {
 }
 
 .pannello-fullscreen .coord-colonna.attiva .coord-colonna-titolo {
-    background: var(--surface-color);
+    background: var(--dark-color);
     color: var(--primary-color);
     border-color: var(--primary-color);
 }
