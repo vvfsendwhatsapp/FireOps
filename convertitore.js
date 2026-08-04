@@ -1421,7 +1421,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function impostaSchedaColonnaAttiva(chiave, salva = true) {
         pulsantiScheda.forEach(p => p.classList.toggle("attivo", p.dataset.tab === chiave));
-        aggiornaAngoliScheda();
+        const corpoSchede = document.querySelector(".coord-tab-corpo");
+        if (corpoSchede) {
+            corpoSchede.classList.remove("corpo-tab-primo-attivo", "corpo-tab-centro-attivo", "corpo-tab-ultimo-attivo");
+            if (chiave === "dati") corpoSchede.classList.add("corpo-tab-primo-attivo");
+            else if (chiave === "mappa") corpoSchede.classList.add("corpo-tab-centro-attivo");
+            else if (chiave === "messaggio") corpoSchede.classList.add("corpo-tab-ultimo-attivo");
+        }
         Object.entries(contenutiScheda).forEach(([k, el]) => {
             if (!el) return;
             el.style.display = k === chiave ? "block" : "none";

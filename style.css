@@ -1543,11 +1543,27 @@ html.comando-gia-scelto #modal-comando {
 .coord-tab-corpo {
     background: var(--surface-color);
     border: 1px solid var(--primary-color);
-    border-radius: 0 8px 8px 8px;
     padding: 18px;
     margin-top: -1px;
     position: relative;
     z-index: 1;
+}
+
+/* Dati (prima scheda) attiva: angolo sinistro squadrato (tocca la scheda),
+   destro arrotondato */
+.coord-tab-corpo.corpo-tab-primo-attivo {
+    border-radius: 0 8px 8px 8px;
+}
+
+/* Mappa (scheda centrale) attiva: nessun lato tocca il bordo esterno,
+   entrambi gli angoli superiori arrotondati */
+.coord-tab-corpo.corpo-tab-centro-attivo {
+    border-radius: 8px 8px 8px 8px;
+}
+
+/* Messaggio (ultima scheda) attiva: angolo destro squadrato, sinistro arrotondato */
+.coord-tab-corpo.corpo-tab-ultimo-attivo {
+    border-radius: 8px 0 8px 8px;
 }
 
 /* Toolbar dei pannelli */
