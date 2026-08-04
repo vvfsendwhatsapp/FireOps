@@ -1420,16 +1420,17 @@ function aggiornaAnteprimaMessaggioCoordinate() {
     const CHIAVE_STORAGE_TAB_COORD = "fireops_coord_tab_attiva";
 
     function impostaSchedaColonnaAttiva(chiave, salva = true) {
-        pulsantiScheda.forEach(p => p.classList.toggle("attivo", p.dataset.tab === chiave));
-        Object.entries(contenutiScheda).forEach(([k, el]) => {
-            if (!el) return;
-            el.style.display = k === chiave ? "block" : "none";
-            el.classList.toggle("coord-colonna-attiva", k === chiave);
-        });
-        if (salva) {
-            try { sessionStorage.setItem(CHIAVE_STORAGE_TAB_COORD, chiave); } catch (err) {}
-        }
+    pulsantiScheda.forEach(p => p.classList.toggle("attivo", p.dataset.tab === chiave));
+    Object.entries(contenutiScheda).forEach(([k, el]) => {
+        if (!el) return;
+        el.style.display = k === chiave ? "block" : "none";
+        const wrapper = el.closest(".coord-colonna-wrapper");
+        if (wrapper) wrapper.classList.toggle("attiva", k === chiave);
+    });
+    if (salva) {
+        try { sessionStorage.setItem(CHIAVE_STORAGE_TAB_COORD, chiave); } catch (err) {}
     }
+}
 
     pulsantiScheda.forEach(pulsante => {
         pulsante.addEventListener("click", () => impostaSchedaColonnaAttiva(pulsante.dataset.tab));
