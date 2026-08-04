@@ -1630,11 +1630,13 @@ html.comando-gia-scelto #modal-comando {
     background: var(--dark-color);
     color: var(--text-muted);
     border: 1px solid var(--border-color);
-    border-radius: 10px;
+    border-bottom: none; /* niente bordo qui: lo disegna la colonna sotto, altrimenti si vede doppio */
+    border-radius: 8px 8px 0 0; /* arrotondato SOLO in alto */
     padding: 9px 20px;
     font-size: 13px;
     font-weight: bold;
     text-align: center;
+    margin: 0;
     cursor: pointer;
 }
 
@@ -1648,8 +1650,9 @@ html.comando-gia-scelto #modal-comando {
 .pannello-fullscreen #coord-tab-content-mappa,
 .pannello-fullscreen #coord-tab-content-messaggio {
     display: block !important;
+    flex: 1 1 auto;
     border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: 0 0 8px 8px; /* arrotondato SOLO in basso */
     padding: 14px;
     background: var(--surface-color);
     min-width: 0;
@@ -1671,6 +1674,18 @@ html.comando-gia-scelto #modal-comando {
 
 .pannello-fullscreen #coord-grafico-altimetria {
     height: 120px !important;
+}
+
+.pannello-fullscreen .coord-colonna.attiva .coord-colonna-titolo {
+    background: var(--surface-color);
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.pannello-fullscreen .coord-colonna.attiva #coord-tab-content-dati,
+.pannello-fullscreen .coord-colonna.attiva #coord-tab-content-mappa,
+.pannello-fullscreen .coord-colonna.attiva #coord-tab-content-messaggio {
+    border-color: var(--primary-color) !important;
 }
 
 .pagina-box-header-con-nota {

@@ -1424,8 +1424,8 @@ document.addEventListener("DOMContentLoaded", () => {
         Object.entries(contenutiScheda).forEach(([k, el]) => {
             if (!el) return;
             el.style.display = k === chiave ? "block" : "none";
-            const wrapper = el.closest(".coord-colonna-wrapper");
-            if (wrapper) wrapper.classList.toggle("attiva", k === chiave);
+            const colonna = el.closest(".coord-colonna");
+            if (colonna) colonna.classList.toggle("attiva", k === chiave);
         });
         if (salva) {
             try { sessionStorage.setItem(CHIAVE_STORAGE_TAB_COORD, chiave); } catch (err) { }
