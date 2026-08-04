@@ -1,0 +1,94 @@
+{
+  "reparti_volo_vvf": [
+    {
+      "nome": "Centro Aviazione ed Hangar Nazionale - Ciampino",
+      "citta": "Roma",
+      "latitudine": 41.7994,
+      "longitudine": 12.5949
+    },
+    {
+      "nome": "Reparto Volo VVF Bari",
+      "citta": "Bari",
+      "latitudine": 41.1378,
+      "longitudine": 16.7606
+    },
+    {
+      "nome": "Reparto Volo VVF Pescara",
+      "citta": "Pescara",
+      "latitudine": 42.4422,
+      "longitudine": 14.1883
+    },
+    {
+      "nome": "Reparto Volo VVF Salerno",
+      "citta": "Pontecagnano Faiano (Salerno)",
+      "latitudine": 40.6231,
+      "longitudine": 14.9122
+    },
+    {
+      "nome": "Reparto Volo VVF Torino",
+      "citta": "San Maurizio Canavese (Torino)",
+      "latitudine": 45.1925,
+      "longitudine": 7.6019
+    },
+    {
+      "nome": "Reparto Volo VVF Lamezia Terme",
+      "citta": "Lamezia Terme",
+      "latitudine": 38.9056,
+      "longitudine": 16.2417
+    },
+    {
+      "nome": "Reparto Volo VVF Genova",
+      "citta": "Genova",
+      "latitudine": 44.4133,
+      "longitudine": 8.8375
+    },
+    {
+      "nome": "Reparto Volo VVF Venezia",
+      "citta": "Venezia (Tessera)",
+      "latitudine": 45.5053,
+      "longitudine": 12.3519
+    },
+    {
+      "nome": "Reparto Volo VVF Bologna",
+      "citta": "Bologna",
+      "latitudine": 44.5354,
+      "longitudine": 11.2887
+    },
+    {
+      "nome": "Reparto Volo VVF Arezzo",
+      "citta": "Arezzo (Molin Bianco)",
+      "latitudine": 43.4552,
+      "longitudine": 11.8474
+    },
+    {
+      "nome": "Reparto Volo VVF Cecina",
+      "citta": "Cecina Mare (Livorno)",
+      "latitudine": 43.2985,
+      "longitudine": 10.5075
+    },
+    {
+      "nome": "Reparto Volo VVF Catania",
+      "citta": "Catania (Fontanarossa)",
+      "latitudine": 37.4668,
+      "longitudine": 15.0664
+    },
+    {
+      "nome": "Reparto Volo VVF Sassari",
+      "citta": "Alghero-Fertilia (Sassari)",
+      "latitudine": 40.6321,
+      "longitudine": 8.2908
+    },
+    {
+      "nome": "Reparto Volo VVF Malpensa",
+      "citta": "Somma Lombardo (Varese)",
+      "latitudine": 45.6306,
+      "longitudine": 8.7231
+    },
+    {
+      "nome": "Reparto Volo VVF Rieti",
+      "citta": "Rieti",
+      "latitudine": 42.4267,
+      "longitudine": 12.85
+    }
+  ]
+}
