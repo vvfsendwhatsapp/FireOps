@@ -300,45 +300,6 @@ document.addEventListener("DOMContentLoaded", () => {
         return (gradi + minuti / 60 + secondi / 3600) * segno;
     }
 
-    // Riconoscimento automatico da testo incollato: coppie decimali, link Google
-    // Maps (con "@lat,lon"), formato "?q=lat,lon", oppure DMS con N/S/E/W.
-    // Best-effort: non copre TUTTI i formati possibili (es. link brevi
-    // maps.app.goo.gl non si possono espandere lato client per via del CORS).
-    function parseTestoLibero(testo) {
-        testo = (testo || "").trim();
-        if (!testo) return null;
-
-        const matchChiocciola = testo.match(/@(-?\d{1,3}\.\d+),\s*(-?\d{1,3}\.\d+)/);
-        if (matchChiocciola) {
-            return { lat: parseFloat(matchChiocciola[1]), lon: parseFloat(matchChiocciola[2]) };
-        }
-
-        const matchQuery = testo.match(/[?&]q=(-?\d{1,3}\.\d+),\s*(-?\d{1,3}\.\d+)/);
-        if (matchQuery) {
-            return { lat: parseFloat(matchQuery[1]), lon: parseFloat(matchQuery[2]) };
-        }
-
-        const matchDecimale = testo.match(/^(-?\d{1,3}(?:[.,]\d+)?)\s*[,;\s]\s*(-?\d{1,3}(?:[.,]\d+)?)$/);
-        if (matchDecimale) {
-            const lat = parseFloat(matchDecimale[1].replace(",", "."));
-            const lon = parseFloat(matchDecimale[2].replace(",", "."));
-            if (!Number.isNaN(lat) && !Number.isNaN(lon)) return { lat, lon };
-        }
-
-        const partiDMS = testo.match(/\d{1,3}[°\s]+\d{1,2}['\s]+\d{1,2}(?:\.\d+)?["\s]*[NSEW]/gi);
-        if (partiDMS && partiDMS.length === 2) {
-            const lat = partiDMS.find(p => /[NS]/i.test(p));
-            const lon = partiDMS.find(p => /[EW]/i.test(p));
-            if (lat && lon) {
-                const latVal = parseDMSField(lat);
-                const lonVal = parseDMSField(lon);
-                if (latVal !== null && lonVal !== null) return { lat: latVal, lon: lonVal };
-            }
-        }
-
-        return null;
-    }
-
     // ==========================================================
     // FORMATTAZIONE OUTPUT (tabella risultati)
     // ==========================================================
@@ -668,7 +629,6 @@ document.addEventListener("DOMContentLoaded", () => {
         olc: document.getElementById("coord-input-olc"),
         utm: document.getElementById("coord-input-utm"),
         mappa: document.getElementById("coord-input-mappa"),
-        libero: document.getElementById("coord-input-libero"),
         indirizzo: document.getElementById("coord-input-indirizzo"),
     };
     const elErrore = document.getElementById("coord-errore");
@@ -683,7 +643,6 @@ document.addEventListener("DOMContentLoaded", () => {
         case "olc": return !!val("coord-olc");
         case "utm": return !!(val("coord-utm-zona") && val("coord-utm-est") && val("coord-utm-nord"));
         case "mappa": return true; // nessun campo da compilare: si va direttamente alla mappa
-        case "libero": return !!val("coord-libero-testo");
         case "indirizzo": return !!(val("coord-indirizzo-via") || val("coord-indirizzo-comune"));
         default: return false;
     }
@@ -719,7 +678,6 @@ function aggiornaBottoneConverti() {
         "coord-dms-lat", "coord-dms-lon",
         "coord-olc",
         "coord-utm-zona", "coord-utm-emisfero", "coord-utm-est", "coord-utm-nord",
-        "coord-libero-testo",
         "coord-indirizzo-via", "coord-indirizzo-comune-input", "coord-indirizzo-comune"
     ];
     const CHIAVE_STORAGE_FORM_COORD = "fireops_coord_form_stato";
@@ -846,13 +804,6 @@ if (contenitoreFormCoord) {
         if (formato === "mappa") {
             mostraErrore("Clicca direttamente su un punto della mappa (scheda \"Mappa\") per generare le coordinate.");
             return null;
-        }
-        if (formato === "libero") {
-            const testo = (document.getElementById("coord-libero-testo").value || "").trim();
-            if (!testo) { mostraErrore("Incolla un testo con delle coordinate."); return null; }
-            const risultato = parseTestoLibero(testo);
-            if (!risultato) { mostraErrore("Formato non riconosciuto. Prova con 'lat, lon' decimali o un link Google Maps."); return null; }
-            return risultato;
         }
         return null;
     }
