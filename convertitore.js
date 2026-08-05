@@ -929,6 +929,35 @@ function aggiornaBottoneConverti() {
     ripristinaStatoFormCoord();
     aggiornaBottoneConverti();
 
+    // Tiene solo ciò che può comparire in un valore di coordinata: cifre,
+    // un unico separatore decimale (la virgola diventa punto) e l'eventuale
+    // segno meno in testa. Lettere e simboli vengono scartati mentre si digita.
+    function filtraTestoNumerico(testo) {
+        let pulito = String(testo).replace(/[^\d.,-]/g, "");
+        const negativo = pulito.startsWith("-");
+        pulito = pulito.replace(/-/g, "").replace(/,/g, ".");
+        const parti = pulito.split(".");
+        if (parti.length > 1) pulito = parti[0] + "." + parti.slice(1).join("");
+        return (negativo ? "-" : "") + pulito;
+    }
+
+    // I campi delle coordinate si svuotano appena ci si entra: in sala
+    // operativa una coordinata si riscrive sempre da capo, non si corregge
+    // una cifra in mezzo. Registrato PRIMA dell'avanzamento automatico, così
+    // il salto al campo successivo valuta il testo già ripulito.
+    document.querySelectorAll("#coord-input-colonna .coord-campo-num").forEach(campo => {
+        campo.addEventListener("input", () => {
+            const ripulito = filtraTestoNumerico(campo.value);
+            if (ripulito !== campo.value) campo.value = ripulito;
+        });
+        campo.addEventListener("focus", () => {
+            if (!campo.value) return;
+            campo.value = "";
+            salvaStatoFormCoord();
+            aggiornaBottoneConverti();
+        });
+    });
+
     // Digitando le coordinate a raffica, i campi a larghezza fissa (gradi e
     // primi interi) passano da soli al successivo appena sono pieni: si batte
     // la sequenza senza staccare le mani dalla tastiera per usare il TAB

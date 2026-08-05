@@ -58,6 +58,14 @@
             letter-spacing: .5px;
         }
 
+        /* La maschera grigia è solo un promemoria del formato: non deve
+           sembrare testo presente nel campo, quindi niente selezione */
+        .coord-campi-riga .coord-campo-num::placeholder {
+            color: var(--text-muted);
+            opacity: .55;
+            user-select: none;
+        }
+
         .coord-campi-riga .coord-campo-gradi {
             flex: 0 0 62px;
         }
