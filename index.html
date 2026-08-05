@@ -447,6 +447,7 @@
                                 <div class="msg-campo">
                                     <label for="coord-profilo-percorso">Tipologia percorso</label>
                                     <select id="coord-profilo-percorso">
+                                        <option value="" selected>— Scegli una tipologia —</option>
                                         <option value="trekking">🥾 A piedi / sentiero</option>
                                         <option value="car-fast">🚗 Automezzo</option>
                                         <option value="linea-diretta">📏 Linea diretta (misura distanza)</option>
@@ -454,8 +455,9 @@
                                 </div>
                                 <div class="msg-campo coord-mappa-azione-campo">
                                     <label for="btn-coord-percorso">Crea percorso</label>
-                                    <button id="btn-coord-percorso" class="btn-toggle-radar" type="button">🧭 Clicca un
-                                        punto sulla mappa</button>
+                                    <button id="btn-coord-percorso" class="btn-toggle-radar" type="button"
+                                        disabled>🧭 Clicca il secondo punto sulla mappa per calcolare il
+                                        percorso</button>
                                 </div>
                             </div>
 

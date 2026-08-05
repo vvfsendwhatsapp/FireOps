@@ -1082,6 +1082,7 @@ if (contenitoreFormCoord) {
     let coordinateTargetCorrenti = null;
     let modalitaPercorsoAttiva = false;
     let ultimoGeojsonPercorso = null;
+    let ultimoPuntoPartenza = null;
 
     function iconaMarkerGenerica(colore) {
         return L.divIcon({
@@ -1214,6 +1215,23 @@ function calcolaAzimut(lat1, lon1, lat2, lon2) {
     return (θ * 180 / Math.PI + 360) % 360;
 }
 
+    // Quote dei due punti in un'unica chiamata Open-Meteo (accetta liste di
+    // coordinate separate da virgola): meno richieste, meno attesa.
+    async function recuperaQuoteCoppia(latPartenza, lonPartenza, latArrivo, lonArrivo) {
+        try {
+            const url = `https://api.open-meteo.com/v1/elevation?latitude=${latPartenza},${latArrivo}&longitude=${lonPartenza},${lonArrivo}`;
+            const risposta = await fetch(url);
+            if (!risposta.ok) throw new Error("HTTP " + risposta.status);
+            const dati = await risposta.json();
+            const quote = Array.isArray(dati.elevation) ? dati.elevation : [];
+            const valido = v => (typeof v === "number" && !Number.isNaN(v)) ? v : null;
+            return { partenza: valido(quote[0]), arrivo: valido(quote[1]) };
+        } catch (err) {
+            console.error("Quote dei punti non disponibili:", err);
+            return { partenza: null, arrivo: null };
+        }
+    }
+
     function aggiornaOverlayPercorso(messaggioSemplice, dati) {
     const overlay = document.getElementById("coord-mappa-overlay-percorso");
     if (!overlay) return;
@@ -1237,6 +1255,21 @@ function calcolaAzimut(lat1, lon1, lat2, lon2) {
         righe.push(`<div class="coord-mappa-overlay-riga">Distanza aria: ${dati.distanzaAriaKm.toFixed(2)} km</div>`);
     }
 
+    // Quote dei due punti selezionati: la squadra deve sapere se sta salendo
+    // o scendendo, e di quanto, prima ancora di guardare l'altimetria
+    if (dati.quotaPartenza !== null && dati.quotaPartenza !== undefined) {
+        righe.push(`<div class="coord-mappa-overlay-riga">Quota squadra VF: ${Math.round(dati.quotaPartenza)} m s.l.m.</div>`);
+    }
+    if (dati.quotaArrivo !== null && dati.quotaArrivo !== undefined) {
+        righe.push(`<div class="coord-mappa-overlay-riga">Quota target: ${Math.round(dati.quotaArrivo)} m s.l.m.</div>`);
+    }
+    if (dati.quotaPartenza !== null && dati.quotaPartenza !== undefined
+        && dati.quotaArrivo !== null && dati.quotaArrivo !== undefined) {
+        const salto = Math.round(dati.quotaArrivo - dati.quotaPartenza);
+        const segno = salto > 0 ? "+" : "";
+        righe.push(`<div class="coord-mappa-overlay-riga">Differenza di quota: ${segno}${salto} m</div>`);
+    }
+
     // Dati specifici del percorso reale (assenti per "linea diretta", che
     // usa la stessa distanza in linea d'aria come unica misura disponibile)
     if (!dati.lineaDiretta && dati.distanzaKm !== null && dati.distanzaKm !== undefined) {
@@ -1253,7 +1286,7 @@ function calcolaAzimut(lat1, lon1, lat2, lon2) {
     overlay.innerHTML = righe.join("");
 }
 
-async function disegnaLineaDiretta(latPartenza, lonPartenza, latArrivo, lonArrivo, azimut, distanzaAriaKm) {
+async function disegnaLineaDiretta(latPartenza, lonPartenza, latArrivo, lonArrivo, azimut, distanzaAriaKm, quote) {
     if (coordLineaPercorso) coordMappaLeaflet.removeLayer(coordLineaPercorso);
     coordLineaPercorso = L.polyline(
         [[latPartenza, lonPartenza], [latArrivo, lonArrivo]],
@@ -1272,48 +1305,73 @@ async function disegnaLineaDiretta(latPartenza, lonPartenza, latArrivo, lonArriv
     if (btnScaricaKml) btnScaricaKml.disabled = false;
 
     nascondiGraficoAltimetria("Linea diretta: nessun profilo altimetrico (è una distanza in linea d'aria, non un percorso reale).");
-    if (elInfoPercorso) elInfoPercorso.textContent = `Linea diretta — ${distanzaAriaKm.toFixed(2)} km — Azimut ${Math.round(azimut)}°`;
+    if (elInfoPercorso) elInfoPercorso.textContent = `Linea diretta — ${distanzaAriaKm.toFixed(2)} km — Azimut ${Math.round(azimut)}°. Trascina la freccia gialla per spostare la squadra e ricalcolare.`;
 
-    try {
-        const [rP, rA] = await Promise.all([
-            fetch(`https://api.open-meteo.com/v1/elevation?latitude=${latPartenza}&longitude=${lonPartenza}`).then(r => r.json()),
-            fetch(`https://api.open-meteo.com/v1/elevation?latitude=${latArrivo}&longitude=${lonArrivo}`).then(r => r.json()),
-        ]);
-        const eleP = Array.isArray(rP.elevation) ? rP.elevation[0] : null;
-        const eleA = Array.isArray(rA.elevation) ? rA.elevation[0] : null;
-        const diff = (eleP !== null && eleA !== null) ? Math.round(eleA - eleP) : null;
-        aggiornaOverlayPercorso(null, {
-            azimut, distanzaAriaKm, lineaDiretta: true,
-            dislivelloPositivo: diff !== null ? Math.max(diff, 0) : null,
-            dislivelloNegativo: diff !== null ? Math.max(-diff, 0) : null,
-        });
-    } catch (err) {
-        console.error("Quote linea diretta non disponibili:", err);
-        aggiornaOverlayPercorso(null, { azimut, distanzaAriaKm, lineaDiretta: true, dislivelloPositivo: null, dislivelloNegativo: null });
-    }
+    const quotaPartenza = quote ? quote.partenza : null;
+    const quotaArrivo = quote ? quote.arrivo : null;
+    const diff = (quotaPartenza !== null && quotaArrivo !== null) ? Math.round(quotaArrivo - quotaPartenza) : null;
+
+    aggiornaOverlayPercorso(null, {
+        azimut, distanzaAriaKm, lineaDiretta: true,
+        quotaPartenza, quotaArrivo,
+        dislivelloPositivo: diff !== null ? Math.max(diff, 0) : null,
+        dislivelloNegativo: diff !== null ? Math.max(-diff, 0) : null,
+    });
+}
+
+// Marker della squadra VF: trascinabile. Al rilascio ricalcola tutto
+// (percorso, quote, azimut) dal nuovo punto, senza dover ricliccare.
+function disegnaMarkerPartenza(lat, lon, azimut) {
+    if (coordMarkerPartenza) coordMappaLeaflet.removeLayer(coordMarkerPartenza);
+    coordMarkerPartenza = L.marker([lat, lon], {
+        icon: iconaFrecciaDirezione(COLORE_SQUADRA, azimut),
+        draggable: true,
+        autoPan: true,
+        title: "Squadra VF — trascina per spostare il punto di partenza",
+    }).addTo(coordMappaLeaflet).bindPopup("Squadra VF (trascinabile)");
+
+    coordMarkerPartenza.on("dragstart", () => {
+        if (elInfoPercorso) elInfoPercorso.textContent = "Spostamento del punto di partenza…";
+    });
+    coordMarkerPartenza.on("dragend", (e) => {
+        const posizione = e.target.getLatLng();
+        calcolaEDisegnaPercorso(posizione.lat, posizione.lng);
+    });
 }
 
     async function calcolaEDisegnaPercorso(latPartenza, lonPartenza) {
     if (!coordinateTargetCorrenti || !coordMappaLeaflet) return;
     const { lat: latArrivo, lon: lonArrivo } = coordinateTargetCorrenti;
-    const profilo = selectProfiloPercorso ? selectProfiloPercorso.value : "trekking";
+    const profilo = selectProfiloPercorso ? selectProfiloPercorso.value : "";
+
+    // Senza tipologia non si calcola nulla: il pulsante è già disabilitato,
+    // questa è la rete di sicurezza per le chiamate da trascinamento/ricalcolo
+    if (!profilo) {
+        aggiornaOverlayPercorso("Scegli prima una tipologia di percorso.", null);
+        return;
+    }
+
+    // Il punto di partenza resta in memoria: serve per ricalcolare quando
+    // cambia la tipologia o quando la freccia viene trascinata altrove
+    ultimoPuntoPartenza = { lat: latPartenza, lon: lonPartenza };
 
     // Azimut e distanza in linea d'aria: calcolati SUBITO, servono anche
     // per orientare la freccia del marker di partenza
     const azimut = calcolaAzimut(latPartenza, lonPartenza, latArrivo, lonArrivo);
     const distanzaAriaKm = distanzaKmHaversine(latPartenza, lonPartenza, latArrivo, lonArrivo);
 
-    if (coordMarkerPartenza) coordMappaLeaflet.removeLayer(coordMarkerPartenza);
-    coordMarkerPartenza = L.marker([latPartenza, lonPartenza], { icon: iconaFrecciaDirezione(COLORE_SQUADRA, azimut) })
-        .addTo(coordMappaLeaflet)
-        .bindPopup("Squadra VF");
+    // Le quote partono in parallelo al routing: si aspettano solo alla fine
+    const promessaQuote = recuperaQuoteCoppia(latPartenza, lonPartenza, latArrivo, lonArrivo);
+
+    disegnaMarkerPartenza(latPartenza, lonPartenza, azimut);
 
     if (elInfoPercorso) elInfoPercorso.textContent = "Calcolo percorso in corso…";
     aggiornaOverlayPercorso(null, { azimut, distanzaAriaKm, lineaDiretta: profilo === "linea-diretta" });
     if (btnScaricaKml) btnScaricaKml.disabled = true;
 
     if (profilo === "linea-diretta") {
-        await disegnaLineaDiretta(latPartenza, lonPartenza, latArrivo, lonArrivo, azimut, distanzaAriaKm);
+        const quote = await promessaQuote;
+        await disegnaLineaDiretta(latPartenza, lonPartenza, latArrivo, lonArrivo, azimut, distanzaAriaKm, quote);
         return;
     }
 
@@ -1331,9 +1389,12 @@ async function disegnaLineaDiretta(latPartenza, lonPartenza, latArrivo, lonArriv
             const lunghezzaM = parseFloat(proprieta["track-length"]);
             const tempoS = parseFloat(proprieta["total-time"]);
             const risultatoAltimetria = disegnaGraficoAltimetria(geojson);
+            const quote = await promessaQuote;
 
             aggiornaOverlayPercorso(null, {
                 azimut, distanzaAriaKm,
+                quotaPartenza: quote.partenza,
+                quotaArrivo: quote.arrivo,
                 distanzaKm: !Number.isNaN(lunghezzaM) ? lunghezzaM / 1000 : null,
                 tempoMin: !Number.isNaN(tempoS) ? Math.round(tempoS / 60) : null,
                 dislivelloPositivo: risultatoAltimetria ? risultatoAltimetria.dislivelloPositivo : null,
@@ -1343,13 +1404,15 @@ async function disegnaLineaDiretta(latPartenza, lonPartenza, latArrivo, lonArriv
             let testoInfo = "Percorso calcolato";
             if (!Number.isNaN(lunghezzaM)) testoInfo += ` — ${(lunghezzaM / 1000).toFixed(2)} km`;
             if (!Number.isNaN(tempoS)) testoInfo += ` — circa ${Math.round(tempoS / 60)} min`;
+            testoInfo += ". Trascina la freccia gialla per spostare la squadra e ricalcolare.";
             if (elInfoPercorso) elInfoPercorso.textContent = testoInfo;
             if (btnScaricaKml) btnScaricaKml.disabled = false;
         } catch (err) {
             console.error("Errore routing BRouter:", err);
             ultimoGeojsonPercorso = null;
             if (elInfoPercorso) elInfoPercorso.textContent = "Impossibile calcolare il percorso (servizio BRouter non raggiungibile o punto fuori copertura).";
-            aggiornaOverlayPercorso(null, { azimut, distanzaAriaKm });
+            const quote = await promessaQuote;
+            aggiornaOverlayPercorso(null, { azimut, distanzaAriaKm, quotaPartenza: quote.partenza, quotaArrivo: quote.arrivo });
             nascondiGraficoAltimetria("Percorso non calcolato: nessun dato altimetrico disponibile.");
         }
     }
@@ -1359,10 +1422,43 @@ async function disegnaLineaDiretta(latPartenza, lonPartenza, latArrivo, lonArriv
 
     const contenitoreControlliPercorsoAttivo = document.getElementById("coord-mappa-controlli-percorso-attivo");
 
+// Il pulsante si attiva solo quando esiste un target convertito E una
+// tipologia di percorso scelta: prima di allora non c'è nulla da calcolare
+function aggiornaStatoBottonePercorso() {
+    if (!btnPercorso) return;
+    const profiloScelto = !!(selectProfiloPercorso && selectProfiloPercorso.value);
+    btnPercorso.disabled = !(profiloScelto && coordinateTargetCorrenti);
+    if (!btnPercorso.disabled) {
+        btnPercorso.title = "Clicca un punto sulla mappa: sarà la posizione della squadra VF";
+    } else if (!coordinateTargetCorrenti) {
+        btnPercorso.title = "Converti prima delle coordinate: serve un punto di arrivo";
+    } else {
+        btnPercorso.title = "Scegli prima una tipologia di percorso";
+    }
+}
+
+if (selectProfiloPercorso) {
+    selectProfiloPercorso.addEventListener("change", () => {
+        aggiornaStatoBottonePercorso();
+        if (!selectProfiloPercorso.value) return;
+        // Cambio di tipologia con un percorso già tracciato: si ricalcola
+        // subito, senza chiedere di ricliccare il punto di partenza
+        if (ultimoPuntoPartenza && coordinateTargetCorrenti) {
+            calcolaEDisegnaPercorso(ultimoPuntoPartenza.lat, ultimoPuntoPartenza.lon);
+        }
+    });
+}
+
+aggiornaStatoBottonePercorso();
+
 if (btnPercorso) {
     btnPercorso.addEventListener("click", () => {
         if (!coordinateTargetCorrenti) {
             mostraErrore("Converti prima delle coordinate: serve un punto di arrivo per calcolare il percorso.");
+            return;
+        }
+        if (selectProfiloPercorso && !selectProfiloPercorso.value) {
+            mostraErrore("Scegli prima una tipologia di percorso.");
             return;
         }
         modalitaPercorsoAttiva = true;
@@ -1381,9 +1477,11 @@ if (btnPercorso) {
         if (coordMarkerPartenza) { coordMappaLeaflet.removeLayer(coordMarkerPartenza); coordMarkerPartenza = null; }
             if (elInfoPercorso) elInfoPercorso.textContent = "";
             ultimoGeojsonPercorso = null;
+            ultimoPuntoPartenza = null;
             if (btnScaricaKml) btnScaricaKml.disabled = true;
             nascondiGraficoAltimetria("");
             aggiornaOverlayPercorso(null, null);
+            aggiornaStatoBottonePercorso();
         });
     }
 
@@ -1802,9 +1900,11 @@ function disegnaGraficoAltimetria(geojson) {
         if (coordMarkerPartenza && coordMappaLeaflet) { coordMappaLeaflet.removeLayer(coordMarkerPartenza); coordMarkerPartenza = null; }
         if (elInfoPercorso) elInfoPercorso.textContent = "";
         ultimoGeojsonPercorso = null;
+        ultimoPuntoPartenza = null;
         if (btnScaricaKml) btnScaricaKml.disabled = true;
         nascondiGraficoAltimetria("");
         aggiornaOverlayPercorso(null, null);
+        aggiornaStatoBottonePercorso();
         const [toponimo, quota] = await Promise.all([
             geocodingInverso(lat, lon),
             recuperaQuota(lat, lon),
