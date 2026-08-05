@@ -80,7 +80,7 @@
             text-align: left;
         }
 
-        .reparto-volo-scheda {
+        .modal-content .reparto-volo-scheda {
             background: var(--dark-color);
             border: 1px solid var(--border-color);
             border-radius: 6px;
@@ -88,14 +88,20 @@
             overflow: hidden;
         }
 
-        /* Testata cliccabile: di default si vede solo questa riga */
-        .reparto-volo-testata {
+        /* Testata cliccabile: di default si vede solo questa riga.
+           I selettori sono prefissati con .modal-content perche' style.css
+           definisce ".modal-content button" (sfondo giallo pieno, pensato per
+           il pulsante "Conferma e Accedi"): senza il prefisso quella regola
+           vince per specificita' e rende la riga gialla, nascondendo i km che
+           sono anch'essi gialli. */
+        .modal-content .reparto-volo-testata {
             display: flex;
             align-items: center;
             gap: 10px;
             width: 100%;
             background: transparent;
             border: none;
+            border-radius: 0;
             color: var(--text-main);
             font-size: 14px;
             font-weight: bold;
@@ -104,48 +110,53 @@
             cursor: pointer;
         }
 
-        .reparto-volo-testata:hover {
+        .modal-content .reparto-volo-testata:hover {
             background: #232323;
+            opacity: 1;
         }
 
-        .reparto-volo-testata .freccia {
+        .modal-content .reparto-volo-testata .freccia {
             color: var(--primary-color);
             font-size: 11px;
             flex-shrink: 0;
         }
 
-        .reparto-volo-testata .nome {
+        .modal-content .reparto-volo-testata .nome {
             flex: 1 1 auto;
             min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
-        .reparto-volo-testata .distanza,
-        .reparto-volo-testata .azimut {
+        .modal-content .reparto-volo-testata .distanza,
+        .modal-content .reparto-volo-testata .azimut {
             font-family: "Courier New", monospace;
+            font-size: 13px;
             flex-shrink: 0;
         }
 
-        .reparto-volo-testata .distanza {
+        .modal-content .reparto-volo-testata .distanza {
             color: var(--primary-color);
         }
 
-        /* Azimut in secondo piano rispetto alla distanza: è il dato di rotta,
+        /* Azimut in secondo piano rispetto alla distanza: e' il dato di rotta,
            non il criterio con cui i reparti sono ordinati */
-        .reparto-volo-testata .azimut {
+        .modal-content .reparto-volo-testata .azimut {
             color: var(--text-muted);
         }
 
-        .reparto-volo-dettaglio {
+        .modal-content .reparto-volo-dettaglio {
             display: none;
             padding: 0 14px 14px;
             border-top: 1px solid var(--border-color);
         }
 
-        .reparto-volo-dettaglio.aperto {
+        .modal-content .reparto-volo-dettaglio.aperto {
             display: block;
         }
 
-        .reparto-volo-scheda h5 {
+        .modal-content .reparto-volo-scheda h5 {
             color: var(--text-muted);
             font-size: 11px;
             text-transform: uppercase;
@@ -153,7 +164,7 @@
             margin: 14px 0 6px;
         }
 
-        .reparto-volo-distintivo {
+        .modal-content .reparto-volo-distintivo {
             display: inline-block;
             background: var(--primary-color);
             color: var(--dark-color);
