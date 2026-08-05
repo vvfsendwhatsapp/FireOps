@@ -3,8 +3,8 @@
     {
       "nome": "Centro Aviazione ed Hangar Nazionale - Ciampino",
       "citta": "Roma",
-      "latitudine": 41.7994,
-      "longitudine": 12.5949,
+      "latitudine": 41.792201,
+      "longitudine": 12.594418,
       "telefono": "06 79340529",
       "fax": "06 79340708",
       "email": "nucleo.eli.rm@vigilfuoco.it",
@@ -13,8 +13,8 @@
     {
       "nome": "Reparto Volo VVF Bari",
       "citta": "Bari",
-      "latitudine": 41.1378,
-      "longitudine": 16.7606,
+      "latitudine": 41.134050,
+      "longitudine": 16.761350,
       "telefono": "080 5316134",
       "fax": null,
       "email": "nucleo.eli.ba@vigilfuoco.it"
@@ -31,8 +31,8 @@
     {
       "nome": "Reparto Volo VVF Salerno",
       "citta": "Pontecagnano Faiano (Salerno)",
-      "latitudine": 40.6231,
-      "longitudine": 14.9122,
+      "latitudine": 40.624650,
+      "longitudine": 14.913422,
       "telefono": "0828 53712",
       "fax": null,
       "email": "nucleo.eli.sa@vigilfuoco.it"
@@ -40,18 +40,20 @@
     {
       "nome": "Reparto Volo VVF Torino",
       "citta": "San Maurizio Canavese (Torino)",
+      "indirizzo": "Strada Vecchia del Malanghero",
       "latitudine": 45.206012,
       "longitudine": 7.645707,
-      "telefono": null,
+      "telefono": "011 9275222",
+      "telefono2":"011 9275275",
+      "telefono3":"011 5676853",
       "fax": null,
-      "email": "nucleo.eli.to@vigilfuoco.it",
-      "note": "Recapiti diretti non pubblicati sul sito ufficiale; fa riferimento al Comando VV.F. di Torino"
+      "email": "nucleo.eli.to@vigilfuoco.it"
     },
     {
       "nome": "Reparto Volo VVF Lamezia Terme",
       "citta": "Lamezia Terme",
-      "latitudine": 38.9056,
-      "longitudine": 16.2417,
+      "latitudine": 38.908601,
+      "longitudine": 16.252091,
       "telefono": null,
       "fax": null,
       "email": "nucleo.eli.cz@vigilfuoco.it",
@@ -86,7 +88,7 @@
     },
     {
       "nome": "Reparto Volo VVF Arezzo",
-      "citta": "Arezzo (Molin Bianco)",
+      "citta": "Molin Bianco (Arezzo)",
       "latitudine": 43.4552,
       "longitudine": 11.8474,
       "telefono": "0575 355800",
@@ -103,17 +105,26 @@
       "email": "nucleo.eli.li@vigilfuoco.it"
     },
     {
+      "nome": "Reparto Volo VVF Brindisi",
+      "citta": "Santa Teresa (Brindisi)",
+      "latitudine": 43.2985,
+      "longitudine": 10.5075,
+      "telefono": "0586 623700",
+      "fax": null,
+      "email": "nucleo.eli.li@vigilfuoco.it"
+    },
+    {
       "nome": "Reparto Volo VVF Catania",
-      "citta": "Catania (Fontanarossa)",
-      "latitudine": 37.4668,
-      "longitudine": 15.0664,
+      "citta": "Fontanarossa (Catania)",
+      "latitudine": 37.469083,
+      "longitudine": 15.060185,
       "telefono": "095 348179",
       "fax": "095 348179",
       "email": "nucleo.eli.ct@vigilfuoco.it"
     },
     {
       "nome": "Reparto Volo VVF Sassari",
-      "citta": "Alghero-Fertilia (Sassari)",
+      "citta": "Sassari (Alghero-Fertilia)",
       "latitudine": 40.6321,
       "longitudine": 8.2908,
       "telefono": "079 935030",
