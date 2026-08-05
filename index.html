@@ -313,23 +313,31 @@
                 </p>
 
                 <div class="msg-riga-campi">
+                    <div class="msg-campo combo-campo">
+                        <label for="msg-prefisso-input">Prefisso internazionale</label>
+                        <div class="combo-wrapper">
+                            <input type="text" id="msg-prefisso-input" class="combo-input"
+                                placeholder="Cerca prefisso o paese..." autocomplete="off">
+                            <input type="hidden" id="msg-prefisso">
+                            <span class="combo-arrow" aria-hidden="true"></span>
+                            <div id="msg-prefisso-dropdown" class="combo-dropdown"></div>
+                        </div>
+                    </div>
                     <div class="msg-campo">
-                        <label for="msg-indirizzo-via">Indirizzo</label>
-                        <input type="text" id="msg-indirizzo-via" placeholder="Via Roma 10" autocomplete="off">
+                        <label for="msg-numero">Numero di telefono</label>
+                        <input type="tel" id="msg-numero" placeholder="Es. 3331234567" autocomplete="off">
                     </div>
                     <div class="msg-campo combo-campo">
-                        <label for="msg-indirizzo-comune-input">Comune</label>
+                        <label for="msg-lingua-input">Lingua messaggio</label>
                         <div class="combo-wrapper">
-                            <input type="text" id="msg-indirizzo-comune-input" class="combo-input"
-                                placeholder="Cerca comune..." autocomplete="off">
-                            <input type="hidden" id="msg-indirizzo-comune">
+                            <input type="text" id="msg-lingua-input" class="combo-input" placeholder="Cerca lingua..."
+                                autocomplete="off">
+                            <input type="hidden" id="msg-lingua">
                             <span class="combo-arrow" aria-hidden="true"></span>
-                            <div id="msg-indirizzo-comune-dropdown" class="combo-dropdown"></div>
+                            <div id="msg-lingua-dropdown" class="combo-dropdown"></div>
                         </div>
                     </div>
                 </div>
-                <p class="pagina-nota">Seleziona il comune dall'elenco. Indirizzo facoltativo, ma aiuta la precisione.
-                </p>
 
                 <label for="msg-testo">Anteprima messaggio</label>
                 <textarea id="msg-testo" rows="16" readonly></textarea>
@@ -449,7 +457,7 @@
                                             <label for="coord-dd-lon">Longitudine</label>
                                             <div class="coord-campi-riga">
                                                 <input type="text" id="coord-dd-lon" class="coord-campo-num"
-                                                    placeholder="DDD.dddddd" maxlength="13" inputmode="decimal"
+                                                    placeholder="+0DD.dddddd" maxlength="13" inputmode="decimal"
                                                     autocomplete="off">
                                                 <span class="coord-campo-unita">°E</span>
                                             </div>
@@ -476,7 +484,7 @@
                                             <label for="coord-dmm-lon-gradi">Longitudine</label>
                                             <div class="coord-campi-riga">
                                                 <input type="text" id="coord-dmm-lon-gradi"
-                                                    class="coord-campo-num coord-campo-gradi" placeholder="DDD"
+                                                    class="coord-campo-num coord-campo-gradi" placeholder="0DD"
                                                     maxlength="4" inputmode="numeric" data-avanza autocomplete="off">
                                                 <span class="coord-campo-unita">°</span>
                                                 <input type="text" id="coord-dmm-lon-primi" class="coord-campo-num"
@@ -511,7 +519,7 @@
                                             <label for="coord-dms-lon-gradi">Longitudine</label>
                                             <div class="coord-campi-riga">
                                                 <input type="text" id="coord-dms-lon-gradi"
-                                                    class="coord-campo-num coord-campo-gradi" placeholder="DDD"
+                                                    class="coord-campo-num coord-campo-gradi" placeholder="0DD"
                                                     maxlength="4" inputmode="numeric" data-avanza autocomplete="off">
                                                 <span class="coord-campo-unita">°</span>
                                                 <input type="text" id="coord-dms-lon-primi"
