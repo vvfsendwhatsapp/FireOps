@@ -40,8 +40,8 @@
     {
       "nome": "Reparto Volo VVF Torino",
       "citta": "San Maurizio Canavese (Torino)",
-      "latitudine": 45.1925,
-      "longitudine": 7.6019,
+      "latitudine": 45.206012,
+      "longitudine": 7.645707,
       "telefono": null,
       "fax": null,
       "email": "nucleo.eli.to@vigilfuoco.it",
@@ -80,7 +80,7 @@
       "citta": "Bologna",
       "latitudine": 44.5354,
       "longitudine": 11.2887,
-      "telefono": "0828 365235",
+      "telefono": "051 403006",
       "fax": null,
       "email": "nucleo.eli.bo@vigilfuoco.it"
     },

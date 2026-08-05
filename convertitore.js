@@ -1196,7 +1196,10 @@ document.addEventListener("fireops:comando-attivo-cambiato", (e) => {
             if (coordLineaPercorso) { coordMappaLeaflet.removeLayer(coordLineaPercorso); coordLineaPercorso = null; }
             if (coordMarkerPartenza) { coordMappaLeaflet.removeLayer(coordMarkerPartenza); coordMarkerPartenza = null; }
         }
-        if (btnPercorso) btnPercorso.classList.remove("attivo");
+        if (btnPercorso) {
+            btnPercorso.classList.remove("attivo");
+            btnPercorso.textContent = TESTO_PERCORSO_DA_ATTIVARE;
+        }
         if (contenitoreControlliPercorsoAttivo) contenitoreControlliPercorsoAttivo.classList.remove("visibile");
         if (elInfoPercorso) elInfoPercorso.textContent = "";
         abilitaEsportazioni(false);
@@ -1254,6 +1257,11 @@ document.addEventListener("fireops:comando-attivo-cambiato", (e) => {
     const elInfoPercorso = document.getElementById("coord-percorso-info");
     const selectProfiloPercorso = document.getElementById("coord-profilo-percorso");
     const PROFILO_PERCORSO_PREDEFINITO = "trekking";
+
+    // Il pulsante ha due stati: prima dice cosa fa, dopo il clic dice cosa
+    // deve fare l'operatore
+    const TESTO_PERCORSO_DA_ATTIVARE = "🧭 Attiva crea percorso";
+    const TESTO_PERCORSO_ATTIVO = "🧭 Clicca sulla mappa per calcolare il percorso";
     const btnScaricaKml = document.getElementById("btn-coord-scarica-kml");
     const btnScaricaGpx = document.getElementById("btn-coord-scarica-gpx");
 
@@ -1479,6 +1487,16 @@ function disegnaMarkerPartenza(lat, lon, azimut) {
 // Il pulsante si attiva solo quando esiste un target convertito E una
 // tipologia di percorso scelta: prima di allora non c'è nulla da calcolare
 function aggiornaStatoBottonePercorso() {
+    // Lookup diretto: questa funzione gira anche prima che le costanti dei
+    // Reparti Volo, più in basso nel file, siano state inizializzate
+    const btnHelicottero = document.getElementById("btn-coord-reparti-volo");
+    if (btnHelicottero) {
+        btnHelicottero.disabled = !coordinateTargetCorrenti;
+        btnHelicottero.title = coordinateTargetCorrenti
+            ? "Mostra i due Reparti Volo più vicini al target"
+            : "Converti prima delle coordinate: serve un target";
+    }
+
     if (!btnPercorso) return;
     // La tipologia ha sempre un valore (predefinito "a piedi"), quindi
     // l'unica condizione rimasta è avere un target verso cui andare
@@ -1509,6 +1527,7 @@ if (btnPercorso) {
         }
         modalitaPercorsoAttiva = true;
         btnPercorso.classList.add("attivo");
+        btnPercorso.textContent = TESTO_PERCORSO_ATTIVO;
         if (contenitoreControlliPercorsoAttivo) contenitoreControlliPercorsoAttivo.classList.add("visibile");
         if (elInfoPercorso) elInfoPercorso.textContent = "Clicca un punto sulla mappa: verrà calcolato il percorso fino al punto convertito.";
     });
@@ -1730,6 +1749,219 @@ function disegnaGraficoAltimetria(geojson) {
 
     return { dislivelloPositivo: Math.round(dislivelloPositivo), dislivelloNegativo: Math.round(dislivelloNegativo) };
 }
+
+    // ==========================================================
+    // REPARTI VOLO — i due più vicini al target, con distanza in linea
+    // d'aria, azimut e dislivello. Il JSON viene mostrato per intero
+    // (tutte le chiavi presenti), così non serve toccare il codice se
+    // domani il file guadagna o perde una colonna.
+    // ==========================================================
+    const btnRepartiVolo = document.getElementById("btn-coord-reparti-volo");
+    const modaleRepartiVolo = document.getElementById("modal-reparti-volo");
+    const contenutoRepartiVolo = document.getElementById("reparti-volo-contenuto");
+    let elencoRepartiVoloCache = null;
+
+    async function caricaRepartiVolo() {
+        if (elencoRepartiVoloCache) return elencoRepartiVoloCache;
+        const risposta = await fetch("/FireOps/db/repartivolovvf.json");
+        if (!risposta.ok) throw new Error("HTTP " + risposta.status);
+        const dati = await risposta.json();
+        // Accetta sia un array puro sia un oggetto che lo contiene
+        elencoRepartiVoloCache = Array.isArray(dati)
+            ? dati
+            : (Object.values(dati).find(Array.isArray) || []);
+        return elencoRepartiVoloCache;
+    }
+
+    // Le coordinate possono arrivare come campo unico "Coordinate": "45.1, 9.2"
+    // (come in comandi.json) oppure come due campi separati. Si accettano
+    // entrambe le forme senza doverle sapere in anticipo.
+    const CHIAVI_LATITUDINE = ["lat", "latitudine", "latitude"];
+    const CHIAVI_LONGITUDINE = ["lon", "lng", "long", "longitudine", "longitude"];
+
+    function coordinateDaRecord(record) {
+        for (const [chiave, valore] of Object.entries(record)) {
+            if (typeof valore !== "string" || !/coordinat/i.test(chiave)) continue;
+            const trovate = valore.match(/(-?\d{1,3}[.,]\d+)\s*[,;]\s*(-?\d{1,3}[.,]\d+)/);
+            if (trovate) {
+                return {
+                    lat: parseFloat(trovate[1].replace(",", ".")),
+                    lon: parseFloat(trovate[2].replace(",", ".")),
+                };
+            }
+        }
+
+        let lat = null, lon = null;
+        for (const [chiave, valore] of Object.entries(record)) {
+            const normalizzata = chiave.toLowerCase().replace(/[^a-z]/g, "");
+            const numero = parseFloat(String(valore).replace(",", "."));
+            if (Number.isNaN(numero)) continue;
+            if (lat === null && CHIAVI_LATITUDINE.includes(normalizzata)) lat = numero;
+            if (lon === null && CHIAVI_LONGITUDINE.includes(normalizzata)) lon = numero;
+        }
+        return (lat !== null && lon !== null) ? { lat, lon } : null;
+    }
+
+    function nomeDelReparto(record, indice) {
+        const chiaveNome = Object.keys(record).find(k => /reparto|denominazion|nome|sede|base|aeroport/i.test(k));
+        return (chiaveNome && String(record[chiaveNome]).trim()) || `Reparto ${indice + 1}`;
+    }
+
+    // Quote di più punti in una sola chiamata Open-Meteo
+    async function recuperaQuoteMultiple(punti) {
+        try {
+            const latitudini = punti.map(p => p.lat).join(",");
+            const longitudini = punti.map(p => p.lon).join(",");
+            const risposta = await fetch(`https://api.open-meteo.com/v1/elevation?latitude=${latitudini}&longitude=${longitudini}`);
+            if (!risposta.ok) throw new Error("HTTP " + risposta.status);
+            const dati = await risposta.json();
+            const quote = Array.isArray(dati.elevation) ? dati.elevation : [];
+            return punti.map((_, i) => (typeof quote[i] === "number" && !Number.isNaN(quote[i])) ? quote[i] : null);
+        } catch (err) {
+            console.error("Reparti Volo: quote non disponibili:", err);
+            return punti.map(() => null);
+        }
+    }
+
+    function testoSicuro(valore) {
+        return String(valore === null || valore === undefined ? "" : valore)
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    // Rende cliccabili telefoni, email e link senza sapere in quale campo
+    // del JSON si trovano
+    function valoreFormattato(valore) {
+        const testo = String(valore === null || valore === undefined ? "" : valore).trim();
+        if (!testo) return "—";
+        if (/^https?:\/\//i.test(testo)) {
+            return `<a href="${testoSicuro(testo)}" target="_blank" rel="noopener" class="indirizzo-link">${testoSicuro(testo)}</a>`;
+        }
+        if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(testo)) {
+            return `<a href="mailto:${testoSicuro(testo)}" class="indirizzo-link">${testoSicuro(testo)}</a>`;
+        }
+        if (/^\+?[\d\s./-]{6,}$/.test(testo) && /\d{5,}/.test(testo.replace(/\D/g, ""))) {
+            return `<a href="tel:${testoSicuro(testo.replace(/[^\d+]/g, ""))}" class="indirizzo-link">${testoSicuro(testo)}</a>`;
+        }
+        return testoSicuro(testo);
+    }
+
+    function tabellaCampiRecord(record) {
+        const righe = Object.entries(record)
+            .map(([chiave, valore]) => `<tr><th>${testoSicuro(chiave)}</th><td>${valoreFormattato(valore)}</td></tr>`)
+            .join("");
+        return `<table class="riepilogo-tabella"><tbody>${righe}</tbody></table>`;
+    }
+
+    function tabellaCalcoliReparto(calcoli) {
+        const quota = v => (v === null ? "non disponibile" : `${Math.round(v)} m s.l.m.`);
+        const dislivello = calcoli.dislivello === null
+            ? "non disponibile"
+            : `${calcoli.dislivello > 0 ? "+" : ""}${Math.round(calcoli.dislivello)} m`;
+
+        return `<table class="riepilogo-tabella"><tbody>
+            <tr><th>Distanza in linea d'aria</th><td>${calcoli.distanzaKm.toFixed(2)} km</td></tr>
+            <tr><th>Azimut (reparto → target)</th><td>${Math.round(calcoli.azimut)}°</td></tr>
+            <tr><th>Quota reparto volo</th><td>${quota(calcoli.quotaReparto)}</td></tr>
+            <tr><th>Quota target</th><td>${quota(calcoli.quotaTarget)}</td></tr>
+            <tr><th>Dislivello (reparto → target)</th><td>${dislivello}</td></tr>
+        </tbody></table>`;
+    }
+
+    function apriModaleRepartiVolo(html) {
+        if (!modaleRepartiVolo || !contenutoRepartiVolo) return;
+        contenutoRepartiVolo.innerHTML = html;
+        modaleRepartiVolo.style.display = "flex";
+    }
+
+    function chiudiModaleRepartiVolo() {
+        if (modaleRepartiVolo) modaleRepartiVolo.style.display = "none";
+    }
+
+    async function mostraRepartiVoloPiuVicini() {
+        if (!coordinateTargetCorrenti) {
+            mostraErrore("Converti prima delle coordinate: serve un target verso cui misurare la distanza.");
+            return;
+        }
+        apriModaleRepartiVolo(`<p class="pagina-nota">Caricamento elenco Reparti Volo…</p>`);
+
+        let reparti = [];
+        try {
+            reparti = await caricaRepartiVolo();
+        } catch (err) {
+            console.error("Reparti Volo: elenco non disponibile:", err);
+            apriModaleRepartiVolo(`<p class="pagina-nota" style="color:var(--danger-color);">Impossibile leggere <code>db/repartivolovvf.json</code>: ${testoSicuro(err.message)}</p>`);
+            return;
+        }
+
+        const conCoordinate = reparti
+            .map(record => ({ record, coord: coordinateDaRecord(record) }))
+            .filter(voce => voce.coord);
+
+        if (conCoordinate.length === 0) {
+            const chiaviViste = reparti.length ? Object.keys(reparti[0]).join(", ") : "(file vuoto)";
+            apriModaleRepartiVolo(`<p class="pagina-nota" style="color:var(--danger-color);">
+                Nessuna coordinata riconosciuta in <code>repartivolovvf.json</code>.
+                Servono un campo "Coordinate" nel formato "45.1, 9.2" oppure due campi
+                latitudine/longitudine separati.<br>Chiavi trovate nel primo record: ${testoSicuro(chiaviViste)}</p>`);
+            return;
+        }
+
+        const { lat: latTarget, lon: lonTarget } = coordinateTargetCorrenti;
+        conCoordinate.forEach(voce => {
+            voce.distanzaKm = distanzaKmHaversine(voce.coord.lat, voce.coord.lon, latTarget, lonTarget);
+            voce.azimut = calcolaAzimut(voce.coord.lat, voce.coord.lon, latTarget, lonTarget);
+        });
+        conCoordinate.sort((a, b) => a.distanzaKm - b.distanzaKm);
+        const piuVicini = conCoordinate.slice(0, 2);
+
+        const quote = await recuperaQuoteMultiple([
+            { lat: latTarget, lon: lonTarget },
+            ...piuVicini.map(v => v.coord),
+        ]);
+        const quotaTarget = quote[0];
+
+        const schede = piuVicini.map((voce, i) => {
+            const quotaReparto = quote[i + 1];
+            const dislivello = (quotaTarget !== null && quotaReparto !== null) ? quotaTarget - quotaReparto : null;
+            const etichetta = i === 0 ? "Più vicino" : "2º più vicino";
+
+            return `<div class="reparto-volo-scheda">
+                <h4><span class="reparto-volo-distintivo">${etichetta}</span>${testoSicuro(nomeDelReparto(voce.record, i))}</h4>
+                <h5>Rotta verso il target</h5>
+                ${tabellaCalcoliReparto({
+                    distanzaKm: voce.distanzaKm,
+                    azimut: voce.azimut,
+                    quotaReparto,
+                    quotaTarget,
+                    dislivello,
+                })}
+                <h5>Dati del reparto</h5>
+                ${tabellaCampiRecord(voce.record)}
+            </div>`;
+        }).join("");
+
+        apriModaleRepartiVolo(`
+            <p class="pagina-nota">Target: ${latTarget.toFixed(6)}, ${lonTarget.toFixed(6)} — confronto su ${conCoordinate.length} reparti con coordinate note.
+            Le distanze sono in linea d'aria (ortodromica), non tengono conto di rotte, spazi aerei o autonomia.</p>
+            ${schede}`);
+    }
+
+    if (btnRepartiVolo) {
+        btnRepartiVolo.addEventListener("click", mostraRepartiVoloPiuVicini);
+    }
+
+    const chiusuraModaleRepartiVolo = document.getElementById("modal-reparti-volo-close");
+    if (chiusuraModaleRepartiVolo) chiusuraModaleRepartiVolo.addEventListener("click", chiudiModaleRepartiVolo);
+    if (modaleRepartiVolo) {
+        modaleRepartiVolo.addEventListener("click", (e) => {
+            if (e.target === modaleRepartiVolo) chiudiModaleRepartiVolo();
+        });
+    }
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && modaleRepartiVolo && modaleRepartiVolo.style.display === "flex") {
+            chiudiModaleRepartiVolo();
+        }
+    });
 
     // ==========================================================
     // MESSAGGIO ALLE SQUADRE VF: prefisso + numero + 3 pulsanti di invio
