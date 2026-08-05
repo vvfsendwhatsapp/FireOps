@@ -280,25 +280,36 @@ document.addEventListener("DOMContentLoaded", () => {
         return numero * segno;
     }
 
-    function parseDMMField(testoInput) {
-        const { testo, segno } = estraiSegnoEPulisci(testoInput);
-        const pulito = testo.replace(/[°'′]/g, " ").replace(/,/g, ".").trim();
-        const parti = pulito.split(/\s+/).filter(Boolean);
-        if (parti.length < 2) return null;
-        const gradi = parseFloat(parti[0]), minuti = parseFloat(parti[1]);
-        if (Number.isNaN(gradi) || Number.isNaN(minuti)) return null;
-        return (gradi + minuti / 60) * segno;
+    // I formati DMM e DMS ora arrivano da campi separati: niente stringa da
+    // interpretare, solo numeri da comporre. Un valore vuoto o fuori scala
+    // (primi/secondi >= 60) restituisce null, così l'errore è esplicito.
+    function numeroDaCampo(testo) {
+        const pulito = String(testo === null || testo === undefined ? "" : testo).trim().replace(",", ".");
+        if (!pulito) return null;
+        const numero = parseFloat(pulito);
+        return Number.isNaN(numero) ? null : numero;
     }
 
-    function parseDMSField(testoInput) {
-        const { testo, segno } = estraiSegnoEPulisci(testoInput);
-        const pulito = testo.replace(/[°'′"″]/g, " ").replace(/,/g, ".").trim();
-        const parti = pulito.split(/\s+/).filter(Boolean);
-        if (parti.length < 3) return null;
-        const gradi = parseFloat(parti[0]), minuti = parseFloat(parti[1]), secondi = parseFloat(parti[2]);
-        if ([gradi, minuti, secondi].some(Number.isNaN)) return null;
-        return (gradi + minuti / 60 + secondi / 3600) * segno;
+    function componiDMM(testoGradi, testoPrimi) {
+        const gradi = numeroDaCampo(testoGradi);
+        const primi = numeroDaCampo(testoPrimi);
+        if (gradi === null || primi === null) return null;
+        if (primi < 0 || primi >= 60) return null;
+        const segno = String(testoGradi).trim().startsWith("-") ? -1 : 1;
+        return segno * (Math.abs(gradi) + primi / 60);
     }
+
+    function componiDMS(testoGradi, testoPrimi, testoSecondi) {
+        const gradi = numeroDaCampo(testoGradi);
+        const primi = numeroDaCampo(testoPrimi);
+        const secondi = numeroDaCampo(testoSecondi);
+        if (gradi === null || primi === null || secondi === null) return null;
+        if (primi < 0 || primi >= 60 || secondi < 0 || secondi >= 60) return null;
+        const segno = String(testoGradi).trim().startsWith("-") ? -1 : 1;
+        return segno * (Math.abs(gradi) + primi / 60 + secondi / 3600);
+    }
+
+
 
     // ==========================================================
     // FORMATTAZIONE OUTPUT (tabella risultati)
@@ -837,8 +848,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const val = id => (document.getElementById(id)?.value || "").trim();
     switch (formato) {
         case "dd": return !!(val("coord-dd-lat") && val("coord-dd-lon"));
-        case "dmm": return !!(val("coord-dmm-lat") && val("coord-dmm-lon"));
-        case "dms": return !!(val("coord-dms-lat") && val("coord-dms-lon"));
+        case "dmm": return ["coord-dmm-lat-gradi", "coord-dmm-lat-primi",
+                            "coord-dmm-lon-gradi", "coord-dmm-lon-primi"].every(val);
+        case "dms": return ["coord-dms-lat-gradi", "coord-dms-lat-primi", "coord-dms-lat-secondi",
+                            "coord-dms-lon-gradi", "coord-dms-lon-primi", "coord-dms-lon-secondi"].every(val);
         case "olc": return !!val("coord-olc");
         case "utm": return !!(val("coord-utm-zona") && val("coord-utm-est") && val("coord-utm-nord"));
         case "mappa": return true; // nessun campo da compilare: si va direttamente alla mappa
@@ -876,8 +889,9 @@ function aggiornaBottoneConverti() {
     const CAMPI_PERSISTENTI_COORD = [
         "coord-formato-input",
         "coord-dd-lat", "coord-dd-lon",
-        "coord-dmm-lat", "coord-dmm-lon",
-        "coord-dms-lat", "coord-dms-lon",
+        "coord-dmm-lat-gradi", "coord-dmm-lat-primi", "coord-dmm-lon-gradi", "coord-dmm-lon-primi",
+        "coord-dms-lat-gradi", "coord-dms-lat-primi", "coord-dms-lat-secondi",
+        "coord-dms-lon-gradi", "coord-dms-lon-primi", "coord-dms-lon-secondi",
         "coord-olc",
         "coord-utm-zona", "coord-utm-emisfero", "coord-utm-est", "coord-utm-nord",
         "coord-indirizzo-via", "coord-indirizzo-comune-input", "coord-indirizzo-comune"
@@ -914,6 +928,19 @@ function aggiornaBottoneConverti() {
 
     ripristinaStatoFormCoord();
     aggiornaBottoneConverti();
+
+    // Digitando le coordinate a raffica, i campi a larghezza fissa (gradi e
+    // primi interi) passano da soli al successivo appena sono pieni: si batte
+    // la sequenza senza staccare le mani dalla tastiera per usare il TAB
+    document.querySelectorAll("#coord-input-colonna input[data-avanza]").forEach(campo => {
+        campo.addEventListener("input", () => {
+            const lunghezzaMassima = parseInt(campo.getAttribute("maxlength"), 10);
+            if (!lunghezzaMassima || campo.value.length < lunghezzaMassima) return;
+            const campiRiga = Array.from(campo.closest(".coord-campi-riga").querySelectorAll("input"));
+            const successivo = campiRiga[campiRiga.indexOf(campo) + 1];
+            if (successivo) { successivo.focus(); successivo.select(); }
+        });
+    });
 
     // Delega un solo listener sull'intero form: copre tutti i campi presenti
     // (compreso quello nascosto della combo Comune) senza doverli agganciare uno per uno
@@ -1025,15 +1052,23 @@ if (contenitoreFormCoord) {
             return { lat, lon };
         }
         if (formato === "dmm") {
-            const lat = parseDMMField(document.getElementById("coord-dmm-lat").value);
-            const lon = parseDMMField(document.getElementById("coord-dmm-lon").value);
-            if (lat === null || lon === null) { mostraErrore("Coordinate gradi/primi non valide. Esempio: 45 27.8522 N"); return null; }
+            const valore = id => (document.getElementById(id)?.value || "");
+            const lat = componiDMM(valore("coord-dmm-lat-gradi"), valore("coord-dmm-lat-primi"));
+            const lon = componiDMM(valore("coord-dmm-lon-gradi"), valore("coord-dmm-lon-primi"));
+            if (lat === null || lon === null) {
+                mostraErrore("Gradi e primi non validi: i primi devono stare fra 0 e 59.9999. Esempio: 45° 27.8522′ N");
+                return null;
+            }
             return { lat, lon };
         }
         if (formato === "dms") {
-            const lat = parseDMSField(document.getElementById("coord-dms-lat").value);
-            const lon = parseDMSField(document.getElementById("coord-dms-lon").value);
-            if (lat === null || lon === null) { mostraErrore("Coordinate gradi/primi/secondi non valide. Esempio: 45 27 51.1 N"); return null; }
+            const valore = id => (document.getElementById(id)?.value || "");
+            const lat = componiDMS(valore("coord-dms-lat-gradi"), valore("coord-dms-lat-primi"), valore("coord-dms-lat-secondi"));
+            const lon = componiDMS(valore("coord-dms-lon-gradi"), valore("coord-dms-lon-primi"), valore("coord-dms-lon-secondi"));
+            if (lat === null || lon === null) {
+                mostraErrore("Gradi, primi e secondi non validi: primi e secondi devono stare fra 0 e 59.99. Esempio: 45° 27′ 51.10″ N");
+                return null;
+            }
             return { lat, lon };
         }
         if (formato === "olc") {
