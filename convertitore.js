@@ -457,22 +457,33 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function comuneDelRisultato(risultato) {
         const a = risultato.address || {};
-        return a.city || a.town || a.village || a.municipality || a.hamlet || "";
+        return a.city || a.town || a.village || a.municipality || a.hamlet || a.suburb || "";
     }
 
-    // Scarta i risultati che Nominatim restituisce in un comune diverso da
-    // quello scelto: è il caso classico delle vie omonime (una "Via Roma"
-    // esiste praticamente in ogni comune d'Italia).
-    function risultatoNelComune(risultato, comune) {
-        if (!comune) return true;
+    // Verifica che il risultato appartenga DAVVERO al comune scelto.
+    //
+    // ATTENZIONE: qui si confrontano solo i campi di livello comunale
+    // (city/town/village/municipality...). NON si deve mai usare il
+    // display_name completo né i campi county/state: in Italia moltissime
+    // province portano il nome del capoluogo, così "Gambettola, ...,
+    // Forlì-Cesena" verrebbe scambiato per un indirizzo di Forlì.
+    function comuneCorrisponde(risultato, comune) {
         const atteso = normalizzaConfronto(comune);
-        if (!atteso) return true;
+        if (!atteso) return false;
         const a = risultato.address || {};
-        const candidati = [a.city, a.town, a.village, a.municipality, a.hamlet, a.suburb, a.city_district]
+        const candidati = [a.city, a.town, a.village, a.municipality, a.borough, a.city_district, a.suburb, a.hamlet]
             .filter(Boolean).map(normalizzaConfronto);
         if (candidati.includes(atteso)) return true;
-        // Frazioni e località minori: il comune compare comunque nel display_name
-        return ` ${normalizzaConfronto(risultato.display_name)} `.includes(` ${atteso} `);
+        // Il risultato può essere il comune stesso (ricerca del solo comune)
+        return normalizzaConfronto(risultato.name) === atteso;
+    }
+
+    function dentroBoundingBox(risultato, bbox) {
+        if (!bbox) return false;
+        const lat = parseFloat(risultato.lat);
+        const lon = parseFloat(risultato.lon);
+        if (Number.isNaN(lat) || Number.isNaN(lon)) return false;
+        return lat >= bbox.sud && lat <= bbox.nord && lon >= bbox.ovest && lon <= bbox.est;
     }
 
     function precisioneRisultato(risultato) {
@@ -509,26 +520,61 @@ document.addEventListener("DOMContentLoaded", () => {
         return Array.isArray(dati) ? dati : [];
     }
 
+    // Ricava il perimetro (bounding box) del comune scelto. Serve a CONFINARE
+    // la ricerca dell'indirizzo: con viewbox+bounded=1 Nominatim non può più
+    // restituire una via omonima di un comune vicino, che è esattamente il
+    // modo in cui "Via Roma, Forlì" finiva a Gambettola.
+    async function trovaPerimetroComune(comune, sigla) {
+        if (!comune) return null;
+        let risultati = [];
+        try {
+            risultati = await interrogaNominatim({ q: [comune, sigla, "Italia"].filter(Boolean).join(", ") });
+        } catch (err) {
+            console.error("Geocoding: perimetro comune non recuperato:", err);
+            return null;
+        }
+
+        const scelto = risultati.find(r => comuneCorrisponde(r, comune)) || null;
+        if (!scelto || !Array.isArray(scelto.boundingbox)) return null;
+
+        const [sud, nord, ovest, est] = scelto.boundingbox.map(parseFloat);
+        if ([sud, nord, ovest, est].some(Number.isNaN)) return null;
+
+        return {
+            sud, nord, ovest, est,
+            lat: parseFloat(scelto.lat),
+            lon: parseFloat(scelto.lon),
+            display: scelto.display_name || comune,
+        };
+    }
+
     async function geocodificaIndirizzo(via, comune, sigla) {
         if (!via && !comune) return null;
 
         const { strada, civico } = separaViaECivico(via);
         const codaComune = [comune, sigla, "Italia"].filter(Boolean).join(", ");
 
+        const perimetro = await trovaPerimetroComune(comune, sigla);
+        const confine = perimetro
+            ? {
+                viewbox: `${perimetro.ovest},${perimetro.nord},${perimetro.est},${perimetro.sud}`,
+                bounded: "1",
+            }
+            : {};
+
         // Ordine dei tentativi: dal più preciso al più generico. Ci si ferma
         // al primo che produce un risultato dentro il comune richiesto.
         const tentativi = [];
         if (via && comune) {
-            tentativi.push({ q: `${via}, ${codaComune}` });
-            if (civico) tentativi.push({ q: `${strada} ${civico}, ${codaComune}` });
-            tentativi.push({ street: civico ? `${civico} ${strada}` : strada, city: comune });
-            if (civico) tentativi.push({ q: `${strada}, ${codaComune}` });
+            tentativi.push({ ...confine, q: `${via}, ${codaComune}` });
+            if (civico) tentativi.push({ ...confine, q: `${strada} ${civico}, ${codaComune}` });
+            tentativi.push({ ...confine, street: civico ? `${civico} ${strada}` : strada, city: comune });
+            if (civico) tentativi.push({ ...confine, q: `${strada}, ${codaComune}` });
         } else if (via) {
             tentativi.push({ q: `${via}, Italia` });
         }
-        if (comune) tentativi.push({ q: codaComune });
 
-        let primoTentativo = true;
+        let primoTentativo = !perimetro; // il perimetro ha già consumato una richiesta
         for (const tentativo of tentativi) {
             if (!primoTentativo) await attendi(PAUSA_TENTATIVI_MS);
             primoTentativo = false;
@@ -541,12 +587,20 @@ document.addEventListener("DOMContentLoaded", () => {
                 continue;
             }
 
-            const validi = risultati.filter(r => risultatoNelComune(r, comune));
+            // Doppia barriera: nome del comune corrispondente OPPURE punto
+            // dentro il perimetro comunale (indispensabile per le frazioni,
+            // dove Nominatim riporta il nome della frazione e non del comune)
+            const validi = risultati.filter(r => comuneCorrisponde(r, comune) || dentroBoundingBox(r, perimetro));
             if (validi.length === 0) continue;
 
-            // A parità di comune si preferisce il risultato più preciso
-            const ordine = { civico: 0, via: 1, comune: 2 };
-            validi.sort((a, b) => ordine[precisioneRisultato(a)] - ordine[precisioneRisultato(b)]);
+            // Prima chi ha il nome del comune giusto, poi il più preciso
+            const ordinePrecisione = { civico: 0, via: 1, comune: 2 };
+            validi.sort((a, b) => {
+                const nomeA = comuneCorrisponde(a, comune) ? 0 : 1;
+                const nomeB = comuneCorrisponde(b, comune) ? 0 : 1;
+                if (nomeA !== nomeB) return nomeA - nomeB;
+                return ordinePrecisione[precisioneRisultato(a)] - ordinePrecisione[precisioneRisultato(b)];
+            });
             const scelto = validi[0];
 
             return {
@@ -554,9 +608,27 @@ document.addEventListener("DOMContentLoaded", () => {
                 lon: parseFloat(scelto.lon),
                 precisione: precisioneRisultato(scelto),
                 civicoRichiesto: civico,
+                comuneRichiesto: comune,
                 comuneTrovato: comuneDelRisultato(scelto),
+                comuneVerificato: comuneCorrisponde(scelto, comune),
                 indirizzoTrovato: scelto.display_name || "",
                 alternative: validi.length - 1,
+            };
+        }
+
+        // Nessun indirizzo trovato dentro il comune: si ripiega sul centro del
+        // comune, che è impreciso ma almeno è nel posto giusto
+        if (perimetro) {
+            return {
+                lat: perimetro.lat,
+                lon: perimetro.lon,
+                precisione: "comune",
+                civicoRichiesto: civico,
+                comuneRichiesto: comune,
+                comuneTrovato: comune,
+                comuneVerificato: true,
+                indirizzoTrovato: perimetro.display,
+                alternative: 0,
             };
         }
 
@@ -925,6 +997,15 @@ if (contenitoreFormCoord) {
             icona = "⚠️";
             colore = "#ffd700";
             titolo = "Indirizzo non trovato: punto approssimato al centro del comune — verifica prima di inviarlo alle squadre";
+        }
+
+        // Frazione o località interna al comune: il punto è dentro il perimetro
+        // comunale ma porta un altro nome. Va detto, perché l'operatore deve
+        // poter riconoscere un eventuale errore.
+        if (risultato.comuneVerificato === false && risultato.comuneTrovato) {
+            icona = "⚠️";
+            colore = "#ffd700";
+            titolo += ` — località "${risultato.comuneTrovato}", dentro il territorio di ${risultato.comuneRichiesto}`;
         }
 
         el.style.color = colore;
