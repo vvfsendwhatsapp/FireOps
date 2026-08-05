@@ -1204,7 +1204,7 @@ document.addEventListener("fireops:comando-attivo-cambiato", (e) => {
         nascondiGraficoAltimetria("");
         aggiornaOverlayPercorso(null, null);
 
-        if (!mantieniTipologia && selectProfiloPercorso) selectProfiloPercorso.value = "";
+        if (!mantieniTipologia && selectProfiloPercorso) selectProfiloPercorso.value = PROFILO_PERCORSO_PREDEFINITO;
         aggiornaStatoBottonePercorso();
     }
 
@@ -1253,6 +1253,7 @@ document.addEventListener("fireops:comando-attivo-cambiato", (e) => {
     // ==========================================================
     const elInfoPercorso = document.getElementById("coord-percorso-info");
     const selectProfiloPercorso = document.getElementById("coord-profilo-percorso");
+    const PROFILO_PERCORSO_PREDEFINITO = "trekking";
     const btnScaricaKml = document.getElementById("btn-coord-scarica-kml");
     const btnScaricaGpx = document.getElementById("btn-coord-scarica-gpx");
 
@@ -1402,14 +1403,7 @@ function disegnaMarkerPartenza(lat, lon, azimut) {
     async function calcolaEDisegnaPercorso(latPartenza, lonPartenza) {
     if (!coordinateTargetCorrenti || !coordMappaLeaflet) return;
     const { lat: latArrivo, lon: lonArrivo } = coordinateTargetCorrenti;
-    const profilo = selectProfiloPercorso ? selectProfiloPercorso.value : "";
-
-    // Senza tipologia non si calcola nulla: il pulsante è già disabilitato,
-    // questa è la rete di sicurezza per le chiamate da trascinamento/ricalcolo
-    if (!profilo) {
-        aggiornaOverlayPercorso("Scegli prima una tipologia di percorso.", null);
-        return;
-    }
+    const profilo = (selectProfiloPercorso && selectProfiloPercorso.value) || PROFILO_PERCORSO_PREDEFINITO;
 
     // Il punto di partenza resta in memoria: serve per ricalcolare quando
     // cambia la tipologia o quando la freccia viene trascinata altrove
@@ -1486,21 +1480,17 @@ function disegnaMarkerPartenza(lat, lon, azimut) {
 // tipologia di percorso scelta: prima di allora non c'è nulla da calcolare
 function aggiornaStatoBottonePercorso() {
     if (!btnPercorso) return;
-    const profiloScelto = !!(selectProfiloPercorso && selectProfiloPercorso.value);
-    btnPercorso.disabled = !(profiloScelto && coordinateTargetCorrenti);
-    if (!btnPercorso.disabled) {
-        btnPercorso.title = "Clicca un punto sulla mappa: sarà la posizione della squadra VF";
-    } else if (!coordinateTargetCorrenti) {
-        btnPercorso.title = "Converti prima delle coordinate: serve un punto di arrivo";
-    } else {
-        btnPercorso.title = "Scegli prima una tipologia di percorso";
-    }
+    // La tipologia ha sempre un valore (predefinito "a piedi"), quindi
+    // l'unica condizione rimasta è avere un target verso cui andare
+    btnPercorso.disabled = !coordinateTargetCorrenti;
+    btnPercorso.title = coordinateTargetCorrenti
+        ? "Clicca un punto sulla mappa: sarà la posizione della squadra VF"
+        : "Converti prima delle coordinate: serve un punto di arrivo";
 }
 
 if (selectProfiloPercorso) {
     selectProfiloPercorso.addEventListener("change", () => {
         aggiornaStatoBottonePercorso();
-        if (!selectProfiloPercorso.value) return;
         // Cambio di tipologia con un percorso già tracciato: si ricalcola
         // subito, senza chiedere di ricliccare il punto di partenza
         if (ultimoPuntoPartenza && coordinateTargetCorrenti) {
@@ -1515,10 +1505,6 @@ if (btnPercorso) {
     btnPercorso.addEventListener("click", () => {
         if (!coordinateTargetCorrenti) {
             mostraErrore("Converti prima delle coordinate: serve un punto di arrivo per calcolare il percorso.");
-            return;
-        }
-        if (selectProfiloPercorso && !selectProfiloPercorso.value) {
-            mostraErrore("Scegli prima una tipologia di percorso.");
             return;
         }
         modalitaPercorsoAttiva = true;
