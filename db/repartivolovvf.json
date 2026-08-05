@@ -8,6 +8,7 @@
       "telefono": "06 79340529",
       "fax": "06 79340708",
       "email": "nucleo.eli.rm@vigilfuoco.it",
+      "indirizzo":"",
       "note": "Email dedicata non pubblicata; contatto generale Ufficio coordinamento servizio aereo: em.soccorsoaereo@vigilfuoco.it"
     },
     {
@@ -17,16 +18,18 @@
       "longitudine": 16.761350,
       "telefono": "080 5316134",
       "fax": null,
-      "email": "nucleo.eli.ba@vigilfuoco.it"
+      "email": "nucleo.eli.ba@vigilfuoco.it",
+      "indirizzo":""
     },
     {
       "nome": "Reparto Volo VVF Pescara",
-      "citta": "Pescara",
-      "latitudine": 42.4422,
-      "longitudine": 14.1883,
+      "citta": "Pescara (Pescara)",
+      "latitudine": 42.442279,
+      "longitudine": 14.188332,
       "telefono": "085 52707",
       "fax": "085 4316734",
-      "email": "nucleo.eli.pe@vigilfuoco.it"
+      "email": "nucleo.eli.pe@vigilfuoco.it",
+      "indirizzo":""
     },
     {
       "nome": "Reparto Volo VVF Salerno",
@@ -35,19 +38,20 @@
       "longitudine": 14.913422,
       "telefono": "0828 53712",
       "fax": null,
-      "email": "nucleo.eli.sa@vigilfuoco.it"
+      "email": "nucleo.eli.sa@vigilfuoco.it",
+      "indirizzo":""
     },
     {
       "nome": "Reparto Volo VVF Torino",
       "citta": "San Maurizio Canavese (Torino)",
-      "indirizzo": "Strada Vecchia del Malanghero",
       "latitudine": 45.206012,
       "longitudine": 7.645707,
       "telefono": "011 9275222",
       "telefono2":"011 9275275",
       "telefono3":"011 5676853",
       "fax": null,
-      "email": "nucleo.eli.to@vigilfuoco.it"
+      "email": "nucleo.eli.to@vigilfuoco.it",
+      "indirizzo": "Strada Vecchia del Malanghero"
     },
     {
       "nome": "Reparto Volo VVF Lamezia Terme",
@@ -57,61 +61,68 @@
       "telefono": null,
       "fax": null,
       "email": "nucleo.eli.cz@vigilfuoco.it",
+      "indirizzo":"",
       "note": "Recapiti diretti non pubblicati sul sito ufficiale; fa riferimento alla Direzione Regionale VV.F. Calabria"
     },
     {
       "nome": "Reparto Volo VVF Genova",
       "citta": "Genova",
-      "latitudine": 44.4133,
-      "longitudine": 8.8375,
+      "latitudine": 44.414401,
+      "longitudine": 8.843514,
       "telefono": "010 6503636",
       "fax": null,
-      "email": "nucleo.eli.ge@vigilfuoco.it"
+      "email": "nucleo.eli.ge@vigilfuoco.it",
+      "indirizzo":""
     },
     {
       "nome": "Reparto Volo VVF Venezia",
-      "citta": "Venezia (Tessera)",
-      "latitudine": 45.5053,
-      "longitudine": 12.3519,
+      "citta": "Venezia",
+      "latitudine": 45.508500,
+      "longitudine": 12.349058,
       "telefono": "041 5415333",
       "fax": "041 5415512",
-      "email": "nucleo.eli.ve@vigilfuoco.it"
+      "email": "nucleo.eli.ve@vigilfuoco.it",
+      "indirizzo":"Via Giovanni Bonmartini"
     },
     {
       "nome": "Reparto Volo VVF Bologna",
       "citta": "Bologna",
-      "latitudine": 44.5354,
-      "longitudine": 11.2887,
+      "latitudine": 44.530876,
+      "longitudine": 11.289068,
       "telefono": "051 403006",
       "fax": null,
-      "email": "nucleo.eli.bo@vigilfuoco.it"
+      "email": "nucleo.eli.bo@vigilfuoco.it",
+      "indirizzo":"Via dell'Aeroporto"
     },
     {
       "nome": "Reparto Volo VVF Arezzo",
       "citta": "Molin Bianco (Arezzo)",
-      "latitudine": 43.4552,
-      "longitudine": 11.8474,
+      "latitudine": 43.458520,
+      "longitudine": 11.846559,
       "telefono": "0575 355800",
       "fax": "0575 21282",
-      "email": "nucleo.eli.ar@vigilfuoco.it"
+      "email": "nucleo.eli.ar@vigilfuoco.it",
+      "indirizzo": "Via Francesco Baracca"
     },
     {
-      "nome": "Reparto Volo VVF Cecina",
-      "citta": "Cecina Mare (Livorno)",
-      "latitudine": 43.2985,
-      "longitudine": 10.5075,
+      "nome": "Reparto Volo VVF Livorno",
+      "citta": "Cecina (Livorno)",
+      "latitudine": 43.278627,
+      "longitudine": 10.515979,
       "telefono": "0586 623700",
       "fax": null,
-      "email": "nucleo.eli.li@vigilfuoco.it"
+      "email": "nucleo.eli.li@vigilfuoco.it",
+      "indirizzo": "Via della Pineta"
     },
     {
       "nome": "Reparto Volo VVF Brindisi",
       "citta": "Santa Teresa (Brindisi)",
-      "latitudine": 43.2985,
-      "longitudine": 10.5075,
+      "latitudine": 40.673800,
+      "longitudine": 17.92048,
       "telefono": "0586 623700",
       "fax": null,
-      "email": "nucleo.eli.li@vigilfuoco.it"
+      "email": "nucleo.eli.li@vigilfuoco.it",
+      "indirizzo": "Via Maestri del Lavoro"
     },
     {
       "nome": "Reparto Volo VVF Catania",
@@ -120,35 +131,39 @@
       "longitudine": 15.060185,
       "telefono": "095 348179",
       "fax": "095 348179",
-      "email": "nucleo.eli.ct@vigilfuoco.it"
+      "email": "nucleo.eli.ct@vigilfuoco.it",
+      "indirizzo": "Via Amelia Earhart"
     },
     {
       "nome": "Reparto Volo VVF Sassari",
       "citta": "Sassari (Alghero-Fertilia)",
-      "latitudine": 40.6321,
-      "longitudine": 8.2908,
+      "latitudine": 40.633483,
+      "longitudine": 8.295550,
       "telefono": "079 935030",
       "fax": null,
-      "email": "nucleo.eli.ss@vigilfuoco.it"
+      "email": "nucleo.eli.ss@vigilfuoco.it",
+      "indirizzo": "Via dell'Aeroporto di Fertilia"
     },
     {
       "nome": "Reparto Volo VVF Malpensa",
       "citta": "Somma Lombardo (Varese)",
-      "latitudine": 45.6306,
-      "longitudine": 8.7231,
+      "latitudine": 45.618815,
+      "longitudine": 8.742236,
       "telefono": "0331 241653",
       "fax": null,
-      "email": "nucleo.eli.va@vigilfuoco.it"
+      "email": "nucleo.eli.va@vigilfuoco.it",
+      "indirizzo": "Aeroporto di Malpensa"
     },
     {
       "nome": "Reparto Volo VVF Rieti",
       "citta": "Rieti",
-      "latitudine": 42.4267,
-      "longitudine": 12.85,
+      "latitudine": 42.423610,
+      "longitudine": 12.855950,
       "telefono": null,
       "fax": null,
       "email": "nucleo.eli.ri@vigilfuoco.it",
-      "note": "Recapiti diretti non pubblicati sul sito ufficiale; secondo fonti sindacali del settore la sede ha avuto vicende organizzative incerte negli ultimi anni"
+      "note": "Recapiti diretti non pubblicati sul sito ufficiale; secondo fonti sindacali del settore la sede ha avuto vicende organizzative incerte negli ultimi anni",
+      "indirizzo": ""
     }
   ]
 }
