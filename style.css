@@ -1849,7 +1849,6 @@ html.comando-gia-scelto #modal-comando {
    select e pulsanti partono tutti dalla stessa linea verticale */
 .coord-mappa-controlli .msg-campo label {
     display: block;
-    min-height: 28px;
 }
 
 .coord-mappa-controlli-percorso-attivo {
