@@ -429,22 +429,149 @@ document.addEventListener("DOMContentLoaded", () => {
         return "Toponimo non disponibile";
     }
 
-    // Geocoding diretto (indirizzo → coordinate), stesso servizio Nominatim
-    // già usato per il geocoding inverso. Nessuna chiave richiesta.
-    async function geocodificaIndirizzo(via, comune) {
-        if (!via && !comune) return null;
+    // ==========================================================
+    // GEOCODING DIRETTO (indirizzo → coordinate)
+    // Stesso servizio Nominatim del geocoding inverso, nessuna chiave.
+    //
+    // La ricerca "strutturata" (street=/city=) di Nominatim è rigidissima:
+    // pretende una corrispondenza quasi letterale e sugli indirizzi italiani
+    // ("Via Roma 97" con il civico in coda) fallisce spesso o restituisce il
+    // centro del comune sbagliato. Qui si usa invece una CASCATA di tentativi
+    // in query libera, con verifica che il risultato ricada davvero nel comune
+    // richiesto e con l'indicazione esplicita del livello di precisione
+    // raggiunto (civico / via / solo comune).
+    // ==========================================================
+    const PAUSA_TENTATIVI_MS = 1100; // Nominatim: max 1 richiesta al secondo
 
-        const parametri = new URLSearchParams({ format: "jsonv2", limit: "1", countrycodes: "it" });
-        if (via) parametri.set("street", via);
-        if (comune) parametri.set("city", comune);
+    function attendi(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-        const url = `https://nominatim.openstreetmap.org/search?${parametri.toString()}`;
-        const risposta = await fetch(url);
+    // Confronto "tollerante": ignora maiuscole, accenti e punteggiatura, così
+    // "Forlì" == "forli" e "Sant'Angelo" == "sant angelo"
+    function normalizzaConfronto(testo) {
+        return (testo || "")
+            .toLowerCase()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-z0-9]+/g, " ")
+            .trim();
+    }
+
+    function comuneDelRisultato(risultato) {
+        const a = risultato.address || {};
+        return a.city || a.town || a.village || a.municipality || a.hamlet || "";
+    }
+
+    // Scarta i risultati che Nominatim restituisce in un comune diverso da
+    // quello scelto: è il caso classico delle vie omonime (una "Via Roma"
+    // esiste praticamente in ogni comune d'Italia).
+    function risultatoNelComune(risultato, comune) {
+        if (!comune) return true;
+        const atteso = normalizzaConfronto(comune);
+        if (!atteso) return true;
+        const a = risultato.address || {};
+        const candidati = [a.city, a.town, a.village, a.municipality, a.hamlet, a.suburb, a.city_district]
+            .filter(Boolean).map(normalizzaConfronto);
+        if (candidati.includes(atteso)) return true;
+        // Frazioni e località minori: il comune compare comunque nel display_name
+        return ` ${normalizzaConfronto(risultato.display_name)} `.includes(` ${atteso} `);
+    }
+
+    function precisioneRisultato(risultato) {
+        const a = risultato.address || {};
+        if (a.house_number) return "civico";
+        if (a.road) return "via";
+        return "comune";
+    }
+
+    // Estrae il numero civico dall'indirizzo digitato ("Via Roma 97" → "97"),
+    // sia in coda (uso italiano) sia in testa (uso anglosassone)
+    function separaViaECivico(via) {
+        const testo = (via || "").trim();
+        const inCoda = testo.match(/^(.*?)[\s,]+(\d+[a-zA-Z]?(?:\s*\/\s*[a-zA-Z0-9]+)?)$/);
+        if (inCoda) return { strada: inCoda[1].trim(), civico: inCoda[2].replace(/\s+/g, "") };
+        const inTesta = testo.match(/^(\d+[a-zA-Z]?)[\s,]+(.*)$/);
+        if (inTesta) return { strada: inTesta[2].trim(), civico: inTesta[1] };
+        return { strada: testo, civico: "" };
+    }
+
+    async function interrogaNominatim(parametriRicerca) {
+        const parametri = new URLSearchParams({
+            format: "jsonv2",
+            limit: "10",
+            countrycodes: "it",
+            addressdetails: "1",
+            "accept-language": "it",
+        });
+        Object.entries(parametriRicerca).forEach(([k, v]) => { if (v) parametri.set(k, v); });
+
+        const risposta = await fetch(`https://nominatim.openstreetmap.org/search?${parametri.toString()}`);
         if (!risposta.ok) throw new Error("HTTP " + risposta.status);
         const dati = await risposta.json();
-        if (!Array.isArray(dati) || dati.length === 0) return null;
+        return Array.isArray(dati) ? dati : [];
+    }
 
-        return { lat: parseFloat(dati[0].lat), lon: parseFloat(dati[0].lon) };
+    async function geocodificaIndirizzo(via, comune, sigla) {
+        if (!via && !comune) return null;
+
+        const { strada, civico } = separaViaECivico(via);
+        const codaComune = [comune, sigla, "Italia"].filter(Boolean).join(", ");
+
+        // Ordine dei tentativi: dal più preciso al più generico. Ci si ferma
+        // al primo che produce un risultato dentro il comune richiesto.
+        const tentativi = [];
+        if (via && comune) {
+            tentativi.push({ q: `${via}, ${codaComune}` });
+            if (civico) tentativi.push({ q: `${strada} ${civico}, ${codaComune}` });
+            tentativi.push({ street: civico ? `${civico} ${strada}` : strada, city: comune });
+            if (civico) tentativi.push({ q: `${strada}, ${codaComune}` });
+        } else if (via) {
+            tentativi.push({ q: `${via}, Italia` });
+        }
+        if (comune) tentativi.push({ q: codaComune });
+
+        let primoTentativo = true;
+        for (const tentativo of tentativi) {
+            if (!primoTentativo) await attendi(PAUSA_TENTATIVI_MS);
+            primoTentativo = false;
+
+            let risultati = [];
+            try {
+                risultati = await interrogaNominatim(tentativo);
+            } catch (err) {
+                console.error("Geocoding: tentativo fallito", tentativo, err);
+                continue;
+            }
+
+            const validi = risultati.filter(r => risultatoNelComune(r, comune));
+            if (validi.length === 0) continue;
+
+            // A parità di comune si preferisce il risultato più preciso
+            const ordine = { civico: 0, via: 1, comune: 2 };
+            validi.sort((a, b) => ordine[precisioneRisultato(a)] - ordine[precisioneRisultato(b)]);
+            const scelto = validi[0];
+
+            return {
+                lat: parseFloat(scelto.lat),
+                lon: parseFloat(scelto.lon),
+                precisione: precisioneRisultato(scelto),
+                civicoRichiesto: civico,
+                comuneTrovato: comuneDelRisultato(scelto),
+                indirizzoTrovato: scelto.display_name || "",
+                alternative: validi.length - 1,
+            };
+        }
+
+        return null;
+    }
+
+    // Legge comune e sigla provinciale dalla combo: il campo nascosto contiene
+    // la sola denominazione, mentre il testo visibile è "Forlì (FC)". La sigla
+    // è decisiva per disambiguare i comuni omonimi.
+    function comuneEProvinciaSelezionati() {
+        const nascosto = (document.getElementById("coord-indirizzo-comune")?.value || "").trim();
+        const visibile = (document.getElementById("coord-indirizzo-comune-input")?.value || "").trim();
+        const conSigla = visibile.match(/\(([A-Za-z]{2})\)\s*$/);
+        const comune = nascosto || visibile.replace(/\s*\([^)]*\)\s*$/, "").trim();
+        return { comune, sigla: conSigla ? conSigla[1].toUpperCase() : "" };
     }
 
     // ==========================================================
@@ -752,7 +879,58 @@ if (contenitoreFormCoord) {
         elErrore.style.display = "block";
         if (elRisultati) elRisultati.style.display = "none";
     }
-    function nascondiErrore() { if (elErrore) elErrore.style.display = "none"; }
+    function nascondiErrore() {
+        if (elErrore) elErrore.style.display = "none";
+        nascondiAvvisoIndirizzo();
+    }
+
+    // Riquadro di esito del geocoding: non è un errore (i risultati restano
+    // visibili), serve a far verificare all'operatore COSA è stato trovato
+    // davvero, perché un punto approssimato al centro del comune è molto
+    // diverso da un civico esatto. Creato al volo: nessuna modifica all'HTML.
+    function elementoAvvisoIndirizzo() {
+        let el = document.getElementById("coord-avviso-indirizzo");
+        if (!el) {
+            if (!elErrore) return null;
+            el = document.createElement("p");
+            el.id = "coord-avviso-indirizzo";
+            el.className = "pagina-nota";
+            el.style.display = "none";
+            el.style.textAlign = "left";
+            elErrore.insertAdjacentElement("afterend", el);
+        }
+        return el;
+    }
+
+    function nascondiAvvisoIndirizzo() {
+        const el = document.getElementById("coord-avviso-indirizzo");
+        if (el) el.style.display = "none";
+    }
+
+    function mostraEsitoIndirizzo(risultato) {
+        const el = elementoAvvisoIndirizzo();
+        if (!el || !risultato) return;
+
+        let icona = "✅";
+        let colore = "var(--text-muted, #9aa0a6)";
+        let titolo = "Civico trovato";
+
+        if (risultato.precisione === "via") {
+            icona = "⚠️";
+            colore = "#ffd700";
+            titolo = risultato.civicoRichiesto
+                ? `Civico ${risultato.civicoRichiesto} non presente in OpenStreetMap: punto posizionato sulla via`
+                : "Punto posizionato sulla via";
+        } else if (risultato.precisione === "comune") {
+            icona = "⚠️";
+            colore = "#ffd700";
+            titolo = "Indirizzo non trovato: punto approssimato al centro del comune — verifica prima di inviarlo alle squadre";
+        }
+
+        el.style.color = colore;
+        el.innerHTML = `${icona} <strong>${titolo}</strong><br>${risultato.indirizzoTrovato}`;
+        el.style.display = "block";
+    }
 
     function leggiCoordinateSelezionate() {
         const formato = selectFormato ? selectFormato.value : "dd";
@@ -1447,31 +1625,51 @@ function disegnaGraficoAltimetria(geojson) {
             }
             let coordinate = null;
 
+            let esitoIndirizzo = null;
+
             if (formatoScelto === "indirizzo") {
                 const via = (document.getElementById("coord-indirizzo-via").value || "").trim();
-                const comune = (document.getElementById("coord-indirizzo-comune").value || "").trim();
+                const { comune, sigla } = comuneEProvinciaSelezionati();
 
                 if (!via && !comune) {
                     mostraErrore("Inserisci almeno indirizzo o comune.");
                     return;
                 }
+
+                // La cascata di tentativi può durare qualche secondo: il
+                // pulsante lo dice, invece di sembrare bloccato
+                const testoOriginaleBottone = btnConverti.textContent;
+                btnConverti.disabled = true;
+                btnConverti.textContent = "🔎 Ricerca indirizzo in corso…";
                 try {
-                    coordinate = await geocodificaIndirizzo(via, comune);
+                    esitoIndirizzo = await geocodificaIndirizzo(via, comune, sigla);
                 } catch (err) {
                     console.error("Geocoding indirizzo non disponibile:", err);
                     mostraErrore("Servizio di geocoding non raggiungibile al momento.");
                     return;
+                } finally {
+                    btnConverti.disabled = false;
+                    btnConverti.textContent = testoOriginaleBottone;
+                    aggiornaBottoneConverti();
                 }
-                if (!coordinate) {
-                    mostraErrore("Indirizzo non trovato. Prova a essere più specifico.");
+
+                if (!esitoIndirizzo) {
+                    mostraErrore(comune
+                        ? `Nessun risultato per "${via || comune}" nel comune di ${comune}. Controlla il nome della via, oppure prova senza numero civico.`
+                        : "Indirizzo non trovato. Prova a essere più specifico.");
                     return;
                 }
+                coordinate = { lat: esitoIndirizzo.lat, lon: esitoIndirizzo.lon };
             } else {
                 coordinate = leggiCoordinateSelezionate();
                 if (!coordinate) return;
             }
 
             await elaboraCoordinateConvertite(coordinate.lat, coordinate.lon);
+
+            // Dopo il rendering, perché elaboraCoordinateConvertite() azzera
+            // errori e avvisi all'inizio
+            if (esitoIndirizzo) mostraEsitoIndirizzo(esitoIndirizzo);
         });
     }
 
