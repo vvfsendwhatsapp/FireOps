@@ -1199,7 +1199,7 @@ document.addEventListener("fireops:comando-attivo-cambiato", (e) => {
         if (btnPercorso) btnPercorso.classList.remove("attivo");
         if (contenitoreControlliPercorsoAttivo) contenitoreControlliPercorsoAttivo.classList.remove("visibile");
         if (elInfoPercorso) elInfoPercorso.textContent = "";
-        if (btnScaricaKml) btnScaricaKml.disabled = true;
+        abilitaEsportazioni(false);
 
         nascondiGraficoAltimetria("");
         aggiornaOverlayPercorso(null, null);
@@ -1254,6 +1254,7 @@ document.addEventListener("fireops:comando-attivo-cambiato", (e) => {
     const elInfoPercorso = document.getElementById("coord-percorso-info");
     const selectProfiloPercorso = document.getElementById("coord-profilo-percorso");
     const btnScaricaKml = document.getElementById("btn-coord-scarica-kml");
+    const btnScaricaGpx = document.getElementById("btn-coord-scarica-gpx");
 
     function distanzaKmHaversine(lat1, lon1, lat2, lon2) {
         const R = 6371;
@@ -1361,7 +1362,7 @@ async function disegnaLineaDiretta(latPartenza, lonPartenza, latArrivo, lonArriv
             geometry: { type: "LineString", coordinates: [[lonPartenza, latPartenza], [lonArrivo, latArrivo]] },
         }],
     };
-    if (btnScaricaKml) btnScaricaKml.disabled = false;
+    abilitaEsportazioni(true);
 
     nascondiGraficoAltimetria("Linea diretta: nessun profilo altimetrico (è una distanza in linea d'aria, non un percorso reale).");
     if (elInfoPercorso) elInfoPercorso.textContent = `Linea diretta — ${distanzaAriaKm.toFixed(2)} km — Azimut ${Math.round(azimut)}°. Trascina la freccia gialla per spostare la squadra e ricalcolare.`;
@@ -1426,7 +1427,7 @@ function disegnaMarkerPartenza(lat, lon, azimut) {
 
     if (elInfoPercorso) elInfoPercorso.textContent = "Calcolo percorso in corso…";
     aggiornaOverlayPercorso(null, { azimut, distanzaAriaKm, lineaDiretta: profilo === "linea-diretta" });
-    if (btnScaricaKml) btnScaricaKml.disabled = true;
+    abilitaEsportazioni(false);
 
     if (profilo === "linea-diretta") {
         const quote = await promessaQuote;
@@ -1465,7 +1466,7 @@ function disegnaMarkerPartenza(lat, lon, azimut) {
             if (!Number.isNaN(tempoS)) testoInfo += ` — circa ${Math.round(tempoS / 60)} min`;
             testoInfo += ". Trascina la freccia gialla per spostare la squadra e ricalcolare.";
             if (elInfoPercorso) elInfoPercorso.textContent = testoInfo;
-            if (btnScaricaKml) btnScaricaKml.disabled = false;
+            abilitaEsportazioni(true);
         } catch (err) {
             console.error("Errore routing BRouter:", err);
             ultimoGeojsonPercorso = null;
@@ -1531,8 +1532,13 @@ if (btnPercorso) {
         btnAnnullaPercorso.addEventListener("click", () => azzeraPercorso({ mantieniTipologia: true }));
     }
 
+    function coordinatePercorso(geojson) {
+        return (geojson && geojson.features && geojson.features[0]
+            && geojson.features[0].geometry && geojson.features[0].geometry.coordinates) || [];
+    }
+
     function costruisciKml(geojson, nomePercorso) {
-        const coords = (geojson.features && geojson.features[0] && geojson.features[0].geometry && geojson.features[0].geometry.coordinates) || [];
+        const coords = coordinatePercorso(geojson);
         const coordinateTesto = coords.map(c => `${c[0]},${c[1]},${c[2] || 0}`).join(" ");
         return `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
@@ -1550,20 +1556,92 @@ if (btnPercorso) {
 </kml>`;
     }
 
+    // GPX 1.1: è il formato che digeriscono i GPS da montagna (Garmin), le
+    // app di navigazione outdoor e i software di soccorso. A differenza del
+    // KML include anche i due waypoint (squadra e target), utili sul campo
+    // anche quando la traccia non serve.
+    function costruisciGpx(geojson, nomePercorso) {
+        const coords = coordinatePercorso(geojson);
+        const istante = new Date().toISOString();
+
+        const puntiTraccia = coords.map(c => {
+            const quota = (c.length >= 3 && !Number.isNaN(parseFloat(c[2])))
+                ? `<ele>${parseFloat(c[2]).toFixed(1)}</ele>`
+                : "";
+            return `      <trkpt lat="${c[1]}" lon="${c[0]}">${quota}</trkpt>`;
+        }).join("\n");
+
+        const waypoint = [];
+        if (ultimoPuntoPartenza) {
+            waypoint.push(`  <wpt lat="${ultimoPuntoPartenza.lat}" lon="${ultimoPuntoPartenza.lon}">
+    <name>Squadra VF</name>
+    <sym>Flag, Blue</sym>
+  </wpt>`);
+        }
+        if (coordinateTargetCorrenti) {
+            waypoint.push(`  <wpt lat="${coordinateTargetCorrenti.lat}" lon="${coordinateTargetCorrenti.lon}">
+    <name>Target intervento</name>
+    <sym>Danger Area</sym>
+  </wpt>`);
+        }
+
+        return `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="FireOps VVF" xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+  <metadata>
+    <name>${nomePercorso}</name>
+    <time>${istante}</time>
+  </metadata>
+${waypoint.join("\n")}
+  <trk>
+    <name>${nomePercorso}</name>
+    <trkseg>
+${puntiTraccia}
+    </trkseg>
+  </trk>
+</gpx>`;
+    }
+
+    function scaricaFile(nomeFile, contenuto, tipoMime) {
+        const blob = new Blob([contenuto], { type: tipoMime });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = nomeFile;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    // I due formati si abilitano e disabilitano sempre insieme: esiste un
+    // percorso esportabile, oppure non esiste per nessuno dei due
+    function abilitaEsportazioni(abilitate) {
+        [btnScaricaKml, btnScaricaGpx].forEach(btn => { if (btn) btn.disabled = !abilitate; });
+    }
+
     if (btnScaricaKml) {
-        btnScaricaKml.disabled = true;
         btnScaricaKml.addEventListener("click", () => {
             if (!ultimoGeojsonPercorso) return;
-            const kml = costruisciKml(ultimoGeojsonPercorso, "Percorso FireOps VVF");
-            const blob = new Blob([kml], { type: "application/vnd.google-earth.kml+xml" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "percorso-fireops.kml";
-            a.click();
-            URL.revokeObjectURL(url);
+            scaricaFile(
+                "percorso-fireops.kml",
+                costruisciKml(ultimoGeojsonPercorso, "Percorso FireOps VVF"),
+                "application/vnd.google-earth.kml+xml"
+            );
         });
     }
+
+    if (btnScaricaGpx) {
+        btnScaricaGpx.addEventListener("click", () => {
+            if (!ultimoGeojsonPercorso) return;
+            scaricaFile(
+                "percorso-fireops.gpx",
+                costruisciGpx(ultimoGeojsonPercorso, "Percorso FireOps VVF"),
+                "application/gpx+xml"
+            );
+        });
+    }
+
+    abilitaEsportazioni(false);
 
     // Grafico altimetria (canvas, nessuna libreria esterna). Dipende dal
     // fatto che BRouter includa la quota (terzo valore delle coordinate)
