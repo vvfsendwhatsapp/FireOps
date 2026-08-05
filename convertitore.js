@@ -863,6 +863,9 @@ function aggiornaBottoneConverti() {
                 if (el) el.style.display = chiave === selectFormato.value ? "block" : "none";
             });
             aggiornaBottoneConverti();
+            // Formato diverso = nuova ricerca: target, percorso e risultati
+            // della ricerca precedente non devono sopravvivere sulla mappa
+            azzeraConvertitore();
         });
     }
 
@@ -1174,6 +1177,62 @@ document.addEventListener("fireops:comando-attivo-cambiato", (e) => {
     applicaComandoAttivo(e.detail);
 });
 
+    // ==========================================================
+    // AZZERAMENTO. Due livelli:
+    //  - azzeraPercorso(): cancella solo percorso, freccia squadra e
+    //    altimetria. Usato a ogni nuova conversione, perché un percorso
+    //    calcolato verso il target PRECEDENTE non deve mai restare sullo
+    //    schermo insieme a coordinate nuove.
+    //  - azzeraConvertitore(): azzera anche il target, la tabella dei
+    //    risultati e riporta la mappa sul Comando. Usato al cambio del
+    //    formato in ingresso: si riparte da zero.
+    // ==========================================================
+    function azzeraPercorso({ mantieniTipologia = true } = {}) {
+        modalitaPercorsoAttiva = false;
+        ultimoPuntoPartenza = null;
+        ultimoGeojsonPercorso = null;
+
+        if (coordMappaLeaflet) {
+            if (coordLineaPercorso) { coordMappaLeaflet.removeLayer(coordLineaPercorso); coordLineaPercorso = null; }
+            if (coordMarkerPartenza) { coordMappaLeaflet.removeLayer(coordMarkerPartenza); coordMarkerPartenza = null; }
+        }
+        if (btnPercorso) btnPercorso.classList.remove("attivo");
+        if (contenitoreControlliPercorsoAttivo) contenitoreControlliPercorsoAttivo.classList.remove("visibile");
+        if (elInfoPercorso) elInfoPercorso.textContent = "";
+        if (btnScaricaKml) btnScaricaKml.disabled = true;
+
+        nascondiGraficoAltimetria("");
+        aggiornaOverlayPercorso(null, null);
+
+        if (!mantieniTipologia && selectProfiloPercorso) selectProfiloPercorso.value = "";
+        aggiornaStatoBottonePercorso();
+    }
+
+    function azzeraConvertitore() {
+        azzeraPercorso({ mantieniTipologia: false });
+
+        coordinateTargetCorrenti = null;
+        if (coordMappaLeaflet && coordMarkerTarget) {
+            coordMappaLeaflet.removeLayer(coordMarkerTarget);
+            coordMarkerTarget = null;
+        }
+
+        // Vista riportata sul Comando attivo, o sull'Italia se non c'è
+        if (coordMappaLeaflet) {
+            const coordComando = estraiCoordinateComando(comandoAttivoCache);
+            if (coordComando) coordMappaLeaflet.setView([coordComando.lat, coordComando.lon], ZOOM_INIZIALE_COMANDO);
+            else coordMappaLeaflet.setView([41.9, 12.5], 6);
+        }
+
+        if (elRisultati) elRisultati.style.display = "none";
+        const elDatiNotaVuota = document.getElementById("coord-dati-nota-vuota");
+        if (elDatiNotaVuota) elDatiNotaVuota.style.display = "block";
+
+        nascondiErrore();
+        aggiornaAnteprimaMessaggioCoordinate();
+        aggiornaStatoBottonePercorso();
+    }
+
     function centraMappaSulTarget(lat, lon) {
         assicuraMappaCoordInizializzata();
         if (!coordMappaLeaflet) return;
@@ -1469,20 +1528,7 @@ if (btnPercorso) {
 }
 
     if (btnAnnullaPercorso) {
-    btnAnnullaPercorso.addEventListener("click", () => {
-        modalitaPercorsoAttiva = false;
-        btnPercorso.classList.remove("attivo");
-        if (contenitoreControlliPercorsoAttivo) contenitoreControlliPercorsoAttivo.classList.remove("visibile");
-        if (coordLineaPercorso) { coordMappaLeaflet.removeLayer(coordLineaPercorso); coordLineaPercorso = null; }
-        if (coordMarkerPartenza) { coordMappaLeaflet.removeLayer(coordMarkerPartenza); coordMarkerPartenza = null; }
-            if (elInfoPercorso) elInfoPercorso.textContent = "";
-            ultimoGeojsonPercorso = null;
-            ultimoPuntoPartenza = null;
-            if (btnScaricaKml) btnScaricaKml.disabled = true;
-            nascondiGraficoAltimetria("");
-            aggiornaOverlayPercorso(null, null);
-            aggiornaStatoBottonePercorso();
-        });
+        btnAnnullaPercorso.addEventListener("click", () => azzeraPercorso({ mantieniTipologia: true }));
     }
 
     function costruisciKml(geojson, nomePercorso) {
@@ -1893,18 +1939,10 @@ function disegnaGraficoAltimetria(geojson) {
         centraMappaSulTarget(lat, lon);
         aggiornaAnteprimaMessaggioCoordinate();
 
-        modalitaPercorsoAttiva = false;
-        if (btnPercorso) btnPercorso.classList.remove("attivo");
-        if (contenitoreControlliPercorsoAttivo) contenitoreControlliPercorsoAttivo.classList.remove("visibile");
-        if (coordLineaPercorso && coordMappaLeaflet) { coordMappaLeaflet.removeLayer(coordLineaPercorso); coordLineaPercorso = null; }
-        if (coordMarkerPartenza && coordMappaLeaflet) { coordMappaLeaflet.removeLayer(coordMarkerPartenza); coordMarkerPartenza = null; }
-        if (elInfoPercorso) elInfoPercorso.textContent = "";
-        ultimoGeojsonPercorso = null;
-        ultimoPuntoPartenza = null;
-        if (btnScaricaKml) btnScaricaKml.disabled = true;
-        nascondiGraficoAltimetria("");
-        aggiornaOverlayPercorso(null, null);
-        aggiornaStatoBottonePercorso();
+        // Nuova conversione: il percorso calcolato verso il target precedente
+        // viene sempre cancellato (la tipologia scelta invece resta)
+        azzeraPercorso({ mantieniTipologia: true });
+
         const [toponimo, quota] = await Promise.all([
             geocodingInverso(lat, lon),
             recuperaQuota(lat, lon),
