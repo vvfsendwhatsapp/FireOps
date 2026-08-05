@@ -46,14 +46,65 @@
             background: var(--dark-color);
             border: 1px solid var(--border-color);
             border-radius: 6px;
-            padding: 14px;
-            margin-bottom: 14px;
+            margin-bottom: 10px;
+            overflow: hidden;
         }
 
-        .reparto-volo-scheda h4 {
+        /* Testata cliccabile: di default si vede solo questa riga */
+        .reparto-volo-testata {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            font-size: 14px;
+            font-weight: bold;
+            text-align: left;
+            padding: 12px 14px;
+            cursor: pointer;
+        }
+
+        .reparto-volo-testata:hover {
+            background: #232323;
+        }
+
+        .reparto-volo-testata .freccia {
             color: var(--primary-color);
-            font-size: 15px;
-            margin-bottom: 10px;
+            font-size: 11px;
+            flex-shrink: 0;
+        }
+
+        .reparto-volo-testata .nome {
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+
+        .reparto-volo-testata .distanza,
+        .reparto-volo-testata .azimut {
+            font-family: "Courier New", monospace;
+            flex-shrink: 0;
+        }
+
+        .reparto-volo-testata .distanza {
+            color: var(--primary-color);
+        }
+
+        /* Azimut in secondo piano rispetto alla distanza: è il dato di rotta,
+           non il criterio con cui i reparti sono ordinati */
+        .reparto-volo-testata .azimut {
+            color: var(--text-muted);
+        }
+
+        .reparto-volo-dettaglio {
+            display: none;
+            padding: 0 14px 14px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .reparto-volo-dettaglio.aperto {
+            display: block;
         }
 
         .reparto-volo-scheda h5 {
@@ -521,14 +572,14 @@
                                     </select>
                                 </div>
                                 <div class="msg-campo coord-mappa-azione-campo">
-                                    <label for="btn-coord-reparti-volo">Supporto aereo</label>
-                                    <button id="btn-coord-reparti-volo" class="btn-toggle-radar" type="button"
-                                        disabled>🚁 Reparti Volo più vicini</button>
-                                </div>
-                                <div class="msg-campo coord-mappa-azione-campo">
                                     <label for="btn-coord-percorso">Crea percorso</label>
                                     <button id="btn-coord-percorso" class="btn-toggle-radar" type="button"
                                         disabled>🧭 Attiva crea percorso</button>
+                                </div>
+                                <div class="msg-campo coord-mappa-azione-campo">
+                                    <label for="btn-coord-reparti-volo">Supporto aereo</label>
+                                    <button id="btn-coord-reparti-volo" class="btn-toggle-radar" type="button"
+                                        disabled>🚁 Reparti Volo più vicini</button>
                                 </div>
                             </div>
 

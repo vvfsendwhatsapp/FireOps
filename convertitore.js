@@ -1912,7 +1912,7 @@ function disegnaGraficoAltimetria(geojson) {
             voce.azimut = calcolaAzimut(voce.coord.lat, voce.coord.lon, latTarget, lonTarget);
         });
         conCoordinate.sort((a, b) => a.distanzaKm - b.distanzaKm);
-        const piuVicini = conCoordinate.slice(0, 2);
+        const piuVicini = conCoordinate.slice(0, 3);
 
         const quote = await recuperaQuoteMultiple([
             { lat: latTarget, lon: lonTarget },
@@ -1923,27 +1923,50 @@ function disegnaGraficoAltimetria(geojson) {
         const schede = piuVicini.map((voce, i) => {
             const quotaReparto = quote[i + 1];
             const dislivello = (quotaTarget !== null && quotaReparto !== null) ? quotaTarget - quotaReparto : null;
-            const etichetta = i === 0 ? "Più vicino" : "2º più vicino";
 
             return `<div class="reparto-volo-scheda">
-                <h4><span class="reparto-volo-distintivo">${etichetta}</span>${testoSicuro(nomeDelReparto(voce.record, i))}</h4>
-                <h5>Rotta verso il target</h5>
-                ${tabellaCalcoliReparto({
-                    distanzaKm: voce.distanzaKm,
-                    azimut: voce.azimut,
-                    quotaReparto,
-                    quotaTarget,
-                    dislivello,
-                })}
-                <h5>Dati del reparto</h5>
-                ${tabellaCampiRecord(voce.record)}
+                <button type="button" class="reparto-volo-testata" data-indice="${i}" aria-expanded="false">
+                    <span class="freccia">▶</span>
+                    <span class="reparto-volo-distintivo">${i + 1}º</span>
+                    <span class="nome">${testoSicuro(nomeDelReparto(voce.record, i))}</span>
+                    <span class="distanza">${voce.distanzaKm.toFixed(1)} km</span>
+                    <span class="azimut">Az ${String(Math.round(voce.azimut)).padStart(3, "0")}°</span>
+                </button>
+                <div class="reparto-volo-dettaglio" data-dettaglio="${i}">
+                    <h5>Rotta verso il target</h5>
+                    ${tabellaCalcoliReparto({
+                        distanzaKm: voce.distanzaKm,
+                        azimut: voce.azimut,
+                        quotaReparto,
+                        quotaTarget,
+                        dislivello,
+                    })}
+                    <h5>Dati del reparto</h5>
+                    ${tabellaCampiRecord(voce.record)}
+                </div>
             </div>`;
         }).join("");
 
         apriModaleRepartiVolo(`
             <p class="pagina-nota">Target: ${latTarget.toFixed(6)}, ${lonTarget.toFixed(6)} — confronto su ${conCoordinate.length} reparti con coordinate note.
-            Le distanze sono in linea d'aria (ortodromica), non tengono conto di rotte, spazi aerei o autonomia.</p>
+            Le distanze sono in linea d'aria (ortodromica), non tengono conto di rotte, spazi aerei o autonomia.
+            Clicca un reparto per aprirne i dati.</p>
             ${schede}`);
+    }
+
+    // Apertura/chiusura delle schede: un solo listener sul contenitore, così
+    // funziona anche sulle schede ricostruite a ogni nuova ricerca
+    if (contenutoRepartiVolo) {
+        contenutoRepartiVolo.addEventListener("click", (e) => {
+            const testata = e.target.closest(".reparto-volo-testata");
+            if (!testata) return;
+            const dettaglio = testata.parentElement.querySelector(".reparto-volo-dettaglio");
+            if (!dettaglio) return;
+            const aperto = dettaglio.classList.toggle("aperto");
+            testata.setAttribute("aria-expanded", aperto ? "true" : "false");
+            const freccia = testata.querySelector(".freccia");
+            if (freccia) freccia.textContent = aperto ? "▼" : "▶";
+        });
     }
 
     if (btnRepartiVolo) {
