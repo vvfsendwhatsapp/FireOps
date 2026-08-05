@@ -32,6 +32,16 @@
             min-height: 0;
         }
 
+        /* I pulsanti della riga controlli mappa cambiano etichetta (es. "Attiva
+           crea percorso" → "Clicca sulla mappa"): senza questo il testo più
+           lungo andava a capo e il pulsante cresceva in altezza, sfasando la
+           riga. Una riga sola sempre, con i puntini se lo spazio è poco. */
+        .coord-mappa-azione-campo .btn-toggle-radar {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
         /* Campi coordinate scomposti: input affiancati con il loro simbolo
            (gradi, primi, secondi) e la lettera N/E in coda alla riga */
         .coord-campi-riga {

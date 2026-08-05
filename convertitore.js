@@ -1296,7 +1296,7 @@ document.addEventListener("fireops:comando-attivo-cambiato", (e) => {
     // Il pulsante ha due stati: prima dice cosa fa, dopo il clic dice cosa
     // deve fare l'operatore
     const TESTO_PERCORSO_DA_ATTIVARE = "🧭 Attiva crea percorso";
-    const TESTO_PERCORSO_ATTIVO = "🧭 Clicca sulla mappa per calcolare il percorso";
+    const TESTO_PERCORSO_ATTIVO = "🧭 Clicca sulla mappa";
     const btnScaricaKml = document.getElementById("btn-coord-scarica-kml");
     const btnScaricaGpx = document.getElementById("btn-coord-scarica-gpx");
 
