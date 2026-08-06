@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Convertitore U.M. — FireOps VVF</title>
+<style>
+:root{
+  --bg:#0f1216;
+  --bg2:#161b22;
+  --bg3:#1c232c;
+  --line:#2a323d;
+  --txt:#e6edf3;
+  --txt2:#9aa7b4;
+  --rosso:#d32f2f;
+  --rosso2:#ff5a4d;
+  --giallo:#f2b705;
+  --ok:#2ea043;
+  --radius:10px;
+  --mono:"JetBrains Mono","SFMono-Regular",Consolas,"Liberation Mono",monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg);
+  color:var(--txt);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  font-size:14px;
+  line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:14px}
+
+/* ---------- header ---------- */
+.head{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 14px;margin-bottom:12px;
+  background:linear-gradient(180deg,var(--bg2),var(--bg));
+  border:1px solid var(--line);border-left:4px solid var(--rosso);
+  border-radius:var(--radius);
+}
+.head h1{font-size:17px;margin:0;font-weight:700;letter-spacing:.2px}
+.head .sub{font-size:11px;color:var(--txt2);text-transform:uppercase;letter-spacing:1.4px}
+.head .badge{
+  margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--txt2);
+  border:1px solid var(--line);border-radius:99px;padding:3px 10px;white-space:nowrap;
+}
+
+/* ---------- ricerca + categorie ---------- */
+.search{position:relative;margin-bottom:10px}
+.search input{
+  width:100%;padding:11px 13px 11px 38px;
+  background:var(--bg2);border:1px solid var(--line);border-radius:var(--radius);
+  color:var(--txt);font-size:14px;outline:none;
+}
+.search input:focus{border-color:var(--rosso);box-shadow:0 0 0 3px rgba(211,47,47,.15)}
+.search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:.5}
+
+.cats{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.cat{
+  background:var(--bg2);border:1px solid var(--line);color:var(--txt2);
+  padding:6px 11px;border-radius:99px;font-size:12.5px;cursor:pointer;
+  transition:.12s;white-space:nowrap;
+}
+.cat:hover{border-color:var(--rosso);color:var(--txt)}
+.cat.on{background:var(--rosso);border-color:var(--rosso);color:#fff;font-weight:600}
+.cat:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--rosso2);outline-offset:2px}
+
+/* ---------- pannello ---------- */
+.panel{background:var(--bg2);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+.panel h2{margin:0 0 2px;font-size:16px}
+.panel .base{font-size:11.5px;color:var(--txt2);font-family:var(--mono);margin-bottom:14px}
+
+.nota{
+  background:rgba(242,183,5,.08);border-left:3px solid var(--giallo);
+  padding:8px 11px;border-radius:6px;font-size:12.5px;color:#e8d9a8;margin-bottom:14px;
+}
+
+/* ---------- riga conversione ---------- */
+.io{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:end}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field label{font-size:11px;text-transform:uppercase;letter-spacing:.9px;color:var(--txt2)}
+.field input,.field select{
+  width:100%;padding:11px 12px;background:var(--bg3);border:1px solid var(--line);
+  border-radius:8px;color:var(--txt);font-size:15px;outline:none;font-family:var(--mono);
+}
+.field select{font-family:inherit;font-size:13.5px;cursor:pointer}
+.field input:focus,.field select:focus{border-color:var(--rosso)}
+.field input[readonly]{background:#11161c;color:var(--rosso2);font-weight:600;cursor:pointer}
+.swap{
+  background:var(--bg3);border:1px solid var(--line);color:var(--txt2);
+  width:40px;height:42px;border-radius:8px;cursor:pointer;font-size:16px;
+  display:flex;align-items:center;justify-content:center;transition:.15s;flex:none;
+}
+.swap:hover{border-color:var(--rosso);color:var(--rosso2);transform:rotate(180deg)}
+
+.quick{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.quick button{
+  background:transparent;border:1px dashed var(--line);color:var(--txt2);
+  border-radius:6px;padding:4px 9px;font-size:11.5px;cursor:pointer;font-family:var(--mono);
+}
+.quick button:hover{border-color:var(--rosso);color:var(--txt);border-style:solid}
+
+/* ---------- tabelle ---------- */
+.tblwrap{margin-top:16px;border:1px solid var(--line);border-radius:8px;overflow:auto;max-height:52vh}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{
+  position:sticky;top:0;background:var(--bg3);color:var(--txt2);
+  font-size:10.5px;text-transform:uppercase;letter-spacing:1px;
+  text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);z-index:1;
+}
+tbody td{padding:7px 10px;border-bottom:1px solid rgba(42,50,61,.5)}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:rgba(211,47,47,.07)}
+td.val{font-family:var(--mono);text-align:right;color:var(--rosso2);cursor:pointer;white-space:nowrap}
+td.sym{font-family:var(--mono);color:var(--txt2);white-space:nowrap}
+td.mono{font-family:var(--mono)}
+tr.hi td{background:rgba(211,47,47,.14)}
+
+/* ---------- griglia risultati (trig/cerchio/basi) ---------- */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;margin-top:14px}
+.card{background:var(--bg3);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.card .k{font-size:10.5px;text-transform:uppercase;letter-spacing:1px;color:var(--txt2)}
+.card .v{font-family:var(--mono);font-size:16px;color:var(--rosso2);margin-top:3px;word-break:break-all;cursor:pointer}
+.card.na .v{color:var(--txt2)}
+
+.sect{margin-top:20px;padding-top:16px;border-top:1px dashed var(--line)}
+.sect h3{margin:0 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:1.1px;color:var(--txt2)}
+
+.row2{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+
+textarea{
+  width:100%;min-height:70px;padding:10px 12px;background:var(--bg3);
+  border:1px solid var(--line);border-radius:8px;color:var(--txt);
+  font-family:var(--mono);font-size:13px;outline:none;resize:vertical;
+}
+textarea:focus{border-color:var(--rosso)}
+.morse-out{color:var(--giallo);letter-spacing:1px}
+
+.toast{
+  position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);
+  background:var(--ok);color:#fff;padding:9px 18px;border-radius:99px;font-size:13px;
+  font-weight:600;opacity:0;pointer-events:none;transition:.2s;z-index:99;
+}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.empty{color:var(--txt2);text-align:center;padding:26px;font-size:13px}
+
+@media (max-width:640px){
+  .wrap{padding:10px}
+  .io{grid-template-columns:1fr;gap:8px}
+  .swap{width:100%;transform:rotate(90deg)}
+  .swap:hover{transform:rotate(270deg)}
+  .head h1{font-size:15px}
+  .head .badge{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="head">
+    <div>
+      <div class="sub">FireOps VVF</div>
+      <h1>Convertitore unità di misura</h1>
+    </div>
+    <div class="badge" id="conteggio">—</div>
+  </header>
+
+  <div class="search">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>
+    </svg>
+    <input id="ricerca" type="search" placeholder="Cerca una categoria o un'unità (es. psi, nodo, l/min, kcal)…" autocomplete="off">
+  </div>
+
+  <div class="cats" id="cats"></div>
+  <div id="panel"></div>
+</div>
+
+<div class="toast" id="toast">Copiato</div>
+
+<script>
+"use strict";
+
+/* percorso del database unità — modificare qui se il JSON sta in una sottocartella (es. 'data/convertitore.json') */
+const DATA_URL = 'convertitore.json';
+
+const PANEL = document.getElementById('panel');
+const CATS  = document.getElementById('cats');
+const RIC   = document.getElementById('ricerca');
+let DB = null, cur = null;
+
+/* ============ utility ============ */
+function num(v){
+  if(typeof v !== 'string') return v;
+  v = v.trim().replace(/\s/g,'').replace(',','.');
+  if(v === '' || v === '-' || v === '.') return NaN;
+  return Number(v);
+}
+function fmt(x, prec){
+  if(x === null || x === undefined || Number.isNaN(x)) return '—';
+  if(!isFinite(x)) return (x > 0 ? '∞' : '−∞');
+  if(x === 0) return '0';
+  const a = Math.abs(x);
+  if(a >= 1e13 || a < 1e-6) return x.toExponential(6);
+  let s = x.toPrecision(prec || 12);
+  if(s.indexOf('e') > -1) return x.toExponential(6);
+  if(s.indexOf('.') > -1) s = s.replace(/0+$/,'').replace(/\.$/,'');
+  return s;
+}
+function copia(txt){
+  const done = () => { const t = document.getElementById('toast'); t.classList.add('on'); setTimeout(()=>t.classList.remove('on'), 1100); };
+  if(navigator.clipboard && window.isSecureContext){ navigator.clipboard.writeText(txt).then(done).catch(done); }
+  else{
+    const ta = document.createElement('textarea'); ta.value = txt; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); }catch(e){}
+    document.body.removeChild(ta); done();
+  }
+}
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-copy]');
+  if(t) copia(t.dataset.copy || t.textContent.trim());
+});
+function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function el(html){ const d = document.createElement('div'); d.innerHTML = html.trim(); return d.firstElementChild; }
+
+/* ============ avvio ============ */
+fetch(DATA_URL)
+  .then(r => { if(!r.ok) throw new Error(r.status); return r.json(); })
+  .then(d => { DB = d; init(); })
+  .catch(err => {
+    PANEL.innerHTML = '<div class="panel"><div class="nota">Impossibile caricare <b>convertitore.json</b>. '+
+      'Il file deve trovarsi nella stessa cartella di questa pagina e la pagina va aperta tramite un server '+
+      '(GitHub Pages oppure <code>python -m http.server</code>), non con doppio clic sul file.</div></div>';
+    console.error(err);
+  });
+
+function init(){
+  const tot = DB.categorie.reduce((s,c) => s + (c.unita ? c.unita.length : 0), 0);
+  document.getElementById('conteggio').textContent = DB.categorie.length + ' categorie · ' + tot + ' unità';
+  renderCats('');
+  apri(DB.categorie[0].id);
+  RIC.addEventListener('input', onSearch);
+}
+
+function renderCats(filtro){
+  const f = filtro.toLowerCase();
+  CATS.innerHTML = '';
+  DB.categorie.forEach(c => {
+    if(f && c.nome.toLowerCase().indexOf(f) === -1 && !unitaMatch(c,f)) return;
+    const b = el('<button class="cat' + (cur && cur.id === c.id ? ' on' : '') + '">' + esc(c.nome) + '</button>');
+    b.onclick = () => apri(c.id);
+    CATS.appendChild(b);
+  });
+  if(!CATS.children.length) CATS.appendChild(el('<div class="empty">Nessuna categoria trovata.</div>'));
+}
+function unitaMatch(c,f){
+  if(!c.unita) return false;
+  return c.unita.some(u => u.n.toLowerCase().indexOf(f) > -1 || u.s.toLowerCase().indexOf(f) > -1);
+}
+
+/* ricerca: se il testo corrisponde a un'unità, apre la categoria e la preseleziona */
+function onSearch(){
+  const f = RIC.value.trim().toLowerCase();
+  renderCats(f);
+  if(f.length < 2) return;
+  for(const c of DB.categorie){
+    if(!c.unita) continue;
+    const i = c.unita.findIndex(u => u.s.toLowerCase() === f || u.n.toLowerCase() === f);
+    if(i > -1){ apri(c.id, i); return; }
+  }
+  for(const c of DB.categorie){
+    if(!c.unita) continue;
+    const i = c.unita.findIndex(u => u.s.toLowerCase().indexOf(f) === 0 || u.n.toLowerCase().indexOf(f) === 0);
+    if(i > -1){ apri(c.id, i); return; }
+  }
+}
+
+function apri(id, unitaIdx){
+  cur = DB.categorie.find(c => c.id === id);
+  [...CATS.children].forEach(b => b.classList && b.classList.toggle('on', b.textContent === cur.nome));
+  const testa = '<div class="panel"><h2>' + esc(cur.nome) + '</h2>' +
+    (cur.base ? '<div class="base">unità di riferimento: ' + esc(cur.base) + '</div>' : '<div class="base"></div>') +
+    (cur.nota ? '<div class="nota">' + esc(cur.nota) + '</div>' : '');
+  PANEL.innerHTML = testa + '<div id="body"></div></div>';
+  const B = document.getElementById('body');
+  switch(cur.tipo){
+    case 'trig':      viewTrig(B); break;
+    case 'temperatura': viewTemp(B); break;
+    case 'basi':      viewBasi(B); break;
+    case 'cerchio':   viewCerchio(B); break;
+    case 'prefissi':  viewPrefissi(B); break;
+    case 'alfabeto':  viewAlfabeto(B); break;
+    default:          viewFattore(B, unitaIdx);
+  }
+}
+
+/* ============ 1. conversione per fattore ============ */
+function viewFattore(B, preIdx){
+  const u = cur.unita;
+  const opts = i => u.map((x,j) => '<option value="'+j+'"'+(j===i?' selected':'')+'>'+esc(x.n)+' ('+esc(x.s)+')</option>').join('');
+  const iDa = (preIdx !== undefined && preIdx !== null) ? preIdx : 0;
+  const iA  = iDa === 1 ? 0 : 1;
+
+  B.innerHTML =
+   '<div class="io">'+
+     '<div class="field"><label>Da</label><input id="vIn" type="text" inputmode="decimal" value="1"><select id="uIn">'+opts(iDa)+'</select></div>'+
+     '<button class="swap" id="swap" title="Inverti">⇄</button>'+
+     '<div class="field"><label>A</label><input id="vOut" type="text" readonly title="Clicca per copiare"><select id="uOut">'+opts(iA)+'</select></div>'+
+   '</div>'+
+   '<div class="quick" id="quick"></div>'+
+   '<div class="tblwrap"><table><thead><tr><th>Unità</th><th>Simbolo</th><th style="text-align:right">Valore</th></tr></thead><tbody id="tb"></tbody></table></div>';
+
+  const vIn = B.querySelector('#vIn'), uIn = B.querySelector('#uIn'),
+        vOut = B.querySelector('#vOut'), uOut = B.querySelector('#uOut'), tb = B.querySelector('#tb');
+
+  const quick = B.querySelector('#quick');
+  [1, 10, 100, 1000].forEach(n => {
+    const b = el('<button>'+n+'</button>'); b.onclick = () => { vIn.value = n; calc(); }; quick.appendChild(b);
+  });
+
+  function calc(){
+    const v = num(vIn.value);
+    const fIn = u[+uIn.value].f;
+    const base = v * fIn;
+    vOut.value = Number.isNaN(v) ? '' : fmt(base / u[+uOut.value].f);
+    vOut.dataset.copy = vOut.value;
+    tb.innerHTML = u.map((x,j) =>
+      '<tr class="'+(j==uOut.value?'hi':'')+'"><td>'+esc(x.n)+'</td><td class="sym">'+esc(x.s)+'</td>'+
+      '<td class="val" data-copy="'+(Number.isNaN(v)?'':fmt(base/x.f))+'">'+(Number.isNaN(v)?'—':fmt(base/x.f))+'</td></tr>'
+    ).join('');
+  }
+  vIn.addEventListener('input', calc);
+  uIn.addEventListener('change', calc);
+  uOut.addEventListener('change', calc);
+  B.querySelector('#swap').onclick = () => {
+    const a = uIn.value; uIn.value = uOut.value; uOut.value = a;
+    if(vOut.value) vIn.value = vOut.value;
+    calc();
+  };
+  tb.addEventListener('click', e => {
+    const tr = e.target.closest('tr'); if(!tr) return;
+    if(!e.target.classList.contains('val')){ uOut.value = [...tb.children].indexOf(tr); calc(); }
+  });
+  calc();
+  vIn.focus(); vIn.select();
+}
+
+/* ============ 2. trigonometria ============ */
+function viewTrig(B){
+  const toRad = { 'gradi': Math.PI/180, 'radianti': 1, 'gon': Math.PI/200, 'mil': 2*Math.PI/6400 };
+  B.innerHTML =
+   '<div class="row2">'+
+     '<div class="field"><label>Angolo</label><input id="ang" type="text" inputmode="decimal" value="30"></div>'+
+     '<div class="field"><label>Unità</label><select id="angU">'+
+       '<option value="gradi">Gradi (°)</option><option value="radianti">Radianti (rad)</option>'+
+       '<option value="gon">Gradi centesimali (gon)</option><option value="mil">Millesimi NATO (mil)</option>'+
+     '</select></div>'+
+   '</div>'+
+   '<div class="grid" id="gTrig"></div>'+
+   '<div class="sect"><h3>Funzioni inverse — da valore ad angolo</h3>'+
+     '<div class="row2"><div class="field"><label>Valore</label><input id="inv" type="text" inputmode="decimal" value="0.5"></div></div>'+
+     '<div class="grid" id="gInv"></div>'+
+   '</div>';
+
+  const ang = B.querySelector('#ang'), angU = B.querySelector('#angU'),
+        gT = B.querySelector('#gTrig'), inv = B.querySelector('#inv'), gI = B.querySelector('#gInv');
+
+  function card(k, v, na){ return '<div class="card'+(na?' na':'')+'"><div class="k">'+k+'</div><div class="v" data-copy="'+esc(v)+'">'+esc(v)+'</div></div>'; }
+
+  function calcT(){
+    const a = num(ang.value);
+    if(Number.isNaN(a)){ gT.innerHTML = '<div class="empty">Inserisci un angolo valido.</div>'; return; }
+    const r = a * toRad[angU.value];
+    const s = Math.sin(r), c = Math.cos(r);
+    const near0 = x => Math.abs(x) < 1e-12;
+    const t = near0(c) ? null : s/c;
+    const ct = near0(s) ? null : c/s;
+    const sec = near0(c) ? null : 1/c;
+    const csc = near0(s) ? null : 1/s;
+    const q = x => x === null ? 'non definito' : fmt(x, 10);
+    gT.innerHTML =
+      card('sin', fmt(s,10)) + card('cos', fmt(c,10)) +
+      card('tan', q(t), t===null) + card('cot', q(ct), ct===null) +
+      card('sec', q(sec), sec===null) + card('csc', q(csc), csc===null) +
+      card('Angolo in radianti', fmt(r,10)) +
+      card('Angolo in gradi', fmt(r*180/Math.PI,10)) +
+      card('Angolo in gon', fmt(r*200/Math.PI,10)) +
+      card('Angolo in mil NATO', fmt(r*6400/(2*Math.PI),10));
+  }
+  function calcI(){
+    const x = num(inv.value);
+    if(Number.isNaN(x)){ gI.innerHTML = '<div class="empty">Inserisci un valore valido.</div>'; return; }
+    const D = 180/Math.PI;
+    const dom  = Math.abs(x) <= 1;      /* dominio di arcsin / arccos */
+    const dom2 = Math.abs(x) >= 1;      /* dominio di arcsec / arccsc */
+    const asin = dom ? Math.asin(x) : null, acos = dom ? Math.acos(x) : null;
+    const atan = Math.atan(x);
+    const acot = Math.PI/2 - atan;
+    const asec = dom2 ? Math.acos(1/x) : null;
+    const acsc = dom2 ? Math.asin(1/x) : null;
+    const g = v => v === null ? 'fuori dominio' : fmt(v*D,10) + '°';
+    const r = v => v === null ? 'fuori dominio' : fmt(v,10);
+    gI.innerHTML =
+      card('arcsin (°)', g(asin), asin===null)   + card('arcsin (rad)', r(asin), asin===null) +
+      card('arccos (°)', g(acos), acos===null)   + card('arccos (rad)', r(acos), acos===null) +
+      card('arctan (°)', g(atan))                + card('arctan (rad)', r(atan)) +
+      card('arccot (°)', g(acot))                + card('arccot (rad)', r(acot)) +
+      card('arcsec (°)', g(asec), asec===null)   + card('arcsec (rad)', r(asec), asec===null) +
+      card('arccosec (°)', g(acsc), acsc===null) + card('arccosec (rad)', r(acsc), acsc===null);
+  }
+  ang.addEventListener('input', calcT); angU.addEventListener('change', calcT); inv.addEventListener('input', calcI);
+  calcT(); calcI();
+}
+
+/* ============ 2b. temperatura (conversione affine) ============ */
+function viewTemp(B){
+  const u = cur.unita;                 /* °C = v*k + o   →   v = (°C - o)/k */
+  const toC   = (v,x) => v * x.k + x.o;
+  const fromC = (c,x) => (c - x.o) / x.k;
+  const opts = i => u.map((x,j) => '<option value="'+j+'"'+(j===i?' selected':'')+'>'+esc(x.n)+' ('+esc(x.s)+')</option>').join('');
+
+  B.innerHTML =
+   '<div class="io">'+
+     '<div class="field"><label>Da</label><input id="tIn" type="text" inputmode="decimal" value="20"><select id="tU">'+opts(0)+'</select></div>'+
+     '<button class="swap" id="tSwap" title="Inverti">⇄</button>'+
+     '<div class="field"><label>A</label><input id="tOut" type="text" readonly title="Clicca per copiare"><select id="tU2">'+opts(2)+'</select></div>'+
+   '</div>'+
+   '<div class="quick" id="tQuick"></div>'+
+   '<div class="tblwrap"><table><thead><tr><th>Scala</th><th>Simbolo</th><th style="text-align:right">Valore</th></tr></thead><tbody id="tTb"></tbody></table></div>'+
+   '<div class="sect"><h3>Punti di riferimento (valori indicativi)</h3>'+
+     '<div class="tblwrap" style="max-height:34vh"><table><thead><tr><th>Riferimento</th><th style="text-align:right">°C</th><th style="text-align:right">°F</th><th style="text-align:right">K</th></tr></thead><tbody id="tRif"></tbody></table></div>'+
+   '</div>';
+
+  const tIn = B.querySelector('#tIn'), tU = B.querySelector('#tU'),
+        tOut = B.querySelector('#tOut'), tU2 = B.querySelector('#tU2'), tTb = B.querySelector('#tTb');
+
+  const q = B.querySelector('#tQuick');
+  [['0 °C',0],['20 °C',20],['37 °C',37],['100 °C',100],['600 °C',600]].forEach(([l,v]) => {
+    const b = el('<button>'+l+'</button>');
+    b.onclick = () => { tU.value = 0; tIn.value = v; calc(); };
+    q.appendChild(b);
+  });
+
+  function calc(){
+    const v = num(tIn.value);
+    const c = Number.isNaN(v) ? NaN : toC(v, u[+tU.value]);
+    tOut.value = Number.isNaN(c) ? '' : fmt(fromC(c, u[+tU2.value]), 10);
+    tOut.dataset.copy = tOut.value;
+    tTb.innerHTML = u.map((x,j) => {
+      const val = Number.isNaN(c) ? '—' : fmt(fromC(c,x), 10);
+      return '<tr class="'+(j==tU2.value?'hi':'')+'"><td>'+esc(x.n)+'</td><td class="sym">'+esc(x.s)+'</td>'+
+             '<td class="val" data-copy="'+(val==='—'?'':val)+'">'+val+'</td></tr>';
+    }).join('');
+  }
+  [tIn].forEach(x => x.addEventListener('input', calc));
+  [tU,tU2].forEach(x => x.addEventListener('change', calc));
+  B.querySelector('#tSwap').onclick = () => {
+    const a = tU.value; tU.value = tU2.value; tU2.value = a;
+    if(tOut.value) tIn.value = tOut.value;
+    calc();
+  };
+  tTb.addEventListener('click', e => {
+    const tr = e.target.closest('tr'); if(!tr) return;
+    if(!e.target.classList.contains('val')){ tU2.value = [...tTb.children].indexOf(tr); calc(); }
+  });
+
+  const rif = B.querySelector('#tRif');
+  rif.innerHTML = (cur.riferimenti || []).slice().sort((a,b) => a.v - b.v).map(r =>
+    '<tr><td>'+esc(r.d)+'</td>'+
+    '<td class="val" data-copy="'+r.v+'">'+fmt(r.v,8)+'</td>'+
+    '<td class="val" data-copy="'+(r.v*9/5+32)+'">'+fmt(r.v*9/5+32,8)+'</td>'+
+    '<td class="val" data-copy="'+(r.v+273.15)+'">'+fmt(r.v+273.15,8)+'</td></tr>').join('');
+
+  calc(); tIn.focus(); tIn.select();
+}
+
+/* ============ 3. hex / dec / bin ============ */
+function viewBasi(B){
+  B.innerHTML =
+   '<div class="row2">'+
+     '<div class="field"><label>Binario (base 2)</label><input id="b2" type="text" value="11111111" autocomplete="off"></div>'+
+     '<div class="field"><label>Ottale (base 8)</label><input id="b8" type="text" value="377" autocomplete="off"></div>'+
+     '<div class="field"><label>Decimale (base 10)</label><input id="b10" type="text" value="255" autocomplete="off"></div>'+
+     '<div class="field"><label>Esadecimale (base 16)</label><input id="b16" type="text" value="FF" autocomplete="off"></div>'+
+   '</div>'+
+   '<div class="grid" id="gB"></div>';
+
+  const f = {2:B.querySelector('#b2'), 8:B.querySelector('#b8'), 10:B.querySelector('#b10'), 16:B.querySelector('#b16')};
+  const gB = B.querySelector('#gB');
+  const ok = {2:/^[01]*$/, 8:/^[0-7]*$/, 10:/^[0-9]*$/, 16:/^[0-9a-fA-F]*$/};
+
+  function agg(n, src){
+    for(const b in f){ if(+b !== src) f[b].value = n.toString(+b).toUpperCase(); }
+    const bin = n.toString(2);
+    const pad = bin.padStart(Math.ceil(bin.length/8)*8, '0');
+    const grup = pad.match(/.{1,8}/g).join(' ');
+    const car = (n >= 32 && n <= 126) ? String.fromCharCode(n) : '—';
+    const card = (k,v) => '<div class="card"><div class="k">'+k+'</div><div class="v" data-copy="'+esc(v)+'">'+esc(v)+'</div></div>';
+    gB.innerHTML =
+      card('Byte (8 bit)', grup) +
+      card('Bit necessari', bin.length) +
+      card('Byte necessari', Math.ceil(bin.length/8)) +
+      card('Carattere ASCII', car) +
+      card('Notazione C/hex', '0x' + n.toString(16).toUpperCase()) +
+      card('Base 36', n.toString(36).toUpperCase());
+  }
+  for(const b in f){
+    const base = +b;
+    f[b].addEventListener('input', () => {
+      let v = f[b].value.trim().replace(/\s/g,'');
+      if(base === 16) v = v.replace(/^0[xX]/,'');
+      if(base === 2)  v = v.replace(/^0[bB]/,'');
+      if(!ok[base].test(v)){ f[b].style.borderColor = 'var(--rosso)'; return; }
+      f[b].style.borderColor = '';
+      if(v === ''){ gB.innerHTML = ''; return; }
+      const n = parseInt(v, base);
+      if(!Number.isSafeInteger(n)){ gB.innerHTML = '<div class="empty">Numero troppo grande (oltre 2⁵³).</div>'; return; }
+      agg(n, base);
+    });
+  }
+  agg(255, 10);
+}
+
+/* ============ 4. cerchio / sfera ============ */
+function viewCerchio(B){
+  const campi = [
+    ['r','Raggio (u)'], ['d','Diametro (u)'], ['C','Circonferenza (u)'],
+    ['A','Area cerchio (u²)'], ['S','Superficie sfera (u²)'], ['V','Volume sfera (u³)']
+  ];
+  B.innerHTML = '<div class="row2">' + campi.map(([k,l]) =>
+      '<div class="field"><label>'+l+'</label><input id="c_'+k+'" type="text" inputmode="decimal" autocomplete="off"></div>'
+    ).join('') + '</div>' +
+    '<div class="quick"><button id="pulisci">Pulisci tutto</button></div>';
+
+  const I = {}; campi.forEach(([k]) => I[k] = B.querySelector('#c_'+k));
+  const P = Math.PI;
+
+  function raggioDa(k, v){
+    switch(k){
+      case 'r': return v;
+      case 'd': return v/2;
+      case 'C': return v/(2*P);
+      case 'A': return v < 0 ? NaN : Math.sqrt(v/P);
+      case 'S': return v < 0 ? NaN : Math.sqrt(v/(4*P));
+      case 'V': return Math.cbrt(v*3/(4*P));
+    }
+  }
+  function agg(src){
+    const v = num(I[src].value);
+    if(Number.isNaN(v)){ campi.forEach(([k]) => { if(k !== src) I[k].value = ''; }); return; }
+    const r = raggioDa(src, v);
+    if(Number.isNaN(r)){ return; }
+    const out = { r:r, d:2*r, C:2*P*r, A:P*r*r, S:4*P*r*r, V:4/3*P*r*r*r };
+    campi.forEach(([k]) => { if(k !== src) I[k].value = fmt(out[k]); });
+  }
+  campi.forEach(([k]) => I[k].addEventListener('input', () => agg(k)));
+  B.querySelector('#pulisci').onclick = () => campi.forEach(([k]) => I[k].value = '');
+  I.r.value = '1'; agg('r');
+}
+
+/* ============ 5. prefissi SI ============ */
+function viewPrefissi(B){
+  const P = cur.dati;
+  const opts = i => P.map((p,j) => '<option value="'+j+'"'+(j===i?' selected':'')+'>'+esc(p.nome)+' ('+esc(p.simbolo)+') '+esc(p.potenza)+'</option>').join('');
+  B.innerHTML =
+   '<div class="io">'+
+     '<div class="field"><label>Da</label><input id="pv" type="text" inputmode="decimal" value="1"><select id="pDa">'+opts(P.findIndex(x=>x.fattore===1000))+'</select></div>'+
+     '<button class="swap" id="pSwap" title="Inverti">⇄</button>'+
+     '<div class="field"><label>A</label><input id="pr" type="text" readonly><select id="pA">'+opts(P.findIndex(x=>x.fattore===1))+'</select></div>'+
+   '</div>'+
+   '<div class="tblwrap"><table><thead><tr><th>Prefisso</th><th>Simbolo</th><th>Potenza</th><th style="text-align:right">Fattore</th></tr></thead><tbody>'+
+     P.map(p => '<tr><td>'+esc(p.nome)+'</td><td class="sym">'+esc(p.simbolo)+'</td><td class="mono">'+esc(p.potenza)+'</td>'+
+       '<td class="val" data-copy="'+p.fattore+'">'+(p.fattore>=1e-4&&p.fattore<1e5?p.fattore.toLocaleString('it-IT'):p.fattore.toExponential())+'</td></tr>').join('')+
+   '</tbody></table></div>';
+
+  const pv = B.querySelector('#pv'), pDa = B.querySelector('#pDa'), pr = B.querySelector('#pr'), pA = B.querySelector('#pA');
+  function calc(){
+    const v = num(pv.value);
+    pr.value = Number.isNaN(v) ? '' : fmt(v * P[+pDa.value].fattore / P[+pA.value].fattore);
+    pr.dataset.copy = pr.value;
+  }
+  [pv,pDa,pA].forEach(x => x.addEventListener('input', calc));
+  [pDa,pA].forEach(x => x.addEventListener('change', calc));
+  B.querySelector('#pSwap').onclick = () => { const a = pDa.value; pDa.value = pA.value; pA.value = a; if(pr.value) pv.value = pr.value; calc(); };
+  calc();
+}
+
+/* ============ 6. alfabeto fonetico + morse ============ */
+function viewAlfabeto(B){
+  const A = cur.dati;
+  B.innerHTML =
+   '<div class="sect" style="margin-top:0;padding-top:0;border:none">'+
+     '<h3>Compitazione — scrivi un testo</h3>'+
+     '<textarea id="txt" placeholder="Es. AB 123 CD">VVF</textarea>'+
+     '<div class="grid">'+
+       '<div class="card" style="grid-column:1/-1"><div class="k">Fonetico ICAO</div><div class="v" id="oIcao" style="font-size:14px"></div></div>'+
+       '<div class="card" style="grid-column:1/-1"><div class="k">Compitazione italiana</div><div class="v" id="oIta" style="font-size:14px"></div></div>'+
+       '<div class="card" style="grid-column:1/-1"><div class="k">Morse</div><div class="v morse-out" id="oMorse" style="font-size:14px"></div></div>'+
+     '</div>'+
+   '</div>'+
+   '<div class="sect"><h3>Tabella</h3>'+
+     '<div class="tblwrap"><table><thead><tr><th>Car.</th><th>Morse</th><th>Codice ICAO</th><th>Pronuncia ICAO</th><th>Italiano</th></tr></thead><tbody>'+
+       A.map(x => '<tr><td class="mono" style="color:var(--rosso2);font-weight:700">'+esc(x.lettera)+'</td>'+
+         '<td class="mono" style="color:var(--giallo);letter-spacing:2px">'+esc(x.morse)+'</td>'+
+         '<td>'+esc(x.icao)+'</td><td class="sym">'+esc(x.pronuncia||'—')+'</td><td>'+esc(x.italiano)+'</td></tr>').join('')+
+     '</tbody></table></div></div>';
+
+  const map = {}; A.forEach(x => map[x.lettera] = x);
+  const txt = B.querySelector('#txt');
+  function agg(){
+    const s = txt.value.toUpperCase();
+    const icao = [], ita = [], mor = [];
+    for(const ch of s){
+      if(ch === ' '){ icao.push('/'); ita.push('/'); mor.push('/'); continue; }
+      if(ch === '\n') continue;
+      const m = map[ch];
+      if(m){ icao.push(m.icao); ita.push(m.italiano); mor.push(m.morse); }
+      else { icao.push(ch); ita.push(ch); mor.push('?'); }
+    }
+    B.querySelector('#oIcao').textContent  = icao.join(' - ') || '—';
+    B.querySelector('#oIta').textContent   = ita.join(' - ')  || '—';
+    B.querySelector('#oMorse').textContent = mor.join('   ')  || '—';
+    ['oIcao','oIta','oMorse'].forEach(id => { const e = B.querySelector('#'+id); e.dataset.copy = e.textContent; });
+  }
+  txt.addEventListener('input', agg);
+  agg();
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,2646 @@
+{
+ "versione": "1.0",
+ "categorie": [
+  {
+   "id": "lunghezza",
+   "nome": "Lunghezza",
+   "tipo": "fattore",
+   "base": "m",
+   "unita": [
+    {
+     "n": "Metro",
+     "s": "m",
+     "f": 1
+    },
+    {
+     "n": "Chilometro",
+     "s": "km",
+     "f": 1000
+    },
+    {
+     "n": "Ettometro",
+     "s": "hm",
+     "f": 100
+    },
+    {
+     "n": "Decametro",
+     "s": "dam",
+     "f": 10
+    },
+    {
+     "n": "Decimetro",
+     "s": "dm",
+     "f": 0.1
+    },
+    {
+     "n": "Centimetro",
+     "s": "cm",
+     "f": 0.01
+    },
+    {
+     "n": "Millimetro",
+     "s": "mm",
+     "f": 0.001
+    },
+    {
+     "n": "Micrometro",
+     "s": "µm",
+     "f": 1e-06
+    },
+    {
+     "n": "Nanometro",
+     "s": "nm",
+     "f": 1e-09
+    },
+    {
+     "n": "Angstrom",
+     "s": "Å",
+     "f": 1e-10
+    },
+    {
+     "n": "Miglio terrestre",
+     "s": "mi",
+     "f": 1609.344
+    },
+    {
+     "n": "Miglio nautico",
+     "s": "nmi",
+     "f": 1852
+    },
+    {
+     "n": "Iarda",
+     "s": "yd",
+     "f": 0.9144
+    },
+    {
+     "n": "Piede",
+     "s": "ft",
+     "f": 0.3048
+    },
+    {
+     "n": "Pollice",
+     "s": "in",
+     "f": 0.0254
+    },
+    {
+     "n": "Mil (thou)",
+     "s": "mil",
+     "f": 2.54e-05
+    },
+    {
+     "n": "Braccio (fathom)",
+     "s": "ftm",
+     "f": 1.8288
+    },
+    {
+     "n": "Catena (chain)",
+     "s": "ch",
+     "f": 20.1168
+    },
+    {
+     "n": "Furlong",
+     "s": "fur",
+     "f": 201.168
+    },
+    {
+     "n": "Unità astronomica",
+     "s": "au",
+     "f": 149597870700.0
+    },
+    {
+     "n": "Anno luce",
+     "s": "ly",
+     "f": 9460730472580800.0
+    },
+    {
+     "n": "Parsec",
+     "s": "pc",
+     "f": 3.085677581491367e+16
+    }
+   ]
+  },
+  {
+   "id": "peso",
+   "nome": "Peso / Massa",
+   "tipo": "fattore",
+   "base": "kg",
+   "unita": [
+    {
+     "n": "Chilogrammo",
+     "s": "kg",
+     "f": 1
+    },
+    {
+     "n": "Ettogrammo",
+     "s": "hg",
+     "f": 0.1
+    },
+    {
+     "n": "Grammo",
+     "s": "g",
+     "f": 0.001
+    },
+    {
+     "n": "Milligrammo",
+     "s": "mg",
+     "f": 1e-06
+    },
+    {
+     "n": "Microgrammo",
+     "s": "µg",
+     "f": 1e-09
+    },
+    {
+     "n": "Tonnellata",
+     "s": "t",
+     "f": 1000
+    },
+    {
+     "n": "Quintale",
+     "s": "q",
+     "f": 100
+    },
+    {
+     "n": "Libbra",
+     "s": "lb",
+     "f": 0.45359237
+    },
+    {
+     "n": "Oncia",
+     "s": "oz",
+     "f": 0.028349523125
+    },
+    {
+     "n": "Oncia troy",
+     "s": "oz t",
+     "f": 0.0311034768
+    },
+    {
+     "n": "Stone",
+     "s": "st",
+     "f": 6.35029318
+    },
+    {
+     "n": "Grano",
+     "s": "gr",
+     "f": 6.479891e-05
+    },
+    {
+     "n": "Carato",
+     "s": "ct",
+     "f": 0.0002
+    },
+    {
+     "n": "Tonnellata corta (US)",
+     "s": "sh tn",
+     "f": 907.18474
+    },
+    {
+     "n": "Tonnellata lunga (UK)",
+     "s": "lg tn",
+     "f": 1016.0469088
+    },
+    {
+     "n": "Slug",
+     "s": "slug",
+     "f": 14.5939029372
+    },
+    {
+     "n": "Unità di massa atomica",
+     "s": "u",
+     "f": 1.6605390666e-27
+    }
+   ]
+  },
+  {
+   "id": "tempo",
+   "nome": "Tempo",
+   "tipo": "fattore",
+   "base": "s",
+   "unita": [
+    {
+     "n": "Secondo",
+     "s": "s",
+     "f": 1
+    },
+    {
+     "n": "Millisecondo",
+     "s": "ms",
+     "f": 0.001
+    },
+    {
+     "n": "Microsecondo",
+     "s": "µs",
+     "f": 1e-06
+    },
+    {
+     "n": "Nanosecondo",
+     "s": "ns",
+     "f": 1e-09
+    },
+    {
+     "n": "Minuto",
+     "s": "min",
+     "f": 60
+    },
+    {
+     "n": "Ora",
+     "s": "h",
+     "f": 3600
+    },
+    {
+     "n": "Giorno",
+     "s": "d",
+     "f": 86400
+    },
+    {
+     "n": "Settimana",
+     "s": "sett",
+     "f": 604800
+    },
+    {
+     "n": "Mese (30 gg)",
+     "s": "mese",
+     "f": 2592000
+    },
+    {
+     "n": "Anno (365 gg)",
+     "s": "anno",
+     "f": 31536000
+    },
+    {
+     "n": "Anno giuliano (365,25 gg)",
+     "s": "a",
+     "f": 31557600
+    },
+    {
+     "n": "Anno solare (tropico)",
+     "s": "a trop",
+     "f": 31556925.216
+    },
+    {
+     "n": "Decennio",
+     "s": "dec",
+     "f": 315576000
+    },
+    {
+     "n": "Secolo",
+     "s": "sec",
+     "f": 3155760000
+    }
+   ]
+  },
+  {
+   "id": "area",
+   "nome": "Area",
+   "tipo": "fattore",
+   "base": "m²",
+   "unita": [
+    {
+     "n": "Metro quadrato",
+     "s": "m²",
+     "f": 1
+    },
+    {
+     "n": "Chilometro quadrato",
+     "s": "km²",
+     "f": 1000000.0
+    },
+    {
+     "n": "Ettometro quadrato",
+     "s": "hm²",
+     "f": 10000.0
+    },
+    {
+     "n": "Decimetro quadrato",
+     "s": "dm²",
+     "f": 0.01
+    },
+    {
+     "n": "Centimetro quadrato",
+     "s": "cm²",
+     "f": 0.0001
+    },
+    {
+     "n": "Millimetro quadrato",
+     "s": "mm²",
+     "f": 1e-06
+    },
+    {
+     "n": "Ettaro",
+     "s": "ha",
+     "f": 10000
+    },
+    {
+     "n": "Ara",
+     "s": "a",
+     "f": 100
+    },
+    {
+     "n": "Centiara",
+     "s": "ca",
+     "f": 1
+    },
+    {
+     "n": "Miglio quadrato",
+     "s": "mi²",
+     "f": 2589988.110336
+    },
+    {
+     "n": "Acro",
+     "s": "ac",
+     "f": 4046.8564224
+    },
+    {
+     "n": "Iarda quadrata",
+     "s": "yd²",
+     "f": 0.83612736
+    },
+    {
+     "n": "Piede quadrato",
+     "s": "ft²",
+     "f": 0.09290304
+    },
+    {
+     "n": "Pollice quadrato",
+     "s": "in²",
+     "f": 0.00064516
+    },
+    {
+     "n": "Barn",
+     "s": "b",
+     "f": 1e-28
+    }
+   ]
+  },
+  {
+   "id": "volume",
+   "nome": "Volume",
+   "tipo": "fattore",
+   "base": "m³",
+   "unita": [
+    {
+     "n": "Metro cubo",
+     "s": "m³",
+     "f": 1
+    },
+    {
+     "n": "Litro",
+     "s": "l",
+     "f": 0.001
+    },
+    {
+     "n": "Ettolitro",
+     "s": "hl",
+     "f": 0.1
+    },
+    {
+     "n": "Decalitro",
+     "s": "dal",
+     "f": 0.01
+    },
+    {
+     "n": "Decilitro",
+     "s": "dl",
+     "f": 0.0001
+    },
+    {
+     "n": "Centilitro",
+     "s": "cl",
+     "f": 1e-05
+    },
+    {
+     "n": "Millilitro",
+     "s": "ml",
+     "f": 1e-06
+    },
+    {
+     "n": "Decimetro cubo",
+     "s": "dm³",
+     "f": 0.001
+    },
+    {
+     "n": "Centimetro cubo",
+     "s": "cm³",
+     "f": 1e-06
+    },
+    {
+     "n": "Millimetro cubo",
+     "s": "mm³",
+     "f": 1e-09
+    },
+    {
+     "n": "Piede cubo",
+     "s": "ft³",
+     "f": 0.028316846592
+    },
+    {
+     "n": "Pollice cubo",
+     "s": "in³",
+     "f": 1.6387064e-05
+    },
+    {
+     "n": "Iarda cuba",
+     "s": "yd³",
+     "f": 0.764554857984
+    },
+    {
+     "n": "Gallone (US)",
+     "s": "gal US",
+     "f": 0.003785411784
+    },
+    {
+     "n": "Gallone (UK)",
+     "s": "gal UK",
+     "f": 0.00454609
+    },
+    {
+     "n": "Quarto (US)",
+     "s": "qt US",
+     "f": 0.000946352946
+    },
+    {
+     "n": "Pinta (US)",
+     "s": "pt US",
+     "f": 0.000473176473
+    },
+    {
+     "n": "Pinta (UK)",
+     "s": "pt UK",
+     "f": 0.00056826125
+    },
+    {
+     "n": "Oncia fluida (US)",
+     "s": "fl oz US",
+     "f": 2.95735295625e-05
+    },
+    {
+     "n": "Oncia fluida (UK)",
+     "s": "fl oz UK",
+     "f": 2.84130625e-05
+    },
+    {
+     "n": "Barile di petrolio (US, 42 gal)",
+     "s": "bbl",
+     "f": 0.158987294928
+    },
+    {
+     "n": "Barile (UK, 36 gal imp)",
+     "s": "bbl UK",
+     "f": 0.16365924
+    }
+   ]
+  },
+  {
+   "id": "angolo",
+   "nome": "Angolo",
+   "tipo": "fattore",
+   "base": "rad",
+   "unita": [
+    {
+     "n": "Radiante",
+     "s": "rad",
+     "f": 1
+    },
+    {
+     "n": "Milliradiante",
+     "s": "mrad",
+     "f": 0.001
+    },
+    {
+     "n": "Grado sessagesimale",
+     "s": "°",
+     "f": 0.017453292519943295
+    },
+    {
+     "n": "Primo d'arco",
+     "s": "'",
+     "f": 0.0002908882086657216
+    },
+    {
+     "n": "Secondo d'arco",
+     "s": "\"",
+     "f": 4.84813681109536e-06
+    },
+    {
+     "n": "Grado centesimale (gon)",
+     "s": "gon",
+     "f": 0.015707963267948967
+    },
+    {
+     "n": "Millesimo NATO",
+     "s": "mil",
+     "f": 0.0009817477042468104
+    },
+    {
+     "n": "Quadrante",
+     "s": "quad",
+     "f": 1.5707963267948966
+    },
+    {
+     "n": "Giro (rivoluzione)",
+     "s": "giro",
+     "f": 6.283185307179586
+    }
+   ]
+  },
+  {
+   "id": "trigonometria",
+   "nome": "Trigonometria",
+   "tipo": "trig",
+   "nota": "Le funzioni inverse restituiscono il valore principale."
+  },
+  {
+   "id": "informatica",
+   "nome": "Informatica",
+   "tipo": "fattore",
+   "base": "B",
+   "unita": [
+    {
+     "n": "Bit",
+     "s": "bit",
+     "f": 0.125
+    },
+    {
+     "n": "Nibble",
+     "s": "nibble",
+     "f": 0.5
+    },
+    {
+     "n": "Byte",
+     "s": "B",
+     "f": 1
+    },
+    {
+     "n": "Kilobit",
+     "s": "kbit",
+     "f": 125
+    },
+    {
+     "n": "Megabit",
+     "s": "Mbit",
+     "f": 125000
+    },
+    {
+     "n": "Gigabit",
+     "s": "Gbit",
+     "f": 125000000.0
+    },
+    {
+     "n": "Kilobyte (10³)",
+     "s": "kB",
+     "f": 1000
+    },
+    {
+     "n": "Megabyte (10⁶)",
+     "s": "MB",
+     "f": 1000000.0
+    },
+    {
+     "n": "Gigabyte (10⁹)",
+     "s": "GB",
+     "f": 1000000000.0
+    },
+    {
+     "n": "Terabyte (10¹²)",
+     "s": "TB",
+     "f": 1000000000000.0
+    },
+    {
+     "n": "Petabyte (10¹⁵)",
+     "s": "PB",
+     "f": 1000000000000000.0
+    },
+    {
+     "n": "Kibibyte (2¹⁰)",
+     "s": "KiB",
+     "f": 1024
+    },
+    {
+     "n": "Mebibyte (2²⁰)",
+     "s": "MiB",
+     "f": 1048576
+    },
+    {
+     "n": "Gibibyte (2³⁰)",
+     "s": "GiB",
+     "f": 1073741824
+    },
+    {
+     "n": "Tebibyte (2⁴⁰)",
+     "s": "TiB",
+     "f": 1099511627776
+    },
+    {
+     "n": "Pebibyte (2⁵⁰)",
+     "s": "PiB",
+     "f": 1125899906842624
+    }
+   ],
+   "nota": "kB/MB/GB usano base 10; KiB/MiB/GiB usano base 2."
+  },
+  {
+   "id": "basi",
+   "nome": "Hex / Dec / Bin",
+   "tipo": "basi",
+   "nota": "Solo numeri interi non negativi. Modifica un campo: gli altri si aggiornano."
+  },
+  {
+   "id": "accelerazione",
+   "nome": "Accelerazione",
+   "tipo": "fattore",
+   "base": "m/s²",
+   "unita": [
+    {
+     "n": "Metro/secondo quadrato",
+     "s": "m/s²",
+     "f": 1
+    },
+    {
+     "n": "Centimetro/secondo quadrato (gal)",
+     "s": "cm/s²",
+     "f": 0.01
+    },
+    {
+     "n": "Chilometro/ora al secondo",
+     "s": "km/h/s",
+     "f": 0.2777777777777778
+    },
+    {
+     "n": "Accelerazione di gravita",
+     "s": "g",
+     "f": 9.80665
+    },
+    {
+     "n": "Piede/secondo quadrato",
+     "s": "ft/s²",
+     "f": 0.3048
+    },
+    {
+     "n": "Pollice/secondo quadrato",
+     "s": "in/s²",
+     "f": 0.0254
+    },
+    {
+     "n": "Miglio/ora al secondo",
+     "s": "mi/h/s",
+     "f": 0.44704
+    },
+    {
+     "n": "Nodo al secondo",
+     "s": "kn/s",
+     "f": 0.5144444444444445
+    }
+   ]
+  },
+  {
+   "id": "velocita",
+   "nome": "Velocità",
+   "tipo": "fattore",
+   "base": "m/s",
+   "unita": [
+    {
+     "n": "Metro/secondo",
+     "s": "m/s",
+     "f": 1
+    },
+    {
+     "n": "Chilometro/ora",
+     "s": "km/h",
+     "f": 0.2777777777777778
+    },
+    {
+     "n": "Chilometro/secondo",
+     "s": "km/s",
+     "f": 1000
+    },
+    {
+     "n": "Metro/minuto",
+     "s": "m/min",
+     "f": 0.016666666666666666
+    },
+    {
+     "n": "Centimetro/secondo",
+     "s": "cm/s",
+     "f": 0.01
+    },
+    {
+     "n": "Millimetro/secondo",
+     "s": "mm/s",
+     "f": 0.001
+    },
+    {
+     "n": "Nodo",
+     "s": "kn",
+     "f": 0.5144444444444445
+    },
+    {
+     "n": "Miglio/ora",
+     "s": "mph",
+     "f": 0.44704
+    },
+    {
+     "n": "Piede/secondo",
+     "s": "ft/s",
+     "f": 0.3048
+    },
+    {
+     "n": "Piede/minuto",
+     "s": "ft/min",
+     "f": 0.00508
+    },
+    {
+     "n": "Mach (aria 15 °C, s.l.m.)",
+     "s": "Ma",
+     "f": 340.29
+    },
+    {
+     "n": "Suono in acqua dolce (20 °C)",
+     "s": "c acqua",
+     "f": 1482
+    },
+    {
+     "n": "Velocità della luce",
+     "s": "c",
+     "f": 299792458
+    }
+   ]
+  },
+  {
+   "id": "velocita_angolare",
+   "nome": "Velocità angolare",
+   "tipo": "fattore",
+   "base": "rad/s",
+   "unita": [
+    {
+     "n": "Radiante/secondo",
+     "s": "rad/s",
+     "f": 1
+    },
+    {
+     "n": "Radiante/minuto",
+     "s": "rad/min",
+     "f": 0.016666666666666666
+    },
+    {
+     "n": "Grado/secondo",
+     "s": "°/s",
+     "f": 0.017453292519943295
+    },
+    {
+     "n": "Grado/minuto",
+     "s": "°/min",
+     "f": 0.0002908882086657216
+    },
+    {
+     "n": "Giri al secondo",
+     "s": "rps",
+     "f": 6.283185307179586
+    },
+    {
+     "n": "Giri al minuto",
+     "s": "rpm",
+     "f": 0.10471975511965977
+    },
+    {
+     "n": "Giri all'ora",
+     "s": "rph",
+     "f": 0.0017453292519943296
+    }
+   ]
+  },
+  {
+   "id": "densita",
+   "nome": "Densità",
+   "tipo": "fattore",
+   "base": "kg/m³",
+   "unita": [
+    {
+     "n": "Chilogrammo/metro cubo",
+     "s": "kg/m³",
+     "f": 1
+    },
+    {
+     "n": "Grammo/centimetro cubo",
+     "s": "g/cm³",
+     "f": 1000
+    },
+    {
+     "n": "Chilogrammo/litro",
+     "s": "kg/l",
+     "f": 1000
+    },
+    {
+     "n": "Grammo/litro",
+     "s": "g/l",
+     "f": 1
+    },
+    {
+     "n": "Grammo/millilitro",
+     "s": "g/ml",
+     "f": 1000
+    },
+    {
+     "n": "Milligrammo/litro",
+     "s": "mg/l",
+     "f": 0.001
+    },
+    {
+     "n": "Tonnellata/metro cubo",
+     "s": "t/m³",
+     "f": 1000
+    },
+    {
+     "n": "Libbra/piede cubo",
+     "s": "lb/ft³",
+     "f": 16.018463373960138
+    },
+    {
+     "n": "Libbra/pollice cubo",
+     "s": "lb/in³",
+     "f": 27679.90471020312
+    },
+    {
+     "n": "Oncia/pollice cubo",
+     "s": "oz/in³",
+     "f": 1729.9940443869716
+    },
+    {
+     "n": "Libbra/gallone (US)",
+     "s": "lb/gal US",
+     "f": 119.82642731165473
+    }
+   ]
+  },
+  {
+   "id": "volume_specifico",
+   "nome": "Volume specifico",
+   "tipo": "fattore",
+   "base": "m³/kg",
+   "unita": [
+    {
+     "n": "Metro cubo/chilogrammo",
+     "s": "m³/kg",
+     "f": 1
+    },
+    {
+     "n": "Centimetro cubo/grammo",
+     "s": "cm³/g",
+     "f": 0.001
+    },
+    {
+     "n": "Litro/chilogrammo",
+     "s": "l/kg",
+     "f": 0.001
+    },
+    {
+     "n": "Litro/grammo",
+     "s": "l/g",
+     "f": 1
+    },
+    {
+     "n": "Piede cubo/libbra",
+     "s": "ft³/lb",
+     "f": 0.06242796057614461
+    },
+    {
+     "n": "Pollice cubo/libbra",
+     "s": "in³/lb",
+     "f": 3.612728744916702e-05
+    },
+    {
+     "n": "Gallone (US)/libbra",
+     "s": "gal US/lb",
+     "f": 0.008345404452030816
+    }
+   ]
+  },
+  {
+   "id": "forza",
+   "nome": "Forza",
+   "tipo": "fattore",
+   "base": "N",
+   "unita": [
+    {
+     "n": "Newton",
+     "s": "N",
+     "f": 1
+    },
+    {
+     "n": "Kilonewton",
+     "s": "kN",
+     "f": 1000
+    },
+    {
+     "n": "Meganewton",
+     "s": "MN",
+     "f": 1000000.0
+    },
+    {
+     "n": "Millinewton",
+     "s": "mN",
+     "f": 0.001
+    },
+    {
+     "n": "Decanewton",
+     "s": "daN",
+     "f": 10
+    },
+    {
+     "n": "Dine",
+     "s": "dyn",
+     "f": 1e-05
+    },
+    {
+     "n": "Chilogrammo forza",
+     "s": "kgf",
+     "f": 9.80665
+    },
+    {
+     "n": "Grammo forza",
+     "s": "gf",
+     "f": 0.00980665
+    },
+    {
+     "n": "Tonnellata forza",
+     "s": "tf",
+     "f": 9806.65
+    },
+    {
+     "n": "Libbra forza",
+     "s": "lbf",
+     "f": 4.4482216152605
+    },
+    {
+     "n": "Oncia forza",
+     "s": "ozf",
+     "f": 0.2780138509537812
+    },
+    {
+     "n": "Poundal",
+     "s": "pdl",
+     "f": 0.138254954376
+    },
+    {
+     "n": "Kip",
+     "s": "kip",
+     "f": 4448.2216152605
+    },
+    {
+     "n": "Stene",
+     "s": "sn",
+     "f": 1000
+    },
+    {
+     "n": "Joule/metro",
+     "s": "J/m",
+     "f": 1
+    }
+   ]
+  },
+  {
+   "id": "pressione",
+   "nome": "Pressione",
+   "tipo": "fattore",
+   "base": "Pa",
+   "unita": [
+    {
+     "n": "Pascal",
+     "s": "Pa",
+     "f": 1
+    },
+    {
+     "n": "Ettopascal",
+     "s": "hPa",
+     "f": 100
+    },
+    {
+     "n": "Kilopascal",
+     "s": "kPa",
+     "f": 1000
+    },
+    {
+     "n": "Megapascal",
+     "s": "MPa",
+     "f": 1000000.0
+    },
+    {
+     "n": "Bar",
+     "s": "bar",
+     "f": 100000.0
+    },
+    {
+     "n": "Millibar",
+     "s": "mbar",
+     "f": 100
+    },
+    {
+     "n": "Atmosfera",
+     "s": "atm",
+     "f": 101325
+    },
+    {
+     "n": "Atmosfera tecnica (kgf/cm²)",
+     "s": "at",
+     "f": 98066.5
+    },
+    {
+     "n": "Torr / mmHg",
+     "s": "Torr",
+     "f": 133.32236842105263
+    },
+    {
+     "n": "Centimetro di mercurio",
+     "s": "cmHg",
+     "f": 1333.2236842105262
+    },
+    {
+     "n": "Newton/centimetro quadrato",
+     "s": "N/cm²",
+     "f": 10000
+    },
+    {
+     "n": "Millimetro di colonna d'acqua",
+     "s": "mmH₂O",
+     "f": 9.80665
+    },
+    {
+     "n": "Metro di colonna d'acqua",
+     "s": "mH₂O",
+     "f": 9806.65
+    },
+    {
+     "n": "Libbra/pollice quadrato",
+     "s": "psi",
+     "f": 6894.757293168361
+    },
+    {
+     "n": "Libbra/piede quadrato",
+     "s": "psf",
+     "f": 47.88025898033584
+    },
+    {
+     "n": "Pollice di mercurio",
+     "s": "inHg",
+     "f": 3386.388640341
+    },
+    {
+     "n": "Pollice di colonna d'acqua",
+     "s": "inH₂O",
+     "f": 249.08891
+    },
+    {
+     "n": "Barye",
+     "s": "Ba",
+     "f": 0.1
+    }
+   ]
+  },
+  {
+   "id": "potenza",
+   "nome": "Potenza",
+   "tipo": "fattore",
+   "base": "W",
+   "unita": [
+    {
+     "n": "Watt",
+     "s": "W",
+     "f": 1
+    },
+    {
+     "n": "Milliwatt",
+     "s": "mW",
+     "f": 0.001
+    },
+    {
+     "n": "Kilowatt",
+     "s": "kW",
+     "f": 1000
+    },
+    {
+     "n": "Megawatt",
+     "s": "MW",
+     "f": 1000000.0
+    },
+    {
+     "n": "Gigawatt",
+     "s": "GW",
+     "f": 1000000000.0
+    },
+    {
+     "n": "Cavallo vapore",
+     "s": "CV",
+     "f": 735.49875
+    },
+    {
+     "n": "Horsepower (imperiale)",
+     "s": "hp",
+     "f": 745.6998715822702
+    },
+    {
+     "n": "Chilogrammetro/secondo",
+     "s": "kgf·m/s",
+     "f": 9.80665
+    },
+    {
+     "n": "Erg/secondo",
+     "s": "erg/s",
+     "f": 1e-07
+    },
+    {
+     "n": "Caloria/secondo",
+     "s": "cal/s",
+     "f": 4.1868
+    },
+    {
+     "n": "Kilocaloria/ora",
+     "s": "kcal/h",
+     "f": 1.163
+    },
+    {
+     "n": "BTU/ora",
+     "s": "BTU/h",
+     "f": 0.2930710701722222
+    },
+    {
+     "n": "Piede-libbra forza/secondo",
+     "s": "ft·lbf/s",
+     "f": 1.3558179483314003
+    },
+    {
+     "n": "Tonnellata di refrigerazione",
+     "s": "TR",
+     "f": 3516.8528420667
+    },
+    {
+     "n": "Voltampere",
+     "s": "VA",
+     "f": 1
+    },
+    {
+     "n": "Kilovoltampere",
+     "s": "kVA",
+     "f": 1000
+    }
+   ],
+   "nota": "VA e kVA misurano la potenza apparente: coincidono con i watt solo con fattore di potenza cosφ = 1."
+  },
+  {
+   "id": "energia",
+   "nome": "Energia / Lavoro",
+   "tipo": "fattore",
+   "base": "J",
+   "unita": [
+    {
+     "n": "Joule",
+     "s": "J",
+     "f": 1
+    },
+    {
+     "n": "Millijoule",
+     "s": "mJ",
+     "f": 0.001
+    },
+    {
+     "n": "Kilojoule",
+     "s": "kJ",
+     "f": 1000
+    },
+    {
+     "n": "Megajoule",
+     "s": "MJ",
+     "f": 1000000.0
+    },
+    {
+     "n": "Gigajoule",
+     "s": "GJ",
+     "f": 1000000000.0
+    },
+    {
+     "n": "Erg",
+     "s": "erg",
+     "f": 1e-07
+    },
+    {
+     "n": "Caloria (IT)",
+     "s": "cal",
+     "f": 4.1868
+    },
+    {
+     "n": "Kilocaloria (IT)",
+     "s": "kcal",
+     "f": 4186.8
+    },
+    {
+     "n": "Caloria (termochimica)",
+     "s": "cal th",
+     "f": 4.184
+    },
+    {
+     "n": "Kilocaloria (termochimica / alimentare)",
+     "s": "kcal th",
+     "f": 4184
+    },
+    {
+     "n": "Wattora",
+     "s": "Wh",
+     "f": 3600
+    },
+    {
+     "n": "Kilowattora",
+     "s": "kWh",
+     "f": 3600000.0
+    },
+    {
+     "n": "Megawattora",
+     "s": "MWh",
+     "f": 3600000000.0
+    },
+    {
+     "n": "Elettronvolt",
+     "s": "eV",
+     "f": 1.602176634e-19
+    },
+    {
+     "n": "Kiloelettronvolt",
+     "s": "keV",
+     "f": 1.602176634e-16
+    },
+    {
+     "n": "Megaelettronvolt",
+     "s": "MeV",
+     "f": 1.602176634e-13
+    },
+    {
+     "n": "BTU",
+     "s": "BTU",
+     "f": 1055.05585262
+    },
+    {
+     "n": "Therm (US)",
+     "s": "thm",
+     "f": 105505585.262
+    },
+    {
+     "n": "Piede-libbra forza",
+     "s": "ft·lbf",
+     "f": 1.3558179483314003
+    },
+    {
+     "n": "Chilogrammetro",
+     "s": "kgf·m",
+     "f": 9.80665
+    },
+    {
+     "n": "Cavallo vapore-ora",
+     "s": "CV·h",
+     "f": 2647795.5
+    },
+    {
+     "n": "Horsepower-ora",
+     "s": "hp·h",
+     "f": 2684519.537696173
+    },
+    {
+     "n": "Chilogrammo di TNT",
+     "s": "kg TNT",
+     "f": 4184000
+    },
+    {
+     "n": "Tonnellata di TNT",
+     "s": "t TNT",
+     "f": 4184000000.0
+    },
+    {
+     "n": "Newton-metro",
+     "s": "N·m",
+     "f": 1
+    }
+   ],
+   "nota": "Vale anche come quantità di calore: 1 J = 1 N·m = 1 W·s."
+  },
+  {
+   "id": "flusso",
+   "nome": "Flusso (Volume)",
+   "tipo": "fattore",
+   "base": "m³/s",
+   "unita": [
+    {
+     "n": "Metro cubo/secondo",
+     "s": "m³/s",
+     "f": 1
+    },
+    {
+     "n": "Metro cubo/minuto",
+     "s": "m³/min",
+     "f": 0.016666666666666666
+    },
+    {
+     "n": "Metro cubo/ora",
+     "s": "m³/h",
+     "f": 0.0002777777777777778
+    },
+    {
+     "n": "Litro/secondo",
+     "s": "l/s",
+     "f": 0.001
+    },
+    {
+     "n": "Litro/minuto",
+     "s": "l/min",
+     "f": 1.6666666666666667e-05
+    },
+    {
+     "n": "Litro/ora",
+     "s": "l/h",
+     "f": 2.7777777777777776e-07
+    },
+    {
+     "n": "Centimetro cubo/secondo",
+     "s": "cm³/s",
+     "f": 1e-06
+    },
+    {
+     "n": "Millilitro/minuto",
+     "s": "ml/min",
+     "f": 1.6666666666666667e-08
+    },
+    {
+     "n": "Piede cubo/secondo",
+     "s": "ft³/s",
+     "f": 0.028316846592
+    },
+    {
+     "n": "Piede cubo/minuto",
+     "s": "CFM",
+     "f": 0.0004719474432
+    },
+    {
+     "n": "Gallone (US)/minuto",
+     "s": "GPM",
+     "f": 6.309019640343977e-05
+    },
+    {
+     "n": "Gallone (US)/ora",
+     "s": "gal US/h",
+     "f": 1.051503273390663e-06
+    },
+    {
+     "n": "Gallone (UK)/minuto",
+     "s": "gal UK/min",
+     "f": 7.576819444444444e-05
+    },
+    {
+     "n": "Barile/giorno",
+     "s": "bbl/d",
+     "f": 1.8401307283333333e-06
+    }
+   ]
+  },
+  {
+   "id": "tensione_superficiale",
+   "nome": "Tensione superficiale",
+   "tipo": "fattore",
+   "base": "N/m",
+   "unita": [
+    {
+     "n": "Newton/metro",
+     "s": "N/m",
+     "f": 1
+    },
+    {
+     "n": "Millinewton/metro",
+     "s": "mN/m",
+     "f": 0.001
+    },
+    {
+     "n": "Newton/centimetro",
+     "s": "N/cm",
+     "f": 100
+    },
+    {
+     "n": "Dine/centimetro",
+     "s": "dyn/cm",
+     "f": 0.001
+    },
+    {
+     "n": "Dine/millimetro",
+     "s": "dyn/mm",
+     "f": 0.01
+    },
+    {
+     "n": "Erg/centimetro quadrato",
+     "s": "erg/cm²",
+     "f": 0.001
+    },
+    {
+     "n": "Chilogrammo forza/metro",
+     "s": "kgf/m",
+     "f": 9.80665
+    },
+    {
+     "n": "Libbra forza/piede",
+     "s": "lbf/ft",
+     "f": 14.593902937206364
+    },
+    {
+     "n": "Libbra forza/pollice",
+     "s": "lbf/in",
+     "f": 175.12683524647636
+    }
+   ]
+  },
+  {
+   "id": "carica",
+   "nome": "Carica elettrica",
+   "tipo": "fattore",
+   "base": "C",
+   "unita": [
+    {
+     "n": "Coulomb",
+     "s": "C",
+     "f": 1
+    },
+    {
+     "n": "Kilocoulomb",
+     "s": "kC",
+     "f": 1000
+    },
+    {
+     "n": "Millicoulomb",
+     "s": "mC",
+     "f": 0.001
+    },
+    {
+     "n": "Microcoulomb",
+     "s": "µC",
+     "f": 1e-06
+    },
+    {
+     "n": "Nanocoulomb",
+     "s": "nC",
+     "f": 1e-09
+    },
+    {
+     "n": "Picocoulomb",
+     "s": "pC",
+     "f": 1e-12
+    },
+    {
+     "n": "Amperora",
+     "s": "Ah",
+     "f": 3600
+    },
+    {
+     "n": "Milliamperora",
+     "s": "mAh",
+     "f": 3.6
+    },
+    {
+     "n": "Faraday",
+     "s": "F",
+     "f": 96485.3321233
+    },
+    {
+     "n": "Abcoulomb",
+     "s": "abC",
+     "f": 10
+    },
+    {
+     "n": "Statcoulomb",
+     "s": "statC",
+     "f": 3.33564095198152e-10
+    },
+    {
+     "n": "Carica elementare",
+     "s": "e",
+     "f": 1.602176634e-19
+    }
+   ]
+  },
+  {
+   "id": "corrente",
+   "nome": "Corrente elettrica",
+   "tipo": "fattore",
+   "base": "A",
+   "unita": [
+    {
+     "n": "Ampere",
+     "s": "A",
+     "f": 1
+    },
+    {
+     "n": "Megaampere",
+     "s": "MA",
+     "f": 1000000.0
+    },
+    {
+     "n": "Kiloampere",
+     "s": "kA",
+     "f": 1000
+    },
+    {
+     "n": "Milliampere",
+     "s": "mA",
+     "f": 0.001
+    },
+    {
+     "n": "Microampere",
+     "s": "µA",
+     "f": 1e-06
+    },
+    {
+     "n": "Nanoampere",
+     "s": "nA",
+     "f": 1e-09
+    },
+    {
+     "n": "Abampere (biot)",
+     "s": "abA",
+     "f": 10
+    },
+    {
+     "n": "Statampere",
+     "s": "statA",
+     "f": 3.33564095198152e-10
+    }
+   ]
+  },
+  {
+   "id": "potenziale",
+   "nome": "Potenziale elettrico",
+   "tipo": "fattore",
+   "base": "V",
+   "unita": [
+    {
+     "n": "Volt",
+     "s": "V",
+     "f": 1
+    },
+    {
+     "n": "Megavolt",
+     "s": "MV",
+     "f": 1000000.0
+    },
+    {
+     "n": "Kilovolt",
+     "s": "kV",
+     "f": 1000
+    },
+    {
+     "n": "Millivolt",
+     "s": "mV",
+     "f": 0.001
+    },
+    {
+     "n": "Microvolt",
+     "s": "µV",
+     "f": 1e-06
+    },
+    {
+     "n": "Nanovolt",
+     "s": "nV",
+     "f": 1e-09
+    },
+    {
+     "n": "Statvolt",
+     "s": "statV",
+     "f": 299.792458
+    },
+    {
+     "n": "Abvolt",
+     "s": "abV",
+     "f": 1e-08
+    }
+   ]
+  },
+  {
+   "id": "attivita",
+   "nome": "Attività radioattiva",
+   "tipo": "fattore",
+   "base": "Bq",
+   "unita": [
+    {
+     "n": "Becquerel",
+     "s": "Bq",
+     "f": 1
+    },
+    {
+     "n": "Kilobecquerel",
+     "s": "kBq",
+     "f": 1000
+    },
+    {
+     "n": "Megabecquerel",
+     "s": "MBq",
+     "f": 1000000.0
+    },
+    {
+     "n": "Gigabecquerel",
+     "s": "GBq",
+     "f": 1000000000.0
+    },
+    {
+     "n": "Terabecquerel",
+     "s": "TBq",
+     "f": 1000000000000.0
+    },
+    {
+     "n": "Curie",
+     "s": "Ci",
+     "f": 37000000000.0
+    },
+    {
+     "n": "Millicurie",
+     "s": "mCi",
+     "f": 37000000.0
+    },
+    {
+     "n": "Microcurie",
+     "s": "µCi",
+     "f": 37000
+    },
+    {
+     "n": "Rutherford",
+     "s": "Rd",
+     "f": 1000000.0
+    },
+    {
+     "n": "Disintegrazioni/secondo",
+     "s": "dps",
+     "f": 1
+    },
+    {
+     "n": "Disintegrazioni/minuto",
+     "s": "dpm",
+     "f": 0.016666666666666666
+    }
+   ]
+  },
+  {
+   "id": "esposizione",
+   "nome": "Dose di radiazioni (esposizione)",
+   "tipo": "fattore",
+   "base": "C/kg",
+   "unita": [
+    {
+     "n": "Coulomb/chilogrammo",
+     "s": "C/kg",
+     "f": 1
+    },
+    {
+     "n": "Millicoulomb/chilogrammo",
+     "s": "mC/kg",
+     "f": 0.001
+    },
+    {
+     "n": "Microcoulomb/chilogrammo",
+     "s": "µC/kg",
+     "f": 1e-06
+    },
+    {
+     "n": "Roentgen",
+     "s": "R",
+     "f": 0.000258
+    },
+    {
+     "n": "Milliroentgen",
+     "s": "mR",
+     "f": 2.58e-07
+    },
+    {
+     "n": "Microroentgen",
+     "s": "µR",
+     "f": 2.58e-10
+    }
+   ],
+   "nota": "Esposizione = ionizzazione prodotta in aria. Da non confondere con la dose assorbita."
+  },
+  {
+   "id": "dose_assorbita",
+   "nome": "Dose assorbita",
+   "tipo": "fattore",
+   "base": "Gy",
+   "unita": [
+    {
+     "n": "Gray",
+     "s": "Gy",
+     "f": 1
+    },
+    {
+     "n": "Milligray",
+     "s": "mGy",
+     "f": 0.001
+    },
+    {
+     "n": "Microgray",
+     "s": "µGy",
+     "f": 1e-06
+    },
+    {
+     "n": "Kilogray",
+     "s": "kGy",
+     "f": 1000
+    },
+    {
+     "n": "Joule/chilogrammo",
+     "s": "J/kg",
+     "f": 1
+    },
+    {
+     "n": "Erg/grammo",
+     "s": "erg/g",
+     "f": 0.0001
+    },
+    {
+     "n": "Rad",
+     "s": "rad",
+     "f": 0.01
+    },
+    {
+     "n": "Millirad",
+     "s": "mrad",
+     "f": 1e-05
+    },
+    {
+     "n": "Sievert",
+     "s": "Sv",
+     "f": 1
+    },
+    {
+     "n": "Millisievert",
+     "s": "mSv",
+     "f": 0.001
+    },
+    {
+     "n": "Microsievert",
+     "s": "µSv",
+     "f": 1e-06
+    },
+    {
+     "n": "Rem",
+     "s": "rem",
+     "f": 0.01
+    },
+    {
+     "n": "Millirem",
+     "s": "mrem",
+     "f": 1e-05
+    }
+   ],
+   "nota": "Gy e Sv sono numericamente 1:1 solo per fattore di ponderazione della radiazione = 1 (fotoni, beta). Per alfa e neutroni il fattore e maggiore: verificare sempre il tipo di radiazione."
+  },
+  {
+   "id": "temperatura",
+   "nome": "Temperatura",
+   "tipo": "temperatura",
+   "base": "°C",
+   "unita": [
+    {
+     "n": "Grado Celsius",
+     "s": "°C",
+     "k": 1,
+     "o": 0
+    },
+    {
+     "n": "Kelvin",
+     "s": "K",
+     "k": 1,
+     "o": -273.15
+    },
+    {
+     "n": "Grado Fahrenheit",
+     "s": "°F",
+     "k": 0.5555555555555556,
+     "o": -17.77777777777778
+    },
+    {
+     "n": "Grado Rankine",
+     "s": "°R",
+     "k": 0.5555555555555556,
+     "o": -273.15
+    },
+    {
+     "n": "Grado Reaumur",
+     "s": "°Ré",
+     "k": 1.25,
+     "o": 0
+    }
+   ],
+   "nota": "Conversione affine (con offset), non moltiplicativa. Per le DIFFERENZE di temperatura vale invece: 1 °C = 1 K = 1,8 °F = 1,8 °R.",
+   "riferimenti": [
+    {
+     "v": -273.15,
+     "d": "Zero assoluto"
+    },
+    {
+     "v": -196,
+     "d": "Ebollizione azoto liquido"
+    },
+    {
+     "v": -161,
+     "d": "Ebollizione metano (GNL)"
+    },
+    {
+     "v": 0,
+     "d": "Congelamento acqua"
+    },
+    {
+     "v": 37,
+     "d": "Temperatura corporea"
+    },
+    {
+     "v": 100,
+     "d": "Ebollizione acqua (1 atm)"
+    },
+    {
+     "v": 60,
+     "d": "Ustione cute in ~1 s"
+    },
+    {
+     "v": 232,
+     "d": "Accensione carta (indicativa)"
+    },
+    {
+     "v": 260,
+     "d": "Limite d'uso DPI - contatto prolungato"
+    },
+    {
+     "v": 537,
+     "d": "Autoaccensione metano in aria"
+    },
+    {
+     "v": 600,
+     "d": "Flash-over (soffitto, indicativo)"
+    },
+    {
+     "v": 660,
+     "d": "Fusione alluminio"
+    },
+    {
+     "v": 900,
+     "d": "Incendio a pieno sviluppo"
+    },
+    {
+     "v": 1083,
+     "d": "Fusione rame"
+    },
+    {
+     "v": 1450,
+     "d": "Fusione acciaio (indicativa)"
+    },
+    {
+     "v": 1950,
+     "d": "Fiamma metano/aria"
+    }
+   ]
+  },
+  {
+   "id": "calore_specifico",
+   "nome": "Calore specifico",
+   "tipo": "fattore",
+   "base": "J/(kg·K)",
+   "unita": [
+    {
+     "n": "Joule/(chilogrammo·kelvin)",
+     "s": "J/(kg·K)",
+     "f": 1
+    },
+    {
+     "n": "Kilojoule/(chilogrammo·kelvin)",
+     "s": "kJ/(kg·K)",
+     "f": 1000
+    },
+    {
+     "n": "Joule/(grammo·°C)",
+     "s": "J/(g·°C)",
+     "f": 1000
+    },
+    {
+     "n": "Caloria/(grammo·°C)",
+     "s": "cal/(g·°C)",
+     "f": 4186.8
+    },
+    {
+     "n": "Kilocaloria/(chilogrammo·°C)",
+     "s": "kcal/(kg·°C)",
+     "f": 4186.8
+    },
+    {
+     "n": "BTU/(libbra·°F)",
+     "s": "BTU/(lb·°F)",
+     "f": 4186.8
+    },
+    {
+     "n": "Wattora/(chilogrammo·kelvin)",
+     "s": "Wh/(kg·K)",
+     "f": 3600
+    }
+   ],
+   "nota": "Acqua ≈ 4186 J/(kg·K); aria ≈ 1005; acciaio ≈ 460; legno ≈ 1700."
+  },
+  {
+   "id": "capacita_termica",
+   "nome": "Capacità termica",
+   "tipo": "fattore",
+   "base": "J/K",
+   "unita": [
+    {
+     "n": "Joule/kelvin",
+     "s": "J/K",
+     "f": 1
+    },
+    {
+     "n": "Kilojoule/kelvin",
+     "s": "kJ/K",
+     "f": 1000
+    },
+    {
+     "n": "Caloria/°C",
+     "s": "cal/°C",
+     "f": 4.1868
+    },
+    {
+     "n": "Kilocaloria/°C",
+     "s": "kcal/°C",
+     "f": 4186.8
+    },
+    {
+     "n": "BTU/°F",
+     "s": "BTU/°F",
+     "f": 1899.100534716
+    },
+    {
+     "n": "Wattora/kelvin",
+     "s": "Wh/K",
+     "f": 3600
+    }
+   ]
+  },
+  {
+   "id": "conduttivita_termica",
+   "nome": "Conduttività termica",
+   "tipo": "fattore",
+   "base": "W/(m·K)",
+   "unita": [
+    {
+     "n": "Watt/(metro·kelvin)",
+     "s": "W/(m·K)",
+     "f": 1
+    },
+    {
+     "n": "Kilowatt/(metro·kelvin)",
+     "s": "kW/(m·K)",
+     "f": 1000
+    },
+    {
+     "n": "Watt/(centimetro·kelvin)",
+     "s": "W/(cm·K)",
+     "f": 100
+    },
+    {
+     "n": "Kilocaloria/(ora·metro·°C)",
+     "s": "kcal/(h·m·°C)",
+     "f": 1.163
+    },
+    {
+     "n": "Caloria/(secondo·centimetro·°C)",
+     "s": "cal/(s·cm·°C)",
+     "f": 418.68
+    },
+    {
+     "n": "BTU/(ora·piede·°F)",
+     "s": "BTU/(h·ft·°F)",
+     "f": 1.7307346630506
+    },
+    {
+     "n": "BTU·pollice/(ora·piede²·°F)",
+     "s": "BTU·in/(h·ft²·°F)",
+     "f": 0.14422790104772
+    }
+   ],
+   "nota": "Rame ≈ 400 W/(m·K); acciaio ≈ 50; acqua ≈ 0,6; legno ≈ 0,15; lana di roccia ≈ 0,04; aria ferma ≈ 0,026."
+  },
+  {
+   "id": "flusso_termico",
+   "nome": "Flusso termico (irraggiamento)",
+   "tipo": "fattore",
+   "base": "W/m²",
+   "unita": [
+    {
+     "n": "Watt/metro quadrato",
+     "s": "W/m²",
+     "f": 1
+    },
+    {
+     "n": "Kilowatt/metro quadrato",
+     "s": "kW/m²",
+     "f": 1000
+    },
+    {
+     "n": "Megawatt/metro quadrato",
+     "s": "MW/m²",
+     "f": 1000000.0
+    },
+    {
+     "n": "Watt/centimetro quadrato",
+     "s": "W/cm²",
+     "f": 10000
+    },
+    {
+     "n": "Kilocaloria/(ora·metro quadrato)",
+     "s": "kcal/(h·m²)",
+     "f": 1.163
+    },
+    {
+     "n": "Caloria/(secondo·centimetro quadrato)",
+     "s": "cal/(s·cm²)",
+     "f": 41868
+    },
+    {
+     "n": "BTU/(ora·piede quadrato)",
+     "s": "BTU/(h·ft²)",
+     "f": 3.1545907450396
+    }
+   ],
+   "nota": "Soglie di riferimento: 1 kW/m² irraggiamento solare estivo; 1,7 kW/m² esposizione prolungata tollerabile; 4,5 kW/m² dolore in ~20 s; 12,5 kW/m² innesco legno con fiamma pilota; 37,5 kW/m² danno alle strutture."
+  },
+  {
+   "id": "scambio_termico",
+   "nome": "Trasmittanza / scambio termico",
+   "tipo": "fattore",
+   "base": "W/(m²·K)",
+   "unita": [
+    {
+     "n": "Watt/(metro quadrato·kelvin)",
+     "s": "W/(m²·K)",
+     "f": 1
+    },
+    {
+     "n": "Kilowatt/(metro quadrato·kelvin)",
+     "s": "kW/(m²·K)",
+     "f": 1000
+    },
+    {
+     "n": "Kilocaloria/(ora·metro quadrato·°C)",
+     "s": "kcal/(h·m²·°C)",
+     "f": 1.163
+    },
+    {
+     "n": "Caloria/(secondo·centimetro quadrato·°C)",
+     "s": "cal/(s·cm²·°C)",
+     "f": 41868
+    },
+    {
+     "n": "BTU/(ora·piede quadrato·°F)",
+     "s": "BTU/(h·ft²·°F)",
+     "f": 5.6782633411134
+    }
+   ]
+  },
+  {
+   "id": "potere_calorifico",
+   "nome": "Potere calorifico",
+   "tipo": "fattore",
+   "base": "J/kg",
+   "unita": [
+    {
+     "n": "Joule/chilogrammo",
+     "s": "J/kg",
+     "f": 1
+    },
+    {
+     "n": "Kilojoule/chilogrammo",
+     "s": "kJ/kg",
+     "f": 1000
+    },
+    {
+     "n": "Megajoule/chilogrammo",
+     "s": "MJ/kg",
+     "f": 1000000.0
+    },
+    {
+     "n": "Kilocaloria/chilogrammo",
+     "s": "kcal/kg",
+     "f": 4186.8
+    },
+    {
+     "n": "Caloria/grammo",
+     "s": "cal/g",
+     "f": 4186.8
+    },
+    {
+     "n": "Kilowattora/chilogrammo",
+     "s": "kWh/kg",
+     "f": 3600000.0
+    },
+    {
+     "n": "BTU/libbra",
+     "s": "BTU/lb",
+     "f": 2326.0
+    }
+   ],
+   "nota": "Valori tipici (P.C.I.): legno 17,5 MJ/kg; carta 16; plastiche 30-46; gasolio 42,7; benzina 43,5; GPL 46; metano 50."
+  },
+  {
+   "id": "carico_incendio",
+   "nome": "Carico d'incendio",
+   "tipo": "fattore",
+   "base": "MJ/m²",
+   "unita": [
+    {
+     "n": "Megajoule/metro quadrato",
+     "s": "MJ/m²",
+     "f": 1
+    },
+    {
+     "n": "Kilojoule/metro quadrato",
+     "s": "kJ/m²",
+     "f": 0.001
+    },
+    {
+     "n": "Kilowattora/metro quadrato",
+     "s": "kWh/m²",
+     "f": 3.6
+    },
+    {
+     "n": "Kilocaloria/metro quadrato",
+     "s": "kcal/m²",
+     "f": 0.0041868
+    },
+    {
+     "n": "Kg di legna equivalente/metro quadrato",
+     "s": "kg legna/m²",
+     "f": 17.5
+    }
+   ],
+   "nota": "Il D.M. 09/03/2007 usa MJ/m² con potere calorifico del legno pari a 17,5 MJ/kg. Classi: 100, 200, 300, 450, 600, 900, 1200, 1500, 1800, 2400 MJ/m²."
+  },
+  {
+   "id": "cerchio",
+   "nome": "Cerchio / Sfera",
+   "tipo": "cerchio",
+   "nota": "Inserisci un solo valore: gli altri vengono ricalcolati. Le unità devono essere coerenti (u, u², u³)."
+  },
+  {
+   "id": "prefissi",
+   "nome": "Prefissi SI",
+   "tipo": "prefissi",
+   "nota": "Prefissi del Sistema Internazionale. Converti fra due prefissi o consulta la tabella.",
+   "dati": [
+    {
+     "nome": "quetta",
+     "simbolo": "Q",
+     "fattore": 1e+30,
+     "potenza": "10³⁰"
+    },
+    {
+     "nome": "ronna",
+     "simbolo": "R",
+     "fattore": 1e+27,
+     "potenza": "10²⁷"
+    },
+    {
+     "nome": "yotta",
+     "simbolo": "Y",
+     "fattore": 1e+24,
+     "potenza": "10²⁴"
+    },
+    {
+     "nome": "zetta",
+     "simbolo": "Z",
+     "fattore": 1e+21,
+     "potenza": "10²¹"
+    },
+    {
+     "nome": "exa",
+     "simbolo": "E",
+     "fattore": 1e+18,
+     "potenza": "10¹⁸"
+    },
+    {
+     "nome": "peta",
+     "simbolo": "P",
+     "fattore": 1000000000000000.0,
+     "potenza": "10¹⁵"
+    },
+    {
+     "nome": "tera",
+     "simbolo": "T",
+     "fattore": 1000000000000.0,
+     "potenza": "10¹²"
+    },
+    {
+     "nome": "giga",
+     "simbolo": "G",
+     "fattore": 1000000000.0,
+     "potenza": "10⁹"
+    },
+    {
+     "nome": "mega",
+     "simbolo": "M",
+     "fattore": 1000000.0,
+     "potenza": "10⁶"
+    },
+    {
+     "nome": "kilo",
+     "simbolo": "k",
+     "fattore": 1000.0,
+     "potenza": "10³"
+    },
+    {
+     "nome": "etto",
+     "simbolo": "h",
+     "fattore": 100.0,
+     "potenza": "10²"
+    },
+    {
+     "nome": "deca",
+     "simbolo": "da",
+     "fattore": 10.0,
+     "potenza": "10¹"
+    },
+    {
+     "nome": "(nessuno)",
+     "simbolo": "—",
+     "fattore": 1,
+     "potenza": "10⁰"
+    },
+    {
+     "nome": "deci",
+     "simbolo": "d",
+     "fattore": 0.1,
+     "potenza": "10⁻¹"
+    },
+    {
+     "nome": "centi",
+     "simbolo": "c",
+     "fattore": 0.01,
+     "potenza": "10⁻²"
+    },
+    {
+     "nome": "milli",
+     "simbolo": "m",
+     "fattore": 0.001,
+     "potenza": "10⁻³"
+    },
+    {
+     "nome": "micro",
+     "simbolo": "µ",
+     "fattore": 1e-06,
+     "potenza": "10⁻⁶"
+    },
+    {
+     "nome": "nano",
+     "simbolo": "n",
+     "fattore": 1e-09,
+     "potenza": "10⁻⁹"
+    },
+    {
+     "nome": "pico",
+     "simbolo": "p",
+     "fattore": 1e-12,
+     "potenza": "10⁻¹²"
+    },
+    {
+     "nome": "femto",
+     "simbolo": "f",
+     "fattore": 1e-15,
+     "potenza": "10⁻¹⁵"
+    },
+    {
+     "nome": "atto",
+     "simbolo": "a",
+     "fattore": 1e-18,
+     "potenza": "10⁻¹⁸"
+    },
+    {
+     "nome": "zepto",
+     "simbolo": "z",
+     "fattore": 1e-21,
+     "potenza": "10⁻²¹"
+    },
+    {
+     "nome": "yocto",
+     "simbolo": "y",
+     "fattore": 1e-24,
+     "potenza": "10⁻²⁴"
+    },
+    {
+     "nome": "ronto",
+     "simbolo": "r",
+     "fattore": 1e-27,
+     "potenza": "10⁻²⁷"
+    },
+    {
+     "nome": "quecto",
+     "simbolo": "q",
+     "fattore": 1e-30,
+     "potenza": "10⁻³⁰"
+    }
+   ]
+  },
+  {
+   "id": "alfabeto",
+   "nome": "Alfabeto fonetico e Morse",
+   "tipo": "alfabeto",
+   "nota": "Alfabeto ICAO/NATO, codice Morse internazionale e compitazione telefonica italiana.",
+   "dati": [
+    {
+     "lettera": "A",
+     "morse": ".-",
+     "icao": "Alfa",
+     "pronuncia": "AL-FAH",
+     "italiano": "Ancona"
+    },
+    {
+     "lettera": "B",
+     "morse": "-...",
+     "icao": "Bravo",
+     "pronuncia": "BRAH-VOH",
+     "italiano": "Bologna"
+    },
+    {
+     "lettera": "C",
+     "morse": "-.-.",
+     "icao": "Charlie",
+     "pronuncia": "CHAR-LEE",
+     "italiano": "Como"
+    },
+    {
+     "lettera": "D",
+     "morse": "-..",
+     "icao": "Delta",
+     "pronuncia": "DELL-TAH",
+     "italiano": "Domodossola"
+    },
+    {
+     "lettera": "E",
+     "morse": ".",
+     "icao": "Echo",
+     "pronuncia": "ECK-OH",
+     "italiano": "Empoli"
+    },
+    {
+     "lettera": "F",
+     "morse": "..-.",
+     "icao": "Foxtrot",
+     "pronuncia": "FOKS-TROT",
+     "italiano": "Firenze"
+    },
+    {
+     "lettera": "G",
+     "morse": "--.",
+     "icao": "Golf",
+     "pronuncia": "GOLF",
+     "italiano": "Genova"
+    },
+    {
+     "lettera": "H",
+     "morse": "....",
+     "icao": "Hotel",
+     "pronuncia": "HOH-TELL",
+     "italiano": "Hotel"
+    },
+    {
+     "lettera": "I",
+     "morse": "..",
+     "icao": "India",
+     "pronuncia": "IN-DEE-AH",
+     "italiano": "Imola"
+    },
+    {
+     "lettera": "J",
+     "morse": ".---",
+     "icao": "Juliett",
+     "pronuncia": "JEW-LEE-ETT",
+     "italiano": "Jolly"
+    },
+    {
+     "lettera": "K",
+     "morse": "-.-",
+     "icao": "Kilo",
+     "pronuncia": "KEY-LOH",
+     "italiano": "Kappa"
+    },
+    {
+     "lettera": "L",
+     "morse": ".-..",
+     "icao": "Lima",
+     "pronuncia": "LEE-MAH",
+     "italiano": "Livorno"
+    },
+    {
+     "lettera": "M",
+     "morse": "--",
+     "icao": "Mike",
+     "pronuncia": "MIKE",
+     "italiano": "Milano"
+    },
+    {
+     "lettera": "N",
+     "morse": "-.",
+     "icao": "November",
+     "pronuncia": "NO-VEM-BER",
+     "italiano": "Napoli"
+    },
+    {
+     "lettera": "O",
+     "morse": "---",
+     "icao": "Oscar",
+     "pronuncia": "OSS-CAH",
+     "italiano": "Otranto"
+    },
+    {
+     "lettera": "P",
+     "morse": ".--.",
+     "icao": "Papa",
+     "pronuncia": "PAH-PAH",
+     "italiano": "Padova"
+    },
+    {
+     "lettera": "Q",
+     "morse": "--.-",
+     "icao": "Quebec",
+     "pronuncia": "KEH-BECK",
+     "italiano": "Quarto"
+    },
+    {
+     "lettera": "R",
+     "morse": ".-.",
+     "icao": "Romeo",
+     "pronuncia": "ROW-ME-OH",
+     "italiano": "Roma"
+    },
+    {
+     "lettera": "S",
+     "morse": "...",
+     "icao": "Sierra",
+     "pronuncia": "SEE-AIR-RAH",
+     "italiano": "Savona"
+    },
+    {
+     "lettera": "T",
+     "morse": "-",
+     "icao": "Tango",
+     "pronuncia": "TANG-GO",
+     "italiano": "Torino"
+    },
+    {
+     "lettera": "U",
+     "morse": "..-",
+     "icao": "Uniform",
+     "pronuncia": "YOU-NEE-FORM",
+     "italiano": "Udine"
+    },
+    {
+     "lettera": "V",
+     "morse": "...-",
+     "icao": "Victor",
+     "pronuncia": "VIK-TAH",
+     "italiano": "Venezia"
+    },
+    {
+     "lettera": "W",
+     "morse": ".--",
+     "icao": "Whiskey",
+     "pronuncia": "WISS-KEY",
+     "italiano": "Washington"
+    },
+    {
+     "lettera": "X",
+     "morse": "-..-",
+     "icao": "X-ray",
+     "pronuncia": "ECKS-RAY",
+     "italiano": "Xilofono"
+    },
+    {
+     "lettera": "Y",
+     "morse": "-.--",
+     "icao": "Yankee",
+     "pronuncia": "YANG-KEY",
+     "italiano": "Yacht"
+    },
+    {
+     "lettera": "Z",
+     "morse": "--..",
+     "icao": "Zulu",
+     "pronuncia": "ZOO-LOO",
+     "italiano": "Zara"
+    },
+    {
+     "lettera": "0",
+     "morse": "-----",
+     "icao": "Zero",
+     "pronuncia": "ZEE-RO",
+     "italiano": "Zero"
+    },
+    {
+     "lettera": "1",
+     "morse": ".----",
+     "icao": "One",
+     "pronuncia": "WUN",
+     "italiano": "Uno"
+    },
+    {
+     "lettera": "2",
+     "morse": "..---",
+     "icao": "Two",
+     "pronuncia": "TOO",
+     "italiano": "Due"
+    },
+    {
+     "lettera": "3",
+     "morse": "...--",
+     "icao": "Three",
+     "pronuncia": "TREE",
+     "italiano": "Tre"
+    },
+    {
+     "lettera": "4",
+     "morse": "....-",
+     "icao": "Four",
+     "pronuncia": "FOW-ER",
+     "italiano": "Quattro"
+    },
+    {
+     "lettera": "5",
+     "morse": ".....",
+     "icao": "Five",
+     "pronuncia": "FIFE",
+     "italiano": "Cinque"
+    },
+    {
+     "lettera": "6",
+     "morse": "-....",
+     "icao": "Six",
+     "pronuncia": "SIX",
+     "italiano": "Sei"
+    },
+    {
+     "lettera": "7",
+     "morse": "--...",
+     "icao": "Seven",
+     "pronuncia": "SEV-EN",
+     "italiano": "Sette"
+    },
+    {
+     "lettera": "8",
+     "morse": "---..",
+     "icao": "Eight",
+     "pronuncia": "AIT",
+     "italiano": "Otto"
+    },
+    {
+     "lettera": "9",
+     "morse": "----.",
+     "icao": "Nine",
+     "pronuncia": "NIN-ER",
+     "italiano": "Nove"
+    },
+    {
+     "lettera": ".",
+     "morse": ".-.-.-",
+     "icao": "Punto",
+     "pronuncia": "",
+     "italiano": "Punto"
+    },
+    {
+     "lettera": ",",
+     "morse": "--..--",
+     "icao": "Virgola",
+     "pronuncia": "",
+     "italiano": "Virgola"
+    },
+    {
+     "lettera": "?",
+     "morse": "..--..",
+     "icao": "Domanda",
+     "pronuncia": "",
+     "italiano": "Punto interrogativo"
+    },
+    {
+     "lettera": "/",
+     "morse": "-..-.",
+     "icao": "Barra",
+     "pronuncia": "",
+     "italiano": "Barra"
+    },
+    {
+     "lettera": "-",
+     "morse": "-....-",
+     "icao": "Trattino",
+     "pronuncia": "",
+     "italiano": "Trattino"
+    },
+    {
+     "lettera": "@",
+     "morse": ".--.-.",
+     "icao": "Chiocciola",
+     "pronuncia": "",
+     "italiano": "Chiocciola"
+    }
+   ]
+  }
+ ]
+}
