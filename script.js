@@ -1020,10 +1020,6 @@ const CHIAVE_STORAGE_PANNELLI = "fireops_pagine_pannelli";
     function eseguiEffettiPagina(idPagina) {
         chiudiPopupDati();
 
-        if (idPagina === "regolamento-servizio") {
-            caricaRegolamentoServizio();
-        }
-
         if (idPagina === "messaggistica") {
             const inputNumero = document.getElementById("msg-numero");
             if (inputNumero) setTimeout(() => inputNumero.focus(), 50);
@@ -1267,7 +1263,7 @@ function abilitaFisarmonica(contenitore) {
     contenitore.addEventListener("click", (e) => {
         const testata = e.target.closest(".evento-rilevante-testata");
         if (!testata) return;
-        const dettaglio = testata.parentElement.querySelector(".evento-rilevante-dettaglio");
+        const dettaglio = testata.parentElement.querySelector(":scope > .evento-rilevante-dettaglio");
         if (!dettaglio) return;
         const aperto = dettaglio.classList.toggle("aperto");
         testata.setAttribute("aria-expanded", aperto ? "true" : "false");
@@ -1356,27 +1352,6 @@ collegaModaleJson({
     prefissoTitolo: "🅁",
 });
 
-// Stessa fisarmonica dei modali, ma dentro una pagina di pannello: il file
-// viene letto una sola volta, alla prima volta che la pagina viene aperta
-const contenutoRegolamento = document.getElementById("regolamento-servizio-contenuto");
-let regolamentoCaricato = false;
-
-function caricaRegolamentoServizio() {
-    if (!contenutoRegolamento || regolamentoCaricato) return;
-    regolamentoCaricato = true;
-
-    contenutoRegolamento.innerHTML = `<p class="pagina-nota">Caricamento del regolamento…</p>`;
-    FireOps.caricaJson("/FireOps/db/dpr642012.json")
-        .then(dati => disegnaFisarmonicaJson(dati, contenutoRegolamento, null, ""))
-        .catch(err => {
-            regolamentoCaricato = false; // un errore non deve impedire un nuovo tentativo
-            console.error("Regolamento di servizio non disponibile:", err);
-            contenutoRegolamento.innerHTML = `<p class="pagina-nota" style="color:var(--danger-color);">Impossibile leggere <code>db/dpr642012.json</code>: ${testoSicuroModale(err.message)}</p>`;
-        });
-}
-
-abilitaFisarmonica(contenutoRegolamento);
-
 collegaModaleJson({
     idBottone: "btn-otto-passi",
     idModale: "modal-otto-passi",
@@ -1397,12 +1372,97 @@ collegaModaleJson({
     spostaSezione(paginaSinistra, "sinistra");
     spostaSezione(paginaDestra, "destra");
 
-    // L'assegnazione iniziale (e quindi il ripristino della sessione dopo un
-    // F5) non passa da eseguiEffettiPagina: se il Regolamento è già in un
-    // pannello va caricato qui, altrimenti resterebbe una pagina vuota
-    if (paginaSinistra === "regolamento-servizio" || paginaDestra === "regolamento-servizio") {
-        caricaRegolamentoServizio();
-    }
+// ==========================================================
+// REGOLAMENTO DI SERVIZIO (D.P.R. 64/2012)
+// Albero Titolo > Capo > Sezione > Articolo > commi > lettere > numeri.
+// Non passa da disegnaFisarmonicaJson: quello serve a elenchi piatti e qui
+// prenderebbe 'preambolo' come elenco principale, sfarinandolo carattere
+// per carattere in Object.entries().
+// ==========================================================
+function indicizzaArticoliDpr(articoli) {
+    const mappa = new Map();
+    (articoli || []).forEach(a => mappa.set(a.numero, a));
+    return mappa;
+}
+
+// Nei commi con lettere, 'testo' contiene solo la frase introduttiva:
+// lettere e numeri vanno resi a parte, senza rischio di duplicazione
+function corpoArticoloDpr(articolo) {
+    if (!articolo) return `<div class="evento-rilevante-testo">Testo non disponibile.</div>`;
+
+    const commi = (articolo.commi || []).map(comma => {
+        const lettere = (comma.lettere || []).map(l => {
+            const numeri = (l.numeri || []).map(n =>
+                `<div class="evento-rilevante-alternativa">${n.numero}) ${testoSicuroModale(n.testo)}</div>`
+            ).join("");
+            return `<div class="evento-rilevante-condizione">
+                <span class="evento-rilevante-sintesi">${testoSicuroModale(l.lettera)})</span>
+                <div class="evento-rilevante-testo">${testoSicuroModale(l.testo)}</div>
+                ${numeri}
+            </div>`;
+        }).join("");
+
+        return `<div class="evento-rilevante-condizione">
+            <span class="evento-rilevante-riferimento">${testoSicuroModale(comma.numero)}.</span>
+            <div class="evento-rilevante-testo">${testoSicuroModale(comma.testo)}</div>
+            ${lettere}
+        </div>`;
+    }).join("");
+
+    return commi || `<div class="evento-rilevante-testo">${testoSicuroModale(articolo.testo || "")}</div>`;
+}
+
+function voceFisarmonica(codice, titolo, contenuto) {
+    return `<div class="evento-rilevante-voce">
+        <button type="button" class="evento-rilevante-testata" aria-expanded="false">
+            <span class="freccia">▶</span>
+            <span class="evento-rilevante-codice">${testoSicuroModale(codice)}</span>
+            <span>${testoSicuroModale(titolo)}</span>
+        </button>
+        <div class="evento-rilevante-dettaglio">${contenuto}</div>
+    </div>`;
+}
+
+// 'figli' manca sugli oggetti sezione: senza (nodo.figli || []) qui si prende
+// un TypeError. Se il nodo ha figli si scende, altrimenti si stampano i suoi
+// articoli: così il Titolo IX (che ripete tutti i 50 articoli dei suoi capi)
+// non li duplica, e il Capo II (articoli: [], tutto nelle sezioni) non resta vuoto.
+function nodoStrutturaDpr(nodo, mappaArticoli) {
+    const figli = nodo.figli || [];
+    const contenuto = figli.length > 0
+        ? figli.map(f => nodoStrutturaDpr(f, mappaArticoli)).join("")
+        : (nodo.articoli || []).map(numero => {
+              const art = mappaArticoli.get(numero);
+              return voceFisarmonica(
+                  art ? art.etichetta : `Art. ${numero}`,
+                  art ? art.rubrica : "",
+                  corpoArticoloDpr(art)
+              );
+          }).join("");
+
+    const tipo = String(nodo.tipo || "").replace(/^./, c => c.toUpperCase());
+    return voceFisarmonica(
+        `${tipo} ${nodo.numero}`,
+        nodo.rubrica,
+        contenuto || `<div class="evento-rilevante-testo">Nessun articolo in questa partizione.</div>`
+    );
+}
+
+function disegnaRegolamentoDpr(dati) {
+    const mappaArticoli = indicizzaArticoliDpr(dati.articoli);
+    const fonte = dati.fonte
+        ? ` — <a href="${dati.fonte}" target="_blank" rel="noopener">Normattiva</a>` : "";
+    const premessa = `<div class="evento-rilevante-premessa">
+        <strong>${testoSicuroModale(dati.titolo_breve || "")}</strong><br>
+        ${testoSicuroModale(dati.rubrica || "")}<br>
+        In vigore dal ${testoSicuroModale(dati.entrata_in_vigore || "-")} ·
+        vigente al ${testoSicuroModale(dati.vigente_al || "-")}${fonte}
+    </div>`;
+
+    return premessa + (dati.struttura || [])
+        .map(n => nodoStrutturaDpr(n, mappaArticoli))
+        .join("");
+}    
     aggiornaSelettori();
     salvaPaginePannelli();
 
@@ -2648,4 +2708,49 @@ function formattaTelefonoPerCopia(telefono) {
     }
 
     return pulito;
+}
+
+// ==========================================================
+// PAGINA NORMATIVE: un listener solo sul contenitore.
+// Le testate con data-fonte caricano il file alla prima apertura;
+// tutte le altre (titoli, capi, sezioni, articoli) si limitano ad aprirsi.
+// ==========================================================
+const RENDERER_NORMATIVE = {
+    "/FireOps/db/dpr642012.json": disegnaRegolamentoDpr
+};
+
+const contenitoreNormative = document.getElementById("normative-contenuto");
+
+if (contenitoreNormative) {
+    contenitoreNormative.addEventListener("click", (e) => {
+        const testata = e.target.closest(".evento-rilevante-testata");
+        if (!testata || !contenitoreNormative.contains(testata)) return;
+
+        const dettaglio = testata.parentElement.querySelector(":scope > .evento-rilevante-dettaglio");
+        if (!dettaglio) return;
+
+        const aperto = dettaglio.classList.toggle("aperto");
+        testata.setAttribute("aria-expanded", aperto ? "true" : "false");
+        const freccia = testata.querySelector(".freccia");
+        if (freccia) freccia.textContent = aperto ? "▼" : "▶";
+
+        const percorso = testata.dataset.fonte;
+        if (!percorso || testata.dataset.caricato === "si") return;
+
+        testata.dataset.caricato = "si";
+        dettaglio.innerHTML = `<p class="pagina-nota">Caricamento in corso…</p>`;
+
+        FireOps.caricaJson(percorso)
+            .then(dati => {
+                const disegna = RENDERER_NORMATIVE[percorso];
+                dettaglio.innerHTML = disegna
+                    ? disegna(dati)
+                    : `<p class="pagina-nota">Nessun renderer per questa fonte.</p>`;
+            })
+            .catch(err => {
+                testata.dataset.caricato = ""; // un errore non deve impedire un nuovo tentativo
+                console.error(`Normativa non disponibile (${percorso}):`, err);
+                dettaglio.innerHTML = `<p class="pagina-nota" style="color:var(--danger-color);">Impossibile leggere <code>${testoSicuroModale(percorso)}</code>: ${testoSicuroModale(err.message)}</p>`;
+            });
+    });
 }
