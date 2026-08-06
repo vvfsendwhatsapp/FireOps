@@ -248,8 +248,30 @@ document.addEventListener("DOMContentLoaded", () => {
         99: ["⛈️", "Temporale con grandine forte"]
     };
 
-    function descrizioneMeteo(codice) {
+    // Varianti notturne: servono solo per i codici la cui icona diurna contiene
+    // il sole. Nuvoloso, nebbia, neve, temporale ecc. restano identici di notte.
+    const METEO_CODICI_NOTTE = {
+        0:  ["🌙",   "Sereno"],
+        1:  ["🌙",   "Prevalentemente sereno"],
+        2:  ["☁️", "Parzialmente nuvoloso"],
+        51: ["🌧️",  "Pioviggine debole"],
+        53: ["🌧️",  "Pioviggine moderata"],
+        80: ["🌧️",  "Rovesci di pioggia deboli"],
+        85: ["🌨️",  "Rovesci di neve deboli"]
+    };
+
+    function descrizioneMeteo(codice, isGiorno = true) {
+        if (!isGiorno && METEO_CODICI_NOTTE[codice]) return METEO_CODICI_NOTTE[codice];
         return METEO_CODICI[codice] || ["🌡️", "Condizioni non disponibili"];
+    }
+
+    // Open-Meteo restituisce is_day (1 = giorno, 0 = notte) allineato a hourly.time.
+    // Se il campo mancasse (risposta parziale, cache vecchia), si ricade su una
+    // stima grezza dall'ora locale invece di mostrare per forza il sole.
+    function eOraDiGiorno(hourly, i) {
+        if (Array.isArray(hourly.is_day)) return hourly.is_day[i] === 1;
+        const ora = parseInt(String(hourly.time[i]).slice(11, 13), 10);
+        return ora >= 7 && ora < 19;
     }
 
     // Estrae { lat, lng } dal campo "Coordinate" del comando (formato testuale "lat, lng")
@@ -587,7 +609,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const contenitoreOrario = document.getElementById("meteo-orario");
         if (!contenitoreOrario || !coord) return;
 
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=${coord.lat}&longitude=${coord.lng}&hourly=temperature_2m,weather_code,precipitation_probability&forecast_hours=12&timezone=auto`;
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${coord.lat}&longitude=${coord.lng}&hourly=temperature_2m,weather_code,precipitation_probability,is_day&forecast_hours=12&timezone=auto`;
 
         fetch(url)
             .then(r => {
@@ -617,7 +639,7 @@ document.addEventListener("DOMContentLoaded", () => {
         let html = "";
         hourly.time.forEach((iso, i) => {
             const ora = iso.slice(11, 16); // estrae "HH:MM" dal formato ISO restituito da Open-Meteo
-            const [icona] = descrizioneMeteo(hourly.weather_code[i]);
+            const [icona] = descrizioneMeteo(hourly.weather_code[i], eOraDiGiorno(hourly, i));
             const temp = Math.round(hourly.temperature_2m[i]);
             const probabilitaPioggia = Array.isArray(hourly.precipitation_probability) ? hourly.precipitation_probability[i] : null;
 
