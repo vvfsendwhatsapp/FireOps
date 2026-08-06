@@ -89,20 +89,22 @@
             flex-shrink: 0;
         }
 
-        /* Pulsante "R" del vademecum: rosso RAL3000 come i campi critici,
-           per distinguerlo a colpo d'occhio da ❓ e ☰ che sono gialli */
+        /* Pulsante "R" del vademecum: stesso guscio di ❓ e ☰ (sfondo nero,
+           bordo giallo), ma la lettera è rossa RAL3000. Il bordo resta giallo
+           anche al passaggio del mouse, così i tre pulsanti restano una fila
+           coerente e a cambiare è solo la R. */
         .btn-icon-hamburger.btn-icon-rilevante {
-            background: var(--danger-color);
-            border-color: var(--danger-color);
-            color: #ffffff;
+            background: var(--dark-color);
+            border-color: var(--primary-color);
+            color: var(--danger-color);
             font-weight: bold;
             font-size: 20px;
         }
 
         .btn-icon-hamburger.btn-icon-rilevante:hover {
-            background: #ffffff;
-            color: var(--danger-color);
-            border-color: #ffffff;
+            background: var(--dark-color);
+            border-color: var(--primary-color);
+            color: #d9483a;
         }
 
         /* Vademecum: premessa e logica OR in evidenza sopra l'elenco */
