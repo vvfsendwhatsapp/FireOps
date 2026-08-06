@@ -1167,121 +1167,164 @@ document.addEventListener("keydown", (e) => {
 });
 
 // ==========================================================
-// VADEMECUM: DETERMINAZIONE EVENTO RILEVANTE
-// Le 10 categorie arrivano da db/interventorilevante.json: nessuna voce è
-// scritta nel codice, così l'elenco resta allineato alla circolare
-// semplicemente aggiornando il JSON.
+// MODALI A FISARMONICA ALIMENTATI DA JSON
+//
+// Stesso motore per il vademecum "Evento rilevante" (pulsante R) e per
+// "Gli 8 Passi" (pulsante 8P): cambiano solo il file e gli elementi del
+// modale. Il renderer non conosce i contenuti — legge le chiavi che trova,
+// così i due JSON possono avere forme diverse e crescere nel tempo senza
+// che il codice vada aggiornato.
 // ==========================================================
-const btnEventoRilevante = document.getElementById("btn-evento-rilevante");
-const modalEventoRilevante = document.getElementById("modal-evento-rilevante");
-const modalEventoRilevanteClose = document.getElementById("modal-evento-rilevante-close");
-const contenutoEventoRilevante = document.getElementById("evento-rilevante-contenuto");
-let vademecumEventoRilevante = null;
-
-function testoSicuroRilevante(valore) {
+function testoSicuroModale(valore) {
     return String(valore === null || valore === undefined ? "" : valore)
         .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-function chipEventoRilevante(voci) {
+function chipModale(voci) {
     if (!Array.isArray(voci) || voci.length === 0) return "";
-    const elementi = voci.map(v => `<span class="evento-rilevante-chip">${testoSicuroRilevante(v)}</span>`).join("");
+    const elementi = voci
+        .map(v => `<span class="evento-rilevante-chip">${testoSicuroModale(typeof v === "object" ? JSON.stringify(v) : v)}</span>`)
+        .join("");
     return `<div class="evento-rilevante-elenco">${elementi}</div>`;
 }
 
-// Il riferimento completo (1.a., 4.a., ...) si ricava dalla categoria che
-// contiene la condizione: nel JSON la lettera è staccata dal numero, ma in
-// una comunicazione di servizio si cita sempre la coppia.
-function condizioneEventoRilevante(condizione, idCategoria) {
+// L'elenco principale può chiamarsi in molti modi a seconda del file:
+// si prende quello riconosciuto, altrimenti il primo array disponibile
+function elencoPrincipale(dati) {
+    const chiaviNote = ["categorie", "passi", "voci", "sezioni", "elenco", "steps"];
+    for (const chiave of chiaviNote) {
+        if (Array.isArray(dati[chiave])) return dati[chiave];
+    }
+    return Object.values(dati).find(Array.isArray) || [];
+}
+
+function primoValore(oggetto, chiavi) {
+    for (const chiave of chiavi) {
+        if (oggetto[chiave] !== undefined && oggetto[chiave] !== null && oggetto[chiave] !== "") {
+            return oggetto[chiave];
+        }
+    }
+    return "";
+}
+
+// Riferimento completo della sotto-voce: 1.a., 4.a., ...
+function condizioneModale(condizione, riferimentoPadre) {
     const lettera = condizione.lettera
-        ? `<span class="evento-rilevante-riferimento">${testoSicuroRilevante(idCategoria)}.${testoSicuroRilevante(condizione.lettera)}.</span> `
+        ? `<span class="evento-rilevante-riferimento">${testoSicuroModale(riferimentoPadre)}.${testoSicuroModale(condizione.lettera)}.</span> `
         : "";
     const alternativa = condizione.alternativa
-        ? `<div class="evento-rilevante-alternativa">In alternativa: ${testoSicuroRilevante(condizione.alternativa)}</div>`
+        ? `<div class="evento-rilevante-alternativa">In alternativa: ${testoSicuroModale(condizione.alternativa)}</div>`
         : "";
-    // nuclei, elementi e attivita hanno significati diversi nel JSON ma stessa
-    // resa a schermo: un elenco di pastiglie sotto al testo della condizione
     const elenchi = [condizione.nuclei, condizione.elementi, condizione.attivita]
-        .map(chipEventoRilevante).join("");
+        .map(chipModale).join("");
 
     return `<div class="evento-rilevante-condizione">
-        <span class="evento-rilevante-sintesi">${lettera}${testoSicuroRilevante(condizione.sintesi || "")}</span>
-        <div class="evento-rilevante-testo">${testoSicuroRilevante(condizione.testo || "")}</div>
+        <span class="evento-rilevante-sintesi">${lettera}${testoSicuroModale(primoValore(condizione, ["sintesi", "titolo", "nome"]))}</span>
+        <div class="evento-rilevante-testo">${testoSicuroModale(primoValore(condizione, ["testo", "descrizione", "dettaglio"]))}</div>
         ${elenchi}${alternativa}
     </div>`;
 }
 
-function disegnaVademecumEventoRilevante(dati) {
-    if (!contenutoEventoRilevante) return;
+// Chiavi già usate altrove nella scheda: non vanno ripetute in coda
+const CHIAVI_GIA_MOSTRATE = ["id", "numero", "codice", "sigla", "titolo", "nome", "condizioni",
+    "testo", "descrizione", "dettaglio", "sintesi", "lettera", "alternativa",
+    "nuclei", "elementi", "attivita", "soglia"];
 
-    const titolo = document.getElementById("evento-rilevante-titolo");
-    if (titolo && dati.titolo) titolo.textContent = `🅁 ${dati.titolo}`;
+function dettaglioVoceModale(voce, riferimento) {
+    // Forma "vademecum": la voce contiene un elenco di condizioni
+    if (Array.isArray(voce.condizioni) && voce.condizioni.length > 0) {
+        return voce.condizioni.map(c => condizioneModale(c, riferimento)).join("");
+    }
 
-    const logica = dati.logica ? ` I criteri sono in <strong>${testoSicuroRilevante(dati.logica)}</strong>: ne basta uno.` : "";
+    // Forma libera: testo principale, poi eventuali elenchi, poi il resto
+    const testo = primoValore(voce, ["testo", "descrizione", "dettaglio"]);
+    const parti = [];
+    if (testo) parti.push(`<div class="evento-rilevante-testo">${testoSicuroModale(testo)}</div>`);
+
+    Object.entries(voce).forEach(([chiave, valore]) => {
+        if (CHIAVI_GIA_MOSTRATE.includes(chiave)) return;
+        if (Array.isArray(valore)) {
+            parti.push(`<h5 style="margin:10px 0 4px;">${testoSicuroModale(chiave)}</h5>${chipModale(valore)}`);
+        } else if (valore !== null && typeof valore === "object") {
+            parti.push(`<div class="evento-rilevante-alternativa">${testoSicuroModale(chiave)}: ${testoSicuroModale(JSON.stringify(valore))}</div>`);
+        } else if (valore !== "" && valore !== null && valore !== undefined) {
+            parti.push(`<div class="evento-rilevante-alternativa">${testoSicuroModale(chiave)}: ${testoSicuroModale(valore)}</div>`);
+        }
+    });
+
+    return parti.join("") || `<div class="evento-rilevante-testo">Nessun dettaglio disponibile per questa voce.</div>`;
+}
+
+function disegnaFisarmonicaJson(dati, contenitore, elementoTitolo, prefissoTitolo) {
+    if (elementoTitolo && dati.titolo) elementoTitolo.textContent = `${prefissoTitolo} ${dati.titolo}`;
+
+    const logica = dati.logica
+        ? ` I criteri sono in <strong>${testoSicuroModale(dati.logica)}</strong>: ne basta uno.`
+        : "";
     const premessa = dati.premessa
-        ? `<div class="evento-rilevante-premessa">${testoSicuroRilevante(dati.premessa)}${logica}</div>`
+        ? `<div class="evento-rilevante-premessa">${testoSicuroModale(dati.premessa)}${logica}</div>`
         : "";
 
-    const voci = (dati.categorie || []).map(categoria => {
-        const condizioni = (categoria.condizioni || [])
-            .map(condizione => condizioneEventoRilevante(condizione, categoria.id))
-            .join("");
+    const voci = elencoPrincipale(dati).map((voce, indice) => {
+        const riferimento = primoValore(voce, ["id", "numero"]) || (indice + 1);
+        const codice = primoValore(voce, ["codice", "sigla"]);
+        const distintivo = codice
+            ? `<span class="evento-rilevante-codice">${testoSicuroModale(codice)}</span>`
+            : "";
+        const titolo = testoSicuroModale(primoValore(voce, ["titolo", "nome"]));
+
         return `<div class="evento-rilevante-voce">
             <button type="button" class="evento-rilevante-testata" aria-expanded="false">
                 <span class="freccia">▶</span>
-                <span class="evento-rilevante-codice">${testoSicuroRilevante(categoria.codice || categoria.id)}</span>
-                <span>${testoSicuroRilevante(categoria.id)}. ${testoSicuroRilevante(categoria.titolo)}</span>
+                ${distintivo}
+                <span>${testoSicuroModale(riferimento)}. ${titolo}</span>
             </button>
-            <div class="evento-rilevante-dettaglio">${condizioni}</div>
+            <div class="evento-rilevante-dettaglio">${dettaglioVoceModale(voce, riferimento)}</div>
         </div>`;
     }).join("");
 
-    contenutoEventoRilevante.innerHTML = premessa + voci;
+    contenitore.innerHTML = premessa + voci;
 }
 
-function apriVademecumEventoRilevante() {
-    if (!modalEventoRilevante) return;
-    modalEventoRilevante.style.display = "flex";
+// Collega pulsante, modale e file JSON. Il caricamento avviene alla prima
+// apertura (non all'avvio) e passa dalla cache condivisa del core.
+function collegaModaleJson({ idBottone, idModale, idChiusura, idContenuto, idTitolo, percorso, prefissoTitolo }) {
+    const bottone = document.getElementById(idBottone);
+    const modale = document.getElementById(idModale);
+    const chiusura = document.getElementById(idChiusura);
+    const contenuto = document.getElementById(idContenuto);
+    const titolo = document.getElementById(idTitolo);
+    if (!bottone || !modale || !contenuto) return;
 
-    if (vademecumEventoRilevante) return; // già caricato: si riapre e basta
-    if (contenutoEventoRilevante) {
-        contenutoEventoRilevante.innerHTML = `<p class="pagina-nota">Caricamento vademecum…</p>`;
-    }
+    let giaCaricato = false;
 
-    fetch("/FireOps/db/interventorilevante.json")
-        .then(r => (r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status))))
-        .then(dati => {
-            vademecumEventoRilevante = dati;
-            disegnaVademecumEventoRilevante(dati);
-        })
-        .catch(err => {
-            console.error("Vademecum evento rilevante non disponibile:", err);
-            if (contenutoEventoRilevante) {
-                contenutoEventoRilevante.innerHTML = `<p class="pagina-nota" style="color:var(--danger-color);">Impossibile leggere <code>db/interventorilevante.json</code>: ${testoSicuroRilevante(err.message)}</p>`;
-            }
-        });
-}
+    function chiudi() { modale.style.display = "none"; }
 
-function chiudiVademecumEventoRilevante() {
-    if (modalEventoRilevante) modalEventoRilevante.style.display = "none";
-}
+    bottone.addEventListener("click", () => {
+        modale.style.display = "flex";
+        if (giaCaricato) return;
 
-if (btnEventoRilevante) btnEventoRilevante.addEventListener("click", apriVademecumEventoRilevante);
-if (modalEventoRilevanteClose) modalEventoRilevanteClose.addEventListener("click", chiudiVademecumEventoRilevante);
-if (modalEventoRilevante) {
-    modalEventoRilevante.addEventListener("click", (e) => {
-        if (e.target === modalEventoRilevante) chiudiVademecumEventoRilevante();
+        contenuto.innerHTML = `<p class="pagina-nota">Caricamento in corso…</p>`;
+        FireOps.caricaJson(percorso)
+            .then(dati => {
+                giaCaricato = true;
+                disegnaFisarmonicaJson(dati, contenuto, titolo, prefissoTitolo);
+            })
+            .catch(err => {
+                console.error(`Contenuto non disponibile (${percorso}):`, err);
+                contenuto.innerHTML = `<p class="pagina-nota" style="color:var(--danger-color);">Impossibile leggere <code>${testoSicuroModale(percorso)}</code>: ${testoSicuroModale(err.message)}</p>`;
+            });
     });
-}
-document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && modalEventoRilevante && modalEventoRilevante.style.display === "flex") {
-        chiudiVademecumEventoRilevante();
-    }
-});
 
-// Apertura/chiusura delle 10 voci: un solo listener sul contenitore
-if (contenutoEventoRilevante) {
-    contenutoEventoRilevante.addEventListener("click", (e) => {
+    if (chiusura) chiusura.addEventListener("click", chiudi);
+    modale.addEventListener("click", (e) => { if (e.target === modale) chiudi(); });
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && modale.style.display === "flex") chiudi();
+    });
+
+    // Apertura/chiusura delle voci: un solo listener sul contenitore, valido
+    // anche per le schede ricostruite
+    contenuto.addEventListener("click", (e) => {
         const testata = e.target.closest(".evento-rilevante-testata");
         if (!testata) return;
         const dettaglio = testata.parentElement.querySelector(".evento-rilevante-dettaglio");
@@ -1292,6 +1335,26 @@ if (contenutoEventoRilevante) {
         if (freccia) freccia.textContent = aperto ? "▼" : "▶";
     });
 }
+
+collegaModaleJson({
+    idBottone: "btn-evento-rilevante",
+    idModale: "modal-evento-rilevante",
+    idChiusura: "modal-evento-rilevante-close",
+    idContenuto: "evento-rilevante-contenuto",
+    idTitolo: "evento-rilevante-titolo",
+    percorso: "/FireOps/db/interventorilevante.json",
+    prefissoTitolo: "🅁",
+});
+
+collegaModaleJson({
+    idBottone: "btn-otto-passi",
+    idModale: "modal-otto-passi",
+    idChiusura: "modal-otto-passi-close",
+    idContenuto: "otto-passi-contenuto",
+    idTitolo: "otto-passi-titolo",
+    percorso: "/FireOps/db/8passi.json",
+    prefissoTitolo: "👣",
+});
 
     // Assegnazione iniziale: Home a sinistra, Mappa e Meteo a destra.
     // Tutte le altre pagine restano parcheggiate nel magazzino nascosto.
