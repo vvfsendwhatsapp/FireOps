@@ -1,0 +1,46 @@
+{
+  "titolo": "Gli 8 Passi",
+  "premessa": "Sequenza operativa per la gestione degli interventi con sostanze pericolose. I passi si svolgono nell'ordine indicato.",
+  "passi": [
+    {
+      "numero": 1,
+      "codice": "P1",
+      "titolo": "Controllo e gestione del sito"
+    },
+    {
+      "numero": 2,
+      "codice": "P2",
+      "titolo": "Identificazione del materiale coinvolto"
+    },
+    {
+      "numero": 3,
+      "codice": "P3",
+      "titolo": "Analisi dei pericoli e del rischio"
+    },
+    {
+      "numero": 4,
+      "codice": "P4",
+      "titolo": "Valutazione degli indumenti protettivi e delle attrezzature"
+    },
+    {
+      "numero": 5,
+      "codice": "P5",
+      "titolo": "Coordinamento delle informazioni e delle risorse"
+    },
+    {
+      "numero": 6,
+      "codice": "P6",
+      "titolo": "Controllo, confinamento e contenimento del prodotto"
+    },
+    {
+      "numero": 7,
+      "codice": "P7",
+      "titolo": "Decontaminazione"
+    },
+    {
+      "numero": 8,
+      "codice": "P8",
+      "titolo": "Chiusura dell'intervento"
+    }
+  ]
+}

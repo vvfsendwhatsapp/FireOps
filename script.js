@@ -960,7 +960,8 @@ document.addEventListener("DOMContentLoaded", () => {
         { id: "qrcode", label: "QrCode" },
         { id: "turnario", label: "Turnario" },
         { id: "moduli-cmr", label: "Moduli CMR" },
-        { id: "sostanze-pericolose", label: "Sostanze pericolose" }
+        { id: "sostanze-pericolose", label: "Sostanze pericolose" },
+        { id: "regolamento-servizio", label: "Regolamento di servizio DPR 64/2012" }
     ];
 
     const magazzinoPagine = document.getElementById("magazzino-pagine");
@@ -1018,6 +1019,10 @@ const CHIAVE_STORAGE_PANNELLI = "fireops_pagine_pannelli";
     // (stesso comportamento che prima aveva il cambio scheda unico)
     function eseguiEffettiPagina(idPagina) {
         chiudiPopupDati();
+
+        if (idPagina === "regolamento-servizio") {
+            caricaRegolamentoServizio();
+        }
 
         if (idPagina === "messaggistica") {
             const inputNumero = document.getElementById("msg-numero");
@@ -1255,6 +1260,22 @@ function dettaglioVoceModale(voce, riferimento) {
     return parti.join("") || `<div class="evento-rilevante-testo">Nessun dettaglio disponibile per questa voce.</div>`;
 }
 
+// Apertura/chiusura delle voci: un solo listener sul contenitore, valido
+// anche per le schede ricostruite da zero a ogni ricaricamento
+function abilitaFisarmonica(contenitore) {
+    if (!contenitore) return;
+    contenitore.addEventListener("click", (e) => {
+        const testata = e.target.closest(".evento-rilevante-testata");
+        if (!testata) return;
+        const dettaglio = testata.parentElement.querySelector(".evento-rilevante-dettaglio");
+        if (!dettaglio) return;
+        const aperto = dettaglio.classList.toggle("aperto");
+        testata.setAttribute("aria-expanded", aperto ? "true" : "false");
+        const freccia = testata.querySelector(".freccia");
+        if (freccia) freccia.textContent = aperto ? "▼" : "▶";
+    });
+}
+
 function disegnaFisarmonicaJson(dati, contenitore, elementoTitolo, prefissoTitolo) {
     if (elementoTitolo && dati.titolo) elementoTitolo.textContent = `${prefissoTitolo} ${dati.titolo}`;
 
@@ -1322,18 +1343,7 @@ function collegaModaleJson({ idBottone, idModale, idChiusura, idContenuto, idTit
         if (e.key === "Escape" && modale.style.display === "flex") chiudi();
     });
 
-    // Apertura/chiusura delle voci: un solo listener sul contenitore, valido
-    // anche per le schede ricostruite
-    contenuto.addEventListener("click", (e) => {
-        const testata = e.target.closest(".evento-rilevante-testata");
-        if (!testata) return;
-        const dettaglio = testata.parentElement.querySelector(".evento-rilevante-dettaglio");
-        if (!dettaglio) return;
-        const aperto = dettaglio.classList.toggle("aperto");
-        testata.setAttribute("aria-expanded", aperto ? "true" : "false");
-        const freccia = testata.querySelector(".freccia");
-        if (freccia) freccia.textContent = aperto ? "▼" : "▶";
-    });
+    abilitaFisarmonica(contenuto);
 }
 
 collegaModaleJson({
@@ -1345,6 +1355,27 @@ collegaModaleJson({
     percorso: "/FireOps/db/interventorilevante.json",
     prefissoTitolo: "🅁",
 });
+
+// Stessa fisarmonica dei modali, ma dentro una pagina di pannello: il file
+// viene letto una sola volta, alla prima volta che la pagina viene aperta
+const contenutoRegolamento = document.getElementById("regolamento-servizio-contenuto");
+let regolamentoCaricato = false;
+
+function caricaRegolamentoServizio() {
+    if (!contenutoRegolamento || regolamentoCaricato) return;
+    regolamentoCaricato = true;
+
+    contenutoRegolamento.innerHTML = `<p class="pagina-nota">Caricamento del regolamento…</p>`;
+    FireOps.caricaJson("/FireOps/db/dpr642012.json")
+        .then(dati => disegnaFisarmonicaJson(dati, contenutoRegolamento, null, ""))
+        .catch(err => {
+            regolamentoCaricato = false; // un errore non deve impedire un nuovo tentativo
+            console.error("Regolamento di servizio non disponibile:", err);
+            contenutoRegolamento.innerHTML = `<p class="pagina-nota" style="color:var(--danger-color);">Impossibile leggere <code>db/dpr642012.json</code>: ${testoSicuroModale(err.message)}</p>`;
+        });
+}
+
+abilitaFisarmonica(contenutoRegolamento);
 
 collegaModaleJson({
     idBottone: "btn-otto-passi",
@@ -1365,6 +1396,13 @@ collegaModaleJson({
     });
     spostaSezione(paginaSinistra, "sinistra");
     spostaSezione(paginaDestra, "destra");
+
+    // L'assegnazione iniziale (e quindi il ripristino della sessione dopo un
+    // F5) non passa da eseguiEffettiPagina: se il Regolamento è già in un
+    // pannello va caricato qui, altrimenti resterebbe una pagina vuota
+    if (paginaSinistra === "regolamento-servizio" || paginaDestra === "regolamento-servizio") {
+        caricaRegolamentoServizio();
+    }
     aggiornaSelettori();
     salvaPaginePannelli();
 
