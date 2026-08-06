@@ -1020,6 +1020,10 @@ const CHIAVE_STORAGE_PANNELLI = "fireops_pagine_pannelli";
     function eseguiEffettiPagina(idPagina) {
         chiudiPopupDati();
 
+        if (idPagina === "regolamento-servizio") {
+            caricaRegolamentoServizio();
+        }
+
         if (idPagina === "messaggistica") {
             const inputNumero = document.getElementById("msg-numero");
             if (inputNumero) setTimeout(() => inputNumero.focus(), 50);
@@ -1352,214 +1356,26 @@ collegaModaleJson({
     prefissoTitolo: "🅁",
 });
 
-// ==========================================================
-// NORMATIVE: fisarmonica ricorsiva (titolo > capo > sezione > articolo)
-//
-// La struttura non è nota in anticipo e cambia da fonte a fonte: il
-// renderer scende ricorsivamente in QUALSIASI array di oggetti trovi,
-// usando il nome della chiave come etichetta del livello. Così lo stesso
-// codice regge un DPR con titoli e capi e una circolare fatta di soli punti.
-// ==========================================================
-const CHIAVI_TESTO_NORMATIVA = ["testo", "contenuto", "descrizione", "corpo"];
-const CHIAVI_ETICHETTA_NORMATIVA = ["titolo", "rubrica", "nome", "oggetto", "descrizione"];
-const CHIAVI_CODICE_NORMATIVA = ["codice", "articolo", "art", "numero", "sigla"];
+// Stessa fisarmonica dei modali, ma dentro una pagina di pannello: il file
+// viene letto una sola volta, alla prima volta che la pagina viene aperta
+const contenutoRegolamento = document.getElementById("regolamento-servizio-contenuto");
+let regolamentoCaricato = false;
 
-// Array di oggetti = livello successivo della gerarchia.
-// Array di stringhe = elenco di commi o punti, non un livello.
-function figliNormativa(nodo) {
-    return Object.entries(nodo).filter(([, valore]) =>
-        Array.isArray(valore) && valore.length > 0 && typeof valore[0] === "object" && valore[0] !== null);
-}
+function caricaRegolamentoServizio() {
+    if (!contenutoRegolamento || regolamentoCaricato) return;
+    regolamentoCaricato = true;
 
-function elenchiTestualiNormativa(nodo) {
-    return Object.entries(nodo).filter(([, valore]) =>
-        Array.isArray(valore) && valore.length > 0 && typeof valore[0] !== "object");
-}
-
-function nodoNormativa(nodo, indice, chiaveLivello) {
-    const codice = primoValore(nodo, CHIAVI_CODICE_NORMATIVA);
-    const etichetta = primoValore(nodo, CHIAVI_ETICHETTA_NORMATIVA);
-    const distintivo = codice
-        ? `<span class="evento-rilevante-codice">${testoSicuroModale(codice)}</span>`
-        : "";
-    // Se manca del tutto un'etichetta si ripiega sul nome del livello ("articolo 3")
-    const intestazione = etichetta || `${testoSicuroModale(chiaveLivello)} ${indice + 1}`;
-
-    const testo = primoValore(nodo, CHIAVI_TESTO_NORMATIVA);
-    const parti = [];
-    if (testo) parti.push(`<div class="evento-rilevante-testo">${testoSicuroModale(testo)}</div>`);
-
-    // Commi e punti: numerati, non pastiglie — vanno letti in sequenza
-    elenchiTestualiNormativa(nodo).forEach(([chiave, valori]) => {
-        parti.push(`<h5>${testoSicuroModale(chiave)}</h5>`);
-        valori.forEach((voce, i) => {
-            parti.push(`<div class="evento-rilevante-comma"><span class="numero">${i + 1}.</span><span>${testoSicuroModale(voce)}</span></div>`);
+    contenutoRegolamento.innerHTML = `<p class="pagina-nota">Caricamento del regolamento…</p>`;
+    FireOps.caricaJson("/FireOps/db/dpr642012.json")
+        .then(dati => disegnaFisarmonicaJson(dati, contenutoRegolamento, null, ""))
+        .catch(err => {
+            regolamentoCaricato = false; // un errore non deve impedire un nuovo tentativo
+            console.error("Regolamento di servizio non disponibile:", err);
+            contenutoRegolamento.innerHTML = `<p class="pagina-nota" style="color:var(--danger-color);">Impossibile leggere <code>db/dpr642012.json</code>: ${testoSicuroModale(err.message)}</p>`;
         });
-    });
-
-    figliNormativa(nodo).forEach(([chiave, elementi]) => {
-        parti.push(elementi.map((figlio, i) => nodoNormativa(figlio, i, chiave)).join(""));
-    });
-
-    return `<div class="evento-rilevante-voce">
-        <button type="button" class="evento-rilevante-testata" aria-expanded="false">
-            <span class="freccia">▶</span>
-            ${distintivo}
-            <span>${testoSicuroModale(intestazione)}</span>
-        </button>
-        <div class="evento-rilevante-dettaglio">${parti.join("") || `<div class="evento-rilevante-testo">Nessun contenuto.</div>`}</div>
-    </div>`;
 }
 
-// ----------------------------------------------------------
-// Forma "Normattiva": albero in "struttura" con RIFERIMENTI NUMERICI agli
-// articoli, che stanno in un elenco piatto a parte. Va quindi risolto il
-// rimando, non basta scendere ricorsivamente negli array.
-// ----------------------------------------------------------
-function eNormattiva(dati) {
-    return Array.isArray(dati.struttura) && Array.isArray(dati.articoli);
-}
-
-function commiArticolo(articolo) {
-    if (Array.isArray(articolo.commi) && articolo.commi.length > 0) {
-        return articolo.commi.map(comma => {
-            const lettere = Array.isArray(comma.lettere) && comma.lettere.length > 0
-                ? comma.lettere.map(l => `<div class="evento-rilevante-comma" style="margin-left:18px;"><span class="numero">${testoSicuroModale(l.lettera || "")}</span><span>${testoSicuroModale(l.testo || l)}</span></div>`).join("")
-                : "";
-            return `<div class="evento-rilevante-comma"><span class="numero">${testoSicuroModale(comma.numero)}.</span><span>${testoSicuroModale(comma.testo)}</span></div>${lettere}`;
-        }).join("");
-    }
-    return `<div class="evento-rilevante-testo">${testoSicuroModale(articolo.testo || "")}</div>`;
-}
-
-function articoloNormattiva(articolo) {
-    const avviso = articolo.possibile_troncamento
-        ? `<div class="evento-rilevante-alternativa" style="color:var(--danger-color);">⚠ Testo probabilmente troncato: verifica sulla fonte ufficiale.</div>`
-        : "";
-    return `<div class="evento-rilevante-voce">
-        <button type="button" class="evento-rilevante-testata" aria-expanded="false">
-            <span class="freccia">▶</span>
-            <span class="evento-rilevante-codice">${testoSicuroModale(articolo.etichetta || ("Art. " + articolo.numero))}</span>
-            <span>${testoSicuroModale(articolo.rubrica || "")}</span>
-        </button>
-        <div class="evento-rilevante-dettaglio">${commiArticolo(articolo)}${avviso}</div>
-    </div>`;
-}
-
-// In questo JSON un titolo elenca anche gli articoli dei propri capi e
-// sezioni: senza filtro ogni articolo comparirebbe due volte, una sotto il
-// capo e una sotto il titolo. Si tengono solo quelli non già coperti più giù.
-function articoliDeiDiscendenti(nodo) {
-    const coperti = new Set();
-    (nodo.figli || []).forEach(figlio => {
-        (figlio.articoli || []).forEach(n => coperti.add(n));
-        articoliDeiDiscendenti(figlio).forEach(n => coperti.add(n));
-    });
-    return coperti;
-}
-
-function nodoNormattiva(nodo, indiceArticoli) {
-    const figli = (nodo.figli || []).map(f => nodoNormattiva(f, indiceArticoli)).join("");
-    const giaNeiFigli = articoliDeiDiscendenti(nodo);
-    const articoli = (nodo.articoli || [])
-        .filter(numero => !giaNeiFigli.has(numero))
-        .map(numero => indiceArticoli.get(numero))
-        .filter(Boolean)
-        .map(articoloNormattiva)
-        .join("");
-    const etichetta = `${nodo.tipo || ""} ${nodo.numero || ""}`.trim().toUpperCase();
-
-    return `<div class="evento-rilevante-voce">
-        <button type="button" class="evento-rilevante-testata" aria-expanded="false">
-            <span class="freccia">▶</span>
-            <span class="evento-rilevante-codice">${testoSicuroModale(etichetta)}</span>
-            <span>${testoSicuroModale(nodo.rubrica || "")}</span>
-        </button>
-        <div class="evento-rilevante-dettaglio">${figli}${articoli}</div>
-    </div>`;
-}
-
-function disegnaNormattiva(dati, contenitore) {
-    const indiceArticoli = new Map((dati.articoli || []).map(a => [a.numero, a]));
-
-    const intestazione = [
-        dati.titolo_breve ? `<strong>${testoSicuroModale(dati.titolo_breve)}</strong>` : "",
-        dati.rubrica ? testoSicuroModale(dati.rubrica) : "",
-        dati.entrata_in_vigore ? `In vigore dal ${testoSicuroModale(dati.entrata_in_vigore)}` : "",
-        dati.vigente_al ? `testo vigente al ${testoSicuroModale(dati.vigente_al)}` : "",
-    ].filter(Boolean).join(" — ");
-    const fonte = dati.fonte
-        ? `<br><a href="${testoSicuroModale(dati.fonte)}" target="_blank" rel="noopener" class="indirizzo-link">Testo ufficiale su Normattiva</a>`
-        : "";
-
-    const albero = (dati.struttura || []).map(nodo => nodoNormattiva(nodo, indiceArticoli)).join("");
-
-    // Rete di sicurezza: un articolo non richiamato da nessun nodo resterebbe
-    // invisibile, ed è proprio quello che non deve succedere in una raccolta
-    // normativa. Se ce ne sono, finiscono in coda.
-    const richiamati = new Set();
-    (function raccogli(nodi) {
-        nodi.forEach(n => {
-            (n.articoli || []).forEach(x => richiamati.add(x));
-            raccogli(n.figli || []);
-        });
-    })(dati.struttura || []);
-    const orfani = (dati.articoli || []).filter(a => !richiamati.has(a.numero));
-    const codaOrfani = orfani.length > 0
-        ? `<div class="evento-rilevante-voce">
-            <button type="button" class="evento-rilevante-testata" aria-expanded="false">
-                <span class="freccia">▶</span>
-                <span class="evento-rilevante-codice">ALTRI</span>
-                <span>Articoli non collocati nella struttura (${orfani.length})</span>
-            </button>
-            <div class="evento-rilevante-dettaglio">${orfani.map(articoloNormattiva).join("")}</div>
-           </div>`
-        : "";
-
-    contenitore.innerHTML = `<div class="evento-rilevante-premessa">${intestazione}${fonte}</div>${albero}${codaOrfani}`;
-}
-
-function disegnaNormativa(dati, contenitore) {
-    if (eNormattiva(dati)) {
-        disegnaNormattiva(dati, contenitore);
-        return;
-    }
-
-    const premessa = dati.premessa
-        ? `<div class="evento-rilevante-premessa">${testoSicuroModale(dati.premessa)}</div>`
-        : "";
-    const radici = figliNormativa(dati);
-    const corpo = radici.length > 0
-        ? radici.map(([chiave, elementi]) => elementi.map((n, i) => nodoNormativa(n, i, chiave)).join("")).join("")
-        : `<p class="pagina-nota">Il file non contiene voci riconoscibili (serve almeno un elenco di oggetti).</p>`;
-    contenitore.innerHTML = premessa + corpo;
-}
-
-// Caricamento pigro: il file parte alla prima espansione della sua voce,
-// non all'apertura della pagina
-const contenutoNormative = document.getElementById("normative-contenuto");
-
-if (contenutoNormative) {
-    contenutoNormative.addEventListener("click", (e) => {
-        const testata = e.target.closest(".evento-rilevante-testata[data-fonte]");
-        if (!testata) return;
-        const dettaglio = testata.parentElement.querySelector(".evento-rilevante-dettaglio");
-        if (!dettaglio || dettaglio.dataset.caricato === "si") return;
-
-        dettaglio.dataset.caricato = "si";
-        dettaglio.innerHTML = `<p class="pagina-nota">Caricamento del testo…</p>`;
-
-        FireOps.caricaJson(testata.dataset.fonte)
-            .then(dati => disegnaNormativa(dati, dettaglio))
-            .catch(err => {
-                dettaglio.dataset.caricato = ""; // un errore non deve bloccare i tentativi successivi
-                console.error(`Normativa non disponibile (${testata.dataset.fonte}):`, err);
-                dettaglio.innerHTML = `<p class="pagina-nota" style="color:var(--danger-color);">Impossibile leggere <code>${testoSicuroModale(testata.dataset.fonte)}</code>: ${testoSicuroModale(err.message)}</p>`;
-            });
-    });
-
-    abilitaFisarmonica(contenutoNormative);
-}
+abilitaFisarmonica(contenutoRegolamento);
 
 collegaModaleJson({
     idBottone: "btn-otto-passi",
@@ -1580,6 +1396,13 @@ collegaModaleJson({
     });
     spostaSezione(paginaSinistra, "sinistra");
     spostaSezione(paginaDestra, "destra");
+
+    // L'assegnazione iniziale (e quindi il ripristino della sessione dopo un
+    // F5) non passa da eseguiEffettiPagina: se il Regolamento è già in un
+    // pannello va caricato qui, altrimenti resterebbe una pagina vuota
+    if (paginaSinistra === "regolamento-servizio" || paginaDestra === "regolamento-servizio") {
+        caricaRegolamentoServizio();
+    }
     aggiornaSelettori();
     salvaPaginePannelli();
 
