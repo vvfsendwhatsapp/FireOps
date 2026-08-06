@@ -325,31 +325,65 @@ document.addEventListener("DOMContentLoaded", () => {
     // Formato DD per la TABELLA RISULTATI (uniforme a DMM/DMS: valore + lettera
     // N/S/E/W). NON usare questo per il campo "Appunti" del messaggio squadre:
     // quello resta "lat, lon" decimale semplice, come nel template originale.
+    // Larghezza fissa dei gradi: 2 cifre in latitudine (max 90), 3 in
+    // longitudine (max 180). Gli zeri iniziali non sono un vezzo grafico:
+    // incolonnano i valori e rendono impossibile leggere "9" per "90" o
+    // scambiare una longitudine per una latitudine quando si dettano via radio.
+    function cifreGradi(lettere) {
+        return lettere === "NS" ? 2 : 3;
+    }
+
+    // Scomposizione in gradi/primi/secondi fatta su INTERI, non su decimali.
+    // Motivo: 5.05° in virgola mobile vale 5.049999...; scomponendo a cascata
+    // si ottiene 5° 02' 59.999...", che arrotondato a due decimali diventa
+    // "60.00" secondi — una coordinata che non esiste. Arrotondando invece
+    // una volta sola alla precisione finale (centesimi di secondo) e dividendo
+    // fra interi, il riporto su primi e gradi avviene da sé.
+    function scomponiDMM(valore) {
+        const decimillesimiDiPrimo = Math.round(Math.abs(valore) * 60 * 10000);
+        return {
+            gradi: Math.floor(decimillesimiDiPrimo / 600000),
+            minuti: (decimillesimiDiPrimo % 600000) / 10000, // 0 - 59.9999
+        };
+    }
+
+    function scomponiDMS(valore) {
+        const centesimiDiSecondo = Math.round(Math.abs(valore) * 3600 * 100);
+        return {
+            gradi: Math.floor(centesimiDiSecondo / 360000),
+            minuti: Math.floor((centesimiDiSecondo % 360000) / 6000), // 0 - 59
+            secondi: (centesimiDiSecondo % 6000) / 100,               // 0 - 59.99
+        };
+    }
+    // "9.189982" con 3 cifre di grado -> "009.189982" (3 + punto + 6 decimali)
+    function gradiDecimaliRiempiti(valore, lettere) {
+        return Math.abs(valore).toFixed(6).padStart(cifreGradi(lettere) + 7, "0");
+    }
+
     function ddSingolo(valore, lettere) {
         const lettera = valore >= 0 ? lettere[0] : lettere[1];
-        return `${Math.abs(valore).toFixed(6)}° ${lettera}`;
+        return `${gradiDecimaliRiempiti(valore, lettere)}° ${lettera}`;
     }
     function formattaDDUscita(lat, lon) {
         return `${ddSingolo(lat, "NS")}, ${ddSingolo(lon, "EW")}`;
     }
     function dmmSingolo(valore, lettere) {
         const lettera = valore >= 0 ? lettere[0] : lettere[1];
-        const v = Math.abs(valore);
-        const gradi = Math.floor(v);
-        const minuti = (v - gradi) * 60;
-        return `${gradi}° ${minuti.toFixed(4)}' ${lettera}`;
+        const { gradi, minuti } = scomponiDMM(valore);
+        const gradiTesto = String(gradi).padStart(cifreGradi(lettere), "0");
+        const minutiTesto = minuti.toFixed(4).padStart(7, "0"); // "7.8522" -> "07.8522"
+        return `${gradiTesto}° ${minutiTesto}' ${lettera}`;
     }
     function formattaDMM(lat, lon) {
         return `${dmmSingolo(lat, "NS")}, ${dmmSingolo(lon, "EW")}`;
     }
     function dmsSingolo(valore, lettere) {
         const lettera = valore >= 0 ? lettere[0] : lettere[1];
-        const v = Math.abs(valore);
-        const gradi = Math.floor(v);
-        const minutiTot = (v - gradi) * 60;
-        const minuti = Math.floor(minutiTot);
-        const secondi = (minutiTot - minuti) * 60;
-        return `${gradi}° ${minuti}' ${secondi.toFixed(2)}" ${lettera}`;
+        const { gradi, minuti, secondi } = scomponiDMS(valore);
+        const gradiTesto = String(gradi).padStart(cifreGradi(lettere), "0");
+        const minutiTesto = String(minuti).padStart(2, "0");
+        const secondiTesto = secondi.toFixed(2).padStart(5, "0"); // "1.10" -> "01.10"
+        return `${gradiTesto}° ${minutiTesto}' ${secondiTesto}" ${lettera}`;
     }
     function formattaDMS(lat, lon) {
         return `${dmsSingolo(lat, "NS")}, ${dmsSingolo(lon, "EW")}`;
@@ -358,6 +392,18 @@ document.addEventListener("DOMContentLoaded", () => {
         const u = latLonToUtm(lat, lon);
         return `${u.zona}${u.lettera} ${Math.round(u.est)} ${Math.round(u.nord)}`;
     }
+    // Versione per gli appunti: via gradi, primi, secondi e lettere di emisfero,
+    // restano solo le cifre con "." e ",". L'emisfero non si perde però: S e W
+    // diventano un segno meno davanti, altrimenti si incollerebbe altrove una
+    // coordinata che punta nell'emisfero sbagliato senza alcun avviso.
+    function testoSoloNumeri(testoVisibile) {
+        return testoVisibile.split(",").map(parte => {
+            const negativo = /[SW]\s*$/.test(parte.trim());
+            const numeri = parte.replace(/[^\d.]/g, " ").trim().replace(/\s+/g, " ");
+            return (negativo ? "-" : "") + numeri;
+        }).join(", ");
+    }
+
     function formattaSO115Lon(lon) { return lon.toFixed(6).replace(".", ","); }
     function formattaSO115Lat(lat) { return lat.toFixed(6).replace(".", ","); }
 
@@ -380,10 +426,11 @@ document.addEventListener("DOMContentLoaded", () => {
     function formattaDMmMessaggio(lat, lon) {
         const sLat = segnoLettera(lat, "NS"), sLon = segnoLettera(lon, "EW");
         function parte(valore, cifreGradi) {
-            const v = Math.abs(valore);
-            const gradi = String(Math.floor(v)).padStart(cifreGradi, "0");
-            const minuti = ((v - Math.floor(v)) * 60).toFixed(4).padStart(7, "0");
-            return { gradi, minuti };
+            const scomposto = scomponiDMM(valore);
+            return {
+                gradi: String(scomposto.gradi).padStart(cifreGradi, "0"),
+                minuti: scomposto.minuti.toFixed(4).padStart(7, "0"),
+            };
         }
         const pLat = parte(lat, 2), pLon = parte(lon, 3);
         return `Lat ${sLat.lettera} ${sLat.segno}${pLat.gradi}° ${pLat.minuti}' - Lon ${sLon.lettera} ${sLon.segno}${pLon.gradi}° ${pLon.minuti}'`;
@@ -391,12 +438,12 @@ document.addEventListener("DOMContentLoaded", () => {
     function formattaDMSsMessaggio(lat, lon) {
         const sLat = segnoLettera(lat, "NS"), sLon = segnoLettera(lon, "EW");
         function parte(valore, cifreGradi) {
-            const v = Math.abs(valore);
-            const gradi = String(Math.floor(v)).padStart(cifreGradi, "0");
-            const minutiTot = (v - Math.floor(v)) * 60;
-            const minuti = String(Math.floor(minutiTot)).padStart(2, "0");
-            const secondi = ((minutiTot - Math.floor(minutiTot)) * 60).toFixed(2).padStart(5, "0");
-            return { gradi, minuti, secondi };
+            const scomposto = scomponiDMS(valore);
+            return {
+                gradi: String(scomposto.gradi).padStart(cifreGradi, "0"),
+                minuti: String(scomposto.minuti).padStart(2, "0"),
+                secondi: scomposto.secondi.toFixed(2).padStart(5, "0"),
+            };
         }
         const pLat = parte(lat, 2), pLon = parte(lon, 3);
         return `Lat ${sLat.lettera} ${sLat.segno}${pLat.gradi}° ${pLat.minuti}' ${pLat.secondi}" - Lon ${sLon.lettera} ${sLon.segno}${pLon.gradi}° ${pLon.minuti}' ${pLon.secondi}"`;
@@ -667,7 +714,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // ==========================================================
     function copiaTestoConFeedback(event, testo) { return FireOps.copiaTesto(event, testo); }
     function mostraFeedbackCopiaCoord(event, testo) { return FireOps.mostraFeedbackCopia(event, testo); }
-    function rendiCopiabile(elemento, testo) { return FireOps.rendiCopiabile(elemento, testo); }
+    function rendiCopiabile(elemento, testo, testoDaCopiare) { return FireOps.rendiCopiabile(elemento, testo, testoDaCopiare); }
 
     // ==========================================================
     // TURNO VVF + DATA/ORA ROMA — duplicato da script.js perché
@@ -2164,9 +2211,12 @@ function disegnaGraficoAltimetria(geojson) {
             return;
         }
 
-        rendiCopiabile(document.getElementById("coord-out-dd"), formattaDDUscita(lat, lon));
-        rendiCopiabile(document.getElementById("coord-out-dmm"), formattaDMM(lat, lon));
-        rendiCopiabile(document.getElementById("coord-out-dms"), formattaDMS(lat, lon));
+        // Si mostra la forma leggibile, si copia quella senza simboli
+        [["coord-out-dd", formattaDDUscita(lat, lon)],
+         ["coord-out-dmm", formattaDMM(lat, lon)],
+         ["coord-out-dms", formattaDMS(lat, lon)]].forEach(([id, testo]) => {
+            rendiCopiabile(document.getElementById(id), testo, testoSoloNumeri(testo));
+        });
         try {
             rendiCopiabile(document.getElementById("coord-out-olc"), olcEncode(lat, lon, 11));
         } catch (err) {
