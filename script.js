@@ -435,9 +435,13 @@ document.addEventListener("DOMContentLoaded", () => {
         return new Date(Math.floor(data.getTime() / cinqueMinutiMs) * cinqueMinutiMs);
     }
 
-    // Genera gli istanti degli ultimi N fotogrammi radar (5 minuti di passo), dal più vecchio al più recente
+    // Il campione radar viene pubblicato con qualche minuto di ritardo rispetto
+    // all'istante di misura: chiedere l'istante appena trascorso restituisce
+    // tile vuote. Si arretra la finestra prima di costruire i fotogrammi.
+    const RITARDO_PUBBLICAZIONE_MS = 10 * 60 * 1000;
+
     function generaIstantiRadar(numeroFotogrammi) {
-        const ultimoIstante = arrotondaAi5Minuti(new Date());
+        const ultimoIstante = arrotondaAi5Minuti(new Date(Date.now() - RITARDO_PUBBLICAZIONE_MS));
         const istanti = [];
         for (let i = numeroFotogrammi - 1; i >= 0; i--) {
             istanti.push(new Date(ultimoIstante.getTime() - i * 5 * 60 * 1000));
@@ -480,23 +484,27 @@ document.addEventListener("DOMContentLoaded", () => {
                 format: "image/png",
                 transparent: true,
                 version: "1.1.1",
-                time: data.toISOString(),
+                time: data.toISOString(), // formato yyyy-MM-ddThh:mm:ss.SSSZ richiesto dal DPC
                 opacity: i === istanti.length - 1 ? 0.65 : 0,
                 attribution: "Radar meteo &copy; Dipartimento Protezione Civile",
-                // Il mosaico radar nazionale ha una risoluzione nativa limitata (~1 km):
-                // tileSize 512 chiede immagini più definite al servizio, mentre maxNativeZoom
-                // evita di richiedere tile oltre la risoluzione reale (Leaflet ingrandisce
-                // l'ultimo fotogramma valido invece di mostrare tile vuote o a scacchiera)
-                tileSize: 512,
-                zoomOffset: -1,
+                // GeoWebCache serve SOLO tile conformi al proprio gridset (256×256):
+                // richieste da 512 px vengono respinte e la mappa resta senza pioggia.
+                // maxNativeZoom evita di chiedere oltre la risoluzione reale (~1 km):
+                // Leaflet ingrandisce l'ultima tile valida invece di lasciare vuoti.
                 maxNativeZoom: 9,
                 minZoom: 3
             });
+
+            // Un campione può mancare (pubblicazione in ritardo, buco nel mosaico):
+            // marcarlo permette all'animazione di saltarlo invece di mostrare il vuoto
+            const fotogramma = { layer, data, disponibile: true };
+            layer.on("tileerror", () => { fotogramma.disponibile = false; });
+
             layer.addTo(mappaComandoLeaflet);
-            return { layer, data };
+            return fotogramma;
         });
 
-        radarIndiceCorrente = radarFotogrammi.length - 1; // parte mostrando il fotogramma più recente
+        radarIndiceCorrente = radarFotogrammi.length - 1;
         mostraOrarioFotogramma(radarFotogrammi[radarIndiceCorrente].data);
     }
 
@@ -514,11 +522,19 @@ document.addEventListener("DOMContentLoaded", () => {
         const DURATA_FOTOGRAMMA_MS = 450;
         const PAUSA_FOTOGRAMMA_RECENTE_MS = 1600;
 
+        function prossimoIndiceDisponibile(partenza) {
+            for (let passo = 1; passo <= radarFotogrammi.length; passo++) {
+                const i = (partenza + passo) % radarFotogrammi.length;
+                if (radarFotogrammi[i].disponibile) return i;
+            }
+            return partenza; // nessun campione valido: resta dov'è invece di lampeggiare a vuoto
+        }
+
         function passoSuccessivo() {
             if (radarFotogrammi.length === 0) return;
 
             radarFotogrammi[radarIndiceCorrente].layer.setOpacity(0);
-            radarIndiceCorrente = (radarIndiceCorrente + 1) % radarFotogrammi.length;
+            radarIndiceCorrente = prossimoIndiceDisponibile(radarIndiceCorrente);
             radarFotogrammi[radarIndiceCorrente].layer.setOpacity(0.65);
             mostraOrarioFotogramma(radarFotogrammi[radarIndiceCorrente].data);
 
