@@ -665,72 +665,17 @@ document.addEventListener("DOMContentLoaded", () => {
     // ==========================================================
     // COPIA NEGLI APPUNTI + FEEDBACK VISIVO
     // ==========================================================
-    function copiaTestoConFeedback(event, testo) {
-        event.stopPropagation();
-        if (!testo) return;
-        navigator.clipboard.writeText(testo)
-            .then(() => mostraFeedbackCopiaCoord(event, "✓ Copiato"))
-            .catch(() => mostraFeedbackCopiaCoord(event, "✗ Errore copia"));
-    }
-    function mostraFeedbackCopiaCoord(event, testo) {
-        const badge = document.createElement("div");
-        badge.className = "copia-feedback";
-        badge.textContent = testo;
-        const rect = event.target.getBoundingClientRect();
-        badge.style.top = `${rect.top - 30}px`;
-        badge.style.left = `${rect.left}px`;
-        document.body.appendChild(badge);
-        setTimeout(() => badge.remove(), 1200);
-    }
-    function rendiCopiabile(elemento, testo) {
-        if (!elemento) return;
-        elemento.textContent = testo;
-        elemento.classList.add("cliccabile");
-        elemento.onclick = (e) => copiaTestoConFeedback(e, testo);
-    }
+    function copiaTestoConFeedback(event, testo) { return FireOps.copiaTesto(event, testo); }
+    function mostraFeedbackCopiaCoord(event, testo) { return FireOps.mostraFeedbackCopia(event, testo); }
+    function rendiCopiabile(elemento, testo) { return FireOps.rendiCopiabile(elemento, testo); }
 
     // ==========================================================
     // TURNO VVF + DATA/ORA ROMA — duplicato da script.js perché
     // convertitore.js è indipendente e non condivide il suo stato interno.
     // ==========================================================
-    const SEQUENZA_TURNI = ["A4", "C4", "B4", "B4", "D4", "C4", "C4", "A5", "D4", "D4", "B5", "A5", "A5", "C5", "B5", "B5", "D5", "C5", "C5", "A6", "D5", "D5", "B6", "A6", "A6", "C6", "B6", "B6", "D6", "C6", "C6", "A7", "D6", "D6", "B7", "A7", "A7", "C7", "B7", "B7", "D7", "C7", "C7", "A8", "D7", "D7", "B8", "A8", "A8", "C8", "B8", "B8", "D8", "C8", "C8", "A1", "D8", "D8", "B1", "A1", "A1", "C1", "B1", "B1", "D1", "C1", "C1", "A2", "D1", "D1", "B2", "A2", "A2", "C2", "B2", "B2", "D2", "C2", "C2", "A3", "D2", "D2", "B3", "A3", "A3", "C3", "B3", "B3", "D3", "C3", "C3", "A4", "D3", "D3", "B4", "A4"];
-    const GIORNI_CICLO = 32;
-    const MS_AL_GIORNO = 24 * 60 * 60 * 1000;
-    const RIFERIMENTO_CICLO_MS = Date.UTC(2026, 0, 26, 0, 0, 0);
-
-    function getComponentiRomaCoord(date) {
-        const fmt = new Intl.DateTimeFormat("en-GB", {
-            timeZone: "Europe/Rome",
-            year: "numeric", month: "2-digit", day: "2-digit",
-            hour: "2-digit", minute: "2-digit", second: "2-digit",
-            hour12: false,
-        });
-        const parts = fmt.formatToParts(date);
-        const get = tipo => parts.find(p => p.type === tipo).value;
-        return {
-            year: parseInt(get("year"), 10), month: parseInt(get("month"), 10), day: parseInt(get("day"), 10),
-            hour: parseInt(get("hour"), 10) % 24, minute: parseInt(get("minute"), 10), second: parseInt(get("second"), 10),
-        };
-    }
-    function calcolaOffsetRomaCoord(data) {
-        const utc = new Date(data.toLocaleString("en-US", { timeZone: "UTC" }));
-        const roma = new Date(data.toLocaleString("en-US", { timeZone: "Europe/Rome" }));
-        return Math.round((roma - utc) / (1000 * 60 * 60));
-    }
-    function calcolaTurnoVVFCoord() {
-        const adesso = new Date();
-        const c = getComponentiRomaCoord(adesso);
-        const oraPseudo = Date.UTC(c.year, c.month - 1, c.day, c.hour, c.minute, c.second);
-        const diffGiorni = (oraPseudo - RIFERIMENTO_CICLO_MS) / MS_AL_GIORNO;
-        const posizioneCiclo = ((diffGiorni % GIORNI_CICLO) + GIORNI_CICLO) % GIORNI_CICLO;
-        const giornoIndex = Math.floor(posizioneCiclo);
-        const fraz = posizioneCiclo - giornoIndex;
-        let fasciaIndex;
-        if (fraz < 1 / 3) fasciaIndex = 0;
-        else if (fraz < 5 / 6) fasciaIndex = 1;
-        else fasciaIndex = 2;
-        return SEQUENZA_TURNI[giornoIndex * 3 + fasciaIndex] || "N/D";
-    }
+    function getComponentiRomaCoord(date) { return FireOps.componentiRoma(date); }
+    function calcolaOffsetRomaCoord(data) { return FireOps.offsetOreRoma(data); }
+    function calcolaTurnoVVFCoord() { return FireOps.turnoVVF(); }
     function costruisciPieDiPaginaCoord() {
         const adesso = new Date();
         const c = getComponentiRomaCoord(adesso);
@@ -741,96 +686,14 @@ document.addEventListener("DOMContentLoaded", () => {
         const oraFormattata = `${pad(c.hour)}:${pad(c.minute)}:${pad(c.second)}`;
         const turno = calcolaTurnoVVFCoord();
         const offsetOre = calcolaOffsetRomaCoord(adesso);
-        const etichettaFuso = offsetOre === 2 ? "CEST" : "CET";
+        const etichettaFuso = FireOps.siglaFusoRoma(adesso);
         return `credit by VVFsendWhatsApp\n${nomeGiornoMaiuscolo} ${dataFormattata} ore ${oraFormattata} - Turno ${turno}\n(GMT+0${offsetOre}.00) Roma (${etichettaFuso})`;
     }
 
     // ==========================================================
     // COMBOBOX RICERCABILE (duplicata da script.js, usata per il prefisso)
     // ==========================================================
-    function creaComboRicercabileCoord({ input, hidden, dropdown, elenco, cercaValore, mostraTesto, testoRicerca, testoSelezionato, onScelta }) {
-        let ultimoFiltrati = elenco;
-        let indiceAttivo = -1;
-
-        function filtra(testo) {
-            const filtro = (testo || "").trim().toLowerCase();
-            if (!filtro) return elenco;
-            const ottieniTesto = testoRicerca || mostraTesto;
-            return elenco.filter(item => ottieniTesto(item).toLowerCase().includes(filtro));
-        }
-        function renderOpzioni(testo) {
-            ultimoFiltrati = filtra(testo);
-            dropdown.innerHTML = "";
-            if (ultimoFiltrati.length === 0) {
-                indiceAttivo = -1;
-                const vuoto = document.createElement("div");
-                vuoto.className = "combo-opzione-vuota";
-                vuoto.textContent = "Nessun risultato";
-                dropdown.appendChild(vuoto);
-                return;
-            }
-            const indiceValoreCorrente = hidden.value ? ultimoFiltrati.findIndex(item => cercaValore(item) === hidden.value) : -1;
-            indiceAttivo = indiceValoreCorrente >= 0 ? indiceValoreCorrente : 0;
-            ultimoFiltrati.forEach((item, i) => {
-                const opz = document.createElement("div");
-                opz.className = "combo-opzione" + (i === indiceAttivo ? " combo-opzione-attiva" : "");
-                opz.textContent = mostraTesto(item);
-                opz.addEventListener("mousedown", (e) => { e.preventDefault(); selezionaVoce(item); });
-                opz.addEventListener("mouseenter", () => { indiceAttivo = i; aggiornaEvidenziazione(); });
-                dropdown.appendChild(opz);
-            });
-            aggiornaEvidenziazione();
-        }
-        function aggiornaEvidenziazione() {
-            const opzioni = dropdown.querySelectorAll(".combo-opzione");
-            opzioni.forEach((el, i) => el.classList.toggle("combo-opzione-attiva", i === indiceAttivo));
-            const attiva = opzioni[indiceAttivo];
-            if (attiva) attiva.scrollIntoView({ block: "nearest" });
-        }
-        function selezionaVoce(item) {
-            hidden.value = cercaValore(item);
-            input.value = testoSelezionato ? testoSelezionato(item) : mostraTesto(item);
-            chiudiDropdown();
-            if (onScelta) onScelta(item);
-        }
-        function apriDropdown() { renderOpzioni(input.value); dropdown.classList.add("aperto"); }
-        function apriDropdownCompleta() { renderOpzioni(""); dropdown.classList.add("aperto"); }
-        function chiudiDropdown() { dropdown.classList.remove("aperto"); }
-
-        input.addEventListener("input", () => { hidden.value = ""; apriDropdown(); });
-        input.addEventListener("focus", apriDropdownCompleta);
-
-        const wrapperCombo = input.closest(".combo-wrapper");
-        const frecciaCombo = wrapperCombo ? wrapperCombo.querySelector(".combo-arrow") : null;
-        if (frecciaCombo) {
-            frecciaCombo.addEventListener("mousedown", (e) => {
-                e.preventDefault();
-                if (dropdown.classList.contains("aperto")) chiudiDropdown();
-                else { input.focus(); apriDropdownCompleta(); }
-            });
-        }
-        input.addEventListener("keydown", (e) => {
-            const aperto = dropdown.classList.contains("aperto");
-            if (e.key === "Escape") { chiudiDropdown(); input.blur(); }
-            else if (e.key === "ArrowDown") {
-                e.preventDefault();
-                if (!aperto) { apriDropdownCompleta(); return; }
-                if (ultimoFiltrati.length > 0) { indiceAttivo = (indiceAttivo + 1) % ultimoFiltrati.length; aggiornaEvidenziazione(); }
-            } else if (e.key === "ArrowUp") {
-                e.preventDefault();
-                if (!aperto) { apriDropdownCompleta(); return; }
-                if (ultimoFiltrati.length > 0) { indiceAttivo = (indiceAttivo - 1 + ultimoFiltrati.length) % ultimoFiltrati.length; aggiornaEvidenziazione(); }
-            } else if (e.key === "Enter") {
-                e.preventDefault();
-                if (ultimoFiltrati.length > 0) selezionaVoce(ultimoFiltrati[indiceAttivo >= 0 ? indiceAttivo : 0]);
-            }
-        });
-        document.addEventListener("click", (e) => {
-            if (!input.contains(e.target) && !dropdown.contains(e.target) && !(frecciaCombo && frecciaCombo.contains(e.target))) chiudiDropdown();
-        });
-
-        return { impostaValore(valore) { const trovato = elenco.find(item => cercaValore(item) === valore); if (trovato) selezionaVoce(trovato); } };
-    }
+    function creaComboRicercabileCoord(opzioni) { return FireOps.creaCombo(opzioni); }
 
     // ==========================================================
     // UI: selezione formato in ingresso, lettura campi, conversione
@@ -1841,9 +1704,7 @@ function disegnaGraficoAltimetria(geojson) {
 
     async function caricaRepartiVolo() {
         if (elencoRepartiVoloCache) return elencoRepartiVoloCache;
-        const risposta = await fetch("/FireOps/db/repartivolovvf.json");
-        if (!risposta.ok) throw new Error("HTTP " + risposta.status);
-        const dati = await risposta.json();
+        const dati = await FireOps.caricaJson("/FireOps/db/repartivolovvf.json");
         // Accetta sia un array puro sia un oggetto che lo contiene
         elencoRepartiVoloCache = Array.isArray(dati)
             ? dati
@@ -2145,8 +2006,7 @@ function disegnaGraficoAltimetria(geojson) {
     aggiornaAnteprimaMessaggioCoordinate(); // stato iniziale: già "Nessun Comando attivo..." finché non arriva il fetch
 
     if (inputMsgPrefisso && hiddenMsgPrefisso && dropdownMsgPrefisso) {
-        fetch("/FireOps/db/prefissi.json")
-            .then(r => (r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status))))
+        FireOps.caricaJson("/FireOps/db/prefissi.json")
             .then(listaPrefissi => {
                 const combo = creaComboRicercabileCoord({
                     input: inputMsgPrefisso,
@@ -2173,8 +2033,7 @@ function disegnaGraficoAltimetria(geojson) {
     const hiddenComuneIndirizzo = document.getElementById("coord-indirizzo-comune");
     const dropdownComuneIndirizzo = document.getElementById("coord-indirizzo-comune-dropdown");
     if (inputComuneIndirizzo && hiddenComuneIndirizzo && dropdownComuneIndirizzo) {
-        fetch("/FireOps/db/comuni.json")
-            .then(r => (r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status))))
+        FireOps.caricaJson("/FireOps/db/comuni.json")
             .then(listaComuni => {
                 creaComboRicercabileCoord({
     input: inputComuneIndirizzo,
