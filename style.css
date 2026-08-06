@@ -1866,3 +1866,178 @@ html.comando-gia-scelto #modal-comando {
     padding: 10px 16px;
     font-size: 14px;
 }
+
+/* ==========================================================================
+   FireOps VVF — Convertitore unità di misura
+   Tutte le regole sono confinate dentro .um-root: nessun selettore globale,
+   nessuna variabile che possa entrare in conflitto con il resto di FireOps.
+   ========================================================================== */
+
+.um-root{
+  --um-bg:#0f1216;
+  --um-bg2:#161b22;
+  --um-bg3:#1c232c;
+  --um-line:#2a323d;
+  --um-txt:#e6edf3;
+  --um-txt2:#9aa7b4;
+  --um-rosso:#d32f2f;
+  --um-rosso2:#ff5a4d;
+  --um-giallo:#f2b705;
+  --um-mono:"JetBrains Mono","SFMono-Regular",Consolas,"Liberation Mono",monospace;
+
+  color:var(--um-txt);
+  font-size:14px;
+  line-height:1.45;
+  height:100%;
+  display:flex;
+  flex-direction:column;
+}
+.um-root *{box-sizing:border-box}
+
+/* ---------- intestazione ---------- */
+.um-root .um-head{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 12px;margin-bottom:10px;
+  background:linear-gradient(180deg,var(--um-bg2),transparent);
+  border:1px solid var(--um-line);border-left:4px solid var(--um-rosso);
+  border-radius:10px;flex:none;
+}
+.um-root .um-head h2{font-size:16px;margin:0;font-weight:700;letter-spacing:.2px;color:var(--um-txt)}
+.um-root .um-head .um-sub{font-size:10.5px;color:var(--um-txt2);text-transform:uppercase;letter-spacing:1.4px}
+.um-root .um-count{
+  margin-left:auto;font-family:var(--um-mono);font-size:11px;color:var(--um-txt2);
+  border:1px solid var(--um-line);border-radius:99px;padding:3px 10px;white-space:nowrap;
+}
+
+/* ---------- ricerca ---------- */
+.um-root .um-search{position:relative;margin-bottom:10px;flex:none}
+.um-root .um-search input{
+  width:100%;padding:10px 12px 10px 36px;
+  background:var(--um-bg2);border:1px solid var(--um-line);border-radius:10px;
+  color:var(--um-txt);font-size:14px;font-family:inherit;outline:none;
+}
+.um-root .um-search input:focus{border-color:var(--um-rosso);box-shadow:0 0 0 3px rgba(211,47,47,.15)}
+.um-root .um-search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);opacity:.5}
+
+/* ---------- chip categorie ---------- */
+.um-root .um-cats{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;flex:none}
+.um-root .um-cat{
+  background:var(--um-bg2);border:1px solid var(--um-line);color:var(--um-txt2);
+  padding:5px 11px;border-radius:99px;font-size:12.5px;font-family:inherit;
+  cursor:pointer;transition:.12s;white-space:nowrap;
+}
+.um-root .um-cat:hover{border-color:var(--um-rosso);color:var(--um-txt)}
+.um-root .um-cat.on{background:var(--um-rosso);border-color:var(--um-rosso);color:#fff;font-weight:600}
+.um-root button:focus-visible,
+.um-root input:focus-visible,
+.um-root select:focus-visible,
+.um-root textarea:focus-visible{outline:2px solid var(--um-rosso2);outline-offset:2px}
+
+/* ---------- pannello ---------- */
+.um-root .um-panel{
+  background:var(--um-bg2);border:1px solid var(--um-line);border-radius:10px;
+  padding:14px;flex:1 1 auto;min-height:0;overflow:auto;
+}
+.um-root .um-panel h3.um-title{margin:0 0 2px;font-size:15px;color:var(--um-txt)}
+.um-root .um-base{font-size:11.5px;color:var(--um-txt2);font-family:var(--um-mono);margin-bottom:12px}
+
+.um-root .um-nota{
+  background:rgba(242,183,5,.08);border-left:3px solid var(--um-giallo);
+  padding:8px 11px;border-radius:6px;font-size:12.5px;color:#e8d9a8;margin-bottom:12px;
+}
+
+/* ---------- riga di conversione ---------- */
+.um-root .um-io{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:end}
+.um-root .um-field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.um-root .um-field label{font-size:10.5px;text-transform:uppercase;letter-spacing:.9px;color:var(--um-txt2)}
+.um-root .um-field input,
+.um-root .um-field select{
+  width:100%;padding:10px 11px;background:var(--um-bg3);border:1px solid var(--um-line);
+  border-radius:8px;color:var(--um-txt);font-size:15px;outline:none;font-family:var(--um-mono);
+}
+.um-root .um-field select{font-family:inherit;font-size:13.5px;cursor:pointer}
+.um-root .um-field input:focus,
+.um-root .um-field select:focus{border-color:var(--um-rosso)}
+.um-root .um-field input[readonly]{background:#11161c;color:var(--um-rosso2);font-weight:600;cursor:pointer}
+
+.um-root .um-swap{
+  background:var(--um-bg3);border:1px solid var(--um-line);color:var(--um-txt2);
+  width:40px;height:41px;border-radius:8px;cursor:pointer;font-size:16px;
+  display:flex;align-items:center;justify-content:center;transition:.15s;flex:none;
+}
+.um-root .um-swap:hover{border-color:var(--um-rosso);color:var(--um-rosso2);transform:rotate(180deg)}
+
+.um-root .um-quick{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
+.um-root .um-quick button{
+  background:transparent;border:1px dashed var(--um-line);color:var(--um-txt2);
+  border-radius:6px;padding:4px 9px;font-size:11.5px;cursor:pointer;font-family:var(--um-mono);
+}
+.um-root .um-quick button:hover{border-color:var(--um-rosso);color:var(--um-txt);border-style:solid}
+
+/* ---------- tabelle ---------- */
+.um-root .um-tbl{margin-top:14px;border:1px solid var(--um-line);border-radius:8px;overflow:auto;max-height:46vh}
+.um-root .um-tbl table{width:100%;border-collapse:collapse;font-size:13px}
+.um-root .um-tbl thead th{
+  position:sticky;top:0;background:var(--um-bg3);color:var(--um-txt2);
+  font-size:10.5px;text-transform:uppercase;letter-spacing:1px;
+  text-align:left;padding:8px 10px;border-bottom:1px solid var(--um-line);z-index:1;
+}
+.um-root .um-tbl tbody td{padding:7px 10px;border-bottom:1px solid rgba(42,50,61,.5)}
+.um-root .um-tbl tbody tr:last-child td{border-bottom:none}
+.um-root .um-tbl tbody tr:hover{background:rgba(211,47,47,.07)}
+.um-root .um-tbl td.val{font-family:var(--um-mono);text-align:right;color:var(--um-rosso2);cursor:pointer;white-space:nowrap}
+.um-root .um-tbl td.sym{font-family:var(--um-mono);color:var(--um-txt2);white-space:nowrap}
+.um-root .um-tbl td.mono{font-family:var(--um-mono)}
+.um-root .um-tbl tr.hi td{background:rgba(211,47,47,.14)}
+
+/* ---------- schede risultato ---------- */
+.um-root .um-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-top:12px}
+.um-root .um-card{background:var(--um-bg3);border:1px solid var(--um-line);border-radius:8px;padding:9px 11px}
+.um-root .um-card .k{font-size:10.5px;text-transform:uppercase;letter-spacing:1px;color:var(--um-txt2)}
+.um-root .um-card .v{font-family:var(--um-mono);font-size:15px;color:var(--um-rosso2);margin-top:3px;word-break:break-all;cursor:pointer}
+.um-root .um-card.na .v{color:var(--um-txt2)}
+.um-root .um-card.wide{grid-column:1/-1}
+.um-root .um-card.wide .v{font-size:14px}
+
+.um-root .um-sect{margin-top:18px;padding-top:14px;border-top:1px dashed var(--um-line)}
+.um-root .um-sect.first{margin-top:0;padding-top:0;border-top:none}
+.um-root .um-sect h4{margin:0 0 10px;font-size:12px;text-transform:uppercase;letter-spacing:1.1px;color:var(--um-txt2);font-weight:600}
+.um-root .um-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:10px}
+
+.um-root textarea{
+  width:100%;min-height:64px;padding:9px 11px;background:var(--um-bg3);
+  border:1px solid var(--um-line);border-radius:8px;color:var(--um-txt);
+  font-family:var(--um-mono);font-size:13px;outline:none;resize:vertical;
+}
+.um-root textarea:focus{border-color:var(--um-rosso)}
+.um-root .um-morse{color:var(--um-giallo);letter-spacing:1px}
+.um-root .um-empty{color:var(--um-txt2);text-align:center;padding:22px;font-size:13px}
+
+/* ---------- toast (unico, agganciato al body) ---------- */
+.um-toast{
+  position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);
+  background:#2ea043;color:#fff;padding:9px 18px;border-radius:99px;font-size:13px;
+  font-weight:600;opacity:0;pointer-events:none;transition:.2s;z-index:9999;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+}
+.um-toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ---------- pannello stretto (split-screen) ---------- */
+/* la classe .narrow viene applicata via JS quando il pannello scende sotto i 560 px,
+   così il layout si adatta anche in split-screen su schermo largo */
+.um-root.narrow .um-io{grid-template-columns:1fr;gap:8px}
+.um-root.narrow .um-swap{width:100%;transform:rotate(90deg)}
+.um-root.narrow .um-swap:hover{transform:rotate(270deg)}
+.um-root.narrow .um-grid{grid-template-columns:1fr}
+.um-root.narrow .um-count{display:none}
+
+@media (max-width:700px){
+  .um-root .um-io{grid-template-columns:1fr;gap:8px}
+  .um-root .um-swap{width:100%;transform:rotate(90deg)}
+  .um-root .um-swap:hover{transform:rotate(270deg)}
+  .um-root .um-count{display:none}
+  .um-root .um-grid{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){
+  .um-root *,.um-toast{transition:none!important}
+}
