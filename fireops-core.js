@@ -283,11 +283,15 @@ window.FireOps = (function () {
     }
 
     // Rende un elemento cliccabile per copiarne il contenuto
-    function rendiCopiabile(elemento, testo) {
+    // testoDaCopiare è facoltativo: serve quando negli appunti deve finire
+    // qualcosa di diverso da ciò che si legge a schermo (per esempio la stessa
+    // coordinata senza i simboli di grado, pronta da incollare altrove)
+    function rendiCopiabile(elemento, testo, testoDaCopiare) {
         if (!elemento) return;
         elemento.textContent = testo;
         elemento.classList.add("cliccabile");
-        elemento.onclick = (e) => copiaTesto(e, testo);
+        const daCopiare = (testoDaCopiare === undefined || testoDaCopiare === null) ? testo : testoDaCopiare;
+        elemento.onclick = (e) => copiaTesto(e, daCopiare);
     }
 
     // ==========================================================
