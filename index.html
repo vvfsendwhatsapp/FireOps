@@ -150,7 +150,7 @@
             color: var(--primary-color);
         }
 
-        .modal-content .evento-rilevante-voce {
+        .evento-rilevante-voce {
             background: var(--dark-color);
             border: 1px solid var(--border-color);
             border-radius: 6px;
@@ -158,7 +158,7 @@
             overflow: hidden;
         }
 
-        .modal-content .evento-rilevante-testata {
+        .evento-rilevante-voce > .evento-rilevante-testata {
             display: flex;
             align-items: center;
             gap: 10px;
@@ -174,18 +174,18 @@
             cursor: pointer;
         }
 
-        .modal-content .evento-rilevante-testata:hover {
+        .evento-rilevante-voce > .evento-rilevante-testata:hover {
             background: #232323;
             opacity: 1;
         }
 
-        .modal-content .evento-rilevante-testata .freccia {
+        .evento-rilevante-voce > .evento-rilevante-testata .freccia {
             color: var(--primary-color);
             font-size: 11px;
             flex-shrink: 0;
         }
 
-        .modal-content .evento-rilevante-codice {
+        .evento-rilevante-voce .evento-rilevante-codice {
             display: inline-block;
             background: var(--primary-color);
             color: var(--dark-color);
@@ -198,7 +198,7 @@
             flex-shrink: 0;
         }
 
-        .modal-content .evento-rilevante-dettaglio {
+        .evento-rilevante-voce > .evento-rilevante-dettaglio {
             display: none;
             padding: 12px 14px 14px;
             border-top: 1px solid var(--border-color);
@@ -206,7 +206,7 @@
             line-height: 1.5;
         }
 
-        .modal-content .evento-rilevante-dettaglio.aperto {
+        .evento-rilevante-voce > .evento-rilevante-dettaglio.aperto {
             display: block;
         }
 
@@ -217,7 +217,7 @@
             border-left: 2px solid var(--border-color);
         }
 
-        .evento-rilevante-dettaglio .evento-rilevante-testata {
+        .evento-rilevante-dettaglio .evento-rilevante-voce > .evento-rilevante-testata {
             font-size: 13px;
             font-weight: normal;
             padding: 8px 12px;

@@ -1411,7 +1411,120 @@ function nodoNormativa(nodo, indice, chiaveLivello) {
     </div>`;
 }
 
+// ----------------------------------------------------------
+// Forma "Normattiva": albero in "struttura" con RIFERIMENTI NUMERICI agli
+// articoli, che stanno in un elenco piatto a parte. Va quindi risolto il
+// rimando, non basta scendere ricorsivamente negli array.
+// ----------------------------------------------------------
+function eNormattiva(dati) {
+    return Array.isArray(dati.struttura) && Array.isArray(dati.articoli);
+}
+
+function commiArticolo(articolo) {
+    if (Array.isArray(articolo.commi) && articolo.commi.length > 0) {
+        return articolo.commi.map(comma => {
+            const lettere = Array.isArray(comma.lettere) && comma.lettere.length > 0
+                ? comma.lettere.map(l => `<div class="evento-rilevante-comma" style="margin-left:18px;"><span class="numero">${testoSicuroModale(l.lettera || "")}</span><span>${testoSicuroModale(l.testo || l)}</span></div>`).join("")
+                : "";
+            return `<div class="evento-rilevante-comma"><span class="numero">${testoSicuroModale(comma.numero)}.</span><span>${testoSicuroModale(comma.testo)}</span></div>${lettere}`;
+        }).join("");
+    }
+    return `<div class="evento-rilevante-testo">${testoSicuroModale(articolo.testo || "")}</div>`;
+}
+
+function articoloNormattiva(articolo) {
+    const avviso = articolo.possibile_troncamento
+        ? `<div class="evento-rilevante-alternativa" style="color:var(--danger-color);">⚠ Testo probabilmente troncato: verifica sulla fonte ufficiale.</div>`
+        : "";
+    return `<div class="evento-rilevante-voce">
+        <button type="button" class="evento-rilevante-testata" aria-expanded="false">
+            <span class="freccia">▶</span>
+            <span class="evento-rilevante-codice">${testoSicuroModale(articolo.etichetta || ("Art. " + articolo.numero))}</span>
+            <span>${testoSicuroModale(articolo.rubrica || "")}</span>
+        </button>
+        <div class="evento-rilevante-dettaglio">${commiArticolo(articolo)}${avviso}</div>
+    </div>`;
+}
+
+// In questo JSON un titolo elenca anche gli articoli dei propri capi e
+// sezioni: senza filtro ogni articolo comparirebbe due volte, una sotto il
+// capo e una sotto il titolo. Si tengono solo quelli non già coperti più giù.
+function articoliDeiDiscendenti(nodo) {
+    const coperti = new Set();
+    (nodo.figli || []).forEach(figlio => {
+        (figlio.articoli || []).forEach(n => coperti.add(n));
+        articoliDeiDiscendenti(figlio).forEach(n => coperti.add(n));
+    });
+    return coperti;
+}
+
+function nodoNormattiva(nodo, indiceArticoli) {
+    const figli = (nodo.figli || []).map(f => nodoNormattiva(f, indiceArticoli)).join("");
+    const giaNeiFigli = articoliDeiDiscendenti(nodo);
+    const articoli = (nodo.articoli || [])
+        .filter(numero => !giaNeiFigli.has(numero))
+        .map(numero => indiceArticoli.get(numero))
+        .filter(Boolean)
+        .map(articoloNormattiva)
+        .join("");
+    const etichetta = `${nodo.tipo || ""} ${nodo.numero || ""}`.trim().toUpperCase();
+
+    return `<div class="evento-rilevante-voce">
+        <button type="button" class="evento-rilevante-testata" aria-expanded="false">
+            <span class="freccia">▶</span>
+            <span class="evento-rilevante-codice">${testoSicuroModale(etichetta)}</span>
+            <span>${testoSicuroModale(nodo.rubrica || "")}</span>
+        </button>
+        <div class="evento-rilevante-dettaglio">${figli}${articoli}</div>
+    </div>`;
+}
+
+function disegnaNormattiva(dati, contenitore) {
+    const indiceArticoli = new Map((dati.articoli || []).map(a => [a.numero, a]));
+
+    const intestazione = [
+        dati.titolo_breve ? `<strong>${testoSicuroModale(dati.titolo_breve)}</strong>` : "",
+        dati.rubrica ? testoSicuroModale(dati.rubrica) : "",
+        dati.entrata_in_vigore ? `In vigore dal ${testoSicuroModale(dati.entrata_in_vigore)}` : "",
+        dati.vigente_al ? `testo vigente al ${testoSicuroModale(dati.vigente_al)}` : "",
+    ].filter(Boolean).join(" — ");
+    const fonte = dati.fonte
+        ? `<br><a href="${testoSicuroModale(dati.fonte)}" target="_blank" rel="noopener" class="indirizzo-link">Testo ufficiale su Normattiva</a>`
+        : "";
+
+    const albero = (dati.struttura || []).map(nodo => nodoNormattiva(nodo, indiceArticoli)).join("");
+
+    // Rete di sicurezza: un articolo non richiamato da nessun nodo resterebbe
+    // invisibile, ed è proprio quello che non deve succedere in una raccolta
+    // normativa. Se ce ne sono, finiscono in coda.
+    const richiamati = new Set();
+    (function raccogli(nodi) {
+        nodi.forEach(n => {
+            (n.articoli || []).forEach(x => richiamati.add(x));
+            raccogli(n.figli || []);
+        });
+    })(dati.struttura || []);
+    const orfani = (dati.articoli || []).filter(a => !richiamati.has(a.numero));
+    const codaOrfani = orfani.length > 0
+        ? `<div class="evento-rilevante-voce">
+            <button type="button" class="evento-rilevante-testata" aria-expanded="false">
+                <span class="freccia">▶</span>
+                <span class="evento-rilevante-codice">ALTRI</span>
+                <span>Articoli non collocati nella struttura (${orfani.length})</span>
+            </button>
+            <div class="evento-rilevante-dettaglio">${orfani.map(articoloNormattiva).join("")}</div>
+           </div>`
+        : "";
+
+    contenitore.innerHTML = `<div class="evento-rilevante-premessa">${intestazione}${fonte}</div>${albero}${codaOrfani}`;
+}
+
 function disegnaNormativa(dati, contenitore) {
+    if (eNormattiva(dati)) {
+        disegnaNormattiva(dati, contenitore);
+        return;
+    }
+
     const premessa = dati.premessa
         ? `<div class="evento-rilevante-premessa">${testoSicuroModale(dati.premessa)}</div>`
         : "";
