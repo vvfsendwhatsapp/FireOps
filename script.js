@@ -1462,9 +1462,55 @@ function disegnaRegolamentoDpr(dati) {
     return premessa + (dati.struttura || [])
         .map(n => nodoStrutturaDpr(n, mappaArticoli))
         .join("");
-}    
-    aggiornaSelettori();
-    salvaPaginePannelli();
+}
+
+// ==========================================================
+// PAGINA NORMATIVE: un listener solo sul contenitore.
+// Le testate con data-fonte caricano il file alla prima apertura;
+// tutte le altre (titoli, capi, sezioni, articoli) si limitano ad aprirsi.
+// ==========================================================
+const RENDERER_NORMATIVE = {
+    "/FireOps/db/dpr642012.json": disegnaRegolamentoDpr
+};
+
+const contenitoreNormative = document.getElementById("normative-contenuto");
+
+if (contenitoreNormative) {
+    contenitoreNormative.addEventListener("click", (e) => {
+        const testata = e.target.closest(".evento-rilevante-testata");
+        if (!testata || !contenitoreNormative.contains(testata)) return;
+
+        const dettaglio = testata.parentElement.querySelector(":scope > .evento-rilevante-dettaglio");
+        if (!dettaglio) return;
+
+        const aperto = dettaglio.classList.toggle("aperto");
+        testata.setAttribute("aria-expanded", aperto ? "true" : "false");
+        const freccia = testata.querySelector(".freccia");
+        if (freccia) freccia.textContent = aperto ? "▼" : "▶";
+
+        const percorso = testata.dataset.fonte;
+        if (!percorso || testata.dataset.caricato === "si") return;
+
+        testata.dataset.caricato = "si";
+        dettaglio.innerHTML = `<p class="pagina-nota">Caricamento in corso…</p>`;
+
+        FireOps.caricaJson(percorso)
+            .then(dati => {
+                const disegna = RENDERER_NORMATIVE[percorso];
+                dettaglio.innerHTML = disegna
+                    ? disegna(dati)
+                    : `<p class="pagina-nota">Nessun renderer per questa fonte.</p>`;
+            })
+            .catch(err => {
+                testata.dataset.caricato = ""; // un errore non deve impedire un nuovo tentativo
+                console.error(`Normativa non disponibile (${percorso}):`, err);
+                dettaglio.innerHTML = `<p class="pagina-nota" style="color:var(--danger-color);">Impossibile leggere <code>${testoSicuroModale(percorso)}</code>: ${testoSicuroModale(err.message)}</p>`;
+            });
+    });
+}
+
+aggiornaSelettori();
+salvaPaginePannelli();
 
     // ==========================================================
     // PAGINA MESSAGGISTICA: messaggio precompilato multilingua
@@ -2708,49 +2754,4 @@ function formattaTelefonoPerCopia(telefono) {
     }
 
     return pulito;
-}
-
-// ==========================================================
-// PAGINA NORMATIVE: un listener solo sul contenitore.
-// Le testate con data-fonte caricano il file alla prima apertura;
-// tutte le altre (titoli, capi, sezioni, articoli) si limitano ad aprirsi.
-// ==========================================================
-const RENDERER_NORMATIVE = {
-    "/FireOps/db/dpr642012.json": disegnaRegolamentoDpr
-};
-
-const contenitoreNormative = document.getElementById("normative-contenuto");
-
-if (contenitoreNormative) {
-    contenitoreNormative.addEventListener("click", (e) => {
-        const testata = e.target.closest(".evento-rilevante-testata");
-        if (!testata || !contenitoreNormative.contains(testata)) return;
-
-        const dettaglio = testata.parentElement.querySelector(":scope > .evento-rilevante-dettaglio");
-        if (!dettaglio) return;
-
-        const aperto = dettaglio.classList.toggle("aperto");
-        testata.setAttribute("aria-expanded", aperto ? "true" : "false");
-        const freccia = testata.querySelector(".freccia");
-        if (freccia) freccia.textContent = aperto ? "▼" : "▶";
-
-        const percorso = testata.dataset.fonte;
-        if (!percorso || testata.dataset.caricato === "si") return;
-
-        testata.dataset.caricato = "si";
-        dettaglio.innerHTML = `<p class="pagina-nota">Caricamento in corso…</p>`;
-
-        FireOps.caricaJson(percorso)
-            .then(dati => {
-                const disegna = RENDERER_NORMATIVE[percorso];
-                dettaglio.innerHTML = disegna
-                    ? disegna(dati)
-                    : `<p class="pagina-nota">Nessun renderer per questa fonte.</p>`;
-            })
-            .catch(err => {
-                testata.dataset.caricato = ""; // un errore non deve impedire un nuovo tentativo
-                console.error(`Normativa non disponibile (${percorso}):`, err);
-                dettaglio.innerHTML = `<p class="pagina-nota" style="color:var(--danger-color);">Impossibile leggere <code>${testoSicuroModale(percorso)}</code>: ${testoSicuroModale(err.message)}</p>`;
-            });
-    });
 }
