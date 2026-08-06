@@ -1062,6 +1062,11 @@ const CHIAVE_STORAGE_PANNELLI = "fireops_pagine_pannelli";
 
         if (nuovoId === idAttualeLato) return; // nessun cambiamento
 
+        // Una pagina espansa che cambia pannello lascerebbe il pannello
+        // vecchio marcato come fullscreen e quello nuovo nascosto dal CSS:
+        // si torna alla vista affiancata prima di spostare qualsiasi cosa
+        esciDaFullscreen();
+
         if (nuovoId === idAttualeAltro) {
             // Scambio: la pagina che era in questo pannello va nell'altro, e viceversa
             spostaSezione(idAttualeLato, altroLato);
@@ -1116,6 +1121,29 @@ const CHIAVE_STORAGE_PANNELLI = "fireops_pagine_pannelli";
 
         pulsante.textContent = inFullscreen ? "🗗 Riduci" : "⛶ Espandi";
         pulsante.title = inFullscreen ? "Riduci a schermo normale" : "Espandi a schermo intero";
+
+        setTimeout(() => window.dispatchEvent(new Event("resize")), 150);
+    }
+
+    // Uscita forzata dal fullscreen, indipendente dal pulsante che l'aveva
+    // attivato. Serve quando una pagina cambia pannello: il pulsante "Riduci"
+    // viaggia insieme alla sezione, quindi non si può contare su di lui per
+    // ripulire lo stato del pannello che resta indietro.
+    function esciDaFullscreen() {
+        const pannelloEspanso = document.querySelector(".pannello.pannello-fullscreen");
+        if (!pannelloEspanso) return;
+
+        pannelloEspanso.classList.remove("pannello-fullscreen");
+        const splitScreenEl = document.querySelector(".split-screen");
+        if (splitScreenEl) splitScreenEl.classList.remove("ha-pannello-fullscreen");
+        document.body.classList.remove("fullscreen-attivo");
+
+        // Tutti i pulsanti tornano a "Espandi": quello espanso potrebbe già
+        // essere stato spostato altrove, quindi si normalizzano in blocco
+        document.querySelectorAll(".btn-fullscreen-pagina").forEach(pulsante => {
+            pulsante.textContent = "⛶ Espandi";
+            pulsante.title = "Espandi a schermo intero";
+        });
 
         setTimeout(() => window.dispatchEvent(new Event("resize")), 150);
     }
@@ -2627,4 +2655,3 @@ function formattaTelefonoPerCopia(telefono) {
 
     return pulito;
 }
-

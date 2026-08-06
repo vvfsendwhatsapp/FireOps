@@ -290,13 +290,19 @@ document.addEventListener("DOMContentLoaded", () => {
         return Number.isNaN(numero) ? null : numero;
     }
 
+    // Il segno arriva da un menu a due voci, non dalla digitazione: nel campo
+    // possono comparire solo cifre, e la scelta resta leggibile a colpo d'occhio
+    function segnoDaSelettore(idSelettore) {
+        const selettore = document.getElementById(idSelettore);
+        return (selettore && selettore.value === "-") ? -1 : 1;
+    }
+
     function componiDMM(testoGradi, testoPrimi) {
         const gradi = numeroDaCampo(testoGradi);
         const primi = numeroDaCampo(testoPrimi);
         if (gradi === null || primi === null) return null;
         if (primi < 0 || primi >= 60) return null;
-        const segno = String(testoGradi).trim().startsWith("-") ? -1 : 1;
-        return segno * (Math.abs(gradi) + primi / 60);
+        return Math.abs(gradi) + primi / 60;
     }
 
     function componiDMS(testoGradi, testoPrimi, testoSecondi) {
@@ -305,8 +311,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const secondi = numeroDaCampo(testoSecondi);
         if (gradi === null || primi === null || secondi === null) return null;
         if (primi < 0 || primi >= 60 || secondi < 0 || secondi >= 60) return null;
-        const segno = String(testoGradi).trim().startsWith("-") ? -1 : 1;
-        return segno * (Math.abs(gradi) + primi / 60 + secondi / 3600);
+        return Math.abs(gradi) + primi / 60 + secondi / 3600;
     }
 
 
@@ -888,10 +893,11 @@ function aggiornaBottoneConverti() {
     // ==========================================================
     const CAMPI_PERSISTENTI_COORD = [
         "coord-formato-input",
-        "coord-dd-lat", "coord-dd-lon",
-        "coord-dmm-lat-gradi", "coord-dmm-lat-primi", "coord-dmm-lon-gradi", "coord-dmm-lon-primi",
-        "coord-dms-lat-gradi", "coord-dms-lat-primi", "coord-dms-lat-secondi",
-        "coord-dms-lon-gradi", "coord-dms-lon-primi", "coord-dms-lon-secondi",
+        "coord-dd-lat-segno", "coord-dd-lat", "coord-dd-lon-segno", "coord-dd-lon",
+        "coord-dmm-lat-segno", "coord-dmm-lat-gradi", "coord-dmm-lat-primi",
+        "coord-dmm-lon-segno", "coord-dmm-lon-gradi", "coord-dmm-lon-primi",
+        "coord-dms-lat-segno", "coord-dms-lat-gradi", "coord-dms-lat-primi", "coord-dms-lat-secondi",
+        "coord-dms-lon-segno", "coord-dms-lon-gradi", "coord-dms-lon-primi", "coord-dms-lon-secondi",
         "coord-olc",
         "coord-utm-zona", "coord-utm-emisfero", "coord-utm-est", "coord-utm-nord",
         "coord-indirizzo-via", "coord-indirizzo-comune-input", "coord-indirizzo-comune"
@@ -929,16 +935,15 @@ function aggiornaBottoneConverti() {
     ripristinaStatoFormCoord();
     aggiornaBottoneConverti();
 
-    // Tiene solo ciò che può comparire in un valore di coordinata: cifre,
-    // un unico separatore decimale (la virgola diventa punto) e l'eventuale
-    // segno meno in testa. Lettere e simboli vengono scartati mentre si digita.
+    // Tiene solo ciò che può comparire in un valore di coordinata: cifre e un
+    // unico separatore decimale (la virgola diventa punto). Niente segno meno:
+    // i campi dichiarano °N e °E, quindi un valore negativo contraddirebbe
+    // l'etichetta e sposterebbe il punto nell'emisfero opposto senza dirlo.
     function filtraTestoNumerico(testo) {
-        let pulito = String(testo).replace(/[^\d.,-]/g, "");
-        const negativo = pulito.startsWith("-");
-        pulito = pulito.replace(/-/g, "").replace(/,/g, ".");
+        let pulito = String(testo).replace(/[^\d.,]/g, "").replace(/,/g, ".");
         const parti = pulito.split(".");
         if (parti.length > 1) pulito = parti[0] + "." + parti.slice(1).join("");
-        return (negativo ? "-" : "") + pulito;
+        return pulito;
     }
 
     // I campi delle coordinate si svuotano appena ci si entra: in sala
@@ -1078,7 +1083,10 @@ if (contenitoreFormCoord) {
             const lat = parseDDField(document.getElementById("coord-dd-lat").value);
             const lon = parseDDField(document.getElementById("coord-dd-lon").value);
             if (lat === null || lon === null) { mostraErrore("Coordinate decimali non valide. Esempio: 45.464204"); return null; }
-            return { lat, lon };
+            return {
+                lat: Math.abs(lat) * segnoDaSelettore("coord-dd-lat-segno"),
+                lon: Math.abs(lon) * segnoDaSelettore("coord-dd-lon-segno"),
+            };
         }
         if (formato === "dmm") {
             const valore = id => (document.getElementById(id)?.value || "");
@@ -1088,7 +1096,10 @@ if (contenitoreFormCoord) {
                 mostraErrore("Gradi e primi non validi: i primi devono stare fra 0 e 59.9999. Esempio: 45° 27.8522′ N");
                 return null;
             }
-            return { lat, lon };
+            return {
+                lat: lat * segnoDaSelettore("coord-dmm-lat-segno"),
+                lon: lon * segnoDaSelettore("coord-dmm-lon-segno"),
+            };
         }
         if (formato === "dms") {
             const valore = id => (document.getElementById(id)?.value || "");
@@ -1098,7 +1109,10 @@ if (contenitoreFormCoord) {
                 mostraErrore("Gradi, primi e secondi non validi: primi e secondi devono stare fra 0 e 59.99. Esempio: 45° 27′ 51.10″ N");
                 return null;
             }
-            return { lat, lon };
+            return {
+                lat: lat * segnoDaSelettore("coord-dms-lat-segno"),
+                lon: lon * segnoDaSelettore("coord-dms-lon-segno"),
+            };
         }
         if (formato === "olc") {
             const codice = (document.getElementById("coord-olc").value || "").trim();

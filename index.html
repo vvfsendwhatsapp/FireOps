@@ -70,6 +70,17 @@
             flex: 0 0 62px;
         }
 
+        /* Selettore di segno: stretto, in testa alla riga. Il segno si sceglie
+           qui e non si digita, così non può finire in mezzo alle cifre */
+        .coord-campi-riga .coord-campo-segno {
+            flex: 0 0 58px;
+            padding: 10px 4px;
+            text-align: center;
+            text-align-last: center;
+            font-family: "Courier New", monospace;
+            font-weight: bold;
+        }
+
         .coord-campo-unita {
             color: var(--primary-color);
             font-weight: bold;
@@ -455,19 +466,29 @@
                                         <div class="msg-campo">
                                             <label for="coord-dd-lat">Latitudine</label>
                                             <div class="coord-campi-riga">
+                                                <select class="coord-campo-segno" id="coord-dd-lat-segno"
+                                                    aria-label="Segno latitudine">
+                                                    <option value="+" selected>+</option>
+                                                    <option value="-">&#8722;</option>
+                                                </select>
                                                 <input type="text" id="coord-dd-lat" class="coord-campo-num"
                                                     placeholder="DD.dddddd" maxlength="12" inputmode="decimal"
                                                     autocomplete="off">
-                                                <span class="coord-campo-unita">°N</span>
+                                                <span class="coord-campo-unita">°</span>
                                             </div>
                                         </div>
                                         <div class="msg-campo">
                                             <label for="coord-dd-lon">Longitudine</label>
                                             <div class="coord-campi-riga">
+                                                <select class="coord-campo-segno" id="coord-dd-lon-segno"
+                                                    aria-label="Segno longitudine">
+                                                    <option value="+" selected>+</option>
+                                                    <option value="-">&#8722;</option>
+                                                </select>
                                                 <input type="text" id="coord-dd-lon" class="coord-campo-num"
                                                     placeholder="DDD.dddddd" maxlength="13" inputmode="decimal"
                                                     autocomplete="off">
-                                                <span class="coord-campo-unita">°E</span>
+                                                <span class="coord-campo-unita">°</span>
                                             </div>
                                         </div>
                                     </div>
@@ -478,6 +499,11 @@
                                         <div class="msg-campo">
                                             <label for="coord-dmm-lat-gradi">Latitudine</label>
                                             <div class="coord-campi-riga">
+                                                <select class="coord-campo-segno" id="coord-dmm-lat-segno"
+                                                    aria-label="Segno latitudine">
+                                                    <option value="+" selected>+</option>
+                                                    <option value="-">&#8722;</option>
+                                                </select>
                                                 <input type="text" id="coord-dmm-lat-gradi"
                                                     class="coord-campo-num coord-campo-gradi" placeholder="DD"
                                                     maxlength="3" inputmode="numeric" data-avanza autocomplete="off">
@@ -485,12 +511,17 @@
                                                 <input type="text" id="coord-dmm-lat-primi" class="coord-campo-num"
                                                     placeholder="MM.mmmm" maxlength="7" inputmode="decimal"
                                                     autocomplete="off">
-                                                <span class="coord-campo-unita">&#8242; N</span>
+                                                <span class="coord-campo-unita">&#8242;</span>
                                             </div>
                                         </div>
                                         <div class="msg-campo">
                                             <label for="coord-dmm-lon-gradi">Longitudine</label>
                                             <div class="coord-campi-riga">
+                                                <select class="coord-campo-segno" id="coord-dmm-lon-segno"
+                                                    aria-label="Segno longitudine">
+                                                    <option value="+" selected>+</option>
+                                                    <option value="-">&#8722;</option>
+                                                </select>
                                                 <input type="text" id="coord-dmm-lon-gradi"
                                                     class="coord-campo-num coord-campo-gradi" placeholder="DDD"
                                                     maxlength="4" inputmode="numeric" data-avanza autocomplete="off">
@@ -498,7 +529,7 @@
                                                 <input type="text" id="coord-dmm-lon-primi" class="coord-campo-num"
                                                     placeholder="MM.mmmm" maxlength="7" inputmode="decimal"
                                                     autocomplete="off">
-                                                <span class="coord-campo-unita">&#8242; E</span>
+                                                <span class="coord-campo-unita">&#8242;</span>
                                             </div>
                                         </div>
                                     </div>
@@ -509,6 +540,11 @@
                                         <div class="msg-campo">
                                             <label for="coord-dms-lat-gradi">Latitudine</label>
                                             <div class="coord-campi-riga">
+                                                <select class="coord-campo-segno" id="coord-dms-lat-segno"
+                                                    aria-label="Segno latitudine">
+                                                    <option value="+" selected>+</option>
+                                                    <option value="-">&#8722;</option>
+                                                </select>
                                                 <input type="text" id="coord-dms-lat-gradi"
                                                     class="coord-campo-num coord-campo-gradi" placeholder="DD"
                                                     maxlength="3" inputmode="numeric" data-avanza autocomplete="off">
@@ -520,12 +556,17 @@
                                                 <input type="text" id="coord-dms-lat-secondi" class="coord-campo-num"
                                                     placeholder="SS.ss" maxlength="6" inputmode="decimal"
                                                     autocomplete="off">
-                                                <span class="coord-campo-unita">&#8243; N</span>
+                                                <span class="coord-campo-unita">&#8243;</span>
                                             </div>
                                         </div>
                                         <div class="msg-campo">
                                             <label for="coord-dms-lon-gradi">Longitudine</label>
                                             <div class="coord-campi-riga">
+                                                <select class="coord-campo-segno" id="coord-dms-lon-segno"
+                                                    aria-label="Segno longitudine">
+                                                    <option value="+" selected>+</option>
+                                                    <option value="-">&#8722;</option>
+                                                </select>
                                                 <input type="text" id="coord-dms-lon-gradi"
                                                     class="coord-campo-num coord-campo-gradi" placeholder="DDD"
                                                     maxlength="4" inputmode="numeric" data-avanza autocomplete="off">
@@ -537,7 +578,7 @@
                                                 <input type="text" id="coord-dms-lon-secondi" class="coord-campo-num"
                                                     placeholder="SS.ss" maxlength="6" inputmode="decimal"
                                                     autocomplete="off">
-                                                <span class="coord-campo-unita">&#8243; E</span>
+                                                <span class="coord-campo-unita">&#8243;</span>
                                             </div>
                                         </div>
                                     </div>
