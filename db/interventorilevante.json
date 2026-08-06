@@ -1,0 +1,184 @@
+{
+  "titolo": "Vademecum determinazione evento rilevante",
+  "logica": "OR",
+  "premessa": "Un evento è ritenuto rilevante qualora una o più delle seguenti condizioni si verifica.",
+  "categorie": [
+    {
+      "id": 1,
+      "codice": "MOV",
+      "titolo": "Movimentazione mezzi",
+      "condizioni": [
+        {
+          "id": "1a",
+          "lettera": "a",
+          "sintesi": "Più di 4 squadre VF ordinarie",
+          "testo": "Movimentazione di più di n. 4 squadre VF ordinarie.",
+          "soglia": { "tipo": "squadre_ordinarie", "operatore": ">", "valore": 4 }
+        },
+        {
+          "id": "1b",
+          "lettera": "b",
+          "sintesi": "Due o più nuclei specialistici, o uno con PCA (AF/UCL)",
+          "testo": "Movimentazione di due o più Nuclei Specialistici-Specializzati (SAF, SMZ, TAS, TLC, Cinofili, Elicotteristi, USAR, NBCR, Portuali), o di un singolo nucleo con creazione di un Posto di Comando Avanzato tramite AF/UCL.",
+          "soglia": { "tipo": "nuclei_specialistici", "operatore": ">=", "valore": 2 },
+          "nuclei": ["SAF", "SMZ", "TAS", "TLC", "Cinofili", "Elicotteristi", "USAR", "NBCR", "Portuali"],
+          "alternativa": "Singolo nucleo con creazione di Posto di Comando Avanzato tramite AF/UCL"
+        },
+        {
+          "id": "1c",
+          "lettera": "c",
+          "sintesi": "Una o più sezioni operative (sisma o alluvione)",
+          "testo": "Movimentazione di una o più sezioni operative (sisma o alluvione).",
+          "soglia": { "tipo": "sezioni_operative", "operatore": ">=", "valore": 1 }
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "codice": "POP",
+      "titolo": "Impatto sulla popolazione",
+      "condizioni": [
+        {
+          "id": "2a",
+          "lettera": "a",
+          "sintesi": "Due o più deceduti, feriti, intossicati o dispersi",
+          "testo": "Evento in cui sono deceduti, feriti, intossicati o dispersi due o più persone.",
+          "soglia": { "tipo": "persone_coinvolte", "operatore": ">=", "valore": 2 },
+          "tipologie": ["deceduti", "feriti", "intossicati", "dispersi"]
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "codice": "RIS",
+      "titolo": "Impegno risorse del Comando",
+      "condizioni": [
+        {
+          "id": "3a",
+          "lettera": "a",
+          "sintesi": "Più di 4 automezzi VF di soccorso",
+          "testo": "L'evento richiede la movimentazione di automezzi VF di soccorso superiore a quattro.",
+          "soglia": { "tipo": "automezzi_soccorso", "operatore": ">", "valore": 4 }
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "codice": "ATT",
+      "titolo": "Attività produttive",
+      "condizioni": [
+        {
+          "id": "4a",
+          "lettera": "a",
+          "sintesi": "Attività con oltre 15 addetti e superficie ≥ 400 mq, o industria RIR",
+          "testo": "L'evento coinvolge attività tipo: ospedali, commerciali, industriali o del terziario con più di 15 addetti in cui il sinistro ha interessato una superficie uguale o maggiore di 400 mq e/o, ovvero industrie a rischio di incidente rilevante.",
+          "soglia": {
+            "addetti": { "operatore": ">", "valore": 15 },
+            "superficie_mq": { "operatore": ">=", "valore": 400 }
+          },
+          "attivita": ["ospedali", "commerciali", "industriali", "terziario"],
+          "alternativa": "Industrie a rischio di incidente rilevante (RIR)"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "codice": "VIA",
+      "titolo": "Viabilità",
+      "condizioni": [
+        {
+          "id": "5a",
+          "lettera": "a",
+          "sintesi": "Interruzione totale di arteria nazionale/strategica senza alternative",
+          "testo": "L'evento causa l'interruzione totale (in entrambi i sensi di marcia) della viabilità di una strada costituente arteria di viabilità nazionale o di importanza strategica logistica in cui non vi siano alternative di tracciato nelle immediate vicinanze."
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "codice": "TUT",
+      "titolo": "Tutela della popolazione",
+      "condizioni": [
+        {
+          "id": "6a",
+          "lettera": "a",
+          "sintesi": "Evacuazione, anche precauzionale, di uno o più nuclei familiari",
+          "testo": "L'evento richiede l'evacuazione, anche se temporanea e a scopo precauzionale, di uno o più nuclei familiari o di un congruo numero di persone; rientrano in questa categoria anche crolli parziali che producano tali provvedimenti, ovvero conseguenze di incendi o grandi rilasci di energia (esplosioni o scoppi).",
+          "soglia": { "tipo": "nuclei_familiari_evacuati", "operatore": ">=", "valore": 1 }
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "codice": "STR",
+      "titolo": "Strutture di particolare rilevanza storica, artistica o di interesse nazionale",
+      "condizioni": [
+        {
+          "id": "7a",
+          "lettera": "a",
+          "sintesi": "Edifici storici, sedi istituzionali, ambasciate o personale con cariche istituzionali",
+          "testo": "L'evento ha coinvolto direttamente o indirettamente: edifici di rilevanza storica, strutture e uffici istituzionali, teatri, sedi di partito, sedi di ambasciate o personale appartenente ai vari corpi dello stato o che rivestono cariche istituzionali di rilevanza nazionale o internazionale.",
+          "elementi": [
+            "edifici di rilevanza storica",
+            "strutture e uffici istituzionali",
+            "teatri",
+            "sedi di partito",
+            "sedi di ambasciate",
+            "personale dei corpi dello Stato",
+            "titolari di cariche istituzionali di rilevanza nazionale o internazionale"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "codice": "INF",
+      "titolo": "Incidenti che interessano infrastrutture o mezzi di trasporto",
+      "condizioni": [
+        {
+          "id": "8a",
+          "lettera": "a",
+          "sintesi": "Porti, aeroporti, stazioni, ferrovie, natanti, aeromobili o grave criticità viabilità",
+          "testo": "L'evento interessa porti, aeroporti, stazioni, linee ferroviarie o altri sistemi di trasporto (metropolitane, funivie, ecc.) ovvero natanti, aeromobili o che crea grave criticità al sistema di viabilità in generale.",
+          "elementi": [
+            "porti",
+            "aeroporti",
+            "stazioni",
+            "linee ferroviarie",
+            "metropolitane",
+            "funivie",
+            "natanti",
+            "aeromobili"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "codice": "MED",
+      "titolo": "Collettività e mass media",
+      "condizioni": [
+        {
+          "id": "9a",
+          "lettera": "a",
+          "sintesi": "Allarme alla collettività e/o interesse dei mass media",
+          "testo": "L'evento crea solo ed esclusivamente allarme alla collettività e/o ha generato esclusivamente interesse dei mass media."
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "codice": "PER",
+      "titolo": "Interventi con conseguenze sul personale VF",
+      "condizioni": [
+        {
+          "id": "10a",
+          "lettera": "a",
+          "sintesi": "Conseguenze al personale VF impegnato nelle operazioni",
+          "testo": "Eventi che portano conseguenze al personale VF impegnato nelle operazioni (incidenti sui mezzi VF, ferimenti in operazioni, infortuni, ecc.).",
+          "elementi": ["incidenti sui mezzi VF", "ferimenti in operazioni", "infortuni"]
+        }
+      ]
+    }
+  ]
+}
