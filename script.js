@@ -1184,6 +1184,133 @@ document.addEventListener("keydown", (e) => {
     }
 });
 
+// ==========================================================
+// VADEMECUM: DETERMINAZIONE EVENTO RILEVANTE
+// Le 10 categorie arrivano da db/interventorilevante.json: nessuna voce è
+// scritta nel codice, così l'elenco resta allineato alla circolare
+// semplicemente aggiornando il JSON.
+// ==========================================================
+const btnEventoRilevante = document.getElementById("btn-evento-rilevante");
+const modalEventoRilevante = document.getElementById("modal-evento-rilevante");
+const modalEventoRilevanteClose = document.getElementById("modal-evento-rilevante-close");
+const contenutoEventoRilevante = document.getElementById("evento-rilevante-contenuto");
+let vademecumEventoRilevante = null;
+
+function testoSicuroRilevante(valore) {
+    return String(valore === null || valore === undefined ? "" : valore)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function chipEventoRilevante(voci) {
+    if (!Array.isArray(voci) || voci.length === 0) return "";
+    const elementi = voci.map(v => `<span class="evento-rilevante-chip">${testoSicuroRilevante(v)}</span>`).join("");
+    return `<div class="evento-rilevante-elenco">${elementi}</div>`;
+}
+
+// Il riferimento completo (1.a., 4.a., ...) si ricava dalla categoria che
+// contiene la condizione: nel JSON la lettera è staccata dal numero, ma in
+// una comunicazione di servizio si cita sempre la coppia.
+function condizioneEventoRilevante(condizione, idCategoria) {
+    const lettera = condizione.lettera
+        ? `<span class="evento-rilevante-riferimento">${testoSicuroRilevante(idCategoria)}.${testoSicuroRilevante(condizione.lettera)}.</span> `
+        : "";
+    const alternativa = condizione.alternativa
+        ? `<div class="evento-rilevante-alternativa">In alternativa: ${testoSicuroRilevante(condizione.alternativa)}</div>`
+        : "";
+    // nuclei, elementi e attivita hanno significati diversi nel JSON ma stessa
+    // resa a schermo: un elenco di pastiglie sotto al testo della condizione
+    const elenchi = [condizione.nuclei, condizione.elementi, condizione.attivita]
+        .map(chipEventoRilevante).join("");
+
+    return `<div class="evento-rilevante-condizione">
+        <span class="evento-rilevante-sintesi">${lettera}${testoSicuroRilevante(condizione.sintesi || "")}</span>
+        <div class="evento-rilevante-testo">${testoSicuroRilevante(condizione.testo || "")}</div>
+        ${elenchi}${alternativa}
+    </div>`;
+}
+
+function disegnaVademecumEventoRilevante(dati) {
+    if (!contenutoEventoRilevante) return;
+
+    const titolo = document.getElementById("evento-rilevante-titolo");
+    if (titolo && dati.titolo) titolo.textContent = `🅁 ${dati.titolo}`;
+
+    const logica = dati.logica ? ` I criteri sono in <strong>${testoSicuroRilevante(dati.logica)}</strong>: ne basta uno.` : "";
+    const premessa = dati.premessa
+        ? `<div class="evento-rilevante-premessa">${testoSicuroRilevante(dati.premessa)}${logica}</div>`
+        : "";
+
+    const voci = (dati.categorie || []).map(categoria => {
+        const condizioni = (categoria.condizioni || [])
+            .map(condizione => condizioneEventoRilevante(condizione, categoria.id))
+            .join("");
+        return `<div class="evento-rilevante-voce">
+            <button type="button" class="evento-rilevante-testata" aria-expanded="false">
+                <span class="freccia">▶</span>
+                <span class="evento-rilevante-codice">${testoSicuroRilevante(categoria.codice || categoria.id)}</span>
+                <span>${testoSicuroRilevante(categoria.id)}. ${testoSicuroRilevante(categoria.titolo)}</span>
+            </button>
+            <div class="evento-rilevante-dettaglio">${condizioni}</div>
+        </div>`;
+    }).join("");
+
+    contenutoEventoRilevante.innerHTML = premessa + voci;
+}
+
+function apriVademecumEventoRilevante() {
+    if (!modalEventoRilevante) return;
+    modalEventoRilevante.style.display = "flex";
+
+    if (vademecumEventoRilevante) return; // già caricato: si riapre e basta
+    if (contenutoEventoRilevante) {
+        contenutoEventoRilevante.innerHTML = `<p class="pagina-nota">Caricamento vademecum…</p>`;
+    }
+
+    fetch("/FireOps/db/interventorilevante.json")
+        .then(r => (r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status))))
+        .then(dati => {
+            vademecumEventoRilevante = dati;
+            disegnaVademecumEventoRilevante(dati);
+        })
+        .catch(err => {
+            console.error("Vademecum evento rilevante non disponibile:", err);
+            if (contenutoEventoRilevante) {
+                contenutoEventoRilevante.innerHTML = `<p class="pagina-nota" style="color:var(--danger-color);">Impossibile leggere <code>db/interventorilevante.json</code>: ${testoSicuroRilevante(err.message)}</p>`;
+            }
+        });
+}
+
+function chiudiVademecumEventoRilevante() {
+    if (modalEventoRilevante) modalEventoRilevante.style.display = "none";
+}
+
+if (btnEventoRilevante) btnEventoRilevante.addEventListener("click", apriVademecumEventoRilevante);
+if (modalEventoRilevanteClose) modalEventoRilevanteClose.addEventListener("click", chiudiVademecumEventoRilevante);
+if (modalEventoRilevante) {
+    modalEventoRilevante.addEventListener("click", (e) => {
+        if (e.target === modalEventoRilevante) chiudiVademecumEventoRilevante();
+    });
+}
+document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && modalEventoRilevante && modalEventoRilevante.style.display === "flex") {
+        chiudiVademecumEventoRilevante();
+    }
+});
+
+// Apertura/chiusura delle 10 voci: un solo listener sul contenitore
+if (contenutoEventoRilevante) {
+    contenutoEventoRilevante.addEventListener("click", (e) => {
+        const testata = e.target.closest(".evento-rilevante-testata");
+        if (!testata) return;
+        const dettaglio = testata.parentElement.querySelector(".evento-rilevante-dettaglio");
+        if (!dettaglio) return;
+        const aperto = dettaglio.classList.toggle("aperto");
+        testata.setAttribute("aria-expanded", aperto ? "true" : "false");
+        const freccia = testata.querySelector(".freccia");
+        if (freccia) freccia.textContent = aperto ? "▼" : "▶";
+    });
+}
+
     // Assegnazione iniziale: Home a sinistra, Mappa e Meteo a destra.
     // Tutte le altre pagine restano parcheggiate nel magazzino nascosto.
     CATALOGO_PAGINE.forEach(pagina => {

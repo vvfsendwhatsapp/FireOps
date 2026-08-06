@@ -89,6 +89,150 @@
             flex-shrink: 0;
         }
 
+        /* Pulsante "R" del vademecum: rosso RAL3000 come i campi critici,
+           per distinguerlo a colpo d'occhio da ❓ e ☰ che sono gialli */
+        .btn-icon-hamburger.btn-icon-rilevante {
+            background: var(--danger-color);
+            border-color: var(--danger-color);
+            color: #ffffff;
+            font-weight: bold;
+            font-size: 20px;
+        }
+
+        .btn-icon-hamburger.btn-icon-rilevante:hover {
+            background: #ffffff;
+            color: var(--danger-color);
+            border-color: #ffffff;
+        }
+
+        /* Vademecum: premessa e logica OR in evidenza sopra l'elenco */
+        .evento-rilevante-premessa {
+            background: var(--dark-color);
+            border-left: 4px solid var(--danger-color);
+            border-radius: 4px;
+            padding: 10px 14px;
+            margin-bottom: 14px;
+            font-size: 13px;
+            line-height: 1.5;
+            color: var(--text-main);
+        }
+
+        .evento-rilevante-premessa strong {
+            color: var(--primary-color);
+        }
+
+        .modal-content .evento-rilevante-voce {
+            background: var(--dark-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            margin-bottom: 8px;
+            overflow: hidden;
+        }
+
+        .modal-content .evento-rilevante-testata {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            background: transparent;
+            border: none;
+            border-radius: 0;
+            color: var(--text-main);
+            font-size: 14px;
+            font-weight: bold;
+            text-align: left;
+            padding: 11px 14px;
+            cursor: pointer;
+        }
+
+        .modal-content .evento-rilevante-testata:hover {
+            background: #232323;
+            opacity: 1;
+        }
+
+        .modal-content .evento-rilevante-testata .freccia {
+            color: var(--primary-color);
+            font-size: 11px;
+            flex-shrink: 0;
+        }
+
+        .modal-content .evento-rilevante-codice {
+            display: inline-block;
+            background: var(--primary-color);
+            color: var(--dark-color);
+            font-family: "Courier New", monospace;
+            font-size: 11px;
+            font-weight: bold;
+            letter-spacing: .5px;
+            border-radius: 4px;
+            padding: 2px 7px;
+            flex-shrink: 0;
+        }
+
+        .modal-content .evento-rilevante-dettaglio {
+            display: none;
+            padding: 12px 14px 14px;
+            border-top: 1px solid var(--border-color);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .modal-content .evento-rilevante-dettaglio.aperto {
+            display: block;
+        }
+
+        .evento-rilevante-condizione + .evento-rilevante-condizione {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px dashed var(--border-color);
+        }
+
+        /* Riferimento normativo della condizione (1.a., 4.a.): monospace, così
+           resta leggibile e allineato anche in un elenco di più condizioni */
+        .evento-rilevante-riferimento {
+            font-family: "Courier New", monospace;
+            color: var(--danger-color);
+            background: rgba(175, 43, 30, .18);
+            border-radius: 3px;
+            padding: 1px 5px;
+            margin-right: 2px;
+        }
+
+        .evento-rilevante-sintesi {
+            color: var(--primary-color);
+            font-weight: bold;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .evento-rilevante-testo {
+            color: var(--text-main);
+            text-align: justify;
+        }
+
+        .evento-rilevante-elenco {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .evento-rilevante-chip {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 999px;
+            padding: 2px 9px;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .evento-rilevante-alternativa {
+            margin-top: 8px;
+            color: var(--text-muted);
+            font-size: 12px;
+            font-style: italic;
+        }
+
         /* Modale dei Reparti Volo: i 400px del modale standard non bastano
            per due schede affiancate con tabella dei campi */
         .modal-content-largo {
@@ -242,6 +386,8 @@
             </div>
         </div>
         <div class="header-right">
+            <button id="btn-evento-rilevante" class="btn-icon-hamburger btn-icon-rilevante" type="button"
+                title="Vademecum: determinazione evento rilevante">R</button>
             <button id="btn-help" class="btn-icon-hamburger" title="Aiuto e contatti">❓</button>
             <button id="btn-cambia-comando" class="btn-icon-hamburger" title="Cambia comando">☰</button>
         </div>
@@ -893,6 +1039,15 @@
         </section>
 
     </main>
+
+    <!-- MODALE VADEMECUM EVENTO RILEVANTE -->
+    <div id="modal-evento-rilevante" class="modal-overlay" style="display:none;">
+        <div class="modal-content chiudibile modal-content-largo">
+            <span class="modal-close" id="modal-evento-rilevante-close" title="Chiudi">&times;</span>
+            <h2 id="evento-rilevante-titolo">Determinazione evento rilevante</h2>
+            <div id="evento-rilevante-contenuto"></div>
+        </div>
+    </div>
 
     <!-- MODALE REPARTI VOLO PIU' VICINI AL TARGET -->
     <div id="modal-reparti-volo" class="modal-overlay" style="display:none;">
