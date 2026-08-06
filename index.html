@@ -210,6 +210,35 @@
             display: block;
         }
 
+        /* Livelli annidati (titolo > capo > sezione > articolo): un rientro
+           leggero e un bordo di guida, per non perdere la gerarchia */
+        .evento-rilevante-dettaglio .evento-rilevante-voce {
+            margin: 6px 0 6px 10px;
+            border-left: 2px solid var(--border-color);
+        }
+
+        .evento-rilevante-dettaglio .evento-rilevante-testata {
+            font-size: 13px;
+            font-weight: normal;
+            padding: 8px 12px;
+        }
+
+        .evento-rilevante-dettaglio .evento-rilevante-dettaglio {
+            padding: 8px 12px 10px;
+        }
+
+        .evento-rilevante-comma {
+            display: flex;
+            gap: 8px;
+            margin-top: 6px;
+        }
+
+        .evento-rilevante-comma .numero {
+            color: var(--text-muted);
+            font-family: "Courier New", monospace;
+            flex-shrink: 0;
+        }
+
         .evento-rilevante-condizione + .evento-rilevante-condizione {
             margin-top: 12px;
             padding-top: 12px;
@@ -1039,15 +1068,28 @@
             </div>
         </section>
 
-        <!-- REGOLAMENTO DI SERVIZIO DPR 64/2012 -->
-        <section id="regolamento-servizio" class="page-section">
+        <!-- NORMATIVE, CIRCOLARI E DISPOSIZIONI -->
+        <section id="normative" class="page-section">
             <div class="pagina-box pagina-box-larga">
-                <h3>Regolamento di servizio — DPR 64/2012</h3>
+                <h3>Normative, Circolari e Disposizioni</h3>
                 <p class="pagina-nota">
-                    Decreto del Presidente della Repubblica 7 maggio 2012, n. 64 — Regolamento di servizio
-                    del Corpo nazionale dei vigili del fuoco. Clicca una voce per aprirne il contenuto.
+                    Raccolta consultabile dei testi di riferimento. Clicca una voce per aprirla: il testo
+                    viene caricato solo alla prima apertura, e si naviga per titoli, capi, sezioni e articoli.
                 </p>
-                <div id="regolamento-servizio-contenuto"></div>
+
+                <div id="normative-contenuto">
+                    <!-- Ogni fonte è una voce con il proprio file: data-fonte dice quale
+                         JSON caricare, il contenuto viene costruito alla prima espansione -->
+                    <div class="evento-rilevante-voce">
+                        <button type="button" class="evento-rilevante-testata" aria-expanded="false"
+                            data-fonte="/FireOps/db/dpr642012.json">
+                            <span class="freccia">▶</span>
+                            <span class="evento-rilevante-codice">DPR 64/2012</span>
+                            <span>Regolamento di servizio del Corpo nazionale dei vigili del fuoco</span>
+                        </button>
+                        <div class="evento-rilevante-dettaglio"></div>
+                    </div>
+                </div>
             </div>
         </section>
 

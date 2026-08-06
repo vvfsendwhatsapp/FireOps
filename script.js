@@ -961,7 +961,7 @@ document.addEventListener("DOMContentLoaded", () => {
         { id: "turnario", label: "Turnario" },
         { id: "moduli-cmr", label: "Moduli CMR" },
         { id: "sostanze-pericolose", label: "Sostanze pericolose" },
-        { id: "regolamento-servizio", label: "Regolamento di servizio DPR 64/2012" }
+        { id: "normative", label: "Normative, Circolari e Disposizioni" }
     ];
 
     const magazzinoPagine = document.getElementById("magazzino-pagine");
@@ -1019,10 +1019,6 @@ const CHIAVE_STORAGE_PANNELLI = "fireops_pagine_pannelli";
     // (stesso comportamento che prima aveva il cambio scheda unico)
     function eseguiEffettiPagina(idPagina) {
         chiudiPopupDati();
-
-        if (idPagina === "regolamento-servizio") {
-            caricaRegolamentoServizio();
-        }
 
         if (idPagina === "messaggistica") {
             const inputNumero = document.getElementById("msg-numero");
@@ -1356,26 +1352,101 @@ collegaModaleJson({
     prefissoTitolo: "🅁",
 });
 
-// Stessa fisarmonica dei modali, ma dentro una pagina di pannello: il file
-// viene letto una sola volta, alla prima volta che la pagina viene aperta
-const contenutoRegolamento = document.getElementById("regolamento-servizio-contenuto");
-let regolamentoCaricato = false;
+// ==========================================================
+// NORMATIVE: fisarmonica ricorsiva (titolo > capo > sezione > articolo)
+//
+// La struttura non è nota in anticipo e cambia da fonte a fonte: il
+// renderer scende ricorsivamente in QUALSIASI array di oggetti trovi,
+// usando il nome della chiave come etichetta del livello. Così lo stesso
+// codice regge un DPR con titoli e capi e una circolare fatta di soli punti.
+// ==========================================================
+const CHIAVI_TESTO_NORMATIVA = ["testo", "contenuto", "descrizione", "corpo"];
+const CHIAVI_ETICHETTA_NORMATIVA = ["titolo", "rubrica", "nome", "oggetto", "descrizione"];
+const CHIAVI_CODICE_NORMATIVA = ["codice", "articolo", "art", "numero", "sigla"];
 
-function caricaRegolamentoServizio() {
-    if (!contenutoRegolamento || regolamentoCaricato) return;
-    regolamentoCaricato = true;
-
-    contenutoRegolamento.innerHTML = `<p class="pagina-nota">Caricamento del regolamento…</p>`;
-    FireOps.caricaJson("/FireOps/db/dpr642012.json")
-        .then(dati => disegnaFisarmonicaJson(dati, contenutoRegolamento, null, ""))
-        .catch(err => {
-            regolamentoCaricato = false; // un errore non deve impedire un nuovo tentativo
-            console.error("Regolamento di servizio non disponibile:", err);
-            contenutoRegolamento.innerHTML = `<p class="pagina-nota" style="color:var(--danger-color);">Impossibile leggere <code>db/dpr642012.json</code>: ${testoSicuroModale(err.message)}</p>`;
-        });
+// Array di oggetti = livello successivo della gerarchia.
+// Array di stringhe = elenco di commi o punti, non un livello.
+function figliNormativa(nodo) {
+    return Object.entries(nodo).filter(([, valore]) =>
+        Array.isArray(valore) && valore.length > 0 && typeof valore[0] === "object" && valore[0] !== null);
 }
 
-abilitaFisarmonica(contenutoRegolamento);
+function elenchiTestualiNormativa(nodo) {
+    return Object.entries(nodo).filter(([, valore]) =>
+        Array.isArray(valore) && valore.length > 0 && typeof valore[0] !== "object");
+}
+
+function nodoNormativa(nodo, indice, chiaveLivello) {
+    const codice = primoValore(nodo, CHIAVI_CODICE_NORMATIVA);
+    const etichetta = primoValore(nodo, CHIAVI_ETICHETTA_NORMATIVA);
+    const distintivo = codice
+        ? `<span class="evento-rilevante-codice">${testoSicuroModale(codice)}</span>`
+        : "";
+    // Se manca del tutto un'etichetta si ripiega sul nome del livello ("articolo 3")
+    const intestazione = etichetta || `${testoSicuroModale(chiaveLivello)} ${indice + 1}`;
+
+    const testo = primoValore(nodo, CHIAVI_TESTO_NORMATIVA);
+    const parti = [];
+    if (testo) parti.push(`<div class="evento-rilevante-testo">${testoSicuroModale(testo)}</div>`);
+
+    // Commi e punti: numerati, non pastiglie — vanno letti in sequenza
+    elenchiTestualiNormativa(nodo).forEach(([chiave, valori]) => {
+        parti.push(`<h5>${testoSicuroModale(chiave)}</h5>`);
+        valori.forEach((voce, i) => {
+            parti.push(`<div class="evento-rilevante-comma"><span class="numero">${i + 1}.</span><span>${testoSicuroModale(voce)}</span></div>`);
+        });
+    });
+
+    figliNormativa(nodo).forEach(([chiave, elementi]) => {
+        parti.push(elementi.map((figlio, i) => nodoNormativa(figlio, i, chiave)).join(""));
+    });
+
+    return `<div class="evento-rilevante-voce">
+        <button type="button" class="evento-rilevante-testata" aria-expanded="false">
+            <span class="freccia">▶</span>
+            ${distintivo}
+            <span>${testoSicuroModale(intestazione)}</span>
+        </button>
+        <div class="evento-rilevante-dettaglio">${parti.join("") || `<div class="evento-rilevante-testo">Nessun contenuto.</div>`}</div>
+    </div>`;
+}
+
+function disegnaNormativa(dati, contenitore) {
+    const premessa = dati.premessa
+        ? `<div class="evento-rilevante-premessa">${testoSicuroModale(dati.premessa)}</div>`
+        : "";
+    const radici = figliNormativa(dati);
+    const corpo = radici.length > 0
+        ? radici.map(([chiave, elementi]) => elementi.map((n, i) => nodoNormativa(n, i, chiave)).join("")).join("")
+        : `<p class="pagina-nota">Il file non contiene voci riconoscibili (serve almeno un elenco di oggetti).</p>`;
+    contenitore.innerHTML = premessa + corpo;
+}
+
+// Caricamento pigro: il file parte alla prima espansione della sua voce,
+// non all'apertura della pagina
+const contenutoNormative = document.getElementById("normative-contenuto");
+
+if (contenutoNormative) {
+    contenutoNormative.addEventListener("click", (e) => {
+        const testata = e.target.closest(".evento-rilevante-testata[data-fonte]");
+        if (!testata) return;
+        const dettaglio = testata.parentElement.querySelector(".evento-rilevante-dettaglio");
+        if (!dettaglio || dettaglio.dataset.caricato === "si") return;
+
+        dettaglio.dataset.caricato = "si";
+        dettaglio.innerHTML = `<p class="pagina-nota">Caricamento del testo…</p>`;
+
+        FireOps.caricaJson(testata.dataset.fonte)
+            .then(dati => disegnaNormativa(dati, dettaglio))
+            .catch(err => {
+                dettaglio.dataset.caricato = ""; // un errore non deve bloccare i tentativi successivi
+                console.error(`Normativa non disponibile (${testata.dataset.fonte}):`, err);
+                dettaglio.innerHTML = `<p class="pagina-nota" style="color:var(--danger-color);">Impossibile leggere <code>${testoSicuroModale(testata.dataset.fonte)}</code>: ${testoSicuroModale(err.message)}</p>`;
+            });
+    });
+
+    abilitaFisarmonica(contenutoNormative);
+}
 
 collegaModaleJson({
     idBottone: "btn-otto-passi",
@@ -1396,13 +1467,6 @@ collegaModaleJson({
     });
     spostaSezione(paginaSinistra, "sinistra");
     spostaSezione(paginaDestra, "destra");
-
-    // L'assegnazione iniziale (e quindi il ripristino della sessione dopo un
-    // F5) non passa da eseguiEffettiPagina: se il Regolamento è già in un
-    // pannello va caricato qui, altrimenti resterebbe una pagina vuota
-    if (paginaSinistra === "regolamento-servizio" || paginaDestra === "regolamento-servizio") {
-        caricaRegolamentoServizio();
-    }
     aggiornaSelettori();
     salvaPaginePannelli();
 
