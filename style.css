@@ -1890,16 +1890,21 @@ html.comando-gia-scelto #modal-comando {
    ========================================================================== */
 
 .um-root{
-  --um-bg:#0f1216;
-  --um-bg2:#161b22;
-  --um-bg3:#1c232c;
-  --um-line:#2a323d;
-  --um-txt:#e6edf3;
-  --um-txt2:#9aa7b4;
-  --um-rosso:#d32f2f;
-  --um-rosso2:#ff5a4d;
-  --um-giallo:#f2b705;
-  --um-mono:"JetBrains Mono","SFMono-Regular",Consolas,"Liberation Mono",monospace;
+  /* Nessun colore proprio: il convertitore eredita la palette FireOps.
+     I nomi --um-* restano per non toccare le ~80 regole che li usano. */
+  --um-bg:var(--dark-color);
+  --um-bg2:var(--surface-color);
+  --um-bg3:var(--dark-color);
+  --um-line:var(--border-color);
+  --um-txt:var(--text-main);
+  --um-txt2:var(--text-muted);
+  /* L'accento di FireOps è il giallo oro, non il rosso: qui il rosso
+     RAL3000 significa "dato mancante/pericolo" e non va speso per
+     evidenziare una cella selezionata. */
+  --um-rosso:var(--primary-color);
+  --um-rosso2:var(--primary-color);
+  --um-giallo:#4fc3f7;
+  --um-mono:"Courier New",monospace;
 
   color:var(--um-txt);
   font-size:14px;
@@ -1909,6 +1914,100 @@ html.comando-gia-scelto #modal-comando {
   flex-direction:column;
 }
 .um-root *{box-sizing:border-box}
+
+/* ==========================================================================
+   Convertitore unità — allineamento allo stile FireOps.
+   Qui stanno solo i punti in cui il modulo aveva colori scritti a mano
+   invece che presi dalle variabili: non si potevano rimappare e basta.
+   ========================================================================== */
+
+/* La testata di pagina è ridondante: il selettore del pannello dice già
+   quale pagina stai guardando. Stessa scelta fatta per tutte le altre
+   sezioni con ".pagina-box > h3 { display:none }". */
+.um-root .um-head{display:none}
+
+/* Input e select: stesso guscio dei campi FireOps (raggio 4px, fondo scuro) */
+.um-root .um-search input,
+.um-root .um-field input,
+.um-root .um-field select,
+.um-root textarea{border-radius:4px}
+
+.um-root .um-search input:focus{box-shadow:0 0 0 1px var(--primary-color)}
+
+/* Categoria attiva: giallo pieno con testo scuro, come le voci evidenziate
+   dei combobox (.combo-opzione-attiva) e i titoli di sezione */
+.um-root .um-cat.on{
+  background:var(--primary-color);
+  border-left-color:var(--primary-color);
+  color:var(--dark-color);
+}
+.um-root .um-cat.on .um-cat-n{
+  background:rgba(18,18,18,.25);
+  color:var(--dark-color);
+}
+
+/* Riga della tabella: sorvolo appena percettibile, riga selezionata marcata */
+.um-root .um-tbl tbody tr:hover{background:rgba(255,215,0,.07)}
+.um-root .um-tbl tr.hi td{background:rgba(255,215,0,.14)}
+.um-root .um-tbl tbody td{border-bottom:1px solid var(--border-color)}
+
+/* Campo risultato: il valore calcolato è il dato da leggere, quindi giallo
+   pieno su fondo scuro, non un grigio qualsiasi */
+.um-root .um-field input[readonly]{
+  background:var(--dark-color);
+  color:var(--primary-color);
+}
+
+/* Nota di categoria: stesso trattamento della premessa dei modali JSON
+   (fondo scuro, barra rossa a sinistra) */
+.um-root .um-nota{
+  background:var(--dark-color);
+  border-left:4px solid var(--danger-color);
+  border-radius:4px;
+  color:var(--text-main);
+  font-size:13px;
+  line-height:1.5;
+}
+
+/* Pulsanti valore rapido (1/10/100/1000): gli stessi ".btn-toggle-radar"
+   usati ovunque per le azioni secondarie */
+.um-root .um-quick button{
+  background:var(--dark-color);
+  border:1px solid var(--border-color);
+  border-radius:4px;
+  color:var(--text-main);
+  padding:7px 14px;
+  font-size:13px;
+  font-family:Arial,sans-serif;
+}
+.um-root .um-quick button:hover{
+  background:var(--primary-color);
+  border-color:var(--primary-color);
+  color:var(--dark-color);
+}
+
+.um-root .um-swap{border-radius:4px}
+.um-root .um-swap:hover{border-color:var(--primary-color);color:var(--primary-color)}
+
+/* Schede risultato e tabelle: raggio 8px come .pagina-box e .riepilogo-box */
+.um-root .um-panel,
+.um-root .um-cats,
+.um-root .um-tbl,
+.um-root .um-card{border-radius:8px}
+
+/* Feedback di copia: identico a .copia-feedback, che è la conferma di
+   copia già usata in tutta l'app. Due conferme diverse per lo stesso
+   gesto sono un dettaglio che si nota subito. */
+.um-toast{
+  background:var(--primary-color);
+  color:var(--dark-color);
+  border-radius:4px;
+  font-family:Arial,sans-serif;
+  font-size:12px;
+  font-weight:bold;
+  padding:4px 10px;
+  box-shadow:0 2px 8px rgba(0,0,0,.5);
+}
 
 /* ---------- intestazione ---------- */
 .um-root .um-head{
