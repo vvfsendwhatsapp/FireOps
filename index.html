@@ -256,13 +256,25 @@
             border-radius: 3px;
             padding: 1px 5px;
             margin-right: 2px;
-        }s
+        }
 
         .evento-rilevante-sintesi {
             color: var(--primary-color);
             font-weight: bold;
             display: block;
             margin-bottom: 4px;
+        }
+
+        /* Dentro un articolo di legge la gerarchia è comma > lettera > numero:
+           il comma tiene il badge, la lettera scende a semplice indice inline.
+           Prima era il contrario — la lettera in grassetto giallo pesava più
+           del comma che la contiene. */
+        .evento-rilevante-dettaglio .evento-rilevante-condizione .evento-rilevante-sintesi {
+            display: inline;
+            color: var(--text-muted);
+            font-weight: normal;
+            font-family: "Courier New", monospace;
+            margin-right: 6px;
         }
 
         .evento-rilevante-testo {
