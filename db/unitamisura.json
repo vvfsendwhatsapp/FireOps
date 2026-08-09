@@ -1251,7 +1251,7 @@
       "id": "basi",
       "nome": "Basi numeriche",
       "tipo": "basi",
-      "nota": "Interi fino a 2⁵³ (limite di precisione dei numeri JavaScript). Utile per selettività radio, maschere e codici DMR."
+      "nota": "Interi fino a 2⁵³ (limite di precisione dei numeri JavaScript)."
     }
   ]
 }
