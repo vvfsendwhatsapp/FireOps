@@ -245,24 +245,18 @@
             border-top: 1px dashed var(--border-color);
         }
 
-        /* Riferimento normativo della condizione (1.a., 4.a.): monospace, così
-           resta leggibile e allineato anche in un elenco di più condizioni */
+        /* Riferimento normativo della voce (1.a., 4.a., numero di comma):
+           monospace per restare incolonnato, accento giallo come il resto
+           dell'app. Il rosso RAL3000 è riservato a ciò che segnala un
+           pericolo o un dato mancante: numerare una voce non lo è. */
         .evento-rilevante-riferimento {
             font-family: "Courier New", monospace;
-            color: var(--danger-color);
-            background: rgba(175, 43, 30, .18);
+            color: var(--primary-color);
+            background: rgba(255, 215, 0, .12);
             border-radius: 3px;
             padding: 1px 5px;
             margin-right: 2px;
-        }
-
-        /* Il numero di comma è struttura, non un elemento da valutare: prende
-        l'accento giallo dell'app invece del badge rosso, che nel vademecum
-        segnala invece una condizione da verificare. */
-        .evento-rilevante-dettaglio .evento-rilevante-condizione>.evento-rilevante-riferimento {
-            color: var(--primary-color);
-            background: rgba(255, 215, 0, .12);
-        }
+        }s
 
         .evento-rilevante-sintesi {
             color: var(--primary-color);
