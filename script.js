@@ -388,6 +388,86 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ==========================================================
+    // VISTA WINDY: alternativa alla mappa Leaflet, centrata sul punto
+    // attualmente inquadrato (che all'apertura è il Comando attivo).
+    // L'iframe riceve un src solo alla prima attivazione: finché il
+    // pulsante non viene premuto, Windy non viene mai contattata.
+    // ==========================================================
+    const btnWindy = document.getElementById("btn-windy");
+    const contenitoreWindy = document.getElementById("windy-comando");
+    const iframeWindy = document.getElementById("windy-iframe");
+    let windyAttivo = false;
+
+    function coordinateVistaCorrente() {
+        if (mappaComandoLeaflet) {
+            const centro = mappaComandoLeaflet.getCenter();
+            return { lat: centro.lat, lng: centro.lng };
+        }
+        return coordinateComandoAttivo;
+    }
+
+    function urlWindy(coord) {
+        const parametri = new URLSearchParams({
+            lat: coord.lat.toFixed(4),
+            lon: coord.lng.toFixed(4),
+            detailLat: coord.lat.toFixed(4),
+            detailLon: coord.lng.toFixed(4),
+            zoom: "8",
+            level: "surface",
+            overlay: "radar",
+            product: "radar",
+            menu: "",
+            message: "",
+            marker: "true",
+            calendar: "now",
+            pressure: "",
+            type: "map",
+            location: "coordinates",
+            detail: "",
+            metricWind: "km/h",
+            metricTemp: "°C",
+            radarRange: "-1"
+        });
+        return `https://embed.windy.com/embed2.html?${parametri.toString()}`;
+    }
+
+    // Ricarica l'iframe solo se Windy è la vista attiva: cambiare Comando
+    // con Windy spento non deve costare una richiesta di rete
+    function aggiornaWindy() {
+        if (!iframeWindy || !windyAttivo) return;
+        const coord = coordinateVistaCorrente();
+        if (!coord) return;
+        iframeWindy.src = urlWindy(coord);
+    }
+
+    if (btnWindy) {
+        btnWindy.addEventListener("click", () => {
+            windyAttivo = !windyAttivo;
+            btnWindy.classList.toggle("attivo", windyAttivo);
+
+            const contenitoreMappa = document.getElementById("mappa-comando");
+            if (contenitoreMappa) contenitoreMappa.style.display = windyAttivo ? "none" : "block";
+            if (contenitoreWindy) contenitoreWindy.style.display = windyAttivo ? "block" : "none";
+
+            // I comandi della mappa Leaflet agiscono su qualcosa di nascosto:
+            // spenti, non disabilitati a metà. Lookup diretto perché alcuni di
+            // questi pulsanti sono dichiarati più in basso nel file.
+            ["btn-stile-mappa", "btn-torna-comando", "btn-toggle-radar", "btn-pausa-radar"]
+                .forEach(id => {
+                    const b = document.getElementById(id);
+                    if (b) b.disabled = windyAttivo;
+                });
+
+            if (windyAttivo) {
+                aggiornaWindy();
+            } else if (mappaComandoLeaflet) {
+                // Rientrando, Leaflet era display:none: dimensioni da ricalcolare
+                setTimeout(() => mappaComandoLeaflet.invalidateSize(), 100);
+            }
+        });
+    }
+
+    // ==========================================================
     // CROCINO CENTRALE: mirino fisso al centro della mappa con le coordinate inquadrate
     // ==========================================================
     function creaCrocinoCentroMappa() {
@@ -675,6 +755,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function aggiornaMappaEMeteo(comando) {
         aggiornaMappaComando(comando);
         aggiornaMeteoComando(comando);
+        aggiornaWindy();
 
         if (intervalloMeteo) clearInterval(intervalloMeteo);
         intervalloMeteo = setInterval(() => {

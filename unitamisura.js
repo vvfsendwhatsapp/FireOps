@@ -15,16 +15,18 @@ window.FireOpsUnitaMisura = (function(){
 "use strict";
 
 /* percorso del JSON — modificare se il file sta in una sottocartella */
-var DATA_URL = 'unitamisura.json';
+var DATA_URL = '/FireOps/db/unitamisura.json';
 
 /* ---------- database condiviso (una sola fetch per tutte le istanze) ---------- */
 var dbPromise = null;
 function loadDB(){
   if(!dbPromise){
-    dbPromise = fetch(DATA_URL).then(function(r){
-      if(!r.ok) throw new Error('HTTP ' + r.status);
-      return r.json();
-    });
+    dbPromise = (window.FireOps && FireOps.caricaJson)
+      ? FireOps.caricaJson(DATA_URL)
+      : fetch(DATA_URL).then(function(r){
+          if(!r.ok) throw new Error('HTTP ' + r.status);
+          return r.json();
+        });
   }
   return dbPromise;
 }
@@ -448,7 +450,7 @@ function init(root){
       '<div class="um-quick"><button type="button" class="f-clear">Pulisci tutto</button></div>';
 
     var I = {}, P = Math.PI;
-    campi.forEach(function(p){ I[p[0]] = B.querySelector('.f-'+p[0]); });
+    campi.forEach(function(p){ I[p[0]] = B.querySelector('.c-'+p[0]); });
 
     function raggioDa(k,v){
       switch(k){
