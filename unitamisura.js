@@ -492,42 +492,74 @@ function init(root){
   /* ---------- 5. prefissi SI ---------- */
   function viewPrefissi(B){
     var P = cur.dati;
-    function opts(i){
-      return P.map(function(p,j){
-        return '<option value="'+j+'"'+(j===i?' selected':'')+'>'+esc(p.nome)+' ('+esc(p.simbolo)+') '+esc(p.potenza)+'</option>';
-      }).join('');
-    }
-    var iK = P.findIndex(function(x){ return x.fattore === 1000; });
-    var i1 = P.findIndex(function(x){ return x.fattore === 1; });
-    B.innerHTML =
-     '<div class="um-io">'+
-       '<div class="um-field"><label>Da</label><input class="f-in" type="text" inputmode="decimal" value="1"><select class="f-uin">'+opts(iK)+'</select></div>'+
-       '<button type="button" class="um-swap" title="Inverti">⇄</button>'+
-       '<div class="um-field"><label>A</label><input class="f-out" type="text" readonly><select class="f-uout">'+opts(i1)+'</select></div>'+
-     '</div>'+
-     '<div class="um-tbl"><table><thead><tr><th>Prefisso</th><th>Simbolo</th><th>Potenza</th><th style="text-align:right">Fattore</th></tr></thead><tbody>'+
-       P.map(function(p){
-         var f = (p.fattore >= 1e-4 && p.fattore < 1e5) ? p.fattore.toLocaleString('it-IT') : p.fattore.toExponential();
-         return '<tr><td>'+esc(p.nome)+'</td><td class="sym">'+esc(p.simbolo)+'</td><td class="mono">'+esc(p.potenza)+'</td>'+
-                '<td class="val" data-copy="'+p.fattore+'">'+f+'</td></tr>';
-       }).join('')+
-     '</tbody></table></div>';
+    var iK = P.findIndex(function(x){ return x.fattore === 1000; }); // chilo
+    if(iK < 0) iK = 0;
 
-    var pv = B.querySelector('.f-in'), pDa = B.querySelector('.f-uin'),
-        pr = B.querySelector('.f-out'), pA = B.querySelector('.f-uout');
+    B.innerHTML =
+     '<div class="um-io um-io-singolo">'+
+       '<div class="um-field"><label>Valore</label>'+
+         '<input class="f-in" type="text" inputmode="decimal" value="1"></div>'+
+       '<div class="um-field"><label>Prefisso di partenza</label><select class="f-uin">'+
+         P.map(function(p,j){
+           return '<option value="'+j+'"'+(j===iK?' selected':'')+'>'+
+                  esc(p.nome)+' ('+esc(p.simbolo)+') '+esc(p.potenza)+'</option>';
+         }).join('')+
+       '</select></div>'+
+     '</div>'+
+     '<div class="um-quick"></div>'+
+     '<div class="um-tbl"><table><thead><tr>'+
+       '<th>Prefisso</th><th>Simbolo</th><th>Potenza</th>'+
+       '<th style="text-align:right">Fattore</th>'+
+       '<th style="text-align:right">Valore</th>'+
+     '</tr></thead><tbody></tbody></table></div>';
+
+    var pv = B.querySelector('.f-in'),
+        pDa = B.querySelector('.f-uin'),
+        tb = B.querySelector('tbody'),
+        quick = B.querySelector('.um-quick');
+
+    [1,10,100,1000].forEach(function(n){
+      var b = el('<button type="button">'+n+'</button>');
+      b.onclick = function(){ pv.value = n; calc(); };
+      quick.appendChild(b);
+    });
+
+    // Il fattore è una costante del prefisso, non dipende dall'ingresso:
+    // si formatta una volta sola invece che a ogni battuta sulla tastiera.
+    var fattoreTesto = P.map(function(p){
+      return (p.fattore >= 1e-4 && p.fattore < 1e5)
+        ? p.fattore.toLocaleString('it-IT')
+        : p.fattore.toExponential();
+    });
+
     function calc(){
       var v = num(pv.value);
-      pr.value = Number.isNaN(v) ? '' : fmt(v * P[+pDa.value].fattore / P[+pA.value].fattore);
-      pr.dataset.copy = pr.value;
+      var base = v * P[+pDa.value].fattore;
+      tb.innerHTML = P.map(function(p,j){
+        var val = Number.isNaN(v) ? '' : fmt(base / p.fattore);
+        return '<tr class="'+(j == pDa.value ? 'hi' : '')+'">'+
+               '<td>'+esc(p.nome)+'</td>'+
+               '<td class="sym">'+esc(p.simbolo)+'</td>'+
+               '<td class="mono">'+esc(p.potenza)+'</td>'+
+               '<td class="val" data-copy="'+p.fattore+'">'+fattoreTesto[j]+'</td>'+
+               '<td class="val" data-copy="'+val+'">'+(val || '—')+'</td></tr>';
+      }).join('');
     }
+
     pv.addEventListener('input', calc);
     pDa.addEventListener('change', calc);
-    pA.addEventListener('change', calc);
-    B.querySelector('.um-swap').onclick = function(){
-      var a = pDa.value; pDa.value = pA.value; pA.value = a;
-      if(pr.value) pv.value = pr.value;
+
+    tb.addEventListener('click', function(e){
+      if(e.target.classList.contains('val')) return; // lì il clic copia
+      var tr = e.target.closest('tr'); if(!tr) return;
+      var j = Array.prototype.indexOf.call(tb.children, tr);
+      if(j < 0) return;
+      var v = num(pv.value);
+      if(!Number.isNaN(v)) pv.value = fmt(v * P[+pDa.value].fattore / P[j].fattore);
+      pDa.value = j;
       calc();
-    };
+    });
+
     calc();
   }
 
