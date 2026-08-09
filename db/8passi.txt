@@ -1,0 +1,96 @@
+-------- OBIETTIVO SICUREZZA --------
+
+CONTROLLO E GESTIONE DEL SITO
+• evacuazione
+• isolamento
+• zonizzazione: zona rossa, arancione, gialla
+• controllo accessi ed uscita dalla zona rossa
+• posizionamento dei mezzi in zona gialla
+IDENTIFICAZIONE DELLO SCENARIO INCIDENTALE
+• raccolta delle informazioni
+ANALISI DEI PERICOLI E DEL RISCHIO
+• identificazione dei pericoli
+• per ciascun pericolo:
+> magnitudo del danno
+> probabilità di accadimento
+• classificazione dei rischi:
+rischio = magnitudo x probabilità
+VALUTAZIONE PROCEDURE OPERATIVE E MISURE PROTETTIVE
+• soglia di accettabilità del rischio
+• prevenzione del rischio soprasoglia di accettabilità:
+> scelta della procedura operativa (PO, POS)
+> riduzione del rischio ad accettabile
+• protezione del rischio residuo:
+> protezione collettiva
+> DPI
+COORDINAMENTO DELLE INFORMAZIONI DELLE RISORSE
+REALIZZAZIONE OPERATIVA DELL’INTERVENTO
+• controllo
+• confinamento
+• risoluzione
+RIPRISTINO
+• personale:
+> decontaminazione
+> riposo
+• equipaggiamento, mezzi:
+> bonifica
+> manutenzione
+• ambiente:
+> bonifica
+> polizia giudiziaria
+CHIUSURA DELL’INTERVENTO
+• relazione d’intervento
+• comunicazione ad enti
+• debriefing
+
+P8P il processo ad 8 passi generalizzato
+Il P8P prevede 8 passi da eseguire sempre ed in tutti gli interventi. L’ordine dei passi non è strettamente cronologico: la pianificazione e gestione dell’intervento è ciclica e continua. I passi possono essere eseguiti nuovamente ogni volta che lo scenario evolve.
+1 - CONTROLLO E GESTIONE DEL SITO
+Il primo passo di ogni soccorso consiste nel limitare il coinvolgimento di ulteriori persone nello scenario incidentale. La squadra che giunge sul luogo installa il cantiere di soccorso: evacua le persone non coinvolte dall’evento, chiude l’accesso dall’esterno al cantiere di soccorso e lo delimita, con la collaborazione delle forze dell’ordine. Poi si effettua la zonizzazione, cioè si divide il cantiere di soccorso in tre zone concentriche:
+1) zona rossa: area pericolosa per i soccorritori, che contiene l’evento incidentale e i suoi effetti
+2) zona arancione: è l’area cuscinetto tra la zona pericolosa e la successiva area di sicurezza
+3) zona gialla: area sicura che ospita le squadre di soccorso ed include il PCA, posto di comando avanzato.
+2 - IDENTIFICAZIONE DELLO SCENARIO INCIDENTALE
+L’obiettivo di questo passo è di capire qual è lo scopo dell’intervento e di descriverne lo scenario.
+I soccorritori raccolgono le informazioni necessarie osservando lo scenario con i cinque sensi, ascoltando le testimonianze dei presenti, consultando documenti, schede di sicurezza, effettuando misure...
+3 - ANALISI DEI PERICOLI E DEL RISCHIO
+L’obiettivo di questo passo della procedura è di individuare e classificare i pericoli presenti sullo scenario, grazie alla valutazione dei rischi.
+La progettazione e la gestione dell’intervento è realizzata dal ROS, il responsabile delle operazioni di soccorso, chiamato anche IC (Incident Commander), ruolo ricoperto dal vigile del fuoco più alto in grado presente sul posto. Negli interventi condotti da una sola squadra, il caposquadra
+assume il ruolo del ROS.
+Non può mai accadere che esistano due ROS nel medesimo intervento: la pianificazione ed il comando devono essere sempre unici.
+Se la complessità lo impone, può essere prevista una struttura organizzativa più ramificata, con responsabili di settore, come previsto ad esempio dalle tecniche ICS (incident command system), facenti comunque capo ad un unico responsabile.
+Il ROS esercita il comando dell’intervento, avvalendosi con intelligenza delle capacità di tutti gli operatori e delega agli specialisti ed ai qualificati le scelte operative specifiche, però rimane responsabile, anche giuridicamente, della gestione generale dell’intervento e del raggiungimento del risultato finale.
+Il ROS esegue la valutazione del rischio dell’intervento per fasi successive:
+1) identificazione dei pericoli - il ROS elenca tutti i potenziali pericoli presenti sullo scenario e prevede come possano evolvere nel tempo
+2) valutazione della probabilità di accadimento e
+della magnitudo di ciascun pericolo - si stima quale sia la probabilità che tali pericoli si verifichino realmente e si valutano i possibili danni conseguenti per gli operatori
+3) classificazione dei rischi - si classificano i potenziali pericoli in ordine di importanza, grazie alla valutazione dei rischi.
+La valutazione del rischio è aggiornata ad ogni variazione di scenario per tener conto dei rischi evolutivi.
+4 - VALUTAZIONE DELLE PROCEDURE OPERATIVE E DELLE MISURE PROTETTIVE
+Nel quarto passo il rischio per ciascun evento pericoloso viene confrontato con quella che si ritiene essere la soglia di accettabilità del rischio per
+l’operatore.
+Per ciascuno degli eventi rischiosi che superano la soglia di accettabilità, il ROS valuta la possibilità di prevenire il rischio, per ridurre il rischio ad accettabile.
+La riduzione del rischio ad accettabile si effettua creando o scegliendo la procedura operativa più opportuna, anche tra quelle già standardizzate
+come le POS.
+Nella realtà non esiste mai una procedura operativa che consenta di ridurre tutti i rischi ad accettabili. Si dice allora che lo scenario presenta del rischio residuo, ancora superiore alla soglia di accettabilità, e dunque non accettabile.
+Quindi gli operatori devono essere protetti dal rischio residuo per mezzo di:
+1) protezione collettiva - sono tutte le misure adottate per proteggere più persone, come ad esempio il puntellamento di una abitazione dissestata o il
+mantenimento di opportune distanze dall’evento
+2) protezione individuale - consiste invece nell’uso di DPI, dispositivi di protezione individuale, come ad esempio il completo antifiamma e l’elmo.
+La protezione collettiva è sempre migliore della protezione individuale. Ad esempio, l’elmo non può proteggere l’operatore dal crollo di un solaio, il puntellamento invece impedisce completamente tale crollo. La protezione individuale è dunque solo la terza ed ultima scelta operativa.
+5 - COORDINAMENTO DELLE INFORMAZIONI E DELLE RISORSE
+Questo punto evidenzia l’importanza di un sistema di comunicazione efficiente tra le squadre e verso l’esterno del cantiere di soccorso.
+6 - REALIZZAZIONE OPERATIVA DELL’INTERVENTO
+Terminata la pianificazione, si passa alla realizzazione dell’intervento operativo secondo quanto progettato.
+In genere gli interventi si realizzano in tre momenti consecutivi:
+1. controllo - la squadra di intervento assume il controllo dell’evento, acquisendo la capacità di regolarne gli effetti
+2. confinamento - la squadra delimita l’evento evitando che possa interessare nuove aree
+3. risoluzione (o contenimento) - l’evento pericoloso viene eliminato o messo in condizione di non nuocere ulteriormente.
+7 - RIPRISTINO
+Il ripristino è il processo per riportare il personale, le attrezzature, i mezzi e l’ambiente alle condizioni di normalità.
+Nel linguaggio dei documenti NBCR, questo passo è chiamato decontaminazione e bonifica.
+8 - CHIUSURA DELL’INTERVENTO
+L’intervento si chiude dopo aver completato gli adempimenti formali, come la relazione d’intervento e le comunicazioni ad altri enti. Gli operatori si riuniscono ed eseguono la revisione critica (debriefing) della procedura di intervento impiegata:
+perché certe scelte? La valutazione dei rischi si è rivelata corretta? Sono stati sottovalutati dei rischi?
+E’ stata tutelata la sicurezza degli operatori? Si sarebbe potuto fare meglio?
+Il debriefing è la migliore occasione per esprimere soddisfazione sul risultato ed apprezzare l’opera dei soccorritori.

@@ -1,11 +1,12 @@
 {
   "titolo": "Gli 8 Passi",
-  "premessa": "Sequenza operativa per la gestione degli interventi con sostanze pericolose. I passi si svolgono nell'ordine indicato.",
+  "premessa": "Il P8P prevede 8 passi da eseguire sempre ed in tutti gli interventi. L’ordine dei passi non è strettamente cronologico: la pianificazione e gestione dell’intervento è ciclica e continua. I passi possono essere eseguiti nuovamente ogni volta che lo scenario evolve.",
   "passi": [
     {
       "numero": 1,
       "codice": "P1",
-      "titolo": "Controllo e gestione del sito"
+      "titolo": "Controllo e gestione del sito",
+      "dettagli": ""
     },
     {
       "numero": 2,
