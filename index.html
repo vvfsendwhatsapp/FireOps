@@ -198,6 +198,28 @@
             flex-shrink: 0;
         }
 
+        /* La rubrica occupa lo spazio libero e spinge il conteggio a fondo
+           riga. min-width:0 le permette di accorciarsi: senza, un titolo
+           lungo spingerebbe il conteggio fuori dal pulsante. */
+        .evento-rilevante-rubrica {
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+
+        /* Quanti articoli contiene la partizione: dato di servizio, in coda
+           e in secondo piano rispetto al titolo. Monospace per restare
+           incolonnato fra voci allo stesso livello. */
+        .evento-rilevante-conteggio {
+            flex-shrink: 0;
+            font-family: "Courier New", monospace;
+            font-size: 11px;
+            font-weight: normal;
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+            border-radius: 999px;
+            padding: 1px 8px;
+        }
+
         .evento-rilevante-voce>.evento-rilevante-dettaglio {
             display: none;
             padding: 12px 14px 14px;

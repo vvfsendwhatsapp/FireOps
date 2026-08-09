@@ -1564,21 +1564,35 @@ function corpoArticoloDpr(articolo) {
     return commi || `<div class="evento-rilevante-testo">${testoSicuroModale(articolo.testo || "")}</div>`;
 }
 
-function voceFisarmonica(codice, titolo, contenuto) {
+function voceFisarmonica(codice, titolo, contenuto, conteggio) {
+    const badge = conteggio
+        ? `<span class="evento-rilevante-conteggio">${testoSicuroModale(conteggio)}</span>`
+        : "";
     return `<div class="evento-rilevante-voce">
         <button type="button" class="evento-rilevante-testata" aria-expanded="false">
             <span class="freccia">▶</span>
             <span class="evento-rilevante-codice">${testoSicuroModale(codice)}</span>
-            <span>${testoSicuroModale(titolo)}</span>
+            <span class="evento-rilevante-rubrica">${testoSicuroModale(titolo)}</span>
+            ${badge}
         </button>
         <div class="evento-rilevante-dettaglio">${contenuto}</div>
     </div>`;
 }
 
-// 'figli' manca sugli oggetti sezione: senza (nodo.figli || []) qui si prende
-// un TypeError. Se il nodo ha figli si scende, altrimenti si stampano i suoi
-// articoli: così il Titolo IX (che ripete tutti i 50 articoli dei suoi capi)
-// non li duplica, e il Capo II (articoli: [], tutto nelle sezioni) non resta vuoto.
+// Un Titolo non ha articoli propri: li hanno i capi e le sezioni sotto.
+// Il conteggio scende quindi fino alle foglie. NOTA: il JSON di Normattiva
+// ripete gli articoli dei capi anche sul titolo padre, quindi contare
+// nodo.articoli su un nodo che ha figli produrrebbe un doppione — per
+// questo qui vale la stessa regola del rendering: se ci sono figli si
+// guarda solo a loro.
+function contaArticoliDpr(nodo) {
+    const figli = nodo.figli || [];
+    if (figli.length > 0) {
+        return figli.reduce((somma, f) => somma + contaArticoliDpr(f), 0);
+    }
+    return (nodo.articoli || []).length;
+}
+
 function nodoStrutturaDpr(nodo, mappaArticoli) {
     const figli = nodo.figli || [];
     const contenuto = figli.length > 0
@@ -1593,10 +1607,13 @@ function nodoStrutturaDpr(nodo, mappaArticoli) {
           }).join("");
 
     const tipo = String(nodo.tipo || "").replace(/^./, c => c.toUpperCase());
+    const quanti = contaArticoliDpr(nodo);
+
     return voceFisarmonica(
         `${tipo} ${nodo.numero}`,
         nodo.rubrica,
-        contenuto || `<div class="evento-rilevante-testo">Nessun articolo in questa partizione.</div>`
+        contenuto || `<div class="evento-rilevante-testo">Nessun articolo in questa partizione.</div>`,
+        quanti ? `${quanti} art.` : ""
     );
 }
 
