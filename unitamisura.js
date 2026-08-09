@@ -414,49 +414,117 @@ function opts(i){
   }
 
   /* ---------- 3. hex / dec / bin ---------- */
+  /* ---------- 3. basi numeriche ---------- */
   function viewBasi(B){
+    var BASI = [
+      { b: 2,  n: 'Binario' },
+      { b: 8,  n: 'Ottale' },
+      { b: 10, n: 'Decimale' },
+      { b: 16, n: 'Esadecimale' },
+      { b: 36, n: 'Base 36' }
+    ];
+    var CIFRE = '0123456789abcdefghijklmnopqrstuvwxyz';
+
+    // Le cifre ammesse discendono dalla base, non da una tabella scritta a
+    // mano: aggiungere una base all'elenco qui sopra basta e avanza.
+    function ammesse(b){
+      var c = CIFRE.slice(0, b);
+      return new RegExp('^[' + c + c.toUpperCase() + ']*$');
+    }
+
     B.innerHTML =
-     '<div class="um-row">'+
-       '<div class="um-field"><label>Binario (base 2)</label><input class="f-b2" type="text" value="11111111" autocomplete="off"></div>'+
-       '<div class="um-field"><label>Ottale (base 8)</label><input class="f-b8" type="text" value="377" autocomplete="off"></div>'+
-       '<div class="um-field"><label>Decimale (base 10)</label><input class="f-b10" type="text" value="255" autocomplete="off"></div>'+
-       '<div class="um-field"><label>Esadecimale (base 16)</label><input class="f-b16" type="text" value="FF" autocomplete="off"></div>'+
+     '<div class="um-io um-io-singolo">'+
+       '<div class="um-field"><label>Valore</label>'+
+         '<input class="f-in" type="text" value="255" autocomplete="off" spellcheck="false"></div>'+
+       '<div class="um-field"><label>Base di partenza</label><select class="f-uin">'+
+         BASI.map(function(x,j){
+           return '<option value="'+j+'"'+(x.b===10?' selected':'')+'>'+
+                  esc(x.n)+' '+sim('base '+x.b)+'</option>';
+         }).join('')+
+       '</select></div>'+
      '</div>'+
+     '<div class="um-nota f-err" style="display:none"></div>'+
+     '<div class="um-tbl"><table><thead><tr><th>Base</th><th>Nome</th>'+
+       '<th style="text-align:right">Valore</th></tr></thead><tbody></tbody></table></div>'+
      '<div class="um-grid f-gb"></div>';
 
-    var f = { 2:B.querySelector('.f-b2'), 8:B.querySelector('.f-b8'), 10:B.querySelector('.f-b10'), 16:B.querySelector('.f-b16') };
-    var gB = B.querySelector('.f-gb');
-    var ok = { 2:/^[01]*$/, 8:/^[0-7]*$/, 10:/^[0-9]*$/, 16:/^[0-9a-fA-F]*$/ };
+    var vIn = B.querySelector('.f-in'),
+        uIn = B.querySelector('.f-uin'),
+        tb  = B.querySelector('tbody'),
+        gB  = B.querySelector('.f-gb'),
+        err = B.querySelector('.f-err');
 
-    function agg(n, src){
-      for(var b in f){ if(+b !== src) f[b].value = n.toString(+b).toUpperCase(); }
+    function errore(messaggio){
+      err.textContent = messaggio;
+      err.style.display = 'block';
+      vIn.style.borderColor = 'var(--danger-color)'; // qui il rosso è appropriato: dato non valido
+      tb.innerHTML = '';
+      gB.innerHTML = '';
+    }
+
+    function calc(){
+      var base = BASI[+uIn.value].b;
+      // I prefissi 0x e 0b si scrivono per abitudine: si accettano e si
+      // tolgono, invece di far comparire un errore per una notazione corretta.
+      var v = vIn.value.trim().replace(/\s/g, '');
+      if(base === 16) v = v.replace(/^0[xX]/, '');
+      if(base === 2)  v = v.replace(/^0[bB]/, '');
+
+      err.style.display = 'none';
+      vIn.style.borderColor = '';
+
+      if(v === ''){ tb.innerHTML = ''; gB.innerHTML = ''; return; }
+
+      if(!ammesse(base).test(v)){
+        errore('In base ' + base + ' sono ammesse solo le cifre ' +
+               CIFRE.slice(0, base).toUpperCase().split('').join(' ') + '.');
+        return;
+      }
+
+      var n = parseInt(v, base);
+      if(!Number.isSafeInteger(n)){
+        errore('Numero troppo grande: oltre 2⁵³ i numeri JavaScript perdono precisione, ' +
+               'e un valore mostrato qui sarebbe sbagliato senza avvisare.');
+        return;
+      }
+
+      tb.innerHTML = BASI.map(function(x,j){
+        var val = n.toString(x.b).toUpperCase();
+        return '<tr class="'+(j == uIn.value ? 'hi' : '')+'">'+
+               '<td class="mono">'+x.b+'</td>'+
+               '<td>'+esc(x.n)+'</td>'+
+               '<td class="val" data-copy="'+val+'">'+val+'</td></tr>';
+      }).join('');
+
       var bin = n.toString(2);
-      var pad = bin.padStart(Math.ceil(bin.length/8)*8, '0');
-      var grup = pad.match(/.{1,8}/g).join(' ');
+      var byte = bin.padStart(Math.ceil(bin.length/8)*8, '0').match(/.{1,8}/g).join(' ');
       var car = (n >= 32 && n <= 126) ? String.fromCharCode(n) : '—';
+
       gB.innerHTML =
-        card('Byte (8 bit)', grup) +
+        card('Byte (8 bit)', byte) +
         card('Bit necessari', bin.length) +
         card('Byte necessari', Math.ceil(bin.length/8)) +
-        card('Carattere ASCII', car) +
-        card('Notazione C/hex', '0x' + n.toString(16).toUpperCase()) +
-        card('Base 36', n.toString(36).toUpperCase());
+        card('Carattere ASCII', car, car === '—') +
+        card('Notazione C/hex', '0x' + n.toString(16).toUpperCase());
     }
-    Object.keys(f).forEach(function(b){
-      var base = +b;
-      f[b].addEventListener('input', function(){
-        var v = f[b].value.trim().replace(/\s/g,'');
-        if(base === 16) v = v.replace(/^0[xX]/,'');
-        if(base === 2)  v = v.replace(/^0[bB]/,'');
-        if(!ok[base].test(v)){ f[b].style.borderColor = 'var(--um-rosso)'; return; }
-        f[b].style.borderColor = '';
-        if(v === ''){ gB.innerHTML = ''; return; }
-        var n = parseInt(v, base);
-        if(!Number.isSafeInteger(n)){ gB.innerHTML = '<div class="um-empty">Numero troppo grande (oltre 2⁵³).</div>'; return; }
-        agg(n, base);
-      });
+
+    vIn.addEventListener('input', calc);
+    uIn.addEventListener('change', calc);
+
+    // Clic su una riga: quella base diventa la partenza, portandosi dietro
+    // la propria rappresentazione. Il numero non cambia, cambia la notazione.
+    tb.addEventListener('click', function(e){
+      if(e.target.classList.contains('val')) return; // lì il clic copia
+      var tr = e.target.closest('tr'); if(!tr) return;
+      var j = Array.prototype.indexOf.call(tb.children, tr);
+      if(j < 0) return;
+      var cella = tr.querySelector('.val');
+      if(cella) vIn.value = cella.textContent;
+      uIn.value = j;
+      calc();
     });
-    agg(255, 10);
+
+    calc();
   }
 
   /* ---------- 4. cerchio / sfera ---------- */

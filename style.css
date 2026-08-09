@@ -1789,16 +1789,10 @@ html.comando-gia-scelto #modal-comando {
     margin: 0;
 }
 
-/* Nota di categoria: stesso trattamento della premessa dei modali JSON */
-.um-root .um-nota {
-    background: var(--dark-color);
-    border-left: 4px solid var(--danger-color);
-    border-radius: 4px;
-    padding: 8px 11px;
-    margin-bottom: 12px;
-    font-size: 13px;
-    line-height: 1.5;
+/* Nota usata come messaggio d'errore (base numerica non valida) */
+.um-root .um-nota.f-err {
     color: var(--text-main);
+    margin-top: 10px;
 }
 
 /* ---------- riga di conversione ---------- */
