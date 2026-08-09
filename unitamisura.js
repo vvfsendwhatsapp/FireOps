@@ -90,24 +90,20 @@ function init(root){
   root.classList.add('um-root');
 
   root.innerHTML =
-    '<div class="um-head">'+
-      '<div><div class="um-sub">FireOps VVF</div><h2>Convertitore unità di misura</h2></div>'+
-      '<div class="um-count"></div>'+
-    '</div>'+
-    '<div class="um-bar">'+
-      '<div class="um-search">'+
-        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+
-          '<circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></svg>'+
-        '<input type="search" placeholder="Cerca categoria o unità…" autocomplete="off">'+
-      '</div>'+
-      '<select class="um-cats" aria-label="Categoria"></select>'+
+    '<label class="um-lab">Categoria da consultare</label>'+
+    '<div class="combo-wrapper um-combo">'+
+      '<input type="text" class="combo-input um-cerca" autocomplete="off" '+
+        'placeholder="Cerca categoria, unità o simbolo (es. psi, L/min)…">'+
+      '<input type="hidden" class="um-cat-val">'+
+      '<span class="combo-arrow" aria-hidden="true"></span>'+
+      '<div class="combo-dropdown um-cat-dd"></div>'+
     '</div>'+
     '<div class="um-panel"><div class="um-empty">Caricamento del database unità…</div></div>';
 
   var DOM = {
-    count : root.querySelector('.um-count'),
-    ric   : root.querySelector('.um-search input'),
-    cats  : root.querySelector('.um-cats'),
+    cerca : root.querySelector('.um-cerca'),
+    val   : root.querySelector('.um-cat-val'),
+    dd    : root.querySelector('.um-cat-dd'),
     panel : root.querySelector('.um-panel')
   };
 
@@ -126,13 +122,54 @@ function init(root){
     }).observe(root);
   }
 
+  // Testo digitato prima della scelta: serve a riaprire la categoria
+  // posizionandosi già sull'unità cercata (digiti "psi" → Pressione con psi
+  // selezionato come "Da"). Il combo azzera il campo alla selezione, quindi
+  // il valore va intercettato prima.
+  var testoDigitato = '';
+
+  function testoRicercabile(c){
+    var parti = [c.nome];
+    (c.unita || []).forEach(function(u){ parti.push(u.n, u.s); });
+    return parti.join(' ');
+  }
+
+  function indiceUnitaCercata(c){
+    if(!testoDigitato || !c.unita) return -1;
+    var i = c.unita.findIndex(function(u){
+      return u.s.toLowerCase() === testoDigitato || u.n.toLowerCase() === testoDigitato;
+    });
+    if(i > -1) return i;
+    return c.unita.findIndex(function(u){
+      return u.s.toLowerCase().indexOf(testoDigitato) === 0 || u.n.toLowerCase().indexOf(testoDigitato) === 0;
+    });
+  }
+
   loadDB().then(function(d){
     DB = d;
-    var tot = DB.categorie.reduce(function(s,c){ return s + (c.unita ? c.unita.length : 0); }, 0);
-    DOM.count.textContent = DB.categorie.length + ' categorie · ' + tot + ' unità';
-    renderCats('');
+
+    DOM.cerca.addEventListener('input', function(){
+      testoDigitato = DOM.cerca.value.trim().toLowerCase();
+    });
+
+    FireOps.creaCombo({
+      input: DOM.cerca,
+      hidden: DOM.val,
+      dropdown: DOM.dd,
+      elenco: DB.categorie,
+      cercaValore: function(c){ return c.id; },
+      mostraTesto: function(c){ return c.nome; },
+      testoRicerca: testoRicercabile,
+      testoSelezionato: function(c){ return c.nome; },
+      placeholderOpzione: '-- Seleziona una categoria --',
+      onScelta: function(c){
+        var i = indiceUnitaCercata(c);
+        apri(c.id, i > -1 ? i : undefined);
+        testoDigitato = '';
+      }
+    });
+
     apri(DB.categorie[0].id);
-    DOM.ric.addEventListener('input', onSearch);
   }).catch(function(err){
     DOM.panel.innerHTML = '<div class="um-nota">Impossibile caricare <b>' + esc(DATA_URL) + '</b>. '+
       'Verifica che il file sia presente e che la pagina sia servita via HTTP (GitHub Pages o '+
@@ -140,64 +177,13 @@ function init(root){
     console.error('[UnitaMisura]', err);
   });
 
-  /* ---------- navigazione categorie ---------- */
-  function renderCats(filtro){
-    var f = filtro.toLowerCase();
-    DOM.cats.innerHTML = '';
-    var trovate = 0;
-    DB.categorie.forEach(function(c){
-      if(f && c.nome.toLowerCase().indexOf(f) === -1 && !unitaMatch(c,f)) return;
-      var o = document.createElement('option');
-      o.value = c.id;
-      o.textContent = c.nome;
-      DOM.cats.appendChild(o);
-      trovate++;
-    });
-    if(!trovate){
-      DOM.cats.appendChild(el('<option>Nessuna categoria trovata</option>'));
-      DOM.cats.disabled = true;
-      return;
-    }
-    DOM.cats.disabled = false;
-    // La categoria aperta resta selezionata solo se supera il filtro: senza
-    // questo controllo il select mostrerebbe una voce diversa da quella
-    // effettivamente aperta nel pannello.
-    if(cur && DB.categorie.some(function(c){ return c.id === cur.id; })) DOM.cats.value = cur.id;
-  }
-
-  function unitaMatch(c,f){
-    if(!c.unita) return false;
-    return c.unita.some(function(u){
-      return u.n.toLowerCase().indexOf(f) > -1 || u.s.toLowerCase().indexOf(f) > -1;
-    });
-  }
-
-  function onSearch(){
-    var f = DOM.ric.value.trim().toLowerCase();
-    renderCats(f);
-    if(f.length < 2) return;
-    var i, c, k;
-    for(k = 0; k < DB.categorie.length; k++){
-      c = DB.categorie[k]; if(!c.unita) continue;
-      i = c.unita.findIndex(function(u){ return u.s.toLowerCase() === f || u.n.toLowerCase() === f; });
-      if(i > -1){ apri(c.id, i); return; }
-    }
-    for(k = 0; k < DB.categorie.length; k++){
-      c = DB.categorie[k]; if(!c.unita) continue;
-      i = c.unita.findIndex(function(u){ return u.s.toLowerCase().indexOf(f) === 0 || u.n.toLowerCase().indexOf(f) === 0; });
-      if(i > -1){ apri(c.id, i); return; }
-    }
-  }
-
   function apri(id, unitaIdx){
     cur = DB.categorie.filter(function(c){ return c.id === id; })[0];
     if(!cur) return;
-    Array.prototype.forEach.call(DOM.cats.children, function(b){
-      if(!b.classList) return;
-      var attiva = b.dataset.cat === cur.id;
-      b.classList.toggle('on', attiva);
-      if(attiva && b.scrollIntoView) b.scrollIntoView({ block: 'nearest' });
-    });
+    // Assegnazione diretta, non combo.impostaValore(): quello richiamerebbe
+    // onScelta, che richiama apri() — ricorsione infinita.
+    if(DOM.cerca) DOM.cerca.value = cur.nome;
+    if(DOM.val)   DOM.val.value = cur.id;
     DOM.panel.innerHTML =
       '<div class="um-panel-head">'+
         '<h3 class="um-title">' + esc(cur.nome) + '</h3>' +
