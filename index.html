@@ -256,6 +256,14 @@
             margin-right: 2px;
         }
 
+        /* Il numero di comma è struttura, non un elemento da valutare: prende
+        l'accento giallo dell'app invece del badge rosso, che nel vademecum
+        segnala invece una condizione da verificare. */
+        .evento-rilevante-dettaglio .evento-rilevante-condizione>.evento-rilevante-riferimento {
+            color: var(--primary-color);
+            background: rgba(255, 215, 0, .12);
+        }
+
         .evento-rilevante-sintesi {
             color: var(--primary-color);
             font-weight: bold;
