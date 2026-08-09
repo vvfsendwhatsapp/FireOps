@@ -580,6 +580,12 @@ function opts(i){
          '<div class="um-card wide"><div class="k">Morse</div><div class="v um-morse f-morse"></div></div>'+
        '</div>'+
      '</div>'+
+     '<div class="um-sect"><h4>Da Morse a testo</h4>'+
+       '<textarea class="f-morse-in" placeholder="Es.  ...- ...- ..-.   (spazio fra lettere, / fra parole)">...- ...- ..-.</textarea>'+
+       '<div class="um-grid">'+
+         '<div class="um-card wide"><div class="k">Testo decodificato</div><div class="v f-dec"></div></div>'+
+       '</div>'+
+     '</div>'+
      '<div class="um-sect"><h4>Tabella</h4>'+
        '<div class="um-tbl"><table><thead><tr><th>Car.</th><th>Morse</th><th>Codice ICAO</th><th>Pronuncia ICAO</th><th>Italiano</th></tr></thead><tbody>'+
          A.map(function(x){
@@ -609,6 +615,51 @@ function opts(i){
       [oI,oT,oM].forEach(function(e){ e.dataset.copy = e.textContent; });
     }
     txt.addEventListener('input', agg);
+    // ---- decodifica: mappa inversa costruita dalla stessa tabella ----
+    // Nessun dato nuovo nel JSON: se un domani cambia un codice, cambia
+    // in un posto solo e le due direzioni restano automaticamente coerenti.
+    var inv = {};
+    A.forEach(function(x){ if(x.morse) inv[x.morse] = x.lettera; });
+
+    var morseIn = B.querySelector('.f-morse-in'),
+        oD = B.querySelector('.f-dec');
+
+    function decodifica(){
+        // Si accettano i punti-linea in qualunque forma li scriva l'operatore:
+        // ·•. per il punto, -–—_ per la linea. Chi copia da un manuale o da
+        // una tastiera diversa non deve accorgersi della differenza.
+        var s = morseIn.value
+            .replace(/[·•]/g, '.')
+            .replace(/[–—_]/g, '-')
+            .trim();
+
+        if(!s){ oD.textContent = '—'; oD.dataset.copy = ''; return; }
+
+        // Separatore di parola: / oppure una pausa lunga (3+ spazi)
+        var parole = s.split(/\s*\/\s*|\s{3,}/);
+        var fuori = [];
+
+        var testo = parole.map(function(p){
+            return p.split(/\s+/).filter(Boolean).map(function(c){
+                if(inv[c]) return inv[c];
+                fuori.push(c);
+                return '\u25A1';   // ▢ segnaposto: un codice non riconosciuto
+            }).join('');           //   deve VEDERSI, non sparire in silenzio
+        }).filter(Boolean).join(' ');
+
+        oD.textContent = testo || '—';
+        oD.dataset.copy = testo;
+        // Un gruppo non decodificabile è un errore di trascrizione, non un
+        // dettaglio: va detto, altrimenti si legge una parola incompleta
+        // credendola giusta.
+        oD.classList.toggle('na', fuori.length > 0);
+        oD.title = fuori.length
+            ? 'Gruppi non riconosciuti: ' + fuori.join(', ')
+            : '';
+    }
+
+    morseIn.addEventListener('input', decodifica);
+    decodifica();
     agg();
   }
 }
