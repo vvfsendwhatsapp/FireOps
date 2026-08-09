@@ -1742,13 +1742,11 @@ html.comando-gia-scelto #modal-comando {
     z-index: 900;
 }
 
-/* L'outline serve solo dove il campo non ha già un proprio stato di focus:
-   sui .combo-input style.css colora il bordo, e sommare le due cose
-   produce un doppio anello giallo. */
-.um-root button:focus-visible,
-.um-root input:not(.combo-input):focus-visible,
-.um-root select:focus-visible,
-.um-root textarea:focus-visible {
+/* Un solo indicatore di focus per elemento. I campi (.combo-input,
+   .um-field input/select, textarea) hanno già il bordo giallo su :focus:
+   sommarci l'outline produce il doppio anello. Restano i button, che
+   non hanno alcuno stato di focus proprio. */
+.um-root button:focus-visible {
     outline: 2px solid var(--um-acc);
     outline-offset: 2px;
 }
