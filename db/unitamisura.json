@@ -3,7 +3,7 @@
     {
       "id": "lunghezza",
       "nome": "Lunghezza",
-      "base": "metro (m)",
+      "base": "metro [m]",
       "unita": [
         {
           "n": "Metro",
@@ -60,7 +60,7 @@
     {
       "id": "superficie",
       "nome": "Superficie",
-      "base": "metro quadro (m²)",
+      "base": "metro quadro [m²]",
       "unita": [
         {
           "n": "Metro quadro",
@@ -112,7 +112,7 @@
     {
       "id": "volume",
       "nome": "Volume e capacità",
-      "base": "litro (L)",
+      "base": "litro [L]",
       "unita": [
         {
           "n": "Litro",
@@ -174,7 +174,7 @@
     {
       "id": "massa",
       "nome": "Massa",
-      "base": "chilogrammo (kg)",
+      "base": "chilogrammo [kg]",
       "unita": [
         {
           "n": "Chilogrammo",
@@ -226,7 +226,7 @@
     {
       "id": "portata",
       "nome": "Portata (volumetrica)",
-      "base": "litri al minuto (L/min)",
+      "base": "litri al minuto [L/min]",
       "nota": "Portata d'acqua: l'unità di riferimento operativa è il L/min. Attenzione a non confondere gpm US e gpm UK: differiscono di circa il 20%.",
       "unita": [
         {
@@ -274,7 +274,7 @@
     {
       "id": "pressione",
       "nome": "Pressione",
-      "base": "bar",
+      "base": "[bar]",
       "nota": "1 bar ≈ 10 metri di colonna d'acqua: regola pratica per stimare le perdite di carico in quota. Il valore esatto è 10,197 mH₂O.",
       "unita": [
         {
@@ -337,7 +337,7 @@
     {
       "id": "forza",
       "nome": "Forza",
-      "base": "newton (N)",
+      "base": "newton [N]",
       "unita": [
         {
           "n": "Newton",
@@ -374,7 +374,7 @@
     {
       "id": "velocita",
       "nome": "Velocità",
-      "base": "metri al secondo (m/s)",
+      "base": "metri al secondo [m/s]",
       "nota": "Il Mach è riferito all'aria a 15 °C al livello del mare (340,3 m/s): varia con la temperatura.",
       "unita": [
         {
@@ -412,7 +412,7 @@
     {
       "id": "energia",
       "nome": "Energia e lavoro",
-      "base": "joule (J)",
+      "base": "joule [J]",
       "unita": [
         {
           "n": "Joule",
@@ -464,7 +464,7 @@
     {
       "id": "potenza",
       "nome": "Potenza",
-      "base": "watt (W)",
+      "base": "watt [W]",
       "unita": [
         {
           "n": "Watt",
@@ -506,7 +506,7 @@
     {
       "id": "irraggiamento",
       "nome": "Irraggiamento termico",
-      "base": "kW/m²",
+      "base": "[kW/m²]",
       "nota": "Grandezza di riferimento per le distanze di sicurezza e per la sostenibilità dell'esposizione. Le soglie applicabili vanno prese dalla norma o dal documento tecnico pertinente, non da questa tabella.",
       "unita": [
         {
@@ -539,7 +539,7 @@
     {
       "id": "densita",
       "nome": "Densità",
-      "base": "kg/m³",
+      "base": "[kg/m³]",
       "nota": "La densità relativa (acqua = 1) coincide numericamente con il valore in kg/L e in g/cm³.",
       "unita": [
         {
@@ -577,7 +577,7 @@
     {
       "id": "concentrazione",
       "nome": "Concentrazione (in volume)",
-      "base": "parti per milione (ppm)",
+      "base": "parti per milione [ppm]",
       "nota": "Solo rapporti VOLUMETRICI. La conversione ppm ↔ mg/m³ NON è qui: dipende dalla massa molare della sostanza, oltre che da temperatura e pressione, e non si può ricavare da un fattore fisso.",
       "unita": [
         {
@@ -610,7 +610,7 @@
     {
       "id": "dose",
       "nome": "Dose equivalente (radiazioni)",
-      "base": "sievert (Sv)",
+      "base": "sievert [Sv]",
       "nota": "Dose equivalente, non attività. Per i ratei sostituire mentalmente l'unità con la corrispondente oraria (µSv → µSv/h): il rapporto non cambia.",
       "unita": [
         {
@@ -643,7 +643,7 @@
     {
       "id": "attivita",
       "nome": "Attività (radioattività)",
-      "base": "becquerel (Bq)",
+      "base": "becquerel [Bq]",
       "unita": [
         {
           "n": "Becquerel",
@@ -685,7 +685,7 @@
     {
       "id": "tempo",
       "nome": "Tempo",
-      "base": "secondo (s)",
+      "base": "secondo [s]",
       "unita": [
         {
           "n": "Secondo",
@@ -728,7 +728,7 @@
       "id": "temperatura",
       "nome": "Temperatura",
       "tipo": "temperatura",
-      "base": "grado Celsius (°C)",
+      "base": "grado Celsius [°C]",
       "nota": "Conversione affine, non moltiplicativa: un rapporto fra temperature non ha significato. I punti di riferimento sono valori indicativi.",
       "unita": [
         {
@@ -821,7 +821,7 @@
       "id": "trigonometria",
       "nome": "Angoli e trigonometria",
       "tipo": "trig",
-      "base": "grado sessagesimale (°)",
+      "base": "grado sessagesimale [°]",
       "nota": "Il millesimo NATO (mil) è quello a 6400 per angolo giro, usato in artiglieria e nei goniometri militari."
     },
     {
@@ -1251,7 +1251,7 @@
       "id": "basi",
       "nome": "Basi numeriche",
       "tipo": "basi",
-      "nota": "Interi fino a 2⁵³ (limite di precisione dei numeri JavaScript)."
+      "nota": "Interi fino a 2⁵³ (limite di precisione dei numeri JavaScript). Utile per selettività radio, maschere e codici DMR."
     }
   ]
 }
