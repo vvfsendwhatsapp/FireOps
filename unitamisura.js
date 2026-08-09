@@ -627,14 +627,14 @@ function opts(i){
       out.innerHTML =
         scheda('Fonetico ICAO', icao.join(' - ') || '—') +
         scheda('Compitazione italiana', ita.join(' - ') || '—') +
-        scheda('Morse', mor.join('   ') || '—');
+        scheda('Morse', mor.join(' ') || '—');
     }
 
     /* ---- Morse → testo ---- */
     function daMorse(){
       // Punto e linea accettati in qualunque forma: chi copia da un manuale
       // o da una tastiera diversa non deve accorgersi della differenza.
-      var s = inp.value.replace(/[·•]/g, '.').replace(/[–—_]/g, '-').trim();
+      var s = inp.value.replace(/[·•]/g, '.').replace(/[–—−_]/g, '-').trim();
       if(!s){ out.innerHTML = scheda('Testo decodificato', '—', true); return; }
 
       // Separatore di parola: / oppure una pausa lunga (3+ spazi), che è
@@ -676,7 +676,8 @@ function opts(i){
     inp.value = 'VVF';
     inp.placeholder = 'Es. VVF 115';
     aggiorna();
-  }
+  }       
+}          
 
 /* ---------- auto-init ---------- */
 function autoInit(ctx){
