@@ -1428,7 +1428,7 @@ function disegnaFisarmonicaJson(dati, contenitore, elementoTitolo, prefissoTitol
     if (elementoTitolo && dati.titolo) elementoTitolo.textContent = `${prefissoTitolo} ${dati.titolo}`;
 
     const logica = dati.logica
-        ? ` I criteri sono in <strong>${testoSicuroModale(dati.logica)}</strong>: ne basta uno.`
+        ? ` Rif. nota DCEMER Prot. n. 4608/2016.`
         : "";
     const premessa = dati.premessa
         ? `<div class="evento-rilevante-premessa">${testoSicuroModale(dati.premessa)}${logica}</div>`
