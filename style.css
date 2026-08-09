@@ -60,6 +60,7 @@ body {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
     text-align: center;
     border: 1px solid var(--border-color);
+    position: relative;
 }
 
 .modal-content h2 {
@@ -108,6 +109,31 @@ body {
     cursor: not-allowed;
 }
 
+.modal-close {
+    position: absolute;
+    top: 10px;
+    right: 14px;
+    cursor: pointer;
+    font-size: 22px;
+    color: var(--text-muted);
+    display: none;
+    /* visibile solo quando il modale è "chiudibile" */
+    line-height: 1;
+}
+
+.modal-close:hover {
+    color: var(--primary-color);
+}
+
+.modal-content.chiudibile .modal-close {
+    display: block;
+}
+
+/* Nasconde il modale immediatamente se il comando è già in sessione (evita flash) */
+html.comando-gia-scelto #modal-comando {
+    display: none;
+}
+
 /* HEADER SUPERIORE */
 .app-header {
     position: fixed;
@@ -149,15 +175,16 @@ body {
     padding: 0 20px;
 }
 
-.subheader-pannello .pannello-etichetta {
-    display: none;
-}
-
 .subheader-pannello:first-child {
     border-right: 1px solid var(--border-color);
 }
 
+/* La posizione (sinistra/destra) dice già a quale pannello si riferisce:
+   l'etichetta è ridondante e ruba larghezza al nome della pagina.
+   REGOLA UNICA: prima era dichiarata due volte, con il display:none in una
+   e il resto nell'altra — una trappola per chi ne modifica solo una. */
 .subheader-pannello .pannello-etichetta {
+    display: none;
     font-size: 11px;
     color: var(--text-muted);
     text-transform: uppercase;
@@ -230,6 +257,14 @@ body {
     justify-content: center;
 }
 
+/* HEADER: tre zone (sinistra, centro, destra) */
+.header-right {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 10px;
+}
+
 .info-box {
     background: var(--dark-color);
     border: 1px solid var(--border-color);
@@ -250,10 +285,66 @@ body {
     text-transform: uppercase;
 }
 
+/* VALORI EVIDENZIATI: comando, orario, turno più grandi e con colori distinti */
 .info-box .value {
-    font-size: 13px;
+    font-size: 18px;
     font-weight: bold;
     color: var(--text-main);
+}
+
+.valore-comando {
+    color: var(--primary-color);
+    /* giallo oro */
+}
+
+.valore-orario {
+    color: #4fc3f7;
+    /* azzurro, per distinguerlo dal giallo del comando */
+}
+
+.valore-turno {
+    color: #ff6b35;
+    /* arancione acceso, massima visibilità per il turno */
+    font-size: 20px;
+    /* leggermente più grande, è il dato più critico da vedere a colpo d'occhio */
+}
+
+#home-nome-comando {
+    color: var(--primary-color);
+}
+
+.header-select {
+    background: var(--dark-color);
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: bold;
+    padding: 3px 6px;
+    max-width: 180px;
+}
+
+.btn-icon-hamburger {
+    background: var(--dark-color);
+    border: 1px solid var(--primary-color);
+    color: var(--primary-color);
+    font-size: 22px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.2s, color 0.2s;
+    line-height: 1;
+    /* stessa larghezza per ☰ e ❓, indipendentemente dal glifo */
+    width: 48px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.btn-icon-hamburger:hover {
+    background: var(--primary-color);
+    color: var(--dark-color);
 }
 
 /* SPLIT SCREEN: due pannelli indipendenti, ciascuno con il proprio selettore di pagina */
@@ -312,6 +403,17 @@ body {
     display: none;
 }
 
+/* Toolbar dei pannelli */
+.pannello-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-bottom: 3px solid var(--primary-color);
+    flex-shrink: 0;
+    background: var(--surface-color);
+}
+
 /* CONTENUTO */
 .main-content {
     padding: 20px;
@@ -350,6 +452,15 @@ body {
     margin-bottom: 20px;
     padding-bottom: 12px;
     border-bottom: 1px solid var(--border-color);
+}
+
+.pagina-nota {
+    color: var(--text-muted);
+    font-size: 13px;
+    margin-bottom: 15px;
+    line-height: 1.4;
+    text-align: justify;
+    text-justify: inter-word;
 }
 
 /* MAPPA E METEO COMANDO */
@@ -421,6 +532,18 @@ body {
 .mappa-comando .leaflet-container {
     background: var(--dark-color);
     font-family: Arial, sans-serif;
+}
+
+.leaflet-top,
+.leaflet-bottom {
+    z-index: 900 !important;
+}
+
+/* Il controllo +/- di Leaflet si sposta dall'angolo in alto a sinistra
+   al centro verticale del lato sinistro, su tutte le mappe dell'app */
+.mappa-comando .leaflet-top.leaflet-left {
+    top: 50%;
+    transform: translateY(-50%);
 }
 
 /* Marker personalizzato: badge circolare col logo VVF a forma di segnaposto "caserma" */
@@ -517,6 +640,23 @@ body {
     pointer-events: none;
 }
 
+/* Vista Windy: stesso ingombro della mappa Leaflet, si alternano */
+.windy-comando {
+    width: 100%;
+    height: 420px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    background: var(--dark-color);
+}
+
+.windy-comando iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+}
+
 /* Striscia con le previsioni orarie per le prossime 12 ore: griglia che si adatta
    alla larghezza del riquadro, senza mai richiedere lo scroll orizzontale */
 .meteo-orario {
@@ -560,6 +700,7 @@ body {
     margin-top: 3px;
 }
 
+/* CAMPI DI FORM */
 .pagina-box label {
     display: block;
     color: var(--text-muted);
@@ -603,8 +744,8 @@ body {
     border-color: var(--primary-color);
 }
 
-/* Freccetta a discesa per i combo ricercabili (prefisso e lingua): elemento reale
-   e cliccabile (non più un ::after decorativo), per poter aprire l'elenco completo */
+/* Freccetta a discesa per i combo ricercabili: elemento reale e cliccabile
+   (non più un ::after decorativo), per poter aprire l'elenco completo */
 .combo-arrow {
     position: absolute;
     top: 0;
@@ -788,11 +929,24 @@ body {
     font-size: 18px;
 }
 
+/* Intestazione di sezione: fondo giallo pieno, testo scuro.
+   REGOLA UNICA: prima era dichiarata due volte (la seconda vinceva). */
 .riepilogo-box h4 {
-    color: var(--primary-color);
+    color: var(--dark-color);
+    background: var(--primary-color);
     margin: 20px 0 10px;
-    font-size: 15px;
+    padding: 6px 12px;
+    font-size: 14px;
+    font-weight: bold;
     text-transform: uppercase;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+}
+
+.riepilogo-box h4.sezione-toggle {
+    margin: 20px 0 0;
+    cursor: pointer;
+    user-select: none;
 }
 
 .riepilogo-tabella,
@@ -837,6 +991,48 @@ body {
 
 .riepilogo-box a:hover {
     text-decoration: underline;
+}
+
+/* Info Altro Comando: accento azzurro al posto del giallo, per non confonderlo
+   a colpo d'occhio col riepilogo del Comando attivo (sempre giallo) */
+.riepilogo-box-consultazione {
+    border-left: 3px solid #4fc3f7;
+    padding-left: 14px;
+}
+
+.riepilogo-box-consultazione h3 {
+    color: #4fc3f7;
+}
+
+.riepilogo-box-consultazione h4,
+.riepilogo-box-consultazione h4.sezione-toggle {
+    background: #4fc3f7;
+    color: var(--dark-color);
+    padding: 6px 12px;
+    border-radius: 4px;
+}
+
+.riepilogo-box-consultazione .riepilogo-tabella-limitrofi th {
+    color: #4fc3f7;
+    background: var(--dark-color);
+}
+
+.sezione-toggle::before {
+    content: "▶ ";
+    display: inline-block;
+}
+
+.sezione-toggle.aperta::before {
+    content: "▼ ";
+}
+
+.sezione-contenuto {
+    display: none;
+    margin-bottom: 10px;
+}
+
+.sezione-contenuto.aperta {
+    display: table;
 }
 
 /* Titolo del modulo CMR selezionato: barra colorata a sinistra secondo il "Colore" del modulo */
@@ -990,6 +1186,7 @@ body {
     color: var(--primary-color);
 }
 
+/* ELEMENTI CLICCABILI (copia negli appunti, link) */
 .cliccabile {
     cursor: pointer;
     text-decoration: underline dotted;
@@ -1000,118 +1197,29 @@ body {
     color: var(--primary-color);
 }
 
-.header-select {
-    background: var(--dark-color);
+.indirizzo-link {
     color: var(--text-main);
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    font-size: 13px;
-    font-weight: bold;
-    padding: 3px 6px;
-    max-width: 180px;
-}
-
-.btn-icon-hamburger {
-    background: var(--dark-color);
-    border: 1px solid var(--primary-color);
-    color: var(--primary-color);
-    font-size: 22px;
-    cursor: pointer;
-    padding: 8px 16px;
-    border-radius: 4px;
-    transition: background 0.2s, color 0.2s;
-    line-height: 1;
-    /* NUOVO: stessa larghezza per ☰ e ❓, indipendentemente dal glifo */
-    width: 48px;
-    height: 42px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-}
-
-.btn-icon-hamburger:hover {
-    color: var(--primary-color);
-}
-
-.modal-content {
-    position: relative;
-}
-
-.modal-close {
-    position: absolute;
-    top: 10px;
-    right: 14px;
-    cursor: pointer;
-    font-size: 22px;
-    color: var(--text-muted);
-    display: none;
-    /* visibile solo quando il modale è "chiudibile" */
-    line-height: 1;
-}
-
-.modal-close:hover {
-    color: var(--primary-color);
-}
-
-.modal-content.chiudibile .modal-close {
-    display: block;
-}
-
-/* Nasconde il modale immediatamente se il comando è già in sessione (evita flash) */
-html.comando-gia-scelto #modal-comando {
-    display: none;
-}
-
-/* HEADER: ora tre zone (sinistra, centro, destra) */
-.header-right {
-    display: flex;
-    align-items: center;
-    flex-shrink: 0;
-    gap: 10px;
-    /* NUOVO: spazio tra ❓ e ☰ */
-}
-
-.btn-icon-hamburger:hover {
-    background: var(--primary-color);
-    color: var(--dark-color);
-}
-
-/* VALORI EVIDENZIATI: comando, orario, turno più grandi e con colori distinti */
-.info-box .value {
-    font-size: 18px;
-    font-weight: bold;
-}
-
-.valore-comando {
-    color: var(--primary-color);
-    /* giallo oro */
-}
-
-.valore-orario {
-    color: #4fc3f7;
-    /* azzurro, per distinguerlo dal giallo del comando */
-}
-
-.valore-turno {
-    color: #ff6b35;
-    /* arancione acceso, massima visibilità per il turno */
-    font-size: 20px;
-    /* leggermente più grande, è il dato più critico da vedere a colpo d'occhio */
-}
-
-#home-nome-comando {
-    color: var(--primary-color);
-}
-
-.telefono-cliccabile {
-    cursor: pointer;
     text-decoration: underline dotted;
     text-underline-offset: 3px;
-    color: var(--text-main);
 }
 
-.telefono-cliccabile:hover {
+.indirizzo-link:hover {
+    color: var(--primary-color);
+}
+
+/* Telefoni ed email copiabili: azzurro chiaro, leggibile su fondo scuro.
+   REGOLA UNICA: prima erano due blocchi e vinceva quello con #0056b3,
+   un blu scuro che su #1e1e1e risultava quasi illeggibile. */
+.telefono-cliccabile,
+.email-cliccabile {
+    cursor: pointer;
+    color: #4fc3f7;
+    text-decoration: underline dotted;
+    text-underline-offset: 3px;
+}
+
+.telefono-cliccabile:hover,
+.email-cliccabile:hover {
     color: var(--primary-color);
 }
 
@@ -1146,100 +1254,6 @@ html.comando-gia-scelto #modal-comando {
     }
 }
 
-.riepilogo-box h4 {
-    color: var(--dark-color);
-    background: var(--primary-color);
-    margin: 20px 0 10px;
-    padding: 6px 12px;
-    font-size: 14px;
-    font-weight: bold;
-    text-transform: uppercase;
-    border-radius: 4px;
-    letter-spacing: 0.5px;
-}
-
-.riepilogo-box h4.sezione-toggle {
-    color: var(--dark-color);
-    background: var(--primary-color);
-    margin: 20px 0 0;
-    padding: 6px 12px;
-    font-size: 14px;
-    font-weight: bold;
-    text-transform: uppercase;
-    border-radius: 4px;
-    letter-spacing: 0.5px;
-    cursor: pointer;
-    user-select: none;
-}
-
-/* Info Altro Comando: accento azzurro al posto del giallo, per non confonderlo
-   a colpo d'occhio col riepilogo del Comando attivo (sempre giallo) */
-.riepilogo-box-consultazione {
-    border-left: 3px solid #4fc3f7;
-    padding-left: 14px;
-}
-
-.riepilogo-box-consultazione h3 {
-    color: #4fc3f7;
-}
-
-.riepilogo-box-consultazione h4 {
-    background: #4fc3f7;
-    color: var(--dark-color);
-    padding: 6px 12px;
-    border-radius: 4px;
-}
-
-.riepilogo-box-consultazione h4.sezione-toggle {
-    background: #4fc3f7;
-    color: var(--dark-color);
-}
-
-.riepilogo-box-consultazione .riepilogo-tabella-limitrofi th {
-    color: #4fc3f7;
-    background: var(--dark-color);
-}
-
-.sezione-toggle::before {
-    content: "▶ ";
-    display: inline-block;
-}
-
-.sezione-toggle.aperta::before {
-    content: "▼ ";
-}
-
-.sezione-contenuto {
-    display: none;
-    margin-bottom: 10px;
-}
-
-.sezione-contenuto.aperta {
-    display: table;
-}
-
-.indirizzo-link {
-    color: var(--text-main);
-    text-decoration: underline dotted;
-    text-underline-offset: 3px;
-}
-
-.indirizzo-link:hover {
-    color: var(--primary-color);
-}
-
-.telefono-cliccabile,
-.email-cliccabile {
-    cursor: pointer;
-    color: #0056b3;
-    text-decoration: underline;
-}
-
-.telefono-cliccabile:hover,
-.email-cliccabile:hover {
-    color: #003366;
-}
-
 /* FOOTER: CONTATORE ACCESSI + CREDITS */
 .app-footer {
     display: flex;
@@ -1270,142 +1284,7 @@ html.comando-gia-scelto #modal-comando {
 }
 
 /* ==========================================================
-   RESPONSIVE: l'header non si schiaccia più su schermi stretti.
-   Sotto i 900px il blocco centrale (comando/orario/turno) va a
-   capo su una riga propria e l'header diventa più alto: si
-   riadattano di conseguenza il padding del body e la posizione
-   del menu sticky, così nulla resta nascosto sotto l'header.
-   ========================================================== */
-@media (max-width: 900px) {
-    /* L'header va a capo: la sua altezza reale cambia, e con essa deve
-       cambiare il punto in cui inizia la subheader e il padding del body.
-       Ridefinire la variabile è sufficiente: top, padding e fullscreen
-       sono già tutti espressi in funzione di --header-height. */
-    :root {
-        --header-height: var(--header-height-tablet);
-    }
-
-    .app-header {
-        flex-wrap: wrap;
-        height: auto;
-        min-height: var(--header-height);
-        padding: 10px 15px;
-    }
-
-    body {
-        padding-top: calc(var(--header-height) + var(--subheader-height));
-    }
-
-    .header-center {
-        order: 3;
-        width: 100%;
-        justify-content: flex-start;
-    }
-
-    .header-right {
-        order: 2;
-    }
-
-    .split-screen {
-        flex-direction: column;
-    }
-
-    .pannello {
-        height: auto;
-        max-height: 70vh;
-    }
-
-    .meteo-orario {
-        grid-template-columns: repeat(6, minmax(0, 1fr));
-    }
-}
-
-@media (max-width: 520px) {
-    :root {
-        --header-height: var(--header-height-mobile);
-    }
-
-    .mappa-meteo-header {
-        flex-wrap: wrap;
-    }
-
-    .mappa-meteo-header h3 {
-        white-space: normal;
-    }
-
-    .site-titles .subtitle {
-        display: none;
-    }
-
-    .site-titles h1 {
-        font-size: 16px;
-    }
-
-    .site-logo {
-        height: 34px;
-    }
-
-    .app-header {
-        min-height: var(--header-height);
-        gap: 8px;
-    }
-
-    .info-box {
-        padding: 4px 8px;
-    }
-
-    .info-box .value {
-        font-size: 14px;
-    }
-
-    .valore-turno {
-        font-size: 15px;
-    }
-
-    body {
-        padding-top: calc(var(--header-height) + var(--subheader-height));
-    }
-
-    .msg-azioni button {
-        min-width: 140px;
-    }
-
-    .mappa-comando {
-        height: 280px;
-        flex-basis: 100%;
-    }
-
-    .meteo-orario {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 5px;
-    }
-
-    .meteo-ora-card {
-        padding: 6px 2px;
-    }
-
-    .meteo-ora-etichetta {
-        font-size: 10px;
-    }
-
-    .meteo-ora-icona {
-        font-size: 17px;
-        margin: 3px 0;
-    }
-
-    .meteo-ora-temp {
-        font-size: 12px;
-    }
-
-    .meteo-ora-pioggia {
-        font-size: 9px;
-    }
-}
-
-/* ==========================================================
    SCHEDA SOSTANZA SELEZIONATA — badge ONU / Kemler
-   Da incollare in style.css, usa le variabili --primary-color,
-   --danger-color, --dark-color già definite in :root.
    ========================================================== */
 .icsc-scheda-selezionata {
     margin: 14px 0;
@@ -1476,25 +1355,9 @@ html.comando-gia-scelto #modal-comando {
     font-weight: 500;
 }
 
-.pagina-nota {
-    color: var(--text-muted);
-    font-size: 13px;
-    margin-bottom: 15px;
-    line-height: 1.4;
-    text-align: justify;
-    text-justify: inter-word;
-}
-
 /* ==========================================================
-   CONVERTITORE COORDINATE — CSS aggiuntiva
+   CONVERTITORE COORDINATE
    ========================================================== */
-.btn-toggle-radar.attivo {
-    background: var(--primary-color);
-    color: var(--dark-color);
-    border-color: var(--primary-color);
-    font-weight: bold;
-}
-
 .coord-input-gruppo label {
     margin-top: 10px;
 }
@@ -1513,8 +1376,6 @@ html.comando-gia-scelto #modal-comando {
     border: 1px solid var(--border-color);
     border-bottom: none;
     border-radius: 10px 10px 0 0;
-    border-bottom-left-radius: 0;
-    border-bottom-right-radius: 0;
     padding: 9px 20px;
     font-size: 13px;
     font-weight: bold;
@@ -1528,7 +1389,8 @@ html.comando-gia-scelto #modal-comando {
 }
 
 .coord-tab-btn:first-child {
-    margin-left: 0; /* la prima scheda non ha nulla da sovrapporre */
+    margin-left: 0;
+    /* la prima scheda non ha nulla da sovrapporre */
 }
 
 .coord-tab-btn:hover:not(.attivo) {
@@ -1540,7 +1402,8 @@ html.comando-gia-scelto #modal-comando {
     background: var(--surface-color);
     color: var(--primary-color);
     border-color: var(--primary-color);
-    border-bottom: none; /* niente riga qui: si fonde col bordo superiore giallo di .coord-tab-corpo sotto */
+    border-bottom: none;
+    /* niente riga qui: si fonde col bordo superiore giallo di .coord-tab-corpo sotto */
     z-index: 3;
 }
 
@@ -1553,16 +1416,14 @@ html.comando-gia-scelto #modal-comando {
     z-index: 1;
 }
 
-/* Dati (prima scheda) attiva: angolo sinistro squadrato (tocca la scheda),
-   destro arrotondato */
+/* Dati (prima scheda) attiva: angolo sinistro squadrato (tocca la scheda), destro arrotondato */
 .coord-tab-corpo.corpo-tab-primo-attivo {
     border-radius: 0 8px 8px 8px;
 }
 
-/* Mappa (scheda centrale) attiva: nessun lato tocca il bordo esterno,
-   entrambi gli angoli superiori arrotondati */
+/* Mappa (scheda centrale) attiva: nessun lato tocca il bordo esterno */
 .coord-tab-corpo.corpo-tab-centro-attivo {
-    border-radius: 8px 8px 8px 8px;
+    border-radius: 8px;
 }
 
 /* Messaggio (ultima scheda) attiva: angolo destro squadrato, sinistro arrotondato */
@@ -1570,18 +1431,138 @@ html.comando-gia-scelto #modal-comando {
     border-radius: 8px 0 8px 8px;
 }
 
-/* Toolbar dei pannelli */
-.pannello-toolbar {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 14px;
-    border-bottom: 3px solid var(--primary-color);
-    flex-shrink: 0;
-    background: var(--surface-color);
+.coord-tab-vicino-dopo-attiva {
+    border-top-left-radius: 0;
 }
 
-/* Header di pagina con titolo + pulsante fullscreen affiancati */
+.coord-tab-vicino-prima-attiva {
+    border-top-right-radius: 0;
+}
+
+.coord-comando-badge {
+    color: var(--text-muted);
+    font-weight: bold;
+}
+
+.coord-header-note-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1 1 auto;
+}
+
+/* Sottotitolo di sezione: stesso stile delle etichette di campo,
+   non una taglia a sé stante */
+.coord-mappa-sottotitolo {
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0 0 14px;
+}
+
+.coord-mappa-controlli {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-bottom: 15px;
+}
+
+.coord-mappa-controlli .msg-campo label {
+    display: block;
+}
+
+.coord-mappa-azione-campo {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+
+/* Pulsanti azione mappa: stessa altezza/font-size degli elementi delle altre colonne */
+.coord-mappa-azione-campo .btn-toggle-radar {
+    width: 100%;
+    padding: 10px 16px;
+    font-size: 14px;
+}
+
+.coord-mappa-wrapper {
+    position: relative;
+}
+
+.coord-mappa-overlay {
+    position: absolute;
+    z-index: 700;
+    background: rgba(18, 18, 18, 0.9);
+    border: 1px solid var(--primary-color);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: var(--text-main);
+    pointer-events: none;
+    max-width: 220px;
+}
+
+.coord-mappa-overlay-sx {
+    top: 8px;
+    left: 8px;
+}
+
+.coord-mappa-overlay-dx {
+    top: 8px;
+    right: 8px;
+}
+
+.coord-mappa-legenda-voce {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.coord-mappa-legenda-voce+.coord-mappa-legenda-voce {
+    margin-top: 4px;
+}
+
+.coord-mappa-pallino {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    flex-shrink: 0;
+}
+
+.coord-mappa-overlay-riga {
+    white-space: nowrap;
+}
+
+.coord-mappa-overlay-riga+.coord-mappa-overlay-riga {
+    margin-top: 2px;
+}
+
+.coord-mappa-overlay-titolo {
+    color: var(--primary-color);
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.coord-mappa-controlli-percorso-attivo {
+    display: none;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.coord-mappa-controlli-percorso-attivo.visibile {
+    display: flex;
+}
+
+.coord-mappa-controlli-percorso-attivo .btn-toggle-radar {
+    flex: 1;
+    padding: 10px 16px;
+    font-size: 14px;
+}
+
+/* HEADER DI PAGINA E FULLSCREEN */
 .pagina-box-header {
     display: flex;
     justify-content: space-between;
@@ -1590,7 +1571,22 @@ html.comando-gia-scelto #modal-comando {
     margin-bottom: 15px;
 }
 
-/* FULLSCREEN PER PAGINA */
+.pagina-box-header-con-nota {
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+}
+
+.pagina-box-header-con-nota .pagina-nota-inline {
+    margin-bottom: 0;
+    flex: 1 1 auto;
+    display: block;
+}
+
+.pagina-box-header-con-nota .btn-fullscreen-pagina {
+    flex-shrink: 0;
+}
+
 .pannello.pannello-fullscreen {
     position: fixed;
     top: calc(var(--header-height) + var(--subheader-height));
@@ -1605,7 +1601,7 @@ html.comando-gia-scelto #modal-comando {
     display: none;
 }
 
-/* I titoli di pagina non servono più */
+/* I titoli di pagina non servono più: il selettore del pannello li rimpiazza */
 .pagina-box>h3,
 .pagina-box-larga>h3,
 .mappa-meteo-header h3,
@@ -1616,11 +1612,6 @@ html.comando-gia-scelto #modal-comando {
 .mappa-meteo-header,
 .pagina-box-header {
     justify-content: flex-end;
-}
-
-.leaflet-top,
-.leaflet-bottom {
-    z-index: 900 !important;
 }
 
 /* ===== Convertitore Coordinate espanso: 3 colonne + riga titoli ===== */
@@ -1651,8 +1642,6 @@ html.comando-gia-scelto #modal-comando {
     border: 1px solid var(--border-color);
     border-bottom: none;
     border-radius: 8px 8px 0 0;
-    border-bottom-left-radius: 0;
-    border-bottom-right-radius: 0;
     padding: 9px 20px;
     font-size: 13px;
     font-weight: bold;
@@ -1661,7 +1650,8 @@ html.comando-gia-scelto #modal-comando {
     cursor: pointer;
 }
 
-.pannello-fullscreen .coord-colonna-titolo.attivo {
+.pannello-fullscreen .coord-colonna-titolo.attivo,
+.pannello-fullscreen .coord-colonna.attiva .coord-colonna-titolo {
     background: var(--dark-color);
     color: var(--primary-color);
     border-color: var(--primary-color);
@@ -1679,6 +1669,12 @@ html.comando-gia-scelto #modal-comando {
     min-width: 0;
 }
 
+.pannello-fullscreen .coord-colonna.attiva #coord-tab-content-dati,
+.pannello-fullscreen .coord-colonna.attiva #coord-tab-content-mappa,
+.pannello-fullscreen .coord-colonna.attiva #coord-tab-content-messaggio {
+    border-color: var(--primary-color) !important;
+}
+
 .pannello-fullscreen .mappa-comando {
     height: 40vh;
 }
@@ -1691,35 +1687,484 @@ html.comando-gia-scelto #modal-comando {
     height: 120px !important;
 }
 
-.pannello-fullscreen .coord-colonna.attiva .coord-colonna-titolo {
-    background: var(--dark-color);
-    color: var(--primary-color);
-    border-color: var(--primary-color);
+/* ==========================================================================
+   FireOps VVF — CONVERTITORE UNITÀ DI MISURA
+   Confinato in .um-root: nessun selettore globale. I nomi --um-* sono
+   rimappati sulla palette FireOps, così il modulo non porta colori propri.
+
+   ORDINE: questo è l'UNICO blocco che tocca .um-root. Non anteporne altri:
+   a parità di specificità vince l'ultima regola, ed è esattamente così che
+   il modulo restava rosso/verde nonostante gli override.
+   ========================================================================== */
+.um-root {
+    --um-bg: var(--dark-color);
+    --um-bg2: var(--surface-color);
+    --um-bg3: var(--dark-color);
+    --um-line: var(--border-color);
+    --um-txt: var(--text-main);
+    --um-txt2: var(--text-muted);
+    /* L'accento di FireOps è il giallo oro. Il rosso RAL3000 qui significa
+       "dato mancante/pericolo" e non va speso per evidenziare una cella. */
+    --um-acc: var(--primary-color);
+    --um-mono: "Courier New", monospace;
+
+    color: var(--um-txt);
+    font-size: 14px;
+    line-height: 1.45;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
 }
 
-.pannello-fullscreen .coord-colonna.attiva #coord-tab-content-dati,
-.pannello-fullscreen .coord-colonna.attiva #coord-tab-content-mappa,
-.pannello-fullscreen .coord-colonna.attiva #coord-tab-content-messaggio {
-    border-color: var(--primary-color) !important;
+.um-root * {
+    box-sizing: border-box;
 }
 
-.pagina-box-header-con-nota {
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 20px;
-}
-
-.pagina-box-header-con-nota .pagina-nota-inline {
-    margin-bottom: 0;
-    flex: 1 1 auto;
+/* ---------- selettore di categoria ---------- */
+/* Replica di ".pagina-box label": la sezione non usa .pagina-box, perché
+   quelle regole sovrascriverebbero i campi interni del convertitore. */
+.um-root .um-lab {
     display: block;
+    color: var(--text-muted);
+    font-size: 12px;
+    text-transform: uppercase;
+    margin: 0 0 6px;
 }
 
-.pagina-box-header-con-nota .btn-fullscreen-pagina {
-    flex-shrink: 0;
+.um-root .um-combo {
+    flex: none;
+    margin-bottom: 14px;
 }
 
+/* Il pannello sotto scorre e ha intestazioni sticky: senza questo l'elenco
+   delle categorie finirebbe dietro le tabelle dei risultati. */
+.um-root .um-combo .combo-dropdown {
+    z-index: 900;
+}
+
+/* L'outline serve solo dove il campo non ha già un proprio stato di focus:
+   sui .combo-input style.css colora il bordo, e sommare le due cose
+   produce un doppio anello giallo. */
+.um-root button:focus-visible,
+.um-root input:not(.combo-input):focus-visible,
+.um-root select:focus-visible,
+.um-root textarea:focus-visible {
+    outline: 2px solid var(--um-acc);
+    outline-offset: 2px;
+}
+
+/* ---------- pannello ---------- */
+.um-root .um-panel {
+    background: var(--um-bg2);
+    border: 1px solid var(--um-line);
+    border-radius: 8px;
+    padding: 14px;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    min-width: 0;
+}
+
+/* Testata ancorata: scorrendo una tabella lunga si continua a vedere di
+   quale grandezza si leggono i valori. I margini negativi la portano a
+   filo dei bordi, annullando il padding del pannello. */
+.um-root .um-panel-head {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--um-bg2);
+    margin: -14px -14px 12px;
+    padding: 10px 14px 8px;
+    border-bottom: 1px solid var(--um-line);
+}
+
+/* Il nome della categoria è già nel selettore qui sopra */
+.um-root .um-panel h3.um-title {
+    display: none;
+}
+
+.um-root .um-base {
+    font-size: 11.5px;
+    color: var(--um-txt2);
+    font-family: var(--um-mono);
+    margin: 0;
+}
+
+/* Nota di categoria: stesso trattamento della premessa dei modali JSON */
+.um-root .um-nota {
+    background: var(--dark-color);
+    border-left: 4px solid var(--danger-color);
+    border-radius: 4px;
+    padding: 8px 11px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-main);
+}
+
+/* ---------- riga di conversione ---------- */
+.um-root .um-io {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 10px;
+    align-items: end;
+}
+
+.um-root .um-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 0;
+}
+
+.um-root .um-field label {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: .9px;
+    color: var(--um-txt2);
+}
+
+.um-root .um-field input,
+.um-root .um-field select {
+    width: 100%;
+    padding: 10px 11px;
+    background: var(--um-bg3);
+    border: 1px solid var(--um-line);
+    border-radius: 4px;
+    color: var(--um-txt);
+    font-size: 15px;
+    outline: none;
+    font-family: var(--um-mono);
+}
+
+.um-root .um-field select {
+    font-family: inherit;
+    font-size: 13.5px;
+    cursor: pointer;
+}
+
+.um-root .um-field input:focus,
+.um-root .um-field select:focus {
+    border-color: var(--um-acc);
+}
+
+/* Il valore calcolato è il dato da leggere: giallo pieno, non un grigio */
+.um-root .um-field input[readonly] {
+    background: var(--dark-color);
+    color: var(--um-acc);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.um-root .um-swap {
+    background: var(--um-bg3);
+    border: 1px solid var(--um-line);
+    color: var(--um-txt2);
+    width: 40px;
+    height: 41px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: .15s;
+    flex: none;
+}
+
+.um-root .um-swap:hover {
+    border-color: var(--um-acc);
+    color: var(--um-acc);
+    transform: rotate(180deg);
+}
+
+/* Valori rapidi (1/10/100/1000): stessi ".btn-toggle-radar" usati ovunque */
+.um-root .um-quick {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 11px;
+}
+
+.um-root .um-quick button {
+    background: var(--dark-color);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-main);
+    padding: 7px 14px;
+    font-size: 13px;
+    font-family: Arial, sans-serif;
+    cursor: pointer;
+    transition: background .2s, color .2s, border-color .2s;
+}
+
+.um-root .um-quick button:hover {
+    background: var(--um-acc);
+    border-color: var(--um-acc);
+    color: var(--dark-color);
+}
+
+/* ---------- tabelle ---------- */
+.um-root .um-tbl {
+    margin-top: 14px;
+    border: 1px solid var(--um-line);
+    border-radius: 8px;
+    overflow: auto;
+    max-height: 46vh;
+}
+
+.um-root .um-tbl table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.um-root .um-tbl thead th {
+    position: sticky;
+    top: 0;
+    background: var(--um-bg3);
+    color: var(--um-txt2);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--um-line);
+    z-index: 1;
+}
+
+.um-root .um-tbl tbody td {
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.um-root .um-tbl tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.um-root .um-tbl tbody tr:hover {
+    background: rgba(255, 215, 0, .07);
+}
+
+.um-root .um-tbl tr.hi td {
+    background: rgba(255, 215, 0, .14);
+}
+
+.um-root .um-tbl td.val {
+    font-family: var(--um-mono);
+    text-align: right;
+    color: var(--um-acc);
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.um-root .um-tbl td.sym {
+    font-family: var(--um-mono);
+    color: var(--um-txt2);
+    white-space: nowrap;
+}
+
+.um-root .um-tbl td.mono {
+    font-family: var(--um-mono);
+}
+
+/* ---------- schede risultato ---------- */
+.um-root .um-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.um-root .um-card {
+    background: var(--um-bg3);
+    border: 1px solid var(--um-line);
+    border-radius: 8px;
+    padding: 9px 11px;
+}
+
+.um-root .um-card .k {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--um-txt2);
+}
+
+.um-root .um-card .v {
+    font-family: var(--um-mono);
+    font-size: 15px;
+    color: var(--um-acc);
+    margin-top: 3px;
+    word-break: break-all;
+    cursor: pointer;
+}
+
+/* Valore non definito o fuori dominio: grigio, mai giallo come un risultato */
+.um-root .um-card.na .v {
+    color: var(--um-txt2);
+}
+
+.um-root .um-card.wide {
+    grid-column: 1/-1;
+}
+
+.um-root .um-card.wide .v {
+    font-size: 14px;
+}
+
+.um-root .um-sect {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--um-line);
+}
+
+.um-root .um-sect.first {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+}
+
+.um-root .um-sect h4 {
+    margin: 0 0 10px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1.1px;
+    color: var(--um-txt2);
+    font-weight: 600;
+}
+
+.um-root .um-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+    gap: 10px;
+}
+
+.um-root textarea {
+    width: 100%;
+    min-height: 64px;
+    padding: 9px 11px;
+    background: var(--um-bg3);
+    border: 1px solid var(--um-line);
+    border-radius: 4px;
+    color: var(--um-txt);
+    font-family: var(--um-mono);
+    font-size: 13px;
+    outline: none;
+    resize: vertical;
+}
+
+.um-root textarea:focus {
+    border-color: var(--um-acc);
+}
+
+/* Morse in azzurro: in giallo sarebbe indistinguibile dall'accento */
+.um-root .um-morse {
+    color: #4fc3f7;
+    letter-spacing: 1px;
+}
+
+.um-root .um-empty {
+    color: var(--um-txt2);
+    text-align: center;
+    padding: 22px;
+    font-size: 13px;
+}
+
+/* ---------- conferma di copia (agganciata al body, fuori da .um-root) ---------- */
+/* Identica a .copia-feedback: due conferme diverse per lo stesso gesto
+   sono un dettaglio che si nota subito. */
+.um-toast {
+    position: fixed;
+    left: 50%;
+    bottom: 22px;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--primary-color);
+    color: var(--dark-color);
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-family: Arial, sans-serif;
+    font-size: 12px;
+    font-weight: bold;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .5);
+    opacity: 0;
+    pointer-events: none;
+    transition: .2s;
+    z-index: 9999;
+}
+
+.um-toast.on {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* ---------- pannello stretto ---------- */
+/* .narrow arriva dal ResizeObserver sotto i 560px di larghezza del PANNELLO:
+   in split-screen su schermo largo il convertitore può essere stretto lo stesso */
+.um-root.narrow .um-io {
+    grid-template-columns: 1fr;
+    gap: 8px;
+}
+
+.um-root.narrow .um-swap {
+    width: 100%;
+    transform: rotate(90deg);
+}
+
+.um-root.narrow .um-swap:hover {
+    transform: rotate(270deg);
+}
+
+.um-root.narrow .um-grid {
+    grid-template-columns: 1fr;
+}
+
+/* ==========================================================
+   RESPONSIVE: l'header non si schiaccia più su schermi stretti.
+   Sotto i 900px il blocco centrale (comando/orario/turno) va a
+   capo su una riga propria e l'header diventa più alto. Ridefinire
+   --header-height è sufficiente: la posizione della subheader, il
+   padding del body e il fullscreen sono già espressi in funzione
+   di quella variabile e si riallineano da soli.
+   ========================================================== */
 @media (max-width: 900px) {
+    :root {
+        --header-height: var(--header-height-tablet);
+    }
+
+    .app-header {
+        flex-wrap: wrap;
+        height: auto;
+        min-height: var(--header-height);
+        padding: 10px 15px;
+    }
+
+    body {
+        padding-top: calc(var(--header-height) + var(--subheader-height));
+    }
+
+    .header-center {
+        order: 3;
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .header-right {
+        order: 2;
+    }
+
+    .split-screen {
+        flex-direction: column;
+    }
+
+    .pannello {
+        height: auto;
+        max-height: 70vh;
+    }
+
+    .meteo-orario {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+
     body.fullscreen-attivo .app-subheader {
         display: none;
     }
@@ -1734,474 +2179,126 @@ html.comando-gia-scelto #modal-comando {
     }
 }
 
-.coord-comando-badge {
-    color: var(--text-muted);
-    font-weight: bold;
-}
+@media (max-width: 700px) {
+    .um-root .um-io {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
 
-.coord-header-note-wrap {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    flex: 1 1 auto;
-}
+    .um-root .um-swap {
+        width: 100%;
+        transform: rotate(90deg);
+    }
 
-.coord-tab-vicino-dopo-attiva {
-    border-top-left-radius: 0;
-}
+    .um-root .um-swap:hover {
+        transform: rotate(270deg);
+    }
 
-.coord-tab-vicino-prima-attiva {
-    border-top-right-radius: 0;
-}
-
-.coord-mappa-sottotitolo {
-    color: var(--text-muted);
-    font-size: 11px;
-    font-weight: bold;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin: 0 0 14px;
-}
-
-.coord-mappa-controlli {
-    display: flex;
-    gap: 15px;
-    flex-wrap: wrap;
-    margin-bottom: 15px;
-}
-
-.coord-mappa-azione-campo {
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-}
-
-.coord-mappa-wrapper {
-    position: relative;
-}
-
-.coord-mappa-overlay {
-    position: absolute;
-    z-index: 700;
-    background: rgba(18, 18, 18, 0.9);
-    border: 1px solid var(--primary-color);
-    border-radius: 6px;
-    padding: 8px 12px;
-    font-size: 12px;
-    color: var(--text-main);
-    pointer-events: none;
-    max-width: 220px;
-}
-
-.coord-mappa-overlay-sx { top: 8px; left: 8px; }
-.coord-mappa-overlay-dx { top: 8px; right: 8px; }
-
-.coord-mappa-legenda-voce {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    white-space: nowrap;
-}
-
-.coord-mappa-legenda-voce + .coord-mappa-legenda-voce {
-    margin-top: 4px;
-}
-
-.coord-mappa-pallino {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    display: inline-block;
-    flex-shrink: 0;
-}
-
-.coord-mappa-overlay-riga {
-    white-space: nowrap;
-}
-
-.coord-mappa-overlay-riga + .coord-mappa-overlay-riga {
-    margin-top: 2px;
-}
-
-.coord-mappa-overlay-titolo {
-    color: var(--primary-color);
-    font-weight: bold;
-    margin-bottom: 4px;
-}
-
-/* Il controllo +/- di Leaflet si sposta dall'angolo in alto a sinistra
-   al centro verticale del lato sinistro, su tutte le mappe dell'app */
-.mappa-comando .leaflet-top.leaflet-left {
-    top: 50%;
-    transform: translateY(-50%);
-}
-
-/* Il select "Modalità di spostamento" ora eredita lo stile standard
-   (.pagina-box select), quindi niente CSS dedicato da aggiungere per lui.
-   Servono invece questi due ritocchi: */
-
-/* Pulsanti azione mappa (Traccia percorso, Annulla, Esporta KML): stessa
-   altezza/font-size degli elementi delle altre due colonne */
-.coord-mappa-azione-campo .btn-toggle-radar {
-    width: 100%;
-    padding: 10px 16px;
-    font-size: 14px;
-}
-
-/* Sottotitolo "Restituzione grafica e pianificazione percorso": stesso
-   stile delle etichette di campo (es. "FORMATO COORDINATE IN INGRESSO"),
-   non più una taglia a sé stante */
-.coord-mappa-sottotitolo {
-    color: var(--text-muted);
-    font-size: 12px;
-    font-weight: bold;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin: 0 0 14px;
-}
-
-/* Tutte le etichette della riga controlli-mappa riservano la stessa
-   altezza (due righe), anche quando il testo ci sta su una sola: così
-   select e pulsanti partono tutti dalla stessa linea verticale */
-.coord-mappa-controlli .msg-campo label {
-    display: block;
-}
-
-.coord-mappa-controlli-percorso-attivo {
-    display: none;
-    gap: 15px;
-    margin-bottom: 15px;
-}
-
-.coord-mappa-controlli-percorso-attivo.visibile {
-    display: flex;
-}
-
-.coord-mappa-controlli-percorso-attivo .btn-toggle-radar {
-    flex: 1;
-    padding: 10px 16px;
-    font-size: 14px;
-}
-
-/* ==========================================================================
-   FireOps VVF — Convertitore unità di misura
-   Tutte le regole sono confinate dentro .um-root: nessun selettore globale,
-   nessuna variabile che possa entrare in conflitto con il resto di FireOps.
-   ========================================================================== */
-
-.um-root{
-  /* Nessun colore proprio: il convertitore eredita la palette FireOps.
-     I nomi --um-* restano per non toccare le ~80 regole che li usano. */
-  --um-bg:var(--dark-color);
-  --um-bg2:var(--surface-color);
-  --um-bg3:var(--dark-color);
-  --um-line:var(--border-color);
-  --um-txt:var(--text-main);
-  --um-txt2:var(--text-muted);
-  /* L'accento di FireOps è il giallo oro, non il rosso: qui il rosso
-     RAL3000 significa "dato mancante/pericolo" e non va speso per
-     evidenziare una cella selezionata. */
-  --um-rosso:var(--primary-color);
-  --um-rosso2:var(--primary-color);
-  --um-giallo:#4fc3f7;
-  --um-mono:"Courier New",monospace;
-
-  color:var(--um-txt);
-  font-size:14px;
-  line-height:1.45;
-  height:100%;
-  display:flex;
-  flex-direction:column;
-}
-.um-root *{box-sizing:border-box}
-
-/* ==========================================================================
-   Convertitore unità — allineamento allo stile FireOps.
-   Qui stanno solo i punti in cui il modulo aveva colori scritti a mano
-   invece che presi dalle variabili: non si potevano rimappare e basta.
-   ========================================================================== */
-
-/* La testata di pagina è ridondante: il selettore del pannello dice già
-   quale pagina stai guardando. Stessa scelta fatta per tutte le altre
-   sezioni con ".pagina-box > h3 { display:none }". */
-.um-root .um-head{display:none}
-
-/* Input e select: stesso guscio dei campi FireOps (raggio 4px, fondo scuro) */
-.um-root .um-search input,
-.um-root .um-field input,
-.um-root .um-field select,
-.um-root textarea{border-radius:4px}
-
-.um-root .um-search input:focus{box-shadow:0 0 0 1px var(--primary-color)}
-
-/* Categoria attiva: giallo pieno con testo scuro, come le voci evidenziate
-   dei combobox (.combo-opzione-attiva) e i titoli di sezione */
-.um-root .um-cat.on{
-  background:var(--primary-color);
-  border-left-color:var(--primary-color);
-  color:var(--dark-color);
-}
-.um-root .um-cat.on .um-cat-n{
-  background:rgba(18,18,18,.25);
-  color:var(--dark-color);
-}
-
-/* Riga della tabella: sorvolo appena percettibile, riga selezionata marcata */
-.um-root .um-tbl tbody tr:hover{background:rgba(255,215,0,.07)}
-.um-root .um-tbl tr.hi td{background:rgba(255,215,0,.14)}
-.um-root .um-tbl tbody td{border-bottom:1px solid var(--border-color)}
-
-/* Campo risultato: il valore calcolato è il dato da leggere, quindi giallo
-   pieno su fondo scuro, non un grigio qualsiasi */
-.um-root .um-field input[readonly]{
-  background:var(--dark-color);
-  color:var(--primary-color);
-}
-
-/* Nota di categoria: stesso trattamento della premessa dei modali JSON
-   (fondo scuro, barra rossa a sinistra) */
-.um-root .um-nota{
-  background:var(--dark-color);
-  border-left:4px solid var(--danger-color);
-  border-radius:4px;
-  color:var(--text-main);
-  font-size:13px;
-  line-height:1.5;
-}
-
-/* Pulsanti valore rapido (1/10/100/1000): gli stessi ".btn-toggle-radar"
-   usati ovunque per le azioni secondarie */
-.um-root .um-quick button{
-  background:var(--dark-color);
-  border:1px solid var(--border-color);
-  border-radius:4px;
-  color:var(--text-main);
-  padding:7px 14px;
-  font-size:13px;
-  font-family:Arial,sans-serif;
-}
-.um-root .um-quick button:hover{
-  background:var(--primary-color);
-  border-color:var(--primary-color);
-  color:var(--dark-color);
-}
-
-.um-root .um-swap{border-radius:4px}
-.um-root .um-swap:hover{border-color:var(--primary-color);color:var(--primary-color)}
-
-/* Schede risultato e tabelle: raggio 8px come .pagina-box e .riepilogo-box */
-.um-root .um-panel,
-.um-root .um-cats,
-.um-root .um-tbl,
-.um-root .um-card{border-radius:8px}
-
-/* Feedback di copia: identico a .copia-feedback, che è la conferma di
-   copia già usata in tutta l'app. Due conferme diverse per lo stesso
-   gesto sono un dettaglio che si nota subito. */
-.um-toast{
-  background:var(--primary-color);
-  color:var(--dark-color);
-  border-radius:4px;
-  font-family:Arial,sans-serif;
-  font-size:12px;
-  font-weight:bold;
-  padding:4px 10px;
-  box-shadow:0 2px 8px rgba(0,0,0,.5);
-}
-
-/* ---------- intestazione ---------- */
-.um-root .um-head{
-  background:var(--dark-color);
-  border:1px solid var(--border-color);
-  border-left:4px solid var(--primary-color);
-  border-radius:4px;
-}
-.um-root .um-head h2{color:var(--primary-color);font-size:15px;text-transform:uppercase}
-.um-root .um-head .um-sub{font-size:10.5px;color:var(--um-txt2);text-transform:uppercase;letter-spacing:1.4px}
-.um-root .um-count{
-  margin-left:auto;font-family:var(--um-mono);font-size:11px;color:var(--um-txt2);
-  border:1px solid var(--um-line);border-radius:99px;padding:3px 10px;white-space:nowrap;
-}
-
-/* ---------- selettore di categoria ---------- */
-/* Etichetta: replica di ".pagina-box label", che qui non si applica perché
-   la sezione non usa .pagina-box (lo farebbe a costo di sovrascrivere gli
-   stili dei campi interni del convertitore). */
-.um-root .um-lab{
-  display:block;
-  color:var(--text-muted);
-  font-size:12px;
-  text-transform:uppercase;
-  margin:0 0 6px;
-}
-
-.um-root .um-combo{flex:none;margin-bottom:14px}
-
-/* Il dropdown ha z-index 500 e il pannello sotto scorre: senza questo
-   l'elenco delle categorie finirebbe dietro le tabelle dei risultati. */
-.um-root .um-combo .combo-dropdown{z-index:900}
-
-.um-root button:focus-visible,
-.um-root input:focus-visible,
-.um-root select:focus-visible,
-.um-root textarea:focus-visible{outline:2px solid var(--um-rosso2);outline-offset:2px}
-
-/* ---------- pannello ---------- */
-.um-root .um-panel{
-  background:var(--um-bg2);border:1px solid var(--um-line);border-radius:10px;
-  padding:14px;flex:1 1 auto;min-height:0;overflow:auto;min-width:0;
-}
-/* Testata ancorata: scorrendo una tabella lunga si continua a vedere
-   di quale grandezza si stanno leggendo i valori.
-   I margini negativi la portano a filo dei bordi, annullando il padding. */
-.um-root .um-panel-head{
-  position:sticky;top:0;z-index:2;
-  background:var(--um-bg2);
-  margin:-14px -14px 12px;padding:12px 14px 9px;
-  border-bottom:1px solid var(--um-line);
-}
-.um-root .um-panel h3.um-title{margin:0 0 2px;font-size:15.5px;font-weight:700;color:var(--um-txt)}
-.um-root .um-base{font-size:11.5px;color:var(--um-txt2);font-family:var(--um-mono);margin:0}
-
-.um-root .um-nota{
-  background:rgba(242,183,5,.08);border-left:3px solid var(--um-giallo);
-  padding:8px 11px;border-radius:6px;font-size:12.5px;color:#e8d9a8;margin-bottom:12px;
-}
-
-/* ---------- riga di conversione ---------- */
-.um-root .um-io{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:end}
-.um-root .um-field{display:flex;flex-direction:column;gap:5px;min-width:0}
-.um-root .um-field label{font-size:10.5px;text-transform:uppercase;letter-spacing:.9px;color:var(--um-txt2)}
-.um-root .um-field input,
-.um-root .um-field select{
-  width:100%;padding:10px 11px;background:var(--um-bg3);border:1px solid var(--um-line);
-  border-radius:8px;color:var(--um-txt);font-size:15px;outline:none;font-family:var(--um-mono);
-}
-.um-root .um-field select{font-family:inherit;font-size:13.5px;cursor:pointer}
-.um-root .um-field input:focus,
-.um-root .um-field select:focus{border-color:var(--um-rosso)}
-.um-root .um-field input[readonly]{background:#11161c;color:var(--um-rosso2);font-weight:600;cursor:pointer}
-
-.um-root .um-swap{
-  background:var(--um-bg3);border:1px solid var(--um-line);color:var(--um-txt2);
-  width:40px;height:41px;border-radius:8px;cursor:pointer;font-size:16px;
-  display:flex;align-items:center;justify-content:center;transition:.15s;flex:none;
-}
-.um-root .um-swap:hover{border-color:var(--um-rosso);color:var(--um-rosso2);transform:rotate(180deg)}
-
-.um-root .um-quick{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
-.um-root .um-quick button{
-  background:transparent;border:1px dashed var(--um-line);color:var(--um-txt2);
-  border-radius:6px;padding:4px 9px;font-size:11.5px;cursor:pointer;font-family:var(--um-mono);
-}
-.um-root .um-quick button:hover{border-color:var(--um-rosso);color:var(--um-txt);border-style:solid}
-
-/* ---------- tabelle ---------- */
-.um-root .um-tbl{margin-top:14px;border:1px solid var(--um-line);border-radius:8px;overflow:auto;max-height:46vh}
-.um-root .um-tbl table{width:100%;border-collapse:collapse;font-size:13px}
-.um-root .um-tbl thead th{
-  position:sticky;top:0;background:var(--um-bg3);color:var(--um-txt2);
-  font-size:10.5px;text-transform:uppercase;letter-spacing:1px;
-  text-align:left;padding:8px 10px;border-bottom:1px solid var(--um-line);z-index:1;
-}
-.um-root .um-tbl tbody td{padding:7px 10px;border-bottom:1px solid rgba(42,50,61,.5)}
-.um-root .um-tbl tbody tr:last-child td{border-bottom:none}
-.um-root .um-tbl tbody tr:hover{background:rgba(211,47,47,.07)}
-.um-root .um-tbl td.val{font-family:var(--um-mono);text-align:right;color:var(--um-rosso2);cursor:pointer;white-space:nowrap}
-.um-root .um-tbl td.sym{font-family:var(--um-mono);color:var(--um-txt2);white-space:nowrap}
-.um-root .um-tbl td.mono{font-family:var(--um-mono)}
-.um-root .um-tbl tr.hi td{background:rgba(211,47,47,.14)}
-
-/* ---------- schede risultato ---------- */
-.um-root .um-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-top:12px}
-.um-root .um-card{background:var(--um-bg3);border:1px solid var(--um-line);border-radius:8px;padding:9px 11px}
-.um-root .um-card .k{font-size:10.5px;text-transform:uppercase;letter-spacing:1px;color:var(--um-txt2)}
-.um-root .um-card .v{font-family:var(--um-mono);font-size:15px;color:var(--um-rosso2);margin-top:3px;word-break:break-all;cursor:pointer}
-.um-root .um-card.na .v{color:var(--um-txt2)}
-.um-root .um-card.wide{grid-column:1/-1}
-.um-root .um-card.wide .v{font-size:14px}
-
-.um-root .um-sect{margin-top:18px;padding-top:14px;border-top:1px dashed var(--um-line)}
-.um-root .um-sect.first{margin-top:0;padding-top:0;border-top:none}
-.um-root .um-sect h4{margin:0 0 10px;font-size:12px;text-transform:uppercase;letter-spacing:1.1px;color:var(--um-txt2);font-weight:600}
-.um-root .um-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:10px}
-
-.um-root textarea{
-  width:100%;min-height:64px;padding:9px 11px;background:var(--um-bg3);
-  border:1px solid var(--um-line);border-radius:8px;color:var(--um-txt);
-  font-family:var(--um-mono);font-size:13px;outline:none;resize:vertical;
-}
-.um-root textarea:focus{border-color:var(--um-rosso)}
-.um-root .um-morse{color:var(--um-giallo);letter-spacing:1px}
-.um-root .um-empty{color:var(--um-txt2);text-align:center;padding:22px;font-size:13px}
-
-/* ---------- toast (unico, agganciato al body) ---------- */
-.um-toast{
-  position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(20px);
-  background:#2ea043;color:#fff;padding:9px 18px;border-radius:99px;font-size:13px;
-  font-weight:600;opacity:0;pointer-events:none;transition:.2s;z-index:9999;
-  font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
-}
-.um-toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
-
-/* ---------- pannello stretto (split-screen) ---------- */
-/* la classe .narrow viene applicata via JS quando il pannello scende sotto i 560 px,
-   così il layout si adatta anche in split-screen su schermo largo */
-.um-root.narrow .um-io{grid-template-columns:1fr;gap:8px}
-.um-root.narrow .um-swap{width:100%;transform:rotate(90deg)}
-.um-root.narrow .um-swap:hover{transform:rotate(270deg)}
-.um-root.narrow .um-grid{grid-template-columns:1fr}
-
-@media (max-width:700px){
-  .um-root .um-io{grid-template-columns:1fr;gap:8px}
-  .um-root .um-swap{width:100%;transform:rotate(90deg)}
-  .um-root .um-swap:hover{transform:rotate(270deg)}
-  .um-root .um-grid{grid-template-columns:1fr}
-}
-@media (prefers-reduced-motion:reduce){
-  .um-root *,.um-toast{transition:none!important}
-}
-
-/* Vista Windy: stesso ingombro della mappa Leaflet, si alternano */
-.windy-comando {
-    width: 100%;
-    height: 420px;
-    border-radius: 8px;
-    overflow: hidden;
-    border: 1px solid var(--border-color);
-    background: var(--dark-color);
-}
-
-.windy-comando iframe {
-    width: 100%;
-    height: 100%;
-    border: 0;
-    display: block;
+    .um-root .um-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 @media (max-width: 520px) {
-    .windy-comando { height: 280px; }
+    :root {
+        --header-height: var(--header-height-mobile);
+    }
+
+    .app-header {
+        min-height: var(--header-height);
+        gap: 8px;
+    }
+
+    body {
+        padding-top: calc(var(--header-height) + var(--subheader-height));
+    }
+
+    .site-titles .subtitle {
+        display: none;
+    }
+
+    .site-titles h1 {
+        font-size: 16px;
+    }
+
+    .site-logo {
+        height: 34px;
+    }
+
+    .info-box {
+        padding: 4px 8px;
+    }
+
+    .info-box .value {
+        font-size: 14px;
+    }
+
+    .valore-turno {
+        font-size: 15px;
+    }
+
+    .subheader-pannello {
+        padding: 0 10px;
+        gap: 6px;
+    }
+
+    .subheader-pannello .pannello-select {
+        font-size: 14px;
+        padding: 8px 6px;
+    }
+
+    .mappa-meteo-header {
+        flex-wrap: wrap;
+    }
+
+    .mappa-meteo-header h3 {
+        white-space: normal;
+    }
+
+    .msg-azioni button {
+        min-width: 140px;
+    }
+
+    .mappa-comando {
+        height: 280px;
+        flex-basis: 100%;
+    }
+
+    .windy-comando {
+        height: 280px;
+    }
+
+    .meteo-orario {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 5px;
+    }
+
+    .meteo-ora-card {
+        padding: 6px 2px;
+    }
+
+    .meteo-ora-etichetta {
+        font-size: 10px;
+    }
+
+    .meteo-ora-icona {
+        font-size: 17px;
+        margin: 3px 0;
+    }
+
+    .meteo-ora-temp {
+        font-size: 12px;
+    }
+
+    .meteo-ora-pioggia {
+        font-size: 9px;
+    }
 }
 
-/* Il selettore del pannello dice già quale pagina stai guardando: la testata
-   interna del modulo ripete lo stesso titolo. Stessa scelta già applicata a
-   tutte le altre sezioni con ".pagina-box > h3 { display:none }". */
-.um-root .um-head{display:none}
+@media (prefers-reduced-motion: reduce) {
 
-/* ---------- selettore di categoria ---------- */
-/* Etichetta: replica di ".pagina-box label", che qui non si applica perché
-   la sezione non usa .pagina-box (lo farebbe a costo di sovrascrivere gli
-   stili dei campi interni del convertitore). */
-.um-root .um-lab{
-  display:block;
-  color:var(--text-muted);
-  font-size:12px;
-  text-transform:uppercase;
-  margin:0 0 6px;
+    .um-root *,
+    .um-toast {
+        transition: none !important;
+    }
 }
-
-.um-root .um-combo{flex:none;margin-bottom:14px}
-
-/* Il dropdown ha z-index 500 e il pannello sotto scorre: senza questo
-   l'elenco delle categorie finirebbe dietro le tabelle dei risultati. */
-.um-root .um-combo .combo-dropdown{z-index:900}
