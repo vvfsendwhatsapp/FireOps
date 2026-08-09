@@ -1714,6 +1714,10 @@ html.comando-gia-scelto #modal-comando {
     height: 100%;
     display: flex;
     flex-direction: column;
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 16px;
 }
 
 .um-root * {
@@ -1753,14 +1757,21 @@ html.comando-gia-scelto #modal-comando {
 
 /* ---------- pannello ---------- */
 .um-root .um-panel {
-    background: var(--um-bg2);
-    border: 1px solid var(--um-line);
-    border-radius: 8px;
-    padding: 14px;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
     flex: 1 1 auto;
     min-height: 0;
-    overflow: auto;
     min-width: 0;
+    overflow: auto;
+}
+
+/* Padding del pannello ora a zero: i margini negativi che portavano la
+   testata a filo dei bordi non servono più */
+.um-root .um-panel-head {
+    margin: 0 0 12px;
+    padding: 0 0 8px;
 }
 
 /* Testata ancorata: scorrendo una tabella lunga si continua a vedere di
@@ -2132,6 +2143,30 @@ html.comando-gia-scelto #modal-comando {
     .um-root .um-io-singolo {
         grid-template-columns: 1fr;
     }
+}
+
+/* Nota di categoria: testo esplicativo, stesso trattamento di .pagina-nota
+   usata ovunque in FireOps — grigio, piccolo, senza cornice. */
+.um-root .um-nota {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    margin-bottom: 14px;
+    color: var(--text-muted);
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+/* L'errore invece deve saltare all'occhio: qui il rosso RAL3000 è
+   appropriato, segnala un dato non valido */
+.um-root .um-nota.f-err {
+    background: var(--dark-color);
+    border-left: 4px solid var(--danger-color);
+    border-radius: 4px;
+    padding: 8px 11px;
+    color: var(--text-main);
+    margin-top: 10px;
 }
 
 /* ==========================================================
