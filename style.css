@@ -2011,13 +2011,12 @@ html.comando-gia-scelto #modal-comando {
 
 /* ---------- intestazione ---------- */
 .um-root .um-head{
-  display:flex;align-items:center;gap:12px;
-  padding:10px 12px;margin-bottom:10px;
-  background:linear-gradient(180deg,var(--um-bg2),transparent);
-  border:1px solid var(--um-line);border-left:4px solid var(--um-rosso);
-  border-radius:10px;flex:none;
+  background:var(--dark-color);
+  border:1px solid var(--border-color);
+  border-left:4px solid var(--primary-color);
+  border-radius:4px;
 }
-.um-root .um-head h2{font-size:16px;margin:0;font-weight:700;letter-spacing:.2px;color:var(--um-txt)}
+.um-root .um-head h2{color:var(--primary-color);font-size:15px;text-transform:uppercase}
 .um-root .um-head .um-sub{font-size:10.5px;color:var(--um-txt2);text-transform:uppercase;letter-spacing:1.4px}
 .um-root .um-count{
   margin-left:auto;font-family:var(--um-mono);font-size:11px;color:var(--um-txt2);
