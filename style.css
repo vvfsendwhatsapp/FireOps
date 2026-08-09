@@ -2223,3 +2223,8 @@ html.comando-gia-scelto #modal-comando {
 @media (max-width: 520px) {
     .windy-comando { height: 280px; }
 }
+
+/* Il selettore del pannello dice già quale pagina stai guardando: la testata
+   interna del modulo ripete lo stesso titolo. Stessa scelta già applicata a
+   tutte le altre sezioni con ".pagina-box > h3 { display:none }". */
+.um-root .um-head{display:none}
