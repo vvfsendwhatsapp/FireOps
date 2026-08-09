@@ -1769,6 +1769,7 @@ html.comando-gia-scelto #modal-comando {
    quale grandezza si leggono i valori. I margini negativi la portano a
    filo dei bordi, annullando il padding del pannello. */
 .um-root .um-panel-head {
+    display:none;
     position: sticky;
     top: 0;
     z-index: 2;
