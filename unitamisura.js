@@ -98,7 +98,7 @@ function init(root){
     '<label class="um-lab">Categoria da consultare</label>'+
     '<div class="combo-wrapper um-combo">'+
       '<input type="text" class="combo-input um-cerca" autocomplete="off" '+
-        'placeholder="Cerca categoria, unità o simbolo (es. psi, L/min)…">'+
+        'placeholder="Seleziona una categoria, o cerca un\'unità (es. psi, L/min)…">'+
       '<input type="hidden" class="um-cat-val">'+
       '<span class="combo-arrow" aria-hidden="true"></span>'+
       '<div class="combo-dropdown um-cat-dd"></div>'+
@@ -174,7 +174,11 @@ function init(root){
       }
     });
 
-    apri(DB.categorie[0].id);
+    // Nessuna categoria aperta all'avvio: la scelta è dell'operatore.
+    // Aprendone una d'ufficio, chi arriva sulla pagina vede numeri che non
+    // ha chiesto e deve capire da dove vengono.
+    DOM.cerca.value = '';
+    DOM.panel.innerHTML = '<div class="um-empty">Scegli una categoria dall\'elenco qui sopra.</div>';
   }).catch(function(err){
     DOM.panel.innerHTML = '<div class="um-nota">Impossibile caricare <b>' + esc(DATA_URL) + '</b>. '+
       'Verifica che il file sia presente e che la pagina sia servita via HTTP (GitHub Pages o '+
