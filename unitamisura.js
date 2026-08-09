@@ -94,17 +94,15 @@ function init(root){
       '<div><div class="um-sub">FireOps VVF</div><h2>Convertitore unità di misura</h2></div>'+
       '<div class="um-count"></div>'+
     '</div>'+
-    '<div class="um-layout">'+
-      '<aside class="um-side">'+
-        '<div class="um-search">'+
-          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+
-            '<circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></svg>'+
-          '<input type="search" placeholder="Cerca categoria o unità…" autocomplete="off">'+
-        '</div>'+
-        '<nav class="um-cats"></nav>'+
-      '</aside>'+
-      '<div class="um-panel"><div class="um-empty">Caricamento del database unità…</div></div>'+
-    '</div>';
+    '<div class="um-bar">'+
+      '<div class="um-search">'+
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+
+          '<circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></svg>'+
+        '<input type="search" placeholder="Cerca categoria o unità…" autocomplete="off">'+
+      '</div>'+
+      '<select class="um-cats" aria-label="Categoria"></select>'+
+    '</div>'+
+    '<div class="um-panel"><div class="um-empty">Caricamento del database unità…</div></div>';
 
   var DOM = {
     count : root.querySelector('.um-count'),
@@ -146,18 +144,25 @@ function init(root){
   function renderCats(filtro){
     var f = filtro.toLowerCase();
     DOM.cats.innerHTML = '';
+    var trovate = 0;
     DB.categorie.forEach(function(c){
       if(f && c.nome.toLowerCase().indexOf(f) === -1 && !unitaMatch(c,f)) return;
-      var n = c.unita ? c.unita.length : (c.dati ? c.dati.length : 0);
-      var b = el('<button type="button" class="um-cat' + (cur && cur.id === c.id ? ' on' : '') + '">'+
-                   '<span class="um-cat-nome">' + esc(c.nome) + '</span>'+
-                   (n ? '<span class="um-cat-n">' + n + '</span>' : '')+
-                 '</button>');
-      b.dataset.cat = c.id;
-      b.onclick = function(){ apri(c.id); };
-      DOM.cats.appendChild(b);
+      var o = document.createElement('option');
+      o.value = c.id;
+      o.textContent = c.nome;
+      DOM.cats.appendChild(o);
+      trovate++;
     });
-    if(!DOM.cats.children.length) DOM.cats.appendChild(el('<div class="um-empty">Nessuna categoria trovata.</div>'));
+    if(!trovate){
+      DOM.cats.appendChild(el('<option>Nessuna categoria trovata</option>'));
+      DOM.cats.disabled = true;
+      return;
+    }
+    DOM.cats.disabled = false;
+    // La categoria aperta resta selezionata solo se supera il filtro: senza
+    // questo controllo il select mostrerebbe una voce diversa da quella
+    // effettivamente aperta nel pannello.
+    if(cur && DB.categorie.some(function(c){ return c.id === cur.id; })) DOM.cats.value = cur.id;
   }
 
   function unitaMatch(c,f){
