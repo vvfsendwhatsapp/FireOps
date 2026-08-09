@@ -1909,25 +1909,58 @@ html.comando-gia-scelto #modal-comando {
   border:1px solid var(--um-line);border-radius:99px;padding:3px 10px;white-space:nowrap;
 }
 
+/* ---------- impianto: elenco categorie a sinistra, pannello a destra ---------- */
+.um-root .um-layout{
+  display:grid;
+  grid-template-columns:236px minmax(0,1fr);
+  gap:12px;
+  flex:1 1 auto;
+  min-height:0;
+}
+.um-root .um-side{display:flex;flex-direction:column;gap:8px;min-width:0}
+
 /* ---------- ricerca ---------- */
-.um-root .um-search{position:relative;margin-bottom:10px;flex:none}
+.um-root .um-search{position:relative;flex:none}
 .um-root .um-search input{
-  width:100%;padding:10px 12px 10px 36px;
-  background:var(--um-bg2);border:1px solid var(--um-line);border-radius:10px;
-  color:var(--um-txt);font-size:14px;font-family:inherit;outline:none;
+  width:100%;padding:9px 11px 9px 34px;
+  background:var(--um-bg2);border:1px solid var(--um-line);border-radius:8px;
+  color:var(--um-txt);font-size:13.5px;font-family:inherit;outline:none;
 }
 .um-root .um-search input:focus{border-color:var(--um-rosso);box-shadow:0 0 0 3px rgba(211,47,47,.15)}
-.um-root .um-search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);opacity:.5}
+.um-root .um-search svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);opacity:.5}
 
-/* ---------- chip categorie ---------- */
-.um-root .um-cats{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;flex:none}
-.um-root .um-cat{
-  background:var(--um-bg2);border:1px solid var(--um-line);color:var(--um-txt2);
-  padding:5px 11px;border-radius:99px;font-size:12.5px;font-family:inherit;
-  cursor:pointer;transition:.12s;white-space:nowrap;
+/* ---------- elenco categorie ---------- */
+.um-root .um-cats{
+  display:flex;flex-direction:column;gap:2px;
+  background:var(--um-bg2);border:1px solid var(--um-line);border-radius:10px;
+  padding:6px;margin:0;
+  /* l'altezza del contenitore è "auto" dentro il pannello FireOps: senza un
+     tetto esplicito l'elenco crescerebbe finché la pagina non scrolla tutta */
+  max-height:62vh;overflow:auto;
 }
-.um-root .um-cat:hover{border-color:var(--um-rosso);color:var(--um-txt)}
-.um-root .um-cat.on{background:var(--um-rosso);border-color:var(--um-rosso);color:#fff;font-weight:600}
+.um-root .um-cat{
+  display:flex;align-items:center;gap:8px;
+  width:100%;text-align:left;line-height:1.3;
+  background:transparent;border:none;border-left:3px solid transparent;
+  border-radius:6px;padding:8px 10px;
+  color:var(--um-txt2);font-size:13px;font-family:inherit;
+  cursor:pointer;transition:background .12s,color .12s,border-color .12s;
+}
+.um-root .um-cat:hover{background:var(--um-bg3);color:var(--um-txt)}
+.um-root .um-cat.on{
+  background:rgba(211,47,47,.14);
+  border-left-color:var(--um-rosso);
+  color:var(--um-txt);font-weight:600;
+}
+.um-root .um-cat-nome{flex:1 1 auto;min-width:0}
+/* Numero di unità nella categoria: informazione di servizio, mai in primo piano */
+.um-root .um-cat-n{
+  flex:none;font-family:var(--um-mono);font-size:10.5px;
+  color:var(--um-txt2);background:var(--um-bg3);
+  border-radius:99px;padding:1px 7px;
+}
+.um-root .um-cat.on .um-cat-n{background:rgba(211,47,47,.25);color:var(--um-rosso2)}
+
 .um-root button:focus-visible,
 .um-root input:focus-visible,
 .um-root select:focus-visible,
@@ -1936,10 +1969,19 @@ html.comando-gia-scelto #modal-comando {
 /* ---------- pannello ---------- */
 .um-root .um-panel{
   background:var(--um-bg2);border:1px solid var(--um-line);border-radius:10px;
-  padding:14px;flex:1 1 auto;min-height:0;overflow:auto;
+  padding:14px;flex:1 1 auto;min-height:0;overflow:auto;min-width:0;
 }
-.um-root .um-panel h3.um-title{margin:0 0 2px;font-size:15px;color:var(--um-txt)}
-.um-root .um-base{font-size:11.5px;color:var(--um-txt2);font-family:var(--um-mono);margin-bottom:12px}
+/* Testata ancorata: scorrendo una tabella lunga si continua a vedere
+   di quale grandezza si stanno leggendo i valori.
+   I margini negativi la portano a filo dei bordi, annullando il padding. */
+.um-root .um-panel-head{
+  position:sticky;top:0;z-index:2;
+  background:var(--um-bg2);
+  margin:-14px -14px 12px;padding:12px 14px 9px;
+  border-bottom:1px solid var(--um-line);
+}
+.um-root .um-panel h3.um-title{margin:0 0 2px;font-size:15.5px;font-weight:700;color:var(--um-txt)}
+.um-root .um-base{font-size:11.5px;color:var(--um-txt2);font-family:var(--um-mono);margin:0}
 
 .um-root .um-nota{
   background:rgba(242,183,5,.08);border-left:3px solid var(--um-giallo);
@@ -2025,6 +2067,9 @@ html.comando-gia-scelto #modal-comando {
 /* ---------- pannello stretto (split-screen) ---------- */
 /* la classe .narrow viene applicata via JS quando il pannello scende sotto i 560 px,
    così il layout si adatta anche in split-screen su schermo largo */
+/* ---------- pannello stretto (split-screen) ---------- */
+.um-root.narrow .um-layout{grid-template-columns:1fr;gap:8px}
+.um-root.narrow .um-cats{max-height:30vh}
 .um-root.narrow .um-io{grid-template-columns:1fr;gap:8px}
 .um-root.narrow .um-swap{width:100%;transform:rotate(90deg)}
 .um-root.narrow .um-swap:hover{transform:rotate(270deg)}
@@ -2032,6 +2077,8 @@ html.comando-gia-scelto #modal-comando {
 .um-root.narrow .um-count{display:none}
 
 @media (max-width:700px){
+  .um-root .um-layout{grid-template-columns:1fr;gap:8px}
+  .um-root .um-cats{max-height:30vh}
   .um-root .um-io{grid-template-columns:1fr;gap:8px}
   .um-root .um-swap{width:100%;transform:rotate(90deg)}
   .um-root .um-swap:hover{transform:rotate(270deg)}

@@ -94,13 +94,17 @@ function init(root){
       '<div><div class="um-sub">FireOps VVF</div><h2>Convertitore unità di misura</h2></div>'+
       '<div class="um-count"></div>'+
     '</div>'+
-    '<div class="um-search">'+
-      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+
-        '<circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></svg>'+
-      '<input type="search" placeholder="Cerca categoria o unità (es. psi, l/min, kW/m²)…" autocomplete="off">'+
-    '</div>'+
-    '<div class="um-cats"></div>'+
-    '<div class="um-panel"><div class="um-empty">Caricamento del database unità…</div></div>';
+    '<div class="um-layout">'+
+      '<aside class="um-side">'+
+        '<div class="um-search">'+
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+
+            '<circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></svg>'+
+          '<input type="search" placeholder="Cerca categoria o unità…" autocomplete="off">'+
+        '</div>'+
+        '<nav class="um-cats"></nav>'+
+      '</aside>'+
+      '<div class="um-panel"><div class="um-empty">Caricamento del database unità…</div></div>'+
+    '</div>';
 
   var DOM = {
     count : root.querySelector('.um-count'),
@@ -144,19 +148,25 @@ function init(root){
     DOM.cats.innerHTML = '';
     DB.categorie.forEach(function(c){
       if(f && c.nome.toLowerCase().indexOf(f) === -1 && !unitaMatch(c,f)) return;
-      var b = el('<button type="button" class="um-cat' + (cur && cur.id === c.id ? ' on' : '') + '">' + esc(c.nome) + '</button>');
+      var n = c.unita ? c.unita.length : (c.dati ? c.dati.length : 0);
+      var b = el('<button type="button" class="um-cat' + (cur && cur.id === c.id ? ' on' : '') + '">'+
+                   '<span class="um-cat-nome">' + esc(c.nome) + '</span>'+
+                   (n ? '<span class="um-cat-n">' + n + '</span>' : '')+
+                 '</button>');
       b.dataset.cat = c.id;
       b.onclick = function(){ apri(c.id); };
       DOM.cats.appendChild(b);
     });
     if(!DOM.cats.children.length) DOM.cats.appendChild(el('<div class="um-empty">Nessuna categoria trovata.</div>'));
   }
+
   function unitaMatch(c,f){
     if(!c.unita) return false;
     return c.unita.some(function(u){
       return u.n.toLowerCase().indexOf(f) > -1 || u.s.toLowerCase().indexOf(f) > -1;
     });
   }
+
   function onSearch(){
     var f = DOM.ric.value.trim().toLowerCase();
     renderCats(f);
@@ -178,11 +188,16 @@ function init(root){
     cur = DB.categorie.filter(function(c){ return c.id === id; })[0];
     if(!cur) return;
     Array.prototype.forEach.call(DOM.cats.children, function(b){
-      if(b.classList) b.classList.toggle('on', b.dataset.cat === cur.id);
+      if(!b.classList) return;
+      var attiva = b.dataset.cat === cur.id;
+      b.classList.toggle('on', attiva);
+      if(attiva && b.scrollIntoView) b.scrollIntoView({ block: 'nearest' });
     });
     DOM.panel.innerHTML =
-      '<h3 class="um-title">' + esc(cur.nome) + '</h3>' +
-      '<div class="um-base">' + (cur.base ? 'unità di riferimento: ' + esc(cur.base) : '') + '</div>' +
+      '<div class="um-panel-head">'+
+        '<h3 class="um-title">' + esc(cur.nome) + '</h3>' +
+        (cur.base ? '<div class="um-base">unità di riferimento: ' + esc(cur.base) + '</div>' : '') +
+      '</div>' +
       (cur.nota ? '<div class="um-nota">' + esc(cur.nota) + '</div>' : '') +
       '<div class="um-body"></div>';
     var B = DOM.panel.querySelector('.um-body');
