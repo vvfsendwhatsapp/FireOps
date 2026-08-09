@@ -636,7 +636,47 @@ function opts(i){
       // o da una tastiera diversa non deve accorgersi della differenza.
       var s = inp.value.replace(/[·•]/g, '.').replace(/[–—_]/g, '-').trim();
       if(!s){ out.innerHTML = scheda('Testo decodificato', '—', true); return; }
-}
+
+      // Separatore di parola: / oppure una pausa lunga (3+ spazi), che è
+      // esattamente ciò che produce la direzione opposta qui sopra.
+      var fuori = [];
+      var testo = s.split(/\s*\/\s*|\s{3,}/).map(function(p){
+        return p.split(/\s+/).filter(Boolean).map(function(c){
+          if(inv[c]) return inv[c];
+          fuori.push(c);
+          return '\u25A1';  // ▢ un gruppo non riconosciuto deve VEDERSI:
+        }).join('');        //   sparendo, si leggerebbe una parola incompleta
+      }).filter(Boolean).join(' ');                    // credendola giusta
+
+      out.innerHTML = scheda('Testo decodificato', testo || '—', fuori.length > 0) +
+        (fuori.length
+          ? '<div class="um-nota">Gruppi non riconosciuti, sostituiti con ▢: <b>'+
+            esc(fuori.join('  '))+'</b></div>'
+          : '');
+    }
+
+    function aggiorna(){
+      if(dir.value === 'morse') daMorse(); else daTesto();
+    }
+
+    // Cambio direzione: si prova a riusare l'uscita come nuovo ingresso, così
+    // si può fare un giro di andata e ritorno per verificare una trascrizione.
+    dir.addEventListener('change', function(){
+      var precedente = out.querySelector('.v');
+      if(precedente && precedente.textContent !== '—') inp.value = precedente.textContent;
+      inp.placeholder = dir.value === 'morse'
+        ? 'Es.  ...- ...- ..-.   (spazio fra lettere, / fra parole)'
+        : 'Es. VVF 115';
+      aggiorna();
+      inp.focus();
+    });
+
+    inp.addEventListener('input', aggiorna);
+
+    inp.value = 'VVF';
+    inp.placeholder = 'Es. VVF 115';
+    aggiorna();
+  }
 
 /* ---------- auto-init ---------- */
 function autoInit(ctx){
