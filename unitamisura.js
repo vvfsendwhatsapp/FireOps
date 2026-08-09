@@ -212,26 +212,26 @@ function init(root){
   /* ---------- 1. conversione per fattore ---------- */
   function viewFattore(B, preIdx){
     var u = cur.unita;
-    function opts(i){
-      return u.map(function(x,j){
-        return '<option value="'+j+'"'+(j===i?' selected':'')+'>'+esc(x.n)+' ('+esc(x.s)+')</option>';
-      }).join('');
-    }
-    var iDa = (preIdx !== undefined && preIdx !== null) ? preIdx : 0;
-    var iA  = (iDa === 1) ? 0 : 1;
+    var iDa = (preIdx !== undefined && preIdx !== null && preIdx > -1) ? preIdx : 0;
 
     B.innerHTML =
-     '<div class="um-io">'+
-       '<div class="um-field"><label>Da</label><input class="f-in" type="text" inputmode="decimal" value="1"><select class="f-uin">'+opts(iDa)+'</select></div>'+
-       '<button type="button" class="um-swap" title="Inverti">⇄</button>'+
-       '<div class="um-field"><label>A</label><input class="f-out" type="text" readonly title="Clicca per copiare"><select class="f-uout">'+opts(iA)+'</select></div>'+
+     '<div class="um-io um-io-singolo">'+
+       '<div class="um-field"><label>Valore</label>'+
+         '<input class="f-in" type="text" inputmode="decimal" value="1"></div>'+
+       '<div class="um-field"><label>Unità di partenza</label><select class="f-uin">'+
+         u.map(function(x,j){
+           return '<option value="'+j+'"'+(j===iDa?' selected':'')+'>'+esc(x.n)+' ('+esc(x.s)+')</option>';
+         }).join('')+
+       '</select></div>'+
      '</div>'+
      '<div class="um-quick"></div>'+
-     '<div class="um-tbl"><table><thead><tr><th>Unità</th><th>Simbolo</th><th style="text-align:right">Valore</th></tr></thead><tbody></tbody></table></div>';
+     '<div class="um-tbl"><table><thead><tr><th>Unità</th><th>Simbolo</th>'+
+       '<th style="text-align:right">Valore</th></tr></thead><tbody></tbody></table></div>';
 
-    var vIn = B.querySelector('.f-in'), uIn = B.querySelector('.f-uin'),
-        vOut = B.querySelector('.f-out'), uOut = B.querySelector('.f-uout'),
-        tb = B.querySelector('tbody'), quick = B.querySelector('.um-quick');
+    var vIn = B.querySelector('.f-in'),
+        uIn = B.querySelector('.f-uin'),
+        tb  = B.querySelector('tbody'),
+        quick = B.querySelector('.um-quick');
 
     [1,10,100,1000].forEach(function(n){
       var b = el('<button type="button">'+n+'</button>');
@@ -242,28 +242,33 @@ function init(root){
     function calc(){
       var v = num(vIn.value);
       var base = v * u[+uIn.value].f;
-      vOut.value = Number.isNaN(v) ? '' : fmt(base / u[+uOut.value].f);
-      vOut.dataset.copy = vOut.value;
       tb.innerHTML = u.map(function(x,j){
         var val = Number.isNaN(v) ? '' : fmt(base / x.f);
-        return '<tr class="'+(j == uOut.value ? 'hi' : '')+'"><td>'+esc(x.n)+'</td><td class="sym">'+esc(x.s)+'</td>'+
+        // La riga dell'unità di partenza è evidenziata: serve a ritrovare a
+        // colpo d'occhio da dove si sta convertendo in un elenco lungo.
+        return '<tr class="'+(j == uIn.value ? 'hi' : '')+'">'+
+               '<td>'+esc(x.n)+'</td><td class="sym">'+esc(x.s)+'</td>'+
                '<td class="val" data-copy="'+val+'">'+(val || '—')+'</td></tr>';
       }).join('');
     }
+
     vIn.addEventListener('input', calc);
     uIn.addEventListener('change', calc);
-    uOut.addEventListener('change', calc);
-    B.querySelector('.um-swap').onclick = function(){
-      var a = uIn.value; uIn.value = uOut.value; uOut.value = a;
-      if(vOut.value) vIn.value = vOut.value;
-      calc();
-    };
+
+    // Clic su una riga (fuori dalla colonna dei valori): quella unità diventa
+    // la partenza, portandosi dietro il proprio valore convertito. I numeri a
+    // schermo non cambiano — cambia solo da quale unità si sta partendo.
     tb.addEventListener('click', function(e){
+      if(e.target.classList.contains('val')) return; // lì il clic copia
       var tr = e.target.closest('tr'); if(!tr) return;
-      if(!e.target.classList.contains('val')){
-        uOut.value = Array.prototype.indexOf.call(tb.children, tr); calc();
-      }
+      var j = Array.prototype.indexOf.call(tb.children, tr);
+      if(j < 0) return;
+      var v = num(vIn.value);
+      if(!Number.isNaN(v)) vIn.value = fmt(v * u[+uIn.value].f / u[j].f);
+      uIn.value = j;
+      calc();
     });
+
     calc();
   }
 
@@ -343,19 +348,21 @@ function init(root){
       }).join('');
     }
     B.innerHTML =
-     '<div class="um-io">'+
-       '<div class="um-field"><label>Da</label><input class="f-in" type="text" inputmode="decimal" value="20"><select class="f-uin">'+opts(0)+'</select></div>'+
-       '<button type="button" class="um-swap" title="Inverti">⇄</button>'+
-       '<div class="um-field"><label>A</label><input class="f-out" type="text" readonly title="Clicca per copiare"><select class="f-uout">'+opts(2)+'</select></div>'+
+     '<div class="um-io um-io-singolo">'+
+       '<div class="um-field"><label>Valore</label>'+
+         '<input class="f-in" type="text" inputmode="decimal" value="20"></div>'+
+       '<div class="um-field"><label>Scala di partenza</label><select class="f-uin">'+opts(0)+'</select></div>'+
      '</div>'+
      '<div class="um-quick"></div>'+
-     '<div class="um-tbl"><table><thead><tr><th>Scala</th><th>Simbolo</th><th style="text-align:right">Valore</th></tr></thead><tbody></tbody></table></div>'+
+     '<div class="um-tbl"><table><thead><tr><th>Scala</th><th>Simbolo</th>'+
+       '<th style="text-align:right">Valore</th></tr></thead><tbody></tbody></table></div>'+
      '<div class="um-sect"><h4>Punti di riferimento (valori indicativi)</h4>'+
-       '<div class="um-tbl" style="max-height:32vh"><table><thead><tr><th>Riferimento</th><th style="text-align:right">°C</th><th style="text-align:right">°F</th><th style="text-align:right">K</th></tr></thead><tbody class="f-rif"></tbody></table></div>'+
+       '<div class="um-tbl" style="max-height:32vh"><table><thead><tr><th>Riferimento</th>'+
+         '<th style="text-align:right">°C</th><th style="text-align:right">°F</th>'+
+         '<th style="text-align:right">K</th></tr></thead><tbody class="f-rif"></tbody></table></div>'+
      '</div>';
 
     var tIn = B.querySelector('.f-in'), tU = B.querySelector('.f-uin'),
-        tOut = B.querySelector('.f-out'), tU2 = B.querySelector('.f-uout'),
         tb = B.querySelector('tbody'), quick = B.querySelector('.um-quick');
 
     [['0 °C',0],['20 °C',20],['37 °C',37],['100 °C',100],['600 °C',600]].forEach(function(p){
@@ -367,30 +374,31 @@ function init(root){
     function calc(){
       var v = num(tIn.value);
       var c = Number.isNaN(v) ? NaN : toC(v, u[+tU.value]);
-      tOut.value = Number.isNaN(c) ? '' : fmt(fromC(c, u[+tU2.value]), 10);
-      tOut.dataset.copy = tOut.value;
       tb.innerHTML = u.map(function(x,j){
         var val = Number.isNaN(c) ? '' : fmt(fromC(c,x), 10);
-        return '<tr class="'+(j == tU2.value ? 'hi' : '')+'"><td>'+esc(x.n)+'</td><td class="sym">'+esc(x.s)+'</td>'+
+        return '<tr class="'+(j == tU.value ? 'hi' : '')+'">'+
+               '<td>'+esc(x.n)+'</td><td class="sym">'+esc(x.s)+'</td>'+
                '<td class="val" data-copy="'+val+'">'+(val || '—')+'</td></tr>';
       }).join('');
     }
+
     tIn.addEventListener('input', calc);
     tU.addEventListener('change', calc);
-    tU2.addEventListener('change', calc);
-    B.querySelector('.um-swap').onclick = function(){
-      var a = tU.value; tU.value = tU2.value; tU2.value = a;
-      if(tOut.value) tIn.value = tOut.value;
-      calc();
-    };
+
     tb.addEventListener('click', function(e){
+      if(e.target.classList.contains('val')) return;
       var tr = e.target.closest('tr'); if(!tr) return;
-      if(!e.target.classList.contains('val')){
-        tU2.value = Array.prototype.indexOf.call(tb.children, tr); calc();
-      }
+      var j = Array.prototype.indexOf.call(tb.children, tr);
+      if(j < 0) return;
+      var v = num(tIn.value);
+      // Conversione affine: si passa comunque per i °C, non si può moltiplicare
+      if(!Number.isNaN(v)) tIn.value = fmt(fromC(toC(v, u[+tU.value]), u[j]), 10);
+      tU.value = j;
+      calc();
     });
 
-    B.querySelector('.f-rif').innerHTML = (cur.riferimenti || []).slice().sort(function(a,b){ return a.v - b.v; })
+    B.querySelector('.f-rif').innerHTML = (cur.riferimenti || []).slice()
+      .sort(function(a,b){ return a.v - b.v; })
       .map(function(r){
         return '<tr><td>'+esc(r.d)+'</td>'+
                '<td class="val" data-copy="'+r.v+'">'+fmt(r.v,8)+'</td>'+

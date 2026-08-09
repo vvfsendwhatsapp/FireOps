@@ -2119,6 +2119,22 @@ html.comando-gia-scelto #modal-comando {
     grid-template-columns: 1fr;
 }
 
+/* Riga a campo singolo: valore + unità di partenza, senza colonna "A".
+   La tabella sotto mostra già la conversione verso tutte le altre unità. */
+.um-root .um-io-singolo {
+    grid-template-columns: 1fr 1.4fr;
+}
+
+.um-root.narrow .um-io-singolo {
+    grid-template-columns: 1fr;
+}
+
+@media (max-width: 700px) {
+    .um-root .um-io-singolo {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* ==========================================================
    RESPONSIVE: l'header non si schiaccia più su schermi stretti.
    Sotto i 900px il blocco centrale (comando/orario/turno) va a
