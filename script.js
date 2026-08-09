@@ -515,13 +515,29 @@ document.addEventListener("DOMContentLoaded", () => {
         return new Date(Math.floor(data.getTime() / cinqueMinutiMs) * cinqueMinutiMs);
     }
 
-    // Il campione radar viene pubblicato con qualche minuto di ritardo rispetto
-    // all'istante di misura: chiedere l'istante appena trascorso restituisce
-    // tile vuote. Si arretra la finestra prima di costruire i fotogrammi.
+// Stima di ripiego, usata solo se l'API DPC non è raggiungibile
     const RITARDO_PUBBLICAZIONE_MS = 10 * 60 * 1000;
 
-    function generaIstantiRadar(numeroFotogrammi) {
-        const ultimoIstante = arrotondaAi5Minuti(new Date(Date.now() - RITARDO_PUBBLICAZIONE_MS));
+    // L'ultimo campione pubblicato non si indovina: lo dichiara il DPC.
+    // Indovinarlo significa chiedere istanti inesistenti e ricevere tile
+    // vuote per tutti e 12 i fotogrammi, senza alcun errore visibile.
+    async function ultimoIstanteRadar() {
+        try {
+            const risposta = await fetch("https://radar-api.protezionecivile.it/findLastProductByType?type=VMI");
+            if (!risposta.ok) throw new Error("HTTP " + risposta.status);
+            const dati = await risposta.json();
+            const ms = dati && Array.isArray(dati.lastProducts) && dati.lastProducts[0]
+                ? dati.lastProducts[0].time : null;
+            if (typeof ms !== "number") throw new Error("Nessun campione VMI dichiarato");
+            return new Date(ms);
+        } catch (err) {
+            // CORS o servizio giù: meglio una stima che nessun radar
+            console.warn("Radar: ultimo campione non ottenuto dall'API DPC, uso la stima a orologio.", err);
+            return arrotondaAi5Minuti(new Date(Date.now() - RITARDO_PUBBLICAZIONE_MS));
+        }
+    }
+
+    function generaIstantiRadar(ultimoIstante, numeroFotogrammi) {
         const istanti = [];
         for (let i = numeroFotogrammi - 1; i >= 0; i--) {
             istanti.push(new Date(ultimoIstante.getTime() - i * 5 * 60 * 1000));
@@ -554,31 +570,46 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Crea i 12 fotogrammi (uno per ogni istante) e li aggiunge tutti alla mappa,
     // ma visibili (opacità piena) solo l'ultimo: l'animazione poi alterna l'opacità tra i layer già caricati
-    function creaFotogrammiRadar() {
+    async function creaFotogrammiRadar() {
+        const ultimoIstante = await ultimoIstanteRadar();
+        // Il radar può essere stato spento mentre attendevamo la risposta:
+        // senza questo controllo i layer tornerebbero sulla mappa da soli
+        if (!radarMeteoAttivo || !mappaComandoLeaflet) return;
+
         rimuoviFotogrammiRadar();
 
-        const istanti = generaIstantiRadar(12);
+        const istanti = generaIstantiRadar(ultimoIstante, 12);
         radarFotogrammi = istanti.map((data, i) => {
             const layer = L.tileLayer.wms("https://radar-geowebcache.protezionecivile.it/service/wms", {
                 layers: "radar:vmi",
                 format: "image/png",
                 transparent: true,
                 version: "1.1.1",
-                time: data.toISOString(), // formato yyyy-MM-ddThh:mm:ss.SSSZ richiesto dal DPC
+                // Il DPC espone un GeoWebCache (WMS-C): senza tiled=true la
+                // richiesta non è quella documentata e non arriva dalla cache.
+                // Leaflet non lo invia mai da solo.
+                tiled: true,
+                styles: "",
+                time: data.toISOString(), // yyyy-MM-ddThh:mm:ss.SSSZ, come da specifica DPC
                 opacity: i === istanti.length - 1 ? 0.65 : 0,
                 attribution: "Radar meteo &copy; Dipartimento Protezione Civile",
-                // GeoWebCache serve SOLO tile conformi al proprio gridset (256×256):
-                // richieste da 512 px vengono respinte e la mappa resta senza pioggia.
-                // maxNativeZoom evita di chiedere oltre la risoluzione reale (~1 km):
-                // Leaflet ingrandisce l'ultima tile valida invece di lasciare vuoti.
+                // GeoWebCache serve SOLO tile del proprio gridset (256×256).
+                // maxNativeZoom evita di chiedere oltre la risoluzione reale (~1 km).
                 maxNativeZoom: 9,
                 minZoom: 3
             });
 
-            // Un campione può mancare (pubblicazione in ritardo, buco nel mosaico):
-            // marcarlo permette all'animazione di saltarlo invece di mostrare il vuoto
-            const fotogramma = { layer, data, disponibile: true };
-            layer.on("tileerror", () => { fotogramma.disponibile = false; });
+            // Un fotogramma si scarta solo se NESSUNA tile è arrivata: prima
+            // bastava una tile mancante ai bordi per marcarlo come assente,
+            // e con tutti e 12 marcati l'animazione restava ferma sul vuoto.
+            const fotogramma = { layer, data, disponibile: true, tileCaricate: 0 };
+            layer.on("tileload", () => {
+                fotogramma.tileCaricate++;
+                fotogramma.disponibile = true;
+            });
+            layer.on("tileerror", () => {
+                if (fotogramma.tileCaricate === 0) fotogramma.disponibile = false;
+            });
 
             layer.addTo(mappaComandoLeaflet);
             return fotogramma;
@@ -664,8 +695,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     btnPausaRadar.textContent = "⏸️ Pausa";
                 }
 
-                creaFotogrammiRadar();
-                avviaAnimazioneRadar();
+                creaFotogrammiRadar().then(() => {
+                    if (radarMeteoAttivo && !radarInPausa) avviaAnimazioneRadar();
+                });
 
                 // Ogni 5 minuti arriva un nuovo campione radar: ricostruisce i 12 fotogrammi
                 // in modo che la finestra "ultima ora" resti sempre aggiornata. Se l'animazione
@@ -673,8 +705,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (intervalloRadar) clearInterval(intervalloRadar);
                 intervalloRadar = setInterval(() => {
                     if (!radarMeteoAttivo) return;
-                    creaFotogrammiRadar();
-                    if (!radarInPausa) avviaAnimazioneRadar();
+                    creaFotogrammiRadar().then(() => {
+                        if (radarMeteoAttivo && !radarInPausa) avviaAnimazioneRadar();
+                    });
                 }, 5 * 60 * 1000);
             } else {
                 fermaAnimazioneRadar();
