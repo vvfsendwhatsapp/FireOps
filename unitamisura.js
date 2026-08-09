@@ -54,6 +54,11 @@ function esc(s){
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];
   });
 }
+
+/* Simbolo di unità sempre fra parentesi quadre: [m], [L/min], [°C].
+   Unica funzione, così la convenzione non può divergere fra le viste. */
+function sim(s){ return '[' + esc(s) + ']'; }
+
 function el(html){ var d = document.createElement('div'); d.innerHTML = html.trim(); return d.firstElementChild; }
 
 /* ---------- toast unico, agganciato al body ---------- */
@@ -220,7 +225,7 @@ function init(root){
          '<input class="f-in" type="text" inputmode="decimal" value="1"></div>'+
        '<div class="um-field"><label>Unità di partenza</label><select class="f-uin">'+
          u.map(function(x,j){
-           return '<option value="'+j+'"'+(j===iDa?' selected':'')+'>'+esc(x.n)+' ('+esc(x.s)+')</option>';
+           return '<option value="'+j+'"'+(j===iDa?' selected':'')+'>'+esc(x.n)+' '+sim(x.s)+'</option>';
          }).join('')+
        '</select></div>'+
      '</div>'+
@@ -247,7 +252,7 @@ function init(root){
         // La riga dell'unità di partenza è evidenziata: serve a ritrovare a
         // colpo d'occhio da dove si sta convertendo in un elenco lungo.
         return '<tr class="'+(j == uIn.value ? 'hi' : '')+'">'+
-               '<td>'+esc(x.n)+'</td><td class="sym">'+esc(x.s)+'</td>'+
+               '<td>'+esc(x.n)+'</td><td class="sym">'+sim(x.s)+'</td>'+
                '<td class="val" data-copy="'+val+'">'+(val || '—')+'</td></tr>';
       }).join('');
     }
@@ -279,8 +284,8 @@ function init(root){
      '<div class="um-row">'+
        '<div class="um-field"><label>Angolo</label><input class="f-ang" type="text" inputmode="decimal" value="30"></div>'+
        '<div class="um-field"><label>Unità</label><select class="f-angu">'+
-         '<option value="gradi">Gradi (°)</option><option value="radianti">Radianti (rad)</option>'+
-         '<option value="gon">Gradi centesimali (gon)</option><option value="mil">Millesimi NATO (mil)</option>'+
+         '<option value="gradi">Gradi [°]</option><option value="radianti">Radianti [rad]</option>'+
+         '<option value="gon">Gradi centesimali [gon]</option><option value="mil">Millesimi NATO [mil]</option>'+
        '</select></div>'+
      '</div>'+
      '<div class="um-grid f-gt"></div>'+
@@ -324,12 +329,12 @@ function init(root){
       var g = function(v){ return v === null ? 'fuori dominio' : fmt(v*D,10) + '°'; };
       var r = function(v){ return v === null ? 'fuori dominio' : fmt(v,10); };
       gI.innerHTML =
-        card('arcsin (°)', g(asin), asin===null)   + card('arcsin (rad)', r(asin), asin===null) +
-        card('arccos (°)', g(acos), acos===null)   + card('arccos (rad)', r(acos), acos===null) +
-        card('arctan (°)', g(atan))                + card('arctan (rad)', r(atan)) +
-        card('arccot (°)', g(acot))                + card('arccot (rad)', r(acot)) +
-        card('arcsec (°)', g(asec), asec===null)   + card('arcsec (rad)', r(asec), asec===null) +
-        card('arccosec (°)', g(acsc), acsc===null) + card('arccosec (rad)', r(acsc), acsc===null);
+        card('arcsin [°]', g(asin), asin===null)   + card('arcsin [rad]', r(asin), asin===null) +
+        card('arccos [°]', g(acos), acos===null)   + card('arccos [rad]', r(acos), acos===null) +
+        card('arctan [°]', g(atan))                + card('arctan [rad]', r(atan)) +
+        card('arccot [°]', g(acot))                + card('arccot [rad]', r(acot)) +
+        card('arcsec [°]', g(asec), asec===null)   + card('arcsec [rad]', r(asec), asec===null) +
+        card('arccosec [°]', g(acsc), acsc===null) + card('arccosec [rad]', r(acsc), acsc===null);
     }
     ang.addEventListener('input', calcT);
     angU.addEventListener('change', calcT);
@@ -342,9 +347,9 @@ function init(root){
     var u = cur.unita;                       /* °C = v*k + o */
     var toC   = function(v,x){ return v * x.k + x.o; };
     var fromC = function(c,x){ return (c - x.o) / x.k; };
-    function opts(i){
+function opts(i){
       return u.map(function(x,j){
-        return '<option value="'+j+'"'+(j===i?' selected':'')+'>'+esc(x.n)+' ('+esc(x.s)+')</option>';
+        return '<option value="'+j+'"'+(j===i?' selected':'')+'>'+esc(x.n)+' '+sim(x.s)+'</option>';
       }).join('');
     }
     B.innerHTML =
@@ -358,8 +363,8 @@ function init(root){
        '<th style="text-align:right">Valore</th></tr></thead><tbody></tbody></table></div>'+
      '<div class="um-sect"><h4>Punti di riferimento (valori indicativi)</h4>'+
        '<div class="um-tbl" style="max-height:32vh"><table><thead><tr><th>Riferimento</th>'+
-         '<th style="text-align:right">°C</th><th style="text-align:right">°F</th>'+
-         '<th style="text-align:right">K</th></tr></thead><tbody class="f-rif"></tbody></table></div>'+
+         '<th style="text-align:right">[°C]</th><th style="text-align:right">[°F]</th>'+
+         '<th style="text-align:right">[K]</th></tr></thead><tbody class="f-rif"></tbody></table></div>'+
      '</div>';
 
     var tIn = B.querySelector('.f-in'), tU = B.querySelector('.f-uin'),
@@ -377,7 +382,7 @@ function init(root){
       tb.innerHTML = u.map(function(x,j){
         var val = Number.isNaN(c) ? '' : fmt(fromC(c,x), 10);
         return '<tr class="'+(j == tU.value ? 'hi' : '')+'">'+
-               '<td>'+esc(x.n)+'</td><td class="sym">'+esc(x.s)+'</td>'+
+               '<td>'+esc(x.n)+'</td><td class="sym">'+sim(x.s)+'</td>'+
                '<td class="val" data-copy="'+val+'">'+(val || '—')+'</td></tr>';
       }).join('');
     }
@@ -456,8 +461,8 @@ function init(root){
 
   /* ---------- 4. cerchio / sfera ---------- */
   function viewCerchio(B){
-    var campi = [['r','Raggio (u)'],['d','Diametro (u)'],['C','Circonferenza (u)'],
-                 ['A','Area cerchio (u²)'],['S','Superficie sfera (u²)'],['V','Volume sfera (u³)']];
+    var campi = [['r','Raggio [u]'],['d','Diametro [u]'],['C','Circonferenza [u]'],
+                 ['A','Area cerchio [u²]'],['S','Superficie sfera [u²]'],['V','Volume sfera [u³]']];
     B.innerHTML = '<div class="um-row">' + campi.map(function(p){
         return '<div class="um-field"><label>'+p[1]+'</label><input class="c-'+p[0]+'" type="text" inputmode="decimal" autocomplete="off"></div>';
       }).join('') + '</div>' +
@@ -502,7 +507,7 @@ function init(root){
        '<div class="um-field"><label>Prefisso di partenza</label><select class="f-uin">'+
          P.map(function(p,j){
            return '<option value="'+j+'"'+(j===iK?' selected':'')+'>'+
-                  esc(p.nome)+' ('+esc(p.simbolo)+') '+esc(p.potenza)+'</option>';
+                  esc(p.nome)+' '+sim(p.simbolo)+' '+esc(p.potenza)+'</option>';
          }).join('')+
        '</select></div>'+
      '</div>'+
@@ -539,7 +544,7 @@ function init(root){
         var val = Number.isNaN(v) ? '' : fmt(base / p.fattore);
         return '<tr class="'+(j == pDa.value ? 'hi' : '')+'">'+
                '<td>'+esc(p.nome)+'</td>'+
-               '<td class="sym">'+esc(p.simbolo)+'</td>'+
+               '<td class="sym">'+sim(p.simbolo)+'</td>'+
                '<td class="mono">'+esc(p.potenza)+'</td>'+
                '<td class="val" data-copy="'+p.fattore+'">'+fattoreTesto[j]+'</td>'+
                '<td class="val" data-copy="'+val+'">'+(val || '—')+'</td></tr>';
