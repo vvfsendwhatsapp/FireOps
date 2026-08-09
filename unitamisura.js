@@ -568,39 +568,54 @@ function opts(i){
     calc();
   }
 
-  /* ---------- 6. alfabeto fonetico + morse ---------- */
+/* ---------- 6. alfabeto fonetico + morse ---------- */
   function viewAlfabeto(B){
     var A = cur.dati;
+
     B.innerHTML =
-     '<div class="um-sect first"><h4>Compitazione — scrivi un testo</h4>'+
-       '<textarea class="f-txt" placeholder="Es. AB 123 CD">VVF</textarea>'+
-       '<div class="um-grid">'+
-         '<div class="um-card wide"><div class="k">Fonetico ICAO</div><div class="v f-icao"></div></div>'+
-         '<div class="um-card wide"><div class="k">Compitazione italiana</div><div class="v f-ita"></div></div>'+
-         '<div class="um-card wide"><div class="k">Morse</div><div class="v um-morse f-morse"></div></div>'+
-       '</div>'+
+     '<div class="um-io um-io-singolo">'+
+       '<div class="um-field"><label>Direzione</label><select class="f-dir">'+
+         '<option value="testo" selected>Da testo → a tutti i codici</option>'+
+         '<option value="morse">Da Morse → a testo</option>'+
+       '</select></div>'+
      '</div>'+
-     '<div class="um-sect"><h4>Da Morse a testo</h4>'+
-       '<textarea class="f-morse-in" placeholder="Es.  ...- ...- ..-.   (spazio fra lettere, / fra parole)">...- ...- ..-.</textarea>'+
-       '<div class="um-grid">'+
-         '<div class="um-card wide"><div class="k">Testo decodificato</div><div class="v f-dec"></div></div>'+
-       '</div>'+
+     '<div class="um-sect first f-blocco" style="margin-top:12px">'+
+       '<textarea class="f-in"></textarea>'+
+       '<div class="um-grid f-out"></div>'+
      '</div>'+
      '<div class="um-sect"><h4>Tabella</h4>'+
-       '<div class="um-tbl"><table><thead><tr><th>Car.</th><th>Morse</th><th>Codice ICAO</th><th>Pronuncia ICAO</th><th>Italiano</th></tr></thead><tbody>'+
+       '<div class="um-tbl"><table><thead><tr><th>Car.</th><th>Morse</th>'+
+         '<th>Codice ICAO</th><th>Pronuncia ICAO</th><th>Italiano</th></tr></thead><tbody>'+
          A.map(function(x){
-           return '<tr><td class="mono" style="color:var(--um-rosso2);font-weight:700">'+esc(x.lettera)+'</td>'+
-                  '<td class="mono" style="color:var(--um-giallo);letter-spacing:2px">'+esc(x.morse)+'</td>'+
-                  '<td>'+esc(x.icao)+'</td><td class="sym">'+esc(x.pronuncia || '—')+'</td><td>'+esc(x.italiano)+'</td></tr>';
+           return '<tr><td class="mono" style="color:var(--um-acc);font-weight:700">'+esc(x.lettera)+'</td>'+
+                  '<td class="mono um-morse">'+esc(x.morse)+'</td>'+
+                  '<td>'+esc(x.icao)+'</td><td class="sym">'+esc(x.pronuncia || '—')+'</td>'+
+                  '<td>'+esc(x.italiano)+'</td></tr>';
          }).join('')+
        '</tbody></table></div></div>';
 
-    var map = {}; A.forEach(function(x){ map[x.lettera] = x; });
-    var txt = B.querySelector('.f-txt');
-    var oI = B.querySelector('.f-icao'), oT = B.querySelector('.f-ita'), oM = B.querySelector('.f-morse');
+    // Le due mappe nascono dalla stessa tabella: se un domani un codice
+    // cambia nel JSON, cambia in un posto solo e le due direzioni restano
+    // automaticamente coerenti fra loro.
+    var map = {}, inv = {};
+    A.forEach(function(x){
+      map[x.lettera] = x;
+      if(x.morse) inv[x.morse] = x.lettera;
+    });
 
-    function agg(){
-      var s = txt.value.toUpperCase(), icao = [], ita = [], mor = [];
+    var dir = B.querySelector('.f-dir'),
+        inp = B.querySelector('.f-in'),
+        out = B.querySelector('.f-out');
+
+    function scheda(k, v, na){
+      return '<div class="um-card wide'+(na ? ' na' : '')+'"><div class="k">'+k+
+             '</div><div class="v'+(k === 'Morse' ? ' um-morse' : '')+
+             '" data-copy="'+esc(v)+'">'+esc(v)+'</div></div>';
+    }
+
+    /* ---- testo → ICAO / italiano / Morse ---- */
+    function daTesto(){
+      var s = inp.value.toUpperCase(), icao = [], ita = [], mor = [];
       for(var i = 0; i < s.length; i++){
         var ch = s[i];
         if(ch === ' '){ icao.push('/'); ita.push('/'); mor.push('/'); continue; }
@@ -609,59 +624,18 @@ function opts(i){
         if(m){ icao.push(m.icao); ita.push(m.italiano); mor.push(m.morse); }
         else { icao.push(ch); ita.push(ch); mor.push('?'); }
       }
-      oI.textContent = icao.join(' - ') || '—';
-      oT.textContent = ita.join(' - ')  || '—';
-      oM.textContent = mor.join('   ')  || '—';
-      [oI,oT,oM].forEach(function(e){ e.dataset.copy = e.textContent; });
-    }
-    txt.addEventListener('input', agg);
-    // ---- decodifica: mappa inversa costruita dalla stessa tabella ----
-    // Nessun dato nuovo nel JSON: se un domani cambia un codice, cambia
-    // in un posto solo e le due direzioni restano automaticamente coerenti.
-    var inv = {};
-    A.forEach(function(x){ if(x.morse) inv[x.morse] = x.lettera; });
-
-    var morseIn = B.querySelector('.f-morse-in'),
-        oD = B.querySelector('.f-dec');
-
-    function decodifica(){
-        // Si accettano i punti-linea in qualunque forma li scriva l'operatore:
-        // ·•. per il punto, -–—_ per la linea. Chi copia da un manuale o da
-        // una tastiera diversa non deve accorgersi della differenza.
-        var s = morseIn.value
-            .replace(/[·•]/g, '.')
-            .replace(/[–—_]/g, '-')
-            .trim();
-
-        if(!s){ oD.textContent = '—'; oD.dataset.copy = ''; return; }
-
-        // Separatore di parola: / oppure una pausa lunga (3+ spazi)
-        var parole = s.split(/\s*\/\s*|\s{3,}/);
-        var fuori = [];
-
-        var testo = parole.map(function(p){
-            return p.split(/\s+/).filter(Boolean).map(function(c){
-                if(inv[c]) return inv[c];
-                fuori.push(c);
-                return '\u25A1';   // ▢ segnaposto: un codice non riconosciuto
-            }).join('');           //   deve VEDERSI, non sparire in silenzio
-        }).filter(Boolean).join(' ');
-
-        oD.textContent = testo || '—';
-        oD.dataset.copy = testo;
-        // Un gruppo non decodificabile è un errore di trascrizione, non un
-        // dettaglio: va detto, altrimenti si legge una parola incompleta
-        // credendola giusta.
-        oD.classList.toggle('na', fuori.length > 0);
-        oD.title = fuori.length
-            ? 'Gruppi non riconosciuti: ' + fuori.join(', ')
-            : '';
+      out.innerHTML =
+        scheda('Fonetico ICAO', icao.join(' - ') || '—') +
+        scheda('Compitazione italiana', ita.join(' - ') || '—') +
+        scheda('Morse', mor.join('   ') || '—');
     }
 
-    morseIn.addEventListener('input', decodifica);
-    decodifica();
-    agg();
-  }
+    /* ---- Morse → testo ---- */
+    function daMorse(){
+      // Punto e linea accettati in qualunque forma: chi copia da un manuale
+      // o da una tastiera diversa non deve accorgersi della differenza.
+      var s = inp.value.replace(/[·•]/g, '.').replace(/[–—_]/g, '-').trim();
+      if(!s){ out.innerHTML = scheda('Testo decodificato', '—', true); return; }
 }
 
 /* ---------- auto-init ---------- */

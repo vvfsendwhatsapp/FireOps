@@ -2062,6 +2062,13 @@ html.comando-gia-scelto #modal-comando {
     letter-spacing: 1px;
 }
 
+/* Nelle schede il Morse è il dato da leggere: monospaziato e spaziato,
+   altrimenti punti e linee si confondono a colpo d'occhio */
+.um-root .um-card .v.um-morse {
+    font-family: var(--um-mono);
+    letter-spacing: 2px;
+}
+
 .um-root .um-empty {
     color: var(--um-txt2);
     text-align: center;
