@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Schede di soccorso — test | FireOps VVF</title>
+
+<style>
+  :root {
+    --accento:        #c0392b;
+    --bordo:          #c3c8d0;
+    --sfondo-input:   #ffffff;
+    --sfondo-alt:     rgba(127,127,127,.08);
+    --attenzione:     #e08a1e;
+    --sfondo-avviso:  rgba(224,138,30,.10);
+    --testo:          #1c2128;
+    --pagina:         #f5f6f8;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bordo:        #3d444d;
+      --sfondo-input: #1c2128;
+      --sfondo-alt:   rgba(255,255,255,.06);
+      --testo:        #e6edf3;
+      --pagina:       #0f1319;
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 1.5rem 1rem 4rem;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.5;
+    color: var(--testo);
+    background: var(--pagina);
+  }
+
+  main { max-width: 46rem; margin: 0 auto; }
+
+  header {
+    padding-bottom: 1rem;
+    margin-bottom: 1.25rem;
+    border-bottom: 2px solid var(--accento);
+  }
+
+  h1 { margin: 0; font-size: 1.35rem; letter-spacing: -.01em; }
+
+  .sottotitolo { margin: .25rem 0 0; font-size: .85rem; opacity: .7; }
+
+  /* Banco di prova: non fa parte del modulo, serve solo a questa pagina. */
+  .banco {
+    margin-bottom: 1.25rem;
+    padding: .75rem;
+    border: 1px dashed var(--bordo);
+    border-radius: .35rem;
+  }
+  .banco p { margin: 0 0 .5rem; font-size: .8rem; font-weight: 600; opacity: .7; }
+  .banco div { display: flex; flex-wrap: wrap; gap: .4rem; }
+  .banco button {
+    padding: .35rem .6rem;
+    font: inherit; font-size: .8rem;
+    cursor: pointer;
+    color: inherit;
+    background: var(--sfondo-input);
+    border: 1px solid var(--bordo);
+    border-radius: .3rem;
+  }
+  .banco button:hover { border-color: var(--accento); }
+  .banco button:focus-visible { outline: 2px solid var(--accento); outline-offset: 2px; }
+</style>
+</head>
+
+<body>
+<main>
+
+  <header>
+    <h1>Schede di soccorso</h1>
+    <p class="sottotitolo">Pagina di prova del modulo — FireOps VVF</p>
+  </header>
+
+  <div class="banco">
+    <p>Casi di prova</p>
+    <div>
+      <button type="button" data-caso="Opel|Astra|2017">Opel Astra 2017</button>
+      <button type="button" data-caso="Tesla|Model 3|2021">Tesla Model 3 2021</button>
+      <button type="button" data-caso="Fiat|Panda|2012">Fiat Panda 2012</button>
+      <button type="button" data-caso="Volkswagen|Golf|2019">VW Golf 2019</button>
+      <button type="button" data-caso="Iveco|Daily|2016">Iveco Daily 2016</button>
+    </div>
+  </div>
+
+  <div id="rescuesheet"></div>
+
+</main>
+
+<script src="rescuesheet.js"></script>
+<script>
+  FireOps.RescueSheet.init('rescuesheet');
+
+  // Precompila i campi e lascia che il modulo ricalcoli da solo.
+  document.querySelector('.banco').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-caso]');
+    if (!b) return;
+
+    var p = b.dataset.caso.split('|');
+    var campi = { 'rs-marca': p[0], 'rs-modello': p[1], 'rs-anno': p[2] };
+
+    Object.keys(campi).forEach(function (id) {
+      var el = document.getElementById(id);
+      el.value = campi[id];
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+
+    document.getElementById('rs-anteprima').scrollIntoView({
+      behavior: 'smooth', block: 'center'
+    });
+  });
+</script>
+
+</body>
+</html>
