@@ -25,8 +25,9 @@
 
     const URL_GESTIONE_PERSONALE = "https://gestionepersonale.dipvvf.it";
 
-    // Il turnario è largo 31 colonne fisse: i mesi corti lasciano vuote le
-    // ultime celle, così le colonne restano incolonnate fra un mese e l'altro
+    // Il turnario è largo 31 colonne fisse: i mesi corti (e febbraio, bisestile
+    // o no) lasciano vuote le ultime celle, così la colonna del giorno 7 è la
+    // stessa in tutti e dodici i mesi
     const COLONNE = 31;
 
     // ----------------------------------------------------------
@@ -63,31 +64,50 @@
     }
 
     // ----------------------------------------------------------
-    // EVIDENZIAZIONE DI UNA SINGOLA CELLA
+    // LETTURA DI UNA GIORNATA
     //
-    // Restituisce "" (nessuna), "esatto" (giallo pieno) o "parziale"
-    // (giallo tenue). Senza saltoturno tutte le corrispondenze valgono
-    // uguale, quindi sono tutte "esatto": la distinzione a due colori
-    // serve solo quando c'è un numero da confrontare.
+    // Restituisce la fascia che riguarda chi consulta il turnario:
+    //   fascia = ""        → giornata libera, nessun colore
+    //   fascia = "giorno"  → di servizio 08:00-20:00  (giallo)
+    //   fascia = "notte"   → di servizio 20:00-08:00  (azzurro)
+    //   esatto = true      → coincide anche col saltoturno chiesto (fucsia)
+    //
+    // Il colore si posa sull'INTERA giornata (data + entrambe le sigle): in
+    // Sala interessa vedere che quel giorno c'è servizio, non quale delle due
+    // sigle stampate combacia. La sigla che combacia resta comunque marcata
+    // più forte, così si legge a colpo d'occhio se è giorno o notte.
+    //
+    // Nel ciclo diurno e notturno non sono mai della stessa squadra nello
+    // stesso giorno (verificato su tutti e 32 i giorni), quindi una giornata
+    // non può risultare gialla e azzurra insieme.
     // ----------------------------------------------------------
-    function statoCella(def, salto, sigla, fascia, giornoSettimana) {
-        if (!def) return "";
+    function analizzaGiorno(def, salto, turni, giornoSettimana) {
+        const nessuna = { fascia: "", esatto: false, marcaSigla: false };
+        if (!def) return nessuna;
 
         if (eGiornaliero(def)) {
-            if (fascia !== "giorno") return "";
-            return (giornoSettimana >= 1 && giornoSettimana <= 5) ? "esatto" : "";
+            // Il G non ha una sigla nella sequenza: si colora la giornata,
+            // ma non si marca nessuna delle due squadre di turno
+            const feriale = giornoSettimana >= 1 && giornoSettimana <= 5;
+            return feriale ? { fascia: "giorno", esatto: false, marcaSigla: false } : nessuna;
         }
 
-        if (!def.fasce.includes(fascia)) return "";
+        const candidate = [];
+        if (def.fasce.includes("giorno")) candidate.push(["giorno", turni.giorno]);
+        if (def.fasce.includes("notte")) candidate.push(["notte", turni.notte]);
 
-        const lettera = sigla.charAt(0).toUpperCase();
-        if (!def.lettere.includes(lettera)) return "";
+        for (const [fascia, sigla] of candidate) {
+            if (!def.lettere.includes(sigla.charAt(0).toUpperCase())) continue;
+            const esatto = !!salto && sigla.slice(1) === String(salto);
+            return { fascia, esatto, marcaSigla: true };
+        }
 
-        if (!salto) return "esatto";
-        return sigla.slice(1) === String(salto) ? "esatto" : "parziale";
+        return nessuna;
     }
 
     function giorniNelMese(anno, mese) {
+        // Il giorno 0 del mese successivo è l'ultimo del mese richiesto: il
+        // calcolo degli anni bisestili lo fa il motore delle date, non noi
         return new Date(Date.UTC(anno, mese, 0)).getUTCDate();
     }
 
@@ -103,9 +123,16 @@
     // ----------------------------------------------------------
     // COSTRUZIONE DELLA TABELLA
     //
-    // Lo stesso HTML serve sia a schermo sia alla stampa/PDF: cambia solo
-    // il foglio di stile applicato, mai il markup. Così non esistono due
+    // Lo stesso HTML serve sia a schermo sia alla stampa: cambia solo il
+    // foglio di stile applicato, mai il markup. Così non esistono due
     // versioni del turnario che possono divergere.
+    //
+    // Ogni mese è un <tbody> a sé: serve al CSS di stampa per non spezzare
+    // un mese a metà fra due pagine.
+    //
+    // La quarta riga (annotazioni a penna per ferie e permessi) è sempre
+    // presente nel markup ed è nascosta a schermo dal CSS: su carta serve,
+    // a video sarebbe solo una striscia vuota che allontana i mesi.
     // ----------------------------------------------------------
     function costruisciTabella(anno, def, salto, oggi) {
         let html = '<table class="turnario-tabella">';
@@ -113,40 +140,48 @@
         for (let mese = 1; mese <= 12; mese++) {
             const quantiGiorni = giorniNelMese(anno, mese);
 
+            html += '<tbody class="turnario-mese">';
             html += `<tr class="turnario-riga-mese"><th colspan="${COLONNE}">${MESI[mese - 1]} ${anno}</th></tr>`;
 
             let rigaGiorni = '<tr class="turnario-riga-giorni">';
             let rigaTurni = '<tr class="turnario-riga-turni">';
+            let rigaNote = '<tr class="turnario-riga-note">';
 
             for (let giorno = 1; giorno <= COLONNE; giorno++) {
                 if (giorno > quantiGiorni) {
                     rigaGiorni += '<td class="turnario-cella-vuota"></td>';
                     rigaTurni += '<td class="turnario-cella-vuota"></td>';
+                    rigaNote += '<td class="turnario-cella-vuota"></td>';
                     continue;
                 }
 
                 const giornoSettimana = new Date(Date.UTC(anno, mese - 1, giorno)).getUTCDay();
                 const turni = FireOps.turniDelGiorno(anno, mese, giorno);
+                const esito = analizzaGiorno(def, salto, turni, giornoSettimana);
+
+                // Un solo nome per il colore della giornata: la corrispondenza
+                // col saltoturno vince sulla distinzione giorno/notte
+                const colore = esito.fascia ? (esito.esatto ? "salto" : esito.fascia) : "";
+                const tinta = colore ? ` turnario-tinta-${colore}` : "";
+                const marca = (colore && esito.marcaSigla) ? ` turnario-marca-${colore}` : "";
 
                 const eOggi = oggi && oggi.year === anno && oggi.month === mese && oggi.day === giorno;
-                const classiGiorno = ["turnario-cella-giorno"];
-                if (giornoSettimana === 0) classiGiorno.push("turnario-domenica");
-                if (eOggi) classiGiorno.push("turnario-oggi");
+                const oggiClasse = eOggi ? " turnario-oggi" : "";
+                const domenicaClasse = giornoSettimana === 0 ? " turnario-domenica" : "";
 
-                rigaGiorni += `<td class="${classiGiorno.join(" ")}">` +
+                rigaGiorni += `<td class="turnario-cella-giorno${domenicaClasse}${tinta}${oggiClasse}">` +
                     `<span class="turnario-sett">${GIORNI_SETTIMANA[giornoSettimana]}</span>` +
                     `<span class="turnario-num">${giorno}</span></td>`;
 
-                const statoG = statoCella(def, salto, turni.giorno, "giorno", giornoSettimana);
-                const statoN = statoCella(def, salto, turni.notte, "notte", giornoSettimana);
+                const spanG = `<span class="turnario-turno turnario-turno-giorno${esito.fascia === "giorno" ? marca : ""}">${testoSicuro(turni.giorno)}</span>`;
+                const spanN = `<span class="turnario-turno turnario-turno-notte${esito.fascia === "notte" ? marca : ""}">${testoSicuro(turni.notte.toLowerCase())}</span>`;
 
-                const spanG = `<span class="turnario-turno turnario-turno-giorno${statoG ? " turnario-" + statoG : ""}">${testoSicuro(turni.giorno)}</span>`;
-                const spanN = `<span class="turnario-turno turnario-turno-notte${statoN ? " turnario-" + statoN : ""}">${testoSicuro(turni.notte.toLowerCase())}</span>`;
-
-                rigaTurni += `<td class="turnario-cella-turni${eOggi ? " turnario-oggi" : ""}">${spanG}<span class="turnario-separatore">/</span>${spanN}</td>`;
+                rigaTurni += `<td class="turnario-cella-turni${tinta}${oggiClasse}">${spanG}<span class="turnario-separatore">/</span>${spanN}</td>`;
+                rigaNote += `<td class="turnario-cella-note${tinta}"></td>`;
             }
 
-            html += rigaGiorni + '</tr>' + rigaTurni + '</tr>';
+            html += rigaGiorni + '</tr>' + rigaTurni + '</tr>' + rigaNote + '</tr>';
+            html += '</tbody>';
         }
 
         return html + '</table>';
@@ -158,24 +193,46 @@
         return `Turnario ${anno} — ${def.etichetta}${conSalto}`;
     }
 
-    function legenda(def, salto) {
-        if (!def) return "";
+    // Voci di legenda: le stesse a schermo e in stampa, così chi guarda il
+    // foglio stampato legge esattamente quello che aveva a video
+    function vociLegenda(def, salto) {
+        if (!def) return [];
+
         if (eGiornaliero(def)) {
-            return `<div class="turnario-legenda">
-                <span class="turnario-legenda-voce"><span class="turnario-campione turnario-esatto"></span> giornata di servizio (lun-ven)</span>
-                <span class="turnario-legenda-voce">Il turno G non ha saltoturno: segue il calendario civile, non la sequenza delle squadre.</span>
-            </div>`;
+            return [
+                { colore: "giorno", testo: "giornata di servizio (lun-ven)" },
+                { colore: null, testo: "Il turno G non ha saltoturno: segue il calendario civile, non la sequenza delle squadre." }
+            ];
         }
-        if (!salto) {
-            return `<div class="turnario-legenda">
-                <span class="turnario-legenda-voce"><span class="turnario-campione turnario-esatto"></span> turno ${testoSicuro(def.lettere.join("/"))}</span>
-                <span class="turnario-legenda-voce">Scegli un saltoturno per distinguere le tue giornate dalle altre della stessa squadra.</span>
-            </div>`;
+
+        const soloDiurno = !def.fasce.includes("notte");
+        const voci = [];
+
+        if (salto) {
+            voci.push({ colore: "salto", testo: `saltoturno ${salto} — le tue giornate` });
+            voci.push({ colore: "giorno", testo: soloDiurno ? "stessa squadra, altro saltoturno" : "diurno, altro saltoturno" });
+            if (!soloDiurno) voci.push({ colore: "notte", testo: "notturno, altro saltoturno" });
+        } else {
+            voci.push({ colore: "giorno", testo: `turno ${def.lettere.join("/")} diurno (08:00-20:00)` });
+            if (!soloDiurno) voci.push({ colore: "notte", testo: `turno ${def.lettere.join("/")} notturno (20:00-08:00)` });
+            voci.push({ colore: null, testo: "Scegli un saltoturno per distinguere le tue giornate da quelle delle altre squadre con la stessa lettera." });
         }
-        return `<div class="turnario-legenda">
-            <span class="turnario-legenda-voce"><span class="turnario-campione turnario-esatto"></span> saltoturno ${testoSicuro(salto)} (le tue giornate)</span>
-            <span class="turnario-legenda-voce"><span class="turnario-campione turnario-parziale"></span> stessa squadra, altro saltoturno</span>
-        </div>`;
+
+        return voci;
+    }
+
+    function legendaHtml(def, salto) {
+        const voci = vociLegenda(def, salto);
+        if (voci.length === 0) return "";
+
+        const elementi = voci.map(v => {
+            const campione = v.colore
+                ? `<span class="turnario-campione turnario-tinta-${v.colore}"></span>`
+                : "";
+            return `<span class="turnario-legenda-voce">${campione}${testoSicuro(v.testo)}</span>`;
+        }).join("");
+
+        return `<div class="turnario-legenda">${elementi}</div>`;
     }
 
     // ==========================================================
@@ -261,7 +318,7 @@
                     <h4>${testoSicuro(descrizioneSelezione(anno, def, salto))}</h4>
                     <span class="turnario-conteggio">${giorniAnno} giorni</span>
                 </div>
-                ${legenda(def, salto)}
+                ${legendaHtml(def, salto)}
                 <div class="turnario-scroll">${costruisciTabella(anno, def, salto, oggi)}</div>
             `;
             giaVisualizzato = true;
@@ -277,10 +334,13 @@
         // ----------------------------------------------------------
         // STAMPA / PDF
         //
-        // Nessuna libreria: si apre una finestra con il solo turnario e si
-        // chiama la stampa del browser ("Salva come PDF"). Il tema è chiaro e
-        // orizzontale, perché una griglia di 31 colonne su fondo nero in
-        // verticale sarebbe illeggibile su carta e sprecherebbe toner.
+        // Nessuna libreria: si apre una scheda nuova che contiene SOLO titolo,
+        // tabella e legenda — niente intestazione FireOps, niente pulsanti,
+        // niente split-screen — e si chiama la stampa del browser, dove come
+        // destinazione si può scegliere "Salva come PDF".
+        //
+        // Il tema è chiaro e orizzontale: una griglia di 31 colonne su fondo
+        // nero in verticale sarebbe illeggibile su carta e sprecherebbe toner.
         // ----------------------------------------------------------
         function stampaPdf() {
             const { anno, def, salto } = selezioneCorrente();
@@ -293,40 +353,57 @@
                 return;
             }
 
+            // Su carta i colori vanno schiariti: le tinte da schermo scuro
+            // diventerebbero campiture pesanti e il testo nero sopra non si
+            // leggerebbe. Le marcature restano più sature delle tinte.
             const stile = `
                 @page { size: A4 landscape; margin: 10mm; }
                 * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-                body { font-family: Arial, Helvetica, sans-serif; color: #111; margin: 0; padding: 12px; }
-                h1 { font-size: 16px; margin: 0 0 4px; }
-                .sottotitolo { font-size: 11px; color: #555; margin: 0 0 10px; }
+                body { font-family: Arial, Helvetica, sans-serif; color: #111; margin: 0; padding: 10px; }
+                h1 { font-size: 15px; margin: 0 0 3px; }
+                .sottotitolo { font-size: 10px; color: #555; margin: 0 0 8px; }
                 .turnario-tabella { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 8.5px; width: 100%; table-layout: fixed; }
                 .turnario-tabella th, .turnario-tabella td { border: 1px solid #999; text-align: center; padding: 1px; }
+                .turnario-mese { page-break-inside: avoid; break-inside: avoid; }
                 .turnario-riga-mese th { background: #eee; text-align: left; padding: 3px 6px; font-size: 11px; }
                 .turnario-cella-giorno { background: #f7f7f7; }
                 .turnario-sett { display: block; color: #666; font-size: 7.5px; }
                 .turnario-num { display: block; font-weight: bold; }
                 .turnario-domenica .turnario-sett, .turnario-domenica .turnario-num { color: #b00; }
                 .turnario-turno { display: inline-block; padding: 0 1px; }
-                .turnario-esatto { background: #ffd700; font-weight: bold; }
-                .turnario-parziale { background: #fff0a8; }
-                .turnario-cella-vuota { background: #fafafa; }
                 .turnario-separatore { color: #888; }
-                .legenda { font-size: 10px; margin: 8px 0 0; }
-                .legenda span { margin-right: 14px; }
+                .turnario-cella-vuota { background: #fff; border-color: #ddd; }
+
+                /* Tinta = intera giornata, marca = la sigla che combacia */
+                .turnario-tinta-giorno { background: #fff2b0; }
+                .turnario-tinta-notte  { background: #cfeaff; }
+                .turnario-tinta-salto  { background: #ffd0f2; }
+                .turnario-marca-giorno { background: #ffd700; font-weight: bold; }
+                .turnario-marca-notte  { background: #6cc4f5; font-weight: bold; }
+                .turnario-marca-salto  { background: #ff6ad5; font-weight: bold; }
+
+                /* Riga libera per segnare ferie e permessi a penna: resta
+                   bianca anche sotto le giornate colorate, altrimenti la
+                   penna non si legge sopra il fondo */
+                .turnario-riga-note td { height: 7mm; background: #fff !important; }
+
+                .legenda { font-size: 10px; margin: 8px 0 0; line-height: 1.8; }
+                .legenda span { margin-right: 16px; white-space: nowrap; }
                 .campione { display: inline-block; width: 11px; height: 11px; border: 1px solid #999; vertical-align: -1px; margin-right: 4px; }
             `;
 
-            const legendaStampa = eGiornaliero(def)
-                ? `<span><i class="campione" style="background:#ffd700"></i>giornata di servizio (lun-ven)</span>`
-                : (salto
-                    ? `<span><i class="campione" style="background:#ffd700"></i>saltoturno ${testoSicuro(salto)}</span>
-                       <span><i class="campione" style="background:#fff0a8"></i>stessa squadra, altro saltoturno</span>`
-                    : `<span><i class="campione" style="background:#ffd700"></i>turno ${testoSicuro(def.lettere.join("/"))}</span>`);
+            const CAMPIONI_STAMPA = { giorno: "#ffd700", notte: "#6cc4f5", salto: "#ff6ad5" };
+            const legendaStampa = vociLegenda(def, salto).map(v => {
+                const campione = v.colore
+                    ? `<i class="campione" style="background:${CAMPIONI_STAMPA[v.colore]}"></i>`
+                    : "";
+                return `<span>${campione}${testoSicuro(v.testo)}</span>`;
+            }).join("");
 
             finestra.document.write(`<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8">
                 <title>${testoSicuro(titolo)}</title><style>${stile}</style></head><body>
                 <h1>${testoSicuro(titolo)}</h1>
-                <p class="sottotitolo">Vigili del Fuoco — maiuscolo: turno diurno 08:00-20:00 · minuscolo: turno notturno 20:00-08:00</p>
+                <p class="sottotitolo">Vigili del Fuoco — MAIUSCOLO: turno diurno 08:00-20:00 · minuscolo: turno notturno 20:00-08:00 · riga libera sotto ogni mese per ferie e permessi</p>
                 ${costruisciTabella(anno, def, salto, null)}
                 <p class="legenda">${legendaStampa}</p>
                 </body></html>`);
