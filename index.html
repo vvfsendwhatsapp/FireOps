@@ -1491,14 +1491,36 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <!-- Nucleo condiviso: deve precedere script.js e convertitore.js -->
-    <script src="fireops-core.js?v=202608101500"></script>
-    <script src="script.js?v=202608101500"></script>
-    <script src="turnario.js?v=202608101500"></script>
-    <script src="convertitore.js?v=202608101500"></script>
-    <script src="unitamisura.js?v=202608101500"></script>
-    <script src="qrcode.js?v=202608101500"></script>
-    <script src="qrcoder.js?v=202608101500"></script>
+    <!-- Nucleo condiviso: deve precedere script.js e convertitore.js --><!-- Versione dei file locali: si cambia SOLO qui e vale per tutti.
+     Serve a far scaricare al browser i file aggiornati invece di
+     riusare quelli in cache. L'ordine dell'elenco è l'ordine di
+     caricamento: fireops-core.js prima di tutti, qrcode.js prima
+     di qrcoder.js. -->
+    <script>
+        (function () {
+            const VERSIONE = "202608101527";
+
+            const MODULI = [
+                "fireops-core.js",   // nucleo condiviso: deve precedere gli altri
+                "script.js",
+                "turnario.js",
+                "convertitore.js",
+                "unitamisura.js",
+                "qrcode.js",         // generatore: deve precedere qrcoder.js
+                "qrcoder.js"
+            ];
+
+            // document.write e non appendChild: gli script inseriti a mano nel
+            // DOM non sono bloccanti, quindi DOMContentLoaded può scattare prima
+            // che siano stati eseguiti — e tutti i moduli si agganciano proprio
+            // a quell'evento, che non arriverebbe mai. Con document.write il
+            // parser li tratta come se fossero scritti nella pagina: ordine
+            // garantito ed evento al momento giusto.
+            MODULI.forEach(file => {
+                document.write(`<script src="${file}?v=${VERSIONE}"><\/script>`);
+            });
+        })();
+    </script>
 </body>
 
 </html>
