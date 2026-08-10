@@ -3141,3 +3141,31 @@ a.btn-icon-hamburger:hover {
         transition: none !important;
     }
 }
+
+/* Canale radio in evidenza sopra la tabella del popup: è il dato per cui
+   il popup viene aperto quasi sempre, e deve leggersi da mezzo metro */
+.popup-dati .popup-canale {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    background: var(--dark-color);
+    border: 1px solid var(--primary-color);
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+}
+
+.popup-dati .popup-canale-etichetta {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+}
+
+.popup-dati .popup-canale-valore {
+    font-family: "Courier New", monospace;
+    font-size: 22px;
+    font-weight: bold;
+    color: var(--primary-color);
+    line-height: 1;
+}

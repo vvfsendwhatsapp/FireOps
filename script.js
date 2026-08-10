@@ -855,7 +855,7 @@ document.addEventListener("DOMContentLoaded", () => {
         popup.innerHTML = `
             <span class="popup-close" onclick="chiudiPopupDati()">&times;</span>
             <h5>${titolo}</h5>
-            <table>${righeHTML}</table>
+            ${righeHTML}
         `;
 
         document.body.appendChild(popup);
@@ -872,38 +872,52 @@ document.addEventListener("DOMContentLoaded", () => {
         if (e.key === "Escape") chiudiPopupDati();
     });
 
-    function popupDatiComando(event, c) {
-        const sitoWeb = c["sito web Comando"]
-            ? `<a href="${c["sito web Comando"]}" target="_blank" rel="noopener">Apri</a>` : "-";
-        const intranet = c["Intranet Comando"]
-            ? `<a href="${c["Intranet Comando"]}" target="_blank" rel="noopener">Apri</a>` : "-";
+    // I due popup mostrano gli stessi cinque campi nello stesso ordine: chi
+    // li apre in sequenza (es. scorrendo i Comandi Limitrofi) trova sempre
+    // il dato nella stessa posizione, senza doverlo cercare.
+    //
+    // Il canale radio sta fuori dalla tabella, in evidenza: è il dato per cui
+    // il popup viene aperto nove volte su dieci, e in una riga di tabella
+    // avrebbe lo stesso peso della PEC.
+    function corpoPopupContatti({ canale, telefono, email, pec, indirizzo, coordinate }) {
+        const canaleHtml = `
+            <div class="popup-canale">
+                <span class="popup-canale-etichetta">CH VHF</span>
+                <span class="popup-canale-valore">${canale || "-"}</span>
+            </div>`;
 
         const righe = `
-            <tr><th>Indirizzo</th><td>${creaLinkMaps(c["Indirizzo Completo"], c["Coordinate"])}</td></tr>
-            <tr><th>CH VHF COM</th><td>${c["Canale Radio Comando"] || "-"}</td></tr>
-            <tr><th>TEL SO COM</th><td>${creaCampoCopiabile(c["Telefono SO Comando"], 'telefono')}</td></tr>
-            <tr><th>SITO WEB</th><td>${sitoWeb}</td></tr>
-            <tr><th>INTRANET</th><td>${intranet}</td></tr>
-            <tr><th>DIREZIONE</th><td>${c["Direzione VVF"] || "-"}</td></tr>
-            <tr><th>TEL SO DIR</th><td>${creaCampoCopiabile(c["Telefono SO Direzione"], 'telefono')}</td></tr>
-            <tr><th>CH DIR</th><td>${c["Canale Radio Direzione"] || "-"}</td></tr>
+            <tr><th>TEL SO</th><td>${creaCampoCopiabile(telefono, 'telefono')}</td></tr>
+            <tr><th>EMAIL SO</th><td>${creaCampoCopiabile(email, 'email')}</td></tr>
+            <tr><th>PEC SO</th><td>${creaCampoCopiabile(pec, 'email')}</td></tr>
+            <tr><th>Indirizzo</th><td>${creaLinkMaps(indirizzo, coordinate)}</td></tr>
         `;
-        mostraPopupDati(event, `Comando: ${c.Comando}`, righe);
+
+        return canaleHtml + `<table>${righe}</table>`;
+    }
+
+    function popupDatiComando(event, c) {
+        mostraPopupDati(event, `Comando: ${c.Comando}`, corpoPopupContatti({
+            canale: c["Canale Radio Comando"],
+            telefono: c["Telefono SO Comando"],
+            email: c["email SO Comando"],
+            pec: c["PEC SO Comando"],
+            indirizzo: c["Indirizzo Completo"],
+            coordinate: c["Coordinate"]
+        }));
     }
 
     function popupDatiDirezione(event, c, tutteDirezioni) {
         const direzioneCollegata = trovaDirezionePerNome(c["Direzione VVF"], tutteDirezioni);
-        const coordinateDirezione = direzioneCollegata ? direzioneCollegata["Coordinate DIR"] : null;
 
-        const righe = `
-            <tr><th>DIREZIONE</th><td>${c["Direzione VVF"] || "-"}</td></tr>
-            <tr><th>Indirizzo</th><td>${creaLinkMaps(c["Indirizzo Direzione"], coordinateDirezione)}</td></tr>
-            <tr><th>TEL SO DIR</th><td>${creaCampoCopiabile(c["Telefono SO Direzione"], 'telefono')}</td></tr>
-            <tr><th>CH DIR</th><td>${c["Canale Radio Direzione"] || "-"}</td></tr>
-            <tr><th>EMAIL SO DIR</th><td>${creaCampoCopiabile(c["email SO Direzione"], 'email')}</td></tr>
-            <tr><th>PEC SO DIR</th><td>${creaCampoCopiabile(c["PEC SO Direzione"], 'email')}</td></tr>
-        `;
-        mostraPopupDati(event, `Direzione: ${c["Direzione VVF"]}`, righe);
+        mostraPopupDati(event, `Direzione: ${c["Direzione VVF"]}`, corpoPopupContatti({
+            canale: c["Canale Radio Direzione"],
+            telefono: c["Telefono SO Direzione"],
+            email: c["email SO Direzione"],
+            pec: c["PEC SO Direzione"],
+            indirizzo: c["Indirizzo Direzione"],
+            coordinate: direzioneCollegata ? direzioneCollegata["Coordinate DIR"] : null
+        }));
     }
 
     // Copia un testo negli appunti e mostra un feedback visivo
