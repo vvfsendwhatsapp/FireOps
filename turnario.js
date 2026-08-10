@@ -72,24 +72,24 @@
     //   fascia = "notte"   → di servizio 20:00-08:00  (azzurro)
     //   esatto = true      → coincide anche col saltoturno chiesto (fucsia)
     //
-    // Il colore si posa sull'INTERA giornata (data + entrambe le sigle): in
-    // Sala interessa vedere che quel giorno c'è servizio, non quale delle due
-    // sigle stampate combacia. La sigla che combacia resta comunque marcata
-    // più forte, così si legge a colpo d'occhio se è giorno o notte.
+    // Il colore riempie l'INTERA giornata (data + entrambe le sigle): in
+    // Sala interessa vedere che quel giorno c'è servizio, e la tinta stessa
+    // dice già se è diurno o notturno. Nessuna sigla viene marcata a parte:
+    // sopra una cella tutta gialla sarebbe solo rumore.
     //
     // Nel ciclo diurno e notturno non sono mai della stessa squadra nello
     // stesso giorno (verificato su tutti e 32 i giorni), quindi una giornata
     // non può risultare gialla e azzurra insieme.
     // ----------------------------------------------------------
     function analizzaGiorno(def, salto, turni, giornoSettimana) {
-        const nessuna = { fascia: "", esatto: false, marcaSigla: false };
+        const nessuna = { fascia: "", esatto: false };
         if (!def) return nessuna;
 
         if (eGiornaliero(def)) {
-            // Il G non ha una sigla nella sequenza: si colora la giornata,
-            // ma non si marca nessuna delle due squadre di turno
+            // Il G non appartiene a nessuna delle squadre della sequenza:
+            // si colora comunque la giornata di servizio
             const feriale = giornoSettimana >= 1 && giornoSettimana <= 5;
-            return feriale ? { fascia: "giorno", esatto: false, marcaSigla: false } : nessuna;
+            return feriale ? { fascia: "giorno", esatto: false } : nessuna;
         }
 
         const candidate = [];
@@ -99,7 +99,7 @@
         for (const [fascia, sigla] of candidate) {
             if (!def.lettere.includes(sigla.charAt(0).toUpperCase())) continue;
             const esatto = !!salto && sigla.slice(1) === String(salto);
-            return { fascia, esatto, marcaSigla: true };
+            return { fascia, esatto };
         }
 
         return nessuna;
@@ -160,10 +160,11 @@
                 const esito = analizzaGiorno(def, salto, turni, giornoSettimana);
 
                 // Un solo nome per il colore della giornata: la corrispondenza
-                // col saltoturno vince sulla distinzione giorno/notte
+                // col saltoturno vince sulla distinzione giorno/notte.
+                // Il colore riempie la cella intera e basta da solo a dire se
+                // e' diurno o notturno: nessuna marcatura sulla singola sigla.
                 const colore = esito.fascia ? (esito.esatto ? "salto" : esito.fascia) : "";
                 const tinta = colore ? ` turnario-tinta-${colore}` : "";
-                const marca = (colore && esito.marcaSigla) ? ` turnario-marca-${colore}` : "";
 
                 const eOggi = oggi && oggi.year === anno && oggi.month === mese && oggi.day === giorno;
                 const oggiClasse = eOggi ? " turnario-oggi" : "";
@@ -173,8 +174,8 @@
                     `<span class="turnario-sett">${GIORNI_SETTIMANA[giornoSettimana]}</span>` +
                     `<span class="turnario-num">${giorno}</span></td>`;
 
-                const spanG = `<span class="turnario-turno turnario-turno-giorno${esito.fascia === "giorno" ? marca : ""}">${testoSicuro(turni.giorno)}</span>`;
-                const spanN = `<span class="turnario-turno turnario-turno-notte${esito.fascia === "notte" ? marca : ""}">${testoSicuro(turni.notte.toLowerCase())}</span>`;
+                const spanG = `<span class="turnario-turno turnario-turno-giorno">${testoSicuro(turni.giorno)}</span>`;
+                const spanN = `<span class="turnario-turno turnario-turno-notte">${testoSicuro(turni.notte.toLowerCase())}</span>`;
 
                 rigaTurni += `<td class="turnario-cella-turni${tinta}${oggiClasse}">${spanG}<span class="turnario-separatore">/</span>${spanN}</td>`;
                 rigaNote += `<td class="turnario-cella-note${tinta}"></td>`;
@@ -387,9 +388,6 @@
                 .turnario-tinta-giorno .turnario-sett, .turnario-tinta-notte .turnario-sett, .turnario-tinta-salto .turnario-sett,
                 .turnario-tinta-giorno .turnario-num,  .turnario-tinta-notte .turnario-num,  .turnario-tinta-salto .turnario-num,
                 .turnario-tinta-giorno .turnario-separatore, .turnario-tinta-notte .turnario-separatore, .turnario-tinta-salto .turnario-separatore { color: #111; }
-
-                /* Quale delle due sigle e' quella che ti riguarda */
-                .turnario-marca-giorno, .turnario-marca-notte, .turnario-marca-salto { background: rgba(0,0,0,.22); font-weight: bold; }
 
                 /* Riga libera per segnare ferie e permessi a penna: resta
                    bianca anche sotto le giornate colorate, altrimenti la
