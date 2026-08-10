@@ -1,0 +1,63 @@
+{
+  "titolo": "Gli 8 Passi generalizzato",
+  "riferimento": "Obiettivo Sicurezza",
+  "premessa": "Il P8P generalizzato prevede 8 passi da eseguire sempre ed in tutti gli interventi, non solo in quelli NBCR. L'ordine dei passi non è strettamente cronologico: la pianificazione e gestione dell'intervento è ciclica e continua. I passi possono essere eseguiti nuovamente ogni volta che lo scenario evolve.",
+  "passi": [
+    {
+      "numero": 1,
+      "codice": "P1",
+      "titolo": "Controllo e gestione del sito",
+      "descrizione": "• evacuazione\n• isolamento\n• zonizzazione: zona rossa, arancione, gialla\n• controllo accessi ed uscita dalla zona rossa\n• posizionamento dei mezzi in zona gialla",
+      "approfondimento": "Il primo passo di ogni soccorso consiste nel limitare il coinvolgimento di ulteriori persone nello scenario incidentale. La squadra che giunge sul luogo installa il cantiere di soccorso: evacua le persone non coinvolte dall'evento, chiude l'accesso dall'esterno al cantiere di soccorso e lo delimita, con la collaborazione delle forze dell'ordine. Poi si effettua la zonizzazione, cioè si divide il cantiere di soccorso in tre zone concentriche:\n1) zona rossa: area pericolosa per i soccorritori, che contiene l'evento incidentale e i suoi effetti\n2) zona arancione: è l'area cuscinetto tra la zona pericolosa e la successiva area di sicurezza\n3) zona gialla: area sicura che ospita le squadre di soccorso ed include il PCA, posto di comando avanzato."
+    },
+    {
+      "numero": 2,
+      "codice": "P2",
+      "titolo": "Identificazione dello scenario incidentale",
+      "descrizione": "• raccolta delle informazioni",
+      "approfondimento": "L'obiettivo di questo passo è di capire qual è lo scopo dell'intervento e di descriverne lo scenario.\nI soccorritori raccolgono le informazioni necessarie osservando lo scenario con i cinque sensi, ascoltando le testimonianze dei presenti, consultando documenti, schede di sicurezza, effettuando misure..."
+    },
+    {
+      "numero": 3,
+      "codice": "P3",
+      "titolo": "Analisi dei pericoli e del rischio",
+      "descrizione": "• identificazione dei pericoli\n• per ciascun pericolo:\n  › magnitudo del danno\n  › probabilità di accadimento\n• classificazione dei rischi:\n  rischio = magnitudo x probabilità",
+      "approfondimento": "L'obiettivo di questo passo della procedura è di individuare e classificare i pericoli presenti sullo scenario, grazie alla valutazione dei rischi.\nLa progettazione e la gestione dell'intervento è realizzata dal ROS, il responsabile delle operazioni di soccorso, chiamato anche IC (Incident Commander), ruolo ricoperto dal vigile del fuoco più alto in grado presente sul posto. Negli interventi condotti da una sola squadra, il caposquadra assume il ruolo del ROS.\nNon può mai accadere che esistano due ROS nel medesimo intervento: la pianificazione ed il comando devono essere sempre unici.\nSe la complessità lo impone, può essere prevista una struttura organizzativa più ramificata, con responsabili di settore, come previsto ad esempio dalle tecniche ICS (incident command system), facenti comunque capo ad un unico responsabile.\nIl ROS esercita il comando dell'intervento, avvalendosi con intelligenza delle capacità di tutti gli operatori e delega agli specialisti ed ai qualificati le scelte operative specifiche, però rimane responsabile, anche giuridicamente, della gestione generale dell'intervento e del raggiungimento del risultato finale.\nIl ROS esegue la valutazione del rischio dell'intervento per fasi successive:\n1) identificazione dei pericoli - il ROS elenca tutti i potenziali pericoli presenti sullo scenario e prevede come possano evolvere nel tempo\n2) valutazione della probabilità di accadimento e della magnitudo di ciascun pericolo - si stima quale sia la probabilità che tali pericoli si verifichino realmente e si valutano i possibili danni conseguenti per gli operatori\n3) classificazione dei rischi - si classificano i potenziali pericoli in ordine di importanza, grazie alla valutazione dei rischi.\nLa valutazione del rischio è aggiornata ad ogni variazione di scenario per tener conto dei rischi evolutivi."
+    },
+    {
+      "numero": 4,
+      "codice": "P4",
+      "titolo": "Valutazione delle procedure operative e delle misure protettive",
+      "descrizione": "• soglia di accettabilità del rischio\n• prevenzione del rischio sopra soglia di accettabilità:\n  › scelta della procedura operativa (PO, POS)\n  › riduzione del rischio ad accettabile\n• protezione del rischio residuo:\n  › protezione collettiva\n  › DPI",
+      "approfondimento": "Nel quarto passo il rischio per ciascun evento pericoloso viene confrontato con quella che si ritiene essere la soglia di accettabilità del rischio per l'operatore.\nPer ciascuno degli eventi rischiosi che superano la soglia di accettabilità, il ROS valuta la possibilità di prevenire il rischio, per ridurre il rischio ad accettabile.\nLa riduzione del rischio ad accettabile si effettua creando o scegliendo la procedura operativa più opportuna, anche tra quelle già standardizzate come le POS.\nNella realtà non esiste mai una procedura operativa che consenta di ridurre tutti i rischi ad accettabili. Si dice allora che lo scenario presenta del rischio residuo, ancora superiore alla soglia di accettabilità, e dunque non accettabile.\nQuindi gli operatori devono essere protetti dal rischio residuo per mezzo di:\n1) protezione collettiva - sono tutte le misure adottate per proteggere più persone, come ad esempio il puntellamento di una abitazione dissestata o il mantenimento di opportune distanze dall'evento\n2) protezione individuale - consiste invece nell'uso di DPI, dispositivi di protezione individuale, come ad esempio il completo antifiamma e l'elmo.\nLa protezione collettiva è sempre migliore della protezione individuale. Ad esempio, l'elmo non può proteggere l'operatore dal crollo di un solaio, il puntellamento invece impedisce completamente tale crollo. La protezione individuale è dunque solo la terza ed ultima scelta operativa."
+    },
+    {
+      "numero": 5,
+      "codice": "P5",
+      "titolo": "Coordinamento delle informazioni e delle risorse",
+      "descrizione": "• comunicazione tra le squadre\n• comunicazione verso l'esterno del cantiere di soccorso",
+      "approfondimento": "Questo punto evidenzia l'importanza di un sistema di comunicazione efficiente tra le squadre e verso l'esterno del cantiere di soccorso."
+    },
+    {
+      "numero": 6,
+      "codice": "P6",
+      "titolo": "Realizzazione operativa dell'intervento",
+      "descrizione": "• controllo\n• confinamento\n• risoluzione",
+      "approfondimento": "Terminata la pianificazione, si passa alla realizzazione dell'intervento operativo secondo quanto progettato.\nIn genere gli interventi si realizzano in tre momenti consecutivi:\n1) controllo - la squadra di intervento assume il controllo dell'evento, acquisendo la capacità di regolarne gli effetti\n2) confinamento - la squadra delimita l'evento evitando che possa interessare nuove aree\n3) risoluzione (o contenimento) - l'evento pericoloso viene eliminato o messo in condizione di non nuocere ulteriormente."
+    },
+    {
+      "numero": 7,
+      "codice": "P7",
+      "titolo": "Ripristino",
+      "descrizione": "• personale:\n  › decontaminazione\n  › riposo\n• equipaggiamento, mezzi:\n  › bonifica\n  › manutenzione\n• ambiente:\n  › bonifica\n  › polizia giudiziaria",
+      "approfondimento": "Il ripristino è il processo per riportare il personale, le attrezzature, i mezzi e l'ambiente alle condizioni di normalità.\nNel linguaggio dei documenti NBCR, questo passo è chiamato decontaminazione e bonifica."
+    },
+    {
+      "numero": 8,
+      "codice": "P8",
+      "titolo": "Chiusura dell'intervento",
+      "descrizione": "• relazione d'intervento\n• comunicazione ad enti\n• debriefing",
+      "approfondimento": "L'intervento si chiude dopo aver completato gli adempimenti formali, come la relazione d'intervento e le comunicazioni ad altri enti. Gli operatori si riuniscono ed eseguono la revisione critica (debriefing) della procedura di intervento impiegata: perché certe scelte? La valutazione dei rischi si è rivelata corretta? Sono stati sottovalutati dei rischi? È stata tutelata la sicurezza degli operatori? Si sarebbe potuto fare meglio?\nIl debriefing è la migliore occasione per esprimere soddisfazione sul risultato ed apprezzare l'opera dei soccorritori."
+    }
+  ]
+}
