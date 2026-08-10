@@ -68,7 +68,8 @@
                 title="Vademecum: determinazione evento rilevante">R</button>
             <a id="btn-protocollo" class="btn-icon-hamburger" href="https://protocollo.dipvvf.it" target="_blank"
                 rel="noopener" title="Protocollo informatico">@</a>
-            <button id="btn-help" class="btn-icon-hamburger" title="Aiuto e contatti">❓</button>
+            <button id="btn-help" class="btn-icon-hamburger" title="Aiuto e contatti">❓<span
+                    id="display-contatore-accessi" class="contatore-badge"></span></button>
             <button id="btn-cambia-comando" class="btn-icon-hamburger" title="Cambia comando">☰</button>
         </div>
 
@@ -584,8 +585,8 @@
                                 <div id="coord-mappa-overlay-percorso"
                                     class="coord-mappa-overlay coord-mappa-overlay-sx" style="display:none;"></div>
                                 <div class="coord-mappa-overlay coord-mappa-overlay-dx">
-                                    <div class="coord-mappa-legenda-voce"><svg width="16" height="16" viewBox="0 0 22 22"
-                                            aria-hidden="true"
+                                    <div class="coord-mappa-legenda-voce"><svg width="16" height="16"
+                                            viewBox="0 0 22 22" aria-hidden="true"
                                             style="vertical-align:middle; margin-right:6px; flex:0 0 auto;">
                                             <polygon points="11,1 20,20 11,15 2,20" fill="#ffd700" stroke="#121212"
                                                 stroke-width="1.5" stroke-linejoin="round" />
@@ -834,12 +835,6 @@
             <div id="reparti-volo-contenuto"></div>
         </div>
     </div>
-
-    <!-- FOOTER: CONTATORE ACCESSI + CREDITS -->
-    <footer class="app-footer">
-        <span id="display-contatore-accessi" class="footer-contatore">Accessi: ...</span>
-        <span class="footer-credits">By Andrea Pelizza</span>
-    </footer>
 
     <!-- Leaflet: esterno, con integrity, quindi resta un tag statico -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
