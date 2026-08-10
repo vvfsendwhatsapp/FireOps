@@ -1,47 +1,54 @@
 {
   "titolo": "Gli 8 Passi",
-  "premessa": "Il P8P prevede 8 passi da eseguire sempre ed in tutti gli interventi. L’ordine dei passi non è strettamente cronologico: la pianificazione e gestione dell’intervento è ciclica e continua. I passi possono essere eseguiti nuovamente ogni volta che lo scenario evolve.",
+  "premessa": "Il P8P prevede 8 passi da eseguire sempre ed in tutti gli interventi. L'ordine dei passi non è strettamente cronologico: la pianificazione e gestione dell'intervento è ciclica e continua. I passi possono essere eseguiti nuovamente ogni volta che lo scenario evolve.",
   "passi": [
     {
       "numero": 1,
       "codice": "P1",
       "titolo": "Controllo e gestione del sito",
-      "dettagli": ""
+      "descrizione": "• evacuazione\n• isolamento\n• zonizzazione: zona rossa, arancione, gialla\n• controllo accessi ed uscita dalla zona rossa\n• posizionamento dei mezzi in zona gialla"
     },
     {
       "numero": 2,
       "codice": "P2",
-      "titolo": "Identificazione del materiale coinvolto"
+      "titolo": "Identificazione del materiale coinvolto",
+      "descrizione": "Identificazione dello scenario incidentale\n• raccolta delle informazioni"
     },
     {
       "numero": 3,
       "codice": "P3",
-      "titolo": "Analisi dei pericoli e del rischio"
+      "titolo": "Analisi dei pericoli e del rischio",
+      "descrizione": "• identificazione dei pericoli\n• per ciascun pericolo:\n  › magnitudo del danno\n  › probabilità di accadimento\n• classificazione dei rischi:\n  rischio = magnitudo x probabilità"
     },
     {
       "numero": 4,
       "codice": "P4",
-      "titolo": "Valutazione degli indumenti protettivi e delle attrezzature"
+      "titolo": "Valutazione degli indumenti protettivi e delle attrezzature",
+      "descrizione": "Valutazione procedure operative e misure protettive\n• soglia di accettabilità del rischio\n• prevenzione del rischio sopra soglia di accettabilità:\n  › scelta della procedura operativa (PO, POS)\n  › riduzione del rischio ad accettabile\n• protezione del rischio residuo:\n  › protezione collettiva\n  › DPI"
     },
     {
       "numero": 5,
       "codice": "P5",
-      "titolo": "Coordinamento delle informazioni e delle risorse"
+      "titolo": "Coordinamento delle informazioni e delle risorse",
+      "descrizione": "Coordinamento delle informazioni e delle risorse"
     },
     {
       "numero": 6,
       "codice": "P6",
-      "titolo": "Controllo, confinamento e contenimento del prodotto"
+      "titolo": "Controllo, confinamento e contenimento del prodotto",
+      "descrizione": "Realizzazione operativa dell'intervento\n• controllo\n• confinamento\n• risoluzione"
     },
     {
       "numero": 7,
       "codice": "P7",
-      "titolo": "Decontaminazione"
+      "titolo": "Decontaminazione",
+      "descrizione": "Ripristino\n• personale:\n  › decontaminazione\n  › riposo\n• equipaggiamento, mezzi:\n  › bonifica\n  › manutenzione\n• ambiente:\n  › bonifica\n  › polizia giudiziaria"
     },
     {
       "numero": 8,
       "codice": "P8",
-      "titolo": "Chiusura dell'intervento"
+      "titolo": "Chiusura dell'intervento",
+      "descrizione": "• relazione d'intervento\n• comunicazione ad enti\n• debriefing"
     }
   ]
 }
