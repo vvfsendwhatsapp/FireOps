@@ -1,3 +1,24 @@
+/* ==========================================================
+   FireOps VVF — FOGLIO DI STILE UNICO
+   ==========================================================
+   ORDINE DEL FILE (conta: a parità di specificità vince l'ultima regola)
+
+   1. Variabili e reset
+   2. Struttura: modali, header, subheader, pannelli, footer
+   3. Componenti condivisi: pulsanti, campi, combobox, tabelle, popup
+   4. Moduli: mappa/meteo, link utili, sostanze, convertitore coordinate,
+      convertitore unità
+   5. MODULI AGGIUNTIVI (in fondo): normative, reparti volo, turnario,
+      qrcode e le eccezioni ai pulsanti.
+      Stanno in coda perché devono poter sovrascrivere le regole generali
+      dei punti 2-4 senza ricorrere a !important.
+   6. Responsive
+
+   Non anteporre nuove regole ai blocchi che sovrascrivono: è esattamente
+   così che in passato il convertitore unità restava rosso/verde nonostante
+   gli override.
+   ========================================================== */
+
 :root {
     --primary-color: #ffd700;
     /* Giallo oro riposante per accenti/importanti */
@@ -1778,7 +1799,7 @@ html.comando-gia-scelto #modal-comando {
    quale grandezza si leggono i valori. I margini negativi la portano a
    filo dei bordi, annullando il padding del pannello. */
 .um-root .um-panel-head {
-    display:none;
+    display: none;
     position: sticky;
     top: 0;
     z-index: 2;
@@ -2139,12 +2160,6 @@ html.comando-gia-scelto #modal-comando {
     grid-template-columns: 1fr;
 }
 
-@media (max-width: 700px) {
-    .um-root .um-io-singolo {
-        grid-template-columns: 1fr;
-    }
-}
-
 /* Nota di categoria: testo esplicativo, stesso trattamento di .pagina-nota
    usata ovunque in FireOps — grigio, piccolo, senza cornice. */
 .um-root .um-nota {
@@ -2170,13 +2185,752 @@ html.comando-gia-scelto #modal-comando {
 }
 
 /* ==========================================================
-   RESPONSIVE: l'header non si schiaccia più su schermi stretti.
-   Sotto i 900px il blocco centrale (comando/orario/turno) va a
-   capo su una riga propria e l'header diventa più alto. Ridefinire
-   --header-height è sufficiente: la posizione della subheader, il
-   padding del body e il fullscreen sono già espressi in funzione
-   di quella variabile e si riallineano da soli.
+   ==========================================================
+   MODULI AGGIUNTIVI
+
+   Questo blocco stava nel <style> inline di index.html. Deve restare
+   IN FONDO al file: contiene eccezioni alle regole generali qui sopra
+   (pulsanti, .modal-content button) e a parità di specificità vince
+   l'ultima regola. Spostandolo più in alto tornerebbero i bug che
+   servono a evitare, senza bisogno di alcun !important.
+   ==========================================================
    ========================================================== */
+
+/* ==========================================================
+   ECCEZIONI AI PULSANTI
+   ========================================================== */
+
+/* Stato disabilitato dei pulsanti azione: chiaramente "spento", per
+   distinguerlo a colpo d'occhio da un pulsante premibile */
+.btn-toggle-radar:disabled,
+.btn-toggle-radar[disabled] {
+    opacity: .3;
+    filter: grayscale(60%);
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* Espandi/Riduci in verde smeraldo: non è un comando operativo come gli
+   altri della fila, cambia solo l'inquadratura della pagina. Il colore
+   diverso lo distingue senza doverne leggere l'etichetta. */
+.btn-toggle-radar.btn-fullscreen-pagina {
+    background: var(--dark-color);
+    border-color: #009b77;
+    color: #009b77;
+}
+
+.btn-toggle-radar.btn-fullscreen-pagina:hover {
+    background: #009b77;
+    color: var(--dark-color);
+}
+
+/* Pulsanti di testata con sigla al posto dell'icona: "8P" a 20px
+   sfonderebbe i 48px del pulsante */
+.btn-icon-hamburger.btn-icon-testo {
+    font-size: 15px;
+    font-weight: bold;
+    letter-spacing: .5px;
+}
+
+/* 8P e @ gialli come ❓ e ☰: la sola eccezione della fila resta la R.
+   Il colore è dichiarato in modo esplicito perché su un <a> il browser
+   applicherebbe comunque il proprio blu da collegamento. */
+.btn-icon-hamburger.btn-icon-testo,
+a.btn-icon-hamburger,
+a.btn-icon-hamburger:visited {
+    background: var(--dark-color);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+/* Al passaggio del mouse seguono il comportamento standard degli altri
+   due: fondo giallo e glifo scuro */
+a.btn-icon-hamburger:hover {
+    background: var(--primary-color);
+    color: var(--dark-color);
+}
+
+/* Pulsante "R" del vademecum: stesso guscio di ❓ e ☰ (sfondo nero,
+   bordo giallo), ma la lettera è rossa. Il bordo resta giallo anche al
+   passaggio del mouse, così i tre pulsanti restano una fila coerente e
+   a cambiare è solo la R. */
+.btn-icon-hamburger.btn-icon-rilevante {
+    background: var(--dark-color);
+    border-color: var(--primary-color);
+    color: var(--danger-color);
+    font-weight: bold;
+    font-size: 20px;
+}
+
+.btn-icon-hamburger.btn-icon-rilevante:hover {
+    background: var(--dark-color);
+    border-color: var(--primary-color);
+    color: #ff0000;
+}
+
+/* ==========================================================
+   CONVERTITORE COORDINATE — CAMPI SCOMPOSTI
+   ========================================================== */
+
+/* La riga controlli della Mappa riservava due righe di altezza alle
+   etichette: serviva quando il pulsante aveva <label>&nbsp;</label> come
+   spaziatore. Ora le etichette sono entrambe testo su una riga, quindi si
+   torna alla stessa distanza etichetta→campo delle schede Dati e Messaggio
+   (i 6px di .pagina-box label). */
+.coord-mappa-controlli .msg-campo label {
+    min-height: 0;
+}
+
+/* I pulsanti della riga controlli mappa cambiano etichetta (es. "Attiva
+   crea percorso" → "Clicca sulla mappa"): senza questo il testo più lungo
+   andava a capo e il pulsante cresceva in altezza, sfasando la riga.
+   Una riga sola sempre, con i puntini se lo spazio è poco. */
+.coord-mappa-azione-campo .btn-toggle-radar {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Campi coordinate scomposti: input affiancati con il loro simbolo
+   (gradi, primi, secondi) e la lettera N/E in coda alla riga */
+.coord-campi-riga {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.coord-campi-riga .coord-campo-num {
+    flex: 1 1 auto;
+    min-width: 0;
+    text-align: center;
+    font-family: "Courier New", monospace;
+    letter-spacing: .5px;
+}
+
+/* La maschera grigia è solo un promemoria del formato: non deve sembrare
+   testo presente nel campo, quindi niente selezione */
+.coord-campi-riga .coord-campo-num::placeholder {
+    color: var(--text-muted);
+    opacity: .55;
+    user-select: none;
+}
+
+.coord-campi-riga .coord-campo-gradi {
+    flex: 0 0 62px;
+}
+
+/* Selettore di segno: stretto, in testa alla riga. Il segno si sceglie qui
+   e non si digita, così non può finire in mezzo alle cifre */
+.coord-campi-riga .coord-campo-segno {
+    flex: 0 0 58px;
+    padding: 10px 4px;
+    text-align: center;
+    text-align-last: center;
+    font-family: "Courier New", monospace;
+    font-weight: bold;
+}
+
+.coord-campo-unita {
+    color: var(--primary-color);
+    font-weight: bold;
+    font-size: 14px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* ==========================================================
+   FISARMONICHE: VADEMECUM EVENTO RILEVANTE, 8 PASSI, NORMATIVE
+
+   Stesso impianto per tutti e tre: le classi .evento-rilevante-* sono
+   usate anche dal renderer del D.P.R. 64/2012 e degli 8 Passi.
+   ========================================================== */
+
+.evento-rilevante-premessa {
+    background: var(--dark-color);
+    border-left: 4px solid var(--danger-color);
+    border-radius: 4px;
+    padding: 10px 14px;
+    margin-bottom: 14px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-main);
+}
+
+.evento-rilevante-premessa strong {
+    color: var(--primary-color);
+}
+
+.evento-rilevante-voce {
+    background: var(--dark-color);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    margin-bottom: 8px;
+    overflow: hidden;
+}
+
+.evento-rilevante-voce>.evento-rilevante-testata {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    color: var(--text-main);
+    font-size: 14px;
+    font-weight: bold;
+    text-align: left;
+    padding: 11px 14px;
+    cursor: pointer;
+}
+
+.evento-rilevante-voce>.evento-rilevante-testata:hover {
+    background: #232323;
+    opacity: 1;
+}
+
+.evento-rilevante-voce>.evento-rilevante-testata .freccia {
+    color: var(--primary-color);
+    font-size: 11px;
+    flex-shrink: 0;
+}
+
+.evento-rilevante-voce .evento-rilevante-codice {
+    display: inline-block;
+    background: var(--primary-color);
+    color: var(--dark-color);
+    font-family: "Courier New", monospace;
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: .5px;
+    border-radius: 4px;
+    padding: 2px 7px;
+    flex-shrink: 0;
+}
+
+/* La rubrica occupa lo spazio libero e spinge il conteggio a fondo riga.
+   min-width:0 le permette di accorciarsi: senza, un titolo lungo
+   spingerebbe il conteggio fuori dal pulsante. */
+.evento-rilevante-rubrica {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+/* Quanti articoli contiene la partizione: dato di servizio, in coda e in
+   secondo piano rispetto al titolo. Monospace per restare incolonnato
+   fra voci allo stesso livello. */
+.evento-rilevante-conteggio {
+    flex-shrink: 0;
+    font-family: "Courier New", monospace;
+    font-size: 11px;
+    font-weight: normal;
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    padding: 1px 8px;
+}
+
+.evento-rilevante-voce>.evento-rilevante-dettaglio {
+    display: none;
+    padding: 12px 14px 14px;
+    border-top: 1px solid var(--border-color);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.evento-rilevante-voce>.evento-rilevante-dettaglio.aperto {
+    display: block;
+}
+
+/* Livelli annidati (titolo > capo > sezione > articolo): un rientro
+   leggero e un bordo di guida, per non perdere la gerarchia */
+.evento-rilevante-dettaglio .evento-rilevante-voce {
+    margin: 6px 0 6px 10px;
+    border-left: 2px solid var(--border-color);
+}
+
+.evento-rilevante-dettaglio .evento-rilevante-voce>.evento-rilevante-testata {
+    font-size: 13px;
+    font-weight: normal;
+    padding: 8px 12px;
+}
+
+.evento-rilevante-dettaglio .evento-rilevante-dettaglio {
+    padding: 8px 12px 10px;
+}
+
+.evento-rilevante-comma {
+    display: flex;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+.evento-rilevante-comma .numero {
+    color: var(--text-muted);
+    font-family: "Courier New", monospace;
+    flex-shrink: 0;
+}
+
+.evento-rilevante-condizione+.evento-rilevante-condizione {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--border-color);
+}
+
+/* Riferimento normativo della voce (1.a., 4.a., numero di comma):
+   monospace per restare incolonnato, accento giallo come il resto
+   dell'app. Il rosso è riservato a ciò che segnala un pericolo o un dato
+   mancante: numerare una voce non lo è. */
+.evento-rilevante-riferimento {
+    font-family: "Courier New", monospace;
+    color: var(--primary-color);
+    background: rgba(255, 215, 0, .12);
+    border-radius: 3px;
+    padding: 1px 5px;
+    margin-right: 2px;
+}
+
+.evento-rilevante-sintesi {
+    color: var(--primary-color);
+    font-weight: bold;
+    display: block;
+    margin-bottom: 4px;
+}
+
+/* Dentro un articolo di legge la gerarchia è comma > lettera > numero:
+   il comma tiene il badge, la lettera scende a semplice indice inline.
+   Prima era il contrario — la lettera in grassetto giallo pesava più del
+   comma che la contiene. */
+.evento-rilevante-dettaglio .evento-rilevante-condizione .evento-rilevante-sintesi {
+    display: inline;
+    color: var(--text-muted);
+    font-weight: normal;
+    font-family: "Courier New", monospace;
+    margin-right: 6px;
+}
+
+.evento-rilevante-testo {
+    color: var(--text-main);
+    text-align: justify;
+}
+
+.evento-rilevante-elenco {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.evento-rilevante-chip {
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    padding: 2px 9px;
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.evento-rilevante-alternativa {
+    margin-top: 8px;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-style: italic;
+}
+
+/* ==========================================================
+   MODALE REPARTI VOLO
+   ========================================================== */
+
+/* I 400px del modale standard non bastano per due schede affiancate con
+   tabella dei campi */
+.modal-content-largo {
+    width: 820px;
+    max-width: 95%;
+    max-height: 85vh;
+    overflow-y: auto;
+    text-align: left;
+}
+
+.modal-content .reparto-volo-scheda {
+    background: var(--dark-color);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    margin-bottom: 10px;
+    overflow: hidden;
+}
+
+/* Testata cliccabile: di default si vede solo questa riga.
+   I selettori sono prefissati con .modal-content perché più su in questo
+   stesso file ".modal-content button" ha sfondo giallo pieno (pensato per
+   "Conferma e Accedi"): senza il prefisso quella regola vince per
+   specificità e rende la riga gialla, nascondendo i km che sono anch'essi
+   gialli. */
+.modal-content .reparto-volo-testata {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    color: var(--text-main);
+    font-size: 14px;
+    font-weight: bold;
+    text-align: left;
+    padding: 12px 14px;
+    cursor: pointer;
+}
+
+.modal-content .reparto-volo-testata:hover {
+    background: #232323;
+    opacity: 1;
+}
+
+.modal-content .reparto-volo-testata .freccia {
+    color: var(--primary-color);
+    font-size: 11px;
+    flex-shrink: 0;
+}
+
+.modal-content .reparto-volo-testata .nome {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.modal-content .reparto-volo-testata .distanza,
+.modal-content .reparto-volo-testata .azimut {
+    font-family: "Courier New", monospace;
+    font-size: 13px;
+    flex-shrink: 0;
+}
+
+.modal-content .reparto-volo-testata .distanza {
+    color: var(--primary-color);
+}
+
+/* Azimut in secondo piano rispetto alla distanza: è il dato di rotta, non
+   il criterio con cui i reparti sono ordinati */
+.modal-content .reparto-volo-testata .azimut {
+    color: var(--text-muted);
+}
+
+.modal-content .reparto-volo-dettaglio {
+    display: none;
+    padding: 0 14px 14px;
+    border-top: 1px solid var(--border-color);
+}
+
+.modal-content .reparto-volo-dettaglio.aperto {
+    display: block;
+}
+
+.modal-content .reparto-volo-scheda h5 {
+    color: var(--text-muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin: 14px 0 6px;
+}
+
+.modal-content .reparto-volo-distintivo {
+    display: inline-block;
+    background: var(--primary-color);
+    color: var(--dark-color);
+    font-size: 11px;
+    font-weight: bold;
+    border-radius: 999px;
+    padding: 2px 9px;
+    margin-right: 8px;
+}
+
+/* ==========================================================
+   SEZIONE TURNARIO
+   ========================================================== */
+
+.turnario-intestazione {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 16px 0 8px;
+}
+
+.turnario-intestazione h4 {
+    margin: 0;
+    color: var(--primary-color);
+    font-size: 15px;
+}
+
+.turnario-conteggio {
+    font-family: "Courier New", monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    padding: 1px 8px;
+    flex-shrink: 0;
+}
+
+.turnario-legenda {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+}
+
+.turnario-legenda-voce {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.turnario-campione {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    border: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+/* 31 colonne non entrano in mezzo schermo: la griglia scorre in
+   orizzontale dentro il suo contenitore invece di sfondare il pannello */
+.turnario-scroll {
+    overflow-x: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--dark-color);
+}
+
+.turnario-tabella {
+    border-collapse: collapse;
+    font-family: "Courier New", monospace;
+    font-size: 11px;
+    width: max-content;
+    min-width: 100%;
+}
+
+.turnario-tabella th,
+.turnario-tabella td {
+    border: 1px solid var(--border-color);
+    text-align: center;
+    padding: 2px 3px;
+    min-width: 44px;
+}
+
+.turnario-riga-mese th {
+    background: var(--surface-color);
+    color: var(--primary-color);
+    text-align: left;
+    font-size: 13px;
+    letter-spacing: .5px;
+    padding: 6px 10px;
+    min-width: 0;
+}
+
+.turnario-cella-giorno {
+    background: rgba(255, 255, 255, .03);
+    line-height: 1.25;
+}
+
+.turnario-sett {
+    display: block;
+    font-size: 9px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+}
+
+.turnario-num {
+    display: block;
+    font-weight: bold;
+    color: var(--text-main);
+}
+
+/* Domenica in rosso come su qualsiasi calendario: è un'indicazione di
+   calendario civile, non un'evidenziazione di turno */
+.turnario-domenica .turnario-sett,
+.turnario-domenica .turnario-num {
+    color: #ff0000;
+}
+
+.turnario-cella-turni {
+    white-space: nowrap;
+    color: var(--text-muted);
+}
+
+.turnario-turno {
+    display: inline-block;
+    padding: 1px 2px;
+    border-radius: 3px;
+}
+
+.turnario-separatore {
+    color: var(--border-color);
+}
+
+/* ----------------------------------------------------------
+   COLORI DELL'EVIDENZIAZIONE
+
+   Il colore è PIENO e copre l'intera cella, sia quella della data sia
+   quella dei due turni: una giornata di servizio si vede da lontano come
+   una colonna colorata da cima a fondo.
+
+   giallo  = turno diurno    (08:00-20:00)
+   azzurro = turno notturno  (20:00-08:00)
+   fucsia  = coincide col saltoturno scelto, cioè sono le tue giornate
+   ---------------------------------------------------------- */
+.turnario-tinta-giorno {
+    background: #ffd700;
+}
+
+.turnario-tinta-notte {
+    background: #4fc3f7;
+}
+
+.turnario-tinta-salto {
+    background: #ff4fd8;
+}
+
+/* Su fondo pieno tutto il testo della cella diventa scuro: il grigio del
+   giorno della settimana e il rosso della domenica sparirebbero */
+.turnario-tinta-giorno,
+.turnario-tinta-notte,
+.turnario-tinta-salto,
+.turnario-tinta-giorno .turnario-sett,
+.turnario-tinta-notte .turnario-sett,
+.turnario-tinta-salto .turnario-sett,
+.turnario-tinta-giorno .turnario-num,
+.turnario-tinta-notte .turnario-num,
+.turnario-tinta-salto .turnario-num,
+.turnario-tinta-giorno .turnario-separatore,
+.turnario-tinta-notte .turnario-separatore,
+.turnario-tinta-salto .turnario-separatore {
+    color: var(--dark-color);
+}
+
+/* Riga per le annotazioni a penna: esiste nel markup ma serve solo su
+   carta. A video sarebbe una striscia vuota che allontana i mesi. */
+.turnario-riga-note {
+    display: none;
+}
+
+/* La giornata odierna resta riconoscibile anche quando non è di servizio */
+.turnario-oggi {
+    box-shadow: inset 0 0 0 2px #ff0000;
+}
+
+.turnario-cella-vuota {
+    background: transparent;
+    border-color: transparent;
+}
+
+/* ==========================================================
+   SEZIONE QRCODE
+   ========================================================== */
+
+/* Il pulsante che genera il codice sta su una riga sua a tutta larghezza:
+   è l'unica azione possibile finché il QR non esiste. I tre formati di
+   salvataggio vengono dopo, in fila e di pari peso fra loro. */
+.qr-azioni {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 14px 0;
+}
+
+.qr-azione-primaria {
+    width: 100%;
+    padding: 13px;
+    border: none;
+    border-radius: 4px;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.qr-azione-primaria:hover {
+    opacity: 0.9;
+}
+
+/* .qr-azioni non è .msg-azioni: lo stato disabilitato va ridichiarato,
+   altrimenti il pulsante resta verde WhatsApp anche da spento */
+.qr-azione-primaria:disabled {
+    background-color: #333333;
+    color: #666666;
+    opacity: 1;
+    cursor: not-allowed;
+}
+
+.qr-azioni-download {
+    display: flex;
+    gap: 10px;
+}
+
+/* flex:1 con min-width:0 li tiene larghi uguali anche se le etichette
+   hanno lunghezze diverse */
+.qr-azioni-download .btn-toggle-radar {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 10px;
+    font-size: 14px;
+}
+
+.qr-anteprima {
+    display: flex;
+    justify-content: center;
+    margin: 16px 0 10px;
+}
+
+/* Fondo bianco anche attorno al codice: il margine chiaro fa parte dello
+   standard, senza di esso molti lettori non agganciano il QR */
+.qr-canvas {
+    width: 300px;
+    max-width: 100%;
+    height: auto;
+    background: #fff;
+    border-radius: 8px;
+    /* I moduli sono quadrati netti: l'interpolazione del browser li
+       sfocherebbe, e un QR sfocato inquadrato male non si legge */
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+
+.qr-messaggio {
+    text-align: center;
+    font-family: "Courier New", monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin: 0 0 12px;
+}
+
+#qr-testo {
+    font-family: "Courier New", monospace;
+    font-size: 13px;
+    resize: vertical;
+}
+
+/* ==========================================================
+   ==========================================================
+   RESPONSIVE
+
+   In fondo a tutto: le media query devono poter sovrascrivere sia le
+   regole di base sia quelle dei moduli qui sopra.
+   ==========================================================
+   ========================================================== */
+
+/* L'header non si schiaccia più su schermi stretti. Sotto i 900px il
+   blocco centrale (comando/orario/turno) va a capo su una riga propria e
+   l'header diventa più alto. Ridefinire --header-height è sufficiente: la
+   posizione della subheader, il padding del body e il fullscreen sono già
+   espressi in funzione di quella variabile e si riallineano da soli. */
 @media (max-width: 900px) {
     :root {
         --header-height: var(--header-height-tablet);
@@ -2234,6 +2988,10 @@ html.comando-gia-scelto #modal-comando {
     .um-root .um-io {
         grid-template-columns: 1fr;
         gap: 8px;
+    }
+
+    .um-root .um-io-singolo {
+        grid-template-columns: 1fr;
     }
 
     .um-root .um-swap {
@@ -2343,6 +3101,13 @@ html.comando-gia-scelto #modal-comando {
 
     .meteo-ora-pioggia {
         font-size: 9px;
+    }
+
+    /* I tre pulsanti di salvataggio QR restano in fila anche qui: le
+       etichette sono di tre lettere, ci stanno */
+    .qr-azioni-download .btn-toggle-radar {
+        padding: 10px 4px;
+        font-size: 13px;
     }
 }
 
