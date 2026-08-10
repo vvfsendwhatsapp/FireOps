@@ -1320,11 +1320,14 @@
                     placeholder="Es. https://vvfsendwhatsapp.github.io/FireOps oppure 41.7712, 12.2378"
                     autocomplete="off"></textarea>
 
-                <div class="msg-azioni">
-                    <button id="btn-qr-visualizza" class="btn-whatsapp" type="button" disabled>🔳 Visualizza QR</button>
-                    <button id="btn-qr-png" class="btn-toggle-radar" type="button" disabled>🖼️ Salva PNG</button>
-                    <button id="btn-qr-jpg" class="btn-toggle-radar" type="button" disabled>📷 Salva JPG</button>
-                    <button id="btn-qr-pdf" class="btn-toggle-radar" type="button" disabled>📄 Salva PDF</button>
+                <div class="qr-azioni">
+                    <button id="btn-qr-visualizza" class="btn-whatsapp qr-azione-primaria" type="button" disabled>🔳
+                        Visualizza QR</button>
+                    <div class="qr-azioni-download">
+                        <button id="btn-qr-png" class="btn-toggle-radar" type="button" disabled>🖼️ PNG</button>
+                        <button id="btn-qr-jpg" class="btn-toggle-radar" type="button" disabled>📷 JPG</button>
+                        <button id="btn-qr-pdf" class="btn-toggle-radar" type="button" disabled>📄 PDF</button>
+                    </div>
                 </div>
 
                 <div id="qr-anteprima" class="qr-anteprima"></div>
