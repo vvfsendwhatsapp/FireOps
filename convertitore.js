@@ -1074,6 +1074,7 @@ if (contenitoreFormCoord) {
     const COLORE_TARGET = "#AF2B1E";
     const COLORE_SQUADRA = "#ffd700";
     const COLORE_PERCORSO = "#AF2B1E";
+    const COLORE_COMANDO = "#2E7DD1";
 
     let coordMappaLeaflet = null;
     let coordMarkerTarget = null;
@@ -1083,6 +1084,7 @@ if (contenitoreFormCoord) {
     let modalitaPercorsoAttiva = false;
     let ultimoGeojsonPercorso = null;
     let ultimoPuntoPartenza = null;
+    let coordMarkerComando = null;
 
     function iconaMarkerGenerica(colore) {
         return L.divIcon({
@@ -1216,6 +1218,7 @@ document.addEventListener("fireops:comando-attivo-cambiato", (e) => {
             coordMappaLeaflet.removeLayer(coordMarkerTarget);
             coordMarkerTarget = null;
         }
+        rimuoviMarkerComandoCompetente();
 
         // Vista riportata sul Comando attivo, o sull'Italia se non c'è
         if (coordMappaLeaflet) {
@@ -2223,6 +2226,42 @@ function disegnaGraficoAltimetria(geojson) {
         return elenco.find(c => String(c.Provincia || "").trim().toUpperCase() === sigla) || null;
     }
 
+function rimuoviMarkerComandoCompetente() {
+        if (coordMappaLeaflet && coordMarkerComando) coordMappaLeaflet.removeLayer(coordMarkerComando);
+        coordMarkerComando = null;
+    }
+
+    // Il marker NON sposta la vista: al centro resta il target, che è il punto
+    // dell'intervento. Se il Comando competente è lontano resta fuori campo,
+    // ed è corretto: la distanza si legge nel popup, non spostando l'inquadratura.
+    function mostraComandoSuMappa(comando) {
+        rimuoviMarkerComandoCompetente();
+        if (!coordMappaLeaflet || !comando) return;
+
+        const coord = estraiCoordinateComando(comando);
+        if (!coord) return;
+
+        const canale = comando["Canale Radio Comando"] || "-";
+        const telefono = String(comando["Telefono SO Comando"] || "").trim() || "-";
+
+        let distanza = "";
+        if (coordinateTargetCorrenti) {
+            const km = distanzaKmHaversine(coord.lat, coord.lon,
+                coordinateTargetCorrenti.lat, coordinateTargetCorrenti.lon);
+            const az = calcolaAzimut(coord.lat, coord.lon,
+                coordinateTargetCorrenti.lat, coordinateTargetCorrenti.lon);
+            distanza = `<br>${km.toFixed(1)} km dal target — Az ${String(Math.round(az)).padStart(3, "0")}°`;
+        }
+
+        coordMarkerComando = L.marker([coord.lat, coord.lon], {
+            icon: iconaMarkerGenerica(COLORE_COMANDO),
+            title: `Comando competente: ${comando.Comando}`,
+        }).addTo(coordMappaLeaflet)
+          .bindPopup(`<strong>Comando ${testoSicuro(comando.Comando)}</strong><br>
+                      CH VHF ${testoSicuro(canale)}<br>
+                      TEL SO ${testoSicuro(telefono)}${distanza}`);
+    }
+
     function mostraComandoCompetente(sigla) {
         const elNome = document.getElementById("coord-out-comando");
         const elCanale = document.getElementById("coord-out-comando-canale");
@@ -2237,6 +2276,7 @@ function disegnaGraficoAltimetria(geojson) {
 
         const comando = comandoPerSigla(sigla);
         if (!comando) {
+            rimuoviMarkerComandoCompetente();
             elNome.textContent = sigla
                 ? `Nessun Comando in elenco per la provincia ${sigla}`
                 : "Provincia non determinata";
@@ -2258,6 +2298,7 @@ function disegnaGraficoAltimetria(geojson) {
             if (telefono) rendiCopiabile(elTelefono, telefono, telefono.replace(/\s+/g, ""));
             else elTelefono.textContent = "-";
         }
+        mostraComandoSuMappa(comando);
     }
 
     // Logica di rendering condivisa: usata sia dal pulsante "Converti" sia
