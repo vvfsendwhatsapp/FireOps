@@ -13,6 +13,21 @@
            Sta qui dopo style.css per avere la precedenza: se preferisci,
            spostalo dentro style.css e togli questo blocco. */
         .btn-toggle-radar:disabled,
+
+        /* Espandi/Riduci in verde smeraldo: non è un comando operativo come gli
+        altri della fila, cambia solo l'inquadratura della pagina. Il colore
+        diverso lo distingue senza doverne leggere l'etichetta. */
+        .btn-toggle-radar.btn-fullscreen-pagina {
+            background: var(--dark-color);
+            border-color: #009b77;
+            color: #009b77;
+        }
+
+        .btn-toggle-radar.btn-fullscreen-pagina:hover {
+            background: #009b77;
+            color: var(--dark-color);
+        }
+
         .btn-toggle-radar[disabled] {
             opacity: .3;
             filter: grayscale(60%);
