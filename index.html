@@ -630,6 +630,44 @@
             background: transparent;
             border-color: transparent;
         }
+
+        /* ==========================================================
+        SEZIONE QRCODE
+        ========================================================== */
+
+        .qr-anteprima {
+            display: flex;
+            justify-content: center;
+            margin: 16px 0 10px;
+        }
+
+        /* Fondo bianco anche attorno al codice: il margine chiaro fa parte
+       dello standard, senza di esso molti lettori non agganciano il QR */
+        .qr-canvas {
+            width: 300px;
+            max-width: 100%;
+            height: auto;
+            background: #fff;
+            border-radius: 8px;
+            /* I moduli sono quadrati netti: l'interpolazione del browser li
+           sfocherebbe, e un QR sfocato inquadrato male non si legge */
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        .qr-messaggio {
+            text-align: center;
+            font-family: "Courier New", monospace;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin: 0 0 12px;
+        }
+
+        #qr-testo {
+            font-family: "Courier New", monospace;
+            font-size: 13px;
+            resize: vertical;
+        }
     </style>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
@@ -1270,7 +1308,27 @@
         <section id="qrcode" class="page-section">
             <div class="pagina-box">
                 <h3>QrCode</h3>
-                <p class="pagina-nota">Sezione in costruzione.</p>
+                <p class="pagina-nota">
+                    Scrivi o incolla qualsiasi contenuto — un indirizzo web, coordinate, un numero
+                    di telefono, il testo di una comunicazione — e genera il codice QR corrispondente.
+                    Il codice si crea sul posto, senza inviare nulla in rete: quello che scrivi non
+                    esce da questo computer.
+                </p>
+
+                <label for="qr-testo">Testo da codificare</label>
+                <textarea id="qr-testo" rows="5"
+                    placeholder="Es. https://vvfsendwhatsapp.github.io/FireOps oppure 41.7712, 12.2378"
+                    autocomplete="off"></textarea>
+
+                <div class="msg-azioni">
+                    <button id="btn-qr-visualizza" class="btn-whatsapp" type="button" disabled>🔳 Visualizza QR</button>
+                    <button id="btn-qr-png" class="btn-toggle-radar" type="button" disabled>🖼️ Salva PNG</button>
+                    <button id="btn-qr-jpg" class="btn-toggle-radar" type="button" disabled>📷 Salva JPG</button>
+                    <button id="btn-qr-pdf" class="btn-toggle-radar" type="button" disabled>📄 Salva PDF</button>
+                </div>
+
+                <div id="qr-anteprima" class="qr-anteprima"></div>
+                <p id="qr-messaggio" class="qr-messaggio" style="display:none;"></p>
             </div>
         </section>
 
@@ -1439,6 +1497,8 @@
     <script src="turnario.js?v=202608101200"></script>
     <script src="convertitore.js?v=202608101200"></script>
     <script src="unitamisura.js?v=202608101200"></script>
+    <script src="qrcode.js?v=20260810"></script>
+    <script src="qrcoder.js?v=20260810"></script>
 </body>
 
 </html>
