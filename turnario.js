@@ -389,10 +389,10 @@
                 .turnario-tinta-giorno .turnario-num,  .turnario-tinta-notte .turnario-num,  .turnario-tinta-salto .turnario-num,
                 .turnario-tinta-giorno .turnario-separatore, .turnario-tinta-notte .turnario-separatore, .turnario-tinta-salto .turnario-separatore { color: #111; }
 
-                /* Riga libera per segnare ferie e permessi a penna: resta
-                   bianca anche sotto le giornate colorate, altrimenti la
-                   penna non si legge sopra il fondo */
-                .turnario-riga-note td { height: 8mm; background: #fff !important; }
+                /* Riga libera per segnare ferie e permessi a penna: eredita
+                   la tinta della giornata, così la colonna colorata scende
+                   compatta dalla data fino allo spazio per gli appunti */
+                .turnario-riga-note td { height: 8mm; }
 
                 .legenda { font-size: 11px; margin: 10px 0 0; line-height: 1.9; }
                 .legenda span { margin-right: 18px; white-space: nowrap; }
