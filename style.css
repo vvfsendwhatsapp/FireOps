@@ -2195,6 +2195,29 @@ html.comando-gia-scelto #modal-comando {
    servono a evitare, senza bisogno di alcun !important.
    ==========================================================
    ========================================================== */
+/* ==========================================================
+   LINK SENZA CLASSE DENTRO MODALI E POPUP
+
+   I contatti del modale Aiuto (mailto, Telegram) e le voci "Apri" di
+   SITO WEB / INTRANET nei popup di Comando e Direzione sono <a> semplici:
+   senza una regola esplicita il browser applica il proprio blu di default,
+   che su fondo scuro è quasi illeggibile.
+
+   Stesso azzurro dei telefoni e delle email cliccabili, per coerenza:
+   in FireOps l'azzurro significa "elemento su cui puoi agire", il giallo
+   è riservato agli accenti e ai dati da leggere.
+   ========================================================== */
+.modal-content a,
+.modal-content a:visited,
+.popup-dati a,
+.popup-dati a:visited {
+    color: #4fc3f7;
+}
+
+.modal-content a:hover,
+.popup-dati a:hover {
+    color: var(--primary-color);
+}
 
 /* ==========================================================
    ECCEZIONI AI PULSANTI
