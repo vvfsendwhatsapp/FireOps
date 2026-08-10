@@ -410,9 +410,8 @@
             finestra.document.write(`<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8">
                 <title>${testoSicuro(titolo)}</title><style>${stile}</style></head><body>
                 <h1>${testoSicuro(titolo)}</h1>
-                <p class="sottotitolo">Vigili del Fuoco — MAIUSCOLO: turno diurno 08:00-20:00 · minuscolo: turno notturno 20:00-08:00 · riga libera sotto ogni mese per ferie e permessi</p>
-                ${costruisciTabella(anno, def, salto, null)}
                 <p class="legenda">${legendaStampa}</p>
+                ${costruisciTabella(anno, def, salto, null)}
                 </body></html>`);
             finestra.document.close();
 
