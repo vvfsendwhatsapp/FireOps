@@ -207,15 +207,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let layerBaseLeaflet = null;      // layer di sfondo attivo (grigia o OSM)
     let stileMappaAttuale = "grigia"; // stile di sfondo scelto dall'utente
     let crocinoCentroMappa = null;    // overlay fisso col mirino che indica il centro inquadratura
-    let radarMeteoAttivo = false;
-    let radarInPausa = false;
-    let radarFotogrammi = []; // [{ layer, data }] dal più vecchio al più recente, ultima ora
-    let radarIndiceCorrente = 0;
-    let radarTimeoutAnimazione = null;
-    let radarEtichettaOrario = null;
     let intervalloMeteo = null;
-    let intervalloRadar = null;
-    let radarTimeoutRiquadro = null;
 
     // Interpretazione sintetica dei WMO Weather Code restituiti da Open-Meteo
     const METEO_CODICI = {
@@ -283,6 +275,33 @@ document.addEventListener("DOMContentLoaded", () => {
         return { lat: parti[0], lng: parti[1] };
     }
 
+// ==========================================================
+    // VISTA PERSISTENTE: centro e zoom sopravvivono ai cambi di pagina
+    // (i pannelli spostano la sezione nel magazzino, ma la mappa Leaflet
+    // resta la stessa) e ai ricaricamenti dentro la stessa sessione.
+    // ==========================================================
+    const CHIAVE_STORAGE_VISTA = "fireops_vista_mappa";
+
+    function salvaVistaMappa() {
+        if (!mappaComandoLeaflet) return;
+        const centro = mappaComandoLeaflet.getCenter();
+        try {
+            sessionStorage.setItem(CHIAVE_STORAGE_VISTA, JSON.stringify({
+                lat: centro.lat,
+                lng: centro.lng,
+                zoom: mappaComandoLeaflet.getZoom()
+            }));
+        } catch (err) {}
+    }
+
+    function leggiVistaMappa() {
+        try {
+            const v = JSON.parse(sessionStorage.getItem(CHIAVE_STORAGE_VISTA));
+            if (v && Number.isFinite(v.lat) && Number.isFinite(v.lng) && Number.isFinite(v.zoom)) return v;
+        } catch (err) {}
+        return null;
+    }
+
     // Crea la mappa Leaflet al primo utilizzo, altrimenti la ricentra sul nuovo Comando
     function aggiornaMappaComando(comando) {
         const contenitoreMappa = document.getElementById("mappa-comando");
@@ -297,13 +316,23 @@ document.addEventListener("DOMContentLoaded", () => {
         coordinateComandoAttivo = coord; // memorizzate per il pulsante "Torna al Comando"
 
         if (!mappaComandoLeaflet) {
-            mappaComandoLeaflet = L.map("mappa-comando").setView([coord.lat, coord.lng], ZOOM_VISTA_COMANDO);
+            // All'apertura si riprende l'ultima inquadratura della sessione:
+            // se la Sala stava guardando una zona precisa, un cambio pagina
+            // non deve riportarla sulla caserma.
+            const vista = leggiVistaMappa();
+            mappaComandoLeaflet = vista
+                ? L.map("mappa-comando").setView([vista.lat, vista.lng], vista.zoom)
+                : L.map("mappa-comando").setView([coord.lat, coord.lng], ZOOM_VISTA_COMANDO);
+
             impostaStileMappa(stileMappaAttuale);
             markerComandoLeaflet = L.marker([coord.lat, coord.lng], { icon: iconaCasermaVVF() }).addTo(mappaComandoLeaflet);
 
             aggiornaCoordinateCentroMappa();
             // Coordinate aggiornate in tempo reale durante il trascinamento (leggero, solo testo)
             mappaComandoLeaflet.on("move", aggiornaCoordinateCentroMappa);
+
+            // Centro e zoom sopravvivono ai cambi di pagina e ai ricaricamenti
+            mappaComandoLeaflet.on("moveend zoomend", salvaVistaMappa);
 
             // Il meteo mostrato segue il centro della mappa: se l'utente la sposta,
             // le previsioni si aggiornano sulla nuova zona inquadrata
@@ -316,27 +345,12 @@ document.addEventListener("DOMContentLoaded", () => {
             mappaComandoLeaflet.on("click", (e) => {
                 mappaComandoLeaflet.panTo(e.latlng);
             });
-
-            // L'overlay è ancorato al riquadro con cui è stato chiesto: spostando
-            // la mappa va rifatto. Ritardato, così un pan continuo non genera
-            // una raffica di ricostruzioni.
-            mappaComandoLeaflet.on("moveend zoomend", () => {
-                if (!radarMeteoAttivo) return;
-                if (radarTimeoutRiquadro) clearTimeout(radarTimeoutRiquadro);
-                radarTimeoutRiquadro = setTimeout(() => {
-                    creaFotogrammiRadar().then(() => {
-                        if (radarMeteoAttivo && !radarInPausa) avviaAnimazioneRadar();
-                    });
-                }, 500);
-            });
         } else {
             mappaComandoLeaflet.setView([coord.lat, coord.lng], ZOOM_VISTA_COMANDO);
             markerComandoLeaflet.setLatLng([coord.lat, coord.lng]);
             // Se la mappa era nascosta (cambio pagina) le dimensioni interne vanno ricalcolate
             setTimeout(() => mappaComandoLeaflet.invalidateSize(), 100);
         }
-        markerComandoLeaflet.bindPopup(`Comando VVF ${comando.Comando}`);
-    }
 
     // Icona del marker: badge circolare col logo VVF, a forma di caserma/segnaposto
     function iconaCasermaVVF() {
@@ -466,7 +480,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // I comandi della mappa Leaflet agiscono su qualcosa di nascosto:
             // spenti, non disabilitati a metà. Lookup diretto perché alcuni di
             // questi pulsanti sono dichiarati più in basso nel file.
-            ["btn-stile-mappa", "btn-torna-comando", "btn-toggle-radar", "btn-pausa-radar"]
+            ["btn-stile-mappa", "btn-torna-comando"]
                 .forEach(id => {
                     const b = document.getElementById(id);
                     if (b) b.disabled = windyAttivo;
@@ -513,293 +527,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const centro = mappaComandoLeaflet.getCenter();
         const etichetta = crocino.querySelector(".crocino-coordinate");
         if (etichetta) etichetta.textContent = `${centro.lat.toFixed(5)}, ${centro.lng.toFixed(5)}`;
-    }
-
-    // ==========================================================
-    // RADAR METEO ANIMATO (ultima ora, un fotogramma ogni 5 minuti)
-    // ==========================================================
-    // Layer "radar:vmi" (Vertical Maximum Intensity) del servizio WMS Protezione Civile.
-    // Il radar produce un nuovo campione ogni 5 minuti: costruiamo 12 fotogrammi (ultima ora)
-    // e li facciamo scorrere in loop cambiandone solo l'opacità, senza dover riscaricare
-    // le tile ad ogni passo dell'animazione.
-
-    // Endpoint GeoServer, non la cache GWC: è l'unico che onora davvero TIME.
-    // /service/wms serve tile cachate per (layer, griglia, zoom, x, y) e non ha
-    // un parameter filter sul tempo: le richieste con orari diversi tornavano
-    // tutte uguali. Verificato: /ows senza tiled=true risponde correttamente.
-    const RADAR_WMS = "https://radar-geowebcache.protezionecivile.it/ows";
-    const RADAR_NUM_FOTOGRAMMI = 10;
-    const RADAR_PASSO_MS = 5 * 60 * 1000;
-
-    // Stima di ripiego, usata solo se l'API DPC non è raggiungibile.
-    // Chiedere un istante non ancora pubblicato NON dà errore: dà un PNG
-    // trasparente. Meglio arretrare troppo che restare a mani vuote.
-    const RITARDO_PUBBLICAZIONE_MS = 20 * 60 * 1000;
-
-    let radarGenerazione = 0; // invalida le ricostruzioni sorpassate
-
-    // Arrotonda un istante al multiplo di 5 minuti precedente (i campioni radar cadono su questi minuti)
-    function arrotondaAi5Minuti(data) {
-        return new Date(Math.floor(data.getTime() / RADAR_PASSO_MS) * RADAR_PASSO_MS);
-    }
-
-    // L'ultimo campione pubblicato non si indovina: lo dichiara il DPC.
-    // L'API richiede però un origin autorizzato, quindi da GitHub Pages il CORS
-    // la blocca quasi sempre e si finisce sulla stima: è atteso, non è un guasto.
-    async function ultimoIstanteRadar() {
-        try {
-            const risposta = await fetch("https://radar-api.protezionecivile.it/findLastProductByType?type=VMI");
-            if (!risposta.ok) throw new Error("HTTP " + risposta.status);
-            const dati = await risposta.json();
-            const ms = dati && Array.isArray(dati.lastProducts) && dati.lastProducts[0]
-                ? dati.lastProducts[0].time : null;
-            if (typeof ms !== "number") throw new Error("Nessun campione VMI dichiarato");
-            console.info("Radar: ultimo campione dichiarato dal DPC:", new Date(ms).toISOString());
-            return new Date(ms);
-        } catch (err) {
-            console.warn("Radar: ultimo campione non ottenuto dall'API DPC, uso la stima a orologio.", err);
-            return arrotondaAi5Minuti(new Date(Date.now() - RITARDO_PUBBLICAZIONE_MS));
-        }
-    }
-
-    function generaIstantiRadar(ultimoIstante, numeroFotogrammi) {
-        const istanti = [];
-        for (let i = numeroFotogrammi - 1; i >= 0; i--) {
-            istanti.push(new Date(ultimoIstante.getTime() - i * RADAR_PASSO_MS));
-        }
-        return istanti;
-    }
-
-    // Etichetta con l'orario del fotogramma radar attualmente mostrato, sovrapposta alla mappa
-    function creaEtichettaOrarioRadar() {
-        if (radarEtichettaOrario) return radarEtichettaOrario;
-        const contenitoreMappa = document.getElementById("mappa-comando");
-        if (!contenitoreMappa) return null;
-        radarEtichettaOrario = document.createElement("div");
-        radarEtichettaOrario.className = "radar-etichetta-orario";
-        contenitoreMappa.appendChild(radarEtichettaOrario);
-        return radarEtichettaOrario;
-    }
-
-    function mostraOrarioFotogramma(data) {
-        const etichetta = creaEtichettaOrarioRadar();
-        if (!etichetta) return;
-        const ora = data.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Rome" });
-        etichetta.textContent = `Radar ${ora}`;
-        etichetta.style.display = "block";
-    }
-
-    function nascondiEtichettaOrarioRadar() {
-        if (radarEtichettaOrario) radarEtichettaOrario.style.display = "none";
-    }
-
-    // Un'unica GetMap per fotogramma, grande quanto l'inquadratura: a zoom 11
-    // le tile sarebbero 2-4 pezzi dello stesso riquadro, tagliato e ricucito.
-    // Il bordo del 20% evita che un pan breve scopra subito il vuoto.
-    function riquadroRadar() {
-        const bounds = mappaComandoLeaflet.getBounds().pad(0.2);
-        const sw = L.CRS.EPSG3857.project(bounds.getSouthWest());
-        const ne = L.CRS.EPSG3857.project(bounds.getNorthEast());
-        const size = mappaComandoLeaflet.getSize();
-        return {
-            bounds,
-            bbox: [sw.x, sw.y, ne.x, ne.y].join(","),
-            // Metà risoluzione schermo: il dato è a ~1 km, chiedere pixel pieni
-            // fa solo lavorare GeoServer per interpolare nulla
-            larghezza: Math.max(64, Math.round(size.x * 1.4 / 2)),
-            altezza: Math.max(64, Math.round(size.y * 1.4 / 2))
-        };
-    }
-
-    function urlFotogrammaRadar(data, riquadro) {
-        const parametri = new URLSearchParams({
-            service: "WMS",
-            request: "GetMap",
-            version: "1.1.1",
-            layers: "radar:vmi",
-            styles: "",
-            format: "image/png",
-            transparent: "true",
-            srs: "EPSG:3857",
-            bbox: riquadro.bbox,
-            width: String(riquadro.larghezza),
-            height: String(riquadro.altezza),
-            time: data.toISOString() // yyyy-MM-ddThh:mm:ss.SSSZ, come da specifica DPC
-        });
-        return `${RADAR_WMS}?${parametri.toString()}`;
-    }
-
-    // Un fotogramma alla volta: senza cache dietro, chiederli tutti insieme
-    // significa far rispondere GeoServer a caso e far partire l'animazione sul vuoto.
-    function caricaFotogramma(data, riquadro) {
-        return new Promise(resolve => {
-            const layer = L.imageOverlay(urlFotogrammaRadar(data, riquadro), riquadro.bounds, {
-                opacity: 0,
-                attribution: "Radar meteo &copy; Dipartimento Protezione Civile",
-                interactive: false
-            });
-
-            const fotogramma = { layer, data, disponibile: false };
-            let concluso = false;
-            const fine = () => { if (!concluso) { concluso = true; resolve(fotogramma); } };
-
-            layer.once("load", () => { fotogramma.disponibile = true; fine(); });
-            layer.once("error", () => {
-                console.warn("Radar: fotogramma non disponibile", data.toISOString());
-                fine();
-            });
-            setTimeout(fine, 8000); // un fotogramma lento non blocca la sequenza
-
-            layer.addTo(mappaComandoLeaflet);
-        });
-    }
-
-    function scartaFotogrammi(lista) {
-        (lista || []).forEach(f => {
-            if (mappaComandoLeaflet) mappaComandoLeaflet.removeLayer(f.layer);
-        });
-    }
-
-    function rimuoviFotogrammiRadar() {
-        scartaFotogrammi(radarFotogrammi);
-        radarFotogrammi = [];
-    }
-
-    async function creaFotogrammiRadar() {
-        const mia = ++radarGenerazione;
-        const ultimoIstante = await ultimoIstanteRadar();
-        if (mia !== radarGenerazione || !radarMeteoAttivo || !mappaComandoLeaflet) return;
-
-        rimuoviFotogrammiRadar();
-
-        // Riquadro calcolato una volta sola: i fotogrammi devono condividere la
-        // stessa inquadratura, altrimenti l'animazione "salta"
-        const riquadro = riquadroRadar();
-        const nuovi = [];
-
-        for (const istante of generaIstantiRadar(ultimoIstante, RADAR_NUM_FOTOGRAMMI)) {
-            const fotogramma = await caricaFotogramma(istante, riquadro);
-            // Radar spento o ricostruzione più recente partita mentre attendevamo:
-            // senza questo i layer tornerebbero sulla mappa da soli
-            if (mia !== radarGenerazione || !radarMeteoAttivo) {
-                scartaFotogrammi(nuovi.concat(fotogramma));
-                return;
-            }
-            nuovi.push(fotogramma);
-        }
-
-        radarFotogrammi = nuovi;
-        radarIndiceCorrente = radarFotogrammi.length - 1;
-
-        const validi = radarFotogrammi.filter(f => f.disponibile).length;
-        console.info(`Radar: ${validi}/${radarFotogrammi.length} fotogrammi ricevuti.`);
-
-        if (validi === 0) {
-            const etichetta = creaEtichettaOrarioRadar();
-            if (etichetta) {
-                etichetta.textContent = "Radar non disponibile";
-                etichetta.style.display = "block";
-            }
-            return;
-        }
-
-        radarFotogrammi[radarIndiceCorrente].layer.setOpacity(0.65);
-        mostraOrarioFotogramma(radarFotogrammi[radarIndiceCorrente].data);
-    }
-
-    // Fa scorrere i fotogrammi in loop: passo normale tra un fotogramma e l'altro,
-    // pausa più lunga sull'ultimo (il più recente) prima di ripartire dal più vecchio
-    function avviaAnimazioneRadar() {
-        fermaAnimazioneRadar();
-        const DURATA_FOTOGRAMMA_MS = 450;
-        const PAUSA_FOTOGRAMMA_RECENTE_MS = 1600;
-
-        function prossimoIndiceDisponibile(partenza) {
-            for (let passo = 1; passo <= radarFotogrammi.length; passo++) {
-                const i = (partenza + passo) % radarFotogrammi.length;
-                if (radarFotogrammi[i].disponibile) return i;
-            }
-            return partenza; // nessun campione valido: resta dov'è invece di lampeggiare a vuoto
-        }
-
-        function passoSuccessivo() {
-            if (radarFotogrammi.length === 0) return;
-
-            radarFotogrammi[radarIndiceCorrente].layer.setOpacity(0);
-            radarIndiceCorrente = prossimoIndiceDisponibile(radarIndiceCorrente);
-            radarFotogrammi[radarIndiceCorrente].layer.setOpacity(0.65);
-            mostraOrarioFotogramma(radarFotogrammi[radarIndiceCorrente].data);
-
-            const suFotogrammaRecente = radarIndiceCorrente === radarFotogrammi.length - 1;
-            radarTimeoutAnimazione = setTimeout(passoSuccessivo, suFotogrammaRecente ? PAUSA_FOTOGRAMMA_RECENTE_MS : DURATA_FOTOGRAMMA_MS);
-        }
-
-        radarTimeoutAnimazione = setTimeout(passoSuccessivo, PAUSA_FOTOGRAMMA_RECENTE_MS);
-    }
-
-    function fermaAnimazioneRadar() {
-        if (radarTimeoutAnimazione) clearTimeout(radarTimeoutAnimazione);
-        radarTimeoutAnimazione = null;
-    }
-
-    const btnToggleRadar = document.getElementById("btn-toggle-radar");
-    const btnPausaRadar = document.getElementById("btn-pausa-radar");
-
-    if (btnPausaRadar) {
-        btnPausaRadar.addEventListener("click", () => {
-            if (!radarMeteoAttivo) return;
-
-            radarInPausa = !radarInPausa;
-            btnPausaRadar.classList.toggle("attivo", radarInPausa);
-            btnPausaRadar.textContent = radarInPausa ? "▶️ Riprendi" : "⏸️ Pausa";
-
-            if (radarInPausa) {
-                fermaAnimazioneRadar();
-            } else {
-                avviaAnimazioneRadar();
-            }
-        });
-    }
-
-    if (btnToggleRadar) {
-        btnToggleRadar.addEventListener("click", () => {
-            if (!mappaComandoLeaflet) return;
-
-            radarMeteoAttivo = !radarMeteoAttivo;
-            btnToggleRadar.classList.toggle("attivo", radarMeteoAttivo);
-
-            if (radarMeteoAttivo) {
-                radarInPausa = false;
-                if (btnPausaRadar) {
-                    btnPausaRadar.style.display = "inline-block";
-                    btnPausaRadar.classList.remove("attivo");
-                    btnPausaRadar.textContent = "⏸️ Pausa";
-                }
-
-                creaFotogrammiRadar().then(() => {
-                    if (radarMeteoAttivo && !radarInPausa) avviaAnimazioneRadar();
-                });
-
-                // Ogni 5 minuti arriva un nuovo campione radar: ricostruisce i 12 fotogrammi
-                // in modo che la finestra "ultima ora" resti sempre aggiornata. Se l'animazione
-                // è in pausa, i fotogrammi vengono comunque rinfrescati ma la riproduzione resta ferma.
-                if (intervalloRadar) clearInterval(intervalloRadar);
-                intervalloRadar = setInterval(() => {
-                    if (!radarMeteoAttivo) return;
-                    creaFotogrammiRadar().then(() => {
-                        if (radarMeteoAttivo && !radarInPausa) avviaAnimazioneRadar();
-                    });
-                }, 5 * 60 * 1000);
-            } else {
-                fermaAnimazioneRadar();
-                rimuoviFotogrammiRadar();
-                nascondiEtichettaOrarioRadar();
-                if (intervalloRadar) clearInterval(intervalloRadar);
-                if (radarTimeoutRiquadro) clearTimeout(radarTimeoutRiquadro);
-                radarInPausa = false;
-                if (btnPausaRadar) btnPausaRadar.style.display = "none";
-            }
-        });
     }
 
     // Scarica e mostra il meteo in tempo reale per le coordinate del Comando attivo
