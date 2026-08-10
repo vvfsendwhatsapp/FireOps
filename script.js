@@ -205,7 +205,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const ZOOM_VISTA_COMANDO = 11;   // zoom di dettaglio usato quando si seleziona/aggiorna il Comando
     const ZOOM_RITORNO_COMANDO = 11; // zoom più ampio usato dal pulsante "Torna al Comando"
     let layerBaseLeaflet = null;      // layer di sfondo attivo (grigia o OSM)
-    let stileMappaAttuale = "grigia"; // stile di sfondo scelto dall'utente
+    let stileMappaAttuale = "grigio"; // stile di sfondo scelto dall'utente
     let crocinoCentroMappa = null;    // overlay fisso col mirino che indica il centro inquadratura
     let intervalloMeteo = null;
 
@@ -397,7 +397,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         stileMappaAttuale = stile;
         if (btnStileMappa) {
-            btnStileMappa.textContent = stile === "grigia" ? "🗺️ OSM" : "🗺️ Grigia";
+            btnStileMappa.textContent = stile === "grigia" ? "🗺️ OSM" : "🗺️ Scura";
         }
     }
 
