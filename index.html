@@ -874,6 +874,11 @@
         (function () {
             const VERSIONE = window.FIREOPS_VERSIONE || "0";
 
+            // Anche il CSS passa da qui: un solo numero da aggiornare.
+            // Arriva a fine documento invece che nel <head>, quindi al
+            // primo caricamento la pagina resta un istante senza stile.
+            document.write(`<link rel="stylesheet" href="style.css?v=${VERSIONE}">`);
+
             const MODULI = [
                 "fireops-core.js",   // nucleo condiviso: deve precedere gli altri
                 "script.js",
