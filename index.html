@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FireOps VVF</title>
     <link rel="icon" type="image/png" href="images/logo.png">
+    <script src="versione.js?v=0"></script>
 
     <!-- Tutto lo stile sta in style.css: nessun blocco <style> in questa
          pagina. Se serve una regola nuova, va in fondo a style.css, nella
@@ -872,7 +873,7 @@
          ========================================================== -->
     <script>
         (function () {
-            const VERSIONE = "202608102253";
+            const VERSIONE = window.FIREOPS_VERSIONE || "0";
 
             const MODULI = [
                 "fireops-core.js",   // nucleo condiviso: deve precedere gli altri
