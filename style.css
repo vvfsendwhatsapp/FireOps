@@ -3169,3 +3169,107 @@ a.btn-icon-hamburger:hover {
     color: var(--primary-color);
     line-height: 1;
 }
+
+/* ==========================================================
+   POPUP CANALI RADIO (ancorato all'header)
+   ========================================================== */
+
+.cliccabile-canali {
+    cursor: pointer;
+    text-decoration: underline dotted;
+    text-underline-offset: 4px;
+}
+
+.popup-canali {
+    position: fixed;
+    z-index: 1600;
+    /* sopra l'header (1000) e il pannello espanso (1500) */
+    background: var(--surface-color);
+    border: 1px solid var(--primary-color);
+    border-radius: 8px;
+    padding: 14px 16px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, .75);
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.popup-canali h5 {
+    color: var(--primary-color);
+    font-size: 13px;
+    margin-bottom: 10px;
+    padding-right: 24px;
+    white-space: nowrap;
+}
+
+.popup-canali table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.popup-canali thead th {
+    color: var(--text-muted);
+    background: var(--dark-color);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    text-align: left;
+    padding: 5px 10px;
+    white-space: nowrap;
+}
+
+.popup-canali td {
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border-color);
+    white-space: nowrap;
+}
+
+.popup-canali tr:last-child td {
+    border-bottom: none;
+}
+
+.popup-canali td.nome {
+    color: var(--text-main);
+    font-size: 13px;
+}
+
+/* Il canale è il motivo per cui si apre questo popup: grande, monospaziato
+   e giallo, leggibile senza avvicinarsi allo schermo */
+.popup-canali td.canale {
+    font-family: "Courier New", monospace;
+    font-size: 19px;
+    font-weight: bold;
+    color: var(--primary-color);
+    text-align: center;
+}
+
+/* Il Comando attivo apre l'elenco e resta distinguibile dagli altri */
+.popup-canali tr.popup-canali-attivo td {
+    background: rgba(255, 215, 0, .10);
+}
+
+.popup-canali tr.popup-canali-attivo td.nome {
+    font-weight: bold;
+}
+
+.popup-canali .popup-close {
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-weight: bold;
+    font-size: 18px;
+    line-height: 1;
+    display: block;
+}
+
+.popup-canali .popup-close:hover {
+    color: var(--primary-color);
+}
+
+.popup-canali td.vuoto {
+    color: var(--text-muted);
+    font-style: italic;
+    font-size: 12px;
+    text-align: center;
+}

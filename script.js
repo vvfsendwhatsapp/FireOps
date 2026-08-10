@@ -2906,6 +2906,98 @@ Koordináták küldéséhez:
     }
 
     // ==========================================================
+    // POPUP CANALI RADIO: cliccando l'intestazione del Comando attivo si
+    // apre l'elenco dei Comandi limitrofi coi rispettivi canali VHF.
+    //
+    // È ancorato all'header, quindi raggiungibile da qualsiasi pagina: gli
+    // stessi dati stanno anche nella Home, ma in Sala il canale del limitrofo
+    // serve mentre si sta guardando tutt'altro.
+    //
+    // Nessun elemento cliccabile dentro: è una tabella da leggere, non un
+    // punto di partenza per navigare. Il canale è il dato per cui si apre,
+    // quindi è grande e monospaziato.
+    // ==========================================================
+    const ID_POPUP_CANALI = "popup-canali-attivo";
+
+    function chiudiPopupCanali() {
+        const esistente = document.getElementById(ID_POPUP_CANALI);
+        if (esistente) esistente.remove();
+    }
+
+    function rigaCanali(c, attivo) {
+        return `
+            <tr${attivo ? ' class="popup-canali-attivo"' : ""}>
+                <td class="nome">${c.Comando || "-"}</td>
+                <td class="canale">${c["Canale Radio Comando"] || "-"}</td>
+                <td class="nome">${c["Direzione VVF"] || "-"}</td>
+                <td class="canale">${c["Canale Radio Direzione"] || "-"}</td>
+            </tr>`;
+    }
+
+    function apriPopupCanali(event) {
+        event.stopPropagation(); // il click che apre non deve anche richiudere
+        if (document.getElementById(ID_POPUP_CANALI)) { chiudiPopupCanali(); return; }
+
+        const nomeAttivo = sessionStorage.getItem(CHIAVE_STORAGE);
+        const comandoAttivo = trovaComandoPerNome(nomeAttivo, comandiData);
+        if (!comandoAttivo) return;
+
+        const limitrofi = (comandoAttivo["Concatena Comandi Confinanti"] || "")
+            .split(";").map(n => n.trim()).filter(Boolean)
+            .map(nome => trovaComandoPerNome(nome, comandiData))
+            .filter(Boolean);
+
+        // Il Comando attivo apre l'elenco: è il riferimento rispetto al quale
+        // si leggono tutti gli altri
+        const righe = rigaCanali(comandoAttivo, true) +
+            (limitrofi.length
+                ? limitrofi.map(c => rigaCanali(c, false)).join("")
+                : '<tr><td colspan="4" class="vuoto">Nessun comando limitrofo indicato</td></tr>');
+
+        const popup = document.createElement("div");
+        popup.id = ID_POPUP_CANALI;
+        popup.className = "popup-canali";
+        popup.innerHTML = `
+            <span class="popup-close" id="popup-canali-close" title="Chiudi">&times;</span>
+            <h5>Canali radio — Comando ${comandoAttivo.Comando} e limitrofi</h5>
+            <table>
+                <thead>
+                    <tr><th>Comando</th><th>CH VHF</th><th>Direzione</th><th>CH VHF</th></tr>
+                </thead>
+                <tbody>${righe}</tbody>
+            </table>`;
+
+        document.body.appendChild(popup);
+
+        // Ancorato sotto l'intestazione che l'ha aperto, rientrando nello
+        // schermo se il pannello è largo e la finestra stretta
+        const rect = event.currentTarget.getBoundingClientRect();
+        popup.style.top = `${rect.bottom + 10}px`;
+        const larghezza = popup.offsetWidth;
+        let sinistra = rect.left;
+        if (sinistra + larghezza > window.innerWidth - 10) sinistra = window.innerWidth - larghezza - 10;
+        popup.style.left = `${Math.max(10, sinistra)}px`;
+
+        const chiusura = document.getElementById("popup-canali-close");
+        if (chiusura) chiusura.addEventListener("click", chiudiPopupCanali);
+        popup.addEventListener("click", (e) => e.stopPropagation());
+    }
+
+    if (displayComando) {
+        displayComando.classList.add("cliccabile-canali");
+        displayComando.title = "Canali radio dei Comandi limitrofi";
+        displayComando.addEventListener("click", apriPopupCanali);
+    }
+
+    document.addEventListener("click", chiudiPopupCanali);
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") chiudiPopupCanali();
+    });
+
+    // Cambiando Comando l'elenco non è più quello giusto
+    document.addEventListener("fireops:comando-attivo-cambiato", chiudiPopupCanali);
+
+    // ==========================================================
     // CONTATORE ACCESSI
     // Il valore compare dentro il modale "Aiuto e contatti": non è un dato
     // operativo e non merita spazio fisso a schermo. Il conteggio si
