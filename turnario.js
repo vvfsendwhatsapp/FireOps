@@ -339,8 +339,9 @@
         // niente split-screen — e si chiama la stampa del browser, dove come
         // destinazione si può scegliere "Salva come PDF".
         //
-        // Il tema è chiaro e orizzontale: una griglia di 31 colonne su fondo
-        // nero in verticale sarebbe illeggibile su carta e sprecherebbe toner.
+        // Il foglio è A3 verticale: ci sta l'anno intero, riga per le
+        // annotazioni compresa. Il fondo è bianco, non il nero dell'app:
+        // stampare una pagina nera sprecherebbe toner e sarebbe illeggibile.
         // ----------------------------------------------------------
         function stampaPdf() {
             const { anno, def, salto } = selezioneCorrente();
@@ -353,46 +354,54 @@
                 return;
             }
 
-            // Su carta i colori vanno schiariti: le tinte da schermo scuro
-            // diventerebbero campiture pesanti e il testo nero sopra non si
-            // leggerebbe. Le marcature restano più sature delle tinte.
+            // A3 verticale: 297x420 mm. Con 31 colonne su 277 mm utili ogni
+            // giornata ha circa 8,9 mm, e i dodici mesi con la riga per le
+            // annotazioni stanno su un foglio solo. In A4 orizzontale l'anno
+            // si spezzava su due o tre pagine.
+            //
+            // I colori restano pieni come a schermo: e' una scelta di lettura,
+            // non un vezzo, e schiarirli su carta renderebbe il foglio stampato
+            // diverso da quello che si vede a video.
             const stile = `
-                @page { size: A4 landscape; margin: 10mm; }
+                @page { size: A3 portrait; margin: 10mm; }
                 * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-                body { font-family: Arial, Helvetica, sans-serif; color: #111; margin: 0; padding: 10px; }
-                h1 { font-size: 15px; margin: 0 0 3px; }
-                .sottotitolo { font-size: 10px; color: #555; margin: 0 0 8px; }
-                .turnario-tabella { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 8.5px; width: 100%; table-layout: fixed; }
+                body { font-family: Arial, Helvetica, sans-serif; color: #111; margin: 0; padding: 8px; }
+                h1 { font-size: 17px; margin: 0 0 3px; }
+                .sottotitolo { font-size: 11px; color: #555; margin: 0 0 10px; }
+                .turnario-tabella { border-collapse: collapse; font-family: "Courier New", monospace; font-size: 10px; width: 100%; table-layout: fixed; }
                 .turnario-tabella th, .turnario-tabella td { border: 1px solid #999; text-align: center; padding: 1px; }
                 .turnario-mese { page-break-inside: avoid; break-inside: avoid; }
-                .turnario-riga-mese th { background: #eee; text-align: left; padding: 3px 6px; font-size: 11px; }
-                .turnario-cella-giorno { background: #f7f7f7; }
-                .turnario-sett { display: block; color: #666; font-size: 7.5px; }
+                .turnario-riga-mese th { background: #e8e8e8; text-align: left; padding: 3px 6px; font-size: 12px; }
+                .turnario-cella-giorno { background: #f7f7f7; line-height: 1.2; }
+                .turnario-sett { display: block; color: #666; font-size: 8px; text-transform: uppercase; }
                 .turnario-num { display: block; font-weight: bold; }
                 .turnario-domenica .turnario-sett, .turnario-domenica .turnario-num { color: #b00; }
                 .turnario-turno { display: inline-block; padding: 0 1px; }
                 .turnario-separatore { color: #888; }
                 .turnario-cella-vuota { background: #fff; border-color: #ddd; }
 
-                /* Tinta = intera giornata, marca = la sigla che combacia */
-                .turnario-tinta-giorno { background: #fff2b0; }
-                .turnario-tinta-notte  { background: #cfeaff; }
-                .turnario-tinta-salto  { background: #ffd0f2; }
-                .turnario-marca-giorno { background: #ffd700; font-weight: bold; }
-                .turnario-marca-notte  { background: #6cc4f5; font-weight: bold; }
-                .turnario-marca-salto  { background: #ff6ad5; font-weight: bold; }
+                /* Colore pieno su tutta la cella, data compresa */
+                .turnario-tinta-giorno { background: #ffd700; }
+                .turnario-tinta-notte  { background: #4fc3f7; }
+                .turnario-tinta-salto  { background: #ff4fd8; }
+                .turnario-tinta-giorno .turnario-sett, .turnario-tinta-notte .turnario-sett, .turnario-tinta-salto .turnario-sett,
+                .turnario-tinta-giorno .turnario-num,  .turnario-tinta-notte .turnario-num,  .turnario-tinta-salto .turnario-num,
+                .turnario-tinta-giorno .turnario-separatore, .turnario-tinta-notte .turnario-separatore, .turnario-tinta-salto .turnario-separatore { color: #111; }
+
+                /* Quale delle due sigle e' quella che ti riguarda */
+                .turnario-marca-giorno, .turnario-marca-notte, .turnario-marca-salto { background: rgba(0,0,0,.22); font-weight: bold; }
 
                 /* Riga libera per segnare ferie e permessi a penna: resta
                    bianca anche sotto le giornate colorate, altrimenti la
                    penna non si legge sopra il fondo */
-                .turnario-riga-note td { height: 7mm; background: #fff !important; }
+                .turnario-riga-note td { height: 8mm; background: #fff !important; }
 
-                .legenda { font-size: 10px; margin: 8px 0 0; line-height: 1.8; }
-                .legenda span { margin-right: 16px; white-space: nowrap; }
-                .campione { display: inline-block; width: 11px; height: 11px; border: 1px solid #999; vertical-align: -1px; margin-right: 4px; }
+                .legenda { font-size: 11px; margin: 10px 0 0; line-height: 1.9; }
+                .legenda span { margin-right: 18px; white-space: nowrap; }
+                .campione { display: inline-block; width: 12px; height: 12px; border: 1px solid #999; vertical-align: -1px; margin-right: 5px; }
             `;
 
-            const CAMPIONI_STAMPA = { giorno: "#ffd700", notte: "#6cc4f5", salto: "#ff6ad5" };
+            const CAMPIONI_STAMPA = { giorno: "#ffd700", notte: "#4fc3f7", salto: "#ff4fd8" };
             const legendaStampa = vociLegenda(def, salto).map(v => {
                 const campione = v.colore
                     ? `<i class="campione" style="background:${CAMPIONI_STAMPA[v.colore]}"></i>`

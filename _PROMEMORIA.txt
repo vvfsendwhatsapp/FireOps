@@ -1,0 +1,203 @@
+<!-- ==========================================================
+     TURNARIO — CSS da incollare in index.html
+
+     Sostituisce il blocco "SEZIONE TURNARIO" gia' presente in fondo
+     al <style> del <head>. La <section> in <main> e il tag <script>
+     restano come sono: NON vanno reincollati.
+     ========================================================== -->
+
+<style>
+    /* ==========================================================
+       SEZIONE TURNARIO
+       ========================================================== */
+
+    .turnario-intestazione {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+        margin: 16px 0 8px;
+    }
+
+    .turnario-intestazione h4 {
+        margin: 0;
+        color: var(--primary-color);
+        font-size: 15px;
+    }
+
+    .turnario-conteggio {
+        font-family: "Courier New", monospace;
+        font-size: 11px;
+        color: var(--text-muted);
+        border: 1px solid var(--border-color);
+        border-radius: 999px;
+        padding: 1px 8px;
+        flex-shrink: 0;
+    }
+
+    .turnario-legenda {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 18px;
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-bottom: 10px;
+    }
+
+    .turnario-legenda-voce {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .turnario-campione {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        border-radius: 3px;
+        border: 1px solid var(--border-color);
+        flex-shrink: 0;
+    }
+
+    /* 31 colonne non entrano in mezzo schermo: la griglia scorre in
+       orizzontale dentro il suo contenitore invece di sfondare il pannello */
+    .turnario-scroll {
+        overflow-x: auto;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        background: var(--dark-color);
+    }
+
+    .turnario-tabella {
+        border-collapse: collapse;
+        font-family: "Courier New", monospace;
+        font-size: 11px;
+        width: max-content;
+        min-width: 100%;
+    }
+
+    .turnario-tabella th,
+    .turnario-tabella td {
+        border: 1px solid var(--border-color);
+        text-align: center;
+        padding: 2px 3px;
+        min-width: 44px;
+    }
+
+    .turnario-riga-mese th {
+        background: var(--surface-color);
+        color: var(--primary-color);
+        text-align: left;
+        font-size: 13px;
+        letter-spacing: .5px;
+        padding: 6px 10px;
+        min-width: 0;
+    }
+
+    .turnario-cella-giorno {
+        background: rgba(255, 255, 255, .03);
+        line-height: 1.25;
+    }
+
+    .turnario-sett {
+        display: block;
+        font-size: 9px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: .5px;
+    }
+
+    .turnario-num {
+        display: block;
+        font-weight: bold;
+        color: var(--text-main);
+    }
+
+    /* Domenica in rosso tenue come su qualsiasi calendario: e' un'indicazione
+       di calendario civile, non un'evidenziazione di turno */
+    .turnario-domenica .turnario-sett,
+    .turnario-domenica .turnario-num {
+        color: #d9483a;
+    }
+
+    .turnario-cella-turni {
+        white-space: nowrap;
+        color: var(--text-muted);
+    }
+
+    .turnario-turno {
+        display: inline-block;
+        padding: 1px 2px;
+        border-radius: 3px;
+    }
+
+    .turnario-separatore {
+        color: var(--border-color);
+    }
+
+    /* ----------------------------------------------------------
+       COLORI DELL'EVIDENZIAZIONE
+
+       Il colore e' PIENO e copre l'intera cella, sia quella della data
+       sia quella dei due turni: una giornata di servizio si vede da
+       lontano come una colonna colorata da cima a fondo.
+
+       giallo  = turno diurno    (08:00-20:00)
+       azzurro = turno notturno  (20:00-08:00)
+       fucsia  = coincide col saltoturno scelto, cioe' sono le tue giornate
+       ---------------------------------------------------------- */
+    .turnario-tinta-giorno {
+        background: #ffd700;
+    }
+
+    .turnario-tinta-notte {
+        background: #4fc3f7;
+    }
+
+    .turnario-tinta-salto {
+        background: #ff4fd8;
+    }
+
+    /* Su fondo pieno tutto il testo della cella diventa scuro: il grigio
+       del giorno della settimana e il rosso della domenica sparirebbero */
+    .turnario-tinta-giorno,
+    .turnario-tinta-notte,
+    .turnario-tinta-salto,
+    .turnario-tinta-giorno .turnario-sett,
+    .turnario-tinta-notte .turnario-sett,
+    .turnario-tinta-salto .turnario-sett,
+    .turnario-tinta-giorno .turnario-num,
+    .turnario-tinta-notte .turnario-num,
+    .turnario-tinta-salto .turnario-num,
+    .turnario-tinta-giorno .turnario-separatore,
+    .turnario-tinta-notte .turnario-separatore,
+    .turnario-tinta-salto .turnario-separatore {
+        color: var(--dark-color);
+    }
+
+    /* Quale delle due sigle e' quella che ti riguarda: la cella e' gia'
+       tutta colorata, quindi qui non serve un altro colore ma un rilievo:
+       velo scuro e grassetto */
+    .turnario-marca-giorno,
+    .turnario-marca-notte,
+    .turnario-marca-salto {
+        background: rgba(0, 0, 0, .22);
+        font-weight: bold;
+    }
+
+    /* Riga per le annotazioni a penna: esiste nel markup ma serve solo su
+       carta. A video sarebbe una striscia vuota che allontana i mesi. */
+    .turnario-riga-note {
+        display: none;
+    }
+
+    /* La giornata odierna resta riconoscibile anche quando non e' di servizio */
+    .turnario-oggi {
+        box-shadow: inset 0 0 0 2px #d9483a;
+    }
+
+    .turnario-cella-vuota {
+        background: transparent;
+        border-color: transparent;
+    }
+</style>
