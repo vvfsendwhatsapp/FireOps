@@ -446,7 +446,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return String(Math.min(11, Math.max(3, Math.round(livello))));
     }
 
-    function urlWindy(coord) {
+    function urlWindy(coord, livelloZoom) {
         const parametri = new URLSearchParams({
             lat: coord.lat.toFixed(4),
             lon: coord.lng.toFixed(4),
