@@ -615,6 +615,15 @@
             background: transparent;
             border-color: transparent;
         }
+    </style>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+    <script>
+        // Controllo sincrono PRIMA del rendering: se c'è già un comando in sessione,
+        // nascondo il modale via classe CSS, così non lampeggia mai a schermo.
+        if (sessionStorage.getItem('fireops_comando_selezionato')) {
+            document.documentElement.classList.add('comando-gia-scelto');
+        }
     </script>
 </head>
 
