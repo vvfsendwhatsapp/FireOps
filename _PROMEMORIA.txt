@@ -175,16 +175,6 @@
         color: var(--dark-color);
     }
 
-    /* Quale delle due sigle e' quella che ti riguarda: la cella e' gia'
-       tutta colorata, quindi qui non serve un altro colore ma un rilievo:
-       velo scuro e grassetto */
-    .turnario-marca-giorno,
-    .turnario-marca-notte,
-    .turnario-marca-salto {
-        background: rgba(0, 0, 0, .22);
-        font-weight: bold;
-    }
-
     /* Riga per le annotazioni a penna: esiste nel markup ma serve solo su
        carta. A video sarebbe una striscia vuota che allontana i mesi. */
     .turnario-riga-note {
