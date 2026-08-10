@@ -69,16 +69,8 @@
         setTimeout(() => URL.revokeObjectURL(url), 2000);
     }
 
-    // Nome file ricavato dal contenuto: ritrovare un QR salvato mesi prima
-    // è impossibile se si chiamano tutti "qrcode.png"
     function nomeFileDaTesto(estensione) {
-        const base = testoCorrente
-            .replace(/^https?:\/\//i, "")
-            .replace(/[^a-zA-Z0-9]+/g, "-")
-            .replace(/^-+|-+$/g, "")
-            .slice(0, 40)
-            .toLowerCase();
-        return `qr-${base || "codice"}.${estensione}`;
+        return `qrcode.${estensione}`;
     }
 
     function salvaImmagine(tipo, estensione, qualita) {
