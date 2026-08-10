@@ -420,12 +420,33 @@
             // altrimenti su alcuni browser l'anteprima esce a pagina bianca.
             // Dopo document.close() il load può essere già scattato: il timer
             // di scorta evita la finestra che resta lì senza aprire la stampa.
+            //
+            // A stampa finita (o annullata) la scheda si chiude da sola: e'
+            // servita solo a impaginare, tenerla aperta lascerebbe in giro
+            // schede "Turnario 2026" a ogni tentativo.
+            //
+            // Il segnale di fine arriva per due strade perche' i browser non
+            // concordano: onafterprint e' l'evento ufficiale, ma su Chrome ed
+            // Edge print() e' bloccante e ritorna quando il dialogo si chiude,
+            // mentre su Firefox e Safari ritorna subito. Chiudere solo sul
+            // ritorno di print() ucciderebbe l'anteprima ancora aperta; solo
+            // su onafterprint lascerebbe la scheda dove l'evento non scatta.
+            // Il ritardo dà al browser il tempo di finire il lavoro di stampa.
+            let giaChiusa = false;
+            const chiudiScheda = () => {
+                if (giaChiusa) return;
+                giaChiusa = true;
+                setTimeout(() => { try { finestra.close(); } catch (err) {} }, 400);
+            };
+
             let giaStampato = false;
             const stampaUnaVolta = () => {
                 if (giaStampato) return;
                 giaStampato = true;
+                finestra.onafterprint = chiudiScheda;
                 finestra.focus();
                 finestra.print();
+                chiudiScheda();
             };
             finestra.onload = stampaUnaVolta;
             setTimeout(stampaUnaVolta, 600);
