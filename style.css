@@ -3118,37 +3118,3 @@ a.btn-icon-hamburger:hover {
         transition: none !important;
     }
 }
-
-/* ==========================================================
-   CONTATORE ACCESSI SUL PULSANTE AIUTO
-   Il footer che lo ospitava è stato tolto: il numero di accessi non è un
-   dato operativo e non merita una barra propria a fondo pagina. Come
-   badge sul ❓ resta consultabile senza occupare spazio.
-   ========================================================== */
-#btn-help {
-    position: relative;
-    overflow: visible;
-}
-
-.contatore-badge {
-    /* Nascosto finché il dato non arriva: un badge vuoto o con "N/D"
-       sarebbe peggio dell'assenza del badge */
-    display: none;
-    position: absolute;
-    top: -6px;
-    right: -6px;
-    min-width: 18px;
-    height: 18px;
-    padding: 0 5px;
-    border-radius: 999px;
-    background: var(--primary-color);
-    color: var(--dark-color);
-    /* Bordo del colore dell'header: stacca il badge dal pulsante sotto */
-    border: 1px solid var(--surface-color);
-    font-family: Arial, sans-serif;
-    font-size: 10px;
-    font-weight: bold;
-    line-height: 16px;
-    text-align: center;
-    pointer-events: none;
-}
