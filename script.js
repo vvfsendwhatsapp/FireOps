@@ -2947,12 +2947,13 @@ Koordináták küldéséhez:
             .map(nome => trovaComandoPerNome(nome, comandiData))
             .filter(Boolean);
 
-        // Solo i limitrofi: il canale del proprio Comando è quello su cui si
-        // è già sintonizzati, elencarlo sarebbe una riga sprecata
-        const righe = limitrofi.length
-            ? limitrofi.map(c => rigaCanali(c)).join("")
-            : '<tr><td colspan="4" class="vuoto">Nessun comando limitrofo indicato</td></tr>';
-
+        // Il Comando attivo apre l'elenco: è il riferimento rispetto al quale
+        // si leggono tutti gli altri
+        const righe = rigaCanali(comandoAttivo, true) +
+            (limitrofi.length
+                ? limitrofi.map(c => rigaCanali(c, false)).join("")
+                : '<tr><td colspan="4" class="vuoto">Nessun comando limitrofo indicato</td></tr>');
+                
         const popup = document.createElement("div");
         popup.id = ID_POPUP_CANALI;
         popup.className = "popup-canali";
