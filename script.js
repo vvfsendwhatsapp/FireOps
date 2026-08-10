@@ -2892,38 +2892,24 @@ Koordináták küldéséhez:
     }
 
     // ==========================================================
-    // CONTATORE ACCESSI + CREDITS
+    // CONTATORE ACCESSI
+    // Il valore compare dentro il modale "Aiuto e contatti": non è un dato
+    // operativo e non merita spazio fisso a schermo. Il conteggio si
+    // incrementa a ogni caricamento della pagina, non all'apertura del modale.
     // ==========================================================
     (function contatoreAccessi() {
-        const badge = document.getElementById("display-contatore-accessi");
-        const bottoneAiuto = document.getElementById("btn-help");
-        if (!badge) return;
-
-        // Su un badge da 18px un numero a cinque cifre non entra: oltre il
-        // migliaio si abbrevia, e il valore esatto resta nel tooltip del
-        // pulsante, dove chi è curioso lo trova
-        function compatta(n) {
-            if (n < 1000) return String(n);
-            if (n < 10000) return (n / 1000).toFixed(1).replace(".", ",") + "k";
-            if (n < 1000000) return Math.round(n / 1000) + "k";
-            return (n / 1000000).toFixed(1).replace(".", ",") + "M";
-        }
+        const display = document.getElementById("display-contatore-accessi");
+        if (!display) return;
 
         fetch("https://abacus.jasoncameron.dev/hit/fireops-vvf-pel/accessi")
             .then(r => r.json())
             .then(dati => {
                 const valore = Number(dati.value);
                 if (!Number.isFinite(valore)) throw new Error("Valore non numerico");
-                badge.textContent = compatta(valore);
-                badge.style.display = "block";
-                if (bottoneAiuto) {
-                    bottoneAiuto.title = `Aiuto e contatti — ${valore.toLocaleString("it-IT")} accessi`;
-                }
+                display.textContent = String(valore);
             })
             .catch(() => {
-                // Servizio non raggiungibile: nessun badge, il pulsante resta
-                // quello che era. Un "N/D" appiccicato al ❓ sembrerebbe un errore
-                badge.style.display = "none";
+                display.textContent = "N/D";
             });
     })();
 });
