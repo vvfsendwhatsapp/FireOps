@@ -81,6 +81,39 @@ window.FireOps = (function () {
         return SEQUENZA_TURNI[slotIndex] || "N/D";
     }
 
+    // ----------------------------------------------------------
+    // TURNI DI UNA DATA QUALSIASI (passata o futura)
+    //
+    // calcolaTurnoVVF() risponde solo per "adesso" e ragiona sulla frazione
+    // di giornata. Per costruire un turnario annuale serve invece il turno
+    // di una data civile, senza ora: qui la data è un giorno di calendario,
+    // non un istante.
+    //
+    // Il conto usa Date.UTC su (anno, mese, giorno): la differenza fra due
+    // mezzanotti UTC è sempre un multiplo esatto di 24h, quindi il cambio
+    // d'ora legale non può far scivolare il ciclo di un giorno — cosa che
+    // accadrebbe usando new Date(anno, mese, giorno) in ora locale.
+    // ----------------------------------------------------------
+    function indiceCicloPerData(anno, mese, giorno) {
+        const ms = Date.UTC(anno, mese - 1, giorno);
+        const diffGiorni = Math.round((ms - RIFERIMENTO_CICLO_MS) / MS_AL_GIORNO);
+        return ((diffGiorni % GIORNI_CICLO) + GIORNI_CICLO) % GIORNI_CICLO;
+    }
+
+    // Restituisce le tre fasce della giornata indicata:
+    //   notteUscente = 00:00-08:00 (coda della notte iniziata il giorno prima)
+    //   giorno       = 08:00-20:00
+    //   notte        = 20:00-08:00 del giorno seguente
+    // Il turnario a schermo mostra la coppia giorno/notte (es. "B5/a5").
+    function turniDelGiorno(anno, mese, giorno) {
+        const i = indiceCicloPerData(anno, mese, giorno) * 3;
+        return {
+            notteUscente: SEQUENZA_TURNI[i] || "N/D",
+            giorno: SEQUENZA_TURNI[i + 1] || "N/D",
+            notte: SEQUENZA_TURNI[i + 2] || "N/D"
+        };
+    }
+
     // Sigla del fuso in vigore adesso: unica riga di verità per l'etichetta
     // CET/CEST usata sia nell'header sia nei messaggi alle squadre
     function siglaFusoRoma(data) {
@@ -320,6 +353,8 @@ window.FireOps = (function () {
         offsetOreRoma: calcolaOffsetRoma,
         siglaFusoRoma,
         turnoVVF: calcolaTurnoVVF,
+        indiceCicloPerData,
+        turniDelGiorno,
         creaCombo: creaComboRicercabile,
         copiaTesto,
         mostraFeedbackCopia,
