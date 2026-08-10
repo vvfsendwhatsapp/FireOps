@@ -55,6 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
     ])
     .then(([comandi, direzioni, con, socav, prefissi, lingue, moduliCMR, linkUtili]) => {
         comandiData = comandi;
+        window.FireOpsComandi = comandiData;
         direzioniData = direzioni;
         conData = Array.isArray(con) ? con[0] : con;
         socavData = Array.isArray(socav) ? socav[0] : socav;

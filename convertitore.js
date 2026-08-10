@@ -452,6 +452,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // ==========================================================
     // GEOCODING INVERSO (Nominatim + fallback Overpass su sentieri)
     // ==========================================================
+    // Restituisce { toponimo, sigla }: la sigla è la targa provinciale
+    // estratta da ISO3166-2-lvl6 ("IT-AG" → "AG"), unico aggancio affidabile
+    // verso comandi.json. Il campo county non va usato: è il nome esteso e
+    // in Italia coincide spesso col capoluogo, che è un'altra cosa.
     async function geocodingInverso(lat, lon) {
         try {
             const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=16&addressdetails=1&accept-language=it`;
@@ -460,12 +464,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 const dati = await risposta.json();
                 if (dati && !dati.error) {
                     const a = dati.address || {};
+                    const iso = String(a["ISO3166-2-lvl6"] || "");
+                    const sigla = /^IT-[A-Z]{2}$/.test(iso) ? iso.slice(3) : "";
+
                     const nome = a.hamlet || a.village || a.town || a.city || a.suburb || a.locality || a.county;
                     if (nome) {
                         const extra = a.county && a.county !== nome ? ` (${a.county})` : "";
-                        return nome + extra;
+                        return { toponimo: nome + extra, sigla };
                     }
-                    if (dati.display_name) return dati.display_name.split(",").slice(0, 2).join(",").trim();
+                    if (dati.display_name) {
+                        return { toponimo: dati.display_name.split(",").slice(0, 2).join(",").trim(), sigla };
+                    }
                 }
             }
         } catch (err) {
@@ -482,14 +491,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 const dati2 = await risposta2.json();
                 const elementi = dati2.elements || [];
                 const conNome = elementi.find(e => e.tags && e.tags.name);
-                if (conNome) return `Vicino al sentiero "${conNome.tags.name}"`;
-                if (elementi.length > 0) return "Vicino a un sentiero/traccia non denominato";
+                if (conNome) return { toponimo: `Vicino al sentiero "${conNome.tags.name}"`, sigla: "" };
+                if (elementi.length > 0) return { toponimo: "Vicino a un sentiero/traccia non denominato", sigla: "" };
             }
         } catch (err) {
             console.error("Fallback Overpass non disponibile:", err);
         }
 
-        return "Toponimo non disponibile";
+        return { toponimo: "Toponimo non disponibile", sigla: "" };
     }
 
     // ==========================================================
@@ -2201,6 +2210,56 @@ function disegnaGraficoAltimetria(geojson) {
         });
     }
 
+// ==========================================================
+    // COMANDO COMPETENTE SUL PUNTO CONVERTITO
+    //
+    // La competenza è provinciale: si cerca per targa, non per vicinanza.
+    // Il Comando più vicino in linea d'aria può stare in un'altra provincia,
+    // e mandarci la squadra sarebbe un errore di giurisdizione.
+    // ==========================================================
+    function comandoPerSigla(sigla) {
+        if (!sigla) return null;
+        const elenco = window.FireOpsComandi || [];
+        return elenco.find(c => String(c.Provincia || "").trim().toUpperCase() === sigla) || null;
+    }
+
+    function mostraComandoCompetente(sigla) {
+        const elNome = document.getElementById("coord-out-comando");
+        const elCanale = document.getElementById("coord-out-comando-canale");
+        const elTelefono = document.getElementById("coord-out-comando-telefono");
+        if (!elNome) return;
+
+        [elNome, elCanale, elTelefono].forEach(el => {
+            if (!el) return;
+            el.classList.remove("cliccabile");
+            el.onclick = null;
+        });
+
+        const comando = comandoPerSigla(sigla);
+        if (!comando) {
+            elNome.textContent = sigla
+                ? `Nessun Comando in elenco per la provincia ${sigla}`
+                : "Provincia non determinata";
+            if (elCanale) elCanale.textContent = "-";
+            if (elTelefono) elTelefono.textContent = "-";
+            return;
+        }
+
+        // Se il punto cade fuori dalla provincia del Comando attivo, la cosa
+        // va detta: è esattamente il caso in cui questo dato serve
+        const attivo = comandoAttivoCache && String(comandoAttivoCache.Provincia || "").toUpperCase();
+        const fuori = attivo && attivo !== sigla ? " ⚠️ fuori dal Comando attivo" : "";
+        elNome.textContent = `${comando.Comando} (${sigla})${fuori}`;
+
+        if (elCanale) elCanale.textContent = comando["Canale Radio Comando"] || "-";
+
+        const telefono = String(comando["Telefono SO Comando"] || "").trim();
+        if (elTelefono) {
+            if (telefono) rendiCopiabile(elTelefono, telefono, telefono.replace(/\s+/g, ""));
+            else elTelefono.textContent = "-";
+        }
+    }
+
     // Logica di rendering condivisa: usata sia dal pulsante "Converti" sia
     // dal click diretto sulla mappa (che passa già una coppia lat/lon)
     async function elaboraCoordinateConvertite(lat, lon) {
@@ -2232,6 +2291,11 @@ function disegnaGraficoAltimetria(geojson) {
             elMaps.innerHTML = `<a href="${urlGoogleMapsNavigazione(lat, lon)}" target="_blank" rel="noopener" class="indirizzo-link">🧭 Naviga con Google Maps</a>`;
         }
 
+        ["coord-out-comando", "coord-out-comando-canale", "coord-out-comando-telefono"].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) { el.textContent = "Ricerca in corso…"; el.classList.remove("cliccabile"); el.onclick = null; }
+        });
+
         const elToponimo = document.getElementById("coord-out-toponimo");
         if (elToponimo) { elToponimo.textContent = "Ricerca in corso…"; elToponimo.classList.remove("cliccabile"); elToponimo.onclick = null; }
 
@@ -2249,12 +2313,13 @@ function disegnaGraficoAltimetria(geojson) {
         // viene sempre cancellato (la tipologia scelta invece resta)
         azzeraPercorso({ mantieniTipologia: true });
 
-        const [toponimo, quota] = await Promise.all([
+        const [esitoToponimo, quota] = await Promise.all([
             geocodingInverso(lat, lon),
             recuperaQuota(lat, lon),
         ]);
-        rendiCopiabile(elToponimo, toponimo);
+        rendiCopiabile(elToponimo, esitoToponimo.toponimo);
         rendiCopiabile(elQuota, quota);
+        mostraComandoCompetente(esitoToponimo.sigla);
     }
 
     // ==========================================================
