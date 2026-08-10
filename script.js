@@ -215,6 +215,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let radarEtichettaOrario = null;
     let intervalloMeteo = null;
     let intervalloRadar = null;
+    let radarTimeoutRiquadro = null;
 
     // Interpretazione sintetica dei WMO Weather Code restituiti da Open-Meteo
     const METEO_CODICI = {
@@ -314,6 +315,19 @@ document.addEventListener("DOMContentLoaded", () => {
             // Click sulla mappa: la ricentra dolcemente sul punto cliccato, senza cambiare zoom
             mappaComandoLeaflet.on("click", (e) => {
                 mappaComandoLeaflet.panTo(e.latlng);
+            });
+
+            // L'overlay è ancorato al riquadro con cui è stato chiesto: spostando
+            // la mappa va rifatto. Ritardato, così un pan continuo non genera
+            // una raffica di ricostruzioni.
+            mappaComandoLeaflet.on("moveend zoomend", () => {
+                if (!radarMeteoAttivo) return;
+                if (radarTimeoutRiquadro) clearTimeout(radarTimeoutRiquadro);
+                radarTimeoutRiquadro = setTimeout(() => {
+                    creaFotogrammiRadar().then(() => {
+                        if (radarMeteoAttivo && !radarInPausa) avviaAnimazioneRadar();
+                    });
+                }, 500);
             });
         } else {
             mappaComandoLeaflet.setView([coord.lat, coord.lng], ZOOM_VISTA_COMANDO);
@@ -509,18 +523,29 @@ document.addEventListener("DOMContentLoaded", () => {
     // e li facciamo scorrere in loop cambiandone solo l'opacità, senza dover riscaricare
     // le tile ad ogni passo dell'animazione.
 
+    // Endpoint GeoServer, non la cache GWC: è l'unico che onora davvero TIME.
+    // /service/wms serve tile cachate per (layer, griglia, zoom, x, y) e non ha
+    // un parameter filter sul tempo: le richieste con orari diversi tornavano
+    // tutte uguali. Verificato: /ows senza tiled=true risponde correttamente.
+    const RADAR_WMS = "https://radar-geowebcache.protezionecivile.it/ows";
+    const RADAR_NUM_FOTOGRAMMI = 10;
+    const RADAR_PASSO_MS = 5 * 60 * 1000;
+
+    // Stima di ripiego, usata solo se l'API DPC non è raggiungibile.
+    // Chiedere un istante non ancora pubblicato NON dà errore: dà un PNG
+    // trasparente. Meglio arretrare troppo che restare a mani vuote.
+    const RITARDO_PUBBLICAZIONE_MS = 20 * 60 * 1000;
+
+    let radarGenerazione = 0; // invalida le ricostruzioni sorpassate
+
     // Arrotonda un istante al multiplo di 5 minuti precedente (i campioni radar cadono su questi minuti)
     function arrotondaAi5Minuti(data) {
-        const cinqueMinutiMs = 5 * 60 * 1000;
-        return new Date(Math.floor(data.getTime() / cinqueMinutiMs) * cinqueMinutiMs);
+        return new Date(Math.floor(data.getTime() / RADAR_PASSO_MS) * RADAR_PASSO_MS);
     }
 
-// Stima di ripiego, usata solo se l'API DPC non è raggiungibile
-    const RITARDO_PUBBLICAZIONE_MS = 10 * 60 * 1000;
-
     // L'ultimo campione pubblicato non si indovina: lo dichiara il DPC.
-    // Indovinarlo significa chiedere istanti inesistenti e ricevere tile
-    // vuote per tutti e 12 i fotogrammi, senza alcun errore visibile.
+    // L'API richiede però un origin autorizzato, quindi da GitHub Pages il CORS
+    // la blocca quasi sempre e si finisce sulla stima: è atteso, non è un guasto.
     async function ultimoIstanteRadar() {
         try {
             const risposta = await fetch("https://radar-api.protezionecivile.it/findLastProductByType?type=VMI");
@@ -529,9 +554,9 @@ document.addEventListener("DOMContentLoaded", () => {
             const ms = dati && Array.isArray(dati.lastProducts) && dati.lastProducts[0]
                 ? dati.lastProducts[0].time : null;
             if (typeof ms !== "number") throw new Error("Nessun campione VMI dichiarato");
+            console.info("Radar: ultimo campione dichiarato dal DPC:", new Date(ms).toISOString());
             return new Date(ms);
         } catch (err) {
-            // CORS o servizio giù: meglio una stima che nessun radar
             console.warn("Radar: ultimo campione non ottenuto dall'API DPC, uso la stima a orologio.", err);
             return arrotondaAi5Minuti(new Date(Date.now() - RITARDO_PUBBLICAZIONE_MS));
         }
@@ -540,7 +565,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function generaIstantiRadar(ultimoIstante, numeroFotogrammi) {
         const istanti = [];
         for (let i = numeroFotogrammi - 1; i >= 0; i--) {
-            istanti.push(new Date(ultimoIstante.getTime() - i * 5 * 60 * 1000));
+            istanti.push(new Date(ultimoIstante.getTime() - i * RADAR_PASSO_MS));
         }
         return istanti;
     }
@@ -568,62 +593,118 @@ document.addEventListener("DOMContentLoaded", () => {
         if (radarEtichettaOrario) radarEtichettaOrario.style.display = "none";
     }
 
-    // Crea i 12 fotogrammi (uno per ogni istante) e li aggiunge tutti alla mappa,
-    // ma visibili (opacità piena) solo l'ultimo: l'animazione poi alterna l'opacità tra i layer già caricati
-    async function creaFotogrammiRadar() {
-        const ultimoIstante = await ultimoIstanteRadar();
-        // Il radar può essere stato spento mentre attendevamo la risposta:
-        // senza questo controllo i layer tornerebbero sulla mappa da soli
-        if (!radarMeteoAttivo || !mappaComandoLeaflet) return;
+    // Un'unica GetMap per fotogramma, grande quanto l'inquadratura: a zoom 11
+    // le tile sarebbero 2-4 pezzi dello stesso riquadro, tagliato e ricucito.
+    // Il bordo del 20% evita che un pan breve scopra subito il vuoto.
+    function riquadroRadar() {
+        const bounds = mappaComandoLeaflet.getBounds().pad(0.2);
+        const sw = L.CRS.EPSG3857.project(bounds.getSouthWest());
+        const ne = L.CRS.EPSG3857.project(bounds.getNorthEast());
+        const size = mappaComandoLeaflet.getSize();
+        return {
+            bounds,
+            bbox: [sw.x, sw.y, ne.x, ne.y].join(","),
+            // Metà risoluzione schermo: il dato è a ~1 km, chiedere pixel pieni
+            // fa solo lavorare GeoServer per interpolare nulla
+            larghezza: Math.max(64, Math.round(size.x * 1.4 / 2)),
+            altezza: Math.max(64, Math.round(size.y * 1.4 / 2))
+        };
+    }
 
-        rimuoviFotogrammiRadar();
+    function urlFotogrammaRadar(data, riquadro) {
+        const parametri = new URLSearchParams({
+            service: "WMS",
+            request: "GetMap",
+            version: "1.1.1",
+            layers: "radar:vmi",
+            styles: "",
+            format: "image/png",
+            transparent: "true",
+            srs: "EPSG:3857",
+            bbox: riquadro.bbox,
+            width: String(riquadro.larghezza),
+            height: String(riquadro.altezza),
+            time: data.toISOString() // yyyy-MM-ddThh:mm:ss.SSSZ, come da specifica DPC
+        });
+        return `${RADAR_WMS}?${parametri.toString()}`;
+    }
 
-        const istanti = generaIstantiRadar(ultimoIstante, 12);
-        radarFotogrammi = istanti.map((data, i) => {
-            const layer = L.tileLayer.wms("https://radar-geowebcache.protezionecivile.it/service/wms", {
-                layers: "radar:vmi",
-                format: "image/png",
-                transparent: true,
-                version: "1.1.1",
-                // Il DPC espone un GeoWebCache (WMS-C): senza tiled=true la
-                // richiesta non è quella documentata e non arriva dalla cache.
-                // Leaflet non lo invia mai da solo.
-                tiled: true,
-                styles: "",
-                time: data.toISOString(), // yyyy-MM-ddThh:mm:ss.SSSZ, come da specifica DPC
-                opacity: i === istanti.length - 1 ? 0.65 : 0,
+    // Un fotogramma alla volta: senza cache dietro, chiederli tutti insieme
+    // significa far rispondere GeoServer a caso e far partire l'animazione sul vuoto.
+    function caricaFotogramma(data, riquadro) {
+        return new Promise(resolve => {
+            const layer = L.imageOverlay(urlFotogrammaRadar(data, riquadro), riquadro.bounds, {
+                opacity: 0,
                 attribution: "Radar meteo &copy; Dipartimento Protezione Civile",
-                // GeoWebCache serve SOLO tile del proprio gridset (256×256).
-                // maxNativeZoom evita di chiedere oltre la risoluzione reale (~1 km).
-                maxNativeZoom: 9,
-                minZoom: 3
+                interactive: false
             });
 
-            // Un fotogramma si scarta solo se NESSUNA tile è arrivata: prima
-            // bastava una tile mancante ai bordi per marcarlo come assente,
-            // e con tutti e 12 marcati l'animazione restava ferma sul vuoto.
-            const fotogramma = { layer, data, disponibile: true, tileCaricate: 0 };
-            layer.on("tileload", () => {
-                fotogramma.tileCaricate++;
-                fotogramma.disponibile = true;
+            const fotogramma = { layer, data, disponibile: false };
+            let concluso = false;
+            const fine = () => { if (!concluso) { concluso = true; resolve(fotogramma); } };
+
+            layer.once("load", () => { fotogramma.disponibile = true; fine(); });
+            layer.once("error", () => {
+                console.warn("Radar: fotogramma non disponibile", data.toISOString());
+                fine();
             });
-            layer.on("tileerror", () => {
-                if (fotogramma.tileCaricate === 0) fotogramma.disponibile = false;
-            });
+            setTimeout(fine, 8000); // un fotogramma lento non blocca la sequenza
 
             layer.addTo(mappaComandoLeaflet);
-            return fotogramma;
         });
+    }
 
-        radarIndiceCorrente = radarFotogrammi.length - 1;
-        mostraOrarioFotogramma(radarFotogrammi[radarIndiceCorrente].data);
+    function scartaFotogrammi(lista) {
+        (lista || []).forEach(f => {
+            if (mappaComandoLeaflet) mappaComandoLeaflet.removeLayer(f.layer);
+        });
     }
 
     function rimuoviFotogrammiRadar() {
-        radarFotogrammi.forEach(f => {
-            if (mappaComandoLeaflet) mappaComandoLeaflet.removeLayer(f.layer);
-        });
+        scartaFotogrammi(radarFotogrammi);
         radarFotogrammi = [];
+    }
+
+    async function creaFotogrammiRadar() {
+        const mia = ++radarGenerazione;
+        const ultimoIstante = await ultimoIstanteRadar();
+        if (mia !== radarGenerazione || !radarMeteoAttivo || !mappaComandoLeaflet) return;
+
+        rimuoviFotogrammiRadar();
+
+        // Riquadro calcolato una volta sola: i fotogrammi devono condividere la
+        // stessa inquadratura, altrimenti l'animazione "salta"
+        const riquadro = riquadroRadar();
+        const nuovi = [];
+
+        for (const istante of generaIstantiRadar(ultimoIstante, RADAR_NUM_FOTOGRAMMI)) {
+            const fotogramma = await caricaFotogramma(istante, riquadro);
+            // Radar spento o ricostruzione più recente partita mentre attendevamo:
+            // senza questo i layer tornerebbero sulla mappa da soli
+            if (mia !== radarGenerazione || !radarMeteoAttivo) {
+                scartaFotogrammi(nuovi.concat(fotogramma));
+                return;
+            }
+            nuovi.push(fotogramma);
+        }
+
+        radarFotogrammi = nuovi;
+        radarIndiceCorrente = radarFotogrammi.length - 1;
+
+        const validi = radarFotogrammi.filter(f => f.disponibile).length;
+        console.info(`Radar: ${validi}/${radarFotogrammi.length} fotogrammi ricevuti.`);
+
+        if (validi === 0) {
+            const etichetta = creaEtichettaOrarioRadar();
+            if (etichetta) {
+                etichetta.textContent = "Radar non disponibile";
+                etichetta.style.display = "block";
+            }
+            return;
+        }
+
+        radarFotogrammi[radarIndiceCorrente].layer.setOpacity(0.65);
+        mostraOrarioFotogramma(radarFotogrammi[radarIndiceCorrente].data);
     }
 
     // Fa scorrere i fotogrammi in loop: passo normale tra un fotogramma e l'altro,
@@ -714,7 +795,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 rimuoviFotogrammiRadar();
                 nascondiEtichettaOrarioRadar();
                 if (intervalloRadar) clearInterval(intervalloRadar);
-
+                if (radarTimeoutRiquadro) clearTimeout(radarTimeoutRiquadro);
                 radarInPausa = false;
                 if (btnPausaRadar) btnPausaRadar.style.display = "none";
             }
