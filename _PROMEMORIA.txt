@@ -1,1 +1,80 @@
 convertitore coordinate, con geocoding su comando competente
+
+Sì, ha senso: il numero lo leggi, ma dove sta quel Comando rispetto al target lo vedi solo sulla mappa.
+
+1. convertitore.js — marker del Comando competente
+
+Aggiungi accanto alle altre costanti colore (vicino a COLORE_TARGET):
+
+js
+    const COLORE_COMANDO = "#2E7DD1";   // blu: né target né squadra
+    let coordMarkerComando = null;
+
+Poi, subito sopra mostraComandoCompetente:
+
+js
+    function rimuoviMarkerComandoCompetente() {
+        if (coordMappaLeaflet && coordMarkerComando) coordMappaLeaflet.removeLayer(coordMarkerComando);
+        coordMarkerComando = null;
+    }
+
+    // Il marker NON sposta la vista: al centro resta il target, che è il punto
+    // dell'intervento. Se il Comando competente è lontano resta fuori campo,
+    // ed è corretto: la distanza si legge nel popup, non spostando l'inquadratura.
+    function mostraComandoSuMappa(comando) {
+        rimuoviMarkerComandoCompetente();
+        if (!coordMappaLeaflet || !comando) return;
+
+        const coord = estraiCoordinateComando(comando);
+        if (!coord) return;
+
+        const canale = comando["Canale Radio Comando"] || "-";
+        const telefono = String(comando["Telefono SO Comando"] || "").trim() || "-";
+
+        let distanza = "";
+        if (coordinateTargetCorrenti) {
+            const km = distanzaKmHaversine(coord.lat, coord.lon,
+                coordinateTargetCorrenti.lat, coordinateTargetCorrenti.lon);
+            const az = calcolaAzimut(coord.lat, coord.lon,
+                coordinateTargetCorrenti.lat, coordinateTargetCorrenti.lon);
+            distanza = `<br>${km.toFixed(1)} km dal target — Az ${String(Math.round(az)).padStart(3, "0")}°`;
+        }
+
+        coordMarkerComando = L.marker([coord.lat, coord.lon], {
+            icon: iconaMarkerGenerica(COLORE_COMANDO),
+            title: `Comando competente: ${comando.Comando}`,
+        }).addTo(coordMappaLeaflet)
+          .bindPopup(`<strong>Comando ${testoSicuro(comando.Comando)}</strong><br>
+                      CH VHF ${testoSicuro(canale)}<br>
+                      TEL SO ${testoSicuro(telefono)}${distanza}`);
+    }
+
+Dentro mostraComandoCompetente, nel ramo "non trovato" aggiungi la pulizia e in fondo la chiamata:
+
+js
+        const comando = comandoPerSigla(sigla);
+        if (!comando) {
+            rimuoviMarkerComandoCompetente();
+            elNome.textContent = sigla
+
+e come ultima riga della funzione, dopo il blocco del telefono:
+
+js
+        mostraComandoSuMappa(comando);
+2. Pulizia
+
+In azzeraConvertitore, accanto alla rimozione di coordMarkerTarget:
+
+js
+        rimuoviMarkerComandoCompetente();
+3. index.html — legenda
+
+Nel riquadro .coord-mappa-overlay-dx, dopo la voce del target:
+
+html
+                                    <div class="coord-mappa-legenda-voce"><span class="coord-mappa-pallino"
+                                            style="background:#2E7DD1;"></span> Comando competente</div>
+
+Una scelta che ho fatto e su cui voglio il tuo parere: la vista resta centrata sul target a zoom 15, quindi con un Comando a 40 km il pallino blu è fuori schermo e lo trovi solo allargando. L'alternativa è un fitBounds che inquadra target e Comando insieme, ma allora il target non è più al centro e a zoom basso perdi il dettaglio del punto — che di solito è quello che serve.
+
+Se preferisci vederli entrambi, si può aggiungere un pulsantino accanto a "Reparti Volo più vicini" tipo "🏠 Inquadra Comando", che fa il fitBounds solo quando lo chiedi. Dimmi se lo vuoi e te lo scrivo.
