@@ -23,7 +23,7 @@
     // Indicizzati come getUTCDay(): 0 = domenica
     const GIORNI_SETTIMANA = ["do", "lu", "ma", "me", "gi", "ve", "sa"];
 
-    const URL_GESTIONE_PERSONALE = "https://gestionepersonale.dipvvf.it";
+    const URL_SIPEC_WEB = "https://gestionepersonale.dipvvf.it";
 
     // Il turnario è largo 31 colonne fisse: i mesi corti (e febbraio, bisestile
     // o no) lasciano vuote le ultime celle, così la colonna del giorno 7 è la
@@ -469,7 +469,7 @@
         if (btnPdf) btnPdf.addEventListener("click", stampaPdf);
 
         if (btnGestione) btnGestione.addEventListener("click", () => {
-            window.open(URL_GESTIONE_PERSONALE, "_blank", "noopener");
+            window.open(URL_SIPEC_WEB, "_blank", "noopener");
         });
     });
 })();
