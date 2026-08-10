@@ -431,9 +431,19 @@ document.addEventListener("DOMContentLoaded", () => {
     function coordinateVistaCorrente() {
         if (mappaComandoLeaflet) {
             const centro = mappaComandoLeaflet.getCenter();
-            return { lat: centro.lat, lng: centro.lng };
+            return { lat: centro.lat, lng: centro.lng, zoom: mappaComandoLeaflet.getZoom() };
         }
-        return coordinateComandoAttivo;
+        // Mappa non ancora creata: si parte dal Comando con lo zoom di default
+        return coordinateComandoAttivo
+            ? { ...coordinateComandoAttivo, zoom: ZOOM_VISTA_COMANDO }
+            : null;
+    }
+
+    // Windy non arriva ai livelli di dettaglio di Leaflet: oltre ~11 le tile
+    // meteo non esistono e l'embed si comporta in modo imprevedibile.
+    // Lo zoom corrente si passa comunque, tagliato nell'intervallo che regge.
+    function zoomWindy(livello) {
+        return String(Math.min(11, Math.max(3, Math.round(livello))));
     }
 
     function urlWindy(coord) {
@@ -442,7 +452,7 @@ document.addEventListener("DOMContentLoaded", () => {
             lon: coord.lng.toFixed(4),
             detailLat: coord.lat.toFixed(4),
             detailLon: coord.lng.toFixed(4),
-            zoom: "8",
+            zoom: zoomWindy(livelloZoom),
             level: "surface",
             overlay: "radar",
             product: "radar",
@@ -467,7 +477,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!iframeWindy || !windyAttivo) return;
         const coord = coordinateVistaCorrente();
         if (!coord) return;
-        iframeWindy.src = urlWindy(coord);
+        iframeWindy.src = urlWindy(coord, coord.zoom);
     }
 
     if (btnWindy) {
