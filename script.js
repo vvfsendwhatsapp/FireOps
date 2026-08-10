@@ -351,6 +351,8 @@ document.addEventListener("DOMContentLoaded", () => {
             // Se la mappa era nascosta (cambio pagina) le dimensioni interne vanno ricalcolate
             setTimeout(() => mappaComandoLeaflet.invalidateSize(), 100);
         }
+        markerComandoLeaflet.bindPopup(`Comando VVF ${comando.Comando}`);
+    }
 
     // Icona del marker: badge circolare col logo VVF, a forma di caserma/segnaposto
     function iconaCasermaVVF() {
