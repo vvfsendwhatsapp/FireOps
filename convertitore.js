@@ -2256,10 +2256,21 @@ function rimuoviMarkerComandoCompetente() {
         coordMarkerComando = L.marker([coord.lat, coord.lon], {
             icon: iconaMarkerGenerica(COLORE_COMANDO),
             title: `Comando competente: ${comando.Comando}`,
-        }).addTo(coordMappaLeaflet)
-          .bindPopup(`<strong>Comando ${testoSicuro(comando.Comando)}</strong><br>
+        }).addTo(coordMappaLeaflet);
+
+        coordMarkerComando.bindPopup(`<strong>Comando ${testoSicuro(comando.Comando)}</strong><br>
                       CH VHF ${testoSicuro(canale)}<br>
                       TEL SO ${testoSicuro(telefono)}${distanza}`);
+
+        // In modalità "crea percorso" il marker deve comportarsi da sfondo:
+        // il clic appartiene alla mappa, ed è anzi il caso in cui si vuole
+        // far partire la squadra proprio dal Comando. Fuori da quella
+        // modalità torna consultabile col popup.
+        coordMarkerComando.on("click", (e) => {
+            if (!modalitaPercorsoAttiva || !coordinateTargetCorrenti) return;
+            coordMarkerComando.closePopup();
+            calcolaEDisegnaPercorso(e.latlng.lat, e.latlng.lng);
+        });
     }
 
     function mostraComandoCompetente(sigla) {
