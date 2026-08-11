@@ -1084,6 +1084,7 @@ if (contenitoreFormCoord) {
     let modalitaPercorsoAttiva = false;
     let ultimoGeojsonPercorso = null;
     let ultimoPuntoPartenza = null;
+    let popupPuntoPartenza = null;
     let coordMarkerComando = null;
 
     function iconaMarkerGenerica(colore) {
@@ -1125,6 +1126,7 @@ function iconaFrecciaDirezione(colore, azimutGradi) {
     // Secondo punto di "Crea percorso": funziona sempre, indipendentemente
     // dal formato selezionato nel menù a tendina
     if (modalitaPercorsoAttiva && coordinateTargetCorrenti) {
+        popupPuntoPartenza = null;
         calcolaEDisegnaPercorso(e.latlng.lat, e.latlng.lng);
         return;
     }
@@ -1189,6 +1191,7 @@ document.addEventListener("fireops:comando-attivo-cambiato", (e) => {
     function azzeraPercorso({ mantieniTipologia = true } = {}) {
         modalitaPercorsoAttiva = false;
         ultimoPuntoPartenza = null;
+        popupPuntoPartenza = null;
         ultimoGeojsonPercorso = null;
 
         if (coordMappaLeaflet) {
@@ -1397,12 +1400,13 @@ function disegnaMarkerPartenza(lat, lon, azimut) {
         draggable: true,
         autoPan: true,
         title: "Squadra VF — trascina per spostare il punto di partenza",
-    }).addTo(coordMappaLeaflet).bindPopup("Squadra VF (trascinabile)");
+    }).addTo(coordMappaLeaflet).bindPopup(popupPuntoPartenza || "Squadra VF (trascinabile)");
 
     coordMarkerPartenza.on("dragstart", () => {
         if (elInfoPercorso) elInfoPercorso.textContent = "Spostamento del punto di partenza…";
     });
     coordMarkerPartenza.on("dragend", (e) => {
+        popupPuntoPartenza = null;
         const posizione = e.target.getLatLng();
         calcolaEDisegnaPercorso(posizione.lat, posizione.lng);
     });
@@ -1760,7 +1764,8 @@ function disegnaGraficoAltimetria(geojson) {
     const modaleRepartiVolo = document.getElementById("modal-reparti-volo");
     const contenutoRepartiVolo = document.getElementById("reparti-volo-contenuto");
     let elencoRepartiVoloCache = null;
-
+    let repartiMostrati = []; // ultimi reparti disegnati, per il clic sulla testata
+        
     // ==========================================================
     // UNITÀ DELLE DISTANZE: km oppure miglia nautiche (1 NM = 1852 m esatti).
     //
@@ -1951,7 +1956,7 @@ function disegnaGraficoAltimetria(geojson) {
         });
         conCoordinate.sort((a, b) => a.distanzaKm - b.distanzaKm);
         const piuVicini = conCoordinate.slice(0, 3);
-
+        repartiMostrati = piuVicini;
         const quote = await recuperaQuoteMultiple([
             { lat: latTarget, lon: lonTarget },
             ...piuVicini.map(v => v.coord),
@@ -1961,50 +1966,62 @@ function disegnaGraficoAltimetria(geojson) {
         const schede = piuVicini.map((voce, i) => {
             const quotaReparto = quote[i + 1];
             const dislivello = (quotaTarget !== null && quotaReparto !== null) ? quotaTarget - quotaReparto : null;
+            voce.calcoli = { quotaReparto, quotaTarget, dislivello };
 
             return `<div class="reparto-volo-scheda">
                 <button type="button" class="reparto-volo-testata" data-indice="${i}"
-                        data-lat="${voce.coord.lat}" data-lon="${voce.coord.lon}"
-                        aria-expanded="false">
-                    <span class="freccia">▶</span>
+                        data-lat="${voce.coord.lat}" data-lon="${voce.coord.lon}">
                     <span class="reparto-volo-distintivo">${i + 1}º</span>
                     <span class="nome">${testoSicuro(nomeDelReparto(voce.record, i))}</span>
                     <span class="distanza">${distanzaDoppia(voce.distanzaKm, 1)}</span>
                     <span class="azimut">Az ${String(Math.round(voce.azimut)).padStart(3, "0")}°</span>
                 </button>
-                <div class="reparto-volo-dettaglio" data-dettaglio="${i}">
-                    <h5>Rotta verso il target</h5>
-                    ${tabellaCalcoliReparto({
-                        distanzaKm: voce.distanzaKm,
-                        azimut: voce.azimut,
-                        quotaReparto,
-                        quotaTarget,
-                        dislivello,
-                    })}
-                    <h5>Dati del reparto</h5>
-                    ${tabellaCampiRecord(voce.record)}
-                <button type="button" class="btn-vedi-su-mappa">🗺️ Vedi la rotta sulla mappa</button>
-                </div>
             </div>`;
         }).join("");
 
         apriModaleRepartiVolo(`
             <p class="pagina-nota">Target: ${latTarget.toFixed(6)}, ${lonTarget.toFixed(6)} — confronto su ${conCoordinate.length} reparti con coordinate note.
             Le distanze sono in linea d'aria (ortodromica), non tengono conto di rotte, spazi aerei o autonomia.
-            Clicca un reparto per aprirne i dati.</p>
+            Clicca un reparto per tracciarne la rotta sulla mappa.</p>
             ${schede}`);
     }
 
-    // Aprendo una scheda si traccia subito la rotta reparto → target.
-    // Il profilo viene forzato su "linea-diretta": un elicottero non segue
-    // strade, e chiedere a BRouter un percorso stradale da un aeroporto
-    // sarebbe una misura senza senso operativo.
-    //
-    // Il valore del select si imposta senza emettere "change": l'evento
-    // farebbe ripartire un secondo calcolo identico sullo stesso punto.
-    function tracciaRottaVersoReparto(lat, lon) {
+    // Tutto ciò che serve dopo la chiusura del modale finisce qui: rotta,
+    // quote e contatti viaggiano col marker sulla mappa.
+    // Le distanze sono in chiaro con entrambe le unità: il CSS che accende
+    // km o NM vive dentro #reparti-volo-contenuto e qui non arriva.
+    function popupReparto(voce, calcoli) {
+        const nome = nomeDelReparto(voce.record, 0);
+        const quota = v => (v === null || v === undefined ? "n.d." : `${Math.round(v)} m`);
+        const dislivello = (calcoli.dislivello === null || calcoli.dislivello === undefined)
+            ? "n.d."
+            : `${calcoli.dislivello > 0 ? "+" : ""}${Math.round(calcoli.dislivello)} m`;
+
+        const rotta = `${voce.distanzaKm.toFixed(2)} km / ${kmInMiglia(voce.distanzaKm).toFixed(2)} NM`
+            + ` — Az ${String(Math.round(voce.azimut)).padStart(3, "0")}°`
+            + `<br>Quota reparto ${quota(calcoli.quotaReparto)} · target ${quota(calcoli.quotaTarget)} · Δ ${dislivello}`;
+
+        const contatti = Object.entries(voce.record)
+            .filter(([chiave, valore]) => /tel|cell|fax|mail|contatt|frequen|radio/i.test(chiave) && valore)
+            .map(([chiave, valore]) => `${testoSicuro(chiave)}: ${valoreFormattato(valore)}`)
+            .join("<br>");
+
+        return `<strong>${testoSicuro(nome)}</strong><br>${rotta}`
+            + `<hr style="border:none;border-top:1px solid #333;margin:6px 0;">`
+            + (contatti || "Nessun contatto in elenco");
+    }
+
+    // Clic sul reparto: traccia la rotta, chiude il modale e porta sulla mappa.
+    // Profilo forzato su "linea-diretta" — un elicottero non segue strade, e
+    // un percorso stradale da un aeroporto sarebbe una misura senza senso.
+    // Il valore si imposta senza emettere "change": l'evento farebbe ripartire
+    // un secondo calcolo identico sullo stesso punto.
+    function tracciaRottaVersoReparto(lat, lon, popupHtml) {
         if (!coordinateTargetCorrenti || Number.isNaN(lat) || Number.isNaN(lon)) return;
         if (selectProfiloPercorso) selectProfiloPercorso.value = "linea-diretta";
+        popupPuntoPartenza = popupHtml || null;
+        chiudiModaleRepartiVolo();
+        impostaSchedaColonnaAttiva("mappa");
         calcolaEDisegnaPercorso(lat, lon);
     }
 
@@ -2012,31 +2029,14 @@ function disegnaGraficoAltimetria(geojson) {
     // funziona anche sulle schede ricostruite a ogni nuova ricerca
     if (contenutoRepartiVolo) {
         contenutoRepartiVolo.addEventListener("click", (e) => {
-            // "Vedi sulla mappa": chiude il modale e porta sulla colonna mappa,
-            // dove la rotta è già tracciata
-            if (e.target.closest(".btn-vedi-su-mappa")) {
-                chiudiModaleRepartiVolo();
-                impostaSchedaColonnaAttiva("mappa");
-                return;
-            }
-
             const testata = e.target.closest(".reparto-volo-testata");
             if (!testata) return;
-            const dettaglio = testata.parentElement.querySelector(".reparto-volo-dettaglio");
-            if (!dettaglio) return;
-            const aperto = dettaglio.classList.toggle("aperto");
-            testata.setAttribute("aria-expanded", aperto ? "true" : "false");
-            const freccia = testata.querySelector(".freccia");
-            if (freccia) freccia.textContent = aperto ? "▼" : "▶";
-
-            // Solo in apertura: richiudendo la scheda la rotta resta sulla
-            // mappa, perché è il dato che serve, non un effetto del modale
-            if (aperto) {
-                tracciaRottaVersoReparto(
-                    parseFloat(testata.dataset.lat),
-                    parseFloat(testata.dataset.lon)
-                );
-            }
+            const voce = repartiMostrati[parseInt(testata.dataset.indice, 10)];
+            tracciaRottaVersoReparto(
+                parseFloat(testata.dataset.lat),
+                parseFloat(testata.dataset.lon),
+                voce ? popupReparto(voce, voce.calcoli || {}) : null
+            );
         });
     }
 
