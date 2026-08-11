@@ -936,13 +936,15 @@ document.addEventListener("DOMContentLoaded", () => {
     // ==========================================================
     const CATALOGO_PAGINE = [
         { id: "homepage", label: "Home page - Informazioni generali comando" },
-        { id: "mappa-meteo", label: "Mappa e meteo" },
+        { id: "mappa-meteo", label: "Meteo locale" },
         { id: "messaggistica", label: "Messaggistica" },
         { id: "info-comando", label: "Info altro comando" },
         { id: "gestione-fpds", label: "Gestione interventi FPDS" },
         { id: "contatti", label: "Link utili" },
         { id: "convertitoreunita", label: "Convertitore unità" },
-        { id: "convertitore", label: "Convertitore coordinate" },
+        { id: "convertitore", label: "Convertitore coordinate e calcolo percorso" },
+        { id: "sitac-aib", label: "SITAC AIB" },
+        { id: "schede-soccorso", label: "Schede di soccorso" },
         { id: "radio-telefoni", label: "Radio e telefoni" },
         { id: "qrcode", label: "QrCode" },
         { id: "turnario", label: "Turnario" },

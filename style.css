@@ -3273,3 +3273,17 @@ a.btn-icon-hamburger:hover {
     font-size: 12px;
     text-align: center;
 }
+
+.reparti-volo-barra {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+/* Predefinito km: le miglia esistono nel DOM ma restano spente */
+#reparti-volo-contenuto .dist-nm { display: none; }
+#reparti-volo-contenuto.unita-nm .dist-km { display: none; }
+#reparti-volo-contenuto.unita-nm .dist-nm { display: inline; }
+
+.reparto-volo-testata .distanza { white-space: nowrap; }

@@ -1761,6 +1761,46 @@ function disegnaGraficoAltimetria(geojson) {
     const contenutoRepartiVolo = document.getElementById("reparti-volo-contenuto");
     let elencoRepartiVoloCache = null;
 
+    // ==========================================================
+    // UNITÀ DELLE DISTANZE: km oppure miglia nautiche (1 NM = 1852 m esatti).
+    //
+    // Nel DOM finiscono SEMPRE entrambi i valori: il selettore accende l'uno
+    // e spegne l'altro via CSS. Così cambiare unità non ricostruisce le
+    // schede — non si perdono gli accordion aperti e, soprattutto, non si
+    // richiamano le API delle quote a ogni clic sul selettore.
+    // ==========================================================
+    const METRI_PER_MIGLIO_NAUTICO = 1852;
+    const CHIAVE_STORAGE_UNITA_DISTANZA = "fireops_unita_distanza";
+    const selectUnitaDistanza = document.getElementById("reparti-volo-unita");
+
+    function unitaDistanzaSalvata() {
+        try {
+            const salvata = sessionStorage.getItem(CHIAVE_STORAGE_UNITA_DISTANZA);
+            if (salvata === "km" || salvata === "nm") return salvata;
+        } catch (err) {}
+        return "km";
+    }
+
+    function kmInMiglia(km) { return (km * 1000) / METRI_PER_MIGLIO_NAUTICO; }
+
+    // Coppia di valori pronta per il DOM: uno solo resta visibile
+    function distanzaDoppia(km, decimali = 2) {
+        return `<span class="dist-km">${km.toFixed(decimali)} km</span>` +
+               `<span class="dist-nm">${kmInMiglia(km).toFixed(decimali)} NM</span>`;
+    }
+
+    function applicaUnitaDistanza(unita) {
+        if (contenutoRepartiVolo) contenutoRepartiVolo.classList.toggle("unita-nm", unita === "nm");
+        if (selectUnitaDistanza) selectUnitaDistanza.value = unita;
+        try { sessionStorage.setItem(CHIAVE_STORAGE_UNITA_DISTANZA, unita); } catch (err) {}
+    }
+
+    if (selectUnitaDistanza) {
+        selectUnitaDistanza.addEventListener("change", () => applicaUnitaDistanza(selectUnitaDistanza.value));
+    }
+
+    applicaUnitaDistanza(unitaDistanzaSalvata());
+
     async function caricaRepartiVolo() {
         if (elencoRepartiVoloCache) return elencoRepartiVoloCache;
         const dati = await FireOps.caricaJson("/FireOps/db/repartivolovvf.json");
@@ -1857,7 +1897,7 @@ function disegnaGraficoAltimetria(geojson) {
             : `${calcoli.dislivello > 0 ? "+" : ""}${Math.round(calcoli.dislivello)} m`;
 
         return `<table class="riepilogo-tabella"><tbody>
-            <tr><th>Distanza in linea d'aria</th><td>${calcoli.distanzaKm.toFixed(2)} km</td></tr>
+            <tr><th>Distanza in linea d'aria</th><td>${distanzaDoppia(calcoli.distanzaKm, 2)}</td></tr>
             <tr><th>Azimut (reparto → target)</th><td>${Math.round(calcoli.azimut)}°</td></tr>
             <tr><th>Quota reparto volo</th><td>${quota(calcoli.quotaReparto)}</td></tr>
             <tr><th>Quota target</th><td>${quota(calcoli.quotaTarget)}</td></tr>
@@ -1927,7 +1967,7 @@ function disegnaGraficoAltimetria(geojson) {
                     <span class="freccia">▶</span>
                     <span class="reparto-volo-distintivo">${i + 1}º</span>
                     <span class="nome">${testoSicuro(nomeDelReparto(voce.record, i))}</span>
-                    <span class="distanza">${voce.distanzaKm.toFixed(1)} km</span>
+                    <span class="distanza">${distanzaDoppia(voce.distanzaKm, 1)}</span>
                     <span class="azimut">Az ${String(Math.round(voce.azimut)).padStart(3, "0")}°</span>
                 </button>
                 <div class="reparto-volo-dettaglio" data-dettaglio="${i}">
