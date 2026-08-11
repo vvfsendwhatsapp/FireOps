@@ -249,15 +249,21 @@
         </section>
 
         <!-- SITAC AIB -->
-        <section id="sitac-aib" class="pagina">
-            <h3 class="pagina-titolo">SITAC AIB</h3>
-            <div id="sitac-aib-contenuto"></div>
+        <section id="sitac-aib" class="page-section">
+            <div class="pagina-box pagina-box-larga">
+                <h3>SITAC AIB</h3>
+                <p class="pagina-nota">Sezione in costruzione.</p>
+                <div id="sitac-aib-contenuto"></div>
+            </div>
         </section>
 
         <!-- SCHEDE DI SOCCORSO -->
-        <section id="schede-soccorso" class="pagina">
-            <h3 class="pagina-titolo">Schede di soccorso</h3>
-            <div id="schede-soccorso-contenuto"></div>
+        <section id="schede-soccorso" class="page-section">
+            <div class="pagina-box pagina-box-larga">
+                <h3>Schede Di Soccorso</h3>
+                <p class="pagina-nota">Sezione in costruzione.</p>
+                <div id="schede-soccorso-contenuto"></div>
+            </div>
         </section>
 
         <!-- CONVERTITORE UNITA DI MISURA -->
@@ -859,6 +865,8 @@
     <!-- MODALE REPARTI VOLO PIU' VICINI AL TARGET -->
     <div id="modal-reparti-volo" class="modal-overlay" style="display:none;">
         <div class="modal-content chiudibile modal-content-largo">
+            <span class="modal-close" id="modal-reparti-volo-close" title="Chiudi">&times;</span>
+            <h2>🚁 Reparti Volo più vicini al target</h2>
             <div class="reparti-volo-barra">
                 <label for="reparti-volo-unita">Distanze:</label>
                 <select id="reparti-volo-unita">
@@ -866,8 +874,6 @@
                     <option value="nm">Miglia nautiche (NM)</option>
                 </select>
             </div>
-            <span class="modal-close" id="modal-reparti-volo-close" title="Chiudi">&times;</span>
-            <h2>🚁 Reparti Volo più vicini al target</h2>
             <div id="reparti-volo-contenuto"></div>
         </div>
     </div>

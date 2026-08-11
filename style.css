@@ -3277,8 +3277,25 @@ a.btn-icon-hamburger:hover {
 .reparti-volo-barra {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 10px;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.reparti-volo-barra label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    flex-shrink: 0;
+}
+
+/* Annulla il width:100% di ".modal-content select", che qui è pensato
+   per il select "Comando" a tutta larghezza */
+.modal-content .reparti-volo-barra select {
+    width: auto;
+    margin-bottom: 0;
+    padding: 6px 10px;
+    font-size: 13px;
 }
 
 /* Predefinito km: le miglia esistono nel DOM ma restano spente */
