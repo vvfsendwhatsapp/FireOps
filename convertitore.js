@@ -1790,7 +1790,6 @@ function disegnaGraficoAltimetria(geojson) {
     const modaleRepartiVolo = document.getElementById("modal-reparti-volo");
     const contenutoRepartiVolo = document.getElementById("reparti-volo-contenuto");
     let elencoRepartiVoloCache = null;
-    let repartiMostrati = []; // ultimi reparti disegnati, per il clic sulla testata
         
     // ==========================================================
     // UNITÀ DELLE DISTANZE: km oppure miglia nautiche (1 NM = 1852 m esatti).
