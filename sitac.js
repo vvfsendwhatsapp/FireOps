@@ -740,11 +740,18 @@ function avvia(app){
     setTimeout(() => window.print(), 250);
   }
 
-  /* la sezione nasce nel magazzino: appena prende dimensione, si ridisegna */
-  if (window.ResizeObserver){
-    new ResizeObserver(() => { if (app.offsetParent !== null) map.invalidateSize(); }).observe(app);
+  /* La sezione nasce nel magazzino e vive dentro un pannello che cambia
+     larghezza: qui si fanno due cose insieme, il ridisegno della mappa e la
+     classe .sitac-stretto (stesso criterio di .um-root.narrow, perche' in
+     split-screen un pannello puo' essere stretto anche su schermo largo). */
+  const LARGHEZZA_STRETTA = 560;
+  function adatta(){
+    if (app.offsetParent === null) return;          // in magazzino: niente da fare
+    app.classList.toggle('sitac-stretto', app.clientWidth < LARGHEZZA_STRETTA);
+    map.invalidateSize();
   }
-  setTimeout(() => map.invalidateSize(), 150);
+  if (window.ResizeObserver) new ResizeObserver(adatta).observe(app);
+  setTimeout(adatta, 150);
 
   /* comando attivo condiviso con script.js / convertitore.js */
   window.addEventListener('fireops:comando-attivo-cambiato', ev => {
@@ -759,7 +766,7 @@ function avvia(app){
     esportaGeoJson: raccogli,
     carica,
     pulisci: () => { disegni.clearLayers(); decori.clearLayers(); aggiornaStato(); },
-    ridisegna: () => map.invalidateSize()
+    ridisegna: adatta
   };
 }
 
@@ -799,29 +806,39 @@ NS.Sitac = {
 /* -----------------------------------------------------------------------
    Aggancio al sistema pannelli.
 
-   La sezione #sitac-aib viaggia fra i due pannelli e il magazzino. Leaflet
-   però non sopporta di nascere (o di riapparire) senza dimensioni: serve
-   un invalidateSize ogni volta che torna a schermo. Un MutationObserver sul
-   contenitore dei pannelli intercetta lo spostamento, qualunque sia il
-   meccanismo che lo produce, senza toccare script.js.
+   La sezione #sitac-aib viaggia fra i due pannelli e il magazzino, e Leaflet
+   non sopporta di riapparire senza dimensioni: serve un invalidateSize ogni
+   volta che torna a schermo.
+
+   L'osservazione e' limitata ai DUE contenitori dei pannelli, con childList
+   e SENZA subtree: le sezioni sono figlie dirette di #corpo-sinistra e
+   #corpo-destra, quindi tanto basta. Osservare .split-screen con subtree:true
+   sembra piu' sicuro ma e' la scelta sbagliata: ogni tile che Leaflet inserisce
+   nella mappa e' una mutazione dentro quel sottoalbero, e ogni spostamento
+   della mappa scatenerebbe decine di invalidateSize inutili (misurati: 56 per
+   otto spostamenti), ognuno dei quali forza un ricalcolo del layout.
    --------------------------------------------------------------------- */
 function agganciaPannelli(){
-  NS.Sitac.init();
-
   const sezione = document.getElementById('sitac-aib');
   if (!sezione) return;
 
   const risveglia = () => {
-    if (sezione.offsetParent === null) return;   // ancora nascosta
+    if (sezione.offsetParent === null) return;   // ancora nel magazzino
     const i = NS.Sitac.init();                   // prima apertura: costruisce
-    if (i) i.ridisegna();                        // già viva: solo ridisegno
+    if (i) i.ridisegna();                        // gia' viva: solo ridisegno
   };
 
-  const main = document.querySelector('.split-screen') || document.body;
-  new MutationObserver(risveglia).observe(main, { childList:true, subtree:true });
+  ['corpo-sinistra','corpo-destra'].forEach(id => {
+    const corpo = document.getElementById(id);
+    if (corpo) new MutationObserver(risveglia).observe(corpo, { childList:true });
+  });
 
-  ['change','fireops:pagina-cambiata'].forEach(ev =>
-    document.addEventListener(ev, () => setTimeout(risveglia, 60)));
+  /* Il fullscreen cambia le dimensioni del pannello senza spostare nulla:
+     script.js emette un resize dopo la transizione. */
+  window.addEventListener('resize', () => {
+    const i = NS.Sitac.get();
+    if (i && sezione.offsetParent !== null) i.ridisegna();
+  });
 
   risveglia();
 }
