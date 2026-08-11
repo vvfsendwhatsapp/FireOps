@@ -2940,6 +2940,114 @@ a.btn-icon-hamburger:hover {
     resize: vertical;
 }
 
+/* ==========================================================================
+   SITAC AIB (sitac.js)
+   Tutto parte da #sitac-app: nessuna regola esce dal contenitore, così i
+   pulsanti e i box del resto dell'app non vengono toccati.
+   ========================================================================== */
+ 
+#sitac-app{
+  /* palette locale: la SITAC resta scura anche se il tema cambia */
+  --sitac-bg:#0b0e13; --sitac-panel:#141922; --sitac-panel2:#1b212c; --sitac-bordo:#2a3241;
+  --sitac-testo:#dbe2ea; --sitac-smorzato:#7d8798; --sitac-oro:var(--primary-color);
+  --sitac-mono:ui-monospace,"JetBrains Mono","SF Mono",Menlo,Consolas,monospace;
+  display:flex; position:relative; overflow:hidden;
+  /* .page-section ha altezza automatica, quindi height:100% non risolverebbe:
+     l'altezza si ricava dalle stesse variabili con cui e' calcolata .pannello
+     (meno i 32px di padding di .pannello-corpo). */
+  height:calc(100vh - var(--header-height) - var(--subheader-height) - 72px);
+  min-height:460px;
+  background:var(--sitac-bg); color:var(--sitac-testo); border:1px solid var(--sitac-bordo); border-radius:8px;
+  font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+/* Il reset globale in cima a style.css applica `font-family:Arial` a OGNI
+   elemento con il selettore `*`: una dichiarazione diretta, che vince
+   sull'ereditarieta'. Senza questa riga il font dichiarato qui sopra non
+   arriverebbe a nessun figlio. */
+#sitac-app *{box-sizing:border-box;font-family:inherit}
+ 
+/* Pannello espanso: niente margine dei 40px dello split-screen */
+.pannello-fullscreen #sitac-app{
+  height:calc(100vh - var(--header-height) - var(--subheader-height) - 32px);
+}
+ 
+#sitac-barra{width:250px;flex:0 0 250px;background:var(--sitac-panel);border-right:1px solid var(--sitac-bordo);
+  overflow-y:auto;padding:14px 12px 40px}
+#sitac-barra .sitac-testata{display:flex;align-items:flex-start;gap:8px;margin-bottom:2px}
+#sitac-barra h3{font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--sitac-oro);
+  margin:0;font-weight:600;flex:1}
+#sitac-barra .sitac-sub{font-size:11px;color:var(--sitac-smorzato);margin:0 0 16px}
+#sitac-lingue{display:flex;gap:3px;flex:0 0 auto}
+#sitac-lingue button{width:26px;height:18px;padding:0;border:1px solid var(--sitac-bordo);border-radius:3px;
+  overflow:hidden;opacity:.45;background:none;transition:opacity .15s,border-color .15s}
+#sitac-lingue button svg{width:100%;height:100%;display:block}
+#sitac-lingue button:hover{opacity:.85;background:none}
+#sitac-lingue button.attivo{opacity:1;border-color:var(--sitac-oro);background:none}
+#sitac-app .sitac-gruppo{margin-bottom:16px}
+#sitac-app .sitac-gruppo>span{display:block;font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--sitac-smorzato);margin-bottom:7px;padding-bottom:4px;border-bottom:1px solid var(--sitac-bordo)}
+#sitac-app .sitac-strumenti{display:grid;gap:5px}
+#sitac-app .sitac-simboli{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+#sitac-app button{font-family:inherit;font-size:12.5px;text-align:left;cursor:pointer;
+  background:var(--sitac-panel2);color:var(--sitac-testo);border:1px solid var(--sitac-bordo);
+  border-radius:5px;padding:7px 9px;display:flex;align-items:center;gap:8px;width:100%}
+#sitac-app button:hover{border-color:#3d4759;background:#222a37}
+#sitac-app button.attivo{border-color:var(--sitac-oro);background:#2a2410;color:var(--sitac-oro)}
+#sitac-app button:focus-visible{outline:2px solid var(--sitac-oro);outline-offset:1px}
+#sitac-app .sitac-simboli button{justify-content:center;padding:6px 2px;aspect-ratio:1}
+#sitac-app .sitac-simboli button svg{width:24px;height:24px}
+#sitac-app .sitac-tratto{width:22px;height:3px;border-radius:2px;flex:0 0 22px}
+#sitac-app .sitac-azioni{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+#sitac-app .sitac-azioni button{justify-content:center;font-weight:600;letter-spacing:.04em}
+#sitac-app .sitac-azioni .largo{grid-column:1/-1}
+#sitac-app .sitac-sottogruppo{display:block;font-size:10px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--sitac-smorzato);margin:10px 0 6px}
+#sitac-stato{font-family:var(--sitac-mono);font-size:11px;color:var(--sitac-smorzato);
+  background:#080b10;border:1px solid var(--sitac-bordo);border-left:3px solid var(--sitac-oro);
+  border-radius:5px;padding:8px 9px;margin-top:14px;min-height:46px;white-space:pre-wrap}
+ 
+#sitac-app .sitac-mapwrap{flex:1;position:relative;min-width:0}
+#sitac-mappa{position:absolute;inset:0;background:#000}
+#sitac-app .leaflet-container{background:#000}
+/* Come .mappa-comando: il +/- di Leaflet sta a meta' del lato sinistro */
+#sitac-mappa .leaflet-top.leaflet-left{top:50%;transform:translateY(-50%)}
+ 
+#sitac-legenda{position:absolute;right:12px;bottom:22px;z-index:900;background:rgba(20,25,34,.94);
+  border:1px solid var(--sitac-bordo);border-radius:6px;padding:9px 11px;font-size:11.5px;
+  max-width:190px;backdrop-filter:blur(4px)}
+#sitac-legenda b{display:block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--sitac-oro);margin-bottom:6px;font-weight:600}
+#sitac-legenda div{display:flex;align-items:center;gap:7px;margin-bottom:3px;color:#b8c2cf}
+#sitac-app .sitac-sim{display:flex;align-items:center;justify-content:center}
+#sitac-app .sitac-sim svg{filter:drop-shadow(0 1px 3px rgba(0,0,0,.9))}
+#sitac-app .sitac-etichetta{font:600 12px/1.2 system-ui,sans-serif;color:#fff;white-space:nowrap;
+  text-shadow:0 0 4px #000,0 0 4px #000,0 1px 2px #000;padding:2px 4px}
+ 
+/* In split-screen un pannello puo' essere stretto anche su schermo largo:
+   la classe arriva dal ResizeObserver, come .um-root.narrow */
+#sitac-app.sitac-stretto{flex-direction:column;height:auto;min-height:0}
+#sitac-app.sitac-stretto #sitac-barra{width:100%;flex:0 0 auto;max-height:40vh;
+  border-right:0;border-bottom:1px solid var(--sitac-bordo)}
+#sitac-app.sitac-stretto .sitac-mapwrap{flex:0 0 auto;height:52vh;min-height:280px}
+#sitac-app.sitac-stretto .sitac-simboli{grid-template-columns:repeat(6,1fr)}
+ 
+@media (max-width:900px){
+  #sitac-app{height:auto;min-height:0;flex-direction:column}
+  #sitac-barra{width:100%;flex:0 0 auto;max-height:40vh;border-right:0;border-bottom:1px solid var(--sitac-bordo)}
+  #sitac-app .sitac-mapwrap{flex:0 0 auto;height:52vh;min-height:280px}
+}
+/* stampa: il modulo si sposta in coda al body e mette a tacere il resto */
+@media print{
+  body.sitac-stampa>*{display:none!important}
+  body.sitac-stampa>#sitac-app{display:block!important;position:static;height:auto;
+    min-height:0;border:0;border-radius:0;overflow:visible}
+  body.sitac-stampa>#sitac-app #sitac-barra{display:none}
+  body.sitac-stampa>#sitac-app .sitac-mapwrap{position:static;height:17cm}
+  body.sitac-stampa>#sitac-app #sitac-mappa{position:relative;inset:auto;height:17cm}
+  body.sitac-stampa>#sitac-app .leaflet-control-zoom{display:none}
+  @page{size:A4 landscape;margin:8mm}
+}
+
 /* ==========================================================
    ==========================================================
    RESPONSIVE
