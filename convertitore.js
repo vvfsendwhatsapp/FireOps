@@ -1233,12 +1233,7 @@ document.addEventListener("fireops:comando-attivo-cambiato", (e) => {
         azzeraPercorso({ mantieniTipologia: false });
 
         coordinateTargetCorrenti = null;
-        repartiMostrati = [];
-        if (coordMappaLeaflet && layerRepartiVolo) {
-            coordMappaLeaflet.removeLayer(layerRepartiVolo);
-            layerRepartiVolo = null;
-            if (btnTuttiRepartiVolo) btnTuttiRepartiVolo.classList.remove("attivo");
-        }
+        rimuoviRepartiVoloDallaMappa();
         rimuoviMarkerComandoCompetente();
 
         // Vista riportata sul Comando attivo, o sull'Italia se non c'è
@@ -1913,28 +1908,6 @@ function disegnaGraficoAltimetria(geojson) {
         return testoSicuro(testo);
     }
 
-    function tabellaCampiRecord(record) {
-        const righe = Object.entries(record)
-            .map(([chiave, valore]) => `<tr><th>${testoSicuro(chiave)}</th><td>${valoreFormattato(valore)}</td></tr>`)
-            .join("");
-        return `<table class="riepilogo-tabella"><tbody>${righe}</tbody></table>`;
-    }
-
-    function tabellaCalcoliReparto(calcoli) {
-        const quota = v => (v === null ? "non disponibile" : `${Math.round(v)} m s.l.m.`);
-        const dislivello = calcoli.dislivello === null
-            ? "non disponibile"
-            : `${calcoli.dislivello > 0 ? "+" : ""}${Math.round(calcoli.dislivello)} m`;
-
-        return `<table class="riepilogo-tabella"><tbody>
-            <tr><th>Distanza in linea d'aria</th><td>${distanzaDoppia(calcoli.distanzaKm, 2)}</td></tr>
-            <tr><th>Azimut (reparto → target)</th><td>${Math.round(calcoli.azimut)}°</td></tr>
-            <tr><th>Quota reparto volo</th><td>${quota(calcoli.quotaReparto)}</td></tr>
-            <tr><th>Quota target</th><td>${quota(calcoli.quotaTarget)}</td></tr>
-            <tr><th>Dislivello (reparto → target)</th><td>${dislivello}</td></tr>
-        </tbody></table>`;
-    }
-
     function apriModaleRepartiVolo(html) {
         if (!modaleRepartiVolo || !contenutoRepartiVolo) return;
         contenutoRepartiVolo.innerHTML = html;
@@ -2009,6 +1982,7 @@ function disegnaGraficoAltimetria(geojson) {
             Le distanze sono in linea d'aria (ortodromica), non tengono conto di rotte, spazi aerei o autonomia.
             Clicca un reparto per tracciarne la rotta sulla mappa.</p>
             ${schede}`);
+        aggiornaStatoBottonePercorso(); // i tre reparti ora esistono: sblocca "Mostra i 3 sulla mappa"
     }
 
     // Tutto ciò che serve dopo la chiusura del modale finisce qui: rotta,
@@ -2360,9 +2334,18 @@ function disegnaGraficoAltimetria(geojson) {
         return elenco.find(c => String(c.Provincia || "").trim().toUpperCase() === sigla) || null;
     }
 
-function rimuoviMarkerComandoCompetente() {
+    function rimuoviMarkerComandoCompetente() {
         if (coordMappaLeaflet && coordMarkerComando) coordMappaLeaflet.removeLayer(coordMarkerComando);
         coordMarkerComando = null;
+    }
+
+    // Target nuovo = terna diversa: i rombi vecchi non sono più i tre più vicini
+    function rimuoviRepartiVoloDallaMappa() {
+        repartiMostrati = [];
+        if (coordMappaLeaflet && layerRepartiVolo) coordMappaLeaflet.removeLayer(layerRepartiVolo);
+        layerRepartiVolo = null;
+        const btn = document.getElementById("btn-coord-tutti-reparti");
+        if (btn) btn.classList.remove("attivo");
     }
 
     // Il marker NON sposta la vista: al centro resta il target, che è il punto
@@ -2497,6 +2480,7 @@ function rimuoviMarkerComandoCompetente() {
 
         // Nuova conversione: il percorso calcolato verso il target precedente
         // viene sempre cancellato (la tipologia scelta invece resta)
+        rimuoviRepartiVoloDallaMappa();
         azzeraPercorso({ mantieniTipologia: true });
 
         const [esitoToponimo, quota] = await Promise.all([
