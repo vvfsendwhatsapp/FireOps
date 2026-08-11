@@ -1963,7 +1963,9 @@ function disegnaGraficoAltimetria(geojson) {
             const dislivello = (quotaTarget !== null && quotaReparto !== null) ? quotaTarget - quotaReparto : null;
 
             return `<div class="reparto-volo-scheda">
-                <button type="button" class="reparto-volo-testata" data-indice="${i}" aria-expanded="false">
+                <button type="button" class="reparto-volo-testata" data-indice="${i}"
+                        data-lat="${voce.coord.lat}" data-lon="${voce.coord.lon}"
+                        aria-expanded="false">
                     <span class="freccia">▶</span>
                     <span class="reparto-volo-distintivo">${i + 1}º</span>
                     <span class="nome">${testoSicuro(nomeDelReparto(voce.record, i))}</span>
@@ -1981,6 +1983,7 @@ function disegnaGraficoAltimetria(geojson) {
                     })}
                     <h5>Dati del reparto</h5>
                     ${tabellaCampiRecord(voce.record)}
+                <button type="button" class="btn-vedi-su-mappa">🗺️ Vedi la rotta sulla mappa</button>
                 </div>
             </div>`;
         }).join("");
@@ -1992,10 +1995,31 @@ function disegnaGraficoAltimetria(geojson) {
             ${schede}`);
     }
 
+    // Aprendo una scheda si traccia subito la rotta reparto → target.
+    // Il profilo viene forzato su "linea-diretta": un elicottero non segue
+    // strade, e chiedere a BRouter un percorso stradale da un aeroporto
+    // sarebbe una misura senza senso operativo.
+    //
+    // Il valore del select si imposta senza emettere "change": l'evento
+    // farebbe ripartire un secondo calcolo identico sullo stesso punto.
+    function tracciaRottaVersoReparto(lat, lon) {
+        if (!coordinateTargetCorrenti || Number.isNaN(lat) || Number.isNaN(lon)) return;
+        if (selectProfiloPercorso) selectProfiloPercorso.value = "linea-diretta";
+        calcolaEDisegnaPercorso(lat, lon);
+    }
+
     // Apertura/chiusura delle schede: un solo listener sul contenitore, così
     // funziona anche sulle schede ricostruite a ogni nuova ricerca
     if (contenutoRepartiVolo) {
         contenutoRepartiVolo.addEventListener("click", (e) => {
+            // "Vedi sulla mappa": chiude il modale e porta sulla colonna mappa,
+            // dove la rotta è già tracciata
+            if (e.target.closest(".btn-vedi-su-mappa")) {
+                chiudiModaleRepartiVolo();
+                impostaSchedaColonnaAttiva("mappa");
+                return;
+            }
+
             const testata = e.target.closest(".reparto-volo-testata");
             if (!testata) return;
             const dettaglio = testata.parentElement.querySelector(".reparto-volo-dettaglio");
@@ -2004,6 +2028,15 @@ function disegnaGraficoAltimetria(geojson) {
             testata.setAttribute("aria-expanded", aperto ? "true" : "false");
             const freccia = testata.querySelector(".freccia");
             if (freccia) freccia.textContent = aperto ? "▼" : "▶";
+
+            // Solo in apertura: richiudendo la scheda la rotta resta sulla
+            // mappa, perché è il dato che serve, non un effetto del modale
+            if (aperto) {
+                tracciaRottaVersoReparto(
+                    parseFloat(testata.dataset.lat),
+                    parseFloat(testata.dataset.lon)
+                );
+            }
         });
     }
 
