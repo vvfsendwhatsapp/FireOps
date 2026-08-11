@@ -1412,6 +1412,7 @@ function disegnaMarkerPartenza(lat, lon, azimut) {
         icon: iconaFrecciaDirezione(COLORE_SQUADRA, azimut),
         draggable: true,
         autoPan: true,
+        zIndexOffset: -100,
         title: "Squadra VF — trascina per spostare il punto di partenza",
     }).addTo(coordMappaLeaflet).bindPopup(popupPuntoPartenza || "Squadra VF (trascinabile)");
 
@@ -2030,12 +2031,27 @@ function disegnaGraficoAltimetria(geojson) {
             return;
         }
 
-        const marker = repartiMostrati.map((voce, i) =>
-            L.marker([voce.coord.lat, voce.coord.lon], {
+        const marker = repartiMostrati.map((voce, i) => {
+            const html = popupReparto(voce, voce.calcoli || {});
+
+            const m = L.marker([voce.coord.lat, voce.coord.lon], {
                 icon: iconaRepartoVolo(i + 1),
                 title: `${i + 1}º — ${nomeDelReparto(voce.record, i)}`,
-            }).bindPopup(popupReparto(voce, voce.calcoli || {}))
-        );
+            }).bindPopup(html);
+
+            // In modalità "crea percorso" il rombo è anche un punto di partenza:
+            // il popup resta aperto (servono i contatti mentre si guarda la
+            // rotta) e il profilo NON viene forzato — se l'operatore ha scelto
+            // "automezzo" sta ragionando su una partenza via strada dalla base,
+            // e sovrascriverlo cancellerebbe la sua scelta.
+            m.on("click", () => {
+                if (!modalitaPercorsoAttiva || !coordinateTargetCorrenti) return;
+                popupPuntoPartenza = html;
+                calcolaEDisegnaPercorso(voce.coord.lat, voce.coord.lon);
+            });
+
+            return m;
+        });
 
         layerRepartiVolo = L.layerGroup(marker).addTo(coordMappaLeaflet);
         if (btnTuttiRepartiVolo) btnTuttiRepartiVolo.classList.add("attivo");
