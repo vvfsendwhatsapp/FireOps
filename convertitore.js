@@ -1075,6 +1075,7 @@ if (contenitoreFormCoord) {
     const COLORE_SQUADRA = "#ffd700";
     const COLORE_PERCORSO = "#AF2B1E";
     const COLORE_COMANDO = "#2E7DD1";
+    const COLORE_REPARTO_VOLO = "#00b3a4";
 
     let coordMappaLeaflet = null;
     let coordMarkerTarget = null;
@@ -1086,6 +1087,8 @@ if (contenitoreFormCoord) {
     let ultimoPuntoPartenza = null;
     let popupPuntoPartenza = null;
     let coordMarkerComando = null;
+    let repartiMostrati = [];
+    let layerRepartiVolo = null;
 
     function iconaMarkerGenerica(colore) {
         return L.divIcon({
@@ -1093,6 +1096,19 @@ if (contenitoreFormCoord) {
             html: `<div style="width:18px;height:18px;border-radius:50%;background:${colore};border:2px solid #121212;box-shadow:0 0 6px rgba(0,0,0,.6);"></div>`,
             iconSize: [18, 18],
             iconAnchor: [9, 9],
+        });
+    }
+
+    // Rombo numerato: forma diversa da target (tondo rosso) e Comando
+    // (tondo blu). Il numero è ruotato in senso opposto per restare dritto.
+    function iconaRepartoVolo(ordine) {
+        return L.divIcon({
+            className: "",
+            html: `<div style="width:20px;height:20px;transform:rotate(45deg);background:${COLORE_REPARTO_VOLO};border:2px solid #121212;box-shadow:0 0 6px rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;">
+                       <span style="transform:rotate(-45deg);color:#121212;font:bold 11px Arial;">${ordine}</span>
+                   </div>`,
+            iconSize: [20, 20],
+            iconAnchor: [10, 10],
         });
     }
 
@@ -1217,9 +1233,11 @@ document.addEventListener("fireops:comando-attivo-cambiato", (e) => {
         azzeraPercorso({ mantieniTipologia: false });
 
         coordinateTargetCorrenti = null;
-        if (coordMappaLeaflet && coordMarkerTarget) {
-            coordMappaLeaflet.removeLayer(coordMarkerTarget);
-            coordMarkerTarget = null;
+        repartiMostrati = [];
+        if (coordMappaLeaflet && layerRepartiVolo) {
+            coordMappaLeaflet.removeLayer(layerRepartiVolo);
+            layerRepartiVolo = null;
+            if (btnTuttiRepartiVolo) btnTuttiRepartiVolo.classList.remove("attivo");
         }
         rimuoviMarkerComandoCompetente();
 
@@ -1499,6 +1517,14 @@ function aggiornaStatoBottonePercorso() {
         btnHelicottero.title = coordinateTargetCorrenti
             ? "Mostra i due Reparti Volo più vicini al target"
             : "Converti prima delle coordinate: serve un target";
+    }
+
+    const btnTreReparti = document.getElementById("btn-coord-tutti-reparti");
+    if (btnTreReparti) {
+        btnTreReparti.disabled = repartiMostrati.length === 0;
+        btnTreReparti.title = repartiMostrati.length
+            ? "Mostra o nasconde sulla mappa i tre reparti calcolati"
+            : "Apri prima \"Reparti Volo più vicini\"";
     }
 
     if (!btnPercorso) return;
@@ -2011,6 +2037,37 @@ function disegnaGraficoAltimetria(geojson) {
             + (contatti || "Nessun contatto in elenco");
     }
 
+    // I tre reparti più vicini sulla mappa. Lavora su repartiMostrati, cioè
+    // esattamente l'elenco già calcolato per il modale: nessun ricalcolo,
+    // nessuna richiesta di rete, e i numeri sui marker corrispondono uno a
+    // uno alle righe della finestra.
+    function alternaRepartiVoloSuMappa() {
+        assicuraMappaCoordInizializzata();
+        if (!coordMappaLeaflet) return;
+
+        if (layerRepartiVolo) {
+            coordMappaLeaflet.removeLayer(layerRepartiVolo);
+            layerRepartiVolo = null;
+            if (btnTuttiRepartiVolo) btnTuttiRepartiVolo.classList.remove("attivo");
+            return;
+        }
+
+        if (repartiMostrati.length === 0) {
+            mostraErrore("Apri prima \"Reparti Volo più vicini\": i tre reparti si calcolano rispetto al target.");
+            return;
+        }
+
+        const marker = repartiMostrati.map((voce, i) =>
+            L.marker([voce.coord.lat, voce.coord.lon], {
+                icon: iconaRepartoVolo(i + 1),
+                title: `${i + 1}º — ${nomeDelReparto(voce.record, i)}`,
+            }).bindPopup(popupReparto(voce, voce.calcoli || {}))
+        );
+
+        layerRepartiVolo = L.layerGroup(marker).addTo(coordMappaLeaflet);
+        if (btnTuttiRepartiVolo) btnTuttiRepartiVolo.classList.add("attivo");
+    }
+
     // Clic sul reparto: traccia la rotta, chiude il modale e porta sulla mappa.
     // Profilo forzato su "linea-diretta" — un elicottero non segue strade, e
     // un percorso stradale da un aeroporto sarebbe una misura senza senso.
@@ -2042,6 +2099,11 @@ function disegnaGraficoAltimetria(geojson) {
 
     if (btnRepartiVolo) {
         btnRepartiVolo.addEventListener("click", mostraRepartiVoloPiuVicini);
+    }
+
+    const btnTuttiRepartiVolo = document.getElementById("btn-coord-tutti-reparti");
+    if (btnTuttiRepartiVolo) {
+        btnTuttiRepartiVolo.addEventListener("click", alternaRepartiVoloSuMappa);
     }
 
     const chiusuraModaleRepartiVolo = document.getElementById("modal-reparti-volo-close");
