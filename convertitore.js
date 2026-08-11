@@ -1983,7 +1983,7 @@ function disegnaGraficoAltimetria(geojson) {
             Le distanze sono in linea d'aria (ortodromica), non tengono conto di rotte, spazi aerei o autonomia.
             Clicca un reparto per tracciarne la rotta sulla mappa.</p>
             ${schede}`);
-        aggiornaStatoBottonePercorso(); // i tre reparti ora esistono: sblocca "Mostra i 3 sulla mappa"
+        disegnaRepartiVoloSuMappa(); // i tre reparti ora esistono: sblocca "Mostra i 3 sulla mappa"
     }
 
     // Tutto ciò che serve dopo la chiusura del modale finisce qui: rotta,
@@ -2011,25 +2011,15 @@ function disegnaGraficoAltimetria(geojson) {
             + (contatti || "Nessun contatto in elenco");
     }
 
-    // I tre reparti più vicini sulla mappa. Lavora su repartiMostrati, cioè
-    // esattamente l'elenco già calcolato per il modale: nessun ricalcolo,
-    // nessuna richiesta di rete, e i numeri sui marker corrispondono uno a
-    // uno alle righe della finestra.
-    function alternaRepartiVoloSuMappa() {
+    // I tre reparti più vicini sulla mappa, disegnati da sé appena il modale
+    // li ha calcolati. Lavora su repartiMostrati, cioè esattamente l'elenco
+    // già mostrato nella finestra: nessun ricalcolo, nessuna richiesta di
+    // rete, e i numeri sui rombi corrispondono uno a uno alle sue righe.
+    function disegnaRepartiVoloSuMappa() {
         assicuraMappaCoordInizializzata();
-        if (!coordMappaLeaflet) return;
+        if (!coordMappaLeaflet || repartiMostrati.length === 0) return;
 
-        if (layerRepartiVolo) {
-            coordMappaLeaflet.removeLayer(layerRepartiVolo);
-            layerRepartiVolo = null;
-            if (btnTuttiRepartiVolo) btnTuttiRepartiVolo.classList.remove("attivo");
-            return;
-        }
-
-        if (repartiMostrati.length === 0) {
-            mostraErrore("Apri prima \"Reparti Volo più vicini\": i tre reparti si calcolano rispetto al target.");
-            return;
-        }
+        if (layerRepartiVolo) coordMappaLeaflet.removeLayer(layerRepartiVolo);
 
         const marker = repartiMostrati.map((voce, i) => {
             const html = popupReparto(voce, voce.calcoli || {});
@@ -2054,7 +2044,6 @@ function disegnaGraficoAltimetria(geojson) {
         });
 
         layerRepartiVolo = L.layerGroup(marker).addTo(coordMappaLeaflet);
-        if (btnTuttiRepartiVolo) btnTuttiRepartiVolo.classList.add("attivo");
     }
 
     // Clic sul reparto: traccia la rotta, chiude il modale e porta sulla mappa.
@@ -2088,11 +2077,6 @@ function disegnaGraficoAltimetria(geojson) {
 
     if (btnRepartiVolo) {
         btnRepartiVolo.addEventListener("click", mostraRepartiVoloPiuVicini);
-    }
-
-    const btnTuttiRepartiVolo = document.getElementById("btn-coord-tutti-reparti");
-    if (btnTuttiRepartiVolo) {
-        btnTuttiRepartiVolo.addEventListener("click", alternaRepartiVoloSuMappa);
     }
 
     const chiusuraModaleRepartiVolo = document.getElementById("modal-reparti-volo-close");
@@ -2360,8 +2344,6 @@ function disegnaGraficoAltimetria(geojson) {
         repartiMostrati = [];
         if (coordMappaLeaflet && layerRepartiVolo) coordMappaLeaflet.removeLayer(layerRepartiVolo);
         layerRepartiVolo = null;
-        const btn = document.getElementById("btn-coord-tutti-reparti");
-        if (btn) btn.classList.remove("attivo");
     }
 
     // Il marker NON sposta la vista: al centro resta il target, che è il punto
