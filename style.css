@@ -2996,7 +2996,6 @@ a.btn-icon-hamburger:hover {
 #sitac-app .sitac-sottogruppo{display:block;font-size:12px;font-weight:bold;
   text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin:12px 0 7px}
 #sitac-app .sitac-strumenti{display:grid;gap:6px}
-#sitac-app .sitac-simboli{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 #sitac-app .sitac-azioni{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 #sitac-app .sitac-azioni .largo{grid-column:1/-1}
 
@@ -3012,26 +3011,49 @@ a.btn-icon-hamburger:hover {
   border-color:var(--primary-color);font-weight:bold}
 #sitac-app button:focus-visible{outline:2px solid var(--primary-color);outline-offset:1px}
 #sitac-app .sitac-azioni button{justify-content:center;font-weight:bold}
-/* I simboli SiTaC sono pensati per la carta: nero e colori pieni su
-   fondo bianco. Nella barra scura il riquadro dell'icona resta chiaro,
-   altrimenti metà set sarebbe invisibile. */
-#sitac-app .sitac-simboli{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:4px}
-#sitac-app .sitac-simboli button{justify-content:center;padding:4px;aspect-ratio:1;
+/* I simboli SITAC sono pensati per la carta: nero e colori pieni su fondo
+   bianco. Nella barra scura il riquadro dell'icona resta chiaro, altrimenti
+   metà tavola sarebbe invisibile. Cinque colonne: i riquadri dei mezzi sono
+   larghi e bassi, e a quattro restavano minuscoli. */
+#sitac-app .sitac-simboli{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-bottom:4px}
+#sitac-app .sitac-simboli button{justify-content:center;padding:3px;aspect-ratio:1;
   background:#eceff3;border-color:#c3c9d2}
 #sitac-app .sitac-simboli button:hover{background:#fff;border-color:var(--primary-color)}
 #sitac-app .sitac-simboli button.attivo{background:#fff;color:inherit;
   border-color:var(--primary-color);box-shadow:inset 0 0 0 2px var(--primary-color)}
-#sitac-app .sitac-simboli button svg{width:100%;height:100%}
+#sitac-app .sitac-simboli button svg{width:100%;height:100%;display:block}
 
-/* Sulla mappa l'alone bianco stacca il simbolo dal terreno: senza, il
-   nero sparisce sull'ortofoto e il rosso sui tetti. */
-#sitac-app .sitac-sim{position:relative}
-#sitac-app .sitac-sim svg{filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 2px #fff)}
-#sitac-app .sitac-glifo{display:block;width:34px;height:34px}
-#sitac-app .sitac-sigla{position:absolute;left:37px;top:50%;transform:translateY(-50%);
-  font-size:11px;font-weight:bold;color:#111;background:rgba(255,255,255,.88);
-  border-radius:3px;padding:0 4px;white-space:nowrap}
-#sitac-app .sitac-tratto{width:22px;height:3px;border-radius:2px;flex:0 0 22px}
+/* Nei tracciati il nome è lungo: il campione di tratto sta a sinistra e il
+   testo va a capo invece di uscire dal pulsante. */
+#sitac-app .sitac-strumenti button{align-items:center}
+#sitac-app .sitac-strumenti button span{flex:1 1 auto;min-width:0;line-height:1.25}
+#sitac-app .sitac-tratto{width:24px;height:3px;border-radius:2px;flex:0 0 24px}
+
+/* Previsto / In atto: due pulsanti che restano accesi, non uno strumento.
+   Il rosso dice "in atto" perché è lo stato che cambia la lettura della
+   carta — quello che c'è davvero, non quello che si vorrebbe. */
+#sitac-app .sitac-stati{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+#sitac-app .sitac-stati button{justify-content:center;font-weight:bold}
+#sitac-app .sitac-stato-btn.attivo{background:#cc0000;border-color:#cc0000;color:#fff}
+#sitac-app #sitac-statoPrevisto.attivo{background:var(--dark-color);
+  border-color:#cc0000;color:#ff6b6b}
+
+/* Avviso dei perimetri: sono fuori dalla tavola e chi guarda deve saperlo */
+#sitac-app .sitac-avviso{font-size:11px;line-height:1.35;color:var(--text-muted);
+  font-style:italic;margin-top:7px}
+
+/* Motivi ripetuti lungo i tracciati (triangoli, rombi, scalette) e badge
+   di testa (4x4, B): li posa PolylineDecorator, non devono intercettare
+   il clic o rubano i vertici a Geoman in modalità modifica. */
+#sitac-app .sitac-deco,#sitac-app .sitac-badge{background:none;border:none;pointer-events:none}
+#sitac-app .sitac-badge{display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:bold;color:#000;background:#fff;border:2px solid #000;
+  border-radius:999px}
+
+/* Legenda: elenca solo ciò che è sulla mappa, quindi i simboli veri */
+#sitac-app .sitac-leg-sim{display:inline-flex;width:20px;height:20px;flex:0 0 20px}
+#sitac-app .sitac-leg-sim svg{width:100%;height:100%}
+#sitac-legenda .sitac-leg-vuota{color:var(--text-muted);font-style:italic}
 
 /* Riquadro di stato: una nota come .evento-rilevante-premessa, ma con
    l'accento giallo — non segnala un pericolo, dice cosa sta succedendo */

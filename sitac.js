@@ -1,23 +1,30 @@
 /*!
  * FireOps VVF — sitac.js — SITAC incendio boschivo
  * Dipendenze (nell'ordine): Leaflet 1.9 · Geoman 2.15 · PolylineDecorator 1.6
+ *                           sitac-simboli.js (dati della simbologia)
  * Markup: sezione #sitac-aib di index.html
  * Stile:  style.css, sezione MODULI AGGIUNTIVI
  *
- * Tutto vive dentro #sitac-app: nessuna variabile globale. Si aggancia
- * al pannello con un ResizeObserver,
- * come convertitore.js, perché Leaflet nasce con altezza zero se la sezione
- * è ancora nel magazzino.
+ * Tutto vive dentro #sitac-app tranne bandiere, descrizione e pulsante
+ * Espandi, che stanno nella riga sopra. Nessuna variabile globale: si
+ * aggancia al pannello con un ResizeObserver, come convertitore.js, perché
+ * Leaflet nasce con altezza zero se la sezione è ancora nel magazzino.
+ *
+ * SIMBOLOGIA
+ * Simboli e tracciati arrivano da sitac-simboli.js e seguono la tavola
+ * SITAC del Corpo Nazionale. Qui non se ne ridefinisce nessuno: questo file
+ * si occupa solo di disegnarli, salvarli e ricaricarli.
+ *
+ * STATO PREVISTO / IN ATTO
+ * La tavola distingue sistematicamente ciò che è pianificato da ciò che è
+ * in atto o completato. Non sono voci separate ma un interruttore in cima
+ * alla barra: vale per il prossimo elemento disegnato, e viaggia nel
+ * GeoJSON insieme al tipo.
  */
 (function () {
 'use strict';
 const NS = (window.FireOps = window.FireOps || {});
 if (NS.Sitac) return;
-
-/* ---------------------------------------------------------------------
-   CSS: ogni selettore parte da #sitac-app. Le variabili sono ridefinite
-   qui e non su :root, così il tema di FireOps resta intatto.
-   ------------------------------------------------------------------- */
 
 function avvia(app){
   /* Bandiere, descrizione e pulsante Espandi stanno nella riga sopra
@@ -27,11 +34,10 @@ function avvia(app){
   const q  = s => radice.querySelector(s);
   const qq = s => radice.querySelectorAll(s);
 
-
   /* =======================================================================
      0. LINGUE
-     La chiave `tipo` nel GeoJSON resta sempre in italiano: è l'identificativo
-     tecnico, non un'etichetta. Cambiare lingua non tocca i file esportati.
+     La chiave `tipo` nel GeoJSON resta sempre quella tecnica: cambiare
+     lingua non tocca in alcun modo i file esportati.
      ===================================================================== */
   const BANDIERE = {
     it:'<svg viewBox="0 0 9 6"><rect width="3" height="6" fill="#008C45"/><rect x="3" width="3" height="6" fill="#F4F5F0"/><rect x="6" width="3" height="6" fill="#CD212A"/></svg>',
@@ -42,10 +48,11 @@ function avvia(app){
 
   const L10N = {
     it:{
-      doc:'SITAC — Incendio boschivo', titolo:'SITAC boschivo',
-      sub:'Scegli uno strumento, poi disegna sulla mappa. Doppio clic o Invio per chiudere una linea.',
-      gLinee:'Linee', gAree:'Aree', gSimboli:'Simboli', gModifica:'Modifica',
-      gMappa:'Mappa e dati', gEsporta:'Esporta', legenda:'Legenda',
+      sub:'Scegli lo stato, poi uno strumento, poi disegna sulla mappa. Doppio clic o Invio per chiudere una linea.',
+      gStato:'Stato', statoPrevisto:'Previsto', statoAttivo:'In atto',
+      gAree:'Aree', gModifica:'Modifica', gMappa:'Mappa e dati', gEsporta:'Esporta',
+      areeFuori:'Perimetri fuori tavola SITAC: servono al calcolo della superficie.',
+      legenda:'Legenda', legVuota:'Nessun elemento sulla mappa.',
       bSposta:'Sposta', bElimina:'Elimina', bAnnulla:'Annulla ultimo', bPulisci:'Cancella tutto',
       bSfondo:'Sfondo', bDoveSono:'Dove sono', bImporta:'Importa', bStampa:'Stampa',
       pronto:'Pronto.\nScegli uno strumento a sinistra.',
@@ -53,8 +60,9 @@ function avvia(app){
       suggLinea:'Clic per i vertici, doppio clic per chiudere.',
       suggArea:'Clic per i vertici, clic sul primo per chiudere.',
       suggSimbolo:'Clic sulla mappa per posizionare.',
-      promptSigla:'Sigla o testo accanto al simbolo:', 
+      promptSigla:'Sigla o testo accanto al simbolo:',
       promptDirezione:'Direzione in gradi (0 = Nord, 90 = Est):',
+      promptEtichetta:'Testo dell\'annotazione:',
       modOn:'Modifica attiva.\nTrascina i vertici o i simboli.', modOff:'Modifica disattivata.',
       elimOn:'Eliminazione attiva.\nClic su un elemento per rimuoverlo.', elimOff:'Eliminazione disattivata.',
       nienteAnnulla:'Niente da annullare.', giaVuota:'La mappa è già vuota.',
@@ -67,15 +75,15 @@ function avvia(app){
       kmlFatto:'KML: {n} elementi ({a} poligoni).\nApribile in QGIS e Google Earth.',
       fileErrato:'File non valido: {e}', importati:'Importati {n} elementi.',
       conteggio:'{l} linee · {a} aree · {s} simboli', superficie:'\nSuperficie totale: {v} ha',
-      promptEtichetta:'Testo dell\'etichetta:',
       kmlDoc:'SITAC incendio boschivo', kmlAree:'Aree', kmlLinee:'Linee', kmlSimboli:'Simboli',
-      sfSat:'Satellite', sfTopo:'Topografico', sfScuro:'Scuro', sfStrada:'Stradale'
+      sfSat:'Satellite', sfTopo:'Topografico', sfStrada:'Stradale'
     },
     en:{
-      doc:'SITAC — Wildfire', titolo:'Wildfire SITAC',
-      sub:'Pick a tool, then draw on the map. Double-click or Enter closes a line.',
-      gLinee:'Lines', gAree:'Areas', gSimboli:'Symbols', gModifica:'Edit',
-      gMappa:'Map and data', gEsporta:'Export', legenda:'Legend',
+      sub:'Pick a state, then a tool, then draw on the map. Double-click or Enter closes a line.',
+      gStato:'State', statoPrevisto:'Planned', statoAttivo:'Active',
+      gAree:'Areas', gModifica:'Edit', gMappa:'Map and data', gEsporta:'Export',
+      areeFuori:'Polygons outside the SITAC table: used for the area calculation.',
+      legenda:'Legend', legVuota:'Nothing on the map yet.',
       bSposta:'Move', bElimina:'Delete', bAnnulla:'Undo last', bPulisci:'Clear all',
       bSfondo:'Basemap', bDoveSono:'Locate me', bImporta:'Import', bStampa:'Print',
       pronto:'Ready.\nPick a tool on the left.',
@@ -83,8 +91,9 @@ function avvia(app){
       suggLinea:'Click each vertex, double-click to close.',
       suggArea:'Click each vertex, click the first one to close.',
       suggSimbolo:'Click the map to place it.',
-      promptSigla:'Label next to the symbol:',        
+      promptSigla:'Label next to the symbol:',
       promptDirezione:'Direction in degrees (0 = North, 90 = East):',
+      promptEtichetta:'Note text:',
       modOn:'Edit mode on.\nDrag vertices or symbols.', modOff:'Edit mode off.',
       elimOn:'Delete mode on.\nClick an element to remove it.', elimOff:'Delete mode off.',
       nienteAnnulla:'Nothing to undo.', giaVuota:'The map is already empty.',
@@ -97,15 +106,15 @@ function avvia(app){
       kmlFatto:'KML: {n} elements ({a} polygons).\nOpens in QGIS and Google Earth.',
       fileErrato:'Invalid file: {e}', importati:'{n} elements imported.',
       conteggio:'{l} lines · {a} areas · {s} symbols', superficie:'\nTotal area: {v} ha',
-      promptEtichetta:'Label text:',
       kmlDoc:'Wildfire SITAC', kmlAree:'Areas', kmlLinee:'Lines', kmlSimboli:'Symbols',
-      sfSat:'Satellite', sfTopo:'Topographic', sfScuro:'Dark', sfStrada:'Street'
+      sfSat:'Satellite', sfTopo:'Topographic', sfStrada:'Street'
     },
     fr:{
-      doc:'SITAC — Feu de forêt', titolo:'SITAC feu de forêt',
-      sub:'Choisissez un outil, puis dessinez sur la carte. Double-clic ou Entrée pour fermer une ligne.',
-      gLinee:'Lignes', gAree:'Zones', gSimboli:'Symboles', gModifica:'Modifier',
-      gMappa:'Carte et données', gEsporta:'Exporter', legenda:'Légende',
+      sub:'Choisissez un état, puis un outil, puis dessinez sur la carte. Double-clic ou Entrée pour fermer une ligne.',
+      gStato:'État', statoPrevisto:'Prévu', statoAttivo:'En cours',
+      gAree:'Zones', gModifica:'Modifier', gMappa:'Carte et données', gEsporta:'Exporter',
+      areeFuori:'Polygones hors tableau SITAC : ils servent au calcul de la surface.',
+      legenda:'Légende', legVuota:'Rien sur la carte pour le moment.',
       bSposta:'Déplacer', bElimina:'Supprimer', bAnnulla:'Annuler le dernier', bPulisci:'Tout effacer',
       bSfondo:'Fond de carte', bDoveSono:'Ma position', bImporta:'Importer', bStampa:'Imprimer',
       pronto:'Prêt.\nChoisissez un outil à gauche.',
@@ -113,8 +122,9 @@ function avvia(app){
       suggLinea:'Cliquez chaque sommet, double-clic pour fermer.',
       suggArea:'Cliquez chaque sommet, cliquez le premier pour fermer.',
       suggSimbolo:'Cliquez sur la carte pour le poser.',
-      promptSigla:'Texte à côté du symbole :',        
+      promptSigla:'Texte à côté du symbole :',
       promptDirezione:'Direction en degrés (0 = Nord, 90 = Est) :',
+      promptEtichetta:'Texte de l\'annotation :',
       modOn:'Modification active.\nDéplacez les sommets ou les symboles.', modOff:'Modification désactivée.',
       elimOn:'Suppression active.\nCliquez un élément pour le retirer.', elimOff:'Suppression désactivée.',
       nienteAnnulla:'Rien à annuler.', giaVuota:'La carte est déjà vide.',
@@ -127,15 +137,15 @@ function avvia(app){
       kmlFatto:'KML : {n} éléments ({a} polygones).\nS\'ouvre dans QGIS et Google Earth.',
       fileErrato:'Fichier invalide : {e}', importati:'{n} éléments importés.',
       conteggio:'{l} lignes · {a} zones · {s} symboles', superficie:'\nSurface totale : {v} ha',
-      promptEtichetta:'Texte de l\'étiquette :',
       kmlDoc:'SITAC feu de forêt', kmlAree:'Zones', kmlLinee:'Lignes', kmlSimboli:'Symboles',
-      sfSat:'Satellite', sfTopo:'Topographique', sfScuro:'Sombre', sfStrada:'Routier'
+      sfSat:'Satellite', sfTopo:'Topographique', sfStrada:'Routier'
     },
     es:{
-      doc:'SITAC — Incendio forestal', titolo:'SITAC forestal',
-      sub:'Elige una herramienta y dibuja en el mapa. Doble clic o Intro para cerrar una línea.',
-      gLinee:'Líneas', gAree:'Áreas', gSimboli:'Símbolos', gModifica:'Editar',
-      gMappa:'Mapa y datos', gEsporta:'Exportar', legenda:'Leyenda',
+      sub:'Elige un estado, luego una herramienta y dibuja en el mapa. Doble clic o Intro para cerrar una línea.',
+      gStato:'Estado', statoPrevisto:'Previsto', statoAttivo:'En curso',
+      gAree:'Áreas', gModifica:'Editar', gMappa:'Mapa y datos', gEsporta:'Exportar',
+      areeFuori:'Polígonos fuera de la tabla SITAC: sirven para calcular la superficie.',
+      legenda:'Leyenda', legVuota:'Todavía no hay nada en el mapa.',
       bSposta:'Mover', bElimina:'Eliminar', bAnnulla:'Deshacer último', bPulisci:'Borrar todo',
       bSfondo:'Fondo', bDoveSono:'Mi ubicación', bImporta:'Importar', bStampa:'Imprimir',
       pronto:'Listo.\nElige una herramienta a la izquierda.',
@@ -143,8 +153,9 @@ function avvia(app){
       suggLinea:'Haz clic en cada vértice, doble clic para cerrar.',
       suggArea:'Haz clic en cada vértice, clic en el primero para cerrar.',
       suggSimbolo:'Haz clic en el mapa para colocarlo.',
-      promptSigla:'Texto junto al símbolo:',          
+      promptSigla:'Texto junto al símbolo:',
       promptDirezione:'Dirección en grados (0 = Norte, 90 = Este):',
+      promptEtichetta:'Texto de la anotación:',
       modOn:'Edición activa.\nArrastra los vértices o los símbolos.', modOff:'Edición desactivada.',
       elimOn:'Eliminación activa.\nHaz clic en un elemento para quitarlo.', elimOff:'Eliminación desactivada.',
       nienteAnnulla:'Nada que deshacer.', giaVuota:'El mapa ya está vacío.',
@@ -157,9 +168,8 @@ function avvia(app){
       kmlFatto:'KML: {n} elementos ({a} polígonos).\nSe abre en QGIS y Google Earth.',
       fileErrato:'Archivo no válido: {e}', importati:'{n} elementos importados.',
       conteggio:'{l} líneas · {a} áreas · {s} símbolos', superficie:'\nSuperficie total: {v} ha',
-      promptEtichetta:'Texto de la etiqueta:',
       kmlDoc:'SITAC incendio forestal', kmlAree:'Áreas', kmlLinee:'Líneas', kmlSimboli:'Símbolos',
-      sfSat:'Satélite', sfTopo:'Topográfico', sfScuro:'Oscuro', sfStrada:'Callejero'
+      sfSat:'Satélite', sfTopo:'Topográfico', sfStrada:'Callejero'
     }
   };
 
@@ -173,95 +183,94 @@ function avvia(app){
     if (val) Object.keys(val).forEach(k => { s = s.split('{'+k+'}').join(val[k]); });
     return s;
   };
-  const nm = d => { const x = d && (d.nome || d.n); return (x && (x[lingua] || x.it)) || ''; };
+  /* I nomi della tavola esistono in italiano e inglese: per francese e
+     spagnolo si ricade sull'italiano, che è la lingua della fonte. */
+  const nm = d => { const x = d && d.n; return (x && (x[lingua] || x.it)) || ''; };
 
   /* =======================================================================
-     1. DEFINIZIONI TATTICHE
-     Ogni voce ha un `tipo` che viaggia nel GeoJSON: è la chiave che permette
-     di ricostruire stile e simbolo al reimport. Il nome è solo un'etichetta.
+     1. SIMBOLOGIA
      ===================================================================== */
-  const LINEE = {
-    fronte:      {color:'#ff2d20', weight:5, freccia:'dente',
-      nome:{it:'Fronte di fiamma', en:'Fire front', fr:'Front de flammes', es:'Frente de llamas'}},
-    propagazione:{color:'#ff8c00', weight:4, freccia:'punta', dashArray:'1,10', lineCap:'round',
-      nome:{it:'Propagazione', en:'Spread direction', fr:'Propagation', es:'Propagación'}},
-    attacco:     {color:'#2f81f7', weight:4, freccia:'punta',
-      nome:{it:'Asse di attacco', en:'Attack line', fr:'Axe d\'attaque', es:'Eje de ataque'}},
-    tagliafuoco: {color:'#ffd700', weight:4, dashArray:'12,7',
-      nome:{it:'Linea tagliafuoco', en:'Firebreak line', fr:'Coupure de combustible', es:'Línea cortafuegos'}},
-    accesso:     {color:'#4ade80', weight:3, dashArray:'6,6',
-      nome:{it:'Via di accesso', en:'Access route', fr:'Itinéraire d\'accès', es:'Vía de acceso'}},
-    fuga:        {color:'#ffffff', weight:3, freccia:'punta', dashArray:'2,8', lineCap:'round',
-      nome:{it:'Via di fuga', en:'Escape route', fr:'Itinéraire de repli', es:'Vía de escape'}}
-  };
+  const SIM  = NS.SITAC_SIMBOLI || {};
+  const LIN  = NS.SITAC_LINEE   || {};
+  const COL  = NS.SITAC_COLORI  || {rosso:'#cc0000'};
+
+  /* Perimetri: la tavola SITAC non prevede poligoni campiti, ma l'area
+     percorsa e il fronte attivo sono ciò che si legge per primo su una
+     carta, e la superficie in ettari si calcola solo su un poligono.
+     Restano quindi qui, dichiaratamente fuori standard e in un gruppo a
+     parte, per non farli passare per simbologia normata. */
   const AREE = {
-    bruciato:   {color:'#8b8f98', fillColor:'#3a3a3a', fillOpacity:.55, dashArray:'8,6', weight:2,
-      nome:{it:'Percorso dal fuoco', en:'Burned area', fr:'Surface parcourue', es:'Superficie quemada'}},
-    incorso:    {color:'#ff2d20', fillColor:'#ff2d20', fillOpacity:.30, weight:3,
-      nome:{it:'Fuoco attivo', en:'Active fire', fr:'Feu actif', es:'Fuego activo'}},
-    minacciato: {color:'#ffd700', fillColor:'#ffd700', fillOpacity:.15, weight:2, dashArray:'4,5',
-      nome:{it:'Zona minacciata', en:'Threatened area', fr:'Zone menacée', es:'Zona amenazada'}},
-    sensibile:  {color:'#c084fc', fillColor:'#c084fc', fillOpacity:.22, weight:2,
-      nome:{it:'Obiettivo sensibile', en:'Sensitive site', fr:'Point sensible', es:'Punto sensible'}},
-    bonificato: {color:'#4ade80', fillColor:'#4ade80', fillOpacity:.18, weight:2,
-      nome:{it:'Bonificato', en:'Mopped up', fr:'Zone noyée', es:'Zona liquidada'}}
+    percorsa:   {color:'#6b6b6b', fillColor:'#3a3a3a', fillOpacity:.55, dashArray:'8,6', weight:2,
+      n:{it:'Superficie percorsa', en:'Burned area', fr:'Surface parcourue', es:'Superficie quemada'}},
+    attiva:     {color:COL.rosso, fillColor:COL.rosso, fillOpacity:.28, weight:3,
+      n:{it:'Area a fuoco attivo', en:'Active fire area', fr:'Zone en feu', es:'Área en llamas'}},
+    minacciata: {color:'#e8a000', fillColor:'#e8a000', fillOpacity:.15, weight:2, dashArray:'4,5',
+      n:{it:'Zona minacciata', en:'Threatened area', fr:'Zone menacée', es:'Zona amenazada'}},
+    evacuata:   {color:COL.verde || '#009900', fillColor:COL.verde || '#009900', fillOpacity:.16, weight:2,
+      n:{it:'Zona evacuata', en:'Evacuated area', fr:'Zone évacuée', es:'Zona evacuada'}},
+    bonificata: {color:'#0070c0', fillColor:'#0070c0', fillOpacity:.15, weight:2,
+      n:{it:'Zona bonificata', en:'Mopped up area', fr:'Zone noyée', es:'Zona liquidada'}}
   };
 
-  /* Simbologia SiTaC: i dati stanno in sitac-simboli.js. Il colore è
-     normativo (rosso incendio, blu acqua, verde sanitario, nero terreno)
-     e non va reinterpretato con la palette di FireOps: qui distingue
-     VVF da sanitario da polizia, che condividono lo stesso tracciato.
+  /* Annotazione libera: non è nella tavola, ma scrivere un orario o un
+     nome sulla carta è la cosa che si fa più spesso in sala operativa. */
+  const NOTA = {libero:1, n:{it:'Annotazione', en:'Note', fr:'Annotation', es:'Anotación'}};
 
-     `etichetta` è l'unica voce non SiTaC: un'annotazione libera, che in
-     sala operativa serve più della metà dei simboli. */
-  const SIMBOLI = Object.assign({}, NS.SITAC_SIMBOLI, {
-    etichetta: {g:'note', c:'#ffffff', libero:1,
-      n:{it:'Annotazione', en:'Label', fr:'Étiquette', es:'Anotación'}}
-  });
-  const GRUPPI = (NS.SITAC_GRUPPI || []).concat([
-    {k:'note', n:{it:'Annotazioni', en:'Notes', fr:'Annotations', es:'Anotaciones'}}
-  ]);
+  const GRUPPI = (NS.SITAC_GRUPPI || []).slice();
 
-  /* Tipi del vecchio set disegnato a mano: i GeoJSON salvati prima
-     continuano a rientrare, ricondotti al simbolo SiTaC equivalente. */
-  const VECCHI = {dos:'pc', ros:'pc', pca:'pc', aps:'vf', abp:'vf', pma:'san',
-    acqua:'acqua_terra', eli:'elisuperficie', raccolta:'raccolta',
-    blocco:'sbarramento', innesco:'innesco'};
-
-  const escapeHtml = s => String(s ?? '').replace(/[<>&"]/g,
+  const escapeHtml = s => String(s == null ? '' : s).replace(/[<>&"]/g,
     c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
 
-  function svgSimbolo(chiave, dim){
-    const d = SIMBOLI[chiave];
-    if (!d || d.libero) return '';
-    return `<svg viewBox="${d.vb}" width="${dim||30}" height="${dim||30}">`
-      + `<g transform="${d.tr}" fill="${d.c}"><path d="${d.d}"/></g></svg>`;
+  /* Il colore non è un campo dei simboli: sta dentro il disegno, dove
+     serve. Per il KML, che vuole un colore solo, si prende il primo del
+     tracciato saltando il bianco, che è sempre fondo e mai significato.
+     I <defs> vanno scartati prima: contengono la campitura del ritardante
+     anche nei lanci d'acqua, che uscirebbero rossi invece che azzurri. */
+  function coloreSimbolo(k){
+    const d = SIM[k];
+    if (!d || !d.svg) return COL.rosso;
+    const corpo = d.svg({stato:'attivo'}).replace(/<defs>[\s\S]*?<\/defs>/g, '');
+    const tutti = (corpo.match(/#[0-9a-fA-F]{6}/g) || [])
+      .filter(c => c.toLowerCase() !== '#ffffff');
+    return tutti[0] || COL.rosso;
   }
 
-  /* L'icona porta con sé rotazione e sigla: sono dati del simbolo, non
-     decorazione, e vanno ricostruiti identici al reimport. */
-  function iconaSimbolo(chiave, opz){
-    const o = opz || {}, d = SIMBOLI[chiave] || {};
-    if (d.libero || chiave === 'etichetta')
+  function svgSimbolo(k, opz){
+    const d = SIM[k];
+    return d && d.svg ? d.svg(opz || {}) : '';
+  }
+
+  /* L'icona porta con sé stato, rotazione e sigla: sono dati del simbolo,
+     non decorazione, e vanno ricostruiti identici al reimport. */
+  function iconaSimbolo(k, opz){
+    const o = opz || {};
+    if (k === 'nota')
       return L.divIcon({className:'sitac-etichetta', html: escapeHtml(o.testo || ''),
         iconSize:null, iconAnchor:[0,10]});
     const gir = o.rotazione ? ` style="transform:rotate(${o.rotazione}deg)"` : '';
-    const html = `<span class="sitac-glifo"${gir}>${svgSimbolo(chiave, 34)}</span>`
-      + (o.testo ? `<span class="sitac-sigla">${escapeHtml(o.testo)}</span>` : '');
-    return L.divIcon({className:'sitac-sim', html, iconSize:[34,34], iconAnchor:[17,17]});
+    return L.divIcon({className:'sitac-sim',
+      html:`<span class="sitac-glifo"${gir}>${svgSimbolo(k, o)}</span>`,
+      iconSize:[36,36], iconAnchor:[18,18], popupAnchor:[0,-18]});
   }
-  
-  /* le opzioni di stile senza `nome` e `freccia`, che Leaflet non deve vedere */
-  function stile(d){
-    const {nome, freccia, ...resto} = d;
+
+  /* Opzioni di stile per Leaflet: le chiavi nostre (n, deco, badge,
+     stati, g) non devono arrivargli. Previsto = tratto spezzato. */
+  function stileLinea(d, stato){
+    const {n, deco, badge, stati, g, ...resto} = d;
+    if (stati && stato === 'previsto')
+      return Object.assign({}, resto, {dashArray: resto.dashArray || '9,7'});
+    return resto;
+  }
+  function stileArea(d){
+    const {n, ...resto} = d;
     return resto;
   }
 
   /* =======================================================================
      2. MAPPA
+     OSM come predefinito: è lo sfondo con cui si lavora normalmente in SO.
+     Topografico per quota e sentieri, satellite per la vegetazione.
      ===================================================================== */
-  /* OSM come predefinito: è lo sfondo con cui si lavora normalmente in SO.
-     Topografico per la quota e i sentieri, satellite per la vegetazione. */
   const sfondi = [
     {k:'sfStrada', l:L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
         {maxZoom:19, attribution:'OpenStreetMap'})},
@@ -275,115 +284,159 @@ function avvia(app){
   L.control.scale({imperial:false}).addTo(map);
 
   const disegni = L.featureGroup().addTo(map);   // esportabile
-  const decori  = L.layerGroup().addTo(map);     // solo frecce: mai esportato
+  const decori  = L.layerGroup().addTo(map);     // solo motivi: mai esportato
   map.pm.setGlobalOptions({layerGroup: disegni, snappable:true, snapDistance:15,
-    templineStyle:{color:'#ffd700'}, hintlineStyle:{color:'#ffd700', dashArray:'5,5'}});
+    templineStyle:{color:COL.rosso}, hintlineStyle:{color:COL.rosso, dashArray:'5,5'}});
 
   /* =======================================================================
-     3. DECORAZIONI (frecce lungo le linee)
+     3. MOTIVI RIPETUTI LUNGO LE LINEE
+     Metà della tavola sono tracciati con un simbolo ripetuto: i triangoli
+     della difesa in linea, i rombi della linea di sicurezza, la scaletta
+     del fronte. PolylineDecorator li ripete e li orienta lungo il percorso.
      ===================================================================== */
+  function glifoDeco(tipo, dim, col, pieno){
+    const riempi = pieno ? col : '#fff';
+    const d = dim;
+    let dentro = '';
+    if (tipo === 'triangolo')
+      dentro = `<path d="M2 ${d-2}L${d/2} 2L${d-2} ${d-2}Z" fill="${riempi}" stroke="${col}" stroke-width="2"/>`;
+    else if (tipo === 'rombo')
+      dentro = `<path d="M${d/2} 1L${d-1} ${d/2}L${d/2} ${d-1}L1 ${d/2}Z" fill="${riempi}" stroke="${col}" stroke-width="2"/>`;
+    else if (tipo === 'croce')
+      dentro = `<path d="M2 2L${d-2} ${d-2}M${d-2} 2L2 ${d-2}" stroke="${col}" stroke-width="2.6"/>`;
+    else if (tipo === 'scaletta')
+      dentro = `<path d="M${d/2} 1V${d-1}" stroke="${col}" stroke-width="2.6"/>`;
+    else if (tipo === 'onda')
+      dentro = `<path d="M1 ${d-2}V3h${d-2}v${d-5}" fill="none" stroke="${col}" stroke-width="2.4"/>`;
+    else if (tipo === 'obliqua')
+      dentro = `<path d="M1 ${d-2}L${d-3} 3M${d-3} 3l-5 0.5M${d-3} 3l0.5 5" fill="none" stroke="${col}" stroke-width="2.2"/>`;
+    return L.divIcon({className:'sitac-deco', iconSize:[d,d], iconAnchor:[d/2,d/2],
+      html:`<svg viewBox="0 0 ${d} ${d}" width="${d}" height="${d}">${dentro}</svg>`});
+  }
+
+  function motivo(def, stato){
+    const dc = def.deco;
+    if (!dc) return null;
+    const pieno = dc.pieno && !(def.stati && stato === 'previsto');
+    const col = def.color || COL.rosso;
+    if (dc.tipo === 'punta' || dc.tipo === 'freccia')
+      return {offset: dc.tipo === 'punta' ? '100%' : '12%', repeat: dc.passo,
+        symbol: L.Symbol.arrowHead({pixelSize: dc.dim, headAngle: 60, polygon: !!pieno,
+          pathOptions:{color:col, fillColor:col, fillOpacity: pieno ? 1 : 0, weight: pieno ? 1 : 2.5}})};
+    return {offset: dc.passo === '50%' ? '50%' : 8, repeat: dc.passo,
+      symbol: L.Symbol.marker({rotate:true,
+        markerOptions:{icon: glifoDeco(dc.tipo, dc.dim, col, pieno), interactive:false}})};
+  }
+
   function decora(layer){
     if (layer._deco){ decori.removeLayer(layer._deco); layer._deco = null; }
-    const def = LINEE[layer._tipo];
-    if (!def || !def.freccia) return;
-    const p = def.freccia === 'dente'
-      ? {offset:'3%', repeat:28, symbol:L.Symbol.arrowHead({pixelSize:10, headAngle:150, polygon:false,
-          pathOptions:{color:def.color, weight:3, opacity:1}})}
-      : {offset:'10%', repeat:'25%', symbol:L.Symbol.arrowHead({pixelSize:14, headAngle:55, polygon:true,
-          pathOptions:{color:def.color, fillColor:def.color, fillOpacity:1, weight:1}})};
-    layer._deco = L.polylineDecorator(layer, {patterns:[p]});
+    const def = LIN[layer._tipo];
+    if (!def) return;
+    const patterns = [];
+    const m = motivo(def, layer._stato);
+    if (m) patterns.push(m);
+    /* Il badge (4x4, B) sta in testa alla linea: dice di che strada o di
+       che azione si tratta, e va letto una volta sola. */
+    if (def.badge)
+      patterns.push({offset:0, repeat:0, symbol: L.Symbol.marker({rotate:false,
+        markerOptions:{interactive:false, icon: L.divIcon({className:'sitac-badge',
+          html: escapeHtml(def.badge), iconSize:[26,18], iconAnchor:[13,9]})}})});
+    if (!patterns.length) return;
+    layer._deco = L.polylineDecorator(layer, {patterns});
     decori.addLayer(layer._deco);
   }
   function scollega(layer){
     if (layer && layer._deco){ decori.removeLayer(layer._deco); layer._deco = null; }
   }
-  /* la modalità elimina globale rimuove il layer: la freccia va tolta con lui */
+  /* la modalità elimina globale rimuove il layer: il motivo va tolto con lui */
   map.on('pm:remove', e => scollega(e.layer));
 
   /* =======================================================================
      4. STRUMENTI
      ===================================================================== */
   let strumento = null;
+  let statoCorrente = 'previsto';
 
   function creaPulsanti(){
-    const linee = q('#sitac-tLinee');
-    linee.innerHTML = '';
-    Object.entries(LINEE).forEach(([k,d]) => {
-      const b = document.createElement('button');
-      b.dataset.genere = 'linea'; b.dataset.chiave = k;
-      b.innerHTML = `<i class="sitac-tratto" style="background:${d.color};
-        ${d.dashArray?'background-image:repeating-linear-gradient(90deg,#0000 0 3px,'+ 'rgba(0,0,0,.65) 3px 6px)':''}"></i>${nm(d)}`;
-      b.onclick = () => attiva('linea', k, b);
-      linee.appendChild(b);
+    /* Un gruppo per ogni sezione della tavola: dentro, prima i tracciati
+       in elenco (hanno nomi lunghi) e poi i simboli in griglia. */
+    const tav = q('#sitac-tavola');
+    tav.innerHTML = '';
+    GRUPPI.forEach(gr => {
+      const linee   = Object.entries(LIN).filter(([, d]) => d.g === gr.k);
+      const simboli = Object.entries(SIM).filter(([, d]) => d.g === gr.k);
+      if (!linee.length && !simboli.length) return;
+
+      const box = document.createElement('div');
+      box.className = 'sitac-gruppo';
+      const titolo = document.createElement('span');
+      titolo.textContent = nm(gr);
+      box.appendChild(titolo);
+
+      if (linee.length){
+        const el = document.createElement('div');
+        el.className = 'sitac-strumenti';
+        linee.forEach(([k, d]) => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.dataset.genere = 'linea'; b.dataset.chiave = k;
+          b.innerHTML = `<i class="sitac-tratto" style="background:${d.color};
+            height:${Math.min(d.weight || 3, 5)}px${d.dashArray
+              ? ';background-image:repeating-linear-gradient(90deg,#0000 0 3px,rgba(255,255,255,.85) 3px 6px)' : ''}"></i>`
+            + `<span>${nm(d)}</span>`;
+          b.onclick = () => attiva('linea', k, b);
+          el.appendChild(b);
+        });
+        box.appendChild(el);
+      }
+      if (simboli.length){
+        const gr2 = document.createElement('div');
+        gr2.className = 'sitac-simboli';
+        simboli.forEach(([k, d]) => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.dataset.genere = 'simbolo'; b.dataset.chiave = k;
+          b.title = nm(d);
+          b.innerHTML = svgSimbolo(k, {stato: statoCorrente});
+          b.onclick = () => attiva('simbolo', k, b);
+          gr2.appendChild(b);
+        });
+        box.appendChild(gr2);
+      }
+      tav.appendChild(box);
     });
+
+    /* Perimetri: fuori tavola, quindi in coda e con l'avviso sotto. */
     const aree = q('#sitac-tAree');
     aree.innerHTML = '';
-    Object.entries(AREE).forEach(([k,d]) => {
+    Object.entries(AREE).forEach(([k, d]) => {
       const b = document.createElement('button');
+      b.type = 'button';
       b.dataset.genere = 'area'; b.dataset.chiave = k;
       b.innerHTML = `<i class="sitac-tratto" style="height:12px;border-radius:2px;
-        background:${d.fillColor};opacity:.75;border:1.5px solid ${d.color}"></i>${nm(d)}`;
+        background:${d.fillColor};opacity:.8;border:1.5px solid ${d.color}"></i><span>${nm(d)}</span>`;
       b.onclick = () => attiva('area', k, b);
       aree.appendChild(b);
     });
-    /* 53 simboli in una griglia unica sarebbero illeggibili: si dividono
-       nei gruppi della specifica (Risorse, Azioni, Incendio, Terreno,
-       Zona di intervento), ciascuno con la sua griglia. */
-    const sim = q('#sitac-tSimboli');
-    sim.innerHTML = '';
-    GRUPPI.forEach(gr => {
-      const voci = Object.entries(SIMBOLI).filter(([, d]) => d.g === gr.k);
-      if (!voci.length) return;
-      const titolo = document.createElement('span');
-      titolo.className = 'sitac-sottogruppo';
-      titolo.textContent = nm(gr);
-      sim.appendChild(titolo);
-      const griglia = document.createElement('div');
-      griglia.className = 'sitac-simboli';
-      voci.forEach(([k, d]) => {
-        const b = document.createElement('button');
-        b.dataset.genere = 'simbolo'; b.dataset.chiave = k;
-        b.title = nm(d);
-        b.innerHTML = d.libero ? '✎' : svgSimbolo(k, 26);
-        b.onclick = () => attiva('simbolo', k, b);
-        griglia.appendChild(b);
-      });
-      sim.appendChild(griglia);
-    });
-    Object.entries(SIMBOLI).forEach(([k,d]) => {
-      const b = document.createElement('button');
-      b.dataset.genere = 'simbolo'; b.dataset.chiave = k;
-      b.title = nm(d);
-      b.innerHTML = svgSimbolo(k);
-      b.onclick = () => attiva('simbolo', k, b);
-      sim.appendChild(b);
-    });
-    // legenda: linee e aree
-    const leg = q('#sitac-legVoci');
-    leg.innerHTML = '';
-    Object.values(LINEE).forEach(d => {
-      leg.insertAdjacentHTML('beforeend',
-        `<div><i class="sitac-tratto" style="background:${d.color}"></i>${nm(d)}</div>`);
-    });
-    Object.values(AREE).forEach(d => {
-      leg.insertAdjacentHTML('beforeend',
-        `<div><i class="sitac-tratto" style="height:11px;border-radius:2px;background:${d.fillColor};
-          opacity:.8;border:1.5px solid ${d.color}"></i>${nm(d)}</div>`);
-    });
-    // ripristina l'evidenza dello strumento in uso dopo un cambio lingua
+    const bn = document.createElement('button');
+    bn.type = 'button';
+    bn.dataset.genere = 'simbolo'; bn.dataset.chiave = 'nota';
+    bn.innerHTML = `<i class="sitac-tratto" style="background:none">✎</i><span>${nm(NOTA)}</span>`;
+    bn.onclick = () => attiva('simbolo', 'nota', bn);
+    aree.appendChild(bn);
+
     if (strumento) marcaAttivo(strumento.genere, strumento.chiave);
   }
+
   function marcaAttivo(genere, chiave){
     const b = q(`#sitac-barra button[data-genere="${genere}"][data-chiave="${chiave}"]`);
     if (b) b.classList.add('attivo');
   }
-
+  /* I due pulsanti di stato non sono strumenti: restano accesi sempre. */
   function spegniPulsanti(){
-    qq('#sitac-barra button').forEach(b => b.classList.remove('attivo'));
-    qq('#sitac-lingue button').forEach(b => {
-      if (b.dataset.lingua === lingua) b.classList.add('attivo');
-    });
+    qq('#sitac-barra button:not(.sitac-stato-btn)').forEach(b => b.classList.remove('attivo'));
   }
+
   function attiva(genere, chiave, bottone){
     const giaAttivo = bottone && bottone.classList.contains('attivo');
     fermaTutto();
@@ -393,24 +446,45 @@ function avvia(app){
     strumento = {genere, chiave};
 
     if (genere === 'linea'){
-      const d = LINEE[chiave];
-      map.pm.enableDraw('Line', {pathOptions: stile(d), continueDrawing:true});
-      stato(`${nm(d)}\n${t('suggLinea')}`);
+      const d = LIN[chiave];
+      map.pm.enableDraw('Line', {pathOptions: stileLinea(d, statoCorrente), continueDrawing:true});
+      stato(`${nm(d)}${etichettaStato(d)}\n${t('suggLinea')}`);
     } else if (genere === 'area'){
       const d = AREE[chiave];
-      map.pm.enableDraw('Polygon', {pathOptions: stile(d), continueDrawing:true});
+      map.pm.enableDraw('Polygon', {pathOptions: stileArea(d), continueDrawing:true});
       stato(`${nm(d)}\n${t('suggArea')}`);
     } else {
-      map.pm.enableDraw('Marker', {markerStyle:{icon: iconaSimbolo(chiave), draggable:true},
+      const d = chiave === 'nota' ? NOTA : SIM[chiave];
+      map.pm.enableDraw('Marker', {
+        markerStyle:{icon: iconaSimbolo(chiave, {stato: statoCorrente}), draggable:true},
         continueDrawing:true});
-      stato(`${nm(SIMBOLI[chiave])}\n${t('suggSimbolo')}`);
+      stato(`${nm(d)}${etichettaStato(d)}\n${t('suggSimbolo')}`);
     }
   }
+  const etichettaStato = d =>
+    (d && (d.s || d.stati)) ? ` — ${t(statoCorrente === 'attivo' ? 'statoAttivo' : 'statoPrevisto')}` : '';
+
   function fermaTutto(){
     map.pm.disableDraw();
     map.pm.disableGlobalEditMode();
     map.pm.disableGlobalRemovalMode();
     strumento = null;
+  }
+
+  /* Cambio di stato: se uno strumento è in uso va riacceso, perché lo
+     stile del tratto e il disegno del simbolo dipendono dallo stato. */
+  function cambiaStato(s){
+    if (s === statoCorrente) return;
+    statoCorrente = s;
+    qq('#sitac-barra .sitac-stato-btn').forEach(b =>
+      b.classList.toggle('attivo', b.dataset.stato === s));
+    const attuale = strumento;
+    creaPulsanti();
+    if (attuale){
+      const b = q(`#sitac-barra button[data-genere="${attuale.genere}"][data-chiave="${attuale.chiave}"]`);
+      strumento = null;
+      attiva(attuale.genere, attuale.chiave, b);
+    }
   }
 
   /* creazione */
@@ -419,6 +493,7 @@ function avvia(app){
     if (!strumento) return;
     layer._tipo = strumento.chiave;
     layer._genere = strumento.genere;
+    layer._stato = statoCorrente;
 
     if (strumento.genere === 'linea'){
       decora(layer);
@@ -426,7 +501,8 @@ function avvia(app){
       layer.on('pm:remove', () => scollega(layer));
     }
     if (strumento.genere === 'simbolo'){
-      const k = strumento.chiave, def = SIMBOLI[k];
+      const k = strumento.chiave;
+      const def = k === 'nota' ? NOTA : SIM[k];
       let testo = '', rotazione = 0;
       if (def.libero || def.e){
         testo = (prompt(def.libero ? t('promptEtichetta') : t('promptSigla')) || '').trim();
@@ -438,8 +514,8 @@ function avvia(app){
       }
       layer._testo = testo || null;
       layer._rotazione = rotazione || null;
-      layer.setIcon(iconaSimbolo(k, {testo, rotazione}));
-      if (!def.libero) layer.bindTooltip(nm(def), {direction:'top', offset:[0,-18]});
+      layer.setIcon(iconaSimbolo(k, {stato: statoCorrente, testo, rotazione}));
+      if (!def.libero) layer.bindTooltip(nm(def) + etichettaStato(def), {direction:'top', offset:[0,-18]});
     }
     aggiornaStato();
   });
@@ -448,6 +524,10 @@ function avvia(app){
      5. AZIONI
      ===================================================================== */
   const $ = id => q('#sitac-' + id);
+
+  qq('#sitac-barra .sitac-stato-btn').forEach(b => {
+    b.onclick = () => cambiaStato(b.dataset.stato);
+  });
 
   $('bModifica').onclick = function(){
     const on = this.classList.contains('attivo');
@@ -487,7 +567,7 @@ function avvia(app){
   };
   map.on('locationfound', e => {
     L.circleMarker(e.latlng, {radius:7, color:'#fff', weight:2,
-      fillColor:'#2f81f7', fillOpacity:1}).addTo(decori);
+      fillColor:'#0070c0', fillOpacity:1}).addTo(decori);
     stato(t('posizione', {lat:e.latlng.lat.toFixed(5), lon:e.latlng.lng.toFixed(5), m:Math.round(e.accuracy)}));
   });
   map.on('locationerror', () => stato(t('posErrore')));
@@ -497,7 +577,8 @@ function avvia(app){
   function raccogli(){
     return disegni.getLayers().map(l => {
       const f = l.toGeoJSON();
-       f.properties = {tipo:l._tipo || null, genere:l._genere || null, testo:l._testo || null, rotazione:l._rotazione || null};
+      f.properties = {tipo:l._tipo || null, genere:l._genere || null,
+        stato:l._stato || null, testo:l._testo || null, rotazione:l._rotazione || null};
       return f;
     });
   }
@@ -514,7 +595,8 @@ function avvia(app){
     const feat = raccogli();
     if (!feat.length) return stato(t('nienteExport'));
     const fc = {type:'FeatureCollection', features:feat,
-      properties:{applicazione:'FireOps SITAC', lingua, creato:new Date().toISOString()}};
+      properties:{applicazione:'FireOps SITAC', simbologia:'SITAC CNVVF',
+        lingua, creato:new Date().toISOString()}};
     scarica(JSON.stringify(fc,null,1), nomeFile('geojson'), 'application/geo+json');
     stato(t('geojsonFatto', {n:feat.length}));
   };
@@ -530,35 +612,42 @@ function avvia(app){
   /* --- KML ---------------------------------------------------------------
      Il KML vuole i colori in aabbggrr: alfa davanti e i canali RGB invertiti.
      È l'errore classico che fa uscire tutto blu al posto del rosso.
-     I nomi dei Placemark seguono la lingua scelta; gli id di stile no.      */
-  function kmlCol(hex, alfa = 1){
-    const h = hex.replace('#','');
-    const a = Math.round(Math.max(0,Math.min(1,alfa)) * 255).toString(16).padStart(2,'0');
+     I nomi dei Placemark seguono la lingua scelta; gli id di stile no.
+     Fuori da qui la simbologia si perde: KML disegna una linea colorata,
+     non i triangoli della difesa in linea. Per ritrovare la SITAC intatta
+     serve il GeoJSON.                                                      */
+  function kmlCol(hex, alfa){
+    const h = String(hex || '#cc0000').replace('#','');
+    const a = Math.round(Math.max(0, Math.min(1, alfa == null ? 1 : alfa)) * 255)
+      .toString(16).padStart(2,'0');
     return a + h.slice(4,6) + h.slice(2,4) + h.slice(0,2);
   }
-  const esc = s => String(s ?? '').replace(/[<>&'"]/g,
+  const esc = s => String(s == null ? '' : s).replace(/[<>&'"]/g,
     c => ({'<':'&lt;','>':'&gt;','&':'&amp;',"'":'&apos;','"':'&quot;'}[c]));
 
   function costruisciKml(feat){
     const stili = [];
-    // uno stile per ogni tipo tattico definito
-    Object.entries(LINEE).forEach(([k,d]) => stili.push(
+    Object.entries(LIN).forEach(([k,d]) => stili.push(
       `<Style id="${k}"><LineStyle><color>${kmlCol(d.color)}</color>`
-      + `<width>${d.weight||3}</width></LineStyle></Style>`));
+      + `<width>${d.weight || 3}</width></LineStyle></Style>`));
     Object.entries(AREE).forEach(([k,d]) => stili.push(
       `<Style id="${k}"><LineStyle><color>${kmlCol(d.color)}</color>`
-      + `<width>${d.weight||2}</width></LineStyle>`
+      + `<width>${d.weight || 2}</width></LineStyle>`
       + `<PolyStyle><color>${kmlCol(d.fillColor, d.fillOpacity)}</color><fill>1</fill>`
       + `<outline>1</outline></PolyStyle></Style>`));
-    Object.entries(SIMBOLI).forEach(([k,d]) => stili.push(
-      `<Style id="${k}"><IconStyle><color>${kmlCol(d.c)}</color><scale>1.1</scale>`
-      + `<Icon><href>https://maps.google.com/mapfiles/kml/shapes/placemark_circle.png</href></Icon>`
-      + `</IconStyle><LabelStyle><color>${kmlCol(d.colore)}</color></LabelStyle></Style>`));
+    Object.keys(SIM).forEach(k => {
+      const c = kmlCol(coloreSimbolo(k));
+      stili.push(`<Style id="${k}"><IconStyle><color>${c}</color><scale>1.1</scale>`
+        + `<Icon><href>https://maps.google.com/mapfiles/kml/shapes/placemark_circle.png</href></Icon>`
+        + `</IconStyle><LabelStyle><color>${c}</color></LabelStyle></Style>`);
+    });
 
     const segna = feat.map(f => {
       const tp = f.properties.tipo;
-      const def = LINEE[tp] || AREE[tp] || SIMBOLI[tp] || null;
-      const nome = f.properties.testo || (def ? nm(def) : '') || tp || 'elemento';
+      const def = LIN[tp] || AREE[tp] || SIM[tp] || (tp === 'nota' ? NOTA : null);
+      let nome = f.properties.testo || (def ? nm(def) : '') || tp || 'elemento';
+      if (def && (def.s || def.stati) && f.properties.stato)
+        nome += ` (${t(f.properties.stato === 'attivo' ? 'statoAttivo' : 'statoPrevisto')})`;
       const g = f.geometry;
       let geom = '';
 
@@ -584,7 +673,8 @@ function avvia(app){
       }
       return `<Placemark><name>${esc(nome)}</name><styleUrl>#${esc(tp)}</styleUrl>`
         + `<ExtendedData><Data name="tipo"><value>${esc(tp)}</value></Data>`
-        + `<Data name="genere"><value>${esc(f.properties.genere)}</value></Data></ExtendedData>`
+        + `<Data name="genere"><value>${esc(f.properties.genere)}</value></Data>`
+        + `<Data name="stato"><value>${esc(f.properties.stato)}</value></Data></ExtendedData>`
         + geom + `</Placemark>`;
     });
 
@@ -595,14 +685,14 @@ function avvia(app){
     };
 
     return `<?xml version="1.0" encoding="UTF-8"?>
-  <kml xmlns="http://www.opengis.net/kml/2.2"><Document>
-  <name>${esc(t('kmlDoc'))}</name>
-  <description>FireOps VVF — ${esc(new Date().toLocaleString(lingua))}</description>
-  ${stili.join('\n')}
-  ${cartella(t('kmlAree'),    f => AREE[f.properties.tipo])}
-  ${cartella(t('kmlLinee'),   f => LINEE[f.properties.tipo])}
-  ${cartella(t('kmlSimboli'), f => SIMBOLI[f.properties.tipo])}
-  </Document></kml>`;
+<kml xmlns="http://www.opengis.net/kml/2.2"><Document>
+<name>${esc(t('kmlDoc'))}</name>
+<description>FireOps VVF — ${esc(new Date().toLocaleString(lingua))}</description>
+${stili.join('\n')}
+${cartella(t('kmlAree'),    f => AREE[f.properties.tipo])}
+${cartella(t('kmlLinee'),   f => LIN[f.properties.tipo])}
+${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo === 'nota')}
+</Document></kml>`;
   }
 
   $('bImporta').onclick = () => $('file').click();
@@ -622,27 +712,33 @@ function avvia(app){
     L.geoJSON(fc, {
       pointToLayer: (feat, latlng) => {
         const p = feat.properties || {};
-        const tp = VECCHI[p.tipo] || p.tipo;
-        if (!SIMBOLI[tp]) return L.marker(latlng, {draggable:true});
+        if (p.tipo !== 'nota' && !SIM[p.tipo]) return L.marker(latlng, {draggable:true});
         return L.marker(latlng, {draggable:true,
-          icon: iconaSimbolo(tp, {testo:p.testo, rotazione:p.rotazione})});
+          icon: iconaSimbolo(p.tipo, {stato:p.stato || 'previsto', testo:p.testo, rotazione:p.rotazione})});
       },
       style: feat => {
-        const tp = feat.properties?.tipo;
-        const d = LINEE[tp] || AREE[tp];
-        return d ? stile(d) : {color:'#ffd700'};
+        const p = feat.properties || {};
+        if (LIN[p.tipo]) return stileLinea(LIN[p.tipo], p.stato || 'previsto');
+        if (AREE[p.tipo]) return stileArea(AREE[p.tipo]);
+        return {color: COL.rosso};
       },
       onEachFeature: (feat, layer) => {
-        layer._tipo = VECCHI[feat.properties?.tipo] || feat.properties?.tipo;
-        layer._genere = feat.properties?.genere;
+        const p = feat.properties || {};
+        layer._tipo = p.tipo;
+        layer._genere = p.genere;
+        layer._stato = p.stato || 'previsto';
+        layer._testo = p.testo || null;
+        layer._rotazione = p.rotazione || null;
         disegni.addLayer(layer);
-        if (LINEE[layer._tipo]){
+        if (LIN[layer._tipo]){
           decora(layer);
           layer.on('pm:edit', () => decora(layer));
           layer.on('pm:remove', () => scollega(layer));
         }
-        if (SIMBOLI[layer._tipo] && !SIMBOLI[layer._tipo].libero)
-          layer.bindTooltip(nm(SIMBOLI[layer._tipo]), {direction:'top', offset:[0,-18]});
+        const def = SIM[layer._tipo];
+        if (def) layer.bindTooltip(nm(def) + (def.s
+          ? ` — ${t(layer._stato === 'attivo' ? 'statoAttivo' : 'statoPrevisto')}` : ''),
+          {direction:'top', offset:[0,-18]});
         n++;
       }
     });
@@ -652,18 +748,58 @@ function avvia(app){
     stato(t('importati', {n}));
   }
 
-  /* --- stato --- */
+  /* --- stato e legenda --- */
   function stato(x){ $('stato').textContent = x; }
+
   function aggiornaStato(){
     const l = disegni.getLayers();
-    const linee = l.filter(x => LINEE[x._tipo]).length;
+    const linee = l.filter(x => LIN[x._tipo]).length;
     const aree  = l.filter(x => AREE[x._tipo]).length;
     const sim   = l.length - linee - aree;
     let sup = 0;
     l.filter(x => AREE[x._tipo] && x.getLatLngs).forEach(x => { sup += areaMq(x); });
     stato(t('conteggio', {l:linee, a:aree, s:sim})
       + (sup ? t('superficie', {v:(sup/10000).toFixed(1)}) : ''));
+    aggiornaLegenda();
   }
+
+  /* La tavola ha 59 voci: una legenda con tutte sarebbe illeggibile e
+     inutile. Si elencano solo i tipi effettivamente sulla mappa. */
+  function aggiornaLegenda(){
+    const leg = q('#sitac-legVoci');
+    leg.innerHTML = '';
+    const visti = new Map();
+    disegni.eachLayer(x => {
+      if (!x._tipo || visti.has(x._tipo + x._stato)) return;
+      visti.set(x._tipo + x._stato, x);
+    });
+    if (!visti.size){
+      leg.innerHTML = `<div class="sitac-leg-vuota">${escapeHtml(t('legVuota'))}</div>`;
+      return;
+    }
+    visti.forEach(x => {
+      const k = x._tipo;
+      if (LIN[k]){
+        const d = LIN[k];
+        leg.insertAdjacentHTML('beforeend',
+          `<div><i class="sitac-tratto" style="background:${d.color};height:${Math.min(d.weight||3,5)}px"></i>`
+          + `${escapeHtml(nm(d) + etichettaStatoDi(d, x._stato))}</div>`);
+      } else if (AREE[k]){
+        const d = AREE[k];
+        leg.insertAdjacentHTML('beforeend',
+          `<div><i class="sitac-tratto" style="height:11px;border-radius:2px;background:${d.fillColor};
+            opacity:.85;border:1.5px solid ${d.color}"></i>${escapeHtml(nm(d))}</div>`);
+      } else if (SIM[k]){
+        const d = SIM[k];
+        leg.insertAdjacentHTML('beforeend',
+          `<div><span class="sitac-leg-sim">${svgSimbolo(k, {stato:x._stato})}</span>`
+          + `${escapeHtml(nm(d) + etichettaStatoDi(d, x._stato))}</div>`);
+      }
+    });
+  }
+  const etichettaStatoDi = (d, s) =>
+    (d && (d.s || d.stati)) ? ` — ${t(s === 'attivo' ? 'statoAttivo' : 'statoPrevisto')}` : '';
+
   // area geodetica approssimata (formula dello shoelace su proiezione locale)
   function areaMq(poly){
     const p = poly.getLatLngs()[0]; if (!p || p.length < 3) return 0;
@@ -687,6 +823,7 @@ function avvia(app){
     box.innerHTML = '';
     Object.keys(L10N).forEach(lg => {
       const b = document.createElement('button');
+      b.type = 'button';
       b.dataset.lingua = lg;
       b.title = lg.toUpperCase();
       b.setAttribute('aria-label', lg.toUpperCase());
@@ -702,29 +839,30 @@ function avvia(app){
     applicaLingua();
   }
   function applicaLingua(){
-    app.setAttribute('lang', lingua);
+    radice.setAttribute('lang', lingua);
     qq('[data-t]').forEach(e => { e.textContent = t(e.dataset.t); });
     qq('#sitac-lingue button').forEach(b =>
       b.classList.toggle('attivo', b.dataset.lingua === lingua));
     creaPulsanti();
     // i tooltip già posati vanno riscritti nella nuova lingua
     disegni.eachLayer(l => {
-      if (SIMBOLI[l._tipo] && !SIMBOLI[l._tipo].libero){
-        l.unbindTooltip();
-        l.bindTooltip(nm(SIMBOLI[l._tipo]), {direction:'top', offset:[0,-18]});
-      }
+      const d = SIM[l._tipo];
+      if (!d) return;
+      l.unbindTooltip();
+      l.bindTooltip(nm(d) + etichettaStatoDi(d, l._stato), {direction:'top', offset:[0,-18]});
     });
     if (strumento){
-      const d = strumento.genere === 'linea' ? LINEE[strumento.chiave]
+      const d = strumento.genere === 'linea' ? LIN[strumento.chiave]
               : strumento.genere === 'area'  ? AREE[strumento.chiave]
-              : SIMBOLI[strumento.chiave];
+              : (strumento.chiave === 'nota' ? NOTA : SIM[strumento.chiave]);
       const sugg = strumento.genere === 'linea' ? 'suggLinea'
                  : strumento.genere === 'area'  ? 'suggArea' : 'suggSimbolo';
-      stato(`${nm(d)}\n${t(sugg)}`);
+      stato(`${nm(d)}${etichettaStato(d)}\n${t(sugg)}`);
     } else if (disegni.getLayers().length){
       aggiornaStato();
     } else {
       stato(t('pronto'));
+      aggiornaLegenda();
     }
   }
 
@@ -735,8 +873,9 @@ function avvia(app){
   });
 
   creaBandiere();
-    applicaLingua();
-    stato(t('pronto'));
+  applicaLingua();
+  stato(t('pronto'));
+  aggiornaLegenda();
 
   /* -------------------------------------------------------------------
      Stampa: la sezione viene appesa al body per il tempo della stampa,
@@ -776,13 +915,15 @@ function avvia(app){
   /* comando attivo condiviso con script.js / convertitore.js */
   window.addEventListener('fireops:comando-attivo-cambiato', ev => {
     const d = ev.detail || {};
-    const la = parseFloat(d.lat ?? d.latitudine), lo = parseFloat(d.lon ?? d.longitudine);
+    const la = parseFloat(d.lat != null ? d.lat : d.latitudine);
+    const lo = parseFloat(d.lon != null ? d.lon : d.longitudine);
     if (!isNaN(la) && !isNaN(lo) && !disegni.getLayers().length) map.setView([la, lo], 12);
   });
 
   return {
     map, disegni,
     lingua: lg => cambiaLingua(lg),
+    stato: s => cambiaStato(s),
     esportaGeoJson: raccogli,
     carica,
     pulisci: () => { disegni.clearLayers(); decori.clearLayers(); aggiornaStato(); },
@@ -808,16 +949,21 @@ NS.Sitac = {
        riquadro: i controlli si cercano a partire dalla sezione. */
     const radice = app.closest('.page-section') || app;
 
-    for (const id of ['sitac-barra','sitac-mappa','sitac-tLinee','sitac-tAree',
-                      'sitac-tSimboli','sitac-legVoci','sitac-stato','sitac-lingue']){
+    for (const id of ['sitac-barra','sitac-mappa','sitac-tavola','sitac-tAree',
+                      'sitac-legVoci','sitac-stato','sitac-lingue']){
       if (!radice.querySelector('#' + id)){
         console.error('[SITAC] manca #' + id + ' nel markup della sezione.');
         return null;
       }
     }
+    const box = radice.querySelector('#sitac-stato');
+    if (!NS.SITAC_SIMBOLI || !NS.SITAC_LINEE){
+      box.textContent = 'Simbologia mancante: sitac-simboli.js deve precedere sitac.js.';
+      console.error('[SITAC] sitac-simboli.js non caricato.');
+      return null;
+    }
     if (typeof L === 'undefined' || !L.PM || !L.Symbol || !L.Symbol.arrowHead){
-      radice.querySelector('#sitac-stato').textContent =
-        'Librerie mancanti: servono Leaflet, Geoman e PolylineDecorator.';
+      box.textContent = 'Librerie mancanti: servono Leaflet, Geoman e PolylineDecorator.';
       console.error('[SITAC] Geoman o PolylineDecorator non caricati.');
       return null;
     }

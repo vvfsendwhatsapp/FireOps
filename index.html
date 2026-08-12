@@ -257,17 +257,27 @@
             </div>
             <div id="sitac-app">
                 <div id="sitac-barra">
+
                     <div class="sitac-gruppo">
-                        <span data-t="gLinee"></span>
-                        <div class="sitac-strumenti" id="sitac-tLinee"></div>
+                        <span data-t="gStato"></span>
+                        <div class="sitac-stati">
+                            <button id="sitac-statoPrevisto" type="button"
+                                class="sitac-stato-btn attivo" data-stato="previsto"
+                                data-t="statoPrevisto"></button>
+                            <button id="sitac-statoAttivo" type="button"
+                                class="sitac-stato-btn" data-stato="attivo"
+                                data-t="statoAttivo"></button>
+                        </div>
                     </div>
+
+                    <!-- I sei gruppi della tavola SITAC: costruiti da sitac.js -->
+                    <div id="sitac-tavola"></div>
 
                     <div class="sitac-gruppo">
                         <span data-t="gAree"></span>
                         <div class="sitac-strumenti" id="sitac-tAree"></div>
+                        <p class="sitac-avviso" data-t="areeFuori"></p>
                     </div>
-
-                    <div class="sitac-gruppo" id="sitac-tSimboli"></div>
 
                     <div class="sitac-gruppo">
                         <span data-t="gModifica"></span>
@@ -278,35 +288,6 @@
                             <button id="sitac-bPulisci" type="button" class="largo" data-t="bPulisci"></button>
                         </div>
                     </div>
-
-                    <div class="sitac-gruppo">
-                        <span data-t="gMappa"></span>
-                        <div class="sitac-azioni">
-                            <button id="sitac-bSfondo" type="button" data-t="bSfondo"></button>
-                            <button id="sitac-bDoveSono" type="button" data-t="bDoveSono"></button>
-                            <button id="sitac-bImporta" type="button" data-t="bImporta"></button>
-                            <button id="sitac-bStampa" type="button" data-t="bStampa"></button>
-                        </div>
-                        <span class="sitac-sottogruppo" data-t="gEsporta"></span>
-                        <div class="sitac-azioni">
-                            <button id="sitac-bGeojson" type="button">GeoJSON</button>
-                            <button id="sitac-bKml" type="button">KML</button>
-                        </div>
-                        <input type="file" id="sitac-file" accept=".geojson,.json" hidden>
-                    </div>
-
-                    <div id="sitac-stato"></div>
-                </div>
-
-                <div class="sitac-mapwrap">
-                    <div id="sitac-mappa"></div>
-                    <div id="sitac-legenda">
-                        <b data-t="legenda"></b>
-                        <div id="sitac-legVoci"></div>
-                    </div>
-                </div>
-
-            </div>
         </section>
 
         <!-- SCHEDE DI SOCCORSO -->
