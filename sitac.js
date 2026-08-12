@@ -265,15 +265,15 @@ function avvia(app){
   /* =======================================================================
      2. MAPPA
      ===================================================================== */
+  /* OSM come predefinito: è lo sfondo con cui si lavora normalmente in SO.
+     Topografico per la quota e i sentieri, satellite per la vegetazione. */
   const sfondi = [
-    {k:'sfSat', l:L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        {maxZoom:19, attribution:'Esri'})},
+    {k:'sfStrada', l:L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        {maxZoom:19, attribution:'OpenStreetMap'})},
     {k:'sfTopo', l:L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
         {maxZoom:17, attribution:'OpenTopoMap'})},
-    {k:'sfScuro', l:L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-        {maxZoom:20, attribution:'CARTO'})},
-    {k:'sfStrada', l:L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        {maxZoom:19, attribution:'OpenStreetMap'})}
+    {k:'sfSat', l:L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        {maxZoom:19, attribution:'Esri'})}
   ];
   let iSfondo = 0;
   const map = L.map(q('#sitac-mappa'), {center:[42.74, 12.74], zoom:13, zoomControl:true, layers:[sfondi[0].l]});
