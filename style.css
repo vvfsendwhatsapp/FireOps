@@ -3012,8 +3012,25 @@ a.btn-icon-hamburger:hover {
   border-color:var(--primary-color);font-weight:bold}
 #sitac-app button:focus-visible{outline:2px solid var(--primary-color);outline-offset:1px}
 #sitac-app .sitac-azioni button{justify-content:center;font-weight:bold}
-#sitac-app .sitac-simboli button{justify-content:center;padding:6px 2px;aspect-ratio:1}
-#sitac-app .sitac-simboli button svg{width:24px;height:24px}
+/* I simboli SiTaC sono pensati per la carta: nero e colori pieni su
+   fondo bianco. Nella barra scura il riquadro dell'icona resta chiaro,
+   altrimenti metà set sarebbe invisibile. */
+#sitac-app .sitac-simboli{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:4px}
+#sitac-app .sitac-simboli button{justify-content:center;padding:4px;aspect-ratio:1;
+  background:#eceff3;border-color:#c3c9d2}
+#sitac-app .sitac-simboli button:hover{background:#fff;border-color:var(--primary-color)}
+#sitac-app .sitac-simboli button.attivo{background:#fff;color:inherit;
+  border-color:var(--primary-color);box-shadow:inset 0 0 0 2px var(--primary-color)}
+#sitac-app .sitac-simboli button svg{width:100%;height:100%}
+
+/* Sulla mappa l'alone bianco stacca il simbolo dal terreno: senza, il
+   nero sparisce sull'ortofoto e il rosso sui tetti. */
+#sitac-app .sitac-sim{position:relative}
+#sitac-app .sitac-sim svg{filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 2px #fff)}
+#sitac-app .sitac-glifo{display:block;width:34px;height:34px}
+#sitac-app .sitac-sigla{position:absolute;left:37px;top:50%;transform:translateY(-50%);
+  font-size:11px;font-weight:bold;color:#111;background:rgba(255,255,255,.88);
+  border-radius:3px;padding:0 4px;white-space:nowrap}
 #sitac-app .sitac-tratto{width:22px;height:3px;border-radius:2px;flex:0 0 22px}
 
 /* Riquadro di stato: una nota come .evento-rilevante-premessa, ma con

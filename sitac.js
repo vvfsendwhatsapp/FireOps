@@ -53,6 +53,8 @@ function avvia(app){
       suggLinea:'Clic per i vertici, doppio clic per chiudere.',
       suggArea:'Clic per i vertici, clic sul primo per chiudere.',
       suggSimbolo:'Clic sulla mappa per posizionare.',
+      promptSigla:'Sigla o testo accanto al simbolo:', 
+      promptDirezione:'Direzione in gradi (0 = Nord, 90 = Est):',
       modOn:'Modifica attiva.\nTrascina i vertici o i simboli.', modOff:'Modifica disattivata.',
       elimOn:'Eliminazione attiva.\nClic su un elemento per rimuoverlo.', elimOff:'Eliminazione disattivata.',
       nienteAnnulla:'Niente da annullare.', giaVuota:'La mappa è già vuota.',
@@ -81,6 +83,8 @@ function avvia(app){
       suggLinea:'Click each vertex, double-click to close.',
       suggArea:'Click each vertex, click the first one to close.',
       suggSimbolo:'Click the map to place it.',
+      promptSigla:'Label next to the symbol:',        
+      promptDirezione:'Direction in degrees (0 = North, 90 = East):',
       modOn:'Edit mode on.\nDrag vertices or symbols.', modOff:'Edit mode off.',
       elimOn:'Delete mode on.\nClick an element to remove it.', elimOff:'Delete mode off.',
       nienteAnnulla:'Nothing to undo.', giaVuota:'The map is already empty.',
@@ -109,6 +113,8 @@ function avvia(app){
       suggLinea:'Cliquez chaque sommet, double-clic pour fermer.',
       suggArea:'Cliquez chaque sommet, cliquez le premier pour fermer.',
       suggSimbolo:'Cliquez sur la carte pour le poser.',
+      promptSigla:'Texte à côté du symbole :',        
+      promptDirezione:'Direction en degrés (0 = Nord, 90 = Est) :',
       modOn:'Modification active.\nDéplacez les sommets ou les symboles.', modOff:'Modification désactivée.',
       elimOn:'Suppression active.\nCliquez un élément pour le retirer.', elimOff:'Suppression désactivée.',
       nienteAnnulla:'Rien à annuler.', giaVuota:'La carte est déjà vide.',
@@ -137,6 +143,8 @@ function avvia(app){
       suggLinea:'Haz clic en cada vértice, doble clic para cerrar.',
       suggArea:'Haz clic en cada vértice, clic en el primero para cerrar.',
       suggSimbolo:'Haz clic en el mapa para colocarlo.',
+      promptSigla:'Texto junto al símbolo:',          
+      promptDirezione:'Dirección en grados (0 = Norte, 90 = Este):',
       modOn:'Edición activa.\nArrastra los vértices o los símbolos.', modOff:'Edición desactivada.',
       elimOn:'Eliminación activa.\nHaz clic en un elemento para quitarlo.', elimOff:'Eliminación desactivada.',
       nienteAnnulla:'Nada que deshacer.', giaVuota:'El mapa ya está vacío.',
@@ -165,7 +173,7 @@ function avvia(app){
     if (val) Object.keys(val).forEach(k => { s = s.split('{'+k+'}').join(val[k]); });
     return s;
   };
-  const nm = d => (d && d.nome && (d.nome[lingua] || d.nome.it)) || '';
+  const nm = d => { const x = d && (d.nome || d.n); return (x && (x[lingua] || x.it)) || ''; };
 
   /* =======================================================================
      1. DEFINIZIONI TATTICHE
@@ -199,67 +207,50 @@ function avvia(app){
       nome:{it:'Bonificato', en:'Mopped up', fr:'Zone noyée', es:'Zona liquidada'}}
   };
 
-  /* Simboli: SVG 32x32 disegnati a mano, scalabili e stampabili.
-     `sigla` è fissa in tutte le lingue: è un codice operativo, non una parola. */
-  const SIMBOLI = {
-    dos:     {colore:'#ffd700', sigla:'DOS', forma:'quadro',
-      nome:{it:'Direttore operazioni spegnimento', en:'Fire operations director', fr:'Directeur des opérations', es:'Director de extinción'}},
-    ros:     {colore:'#ff8c00', sigla:'ROS', forma:'quadro',
-      nome:{it:'Responsabile operazioni soccorso', en:'Rescue operations chief', fr:'Chef des secours', es:'Jefe de intervención'}},
-    pca:     {colore:'#ffd700', forma:'bandiera',
-      nome:{it:'Posto comando', en:'Command post', fr:'Poste de commandement', es:'Puesto de mando'}},
-    aps:     {colore:'#ff2d20', sigla:'APS', forma:'tondo',
-      nome:{it:'Autopompaserbatoio', en:'Pumper', fr:'Fourgon pompe-tonne', es:'Autobomba'}},
-    abp:     {colore:'#ff2d20', sigla:'ABP', forma:'tondo',
-      nome:{it:'Autobotte', en:'Water tanker', fr:'Camion-citerne', es:'Camión cisterna'}},
-    acqua:   {colore:'#2f81f7', forma:'goccia',
-      nome:{it:'Punto acqua', en:'Water point', fr:'Point d\'eau', es:'Punto de agua'}},
-    eli:     {colore:'#4ade80', forma:'elicottero',
-      nome:{it:'Elisuperficie', en:'Helispot', fr:'Hélisurface', es:'Helisuperficie'}},
-    pma:     {colore:'#ffffff', forma:'croce',
-      nome:{it:'Posto medico avanzato', en:'Casualty station', fr:'PMA', es:'Puesto médico avanzado'}},
-    raccolta:{colore:'#4ade80', sigla:'PR', forma:'tondo',
-      nome:{it:'Punto raccolta', en:'Assembly point', fr:'Point de rassemblement', es:'Punto de reunión'}},
-    blocco:  {colore:'#c084fc', forma:'sbarra',
-      nome:{it:'Posto di blocco', en:'Road block', fr:'Point de contrôle', es:'Control de acceso'}},
-    innesco: {colore:'#ff2d20', forma:'stella',
-      nome:{it:'Innesco', en:'Ignition point', fr:'Point d\'éclosion', es:'Punto de inicio'}},
-    etichetta:{colore:'#ffffff', forma:'testo',
-      nome:{it:'Etichetta', en:'Label', fr:'Étiquette', es:'Etiqueta'}}
-  };
+  /* Simbologia SiTaC: i dati stanno in sitac-simboli.js. Il colore è
+     normativo (rosso incendio, blu acqua, verde sanitario, nero terreno)
+     e non va reinterpretato con la palette di FireOps: qui distingue
+     VVF da sanitario da polizia, che condividono lo stesso tracciato.
 
-  /* --- generatori SVG --- */
-  const G = dentro => `<svg viewBox="0 0 32 32" width="30" height="30">${dentro}</svg>`;
-  const FORME = {
-    quadro: (c,s) => G(`<rect x="4" y="4" width="24" height="24" rx="3" fill="#0b0e13" stroke="${c}" stroke-width="2.5"/>
-      <text x="16" y="20.5" text-anchor="middle" font-size="9.5" font-weight="700" fill="${c}" font-family="system-ui">${s}</text>`),
-    tondo: (c,s) => G(`<circle cx="16" cy="16" r="12" fill="#0b0e13" stroke="${c}" stroke-width="2.5"/>
-      <text x="16" y="20" text-anchor="middle" font-size="9" font-weight="700" fill="${c}" font-family="system-ui">${s}</text>`),
-    bandiera: c => G(`<path d="M9 28V5" stroke="${c}" stroke-width="2.5" stroke-linecap="round"/>
-      <path d="M10 6h16l-4 5 4 5H10z" fill="${c}"/>`),
-    goccia: c => G(`<path d="M16 4c6 8 9 11 9 15a9 9 0 0 1-18 0c0-4 3-7 9-15z" fill="#0b0e13" stroke="${c}" stroke-width="2.5"/>
-      <path d="M12 19a4 4 0 0 0 4 4" stroke="${c}" stroke-width="2" fill="none" stroke-linecap="round"/>`),
-    elicottero: c => G(`<circle cx="16" cy="16" r="12" fill="#0b0e13" stroke="${c}" stroke-width="2.5"/>
-      <path d="M16 8v16M8 16h16" stroke="${c}" stroke-width="2.5" stroke-linecap="round"/>
-      <text x="16" y="19.5" text-anchor="middle" font-size="8" font-weight="700" fill="${c}" font-family="system-ui">H</text>`),
-    croce: c => G(`<rect x="4" y="4" width="24" height="24" rx="3" fill="#0b0e13" stroke="${c}" stroke-width="2.5"/>
-      <path d="M16 9v14M9 16h14" stroke="#ff2d20" stroke-width="4" stroke-linecap="round"/>`),
-    sbarra: c => G(`<circle cx="16" cy="16" r="12" fill="#0b0e13" stroke="${c}" stroke-width="2.5"/>
-      <path d="M8 20h16M10 20l3-8h6l3 8" stroke="${c}" stroke-width="2" fill="none" stroke-linejoin="round"/>`),
-    stella: c => G(`<path d="M16 3l3.4 7.6L27 12l-5.5 5.2 1.4 8.1L16 21.5 9.1 25.3l1.4-8.1L5 12l7.6-1.4z"
-      fill="${c}" stroke="#0b0e13" stroke-width="1.5"/>`),
-    testo: c => G(`<rect x="3" y="9" width="26" height="14" rx="2" fill="#0b0e13" stroke="${c}" stroke-width="2"/>
-      <path d="M9 13h14M9 17h9" stroke="${c}" stroke-width="2" stroke-linecap="round"/>`)
-  };
+     `etichetta` è l'unica voce non SiTaC: un'annotazione libera, che in
+     sala operativa serve più della metà dei simboli. */
+  const SIMBOLI = Object.assign({}, NS.SITAC_SIMBOLI, {
+    etichetta: {g:'note', c:'#ffffff', libero:1,
+      n:{it:'Annotazione', en:'Label', fr:'Étiquette', es:'Anotación'}}
+  });
+  const GRUPPI = (NS.SITAC_GRUPPI || []).concat([
+    {k:'note', n:{it:'Annotazioni', en:'Notes', fr:'Annotations', es:'Anotaciones'}}
+  ]);
 
-  function svgSimbolo(chiave){
+  /* Tipi del vecchio set disegnato a mano: i GeoJSON salvati prima
+     continuano a rientrare, ricondotti al simbolo SiTaC equivalente. */
+  const VECCHI = {dos:'pc', ros:'pc', pca:'pc', aps:'vf', abp:'vf', pma:'san',
+    acqua:'acqua_terra', eli:'elisuperficie', raccolta:'raccolta',
+    blocco:'sbarramento', innesco:'innesco'};
+
+  const escapeHtml = s => String(s ?? '').replace(/[<>&"]/g,
+    c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+
+  function svgSimbolo(chiave, dim){
     const d = SIMBOLI[chiave];
-    return FORME[d.forma](d.colore, d.sigla || '');
+    if (!d || d.libero) return '';
+    return `<svg viewBox="${d.vb}" width="${dim||30}" height="${dim||30}">`
+      + `<g transform="${d.tr}" fill="${d.c}"><path d="${d.d}"/></g></svg>`;
   }
-  function iconaSimbolo(chiave){
-    return L.divIcon({className:'sitac-sim', html: svgSimbolo(chiave),
-      iconSize:[30,30], iconAnchor:[15,15], popupAnchor:[0,-14]});
+
+  /* L'icona porta con sé rotazione e sigla: sono dati del simbolo, non
+     decorazione, e vanno ricostruiti identici al reimport. */
+  function iconaSimbolo(chiave, opz){
+    const o = opz || {}, d = SIMBOLI[chiave] || {};
+    if (d.libero || chiave === 'etichetta')
+      return L.divIcon({className:'sitac-etichetta', html: escapeHtml(o.testo || ''),
+        iconSize:null, iconAnchor:[0,10]});
+    const gir = o.rotazione ? ` style="transform:rotate(${o.rotazione}deg)"` : '';
+    const html = `<span class="sitac-glifo"${gir}>${svgSimbolo(chiave, 34)}</span>`
+      + (o.testo ? `<span class="sitac-sigla">${escapeHtml(o.testo)}</span>` : '');
+    return L.divIcon({className:'sitac-sim', html, iconSize:[34,34], iconAnchor:[17,17]});
   }
+  
   /* le opzioni di stile senza `nome` e `freccia`, che Leaflet non deve vedere */
   function stile(d){
     const {nome, freccia, ...resto} = d;
@@ -335,8 +326,30 @@ function avvia(app){
       b.onclick = () => attiva('area', k, b);
       aree.appendChild(b);
     });
+    /* 53 simboli in una griglia unica sarebbero illeggibili: si dividono
+       nei gruppi della specifica (Risorse, Azioni, Incendio, Terreno,
+       Zona di intervento), ciascuno con la sua griglia. */
     const sim = q('#sitac-tSimboli');
     sim.innerHTML = '';
+    GRUPPI.forEach(gr => {
+      const voci = Object.entries(SIMBOLI).filter(([, d]) => d.g === gr.k);
+      if (!voci.length) return;
+      const titolo = document.createElement('span');
+      titolo.className = 'sitac-sottogruppo';
+      titolo.textContent = nm(gr);
+      sim.appendChild(titolo);
+      const griglia = document.createElement('div');
+      griglia.className = 'sitac-simboli';
+      voci.forEach(([k, d]) => {
+        const b = document.createElement('button');
+        b.dataset.genere = 'simbolo'; b.dataset.chiave = k;
+        b.title = nm(d);
+        b.innerHTML = d.libero ? '✎' : svgSimbolo(k, 26);
+        b.onclick = () => attiva('simbolo', k, b);
+        griglia.appendChild(b);
+      });
+      sim.appendChild(griglia);
+    });
     Object.entries(SIMBOLI).forEach(([k,d]) => {
       const b = document.createElement('button');
       b.dataset.genere = 'simbolo'; b.dataset.chiave = k;
@@ -413,15 +426,20 @@ function avvia(app){
       layer.on('pm:remove', () => scollega(layer));
     }
     if (strumento.genere === 'simbolo'){
-      if (strumento.chiave === 'etichetta'){
-        const testo = (prompt(t('promptEtichetta')) || '').trim();
-        if (!testo){ disegni.removeLayer(layer); return; }
-        layer.setIcon(L.divIcon({className:'sitac-etichetta', html: testo,
-          iconSize:null, iconAnchor:[0,10]}));
-        layer._testo = testo;
-      } else {
-        layer.bindTooltip(nm(SIMBOLI[strumento.chiave]), {direction:'top', offset:[0,-14]});
+      const k = strumento.chiave, def = SIMBOLI[k];
+      let testo = '', rotazione = 0;
+      if (def.libero || def.e){
+        testo = (prompt(def.libero ? t('promptEtichetta') : t('promptSigla')) || '').trim();
+        if (def.libero && !testo){ disegni.removeLayer(layer); return; }
       }
+      if (def.r){
+        const g = parseFloat(prompt(t('promptDirezione'), '0'));
+        rotazione = isNaN(g) ? 0 : ((g % 360) + 360) % 360;
+      }
+      layer._testo = testo || null;
+      layer._rotazione = rotazione || null;
+      layer.setIcon(iconaSimbolo(k, {testo, rotazione}));
+      if (!def.libero) layer.bindTooltip(nm(def), {direction:'top', offset:[0,-18]});
     }
     aggiornaStato();
   });
@@ -479,7 +497,7 @@ function avvia(app){
   function raccogli(){
     return disegni.getLayers().map(l => {
       const f = l.toGeoJSON();
-      f.properties = {tipo:l._tipo || null, genere:l._genere || null, testo:l._testo || null};
+       f.properties = {tipo:l._tipo || null, genere:l._genere || null, testo:l._testo || null, rotazione:l._rotazione || null};
       return f;
     });
   }
@@ -533,7 +551,7 @@ function avvia(app){
       + `<PolyStyle><color>${kmlCol(d.fillColor, d.fillOpacity)}</color><fill>1</fill>`
       + `<outline>1</outline></PolyStyle></Style>`));
     Object.entries(SIMBOLI).forEach(([k,d]) => stili.push(
-      `<Style id="${k}"><IconStyle><color>${kmlCol(d.colore)}</color><scale>1.1</scale>`
+      `<Style id="${k}"><IconStyle><color>${kmlCol(d.c)}</color><scale>1.1</scale>`
       + `<Icon><href>https://maps.google.com/mapfiles/kml/shapes/placemark_circle.png</href></Icon>`
       + `</IconStyle><LabelStyle><color>${kmlCol(d.colore)}</color></LabelStyle></Style>`));
 
@@ -603,13 +621,11 @@ function avvia(app){
     let n = 0;
     L.geoJSON(fc, {
       pointToLayer: (feat, latlng) => {
-        const tp = feat.properties?.tipo;
-        if (tp === 'etichetta'){
-          const m = L.marker(latlng, {icon:L.divIcon({className:'sitac-etichetta',
-            html: feat.properties.testo || '', iconSize:null, iconAnchor:[0,10]})});
-          m._testo = feat.properties.testo; return m;
-        }
-        return L.marker(latlng, {icon: iconaSimbolo(SIMBOLI[tp] ? tp : 'ros'), draggable:true});
+        const p = feat.properties || {};
+        const tp = VECCHI[p.tipo] || p.tipo;
+        if (!SIMBOLI[tp]) return L.marker(latlng, {draggable:true});
+        return L.marker(latlng, {draggable:true,
+          icon: iconaSimbolo(tp, {testo:p.testo, rotazione:p.rotazione})});
       },
       style: feat => {
         const tp = feat.properties?.tipo;
@@ -617,7 +633,7 @@ function avvia(app){
         return d ? stile(d) : {color:'#ffd700'};
       },
       onEachFeature: (feat, layer) => {
-        layer._tipo = feat.properties?.tipo;
+        layer._tipo = VECCHI[feat.properties?.tipo] || feat.properties?.tipo;
         layer._genere = feat.properties?.genere;
         disegni.addLayer(layer);
         if (LINEE[layer._tipo]){
@@ -625,8 +641,8 @@ function avvia(app){
           layer.on('pm:edit', () => decora(layer));
           layer.on('pm:remove', () => scollega(layer));
         }
-        if (SIMBOLI[layer._tipo] && layer._tipo !== 'etichetta')
-          layer.bindTooltip(nm(SIMBOLI[layer._tipo]), {direction:'top', offset:[0,-14]});
+        if (SIMBOLI[layer._tipo] && !SIMBOLI[layer._tipo].libero)
+          layer.bindTooltip(nm(SIMBOLI[layer._tipo]), {direction:'top', offset:[0,-18]});
         n++;
       }
     });
@@ -693,9 +709,9 @@ function avvia(app){
     creaPulsanti();
     // i tooltip già posati vanno riscritti nella nuova lingua
     disegni.eachLayer(l => {
-      if (SIMBOLI[l._tipo] && l._tipo !== 'etichetta'){
+      if (SIMBOLI[l._tipo] && !SIMBOLI[l._tipo].libero){
         l.unbindTooltip();
-        l.bindTooltip(nm(SIMBOLI[l._tipo]), {direction:'top', offset:[0,-14]});
+        l.bindTooltip(nm(SIMBOLI[l._tipo]), {direction:'top', offset:[0,-18]});
       }
     });
     if (strumento){
