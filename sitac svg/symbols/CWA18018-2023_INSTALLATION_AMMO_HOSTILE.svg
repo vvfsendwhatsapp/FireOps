@@ -2,10 +2,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
   <rect x="8" y="8" width="240" height="240" rx="16" fill="#111" stroke="#000" stroke-width="4"/>
   <circle cx="128" cy="96" r="56" fill="#CC0033"/>
-  <!-- ammunition dump: crate + rounds -->
-  <g transform="translate(0,0)" fill="#fff">
-    <rect x="96" y="96" width="64" height="44" rx="4"/>
-    <path d="M108 120 q10 -8 20 0 q10 -8 20 0" stroke="#CC0033" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <!-- helicopter: rotor + fuselage -->
+  <g transform="translate(0,0)" stroke="#fff" stroke-width="8" stroke-linecap="round" fill="none">
+    <path d="M84 108 q44 -28 88 0"/>
+    <path d="M128 64 L128 40"/>
+    <path d="M84 88 L44 76"/>
+    <path d="M172 88 L212 76"/>
   </g>
-  <text x="128" y="212" font-family="Arial" font-size="13" fill="#fff" text-anchor="middle">CWA18018-2023_INSTALLATION_AMMO_HOSTILE</text>
+  <g transform="translate(0,0)" fill="#fff">
+    <rect x="110" y="112" width="36" height="18" rx="6"/>
+  </g>
+  <text x="128" y="212" font-family="Arial" font-size="14" fill="#fff" text-anchor="middle">CWA18018-2023_UNIT_AIR_HELO_HOSTILE</text>
 </svg>
