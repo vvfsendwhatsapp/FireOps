@@ -1,43 +1,51 @@
 /*!
- * FireOps VVF — sitac-simboli.js — simbologia SITAC
+ * FireOps VVF — sitac-simboli.js — simbologia SI.TA.C.
  *
- * Fonte: "SITAC Symbology — Standardization of Firefighting Tactical Situation
- * Management", G. Micillo e L. Torrini, Corpo Nazionale dei Vigili del Fuoco.
- * I 59 simboli della tavola sono qui ridisegnati in SVG: sono forme
- * geometriche regolari, quindi si generano da poche primitive invece di
- * ricalcare 59 tracciati a mano.
+ * Fonte: "SI.TA.C. — Cartografia Operativa", Corpo Nazionale dei Vigili del
+ * Fuoco, Direzione Centrale per l'Emergenza, il Soccorso Tecnico e
+ * l'Antincendio Boschivo, Ufficio Pianificazione e Coordinamento Servizio
+ * AIB, Roma 2021. A cura di Gianfilippo Micillo e Luca Torrini.
+ *
+ * I simboli della tavola sono qui ridisegnati in SVG: sono forme geometriche
+ * regolari — la pubblicazione dice esplicitamente che sono studiati per poter
+ * essere tracciati a mano su carta — quindi si generano da poche primitive
+ * invece di ricalcare un tracciato per volta.
+ *
+ * LE QUATTRO TAVOLE
+ * L'originale è diviso in quattro fogli, e questo file mantiene la stessa
+ * partizione: la zona di intervento, l'evoluzione dell'incendio, il
+ * dispositivo di intervento, le azioni. `g` è la tavola, `sg` il riquadro
+ * interno (Dispositivo aereo, Squadre a terra, Evacuazione…).
  *
  * DUE STATI, NON DUE SIMBOLI
- * La tavola distingue sistematicamente previsto/in atto (PLANNED/ACTIVE per i
- * mezzi, PLANNED/DONE per le azioni), e la differenza è sempre la stessa: il
- * contorno diventa pieno. Qui non sono due voci separate ma un solo simbolo
- * con un parametro `stato`: la barra ha un interruttore unico e i pulsanti
- * restano una quarantina invece di ottanta.
+ * La tavola distingue sistematicamente previsto/attivo per i mezzi e
+ * prevista/effettuata per le azioni, e la differenza è sempre la stessa: il
+ * contorno si riempie. Qui non sono due voci ma un parametro `stato`.
  *
  * COSA VIAGGIA NEL GEOJSON
  * La chiave (`vvf`, `origine`, `lancio_pesante_acqua`…), lo stato e
- * l'eventuale etichetta. Le chiavi sono identificativi tecnici: non vanno
+ * l'eventuale testo. Le chiavi sono identificativi tecnici: non vanno
  * tradotte né rinominate, o i file salvati diventano illeggibili.
  *
- * `r` marca i simboli che vanno orientati (pendenze, vento): senza rotazione
- * non dicono nulla. `e` quelli che la tavola vuole accompagnati da un testo
- * (sigla del mezzo, velocità del vento). `s` quelli che hanno i due stati.
+ * `r` marca i simboli che vanno orientati, `e` quelli che la tavola vuole
+ * accompagnati da un testo (la sigla del mezzo, i km/h del vento: nella
+ * tavola sono i puntini di "CAN ......." e di "(.........Km/h)"),
+ * `s` quelli che hanno i due stati.
  *
- * I colori sono normativi e non vanno rimappati sulla palette di FireOps:
- * qui il rosso distingue il ritardante dall'acqua e i VVF dal soccorso
- * sanitario, non è una scelta grafica.
+ * I colori sono normativi: rosso il dispositivo VVF e il fuoco, verde il
+ * soccorso sanitario e l'evacuazione, azzurro l'acqua e le forze di polizia,
+ * nero il terreno e le infrastrutture. Non vanno rimappati sulla palette di
+ * FireOps: qui distinguono un lancio d'acqua da uno di ritardante.
  */
 (function () {
 'use strict';
 const NS = (window.FireOps = window.FireOps || {});
 
-/* ---------------------------------------------------------------------
-   Palette della tavola, campionata dall'originale
-   ------------------------------------------------------------------- */
 const C = {
   rosso:  '#cc0000',
   verde:  '#009900',
-  acqua:  '#3fa9f5',
+  acqua:  '#29abe2',
+  polizia:'#00a0e3',
   giallo: '#ffe000',
   nero:   '#000000'
 };
@@ -49,29 +57,28 @@ const esc = s => String(s == null ? '' : s).replace(/[<>&"]/g,
   c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
 const attivo = o => (o && o.stato) === 'attivo';
 
-/* Il testo è parte del simbolo: la sigla distingue Canadair da Fireboss. */
-function txt(x, y, s, col, dim){
-  return `<text x="${x}" y="${y}" text-anchor="middle" font-size="${dim || 13}"`
+function txt(x, y, s, col, dim, ancora){
+  return `<text x="${x}" y="${y}" text-anchor="${ancora || 'middle'}" font-size="${dim || 13}"`
     + ` font-family="Arial,Helvetica,sans-serif" font-weight="700" fill="${col}">${esc(s)}</text>`;
 }
+/* La riga di puntini è il posto dove sulla carta si scrive a penna il
+   numero della squadra o la sigla del mezzo: va lasciata anche a video. */
+const puntini = (x1, x2, y, col) =>
+  `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="${col}" stroke-width="1.6" stroke-dasharray="1.5,2.5"/>`;
 
-/* Campitura a 45 gradi: nella tavola distingue il ritardante (rigato)
-   dall'acqua (vuoto), e il punto sensibile per interfaccia. */
 const RIG = (id, col, largo) => `<pattern id="${id}" width="7" height="7" patternUnits="userSpaceOnUse"`
   + ` patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="7" stroke="${col}" stroke-width="${largo}"/></pattern>`;
 
 /* =====================================================================
    1. FAMIGLIE
-   Le voci della tavola sono variazioni di pochi impianti: cambiano la
-   sigla, il numero di aste, il colore. Si generano, non si ridisegnano.
    ===================================================================== */
 
-/* Mezzi aerei (30-35): riquadro con le diagonali e una banda in basso per
-   la sigla. Da previsto ad attivo le diagonali si riempiono. */
+/* Dispositivo aereo: riquadro con le diagonali e una banda in basso per la
+   sigla. Da previsto ad attivo le diagonali si riempiono. */
 function mezzoAereo(sigla){
   return o => {
     const p = attivo(o), R = C.rosso;
-    const x1 = 5, y1 = 14, x2 = 59, y2 = 42, ym = 50;
+    const x1 = 5, y1 = 14, x2 = 59, y2 = 42, ym = 51;
     const corpo = p
       ? `<path d="M${x1} ${y1}H${x2}L${x1} ${y2}H${x2}Z" fill="${R}"/>`
       : `<path d="M${x1} ${y1}L${x2} ${y2}M${x2} ${y1}L${x1} ${y2}" stroke="${R}" stroke-width="2" fill="none"/>`;
@@ -79,52 +86,54 @@ function mezzoAereo(sigla){
     return T(`<rect x="${x1}" y="${y1}" width="${x2-x1}" height="${y2-y1}" fill="#fff" stroke="${R}" stroke-width="2.6"/>
       ${corpo}
       <rect x="${x1}" y="${y2}" width="${x2-x1}" height="${ym-y2}" fill="#fff" stroke="${R}" stroke-width="2.6"/>
-      ${s ? txt(32, ym-2, s, R, s.length > 5 ? 9 : 11)
-          : `<line x1="${x1+4}" y1="${ym-3}" x2="${x2-4}" y2="${ym-3}" stroke="${R}" stroke-width="1.6" stroke-dasharray="2,2.5"/>`}`);
+      ${s ? txt(x1+3, ym-2.5, s, R, s.length > 5 ? 8.5 : 10, 'start') : ''}
+      ${puntini(s ? x1 + 4 + s.length * 5.6 : x1 + 4, x2 - 3, ym - 3.5, R)}`);
   };
 }
 
-/* Mezzi a terra (36-45): riquadro con la sigla, una asta sopra per la
-   squadra, due per il gruppo, tre per la colonna. Attivo = triangolo
-   pieno nell'angolo destro. */
-function mezzoTerra(sigla, aste, col){
+/* Dispositivo terrestre: il riquadro è diviso in due. Nel quarto di
+   sinistra la sigla, e sotto la riga su cui si scrive il numero; il resto
+   resta libero. L'asta sopra il divisorio conta il livello: una per la
+   squadra, due per il modulo/gruppo, tre per il modulo UE/colonna.
+   Attivo = triangolo pieno nella metà destra. */
+function mezzoTerra(sigla, aste, col, senzaDivisione){
   return o => {
     const p = attivo(o), K = col || C.rosso;
-    const x1 = 4, y1 = 21, x2 = 60, y2 = 45, h = y2 - y1;
+    const x1 = 3, y1 = 20, x2 = 61, y2 = 46, xd = 30, ym = 33;
     let a = '';
-    if (aste < 0){
-      /* Posto di comando: non ha le aste dei reparti ma il palo laterale
-         che scende, quello che nella tavola lo pianta sul terreno. */
-      a = `<line x1="${x1}" y1="${y1}" x2="${x1}" y2="${y2+9}" stroke="${K}" stroke-width="2.6"/>`;
-    }
-    const passo = (x2 - x1) / (aste + 1);
-    for (let i = 1; i <= aste; i++){
-      const x = (x1 + passo * i).toFixed(1);
-      a += `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y1-10}" stroke="${K}" stroke-width="2.6"/>`;
+    for (let i = 0; i < aste; i++){
+      const x = (xd - (aste - 1) * 4 + i * 8).toFixed(1);
+      a += `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y1-8}" stroke="${K}" stroke-width="2.2"/>`;
     }
     const s = (o && o.testo) || sigla;
+    if (senzaDivisione)
+      return T(`${a}<rect x="${x1}" y="${y1}" width="${x2-x1}" height="${y2-y1}" fill="#fff" stroke="${K}" stroke-width="2.6"/>
+        ${p ? `<path d="M${x2-(y2-y1)} ${y2}H${x2}V${y1}Z" fill="${K}"/>` : ''}
+        ${txt(p ? 28 : 32, y2-8, s, K, 15)}`);
     return T(`${a}
-      <rect x="${x1}" y="${y1}" width="${x2-x1}" height="${h}" fill="#fff" stroke="${K}" stroke-width="2.6"/>
-      ${p ? `<path d="M${x2-h} ${y2}H${x2}V${y1}Z" fill="${K}"/>` : ''}
-      ${s ? txt(p ? 28 : 32, y2-7, s, K, 15)
-          : `<line x1="${x1+5}" y1="${y2-5}" x2="${p ? x2-h-4 : x2-5}" y2="${y2-5}" stroke="${K}" stroke-width="1.8" stroke-dasharray="2,3"/>`}`);
+      <rect x="${x1}" y="${y1}" width="${x2-x1}" height="${y2-y1}" fill="#fff" stroke="${K}" stroke-width="2.6"/>
+      ${p ? `<path d="M${xd} ${y2}L${x2} ${y1}V${y2}Z" fill="${K}"/>` : ''}
+      <line x1="${xd}" y1="${y1}" x2="${xd}" y2="${y2}" stroke="${K}" stroke-width="2.2"/>
+      <line x1="${x1}" y1="${ym}" x2="${xd}" y2="${ym}" stroke="${K}" stroke-width="2.2"/>
+      ${s ? txt((x1+xd)/2, ym-3, s, K, 11) : ''}
+      ${puntini(x1+3, xd-3, y2-8, K)}`);
   };
 }
 
-/* Lanci (46-49): ellisse per i mezzi pesanti, cerchio per gli elicotteri;
-   rigato per il ritardante, vuoto per l'acqua. Previsto = tratteggiato. */
+/* Lanci: ellisse per i mezzi pesanti, cerchio per gli elicotteri; rigato
+   per il ritardante, vuoto per l'acqua. Prevista = tratteggiata. */
 function lancio(grande, ritardante){
   return o => {
     const p = attivo(o), K = ritardante ? C.rosso : C.acqua;
     const tratto = p ? '' : ' stroke-dasharray="5,4"';
-    const forma = grande ? `<ellipse cx="32" cy="32" rx="29" ry="16"` : `<circle cx="32" cy="32" r="18"`;
-    return T(`<defs>${RIG('sitacRigR', C.rosso, 2.2)}</defs>`
+    const forma = grande ? `<ellipse cx="32" cy="32" rx="29" ry="14"` : `<circle cx="32" cy="32" r="17"`;
+    return T((ritardante ? `<defs>${RIG('sitacRigR', C.rosso, 2.2)}</defs>` : '')
       + `${forma} fill="${ritardante ? 'url(#sitacRigR)' : 'none'}" stroke="${K}" stroke-width="2.6"${tratto}/>`);
   };
 }
 
-/* Pendenze (8-10): freccia che punta a valle, con tante barrette quanto
-   è ripido. Va orientata secondo la linea di massima pendenza. */
+/* Pendenze: freccia che punta a valle, con tante barrette quanto è ripido.
+   Va orientata secondo la linea di massima pendenza. */
 function pendenza(n){
   return () => {
     let b = '';
@@ -138,8 +147,8 @@ function pendenza(n){
   };
 }
 
-/* Vento (24-26): la freccia dice da dove spira, le barrette l'intensità,
-   l'etichetta la velocità in km/h. */
+/* Vento: la freccia dice dove va, le barrette in coda l'intensità, il testo
+   la velocità — nella tavola è il "(.........Km/h)" sopra l'asta. */
 function vento(n){
   return o => {
     let b = '';
@@ -149,12 +158,12 @@ function vento(n){
     }
     return T(`<line x1="56" y1="35" x2="14" y2="35" stroke="${C.nero}" stroke-width="2.6"/>
       <path d="M5 35l13-6.5v13Z" fill="${C.nero}"/>${b}
-      ${o && o.testo ? txt(34, 21, o.testo, C.nero, 11) : ''}`);
+      ${txt(34, 22, (o && o.testo) ? o.testo + ' Km/h' : '(.....Km/h)', C.nero, 10)}`);
   };
 }
 
-/* Tipo di incendio (27-29): tre rami, il pieno dice a che quota corre il
-   fuoco — chioma in alto, radente in mezzo, sotterraneo in basso. */
+/* Tipo di incendio: tre rami, il pieno dice a che quota corre il fuoco —
+   chioma in alto, radente in mezzo, sotterraneo in basso. */
 function quotaFuoco(pieno){
   return () => {
     let c = '';
@@ -166,75 +175,96 @@ function quotaFuoco(pieno){
   };
 }
 
+/* Cerchio con sigla: Area da evacuare (Ev) e Zona Sicura (SZ), entrambe
+   verdi. Effettuata = metà inferiore piena, come nella tavola: la sigla sta
+   alta perché deve restare leggibile sul pieno. */
+function tondoSigla(sigla, col){
+  return o => T(`<circle cx="32" cy="32" r="19" fill="#fff" stroke="${col}" stroke-width="3"/>
+    ${attivo(o) ? `<path d="M13 32a19 19 0 0 0 38 0Z" fill="${col}"/>` : ''}
+    ${txt(32, 33, sigla, col, 17)}`);
+}
+
 /* =====================================================================
    2. SIMBOLI PUNTUALI
    ===================================================================== */
 const S = {};
-const agg = (k, g, it, en, svg, extra) => { S[k] = Object.assign({g, n:{it, en}, svg}, extra || {}); };
+const agg = (k, g, sg, it, en, svg, extra) => {
+  S[k] = Object.assign({g, sg, n:{it, en}, svg}, extra || {});
+};
 
-/* ---- Zona di intervento (8-18) ---- */
-agg('pend_lieve','zona','Pendenza lieve','Light slope', pendenza(1), {r:1});
-agg('pend_moderata','zona','Pendenza moderata','Moderate slope', pendenza(2), {r:1});
-agg('pend_forte','zona','Pendenza forte','Steep slope', pendenza(3), {r:1});
+/* ---- TAVOLA 1: la zona di intervento ---- */
+agg('pend_lieve','zona',null,'Pendenza lieve','Light slope', pendenza(1), {r:1});
+agg('pend_moderata','zona',null,'Pendenza moderata','Moderate slope', pendenza(2), {r:1});
+agg('pend_forte','zona',null,'Pendenza forte','Steep slope', pendenza(3), {r:1});
 
 const FULMINE = `<path d="M38 5L17 35h11l-5 24 25-33H36l8-21Z" fill="${C.giallo}" stroke="${C.nero}" stroke-width="2" stroke-linejoin="round"/>`;
-agg('elettrodotto','zona','Linea elettrica in tensione','Power line on', () => T(FULMINE));
-agg('elettrodotto_off','zona','Linea elettrica disattivata','Power line off',
+agg('elettrodotto','zona',null,'Linea elettrica attiva','Power line on', () => T(FULMINE));
+agg('elettrodotto_off','zona',null,'Linea elettrica disattivata','Power line off',
   () => T(`${FULMINE}<path d="M9 9L55 55M55 9L9 55" stroke="${C.nero}" stroke-width="3"/>`));
 
-agg('acqua','zona','Punto d\u2019acqua','Water point',
+agg('acqua','zona',null,'Punto d\u2019acqua per mezzi terrestri','Water point, ground means',
   () => T(`<circle cx="32" cy="32" r="21" fill="${C.acqua}"/>`));
-agg('acqua_eli','zona','Punto d\u2019acqua per elicotteri','Water point for helicopters',
-  () => T(`<clipPath id="sitacTondo"><circle cx="32" cy="32" r="21"/></clipPath>
-    <circle cx="32" cy="32" r="21" fill="#fff" stroke="${C.acqua}" stroke-width="1.6"/>
-    <path d="M11 11h42L11 53h42Z" fill="${C.acqua}" clip-path="url(#sitacTondo)"/>`));
+/* Il punto d'acqua per mezzi aerei porta scritto Eli/CAN sotto il simbolo:
+   dice quale macchina ci si può approvvigionare. */
+agg('acqua_aerei','zona',null,'Punto d\u2019acqua per mezzi aerei','Water point, air means',
+  o => T(`<clipPath id="sitacTondo"><circle cx="32" cy="28" r="19"/></clipPath>
+    <circle cx="32" cy="28" r="19" fill="#fff" stroke="${C.acqua}" stroke-width="1.6"/>
+    <path d="M13 9h38L13 47h38Z" fill="${C.acqua}" clip-path="url(#sitacTondo)"/>
+    ${txt(32, 60, (o && o.testo) || 'Eli/CAN', C.acqua, 12)}`), {e:1});
 
-agg('sensibile','zona','Punto sensibile','Sensitive point',
+agg('sensibile','zona',null,'Punto sensibile','Sensitive point',
   () => T(`<path d="M6 12h52L32 57Z" fill="${C.rosso}"/>`));
-agg('sensibile_wui','zona','Punto sensibile per interfaccia','Sensitive point for WUI',
+agg('sensibile_wui','zona',null,'Punto sensibile per interfaccia','Sensitive point for WUI',
   () => T(`<defs>${RIG('sitacRigV', C.verde, 1.6)}</defs>
     <path d="M6 12h52L32 57Z" fill="url(#sitacRigV)" stroke="${C.verde}" stroke-width="2.2"/>`));
 
-agg('elisuperficie','zona','Piazzola per elicottero','Helispot',
+agg('elisuperficie','zona',null,'Piazzola per elicottero','Helispot',
   () => T(`<circle cx="32" cy="32" r="20" fill="#fff" stroke="${C.nero}" stroke-width="2.8"/>
     ${txt(32, 40, 'H', C.nero, 24)}`));
-agg('ostacolo_volo','zona','Altri ostacoli alla navigazione aerea','Other flight obstacles',
+agg('fune_sbalzo','zona',null,'Funivie, fili a sbalzo, ecc.','Cableways and aerial wires',
   () => T(`<line x1="6" y1="25" x2="58" y2="34" stroke="${C.nero}" stroke-width="2.6"/>
     <line x1="31" y1="30" x2="31" y2="41" stroke="${C.nero}" stroke-width="2.6"/>
     <rect x="23" y="41" width="16" height="10" fill="${C.nero}"/>`));
+/* Traliccio: la tavola 2021 lo aggiunge accanto ai fili a sbalzo, ed è
+   l'ostacolo che conta di più per l'elicottero in avvicinamento. */
+agg('ripetitore','zona',null,'Ripetitori, antenne, pale eoliche, ecc.','Masts, antennas, wind turbines',
+  () => T(`<circle cx="32" cy="11" r="6" fill="${C.nero}"/>
+    <path d="M32 15L20 56h24Z" fill="none" stroke="${C.nero}" stroke-width="2.6" stroke-linejoin="round"/>
+    <line x1="32" y1="15" x2="32" y2="56" stroke="${C.nero}" stroke-width="2"/>`));
 
-/* ---- Evoluzione dell'incendio (22, 24-29) ---- */
-agg('origine','incendio','Punto di origine','Point of origin',
+/* ---- TAVOLA 2: l'evoluzione dell'incendio ---- */
+agg('origine','evoluzione',null,'Area d\u2019origine','Area of origin',
   () => T(`<path d="M32 4l7.7 17.3L58 23.6 44.9 36.1 48.4 54 32 45 15.6 54l3.5-17.9L6 23.6l18.3-2.3Z" fill="${C.rosso}"/>`));
-agg('vento_debole','incendio','Vento di intensit\u00e0 debole','Wind, light intensity', vento(1), {r:1, e:1});
-agg('vento_moderato','incendio','Vento di intensit\u00e0 moderata','Wind, moderate intensity', vento(2), {r:1, e:1});
-agg('vento_forte','incendio','Vento di intensit\u00e0 forte','Wind, steep intensity', vento(3), {r:1, e:1});
-agg('inc_chioma','incendio','Incendio di chioma','Crown fire', quotaFuoco(0));
-agg('inc_radente','incendio','Incendio radente','Surface fire', quotaFuoco(1));
-agg('inc_sotterraneo','incendio','Incendio sotterraneo','Ground fire', quotaFuoco(2));
+agg('vento_debole','evoluzione',null,'Direzione del vento, intensit\u00e0 debole','Wind direction, light', vento(1), {r:1, e:1});
+agg('vento_moderato','evoluzione',null,'Direzione del vento, intensit\u00e0 moderata','Wind direction, moderate', vento(2), {r:1, e:1});
+agg('vento_forte','evoluzione',null,'Direzione del vento, intensit\u00e0 forte','Wind direction, strong', vento(3), {r:1, e:1});
+agg('inc_chioma','evoluzione',null,'Incendio di chioma','Crown fire', quotaFuoco(0));
+agg('inc_radente','evoluzione',null,'Incendio radente','Surface fire', quotaFuoco(1));
+agg('inc_sotterraneo','evoluzione',null,'Incendio sotterraneo','Ground fire', quotaFuoco(2));
 
-/* ---- Mezzi aerei (30-35) ---- */
-agg('can','aerei','Canadair','Canadair', mezzoAereo('CAN'), {s:1, e:1});
-agg('s64','aerei','S 64','S 64', mezzoAereo('S 64'), {s:1, e:1});
-agg('fireboss','aerei','Fireboss','Fireboss', mezzoAereo('Boss'), {s:1, e:1});
-agg('eli','aerei','Elicotteri medi e leggeri','Light and medium helicopter', mezzoAereo('Eli'), {s:1, e:1});
-agg('eli_com','aerei','Elicottero Comando','Heli commander', mezzoAereo('Eli Com'), {s:1, e:1});
-agg('aereo_altro','aerei','Altro mezzo aereo','Other air means', mezzoAereo(''), {s:1, e:1});
+/* ---- TAVOLA 3: il dispositivo di intervento ---- */
+agg('can','dispositivo','sgAereo','Canadair','Canadair', mezzoAereo('CAN'), {s:1, e:1});
+agg('s64','dispositivo','sgAereo','S 64','S 64', mezzoAereo('S64'), {s:1, e:1});
+agg('fireboss','dispositivo','sgAereo','Fireboss','Fireboss', mezzoAereo('Boss'), {s:1, e:1});
+agg('eli','dispositivo','sgAereo','Elicotteri medi e leggeri','Light and medium helicopters', mezzoAereo('Eli'), {s:1, e:1});
+agg('eli_com','dispositivo','sgAereo','Elicottero Comando','Command helicopter', mezzoAereo('Eli Com'), {s:1, e:1});
+agg('aereo_altro','dispositivo','sgAereo','Altro mezzo aereo','Other air means', mezzoAereo(''), {s:1, e:1});
 
-/* ---- Mezzi a terra (36-45) ---- */
-agg('vvf','terra','Squadra Vigili del Fuoco','Fire fighting crew', mezzoTerra('VVF', 1), {s:1, e:1});
-agg('vol','terra','Squadra Volontari','Volunteer crew', mezzoTerra('VOL', 1), {s:1, e:1});
-agg('gos','terra','Squadra GOS','GOS crew', mezzoTerra('GOS', 1), {s:1, e:1});
-agg('sai','terra','Squadra SAI','SAI crew', mezzoTerra('SAI', 1), {s:1, e:1});
-agg('squadra_altra','terra','Altra squadra','Other crew', mezzoTerra('', 1), {s:1, e:1});
-agg('gruppo','terra','Gruppo','Group', mezzoTerra('', 2), {s:1, e:1});
-agg('colonna','terra','Colonna','Column', mezzoTerra('', 3), {s:1, e:1});
-agg('cp','terra','Posto di comando','Command post', mezzoTerra('CP', -1), {s:1, e:1});
-agg('ss','terra','Soccorso sanitario','Ambulance', mezzoTerra('SS', 0, C.verde), {s:1, e:1});
+agg('dos','dispositivo','sgTerra','DOS — Direttore Operazioni Spegnimento','Fire operations director', mezzoTerra('DOS', 1), {s:1, e:1});
+agg('vvf','dispositivo','sgTerra','Squadra VVF','VVF crew', mezzoTerra('VVF', 1), {s:1, e:1});
+agg('vol','dispositivo','sgTerra','Squadra VOL','Volunteer crew', mezzoTerra('VOL', 1), {s:1, e:1});
+agg('gos','dispositivo','sgTerra','Squadra GOS','GOS crew', mezzoTerra('GOS', 1), {s:1, e:1});
+agg('sai','dispositivo','sgTerra','Squadra SAI','SAI crew', mezzoTerra('SAI', 1), {s:1, e:1});
+agg('squadra_altra','dispositivo','sgTerra','Squadra\u2026','Other crew', mezzoTerra('', 1), {s:1, e:1});
+agg('modulo_vvf','dispositivo','sgTerra','Modulo VVF / Gruppo','VVF module / Group', mezzoTerra('', 2), {s:1, e:1});
+agg('modulo_ue','dispositivo','sgTerra','Modulo UE / Colonna','EU module / Column', mezzoTerra('', 3), {s:1, e:1});
+agg('cp','dispositivo','sgTerra','Posto di Comando','Command post', mezzoTerra('CP', 0, C.rosso, 1), {s:1, e:1});
+agg('ss','dispositivo','sgTerra','Soccorso Sanitario','Ambulance', mezzoTerra('SS', 0, C.verde, 1), {s:1, e:1});
+agg('pol','dispositivo','sgTerra','Forze di Polizia','Police forces', mezzoTerra('Pol', 0, C.polizia, 1), {s:1, e:1});
 
-/* Transit point (44): il cerchio sta su una linea di transito e la
-   freccia dice da che parte si entra in zona. */
-agg('tp','terra','Transit point','Transit point', o => {
+/* Transit Point: il cerchio sta su una linea di transito e la freccia dice
+   da che parte si entra in zona. */
+agg('tp','dispositivo','sgTerra','Transit Point','Transit point', o => {
   const R = C.rosso;
   return T(`<line x1="2" y1="32" x2="58" y2="32" stroke="${R}" stroke-width="2.6"/>
     <path d="M50 25l12 7-12 7Z" fill="${R}"/>
@@ -243,98 +273,118 @@ agg('tp','terra','Transit point','Transit point', o => {
     ${txt(28, 35, (o && o.testo) || 'TP', R, 13)}`);
 }, {s:1});
 
-/* ---- Azioni puntuali (46-49, 51, 53, 58) ---- */
-agg('lancio_pesante_ritardante','azioni','Lancio mezzi aerei pesanti con ritardante','Fire retardant drop, heavy means', lancio(1,1), {s:1});
-agg('lancio_pesante_acqua','azioni','Lancio mezzi aerei pesanti con acqua','Water drop, heavy means', lancio(1,0), {s:1});
-agg('lancio_leggero_ritardante','azioni','Lancio elicotteri con ritardante','Retardant drop, light helicopters', lancio(0,1), {s:1});
-agg('lancio_leggero_acqua','azioni','Lancio elicotteri con acqua','Water drop, light helicopters', lancio(0,0), {s:1});
+/* ---- TAVOLA 4: le azioni ---- */
+agg('lancio_pesante_ritardante','azioni','sgAereo','Lancio mezzi aerei pesanti con ritardante','Retardant drop, heavy means', lancio(1,1), {s:1});
+agg('lancio_pesante_acqua','azioni','sgAereo','Lancio mezzi aerei pesanti con acqua','Water drop, heavy means', lancio(1,0), {s:1});
+agg('lancio_leggero_ritardante','azioni','sgAereo','Lancio elicotteri medi e leggeri con ritardante','Retardant drop, light helicopters', lancio(0,1), {s:1});
+agg('lancio_leggero_acqua','azioni','sgAereo','Lancio elicotteri medi e leggeri con acqua','Water drop, light helicopters', lancio(0,0), {s:1});
 
-agg('evacuazione','azioni','Evacuazione','Evacuation', o => T(
-  `<circle cx="32" cy="32" r="20" fill="#fff" stroke="${C.verde}" stroke-width="3"/>
-   ${attivo(o) ? `<path d="M12 32a20 20 0 0 0 40 0Z" fill="${C.verde}"/>` : ''}
-   ${txt(32, 36, 'Ev', C.verde, 19)}`), {s:1});
-
-agg('difesa_perimetrale','azioni','Difesa perimetrale','Perimeter defence', o => {
-  const R = C.rosso, t1 = 'M32 4l24 42H8Z', t2 = 'M32 60L8 18h48Z';
-  return attivo(o)
-    ? T(`<path d="${t1}" fill="${R}"/><path d="${t2}" fill="${R}"/><circle cx="32" cy="32" r="10" fill="#fff"/>`)
-    : T(`<path d="${t1}" fill="none" stroke="${R}" stroke-width="2.8"/><path d="${t2}" fill="none" stroke="${R}" stroke-width="2.8"/>`);
+/* Difesa perimetrale: nella tavola 2021 è una raggiera a otto punte attorno
+   a uno spazio libero, non la stella a sei della versione precedente. */
+agg('difesa_perimetrale','azioni','sgTerra','Difesa perimetrale','Perimeter defence', o => {
+  const R = C.rosso, p = attivo(o);
+  let d = '';
+  for (let i = 0; i < 8; i++){
+    const a = i * Math.PI / 4, b = a + Math.PI / 8, c = a - Math.PI / 8;
+    const px = 32 + 26 * Math.cos(a), py = 32 + 26 * Math.sin(a);
+    const bx = 32 + 14 * Math.cos(b), by = 32 + 14 * Math.sin(b);
+    const cx = 32 + 14 * Math.cos(c), cy = 32 + 14 * Math.sin(c);
+    d += `M${cx.toFixed(1)} ${cy.toFixed(1)}L${px.toFixed(1)} ${py.toFixed(1)}L${bx.toFixed(1)} ${by.toFixed(1)}`;
+  }
+  return T(`<path d="${d}Z" fill="${p ? R : 'none'}" stroke="${R}" stroke-width="2.4" stroke-linejoin="round"/>
+    <circle cx="32" cy="32" r="9" fill="none" stroke="${R}" stroke-width="2.4"/>`);
 }, {s:1});
 
-agg('accensione_punti','azioni','Accensione per punti','Ignition by points', o => T(
+agg('accensione_punti','azioni','sgControfuoco','Accensione per punti','Ignition by points', o => T(
   `<circle cx="32" cy="23" r="16" fill="${attivo(o) ? C.rosso : '#fff'}" stroke="${C.rosso}" stroke-width="2.8"/>
    <line x1="32" y1="39" x2="32" y2="50" stroke="${C.rosso}" stroke-width="2.8"/>
    <path d="M25 48l7 12 7-12Z" fill="${C.rosso}"/>`), {s:1});
 
+agg('area_evacuare','azioni','sgEvacuazione','Area da evacuare','Area to evacuate', tondoSigla('Ev', C.verde), {s:1});
+agg('zona_sicura','azioni','sgEvacuazione','Zona Sicura','Safety zone', tondoSigla('SZ', C.verde), {s:1});
+
 /* =====================================================================
    3. LINEE
-   Nella tavola metà dei simboli sono tracciati, non punti. Ognuno porta
-   lo stile Leaflet e, dove serve, il motivo ripetuto che sitac.js passa a
-   PolylineDecorator: {tipo, passo, dim, pieno}.
+   Metà della tavola sono tracciati. Ognuno porta lo stile Leaflet e, dove
+   serve, il motivo ripetuto che sitac.js passa a PolylineDecorator:
+   {tipo, passo, dim, pieno}.
    ===================================================================== */
 const L = {};
-const aggL = (k, g, it, en, stile, extra) => { L[k] = Object.assign({g, n:{it, en}}, stile, extra || {}); };
+const aggL = (k, g, sg, it, en, stile, extra) => {
+  L[k] = Object.assign({g, sg, n:{it, en}}, stile, extra || {});
+};
 
-/* Viabilità (1-7): il tratto dice la percorribilità, il badge 4x4 il
-   fondo non asfaltato. */
-aggL('sentiero','viabilita','Sentiero o mulattiera','Trail',
+/* ---- TAVOLA 1: viabilità ---- */
+aggL('sentiero','zona',null,'Sentiero o mulattiera','Trail',
   {color:C.nero, weight:3, dashArray:'14,5,3,5'});
-aggL('strada_leggeri','viabilita','Strada per mezzi leggeri','Light means road',
+aggL('strada_leggeri','zona',null,'Strada per mezzi leggeri','Light means road',
   {color:C.nero, weight:3, dashArray:'11,8'});
-aggL('sterrata_leggeri','viabilita','Strada sterrata per mezzi leggeri','Unpaved road, light means',
+aggL('sterrata_leggeri','zona',null,'Strada sterrata per mezzi leggeri','Unpaved road, light means',
   {color:C.nero, weight:3, dashArray:'11,8'}, {badge:'4x4'});
-aggL('strada_pesanti','viabilita','Strada per mezzi pesanti','Heavy means road',
+aggL('strada_pesanti','zona',null,'Strada per mezzi pesanti','Heavy means road',
   {color:C.nero, weight:3.5});
-aggL('sterrata_pesanti','viabilita','Strada sterrata per mezzi pesanti','Unpaved road, heavy means',
+aggL('sterrata_pesanti','zona',null,'Strada sterrata per mezzi pesanti','Unpaved road, heavy means',
   {color:C.nero, weight:3.5}, {badge:'4x4'});
-aggL('senso_unico','viabilita','Senso di marcia obbligatorio','One way only',
+aggL('senso_unico','zona',null,'Senso di marcia obbligatorio','One way only',
   {color:C.nero, weight:3}, {deco:{tipo:'freccia', passo:'25%', dim:13}});
-aggL('accesso_interrotto','viabilita','Accesso interrotto','Road closed',
+aggL('accesso_interrotto','zona',null,'Accesso interrotto','Road closed',
   {color:C.nero, weight:3.5}, {deco:{tipo:'croce', passo:'50%', dim:18}});
 
-/* Evoluzione (19-21, 23): l'asse principale è la freccia piena, i
-   secondari sono vuoti e si distinguono per il calibro. */
-aggL('asse_principale','incendio','Asse di sviluppo principale','Head of the fire',
+/* ---- TAVOLA 2: assi di sviluppo e fronte ---- */
+aggL('asse_principale','evoluzione',null,'Asse di sviluppo principale','Head of the fire',
   {color:C.rosso, weight:10}, {deco:{tipo:'punta', passo:'100%', dim:28, pieno:1}});
-aggL('asse_veloce','incendio','Asse di sviluppo secondario veloce','Fire flank, fast',
+aggL('asse_veloce','evoluzione',null,'Asse secondario (veloce)','Secondary axis (fast)',
   {color:C.rosso, weight:3}, {deco:{tipo:'punta', passo:'100%', dim:22}});
-aggL('asse_lento','incendio','Asse di sviluppo secondario lento','Fire flank, slow',
+aggL('asse_lento','evoluzione',null,'Asse secondario (lento)','Secondary axis (slow)',
   {color:C.rosso, weight:2.5}, {deco:{tipo:'punta', passo:'100%', dim:14}});
-aggL('fronte','incendio','Fronte dell\u2019incendio','Fire front',
+aggL('fronte','evoluzione',null,'Fronte dell\u2019incendio','Fire front',
   {color:C.rosso, weight:3}, {deco:{tipo:'scaletta', passo:15, dim:12}});
 
-/* Azioni su linea (50, 52, 54-57, 59): `stati:1` dice che la linea ha
-   previsto/in atto — tratteggiata quando è prevista, piena quando è fatta. */
-aggL('ricognizione','azioni','Ricognizione','Patrol',
+/* ---- TAVOLA 4: azioni su linea ----
+   `stati:1` dice che il tracciato ha prevista/effettuata: tratteggiato
+   quando è prevista, pieno quando è fatta. */
+aggL('ricognizione','azioni','sgTerra','Ricognizione','Patrol',
   {color:C.rosso, weight:3}, {stati:1, deco:{tipo:'onda', passo:36, dim:13}});
-aggL('difesa_linea','azioni','Difesa in linea','Defence on a line',
+aggL('difesa_linea','azioni','sgTerra','Difesa in linea','Defence on a line',
   {color:C.rosso, weight:3}, {stati:1, deco:{tipo:'triangolo', passo:19, dim:13}});
-aggL('attacco_fianchi','azioni','Attacco sui fianchi','Containment attack',
+aggL('attacco_fianchi','azioni','sgTerra','Attacco sui fianchi','Containment attack',
   {color:C.rosso, weight:3}, {stati:1, deco:{tipo:'obliqua', passo:24, dim:14}});
-aggL('attacco_localizzato','azioni','Attacco localizzato','Hot spotting',
+aggL('attacco_localizzato','azioni','sgTerra','Attacco localizzato','Hot spotting',
   {color:C.rosso, weight:4}, {stati:1, deco:{tipo:'punta', passo:'100%', dim:20, pieno:1}});
-aggL('bonifica','azioni','Bonifica','Mop up',
+aggL('bonifica','azioni','sgTerra','Bonifica','Mop up',
   {color:C.rosso, weight:3}, {stati:1, deco:{tipo:'onda', passo:36, dim:13}, badge:'B'});
-aggL('linea_sicurezza','azioni','Creazione linea di sicurezza','Creation of a safety line',
+aggL('linea_sicurezza','azioni','sgControfuoco','Creazione linea di sicurezza','Creation of a safety line',
   {color:C.rosso, weight:3}, {stati:1, deco:{tipo:'rombo', passo:21, dim:14}});
-aggL('accensione_linee','azioni','Accensione per linee','Ignition by lines',
+aggL('accensione_linee','azioni','sgControfuoco','Accensione per linee','Ignition by lines',
   {color:C.rosso, weight:7}, {stati:1, deco:{tipo:'punta', passo:'100%', dim:24, pieno:1}});
+/* Via di fuga: nera con i chevron. Prevista uno, effettuata tre — è
+   l'unico tracciato della tavola in cui cambia il numero di segni. */
+aggL('via_fuga','azioni','sgEvacuazione','Via di fuga per evacuazione','Evacuation escape route',
+  {color:C.nero, weight:2.6}, {stati:1, deco:{tipo:'chevron', passo:'33%', dim:16}});
 
 /* =====================================================================
-   4. GRUPPI
-   L'ordine è quello della tavola: prima il terreno su cui si opera, poi
-   l'incendio, poi chi interviene, infine cosa fa.
+   4. TAVOLE E RIQUADRI
+   L'ordine è quello della pubblicazione.
    ===================================================================== */
 NS.SITAC_SIMBOLI = S;
 NS.SITAC_LINEE   = L;
 NS.SITAC_COLORI  = C;
-NS.SITAC_GRUPPI  = [
-  {k:'viabilita', n:{it:'Viabilit\u00e0', en:'Roads'}},
-  {k:'zona',      n:{it:'Zona di intervento', en:'Operating area'}},
-  {k:'incendio',  n:{it:'Evoluzione dell\u2019incendio', en:'Fire progression'}},
-  {k:'aerei',     n:{it:'Mezzi aerei', en:'Air means'}},
-  {k:'terra',     n:{it:'Mezzi a terra', en:'Ground forces'}},
-  {k:'azioni',    n:{it:'Azioni', en:'Actions'}}
+NS.SITAC_TAVOLE  = [
+  {k:'zona',       n:{it:'La zona di intervento', en:'The operating area'}},
+  {k:'evoluzione', n:{it:'L\u2019evoluzione dell\u2019incendio', en:'Fire progression'}},
+  {k:'dispositivo',n:{it:'Il dispositivo di intervento', en:'The deployed means'}},
+  {k:'azioni',     n:{it:'Le azioni', en:'The actions'}}
 ];
+NS.SITAC_RIQUADRI = {
+  sgAereo:      {it:'Dispositivo aereo', en:'Air means'},
+  sgTerra:      {it:'Squadre a terra', en:'Ground crews'},
+  sgControfuoco:{it:'Controfuoco e fuoco prescritto', en:'Backfire and prescribed fire'},
+  sgEvacuazione:{it:'Evacuazione', en:'Evacuation'}
+};
+
+/* Compatibilità con la versione precedente del modulo: i vecchi GeoJSON
+   rientrano ricondotti alle chiavi nuove. */
+NS.SITAC_VECCHI = {gruppo:'modulo_vvf', colonna:'modulo_ue', acqua_eli:'acqua_aerei',
+  ostacolo_volo:'fune_sbalzo', evacuazione:'area_evacuare'};
 
 })();
