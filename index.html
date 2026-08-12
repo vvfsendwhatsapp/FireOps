@@ -251,6 +251,14 @@
         <section id="sitac-aib" class="page-section">
             <div class="pagina-box-header pagina-box-header-con-nota">
                 <p class="pagina-nota pagina-nota-inline" data-t="sub"></p>
+                <div class="sitac-intestazione">
+                    <label for="sitac-nIntervento" data-t="nIntervento"></label>
+                    <input type="text" id="sitac-nIntervento" inputmode="numeric"
+                        maxlength="10" autocomplete="off">
+                    <label for="sitac-nDos" data-t="nDos"></label>
+                    <input type="text" id="sitac-nDos" maxlength="4" placeholder="A123"
+                        autocomplete="off">
+                </div>
                 <div id="sitac-lingue"></div>
                 <button class="btn-toggle-radar btn-fullscreen-pagina" type="button"
                     title="Espandi a schermo intero">⛶ Espandi</button>
@@ -345,6 +353,7 @@
                 <!-- Testata che compare solo sulla carta stampata -->
                 <div id="sitac-testata-stampa">
                     <div class="t"></div>
+                    <div class="i"></div>
                     <div class="d"></div>
                     <div class="n"></div>
                 </div>
@@ -1019,6 +1028,7 @@
                 "convertitore.js",
                 "unitamisura.js",
                 "sitac-simboli.js",
+                "sitac-vento.js",
                 "sitac.js",
                 "qrcode.js",
                 "qrcoder.js"

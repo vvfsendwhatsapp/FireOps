@@ -3169,6 +3169,8 @@ a.btn-icon-hamburger:hover {
   body.sitac-stampa>#sitac-app #sitac-testata-stampa{display:block;margin-bottom:6mm;
     border-bottom:2px solid #000;padding-bottom:3mm}
   body.sitac-stampa>#sitac-app #sitac-testata-stampa .t{font-size:17pt;font-weight:bold}
+  body.sitac-stampa>#sitac-app #sitac-testata-stampa .i{font-size:12pt;font-weight:bold;
+    margin-top:2mm;font-family:"Courier New",monospace}
   body.sitac-stampa>#sitac-app #sitac-testata-stampa .d{font-size:10pt;margin-top:2mm}
   body.sitac-stampa>#sitac-app #sitac-testata-stampa .n{font-size:11pt;font-weight:bold;
     margin-top:2mm}
@@ -3181,6 +3183,29 @@ a.btn-icon-hamburger:hover {
   body.sitac-stampa>#sitac-app #sitac-legTesta .freccia{display:none}
   @page{size:A4 landscape;margin:10mm}
 }
+
+/* Intestazione della carta: numero d'intervento e DOS. Stanno in alto
+   accanto alle bandiere perché sono la prima cosa che si compila e
+   l'ultima che si guarda quando la carta arriva da qualcun altro. */
+#sitac-aib .sitac-intestazione{display:flex;align-items:center;gap:6px;flex:0 0 auto}
+#sitac-aib .sitac-intestazione label{font-size:11px;color:var(--text-muted);
+  text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+#sitac-aib .sitac-intestazione input{width:78px;padding:7px 8px;text-align:center;
+  background:var(--dark-color);color:var(--text-main);border:1px solid var(--border-color);
+  border-radius:4px;font-family:"Courier New",monospace;font-size:14px;font-weight:bold;
+  letter-spacing:1px}
+#sitac-aib .sitac-intestazione input:focus{outline:none;border-color:var(--primary-color)}
+#sitac-aib .sitac-intestazione #sitac-nDos{width:64px}
+
+/* Riquadro interno di una tavola (Dispositivo aereo, Squadre a terra…):
+   un gradino sotto il titolo della tavola, non un titolo a sé */
+#sitac-app .sitac-riquadro{display:block;font-size:10.5px;color:var(--text-muted);
+  font-style:italic;margin:8px 0 5px}
+
+/* Archi del cono a 15, 30 e 60 minuti: l'etichetta sta sulla linea */
+#sitac-app .sitac-tip-arco{background:rgba(204,0,0,.9);border-color:#cc0000;
+  color:#fff;font-weight:bold;font-size:11px;padding:1px 6px}
+#sitac-app .sitac-tip-arco::before{display:none}
 
 /* ==========================================================
    ==========================================================
