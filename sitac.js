@@ -950,7 +950,7 @@ NS.Sitac = {
     const radice = app.closest('.page-section') || app;
 
     for (const id of ['sitac-barra','sitac-mappa','sitac-tavola','sitac-tAree',
-                      'sitac-legVoci','sitac-stato','sitac-lingue']){
+                      'sitac-stato','sitac-lingue']){
       if (!radice.querySelector('#' + id)){
         console.error('[SITAC] manca #' + id + ' nel markup della sezione.');
         return null;
