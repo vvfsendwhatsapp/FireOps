@@ -257,9 +257,11 @@
             </div>
 
             <div id="sitac-app">
+
+                <!-- COLONNA SINISTRA: comandi -->
                 <div id="sitac-barra">
 
-                    <div class="sitac-gruppo">
+                    <div class="sitac-stati-riga">
                         <span data-t="gStato"></span>
                         <div class="sitac-stati">
                             <button id="sitac-statoPrevisto" type="button"
@@ -271,51 +273,97 @@
                         </div>
                     </div>
 
-                    <!-- I sei gruppi della tavola SITAC: li costruisce sitac.js -->
+                    <!-- Punti / Linee / Aree: le costruisce sitac.js -->
                     <div id="sitac-tavola"></div>
 
-                    <div class="sitac-gruppo">
-                        <span data-t="gAree"></span>
-                        <div class="sitac-strumenti" id="sitac-tAree"></div>
-                        <p class="sitac-avviso" data-t="areeFuori"></p>
-                    </div>
-
-                    <div class="sitac-gruppo">
-                        <span data-t="gModifica"></span>
-                        <div class="sitac-azioni">
-                            <button id="sitac-bModifica" type="button" data-t="bSposta"></button>
-                            <button id="sitac-bElimina" type="button" data-t="bElimina"></button>
-                            <button id="sitac-bAnnulla" type="button" class="largo" data-t="bAnnulla"></button>
-                            <button id="sitac-bPulisci" type="button" class="largo" data-t="bPulisci"></button>
+                    <div class="sitac-fisa">
+                        <button class="sitac-fisa-testa" type="button" aria-expanded="false">
+                            <span class="freccia">▶</span><span data-t="gModifica"></span>
+                        </button>
+                        <div class="sitac-fisa-corpo">
+                            <div class="sitac-azioni">
+                                <button id="sitac-bModifica" type="button" data-t="bSposta"></button>
+                                <button id="sitac-bElimina" type="button" data-t="bElimina"></button>
+                                <button id="sitac-bAnnulla" type="button" class="largo" data-t="bAnnulla"></button>
+                                <button id="sitac-bPulisci" type="button" class="largo" data-t="bPulisci"></button>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="sitac-gruppo">
-                        <span data-t="gMappa"></span>
-                        <div class="sitac-azioni">
-                            <button id="sitac-bSfondo" type="button" data-t="bSfondo"></button>
-                            <button id="sitac-bDoveSono" type="button" data-t="bDoveSono"></button>
-                            <button id="sitac-bImporta" type="button" data-t="bImporta"></button>
-                            <button id="sitac-bStampa" type="button" data-t="bStampa"></button>
+                    <div class="sitac-fisa">
+                        <button class="sitac-fisa-testa" type="button" aria-expanded="false">
+                            <span class="freccia">▶</span><span data-t="gMappa"></span>
+                        </button>
+                        <div class="sitac-fisa-corpo">
+                            <div class="sitac-azioni">
+                                <button id="sitac-bSfondo" type="button" data-t="bSfondo"></button>
+                                <button id="sitac-bImporta" type="button" data-t="bImporta"></button>
+                            </div>
+                            <input type="file" id="sitac-file" accept=".geojson,.json" hidden>
                         </div>
-                        <span class="sitac-sottogruppo" data-t="gEsporta"></span>
-                        <div class="sitac-azioni">
-                            <button id="sitac-bGeojson" type="button">GeoJSON</button>
-                            <button id="sitac-bKml" type="button">KML</button>
+                    </div>
+
+                    <div class="sitac-fisa">
+                        <button class="sitac-fisa-testa" type="button" aria-expanded="false">
+                            <span class="freccia">▶</span><span data-t="gEsporta"></span>
+                        </button>
+                        <div class="sitac-fisa-corpo">
+                            <div class="sitac-azioni">
+                                <button id="sitac-bGeojson" type="button">GeoJSON</button>
+                                <button id="sitac-bKml" type="button">KML</button>
+                                <button id="sitac-bStampa" type="button" class="largo" data-t="bStampa"></button>
+                            </div>
                         </div>
-                        <input type="file" id="sitac-file" accept=".geojson,.json" hidden>
                     </div>
 
                     <div id="sitac-stato"></div>
                 </div>
 
+                <!-- COLONNA DESTRA: mappa, legenda e crocetta di centraggio -->
                 <div class="sitac-mapwrap">
                     <div id="sitac-mappa"></div>
+
                     <div id="sitac-legenda">
-                        <b data-t="legenda"></b>
+                        <button id="sitac-legTesta" type="button">
+                            <b data-t="legenda"></b>
+                            <span id="sitac-legQuanti" class="sitac-quanti"></span>
+                            <span class="freccia">▾</span>
+                        </button>
                         <div id="sitac-legVoci"></div>
                     </div>
+
+                    <button id="sitac-bCentra" class="sitac-centra" type="button">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" stroke-width="2"/>
+                            <circle cx="12" cy="12" r="1.6" fill="currentColor"/>
+                            <path d="M12 1v4M12 19v4M1 12h4M19 12h4" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </button>
                 </div>
+
+                <!-- Testata che compare solo sulla carta stampata -->
+                <div id="sitac-testata-stampa">
+                    <div class="t"></div>
+                    <div class="d"></div>
+                    <div class="n"></div>
+                </div>
+
+                <!-- Modale interno: sostituisce prompt e confirm del browser,
+                     che intestano la finestra col dominio del sito -->
+                <div id="sitac-modale" class="sitac-modale" hidden>
+                    <div class="sitac-modale-box">
+                        <div class="sitac-modale-titolo"></div>
+                        <p class="sitac-modale-testo"></p>
+                        <input type="text" id="sitac-modale-input" autocomplete="off">
+                        <div class="sitac-modale-azioni">
+                            <button id="sitac-modale-no" type="button"></button>
+                            <button id="sitac-modale-ok" type="button"></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
 
         <!-- SCHEDE DI SOCCORSO -->
         <section id="schede-soccorso" class="page-section">

@@ -2944,15 +2944,12 @@ a.btn-icon-hamburger:hover {
    SITAC AIB (sitac.js)
 
    Ogni regola parte da #sitac-aib o da #sitac-app: niente esce dal
-   contenitore. Nessuna palette locale: si usano le variabili di FireOps,
-   così i pulsanti sono gli stessi .btn-toggle-radar del resto dell'app e
-   il modulo non porta colori propri. Il font arriva dal reset globale
-   (`* { font-family: Arial }`), come in ogni altra pagina: per questo qui
-   non c'è alcuna dichiarazione di font-family.
+   contenitore. Nessuna palette locale — si usano le variabili di FireOps —
+   con UNA eccezione: i simboli della tavola sono a colori normati su fondo
+   bianco, e i riquadri che li ospitano restano chiari anche nel tema scuro.
+   Il font arriva dal reset globale, come in ogni altra pagina.
    ========================================================================== */
 
-/* Riga con il pulsante Espandi, sopra la mappa: stessa di Convertitore e
-   Turnario. Il justify-content:flex-end arriva dalla regola generale. */
 #sitac-aib .pagina-box-header { margin-bottom: 15px; }
 
 #sitac-app{
@@ -2960,62 +2957,84 @@ a.btn-icon-hamburger:hover {
   background:var(--surface-color); color:var(--text-main);
   border:1px solid var(--border-color); border-radius:8px;
   /* .page-section ha altezza automatica, quindi height:100% non risolverebbe:
-     l'altezza si ricava dalle stesse variabili con cui è calcolata .pannello,
-     meno i 32px di padding di .pannello-corpo, i 40px dello split-screen e i
-     48px della riga con Espandi. */
+     l'altezza si ricava dalle variabili con cui è calcolata .pannello, meno
+     i 32px di padding di .pannello-corpo, i 40px dello split-screen e i 48px
+     della riga con Espandi. */
   height:calc(100vh - var(--header-height) - var(--subheader-height) - 120px);
-  min-height:460px;
+  min-height:480px;
 }
-
-/* Pannello espanso: niente i 40px dello split-screen */
 .pannello-fullscreen #sitac-app{
   height:calc(100vh - var(--header-height) - var(--subheader-height) - 80px);
 }
 
-/* ---------- barra degli strumenti ---------- */
-#sitac-barra{width:250px;flex:0 0 250px;background:var(--dark-color);
-  border-right:1px solid var(--border-color);overflow-y:auto;padding:14px 12px 40px}
-#sitac-barra .sitac-testata{display:flex;align-items:center;gap:10px;margin-bottom:4px}
-#sitac-barra h3{flex:1;margin:0;font-size:18px;color:var(--primary-color)}
-#sitac-barra .sitac-sub{font-size:13px;line-height:1.4;color:var(--text-muted);margin:0 0 16px}
+/* ---------- colonna sinistra ---------- */
+#sitac-barra{width:270px;flex:0 0 270px;background:var(--dark-color);
+  border-right:1px solid var(--border-color);overflow-y:auto;padding:12px 10px 30px}
 
-/* Bandiere: più grandi, si devono poter colpire senza mirare */
+/* Bandiere: fuori da #sitac-app, così non le tocca la regola dei pulsanti */
 #sitac-lingue{display:flex;gap:5px;flex:0 0 auto}
-#sitac-lingue button{width:38px;height:26px;padding:0;flex:0 0 auto;
+#sitac-lingue button{width:38px;height:26px;padding:0;flex:0 0 auto;cursor:pointer;
   border:1px solid var(--border-color);border-radius:4px;overflow:hidden;
   background:none;opacity:.5;transition:opacity .15s,border-color .15s}
 #sitac-lingue button svg{width:100%;height:100%;display:block}
-#sitac-lingue button:hover{opacity:.9;background:none;border-color:var(--primary-color)}
-#sitac-lingue button.attivo{opacity:1;background:none;border-color:var(--primary-color)}
+#sitac-lingue button:hover{opacity:.9;border-color:var(--primary-color)}
+#sitac-lingue button.attivo{opacity:1;border-color:var(--primary-color)}
 
-/* Intestazioni di gruppo: stesse di .link-utili-sottocategoria */
-#sitac-app .sitac-gruppo{margin-bottom:18px}
-#sitac-app .sitac-gruppo>span{display:block;font-size:12px;font-weight:bold;
-  text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);
-  margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--border-color)}
-#sitac-app .sitac-sottogruppo{display:block;font-size:12px;font-weight:bold;
-  text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin:12px 0 7px}
-#sitac-app .sitac-strumenti{display:grid;gap:6px}
-#sitac-app .sitac-azioni{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-#sitac-app .sitac-azioni .largo{grid-column:1/-1}
-
-/* I pulsanti sono .btn-toggle-radar: stesso guscio, stesso hover,
-   stesso stato attivo (giallo pieno) usato in tutta l'app. */
+/* Tutti i pulsanti della barra sono .btn-toggle-radar: stesso guscio,
+   stesso hover, stesso stato attivo giallo del resto di FireOps. */
 #sitac-app button{width:100%;display:flex;align-items:center;gap:8px;
   background:var(--dark-color);color:var(--text-main);
   border:1px solid var(--border-color);border-radius:4px;
-  padding:7px 12px;font-size:13px;text-align:left;cursor:pointer;
+  padding:7px 10px;font-size:13px;text-align:left;cursor:pointer;
   transition:background .2s,color .2s,border-color .2s}
 #sitac-app button:hover{border-color:var(--primary-color)}
 #sitac-app button.attivo{background:var(--primary-color);color:var(--dark-color);
   border-color:var(--primary-color);font-weight:bold}
 #sitac-app button:focus-visible{outline:2px solid var(--primary-color);outline-offset:1px}
+
+/* Previsto / In atto: due interruttori che restano accesi, non strumenti.
+   Il rosso segna "in atto" perché è lo stato che cambia la lettura della
+   carta: quello che c'è davvero, non quello che si vorrebbe. */
+#sitac-app .sitac-stati-riga{margin-bottom:12px}
+#sitac-app .sitac-stati-riga>span{display:block;font-size:11px;font-weight:bold;
+  text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:6px}
+#sitac-app .sitac-stati{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+#sitac-app .sitac-stati button{justify-content:center;font-weight:bold}
+#sitac-app #sitac-statoAttivo.attivo{background:#cc0000;border-color:#cc0000;color:#fff}
+#sitac-app #sitac-statoPrevisto.attivo{background:var(--dark-color);
+  border-color:#cc0000;color:#ff7a7a}
+
+/* ---------- fisarmoniche: una aperta alla volta ---------- */
+#sitac-app .sitac-fisa{margin-bottom:6px}
+#sitac-app .sitac-fisa-testa{font-size:13px;font-weight:bold;text-transform:uppercase;
+  letter-spacing:.4px;color:var(--text-main);background:var(--surface-color)}
+#sitac-app .sitac-fisa-testa .freccia{color:var(--primary-color);font-size:10px;flex:0 0 auto;
+  transition:transform .15s}
+#sitac-app .sitac-fisa-testa.aperto{border-color:var(--primary-color);color:var(--primary-color)}
+#sitac-app .sitac-fisa-testa.aperto .freccia{transform:rotate(90deg)}
+#sitac-app .sitac-fisa-testa>span:nth-child(2){flex:1 1 auto;min-width:0}
+#sitac-app .sitac-quanti{flex:0 0 auto;font-family:"Courier New",monospace;font-size:11px;
+  font-weight:normal;color:var(--text-muted);border:1px solid var(--border-color);
+  border-radius:999px;padding:0 7px}
+#sitac-app .sitac-fisa-corpo{display:none;padding:8px 2px 4px}
+#sitac-app .sitac-fisa-corpo.aperto{display:block}
+
+#sitac-app .sitac-sottogruppo{display:block;font-size:11px;font-weight:bold;
+  text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin:10px 0 6px}
+#sitac-app .sitac-sottogruppo:first-child{margin-top:0}
+#sitac-app .sitac-strumenti{display:grid;gap:5px}
+#sitac-app .sitac-strumenti button span{flex:1 1 auto;min-width:0;line-height:1.25}
+#sitac-app .sitac-tratto{width:24px;height:3px;border-radius:2px;flex:0 0 24px}
+#sitac-app .sitac-azioni{display:grid;grid-template-columns:1fr 1fr;gap:5px}
 #sitac-app .sitac-azioni button{justify-content:center;font-weight:bold}
-/* I simboli SITAC sono pensati per la carta: nero e colori pieni su fondo
-   bianco. Nella barra scura il riquadro dell'icona resta chiaro, altrimenti
-   metà tavola sarebbe invisibile. Cinque colonne: i riquadri dei mezzi sono
-   larghi e bassi, e a quattro restavano minuscoli. */
-#sitac-app .sitac-simboli{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-bottom:4px}
+#sitac-app .sitac-azioni .largo{grid-column:1/-1}
+#sitac-app .sitac-avviso{font-size:11px;line-height:1.35;color:var(--text-muted);
+  font-style:italic;margin-top:8px}
+
+/* I simboli sono disegnati per la carta: nella barra scura il riquadro
+   resta chiaro, altrimenti metà tavola sarebbe invisibile. Cinque colonne:
+   i riquadri dei mezzi sono larghi e bassi, a quattro restavano minuscoli. */
+#sitac-app .sitac-simboli{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
 #sitac-app .sitac-simboli button{justify-content:center;padding:3px;aspect-ratio:1;
   background:#eceff3;border-color:#c3c9d2}
 #sitac-app .sitac-simboli button:hover{background:#fff;border-color:var(--primary-color)}
@@ -3023,89 +3042,144 @@ a.btn-icon-hamburger:hover {
   border-color:var(--primary-color);box-shadow:inset 0 0 0 2px var(--primary-color)}
 #sitac-app .sitac-simboli button svg{width:100%;height:100%;display:block}
 
-/* Nei tracciati il nome è lungo: il campione di tratto sta a sinistra e il
-   testo va a capo invece di uscire dal pulsante. */
-#sitac-app .sitac-strumenti button{align-items:center}
-#sitac-app .sitac-strumenti button span{flex:1 1 auto;min-width:0;line-height:1.25}
-#sitac-app .sitac-tratto{width:24px;height:3px;border-radius:2px;flex:0 0 24px}
+/* Riquadro di stato: una nota con l'accento giallo — non segnala un
+   pericolo, dice cosa sta succedendo. */
+#sitac-stato{font-family:"Courier New",monospace;font-size:12px;line-height:1.45;
+  color:var(--text-muted);background:var(--surface-color);
+  border:1px solid var(--border-color);border-left:4px solid var(--primary-color);
+  border-radius:4px;padding:10px 12px;margin-top:14px;min-height:46px;white-space:pre-wrap}
 
-/* Previsto / In atto: due pulsanti che restano accesi, non uno strumento.
-   Il rosso dice "in atto" perché è lo stato che cambia la lettura della
-   carta — quello che c'è davvero, non quello che si vorrebbe. */
-#sitac-app .sitac-stati{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-#sitac-app .sitac-stati button{justify-content:center;font-weight:bold}
-#sitac-app .sitac-stato-btn.attivo{background:#cc0000;border-color:#cc0000;color:#fff}
-#sitac-app #sitac-statoPrevisto.attivo{background:var(--dark-color);
-  border-color:#cc0000;color:#ff6b6b}
+/* ---------- colonna destra: mappa ---------- */
+#sitac-app .sitac-mapwrap{flex:1;position:relative;min-width:0}
+#sitac-mappa{position:absolute;inset:0;background:var(--dark-color)}
+#sitac-app .leaflet-container{background:var(--dark-color)}
+#sitac-mappa .leaflet-top.leaflet-left{top:50%;transform:translateY(-50%)}
 
-/* Avviso dei perimetri: sono fuori dalla tavola e chi guarda deve saperlo */
-#sitac-app .sitac-avviso{font-size:11px;line-height:1.35;color:var(--text-muted);
-  font-style:italic;margin-top:7px}
+/* I SIMBOLI SULLA MAPPA
+   Il disco chiaro dietro non è decorazione: la tavola è pensata per carta
+   bianca, e su ortofoto o bosco fitto il nero e il rosso sparirebbero.
+   Senza width/height espliciti l'SVG (che ha solo il viewBox) collassa a
+   zero dentro il divIcon: è il motivo per cui i punti non si vedevano. */
+#sitac-app .sitac-sim{background:none;border:none}
+#sitac-app .sitac-disco{position:absolute;left:3px;top:3px;width:36px;height:36px;
+  border-radius:50%;background:rgba(255,255,255,.82);box-shadow:0 1px 4px rgba(0,0,0,.55)}
+#sitac-app .sitac-glifo{position:absolute;left:5px;top:5px;width:32px;height:32px;display:block}
+#sitac-app .sitac-glifo svg{width:100%;height:100%;display:block}
+#sitac-app .sitac-etichetta{font-size:12px;font-weight:bold;line-height:1.2;color:#fff;
+  white-space:nowrap;text-shadow:0 0 4px #000,0 0 4px #000,0 1px 2px #000;
+  background:none;border:none;padding:2px 4px}
 
-/* Motivi ripetuti lungo i tracciati (triangoli, rombi, scalette) e badge
-   di testa (4x4, B): li posa PolylineDecorator, non devono intercettare
-   il clic o rubano i vertici a Geoman in modalità modifica. */
+/* Maniglia di direzione: il pallino che si trascina per orientare vento,
+   pendenze e assi di propagazione. */
+#sitac-app .sitac-maniglia{background:none;border:none;cursor:grab}
+#sitac-app .sitac-maniglia span{display:block;width:14px;height:14px;margin:2px;
+  border-radius:50%;background:#0070c0;border:2px solid #fff;
+  box-shadow:0 1px 4px rgba(0,0,0,.6)}
+
+/* Motivi ripetuti lungo i tracciati e badge di testa (4x4, B): li posa
+   PolylineDecorator e non devono intercettare il clic, o in modalità
+   modifica rubano i vertici a Geoman. */
 #sitac-app .sitac-deco,#sitac-app .sitac-badge{background:none;border:none;pointer-events:none}
 #sitac-app .sitac-badge{display:flex;align-items:center;justify-content:center;
   font-size:11px;font-weight:bold;color:#000;background:#fff;border:2px solid #000;
   border-radius:999px}
 
-/* Legenda: elenca solo ciò che è sulla mappa, quindi i simboli veri */
-#sitac-app .sitac-leg-sim{display:inline-flex;width:20px;height:20px;flex:0 0 20px}
+/* Suggerimenti sugli elementi: seguono la lingua scelta */
+#sitac-app .sitac-tip{background:rgba(18,18,18,.92);color:var(--text-main);
+  border:1px solid var(--primary-color);border-radius:4px;font-size:12px;
+  white-space:pre-line;box-shadow:none}
+#sitac-app .sitac-tip::before{border-top-color:var(--primary-color)}
+
+/* Legenda in alto a destra: si apre e si chiude, perché su un pannello
+   stretto coprirebbe mezza mappa proprio mentre si disegna. */
+#sitac-legenda{position:absolute;top:8px;right:8px;z-index:900;max-width:240px;
+  background:rgba(18,18,18,.92);border:1px solid var(--primary-color);border-radius:6px;
+  overflow:hidden}
+#sitac-app #sitac-legTesta{background:none;border:none;border-radius:0;padding:7px 10px;
+  gap:8px}
+#sitac-app #sitac-legTesta:hover{background:rgba(255,215,0,.1)}
+#sitac-legenda b{flex:1 1 auto;font-size:11px;font-weight:bold;text-transform:uppercase;
+  letter-spacing:.5px;color:var(--primary-color)}
+#sitac-legenda .freccia{color:var(--primary-color);font-size:11px;transition:transform .15s}
+#sitac-legenda.chiusa .freccia{transform:rotate(-90deg)}
+#sitac-legenda.chiusa #sitac-legVoci{display:none}
+#sitac-legVoci{padding:2px 10px 9px;max-height:46vh;overflow-y:auto;font-size:12px}
+#sitac-legVoci div{display:flex;align-items:center;gap:7px;margin-bottom:4px}
+#sitac-legVoci span{min-width:0}
+#sitac-app .sitac-leg-sim{display:inline-flex;width:22px;height:22px;flex:0 0 22px;
+  background:#fff;border-radius:3px;padding:1px}
 #sitac-app .sitac-leg-sim svg{width:100%;height:100%}
-#sitac-legenda .sitac-leg-vuota{color:var(--text-muted);font-style:italic}
+#sitac-legVoci .sitac-leg-vuota{color:var(--text-muted);font-style:italic;display:block}
 
-/* Riquadro di stato: una nota come .evento-rilevante-premessa, ma con
-   l'accento giallo — non segnala un pericolo, dice cosa sta succedendo */
-#sitac-stato{font-family:"Courier New",monospace;font-size:12px;line-height:1.45;
-  color:var(--text-muted);background:var(--dark-color);
-  border:1px solid var(--border-color);border-left:4px solid var(--primary-color);
-  border-radius:4px;padding:10px 12px;margin-top:16px;min-height:46px;white-space:pre-wrap}
+/* Crocetta di centraggio, in basso a sinistra sulla mappa */
+#sitac-app .sitac-centra{position:absolute;left:10px;bottom:26px;z-index:900;
+  width:40px;height:40px;padding:0;justify-content:center;
+  background:rgba(18,18,18,.92);border:1px solid var(--primary-color);
+  color:var(--primary-color);border-radius:50%}
+#sitac-app .sitac-centra:hover{background:var(--primary-color);color:var(--dark-color)}
+#sitac-app .sitac-centra svg{width:22px;height:22px}
 
-/* ---------- mappa ---------- */
-#sitac-app .sitac-mapwrap{flex:1;position:relative;min-width:0}
-#sitac-mappa{position:absolute;inset:0;background:var(--dark-color)}
-#sitac-app .leaflet-container{background:var(--dark-color)}
-/* Come .mappa-comando: il +/- di Leaflet sta a metà del lato sinistro */
-#sitac-mappa .leaflet-top.leaflet-left{top:50%;transform:translateY(-50%)}
+/* ---------- modale interno ---------- */
+#sitac-app .sitac-modale{position:absolute;inset:0;z-index:1200;display:flex;
+  align-items:center;justify-content:center;background:rgba(0,0,0,.75)}
+#sitac-app .sitac-modale[hidden]{display:none}
+#sitac-app .sitac-modale-box{width:340px;max-width:88%;background:var(--surface-color);
+  border:1px solid var(--primary-color);border-radius:8px;padding:18px;
+  box-shadow:0 8px 30px rgba(0,0,0,.7)}
+#sitac-app .sitac-modale-titolo{color:var(--primary-color);font-size:13px;font-weight:bold;
+  text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+#sitac-app .sitac-modale-testo{font-size:14px;line-height:1.45;color:var(--text-main);
+  white-space:pre-line;margin-bottom:12px}
+#sitac-app #sitac-modale-input{width:100%;padding:10px;background:var(--dark-color);
+  color:var(--text-main);border:1px solid var(--border-color);border-radius:4px;font-size:14px}
+#sitac-app #sitac-modale-input:focus{outline:none;border-color:var(--primary-color)}
+#sitac-app .sitac-modale-azioni{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+#sitac-app .sitac-modale-azioni button{justify-content:center;font-weight:bold}
+#sitac-app #sitac-modale-ok{background:var(--primary-color);color:var(--dark-color);
+  border-color:var(--primary-color)}
 
-/* Legenda: stesso riquadro di .coord-mappa-overlay */
-#sitac-legenda{position:absolute;right:8px;bottom:22px;z-index:900;
-  background:rgba(18,18,18,.9);border:1px solid var(--primary-color);border-radius:6px;
-  padding:8px 12px;font-size:12px;color:var(--text-main);max-width:200px}
-#sitac-legenda b{display:block;font-size:11px;font-weight:bold;text-transform:uppercase;
-  letter-spacing:.5px;color:var(--primary-color);margin-bottom:6px}
-#sitac-legenda div{display:flex;align-items:center;gap:7px;margin-bottom:3px}
-#sitac-app .sitac-sim{display:flex;align-items:center;justify-content:center}
-#sitac-app .sitac-sim svg{filter:drop-shadow(0 1px 3px rgba(0,0,0,.9))}
-#sitac-app .sitac-etichetta{font-size:12px;font-weight:bold;line-height:1.2;color:#fff;
-  white-space:nowrap;text-shadow:0 0 4px #000,0 0 4px #000,0 1px 2px #000;padding:2px 4px}
+/* Testata di stampa: esiste solo su carta, a video ripeterebbe lo stato */
+#sitac-testata-stampa{display:none}
 
 /* In split-screen un pannello può essere stretto anche su schermo largo:
    la classe arriva dal ResizeObserver, come .um-root.narrow */
 #sitac-app.sitac-stretto{flex-direction:column;height:auto;min-height:0}
-#sitac-app.sitac-stretto #sitac-barra{width:100%;flex:0 0 auto;max-height:40vh;
+#sitac-app.sitac-stretto #sitac-barra{width:100%;flex:0 0 auto;max-height:42vh;
   border-right:0;border-bottom:1px solid var(--border-color)}
-#sitac-app.sitac-stretto .sitac-mapwrap{flex:0 0 auto;height:52vh;min-height:280px}
-#sitac-app.sitac-stretto .sitac-simboli{grid-template-columns:repeat(6,1fr)}
+#sitac-app.sitac-stretto .sitac-mapwrap{flex:0 0 auto;height:54vh;min-height:300px}
+#sitac-app.sitac-stretto .sitac-simboli{grid-template-columns:repeat(7,1fr)}
 
 @media (max-width:900px){
   #sitac-app{height:auto;min-height:0;flex-direction:column}
-  #sitac-barra{width:100%;flex:0 0 auto;max-height:40vh;border-right:0;
+  #sitac-barra{width:100%;flex:0 0 auto;max-height:42vh;border-right:0;
     border-bottom:1px solid var(--border-color)}
-  #sitac-app .sitac-mapwrap{flex:0 0 auto;height:52vh;min-height:280px}
+  #sitac-app .sitac-mapwrap{flex:0 0 auto;height:54vh;min-height:300px}
 }
 
-/* stampa: il modulo si sposta in coda al body e mette a tacere il resto */
+/* stampa: il modulo si sposta in coda al body e mette a tacere il resto.
+   Restano mappa, legenda e testata: è quello che serve su carta. */
 @media print{
   body.sitac-stampa>*{display:none!important}
   body.sitac-stampa>#sitac-app{display:block!important;position:static;height:auto;
-    min-height:0;border:0;border-radius:0;overflow:visible}
-  body.sitac-stampa>#sitac-app #sitac-barra{display:none}
-  body.sitac-stampa>#sitac-app .sitac-mapwrap{position:static;height:17cm}
-  body.sitac-stampa>#sitac-app #sitac-mappa{position:relative;inset:auto;height:17cm}
-  body.sitac-stampa>#sitac-app .leaflet-control-zoom{display:none}
-  @page{size:A4 landscape;margin:8mm}
+    min-height:0;border:0;border-radius:0;overflow:visible;background:#fff;color:#000}
+  body.sitac-stampa>#sitac-app #sitac-barra,
+  body.sitac-stampa>#sitac-app .sitac-centra,
+  body.sitac-stampa>#sitac-app .sitac-modale,
+  body.sitac-stampa>#sitac-app .leaflet-control-zoom{display:none!important}
+  body.sitac-stampa>#sitac-app #sitac-testata-stampa{display:block;margin-bottom:6mm;
+    border-bottom:2px solid #000;padding-bottom:3mm}
+  body.sitac-stampa>#sitac-app #sitac-testata-stampa .t{font-size:17pt;font-weight:bold}
+  body.sitac-stampa>#sitac-app #sitac-testata-stampa .d{font-size:10pt;margin-top:2mm}
+  body.sitac-stampa>#sitac-app #sitac-testata-stampa .n{font-size:11pt;font-weight:bold;
+    margin-top:2mm}
+  body.sitac-stampa>#sitac-app .sitac-mapwrap{position:relative;height:15.5cm}
+  body.sitac-stampa>#sitac-app #sitac-mappa{position:absolute;inset:0;height:15.5cm}
+  body.sitac-stampa>#sitac-app #sitac-legenda{background:#fff;color:#000;
+    border:1.5px solid #000;max-width:6cm}
+  body.sitac-stampa>#sitac-app #sitac-legenda b{color:#000}
+  body.sitac-stampa>#sitac-app #sitac-legVoci{max-height:none;color:#000}
+  body.sitac-stampa>#sitac-app #sitac-legTesta .freccia{display:none}
+  @page{size:A4 landscape;margin:10mm}
 }
 
 /* ==========================================================
