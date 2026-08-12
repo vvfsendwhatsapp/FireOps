@@ -767,6 +767,7 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
      inutile. Si elencano solo i tipi effettivamente sulla mappa. */
   function aggiornaLegenda(){
     const leg = q('#sitac-legVoci');
+    if (!leg) return;
     leg.innerHTML = '';
     const visti = new Map();
     disegni.eachLayer(x => {
@@ -950,7 +951,7 @@ NS.Sitac = {
     const radice = app.closest('.page-section') || app;
 
     for (const id of ['sitac-barra','sitac-mappa','sitac-tavola','sitac-tAree',
-                      'sitac-stato','sitac-lingue']){
+                      'sitac-legVoci','sitac-stato','sitac-lingue']){
       if (!radice.querySelector('#' + id)){
         console.error('[SITAC] manca #' + id + ' nel markup della sezione.');
         return null;
