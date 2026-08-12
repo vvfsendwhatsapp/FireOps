@@ -20,8 +20,12 @@ if (NS.Sitac) return;
    ------------------------------------------------------------------- */
 
 function avvia(app){
-  const q  = s => app.querySelector(s);
-  const qq = s => app.querySelectorAll(s);
+  /* Bandiere, descrizione e pulsante Espandi stanno nella riga sopra
+     #sitac-app, fuori dal riquadro: le ricerche partono dalla sezione.
+     La classe .sitac-stretto e la stampa restano su #sitac-app. */
+  const radice = app.closest('.page-section') || app;
+  const q  = s => radice.querySelector(s);
+  const qq = s => radice.querySelectorAll(s);
 
 
   /* =======================================================================
@@ -784,15 +788,19 @@ NS.Sitac = {
     const app = document.getElementById('sitac-app');
     if (!app) return null;                       // sezione non ancora nel DOM
 
+    /* Bandiere e descrizione stanno nella riga sopra #sitac-app, fuori dal
+       riquadro: i controlli si cercano a partire dalla sezione. */
+    const radice = app.closest('.page-section') || app;
+
     for (const id of ['sitac-barra','sitac-mappa','sitac-tLinee','sitac-tAree',
                       'sitac-tSimboli','sitac-legVoci','sitac-stato','sitac-lingue']){
-      if (!app.querySelector('#' + id)){
+      if (!radice.querySelector('#' + id)){
         console.error('[SITAC] manca #' + id + ' nel markup della sezione.');
         return null;
       }
     }
     if (typeof L === 'undefined' || !L.PM || !L.Symbol || !L.Symbol.arrowHead){
-      app.querySelector('#sitac-stato').textContent =
+      radice.querySelector('#sitac-stato').textContent =
         'Librerie mancanti: servono Leaflet, Geoman e PolylineDecorator.';
       console.error('[SITAC] Geoman o PolylineDecorator non caricati.');
       return null;
