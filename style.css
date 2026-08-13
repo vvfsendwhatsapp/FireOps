@@ -3093,6 +3093,12 @@ a.btn-icon-hamburger:hover {
   border-radius:50%;background:#0070c0;border:2px solid #fff;
   box-shadow:0 1px 4px rgba(0,0,0,.6)}
 
+/* Maniglie del lancio: tre colori, tre gesti diversi — asse, larghezza,
+   spostamento. Il colore è l'unico modo per non doverle provare a caso. */
+#sitac-app .sitac-mn-asse span{background:#cc0000}
+#sitac-app .sitac-mn-largo span{background:#29abe2}
+#sitac-app .sitac-mn-centro span{background:#666}
+
 /* Motivi ripetuti lungo i tracciati e badge di testa (4x4, B): li posa
    PolylineDecorator e non devono intercettare il clic, o in modalità
    modifica rubano i vertici a Geoman. */

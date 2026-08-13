@@ -259,8 +259,9 @@ function avvia(app){
       conoElementoNota:'Di un\u2019area percorsa si prende il bordo sottovento; di un fronte, il tracciato.',
       conoNienteBase:'Nessuna area percorsa n\u00e9 fronte sulla carta: disegnane uno, o usa gli altri modi.',
       conoScegliBase:'Clicca sulla mappa l\u2019area o il fronte da cui far partire il cono.',
-      conoBaseCorta:'La geometria scelta ha troppo pochi vertici.', },
-
+      conoBaseCorta:'La geometria scelta ha troppo pochi vertici.',
+      lancioManiglie:'Trascina la punta per direzione e lunghezza, il fianco per la larghezza, il centro per spostarlo.',
+      lancioDi:'Asse {a} m · larghezza {b} m · {s} ha', },
     en:{ bCono:'Add cone', conoModo:'How should the cone be built?',
       conoSettore:'From the point of origin', conoSettoreNota:'30° sector from the origin; a second click marks where the front is now (T0).',
       conoFronte:'From the fire front line', conoFronteNota:'Draw the observed front and push it forward at 15, 30 and 60 minutes.',
@@ -810,6 +811,7 @@ function avvia(app){
     if (layer._deco){ decori.removeLayer(layer._deco); layer._deco = null; }
     if (layer._maniglia){ decori.removeLayer(layer._maniglia); layer._maniglia = null; }
     if (layer._asta){ decori.removeLayer(layer._asta); layer._asta = null; }
+    scollegaLancio(layer);
   }
   map.on('pm:remove', e => { scollega(e.layer); aggiornaStato(); });
 
@@ -871,6 +873,103 @@ function avvia(app){
       layer._maniglia.setLatLng(np);
       layer._asta.setLatLngs([o, np]);
     });
+  }
+
+  /* =======================================================================
+     5ter. LANCI COME POLIGONI
+     Il lancio è l'unico elemento della tavola che ha una dimensione vera
+     sul terreno: qui il simbolo resta nella barra, ma sulla carta si
+     disegna un'ellisse georeferenziata, orientabile e ridimensionabile.
+     ===================================================================== */
+  const PASSO_ELLISSE = 6;   // gradi fra due vertici: 60 per giro
+
+  /* Ellisse per punti: `a` lungo l'asse di lancio, `b` di traverso. Il
+     punto parametrico (a·cos t, b·sin t) si converte in azimut e distanza,
+     così la forma resta corretta anche a latitudini alte. */
+  function ellisse(centro, a, b, verso){
+    const p = [];
+    for (let g = 0; g < 360; g += PASSO_ELLISSE){
+      const r = rad(g);
+      const x = a * Math.cos(r), y = b * Math.sin(r);
+      p.push(puntoDaAzimut(centro, verso + gra(Math.atan2(y, x)),
+        Math.sqrt(x*x + y*y)));
+    }
+    return p;
+  }
+
+  /* Il ritardante è rosso e più coperto, l'acqua azzurra e leggera; il
+     contorno tratteggiato dice "previsto", come nella tavola. */
+  function stileLancio(k, stato){
+    const rit = k.indexOf('ritardante') >= 0;
+    const col = rit ? COL.rosso : COL.acqua;
+    return {color: col, weight: 2.6, fillColor: col,
+      fillOpacity: rit ? .35 : .18,
+      dashArray: stato === 'attivo' ? null : '6,5'};
+  }
+
+  const ellisseDi = l => ellisse(l._centro, l._a, l._b, l._rotazione);
+
+  function scollegaLancio(l){
+    if (!l || !l._manig) return;
+    l._manig.forEach(m => decori.removeLayer(m));
+    l._manig = null;
+  }
+
+  function maniglieLancio(l){
+    scollegaLancio(l);
+    l._manig = [];
+    const fai = (classe, dove, applica) => {
+      const m = L.marker(dove(), {draggable:true, keyboard:false,
+        icon: L.divIcon({className:'sitac-maniglia sitac-mn-' + classe,
+          iconSize:[18,18], iconAnchor:[9,9], html:'<span></span>'})}).addTo(decori);
+      m.on('drag', () => {
+        applica(m.getLatLng());
+        l.setLatLngs(ellisseDi(l));
+        etichettaElemento(l);
+      });
+      /* A fine trascinamento le maniglie si rifanno: quella dell'asse ha
+         spostato anche le altre, che altrimenti resterebbero indietro. */
+      m.on('dragend', () => { maniglieLancio(l); aggiornaStato(); });
+      l._manig.push(m);
+    };
+    /* Punta: direzione e lunghezza insieme — è il gesto con cui si dice
+       "il lancio è andato di là, e arriva fin qui". */
+    fai('asse', () => puntoDaAzimut(l._centro, l._rotazione, l._a), pt => {
+      l._rotazione = Math.round(azimut(l._centro, pt));
+      l._a = Math.max(15, Math.round(l._centro.distanceTo(pt)));
+    });
+    /* Fianco: solo la larghezza, l'asse non si tocca. */
+    fai('largo', () => puntoDaAzimut(l._centro, l._rotazione + 90, l._b), pt => {
+      l._b = Math.max(8, Math.round(l._centro.distanceTo(pt)));
+    });
+    fai('centro', () => l._centro, pt => { l._centro = pt; });
+  }
+
+  /* `pmIgnore` tiene Geoman fuori: in modalità modifica metterebbe un
+     vertice trascinabile su ognuno dei sessanta punti dell'ellisse, e al
+     primo strattone la forma non sarebbe più un'ellisse. L'eliminazione
+     va quindi gestita a mano. */
+  function creaLancio(k, centro, opz){
+    const o = opz || {};
+    const d = SIM[k].poly;
+    const l = L.polygon([], Object.assign({pmIgnore:true},
+      stileLancio(k, o.stato || 'previsto')));
+    l._tipo = k; l._genere = 'lancio'; l._stato = o.stato || 'previsto';
+    l._centro = centro;
+    l._a = o.a || d.a; l._b = o.b || d.b;
+    l._rotazione = o.rotazione != null ? o.rotazione : 90;
+    l.setLatLngs(ellisseDi(l));
+    l.on('click', () => {
+      if (map.pm.globalRemovalModeEnabled && map.pm.globalRemovalModeEnabled()){
+        scollegaLancio(l);
+        disegni.removeLayer(l);
+        aggiornaStato();
+      }
+    });
+    disegni.addLayer(l);
+    etichettaElemento(l);
+    maniglieLancio(l);
+    return l;
   }
 
   /* =======================================================================
@@ -1549,6 +1648,17 @@ function avvia(app){
 
     const k = strumento.chiave;
     const def = k === 'nota' ? NOTA : SIM[k];
+    /* I lanci nascono come marcatore per avere il clic di posa, poi il
+       marcatore si butta e resta il poligono. */
+    if (def.poly){
+      const centro = layer.getLatLng();
+      disegni.removeLayer(layer);
+      creaLancio(k, centro, {stato: statoCorrente});
+      aggiornaStato();
+      stato(`${nm(def)}${etichettaStato(def)}\n${t('lancioManiglie')}`);
+      riattivaStrumento();
+      return;
+    }
 
     /* Il testo va chiesto prima di mostrare il simbolo: la sigla ci sta
        dentro, e ridisegnarlo dopo farebbe lampeggiare il riquadro vuoto. */
@@ -1590,6 +1700,9 @@ function avvia(app){
       p:(perimetroM(layer)/1000).toFixed(2)});
     else if (LIN[k]) testo += '\n' + t('lunghezzaDi', {v:(lunghezzaM(layer)/1000).toFixed(2)});
     else if (layer._testo) testo += ` — ${layer._testo}`;
+    if (layer._genere === 'lancio')
+      testo += '\n' + t('lancioDi', {a: layer._a * 2, b: layer._b * 2,
+        s: (areaMq(layer) / 10000).toFixed(2)});
     layer.unbindTooltip();
     layer.bindTooltip(testo, {direction:'top', offset:[0, LIN[k] || AREE[k] ? 0 : -22],
       className:'sitac-tip', sticky: !!(LIN[k] || AREE[k])});
@@ -1652,6 +1765,12 @@ function avvia(app){
       const f = l.toGeoJSON();
       f.properties = {tipo:l._tipo || null, genere:l._genere || null,
         stato:l._stato || null, testo:l._testo || null, rotazione:l._rotazione || null};
+      /* Il poligono viaggia come geometria — QGIS e Google Earth vedono
+         l'ingombro vero — ma i parametri viaggiano accanto, così rientrando
+         qui l'ellisse torna modificabile invece che come sessanta vertici. */
+      if (l._genere === 'lancio')
+        Object.assign(f.properties, {a:l._a, b:l._b,
+          centro:[l._centro.lng, l._centro.lat]});
       return f;
     });
   }
@@ -1824,6 +1943,13 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
         layer._testo = pr.testo || null;
         layer._rotazione = pr.rotazione || null;
         disegni.addLayer(layer);
+        if (pr.genere === 'lancio' && pr.centro && SIM[layer._tipo] && SIM[layer._tipo].poly){
+          disegni.removeLayer(layer);
+          creaLancio(layer._tipo, L.latLng(pr.centro[1], pr.centro[0]),
+            {stato: layer._stato, a: pr.a, b: pr.b, rotazione: pr.rotazione});
+          n++;
+          return;
+        }
         if (LIN[layer._tipo]){
           decora(layer);
           layer.on('pm:edit', () => { decora(layer); etichettaElemento(layer); aggiornaStato(); });

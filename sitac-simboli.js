@@ -282,12 +282,14 @@ agg('tp','dispositivo','sgTerra','Transit Point','Transit point', o => {
 }, {s:1, r:1, r0:90});
 
 /* ---- TAVOLA 4: le azioni ---- */
-/* I lanci pesanti sono ellissi: hanno un asse, e va orientato lungo la
-   direzione di lancio. Quelli leggeri sono cerchi e non serve. */
-agg('lancio_pesante_ritardante','azioni','sgAereo','Lancio mezzi aerei pesanti con ritardante','Retardant drop, heavy means', lancio(1,1), {s:1, r:1, r0:90});
-agg('lancio_pesante_acqua','azioni','sgAereo','Lancio mezzi aerei pesanti con acqua','Water drop, heavy means', lancio(1,0), {s:1, r:1, r0:90});
-agg('lancio_leggero_ritardante','azioni','sgAereo','Lancio elicotteri medi e leggeri con ritardante','Retardant drop, light helicopters', lancio(0,1), {s:1});
-agg('lancio_leggero_acqua','azioni','sgAereo','Lancio elicotteri medi e leggeri con acqua','Water drop, light helicopters', lancio(0,0), {s:1});
+/* Sulla carta il lancio è un poligono georeferenziato, non un simbolo di
+   dimensione fissa: `poly` porta i semiassi in metri — `a` lungo l'asse di
+   lancio, `b` di traverso. Sono valori convenzionali di partenza: la
+   pubblicazione non fissa ingombri, e si trascinano sulla mappa. */
+agg('lancio_pesante_ritardante','azioni','sgAereo','Lancio mezzi aerei pesanti con ritardante','Retardant drop, heavy means', lancio(1,1), {s:1, poly:{a:125, b:20}});
+agg('lancio_pesante_acqua','azioni','sgAereo','Lancio mezzi aerei pesanti con acqua','Water drop, heavy means', lancio(1,0), {s:1, poly:{a:125, b:20}});
+agg('lancio_leggero_ritardante','azioni','sgAereo','Lancio elicotteri medi e leggeri con ritardante','Retardant drop, light helicopters', lancio(0,1), {s:1, poly:{a:35, b:35}});
+agg('lancio_leggero_acqua','azioni','sgAereo','Lancio elicotteri medi e leggeri con acqua','Water drop, light helicopters', lancio(0,0), {s:1, poly:{a:35, b:35}});
 
 /* Difesa perimetrale: nella tavola 2021 è una raggiera a otto punte attorno
    a uno spazio libero, non la stella a sei della versione precedente. Fra
