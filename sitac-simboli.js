@@ -209,11 +209,6 @@ agg('pend_lieve','zona',null,'Pendenza lieve','Light slope', pendenza(1), {r:1})
 agg('pend_moderata','zona',null,'Pendenza moderata','Moderate slope', pendenza(2), {r:1});
 agg('pend_forte','zona',null,'Pendenza forte','Steep slope', pendenza(3), {r:1});
 
-const FULMINE = `<path d="M38 5L17 35h11l-5 24 25-33H36l8-21Z" fill="${C.giallo}" stroke="${C.nero}" stroke-width="2" stroke-linejoin="round"/>`;
-agg('elettrodotto','zona',null,'Linea elettrica attiva','Power line on', () => T(FULMINE));
-agg('elettrodotto_off','zona',null,'Linea elettrica disattivata','Power line off',
-  () => T(`${FULMINE}<path d="M9 9L55 55M55 9L9 55" stroke="${C.nero}" stroke-width="3"/>`));
-
 agg('acqua','zona',null,'Punto d\u2019acqua per mezzi terrestri','Water point, ground means',
   () => T(`<circle cx="32" cy="32" r="21" fill="${C.acqua}"/>`));
 /* Il punto d'acqua per mezzi aerei porta scritto Eli/CAN sotto il simbolo:
@@ -349,13 +344,6 @@ aggL('senso_unico','zona',null,'Senso di marcia obbligatorio','One way only',
   {color:C.nero, weight:3}, {deco:{tipo:'freccia', passo:'25%', dim:13}});
 aggL('accesso_interrotto','zona',null,'Accesso interrotto','Road closed',
   {color:C.nero, weight:3.5}, {deco:{tipo:'croce', passo:'50%', dim:18}});
-/* La tavola disegna la linea elettrica come un tracciato tratto-punto col
-   fulmine sopra, non come un punto: il simbolo puntuale resta per il
-   traliccio isolato, questi sono l'elettrodotto che attraversa la zona. */
-aggL('elettrodotto_tratto','zona',null,'Linea elettrica attiva','Power line on',
-  {color:C.nero, weight:2.4, dashArray:'14,5,3,5'}, {deco:{tipo:'fulmine', passo:70, dim:24}});
-aggL('elettrodotto_off_tratto','zona',null,'Linea elettrica disattivata','Power line off',
-  {color:C.nero, weight:2.4, dashArray:'14,5,3,5'}, {deco:{tipo:'fulmineOff', passo:70, dim:24}});
 
 /* ---- TAVOLA 2: assi di sviluppo e fronte ---- */
 aggL('asse_principale','evoluzione',null,'Asse di sviluppo principale','Head of the fire',

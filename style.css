@@ -3006,10 +3006,13 @@ a.btn-icon-hamburger:hover {
   border-color:var(--primary-color);font-weight:bold}
 #sitac-app button:focus-visible{outline:2px solid var(--primary-color);outline-offset:1px}
 
-/* Previsto / In atto: due interruttori che restano accesi, non strumenti.
-   Il rosso segna "in atto" perché è lo stato che cambia la lettura della
-   carta: quello che c'è davvero, non quello che si vorrebbe. */
-#sitac-app .sitac-stati-riga{margin-bottom:12px}
+/* Previsto / In atto restano in vista mentre si scorrono le voci della
+   tavola. Il fondo pieno serve: senza, i simboli scorrerebbero visibili
+   sotto i due pulsanti. I margini negativi recuperano il padding di
+   #sitac-barra (12px 10px), così la striscia arriva ai bordi. */
+#sitac-app .sitac-stati-riga{position:sticky;top:0;z-index:5;
+  margin:-12px -10px 12px;padding:12px 10px 10px;
+  background:var(--dark-color);border-bottom:1px solid var(--border-color)}
 #sitac-app .sitac-stati-riga>span{display:block;font-size:11px;font-weight:bold;
   text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:6px}
 #sitac-app .sitac-stati{display:grid;grid-template-columns:1fr 1fr;gap:6px}
@@ -3248,10 +3251,11 @@ a.btn-icon-hamburger:hover {
 /* `min-width:0` è la riga che conta: senza, un elemento flex non scende sotto
    la larghezza del proprio contenuto e sfonda il contenitore anche con
    flex-wrap attivo — è lo scorrimento orizzontale che vedevi. */
-#sitac-aib .pagina-nota-inline{flex:1 1 320px;min-width:0;margin:0}
-#sitac-aib .btn-fullscreen-pagina{flex:0 0 auto}
+#sitac-aib .pagina-nota-inline{flex:1 1 0;min-width:0;margin:0;
+  white-space:normal;overflow-wrap:anywhere}
+#sitac-aib #sitac-lingue{flex:0 0 auto}
+#sitac-aib .btn-fullscreen-pagina{flex:0 0 auto;white-space:nowrap}
 #sitac-aib .sitac-intestazione{flex:1 1 100%;flex-wrap:wrap}
-#sitac-aib .sitac-intestazione input{min-width:0}
 
 /* Linguetta della tendina */
 #sitac-aib .sitac-dati-testa{display:flex;align-items:center;gap:7px;

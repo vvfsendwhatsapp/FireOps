@@ -726,7 +726,7 @@ function avvia(app){
     if (layer._maniglia){ decori.removeLayer(layer._maniglia); layer._maniglia = null; }
     if (layer._asta){ decori.removeLayer(layer._asta); layer._asta = null; }
   }
-  map.on('pm:remove', e => scollega(e.layer));
+  map.on('pm:remove', e => { scollega(e.layer); aggiornaStato(); });
 
   /* =======================================================================
      5. DIREZIONE: SECONDO PUNTO E MANIGLIA
@@ -831,6 +831,14 @@ function avvia(app){
     disegni.eachLayer(x => { if (x._tipo === 'origine' && x.getLatLng) m = x; });
     return m;
   };
+
+  /* Il cono nasce dal punto d'innesco: senza, il pulsante non ha niente su
+     cui lavorare e resta spento invece di aprire un percorso che si
+     interromperebbe al primo passo. */
+  function aggiornaCono(){
+    const b = q('#sitac-bCono');
+    if (b) b.disabled = !origineSullaCarta();
+  }
 
   /* Il simbolo del vento è un elemento della tavola a tutti gli effetti,
      quindi si aggiunge ai disegni e viene esportato. Uno solo per volta:
@@ -1297,11 +1305,11 @@ function avvia(app){
     }
 
     if (def.r){
-      /* Direzione: si sospende il disegno, il prossimo clic sulla mappa
-         dice dove punta. Poi resta la maniglia. */
+      /* Un tick dopo: il clic che ha posato il simbolo è ancora in corso e
+         verrebbe consumato subito come "direzione", con azimut nullo. */
       map.pm.disableDraw();
-      attesaDirezione = layer;
       stato(`${nm(def)}\n${t('chiediDirezione')}`);
+      setTimeout(() => { attesaDirezione = layer; }, 0);
     }
     etichettaElemento(layer);
     aggiornaStato();
@@ -1607,6 +1615,7 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
       + (sup ? t('superficie', {v:(sup/10000).toFixed(1)}) : '')
       + (per ? t('perimetro', {v:(per/1000).toFixed(2)}) : ''));
     aggiornaLegenda();
+    aggiornaCono();
   }
 
   /* La tavola ha 59 voci: una legenda con tutte sarebbe illeggibile.
