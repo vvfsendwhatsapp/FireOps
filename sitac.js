@@ -249,6 +249,10 @@ function avvia(app){
       conoAvanza:'il fuoco avanza di {m} m in un\u2019ora', conoT0:'T0 — fronte rilevato',
       conoFatto:'Cono {a}° · vento {v} km/h verso {d}° ({f})\nFronte a {m} m in un\u2019ora.',
       vento_debole:'Intensit\u00e0 debole', vento_moderato:'Intensit\u00e0 moderata', vento_forte:'Intensit\u00e0 forte',
+      gDati:'Dati intervento', nNominativo:'Nominativo', nTelefono:'Telefono',
+      nPosizione:'Posizione attuale', bConvalida:'Convalida',
+      datiOk:'Dati convalidati: intervento {i}, {n}.',
+      datiMancanti:'Mancano o non sono validi: {c}',
       statoPrevista:'Prevista', statoAttiva:'Attiva', statoEffettuata:'Effettuata' },
     en:{ bCono:'Spread cone', conoModo:'How should the cone be built?',
       conoSettore:'From the point of origin', conoSettoreNota:'30° sector from the origin; a second click marks where the front is now (T0).',
@@ -500,8 +504,13 @@ function avvia(app){
      nel nome del file e nella testata di stampa.
      ===================================================================== */
   const inIntervento = q('#sitac-nIntervento');
-  const inDos = q('#sitac-nDos');
-  const CHIAVE_SESS = 'fireops_sitac_intestazione';
+  const inDos        = q('#sitac-nDos');
+  const inNominativo = q('#sitac-nominativo');
+  const inTelefono   = q('#sitac-telefono');
+  const inPosizione  = q('#sitac-posizione');
+  const boxDati      = q('#sitac-dati');
+  const bDati        = q('#sitac-bDati');
+  const CHIAVE_SESS  = 'fireops_sitac_intestazione';
 
   /* Il DOS è una lettera e tre cifre (A123): la maschera corregge mentre si
      scrive invece di rimproverare dopo. */
@@ -513,14 +522,20 @@ function avvia(app){
   }
   const dosValido = () => /^[A-Z][0-9]{3}$/.test(inDos.value);
   const interventoValido = () => /^[0-9]+$/.test(inIntervento.value);
+  const telefonoValido = () =>
+    /^\+?[0-9]{6,15}$/.test(inTelefono.value.replace(/[ .\-]/g, ''));
 
   function segnaIntestazione(){
     inDos.classList.toggle('campo-mancante', !!inDos.value && !dosValido());
     inIntervento.classList.toggle('campo-mancante',
       !!inIntervento.value && !interventoValido());
+    inTelefono.classList.toggle('campo-mancante',
+      !!inTelefono.value && !telefonoValido());
     try {
-      sessionStorage.setItem(CHIAVE_SESS, JSON.stringify(
-        {intervento: inIntervento.value, dos: inDos.value}));
+      sessionStorage.setItem(CHIAVE_SESS, JSON.stringify({
+        intervento: inIntervento.value, dos: inDos.value,
+        nominativo: inNominativo.value, telefono: inTelefono.value,
+        posizione: inPosizione.value}));
     } catch(e){ /* sessione non disponibile: si perde solo il ricordo */ }
   }
   inIntervento.oninput = () => {
@@ -528,15 +543,64 @@ function avvia(app){
     segnaIntestazione();
   };
   inDos.oninput = () => { inDos.value = normalizzaDos(inDos.value); segnaIntestazione(); };
+  inNominativo.oninput = segnaIntestazione;
+  inTelefono.oninput = () => {
+    inTelefono.value = inTelefono.value.replace(/[^0-9+ ]/g, '');
+    segnaIntestazione();
+  };
+
+  /* La tendina: numero e DOS bastano quasi sempre, il resto si apre quando
+     serve — di solito una volta sola, all'inizio. */
+  function apriDati(apri){
+    boxDati.hidden = !apri;
+    bDati.setAttribute('aria-expanded', apri ? 'true' : 'false');
+    bDati.classList.toggle('aperto', apri);
+  }
+  bDati.onclick = () => apriDati(boxDati.hidden);
+
+  /* Posizione attuale: si riusa il GPS della mappa, che disegna già il
+     pallino azzurro. Il campo è di sola lettura — è un rilievo, non un dato
+     da digitare, e a mano ci si sbaglia di un grado senza accorgersene. */
+  q('#sitac-bPosizione').onclick = () => centraSuGps(true);
+  function scriviPosizione(latlng, acc){
+    inPosizione.value = `${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}`
+      + (acc ? ` (\u00b1${Math.round(acc)} m)` : '');
+    segnaIntestazione();
+  }
+
+  /* Convalida: la posizione resta facoltativa, perché il GPS in sala
+     operativa non dice niente di utile e su http non locale è bloccato. */
+  q('#sitac-bConvalida').onclick = () => {
+    const manca = [];
+    if (!interventoValido()) manca.push(t('nIntervento'));
+    if (!dosValido()) manca.push(t('nDos'));
+    if (!inNominativo.value.trim()) manca.push(t('nNominativo'));
+    if (!telefonoValido()) manca.push(t('nTelefono'));
+    segnaIntestazione();
+    if (manca.length){
+      bDati.classList.remove('convalidato');
+      return stato(t('datiMancanti', {c: manca.join(', ')}));
+    }
+    apriDati(false);
+    bDati.classList.add('convalidato');
+    stato(t('datiOk', {i: inIntervento.value, n: inNominativo.value.trim()}));
+  };
+
   try {
     const salvato = JSON.parse(sessionStorage.getItem(CHIAVE_SESS) || '{}');
     inIntervento.value = salvato.intervento || '';
-    inDos.value = salvato.dos || '';
+    inDos.value        = salvato.dos || '';
+    inNominativo.value = salvato.nominativo || '';
+    inTelefono.value   = salvato.telefono || '';
+    inPosizione.value  = salvato.posizione || '';
   } catch(e){ /* niente da ripristinare */ }
 
   const intestazione = () => ({
     intervento: inIntervento.value || null,
-    dos: inDos.value || null
+    dos: inDos.value || null,
+    nominativo: inNominativo.value.trim() || null,
+    telefono: inTelefono.value.trim() || null,
+    posizione: inPosizione.value || null
   });
   function siglaFile(){
     const i = intestazione();
@@ -581,6 +645,7 @@ function avvia(app){
     if (cerchioPosizione) decori.removeLayer(cerchioPosizione);
     cerchioPosizione = L.circleMarker(e.latlng, {radius:7, color:'#fff', weight:2,
       fillColor:'#0070c0', fillOpacity:1, interactive:false}).addTo(decori);
+    scriviPosizione(e.latlng, e.accuracy);
     stato(t('posizione', {lat:e.latlng.lat.toFixed(5), lon:e.latlng.lng.toFixed(5),
       m:Math.round(e.accuracy)}));
   });
@@ -1445,6 +1510,9 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
       if (p.dos){ inDos.value = normalizzaDos(p.dos); }
       segnaIntestazione();
     }
+    if (p.nominativo) inNominativo.value = String(p.nominativo);
+    if (p.telefono)   inTelefono.value   = String(p.telefono);
+    if (p.posizione)  inPosizione.value  = String(p.posizione);
     L.geoJSON(fc, {
       pointToLayer: (feat, latlng) => {
         const p = feat.properties || {};
@@ -1654,7 +1722,8 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
     const i = intestazione();
     testata.querySelector('.i').textContent =
       [i.intervento ? `${t('nIntervento')} ${i.intervento}` : '',
-       i.dos ? `${t('nDos')} ${i.dos}` : ''].filter(Boolean).join('  ·  ');
+       i.dos ? `${t('nDos')} ${i.dos}` : '',
+       i.nominativo || '', i.telefono || ''].filter(Boolean).join('  ·  ');
     testata.querySelector('.d').textContent =
       t('stData', {d:new Date().toLocaleString(lingua)});
     testata.querySelector('.n').textContent = $('stato').textContent.replace(/\n/g, ' · ');

@@ -3238,6 +3238,59 @@ a.btn-icon-hamburger:hover {
 #sitac-aib .sitac-intestazione input:focus{outline:none;border-color:var(--primary-color)}
 #sitac-aib .sitac-intestazione #sitac-nDos{width:64px}
 
+/* La riga sopra il riquadro sta FUORI da #sitac-app: nessuna regola di quel
+   contenitore la raggiunge, nemmeno .sitac-stretto.
+   Riga 1: nota, bandiere ed Espandi, allineati in alto — la nota è alta due
+   righe e gli altri due devono restare alla sua prima riga, non al centro.
+   Riga 2: i campi. Riga 3: la tendina. */
+#sitac-aib .pagina-box-header-con-nota{
+  display:flex;flex-wrap:wrap;align-items:flex-start;gap:10px 14px;max-width:100%}
+/* `min-width:0` è la riga che conta: senza, un elemento flex non scende sotto
+   la larghezza del proprio contenuto e sfonda il contenitore anche con
+   flex-wrap attivo — è lo scorrimento orizzontale che vedevi. */
+#sitac-aib .pagina-nota-inline{flex:1 1 320px;min-width:0;margin:0}
+#sitac-aib .btn-fullscreen-pagina{flex:0 0 auto}
+#sitac-aib .sitac-intestazione{flex:1 1 100%;flex-wrap:wrap}
+#sitac-aib .sitac-intestazione input{min-width:0}
+
+/* Linguetta della tendina */
+#sitac-aib .sitac-dati-testa{display:flex;align-items:center;gap:7px;
+  background:var(--dark-color);color:var(--text-main);border:1px solid var(--border-color);
+  border-radius:4px;padding:7px 11px;font-size:12px;cursor:pointer;
+  transition:border-color .2s,color .2s}
+#sitac-aib .sitac-dati-testa:hover{border-color:var(--primary-color)}
+#sitac-aib .sitac-dati-testa .freccia{color:var(--primary-color);font-size:10px;
+  transition:transform .15s}
+#sitac-aib .sitac-dati-testa.aperto{border-color:var(--primary-color);color:var(--primary-color)}
+#sitac-aib .sitac-dati-testa.aperto .freccia{transform:rotate(90deg)}
+/* Convalidata: il verde qui non è un vezzo, dice che la carta è firmata */
+#sitac-aib .sitac-dati-testa.convalidato{border-color:#009900;color:#4cd94c}
+
+/* Corpo della tendina */
+#sitac-aib .sitac-dati{flex:1 1 100%;display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px 14px;
+  background:var(--surface-color);border:1px solid var(--border-color);
+  border-left:4px solid var(--primary-color);border-radius:4px;padding:12px 14px}
+#sitac-aib .sitac-dati[hidden]{display:none}
+#sitac-aib .sitac-dati-campo{display:flex;flex-direction:column;gap:4px;min-width:0}
+#sitac-aib .sitac-dati-campo label{font-size:11px;color:var(--text-muted);
+  text-transform:uppercase;letter-spacing:.5px}
+#sitac-aib .sitac-dati-campo input{width:100%;min-width:0;padding:7px 8px;
+  background:var(--dark-color);color:var(--text-main);border:1px solid var(--border-color);
+  border-radius:4px;font-size:13px}
+#sitac-aib .sitac-dati-campo input:focus{outline:none;border-color:var(--primary-color)}
+#sitac-aib .sitac-dati-campo input[readonly]{font-family:"Courier New",monospace;
+  color:var(--text-muted)}
+#sitac-aib .sitac-dati-riga{display:flex;gap:6px}
+#sitac-aib #sitac-bPosizione{flex:0 0 auto;width:38px;padding:0;
+  background:var(--dark-color);color:var(--primary-color);
+  border:1px solid var(--border-color);border-radius:4px;font-size:16px;cursor:pointer}
+#sitac-aib #sitac-bPosizione:hover{border-color:var(--primary-color)}
+#sitac-aib .sitac-dati-azioni{display:flex;align-items:flex-end}
+#sitac-aib #sitac-bConvalida{width:100%;padding:8px 12px;font-size:13px;font-weight:bold;
+  background:var(--primary-color);color:var(--dark-color);
+  border:1px solid var(--primary-color);border-radius:4px;cursor:pointer}
+
 /* Riquadro interno di una tavola (Dispositivo aereo, Squadre a terra…):
    un gradino sotto il titolo della tavola, non un titolo a sé */
 #sitac-app .sitac-riquadro{display:block;font-size:10.5px;color:var(--text-muted);
