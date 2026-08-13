@@ -3243,18 +3243,7 @@ a.btn-icon-hamburger:hover {
    quando i campi vanno a capo resta isolato dall'altra parte. */
 .sitac-sez-stretta .btn-fullscreen-pagina{margin-left:0}
 
-/* Intestazione della carta: numero d'intervento e DOS. Stanno in alto
-   accanto alle bandiere perché sono la prima cosa che si compila e
-   l'ultima che si guarda quando la carta arriva da qualcun altro. */
-#sitac-aib .sitac-intestazione{display:flex;align-items:center;gap:6px;flex:0 0 auto}
-#sitac-aib .sitac-intestazione label{font-size:11px;color:var(--text-muted);
-  text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
-#sitac-aib .sitac-intestazione input{width:78px;min-width:0;padding:7px 8px;text-align:center;
-  background:var(--dark-color);color:var(--text-main);border:1px solid var(--border-color);
-  border-radius:4px;font-family:"Courier New",monospace;font-size:14px;font-weight:bold;
-  letter-spacing:1px}
-#sitac-aib .sitac-intestazione input:focus{outline:none;border-color:var(--primary-color)}
-#sitac-aib .sitac-intestazione #sitac-nDos{width:64px}
+
 
 /* La riga sopra il riquadro sta FUORI da #sitac-app: nessuna regola di quel
    contenitore la raggiunge, nemmeno .sitac-stretto.
@@ -3272,43 +3261,47 @@ a.btn-icon-hamburger:hover {
 #sitac-aib .btn-fullscreen-pagina{flex:0 0 auto;white-space:nowrap}
 #sitac-aib .sitac-intestazione{flex:1 1 100%;flex-wrap:wrap}
 
-/* Linguetta della tendina */
-#sitac-aib .sitac-dati-testa{display:flex;align-items:center;gap:7px;
-  background:var(--dark-color);color:var(--text-main);border:1px solid var(--border-color);
-  border-radius:4px;padding:7px 11px;font-size:12px;cursor:pointer;
-  transition:border-color .2s,color .2s}
-#sitac-aib .sitac-dati-testa:hover{border-color:var(--primary-color)}
-#sitac-aib .sitac-dati-testa .freccia{color:var(--primary-color);font-size:10px;
-  transition:transform .15s}
-#sitac-aib .sitac-dati-testa.aperto{border-color:var(--primary-color);color:var(--primary-color)}
-#sitac-aib .sitac-dati-testa.aperto .freccia{transform:rotate(90deg)}
-/* Convalidata: il verde qui non è un vezzo, dice che la carta è firmata */
-#sitac-aib .sitac-dati-testa.convalidato{border-color:#009900;color:#4cd94c}
+/* Passi numerati: la barra segue l'ordine in cui si fa una SITAC. Il
+   numero e l'indicatore stanno sulla testata, così lo stato del lavoro si
+   legge a fisarmonica chiusa. */
+#sitac-app .sitac-passo-n{flex:0 0 auto;width:19px;height:19px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:11px;
+  background:var(--border-color);color:var(--text-main)}
+#sitac-app .sitac-fisa-testa.aperto .sitac-passo-n{background:var(--primary-color);
+  color:var(--dark-color)}
+#sitac-app .sitac-passo-tit{flex:1 1 auto;min-width:0;line-height:1.25}
+#sitac-app .sitac-passo-stato{flex:0 0 auto;font-size:10.5px;font-weight:normal;
+  text-transform:none;letter-spacing:0;color:var(--text-muted);white-space:nowrap}
+#sitac-app .sitac-passo-stato.fatto{color:#4cd94c}
+#sitac-app .sitac-passo-stato.manca{color:var(--primary-color)}
+#sitac-app .sitac-conta{font-family:"Courier New",monospace;font-size:12px;
+  color:var(--text-muted);margin:6px 0 0}
 
-/* Corpo della tendina */
-#sitac-aib .sitac-dati{flex:1 1 100%;display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px 14px;
-  background:var(--surface-color);border:1px solid var(--border-color);
-  border-left:4px solid var(--primary-color);border-radius:4px;padding:12px 14px}
-#sitac-aib .sitac-dati[hidden]{display:none}
-#sitac-aib .sitac-dati-campo{display:flex;flex-direction:column;gap:4px;min-width:0}
-#sitac-aib .sitac-dati-campo label{font-size:11px;color:var(--text-muted);
+/* Elenco dei coni: ognuno con il suo vento e il pulsante per toglierlo */
+#sitac-app .sitac-cono-voce{display:flex;align-items:center;gap:6px;
+  border:1px solid var(--border-color);border-radius:4px;padding:5px 7px;margin-top:5px}
+#sitac-app .sitac-cono-voce span{flex:1 1 auto;min-width:0;font-size:11.5px;
+  font-family:"Courier New",monospace;line-height:1.3}
+#sitac-app .sitac-cono-voce button{width:26px;flex:0 0 26px;padding:0;
+  justify-content:center;font-weight:bold}
+
+/* I campi dei passi 1 e 2 vivono ora nella barra, non più in testata */
+#sitac-app .sitac-dati{display:grid;gap:8px}
+#sitac-app .sitac-dati-campo{display:flex;flex-direction:column;gap:4px;min-width:0}
+#sitac-app .sitac-dati-campo label{font-size:10.5px;color:var(--text-muted);
   text-transform:uppercase;letter-spacing:.5px}
-#sitac-aib .sitac-dati-campo input{width:100%;min-width:0;padding:7px 8px;
-  background:var(--dark-color);color:var(--text-main);border:1px solid var(--border-color);
-  border-radius:4px;font-size:13px}
-#sitac-aib .sitac-dati-campo input:focus{outline:none;border-color:var(--primary-color)}
-#sitac-aib .sitac-dati-campo input[readonly]{font-family:"Courier New",monospace;
+#sitac-app .sitac-dati-campo input{width:100%;min-width:0;padding:7px 8px;
+  background:var(--dark-color);color:var(--text-main);
+  border:1px solid var(--border-color);border-radius:4px;font-size:13px}
+#sitac-app .sitac-dati-campo input:focus{outline:none;border-color:var(--primary-color)}
+#sitac-app .sitac-dati-campo input.campo-mancante{border-color:#cc0000}
+#sitac-app .sitac-dati-campo input[readonly]{font-family:"Courier New",monospace;
   color:var(--text-muted)}
-#sitac-aib .sitac-dati-riga{display:flex;gap:6px}
-#sitac-aib #sitac-bPosizione{flex:0 0 auto;width:38px;padding:0;
-  background:var(--dark-color);color:var(--primary-color);
-  border:1px solid var(--border-color);border-radius:4px;font-size:16px;cursor:pointer}
-#sitac-aib #sitac-bPosizione:hover{border-color:var(--primary-color)}
-#sitac-aib .sitac-dati-azioni{display:flex;align-items:flex-end}
-#sitac-aib #sitac-bConvalida{width:100%;padding:8px 12px;font-size:13px;font-weight:bold;
-  background:var(--primary-color);color:var(--dark-color);
-  border:1px solid var(--primary-color);border-radius:4px;cursor:pointer}
+#sitac-app .sitac-dati-riga{display:flex;gap:6px}
+#sitac-app #sitac-bPosizione{width:38px;flex:0 0 38px;padding:0;justify-content:center;
+  color:var(--primary-color);font-size:16px}
+#sitac-app #sitac-bConvalida{justify-content:center;font-weight:bold;
+  background:var(--primary-color);color:var(--dark-color);border-color:var(--primary-color)}
 
 /* Riquadro interno di una tavola (Dispositivo aereo, Squadre a terra…):
    un gradino sotto il titolo della tavola, non un titolo a sé */
