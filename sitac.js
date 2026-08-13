@@ -225,6 +225,94 @@ function avvia(app){
     }
   };
 
+  /* Le voci del percorso guidato del cono stanno qui in blocco invece che
+     dentro L10N: sono un aggiunta successiva e tenerle insieme rende
+     evidente cosa appartiene al cono e cosa alla tavola. */
+  const L10N_CONO = {
+    it:{ bCono:'Cono di propagazione',
+      conoModo:'Come si costruisce il cono?',
+      conoSettore:'Dal punto d\u2019innesco', conoSettoreNota:'Settore a 30° dall\u2019origine; un secondo clic dice dove sta il fronte adesso (T0).',
+      conoFronte:'Dalla linea del fronte', conoFronteNota:'Si disegna il fronte rilevato e lo si fa avanzare a 15, 30 e 60 minuti.',
+      conoTerzo:'Pendenza e vento composti', conoStandby:'Non ancora disponibile (fig. 4 e 5 della pubblicazione).',
+      conoVia:'Togli il cono', conoViaNota:'Rimuove la previsione dalla carta.', conoTolto:'Cono rimosso.',
+      conoAnnullato:'Cono annullato.',
+      conoClicOrigine:'Clicca sulla mappa il punto d\u2019innesco.',
+      conoClicFronte:'Clicca dove sta il fronte adesso (T0).',
+      conoDisegnaFronte:'Disegna la linea del fronte: clic sui vertici, doppio clic per chiudere.',
+      conoDirezione:'Direzione del vento', dirWeb:'Da servizio meteo', dirWebNota:'Open-Meteo, MET Norway, OpenWeatherMap in cascata.',
+      dirBussola:'Punta il telefono verso il fumo', dirBussolaNota:'Tieni il telefono verso il fronte e conferma: si legge la bussola.',
+      dirBussolaNo:'Bussola non disponibile su questo dispositivo.',
+      dirMappa:'Scelta sulla mappa', dirMappaNota:'Un clic nella direzione verso cui va il vento.',
+      bussolaLeggo:'Lettura della bussola in corso\u2026 tieni il telefono fermo.',
+      conoIntensita:'Intensit\u00e0 del vento', intWeb:'Da servizio meteo', intWebNota:'Arrotondata in eccesso a decine di km/h.',
+      intScala:'Scala 10\u2013110 km/h', intScalaNota:'La colonna della tabella 1 della pubblicazione.',
+      conoAvanza:'il fuoco avanza di {m} m in un\u2019ora', conoT0:'T0 — fronte rilevato',
+      conoFatto:'Cono {a}° · vento {v} km/h verso {d}° ({f})\nFronte a {m} m in un\u2019ora.',
+      vento_debole:'Intensit\u00e0 debole', vento_moderato:'Intensit\u00e0 moderata', vento_forte:'Intensit\u00e0 forte',
+      statoPrevista:'Prevista', statoAttiva:'Attiva', statoEffettuata:'Effettuata' },
+    en:{ bCono:'Spread cone', conoModo:'How should the cone be built?',
+      conoSettore:'From the point of origin', conoSettoreNota:'30° sector from the origin; a second click marks where the front is now (T0).',
+      conoFronte:'From the fire front line', conoFronteNota:'Draw the observed front and push it forward at 15, 30 and 60 minutes.',
+      conoTerzo:'Slope and wind combined', conoStandby:'Not available yet (fig. 4 and 5 of the publication).',
+      conoVia:'Remove the cone', conoViaNota:'Takes the forecast off the map.', conoTolto:'Cone removed.',
+      conoAnnullato:'Cone cancelled.',
+      conoClicOrigine:'Click the point of origin on the map.',
+      conoClicFronte:'Click where the front is right now (T0).',
+      conoDisegnaFronte:'Draw the front line: click each vertex, double-click to close.',
+      conoDirezione:'Wind direction', dirWeb:'From weather service', dirWebNota:'Open-Meteo, MET Norway, OpenWeatherMap in turn.',
+      dirBussola:'Point the phone at the smoke', dirBussolaNota:'Hold the phone towards the front and confirm: the compass is read.',
+      dirBussolaNo:'Compass not available on this device.',
+      dirMappa:'Pick on the map', dirMappaNota:'One click in the direction the wind is going.',
+      bussolaLeggo:'Reading the compass\u2026 hold the phone still.',
+      conoIntensita:'Wind speed', intWeb:'From weather service', intWebNota:'Rounded up to tens of km/h.',
+      intScala:'Scale 10\u2013110 km/h', intScalaNota:'The column from table 1 of the publication.',
+      conoAvanza:'fire advances {m} m in one hour', conoT0:'T0 — observed front',
+      conoFatto:'Cone {a}° · wind {v} km/h towards {d}° ({f})\nFront at {m} m in one hour.',
+      vento_debole:'Light', vento_moderato:'Moderate', vento_forte:'Strong',
+      statoPrevista:'Planned', statoAttiva:'Active', statoEffettuata:'Done' },
+    fr:{ bCono:'C\u00f4ne de propagation', conoModo:'Comment construire le c\u00f4ne ?',
+      conoSettore:'Depuis le point d\u2019origine', conoSettoreNota:'Secteur \u00e0 30° depuis l\u2019origine ; un second clic indique o\u00f9 est le front (T0).',
+      conoFronte:'Depuis la ligne de front', conoFronteNota:'Tracez le front relev\u00e9 et faites-le avancer \u00e0 15, 30 et 60 minutes.',
+      conoTerzo:'Pente et vent compos\u00e9s', conoStandby:'Pas encore disponible (fig. 4 et 5 de la publication).',
+      conoVia:'Retirer le c\u00f4ne', conoViaNota:'Enl\u00e8ve la pr\u00e9vision de la carte.', conoTolto:'C\u00f4ne retir\u00e9.',
+      conoAnnullato:'C\u00f4ne annul\u00e9.',
+      conoClicOrigine:'Cliquez le point d\u2019origine sur la carte.',
+      conoClicFronte:'Cliquez o\u00f9 se trouve le front maintenant (T0).',
+      conoDisegnaFronte:'Tracez la ligne de front : cliquez chaque sommet, double-clic pour fermer.',
+      conoDirezione:'Direction du vent', dirWeb:'Depuis un service m\u00e9t\u00e9o', dirWebNota:'Open-Meteo, MET Norway, OpenWeatherMap tour \u00e0 tour.',
+      dirBussola:'Pointez le t\u00e9l\u00e9phone vers la fum\u00e9e', dirBussolaNota:'Tenez le t\u00e9l\u00e9phone vers le front et confirmez : la boussole est lue.',
+      dirBussolaNo:'Boussole indisponible sur cet appareil.',
+      dirMappa:'Choix sur la carte', dirMappaNota:'Un clic dans la direction o\u00f9 va le vent.',
+      bussolaLeggo:'Lecture de la boussole\u2026 gardez le t\u00e9l\u00e9phone immobile.',
+      conoIntensita:'Intensit\u00e9 du vent', intWeb:'Depuis un service m\u00e9t\u00e9o', intWebNota:'Arrondie par exc\u00e8s \u00e0 la dizaine de km/h.',
+      intScala:'\u00c9chelle 10\u2013110 km/h', intScalaNota:'La colonne du tableau 1 de la publication.',
+      conoAvanza:'le feu avance de {m} m en une heure', conoT0:'T0 — front relev\u00e9',
+      conoFatto:'C\u00f4ne {a}° · vent {v} km/h vers {d}° ({f})\nFront \u00e0 {m} m en une heure.',
+      vento_debole:'Faible', vento_moderato:'Mod\u00e9r\u00e9e', vento_forte:'Forte',
+      statoPrevista:'Pr\u00e9vue', statoAttiva:'En cours', statoEffettuata:'Effectu\u00e9e' },
+    es:{ bCono:'Cono de propagaci\u00f3n', conoModo:'\u00bfC\u00f3mo se construye el cono?',
+      conoSettore:'Desde el punto de origen', conoSettoreNota:'Sector de 30° desde el origen; un segundo clic marca d\u00f3nde est\u00e1 el frente (T0).',
+      conoFronte:'Desde la l\u00ednea del frente', conoFronteNota:'Dibuja el frente observado y hazlo avanzar a 15, 30 y 60 minutos.',
+      conoTerzo:'Pendiente y viento compuestos', conoStandby:'A\u00fan no disponible (fig. 4 y 5 de la publicaci\u00f3n).',
+      conoVia:'Quitar el cono', conoViaNota:'Retira la previsi\u00f3n del mapa.', conoTolto:'Cono retirado.',
+      conoAnnullato:'Cono cancelado.',
+      conoClicOrigine:'Haz clic en el punto de origen.',
+      conoClicFronte:'Haz clic donde est\u00e1 el frente ahora (T0).',
+      conoDisegnaFronte:'Dibuja la l\u00ednea del frente: clic en cada v\u00e9rtice, doble clic para cerrar.',
+      conoDirezione:'Direcci\u00f3n del viento', dirWeb:'Desde servicio meteorol\u00f3gico', dirWebNota:'Open-Meteo, MET Norway, OpenWeatherMap en cascada.',
+      dirBussola:'Apunta el m\u00f3vil hacia el humo', dirBussolaNota:'Sostén el m\u00f3vil hacia el frente y confirma: se lee la br\u00fajula.',
+      dirBussolaNo:'Br\u00fajula no disponible en este dispositivo.',
+      dirMappa:'Elecci\u00f3n en el mapa', dirMappaNota:'Un clic en la direcci\u00f3n hacia la que va el viento.',
+      bussolaLeggo:'Leyendo la br\u00fajula\u2026 mant\u00e9n el m\u00f3vil quieto.',
+      conoIntensita:'Intensidad del viento', intWeb:'Desde servicio meteorol\u00f3gico', intWebNota:'Redondeada por exceso a decenas de km/h.',
+      intScala:'Escala 10\u2013110 km/h', intScalaNota:'La columna de la tabla 1 de la publicaci\u00f3n.',
+      conoAvanza:'el fuego avanza {m} m en una hora', conoT0:'T0 — frente observado',
+      conoFatto:'Cono {a}° · viento {v} km/h hacia {d}° ({f})\nFrente a {m} m en una hora.',
+      vento_debole:'D\u00e9bil', vento_moderato:'Moderada', vento_forte:'Fuerte',
+      statoPrevista:'Prevista', statoAttiva:'Activa', statoEffettuata:'Efectuada' }
+  };
+  Object.keys(L10N_CONO).forEach(k => Object.assign(L10N[k], L10N_CONO[k]));
+
   let lingua = 'it';
   const t = (chiave, val) => {
     let s = (L10N[lingua] && L10N[lingua][chiave]) || L10N.it[chiave] || chiave;
@@ -329,6 +417,7 @@ function avvia(app){
       input.style.display = soloConferma ? 'none' : '';
       input.value = opz.valore || '';
       modale.querySelector('#sitac-modale-ok').textContent = t('ok');
+      modale.querySelector('#sitac-modale-ok').style.display = '';
       modale.querySelector('#sitac-modale-no').textContent = t('annulla');
       modale.hidden = false;
 
@@ -345,6 +434,61 @@ function avvia(app){
         if (e.key === 'Escape') fine(null);
       };
       setTimeout(() => (soloConferma ? modale.querySelector('#sitac-modale-ok') : input).focus(), 30);
+    });
+  }
+
+  /* Scelta a pulsanti: stessi elementi del modale, ma al posto del campo di
+     testo un elenco di voci. Serve al percorso guidato del cono, dove ogni
+     passo è una scelta fra due o tre. */
+  function scegli(opz){
+    return new Promise(risolvi => {
+      const testo = modale.querySelector('.sitac-modale-testo');
+      const input = modale.querySelector('#sitac-modale-input');
+      const ok = modale.querySelector('#sitac-modale-ok');
+      const no = modale.querySelector('#sitac-modale-no');
+      let chiuso = false;
+      const fine = val => {
+        if (chiuso) return;
+        chiuso = true;
+        modale.hidden = true; chiudiModale = null;
+        ok.style.display = ''; input.style.display = ''; testo.textContent = '';
+        risolvi(val);
+      };
+
+      modale.querySelector('.sitac-modale-titolo').textContent = t('titoloModale');
+      testo.textContent = '';
+      const p = document.createElement('p');
+      p.textContent = opz.testo || '';
+      testo.appendChild(p);
+      const el = document.createElement('div');
+      el.className = 'sitac-scelte';
+      (opz.voci || []).forEach(v => {
+        if (v.titolo){
+          const h = document.createElement('p');
+          h.className = 'sitac-scelta-titolo';
+          h.textContent = v.titolo;
+          el.appendChild(h);
+          return;
+        }
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'sitac-scelta';
+        b.disabled = !!v.off;
+        b.innerHTML = `<b>${esc(v.et)}</b>${v.nota ? `<span>${esc(v.nota)}</span>` : ''}`;
+        b.onclick = () => fine(v.k);
+        el.appendChild(b);
+      });
+      testo.appendChild(el);
+      input.style.display = 'none';
+      ok.style.display = 'none';
+      no.textContent = t('annulla');
+      no.onclick = () => fine(null);
+      chiudiModale = () => fine(null);
+      modale.hidden = false;
+      setTimeout(() => {
+        const b = el.querySelector('button:not([disabled])');
+        if (b) b.focus();
+      }, 30);
     });
   }
 
@@ -463,6 +607,12 @@ function avvia(app){
       dentro = `<path d="M1 ${d-2}V3h${d-2}v${d-5}" fill="none" stroke="${col}" stroke-width="2.4"/>`;
     else if (tipo === 'obliqua')
       dentro = `<path d="M1 ${d-2}L${d-3} 3M${d-3} 3l-5 .5M${d-3} 3l.5 5" fill="none" stroke="${col}" stroke-width="2.2"/>`;
+    else if (tipo === 'fulmine' || tipo === 'fulmineOff')
+      dentro = `<g transform="scale(${(d/64).toFixed(3)})">`
+        + `<path d="M38 5L17 35h11l-5 24 25-33H36l8-21Z" fill="#ffe000" stroke="${col}" stroke-width="4" stroke-linejoin="round"/>`
+        + (tipo === 'fulmineOff'
+            ? `<path d="M9 9L55 55M55 9L9 55" stroke="${col}" stroke-width="5"/>` : '')
+        + `</g>`;
     return L.divIcon({className:'sitac-deco', iconSize:[d,d], iconAnchor:[d/2,d/2],
       html:`<svg viewBox="0 0 ${d} ${d}" width="${d}" height="${d}">${dentro}</svg>`});
   }
@@ -569,58 +719,217 @@ function avvia(app){
 
   /* =======================================================================
      5bis. CONO DI PROPAGAZIONE
-     Posare l'area d'origine è il momento in cui serve sapere dove andrà il
-     fuoco. Si legge il vento, si posa il simbolo della tavola con la sua
-     velocità, e si disegna il cono a 30° con gli archi a 15, 30 e 60
-     minuti. Il cono NON è un rilievo ma una stima, e infatti non finisce
-     nel GeoJSON: sta nei decori e si rifà quando l'origine si sposta.
+     Non è più agganciato all'area d'origine: si preme il pulsante e si
+     risponde a tre domande — come si costruisce, da dove viene la direzione
+     del vento, quanto forte soffia. Il cono NON è un rilievo ma una stima,
+     e infatti non finisce nel GeoJSON: sta nei decori e si rifà quando
+     l'origine si sposta.
      ===================================================================== */
   let conoLayer = null;
-  let ultimoVento = null;
+  let ventoCono = null;
+  let simboloVentoLayer = null;
+  let attesaClic = null;
+  let attesaLinea = null;
 
-  async function previsione(origine){
+  function togliCono(){
+    if (conoLayer){ decori.removeLayer(conoLayer); conoLayer = null; }
+    ventoCono = null;
+  }
+
+  /* Attese: risolvono con null se qualcuno preme Esc o cambia strumento —
+     fermaTutto() le chiude, così il percorso guidato non resta appeso. */
+  function attendiClic(msg){
+    fermaTutto(); spegniPulsanti(); stato(msg);
+    return new Promise(risolvi => { attesaClic = risolvi; });
+  }
+  function attendiLinea(msg){
+    fermaTutto(); spegniPulsanti(); stato(msg);
+    return new Promise(risolvi => {
+      attesaLinea = risolvi;
+      map.pm.enableDraw('Line', {pathOptions:{color:COL.rosso, weight:3.5},
+        continueDrawing:false});
+    });
+  }
+  map.on('click', e => {
+    if (!attesaClic) return;
+    const f = attesaClic; attesaClic = null; f(e.latlng);
+  });
+
+  const origineSullaCarta = () => {
+    let m = null;
+    disegni.eachLayer(x => { if (x._tipo === 'origine' && x.getLatLng) m = x; });
+    return m;
+  };
+
+  /* Il simbolo del vento è un elemento della tavola a tutti gli effetti,
+     quindi si aggiunge ai disegni e viene esportato. Uno solo per volta:
+     rifacendo il cono si sostituisce, non se ne accumulano. */
+  function posaSimboloVento(punto, vento){
     const V = NS.SitacVento;
-    if (!V) return;
-    stato(t('ventoLeggo'));
-    let vento;
-    try { vento = await V.leggi(origine.getLatLng().lat, origine.getLatLng().lng); }
-    catch(e){ stato(t('ventoErrore', {e:e.message})); return; }
-    ultimoVento = vento;
-    disegnaPrevisione(origine, vento);
-
-    /* Il simbolo del vento è un elemento della tavola a tutti gli effetti,
-       quindi si aggiunge ai disegni e viene esportato: la freccia parte
-       dall'origine e corre lungo la bisettrice del cono. */
+    if (simboloVentoLayer){
+      scollega(simboloVentoLayer);
+      disegni.removeLayer(simboloVentoLayer);
+    }
     const k = V.simboloVento(vento.velocita);
-    const m = L.marker(origine.getLatLng(), {draggable:true,
+    const m = L.marker(punto, {draggable:true,
       icon: iconaSimbolo(k, {rotazione: vento.verso, testo: String(vento.velocita)})});
     m._tipo = k; m._genere = 'simbolo'; m._stato = 'previsto';
     m._rotazione = vento.verso; m._testo = String(vento.velocita);
     disegni.addLayer(m);
+    creaManiglia(m);
     etichettaElemento(m);
-
-    const d = Math.round(V.distanzaFronte(vento.velocita, 60));
-    stato(t('ventoOk', {v:vento.velocita, p:vento.provenienza, f:vento.fonte,
-      a:V.APERTURA, d}));
-    aggiornaStato();
+    simboloVentoLayer = m;
   }
 
-  function disegnaPrevisione(origine, vento){
+  /* Secondo e terzo passo del percorso: direzione, poi intensità. Il
+     servizio meteo si interroga una volta sola anche se serve a entrambe. */
+  async function scegliVento(punto){
     const V = NS.SitacVento;
-    if (!V || !vento) return;
-    if (conoLayer){ decori.removeLayer(conoLayer); conoLayer = null; }
-    conoLayer = V.disegnaCono(origine.getLatLng(), vento, {colore: COL.rosso});
+    let letto = null;
+    const daWeb = async () => {
+      if (letto) return letto;
+      stato(t('ventoLeggo'));
+      letto = await V.leggi(punto.lat, punto.lng);
+      return letto;
+    };
+
+    const bussolaOk = V.bussolaDisponibile();
+    const modo = await scegli({testo: t('conoDirezione'), voci:[
+      {k:'web',     et:t('dirWeb'),     nota:t('dirWebNota')},
+      {k:'bussola', et:t('dirBussola'),
+        nota: bussolaOk ? t('dirBussolaNota') : t('dirBussolaNo'), off: !bussolaOk},
+      {k:'mappa',   et:t('dirMappa'),   nota:t('dirMappaNota')}
+    ]});
+    if (!modo) return null;
+
+    let verso = null, fonte = '';
+    if (modo === 'web'){
+      const v = await daWeb();
+      verso = v.verso; fonte = v.fonte;
+    } else if (modo === 'bussola'){
+      /* Niente await prima di qui: su iOS il permesso alla bussola vale
+         solo dentro il gesto dell'utente, e il clic sul pulsante è quello. */
+      stato(t('bussolaLeggo'));
+      verso = await V.leggiBussola();
+      fonte = t('dirBussola');
+    } else {
+      const p = await attendiClic(t('conoClicVento'));
+      if (!p) return null;
+      verso = Math.round(azimut(punto, p));
+      fonte = t('dirMappa');
+    }
+
+    const modoV = await scegli({testo: t('conoIntensita'), voci:[
+      {k:'web',   et:t('intWeb'),   nota:t('intWebNota')},
+      {k:'scala', et:t('intScala'), nota:t('intScalaNota')}
+    ]});
+    if (!modoV) return null;
+
+    let velocita;
+    if (modoV === 'web'){
+      const v = await daWeb();
+      velocita = V.arrotondaDecine(v.velocita);
+      fonte = (modo === 'web') ? v.fonte : `${fonte} + ${v.fonte}`;
+    } else {
+      velocita = await scegliVelocita();
+      if (!velocita) return null;
+    }
+    return V.ventoDa(velocita, verso, fonte);
+  }
+
+  /* La scala è la colonna sinistra della tabella 1: dieci in dieci fino a
+     110, raggruppata nelle tre intensità della tavola. Accanto a ogni voce
+     quanto avanza il fuoco in un'ora, che è il numero che si cerca. */
+  function scegliVelocita(){
+    const V = NS.SitacVento;
+    const voci = [];
+    let banda = null;
+    V.SCALA.forEach(v => {
+      const b = V.simboloVento(v);
+      if (b !== banda){ banda = b; voci.push({titolo: t(b)}); }
+      voci.push({k:String(v), et: v + ' km/h',
+        nota: t('conoAvanza', {m: Math.round(V.distanzaFronte(v, 60))})});
+    });
+    return scegli({testo: t('conoIntensita'), voci}).then(x => x ? Number(x) : null);
+  }
+
+  async function creaCono(){
+    const V = NS.SitacVento;
+    if (!V) return stato('sitac-vento.js non caricato.');
+    const voci = [];
+    if (conoLayer) voci.push({k:'via', et:t('conoVia'), nota:t('conoViaNota')});
+    voci.push({k:'settore', et:t('conoSettore'), nota:t('conoSettoreNota')});
+    voci.push({k:'fronte',  et:t('conoFronte'),  nota:t('conoFronteNota')});
+    voci.push({k:'terzo',   et:t('conoTerzo'),   nota:t('conoStandby'), off:1});
+    try {
+      const modo = await scegli({testo: t('conoModo'), voci});
+      if (!modo) return stato(t('conoAnnullato'));
+      if (modo === 'via'){ togliCono(); return stato(t('conoTolto')); }
+      if (modo === 'settore') await conoSettore(); else await conoFronte();
+    } catch(e){
+      stato(t('ventoErrore', {e: e.message}));
+    }
+  }
+
+  /* Modo 1: vertice sul punto d'innesco, secondo clic per dire dove sta il
+     fronte adesso. Gli archi partono da lì, non dal vertice. */
+  async function conoSettore(){
+    const V = NS.SitacVento;
+    const m = origineSullaCarta();
+    const origine = m ? m.getLatLng() : await attendiClic(t('conoClicOrigine'));
+    if (!origine) return stato(t('conoAnnullato'));
+    const p0 = await attendiClic(t('conoClicFronte'));
+    if (!p0) return stato(t('conoAnnullato'));
+    const r0 = Math.round(origine.distanceTo(p0));
+
+    const vento = await scegliVento(origine);
+    if (!vento) return stato(t('conoAnnullato'));
+
+    togliCono();
+    ventoCono = vento;
+    const opz = {colore: COL.rosso, raggio0: r0, etichetta0: t('conoT0')};
+    conoLayer = V.disegnaCono(origine, vento, opz);
     decori.addLayer(conoLayer);
-    /* Spostando l'origine la previsione la segue: il vento è lo stesso, il
-       vertice no. Per rileggere il vento si ricancella e si riposa. */
-    origine.off('move.sitacCono').on('move.sitacCono', () => {
-      if (conoLayer){ decori.removeLayer(conoLayer); }
-      conoLayer = V.disegnaCono(origine.getLatLng(), vento, {colore: COL.rosso});
-      decori.addLayer(conoLayer);
-    });
-    origine.on('pm:remove', () => {
-      if (conoLayer){ decori.removeLayer(conoLayer); conoLayer = null; }
-    });
+
+    /* Spostando l'area d'origine la previsione la segue: il vento è lo
+       stesso, il vertice no. Per rileggere il vento si rifà il percorso. */
+    if (m){
+      m.off('move.sitacCono').on('move.sitacCono', () => {
+        if (conoLayer) decori.removeLayer(conoLayer);
+        conoLayer = V.disegnaCono(m.getLatLng(), vento, opz);
+        decori.addLayer(conoLayer);
+      });
+      m.on('pm:remove', togliCono);
+    }
+    posaSimboloVento(origine, vento);
+    riassunto(vento);
+  }
+
+  /* Modo 2: si disegna il fronte com'è adesso e lo si trasla nel tempo.
+     Serve quando l'incendio è già lungo e il punto d'innesco non dice più
+     niente su dove si trova la fiamma. */
+  async function conoFronte(){
+    const V = NS.SitacVento;
+    const punti = await attendiLinea(t('conoDisegnaFronte'));
+    if (!punti || punti.length < 2) return stato(t('conoAnnullato'));
+    const centro = punti[Math.floor(punti.length / 2)];
+    const vento = await scegliVento(centro);
+    if (!vento) return stato(t('conoAnnullato'));
+
+    togliCono();
+    ventoCono = vento;
+    conoLayer = V.disegnaFronti(punti, vento,
+      {colore: COL.rosso, etichetta0: t('conoT0')});
+    decori.addLayer(conoLayer);
+    posaSimboloVento(centro, vento);
+    riassunto(vento);
+  }
+
+  function riassunto(vento){
+    const V = NS.SitacVento;
+    aggiornaStato();
+    stato(t('conoFatto', {v: vento.velocita, d: vento.verso, f: vento.fonte,
+      a: V.APERTURA, m: Math.round(V.distanzaFronte(vento.velocita, 60))}));
   }
 
   let attesaDirezione = null;
@@ -834,16 +1143,22 @@ function avvia(app){
       stato(`${nm(d)}${etichettaStato(d)}\n${t('suggSimbolo')}`);
     }
   }
-  const etichettaStato = d =>
-    (d && (d.s || d.stati)) ? ` — ${t(statoCorrente === 'attivo' ? 'statoAttivo' : 'statoPrevisto')}` : '';
-  const statoDi = (d, s) =>
-    (d && (d.s || d.stati)) ? ` — ${t(s === 'attivo' ? 'statoAttivo' : 'statoPrevisto')}` : '';
+  /* La tavola usa tre coppie: previsto/attivo per i mezzi, prevista/attiva
+     per il DOS e le squadre, prevista/effettuata per tutte le azioni. */
+  const paroleStato = d => (d && d.g === 'azioni') ? ['statoPrevista','statoEffettuata']
+    : (d && d.f) ? ['statoPrevista','statoAttiva'] : ['statoPrevisto','statoAttivo'];
+  const etichettaStato = d => (d && (d.s || d.stati))
+    ? ` — ${t(paroleStato(d)[statoCorrente === 'attivo' ? 1 : 0])}` : '';
+  const statoDi = (d, s) => (d && (d.s || d.stati))
+    ? ` — ${t(paroleStato(d)[s === 'attivo' ? 1 : 0])}` : '';
 
   function fermaTutto(){
     map.pm.disableDraw();
     map.pm.disableGlobalEditMode();
     map.pm.disableGlobalRemovalMode();
     attesaDirezione = null;
+    if (attesaClic){ const f = attesaClic; attesaClic = null; f(null); }
+    if (attesaLinea){ const f = attesaLinea; attesaLinea = null; f(null); }
     strumento = null;
   }
 
@@ -868,6 +1183,16 @@ function avvia(app){
      ===================================================================== */
   map.on('pm:create', async e => {
     const layer = e.layer;
+    /* Il fronte del percorso guidato non è un elemento della tavola: si
+       prendono i vertici e si butta via il tracciato provvisorio. */
+    if (attesaLinea){
+      const f = attesaLinea; attesaLinea = null;
+      const punti = layer.getLatLngs();
+      disegni.removeLayer(layer);
+      map.pm.disableDraw();
+      f(punti);
+      return;
+    }
     if (!strumento) return;
     layer._tipo = strumento.chiave;
     layer._genere = strumento.genere;
@@ -910,9 +1235,7 @@ function avvia(app){
     etichettaElemento(layer);
     aggiornaStato();
 
-    /* L'area d'origine tira con sé la previsione: è il punto da cui si
-       ragiona su dove andrà il fuoco. */
-    if (k === 'origine'){ map.pm.disableDraw(); await previsione(layer); riattivaStrumento(); }
+
   });
 
   /* =======================================================================
@@ -966,6 +1289,7 @@ function avvia(app){
     if (!disegni.getLayers().length) return stato(t('giaVuota'));
     if (!await chiedi({testo: t('confPulisci')})) return;
     disegni.clearLayers(); decori.clearLayers();
+    conoLayer = null; ventoCono = null; simboloVentoLayer = null;
     cerchioPosizione = null;
     aggiornaStato();
   };
@@ -977,6 +1301,7 @@ function avvia(app){
     stato(t('sfondo', {n: t(sfondi[iSfondo].k)}));
   };
   $('bCentra').onclick = () => centraSuGps(true);
+  $('bCono').onclick = creaCono;
   $('bStampa').onclick = stampa;
 
   /* Legenda: si apre e si chiude, perché su un pannello stretto coprirebbe

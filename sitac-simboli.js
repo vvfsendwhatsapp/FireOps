@@ -73,8 +73,9 @@ const RIG = (id, col, largo) => `<pattern id="${id}" width="7" height="7" patter
    1. FAMIGLIE
    ===================================================================== */
 
-/* Dispositivo aereo: riquadro con le diagonali e una banda in basso per la
-   sigla. Da previsto ad attivo le diagonali si riempiono. */
+/* Dispositivo aereo: riquadro con le diagonali e una banda in basso. La
+   sigla è FISSA (CAN, S64, Boss): quello che si digita finisce sui
+   puntini accanto, che sulla carta è dove si scrive la matricola. */
 function mezzoAereo(sigla){
   return o => {
     const p = attivo(o), R = C.rosso;
@@ -82,19 +83,23 @@ function mezzoAereo(sigla){
     const corpo = p
       ? `<path d="M${x1} ${y1}H${x2}L${x1} ${y2}H${x2}Z" fill="${R}"/>`
       : `<path d="M${x1} ${y1}L${x2} ${y2}M${x2} ${y1}L${x1} ${y2}" stroke="${R}" stroke-width="2" fill="none"/>`;
-    const s = (o && o.testo) || sigla;
+    const s = sigla || '';
+    const n = (o && o.testo) || '';
+    const dimS = s.length > 5 ? 8.5 : 10;
+    const xn = s ? x1 + 5 + s.length * dimS * 0.62 : x1 + 4;
     return T(`<rect x="${x1}" y="${y1}" width="${x2-x1}" height="${y2-y1}" fill="#fff" stroke="${R}" stroke-width="2.6"/>
       ${corpo}
       <rect x="${x1}" y="${y2}" width="${x2-x1}" height="${ym-y2}" fill="#fff" stroke="${R}" stroke-width="2.6"/>
-      ${s ? txt(x1+3, ym-2.5, s, R, s.length > 5 ? 8.5 : 10, 'start') : ''}
-      ${puntini(s ? x1 + 4 + s.length * 5.6 : x1 + 4, x2 - 3, ym - 3.5, R)}`);
+      ${s ? txt(x1+3, ym-2.5, s, R, dimS, 'start') : ''}
+      ${n ? txt(xn, ym-2.5, n, R, 9.5, 'start') : puntini(xn, x2-3, ym-3.5, R)}`);
   };
 }
 
-/* Dispositivo terrestre: il riquadro è diviso in due. Nel quarto di
-   sinistra la sigla, e sotto la riga su cui si scrive il numero; il resto
-   resta libero. L'asta sopra il divisorio conta il livello: una per la
-   squadra, due per il modulo/gruppo, tre per il modulo UE/colonna.
+/* Dispositivo terrestre: nel quarto di sinistra la sigla fissa, e sotto la
+   riga su cui si scrive il numero. Dove la sigla non c'è (Squadra.....,
+   Modulo, Colonna) è il testo digitato a occupare il posto della sigla.
+   L'asta sopra il divisorio conta il livello: una per la squadra, due per
+   il modulo/gruppo, tre per il modulo UE/colonna.
    Attivo = triangolo pieno nella metà destra. */
 function mezzoTerra(sigla, aste, col, senzaDivisione){
   return o => {
@@ -105,18 +110,19 @@ function mezzoTerra(sigla, aste, col, senzaDivisione){
       const x = (xd - (aste - 1) * 4 + i * 8).toFixed(1);
       a += `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y1-8}" stroke="${K}" stroke-width="2.2"/>`;
     }
-    const s = (o && o.testo) || sigla;
+    const s = sigla || (o && o.testo) || '';
+    const n = sigla ? ((o && o.testo) || '') : '';
     if (senzaDivisione)
       return T(`${a}<rect x="${x1}" y="${y1}" width="${x2-x1}" height="${y2-y1}" fill="#fff" stroke="${K}" stroke-width="2.6"/>
         ${p ? `<path d="M${x2-(y2-y1)} ${y2}H${x2}V${y1}Z" fill="${K}"/>` : ''}
-        ${txt(p ? 28 : 32, y2-8, s, K, 15)}`);
+        ${txt(p ? 28 : 32, y2-8, sigla, K, 15)}`);
     return T(`${a}
       <rect x="${x1}" y="${y1}" width="${x2-x1}" height="${y2-y1}" fill="#fff" stroke="${K}" stroke-width="2.6"/>
       ${p ? `<path d="M${xd} ${y2}L${x2} ${y1}V${y2}Z" fill="${K}"/>` : ''}
       <line x1="${xd}" y1="${y1}" x2="${xd}" y2="${y2}" stroke="${K}" stroke-width="2.2"/>
       <line x1="${x1}" y1="${ym}" x2="${xd}" y2="${ym}" stroke="${K}" stroke-width="2.2"/>
       ${s ? txt((x1+xd)/2, ym-3, s, K, 11) : ''}
-      ${puntini(x1+3, xd-3, y2-8, K)}`);
+      ${n ? txt((x1+xd)/2, y2-7, n, K, 10) : puntini(x1+3, xd-3, y2-8, K)}`);
   };
 }
 
@@ -179,9 +185,9 @@ function quotaFuoco(pieno){
    verdi. Effettuata = metà inferiore piena, come nella tavola: la sigla sta
    alta perché deve restare leggibile sul pieno. */
 function tondoSigla(sigla, col){
-  return o => T(`<circle cx="32" cy="32" r="19" fill="#fff" stroke="${col}" stroke-width="3"/>
-    ${attivo(o) ? `<path d="M13 32a19 19 0 0 0 38 0Z" fill="${col}"/>` : ''}
-    ${txt(32, 33, sigla, col, 17)}`);
+  return o => { const p = attivo(o);
+    return T(`<circle cx="32" cy="32" r="19" fill="${p ? col : '#fff'}" stroke="${col}" stroke-width="3"/>
+      ${txt(32, 38, sigla, p ? '#fff' : col, 17)}`); };
 }
 
 /* =====================================================================
@@ -201,6 +207,14 @@ const FULMINE = `<path d="M38 5L17 35h11l-5 24 25-33H36l8-21Z" fill="${C.giallo}
 agg('elettrodotto','zona',null,'Linea elettrica attiva','Power line on', () => T(FULMINE));
 agg('elettrodotto_off','zona',null,'Linea elettrica disattivata','Power line off',
   () => T(`${FULMINE}<path d="M9 9L55 55M55 9L9 55" stroke="${C.nero}" stroke-width="3"/>`));
+
+/* La tavola disegna la linea elettrica come un tracciato tratto-punto col
+   fulmine sopra, non come un punto: il punto resta per il traliccio
+   isolato, questi sono l'elettrodotto che attraversa la zona. */
+aggL('elettrodotto_tratto','zona',null,'Linea elettrica attiva','Power line on',
+  {color:C.nero, weight:2.4, dashArray:'14,5,3,5'}, {deco:{tipo:'fulmine', passo:70, dim:24}});
+aggL('elettrodotto_off_tratto','zona',null,'Linea elettrica disattivata','Power line off',
+  {color:C.nero, weight:2.4, dashArray:'14,5,3,5'}, {deco:{tipo:'fulmineOff', passo:70, dim:24}});
 
 agg('acqua','zona',null,'Punto d\u2019acqua per mezzi terrestri','Water point, ground means',
   () => T(`<circle cx="32" cy="32" r="21" fill="${C.acqua}"/>`));
@@ -250,28 +264,28 @@ agg('eli','dispositivo','sgAereo','Elicotteri medi e leggeri','Light and medium 
 agg('eli_com','dispositivo','sgAereo','Elicottero Comando','Command helicopter', mezzoAereo('Eli Com'), {s:1, e:1});
 agg('aereo_altro','dispositivo','sgAereo','Altro mezzo aereo','Other air means', mezzoAereo(''), {s:1, e:1});
 
-agg('dos','dispositivo','sgTerra','DOS — Direttore Operazioni Spegnimento','Fire operations director', mezzoTerra('DOS', 1), {s:1, e:1});
-agg('vvf','dispositivo','sgTerra','Squadra VVF','VVF crew', mezzoTerra('VVF', 1), {s:1, e:1});
-agg('vol','dispositivo','sgTerra','Squadra VOL','Volunteer crew', mezzoTerra('VOL', 1), {s:1, e:1});
-agg('gos','dispositivo','sgTerra','Squadra GOS','GOS crew', mezzoTerra('GOS', 1), {s:1, e:1});
-agg('sai','dispositivo','sgTerra','Squadra SAI','SAI crew', mezzoTerra('SAI', 1), {s:1, e:1});
-agg('squadra_altra','dispositivo','sgTerra','Squadra\u2026','Other crew', mezzoTerra('', 1), {s:1, e:1});
-agg('modulo_vvf','dispositivo','sgTerra','Modulo VVF / Gruppo','VVF module / Group', mezzoTerra('', 2), {s:1, e:1});
-agg('modulo_ue','dispositivo','sgTerra','Modulo UE / Colonna','EU module / Column', mezzoTerra('', 3), {s:1, e:1});
-agg('cp','dispositivo','sgTerra','Posto di Comando','Command post', mezzoTerra('CP', 0, C.rosso, 1), {s:1, e:1});
-agg('ss','dispositivo','sgTerra','Soccorso Sanitario','Ambulance', mezzoTerra('SS', 0, C.verde, 1), {s:1, e:1});
-agg('pol','dispositivo','sgTerra','Forze di Polizia','Police forces', mezzoTerra('Pol', 0, C.polizia, 1), {s:1, e:1});
+agg('dos','dispositivo','sgTerra','DOS — Direttore Operazioni Spegnimento','Fire operations director', mezzoTerra('DOS', 1), {s:1, e:1, f:1});
+agg('vvf','dispositivo','sgTerra','Squadra VVF','VVF crew', mezzoTerra('VVF', 1), {s:1, e:1, f:1});
+agg('vol','dispositivo','sgTerra','Squadra VOL','Volunteer crew', mezzoTerra('VOL', 1), {s:1, e:1, f:1});
+agg('gos','dispositivo','sgTerra','Squadra GOS','GOS crew', mezzoTerra('GOS', 1), {s:1, e:1, f:1});
+agg('sai','dispositivo','sgTerra','Squadra SAI','SAI crew', mezzoTerra('SAI', 1), {s:1, e:1, f:1});
+agg('squadra_altra','dispositivo','sgTerra','Squadra\u2026','Other crew', mezzoTerra('', 1), {s:1, e:1, f:1});
+agg('cp','dispositivo','sgTerra','Posto di Comando','Command post', mezzoTerra('CP', 0, C.rosso, 1), {s:1});
+agg('ss','dispositivo','sgTerra','Soccorso Sanitario','Ambulance', mezzoTerra('SS', 0, C.verde, 1), {s:1});
+agg('pol','dispositivo','sgTerra','Forze di Polizia','Police forces', mezzoTerra('Pol', 0, C.polizia, 1), {s:1});
+
+agg('fune_sbalzo','zona',null,'Funivie, fili a sbalzo, ecc.','Cableways and aerial wires', /* invariato */, {r:1});
+
+agg('lancio_pesante_ritardante','azioni','sgAereo','Lancio mezzi aerei pesanti con ritardante','Retardant drop, heavy means', lancio(1,1), {s:1, r:1});
+agg('lancio_pesante_acqua','azioni','sgAereo','Lancio mezzi aerei pesanti con acqua','Water drop, heavy means', lancio(1,0), {s:1, r:1});
 
 /* Transit Point: il cerchio sta su una linea di transito e la freccia dice
    da che parte si entra in zona. */
 agg('tp','dispositivo','sgTerra','Transit Point','Transit point', o => {
-  const R = C.rosso;
-  return T(`<line x1="2" y1="32" x2="58" y2="32" stroke="${R}" stroke-width="2.6"/>
-    <path d="M50 25l12 7-12 7Z" fill="${R}"/>
-    <circle cx="28" cy="32" r="13" fill="#fff" stroke="${R}" stroke-width="2.6"/>
-    ${attivo(o) ? `<path d="M15 32a13 13 0 0 0 26 0Z" fill="${R}"/>` : ''}
-    ${txt(28, 35, (o && o.testo) || 'TP', R, 13)}`);
-}, {s:1});
+  const tr = p ? '' : ' stroke-dasharray="4,3"';
+  return T(`<path d="${d}Z" fill="none" stroke="${R}" stroke-width="2.4" stroke-linejoin="round"${tr}/>
+    <circle cx="32" cy="32" r="9" fill="none" stroke="${R}" stroke-width="2.4"${tr}/>`);
+}, {s:1, r:1});
 
 /* ---- TAVOLA 4: le azioni ---- */
 agg('lancio_pesante_ritardante','azioni','sgAereo','Lancio mezzi aerei pesanti con ritardante','Retardant drop, heavy means', lancio(1,1), {s:1});

@@ -2219,6 +2219,20 @@ html.comando-gia-scelto #modal-comando {
     color: var(--primary-color);
 }
 
+/* Percorso guidato del cono: le voci di scelta dentro il modale */
+#sitac-modale .sitac-scelte{display:flex;flex-direction:column;gap:6px;margin-top:10px;
+  max-height:52vh;overflow:auto}
+#sitac-modale .sitac-scelta-titolo{margin:8px 0 0;font-size:.75rem;text-transform:uppercase;
+  letter-spacing:.05em;opacity:.55}
+#sitac-modale .sitac-scelta{display:flex;flex-direction:column;align-items:flex-start;gap:2px;
+  width:100%;text-align:left;padding:8px 10px;border:1px solid rgba(0,0,0,.18);
+  border-radius:6px;background:#fff;font:inherit;cursor:pointer}
+#sitac-modale .sitac-scelta:hover:not([disabled]),
+#sitac-modale .sitac-scelta:focus-visible{border-color:#cc0000;background:#fff5f5}
+#sitac-modale .sitac-scelta b{font-size:.95rem}
+#sitac-modale .sitac-scelta span{font-size:.8rem;line-height:1.25;opacity:.7}
+#sitac-modale .sitac-scelta[disabled]{opacity:.45;cursor:not-allowed}
+
 /* ==========================================================
    ECCEZIONI AI PULSANTI
    ========================================================== */

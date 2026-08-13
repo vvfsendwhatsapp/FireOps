@@ -1,5 +1,5 @@
 /*!
- * FireOps VVF — sitac-vento.js — vento e cono di propagazione
+ * FireOps VVF — sitac-vento.js — vento, cono di propagazione, fronti
  *
  * Metodo e numeri sono quelli della pubblicazione SI.TA.C. 2021 del CNVVF:
  *
@@ -16,7 +16,8 @@
  *
  * Con vento a 30 km/h il fuoco avanza a 900 m/h, quindi 225 m in 15
  * minuti, 450 in 30 e 900 in un'ora: sono esattamente i valori della
- * tabella 1 della pubblicazione, e servono da verifica.
+ * tabella 1 della pubblicazione, e servono da verifica. SCALA è la colonna
+ * sinistra della stessa tabella, 10÷110 km/h di dieci in dieci.
  *
  * DA DOVE VIENE, DOVE VA
  * Le API meteorologiche danno la direzione DA CUI spira il vento (uso
@@ -24,6 +25,20 @@
  * la freccia della tavola punta dove il vento va. Qui la conversione si fa
  * una volta sola, in `versoPropagazione`: è l'errore che ribalta il cono
  * di 180° e manda le squadre dalla parte sbagliata.
+ *
+ * LA BUSSOLA NON VA CONVERTITA
+ * Puntando il telefono verso il fumo si legge già il VERSO di propagazione,
+ * non la provenienza: `leggiBussola` restituisce quindi un verso, e chi lo
+ * usa ricava la provenienza al contrario. Sbagliare qui ribalta il cono
+ * esattamente come sopra.
+ *
+ * DUE GEOMETRIE
+ * `disegnaCono`  — settore circolare dal punto d'innesco, con raggio
+ *                  iniziale opzionale (dove sta il fronte adesso, T0).
+ * `disegnaFronti`— la linea del fronte rilevata a T0, traslata lungo la
+ *                  direzione del vento di quanto avanza in 15/30/60 minuti.
+ * Nessuna delle due è un rilievo: sono stime, stanno nei decori e non
+ * finiscono nel GeoJSON esportato.
  */
 (function () {
 'use strict';
@@ -32,13 +47,14 @@ const NS = (window.FireOps = window.FireOps || {});
 const APERTURA = 30;          // gradi totali del cono (±15 sulla bisettrice)
 const QUOTA_VENTO = 0.03;     // la propagazione è il 3% della velocità del vento
 const MINUTI = [15, 30, 60];  // archi previsti dalla pubblicazione
+const SCALA = [10,20,30,40,50,60,70,80,90,100,110];   // colonna km/h di tab. 1
 
 const R_TERRA = 6378137;
 const rad = x => x * Math.PI / 180;
 const gra = x => x * 180 / Math.PI;
 
 /* =======================================================================
-   1. LETTURA DEL VENTO
+   1. LETTURA DEL VENTO DA SERVIZIO
    Tre servizi in cascata. Open-Meteo per primo perché non chiede chiavi e
    risponde in CORS: è l'unico che funziona su GitHub Pages senza altro.
    ===================================================================== */
@@ -112,6 +128,11 @@ async function leggiVento(lat, lon){
 /* Meteorologia: 0 gradi vuol dire "da nord", cioè il vento va verso sud. */
 const versoPropagazione = provenienza => (provenienza + 180) % 360;
 
+/* La tabella 1 ragiona per decine di km/h. Arrotondare in eccesso è la
+   scelta prudente: il fronte previsto sta un po' più avanti del reale, non
+   un po' più indietro. */
+const arrotondaDecine = v => Math.min(110, Math.max(10, Math.ceil((+v || 0) / 10) * 10));
+
 /* Intensità secondo la scala della tavola: debole, moderata, forte.
    La pubblicazione non fissa le soglie, quindi si usa Beaufort — sotto i
    20 km/h brezza leggera, oltre i 40 vento fresco. */
@@ -119,6 +140,66 @@ function simboloVento(kmh){
   if (kmh < 20) return 'vento_debole';
   if (kmh < 40) return 'vento_moderato';
   return 'vento_forte';
+}
+
+/* =======================================================================
+   1bis. LETTURA DEL VENTO DALLA BUSSOLA
+   Si punta il telefono verso il fumo. Quello che si legge è già il VERSO
+   di propagazione: nessuna somma di 180 gradi, qui.
+   Serve HTTPS (su GitHub Pages c'è). Su iOS il permesso va chiesto dentro
+   il gesto dell'utente: `leggiBussola` va quindi chiamata subito dopo il
+   clic sul pulsante, senza attese in mezzo.
+   ===================================================================== */
+function bussolaDisponibile(){
+  return typeof window.DeviceOrientationEvent !== 'undefined'
+    && window.isSecureContext !== false;
+}
+
+function leggiBussola(attesa){
+  return new Promise((risolvi, rifiuta) => {
+    if (!bussolaDisponibile())
+      return rifiuta(new Error('bussola non disponibile su questo dispositivo'));
+
+    const avvia = () => {
+      let ultimo = null, chiuso = false;
+      const su = ev => {
+        let h = null;
+        /* iOS dà la prua magnetica già pronta; Android la ricava da alpha,
+           ma solo se l'evento è assoluto — altrimenti è relativa a dove il
+           telefono era acceso, e non vuol dire niente. */
+        if (typeof ev.webkitCompassHeading === 'number') h = ev.webkitCompassHeading;
+        else if (ev.absolute && typeof ev.alpha === 'number') h = (360 - ev.alpha) % 360;
+        if (h == null || isNaN(h)) return;
+        ultimo = (h + 360) % 360;
+      };
+      const chiudi = () => {
+        if (chiuso) return; chiuso = true;
+        window.removeEventListener('deviceorientationabsolute', su, true);
+        window.removeEventListener('deviceorientation', su, true);
+        clearTimeout(tempo);
+        if (ultimo == null) rifiuta(new Error('nessuna lettura dalla bussola'));
+        else risolvi(Math.round(ultimo));
+      };
+      window.addEventListener('deviceorientationabsolute', su, true);
+      window.addEventListener('deviceorientation', su, true);
+      const tempo = setTimeout(chiudi, attesa || 2500);
+    };
+
+    const DOE = window.DeviceOrientationEvent;
+    if (typeof DOE.requestPermission === 'function')
+      DOE.requestPermission().then(
+        p => p === 'granted' ? avvia() : rifiuta(new Error('permesso bussola negato')),
+        e => rifiuta(e));
+    else avvia();
+  });
+}
+
+/* Un vento costruito a mano vale quanto uno letto da un servizio: stessa
+   forma, così chi disegna non deve sapere da dove viene. */
+function ventoDa(velocita, verso, fonte){
+  const vs = ((Math.round(verso) % 360) + 360) % 360;
+  return {velocita: Math.round(velocita * 10) / 10, verso: vs,
+    provenienza: (vs + 180) % 360, fonte: fonte || '—', quando: null};
 }
 
 /* =======================================================================
@@ -145,19 +226,32 @@ function arco(centro, verso, metri, passo){
   return p;
 }
 
+/* Offset del fronte: ogni vertice avanza della stessa distanza nella
+   direzione del vento. Non è una parallela geometrica ma una traslazione,
+   che è quello che mostrano le figure 2 e 3 della pubblicazione. */
+const trasla = (punti, verso, metri) =>
+  punti.map(p => puntoDaAzimut(L.latLng(p.lat, p.lng), verso, metri));
+
 /* =======================================================================
    3. DISEGNO
-   Restituisce un LayerGroup: chi lo chiama decide dove metterlo e quando
+   Restituiscono un LayerGroup: chi lo chiama decide dove metterlo e quando
    toglierlo. Nulla di questo va nel GeoJSON esportato — è una previsione,
    non un rilievo, e si ricalcola quando cambia il vento.
    ===================================================================== */
+
+/* Modo 1 — settore circolare dal punto d'innesco.
+   `raggio0` è la distanza a cui sta il fronte adesso: se vale 0 il cono
+   parte dal vertice, come in figura 1; se vale qualcosa il primo arco è il
+   fronte rilevato (T0) e gli altri partono da lì. */
 function disegnaCono(origine, vento, opz){
   const o = opz || {};
   const col = o.colore || '#cc0000';
   const g = L.layerGroup();
   const verso = vento.verso;
-  const massima = distanzaFronte(vento.velocita, Math.max.apply(null, MINUTI));
-  const etichetta = o.etichetta || (m => `T+${m}`);
+  const r0 = Math.max(0, o.raggio0 || 0);
+  const minuti = o.minuti || MINUTI;
+  const massima = r0 + distanzaFronte(vento.velocita, Math.max.apply(null, minuti));
+  const etichetta = o.etichetta || (m => 'T+' + m);
 
   /* Il settore: due lati dal punto di origine e l'arco esterno a chiuderli.
      Campitura leggerissima — sotto ci deve restare leggibile la carta. */
@@ -169,11 +263,70 @@ function disegnaCono(origine, vento, opz){
   g.addLayer(L.polyline([origine, puntoDaAzimut(origine, verso, massima)],
     {color: col, weight: 2, dashArray: '10,6', interactive: false}));
 
+  /* Il fronte di adesso, quando è stato indicato: tratto grosso e continuo,
+     perché quello è rilevato e non stimato. */
+  if (r0 > 1){
+    const l0 = L.polyline(arco(origine, verso, r0),
+      {color: col, weight: 3.5, interactive: false});
+    l0.bindTooltip(`${o.etichetta0 || 'T0'} — ${Math.round(r0)} m`,
+      {permanent: true, direction: 'center', className: 'sitac-tip sitac-tip-arco'});
+    g.addLayer(l0);
+  }
+
   /* Un arco per ciascun tempo, con quanto avrà percorso il fronte. */
-  MINUTI.forEach(m => {
+  minuti.forEach(m => {
     const d = distanzaFronte(vento.velocita, m);
     if (d < 1) return;
-    const linea = L.polyline(arco(origine, verso, d),
+    const linea = L.polyline(arco(origine, verso, r0 + d),
+      {color: col, weight: 2.5, interactive: false});
+    linea.bindTooltip(`${etichetta(m)} — ${Math.round(d)} m`,
+      {permanent: true, direction: 'center', className: 'sitac-tip sitac-tip-arco'});
+    g.addLayer(linea);
+  });
+
+  return g;
+}
+
+/* Modo 2 — la linea del fronte rilevata a T0, traslata nel tempo.
+   Serve quando il fuoco è già lungo e il punto d'innesco non dice più
+   niente: quello che conta è dov'è il fronte adesso. */
+function disegnaFronti(vertici, vento, opz){
+  const o = opz || {};
+  const col = o.colore || '#cc0000';
+  const g = L.layerGroup();
+  const verso = vento.verso;
+  const minuti = o.minuti || MINUTI;
+  const etichetta = o.etichetta || (m => 'T+' + m);
+  const punti = vertici.map(p => L.latLng(p.lat, p.lng));
+
+  const massima = distanzaFronte(vento.velocita, Math.max.apply(null, minuti));
+
+  /* Il corridoio fra il fronte di adesso e quello finale: dice quale
+     striscia di terreno è in gioco nell'ora che viene. */
+  if (massima > 1){
+    const finale = trasla(punti, verso, massima);
+    g.addLayer(L.polygon(punti.concat(finale.slice().reverse()),
+      {color: col, weight: 1, dashArray: '6,5', fillColor: col, fillOpacity: .07,
+       interactive: false}));
+  }
+
+  /* T0: rilevato, quindi continuo e grosso. */
+  const l0 = L.polyline(punti, {color: col, weight: 3.5, interactive: false});
+  l0.bindTooltip(o.etichetta0 || 'T0',
+    {permanent: true, direction: 'center', className: 'sitac-tip sitac-tip-arco'});
+  g.addLayer(l0);
+
+  /* La bisettrice parte dal centro del fronte: è la stessa direzione del
+     vento, e serve a vedere subito da che parte si sta spostando tutto. */
+  const centro = punti[Math.floor(punti.length / 2)];
+  if (massima > 1)
+    g.addLayer(L.polyline([centro, puntoDaAzimut(centro, verso, massima)],
+      {color: col, weight: 2, dashArray: '10,6', interactive: false}));
+
+  minuti.forEach(m => {
+    const d = distanzaFronte(vento.velocita, m);
+    if (d < 1) return;
+    const linea = L.polyline(trasla(punti, verso, d),
       {color: col, weight: 2.5, interactive: false});
     linea.bindTooltip(`${etichetta(m)} — ${Math.round(d)} m`,
       {permanent: true, direction: 'center', className: 'sitac-tip sitac-tip-arco'});
@@ -184,13 +337,19 @@ function disegnaCono(origine, vento, opz){
 }
 
 NS.SitacVento = {
-  APERTURA, QUOTA_VENTO, MINUTI,
+  APERTURA, QUOTA_VENTO, MINUTI, SCALA,
   leggi: leggiVento,
   chiaveOWM,
   simboloVento,
   versoPropagazione,
+  arrotondaDecine,
+  bussolaDisponibile,
+  leggiBussola,
+  ventoDa,
   distanzaFronte,
-  disegnaCono
+  puntoDaAzimut,
+  disegnaCono,
+  disegnaFronti
 };
 
 })();
