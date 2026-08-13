@@ -2,13 +2,17 @@
  * FireOps VVF — sitac.js — SITAC incendio boschivo
  * Dipendenze (nell'ordine): Leaflet 1.9 · Geoman 2.15 · PolylineDecorator 1.6
  *                           sitac-simboli.js (dati della simbologia)
+ *                           sitac-vento.js (vento, cono, fronti)
  * Markup: sezione #sitac-aib di index.html
  * Stile:  style.css, sezione MODULI AGGIUNTIVI
  *
  * IMPIANTO
- * Due colonne: a sinistra i comandi, a destra la mappa. La barra è fatta di
- * fisarmoniche che si aprono UNA ALLA VOLTA: la tavola SITAC ha 59 voci e
- * tenerle tutte aperte significa scorrere invece di scegliere.
+ * Due colonne: a sinistra i comandi, a destra la mappa. La barra segue
+ * l'ordine in cui una SITAC si compila davvero — intervento, posizione,
+ * area d'origine, vento, fronte, superficie, e solo dopo le quattro tavole
+ * della pubblicazione. La sequenza SUGGERISCE, non impone: una SITAC si
+ * apre spesso a incendio già in corso, col numero d'intervento che arriva
+ * dopo e il fronte dettato per radio.
  *
  * NIENTE DIALOGHI DEL BROWSER
  * prompt() e confirm() intestano la finestra col dominio del sito
@@ -16,15 +20,16 @@
  * nessuno. Al loro posto c'è un modale interno che dice FireOps VVF.
  *
  * DIREZIONE A DUE PUNTI
- * I simboli orientabili (vento, pendenze, assi di propagazione) non
+ * I simboli orientabili (vento, pendenze, lanci, Transit Point) non
  * chiedono un azimut da digitare: si posa il simbolo, si clicca dove
  * punta, e resta una maniglia trascinabile. Su una carta si ragiona per
  * direzioni viste, non per gradi.
  *
  * STATO PREVISTO / IN ATTO
  * La tavola distingue ciò che è pianificato da ciò che è in atto. Non sono
- * voci separate ma un interruttore in cima: vale per il prossimo elemento
- * disegnato e viaggia nel GeoJSON insieme al tipo.
+ * voci separate ma un interruttore in cima, che resta fisso mentre si
+ * scorre: vale per il prossimo elemento disegnato e viaggia nel GeoJSON
+ * insieme al tipo.
  */
 (function () {
 'use strict';
@@ -52,22 +57,18 @@ function avvia(app){
 
   const L10N = {
     it:{
-      sub:'Scegli lo stato, poi uno strumento, poi disegna sulla mappa. Doppio clic o Invio per chiudere una linea.',
+      sub:'Segui i passi a sinistra: prima i dati, poi lo scenario, poi le quattro tavole. Doppio clic o Invio per chiudere una linea.',
       gStato:'Stato', statoPrevisto:'Previsto', statoAttivo:'In atto',
       nIntervento:'N. intervento', nDos:'DOS', dosAiuto:'Lettera e tre cifre, es. A123',
       ventoLeggo:'Lettura del vento in corso…',
-      ventoOk:'Vento {v} km/h da {p}°, fonte {f}.\nCono di propagazione a {a}° · fronte a {d} m in un\'ora.',
-      ventoErrore:'Vento non disponibile: {e}\nIl punto di origine resta, senza cono.',
-      conoRifatto:'Cono ricalcolato sulla nuova origine.',
+      ventoErrore:'Vento non disponibile: {e}',
       gPunti:'Punti', gLinee:'Linee', gAree:'Aree',
-      cZona:'Zona di intervento', cIncendio:'Evoluzione dell\u2019incendio',
-      cDispositivo:'Dispositivo', cAzioni:'Azioni', cPerimetri:'Perimetri',
       areeFuori:'Perimetri fuori tavola SITAC: servono al calcolo di superficie e perimetro.',
       gModifica:'Modifica', gMappa:'Mappa e dati', gEsporta:'Esportazione',
       legenda:'Legenda', legVuota:'Nessun elemento sulla mappa.',
       bSposta:'Sposta', bElimina:'Elimina', bAnnulla:'Annulla ultimo', bPulisci:'Cancella tutto',
       bSfondo:'Sfondo', bImporta:'Importa', bStampa:'Stampa PDF', bCentra:'Centra sulla mia posizione',
-      pronto:'Pronto.\nApri un gruppo a sinistra e scegli uno strumento.',
+      pronto:'Pronto.\nApri un passo a sinistra e scegli uno strumento.',
       spento:'Strumento disattivato.',
       suggLinea:'Clic per i vertici, doppio clic per chiudere.',
       suggArea:'Clic per i vertici, clic sul primo per chiudere.',
@@ -95,22 +96,18 @@ function avvia(app){
       stTitolo:'SITAC — Incendio boschivo', stData:'Redatta il {d}'
     },
     en:{
-      sub:'Pick a state, then a tool, then draw on the map. Double-click or Enter closes a line.',
+      sub:'Follow the steps on the left: data first, then the scenario, then the four tables. Double-click or Enter closes a line.',
       gStato:'State', statoPrevisto:'Planned', statoAttivo:'Active',
       nIntervento:'Incident no.', nDos:'DOS', dosAiuto:'One letter and three digits, e.g. A123',
       ventoLeggo:'Reading wind data…',
-      ventoOk:'Wind {v} km/h from {p}°, source {f}.\nSpread cone {a}° · front at {d} m in one hour.',
-      ventoErrore:'Wind unavailable: {e}\nThe point of origin stays, without the cone.',
-      conoRifatto:'Cone recomputed on the new origin.',
+      ventoErrore:'Wind unavailable: {e}',
       gPunti:'Points', gLinee:'Lines', gAree:'Areas',
-      cZona:'Operating area', cIncendio:'Fire progression',
-      cDispositivo:'Deployed means', cAzioni:'Actions', cPerimetri:'Perimeters',
       areeFuori:'Polygons outside the SITAC table: used to compute area and perimeter.',
       gModifica:'Edit', gMappa:'Map and data', gEsporta:'Export',
       legenda:'Legend', legVuota:'Nothing on the map yet.',
       bSposta:'Move', bElimina:'Delete', bAnnulla:'Undo last', bPulisci:'Clear all',
       bSfondo:'Basemap', bImporta:'Import', bStampa:'Print PDF', bCentra:'Centre on my position',
-      pronto:'Ready.\nOpen a group on the left and pick a tool.',
+      pronto:'Ready.\nOpen a step on the left and pick a tool.',
       spento:'Tool switched off.',
       suggLinea:'Click each vertex, double-click to close.',
       suggArea:'Click each vertex, click the first one to close.',
@@ -138,22 +135,18 @@ function avvia(app){
       stTitolo:'SITAC — Wildfire', stData:'Drawn on {d}'
     },
     fr:{
-      sub:'Choisissez un état, puis un outil, puis dessinez sur la carte. Double-clic ou Entrée pour fermer une ligne.',
+      sub:'Suivez les étapes à gauche : les données, puis la situation, puis les quatre tableaux. Double-clic ou Entrée pour fermer une ligne.',
       gStato:'État', statoPrevisto:'Prévu', statoAttivo:'En cours',
       nIntervento:'N° d\'intervention', nDos:'DOS', dosAiuto:'Une lettre et trois chiffres, ex. A123',
       ventoLeggo:'Lecture du vent en cours…',
-      ventoOk:'Vent {v} km/h de {p}°, source {f}.\nCône de propagation {a}° · front à {d} m en une heure.',
-      ventoErrore:'Vent indisponible : {e}\nLe point d\'origine reste, sans le cône.',
-      conoRifatto:'Cône recalculé sur la nouvelle origine.',
+      ventoErrore:'Vent indisponible : {e}',
       gPunti:'Points', gLinee:'Lignes', gAree:'Zones',
-      cZona:'Zone d\u2019intervention', cIncendio:'Évolution de l\u2019incendie',
-      cDispositivo:'Moyens engagés', cAzioni:'Actions', cPerimetri:'Périmètres',
       areeFuori:'Polygones hors tableau SITAC : ils servent au calcul de la surface et du périmètre.',
       gModifica:'Modifier', gMappa:'Carte et données', gEsporta:'Exportation',
       legenda:'Légende', legVuota:'Rien sur la carte pour le moment.',
       bSposta:'Déplacer', bElimina:'Supprimer', bAnnulla:'Annuler le dernier', bPulisci:'Tout effacer',
       bSfondo:'Fond de carte', bImporta:'Importer', bStampa:'Imprimer PDF', bCentra:'Centrer sur ma position',
-      pronto:'Prêt.\nOuvrez un groupe à gauche et choisissez un outil.',
+      pronto:'Prêt.\nOuvrez une étape à gauche et choisissez un outil.',
       spento:'Outil désactivé.',
       suggLinea:'Cliquez chaque sommet, double-clic pour fermer.',
       suggArea:'Cliquez chaque sommet, cliquez le premier pour fermer.',
@@ -181,22 +174,18 @@ function avvia(app){
       stTitolo:'SITAC — Feu de forêt', stData:'Établie le {d}'
     },
     es:{
-      sub:'Elige un estado, luego una herramienta y dibuja en el mapa. Doble clic o Intro para cerrar una línea.',
+      sub:'Sigue los pasos de la izquierda: primero los datos, luego la situación, luego las cuatro tablas. Doble clic o Intro para cerrar una línea.',
       gStato:'Estado', statoPrevisto:'Previsto', statoAttivo:'En curso',
       nIntervento:'N.º de intervención', nDos:'DOS', dosAiuto:'Una letra y tres cifras, p. ej. A123',
       ventoLeggo:'Leyendo el viento…',
-      ventoOk:'Viento {v} km/h de {p}°, fuente {f}.\nCono de propagación {a}° · frente a {d} m en una hora.',
-      ventoErrore:'Viento no disponible: {e}\nEl punto de origen permanece, sin el cono.',
-      conoRifatto:'Cono recalculado sobre el nuevo origen.',
+      ventoErrore:'Viento no disponible: {e}',
       gPunti:'Puntos', gLinee:'Líneas', gAree:'Áreas',
-      cZona:'Zona de intervención', cIncendio:'Evolución del incendio',
-      cDispositivo:'Medios desplegados', cAzioni:'Acciones', cPerimetri:'Perímetros',
       areeFuori:'Polígonos fuera de la tabla SITAC: sirven para calcular superficie y perímetro.',
       gModifica:'Editar', gMappa:'Mapa y datos', gEsporta:'Exportación',
       legenda:'Leyenda', legVuota:'Todavía no hay nada en el mapa.',
       bSposta:'Mover', bElimina:'Eliminar', bAnnulla:'Deshacer último', bPulisci:'Borrar todo',
       bSfondo:'Fondo', bImporta:'Importar', bStampa:'Imprimir PDF', bCentra:'Centrar en mi posición',
-      pronto:'Listo.\nAbre un grupo a la izquierda y elige una herramienta.',
+      pronto:'Listo.\nAbre un paso a la izquierda y elige una herramienta.',
       spento:'Herramienta desactivada.',
       suggLinea:'Haz clic en cada vértice, doble clic para cerrar.',
       suggArea:'Haz clic en cada vértice, clic en el primero para cerrar.',
@@ -225,19 +214,21 @@ function avvia(app){
     }
   };
 
-  /* Le voci del percorso guidato del cono stanno qui in blocco invece che
-     dentro L10N: sono un aggiunta successiva e tenerle insieme rende
-     evidente cosa appartiene al cono e cosa alla tavola. */
-  const L10N_CONO = {
-    it:{ bCono:'Cono di propagazione',
+  /* Le voci dei passi e del percorso guidato del cono stanno qui in blocco
+     invece che dentro L10N: sono un'aggiunta successiva, e tenerle insieme
+     rende evidente cosa appartiene al percorso e cosa alla tavola. Quello
+     che manca in una lingua ricade sull'italiano, come fa `t`. */
+  const L10N_EXTRA = {
+    it:{ bCono:'Aggiungi cono',
       conoModo:'Come si costruisce il cono?',
       conoSettore:'Dal punto d\u2019innesco', conoSettoreNota:'Settore a 30° dall\u2019origine; un secondo clic dice dove sta il fronte adesso (T0).',
       conoFronte:'Dalla linea del fronte', conoFronteNota:'Si disegna il fronte rilevato e lo si fa avanzare a 15, 30 e 60 minuti.',
       conoTerzo:'Pendenza e vento composti', conoStandby:'Non ancora disponibile (fig. 4 e 5 della pubblicazione).',
-      conoVia:'Togli il cono', conoViaNota:'Rimuove la previsione dalla carta.', conoTolto:'Cono rimosso.',
+      conoVia:'Togli tutti i coni', conoViaNota:'Rimuove le previsioni dalla carta.', conoTolto:'Coni rimossi.',
       conoAnnullato:'Cono annullato.',
       conoClicOrigine:'Clicca sulla mappa il punto d\u2019innesco.',
       conoClicFronte:'Clicca dove sta il fronte adesso (T0).',
+      conoClicVento:'Clicca sulla mappa nella direzione verso cui va il vento.',
       conoDisegnaFronte:'Disegna la linea del fronte: clic sui vertici, doppio clic per chiudere.',
       conoDirezione:'Direzione del vento', dirWeb:'Da servizio meteo', dirWebNota:'Open-Meteo, MET Norway, OpenWeatherMap in cascata.',
       dirBussola:'Punta il telefono verso il fumo', dirBussolaNota:'Tieni il telefono verso il fronte e conferma: si legge la bussola.',
@@ -249,7 +240,7 @@ function avvia(app){
       conoAvanza:'il fuoco avanza di {m} m in un\u2019ora', conoT0:'T0 — fronte rilevato',
       conoFatto:'Cono {a}° · vento {v} km/h verso {d}° ({f})\nFronte a {m} m in un\u2019ora.',
       vento_debole:'Intensit\u00e0 debole', vento_moderato:'Intensit\u00e0 moderata', vento_forte:'Intensit\u00e0 forte',
-      gDati:'Dati intervento', nNominativo:'Nominativo', nTelefono:'Telefono',
+      nNominativo:'Nominativo', nTelefono:'Telefono',
       nPosizione:'Posizione attuale', bConvalida:'Convalida',
       datiOk:'Dati convalidati: intervento {i}, {n}.',
       datiMancanti:'Mancano o non sono validi: {c}',
@@ -261,18 +252,19 @@ function avvia(app){
       pFatto:'\u2713', pManca:'da fare',
       pInneschi:'{n} sul terreno', pFronti:'{n} tracciati', pConi:'{n} coni',
       pEttari:'{v} ha', pNessuno:'nessuno',
-      bInnesco:'Posa area d\u2019origine', bFronte:'Traccia fronte', bCono:'Aggiungi cono',
       dosDove:'Posizione rilevata. Cosa ne faccio?',
       dosPosa:'Posa qui il simbolo DOS', dosSposta:'Sposta qui il DOS',
       dosSolo:'Tieni solo le coordinate', dosPosato:'DOS posato sulla posizione rilevata.' },
-    en:{ bCono:'Spread cone', conoModo:'How should the cone be built?',
+
+    en:{ bCono:'Add cone', conoModo:'How should the cone be built?',
       conoSettore:'From the point of origin', conoSettoreNota:'30° sector from the origin; a second click marks where the front is now (T0).',
       conoFronte:'From the fire front line', conoFronteNota:'Draw the observed front and push it forward at 15, 30 and 60 minutes.',
       conoTerzo:'Slope and wind combined', conoStandby:'Not available yet (fig. 4 and 5 of the publication).',
-      conoVia:'Remove the cone', conoViaNota:'Takes the forecast off the map.', conoTolto:'Cone removed.',
+      conoVia:'Remove every cone', conoViaNota:'Takes the forecasts off the map.', conoTolto:'Cones removed.',
       conoAnnullato:'Cone cancelled.',
       conoClicOrigine:'Click the point of origin on the map.',
       conoClicFronte:'Click where the front is right now (T0).',
+      conoClicVento:'Click on the map in the direction the wind is going.',
       conoDisegnaFronte:'Draw the front line: click each vertex, double-click to close.',
       conoDirezione:'Wind direction', dirWeb:'From weather service', dirWebNota:'Open-Meteo, MET Norway, OpenWeatherMap in turn.',
       dirBussola:'Point the phone at the smoke', dirBussolaNota:'Hold the phone towards the front and confirm: the compass is read.',
@@ -284,15 +276,31 @@ function avvia(app){
       conoAvanza:'fire advances {m} m in one hour', conoT0:'T0 — observed front',
       conoFatto:'Cone {a}° · wind {v} km/h towards {d}° ({f})\nFront at {m} m in one hour.',
       vento_debole:'Light', vento_moderato:'Moderate', vento_forte:'Strong',
-      statoPrevista:'Planned', statoAttiva:'Active', statoEffettuata:'Done' },
-    fr:{ bCono:'C\u00f4ne de propagation', conoModo:'Comment construire le c\u00f4ne ?',
+      nNominativo:'Name', nTelefono:'Phone',
+      nPosizione:'Current position', bConvalida:'Validate',
+      datiOk:'Data validated: incident {i}, {n}.',
+      datiMancanti:'Missing or invalid: {c}',
+      statoPrevista:'Planned', statoAttiva:'Active', statoEffettuata:'Done',
+      stVento:'Wind {v} km/h towards {d}° (read at {o})',
+      p1:'Incident', p2:'DOS position', p3:'Area of origin',
+      p4:'Wind and cones', p5:'Fire front', p6:'Area involved',
+      p2Nota:'This reads where this device is: in the control room that is not where the DOS stands.',
+      pFatto:'\u2713', pManca:'to do',
+      pInneschi:'{n} on the ground', pFronti:'{n} drawn', pConi:'{n} cones',
+      pEttari:'{v} ha', pNessuno:'none',
+      dosDove:'Position acquired. What should I do with it?',
+      dosPosa:'Place the DOS symbol here', dosSposta:'Move the DOS here',
+      dosSolo:'Keep the coordinates only', dosPosato:'DOS placed on the acquired position.' },
+
+    fr:{ bCono:'Ajouter un c\u00f4ne', conoModo:'Comment construire le c\u00f4ne ?',
       conoSettore:'Depuis le point d\u2019origine', conoSettoreNota:'Secteur \u00e0 30° depuis l\u2019origine ; un second clic indique o\u00f9 est le front (T0).',
       conoFronte:'Depuis la ligne de front', conoFronteNota:'Tracez le front relev\u00e9 et faites-le avancer \u00e0 15, 30 et 60 minutes.',
       conoTerzo:'Pente et vent compos\u00e9s', conoStandby:'Pas encore disponible (fig. 4 et 5 de la publication).',
-      conoVia:'Retirer le c\u00f4ne', conoViaNota:'Enl\u00e8ve la pr\u00e9vision de la carte.', conoTolto:'C\u00f4ne retir\u00e9.',
+      conoVia:'Retirer tous les c\u00f4nes', conoViaNota:'Enl\u00e8ve les pr\u00e9visions de la carte.', conoTolto:'C\u00f4nes retir\u00e9s.',
       conoAnnullato:'C\u00f4ne annul\u00e9.',
       conoClicOrigine:'Cliquez le point d\u2019origine sur la carte.',
       conoClicFronte:'Cliquez o\u00f9 se trouve le front maintenant (T0).',
+      conoClicVento:'Cliquez sur la carte dans la direction o\u00f9 va le vent.',
       conoDisegnaFronte:'Tracez la ligne de front : cliquez chaque sommet, double-clic pour fermer.',
       conoDirezione:'Direction du vent', dirWeb:'Depuis un service m\u00e9t\u00e9o', dirWebNota:'Open-Meteo, MET Norway, OpenWeatherMap tour \u00e0 tour.',
       dirBussola:'Pointez le t\u00e9l\u00e9phone vers la fum\u00e9e', dirBussolaNota:'Tenez le t\u00e9l\u00e9phone vers le front et confirmez : la boussole est lue.',
@@ -304,18 +312,34 @@ function avvia(app){
       conoAvanza:'le feu avance de {m} m en une heure', conoT0:'T0 — front relev\u00e9',
       conoFatto:'C\u00f4ne {a}° · vent {v} km/h vers {d}° ({f})\nFront \u00e0 {m} m en une heure.',
       vento_debole:'Faible', vento_moderato:'Mod\u00e9r\u00e9e', vento_forte:'Forte',
-      statoPrevista:'Pr\u00e9vue', statoAttiva:'En cours', statoEffettuata:'Effectu\u00e9e' },
-    es:{ bCono:'Cono de propagaci\u00f3n', conoModo:'\u00bfC\u00f3mo se construye el cono?',
+      nNominativo:'Nom', nTelefono:'T\u00e9l\u00e9phone',
+      nPosizione:'Position actuelle', bConvalida:'Valider',
+      datiOk:'Donn\u00e9es valid\u00e9es : intervention {i}, {n}.',
+      datiMancanti:'Manquant ou invalide : {c}',
+      statoPrevista:'Pr\u00e9vue', statoAttiva:'En cours', statoEffettuata:'Effectu\u00e9e',
+      stVento:'Vent {v} km/h vers {d}° (relev\u00e9 \u00e0 {o})',
+      p1:'Intervention', p2:'Position DOS', p3:'Zone d\u2019origine',
+      p4:'Vent et c\u00f4nes', p5:'Front de flamme', p6:'Surface concern\u00e9e',
+      p2Nota:'Le relev\u00e9 donne la position de cet appareil : en salle op\u00e9rationnelle ce n\u2019est pas celle du DOS.',
+      pFatto:'\u2713', pManca:'\u00e0 faire',
+      pInneschi:'{n} sur le terrain', pFronti:'{n} trac\u00e9s', pConi:'{n} c\u00f4nes',
+      pEttari:'{v} ha', pNessuno:'aucun',
+      dosDove:'Position relev\u00e9e. Qu\u2019en fait-on ?',
+      dosPosa:'Poser ici le symbole DOS', dosSposta:'D\u00e9placer le DOS ici',
+      dosSolo:'Garder seulement les coordonn\u00e9es', dosPosato:'DOS pos\u00e9 sur la position relev\u00e9e.' },
+
+    es:{ bCono:'A\u00f1adir cono', conoModo:'\u00bfC\u00f3mo se construye el cono?',
       conoSettore:'Desde el punto de origen', conoSettoreNota:'Sector de 30° desde el origen; un segundo clic marca d\u00f3nde est\u00e1 el frente (T0).',
       conoFronte:'Desde la l\u00ednea del frente', conoFronteNota:'Dibuja el frente observado y hazlo avanzar a 15, 30 y 60 minutos.',
       conoTerzo:'Pendiente y viento compuestos', conoStandby:'A\u00fan no disponible (fig. 4 y 5 de la publicaci\u00f3n).',
-      conoVia:'Quitar el cono', conoViaNota:'Retira la previsi\u00f3n del mapa.', conoTolto:'Cono retirado.',
+      conoVia:'Quitar todos los conos', conoViaNota:'Retira las previsiones del mapa.', conoTolto:'Conos retirados.',
       conoAnnullato:'Cono cancelado.',
       conoClicOrigine:'Haz clic en el punto de origen.',
       conoClicFronte:'Haz clic donde est\u00e1 el frente ahora (T0).',
+      conoClicVento:'Haz clic en el mapa hacia donde va el viento.',
       conoDisegnaFronte:'Dibuja la l\u00ednea del frente: clic en cada v\u00e9rtice, doble clic para cerrar.',
       conoDirezione:'Direcci\u00f3n del viento', dirWeb:'Desde servicio meteorol\u00f3gico', dirWebNota:'Open-Meteo, MET Norway, OpenWeatherMap en cascada.',
-      dirBussola:'Apunta el m\u00f3vil hacia el humo', dirBussolaNota:'Sostén el m\u00f3vil hacia el frente y confirma: se lee la br\u00fajula.',
+      dirBussola:'Apunta el m\u00f3vil hacia el humo', dirBussolaNota:'Sost\u00e9n el m\u00f3vil hacia el frente y confirma: se lee la br\u00fajula.',
       dirBussolaNo:'Br\u00fajula no disponible en este dispositivo.',
       dirMappa:'Elecci\u00f3n en el mapa', dirMappaNota:'Un clic en la direcci\u00f3n hacia la que va el viento.',
       bussolaLeggo:'Leyendo la br\u00fajula\u2026 mant\u00e9n el m\u00f3vil quieto.',
@@ -324,9 +348,23 @@ function avvia(app){
       conoAvanza:'el fuego avanza {m} m en una hora', conoT0:'T0 — frente observado',
       conoFatto:'Cono {a}° · viento {v} km/h hacia {d}° ({f})\nFrente a {m} m en una hora.',
       vento_debole:'D\u00e9bil', vento_moderato:'Moderada', vento_forte:'Fuerte',
-      statoPrevista:'Prevista', statoAttiva:'Activa', statoEffettuata:'Efectuada' }
+      nNominativo:'Nombre', nTelefono:'Tel\u00e9fono',
+      nPosizione:'Posici\u00f3n actual', bConvalida:'Validar',
+      datiOk:'Datos validados: intervenci\u00f3n {i}, {n}.',
+      datiMancanti:'Faltan o no son v\u00e1lidos: {c}',
+      statoPrevista:'Prevista', statoAttiva:'Activa', statoEffettuata:'Efectuada',
+      stVento:'Viento {v} km/h hacia {d}° (medido a las {o})',
+      p1:'Intervenci\u00f3n', p2:'Posici\u00f3n DOS', p3:'\u00c1rea de origen',
+      p4:'Viento y conos', p5:'Frente de llama', p6:'Superficie afectada',
+      p2Nota:'La medici\u00f3n da la posici\u00f3n de este dispositivo: en sala no es la del DOS.',
+      pFatto:'\u2713', pManca:'pendiente',
+      pInneschi:'{n} en el terreno', pFronti:'{n} trazados', pConi:'{n} conos',
+      pEttari:'{v} ha', pNessuno:'ninguno',
+      dosDove:'Posici\u00f3n obtenida. \u00bfQu\u00e9 hago con ella?',
+      dosPosa:'Coloca aqu\u00ed el s\u00edmbolo DOS', dosSposta:'Mueve aqu\u00ed el DOS',
+      dosSolo:'Conserva solo las coordenadas', dosPosato:'DOS colocado en la posici\u00f3n obtenida.' }
   };
-  Object.keys(L10N_CONO).forEach(k => Object.assign(L10N[k], L10N_CONO[k]));
+  Object.keys(L10N_EXTRA).forEach(k => Object.assign(L10N[k], L10N_EXTRA[k]));
 
   let lingua = 'it';
   const t = (chiave, val) => {
@@ -345,9 +383,9 @@ function avvia(app){
   const LIN = NS.SITAC_LINEE   || {};
   const COL = NS.SITAC_COLORI  || {rosso:'#cc0000', verde:'#009900'};
 
-  /* Le quattro tavole della pubblicazione, coi riquadri interni: la barra
-     riproduce la stessa partizione del documento, così chi ha in mano il
-     pieghevole ritrova le voci dove se le aspetta. */
+  /* Le quattro tavole della pubblicazione, coi riquadri interni: i passi
+     7-10 riproducono la stessa partizione del documento, così chi ha in
+     mano il pieghevole ritrova le voci dove se le aspetta. */
   const TAVOLE = NS.SITAC_TAVOLE || [];
   const RIQUADRI = NS.SITAC_RIQUADRI || {};
   const VECCHI = NS.SITAC_VECCHI || {};
@@ -369,6 +407,9 @@ function avvia(app){
     bonificata: {color:'#0070c0', fillColor:'#0070c0', fillOpacity:.15, weight:2,
       n:{it:'Zona bonificata', en:'Mopped up area', fr:'Zone noyée', es:'Zona liquidada'}}
   };
+  /* Solo queste due contano come "superficie coinvolta": le altre sono
+     zone di gestione, non terreno bruciato o in fiamme. */
+  const AREE_SUPERFICIE = ['percorsa', 'attiva'];
 
   /* Annotazione libera: non è nella tavola, ma scrivere un orario o un
      nome sulla carta è la cosa che si fa più spesso in sala operativa. */
@@ -401,9 +442,9 @@ function avvia(app){
       return L.divIcon({className:'sitac-etichetta', html: esc(o.testo || ''),
         iconSize:null, iconAnchor:[0,10]});
     /* `rotazione` è un azimut vero; `r0` dice verso dove punta il disegno
-       così com'è (il vento è disegnato verso ovest, la pendenza verso sud-
-       ovest). Senza la differenza i simboli escono ruotati di novanta gradi
-       e le squadre leggono una direzione sbagliata. */
+       così com'è (il vento è disegnato verso ovest, la pendenza verso
+       sud-ovest). Senza la differenza i simboli escono ruotati di novanta
+       gradi e le squadre leggono una direzione sbagliata. */
     const d0 = (SIM[k] && SIM[k].r0) || 0;
     const gir = o.rotazione != null
       ? ` style="transform:rotate(${((o.rotazione - d0) % 360 + 360) % 360}deg)"` : '';
@@ -415,7 +456,7 @@ function avvia(app){
   /* Opzioni di stile per Leaflet: le chiavi nostre non devono arrivargli.
      Previsto = tratto spezzato, come nella tavola. */
   function stileLinea(d, stato){
-    const {n, deco, badge, stati, g, ...resto} = d;
+    const {n, deco, badge, stati, g, sg, r0, ...resto} = d;
     if (stati && stato === 'previsto')
       return Object.assign({}, resto, {dashArray: resto.dashArray || '9,7'});
     return resto;
@@ -435,10 +476,11 @@ function avvia(app){
       modale.querySelector('.sitac-modale-titolo').textContent = t('titoloModale');
       modale.querySelector('.sitac-modale-testo').textContent = opz.testo || '';
       const input = modale.querySelector('#sitac-modale-input');
+      const ok = modale.querySelector('#sitac-modale-ok');
       input.style.display = soloConferma ? 'none' : '';
       input.value = opz.valore || '';
-      modale.querySelector('#sitac-modale-ok').textContent = t('ok');
-      modale.querySelector('#sitac-modale-ok').style.display = '';
+      ok.textContent = t('ok');
+      ok.style.display = '';   // scegli() lo nasconde: qui va rimesso
       modale.querySelector('#sitac-modale-no').textContent = t('annulla');
       modale.hidden = false;
 
@@ -448,13 +490,13 @@ function avvia(app){
         risolvi(val);
       };
       chiudiModale = () => fine(null);
-      modale.querySelector('#sitac-modale-ok').onclick = () => fine(soloConferma ? true : input.value.trim());
+      ok.onclick = () => fine(soloConferma ? true : input.value.trim());
       modale.querySelector('#sitac-modale-no').onclick = () => fine(null);
       input.onkeydown = e => {
         if (e.key === 'Enter'){ e.preventDefault(); fine(input.value.trim()); }
         if (e.key === 'Escape') fine(null);
       };
-      setTimeout(() => (soloConferma ? modale.querySelector('#sitac-modale-ok') : input).focus(), 30);
+      setTimeout(() => (soloConferma ? ok : input).focus(), 30);
     });
   }
 
@@ -514,7 +556,7 @@ function avvia(app){
   }
 
   /* =======================================================================
-     2bis. INTESTAZIONE DELLA CARTA
+     2bis. PASSI 1 e 2: INTESTAZIONE E POSIZIONE
      Numero d'intervento e DOS non sono un vezzo burocratico: una SITAC che
      gira fra sale operative e squadre senza dire a quale intervento si
      riferisce, e chi la firma, non serve a niente. Finiscono nel GeoJSON,
@@ -525,8 +567,6 @@ function avvia(app){
   const inNominativo = q('#sitac-nominativo');
   const inTelefono   = q('#sitac-telefono');
   const inPosizione  = q('#sitac-posizione');
-  const boxDati      = q('#sitac-dati');
-  const bDati        = q('#sitac-bDati');
   const CHIAVE_SESS  = 'fireops_sitac_intestazione';
 
   /* Il DOS è una lettera e tre cifre (A123): la maschera corregge mentre si
@@ -554,7 +594,7 @@ function avvia(app){
         nominativo: inNominativo.value, telefono: inTelefono.value,
         posizione: inPosizione.value}));
     } catch(e){ /* sessione non disponibile: si perde solo il ricordo */ }
-  aggiornaPassi();
+    aggiornaPassi();
   }
   inIntervento.oninput = () => {
     inIntervento.value = inIntervento.value.replace(/[^0-9]/g, '');
@@ -567,6 +607,9 @@ function avvia(app){
     segnaIntestazione();
   };
 
+  /* Il GPS risponde anche all'avvio, quando `centraSuGps(false)` centra la
+     mappa da solo: senza questa spia la posizione ripristinata dalla
+     sessione verrebbe sovrascritta senza che nessuno l'abbia chiesto. */
   let chiedePosizione = false;
   q('#sitac-bPosizione').onclick = () => { chiedePosizione = true; centraSuGps(true); };
 
@@ -592,12 +635,14 @@ function avvia(app){
       {k:'solo', et: t('dosSolo')}
     ]});
     if (scelta !== 'posa') return;
-    if (gia){ gia.setLatLng(latlng); }
-    else {
+    if (gia){
+      gia.setLatLng(latlng);
+    } else {
       const m = L.marker(latlng, {draggable:true,
         icon: iconaSimbolo('dos', {stato:'attivo'})});
       m._tipo = 'dos'; m._genere = 'simbolo'; m._stato = 'attivo';
       m._testo = inDos.value || null;
+      m.on('pm:remove', () => scollega(m));
       disegni.addLayer(m);
       etichettaElemento(m);
     }
@@ -606,7 +651,8 @@ function avvia(app){
   }
 
   /* Convalida: la posizione resta facoltativa, perché il GPS in sala
-     operativa non dice niente di utile e su http non locale è bloccato. */
+     operativa non dice niente di utile e su http non locale è bloccato.
+     Il segno verde sulla testata del passo 1 lo scrive aggiornaPassi. */
   q('#sitac-bConvalida').onclick = () => {
     const manca = [];
     if (!interventoValido()) manca.push(t('nIntervento'));
@@ -614,14 +660,8 @@ function avvia(app){
     if (!inNominativo.value.trim()) manca.push(t('nNominativo'));
     if (!telefonoValido()) manca.push(t('nTelefono'));
     segnaIntestazione();
-    if (manca.length){
-      bDati.classList.remove('convalidato');
-      return stato(t('datiMancanti', {c: manca.join(', ')}));
-    }
-    apriDati(false);
-    bDati.classList.add('convalidato');
+    if (manca.length) return stato(t('datiMancanti', {c: manca.join(', ')}));
     stato(t('datiOk', {i: inIntervento.value, n: inNominativo.value.trim()}));
-    aggiornaPassi();
   };
 
   try {
@@ -664,7 +704,7 @@ function avvia(app){
   L.control.scale({imperial:false}).addTo(map);
 
   const disegni = L.featureGroup().addTo(map);   // esportabile
-  const decori  = L.layerGroup().addTo(map);     // motivi e maniglie: mai esportati
+  const decori  = L.layerGroup().addTo(map);     // motivi, maniglie, coni: mai esportati
   map.pm.setGlobalOptions({layerGroup: disegni, snappable:true, snapDistance:15,
     templineStyle:{color:COL.rosso}, hintlineStyle:{color:COL.rosso, dashArray:'5,5'}});
 
@@ -683,7 +723,7 @@ function avvia(app){
     if (cerchioPosizione) decori.removeLayer(cerchioPosizione);
     cerchioPosizione = L.circleMarker(e.latlng, {radius:7, color:'#fff', weight:2,
       fillColor:'#0070c0', fillOpacity:1, interactive:false}).addTo(decori);
-      const chiesta = chiedePosizione;
+    const chiesta = chiedePosizione;
     chiedePosizione = false;
     if (chiesta || !inPosizione.value) scriviPosizione(e.latlng, e.accuracy);
     if (chiesta) offriDos(e.latlng);
@@ -736,6 +776,8 @@ function avvia(app){
         symbol: L.Symbol.arrowHead({pixelSize: dc.dim, headAngle: 60, polygon: !!pieno,
           pathOptions:{color:col, fillColor:col, fillOpacity: pieno ? 1 : 0,
             weight: pieno ? 1 : 2.5}})};
+    /* `dritto` per i glifi che non vanno ruotati lungo il percorso: il
+       pilone del filo a sbalzo sta in piedi, non segue la campata. */
     return {offset: dc.passo === '50%' ? '50%' : 8, repeat: dc.passo,
       symbol: L.Symbol.marker({rotate: !dc.dritto,
         markerOptions:{icon: glifoDeco(dc.tipo, dc.dim, col, pieno), interactive:false}})};
@@ -827,24 +869,23 @@ function avvia(app){
   }
 
   /* =======================================================================
-     5bis. CONO DI PROPAGAZIONE
-     Non è più agganciato all'area d'origine: si preme il pulsante e si
-     risponde a tre domande — come si costruisce, da dove viene la direzione
-     del vento, quanto forte soffia. Il cono NON è un rilievo ma una stima,
-     e infatti non finisce nel GeoJSON: sta nei decori e si rifà quando
-     l'origine si sposta.
+     5bis. VENTO E CONI DI PROPAGAZIONE
+     Si preme il pulsante del passo 4 e si risponde a tre domande: come si
+     costruisce il cono, da dove viene la direzione del vento, quanto forte
+     soffia. I coni NON sono rilievi ma stime, quindi stanno nei decori e
+     non finiscono nel GeoJSON come geometrie: nel file viaggia il dato del
+     vento, con l'ora in cui è stato letto, e da quello si ricostruiscono.
      ===================================================================== */
-  let ventoCono = null;
+  let ventoCono = null;      // ultimo vento noto: quadro, export e stampa
   let attesaClic = null;
   let attesaLinea = null;
 
   /* Più coni sulla stessa carta: un incendio con due fronti attivi ne
-     vuole due, e cancellare il precedente ogni volta era il motivo per cui
-     non si potevano confrontare. Il vento è uno solo — lo rileva la stessa
-     persona — ma ogni cono può derogare sulla direzione locale. */
+     vuole due, e cancellare il precedente ogni volta impediva di
+     confrontarli. Il vento è uno solo — lo rileva la stessa persona — ma
+     ogni cono conserva il proprio, così una deroga locale è possibile. */
   const coni = [];
   let nCono = 0;
-  let ventoGlobale = null;
 
   function togliCono(id){
     const i = coni.findIndex(c => c.id === id);
@@ -883,9 +924,10 @@ function avvia(app){
     return m;
   };
 
-  /* Il vento non è più un simbolo posato sulla carta ma un quadro fisso:
-     sulla mappa finiva sotto agli altri elementi e si spostava con loro,
-     mentre è un dato dell'intero scenario, non di un punto. */
+  /* Il vento non è un simbolo posato sulla carta ma un quadro fisso in alto
+     a sinistra, col nord accanto: sulla mappa finiva sotto agli altri
+     elementi e si spostava con loro, mentre è un dato dell'intero
+     scenario, non di un punto. */
   function mostraVento(vento){
     ventoCono = vento || null;
     const box = q('#sitac-vento');
@@ -959,7 +1001,10 @@ function avvia(app){
       velocita = await scegliVelocita();
       if (!velocita) return null;
     }
-    const V.ventoDa(velocita, verso, fonte);
+
+    /* L'ora della lettura viaggia col dato: chi apre la carta due ore dopo
+       deve sapere se quei km/h sono di adesso o di stamattina. */
+    const v = V.ventoDa(velocita, verso, fonte);
     v.letto = new Date().toISOString();
     return v;
   }
@@ -1013,10 +1058,10 @@ function avvia(app){
     if (!vento) return stato(t('conoAnnullato'));
 
     const opz = {colore: COL.rosso, raggio0: r0, etichetta0: t('conoT0')};
-    const layer = V.disegnaCono(origine, vento, opz);   // o disegnaFronti
+    const layer = V.disegnaCono(origine, vento, opz);
     decori.addLayer(layer);
-    coni.push({id: ++nCono, layer, vento, tipo:'settore'});
-    ventoGlobale = vento;
+    const id = ++nCono;
+    coni.push({id, layer, vento, tipo:'settore'});
     mostraVento(vento);
 
     /* Spostando l'area d'origine la previsione la segue: il vento è lo
@@ -1034,9 +1079,9 @@ function avvia(app){
     riassunto(vento);
   }
 
-  /* Modo 2: si disegna il fronte com'è adesso e lo si trasla nel tempo.
-     Serve quando l'incendio è già lungo e il punto d'innesco non dice più
-     niente su dove si trova la fiamma. */
+  /* Modo 2: si disegna il fronte com'è adesso e lo si fa avanzare nel
+     tempo, allargandolo di 15° per parte. Serve quando l'incendio è già
+     lungo e il punto d'innesco non dice più dove sta la fiamma. */
   async function conoFronte(){
     const V = NS.SitacVento;
     const punti = await attendiLinea(t('conoDisegnaFronte'));
@@ -1044,18 +1089,18 @@ function avvia(app){
     const centro = punti[Math.floor(punti.length / 2)];
     const vento = await scegliVento(centro);
     if (!vento) return stato(t('conoAnnullato'));
+
     const layer = V.disegnaFronti(punti, vento,
       {colore: COL.rosso, etichetta0: t('conoT0')});
     decori.addLayer(layer);
     coni.push({id: ++nCono, layer, vento, tipo:'fronte'});
-    ventoGlobale = vento;
     mostraVento(vento);
     riassunto(vento);
   }
 
   function riassunto(vento){
     const V = NS.SitacVento;
-    aggiornaStato();
+    aggiornaStato();   // prima, altrimenti riscrive sopra il riepilogo
     stato(t('conoFatto', {v: vento.velocita, d: vento.verso, f: vento.fonte,
       a: V.APERTURA, m: Math.round(V.distanzaFronte(vento.velocita, 60))}));
   }
@@ -1075,13 +1120,14 @@ function avvia(app){
   });
 
   /* =======================================================================
-     6. STRUMENTI E FISARMONICHE
+     6. STRUMENTI E PASSI
      ===================================================================== */
   let strumento = null;
   let statoCorrente = 'previsto';
 
-  /* Una alla volta: aprendo un gruppo si chiudono gli altri. Con 59 voci
-     la barra sarebbe altrimenti un elenco lungo il doppio dello schermo. */
+  /* Uno alla volta: aprendo un passo si chiudono gli altri. Con dieci passi
+     e 64 voci di tavola la barra sarebbe altrimenti un elenco lungo il
+     doppio dello schermo. */
   function apriFisa(testa){
     const gia = testa.classList.contains('aperto');
     qq('#sitac-barra .sitac-fisa-testa').forEach(b => {
@@ -1119,7 +1165,16 @@ function avvia(app){
     b.onclick = () => attiva('linea', k, b);
     return b;
   }
-
+  function bottoneArea(k, d){
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.dataset.genere = 'area'; b.dataset.chiave = k;
+    b.innerHTML = `<i class="sitac-tratto" style="height:12px;border-radius:2px;
+      background:${d.fillColor};opacity:.85;border:1.5px solid ${d.color}"></i>`
+      + `<span>${esc(nm(d))}</span>`;
+    b.onclick = () => attiva('area', k, b);
+    return b;
+  }
   function bottoneAzione(genere, chiave, etichetta){
     const b = document.createElement('button');
     b.type = 'button';
@@ -1134,9 +1189,9 @@ function avvia(app){
     tav.innerHTML = '';
 
     /* Un passo è una fisarmonica numerata con l'indicatore di stato sulla
-       testata. La sequenza SUGGERISCE l'ordine di lavoro, non lo impone:
-       una SITAC si apre spesso a incendio già in corso, col numero
-       d'intervento che arriva dopo e il fronte dettato per radio. */
+       testata. `riempi` può restituire un conteggio fisso (le tavole); i
+       passi 3-6 non restituiscono niente e la loro testata la scrive
+       aggiornaPassi, perché cambia col disegno. */
     const passo = (n, titolo, id, riempi) => {
       const box = document.createElement('div');
       box.className = 'sitac-fisa';
@@ -1150,17 +1205,21 @@ function avvia(app){
         + `<span class="sitac-passo-stato" id="sitac-st${id}"></span>`;
       const corpo = document.createElement('div');
       corpo.className = 'sitac-fisa-corpo';
-      riempi(corpo);
+      const quante = riempi(corpo);
       box.appendChild(testa); box.appendChild(corpo);
       tav.appendChild(box);
+      /* Il conteggio si scrive dopo l'append: dentro `riempi` il box non è
+         ancora nel DOM, e cercarlo da lì significa trovare il passo prima. */
+      if (quante != null)
+        box.querySelector('.sitac-passo-stato').textContent = quante;
     };
 
     /* 3 — l'area d'origine è una voce della tavola 2: qui non se ne crea
        una copia, si richiama lo stesso strumento. */
     passo(3, t('p3'), 3, corpo => {
       const el = document.createElement('div');
-      el.className = 'sitac-strumenti';
-      el.appendChild(bottoneSimbolo('origine', SIM.origine));
+      el.className = 'sitac-simboli';
+      if (SIM.origine) el.appendChild(bottoneSimbolo('origine', SIM.origine));
       corpo.appendChild(el);
     });
 
@@ -1181,7 +1240,7 @@ function avvia(app){
     passo(5, t('p5'), 5, corpo => {
       const el = document.createElement('div');
       el.className = 'sitac-strumenti';
-      el.appendChild(bottoneLinea('fronte', LIN.fronte));
+      if (LIN.fronte) el.appendChild(bottoneLinea('fronte', LIN.fronte));
       corpo.appendChild(el);
     });
 
@@ -1191,15 +1250,7 @@ function avvia(app){
     passo(6, t('p6'), 6, corpo => {
       const el = document.createElement('div');
       el.className = 'sitac-strumenti';
-      Object.entries(AREE).forEach(([k, d]) => {
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.dataset.genere = 'area'; b.dataset.chiave = k;
-        b.innerHTML = `<i class="sitac-tratto" style="height:12px;border-radius:2px;
-          background:${d.fillColor};opacity:.85;border:1.5px solid ${d.color}"></i><span>${esc(nm(d))}</span>`;
-        b.onclick = () => attiva('area', k, b);
-        el.appendChild(b);
-      });
+      Object.entries(AREE).forEach(([k, d]) => el.appendChild(bottoneArea(k, d)));
       corpo.appendChild(el);
       corpo.insertAdjacentHTML('beforeend',
         `<p class="sitac-conta" id="sitac-superficie"></p>`
@@ -1251,9 +1302,9 @@ function avvia(app){
           el.className = 'sitac-strumenti';
           el.appendChild(bottoneAzione('simbolo', 'nota', nm(NOTA)));
           corpo.appendChild(el);
+          n += 1;
         }
-        const testa = tav.lastChild.querySelector('.sitac-passo-stato');
-        if (testa) testa.textContent = n;
+        return n;
       });
     });
 
@@ -1262,8 +1313,10 @@ function avvia(app){
     if (strumento) marcaAttivo(strumento.genere, strumento.chiave);
   }
 
-  /* Gli indicatori sulle testate: dicono a colpo d'occhio cosa manca
-     senza aprire i passi uno per uno. */
+  /* Gli indicatori sulle testate: dicono a colpo d'occhio cosa manca senza
+     aprire i passi uno per uno. I passi 1 e 2 stanno nel markup fisso, gli
+     altri li costruisce creaPulsanti: `segna` esce in silenzio se il
+     bersaglio non c'è ancora. */
   function aggiornaPassi(){
     const segna = (id, testo, ok) => {
       const e = q('#sitac-st' + id);
@@ -1272,9 +1325,11 @@ function avvia(app){
       e.classList.toggle('fatto', !!ok);
       e.classList.toggle('manca', !ok);
     };
+
     const completo = interventoValido() && dosValido()
       && !!inNominativo.value.trim() && telefonoValido();
-    segna(1, completo ? `${t('pFatto')} ${inIntervento.value} · ${inDos.value}` : t('pManca'), completo);
+    segna(1, completo ? `${t('pFatto')} ${inIntervento.value} · ${inDos.value}`
+      : t('pManca'), completo);
     segna(2, inPosizione.value ? t('pFatto') : t('pManca'), !!inPosizione.value);
 
     const conta = k => disegni.getLayers().filter(x => x._tipo === k).length;
@@ -1286,7 +1341,7 @@ function avvia(app){
 
     let sup = 0;
     disegni.eachLayer(x => {
-      if (x._tipo === 'percorsa' || x._tipo === 'attiva') sup += areaMq(x);
+      if (AREE_SUPERFICIE.indexOf(x._tipo) >= 0) sup += areaMq(x);
     });
     segna(6, sup ? t('pEttari', {v:(sup/10000).toFixed(1)}) : t('pNessuno'), sup > 0);
     const box = q('#sitac-superficie');
@@ -1313,7 +1368,7 @@ function avvia(app){
     const b = q(`#sitac-barra button[data-genere="${genere}"][data-chiave="${chiave}"]`);
     if (b){
       b.classList.add('attivo');
-      /* se lo strumento sta in una fisarmonica chiusa, la si apre */
+      /* se lo strumento sta in un passo chiuso, lo si apre */
       const corpo = b.closest('.sitac-fisa-corpo');
       if (corpo && !corpo.classList.contains('aperto')) apriFisa(corpo.previousElementSibling);
     }
@@ -1352,8 +1407,9 @@ function avvia(app){
       stato(`${nm(d)}${etichettaStato(d)}\n${t('suggSimbolo')}`);
     }
   }
+
   /* La tavola usa tre coppie: previsto/attivo per i mezzi, prevista/attiva
-     per il DOS e le squadre, prevista/effettuata per tutte le azioni. */
+     per il DOS e le squadre (flag `f`), prevista/effettuata per le azioni. */
   const paroleStato = d => (d && d.g === 'azioni') ? ['statoPrevista','statoEffettuata']
     : (d && d.f) ? ['statoPrevista','statoAttiva'] : ['statoPrevisto','statoAttivo'];
   const etichettaStato = d => (d && (d.s || d.stati))
@@ -1363,6 +1419,8 @@ function avvia(app){
 
   function fermaTutto(){
     map.pm.disableDraw();
+    /* Solo se accese: Geoman prova a sganciare listener mai agganciati e
+       Leaflet stampa "wrong listener type" in console. */
     if (map.pm.globalEditModeEnabled && map.pm.globalEditModeEnabled())
       map.pm.disableGlobalEditMode();
     if (map.pm.globalRemovalModeEnabled && map.pm.globalRemovalModeEnabled())
@@ -1429,7 +1487,7 @@ function avvia(app){
        dentro, e ridisegnarlo dopo farebbe lampeggiare il riquadro vuoto. */
     if (def.libero || def.e){
       map.pm.disableDraw();
-      const val = await chiedi({testo: t(def.libero ? 'chiediNota' : 'chiediSigla')});
+      const val = await chiedi({campo:1, testo: t(def.libero ? 'chiediNota' : 'chiediSigla')});
       if (def.libero && !val){ disegni.removeLayer(layer); riattivaStrumento(); return; }
       layer._testo = val || null;
       layer.setIcon(iconaSimbolo(k, {stato:layer._stato, testo:layer._testo}));
@@ -1440,9 +1498,10 @@ function avvia(app){
     aggiornaStato();
 
     if (def.r){
-      /* Dopo aggiornaStato, che riscriverebbe sopra. Il setTimeout serve
-         perché il clic che ha posato il simbolo è ancora in corso e
-         verrebbe consumato subito come direzione, con azimut nullo. */
+      /* Dopo aggiornaStato, che riscriverebbe sopra l'istruzione. Il
+         setTimeout serve perché il clic che ha posato il simbolo è ancora
+         in corso e verrebbe consumato subito come direzione, con azimut
+         nullo: è il motivo per cui serviva cliccare due volte. */
       map.pm.disableDraw();
       setTimeout(() => { attesaDirezione = layer; }, 0);
       stato(`${nm(def)}\n${t('chiediDirezione')}`);
@@ -1497,10 +1556,11 @@ function avvia(app){
     aggiornaStato();
   };
   $('bPulisci').onclick = async () => {
-    if (!disegni.getLayers().length) return stato(t('giaVuota'));
+    if (!disegni.getLayers().length && !coni.length) return stato(t('giaVuota'));
     if (!await chiedi({testo: t('confPulisci')})) return;
     disegni.clearLayers(); decori.clearLayers();
-    togliTuttiConi(); mostraVento(null);
+    coni.length = 0;
+    mostraVento(null);
     cerchioPosizione = null;
     aggiornaStato();
   };
@@ -1539,6 +1599,9 @@ function avvia(app){
   $('bGeojson').onclick = () => {
     const feat = raccogli();
     if (!feat.length) return stato(t('nienteExport'));
+    /* `apertura` e `quota` viaggiano col vento perché il cono si ricostruisce
+       da quei numeri: se un domani cambiassero, un file vecchio va rifatto
+       coi suoi. */
     const fc = {type:'FeatureCollection', features:feat,
       properties:Object.assign({applicazione:'FireOps VVF — SITAC',
         simbologia:'SI.TA.C. CNVVF 2021', lingua,
@@ -1594,8 +1657,10 @@ function avvia(app){
       const tp = f.properties.tipo;
       const def = LIN[tp] || AREE[tp] || SIM[tp] || (tp === 'nota' ? NOTA : null);
       let nome = f.properties.testo || (def ? nm(def) : '') || tp || 'elemento';
+      /* Le stesse tre coppie della tavola: un'azione è "effettuata", non
+         "in atto". */
       if (def && (def.s || def.stati) && f.properties.stato)
-        nome += ` (${t(f.properties.stato === 'attivo' ? 'statoAttivo' : 'statoPrevisto')})`;
+        nome += ` (${t(paroleStato(def)[f.properties.stato === 'attivo' ? 1 : 0])})`;
       const g = f.geometry;
       let geom = '';
       if (g.type === 'Point'){
@@ -1652,16 +1717,17 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
   function carica(fc){
     let n = 0;
     /* Un file altrui porta con sé il suo intervento: si adottano, invece di
-       lasciare in testata i numeri di quello precedente. */
+       lasciare in testata i numeri di quello precedente. `p` può mancare
+       del tutto in un GeoJSON non nostro, quindi tutto sta dentro il test. */
     const p = fc && fc.properties;
     if (p){
-      if (p.intervento){ inIntervento.value = String(p.intervento).replace(/[^0-9]/g,''); }
-      if (p.dos){ inDos.value = normalizzaDos(p.dos); }
+      if (p.intervento) inIntervento.value = String(p.intervento).replace(/[^0-9]/g,'');
+      if (p.dos)        inDos.value        = normalizzaDos(p.dos);
       if (p.nominativo) inNominativo.value = String(p.nominativo);
       if (p.telefono)   inTelefono.value   = String(p.telefono);
       if (p.posizione)  inPosizione.value  = String(p.posizione);
-      /* Il vento rientra come dato, non come disegno: il cono è una stima
-         e si rifà dal pulsante, ma il quadro dice subito con che vento la
+      /* Il vento rientra come dato, non come disegno: i coni sono stime e
+         si rifanno dal pulsante, ma il quadro dice subito con che vento la
          carta è stata redatta. */
       if (p.vento && p.vento.velocita != null && p.vento.verso != null)
         mostraVento(p.vento);
@@ -1669,27 +1735,27 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
     }
     L.geoJSON(fc, {
       pointToLayer: (feat, latlng) => {
-        const p = feat.properties || {};
-        const tp = VECCHI[p.tipo] || p.tipo;
+        const pr = feat.properties || {};
+        const tp = VECCHI[pr.tipo] || pr.tipo;
         if (tp !== 'nota' && !SIM[tp]) return L.marker(latlng, {draggable:true});
         return L.marker(latlng, {draggable:true,
-          icon: iconaSimbolo(tp, {stato:p.stato || 'previsto',
-            testo:p.testo, rotazione:p.rotazione})});
+          icon: iconaSimbolo(tp, {stato:pr.stato || 'previsto',
+            testo:pr.testo, rotazione:pr.rotazione})});
       },
       style: feat => {
-        const p = feat.properties || {};
-        const tp = VECCHI[p.tipo] || p.tipo;
-        if (LIN[tp]) return stileLinea(LIN[tp], p.stato || 'previsto');
+        const pr = feat.properties || {};
+        const tp = VECCHI[pr.tipo] || pr.tipo;
+        if (LIN[tp]) return stileLinea(LIN[tp], pr.stato || 'previsto');
         if (AREE[tp]) return stileArea(AREE[tp]);
         return {color: COL.rosso};
       },
       onEachFeature: (feat, layer) => {
-        const p = feat.properties || {};
-        layer._tipo = VECCHI[p.tipo] || p.tipo;
-        layer._genere = p.genere;
-        layer._stato = p.stato || 'previsto';
-        layer._testo = p.testo || null;
-        layer._rotazione = p.rotazione || null;
+        const pr = feat.properties || {};
+        layer._tipo = VECCHI[pr.tipo] || pr.tipo;
+        layer._genere = pr.genere;
+        layer._stato = pr.stato || 'previsto';
+        layer._testo = pr.testo || null;
+        layer._rotazione = pr.rotazione || null;
         disegni.addLayer(layer);
         if (LIN[layer._tipo]){
           decora(layer);
@@ -1758,7 +1824,7 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
     aggiornaPassi();
   }
 
-  /* La tavola ha 59 voci: una legenda con tutte sarebbe illeggibile.
+  /* La tavola ha 64 voci: una legenda con tutte sarebbe illeggibile.
      Si elencano solo i tipi effettivamente sulla mappa, una volta ciascuno. */
   function aggiornaLegenda(){
     const leg = q('#sitac-legVoci');
@@ -1835,6 +1901,7 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
     inDos.title = t('dosAiuto');
     creaPulsanti();
     disegni.eachLayer(etichettaElemento);
+    if (ventoCono) mostraVento(ventoCono);
     if (strumento){
       const d = strumento.genere === 'linea' ? LIN[strumento.chiave]
               : strumento.genere === 'area'  ? AREE[strumento.chiave]
@@ -1911,8 +1978,8 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
     if (app.offsetParent === null) return;          // in magazzino: niente da fare
     const stretto = app.clientWidth < LARGHEZZA_STRETTA;
     app.classList.toggle('sitac-stretto', stretto);
-    /* La testata (campi, bandiere, Espandi) vive fuori da #sitac-app:
-       senza una classe sulla sezione resterebbe fuori portata. */
+    /* La riga sopra il riquadro (nota, bandiere, Espandi) vive FUORI da
+       #sitac-app: senza una classe sulla sezione resterebbe fuori portata. */
     radice.classList.toggle('sitac-sez-stretta', stretto);
     map.invalidateSize();
   }
@@ -1930,12 +1997,17 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
   });
 
   return {
-    map, disegni,
+    map, disegni, coni,
     lingua: lg => cambiaLingua(lg),
     stato: s => cambiaStato(s),
     esportaGeoJson: raccogli,
+    vento: () => ventoCono,
     carica,
-    pulisci: () => { disegni.clearLayers(); decori.clearLayers(); cerchioPosizione = null; aggiornaStato(); },
+    pulisci: () => {
+      disegni.clearLayers(); decori.clearLayers();
+      coni.length = 0; mostraVento(null); cerchioPosizione = null;
+      aggiornaStato();
+    },
     ridisegna: adatta
   };
 }
@@ -1955,10 +2027,18 @@ NS.Sitac = {
     if (!app) return null;                       // sezione non ancora nel DOM
     const radice = app.closest('.page-section') || app;
 
+    /* La guardia elenca TUTTO quello che avvia() tocca senza rete: se il
+       markup è indietro rispetto al codice, si vede subito quale pezzo
+       manca invece di un TypeError a metà costruzione. */
     for (const id of ['sitac-barra','sitac-mappa','sitac-tavola','sitac-stato',
-                      'sitac-lingue','sitac-modale','sitac-legenda',
-                      'sitac-bPosizione','sitac-bConvalida',
-                      'sitac-nominativo','sitac-telefono','sitac-posizione']){
+                      'sitac-lingue','sitac-modale','sitac-legenda','sitac-legTesta',
+                      'sitac-legVoci','sitac-vento','sitac-testata-stampa',
+                      'sitac-nIntervento','sitac-nDos','sitac-nominativo',
+                      'sitac-telefono','sitac-posizione','sitac-bPosizione',
+                      'sitac-bConvalida','sitac-bCentra','sitac-bModifica',
+                      'sitac-bElimina','sitac-bAnnulla','sitac-bPulisci',
+                      'sitac-bSfondo','sitac-bImporta','sitac-bStampa',
+                      'sitac-bGeojson','sitac-bKml','sitac-file']){
       if (!radice.querySelector('#' + id)){
         console.error('[SITAC] manca #' + id + ' nel markup della sezione.');
         return null;
@@ -1968,6 +2048,11 @@ NS.Sitac = {
     if (!NS.SITAC_SIMBOLI || !NS.SITAC_LINEE){
       box.textContent = 'Simbologia mancante: sitac-simboli.js deve precedere sitac.js.';
       console.error('[SITAC] sitac-simboli.js non caricato.');
+      return null;
+    }
+    if (!NS.SitacVento){
+      box.textContent = 'Modulo vento mancante: sitac-vento.js deve precedere sitac.js.';
+      console.error('[SITAC] sitac-vento.js non caricato.');
       return null;
     }
     if (typeof L === 'undefined' || !L.PM || !L.Symbol || !L.Symbol.arrowHead){
