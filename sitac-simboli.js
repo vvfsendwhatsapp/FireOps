@@ -18,19 +18,23 @@
  * interno (Dispositivo aereo, Squadre a terra, Evacuazione…).
  *
  * DUE STATI, NON DUE SIMBOLI
- * La tavola distingue sistematicamente previsto/attivo per i mezzi e
- * prevista/effettuata per le azioni, e la differenza è sempre la stessa: il
- * contorno si riempie. Qui non sono due voci ma un parametro `stato`.
+ * La tavola distingue sistematicamente i due momenti, ma con parole diverse:
+ * previsto/attivo per i mezzi, prevista/attiva per il DOS e le squadre,
+ * prevista/effettuata per tutte le azioni. Qui non sono due voci ma un
+ * parametro `stato`; le parole le sceglie sitac.js leggendo `g` e `f`.
  *
  * COSA VIAGGIA NEL GEOJSON
  * La chiave (`vvf`, `origine`, `lancio_pesante_acqua`…), lo stato e
  * l'eventuale testo. Le chiavi sono identificativi tecnici: non vanno
  * tradotte né rinominate, o i file salvati diventano illeggibili.
  *
- * `r` marca i simboli che vanno orientati, `e` quelli che la tavola vuole
- * accompagnati da un testo (la sigla del mezzo, i km/h del vento: nella
- * tavola sono i puntini di "CAN ......." e di "(.........Km/h)"),
- * `s` quelli che hanno i due stati.
+ * I FLAG
+ * `r` i simboli che vanno orientati; `e` quelli che la tavola vuole
+ * accompagnati da un testo (la matricola del mezzo, il numero della
+ * squadra, i km/h del vento: nella tavola sono i puntini di "CAN ......."
+ * e di "(.........Km/h)"); `s` quelli che hanno i due stati; `f` quelli
+ * di genere femminile, che al posto di previsto/attivo leggono
+ * prevista/attiva.
  *
  * I colori sono normativi: rosso il dispositivo VVF e il fuoco, verde il
  * soccorso sanitario e l'evacuazione, azzurro l'acqua e le forze di polizia,
@@ -62,7 +66,7 @@ function txt(x, y, s, col, dim, ancora){
     + ` font-family="Arial,Helvetica,sans-serif" font-weight="700" fill="${col}">${esc(s)}</text>`;
 }
 /* La riga di puntini è il posto dove sulla carta si scrive a penna il
-   numero della squadra o la sigla del mezzo: va lasciata anche a video. */
+   numero della squadra o la matricola del mezzo: va lasciata anche a video. */
 const puntini = (x1, x2, y, col) =>
   `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="${col}" stroke-width="1.6" stroke-dasharray="1.5,2.5"/>`;
 
@@ -182,12 +186,14 @@ function quotaFuoco(pieno){
 }
 
 /* Cerchio con sigla: Area da evacuare (Ev) e Zona Sicura (SZ), entrambe
-   verdi. Effettuata = metà inferiore piena, come nella tavola: la sigla sta
-   alta perché deve restare leggibile sul pieno. */
+   verdi. Effettuata = cerchio interamente pieno con la sigla in bianco,
+   come nella tavola. */
 function tondoSigla(sigla, col){
-  return o => { const p = attivo(o);
+  return o => {
+    const p = attivo(o);
     return T(`<circle cx="32" cy="32" r="19" fill="${p ? col : '#fff'}" stroke="${col}" stroke-width="3"/>
-      ${txt(32, 38, sigla, p ? '#fff' : col, 17)}`); };
+      ${txt(32, 38, sigla, p ? '#fff' : col, 17)}`);
+  };
 }
 
 /* =====================================================================
@@ -208,14 +214,6 @@ agg('elettrodotto','zona',null,'Linea elettrica attiva','Power line on', () => T
 agg('elettrodotto_off','zona',null,'Linea elettrica disattivata','Power line off',
   () => T(`${FULMINE}<path d="M9 9L55 55M55 9L9 55" stroke="${C.nero}" stroke-width="3"/>`));
 
-/* La tavola disegna la linea elettrica come un tracciato tratto-punto col
-   fulmine sopra, non come un punto: il punto resta per il traliccio
-   isolato, questi sono l'elettrodotto che attraversa la zona. */
-aggL('elettrodotto_tratto','zona',null,'Linea elettrica attiva','Power line on',
-  {color:C.nero, weight:2.4, dashArray:'14,5,3,5'}, {deco:{tipo:'fulmine', passo:70, dim:24}});
-aggL('elettrodotto_off_tratto','zona',null,'Linea elettrica disattivata','Power line off',
-  {color:C.nero, weight:2.4, dashArray:'14,5,3,5'}, {deco:{tipo:'fulmineOff', passo:70, dim:24}});
-
 agg('acqua','zona',null,'Punto d\u2019acqua per mezzi terrestri','Water point, ground means',
   () => T(`<circle cx="32" cy="32" r="21" fill="${C.acqua}"/>`));
 /* Il punto d'acqua per mezzi aerei porta scritto Eli/CAN sotto il simbolo:
@@ -235,10 +233,11 @@ agg('sensibile_wui','zona',null,'Punto sensibile per interfaccia','Sensitive poi
 agg('elisuperficie','zona',null,'Piazzola per elicottero','Helispot',
   () => T(`<circle cx="32" cy="32" r="20" fill="#fff" stroke="${C.nero}" stroke-width="2.8"/>
     ${txt(32, 40, 'H', C.nero, 24)}`));
+/* Il filo a sbalzo ha una direzione: si orienta secondo la campata. */
 agg('fune_sbalzo','zona',null,'Funivie, fili a sbalzo, ecc.','Cableways and aerial wires',
   () => T(`<line x1="6" y1="25" x2="58" y2="34" stroke="${C.nero}" stroke-width="2.6"/>
     <line x1="31" y1="30" x2="31" y2="41" stroke="${C.nero}" stroke-width="2.6"/>
-    <rect x="23" y="41" width="16" height="10" fill="${C.nero}"/>`));
+    <rect x="23" y="41" width="16" height="10" fill="${C.nero}"/>`), {r:1});
 /* Traliccio: la tavola 2021 lo aggiunge accanto ai fili a sbalzo, ed è
    l'ostacolo che conta di più per l'elicottero in avvicinamento. */
 agg('ripetitore','zona',null,'Ripetitori, antenne, pale eoliche, ecc.','Masts, antennas, wind turbines',
@@ -264,37 +263,43 @@ agg('eli','dispositivo','sgAereo','Elicotteri medi e leggeri','Light and medium 
 agg('eli_com','dispositivo','sgAereo','Elicottero Comando','Command helicopter', mezzoAereo('Eli Com'), {s:1, e:1});
 agg('aereo_altro','dispositivo','sgAereo','Altro mezzo aereo','Other air means', mezzoAereo(''), {s:1, e:1});
 
+/* DOS e squadre sono femminili nella tavola: prevista / attiva. */
 agg('dos','dispositivo','sgTerra','DOS — Direttore Operazioni Spegnimento','Fire operations director', mezzoTerra('DOS', 1), {s:1, e:1, f:1});
 agg('vvf','dispositivo','sgTerra','Squadra VVF','VVF crew', mezzoTerra('VVF', 1), {s:1, e:1, f:1});
 agg('vol','dispositivo','sgTerra','Squadra VOL','Volunteer crew', mezzoTerra('VOL', 1), {s:1, e:1, f:1});
 agg('gos','dispositivo','sgTerra','Squadra GOS','GOS crew', mezzoTerra('GOS', 1), {s:1, e:1, f:1});
 agg('sai','dispositivo','sgTerra','Squadra SAI','SAI crew', mezzoTerra('SAI', 1), {s:1, e:1, f:1});
 agg('squadra_altra','dispositivo','sgTerra','Squadra\u2026','Other crew', mezzoTerra('', 1), {s:1, e:1, f:1});
+agg('modulo_vvf','dispositivo','sgTerra','Modulo VVF / Gruppo','VVF module / Group', mezzoTerra('', 2), {s:1, e:1});
+agg('modulo_ue','dispositivo','sgTerra','Modulo UE / Colonna','EU module / Column', mezzoTerra('', 3), {s:1, e:1});
+/* CP, SS e Pol nella tavola non hanno la riga di puntini: nessun testo. */
 agg('cp','dispositivo','sgTerra','Posto di Comando','Command post', mezzoTerra('CP', 0, C.rosso, 1), {s:1});
 agg('ss','dispositivo','sgTerra','Soccorso Sanitario','Ambulance', mezzoTerra('SS', 0, C.verde, 1), {s:1});
 agg('pol','dispositivo','sgTerra','Forze di Polizia','Police forces', mezzoTerra('Pol', 0, C.polizia, 1), {s:1});
 
-agg('fune_sbalzo','zona',null,'Funivie, fili a sbalzo, ecc.','Cableways and aerial wires', /* invariato */, {r:1});
-
-agg('lancio_pesante_ritardante','azioni','sgAereo','Lancio mezzi aerei pesanti con ritardante','Retardant drop, heavy means', lancio(1,1), {s:1, r:1});
-agg('lancio_pesante_acqua','azioni','sgAereo','Lancio mezzi aerei pesanti con acqua','Water drop, heavy means', lancio(1,0), {s:1, r:1});
-
 /* Transit Point: il cerchio sta su una linea di transito e la freccia dice
-   da che parte si entra in zona. */
+   da che parte si entra in zona, quindi va orientato. Attivo = cerchio
+   interamente pieno, come nella tavola. */
 agg('tp','dispositivo','sgTerra','Transit Point','Transit point', o => {
-  const tr = p ? '' : ' stroke-dasharray="4,3"';
-  return T(`<path d="${d}Z" fill="none" stroke="${R}" stroke-width="2.4" stroke-linejoin="round"${tr}/>
-    <circle cx="32" cy="32" r="9" fill="none" stroke="${R}" stroke-width="2.4"${tr}/>`);
+  const R = C.rosso, p = attivo(o);
+  return T(`<line x1="2" y1="32" x2="58" y2="32" stroke="${R}" stroke-width="2.6"/>
+    <path d="M50 25l12 7-12 7Z" fill="${R}"/>
+    <circle cx="28" cy="32" r="13" fill="${p ? R : '#fff'}" stroke="${R}" stroke-width="2.6"/>
+    ${txt(28, 36, (o && o.testo) || 'TP', p ? '#fff' : R, 13)}`);
 }, {s:1, r:1});
 
 /* ---- TAVOLA 4: le azioni ---- */
-agg('lancio_pesante_ritardante','azioni','sgAereo','Lancio mezzi aerei pesanti con ritardante','Retardant drop, heavy means', lancio(1,1), {s:1});
-agg('lancio_pesante_acqua','azioni','sgAereo','Lancio mezzi aerei pesanti con acqua','Water drop, heavy means', lancio(1,0), {s:1});
+/* I lanci pesanti sono ellissi: hanno un asse, e va orientato lungo la
+   direzione di lancio. Quelli leggeri sono cerchi e non serve. */
+agg('lancio_pesante_ritardante','azioni','sgAereo','Lancio mezzi aerei pesanti con ritardante','Retardant drop, heavy means', lancio(1,1), {s:1, r:1});
+agg('lancio_pesante_acqua','azioni','sgAereo','Lancio mezzi aerei pesanti con acqua','Water drop, heavy means', lancio(1,0), {s:1, r:1});
 agg('lancio_leggero_ritardante','azioni','sgAereo','Lancio elicotteri medi e leggeri con ritardante','Retardant drop, light helicopters', lancio(0,1), {s:1});
 agg('lancio_leggero_acqua','azioni','sgAereo','Lancio elicotteri medi e leggeri con acqua','Water drop, light helicopters', lancio(0,0), {s:1});
 
 /* Difesa perimetrale: nella tavola 2021 è una raggiera a otto punte attorno
-   a uno spazio libero, non la stella a sei della versione precedente. */
+   a uno spazio libero, non la stella a sei della versione precedente. Fra
+   prevista ed effettuata cambia il tratto — tratteggiato o continuo — non
+   il riempimento: la raggiera resta sempre vuota. */
 agg('difesa_perimetrale','azioni','sgTerra','Difesa perimetrale','Perimeter defence', o => {
   const R = C.rosso, p = attivo(o);
   let d = '';
@@ -305,8 +310,9 @@ agg('difesa_perimetrale','azioni','sgTerra','Difesa perimetrale','Perimeter defe
     const cx = 32 + 14 * Math.cos(c), cy = 32 + 14 * Math.sin(c);
     d += `M${cx.toFixed(1)} ${cy.toFixed(1)}L${px.toFixed(1)} ${py.toFixed(1)}L${bx.toFixed(1)} ${by.toFixed(1)}`;
   }
-  return T(`<path d="${d}Z" fill="${p ? R : 'none'}" stroke="${R}" stroke-width="2.4" stroke-linejoin="round"/>
-    <circle cx="32" cy="32" r="9" fill="none" stroke="${R}" stroke-width="2.4"/>`);
+  const tr = p ? '' : ' stroke-dasharray="4,3"';
+  return T(`<path d="${d}Z" fill="none" stroke="${R}" stroke-width="2.4" stroke-linejoin="round"${tr}/>
+    <circle cx="32" cy="32" r="9" fill="none" stroke="${R}" stroke-width="2.4"${tr}/>`);
 }, {s:1});
 
 agg('accensione_punti','azioni','sgControfuoco','Accensione per punti','Ignition by points', o => T(
@@ -328,7 +334,7 @@ const aggL = (k, g, sg, it, en, stile, extra) => {
   L[k] = Object.assign({g, sg, n:{it, en}}, stile, extra || {});
 };
 
-/* ---- TAVOLA 1: viabilità ---- */
+/* ---- TAVOLA 1: viabilità e infrastrutture ---- */
 aggL('sentiero','zona',null,'Sentiero o mulattiera','Trail',
   {color:C.nero, weight:3, dashArray:'14,5,3,5'});
 aggL('strada_leggeri','zona',null,'Strada per mezzi leggeri','Light means road',
@@ -343,6 +349,13 @@ aggL('senso_unico','zona',null,'Senso di marcia obbligatorio','One way only',
   {color:C.nero, weight:3}, {deco:{tipo:'freccia', passo:'25%', dim:13}});
 aggL('accesso_interrotto','zona',null,'Accesso interrotto','Road closed',
   {color:C.nero, weight:3.5}, {deco:{tipo:'croce', passo:'50%', dim:18}});
+/* La tavola disegna la linea elettrica come un tracciato tratto-punto col
+   fulmine sopra, non come un punto: il simbolo puntuale resta per il
+   traliccio isolato, questi sono l'elettrodotto che attraversa la zona. */
+aggL('elettrodotto_tratto','zona',null,'Linea elettrica attiva','Power line on',
+  {color:C.nero, weight:2.4, dashArray:'14,5,3,5'}, {deco:{tipo:'fulmine', passo:70, dim:24}});
+aggL('elettrodotto_off_tratto','zona',null,'Linea elettrica disattivata','Power line off',
+  {color:C.nero, weight:2.4, dashArray:'14,5,3,5'}, {deco:{tipo:'fulmineOff', passo:70, dim:24}});
 
 /* ---- TAVOLA 2: assi di sviluppo e fronte ---- */
 aggL('asse_principale','evoluzione',null,'Asse di sviluppo principale','Head of the fire',
