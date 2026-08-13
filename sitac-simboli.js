@@ -168,7 +168,8 @@ function vento(n){
     }
     return T(`<line x1="56" y1="35" x2="14" y2="35" stroke="${C.nero}" stroke-width="2.6"/>
       <path d="M5 35l13-6.5v13Z" fill="${C.nero}"/>${b}
-      ${txt(34, 22, (o && o.testo) ? o.testo + ' Km/h' : '(.....Km/h)', C.nero, 10)}`);
+      ${(o && o.senzaTesto) ? '' :
+        txt(34, 22, (o && o.testo) ? o.testo + ' Km/h' : '(.....Km/h)', C.nero, 10)}
   };
 }
 
@@ -205,9 +206,9 @@ const agg = (k, g, sg, it, en, svg, extra) => {
 };
 
 /* ---- TAVOLA 1: la zona di intervento ---- */
-agg('pend_lieve','zona',null,'Pendenza lieve','Light slope', pendenza(1), {r:1});
-agg('pend_moderata','zona',null,'Pendenza moderata','Moderate slope', pendenza(2), {r:1});
-agg('pend_forte','zona',null,'Pendenza forte','Steep slope', pendenza(3), {r:1});
+agg('pend_lieve','zona',null,'Pendenza lieve','Light slope', pendenza(1), {r:1, r0:226});
+agg('pend_moderata','zona',null,'Pendenza moderata','Moderate slope', pendenza(2), {r:1, r0:226});
+agg('pend_forte','zona',null,'Pendenza forte','Steep slope', pendenza(3), {r:1, r0:226});
 
 agg('acqua','zona',null,'Punto d\u2019acqua per mezzi terrestri','Water point, ground means',
   () => T(`<circle cx="32" cy="32" r="21" fill="${C.acqua}"/>`));
@@ -228,24 +229,25 @@ agg('sensibile_wui','zona',null,'Punto sensibile per interfaccia','Sensitive poi
 agg('elisuperficie','zona',null,'Piazzola per elicottero','Helispot',
   () => T(`<circle cx="32" cy="32" r="20" fill="#fff" stroke="${C.nero}" stroke-width="2.8"/>
     ${txt(32, 40, 'H', C.nero, 24)}`));
-/* Il filo a sbalzo ha una direzione: si orienta secondo la campata. */
-agg('fune_sbalzo','zona',null,'Funivie, fili a sbalzo, ecc.','Cableways and aerial wires',
-  () => T(`<line x1="6" y1="25" x2="58" y2="34" stroke="${C.nero}" stroke-width="2.6"/>
-    <line x1="31" y1="30" x2="31" y2="41" stroke="${C.nero}" stroke-width="2.6"/>
-    <rect x="23" y="41" width="16" height="10" fill="${C.nero}"/>`), {r:1});
 /* Traliccio: la tavola 2021 lo aggiunge accanto ai fili a sbalzo, ed è
    l'ostacolo che conta di più per l'elicottero in avvicinamento. */
 agg('ripetitore','zona',null,'Ripetitori, antenne, pale eoliche, ecc.','Masts, antennas, wind turbines',
   () => T(`<circle cx="32" cy="11" r="6" fill="${C.nero}"/>
     <path d="M32 15L20 56h24Z" fill="none" stroke="${C.nero}" stroke-width="2.6" stroke-linejoin="round"/>
     <line x1="32" y1="15" x2="32" y2="56" stroke="${C.nero}" stroke-width="2"/>`));
+/* La tavola disegna la linea elettrica come un tracciato tratto-punto col
+   fulmine sopra: è un attraversamento, non un punto. */
+aggL('elettrodotto','zona',null,'Linea elettrica attiva','Power line on',
+  {color:C.nero, weight:2.4, dashArray:'14,5,3,5'}, {deco:{tipo:'fulmine', passo:70, dim:24}});
+aggL('elettrodotto_off','zona',null,'Linea elettrica disattivata','Power line off',
+  {color:C.nero, weight:2.4, dashArray:'14,5,3,5'}, {deco:{tipo:'fulmineOff', passo:70, dim:24}});
 
 /* ---- TAVOLA 2: l'evoluzione dell'incendio ---- */
 agg('origine','evoluzione',null,'Area d\u2019origine','Area of origin',
   () => T(`<path d="M32 4l7.7 17.3L58 23.6 44.9 36.1 48.4 54 32 45 15.6 54l3.5-17.9L6 23.6l18.3-2.3Z" fill="${C.rosso}"/>`));
-agg('vento_debole','evoluzione',null,'Direzione del vento, intensit\u00e0 debole','Wind direction, light', vento(1), {r:1, e:1});
-agg('vento_moderato','evoluzione',null,'Direzione del vento, intensit\u00e0 moderata','Wind direction, moderate', vento(2), {r:1, e:1});
-agg('vento_forte','evoluzione',null,'Direzione del vento, intensit\u00e0 forte','Wind direction, strong', vento(3), {r:1, e:1});
+agg('vento_debole','evoluzione',null,'Direzione del vento, intensit\u00e0 debole','Wind direction, light', vento(1), {r:1, e:1, r0:270});
+agg('vento_moderato','evoluzione',null,'Direzione del vento, intensit\u00e0 moderata','Wind direction, moderate', vento(2), {r:1, e:1, r0:270});
+agg('vento_forte','evoluzione',null,'Direzione del vento, intensit\u00e0 forte','Wind direction, strong', vento(3), {r:1, e:1, r0:270});
 agg('inc_chioma','evoluzione',null,'Incendio di chioma','Crown fire', quotaFuoco(0));
 agg('inc_radente','evoluzione',null,'Incendio radente','Surface fire', quotaFuoco(1));
 agg('inc_sotterraneo','evoluzione',null,'Incendio sotterraneo','Ground fire', quotaFuoco(2));
@@ -281,15 +283,15 @@ agg('tp','dispositivo','sgTerra','Transit Point','Transit point', o => {
     <path d="M50 25l12 7-12 7Z" fill="${R}"/>
     <circle cx="28" cy="32" r="13" fill="${p ? R : '#fff'}" stroke="${R}" stroke-width="2.6"/>
     ${txt(28, 36, (o && o.testo) || 'TP', p ? '#fff' : R, 13)}`);
-}, {s:1, r:1});
+}, {s:1, r:1r0:90});
 
 /* ---- TAVOLA 4: le azioni ---- */
 /* I lanci pesanti sono ellissi: hanno un asse, e va orientato lungo la
    direzione di lancio. Quelli leggeri sono cerchi e non serve. */
-agg('lancio_pesante_ritardante','azioni','sgAereo','Lancio mezzi aerei pesanti con ritardante','Retardant drop, heavy means', lancio(1,1), {s:1, r:1});
-agg('lancio_pesante_acqua','azioni','sgAereo','Lancio mezzi aerei pesanti con acqua','Water drop, heavy means', lancio(1,0), {s:1, r:1});
-agg('lancio_leggero_ritardante','azioni','sgAereo','Lancio elicotteri medi e leggeri con ritardante','Retardant drop, light helicopters', lancio(0,1), {s:1});
-agg('lancio_leggero_acqua','azioni','sgAereo','Lancio elicotteri medi e leggeri con acqua','Water drop, light helicopters', lancio(0,0), {s:1});
+agg('lancio_pesante_ritardante','azioni','sgAereo','Lancio mezzi aerei pesanti con ritardante','Retardant drop, heavy means', lancio(1,1), {s:1, r:1, r0:90});
+agg('lancio_pesante_acqua','azioni','sgAereo','Lancio mezzi aerei pesanti con acqua','Water drop, heavy means', lancio(1,0), {s:1, r:1, r0:90});
+agg('lancio_leggero_ritardante','azioni','sgAereo','Lancio elicotteri medi e leggeri con ritardante','Retardant drop, light helicopters', lancio(0,1), {s:1, r0:90});
+agg('lancio_leggero_acqua','azioni','sgAereo','Lancio elicotteri medi e leggeri con acqua','Water drop, light helicopters', lancio(0,0), {s:1, r0:90});
 
 /* Difesa perimetrale: nella tavola 2021 è una raggiera a otto punte attorno
    a uno spazio libero, non la stella a sei della versione precedente. Fra
@@ -344,10 +346,12 @@ aggL('senso_unico','zona',null,'Senso di marcia obbligatorio','One way only',
   {color:C.nero, weight:3}, {deco:{tipo:'freccia', passo:'25%', dim:13}});
 aggL('accesso_interrotto','zona',null,'Accesso interrotto','Road closed',
   {color:C.nero, weight:3.5}, {deco:{tipo:'croce', passo:'50%', dim:18}});
+aggL('fune_sbalzo','zona',null,'Funivie, fili a sbalzo, ecc.','Cableways and aerial wires',
+  {color:C.nero, weight:2.6}, {deco:{tipo:'pilone', passo:'50%', dim:22, dritto:1}});
 
 /* ---- TAVOLA 2: assi di sviluppo e fronte ---- */
 aggL('asse_principale','evoluzione',null,'Asse di sviluppo principale','Head of the fire',
-  {color:C.rosso, weight:10}, {deco:{tipo:'punta', passo:'100%', dim:28, pieno:1}});
+  {color:C.rosso, weight:10, lineCap:'butt'}, {deco:{tipo:'punta', passo:'100%', dim:34, pieno:1}});
 aggL('asse_veloce','evoluzione',null,'Asse secondario (veloce)','Secondary axis (fast)',
   {color:C.rosso, weight:3}, {deco:{tipo:'punta', passo:'100%', dim:22}});
 aggL('asse_lento','evoluzione',null,'Asse secondario (lento)','Secondary axis (slow)',

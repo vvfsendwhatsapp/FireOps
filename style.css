@@ -3178,6 +3178,21 @@ a.btn-icon-hamburger:hover {
 #sitac-app.sitac-stretto .sitac-mapwrap{flex:0 0 auto;height:54vh;min-height:300px}
 #sitac-app.sitac-stretto .sitac-simboli{grid-template-columns:repeat(7,1fr)}
 
+/* Quadro del vento: sta fermo in alto a sinistra, con il nord accanto —
+   la mappa è sempre a nord in alto, quindi la freccia si legge subito. */
+#sitac-app .sitac-vento{position:absolute;top:8px;left:8px;z-index:900;
+  display:flex;align-items:center;gap:8px;padding:6px 9px;
+  background:rgba(255,255,255,.92);border:1px solid var(--border-color);
+  border-radius:6px;box-shadow:0 1px 6px rgba(0,0,0,.5);color:#111}
+#sitac-app .sitac-vento[hidden]{display:none}
+#sitac-app .sitac-vento-nord{display:flex;flex-direction:column;align-items:center;
+  font-size:10px;font-weight:bold;line-height:1}
+#sitac-app .sitac-vento-nord svg{width:18px;height:18px}
+#sitac-app .sitac-vento-glifo{width:38px;height:38px;display:block}
+#sitac-app .sitac-vento-glifo svg{width:100%;height:100%;display:block}
+#sitac-app .sitac-vento-dati{font-family:"Courier New",monospace;font-size:12px;
+  font-weight:bold;line-height:1.3;white-space:nowrap}
+
 @media (max-width:900px){
   #sitac-app{height:auto;min-height:0;flex-direction:column}
   #sitac-barra{width:100%;flex:0 0 auto;max-height:42vh;border-right:0;

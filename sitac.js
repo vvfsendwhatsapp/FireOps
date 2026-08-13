@@ -254,6 +254,7 @@ function avvia(app){
       datiOk:'Dati convalidati: intervento {i}, {n}.',
       datiMancanti:'Mancano o non sono validi: {c}',
       statoPrevista:'Prevista', statoAttiva:'Attiva', statoEffettuata:'Effettuata' },
+      stVento:'Vento {v} km/h verso {d}° (rilevato alle {o})',
     en:{ bCono:'Spread cone', conoModo:'How should the cone be built?',
       conoSettore:'From the point of origin', conoSettoreNota:'30° sector from the origin; a second click marks where the front is now (T0).',
       conoFronte:'From the fire front line', conoFronteNota:'Draw the observed front and push it forward at 15, 30 and 60 minutes.',
@@ -389,7 +390,13 @@ function avvia(app){
     if (k === 'nota')
       return L.divIcon({className:'sitac-etichetta', html: esc(o.testo || ''),
         iconSize:null, iconAnchor:[0,10]});
-    const gir = o.rotazione ? ` style="transform:rotate(${o.rotazione}deg)"` : '';
+    /* `rotazione` è un azimut vero; `r0` dice verso dove punta il disegno
+       così com'è (il vento è disegnato verso ovest, la pendenza verso sud-
+       ovest). Senza la differenza i simboli escono ruotati di novanta gradi
+       e le squadre leggono una direzione sbagliata. */
+    const d0 = (SIM[k] && SIM[k].r0) || 0;
+    const gir = o.rotazione != null
+      ? ` style="transform:rotate(${((o.rotazione - d0) % 360 + 360) % 360}deg)"` : '';
     return L.divIcon({className:'sitac-sim',
       html:`<span class="sitac-disco"></span><span class="sitac-glifo"${gir}>${svgSimbolo(k, o)}</span>`,
       iconSize:[42,42], iconAnchor:[21,21], popupAnchor:[0,-21]});
@@ -684,6 +691,9 @@ function avvia(app){
         + (tipo === 'fulmineOff'
             ? `<path d="M9 9L55 55M55 9L9 55" stroke="${col}" stroke-width="5"/>` : '')
         + `</g>`;
+    else if (tipo === 'pilone')
+      dentro = `<path d="M${d/2} 2V${d-7}" stroke="${col}" stroke-width="2.4"/>`
+        + `<rect x="${d/2-4}" y="${d-8}" width="8" height="6" fill="${col}"/>`;
     return L.divIcon({className:'sitac-deco', iconSize:[d,d], iconAnchor:[d/2,d/2],
       html:`<svg viewBox="0 0 ${d} ${d}" width="${d}" height="${d}">${dentro}</svg>`});
   }
@@ -699,7 +709,7 @@ function avvia(app){
           pathOptions:{color:col, fillColor:col, fillOpacity: pieno ? 1 : 0,
             weight: pieno ? 1 : 2.5}})};
     return {offset: dc.passo === '50%' ? '50%' : 8, repeat: dc.passo,
-      symbol: L.Symbol.marker({rotate:true,
+      symbol: L.Symbol.marker({rotate: !dc.dritto,
         markerOptions:{icon: glifoDeco(dc.tipo, dc.dim, col, pieno), interactive:false}})};
   }
 
@@ -798,13 +808,13 @@ function avvia(app){
      ===================================================================== */
   let conoLayer = null;
   let ventoCono = null;
-  let simboloVentoLayer = null;
   let attesaClic = null;
   let attesaLinea = null;
 
   function togliCono(){
     if (conoLayer){ decori.removeLayer(conoLayer); conoLayer = null; }
     ventoCono = null;
+    mostraVento(null);
   }
 
   /* Attese: risolvono con null se qualcuno preme Esc o cambia strumento —
@@ -840,24 +850,27 @@ function avvia(app){
     if (b) b.disabled = !origineSullaCarta();
   }
 
-  /* Il simbolo del vento è un elemento della tavola a tutti gli effetti,
-     quindi si aggiunge ai disegni e viene esportato. Uno solo per volta:
-     rifacendo il cono si sostituisce, non se ne accumulano. */
-  function posaSimboloVento(punto, vento){
+  /* Il vento non è più un simbolo posato sulla carta ma un quadro fisso:
+     sulla mappa finiva sotto agli altri elementi e si spostava con loro,
+     mentre è un dato dell'intero scenario, non di un punto. */
+  function mostraVento(vento){
+    ventoCono = vento || null;
+    const box = q('#sitac-vento');
+    if (!box) return;
+    if (!vento){ box.hidden = true; box.innerHTML = ''; return; }
     const V = NS.SitacVento;
-    if (simboloVentoLayer){
-      scollega(simboloVentoLayer);
-      disegni.removeLayer(simboloVentoLayer);
-    }
     const k = V.simboloVento(vento.velocita);
-    const m = L.marker(punto, {draggable:true,
-      icon: iconaSimbolo(k, {rotazione: vento.verso, testo: String(vento.velocita)})});
-    m._tipo = k; m._genere = 'simbolo'; m._stato = 'previsto';
-    m._rotazione = vento.verso; m._testo = String(vento.velocita);
-    disegni.addLayer(m);
-    creaManiglia(m);
-    etichettaElemento(m);
-    simboloVentoLayer = m;
+    const d0 = (SIM[k] && SIM[k].r0) || 0;
+    box.hidden = false;
+    box.innerHTML =
+      `<span class="sitac-vento-nord"><svg viewBox="0 0 24 24">`
+      + `<path d="M12 2l5 11h-10Z" fill="#cc0000"/>`
+      + `<path d="M12 22l-5-9h10Z" fill="#888"/></svg><b>N</b></span>`
+      + `<span class="sitac-vento-glifo" style="transform:rotate(`
+      + `${((vento.verso - d0) % 360 + 360) % 360}deg)">`
+      + `${svgSimbolo(k, {senzaTesto:1})}</span>`
+      + `<span class="sitac-vento-dati">${esc(String(vento.velocita))} km/h<br>`
+      + `${esc(String(vento.verso))}\u00b0</span>`;
   }
 
   /* Secondo e terzo passo del percorso: direzione, poi intensità. Il
@@ -914,6 +927,8 @@ function avvia(app){
       if (!velocita) return null;
     }
     return V.ventoDa(velocita, verso, fonte);
+    v.letto = new Date().toISOString();
+    return v;
   }
 
   /* La scala è la colonna sinistra della tabella 1: dieci in dieci fino a
@@ -965,7 +980,7 @@ function avvia(app){
     if (!vento) return stato(t('conoAnnullato'));
 
     togliCono();
-    ventoCono = vento;
+    
     const opz = {colore: COL.rosso, raggio0: r0, etichetta0: t('conoT0')};
     conoLayer = V.disegnaCono(origine, vento, opz);
     decori.addLayer(conoLayer);
@@ -980,7 +995,7 @@ function avvia(app){
       });
       m.on('pm:remove', togliCono);
     }
-    posaSimboloVento(origine, vento);
+    mostraVento(vento);
     riassunto(vento);
   }
 
@@ -996,11 +1011,11 @@ function avvia(app){
     if (!vento) return stato(t('conoAnnullato'));
 
     togliCono();
-    ventoCono = vento;
+
     conoLayer = V.disegnaFronti(punti, vento,
       {colore: COL.rosso, etichetta0: t('conoT0')});
     decori.addLayer(conoLayer);
-    posaSimboloVento(centro, vento);
+    mostraVento(vento);
     riassunto(vento);
   }
 
@@ -1233,8 +1248,10 @@ function avvia(app){
 
   function fermaTutto(){
     map.pm.disableDraw();
-    map.pm.disableGlobalEditMode();
-    map.pm.disableGlobalRemovalMode();
+    if (map.pm.globalEditModeEnabled && map.pm.globalEditModeEnabled())
+      map.pm.disableGlobalEditMode();
+    if (map.pm.globalRemovalModeEnabled && map.pm.globalRemovalModeEnabled())
+      map.pm.disableGlobalRemovalMode();
     attesaDirezione = null;
     if (attesaClic){ const f = attesaClic; attesaClic = null; f(null); }
     if (attesaLinea){ const f = attesaLinea; attesaLinea = null; f(null); }
@@ -1304,17 +1321,17 @@ function avvia(app){
       if (!def.r) riattivaStrumento();
     }
 
-    if (def.r){
-      /* Un tick dopo: il clic che ha posato il simbolo è ancora in corso e
-         verrebbe consumato subito come "direzione", con azimut nullo. */
-      map.pm.disableDraw();
-      stato(`${nm(def)}\n${t('chiediDirezione')}`);
-      setTimeout(() => { attesaDirezione = layer; }, 0);
-    }
     etichettaElemento(layer);
     aggiornaStato();
 
-
+    if (def.r){
+      /* Dopo aggiornaStato, che riscriverebbe sopra. Il setTimeout serve
+         perché il clic che ha posato il simbolo è ancora in corso e
+         verrebbe consumato subito come direzione, con azimut nullo. */
+      map.pm.disableDraw();
+      setTimeout(() => { attesaDirezione = layer; }, 0);
+      stato(`${nm(def)}\n${t('chiediDirezione')}`);
+    }
   });
 
   /* =======================================================================
@@ -1368,7 +1385,7 @@ function avvia(app){
     if (!disegni.getLayers().length) return stato(t('giaVuota'));
     if (!await chiedi({testo: t('confPulisci')})) return;
     disegni.clearLayers(); decori.clearLayers();
-    conoLayer = null; ventoCono = null; simboloVentoLayer = null;
+    conoLayer = null; ventoCono = null; 
     cerchioPosizione = null;
     aggiornaStato();
   };
@@ -1411,7 +1428,11 @@ function avvia(app){
     const fc = {type:'FeatureCollection', features:feat,
       properties:Object.assign({applicazione:'FireOps VVF — SITAC',
         simbologia:'SI.TA.C. CNVVF 2021', lingua,
-        creato:new Date().toISOString()}, intestazione())};
+        creato:new Date().toISOString()}, intestazione(),
+        ventoCono ? {vento:{velocita:ventoCono.velocita, verso:ventoCono.verso,
+          provenienza:ventoCono.provenienza, fonte:ventoCono.fonte,
+          letto:ventoCono.letto || null,
+          apertura:NS.SitacVento.APERTURA, quota:NS.SitacVento.QUOTA_VENTO}} : {})};
     scarica(JSON.stringify(fc,null,1), nomeFile('geojson'), 'application/geo+json');
     stato(t('geojsonFatto', {n:feat.length}));
   };
@@ -1525,6 +1546,11 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
       if (p.nominativo) inNominativo.value = String(p.nominativo);
       if (p.telefono)   inTelefono.value   = String(p.telefono);
       if (p.posizione)  inPosizione.value  = String(p.posizione);
+      /* Il vento rientra come dato, non come disegno: il cono è una stima
+         e si rifà dal pulsante, ma il quadro dice subito con che vento la
+         carta è stata redatta. */
+      if (p.vento && p.vento.velocita != null && p.vento.verso != null)
+        mostraVento(p.vento);
       segnaIntestazione();
     }
     L.geoJSON(fc, {
@@ -1740,7 +1766,9 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
        i.dos ? `${t('nDos')} ${i.dos}` : '',
        i.nominativo || '', i.telefono || ''].filter(Boolean).join('  ·  ');
     testata.querySelector('.d').textContent =
-      t('stData', {d:new Date().toLocaleString(lingua)});
+      t('stData', {d:new Date().toLocaleString(lingua)})
+      + (ventoCono ? `  ·  ${t('stVento', {v:ventoCono.velocita, d:ventoCono.verso,
+          o:ventoCono.letto ? new Date(ventoCono.letto).toLocaleTimeString(lingua) : '—'})}` : '');
     testata.querySelector('.n').textContent = $('stato').textContent.replace(/\n/g, ' · ');
     legenda.classList.remove('chiusa');   // sulla carta la legenda serve aperta
 
