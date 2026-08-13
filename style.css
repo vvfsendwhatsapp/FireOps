@@ -3151,6 +3151,18 @@ a.btn-icon-hamburger:hover {
 #sitac-app .sitac-modale-azioni button{justify-content:center;font-weight:bold}
 #sitac-app #sitac-modale-ok{background:var(--primary-color);color:var(--dark-color);
   border-color:var(--primary-color)}
+/* Percorso guidato del cono: al posto del campo di testo, un elenco di voci */
+#sitac-app .sitac-scelte{display:flex;flex-direction:column;gap:6px;margin-top:10px;
+  max-height:52vh;overflow-y:auto}
+#sitac-app .sitac-scelta-titolo{margin:8px 0 0;font-size:11px;font-weight:bold;
+  text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted)}
+#sitac-app .sitac-scelta{flex-direction:column;align-items:flex-start;gap:2px;
+  padding:9px 11px}
+#sitac-app .sitac-scelta b{font-size:13px;color:var(--text-main)}
+#sitac-app .sitac-scelta span{font-size:11.5px;line-height:1.35;color:var(--text-muted);
+  white-space:normal}
+#sitac-app .sitac-scelta[disabled]{opacity:.45;cursor:not-allowed}
+#sitac-app .sitac-scelta[disabled]:hover{border-color:var(--border-color)}
 
 /* Testata di stampa: esiste solo su carta, a video ripeterebbe lo stato */
 #sitac-testata-stampa{display:none}
@@ -3198,13 +3210,28 @@ a.btn-icon-hamburger:hover {
   @page{size:A4 landscape;margin:10mm}
 }
 
+/* La riga sopra il riquadro — nota, campi, bandiere, Espandi — sta FUORI da
+   #sitac-app: nessuna regola di quel contenitore la raggiunge, e nemmeno
+   .sitac-stretto. La nota prende la riga intera e spinge il resto sotto,
+   allineato sulla stessa base. */
+#sitac-aib .pagina-box-header-con-nota{
+  display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;max-width:100%}
+/* `min-width:0` è la riga che conta: senza, un elemento flex non scende
+   sotto la larghezza del proprio contenuto e sfonda il contenitore anche
+   con flex-wrap attivo — è lo scorrimento orizzontale che vedevi. */
+#sitac-aib .pagina-nota-inline{flex:1 1 100%;min-width:0;margin:0}
+#sitac-aib .btn-fullscreen-pagina{flex:0 0 auto;margin-left:auto}
+/* Pannello stretto: Espandi smette di andare a fondo riga, altrimenti
+   quando i campi vanno a capo resta isolato dall'altra parte. */
+.sitac-sez-stretta .btn-fullscreen-pagina{margin-left:0}
+
 /* Intestazione della carta: numero d'intervento e DOS. Stanno in alto
    accanto alle bandiere perché sono la prima cosa che si compila e
    l'ultima che si guarda quando la carta arriva da qualcun altro. */
 #sitac-aib .sitac-intestazione{display:flex;align-items:center;gap:6px;flex:0 0 auto}
 #sitac-aib .sitac-intestazione label{font-size:11px;color:var(--text-muted);
   text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
-#sitac-aib .sitac-intestazione input{width:78px;padding:7px 8px;text-align:center;
+#sitac-aib .sitac-intestazione input{width:78px;min-width:0;padding:7px 8px;text-align:center;
   background:var(--dark-color);color:var(--text-main);border:1px solid var(--border-color);
   border-radius:4px;font-family:"Courier New",monospace;font-size:14px;font-weight:bold;
   letter-spacing:1px}
