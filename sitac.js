@@ -255,6 +255,16 @@ function avvia(app){
       datiMancanti:'Mancano o non sono validi: {c}',
       statoPrevista:'Prevista', statoAttiva:'Attiva', statoEffettuata:'Effettuata' },
       stVento:'Vento {v} km/h verso {d}° (rilevato alle {o})',
+      p1:'Intervento', p2:'Posizione DOS', p3:'Area d\u2019origine',
+      p4:'Vento e coni', p5:'Fronte di fiamma', p6:'Superficie coinvolta',
+      p2Nota:'Il rilievo è la posizione di questo dispositivo: in sala operativa non è quella del DOS.',
+      pFatto:'\u2713', pManca:'da fare',
+      pInneschi:'{n} sul terreno', pFronti:'{n} tracciati', pConi:'{n} coni',
+      pEttari:'{v} ha', pNessuno:'nessuno',
+      bInnesco:'Posa area d\u2019origine', bFronte:'Traccia fronte', bCono:'Aggiungi cono',
+      dosDove:'Posizione rilevata. Cosa ne faccio?',
+      dosPosa:'Posa qui il simbolo DOS', dosSposta:'Sposta qui il DOS',
+      dosSolo:'Tieni solo le coordinate', dosPosato:'DOS posato sulla posizione rilevata.',
     en:{ bCono:'Spread cone', conoModo:'How should the cone be built?',
       conoSettore:'From the point of origin', conoSettoreNota:'30° sector from the origin; a second click marks where the front is now (T0).',
       conoFronte:'From the fire front line', conoFronteNota:'Draw the observed front and push it forward at 15, 30 and 60 minutes.',
@@ -544,6 +554,7 @@ function avvia(app){
         nominativo: inNominativo.value, telefono: inTelefono.value,
         posizione: inPosizione.value}));
     } catch(e){ /* sessione non disponibile: si perde solo il ricordo */ }
+  aggiornaPassi();
   }
   inIntervento.oninput = () => {
     inIntervento.value = inIntervento.value.replace(/[^0-9]/g, '');
@@ -556,28 +567,42 @@ function avvia(app){
     segnaIntestazione();
   };
 
-  /* La tendina: numero e DOS bastano quasi sempre, il resto si apre quando
-     serve — di solito una volta sola, all'inizio. */
-  function apriDati(apri){
-    boxDati.hidden = !apri;
-    bDati.setAttribute('aria-expanded', apri ? 'true' : 'false');
-    bDati.classList.toggle('aperto', apri);
-  }
-  bDati.onclick = () => apriDati(boxDati.hidden);
-
-              /* Posizione attuale: si riusa il GPS della mappa, che disegna già il
-                pallino azzurro. Il campo è di sola lettura — è un rilievo, non un dato
-                da digitare, e a mano ci si sbaglia di un grado senza accorgersene. */
-  /* Il GPS risponde anche all'avvio, quando `centraSuGps(false)` centra la
-     mappa da solo: senza questa spia la posizione ripristinata dalla
-     sessione verrebbe sovrascritta da quella nuova senza che nessuno
-     l'abbia chiesta. */
   let chiedePosizione = false;
   q('#sitac-bPosizione').onclick = () => { chiedePosizione = true; centraSuGps(true); };
+
   function scriviPosizione(latlng, acc){
     inPosizione.value = `${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}`
       + (acc ? ` (\u00b1${Math.round(acc)} m)` : '');
     segnaIntestazione();
+  }
+
+  /* Il GPS dice dove sta questo dispositivo. In sala operativa non è il
+     DOS, sul posto sì: la differenza la sa solo chi sta davanti allo
+     schermo, quindi si chiede invece di decidere. */
+  const dosSullaCarta = () => {
+    let m = null;
+    disegni.eachLayer(x => { if (x._tipo === 'dos' && x.getLatLng) m = x; });
+    return m;
+  };
+
+  async function offriDos(latlng){
+    const gia = dosSullaCarta();
+    const scelta = await scegli({testo: t('dosDove'), voci:[
+      {k:'posa', et: gia ? t('dosSposta') : t('dosPosa')},
+      {k:'solo', et: t('dosSolo')}
+    ]});
+    if (scelta !== 'posa') return;
+    if (gia){ gia.setLatLng(latlng); }
+    else {
+      const m = L.marker(latlng, {draggable:true,
+        icon: iconaSimbolo('dos', {stato:'attivo'})});
+      m._tipo = 'dos'; m._genere = 'simbolo'; m._stato = 'attivo';
+      m._testo = inDos.value || null;
+      disegni.addLayer(m);
+      etichettaElemento(m);
+    }
+    aggiornaStato();
+    stato(t('dosPosato'));
   }
 
   /* Convalida: la posizione resta facoltativa, perché il GPS in sala
@@ -596,6 +621,7 @@ function avvia(app){
     apriDati(false);
     bDati.classList.add('convalidato');
     stato(t('datiOk', {i: inIntervento.value, n: inNominativo.value.trim()}));
+    aggiornaPassi();
   };
 
   try {
@@ -657,7 +683,10 @@ function avvia(app){
     if (cerchioPosizione) decori.removeLayer(cerchioPosizione);
     cerchioPosizione = L.circleMarker(e.latlng, {radius:7, color:'#fff', weight:2,
       fillColor:'#0070c0', fillOpacity:1, interactive:false}).addTo(decori);
-    if (chiedePosizione || !inPosizione.value) scriviPosizione(e.latlng, e.accuracy);
+      const chiesta = chiedePosizione;
+    chiedePosizione = false;
+    if (chiesta || !inPosizione.value) scriviPosizione(e.latlng, e.accuracy);
+    if (chiesta) offriDos(e.latlng);
     chiedePosizione = false;
     stato(t('posizione', {lat:e.latlng.lat.toFixed(5), lon:e.latlng.lng.toFixed(5),
       m:Math.round(e.accuracy)}));
@@ -806,15 +835,28 @@ function avvia(app){
      e infatti non finisce nel GeoJSON: sta nei decori e si rifà quando
      l'origine si sposta.
      ===================================================================== */
-  let conoLayer = null;
   let ventoCono = null;
   let attesaClic = null;
   let attesaLinea = null;
 
-  function togliCono(){
-    if (conoLayer){ decori.removeLayer(conoLayer); conoLayer = null; }
-    ventoCono = null;
-    mostraVento(null);
+  /* Più coni sulla stessa carta: un incendio con due fronti attivi ne
+     vuole due, e cancellare il precedente ogni volta era il motivo per cui
+     non si potevano confrontare. Il vento è uno solo — lo rileva la stessa
+     persona — ma ogni cono può derogare sulla direzione locale. */
+  const coni = [];
+  let nCono = 0;
+  let ventoGlobale = null;
+
+  function togliCono(id){
+    const i = coni.findIndex(c => c.id === id);
+    if (i < 0) return;
+    decori.removeLayer(coni[i].layer);
+    coni.splice(i, 1);
+    aggiornaStato();
+  }
+  function togliTuttiConi(){
+    coni.forEach(c => decori.removeLayer(c.layer));
+    coni.length = 0;
   }
 
   /* Attese: risolvono con null se qualcuno preme Esc o cambia strumento —
@@ -854,7 +896,11 @@ function avvia(app){
      sulla mappa finiva sotto agli altri elementi e si spostava con loro,
      mentre è un dato dell'intero scenario, non di un punto. */
   function mostraVento(vento){
-    ventoCono = vento || null;
+    const layer = V.disegnaCono(origine, vento, opz);   // o disegnaFronti
+    decori.addLayer(layer);
+    coni.push({id: ++nCono, layer, vento, tipo:'settore'});
+    ventoGlobale = vento;
+    mostraVento(vento);
     const box = q('#sitac-vento');
     if (!box) return;
     if (!vento){ box.hidden = true; box.innerHTML = ''; return; }
@@ -951,7 +997,7 @@ function avvia(app){
     const V = NS.SitacVento;
     if (!V) return stato('sitac-vento.js non caricato.');
     const voci = [];
-    if (conoLayer) voci.push({k:'via', et:t('conoVia'), nota:t('conoViaNota')});
+    if (conoLayer) voci.push({k:'via', et:t('conoVia')});
     voci.push({k:'settore', et:t('conoSettore'), nota:t('conoSettoreNota')});
     voci.push({k:'fronte',  et:t('conoFronte'),  nota:t('conoFronteNota')});
     voci.push({k:'terzo',   et:t('conoTerzo'),   nota:t('conoStandby'), off:1});
@@ -979,11 +1025,13 @@ function avvia(app){
     const vento = await scegliVento(origine);
     if (!vento) return stato(t('conoAnnullato'));
 
-    togliCono();
-    
+    const layer = V.disegnaCono(origine, vento, opz);   // o disegnaFronti
+    decori.addLayer(layer);
+    coni.push({id: ++nCono, layer, vento, tipo:'settore'});
+    ventoGlobale = vento;
+    mostraVento(vento);
+
     const opz = {colore: COL.rosso, raggio0: r0, etichetta0: t('conoT0')};
-    conoLayer = V.disegnaCono(origine, vento, opz);
-    decori.addLayer(conoLayer);
 
     /* Spostando l'area d'origine la previsione la segue: il vento è lo
        stesso, il vertice no. Per rileggere il vento si rifà il percorso. */
@@ -1086,93 +1134,75 @@ function avvia(app){
     return b;
   }
 
+  function bottoneAzione(genere, chiave, etichetta){
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.dataset.genere = genere; b.dataset.chiave = chiave;
+    b.innerHTML = `<span>${esc(etichetta)}</span>`;
+    b.onclick = () => attiva(genere, chiave, b);
+    return b;
+  }
+
   function creaPulsanti(){
     const tav = q('#sitac-tavola');
     tav.innerHTML = '';
 
-    /* Primo livello: la geometria — è la prima cosa che si decide, perché
-       determina come si disegna. Dentro, le quattro tavole della
-       pubblicazione e, dove esistono, i loro riquadri. */
-    const fisa = (titolo, riempi) => {
+    /* Un passo è una fisarmonica numerata con l'indicatore di stato sulla
+       testata. La sequenza SUGGERISCE l'ordine di lavoro, non lo impone:
+       una SITAC si apre spesso a incendio già in corso, col numero
+       d'intervento che arriva dopo e il fronte dettato per radio. */
+    const passo = (n, titolo, id, riempi) => {
       const box = document.createElement('div');
       box.className = 'sitac-fisa';
       const testa = document.createElement('button');
       testa.type = 'button';
       testa.className = 'sitac-fisa-testa';
       testa.setAttribute('aria-expanded', 'false');
-      testa.innerHTML = `<span class="freccia">▶</span><span>${esc(titolo)}</span>`;
+      testa.innerHTML = `<span class="freccia">▶</span>`
+        + `<span class="sitac-passo-n">${n}</span>`
+        + `<span class="sitac-passo-tit">${esc(titolo)}</span>`
+        + `<span class="sitac-passo-stato" id="sitac-st${id}"></span>`;
       const corpo = document.createElement('div');
       corpo.className = 'sitac-fisa-corpo';
-      const n = riempi(corpo);
-      if (!n) return;
-      testa.insertAdjacentHTML('beforeend', `<span class="sitac-quanti">${n}</span>`);
+      riempi(corpo);
       box.appendChild(testa); box.appendChild(corpo);
       tav.appendChild(box);
     };
 
-    /* Le voci di una tavola, spezzate nei riquadri che la pubblicazione
-       disegna dentro il foglio (Dispositivo aereo, Squadre a terra…). */
-    const perRiquadro = (fonte, tavola) => {
-      const voci = Object.entries(fonte).filter(([, d]) => d.g === tavola);
-      const gruppi = new Map();
-      voci.forEach(v => {
-        const sg = v[1].sg || '';
-        if (!gruppi.has(sg)) gruppi.set(sg, []);
-        gruppi.get(sg).push(v);
-      });
-      return gruppi;
-    };
-
-    fisa(t('gPunti'), corpo => {
-      let n = 0;
-      TAVOLE.forEach(tv => {
-        const gruppi = perRiquadro(SIM, tv.k);
-        if (!gruppi.size) return;
-        corpo.insertAdjacentHTML('beforeend',
-          `<span class="sitac-sottogruppo">${esc(nm(tv))}</span>`);
-        gruppi.forEach((voci, sg) => {
-          if (sg) corpo.insertAdjacentHTML('beforeend',
-            `<span class="sitac-riquadro">${esc(nmRiquadro(sg))}</span>`);
-          const griglia = document.createElement('div');
-          griglia.className = 'sitac-simboli';
-          voci.forEach(([k, d]) => griglia.appendChild(bottoneSimbolo(k, d)));
-          corpo.appendChild(griglia);
-          n += voci.length;
-        });
-      });
+    /* 3 — l'area d'origine è una voce della tavola 2: qui non se ne crea
+       una copia, si richiama lo stesso strumento. */
+    passo(3, t('p3'), 3, corpo => {
       const el = document.createElement('div');
       el.className = 'sitac-strumenti';
-      const bn = document.createElement('button');
-      bn.type = 'button';
-      bn.dataset.genere = 'simbolo'; bn.dataset.chiave = 'nota';
-      bn.innerHTML = `<i class="sitac-tratto" style="background:none;text-align:center">✎</i><span>${esc(nm(NOTA))}</span>`;
-      bn.onclick = () => attiva('simbolo', 'nota', bn);
-      el.appendChild(bn);
+      el.appendChild(bottoneSimbolo('origine', SIM.origine));
       corpo.appendChild(el);
-      return n + 1;
     });
 
-    fisa(t('gLinee'), corpo => {
-      let n = 0;
-      TAVOLE.forEach(tv => {
-        const gruppi = perRiquadro(LIN, tv.k);
-        if (!gruppi.size) return;
-        corpo.insertAdjacentHTML('beforeend',
-          `<span class="sitac-sottogruppo">${esc(nm(tv))}</span>`);
-        gruppi.forEach((voci, sg) => {
-          if (sg) corpo.insertAdjacentHTML('beforeend',
-            `<span class="sitac-riquadro">${esc(nmRiquadro(sg))}</span>`);
-          const el = document.createElement('div');
-          el.className = 'sitac-strumenti';
-          voci.forEach(([k, d]) => el.appendChild(bottoneLinea(k, d)));
-          corpo.appendChild(el);
-          n += voci.length;
-        });
-      });
-      return n;
+    passo(4, t('p4'), 4, corpo => {
+      const el = document.createElement('div');
+      el.className = 'sitac-azioni';
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'largo';
+      b.innerHTML = `<span>${esc(t('bCono'))}</span>`;
+      b.onclick = creaCono;
+      el.appendChild(b);
+      corpo.appendChild(el);
+      const lista = document.createElement('div');
+      lista.id = 'sitac-coni';
+      corpo.appendChild(lista);
     });
 
-    fisa(t('gAree'), corpo => {
+    passo(5, t('p5'), 5, corpo => {
+      const el = document.createElement('div');
+      el.className = 'sitac-strumenti';
+      el.appendChild(bottoneLinea('fronte', LIN.fronte));
+      corpo.appendChild(el);
+    });
+
+    /* 6 — la superficie è calcolata sui poligoni, non digitata: un numero
+       scritto a mano che contraddice quello misurato, su una carta
+       operativa, è peggio di nessun numero. */
+    passo(6, t('p6'), 6, corpo => {
       const el = document.createElement('div');
       el.className = 'sitac-strumenti';
       Object.entries(AREE).forEach(([k, d]) => {
@@ -1186,12 +1216,111 @@ function avvia(app){
       });
       corpo.appendChild(el);
       corpo.insertAdjacentHTML('beforeend',
-        `<p class="sitac-avviso">${esc(t('areeFuori'))}</p>`);
-      return Object.keys(AREE).length;
+        `<p class="sitac-conta" id="sitac-superficie"></p>`
+        + `<p class="sitac-avviso">${esc(t('areeFuori'))}</p>`);
+    });
+
+    /* 7-10 — le quattro tavole della pubblicazione, ciascuna coi suoi
+       riquadri: punti e linee insieme, come sul pieghevole. */
+    const perRiquadro = (fonte, tavola) => {
+      const gruppi = new Map();
+      Object.entries(fonte).filter(([, d]) => d.g === tavola).forEach(v => {
+        const sg = v[1].sg || '';
+        if (!gruppi.has(sg)) gruppi.set(sg, []);
+        gruppi.get(sg).push(v);
+      });
+      return gruppi;
+    };
+
+    TAVOLE.forEach((tv, i) => {
+      passo(7 + i, nm(tv), 'T' + tv.k, corpo => {
+        let n = 0;
+        const gs = perRiquadro(SIM, tv.k);
+        const gl = perRiquadro(LIN, tv.k);
+        const chiavi = new Set([...gs.keys(), ...gl.keys()]);
+        chiavi.forEach(sg => {
+          if (sg) corpo.insertAdjacentHTML('beforeend',
+            `<span class="sitac-riquadro">${esc(nmRiquadro(sg))}</span>`);
+          const voci = gs.get(sg);
+          if (voci){
+            const griglia = document.createElement('div');
+            griglia.className = 'sitac-simboli';
+            voci.forEach(([k, d]) => griglia.appendChild(bottoneSimbolo(k, d)));
+            corpo.appendChild(griglia);
+            n += voci.length;
+          }
+          const linee = gl.get(sg);
+          if (linee){
+            const el = document.createElement('div');
+            el.className = 'sitac-strumenti';
+            linee.forEach(([k, d]) => el.appendChild(bottoneLinea(k, d)));
+            corpo.appendChild(el);
+            n += linee.length;
+          }
+        });
+        /* L'annotazione libera sta con le azioni: è quello che si scrive
+           sulla carta mentre si opera. */
+        if (tv.k === 'azioni'){
+          const el = document.createElement('div');
+          el.className = 'sitac-strumenti';
+          el.appendChild(bottoneAzione('simbolo', 'nota', nm(NOTA)));
+          corpo.appendChild(el);
+        }
+        const testa = tav.lastChild.querySelector('.sitac-passo-stato');
+        if (testa) testa.textContent = n;
+      });
     });
 
     agganciaFisa(tav);
+    aggiornaPassi();
     if (strumento) marcaAttivo(strumento.genere, strumento.chiave);
+  }
+
+  /* Gli indicatori sulle testate: dicono a colpo d'occhio cosa manca
+     senza aprire i passi uno per uno. */
+  function aggiornaPassi(){
+    const segna = (id, testo, ok) => {
+      const e = q('#sitac-st' + id);
+      if (!e) return;
+      e.textContent = testo;
+      e.classList.toggle('fatto', !!ok);
+      e.classList.toggle('manca', !ok);
+    };
+    const completo = interventoValido() && dosValido()
+      && !!inNominativo.value.trim() && telefonoValido();
+    segna(1, completo ? `${t('pFatto')} ${inIntervento.value} · ${inDos.value}` : t('pManca'), completo);
+    segna(2, inPosizione.value ? t('pFatto') : t('pManca'), !!inPosizione.value);
+
+    const conta = k => disegni.getLayers().filter(x => x._tipo === k).length;
+    const nIn = conta('origine');
+    segna(3, nIn ? t('pInneschi', {n:nIn}) : t('pNessuno'), nIn > 0);
+    segna(4, coni.length ? t('pConi', {n:coni.length}) : t('pNessuno'), coni.length > 0);
+    const nFr = conta('fronte');
+    segna(5, nFr ? t('pFronti', {n:nFr}) : t('pNessuno'), nFr > 0);
+
+    let sup = 0;
+    disegni.eachLayer(x => {
+      if (x._tipo === 'percorsa' || x._tipo === 'attiva') sup += areaMq(x);
+    });
+    segna(6, sup ? t('pEttari', {v:(sup/10000).toFixed(1)}) : t('pNessuno'), sup > 0);
+    const box = q('#sitac-superficie');
+    if (box) box.textContent = sup ? t('pEttari', {v:(sup/10000).toFixed(2)}) : '';
+
+    const lista = q('#sitac-coni');
+    if (lista){
+      lista.innerHTML = '';
+      coni.forEach(c => {
+        const r = document.createElement('div');
+        r.className = 'sitac-cono-voce';
+        r.innerHTML = `<span>${c.id} — ${esc(String(c.vento.velocita))} km/h `
+          + `\u2192 ${esc(String(c.vento.verso))}\u00b0</span>`;
+        const b = document.createElement('button');
+        b.type = 'button'; b.textContent = '\u00d7';
+        b.onclick = () => togliCono(c.id);
+        r.appendChild(b);
+        lista.appendChild(r);
+      });
+    }
   }
 
   function marcaAttivo(genere, chiave){
@@ -1385,7 +1514,7 @@ function avvia(app){
     if (!disegni.getLayers().length) return stato(t('giaVuota'));
     if (!await chiedi({testo: t('confPulisci')})) return;
     disegni.clearLayers(); decori.clearLayers();
-    conoLayer = null; ventoCono = null; 
+    togliTuttiConi(); mostraVento(null);
     cerchioPosizione = null;
     aggiornaStato();
   };
@@ -1642,6 +1771,7 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
       + (per ? t('perimetro', {v:(per/1000).toFixed(2)}) : ''));
     aggiornaLegenda();
     aggiornaCono();
+    aggiornaPassi();
   }
 
   /* La tavola ha 59 voci: una legenda con tutte sarebbe illeggibile.
