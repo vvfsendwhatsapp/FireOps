@@ -285,7 +285,7 @@ agg('tp','dispositivo','sgTerra','Transit Point','Transit point', o => {
     <path d="M50 25l12 7-12 7Z" fill="${R}"/>
     <circle cx="28" cy="32" r="13" fill="${p ? R : '#fff'}" stroke="${R}" stroke-width="2.6"/>
     ${txt(28, 36, (o && o.testo) || 'TP', p ? '#fff' : R, 13)}`);
-}, {s:1, r:1r0:90});
+}, {s:1, r:1, r0:90});
 
 /* ---- TAVOLA 4: le azioni ---- */
 /* I lanci pesanti sono ellissi: hanno un asse, e va orientato lungo la
