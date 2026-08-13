@@ -166,10 +166,12 @@ function vento(n){
       const x = 52 - i * 6;
       b += `<line x1="${x}" y1="30" x2="${x-8}" y2="41" stroke="${C.nero}" stroke-width="3"/>`;
     }
+    /* Nel quadro fisso il testo sta fuori dal glifo: ruotandolo con la
+       freccia diventerebbe illeggibile. */
     return T(`<line x1="56" y1="35" x2="14" y2="35" stroke="${C.nero}" stroke-width="2.6"/>
       <path d="M5 35l13-6.5v13Z" fill="${C.nero}"/>${b}
       ${(o && o.senzaTesto) ? '' :
-        txt(34, 22, (o && o.testo) ? o.testo + ' Km/h' : '(.....Km/h)', C.nero, 10)}
+        txt(34, 22, (o && o.testo) ? o.testo + ' Km/h' : '(.....Km/h)', C.nero, 10)}`);
   };
 }
 
