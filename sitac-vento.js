@@ -271,6 +271,36 @@ function frontePiu(punti, verso, metri){
   });
 }
 
+/* Il fronte non è il perimetro: di un'area percorsa quello che avanza è
+   solo il bordo sottovento. Si porta tutto nel riferimento locale — x di
+   traverso al vento, y lungo il vento — si prendono i due vertici estremi
+   in x, e delle due catene di bordo che li uniscono si tiene quella che
+   sta più avanti. L'altra è coda e fianchi, già percorsi. */
+function fronteSottovento(vertici, verso){
+  const punti = vertici.map(p => L.latLng(p.lat, p.lng));
+  if (punti.length < 3) return punti;
+  const c = centroide(punti);
+  const loc = punti.map(p => {
+    const d = c.distanceTo(p), a = rad(azimut(c, p) - verso);
+    return {x: d * Math.sin(a), y: d * Math.cos(a)};
+  });
+  let iMin = 0, iMax = 0;
+  loc.forEach((p, i) => {
+    if (p.x < loc[iMin].x) iMin = i;
+    if (p.x > loc[iMax].x) iMax = i;
+  });
+  /* L'anello è chiuso: da un estremo all'altro si può girare in due sensi. */
+  const catena = (da, a) => {
+    const r = [];
+    for (let i = da; ; i = (i + 1) % punti.length){ r.push(i); if (i === a) break; }
+    return r;
+  };
+  const c1 = catena(iMin, iMax), c2 = catena(iMax, iMin);
+  const media = ind => ind.reduce((s, i) => s + loc[i].y, 0) / ind.length;
+  const scelta = media(c1) >= media(c2) ? c1 : c2.slice().reverse();
+  return scelta.map(i => punti[i]);
+}
+
 /* Modo 2 — la linea del fronte rilevata a T0, allargata e spinta avanti.
    Serve quando il fuoco è già lungo e il punto d'innesco non dice più
    niente: quello che conta è dov'è il fronte adesso. */
@@ -384,6 +414,7 @@ NS.SitacVento = {
   distanzaFronte,
   puntoDaAzimut,
   disegnaCono,
+  fronteSottovento,
   disegnaFronti
 };
 

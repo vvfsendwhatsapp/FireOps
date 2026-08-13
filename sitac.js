@@ -254,7 +254,12 @@ function avvia(app){
       pEttari:'{v} ha', pNessuno:'nessuno',
       dosDove:'Posizione rilevata. Cosa ne faccio?',
       dosPosa:'Posa qui il simbolo DOS', dosSposta:'Sposta qui il DOS',
-      dosSolo:'Tieni solo le coordinate', dosPosato:'DOS posato sulla posizione rilevata.' },
+      dosSolo:'Tieni solo le coordinate', dosPosato:'DOS posato sulla posizione rilevata.',
+      conoElemento:'Da un\u2019area o un fronte gi\u00e0 disegnati',
+      conoElementoNota:'Di un\u2019area percorsa si prende il bordo sottovento; di un fronte, il tracciato.',
+      conoNienteBase:'Nessuna area percorsa n\u00e9 fronte sulla carta: disegnane uno, o usa gli altri modi.',
+      conoScegliBase:'Clicca sulla mappa l\u2019area o il fronte da cui far partire il cono.',
+      conoBaseCorta:'La geometria scelta ha troppo pochi vertici.', },
 
     en:{ bCono:'Add cone', conoModo:'How should the cone be built?',
       conoSettore:'From the point of origin', conoSettoreNota:'30° sector from the origin; a second click marks where the front is now (T0).',
@@ -924,6 +929,33 @@ function avvia(app){
     return m;
   };
 
+  /* Basi possibili per il cono: i poligoni che rappresentano fuoco — non
+     le zone di gestione — e i fronti già tracciati. */
+  const basiCono = () => disegni.getLayers().filter(x =>
+    AREE_SUPERFICIE.indexOf(x._tipo) >= 0 || x._tipo === 'fronte');
+
+  function evidenzia(lista, on){
+    lista.forEach(l => {
+      const el = l._path || (l.getElement && l.getElement());
+      if (el && el.classList) el.classList.toggle('sitac-eleggibile', !!on);
+    });
+  }
+
+  let attesaElemento = null;
+  function attendiElemento(lista, msg){
+    fermaTutto(); spegniPulsanti(); stato(msg);
+    evidenzia(lista, true);
+    return new Promise(risolvi => {
+      attesaElemento = l => { evidenzia(lista, false); risolvi(l); };
+    });
+  }
+  /* Il FeatureGroup inoltra i clic dei figli e mette il layer in e.layer:
+     non serve agganciare un listener per elemento. */
+  disegni.on('click', e => {
+    if (!attesaElemento) return;
+    const f = attesaElemento; attesaElemento = null; f(e.layer);
+  });
+
   /* Il vento non è un simbolo posato sulla carta ma un quadro fisso in alto
      a sinistra, col nord accanto: sulla mappa finiva sotto agli altri
      elementi e si spostava con loro, mentre è un dato dell'intero
@@ -1029,7 +1061,9 @@ function avvia(app){
     const V = NS.SitacVento;
     if (!V) return stato('sitac-vento.js non caricato.');
     const voci = [];
+    const basi = basiCono().length;
     if (coni.length) voci.push({k:'via', et:t('conoVia'), nota:t('conoViaNota')});
+    voci.push({k:'elemento', et:t('conoElemento'), nota:t('conoElementoNota'), off: !basi});
     voci.push({k:'settore', et:t('conoSettore'), nota:t('conoSettoreNota')});
     voci.push({k:'fronte',  et:t('conoFronte'),  nota:t('conoFronteNota')});
     voci.push({k:'terzo',   et:t('conoTerzo'),   nota:t('conoStandby'), off:1});
@@ -1037,7 +1071,9 @@ function avvia(app){
       const modo = await scegli({testo: t('conoModo'), voci});
       if (!modo) return stato(t('conoAnnullato'));
       if (modo === 'via'){ togliTuttiConi(); aggiornaStato(); return stato(t('conoTolto')); }
-      if (modo === 'settore') await conoSettore(); else await conoFronte();
+      if (modo === 'elemento') await conoDaElemento();
+      else if (modo === 'settore') await conoSettore();
+      else await conoFronte();
     } catch(e){
       stato(t('ventoErrore', {e: e.message}));
     }
@@ -1118,6 +1154,36 @@ function avvia(app){
     aggiornaStato();
     if (strumento) riattivaStrumento();
   });
+
+  /* Modo 3: da un'area percorsa o da un fronte già sulla carta. È il caso
+     più frequente in sala operativa — l'area la si disegna comunque. */
+  async function conoDaElemento(){
+    const V = NS.SitacVento;
+    const lista = basiCono();
+    if (!lista.length) return stato(t('conoNienteBase'));
+    const l = lista.length === 1 ? lista[0]
+      : await attendiElemento(lista, t('conoScegliBase'));
+    if (!l) return stato(t('conoAnnullato'));
+
+    const anello = AREE[l._tipo] ? l.getLatLngs()[0] : l.getLatLngs();
+    if (!anello || anello.length < 2) return stato(t('conoBaseCorta'));
+    const centro = anello[Math.floor(anello.length / 2)];
+
+    /* Il vento si chiede PRIMA: senza direzione non si sa quale bordo del
+       poligono è il fronte e quale è la coda. */
+    const vento = await scegliVento(centro);
+    if (!vento) return stato(t('conoAnnullato'));
+
+    const punti = AREE[l._tipo] ? V.fronteSottovento(anello, vento.verso) : anello;
+    if (punti.length < 2) return stato(t('conoBaseCorta'));
+
+    const layer = V.disegnaFronti(punti, vento,
+      {colore: COL.rosso, etichetta0: t('conoT0')});
+    decori.addLayer(layer);
+    coni.push({id: ++nCono, layer, vento, tipo:'elemento'});
+    mostraVento(vento);
+    riassunto(vento);
+  }
 
   /* =======================================================================
      6. STRUMENTI E PASSI
@@ -1428,6 +1494,7 @@ function avvia(app){
     attesaDirezione = null;
     if (attesaClic){ const f = attesaClic; attesaClic = null; f(null); }
     if (attesaLinea){ const f = attesaLinea; attesaLinea = null; f(null); }
+    if (attesaElemento){ const f = attesaElemento; attesaElemento = null; f(null); }
     strumento = null;
   }
 

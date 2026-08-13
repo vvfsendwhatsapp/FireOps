@@ -3101,6 +3101,11 @@ a.btn-icon-hamburger:hover {
   font-size:11px;font-weight:bold;color:#000;background:#fff;border:2px solid #000;
   border-radius:999px}
 
+/* Elemento selezionabile come base del cono: lampeggia finché non si sceglie */
+#sitac-app .sitac-eleggibile{filter:drop-shadow(0 0 6px var(--primary-color));
+  animation:sitacPulsa 1.1s ease-in-out infinite}
+@keyframes sitacPulsa{50%{filter:drop-shadow(0 0 12px var(--primary-color))}}
+
 /* Suggerimenti sugli elementi: seguono la lingua scelta */
 #sitac-app .sitac-tip{background:rgba(18,18,18,.92);color:var(--text-main);
   border:1px solid var(--primary-color);border-radius:4px;font-size:12px;
