@@ -558,10 +558,15 @@ function avvia(app){
   }
   bDati.onclick = () => apriDati(boxDati.hidden);
 
-  /* Posizione attuale: si riusa il GPS della mappa, che disegna già il
-     pallino azzurro. Il campo è di sola lettura — è un rilievo, non un dato
-     da digitare, e a mano ci si sbaglia di un grado senza accorgersene. */
-  q('#sitac-bPosizione').onclick = () => centraSuGps(true);
+              /* Posizione attuale: si riusa il GPS della mappa, che disegna già il
+                pallino azzurro. Il campo è di sola lettura — è un rilievo, non un dato
+                da digitare, e a mano ci si sbaglia di un grado senza accorgersene. */
+  /* Il GPS risponde anche all'avvio, quando `centraSuGps(false)` centra la
+     mappa da solo: senza questa spia la posizione ripristinata dalla
+     sessione verrebbe sovrascritta da quella nuova senza che nessuno
+     l'abbia chiesta. */
+  let chiedePosizione = false;
+  q('#sitac-bPosizione').onclick = () => { chiedePosizione = true; centraSuGps(true); };
   function scriviPosizione(latlng, acc){
     inPosizione.value = `${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}`
       + (acc ? ` (\u00b1${Math.round(acc)} m)` : '');
@@ -645,7 +650,8 @@ function avvia(app){
     if (cerchioPosizione) decori.removeLayer(cerchioPosizione);
     cerchioPosizione = L.circleMarker(e.latlng, {radius:7, color:'#fff', weight:2,
       fillColor:'#0070c0', fillOpacity:1, interactive:false}).addTo(decori);
-    scriviPosizione(e.latlng, e.accuracy);
+    if (chiedePosizione || !inPosizione.value) scriviPosizione(e.latlng, e.accuracy);
+    chiedePosizione = false;
     stato(t('posizione', {lat:e.latlng.lat.toFixed(5), lon:e.latlng.lng.toFixed(5),
       m:Math.round(e.accuracy)}));
   });
@@ -1508,11 +1514,11 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
     if (p){
       if (p.intervento){ inIntervento.value = String(p.intervento).replace(/[^0-9]/g,''); }
       if (p.dos){ inDos.value = normalizzaDos(p.dos); }
+      if (p.nominativo) inNominativo.value = String(p.nominativo);
+      if (p.telefono)   inTelefono.value   = String(p.telefono);
+      if (p.posizione)  inPosizione.value  = String(p.posizione);
       segnaIntestazione();
     }
-    if (p.nominativo) inNominativo.value = String(p.nominativo);
-    if (p.telefono)   inTelefono.value   = String(p.telefono);
-    if (p.posizione)  inPosizione.value  = String(p.posizione);
     L.geoJSON(fc, {
       pointToLayer: (feat, latlng) => {
         const p = feat.properties || {};
@@ -1752,7 +1758,11 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
   const LARGHEZZA_STRETTA = 620;
   function adatta(){
     if (app.offsetParent === null) return;          // in magazzino: niente da fare
-    app.classList.toggle('sitac-stretto', app.clientWidth < LARGHEZZA_STRETTA);
+    const stretto = app.clientWidth < LARGHEZZA_STRETTA;
+    app.classList.toggle('sitac-stretto', stretto);
+    /* La testata (campi, bandiere, Espandi) vive fuori da #sitac-app:
+       senza una classe sulla sezione resterebbe fuori portata. */
+    radice.classList.toggle('sitac-sez-stretta', stretto);
     map.invalidateSize();
   }
   if (window.ResizeObserver) new ResizeObserver(adatta).observe(app);
@@ -1795,7 +1805,9 @@ NS.Sitac = {
     const radice = app.closest('.page-section') || app;
 
     for (const id of ['sitac-barra','sitac-mappa','sitac-tavola','sitac-stato',
-                      'sitac-lingue','sitac-modale','sitac-legenda']){
+                      'sitac-lingue','sitac-modale','sitac-legenda',
+                      'sitac-dati','sitac-bDati','sitac-bPosizione','sitac-bConvalida',
+                      'sitac-nominativo','sitac-telefono','sitac-posizione','sitac-bCono']){
       if (!radice.querySelector('#' + id)){
         console.error('[SITAC] manca #' + id + ' nel markup della sezione.');
         return null;
