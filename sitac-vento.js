@@ -226,11 +226,95 @@ function arco(centro, verso, metri, passo){
   return p;
 }
 
-/* Offset del fronte: ogni vertice avanza della stessa distanza nella
-   direzione del vento. Non è una parallela geometrica ma una traslazione,
-   che è quello che mostrano le figure 2 e 3 della pubblicazione. */
-const trasla = (punti, verso, metri) =>
-  punti.map(p => puntoDaAzimut(L.latLng(p.lat, p.lng), verso, metri));
+/* Il centro del fronte serve da origine del riferimento locale: si prende
+   la media dei vertici, che su qualche centinaio di metri va benissimo. */
+function centroide(punti){
+  let la = 0, lo = 0;
+  punti.forEach(p => { la += p.lat; lo += p.lng; });
+  return L.latLng(la / punti.length, lo / punti.length);
+}
+
+function azimut(a, b){
+  const dLon = rad(b.lng - a.lng);
+  const y = Math.sin(dLon) * Math.cos(rad(b.lat));
+  const x = Math.cos(rad(a.lat)) * Math.sin(rad(b.lat))
+          - Math.sin(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.cos(dLon);
+  return (gra(Math.atan2(y, x)) + 360) % 360;
+}
+
+/* Il fronte non si limita a traslare: si allarga anche di lato, 15° per
+   parte come il cono, perché ai due estremi il fuoco corre uguale.
+   In un riferimento locale — y lungo il vento, x di traverso — ogni tempo
+   si ricalcola SEMPRE dal fronte di T0, mai a catena: incatenare gli
+   offset somma gli errori e la mezz'ora è il doppio sbagliata dei quindici
+   minuti.
+   Poi si ripulisce. Un fronte concavo, che torna indietro su sé stesso,
+   allargandosi si incrocerebbe; le x si forzano monotone lungo il
+   tracciato, e la piega si appiattisce invece di annodarsi. */
+function frontePiu(punti, verso, metri){
+  const c = centroide(punti);
+  const apre = metri * Math.tan(rad(APERTURA / 2));
+  const loc = punti.map(p => {
+    const d = c.distanceTo(p), a = rad(azimut(c, p) - verso);
+    return {x: d * Math.sin(a), y: d * Math.cos(a)};
+  });
+  const larghezza = Math.max.apply(null, loc.map(p => Math.abs(p.x)));
+  const k = larghezza > 1 ? (larghezza + apre) / larghezza : 1;
+  const x = loc.map(p => p.x * k);
+  const avanti = x[x.length - 1] >= x[0];
+  for (let i = 1; i < x.length; i++)
+    x[i] = avanti ? Math.max(x[i], x[i-1]) : Math.min(x[i], x[i-1]);
+  return loc.map((p, i) => {
+    const y = p.y + metri;
+    return puntoDaAzimut(c, verso + gra(Math.atan2(x[i], y)),
+      Math.sqrt(x[i]*x[i] + y*y));
+  });
+}
+
+/* Modo 2 — la linea del fronte rilevata a T0, allargata e spinta avanti.
+   Serve quando il fuoco è già lungo e il punto d'innesco non dice più
+   niente: quello che conta è dov'è il fronte adesso. */
+function disegnaFronti(vertici, vento, opz){
+  const o = opz || {};
+  const col = o.colore || '#cc0000';
+  const g = L.layerGroup();
+  const verso = vento.verso;
+  const minuti = o.minuti || MINUTI;
+  const etichetta = o.etichetta || (m => 'T+' + m);
+  const punti = vertici.map(p => L.latLng(p.lat, p.lng));
+  const centro = centroide(punti);
+  const massima = distanzaFronte(vento.velocita, Math.max.apply(null, minuti));
+
+  /* Il corridoio fra il fronte di adesso e quello finale: dice quale
+     porzione di terreno è in gioco nell'ora che viene. Si chiude sul
+     fronte allargato, quindi è un trapezio, non una striscia. */
+  if (massima > 1)
+    g.addLayer(L.polygon(punti.concat(frontePiu(punti, verso, massima).reverse()),
+      {color: col, weight: 1, dashArray: '6,5', fillColor: col, fillOpacity: .07,
+       interactive: false}));
+
+  /* T0: rilevato, quindi continuo, grosso e non ritoccato. */
+  const l0 = L.polyline(punti, {color: col, weight: 3.5, interactive: false});
+  l0.bindTooltip(o.etichetta0 || 'T0',
+    {permanent: true, direction: 'center', className: 'sitac-tip sitac-tip-arco'});
+  g.addLayer(l0);
+
+  if (massima > 1)
+    g.addLayer(L.polyline([centro, puntoDaAzimut(centro, verso, massima)],
+      {color: col, weight: 2, dashArray: '10,6', interactive: false}));
+
+  minuti.forEach(m => {
+    const d = distanzaFronte(vento.velocita, m);
+    if (d < 1) return;
+    const linea = L.polyline(frontePiu(punti, verso, d),
+      {color: col, weight: 2.5, interactive: false});
+    linea.bindTooltip(`${etichetta(m)} — ${Math.round(d)} m`,
+      {permanent: true, direction: 'center', className: 'sitac-tip sitac-tip-arco'});
+    g.addLayer(linea);
+  });
+
+  return g;
+}
 
 /* =======================================================================
    3. DISEGNO
@@ -278,55 +362,6 @@ function disegnaCono(origine, vento, opz){
     const d = distanzaFronte(vento.velocita, m);
     if (d < 1) return;
     const linea = L.polyline(arco(origine, verso, r0 + d),
-      {color: col, weight: 2.5, interactive: false});
-    linea.bindTooltip(`${etichetta(m)} — ${Math.round(d)} m`,
-      {permanent: true, direction: 'center', className: 'sitac-tip sitac-tip-arco'});
-    g.addLayer(linea);
-  });
-
-  return g;
-}
-
-/* Modo 2 — la linea del fronte rilevata a T0, traslata nel tempo.
-   Serve quando il fuoco è già lungo e il punto d'innesco non dice più
-   niente: quello che conta è dov'è il fronte adesso. */
-function disegnaFronti(vertici, vento, opz){
-  const o = opz || {};
-  const col = o.colore || '#cc0000';
-  const g = L.layerGroup();
-  const verso = vento.verso;
-  const minuti = o.minuti || MINUTI;
-  const etichetta = o.etichetta || (m => 'T+' + m);
-  const punti = vertici.map(p => L.latLng(p.lat, p.lng));
-
-  const massima = distanzaFronte(vento.velocita, Math.max.apply(null, minuti));
-
-  /* Il corridoio fra il fronte di adesso e quello finale: dice quale
-     striscia di terreno è in gioco nell'ora che viene. */
-  if (massima > 1){
-    const finale = trasla(punti, verso, massima);
-    g.addLayer(L.polygon(punti.concat(finale.slice().reverse()),
-      {color: col, weight: 1, dashArray: '6,5', fillColor: col, fillOpacity: .07,
-       interactive: false}));
-  }
-
-  /* T0: rilevato, quindi continuo e grosso. */
-  const l0 = L.polyline(punti, {color: col, weight: 3.5, interactive: false});
-  l0.bindTooltip(o.etichetta0 || 'T0',
-    {permanent: true, direction: 'center', className: 'sitac-tip sitac-tip-arco'});
-  g.addLayer(l0);
-
-  /* La bisettrice parte dal centro del fronte: è la stessa direzione del
-     vento, e serve a vedere subito da che parte si sta spostando tutto. */
-  const centro = punti[Math.floor(punti.length / 2)];
-  if (massima > 1)
-    g.addLayer(L.polyline([centro, puntoDaAzimut(centro, verso, massima)],
-      {color: col, weight: 2, dashArray: '10,6', interactive: false}));
-
-  minuti.forEach(m => {
-    const d = distanzaFronte(vento.velocita, m);
-    if (d < 1) return;
-    const linea = L.polyline(trasla(punti, verso, d),
       {color: col, weight: 2.5, interactive: false});
     linea.bindTooltip(`${etichetta(m)} — ${Math.round(d)} m`,
       {permanent: true, direction: 'center', className: 'sitac-tip sitac-tip-arco'});
