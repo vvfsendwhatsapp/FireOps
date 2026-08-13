@@ -237,12 +237,6 @@ agg('ripetitore','zona',null,'Ripetitori, antenne, pale eoliche, ecc.','Masts, a
   () => T(`<circle cx="32" cy="11" r="6" fill="${C.nero}"/>
     <path d="M32 15L20 56h24Z" fill="none" stroke="${C.nero}" stroke-width="2.6" stroke-linejoin="round"/>
     <line x1="32" y1="15" x2="32" y2="56" stroke="${C.nero}" stroke-width="2"/>`));
-/* La tavola disegna la linea elettrica come un tracciato tratto-punto col
-   fulmine sopra: è un attraversamento, non un punto. */
-aggL('elettrodotto','zona',null,'Linea elettrica attiva','Power line on',
-  {color:C.nero, weight:2.4, dashArray:'14,5,3,5'}, {deco:{tipo:'fulmine', passo:70, dim:24}});
-aggL('elettrodotto_off','zona',null,'Linea elettrica disattivata','Power line off',
-  {color:C.nero, weight:2.4, dashArray:'14,5,3,5'}, {deco:{tipo:'fulmineOff', passo:70, dim:24}});
 
 /* ---- TAVOLA 2: l'evoluzione dell'incendio ---- */
 agg('origine','evoluzione',null,'Area d\u2019origine','Area of origin',
@@ -350,6 +344,13 @@ aggL('accesso_interrotto','zona',null,'Accesso interrotto','Road closed',
   {color:C.nero, weight:3.5}, {deco:{tipo:'croce', passo:'50%', dim:18}});
 aggL('fune_sbalzo','zona',null,'Funivie, fili a sbalzo, ecc.','Cableways and aerial wires',
   {color:C.nero, weight:2.6}, {deco:{tipo:'pilone', passo:'50%', dim:22, dritto:1}});
+  /* La tavola disegna la linea elettrica come un tracciato tratto-punto col
+   fulmine sopra: è un attraversamento, non un punto. */
+aggL('elettrodotto','zona',null,'Linea elettrica attiva','Power line on',
+  {color:C.nero, weight:2.4, dashArray:'14,5,3,5'}, {deco:{tipo:'fulmine', passo:70, dim:24}});
+aggL('elettrodotto_off','zona',null,'Linea elettrica disattivata','Power line off',
+  {color:C.nero, weight:2.4, dashArray:'14,5,3,5'}, {deco:{tipo:'fulmineOff', passo:70, dim:24}});
+
 
 /* ---- TAVOLA 2: assi di sviluppo e fronte ---- */
 aggL('asse_principale','evoluzione',null,'Asse di sviluppo principale','Head of the fire',
