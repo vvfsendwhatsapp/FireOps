@@ -253,7 +253,7 @@ function avvia(app){
       nPosizione:'Posizione attuale', bConvalida:'Convalida',
       datiOk:'Dati convalidati: intervento {i}, {n}.',
       datiMancanti:'Mancano o non sono validi: {c}',
-      statoPrevista:'Prevista', statoAttiva:'Attiva', statoEffettuata:'Effettuata' },
+      statoPrevista:'Prevista', statoAttiva:'Attiva', statoEffettuata:'Effettuata',
       stVento:'Vento {v} km/h verso {d}° (rilevato alle {o})',
       p1:'Intervento', p2:'Posizione DOS', p3:'Area d\u2019origine',
       p4:'Vento e coni', p5:'Fronte di fiamma', p6:'Superficie coinvolta',
@@ -264,7 +264,7 @@ function avvia(app){
       bInnesco:'Posa area d\u2019origine', bFronte:'Traccia fronte', bCono:'Aggiungi cono',
       dosDove:'Posizione rilevata. Cosa ne faccio?',
       dosPosa:'Posa qui il simbolo DOS', dosSposta:'Sposta qui il DOS',
-      dosSolo:'Tieni solo le coordinate', dosPosato:'DOS posato sulla posizione rilevata.',
+      dosSolo:'Tieni solo le coordinate', dosPosato:'DOS posato sulla posizione rilevata.' },
     en:{ bCono:'Spread cone', conoModo:'How should the cone be built?',
       conoSettore:'From the point of origin', conoSettoreNota:'30° sector from the origin; a second click marks where the front is now (T0).',
       conoFronte:'From the fire front line', conoFronteNota:'Draw the observed front and push it forward at 15, 30 and 60 minutes.',
@@ -687,7 +687,6 @@ function avvia(app){
     chiedePosizione = false;
     if (chiesta || !inPosizione.value) scriviPosizione(e.latlng, e.accuracy);
     if (chiesta) offriDos(e.latlng);
-    chiedePosizione = false;
     stato(t('posizione', {lat:e.latlng.lat.toFixed(5), lon:e.latlng.lng.toFixed(5),
       m:Math.round(e.accuracy)}));
   });
@@ -884,23 +883,11 @@ function avvia(app){
     return m;
   };
 
-  /* Il cono nasce dal punto d'innesco: senza, il pulsante non ha niente su
-     cui lavorare e resta spento invece di aprire un percorso che si
-     interromperebbe al primo passo. */
-  function aggiornaCono(){
-    const b = q('#sitac-bCono');
-    if (b) b.disabled = !origineSullaCarta();
-  }
-
   /* Il vento non è più un simbolo posato sulla carta ma un quadro fisso:
      sulla mappa finiva sotto agli altri elementi e si spostava con loro,
      mentre è un dato dell'intero scenario, non di un punto. */
   function mostraVento(vento){
-    const layer = V.disegnaCono(origine, vento, opz);   // o disegnaFronti
-    decori.addLayer(layer);
-    coni.push({id: ++nCono, layer, vento, tipo:'settore'});
-    ventoGlobale = vento;
-    mostraVento(vento);
+    ventoCono = vento || null;
     const box = q('#sitac-vento');
     if (!box) return;
     if (!vento){ box.hidden = true; box.innerHTML = ''; return; }
@@ -972,7 +959,7 @@ function avvia(app){
       velocita = await scegliVelocita();
       if (!velocita) return null;
     }
-    return V.ventoDa(velocita, verso, fonte);
+    const V.ventoDa(velocita, verso, fonte);
     v.letto = new Date().toISOString();
     return v;
   }
@@ -997,14 +984,14 @@ function avvia(app){
     const V = NS.SitacVento;
     if (!V) return stato('sitac-vento.js non caricato.');
     const voci = [];
-    if (conoLayer) voci.push({k:'via', et:t('conoVia')});
+    if (coni.length) voci.push({k:'via', et:t('conoVia'), nota:t('conoViaNota')});
     voci.push({k:'settore', et:t('conoSettore'), nota:t('conoSettoreNota')});
     voci.push({k:'fronte',  et:t('conoFronte'),  nota:t('conoFronteNota')});
     voci.push({k:'terzo',   et:t('conoTerzo'),   nota:t('conoStandby'), off:1});
     try {
       const modo = await scegli({testo: t('conoModo'), voci});
       if (!modo) return stato(t('conoAnnullato'));
-      if (modo === 'via'){ togliCono(); return stato(t('conoTolto')); }
+      if (modo === 'via'){ togliTuttiConi(); aggiornaStato(); return stato(t('conoTolto')); }
       if (modo === 'settore') await conoSettore(); else await conoFronte();
     } catch(e){
       stato(t('ventoErrore', {e: e.message}));
@@ -1025,25 +1012,25 @@ function avvia(app){
     const vento = await scegliVento(origine);
     if (!vento) return stato(t('conoAnnullato'));
 
+    const opz = {colore: COL.rosso, raggio0: r0, etichetta0: t('conoT0')};
     const layer = V.disegnaCono(origine, vento, opz);   // o disegnaFronti
     decori.addLayer(layer);
     coni.push({id: ++nCono, layer, vento, tipo:'settore'});
     ventoGlobale = vento;
     mostraVento(vento);
 
-    const opz = {colore: COL.rosso, raggio0: r0, etichetta0: t('conoT0')};
-
     /* Spostando l'area d'origine la previsione la segue: il vento è lo
        stesso, il vertice no. Per rileggere il vento si rifà il percorso. */
     if (m){
       m.off('move.sitacCono').on('move.sitacCono', () => {
-        if (conoLayer) decori.removeLayer(conoLayer);
-        conoLayer = V.disegnaCono(m.getLatLng(), vento, opz);
-        decori.addLayer(conoLayer);
+        const c = coni.find(x => x.id === id);
+        if (!c) return;
+        decori.removeLayer(c.layer);
+        c.layer = V.disegnaCono(m.getLatLng(), vento, opz);
+        decori.addLayer(c.layer);
       });
-      m.on('pm:remove', togliCono);
+      m.on('pm:remove', () => togliCono(id));
     }
-    mostraVento(vento);
     riassunto(vento);
   }
 
@@ -1057,12 +1044,11 @@ function avvia(app){
     const centro = punti[Math.floor(punti.length / 2)];
     const vento = await scegliVento(centro);
     if (!vento) return stato(t('conoAnnullato'));
-
-    togliCono();
-
-    conoLayer = V.disegnaFronti(punti, vento,
+    const layer = V.disegnaFronti(punti, vento,
       {colore: COL.rosso, etichetta0: t('conoT0')});
-    decori.addLayer(conoLayer);
+    decori.addLayer(layer);
+    coni.push({id: ++nCono, layer, vento, tipo:'fronte'});
+    ventoGlobale = vento;
     mostraVento(vento);
     riassunto(vento);
   }
@@ -1526,7 +1512,6 @@ function avvia(app){
     stato(t('sfondo', {n: t(sfondi[iSfondo].k)}));
   };
   $('bCentra').onclick = () => centraSuGps(true);
-  $('bCono').onclick = creaCono;
   $('bStampa').onclick = stampa;
 
   /* Legenda: si apre e si chiude, perché su un pannello stretto coprirebbe
@@ -1770,7 +1755,6 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
       + (sup ? t('superficie', {v:(sup/10000).toFixed(1)}) : '')
       + (per ? t('perimetro', {v:(per/1000).toFixed(2)}) : ''));
     aggiornaLegenda();
-    aggiornaCono();
     aggiornaPassi();
   }
 
@@ -1973,8 +1957,8 @@ NS.Sitac = {
 
     for (const id of ['sitac-barra','sitac-mappa','sitac-tavola','sitac-stato',
                       'sitac-lingue','sitac-modale','sitac-legenda',
-                      'sitac-dati','sitac-bDati','sitac-bPosizione','sitac-bConvalida',
-                      'sitac-nominativo','sitac-telefono','sitac-posizione','sitac-bCono']){
+                      'sitac-bPosizione','sitac-bConvalida',
+                      'sitac-nominativo','sitac-telefono','sitac-posizione']){
       if (!radice.querySelector('#' + id)){
         console.error('[SITAC] manca #' + id + ' nel markup della sezione.');
         return null;
