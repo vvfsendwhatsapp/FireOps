@@ -1494,12 +1494,17 @@ function mostraComandoAfferente(sigla, nome){
     dove.querySelectorAll('.sitac-fisa-testa').forEach(b => { b.onclick = () => apriFisa(b); });
   }
 
+  /* Stesso formato delle linee: swatch chiara a sinistra, descrizione a
+     fianco. I simboli sono disegnati per la carta bianca, quindi la
+     swatch resta chiara anche nel tema scuro — e la palette non mente su
+     come il simbolo apparirà davvero in mappa. */
   function bottoneSimbolo(k, d){
     const b = document.createElement('button');
     b.type = 'button';
     b.dataset.genere = 'simbolo'; b.dataset.chiave = k;
     b.title = nm(d);
-    b.innerHTML = svgSimbolo(k, {stato: statoPer(d)});
+    b.innerHTML = `<i class="sitac-swatch">${svgSimbolo(k, {stato: statoPer(d)})}</i>`
+      + `<span>${esc(nm(d))}</span>`;
     b.onclick = () => attiva('simbolo', k, b);
     return b;
   }
@@ -1586,7 +1591,7 @@ function mostraComandoAfferente(sigla, nome){
        avanti e indietro fra due passi. */
     passo(3, t('p3'), 3, corpo => {
       const el = document.createElement('div');
-      el.className = 'sitac-simboli';
+      el.className = 'sitac-strumenti';
       if (SIM.origine) el.appendChild(bottoneSimbolo('origine', SIM.origine));
       corpo.appendChild(el);
       const ar = document.createElement('div');
@@ -1661,7 +1666,7 @@ function mostraComandoAfferente(sigla, nome){
           const voci = gs.get(sg);
           if (voci){
             const griglia = document.createElement('div');
-            griglia.className = 'sitac-simboli';
+            griglia.className = 'sitac-strumenti';
             voci.forEach(([k, d]) => griglia.appendChild(bottoneSimbolo(k, d)));
             corpo.appendChild(griglia);
             n += voci.length;
@@ -1682,6 +1687,11 @@ function mostraComandoAfferente(sigla, nome){
           corpo.appendChild(el);
           n += 1;
         }
+        /* Zona di intervento ed evoluzione restano sempre agibili: sono
+           terreno e scenario, cioè i dati su cui poggia il blocco. */
+        if (tv.k === 'dispositivo' || tv.k === 'azioni')
+          corpo.querySelectorAll('button[data-chiave]')
+            .forEach(b => { b.dataset.bloccabile = '1'; });
         return n;
       });
     });
@@ -1742,13 +1752,12 @@ function mostraComandoAfferente(sigla, nome){
        fisarmonica si apre lo stesso: si deve poter guardare la tavola
        anche quando non la si può ancora usare. */
     const pronto = scenarioPronto();
-    const avviso = pronto ? '' : t('reqBreve');
-    TAVOLE.forEach(tv => {
-      const e = q('#sitac-stT' + tv.k);
+    ['dispositivo','azioni'].forEach(k => {
+      const e = q('#sitac-stT' + k);
       if (!e) return;
       const fisa = e.closest('.sitac-fisa');
       if (fisa) fisa.classList.toggle('sitac-bloccato', !pronto);
-      if (!pronto) e.textContent = avviso;
+      if (!pronto) e.textContent = t('reqBreve');
     });
   }
 
@@ -1768,11 +1777,13 @@ function mostraComandoAfferente(sigla, nome){
   }
 
   function attiva(genere, chiave, bottone){
-    /* Gli strumenti dei passi 3 e 4 restano sempre disponibili: sono quelli
-       che servono proprio a soddisfare il prerequisito. */
-    const d = LIN[chiave] || SIM[chiave];
-    if (d && d.g && !scenarioPronto())
+    /* Il blocco vale per le tavole 7-8, non per gli strumenti dei passi
+       3-4: quelli servono proprio a soddisfare il prerequisito, e
+       filtrarli per `g` bloccava l'innesco con la scusa che manca
+       l'innesco. Il passo di provenienza sta sul pulsante. */
+    if (bottone && bottone.dataset.bloccabile && !scenarioPronto())
       return stato(t('reqManca', {c: mancanti().join(', ')}));
+
     const gia = bottone && bottone.classList.contains('attivo');
     fermaTutto();
     if (gia){ spegniPulsanti(); stato(t('spento')); return; }

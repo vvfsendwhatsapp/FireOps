@@ -3047,17 +3047,6 @@ a.btn-icon-hamburger:hover {
 #sitac-app .sitac-avviso{font-size:11px;line-height:1.35;color:var(--text-muted);
   font-style:italic;margin-top:8px}
 
-/* I simboli sono disegnati per la carta: nella barra scura il riquadro
-   resta chiaro, altrimenti metà tavola sarebbe invisibile. Cinque colonne:
-   i riquadri dei mezzi sono larghi e bassi, a quattro restavano minuscoli. */
-#sitac-app .sitac-simboli{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
-#sitac-app .sitac-simboli button{justify-content:center;padding:3px;aspect-ratio:1;
-  background:#eceff3;border-color:#c3c9d2}
-#sitac-app .sitac-simboli button:hover{background:#fff;border-color:var(--primary-color)}
-#sitac-app .sitac-simboli button.attivo{background:#fff;color:inherit;
-  border-color:var(--primary-color);box-shadow:inset 0 0 0 2px var(--primary-color)}
-#sitac-app .sitac-simboli button svg{width:100%;height:100%;display:block}
-
 /* Riquadro di stato: una nota con l'accento giallo — non segnala un
    pericolo, dice cosa sta succedendo. */
 #sitac-stato{font-family:"Courier New",monospace;font-size:12px;line-height:1.45;
@@ -3134,7 +3123,7 @@ a.btn-icon-hamburger:hover {
 #sitac-legVoci div{display:flex;align-items:center;gap:7px;margin-bottom:4px}
 #sitac-legVoci span{min-width:0}
 #sitac-app .sitac-leg-sim{display:inline-flex;width:22px;height:22px;flex:0 0 22px;
-  background:#fff;border-radius:3px;padding:1px}
+  background:#f2f0e8;border-radius:3px;padding:1px}
 #sitac-app .sitac-leg-sim svg{width:100%;height:100%}
 #sitac-legVoci .sitac-leg-vuota{color:var(--text-muted);font-style:italic;display:block}
 
@@ -3359,6 +3348,13 @@ a.btn-icon-hamburger:hover {
 #sitac-app .sitac-bloccato .sitac-fisa-corpo{opacity:.45}
 #sitac-app .sitac-bloccato .sitac-fisa-corpo button:not(.sitac-stato-btn){
   cursor:not-allowed}
+
+  /* Swatch chiara: una miniatura di carta dentro la barra scura. Senza,
+   i simboli neri della tavola 1 sparirebbero sul fondo grigio. */
+#sitac-app .sitac-swatch{flex:0 0 30px;width:30px;height:30px;display:block;
+  background:#f2f0e8;border:1px solid #c3c9d2;border-radius:3px;padding:2px}
+#sitac-app .sitac-swatch svg{width:100%;height:100%;display:block}
+#sitac-app .sitac-strumenti button.attivo .sitac-swatch{border-color:var(--dark-color)}
 
 /* ==========================================================
    ==========================================================
