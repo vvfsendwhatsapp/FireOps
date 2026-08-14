@@ -282,7 +282,7 @@ function avvia(app){
       conoScegliBase:'Clicca sulla mappa l\u2019area o il fronte da cui far partire il cono.',
       conoBaseCorta:'La geometria scelta ha troppo pochi vertici.',
       lancioManiglie:'Trascina la punta per direzione e lunghezza, il fianco per la larghezza, il centro per spostarlo.',
-      lancioDi:'Asse {a} m · larghezza {b} m · {s} ha', },
+      lancioDi:'Asse {a} m · larghezza {b} m · {s} ha',
       ventoQuale:'Con che vento si costruisce?',
       ventoRiusa:'Vento dello scenario — {v} km/h verso {d}\u00b0',
       ventoRiusaNota:'Quello impostato al passo 2 ({f}).',
@@ -290,7 +290,7 @@ function avvia(app){
       ventoAltroNota:'Vale solo per questo cono: il quadro dello scenario non cambia.',
       reqInnesco:'punto d\u2019innesco', reqSuperficie:'superficie coinvolta',
       reqManca:'Prima servono: {c}.\nSono i dati su cui poggia tutto il resto.',
-      reqBreve:'servono i passi 2 e 3',
+      reqBreve:'servono i passi 2 e 3', },
     en:{ bCono:'Add cone', conoModo:'How should the cone be built?',
       conoSettore:'From the point of origin', conoSettoreNota:'30° sector from the origin; a second click marks where the front is now (T0).',
       conoFronte:'From the fire front line', conoFronteNota:'Draw the observed front and push it forward at 15, 30 and 60 minutes.',
@@ -326,7 +326,6 @@ function avvia(app){
       dosDove:'Position acquired. What should I do with it?',
       dosPosa:'Place the DOS symbol here', dosSposta:'Move the DOS here',
       dosSolo:'Keep the coordinates only', dosPosato:'DOS placed on the acquired position.' },
-
     fr:{ bCono:'Ajouter un c\u00f4ne', conoModo:'Comment construire le c\u00f4ne ?',
       conoSettore:'Depuis le point d\u2019origine', conoSettoreNota:'Secteur \u00e0 30° depuis l\u2019origine ; un second clic indique o\u00f9 est le front (T0).',
       conoFronte:'Depuis la ligne de front', conoFronteNota:'Tracez le front relev\u00e9 et faites-le avancer \u00e0 15, 30 et 60 minutes.',
@@ -362,7 +361,6 @@ function avvia(app){
       dosDove:'Position relev\u00e9e. Qu\u2019en fait-on ?',
       dosPosa:'Poser ici le symbole DOS', dosSposta:'D\u00e9placer le DOS ici',
       dosSolo:'Garder seulement les coordonn\u00e9es', dosPosato:'DOS pos\u00e9 sur la position relev\u00e9e.' },
-
     es:{ bCono:'A\u00f1adir cono', conoModo:'\u00bfC\u00f3mo se construye el cono?',
       conoSettore:'Desde el punto de origen', conoSettoreNota:'Sector de 30° desde el origen; un segundo clic marca d\u00f3nde est\u00e1 el frente (T0).',
       conoFronte:'Desde la l\u00ednea del frente', conoFronteNota:'Dibuja el frente observado y hazlo avanzar a 15, 30 y 60 minutos.',
@@ -1739,7 +1737,7 @@ function mostraComandoAfferente(sigla, nome){
         lista.appendChild(r);
       });
     }
-    
+
     /* Le testate dei passi bloccati si spengono e dicono perché. La
        fisarmonica si apre lo stesso: si deve poter guardare la tavola
        anche quando non la si può ancora usare. */
