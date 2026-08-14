@@ -283,6 +283,14 @@ function avvia(app){
       conoBaseCorta:'La geometria scelta ha troppo pochi vertici.',
       lancioManiglie:'Trascina la punta per direzione e lunghezza, il fianco per la larghezza, il centro per spostarlo.',
       lancioDi:'Asse {a} m · larghezza {b} m · {s} ha', },
+      ventoQuale:'Con che vento si costruisce?',
+      ventoRiusa:'Vento dello scenario — {v} km/h verso {d}\u00b0',
+      ventoRiusaNota:'Quello impostato al passo 2 ({f}).',
+      ventoAltro:'Un vento locale diverso',
+      ventoAltroNota:'Vale solo per questo cono: il quadro dello scenario non cambia.',
+      reqInnesco:'punto d\u2019innesco', reqSuperficie:'superficie coinvolta',
+      reqManca:'Prima servono: {c}.\nSono i dati su cui poggia tutto il resto.',
+      reqBreve:'servono i passi 2 e 3',
     en:{ bCono:'Add cone', conoModo:'How should the cone be built?',
       conoSettore:'From the point of origin', conoSettoreNota:'30° sector from the origin; a second click marks where the front is now (T0).',
       conoFronte:'From the fire front line', conoFronteNota:'Draw the observed front and push it forward at 15, 30 and 60 minutes.',
@@ -1176,9 +1184,31 @@ function mostraComandoAfferente(sigla, nome){
       + `${esc(String(vento.verso))}\u00b0</span>`;
   }
 
-  /* Secondo e terzo passo del percorso: direzione, poi intensità. Il
-     servizio meteo si interroga una volta sola anche se serve a entrambe. */
+  /* Il vento lo si imposta una volta sola, al passo 2: qui si riusa. La
+     domanda si fa lo stesso, perché un secondo fronte può avere un vento
+     locale diverso — ma la risposta preimpostata è quella già nota, e
+     un'occhiata basta a confermarla. */
   async function scegliVento(punto){
+    const V = NS.SitacVento;
+
+    if (ventoCono){
+      const scelta = await scegli({testo: t('ventoQuale'), voci:[
+        {k:'noto', et: t('ventoRiusa', {v: ventoCono.velocita, d: ventoCono.verso}),
+          nota: t('ventoRiusaNota', {f: ventoCono.fonte})},
+        {k:'altro', et: t('ventoAltro'), nota: t('ventoAltroNota')}
+      ]});
+      if (!scelta) return null;
+      /* Copia: il cono conserva il vento con cui è stato disegnato, e
+         cambiare lo slider dopo non deve riscrivergli sotto i piedi. */
+      if (scelta === 'noto') return Object.assign({}, ventoCono);
+    }
+
+    return chiediVentoDaCapo(punto);
+  }
+
+  /* Il percorso a tre domande di prima: resta per il vento locale di un
+     singolo cono e per il caso in cui il passo 2 sia stato saltato. */
+  async function chiediVentoDaCapo(punto){
     const V = NS.SitacVento;
     let letto = null;
     const daWeb = async () => {
@@ -1202,8 +1232,6 @@ function mostraComandoAfferente(sigla, nome){
       const v = await daWeb();
       verso = v.verso; fonte = v.fonte;
     } else if (modo === 'bussola'){
-      /* Niente await prima di qui: su iOS il permesso alla bussola vale
-         solo dentro il gesto dell'utente, e il clic sul pulsante è quello. */
       stato(t('bussolaLeggo'));
       verso = await V.leggiBussola();
       fonte = t('dirBussola');
@@ -1230,8 +1258,6 @@ function mostraComandoAfferente(sigla, nome){
       if (!velocita) return null;
     }
 
-    /* L'ora della lettura viaggia col dato: chi apre la carta due ore dopo
-       deve sapere se quei km/h sono di adesso o di stamattina. */
     const v = V.ventoDa(velocita, verso, fonte);
     v.letto = new Date().toISOString();
     return v;
@@ -1285,16 +1311,13 @@ function mostraComandoAfferente(sigla, nome){
     const p0 = await attendiClic(t('conoClicFronte'));
     if (!p0) return stato(t('conoAnnullato'));
     const r0 = Math.round(origine.distanceTo(p0));
-
     const vento = await scegliVento(origine);
     if (!vento) return stato(t('conoAnnullato'));
-
     const opz = {colore: COL.rosso, raggio0: r0, etichetta0: t('conoT0')};
     const layer = V.disegnaCono(origine, vento, opz);
     decori.addLayer(layer);
     const id = ++nCono;
     coni.push({id, layer, vento, tipo:'settore'});
-    mostraVento(vento);
 
     /* Spostando l'area d'origine la previsione la segue: il vento è lo
        stesso, il vertice no. Per rileggere il vento si rifà il percorso. */
@@ -1321,12 +1344,10 @@ function mostraComandoAfferente(sigla, nome){
     const centro = punti[Math.floor(punti.length / 2)];
     const vento = await scegliVento(centro);
     if (!vento) return stato(t('conoAnnullato'));
-
     const layer = V.disegnaFronti(punti, vento,
       {colore: COL.rosso, etichetta0: t('conoT0')});
     decori.addLayer(layer);
     coni.push({id: ++nCono, layer, vento, tipo:'fronte'});
-    mostraVento(vento);
     riassunto(vento);
   }
 
@@ -1336,7 +1357,6 @@ function mostraComandoAfferente(sigla, nome){
     stato(t('conoFatto', {v: vento.velocita, d: vento.verso, f: vento.fonte,
       a: V.APERTURA, m: Math.round(V.distanzaFronte(vento.velocita, 60))}));
   }
-
   let attesaDirezione = null;
   map.on('click', e => {
     if (!attesaDirezione) return;
@@ -1360,7 +1380,6 @@ function mostraComandoAfferente(sigla, nome){
     const l = lista.length === 1 ? lista[0]
       : await attendiElemento(lista, t('conoScegliBase'));
     if (!l) return stato(t('conoAnnullato'));
-
     const anello = AREE[l._tipo] ? l.getLatLngs()[0] : l.getLatLngs();
     if (!anello || anello.length < 2) return stato(t('conoBaseCorta'));
     const centro = anello[Math.floor(anello.length / 2)];
@@ -1377,7 +1396,6 @@ function mostraComandoAfferente(sigla, nome){
       {colore: COL.rosso, etichetta0: t('conoT0')});
     decori.addLayer(layer);
     coni.push({id: ++nCono, layer, vento, tipo:'elemento'});
-    mostraVento(vento);
     riassunto(vento);
   }
 
@@ -1516,6 +1534,24 @@ function mostraComandoAfferente(sigla, nome){
     b.onclick = () => attiva(genere, chiave, b);
     return b;
   }
+
+/* =====================================================================
+     PREREQUISITI
+     I passi 5-8 descrivono un dispositivo e delle azioni su uno scenario:
+     senza sapere dove è partito, quanto è grande e dove tira il vento,
+     quei simboli sono decorazione. La barra li tiene chiusi e dice cosa
+     manca, invece di lasciar disegnare una carta che non si può leggere.
+     =================================================================== */
+  function mancanti(){
+    const m = [];
+    if (!ventoCono) m.push(t('p2'));
+    if (!disegni.getLayers().some(x => x._tipo === 'origine')) m.push(t('reqInnesco'));
+    let sup = 0;
+    disegni.eachLayer(x => { if (AREE_SUPERFICIE.indexOf(x._tipo) >= 0) sup += areaMq(x); });
+    if (!sup) m.push(t('reqSuperficie'));
+    return m;
+  }
+  const scenarioPronto = () => mancanti().length === 0;
 
   function creaPulsanti(){
     const tav = q('#sitac-tavola');
@@ -1703,6 +1739,19 @@ function mostraComandoAfferente(sigla, nome){
         lista.appendChild(r);
       });
     }
+    
+    /* Le testate dei passi bloccati si spengono e dicono perché. La
+       fisarmonica si apre lo stesso: si deve poter guardare la tavola
+       anche quando non la si può ancora usare. */
+    const pronto = scenarioPronto();
+    const avviso = pronto ? '' : t('reqBreve');
+    TAVOLE.forEach(tv => {
+      const e = q('#sitac-stT' + tv.k);
+      if (!e) return;
+      const fisa = e.closest('.sitac-fisa');
+      if (fisa) fisa.classList.toggle('sitac-bloccato', !pronto);
+      if (!pronto) e.textContent = avviso;
+    });
   }
 
   function marcaAttivo(genere, chiave){
@@ -1721,6 +1770,11 @@ function mostraComandoAfferente(sigla, nome){
   }
 
   function attiva(genere, chiave, bottone){
+    /* Gli strumenti dei passi 3 e 4 restano sempre disponibili: sono quelli
+       che servono proprio a soddisfare il prerequisito. */
+    const d = LIN[chiave] || SIM[chiave];
+    if (d && d.g && !scenarioPronto())
+      return stato(t('reqManca', {c: mancanti().join(', ')}));
     const gia = bottone && bottone.classList.contains('attivo');
     fermaTutto();
     if (gia){ spegniPulsanti(); stato(t('spento')); return; }

@@ -3351,6 +3351,15 @@ a.btn-icon-hamburger:hover {
 /* Cambia mappa vive nella riga delle bandiere, fuori da #sitac-app */
 #sitac-aib #sitac-bSfondo{flex:0 0 auto;white-space:nowrap}
 
+/* Passo bloccato: la testata si spegne e i pulsanti dentro non rispondono.
+   Il corpo resta apribile — la tavola si deve poter consultare comunque. */
+#sitac-app .sitac-bloccato .sitac-fisa-testa{opacity:.5}
+#sitac-app .sitac-bloccato .sitac-passo-n{background:var(--border-color);
+  color:var(--text-muted)}
+#sitac-app .sitac-bloccato .sitac-fisa-corpo{opacity:.45}
+#sitac-app .sitac-bloccato .sitac-fisa-corpo button:not(.sitac-stato-btn){
+  cursor:not-allowed}
+
 /* ==========================================================
    ==========================================================
    RESPONSIVE
