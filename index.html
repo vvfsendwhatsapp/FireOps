@@ -252,6 +252,7 @@
             <div class="pagina-box-header pagina-box-header-con-nota">
                 <p class="pagina-nota pagina-nota-inline" data-t="sub"></p>
                 <div id="sitac-lingue"></div>
+                <button id="sitac-bSfondo" class="btn-toggle-radar" type="button"></button>
                 <button class="btn-toggle-radar btn-fullscreen-pagina" type="button" title="Espandi a schermo intero">⛶
                     Espandi</button>
             </div>
@@ -260,16 +261,6 @@
 
                 <!-- COLONNA SINISTRA: comandi -->
                 <div id="sitac-barra">
-
-                    <div class="sitac-stati-riga">
-                        <span data-t="gStato"></span>
-                        <div class="sitac-stati">
-                            <button id="sitac-statoPrevisto" type="button" class="sitac-stato-btn attivo"
-                                data-stato="previsto" data-t="statoPrevisto"></button>
-                            <button id="sitac-statoAttivo" type="button" class="sitac-stato-btn" data-stato="attivo"
-                                data-t="statoAttivo"></button>
-                        </div>
-                    </div>
 
                     <div class="sitac-fisa">
                         <button class="sitac-fisa-testa" type="button" aria-expanded="false">
@@ -286,8 +277,11 @@
                                 </div>
                                 <div class="sitac-dati-campo">
                                     <label for="sitac-nDos" data-t="nDos"></label>
-                                    <input type="text" id="sitac-nDos" maxlength="4" placeholder="A123"
-                                        autocomplete="off">
+                                    <div class="sitac-dos-riga">
+                                        <span class="sitac-dos-vf">VF</span>
+                                        <input type="text" id="sitac-nDos" maxlength="4" placeholder="0000"
+                                            autocomplete="off">
+                                    </div>
                                 </div>
                                 <div class="sitac-dati-campo">
                                     <label for="sitac-nominativo" data-t="nNominativo"></label>
@@ -297,6 +291,21 @@
                                     <label for="sitac-telefono" data-t="nTelefono"></label>
                                     <input type="tel" id="sitac-telefono" maxlength="20" inputmode="tel"
                                         autocomplete="off">
+                                </div>
+                                <div class="sitac-dati-campo">
+                                    <label for="sitac-posizione" data-t="posDos"></label>
+                                    <div class="sitac-dati-riga">
+                                        <input type="text" id="sitac-posizione" readonly>
+                                        <button id="sitac-bPosizione" type="button">⌖</button>
+                                    </div>
+                                </div>
+                                <div class="sitac-dati-campo">
+                                    <label data-t="provincia"></label>
+                                    <div id="sitac-provincia" class="sitac-derivato">—</div>
+                                </div>
+                                <div class="sitac-dati-campo">
+                                    <label data-t="comando"></label>
+                                    <div id="sitac-comando" class="sitac-derivato">—</div>
                                 </div>
                                 <div class="sitac-dati-azioni">
                                     <button id="sitac-bConvalida" type="button" data-t="bConvalida"></button>
@@ -312,16 +321,15 @@
                             <span class="sitac-passo-stato" id="sitac-st2"></span>
                         </button>
                         <div class="sitac-fisa-corpo">
-                            <div class="sitac-dati">
-                                <div class="sitac-dati-campo">
-                                    <label for="sitac-posizione" data-t="nPosizione"></label>
-                                    <div class="sitac-dati-riga">
-                                        <input type="text" id="sitac-posizione" readonly>
-                                        <button id="sitac-bPosizione" type="button">⌖</button>
-                                    </div>
-                                </div>
+                            <div class="sitac-azioni">
+                                <button id="sitac-bVentoDir" type="button" class="largo" data-t="bVentoDir"></button>
+                                <button id="sitac-bVentoWeb" type="button" class="largo" data-t="bVentoWeb"></button>
                             </div>
-                            <p class="sitac-avviso" data-t="p2Nota"></p>
+                            <div class="sitac-vento-scala">
+                                <input type="range" id="sitac-ventoScala" min="0" max="110" step="5" value="0">
+                                <span class="sitac-vento-valore" id="sitac-ventoValore">0 km/h</span>
+                            </div>
+                            <p class="sitac-avviso" data-t="ventoNota"></p>
                         </div>
                     </div>
 
@@ -348,8 +356,6 @@
                         </button>
                         <div class="sitac-fisa-corpo">
                             <div class="sitac-azioni">
-                                <button id="sitac-bSfondo" type="button" data-t="bSfondo"></button>
-                                <button type="button" id="sitac-bCono" data-t="bCono">Cono di propagazione</button>
                                 <button id="sitac-bImporta" type="button" data-t="bImporta"></button>
                             </div>
                             <input type="file" id="sitac-file" accept=".geojson,.json" hidden>

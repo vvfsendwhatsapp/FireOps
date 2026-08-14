@@ -741,6 +741,51 @@ document.addEventListener("DOMContentLoaded", () => {
         }));
     }
 
+    // ==========================================================
+    // API PER I MODULI ESTERNI (sitac.js)
+    // comandiData e i popup vivono dentro questa closure: senza queste due
+    // esportazioni nessun altro file può arrivarci. Restano funzioni, non
+    // riferimenti all'array, così chi le chiama legge sempre il dato di
+    // adesso e non una copia presa prima del fetch.
+    // ==========================================================
+    window.FireOps = window.FireOps || {};
+
+    /* La sigla arriva da Nominatim come "IT-AG": si toglie il prefisso e si
+       confronta col campo Provincia. Il nome esteso è la riserva per le
+       province in cui l'ISO manca o è cambiato (Sud Sardegna, ex CI/VS). */
+    window.FireOps.comandoPerProvincia = function (sigla, nome) {
+        if (!Array.isArray(comandiData) || comandiData.length === 0) return null;
+
+        const s = String(sigla || "").toUpperCase().replace(/^IT-/, "").trim();
+        if (s) {
+            const perSigla = comandiData.find(c => String(c.Provincia || "").toUpperCase() === s);
+            if (perSigla) return perSigla;
+        }
+
+        const n = String(nome || "").toLowerCase().trim();
+        if (!n) return null;
+        return comandiData.find(c =>
+            String(c.Comando || "").toLowerCase() === n ||
+            String(c.Comune || "").toLowerCase() === n) || null;
+    };
+
+    /* Stesso popup dei Comandi Limitrofi, aperto da un elemento qualsiasi.
+       L'evento vero serve per due motivi: fermare la propagazione (il
+       listener su document chiuderebbe il popup nello stesso click che lo
+       apre) e ancorarlo. `elemento` sovrascrive il bersaglio perché dentro
+       un <div> con del <b> il target è il grassetto, non il riquadro. */
+    window.FireOps.apriPopupComando = function (comando, evento, elemento) {
+        if (!comando) return;
+        const ancora = elemento
+            || (evento && evento.currentTarget)
+            || (evento && evento.target);
+        if (!ancora) return;
+        popupDatiComando({
+            stopPropagation: () => { if (evento && evento.stopPropagation) evento.stopPropagation(); },
+            target: ancora
+        }, comando);
+    };
+
     // Copia un testo negli appunti e mostra un feedback visivo
     function copiaTesto(event, testo) { return FireOps.copiaTesto(event, testo); }
 

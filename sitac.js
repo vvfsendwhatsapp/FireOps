@@ -246,8 +246,29 @@ function avvia(app){
       datiMancanti:'Mancano o non sono validi: {c}',
       statoPrevista:'Prevista', statoAttiva:'Attiva', statoEffettuata:'Effettuata',
       stVento:'Vento {v} km/h verso {d}° (rilevato alle {o})',
-      p1:'Intervento', p2:'Posizione DOS', p3:'Area d\u2019origine',
-      p4:'Vento e coni', p5:'Fronte di fiamma', p6:'Superficie coinvolta',
+      p1:'Intervento', p2:'Vento locale', p3:'Innesco e superficie coinvolta',
+      p4:'Coni di propagazione', p5:'Zona di intervento', p6:'Evoluzione dell\u2019incendio',
+      p7:'Dispositivo di intervento', p8:'Azioni', p9:'Modifica', p10:'Esportazione',
+      nDos:'ID DOS', dosAiuto:'Quattro caratteri, cifre o lettere. Es. VF 12A4',
+      posDos:'Posizione DOS',
+      posComeQuale:'Come indichi la posizione del DOS?',
+      posGps:'Localizzazione GPS', posGpsNota:'Legge dove sta questo dispositivo.',
+      posCoord:'Inserisci le coordinate', posCoordNota:'Gradi decimali, separati da virgola.',
+      posMappa:'Clic sulla mappa', posMappaNota:'Un clic dove sta il DOS.',
+      posClicMappa:'Clicca sulla mappa la posizione del DOS.',
+      chiediCoord:'Coordinate: latitudine, longitudine in gradi decimali',
+      coordErrate:'Coordinate non valide.',
+      provincia:'Provincia', comando:'Comando afferente',
+      geoLeggo:'Ricerca della provincia in corso\u2026',
+      geoErrore:'Provincia non determinata: {e}',
+      geoFatto:'DOS in provincia di {p}.',
+      bVentoDir:'Direzione sulla mappa', bVentoWeb:'Leggi da Open-Meteo',
+      ventoTrascina:'Trascina la punta della freccia: indica dove VA il vento.',
+      ventoNoDos:'Prima indica la posizione del DOS al passo 1.',
+      ventoNota:'La stima da servizio meteo non vede il vento di versante: correggila a vista.',
+      ventoImpostato:'Vento {v} km/h verso {d}\u00b0 ({f}).',
+      statoDispositivo:'Stato del dispositivo', statoAzioni:'Stato delle azioni',
+      bSfondo:'Mappa: {n}',
       p2Nota:'Il rilievo è la posizione di questo dispositivo: in sala operativa non è quella del DOS.',
       pFatto:'\u2713', pManca:'da fare',
       pInneschi:'{n} sul terreno', pFronti:'{n} tracciati', pConi:'{n} coni',
@@ -575,15 +596,15 @@ function avvia(app){
   const inPosizione  = q('#sitac-posizione');
   const CHIAVE_SESS  = 'fireops_sitac_intestazione';
 
-  /* Il DOS è una lettera e tre cifre (A123): la maschera corregge mentre si
-     scrive invece di rimproverare dopo. */
+    /* VF è fisso e sta nel markup: qui viaggiano solo i 4 caratteri liberi,
+    cifre o lettere indifferentemente. Lo strip di ^VF serve ai file
+    importati, che portano la sigla intera. */
   function normalizzaDos(v){
-    v = String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-    const lettera = (v.match(/[A-Z]/) || [''])[0];
-    const cifre = v.replace(/[^0-9]/g, '').slice(0, 3);
-    return (lettera || '') + cifre;
+    return String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
+      .replace(/^VF/, '').slice(0, 4);
   }
-  const dosValido = () => /^[A-Z][0-9]{3}$/.test(inDos.value);
+  const dosValido = () => /^[A-Z0-9]{4}$/.test(inDos.value);
+  const dosCompleto = () => dosValido() ? 'VF ' + inDos.value : '';
   const interventoValido = () => /^[0-9]+$/.test(inIntervento.value);
   const telefonoValido = () =>
     /^\+?[0-9]{6,15}$/.test(inTelefono.value.replace(/[ .\-]/g, ''));
@@ -613,49 +634,6 @@ function avvia(app){
     segnaIntestazione();
   };
 
-  /* Il GPS risponde anche all'avvio, quando `centraSuGps(false)` centra la
-     mappa da solo: senza questa spia la posizione ripristinata dalla
-     sessione verrebbe sovrascritta senza che nessuno l'abbia chiesto. */
-  let chiedePosizione = false;
-  q('#sitac-bPosizione').onclick = () => { chiedePosizione = true; centraSuGps(true); };
-
-  function scriviPosizione(latlng, acc){
-    inPosizione.value = `${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}`
-      + (acc ? ` (\u00b1${Math.round(acc)} m)` : '');
-    segnaIntestazione();
-  }
-
-  /* Il GPS dice dove sta questo dispositivo. In sala operativa non è il
-     DOS, sul posto sì: la differenza la sa solo chi sta davanti allo
-     schermo, quindi si chiede invece di decidere. */
-  const dosSullaCarta = () => {
-    let m = null;
-    disegni.eachLayer(x => { if (x._tipo === 'dos' && x.getLatLng) m = x; });
-    return m;
-  };
-
-  async function offriDos(latlng){
-    const gia = dosSullaCarta();
-    const scelta = await scegli({testo: t('dosDove'), voci:[
-      {k:'posa', et: gia ? t('dosSposta') : t('dosPosa')},
-      {k:'solo', et: t('dosSolo')}
-    ]});
-    if (scelta !== 'posa') return;
-    if (gia){
-      gia.setLatLng(latlng);
-    } else {
-      const m = L.marker(latlng, {draggable:true,
-        icon: iconaSimbolo('dos', {stato:'attivo'})});
-      m._tipo = 'dos'; m._genere = 'simbolo'; m._stato = 'attivo';
-      m._testo = inDos.value || null;
-      m.on('pm:remove', () => scollega(m));
-      disegni.addLayer(m);
-      etichettaElemento(m);
-    }
-    aggiornaStato();
-    stato(t('dosPosato'));
-  }
-
   /* Convalida: la posizione resta facoltativa, perché il GPS in sala
      operativa non dice niente di utile e su http non locale è bloccato.
      Il segno verde sulla testata del passo 1 lo scrive aggiornaPassi. */
@@ -681,15 +659,137 @@ function avvia(app){
 
   const intestazione = () => ({
     intervento: inIntervento.value || null,
-    dos: inDos.value || null,
+    dos: dosCompleto() || null,
     nominativo: inNominativo.value.trim() || null,
     telefono: inTelefono.value.trim() || null,
     posizione: inPosizione.value || null
   });
   function siglaFile(){
     const i = intestazione();
-    return (i.intervento ? '_' + i.intervento : '') + (i.dos ? '_' + i.dos : '');
+    return (i.intervento ? '_' + i.intervento : '') + (i.dos ? '_' + i.dos.replace(/\s/g, '') : '');
   }
+
+  /* La posizione del DOS non è più "dove sta questo dispositivo": si sceglie
+   il modo. In sala operativa il GPS è inutile, e il modo giusto è il clic
+   sulla mappa o le coordinate dettate per radio. */
+let posDos = null;
+let provinciaDos = null;
+
+function scriviPosizione(latlng, acc){
+  posDos = L.latLng(latlng.lat, latlng.lng);
+  inPosizione.value = `${posDos.lat.toFixed(5)}, ${posDos.lng.toFixed(5)}`
+    + (acc ? ` (\u00b1${Math.round(acc)} m)` : '');
+  segnaIntestazione();
+  posaDos(posDos);
+  aggiornaAncoraVento();
+  cercaProvincia(posDos);
+}
+
+const dosSullaCarta = () => {
+  let m = null;
+  disegni.eachLayer(x => { if (x._tipo === 'dos' && x.getLatLng) m = x; });
+  return m;
+};
+
+function posaDos(latlng){
+  const gia = dosSullaCarta();
+  if (gia){ gia.setLatLng(latlng); aggiornaStato(); return; }
+  const m = L.marker(latlng, {draggable:true,
+    icon: iconaSimbolo('dos', {stato:'attivo'})});
+  m._tipo = 'dos'; m._genere = 'simbolo'; m._stato = 'attivo';
+  m._testo = inDos.value || null;
+  m.on('pm:remove', () => scollega(m));
+  /* Trascinando il simbolo si sposta il dato, non solo il disegno: sono
+     la stessa cosa, e due posizioni DOS diverse sono un errore garantito. */
+  m.on('dragend', () => {
+    posDos = m.getLatLng();
+    inPosizione.value = `${posDos.lat.toFixed(5)}, ${posDos.lng.toFixed(5)}`;
+    segnaIntestazione();
+    aggiornaAncoraVento();
+    cercaProvincia(posDos);
+  });
+  disegni.addLayer(m);
+  etichettaElemento(m);
+  aggiornaStato();
+}
+
+let chiedePosizione = false;
+q('#sitac-bPosizione').onclick = async () => {
+  const modo = await scegli({testo: t('posComeQuale'), voci:[
+    {k:'gps',   et:t('posGps'),   nota:t('posGpsNota')},
+    {k:'coord', et:t('posCoord'), nota:t('posCoordNota')},
+    {k:'mappa', et:t('posMappa'), nota:t('posMappaNota')}
+  ]});
+  if (!modo) return;
+  if (modo === 'gps'){ chiedePosizione = true; return centraSuGps(true); }
+  if (modo === 'mappa'){
+    const p = await attendiClic(t('posClicMappa'));
+    if (p) scriviPosizione(p);
+    return;
+  }
+  const v = await chiedi({campo:1, testo: t('chiediCoord'), valore: inPosizione.value});
+  if (!v) return;
+  const n = v.split(/[,;\s]+/).map(Number).filter(x => !isNaN(x));
+  if (n.length < 2 || Math.abs(n[0]) > 90 || Math.abs(n[1]) > 180)
+    return stato(t('coordErrate'));
+  scriviPosizione(L.latLng(n[0], n[1]));
+};
+
+/* Reverse geocoding: da Nominatim si prende ISO3166-2-lvl6, che è la sigla
+   della provincia ("IT-BO"). `county` e `state_district` in Italia si
+   scambiano di posto a seconda della regione, e il nome del comune non è
+   mai quello della provincia: è la confusione già vista nel convertitore. */
+async function cercaProvincia(latlng){
+  const boxP = q('#sitac-provincia'), boxC = q('#sitac-comando');
+  boxP.textContent = '\u2026';
+  try {
+    const u = `https://nominatim.openstreetmap.org/reverse?format=jsonv2`
+      + `&lat=${latlng.lat}&lon=${latlng.lng}&zoom=10&addressdetails=1`;
+    const r = await fetch(u, {headers:{'Accept':'application/json'}});
+    if (!r.ok) throw new Error('nominatim ' + r.status);
+    const a = (await r.json()).address || {};
+    const iso = a['ISO3166-2-lvl6'] || '';
+    const sigla = iso.split('-')[1] || '';
+    const nome = a.county || a.state_district || a.province || '';
+    if (!sigla && !nome) throw new Error('provincia assente');
+    provinciaDos = {sigla, nome};
+    boxP.innerHTML = `<b>${esc(sigla)}</b> ${esc(nome)}`;
+    mostraComandoAfferente(sigla, nome);
+    stato(t('geoFatto', {p: nome || sigla}));
+  } catch(e){
+    provinciaDos = null;
+    boxP.textContent = '\u2014';
+    boxC.textContent = '\u2014';
+    stato(t('geoErrore', {e: e.message}));
+  }
+  aggiornaPassi();
+}
+
+/* Il Comando resta LOCALE alla SITAC: non si tocca window.FireOpsComandoAttivo
+   né si emette l'evento condiviso. Una SITAC su un incendio in provincia
+   confinante non deve cambiare il Comando di tutta l'applicazione. */
+let comandoSitac = null;
+function mostraComandoAfferente(sigla, nome){
+  const boxC = q('#sitac-comando');
+  const trova = NS.comandoPerProvincia;
+  comandoSitac = (typeof trova === 'function') ? trova(sigla, nome) : null;
+  if (!comandoSitac){
+    boxC.textContent = '\u2014';
+    boxC.classList.remove('cliccabile-comando');
+    boxC.onclick = null;
+    return;
+  }
+  /* Il canale radio sta in vista accanto al nome: è il dato che si cerca
+     per primo quando l'incendio è fuori dal proprio Comando. */
+  const ch = comandoSitac['Canale Radio Comando'];
+  boxC.innerHTML = `<b>${esc(comandoSitac.Comando)}</b>`
+    + (ch ? ` \u00b7 CH ${esc(ch)}` : '');
+  boxC.classList.add('cliccabile-comando');
+  boxC.onclick = ev => {
+    if (typeof NS.apriPopupComando === 'function')
+      NS.apriPopupComando(comandoSitac, ev, boxC);
+  };
+}
 
   /* =======================================================================
      3. MAPPA
@@ -731,10 +831,7 @@ function avvia(app){
       fillColor:'#0070c0', fillOpacity:1, interactive:false}).addTo(decori);
     const chiesta = chiedePosizione;
     chiedePosizione = false;
-    if (chiesta || !inPosizione.value) scriviPosizione(e.latlng, e.accuracy);
-    if (chiesta) offriDos(e.latlng);
-    stato(t('posizione', {lat:e.latlng.lat.toFixed(5), lon:e.latlng.lng.toFixed(5),
-      m:Math.round(e.accuracy)}));
+    if (chiesta) scriviPosizione(e.latlng, e.accuracy);
   });
   map.on('locationerror', () => { if (posizioneOttenuta) stato(t('posErrore')); });
 
@@ -1284,11 +1381,82 @@ function avvia(app){
     riassunto(vento);
   }
 
+  /* =====================================================================
+     5quater. VENTO LOCALE — PASSO 2
+     Direzione a due punti dal DOS: la linea tratteggiata e la punta
+     trascinabile dicono dove VA il vento, e il quadro in alto a sinistra
+     segue in tempo reale. È la stessa grammatica dei simboli orientabili.
+     =================================================================== */
+  let ventoAsta = null, ventoPunta = null;
+  let ventoVelocita = 0, ventoVerso = 0;
+
+  function applicaVento(fonte){
+    if (!ventoVelocita){ mostraVento(null); aggiornaPassi(); return; }
+    const v = NS.SitacVento.ventoDa(ventoVelocita, ventoVerso, fonte || 'manuale');
+    v.letto = new Date().toISOString();
+    mostraVento(v);
+    aggiornaPassi();
+    stato(t('ventoImpostato', {v:v.velocita, d:v.verso, f:v.fonte}));
+  }
+
+  function disegnaFrecciaVento(){
+    if (ventoAsta){ decori.removeLayer(ventoAsta); ventoAsta = null; }
+    if (ventoPunta){ decori.removeLayer(ventoPunta); ventoPunta = null; }
+    if (!posDos) return;
+    const d = distanzaManiglia() * 1.8;
+    const p = puntoDaAzimut(posDos, ventoVerso, d);
+    ventoAsta = L.polyline([posDos, p], {color:'#cc0000', weight:2.5,
+      dashArray:'8,6', interactive:false}).addTo(decori);
+    ventoPunta = L.marker(p, {draggable:true, keyboard:false,
+      icon: L.divIcon({className:'sitac-maniglia sitac-mn-vento',
+        iconSize:[20,20], iconAnchor:[10,10], html:'<span></span>'})}).addTo(decori);
+    ventoPunta.on('drag', () => {
+      ventoVerso = Math.round(azimut(posDos, ventoPunta.getLatLng()));
+      ventoAsta.setLatLngs([posDos, ventoPunta.getLatLng()]);
+      if (ventoVelocita) applicaVento('mappa');
+    });
+  }
+  /* La freccia sta a distanza fissa sullo SCHERMO: cambiando zoom va rifatta,
+     o a zoom 10 finisce sotto il simbolo del DOS. */
+  const aggiornaAncoraVento = () => { if (ventoAsta || ventoPunta) disegnaFrecciaVento(); };
+  map.on('zoomend', aggiornaAncoraVento);
+
+  q('#sitac-bVentoDir').onclick = () => {
+    if (!posDos) return stato(t('ventoNoDos'));
+    disegnaFrecciaVento();
+    stato(t('ventoTrascina'));
+  };
+
+  q('#sitac-bVentoWeb').onclick = async () => {
+    if (!posDos) return stato(t('ventoNoDos'));
+    stato(t('ventoLeggo'));
+    try {
+      const v = await NS.SitacVento.leggi(posDos.lat, posDos.lng);
+      ventoVerso = v.verso;
+      /* Arrotondato a 5: la scala è a step di 5 e un 23,4 km/h dichiara
+         una precisione che il dato non ha. */
+      ventoVelocita = Math.min(110, Math.round(v.velocita / 5) * 5);
+      q('#sitac-ventoScala').value = ventoVelocita;
+      q('#sitac-ventoValore').textContent = ventoVelocita + ' km/h';
+      disegnaFrecciaVento();
+      applicaVento(v.fonte);
+    } catch(e){ stato(t('ventoErrore', {e: e.message})); }
+  };
+
+  q('#sitac-ventoScala').oninput = function(){
+    ventoVelocita = Number(this.value);
+    q('#sitac-ventoValore').textContent = ventoVelocita + ' km/h';
+    applicaVento('manuale');
+  };
+
   /* =======================================================================
      6. STRUMENTI E PASSI
      ===================================================================== */
   let strumento = null;
-  let statoCorrente = 'previsto';
+    /* Due stati indipendenti, uno per tavola: il dispositivo può essere in atto
+    mentre le azioni sono ancora previste, ed è il caso normale. */
+  const stati = {dispositivo:'previsto', azioni:'previsto'};
+  const statoPer = def => stati[(def && def.g) || ''] || 'previsto';
 
   /* Uno alla volta: aprendo un passo si chiudono gli altri. Con dieci passi
      e 64 voci di tavola la barra sarebbe altrimenti un elenco lungo il
@@ -1315,7 +1483,7 @@ function avvia(app){
     b.type = 'button';
     b.dataset.genere = 'simbolo'; b.dataset.chiave = k;
     b.title = nm(d);
-    b.innerHTML = svgSimbolo(k, {stato: statoCorrente});
+    b.innerHTML = svgSimbolo(k, {stato: statoPer(d)});
     b.onclick = () => attiva('simbolo', k, b);
     return b;
   }
@@ -1379,13 +1547,21 @@ function avvia(app){
         box.querySelector('.sitac-passo-stato').textContent = quante;
     };
 
-    /* 3 — l'area d'origine è una voce della tavola 2: qui non se ne crea
-       una copia, si richiama lo stesso strumento. */
+    /* 3 — innesco e superficie insieme: il punto d'origine e l'area bruciata
+       si rilevano nello stesso momento, e separarli obbligava a saltare
+       avanti e indietro fra due passi. */
     passo(3, t('p3'), 3, corpo => {
       const el = document.createElement('div');
       el.className = 'sitac-simboli';
       if (SIM.origine) el.appendChild(bottoneSimbolo('origine', SIM.origine));
       corpo.appendChild(el);
+      const ar = document.createElement('div');
+      ar.className = 'sitac-strumenti';
+      Object.entries(AREE).forEach(([k, d]) => ar.appendChild(bottoneArea(k, d)));
+      corpo.appendChild(ar);
+      corpo.insertAdjacentHTML('beforeend',
+        `<p class="sitac-conta" id="sitac-superficie"></p>`
+        + `<p class="sitac-avviso">${esc(t('areeFuori'))}</p>`);
     });
 
     passo(4, t('p4'), 4, corpo => {
@@ -1402,28 +1578,31 @@ function avvia(app){
       corpo.appendChild(lista);
     });
 
-    passo(5, t('p5'), 5, corpo => {
-      const el = document.createElement('div');
-      el.className = 'sitac-strumenti';
-      if (LIN.fronte) el.appendChild(bottoneLinea('fronte', LIN.fronte));
-      corpo.appendChild(el);
-    });
+    /* La riga di stato sta dentro la tavola a cui si applica: in cima alla
+       barra valeva per tutto e scorrendo non la vedeva più nessuno. */
+    const rigaStato = (tavola, corpo) => {
+      const et = tavola === 'azioni' ? ['statoPrevista','statoEffettuata']
+                                     : ['statoPrevisto','statoAttivo'];
+      const box = document.createElement('div');
+      box.className = 'sitac-stato-sez';
+      const tit = document.createElement('span');
+      tit.textContent = t(tavola === 'azioni' ? 'statoAzioni' : 'statoDispositivo');
+      box.appendChild(tit);
+      const g = document.createElement('div');
+      g.className = 'sitac-stati';
+      ['previsto','attivo'].forEach((s, i) => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'sitac-stato-btn';
+        b.dataset.stato = s; b.dataset.tavola = tavola;
+        b.textContent = t(et[i]);
+        if (stati[tavola] === s) b.classList.add('attivo');
+        b.onclick = () => cambiaStato(tavola, s);
+        g.appendChild(b);
+      });
+      box.appendChild(g);
+      corpo.appendChild(box);
+    };
 
-    /* 6 — la superficie è calcolata sui poligoni, non digitata: un numero
-       scritto a mano che contraddice quello misurato, su una carta
-       operativa, è peggio di nessun numero. */
-    passo(6, t('p6'), 6, corpo => {
-      const el = document.createElement('div');
-      el.className = 'sitac-strumenti';
-      Object.entries(AREE).forEach(([k, d]) => el.appendChild(bottoneArea(k, d)));
-      corpo.appendChild(el);
-      corpo.insertAdjacentHTML('beforeend',
-        `<p class="sitac-conta" id="sitac-superficie"></p>`
-        + `<p class="sitac-avviso">${esc(t('areeFuori'))}</p>`);
-    });
-
-    /* 7-10 — le quattro tavole della pubblicazione, ciascuna coi suoi
-       riquadri: punti e linee insieme, come sul pieghevole. */
     const perRiquadro = (fonte, tavola) => {
       const gruppi = new Map();
       Object.entries(fonte).filter(([, d]) => d.g === tavola).forEach(v => {
@@ -1434,8 +1613,10 @@ function avvia(app){
       return gruppi;
     };
 
+    /* 5-8: le quattro tavole, nell'ordine della pubblicazione. */
     TAVOLE.forEach((tv, i) => {
-      passo(7 + i, nm(tv), 'T' + tv.k, corpo => {
+      passo(5 + i, t('p' + (5 + i)), 'T' + tv.k, corpo => {
+        if (stati[tv.k] !== undefined) rigaStato(tv.k, corpo);
         let n = 0;
         const gs = perRiquadro(SIM, tv.k);
         const gl = perRiquadro(LIN, tv.k);
@@ -1460,8 +1641,6 @@ function avvia(app){
             n += linee.length;
           }
         });
-        /* L'annotazione libera sta con le azioni: è quello che si scrive
-           sulla carta mentre si opera. */
         if (tv.k === 'azioni'){
           const el = document.createElement('div');
           el.className = 'sitac-strumenti';
@@ -1492,23 +1671,20 @@ function avvia(app){
     };
 
     const completo = interventoValido() && dosValido()
-      && !!inNominativo.value.trim() && telefonoValido();
-    segna(1, completo ? `${t('pFatto')} ${inIntervento.value} · ${inDos.value}`
+      && !!inNominativo.value.trim() && telefonoValido() && !!posDos;
+    segna(1, completo ? `${t('pFatto')} ${inIntervento.value} \u00b7 ${dosCompleto()}`
       : t('pManca'), completo);
-    segna(2, inPosizione.value ? t('pFatto') : t('pManca'), !!inPosizione.value);
+    segna(2, ventoCono ? `${t('pFatto')} ${ventoCono.velocita} km/h \u2192 ${ventoCono.verso}\u00b0`
+      : t('pManca'), !!ventoCono);
 
     const conta = k => disegni.getLayers().filter(x => x._tipo === k).length;
-    const nIn = conta('origine');
-    segna(3, nIn ? t('pInneschi', {n:nIn}) : t('pNessuno'), nIn > 0);
-    segna(4, coni.length ? t('pConi', {n:coni.length}) : t('pNessuno'), coni.length > 0);
-    const nFr = conta('fronte');
-    segna(5, nFr ? t('pFronti', {n:nFr}) : t('pNessuno'), nFr > 0);
-
     let sup = 0;
-    disegni.eachLayer(x => {
-      if (AREE_SUPERFICIE.indexOf(x._tipo) >= 0) sup += areaMq(x);
-    });
-    segna(6, sup ? t('pEttari', {v:(sup/10000).toFixed(1)}) : t('pNessuno'), sup > 0);
+    disegni.eachLayer(x => { if (AREE_SUPERFICIE.indexOf(x._tipo) >= 0) sup += areaMq(x); });
+    const nIn = conta('origine');
+    segna(3, (nIn || sup)
+      ? `${nIn ? t('pInneschi', {n:nIn}) : ''}${nIn && sup ? ' \u00b7 ' : ''}${sup ? t('pEttari', {v:(sup/10000).toFixed(1)}) : ''}`
+      : t('pNessuno'), nIn > 0 || sup > 0);
+    segna(4, coni.length ? t('pConi', {n:coni.length}) : t('pNessuno'), coni.length > 0);
     const box = q('#sitac-superficie');
     if (box) box.textContent = sup ? t('pEttari', {v:(sup/10000).toFixed(2)}) : '';
 
@@ -1558,7 +1734,7 @@ function avvia(app){
     const {genere, chiave} = strumento;
     if (genere === 'linea'){
       const d = LIN[chiave];
-      map.pm.enableDraw('Line', {pathOptions: stileLinea(d, statoCorrente), continueDrawing:true});
+      map.pm.enableDraw('Line', {pathOptions: stileLinea(d, statoPer(d)), continueDrawing:true});
       stato(`${nm(d)}${etichettaStato(d)}\n${t('suggLinea')}`);
     } else if (genere === 'area'){
       const d = AREE[chiave];
@@ -1567,7 +1743,7 @@ function avvia(app){
     } else {
       const d = chiave === 'nota' ? NOTA : SIM[chiave];
       map.pm.enableDraw('Marker', {
-        markerStyle:{icon: iconaSimbolo(chiave, {stato: statoCorrente}), draggable:true},
+        markerStyle:{icon: iconaSimbolo(chiave, {stato: statoPer(d)}), draggable:true},
         continueDrawing:true});
       stato(`${nm(d)}${etichettaStato(d)}\n${t('suggSimbolo')}`);
     }
@@ -1578,7 +1754,7 @@ function avvia(app){
   const paroleStato = d => (d && d.g === 'azioni') ? ['statoPrevista','statoEffettuata']
     : (d && d.f) ? ['statoPrevista','statoAttiva'] : ['statoPrevisto','statoAttivo'];
   const etichettaStato = d => (d && (d.s || d.stati))
-    ? ` — ${t(paroleStato(d)[statoCorrente === 'attivo' ? 1 : 0])}` : '';
+    ? ` — ${t(paroleStato(d)[statoPer(d) === 'attivo' ? 1 : 0])}` : '';
   const statoDi = (d, s) => (d && (d.s || d.stati))
     ? ` — ${t(paroleStato(d)[s === 'attivo' ? 1 : 0])}` : '';
 
@@ -1599,19 +1775,17 @@ function avvia(app){
 
   /* Cambio di stato: se uno strumento è in uso va riacceso, perché il
      tratto e il disegno del simbolo dipendono dallo stato. */
-  function cambiaStato(s){
-    if (s === statoCorrente) return;
-    statoCorrente = s;
-    qq('#sitac-barra .sitac-stato-btn').forEach(b =>
-      b.classList.toggle('attivo', b.dataset.stato === s));
-    const attuale = strumento;
-    creaPulsanti();
-    if (attuale){
-      strumento = attuale;
-      marcaAttivo(attuale.genere, attuale.chiave);
-      riattivaStrumento();
-    }
+  function cambiaStato(tavola, s){
+  if (stati[tavola] === s) return;
+  stati[tavola] = s;
+  const attuale = strumento;
+  creaPulsanti();
+  if (attuale){
+    strumento = attuale;
+    marcaAttivo(attuale.genere, attuale.chiave);
+    riattivaStrumento();
   }
+}
 
   /* =======================================================================
      7. CREAZIONE
@@ -1631,7 +1805,9 @@ function avvia(app){
     if (!strumento) return;
     layer._tipo = strumento.chiave;
     layer._genere = strumento.genere;
-    layer._stato = statoCorrente;
+    const kk = strumento.chiave;
+    layer._stato = statoPer(kk === 'nota' ? NOTA
+      : (LIN[kk] || AREE[kk] || SIM[kk]));
 
     if (strumento.genere !== 'simbolo'){
       if (strumento.genere === 'linea'){
@@ -1653,7 +1829,7 @@ function avvia(app){
     if (def.poly){
       const centro = layer.getLatLng();
       disegni.removeLayer(layer);
-      creaLancio(k, centro, {stato: statoCorrente});
+      creaLancio(k, centro, {stato: statoPer(SIM[k])});
       aggiornaStato();
       stato(`${nm(def)}${etichettaStato(def)}\n${t('lancioManiglie')}`);
       riattivaStrumento();
@@ -1713,7 +1889,6 @@ function avvia(app){
      ===================================================================== */
   const $ = id => q('#sitac-' + id);
 
-  qq('#sitac-barra .sitac-stato-btn').forEach(b => { b.onclick = () => cambiaStato(b.dataset.stato); });
   agganciaFisa(q('#sitac-barra'));
 
   $('bModifica').onclick = function(){
@@ -1744,12 +1919,15 @@ function avvia(app){
     cerchioPosizione = null;
     aggiornaStato();
   };
+  function etichettaSfondo(){
+    $('bSfondo').innerHTML = `<span>${esc(t('bSfondo', {n: t(sfondi[iSfondo].k)}))}</span>`;
+  }
   $('bSfondo').onclick = () => {
     map.removeLayer(sfondi[iSfondo].l);
     iSfondo = (iSfondo + 1) % sfondi.length;
     map.addLayer(sfondi[iSfondo].l);
     sfondi[iSfondo].l.bringToBack();
-    stato(t('sfondo', {n: t(sfondi[iSfondo].k)}));
+    etichettaSfondo();
   };
   $('bCentra').onclick = () => centraSuGps(true);
   $('bStampa').onclick = stampa;
@@ -1911,7 +2089,13 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
       if (p.dos)        inDos.value        = normalizzaDos(p.dos);
       if (p.nominativo) inNominativo.value = String(p.nominativo);
       if (p.telefono)   inTelefono.value   = String(p.telefono);
-      if (p.posizione)  inPosizione.value  = String(p.posizione);
+      /* La posizione rientra come dato vivo, non come testo: senza questo
+         il passo 2 crede che il DOS non ci sia. */
+      if (p.posizione){
+        const c = String(p.posizione).split(/[,;\s]+/).map(Number)
+          .filter(x => !isNaN(x));
+        if (c.length >= 2){ posDos = L.latLng(c[0], c[1]); posaDos(posDos); cercaProvincia(posDos); }
+      }
       /* Il vento rientra come dato, non come disegno: i coni sono stime e
          si rifanno dal pulsante, ma il quadro dice subito con che vento la
          carta è stata redatta. */
@@ -2093,6 +2277,7 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
     q('#sitac-bCentra').title = t('bCentra');
     inDos.title = t('dosAiuto');
     creaPulsanti();
+    etichettaSfondo();
     disegni.eachLayer(etichettaElemento);
     if (ventoCono) mostraVento(ventoCono);
     if (strumento){
@@ -2192,7 +2377,7 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
   return {
     map, disegni, coni,
     lingua: lg => cambiaLingua(lg),
-    stato: s => cambiaStato(s),
+    stato: (tavola, s) => cambiaStato(tavola, s),
     esportaGeoJson: raccogli,
     vento: () => ventoCono,
     carica,
@@ -2231,7 +2416,8 @@ NS.Sitac = {
                       'sitac-bConvalida','sitac-bCentra','sitac-bModifica',
                       'sitac-bElimina','sitac-bAnnulla','sitac-bPulisci',
                       'sitac-bSfondo','sitac-bImporta','sitac-bStampa',
-                      'sitac-bGeojson','sitac-bKml','sitac-file']){
+                      'sitac-bGeojson','sitac-bKml','sitac-file',
+                      'sitac-provincia','sitac-comando','sitac-bVentoDir','sitac-bVentoWeb','sitac-ventoScala','sitac-ventoValore' ]){
       if (!radice.querySelector('#' + id)){
         console.error('[SITAC] manca #' + id + ' nel markup della sezione.');
         return null;

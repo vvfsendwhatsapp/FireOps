@@ -2982,8 +2982,9 @@ a.btn-icon-hamburger:hover {
 }
 
 /* ---------- colonna sinistra ---------- */
-#sitac-barra{width:270px;flex:0 0 270px;background:var(--dark-color);
-  border-right:1px solid var(--border-color);overflow-y:auto;padding:12px 10px 30px}
+#sitac-barra{flex:0 0 33.333%;max-width:33.333%;min-width:240px;
+  background:var(--dark-color);border-right:1px solid var(--border-color);
+  overflow-y:auto;padding:12px 10px 30px}
 
 /* Bandiere: fuori da #sitac-app, così non le tocca la regola dei pulsanti */
 #sitac-lingue{display:flex;gap:5px;flex:0 0 auto}
@@ -3006,19 +3007,17 @@ a.btn-icon-hamburger:hover {
   border-color:var(--primary-color);font-weight:bold}
 #sitac-app button:focus-visible{outline:2px solid var(--primary-color);outline-offset:1px}
 
-/* Previsto / In atto restano in vista mentre si scorrono le voci della
-   tavola. Il fondo pieno serve: senza, i simboli scorrerebbero visibili
-   sotto i due pulsanti. I margini negativi recuperano il padding di
-   #sitac-barra (12px 10px), così la striscia arriva ai bordi. */
-#sitac-app .sitac-stati-riga{position:sticky;top:0;z-index:5;
-  margin:-12px -10px 12px;padding:12px 10px 10px;
-  background:var(--dark-color);border-bottom:1px solid var(--border-color)}
-#sitac-app .sitac-stati-riga>span{display:block;font-size:11px;font-weight:bold;
+/* Stato: non più in cima alla barra ma dentro i passi 7 e 8, dove serve.
+   In cima valeva per tutto e nessuno lo vedeva scorrendo la tavola. */
+#sitac-app .sitac-stato-sez{margin:0 0 10px;padding:8px;border-radius:4px;
+  background:var(--surface-color);border:1px solid var(--border-color)}
+#sitac-app .sitac-stato-sez>span{display:block;font-size:10.5px;font-weight:bold;
   text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:6px}
 #sitac-app .sitac-stati{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 #sitac-app .sitac-stati button{justify-content:center;font-weight:bold}
-#sitac-app #sitac-statoAttivo.attivo{background:#cc0000;border-color:#cc0000;color:#fff}
-#sitac-app #sitac-statoPrevisto.attivo{background:var(--dark-color);
+#sitac-app .sitac-stati button[data-stato="attivo"].attivo{background:#cc0000;
+  border-color:#cc0000;color:#fff}
+#sitac-app .sitac-stati button[data-stato="previsto"].attivo{background:var(--dark-color);
   border-color:#cc0000;color:#ff7a7a}
 
 /* ---------- fisarmoniche: una aperta alla volta ---------- */
@@ -3067,7 +3066,7 @@ a.btn-icon-hamburger:hover {
   border-radius:4px;padding:10px 12px;margin-top:14px;min-height:46px;white-space:pre-wrap}
 
 /* ---------- colonna destra: mappa ---------- */
-#sitac-app .sitac-mapwrap{flex:1;position:relative;min-width:0}
+#sitac-app .sitac-mapwrap{flex:1 1 66.667%;position:relative;min-width:0}
 #sitac-mappa{position:absolute;inset:0;background:var(--dark-color)}
 #sitac-app .leaflet-container{background:var(--dark-color)}
 #sitac-mappa .leaflet-top.leaflet-left{top:50%;transform:translateY(-50%)}
@@ -3323,6 +3322,34 @@ a.btn-icon-hamburger:hover {
 #sitac-app .sitac-tip-arco{background:rgba(204,0,0,.9);border-color:#cc0000;
   color:#fff;font-weight:bold;font-size:11px;padding:1px 6px}
 #sitac-app .sitac-tip-arco::before{display:none}
+
+/* ---------- passo 1: ID DOS e posizione ---------- */
+/* VF è fisso: sta fuori dal campo, così non si può cancellare per sbaglio
+   e le 4 posizioni libere restano leggibili come tali. */
+#sitac-app .sitac-dos-riga{display:flex;align-items:stretch;gap:0}
+#sitac-app .sitac-dos-vf{flex:0 0 auto;display:flex;align-items:center;padding:0 9px;
+  background:var(--surface-color);color:var(--primary-color);
+  border:1px solid var(--border-color);border-right:0;border-radius:4px 0 0 4px;
+  font-family:"Courier New",monospace;font-weight:bold;font-size:13px}
+#sitac-app .sitac-dos-riga input{border-radius:0 4px 4px 0;
+  font-family:"Courier New",monospace;letter-spacing:3px;text-transform:uppercase}
+#sitac-app .sitac-dati-campo .sitac-derivato{padding:7px 8px;font-size:12.5px;
+  background:var(--surface-color);border:1px solid var(--border-color);
+  border-radius:4px;color:var(--text-muted);min-height:31px}
+#sitac-app .sitac-derivato b{color:var(--primary-color);font-family:"Courier New",monospace}
+#sitac-app .sitac-derivato.cliccabile-comando{cursor:pointer}
+#sitac-app .sitac-derivato.cliccabile-comando:hover{border-color:var(--primary-color)}
+
+/* ---------- passo 2: vento ---------- */
+#sitac-app .sitac-vento-scala{display:flex;align-items:center;gap:8px;margin-top:8px}
+#sitac-app .sitac-vento-scala input[type=range]{flex:1 1 auto;min-width:0;accent-color:#cc0000}
+#sitac-app .sitac-vento-valore{flex:0 0 auto;font-family:"Courier New",monospace;
+  font-size:13px;font-weight:bold;color:var(--primary-color);white-space:nowrap}
+/* Punta della freccia del vento: si trascina, quindi deve dire di esserlo */
+#sitac-app .sitac-mn-vento span{background:#cc0000;width:16px;height:16px}
+
+/* Cambia mappa vive nella riga delle bandiere, fuori da #sitac-app */
+#sitac-aib #sitac-bSfondo{flex:0 0 auto;white-space:nowrap}
 
 /* ==========================================================
    ==========================================================
