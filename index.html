@@ -443,45 +443,9 @@
         <section id="convertitore" class="page-section">
             <div class="pagina-box pagina-box-larga">
                 <div class="pagina-box-header pagina-box-header-con-nota">
-                    <p class="pagina-nota pagina-nota-inline" data-t="sub"></p>
-                    <div id="sitac-lingue"></div>
                     <button class="btn-toggle-radar btn-fullscreen-pagina" type="button"
                         title="Espandi a schermo intero">⛶ Espandi</button>
-
-                    <div class="sitac-intestazione">
-                        <label for="sitac-nIntervento" data-t="nIntervento"></label>
-                        <input type="text" id="sitac-nIntervento" inputmode="numeric" maxlength="10" autocomplete="off">
-                        <label for="sitac-nDos" data-t="nDos"></label>
-                        <input type="text" id="sitac-nDos" maxlength="4" placeholder="A123" autocomplete="off">
-                        <button id="sitac-bDati" type="button" class="sitac-dati-testa" aria-expanded="false"
-                            aria-controls="sitac-dati">
-                            <span class="freccia">▶</span><span data-t="gDati"></span>
-                        </button>
-                    </div>
-
-                    <!-- Tendina dati: si apre sotto il DOS, a tutta larghezza -->
-                    <div id="sitac-dati" class="sitac-dati" hidden>
-                        <div class="sitac-dati-campo">
-                            <label for="sitac-nominativo" data-t="nNominativo"></label>
-                            <input type="text" id="sitac-nominativo" maxlength="60" autocomplete="off">
-                        </div>
-                        <div class="sitac-dati-campo">
-                            <label for="sitac-telefono" data-t="nTelefono"></label>
-                            <input type="tel" id="sitac-telefono" maxlength="20" inputmode="tel" autocomplete="off">
-                        </div>
-                        <div class="sitac-dati-campo sitac-dati-largo">
-                            <label for="sitac-posizione" data-t="nPosizione"></label>
-                            <div class="sitac-dati-riga">
-                                <input type="text" id="sitac-posizione" readonly>
-                                <button id="sitac-bPosizione" type="button">⌖</button>
-                            </div>
-                        </div>
-                        <div class="sitac-dati-azioni">
-                            <button id="sitac-bConvalida" type="button" data-t="bConvalida"></button>
-                        </div>
-                    </div>
                 </div>
-
                 <!-- ===================================================
                      SOTTOSCHEDE STILE CHROME: Dati / Mappa / Messaggio
                      =================================================== -->
@@ -510,7 +474,6 @@
                                     <option value="mappa">Scelta su mappa (clic diretto)</option>
                                     <option value="indirizzo">Indirizzo (geocoding)</option>
                                 </select>
-
                                 <div id="coord-input-dd" class="coord-input-gruppo">
                                     <div class="msg-riga-campi">
                                         <div class="msg-campo">
@@ -543,7 +506,6 @@
                                         </div>
                                     </div>
                                 </div>
-
                                 <div id="coord-input-dmm" class="coord-input-gruppo" style="display:none;">
                                     <div class="msg-riga-campi">
                                         <div class="msg-campo">
@@ -584,7 +546,6 @@
                                         </div>
                                     </div>
                                 </div>
-
                                 <div id="coord-input-dms" class="coord-input-gruppo" style="display:none;">
                                     <div class="msg-riga-campi">
                                         <div class="msg-campo">
