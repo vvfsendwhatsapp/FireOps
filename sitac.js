@@ -820,17 +820,24 @@ function mostraComandoAfferente(sigla, nome){
      `window.FireOpsComandoAttivo` è lo stesso globale condiviso che usano
      script.js e convertitore.js; l'evento più sotto copre il cambio di
      Comando a modulo già avviato. */
+  /* I campi di comandi.json non hanno un nome canonico — iniziale maiuscola,
+     spazi, a volte una sola colonna "Coordinate" — quindi si cerca per
+     forma invece che per nome esatto: la prima chiave che comincia per
+     "lat" e la prima che comincia per "lon" o "lng". */
   function centroComando(){
     const c = window.FireOpsComandoAttivo;
     if (!c) return null;
-    const la = parseFloat(c.lat != null ? c.lat : c.latitudine);
-    const lo = parseFloat(c.lon != null ? c.lon : c.longitudine);
+    const trova = re => {
+      const k = Object.keys(c).find(x => re.test(x));
+      return k ? parseFloat(String(c[k]).replace(',', '.')) : NaN;
+    };
+    const la = trova(/^lat/i), lo = trova(/^(lon|lng)/i);
     return (!isNaN(la) && !isNaN(lo)) ? [la, lo] : null;
   }
 
   const partenza = centroComando();
   const map = L.map(q('#sitac-mappa'), {center: partenza || [42.74, 12.74],
-    zoom: partenza ? 12 : 12, zoomControl:true, layers:[sfondi[0].l]});
+    zoom: partenza ? 12 : 6, zoomControl:true, layers:[sfondi[0].l]});
   L.control.scale({imperial:false}).addTo(map);
 
   const disegni = L.featureGroup().addTo(map);   // esportabile
