@@ -820,18 +820,25 @@ function mostraComandoAfferente(sigla, nome){
      `window.FireOpsComandoAttivo` è lo stesso globale condiviso che usano
      script.js e convertitore.js; l'evento più sotto copre il cambio di
      Comando a modulo già avviato. */
-  /* I campi di comandi.json non hanno un nome canonico — iniziale maiuscola,
-     spazi, a volte una sola colonna "Coordinate" — quindi si cerca per
-     forma invece che per nome esatto: la prima chiave che comincia per
-     "lat" e la prima che comincia per "lon" o "lng". */
+  /* I campi di comandi.json hanno l'iniziale maiuscola e tipi non uniformi:
+     Latitudine è un numero, Longitudine una stringa con lo zero davanti
+     ("012.061362"). Si cerca per forma invece che per nome esatto, e si
+     passa sempre da String prima di parseFloat.
+     Il ripiego su "Coordinate" copre le righe dove le due colonne separate
+     sono vuote: quella c'è sempre. */
   function centroComando(){
     const c = window.FireOpsComandoAttivo;
     if (!c) return null;
-    const trova = re => {
+    const num = v => parseFloat(String(v == null ? '' : v).trim().replace(',', '.'));
+    const perNome = re => {
       const k = Object.keys(c).find(x => re.test(x));
-      return k ? parseFloat(String(c[k]).replace(',', '.')) : NaN;
+      return k ? num(c[k]) : NaN;
     };
-    const la = trova(/^lat/i), lo = trova(/^(lon|lng)/i);
+    let la = perNome(/^lat/i), lo = perNome(/^(lon|lng)/i);
+    if (isNaN(la) || isNaN(lo)){
+      const p = String(c.Coordinate || '').split(/[;\s]*,[;\s]*/);
+      if (p.length >= 2){ la = num(p[0]); lo = num(p[1]); }
+    }
     return (!isNaN(la) && !isNaN(lo)) ? [la, lo] : null;
   }
 
