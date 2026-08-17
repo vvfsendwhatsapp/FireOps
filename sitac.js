@@ -630,6 +630,14 @@ function avvia(app){
         nominativo: inNominativo.value, telefono: inTelefono.value,
         posizione: inPosizione.value}));
     } catch(e){ /* sessione non disponibile: si perde solo il ricordo */ }
+    /* Il simbolo sulla carta porta la sigla DOS: se la si scrive dopo aver
+       posato la posizione, l'etichetta va riscritta o resta vuota. */
+    const mDos = dosSullaCarta();
+    if (mDos){
+      mDos._testo = inDos.value || null;
+      mDos.setIcon(iconaSimbolo('dos', {stato:'attivo', testo: mDos._testo}));
+      etichettaElemento(mDos);
+    }
     aggiornaPassi();
   }
   inIntervento.oninput = () => {
@@ -704,7 +712,7 @@ function posaDos(latlng){
   const gia = dosSullaCarta();
   if (gia){ gia.setLatLng(latlng); aggiornaStato(); return; }
   const m = L.marker(latlng, {draggable:true,
-    icon: iconaSimbolo('dos', {stato:'attivo'})});
+    icon: iconaSimbolo('dos', {stato:'attivo', testo: inDos.value || null})});
   m._tipo = 'dos'; m._genere = 'simbolo'; m._stato = 'attivo';
   m._testo = inDos.value || null;
   m.on('pm:remove', () => scollega(m));
@@ -722,15 +730,22 @@ function posaDos(latlng){
   aggiornaStato();
 }
 
-let chiedePosizione = false;
 q('#sitac-bPosizione').onclick = async () => {
-  const modo = await scegli({testo: t('posComeQuale'), voci:[
-    {k:'gps',   et:t('posGps'),   nota:t('posGpsNota')},
-    {k:'coord', et:t('posCoord'), nota:t('posCoordNota')},
-    {k:'mappa', et:t('posMappa'), nota:t('posMappaNota')}
-  ]});
+  /* La localizzazione l'ha già tentata l'avvio: se ha risposto, `cerchioPosizione`
+     è sulla carta e la si può offrire come dato pronto. Se non ha risposto —
+     in sala operativa è la norma — proporla di nuovo significa far aspettare
+     l'operatore per un timeout che si sa già come finisce. */
+  const gps = posizioneOttenuta && cerchioPosizione;
+  const voci = [];
+  if (gps) voci.push({k:'gps', et:t('posGps'), nota:t('posGpsNota')});
+  voci.push({k:'coord', et:t('posCoord'), nota:t('posCoordNota')});
+  voci.push({k:'mappa', et:t('posMappa'), nota:t('posMappaNota')});
+
+  const modo = await scegli({testo: t('posComeQuale'), voci});
   if (!modo) return;
-  if (modo === 'gps'){ chiedePosizione = true; return centraSuGps(true); }
+  /* Nessuna nuova lettura: si usa quella già acquisita all'avvio. Rileggere
+     qui darebbe la stessa posizione dopo qualche secondo d'attesa. */
+  if (modo === 'gps') return scriviPosizione(cerchioPosizione.getLatLng());
   if (modo === 'mappa'){
     const p = await attendiClic(t('posClicMappa'));
     if (p) scriviPosizione(p);
@@ -867,9 +882,6 @@ function mostraComandoAfferente(sigla, nome){
     if (cerchioPosizione) decori.removeLayer(cerchioPosizione);
     cerchioPosizione = L.circleMarker(e.latlng, {radius:7, color:'#fff', weight:2,
       fillColor:'#0070c0', fillOpacity:1, interactive:false}).addTo(decori);
-    const chiesta = chiedePosizione;
-    chiedePosizione = false;
-    if (chiesta) scriviPosizione(e.latlng, e.accuracy);
   });
   map.on('locationerror', () => {
     if (posizioneOttenuta) stato(t('posErrore'));
@@ -2051,6 +2063,7 @@ function mostraComandoAfferente(sigla, nome){
     coni.length = 0;
     mostraVento(null);
     cerchioPosizione = null;
+    posizioneOttenuta = false;
     aggiornaStato();
   };
   function etichettaSfondo(){
@@ -2520,7 +2533,7 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
     carica,
     pulisci: () => {
       disegni.clearLayers(); decori.clearLayers();
-      coni.length = 0; mostraVento(null); cerchioPosizione = null;
+      coni.length = 0; mostraVento(null); cerchioPosizione = null; posizioneOttenuta = false;
       aggiornaStato();
     },
     ridisegna: adatta
