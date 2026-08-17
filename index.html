@@ -332,89 +332,88 @@
                             <p class="sitac-avviso" data-t="ventoNota"></p>
                         </div>
                     </div>
-                </div>
 
-                <div id="sitac-tavola"></div>
-
-                <div class="sitac-fisa">
-                    <button class="sitac-fisa-testa" type="button" aria-expanded="false">
-                        <span class="freccia">▶</span><span class="sitac-passo-n">9</span>
-                        <span class="sitac-passo-tit" data-t="p9"></span>
-                        <span class="sitac-passo-stato" id="sitac-st9"></span>
-                    </button>
-                    <div class="sitac-fisa-corpo">
-                        <div class="sitac-azioni">
-                            <button id="sitac-bModifica" type="button" data-t="bSposta"></button>
-                            <button id="sitac-bElimina" type="button" data-t="bElimina"></button>
-                            <button id="sitac-bAnnulla" type="button" class="largo" data-t="bAnnulla"></button>
-                            <button id="sitac-bPulisci" type="button" class="largo" data-t="bPulisci"></button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="sitac-fisa">
-                    <button class="sitac-fisa-testa" type="button" aria-expanded="false">
-                        <span class="freccia">▶</span><span class="sitac-passo-n">10</span>
-                        <span class="sitac-passo-tit" data-t="p10"></span>
-                        <span class="sitac-passo-stato" id="sitac-st10"></span>
-                    </button>
-                    <div class="sitac-fisa-corpo">
-                        <div class="sitac-azioni">
-                            <button id="sitac-bImporta" type="button" data-t="bImporta"></button>
-                            <button id="sitac-bStampa" type="button" data-t="bStampa"></button>
-                            <button id="sitac-bGeojson" type="button">GeoJSON</button>
-                            <button id="sitac-bKml" type="button">KML</button>
-                        </div>
-                        <input type="file" id="sitac-file" accept=".geojson,.json" hidden>
-                    </div>
-                    <div id="sitac-stato"></div>
-                </div>
-
-                <!-- COLONNA DESTRA: mappa, legenda e crocetta di centraggio -->
-                <div class="sitac-mapwrap">
-                    <div id="sitac-mappa"></div>
-                    <div id="sitac-vento" class="sitac-vento" hidden></div>
-                    <div id="sitac-legenda">
-                        <button id="sitac-legTesta" type="button">
-                            <b data-t="legenda"></b>
-                            <span id="sitac-legQuanti" class="sitac-quanti"></span>
-                            <span class="freccia">▾</span>
+                    <div id="sitac-tavola"></div>
+                    <div class="sitac-fisa">
+                        <button class="sitac-fisa-testa" type="button" aria-expanded="false">
+                            <span class="freccia">▶</span><span class="sitac-passo-n">9</span>
+                            <span class="sitac-passo-tit" data-t="p9"></span>
+                            <span class="sitac-passo-stato" id="sitac-st9"></span>
                         </button>
-                        <div id="sitac-legVoci"></div>
+                        <div class="sitac-fisa-corpo">
+                            <div class="sitac-azioni">
+                                <button id="sitac-bModifica" type="button" data-t="bSposta"></button>
+                                <button id="sitac-bElimina" type="button" data-t="bElimina"></button>
+                                <button id="sitac-bAnnulla" type="button" class="largo" data-t="bAnnulla"></button>
+                                <button id="sitac-bPulisci" type="button" class="largo" data-t="bPulisci"></button>
+                            </div>
+                        </div>
                     </div>
 
-                    <button id="sitac-bCentra" class="sitac-centra" type="button">
-                        <svg viewBox="0 0 24 24" aria-hidden="true">
-                            <circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" stroke-width="2" />
-                            <circle cx="12" cy="12" r="1.6" fill="currentColor" />
-                            <path d="M12 1v4M12 19v4M1 12h4M19 12h4" stroke="currentColor" stroke-width="2"
-                                stroke-linecap="round" />
-                        </svg>
-                    </button>
-                </div>
+                    <div class="sitac-fisa">
+                        <button class="sitac-fisa-testa" type="button" aria-expanded="false">
+                            <span class="freccia">▶</span><span class="sitac-passo-n">10</span>
+                            <span class="sitac-passo-tit" data-t="p10"></span>
+                            <span class="sitac-passo-stato" id="sitac-st10"></span>
+                        </button>
+                        <div class="sitac-fisa-corpo">
+                            <div class="sitac-azioni">
+                                <button id="sitac-bImporta" type="button" data-t="bImporta"></button>
+                                <button id="sitac-bStampa" type="button" data-t="bStampa"></button>
+                                <button id="sitac-bGeojson" type="button">GeoJSON</button>
+                                <button id="sitac-bKml" type="button">KML</button>
+                            </div>
+                            <input type="file" id="sitac-file" accept=".geojson,.json" hidden>
+                        </div>
+                        <div id="sitac-stato"></div>
+                    </div>
+                    </div>
 
-                <!-- Testata che compare solo sulla carta stampata -->
-                <div id="sitac-testata-stampa">
-                    <div class="t"></div>
-                    <div class="i"></div>
-                    <div class="d"></div>
-                    <div class="n"></div>
-                </div>
+                    <!-- COLONNA DESTRA: mappa, legenda e crocetta di centraggio -->
+                    <div class="sitac-mapwrap">
+                        <div id="sitac-mappa"></div>
+                        <div id="sitac-vento" class="sitac-vento" hidden></div>
+                        <div id="sitac-legenda">
+                            <button id="sitac-legTesta" type="button">
+                                <b data-t="legenda"></b>
+                                <span id="sitac-legQuanti" class="sitac-quanti"></span>
+                                <span class="freccia">▾</span>
+                            </button>
+                            <div id="sitac-legVoci"></div>
+                        </div>
 
-                <!-- Modale interno: sostituisce prompt e confirm del browser,
+                        <button id="sitac-bCentra" class="sitac-centra" type="button">
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" stroke-width="2" />
+                                <circle cx="12" cy="12" r="1.6" fill="currentColor" />
+                                <path d="M12 1v4M12 19v4M1 12h4M19 12h4" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Testata che compare solo sulla carta stampata -->
+                    <div id="sitac-testata-stampa">
+                        <div class="t"></div>
+                        <div class="i"></div>
+                        <div class="d"></div>
+                        <div class="n"></div>
+                    </div>
+
+                    <!-- Modale interno: sostituisce prompt e confirm del browser,
                      che intestano la finestra col dominio del sito -->
-                <div id="sitac-modale" class="sitac-modale" hidden>
-                    <div class="sitac-modale-box">
-                        <div class="sitac-modale-titolo"></div>
-                        <div class="sitac-modale-testo"></div>
-                        <input type="text" id="sitac-modale-input" autocomplete="off">
-                        <div class="sitac-modale-azioni">
-                            <button id="sitac-modale-no" type="button"></button>
-                            <button id="sitac-modale-ok" type="button"></button>
+                    <div id="sitac-modale" class="sitac-modale" hidden>
+                        <div class="sitac-modale-box">
+                            <div class="sitac-modale-titolo"></div>
+                            <div class="sitac-modale-testo"></div>
+                            <input type="text" id="sitac-modale-input" autocomplete="off">
+                            <div class="sitac-modale-azioni">
+                                <button id="sitac-modale-no" type="button"></button>
+                                <button id="sitac-modale-ok" type="button"></button>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
         </section>
 
         <!-- SCHEDE DI SOCCORSO -->
