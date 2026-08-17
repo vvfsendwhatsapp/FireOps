@@ -1650,8 +1650,9 @@ function mostraComandoAfferente(sigla, nome){
     const b = document.createElement('button');
     b.type = 'button';
     b.dataset.genere = 'area'; b.dataset.chiave = k;
-    b.innerHTML = `<i class="sitac-tratto" style="height:12px;border-radius:2px;
-      background:${d.fillColor};opacity:.85;border:1.5px solid ${d.color}"></i>`
+    b.innerHTML = `<i class="sitac-swatch sitac-swatch-linea">`
+      + `<span class="sitac-tratto" style="height:12px;border-radius:2px;`
+      + `background:${d.fillColor};opacity:.85;border:1.5px solid ${d.color}"></span></i>`
       + `<span>${esc(nm(d))}</span>`;
     b.onclick = () => attiva('area', k, b);
     return b;
