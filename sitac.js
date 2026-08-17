@@ -248,7 +248,7 @@ function avvia(app){
       stVento:'Vento {v} km/h verso {d}° (rilevato alle {o})',
       p1:'Intervento', p2:'Vento locale', p3:'Innesco e superficie coinvolta',
       p4:'Coni di propagazione', p5:'Zona di intervento', p6:'Evoluzione dell\u2019incendio',
-      p7:'Dispositivo di intervento', p8:'Azioni', p9:'Modifica', p10:'Esportazione',
+      p7:'Dispositivo di intervento', p8:'Azioni', p9:'Modifica', p10:'Importa ed Esporta',
       nDos:'ID DOS', dosAiuto:'Quattro caratteri, cifre o lettere. Es. VF 12A4',
       posDos:'Posizione DOS',
       posComeQuale:'Come indichi la posizione del DOS?',
@@ -1522,12 +1522,24 @@ function mostraComandoAfferente(sigla, nome){
     const p = puntoDaAzimut(posDos, ventoVerso, d);
     ventoAsta = L.polyline([posDos, p], {color:'#0070c0', weight:2.5,
       dashArray:'8,6', interactive:false}).addTo(decori);
+    /* La punta è una freccia orientata, non un pallino: su una carta il
+       vento si legge dalla forma prima che dal colore, e un cerchio non
+       dice da che parte va. */
     ventoPunta = L.marker(p, {draggable:true, keyboard:false,
       icon: L.divIcon({className:'sitac-maniglia sitac-mn-vento',
-        iconSize:[20,20], iconAnchor:[10,10], html:'<span></span>'})}).addTo(decori);
+        iconSize:[26,26], iconAnchor:[13,13],
+        html:`<svg viewBox="0 0 26 26" style="transform:rotate(${ventoVerso}deg)">`
+          + `<path d="M13 1l7 16-7-4-7 4Z" fill="#0070c0" stroke="#fff" stroke-width="1.6"`
+          + ` stroke-linejoin="round"/></svg>`})}).addTo(decori);
     ventoPunta.on('drag', () => {
       ventoVerso = Math.round(azimut(posDos, ventoPunta.getLatLng()));
       ventoAsta.setLatLngs([posDos, ventoPunta.getLatLng()]);
+      /* L'HTML del divIcon è fissato alla creazione: per far girare la
+         freccia durante il trascinamento si scrive direttamente sull'SVG
+         che è già a schermo, invece di ricostruire il marker sotto il dito. */
+      const el = ventoPunta.getElement();
+      const svg = el && el.querySelector('svg');
+      if (svg) svg.style.transform = `rotate(${ventoVerso}deg)`;
       if (ventoVelocita) applicaVento('mappa');
     });
   }
@@ -1623,9 +1635,13 @@ function mostraComandoAfferente(sigla, nome){
     const b = document.createElement('button');
     b.type = 'button';
     b.dataset.genere = 'linea'; b.dataset.chiave = k;
-    b.innerHTML = `<i class="sitac-tratto" style="background:${d.color};
-      height:${Math.min(d.weight || 3, 5)}px${d.dashArray
-        ? ';background-image:repeating-linear-gradient(90deg,#0000 0 3px,rgba(255,255,255,.85) 3px 6px)' : ''}"></i>`
+    /* Stessa swatch chiara dei simboli: la tavola è disegnata per la carta
+       bianca, e un tracciato nero su fondo grigio scuro non si distingue
+       da uno rosso scuro. La barretta va dentro la cornice, non nuda. */
+    b.innerHTML = `<i class="sitac-swatch sitac-swatch-linea">`
+      + `<span class="sitac-tratto" style="background:${d.color};`
+      + `height:${Math.min(d.weight || 3, 5)}px${d.dashArray
+        ? ';background-image:repeating-linear-gradient(90deg,#0000 0 3px,#f2f0e8 3px 6px)' : ''}"></span></i>`
       + `<span>${esc(nm(d))}</span>`;
     b.onclick = () => attiva('linea', k, b);
     return b;
