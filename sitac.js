@@ -290,7 +290,10 @@ function avvia(app){
       ventoAltroNota:'Vale solo per questo cono: il quadro dello scenario non cambia.',
       reqInnesco:'punto d\u2019innesco', reqSuperficie:'superficie coinvolta',
       reqManca:'Prima servono: {c}.\nSono i dati su cui poggia tutto il resto.',
-      reqBreve:'servono i passi 2 e 3', },
+      reqBreve:'servono i passi 2 e 3',
+      rilLeggo:'Lettura del rilievo in corso\u2026',
+      rilErrore:'Rilievo non disponibile: {e} — cono non corretto.',
+      rilFatto:'Raggi corretti per pendenza: {k}\nStima empirica, non SI.TA.C.', },
     en:{ bCono:'Add cone', conoModo:'How should the cone be built?',
       conoSettore:'From the point of origin', conoSettoreNota:'30° sector from the origin; a second click marks where the front is now (T0).',
       conoFronte:'From the fire front line', conoFronteNota:'Draw the observed front and push it forward at 15, 30 and 60 minutes.',
@@ -1311,14 +1314,32 @@ function mostraComandoAfferente(sigla, nome){
     const r0 = Math.round(origine.distanceTo(p0));
     const vento = await scegliVento(origine);
     if (!vento) return stato(t('conoAnnullato'));
-    const opz = {colore: COL.rosso, raggio0: r0, etichetta0: t('conoT0')};
+
+    /* Il rilievo si legge PRIMA di disegnare. Un cono che si allunga da
+       solo mezzo secondo dopo è peggio di mezzo secondo d'attesa: chi
+       guarda ha già cominciato a leggerlo.
+       Il profilo parte da dove sta il fronte ADESSO, non dal punto
+       d'innesco: il terreno già percorso non conta più, il fuoco lo
+       attraversa nel prossimo quarto d'ora. */
+    let fattori = null;
+    if (NS.SitacRilievo){
+      try {
+        stato(t('rilLeggo'));
+        const base = V.puntoDaAzimut(origine, vento.verso, r0);
+        fattori = (await NS.SitacRilievo.analizza(base, vento.verso,
+          V.MINUTI.map(x => V.distanzaFronte(vento.velocita, x)))).fattori;
+      } catch(e){ stato(t('rilErrore', {e: e.message})); }
+    }
+
+    const opz = {colore: COL.rosso, raggio0: r0, etichetta0: t('conoT0'), fattori};
     const layer = V.disegnaCono(origine, vento, opz);
     decori.addLayer(layer);
     const id = ++nCono;
-    coni.push({id, layer, vento, tipo:'settore'});
+    coni.push({id, layer, vento, fattori, tipo:'settore'});
 
-    /* Spostando l'area d'origine la previsione la segue: il vento è lo
-       stesso, il vertice no. Per rileggere il vento si rifà il percorso. */
+    /* Spostando l'area d'origine la previsione la segue col vento e i
+       fattori di prima: il terreno sotto però è cambiato. Per rileggere
+       la pendenza si rifà il percorso. */
     if (m){
       m.off('move.sitacCono').on('move.sitacCono', () => {
         const c = coni.find(x => x.id === id);
@@ -1330,6 +1351,8 @@ function mostraComandoAfferente(sigla, nome){
       m.on('pm:remove', () => togliCono(id));
     }
     riassunto(vento);
+    if (fattori) stato($('stato').textContent + '\n' + t('rilFatto', {
+      k: fattori.map(f => '\u00d7' + f.k.toFixed(1)).join(' · ')}));
   }
 
   /* Modo 2: si disegna il fronte com'è adesso e lo si fa avanzare nel
@@ -2390,7 +2413,9 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
     testata.querySelector('.d').textContent =
       t('stData', {d:new Date().toLocaleString(lingua)})
       + (ventoCono ? `  ·  ${t('stVento', {v:ventoCono.velocita, d:ventoCono.verso,
-          o:ventoCono.letto ? new Date(ventoCono.letto).toLocaleTimeString(lingua) : '—'})}` : '');
+          o:ventoCono.letto ? new Date(ventoCono.letto).toLocaleTimeString(lingua) : '—'})}` : '')
+      + (coni.some(c => c.fattori) ? `  ·  ${NS.SitacRilievo.avvertenza[lingua]
+          || NS.SitacRilievo.avvertenza.it}` : '');
     testata.querySelector('.n').textContent = $('stato').textContent.replace(/\n/g, ' · ');
     legenda.classList.remove('chiusa');   // sulla carta la legenda serve aperta
 

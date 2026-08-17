@@ -356,7 +356,12 @@ function disegnaFronti(vertici, vento, opz){
 /* Modo 1 — settore circolare dal punto d'innesco.
    `raggio0` è la distanza a cui sta il fronte adesso: se vale 0 il cono
    parte dal vertice, come in figura 1; se vale qualcosa il primo arco è il
-   fronte rilevato (T0) e gli altri partono da lì. */
+   fronte rilevato (T0) e gli altri partono da lì.
+
+   `fattori` è opzionale e arriva da sitac-rilievo.js: un elemento per
+   ciascun tempo, con il moltiplicatore di pendenza. Senza, la funzione si
+   comporta ESATTAMENTE come prima — il cono resta quello della
+   pubblicazione, e nessun file esistente cambia comportamento. */
 function disegnaCono(origine, vento, opz){
   const o = opz || {};
   const col = o.colore || '#cc0000';
@@ -364,21 +369,25 @@ function disegnaCono(origine, vento, opz){
   const verso = vento.verso;
   const r0 = Math.max(0, o.raggio0 || 0);
   const minuti = o.minuti || MINUTI;
-  const massima = r0 + distanzaFronte(vento.velocita, Math.max.apply(null, minuti));
   const etichetta = o.etichetta || (m => 'T+' + m);
 
-  /* Il settore: due lati dal punto di origine e l'arco esterno a chiuderli.
-     Campitura leggerissima — sotto ci deve restare leggibile la carta. */
+  const fattoreDi = i => (o.fattori && o.fattori[i]) || null;
+  const corretto = f => f && Math.abs(f.k - 1) > .01;
+  const nominale = m => distanzaFronte(vento.velocita, m);
+
+  /* Con un fattore per arco il più lontano non è per forza l'ultimo:
+     in discesa il cono si accorcia, e un massimo preso sull'ultimo
+     elemento taglierebbe il settore dentro gli archi. */
+  const massima = r0 + Math.max.apply(null,
+    minuti.map((m, i) => nominale(m) * (fattoreDi(i) ? fattoreDi(i).k : 1)));
+
   const settore = [origine].concat(arco(origine, verso, massima)).concat([origine]);
   g.addLayer(L.polygon(settore, {color: col, weight: 1.5, dashArray: '6,5',
     fillColor: col, fillOpacity: .07, interactive: false}));
 
-  /* La bisettrice è la direzione del vento: è l'asse su cui si ragiona. */
   g.addLayer(L.polyline([origine, puntoDaAzimut(origine, verso, massima)],
     {color: col, weight: 2, dashArray: '10,6', interactive: false}));
 
-  /* Il fronte di adesso, quando è stato indicato: tratto grosso e continuo,
-     perché quello è rilevato e non stimato. */
   if (r0 > 1){
     const l0 = L.polyline(arco(origine, verso, r0),
       {color: col, weight: 3.5, interactive: false});
@@ -387,13 +396,26 @@ function disegnaCono(origine, vento, opz){
     g.addLayer(l0);
   }
 
-  /* Un arco per ciascun tempo, con quanto avrà percorso il fronte. */
-  minuti.forEach(m => {
-    const d = distanzaFronte(vento.velocita, m);
-    if (d < 1) return;
+  minuti.forEach((m, i) => {
+    const dn = nominale(m);
+    if (dn < 1) return;
+    const f = fattoreDi(i);
+    const d = dn * (f ? f.k : 1);
+
+    /* L'arco nominale resta disegnato sottile sotto quello corretto: senza
+       il termine di paragone un cono allungato dalla pendenza si legge
+       come un cono SI.TA.C., che non è. */
+    if (corretto(f))
+      g.addLayer(L.polyline(arco(origine, verso, r0 + dn),
+        {color: col, weight: 1, opacity: .45, dashArray: '3,4', interactive: false}));
+
     const linea = L.polyline(arco(origine, verso, r0 + d),
       {color: col, weight: 2.5, interactive: false});
-    linea.bindTooltip(`${etichetta(m)} — ${Math.round(d)} m`,
+    let et = `${etichetta(m)} — ${Math.round(d)} m`;
+    if (corretto(f))
+      et += `\n${f.pendenza > 0 ? '+' : ''}${f.pendenza}° · \u00d7${f.k.toFixed(1)}`
+          + (f.tagliato ? ' (max)' : '');
+    linea.bindTooltip(et,
       {permanent: true, direction: 'center', className: 'sitac-tip sitac-tip-arco'});
     g.addLayer(linea);
   });
