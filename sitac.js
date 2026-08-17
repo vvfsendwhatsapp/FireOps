@@ -814,8 +814,23 @@ function mostraComandoAfferente(sigla, nome){
         {maxZoom:19, attribution:'Esri'})}
   ];
   let iSfondo = 0;
-  const map = L.map(q('#sitac-mappa'), {center:[42.74, 12.74], zoom:13,
-    zoomControl:true, layers:[sfondi[0].l]});
+
+  /* All'apertura si parte dal Comando attivo, non dal centro d'Italia: una
+     SITAC si apre quasi sempre su un incendio del proprio territorio.
+     `window.FireOpsComandoAttivo` è lo stesso globale condiviso che usano
+     script.js e convertitore.js; l'evento più sotto copre il cambio di
+     Comando a modulo già avviato. */
+  function centroComando(){
+    const c = window.FireOpsComandoAttivo;
+    if (!c) return null;
+    const la = parseFloat(c.lat != null ? c.lat : c.latitudine);
+    const lo = parseFloat(c.lon != null ? c.lon : c.longitudine);
+    return (!isNaN(la) && !isNaN(lo)) ? [la, lo] : null;
+  }
+
+  const partenza = centroComando();
+  const map = L.map(q('#sitac-mappa'), {center: partenza || [42.74, 12.74],
+    zoom: partenza ? 12 : 6, zoomControl:true, layers:[sfondi[0].l]});
   L.control.scale({imperial:false}).addTo(map);
 
   const disegni = L.featureGroup().addTo(map);   // esportabile
@@ -842,7 +857,20 @@ function mostraComandoAfferente(sigla, nome){
     chiedePosizione = false;
     if (chiesta) scriviPosizione(e.latlng, e.accuracy);
   });
-  map.on('locationerror', () => { if (posizioneOttenuta) stato(t('posErrore')); });
+  map.on('locationerror', () => {
+    if (posizioneOttenuta) stato(t('posErrore'));
+    tornaAlComando();
+  });
+
+  /* Ripiego: usato quando il GPS non risponde, o quando il Comando viene
+     scelto dopo l'avvio del modulo. Non tocca nulla se l'utente ha già
+     disegnato — spostargli la vista sotto le mani è peggio di una vista
+     imprecisa. */
+  function tornaAlComando(){
+    const c = centroComando();
+    if (c && !posizioneOttenuta && !disegni.getLayers().length)
+      map.setView(c, 12);
+  }
 
   /* =======================================================================
      4. MOTIVI RIPETUTI LUNGO LE LINEE
@@ -2464,8 +2492,9 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
     const d = ev.detail || {};
     const la = parseFloat(d.lat != null ? d.lat : d.latitudine);
     const lo = parseFloat(d.lon != null ? d.lon : d.longitudine);
-    if (!isNaN(la) && !isNaN(lo) && !posizioneOttenuta && !disegni.getLayers().length)
-      map.setView([la, lo], 12);
+    if (!isNaN(la) && !isNaN(lo)){
+      if (!posizioneOttenuta && !disegni.getLayers().length) map.setView([la, lo], 12);
+    } else tornaAlComando();
   });
 
   return {
