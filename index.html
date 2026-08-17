@@ -264,79 +264,109 @@
 
                     <div class="sitac-fisa">
                         <button class="sitac-fisa-testa" type="button" aria-expanded="false">
-                            <span class="freccia">▶</span><span class="sitac-passo-n">9</span>
-                            <span class="sitac-passo-tit" data-t="p9"></span>
-                            <span class="sitac-passo-stato" id="sitac-st9"></span>
+                            <span class="freccia">▶</span><span class="sitac-passo-n">1</span>
+                            <span class="sitac-passo-tit" data-t="p1"></span>
+                            <span class="sitac-passo-stato" id="sitac-st1"></span>
                         </button>
                         <div class="sitac-fisa-corpo">
-                            <div class="sitac-azioni">
-                                <button id="sitac-bModifica" type="button" data-t="bSposta"></button>
-                                <button id="sitac-bElimina" type="button" data-t="bElimina"></button>
-                                <button id="sitac-bAnnulla" type="button" class="largo" data-t="bAnnulla"></button>
-                                <button id="sitac-bPulisci" type="button" class="largo" data-t="bPulisci"></button>
+                            <div class="sitac-dati">
+                                <div class="sitac-dati-campo">
+                                    <label for="sitac-nIntervento" data-t="nIntervento"></label>
+                                    <input type="text" id="sitac-nIntervento" inputmode="numeric" maxlength="10"
+                                        autocomplete="off">
+                                </div>
+                                <div class="sitac-dati-campo">
+                                    <label for="sitac-nDos" data-t="nDos"></label>
+                                    <div class="sitac-dos-riga">
+                                        <span class="sitac-dos-vf">VF</span>
+                                        <input type="text" id="sitac-nDos" maxlength="4" placeholder="0000"
+                                            autocomplete="off">
+                                    </div>
+                                </div>
+                                <div class="sitac-dati-campo">
+                                    <label for="sitac-nominativo" data-t="nNominativo"></label>
+                                    <input type="text" id="sitac-nominativo" maxlength="60" autocomplete="off">
+                                </div>
+                                <div class="sitac-dati-campo">
+                                    <label for="sitac-telefono" data-t="nTelefono"></label>
+                                    <input type="tel" id="sitac-telefono" maxlength="20" inputmode="tel"
+                                        autocomplete="off">
+                                </div>
+                                <div class="sitac-dati-campo">
+                                    <label for="sitac-posizione" data-t="posDos"></label>
+                                    <div class="sitac-dati-riga">
+                                        <input type="text" id="sitac-posizione" readonly>
+                                        <button id="sitac-bPosizione" type="button">⌖</button>
+                                    </div>
+                                </div>
+                                <div class="sitac-dati-campo">
+                                    <label data-t="provincia"></label>
+                                    <div id="sitac-provincia" class="sitac-derivato">—</div>
+                                </div>
+                                <div class="sitac-dati-campo">
+                                    <label data-t="comando"></label>
+                                    <div id="sitac-comando" class="sitac-derivato">—</div>
+                                </div>
+                                <div class="sitac-dati-azioni">
+                                    <button id="sitac-bConvalida" type="button" data-t="bConvalida"></button>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <div class="sitac-fisa">
                         <button class="sitac-fisa-testa" type="button" aria-expanded="false">
-                            <span class="freccia">▶</span><span class="sitac-passo-n">10</span>
-                            <span class="sitac-passo-tit" data-t="p10"></span>
-                            <span class="sitac-passo-stato" id="sitac-st10"></span>
+                            <span class="freccia">▶</span><span class="sitac-passo-n">2</span>
+                            <span class="sitac-passo-tit" data-t="p2"></span>
+                            <span class="sitac-passo-stato" id="sitac-st2"></span>
                         </button>
                         <div class="sitac-fisa-corpo">
                             <div class="sitac-azioni">
-                                <button id="sitac-bImporta" type="button" data-t="bImporta"></button>
-                                <button id="sitac-bStampa" type="button" data-t="bStampa"></button>
-                                <button id="sitac-bGeojson" type="button">GeoJSON</button>
-                                <button id="sitac-bKml" type="button">KML</button>
+                                <button id="sitac-bVentoDir" type="button" class="largo" data-t="bVentoDir"></button>
+                                <button id="sitac-bVentoWeb" type="button" class="largo" data-t="bVentoWeb"></button>
                             </div>
-                            <input type="file" id="sitac-file" accept=".geojson,.json" hidden>
+                            <div class="sitac-vento-scala">
+                                <input type="range" id="sitac-ventoScala" min="0" max="110" step="5" value="0">
+                                <span class="sitac-vento-valore" id="sitac-ventoValore">0 km/h</span>
+                            </div>
+                            <p class="sitac-avviso" data-t="ventoNota"></p>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Punti / Linee / Aree: le costruisce sitac.js -->
-                    <div id="sitac-tavola"></div>
+                <div id="sitac-tavola"></div>
 
-                    <div class="sitac-fisa">
-                        <button class="sitac-fisa-testa" type="button" aria-expanded="false">
-                            <span class="freccia">▶</span><span data-t="gModifica"></span>
-                        </button>
-                        <div class="sitac-fisa-corpo">
-                            <div class="sitac-azioni">
-                                <button id="sitac-bModifica" type="button" data-t="bSposta"></button>
-                                <button id="sitac-bElimina" type="button" data-t="bElimina"></button>
-                                <button id="sitac-bAnnulla" type="button" class="largo" data-t="bAnnulla"></button>
-                                <button id="sitac-bPulisci" type="button" class="largo" data-t="bPulisci"></button>
-                            </div>
+                <div class="sitac-fisa">
+                    <button class="sitac-fisa-testa" type="button" aria-expanded="false">
+                        <span class="freccia">▶</span><span class="sitac-passo-n">9</span>
+                        <span class="sitac-passo-tit" data-t="p9"></span>
+                        <span class="sitac-passo-stato" id="sitac-st9"></span>
+                    </button>
+                    <div class="sitac-fisa-corpo">
+                        <div class="sitac-azioni">
+                            <button id="sitac-bModifica" type="button" data-t="bSposta"></button>
+                            <button id="sitac-bElimina" type="button" data-t="bElimina"></button>
+                            <button id="sitac-bAnnulla" type="button" class="largo" data-t="bAnnulla"></button>
+                            <button id="sitac-bPulisci" type="button" class="largo" data-t="bPulisci"></button>
                         </div>
                     </div>
+                </div>
 
-                    <div class="sitac-fisa">
-                        <button class="sitac-fisa-testa" type="button" aria-expanded="false">
-                            <span class="freccia">▶</span><span data-t="gMappa"></span>
-                        </button>
-                        <div class="sitac-fisa-corpo">
-                            <div class="sitac-azioni">
-                                <button id="sitac-bImporta" type="button" data-t="bImporta"></button>
-                            </div>
-                            <input type="file" id="sitac-file" accept=".geojson,.json" hidden>
+                <div class="sitac-fisa">
+                    <button class="sitac-fisa-testa" type="button" aria-expanded="false">
+                        <span class="freccia">▶</span><span class="sitac-passo-n">10</span>
+                        <span class="sitac-passo-tit" data-t="p10"></span>
+                        <span class="sitac-passo-stato" id="sitac-st10"></span>
+                    </button>
+                    <div class="sitac-fisa-corpo">
+                        <div class="sitac-azioni">
+                            <button id="sitac-bImporta" type="button" data-t="bImporta"></button>
+                            <button id="sitac-bStampa" type="button" data-t="bStampa"></button>
+                            <button id="sitac-bGeojson" type="button">GeoJSON</button>
+                            <button id="sitac-bKml" type="button">KML</button>
                         </div>
+                        <input type="file" id="sitac-file" accept=".geojson,.json" hidden>
                     </div>
-
-                    <div class="sitac-fisa">
-                        <button class="sitac-fisa-testa" type="button" aria-expanded="false">
-                            <span class="freccia">▶</span><span data-t="gEsporta"></span>
-                        </button>
-                        <div class="sitac-fisa-corpo">
-                            <div class="sitac-azioni">
-                                <button id="sitac-bGeojson" type="button">GeoJSON</button>
-                                <button id="sitac-bKml" type="button">KML</button>
-                                <button id="sitac-bStampa" type="button" class="largo" data-t="bStampa"></button>
-                            </div>
-                        </div>
-                    </div>
-
                     <div id="sitac-stato"></div>
                 </div>
 
