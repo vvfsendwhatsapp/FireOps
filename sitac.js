@@ -301,7 +301,8 @@ function avvia(app){
       posRilevataNoNota:'Coordinate dettate per radio, o un clic sulla mappa.',
       supPercorsa:'Percorsa: {v} ha',
       supAttiva:'A fuoco attivo: {v} ha',
-      supTotale:'Coinvolta in totale: {v} ha', },
+      supTotale:'Coinvolta in totale: {v} ha',
+      ventoRiancorato:'Posizione DOS modificata.\nLa freccia del vento è stata riancorata: verifica la direzione.', },
     en:{ bCono:'Add cone', conoModo:'How should the cone be built?',
       conoSettore:'From the point of origin', conoSettoreNota:'30° sector from the origin; a second click marks where the front is now (T0).',
       conoFronte:'From the fire front line', conoFronteNota:'Draw the observed front and push it forward at 15, 30 and 60 minutes.',
@@ -706,7 +707,7 @@ function scriviPosizione(latlng, acc){
     + (acc ? ` (\u00b1${Math.round(acc)} m)` : '');
   segnaIntestazione();
   posaDos(posDos);
-  aggiornaAncoraVento();
+  ventoSeguiDos();
   cercaProvincia(posDos);
 }
 
@@ -1533,6 +1534,18 @@ function mostraComandoAfferente(sigla, nome){
   /* La freccia sta a distanza fissa sullo SCHERMO: cambiando zoom va rifatta,
      o a zoom 10 finisce sotto il simbolo del DOS. */
   const aggiornaAncoraVento = () => { if (ventoAsta || ventoPunta) disegnaFrecciaVento(); };
+
+  /* Spostando il DOS la freccia lo segue mantenendo l'azimut: il vento è un
+     dato di scenario, non del singolo punto, e 200 m non cambiano dove tira.
+     Ma la direzione l'operatore può averla corretta a vista sul vecchio
+     punto, quindi lo si avvisa invece di rileggere il servizio e
+     sovrascrivergli la correzione. */
+  function ventoSeguiDos(){
+    if (!ventoAsta && !ventoPunta) return;
+    disegnaFrecciaVento();
+    stato(t('ventoRiancorato'));
+  }
+
   map.on('zoomend', aggiornaAncoraVento);
 
   q('#sitac-bVentoDir').onclick = () => {
@@ -1817,7 +1830,6 @@ function mostraComandoAfferente(sigla, nome){
     segna(2, ventoCono ? `${t('pFatto')} ${ventoCono.velocita} km/h \u2192 ${ventoCono.verso}\u00b0`
       : t('pManca'), !!ventoCono);
 
-    const conta = k => disegni.getLayers().filter(x => x._tipo === k).length;
     const sf = superfici();
     const nIn = disegni.getLayers().filter(x => x._tipo === 'origine').length;
     segna(3, (nIn || sf.totale)
@@ -2337,6 +2349,8 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
     }
     return Math.abs(s * R_TERRA * R_TERRA / 2);
   }
+  function inHa(mq){ return (mq / 10000).toFixed(2); }
+  function inMq(mq){ return Math.round(mq).toLocaleString('it-IT'); }
   /* Percorsa e attiva sono due dati operativi distinti: quanto è già
      bruciato e quanto sta bruciando adesso. Sommarli dà un numero che non
      dice niente a chi legge la carta. Le altre tre aree — minacciata,
@@ -2359,8 +2373,6 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
       + `${t('supAttiva',   {v: inHa(sf.attiva)})} — ${inMq(sf.attiva)} m²\n\n`
       + `${t('supTotale',   {v: inHa(sf.totale)})} — ${inMq(sf.totale)} m²`});
   }
-  const inHa = mq => (mq / 10000).toFixed(2);
-  const inMq = mq => Math.round(mq).toLocaleString('it-IT');
   function perimetroM(poly){
     const p = poly.getLatLngs && poly.getLatLngs()[0];
     if (!p || p.length < 2) return 0;
