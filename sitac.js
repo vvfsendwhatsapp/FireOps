@@ -2493,7 +2493,7 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
     const la = parseFloat(d.lat != null ? d.lat : d.latitudine);
     const lo = parseFloat(d.lon != null ? d.lon : d.longitudine);
     if (!isNaN(la) && !isNaN(lo)){
-      if (!posizioneOttenuta && !disegni.getLayers().length) map.setView([la, lo], 12);
+      if (!posizioneOttenuta && !disegni.getLayers().length) map.setView([la, lo], 15);
     } else tornaAlComando();
   });
 
