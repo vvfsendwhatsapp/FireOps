@@ -830,7 +830,7 @@ function mostraComandoAfferente(sigla, nome){
 
   const partenza = centroComando();
   const map = L.map(q('#sitac-mappa'), {center: partenza || [42.74, 12.74],
-    zoom: partenza ? 12 : 6, zoomControl:true, layers:[sfondi[0].l]});
+    zoom: partenza ? 12 : 12, zoomControl:true, layers:[sfondi[0].l]});
   L.control.scale({imperial:false}).addTo(map);
 
   const disegni = L.featureGroup().addTo(map);   // esportabile
@@ -2493,7 +2493,7 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
     const la = parseFloat(d.lat != null ? d.lat : d.latitudine);
     const lo = parseFloat(d.lon != null ? d.lon : d.longitudine);
     if (!isNaN(la) && !isNaN(lo)){
-      if (!posizioneOttenuta && !disegni.getLayers().length) map.setView([la, lo], 15);
+      if (!posizioneOttenuta && !disegni.getLayers().length) map.setView([la, lo], 12);
     } else tornaAlComando();
   });
 
