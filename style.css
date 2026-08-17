@@ -3014,7 +3014,11 @@ a.btn-icon-hamburger:hover {
   transition:transform .15s}
 #sitac-app .sitac-fisa-testa.aperto{border-color:var(--primary-color);color:var(--primary-color)}
 #sitac-app .sitac-fisa-testa.aperto .freccia{transform:rotate(90deg)}
-#sitac-app .sitac-fisa-testa>span:nth-child(2){flex:1 1 auto;min-width:0}
+/* Prende il titolo per classe, non per posizione: inserire un elemento
+   prima — com'è successo col numero del passo — spostava il bersaglio e
+   allungava il pallino a ovale. */
+#sitac-app .sitac-fisa-testa>span:not([class]),
+#sitac-app .sitac-fisa-testa>.sitac-passo-tit{flex:1 1 auto;min-width:0}
 #sitac-app .sitac-quanti{flex:0 0 auto;font-family:"Courier New",monospace;font-size:11px;
   font-weight:normal;color:var(--text-muted);border:1px solid var(--border-color);
   border-radius:999px;padding:0 7px}
@@ -3249,9 +3253,9 @@ a.btn-icon-hamburger:hover {
 /* Passi numerati: la barra segue l'ordine in cui si fa una SITAC. Il
    numero e l'indicatore stanno sulla testata, così lo stato del lavoro si
    legge a fisarmonica chiusa. */
-#sitac-app .sitac-passo-n{flex:0 0 auto;width:19px;height:19px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;font-size:11px;
-  background:var(--border-color);color:var(--text-main)}
+#sitac-app .sitac-passo-n{flex:0 0 20px;width:20px;height:20px;min-width:20px;
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:11px;line-height:1;background:var(--border-color);color:var(--text-main)}
 #sitac-app .sitac-fisa-testa.aperto .sitac-passo-n{background:var(--primary-color);
   color:var(--dark-color)}
 #sitac-app .sitac-passo-tit{flex:1 1 auto;min-width:0;line-height:1.25}
@@ -3320,8 +3324,10 @@ a.btn-icon-hamburger:hover {
 #sitac-app .sitac-vento-scala input[type=range]{flex:1 1 auto;min-width:0;accent-color:#cc0000}
 #sitac-app .sitac-vento-valore{flex:0 0 auto;font-family:"Courier New",monospace;
   font-size:13px;font-weight:bold;color:var(--primary-color);white-space:nowrap}
-/* Punta della freccia del vento: si trascina, quindi deve dire di esserlo */
-#sitac-app .sitac-mn-vento span{background:#cc0000;width:16px;height:16px}
+/* Blu come le altre maniglie di direzione del modulo: il rosso sulla carta
+   è il fuoco e il dispositivo VVF, e una freccia rossa ancorata al DOS si
+   confonde con un asse di sviluppo. */
+#sitac-app .sitac-mn-vento span{background:#0070c0;width:16px;height:16px}
 
 /* Cambia mappa vive nella riga delle bandiere, fuori da #sitac-app */
 #sitac-aib #sitac-bSfondo{flex:0 0 auto;white-space:nowrap}
@@ -3346,6 +3352,9 @@ a.btn-icon-hamburger:hover {
 #sitac-legenda{background:#141414}
 #sitac-app .sitac-tip{background:#141414}
 #sitac-app .sitac-centra{background:#141414}
+
+#sitac-app .sitac-conta-cliccabile{cursor:pointer;line-height:1.5}
+#sitac-app .sitac-conta-cliccabile:hover{color:var(--primary-color)}
 
 /* ==========================================================
    ==========================================================
@@ -3711,3 +3720,5 @@ a.btn-icon-hamburger:hover {
 #reparti-volo-contenuto.unita-nm .dist-nm { display: inline; }
 
 .reparto-volo-testata .distanza { white-space: nowrap; }
+
+

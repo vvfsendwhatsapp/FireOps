@@ -298,7 +298,10 @@ function avvia(app){
       posRilevataSi:'Sì, è la posizione del DOS',
       posRilevataSiNota:'Posa qui il simbolo e compila il campo del passo 1.',
       posRilevataNo:'No, la indico in un altro modo',
-      posRilevataNoNota:'Coordinate dettate per radio, o un clic sulla mappa.', },
+      posRilevataNoNota:'Coordinate dettate per radio, o un clic sulla mappa.',
+      supPercorsa:'Percorsa: {v} ha',
+      supAttiva:'A fuoco attivo: {v} ha',
+      supTotale:'Coinvolta in totale: {v} ha', },
     en:{ bCono:'Add cone', conoModo:'How should the cone be built?',
       conoSettore:'From the point of origin', conoSettoreNota:'30° sector from the origin; a second click marks where the front is now (T0).',
       conoFronte:'From the fire front line', conoFronteNota:'Draw the observed front and push it forward at 15, 30 and 60 minutes.',
@@ -1516,7 +1519,7 @@ function mostraComandoAfferente(sigla, nome){
     if (!posDos) return;
     const d = distanzaManiglia() * 1.8;
     const p = puntoDaAzimut(posDos, ventoVerso, d);
-    ventoAsta = L.polyline([posDos, p], {color:'#cc0000', weight:2.5,
+    ventoAsta = L.polyline([posDos, p], {color:'#0070c0', weight:2.5,
       dashArray:'8,6', interactive:false}).addTo(decori);
     ventoPunta = L.marker(p, {draggable:true, keyboard:false,
       icon: L.divIcon({className:'sitac-maniglia sitac-mn-vento',
@@ -1644,9 +1647,7 @@ function mostraComandoAfferente(sigla, nome){
     const m = [];
     if (!ventoCono) m.push(t('p2'));
     if (!disegni.getLayers().some(x => x._tipo === 'origine')) m.push(t('reqInnesco'));
-    let sup = 0;
-    disegni.eachLayer(x => { if (AREE_SUPERFICIE.indexOf(x._tipo) >= 0) sup += areaMq(x); });
-    if (!sup) m.push(t('reqSuperficie'));
+    if (!superfici().totale) m.push(t('reqSuperficie'));
     return m;
   }
   const scenarioPronto = () => mancanti().length === 0;
@@ -1817,15 +1818,23 @@ function mostraComandoAfferente(sigla, nome){
       : t('pManca'), !!ventoCono);
 
     const conta = k => disegni.getLayers().filter(x => x._tipo === k).length;
-    let sup = 0;
-    disegni.eachLayer(x => { if (AREE_SUPERFICIE.indexOf(x._tipo) >= 0) sup += areaMq(x); });
-    const nIn = conta('origine');
-    segna(3, (nIn || sup)
-      ? `${nIn ? t('pInneschi', {n:nIn}) : ''}${nIn && sup ? ' \u00b7 ' : ''}${sup ? t('pEttari', {v:(sup/10000).toFixed(1)}) : ''}`
-      : t('pNessuno'), nIn > 0 || sup > 0);
+    const sf = superfici();
+    const nIn = disegni.getLayers().filter(x => x._tipo === 'origine').length;
+    segna(3, (nIn || sf.totale)
+      ? `${nIn ? t('pInneschi', {n:nIn}) : ''}${nIn && sf.totale ? ' \u00b7 ' : ''}`
+        + `${sf.totale ? t('pEttari', {v: inHa(sf.totale)}) : ''}`
+      : t('pNessuno'), nIn > 0 || sf.totale > 0);
     segna(4, coni.length ? t('pConi', {n:coni.length}) : t('pNessuno'), coni.length > 0);
+
     const box = q('#sitac-superficie');
-    if (box) box.textContent = sup ? t('pEttari', {v:(sup/10000).toFixed(2)}) : '';
+    if (box){
+      box.innerHTML = sf.totale
+        ? `<span>${esc(t('supPercorsa', {v: inHa(sf.percorsa)}))}</span><br>`
+          + `<span>${esc(t('supAttiva', {v: inHa(sf.attiva)}))}</span>`
+        : '';
+      box.classList.toggle('sitac-conta-cliccabile', sf.totale > 0);
+      box.onclick = sf.totale ? mostraSuperfici : null;
+    }
 
     const lista = q('#sitac-coni');
     if (lista){
@@ -2328,6 +2337,30 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
     }
     return Math.abs(s * R_TERRA * R_TERRA / 2);
   }
+  /* Percorsa e attiva sono due dati operativi distinti: quanto è già
+     bruciato e quanto sta bruciando adesso. Sommarli dà un numero che non
+     dice niente a chi legge la carta. Le altre tre aree — minacciata,
+     evacuata, bonificata — sono zone di gestione e restano fuori. */
+  function superfici(){
+    let percorsa = 0, attiva = 0;
+    disegni.eachLayer(x => {
+      if (x._tipo === 'percorsa') percorsa += areaMq(x);
+      else if (x._tipo === 'attiva') attiva += areaMq(x);
+    });
+    return {percorsa, attiva, totale: percorsa + attiva};
+  }
+  /* Gli ettari sono l'unità con cui si ragiona in AIB e si parla per radio;
+     i metri quadri servono sotto l'ettaro, dove "0,04 ha" non dice niente
+     e "400 m²" sì. Stanno in un riquadro a parte per non affollare la barra. */
+  function mostraSuperfici(){
+    const sf = superfici();
+    chiedi({testo:
+        `${t('supPercorsa', {v: inHa(sf.percorsa)})} — ${inMq(sf.percorsa)} m²\n`
+      + `${t('supAttiva',   {v: inHa(sf.attiva)})} — ${inMq(sf.attiva)} m²\n\n`
+      + `${t('supTotale',   {v: inHa(sf.totale)})} — ${inMq(sf.totale)} m²`});
+  }
+  const inHa = mq => (mq / 10000).toFixed(2);
+  const inMq = mq => Math.round(mq).toLocaleString('it-IT');
   function perimetroM(poly){
     const p = poly.getLatLngs && poly.getLatLngs()[0];
     if (!p || p.length < 2) return 0;
