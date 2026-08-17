@@ -1321,14 +1321,18 @@ function mostraComandoAfferente(sigla, nome){
        Il profilo parte da dove sta il fronte ADESSO, non dal punto
        d'innesco: il terreno già percorso non conta più, il fuoco lo
        attraversa nel prossimo quarto d'ora. */
-    let fattori = null;
+    let fattori = null, rilErrore = null;
     if (NS.SitacRilievo){
-      try {
-        stato(t('rilLeggo'));
-        const base = V.puntoDaAzimut(origine, vento.verso, r0);
-        fattori = (await NS.SitacRilievo.analizza(base, vento.verso,
-          V.MINUTI.map(x => V.distanzaFronte(vento.velocita, x)))).fattori;
-      } catch(e){ stato(t('rilErrore', {e: e.message})); }
+      const dist = V.MINUTI.map(x => V.distanzaFronte(vento.velocita, x));
+      /* Con distanze nulle il profilo degenera: passo zero, dislivello
+         diviso zero, e la pendenza esce a 90° tagliata al massimo. */
+      if (Math.max.apply(null, dist) > 50){
+        try {
+          stato(t('rilLeggo'));
+          const base = V.puntoDaAzimut(origine, vento.verso, r0);
+          fattori = (await NS.SitacRilievo.analizza(base, vento.verso, dist)).fattori;
+        } catch(e){ rilErrore = e.message; }
+      }
     }
 
     const opz = {colore: COL.rosso, raggio0: r0, etichetta0: t('conoT0'), fattori};
@@ -1352,7 +1356,9 @@ function mostraComandoAfferente(sigla, nome){
     }
     riassunto(vento);
     if (fattori) stato($('stato').textContent + '\n' + t('rilFatto', {
-      k: fattori.map(f => '\u00d7' + f.k.toFixed(1)).join(' · ')}));
+      k: fattori.map(f => '\u00d7' + f.k.toFixed(1)).join(' \u00b7 ')}));
+    else if (rilErrore) stato($('stato').textContent + '\n'
+      + t('rilErrore', {e: rilErrore}));
   }
 
   /* Modo 2: si disegna il fronte com'è adesso e lo si fa avanzare nel
