@@ -293,7 +293,12 @@ function avvia(app){
       reqBreve:'servono i passi 2 e 3',
       rilLeggo:'Lettura del rilievo in corso\u2026',
       rilErrore:'Rilievo non disponibile: {e} — cono non corretto.',
-      rilFatto:'Raggi corretti per pendenza: {k}\nStima empirica, non SI.TA.C.', },
+      rilFatto:'Raggi corretti per pendenza: {k}\nStima empirica, non SI.TA.C.',
+      posRilevataQ:'Posizione rilevata: {lat}, {lon}\nÈ questa la posizione del DOS?',
+      posRilevataSi:'Sì, è la posizione del DOS',
+      posRilevataSiNota:'Posa qui il simbolo e compila il campo del passo 1.',
+      posRilevataNo:'No, la indico in un altro modo',
+      posRilevataNoNota:'Coordinate dettate per radio, o un clic sulla mappa.', },
     en:{ bCono:'Add cone', conoModo:'How should the cone be built?',
       conoSettore:'From the point of origin', conoSettoreNota:'30° sector from the origin; a second click marks where the front is now (T0).',
       conoFronte:'From the fire front line', conoFronteNota:'Draw the observed front and push it forward at 15, 30 and 60 minutes.',
@@ -731,21 +736,28 @@ function posaDos(latlng){
 }
 
 q('#sitac-bPosizione').onclick = async () => {
-  /* La localizzazione l'ha già tentata l'avvio: se ha risposto, `cerchioPosizione`
-     è sulla carta e la si può offrire come dato pronto. Se non ha risposto —
-     in sala operativa è la norma — proporla di nuovo significa far aspettare
-     l'operatore per un timeout che si sa già come finisce. */
-  const gps = posizioneOttenuta && cerchioPosizione;
-  const voci = [];
-  if (gps) voci.push({k:'gps', et:t('posGps'), nota:t('posGpsNota')});
-  voci.push({k:'coord', et:t('posCoord'), nota:t('posCoordNota')});
-  voci.push({k:'mappa', et:t('posMappa'), nota:t('posMappaNota')});
+  /* Se il GPS ha risposto all'avvio, la posizione c'è già: si chiede solo
+     se è quella del DOS. In sala operativa la risposta è no — il computer
+     non sta sull'incendio — ma su un tablet in campo è sì, ed è un clic
+     invece di tre. */
+  if (posizioneOttenuta && cerchioPosizione){
+    const p = cerchioPosizione.getLatLng();
+    const usa = await scegli({
+      testo: t('posRilevataQ', {lat: p.lat.toFixed(5), lon: p.lng.toFixed(5)}),
+      voci: [
+        {k:'si', et: t('posRilevataSi'), nota: t('posRilevataSiNota')},
+        {k:'no', et: t('posRilevataNo'), nota: t('posRilevataNoNota')}
+      ]});
+    if (!usa) return;                       // Annulla: si esce del tutto
+    if (usa === 'si') return scriviPosizione(p);
+    /* 'no' cade nel percorso qui sotto */
+  }
 
-  const modo = await scegli({testo: t('posComeQuale'), voci});
+  const modo = await scegli({testo: t('posComeQuale'), voci: [
+    {k:'coord', et:t('posCoord'), nota:t('posCoordNota')},
+    {k:'mappa', et:t('posMappa'), nota:t('posMappaNota')}
+  ]});
   if (!modo) return;
-  /* Nessuna nuova lettura: si usa quella già acquisita all'avvio. Rileggere
-     qui darebbe la stessa posizione dopo qualche secondo d'attesa. */
-  if (modo === 'gps') return scriviPosizione(cerchioPosizione.getLatLng());
   if (modo === 'mappa'){
     const p = await attendiClic(t('posClicMappa'));
     if (p) scriviPosizione(p);
