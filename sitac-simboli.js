@@ -61,6 +61,13 @@ const esc = s => String(s == null ? '' : s).replace(/[<>&"]/g,
   c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
 const attivo = o => (o && o.stato) === 'attivo';
 
+/* La tavola lascia sulla carta lo spazio per una matricola breve: quattro
+   caratteri sono il massimo che sta nella banda senza rimpicciolire il
+   simbolo. Il taglio va fatto qui e non solo nell'input, o un GeoJSON
+   arrivato da fuori sfonda comunque il riquadro. */
+const ID_MAX = 4;
+const idTesto = o => String((o && o.testo) || '').trim().slice(0, ID_MAX);
+
 /* Lo stesso simbolo può comparire nel pannello e sulla mappa: con un id
    fisso il browser risolve url(#...) sulla prima occorrenza nel documento
    e le altre restano senza campitura appena quella viene rimossa dal DOM. */
@@ -95,13 +102,13 @@ function mezzoAereo(sigla){
        pieni, con le diagonali ripassate sopra: a dimensione di pulsante la
        X resta leggibile e il simbolo non diventa una macchia rossa. */
     const dia = `<path d="M${x1} ${y1}L${x2} ${y2}M${x2} ${y1}L${x1} ${y2}" stroke="${R}" stroke-width="2.2" fill="none"/>`;
-    const corpo = (p ? `<path d="M${x1} ${y1}H${x2}L${cx} ${cy}ZM${x1} ${y2}H${x2}L${cx} ${cy}Z" fill="${R}"/>` : '') + dia;
+    const corpo = (p ? `<path d="M${x1} ${y1}V${y2}L${cx} ${cy}ZM${x2} ${y1}V${y2}L${cx} ${cy}Z" fill="${R}"/>` : '') + dia;
 
     /* La banda: sigla fissa a sinistra, poi la matricola digitata oppure i
        puntini su cui sulla carta la si scrive a penna. Arial bold occupa
        circa 0.58 em per carattere: basta a non far uscire nulla dal bordo. */
     const s = sigla || '';
-    const n = (o && o.testo) || '';
+    const n = idTesto(o);
     const bx1 = x1 + 3, bx2 = x2 - 3, base = ym - 4;
     const dim = (t, max, cap) => Math.min(max, cap / (t.length * 0.58));
     let banda;
@@ -136,8 +143,8 @@ function mezzoTerra(sigla, aste, col, senzaDivisione){
       const x = (xd - (aste - 1) * 4 + i * 8).toFixed(1);
       a += `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y1-8}" stroke="${K}" stroke-width="2.2"/>`;
     }
-    const s = sigla || (o && o.testo) || '';
-    const n = sigla ? ((o && o.testo) || '') : '';
+    const s = sigla || idTesto(o) || '';
+    const n = sigla ? idTesto(o) : '';
     if (senzaDivisione)
       return T(`${a}<rect x="${x1}" y="${y1}" width="${x2-x1}" height="${y2-y1}" fill="#fff" stroke="${K}" stroke-width="2.6"/>
         ${p ? `<path d="M${x2-(y2-y1)} ${y2}H${x2}V${y1}Z" fill="${K}"/>` : ''}
@@ -274,12 +281,12 @@ agg('inc_radente','evoluzione',null,'Incendio radente','Surface fire', quotaFuoc
 agg('inc_sotterraneo','evoluzione',null,'Incendio sotterraneo','Ground fire', quotaFuoco(2));
 
 /* ---- TAVOLA 3: il dispositivo di intervento ---- */
-agg('can','dispositivo','sgAereo','Canadair','Canadair', mezzoAereo('CAN'), {s:1, e:1});
-agg('s64','dispositivo','sgAereo','S 64','S 64', mezzoAereo('S64'), {s:1, e:1});
-agg('fireboss','dispositivo','sgAereo','Fireboss','Fireboss', mezzoAereo('Boss'), {s:1, e:1});
-agg('eli','dispositivo','sgAereo','Elicotteri medi e leggeri','Light and medium helicopters', mezzoAereo('Eli'), {s:1, e:1});
-agg('eli_com','dispositivo','sgAereo','Elicottero Comando','Command helicopter', mezzoAereo('Eli Com'), {s:1, e:1});
-agg('aereo_altro','dispositivo','sgAereo','Altro mezzo aereo','Other air means', mezzoAereo(''), {s:1, e:1});
+agg('can','dispositivo','sgAereo','Canadair','Canadair', mezzoAereo('CAN'), {s:1, e:1, lbl:'ID CAN'});
+agg('s64','dispositivo','sgAereo','S 64','S 64', mezzoAereo('S64'), {s:1, e:1, lbl:'ID S64'});
+agg('fireboss','dispositivo','sgAereo','Fireboss','Fireboss', mezzoAereo('Boss'), {s:1, e:1, lbl:'ID Boss'});
+agg('eli','dispositivo','sgAereo','Elicotteri medi e leggeri','Light and medium helicopters', mezzoAereo('Eli'), {s:1, e:1, lbl:'ID Eli'});
+agg('eli_com','dispositivo','sgAereo','Elicottero Comando','Command helicopter', mezzoAereo('Eli Com'), {s:1, e:1, lbl:'ID Eli Com'});
+agg('aereo_altro','dispositivo','sgAereo','Altro mezzo aereo','Other air means', mezzoAereo(''), {s:1, e:1, lbl:'ID mezzo'});
 
 /* DOS e squadre sono femminili nella tavola: prevista / attiva. */
 agg('dos','dispositivo','sgTerra','DOS — Direttore Operazioni Spegnimento','Fire operations director', mezzoTerra('DOS', 1), {s:1, e:1, f:1});
@@ -433,6 +440,12 @@ NS.SITAC_RIQUADRI = {
   sgControfuoco:{it:'Controfuoco e fuoco prescritto', en:'Backfire and prescribed fire'},
   sgEvacuazione:{it:'Evacuazione', en:'Evacuation'}
 };
+
+
+/* Etichetta e lunghezza per la finestra di inserimento: la chiede sitac.js
+   quando si posa un simbolo con il flag `e`. */
+NS.SITAC_ID_MAX = ID_MAX;
+NS.SITAC_ETICHETTA = k => (S[k] && S[k].lbl) || 'ID';
 
 /* Compatibilità con la versione precedente del modulo: i vecchi GeoJSON
    rientrano ricondotti alle chiavi nuove. */
