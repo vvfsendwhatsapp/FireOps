@@ -1060,17 +1060,31 @@ function mostraComandoAfferente(sigla, nome){
     const p = puntoDaAzimut(c, layer._rotazione || 0, distanzaManiglia());
     layer._asta = L.polyline([c, p], {color:'#0070c0', weight:2.5, dashArray:'6,5',
       interactive:false}).addTo(decori);
+
+    /* La punta dice da che parte si entra in zona: un pallino non lo dice.
+       È la stessa forma della maniglia del vento, orientata sull'azimut. */
+    const puntaSvg = g => `<svg viewBox="0 0 26 26" style="transform:rotate(${g}deg)">`
+      + `<path d="M13 1l7 16-7-4-7 4Z" fill="#0070c0" stroke="#fff" stroke-width="1.6"`
+      + ` stroke-linejoin="round"/></svg>`;
     layer._maniglia = L.marker(p, {draggable:true, keyboard:false,
-      icon: L.divIcon({className:'sitac-maniglia', iconSize:[18,18], iconAnchor:[9,9],
-        html:'<span></span>'})}).addTo(decori);
+      icon: L.divIcon({className:'sitac-maniglia sitac-mn-vento',
+        iconSize:[26,26], iconAnchor:[13,13],
+        html: puntaSvg(layer._rotazione || 0)})}).addTo(decori);
+
     layer._maniglia.on('drag', () => {
       const m = layer._maniglia.getLatLng(), o = layer.getLatLng();
       layer._rotazione = Math.round(azimut(o, m));
       layer.setIcon(iconaSimbolo(layer._tipo, {stato:layer._stato,
         testo:layer._testo, rotazione:layer._rotazione}));
       layer._asta.setLatLngs([o, m]);
+      /* L'HTML del divIcon è fissato alla creazione: si scrive direttamente
+         sull'SVG a schermo invece di ricostruire il marker sotto il dito. */
+      const el = layer._maniglia.getElement();
+      const svg = el && el.querySelector('svg');
+      if (svg) svg.style.transform = `rotate(${layer._rotazione}deg)`;
       etichettaElemento(layer);
     });
+
     /* Il simbolo si sposta, la maniglia lo segue mantenendo la direzione */
     layer.on('move', () => {
       if (!layer._maniglia) return;
