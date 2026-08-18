@@ -1071,15 +1071,7 @@ function mostraComandoAfferente(sigla, nome){
       ? {color:COL.rosso, weight:3.4, interactive:false}
       : {color:'#0070c0', weight:2.5, dashArray:'6,5', interactive:false}).addTo(decori);
     if (tp) layer._asta.bringToBack();
-    /* Sul TP l'asta è la strada di transito: rossa come il simbolo, continua,
-       e sotto di esso. Sugli altri orientabili resta la guida blu tratteggiata,
-       che è un attrezzo di regolazione e non un elemento della carta. */
-    const tp = layer._tipo === 'tp';
-    layer._asta = L.polyline([c, p], tp
-      ? {color:COL.rosso, weight:3.4, interactive:false}
-      : {color:'#0070c0', weight:2.5, dashArray:'6,5', interactive:false}).addTo(decori);
-    if (tp) layer._asta.bringToBack();
-
+    
     /* La punta dice da che parte si entra in zona: un pallino non lo dice.
        Sugli altri simboli la direzione la disegna già il glifo, e una
        seconda punta accanto sarebbe un doppione. */
