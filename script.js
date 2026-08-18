@@ -674,17 +674,18 @@ document.addEventListener("DOMContentLoaded", () => {
         popup.style.left = `${left}px`;
 
         popup.innerHTML = `
-            <span class="popup-close" onclick="chiudiPopupDati()">&times;</span>
+            <span class="popup-close" title="Chiudi">&times;</span>
             <h5>${titolo}</h5>
             ${righeHTML}
         `;
 
         document.body.appendChild(popup);
 
-        // Attiva il click-to-copy dentro il popup per telefoni ed email
-        popup.querySelectorAll(".telefono-cliccabile, .email-cliccabile").forEach(el => {
-            el.addEventListener("click", (e) => copiaTesto(e, el.dataset.copia));
-        });
+        /* Il listener si aggancia qui e non con onclick nel markup: la
+           funzione vive dentro questa closure e da un attributo HTML, che
+           risolve solo su window, non è raggiungibile. */
+        const chiusura = popup.querySelector(".popup-close");
+        if (chiusura) chiusura.addEventListener("click", chiudiPopupDati);
     }
 
     // Chiude il popup cliccando fuori o con ESC
