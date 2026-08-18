@@ -490,8 +490,8 @@ function avvia(app){
        sud-ovest). Senza la differenza i simboli escono ruotati di novanta
        gradi e le squadre leggono una direzione sbagliata. */
     const d0 = (SIM[k] && SIM[k].r0) || 0;
-    /* La rotazione la applica il contenitore, ma il glifo può averne
-       bisogno per raddrizzare il proprio testo: gliela si passa. */
+    /* La rotazione la applica il contenitore, ma il glifo può averne bisogno
+       per raddrizzare il proprio testo: gliela si passa. */
     const gradi = o.rotazione != null ? ((o.rotazione - d0) % 360 + 360) % 360 : 0;
     const gir = o.rotazione != null ? ` style="transform:rotate(${gradi}deg)"` : '';
     return L.divIcon({className:'sitac-sim',
