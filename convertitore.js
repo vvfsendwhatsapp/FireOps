@@ -718,6 +718,28 @@ document.addEventListener("DOMContentLoaded", () => {
         return { comune, sigla: conSigla ? conSigla[1].toUpperCase() : "" };
     }
 
+        // Posizione dal dispositivo (Geolocation API): nessun servizio esterno,
+    // richiede HTTPS e il consenso dell'utente. enableHighAccuracy chiede il
+    // GPS vero dove c'è: una posizione dedotta dal Wi-Fi con 2 km di errore
+    // qui non serve a nulla.
+    function posizioneCorrente() {
+        return new Promise((risolvi, rifiuta) => {
+            if (!navigator.geolocation) {
+                rifiuta(new Error("Questo browser non espone la posizione."));
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(
+                pos => risolvi({ lat: pos.coords.latitude, lon: pos.coords.longitude, accuratezza: pos.coords.accuracy }),
+                err => rifiuta(new Error({
+                    1: "Permesso negato: autorizza la posizione dall'icona del lucchetto nella barra degli indirizzi.",
+                    2: "Posizione non determinabile: nessun segnale GPS o di rete utilizzabile.",
+                    3: "Tempo scaduto. Riprova, meglio se all'aperto.",
+                }[err.code] || err.message)),
+                { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+            );
+        });
+    }
+
     // ==========================================================
     // COPIA NEGLI APPUNTI + FEEDBACK VISIVO
     // ==========================================================
@@ -779,6 +801,7 @@ document.addEventListener("DOMContentLoaded", () => {
         case "olc": return !!val("coord-olc");
         case "utm": return !!(val("coord-utm-zona") && val("coord-utm-est") && val("coord-utm-nord"));
         case "mappa": return true; // nessun campo da compilare: si va direttamente alla mappa
+        case "gps": return true;   // nessun campo: la posizione la dà il dispositivo
         case "indirizzo": return !!(val("coord-indirizzo-via") || val("coord-indirizzo-comune"));
         default: return false;
     }
@@ -788,9 +811,11 @@ function aggiornaBottoneConverti() {
     const btn = document.getElementById("btn-coord-converti");
     if (!btn || !selectFormato) return;
     const formato = selectFormato.value;
-    btn.textContent = formato === "mappa"
+        btn.textContent = formato === "mappa"
         ? "🗺️ Vai alla mappa"
-        : "📐 Converti e scopri le funzioni a lato";
+        : formato === "gps"
+            ? "📍 Rileva la mia posizione"
+            : "📐 Converti e scopri le funzioni a lato";
     btn.disabled = !tuttiCampiCompilatiPerFormato(formato);
 }
 
@@ -2269,6 +2294,33 @@ function disegnaGraficoAltimetria(geojson) {
             if (formatoScelto === "mappa") {
                 event.stopPropagation();
                 impostaSchedaColonnaAttiva("mappa");
+                return;
+            }
+            if (formatoScelto === "gps") {
+                const testoOriginale = btnConverti.textContent;
+                btnConverti.disabled = true;
+                btnConverti.textContent = "📍 Rilevamento in corso…";
+                try {
+                    const p = await posizioneCorrente();
+                    await elaboraCoordinateConvertite(p.lat, p.lon);
+                    // L'accuratezza è il raggio entro cui sta davvero il punto:
+                    // va letta prima di dettarlo via radio
+                    const avviso = elementoAvvisoIndirizzo();
+                    if (avviso) {
+                        const m = Math.round(p.accuratezza || 0);
+                        const ok = m > 0 && m <= 50;
+                        avviso.style.color = ok ? "var(--text-muted, #9aa0a6)" : "#ffd700";
+                        avviso.innerHTML = `${ok ? "✅" : "⚠️"} <strong>Posizione del dispositivo — precisione ± ${m} m</strong>`
+                            + (ok ? "" : "<br>Precisione bassa: verifica il punto sulla mappa prima di inviarlo.");
+                        avviso.style.display = "block";
+                    }
+                } catch (err) {
+                    mostraErrore(err.message);
+                } finally {
+                    btnConverti.disabled = false;
+                    btnConverti.textContent = testoOriginale;
+                    aggiornaBottoneConverti();
+                }
                 return;
             }
             let coordinate = null;
