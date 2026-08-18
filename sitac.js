@@ -494,7 +494,7 @@ function avvia(app){
       ? ` style="transform:rotate(${((o.rotazione - d0) % 360 + 360) % 360}deg)"` : '';
     return L.divIcon({className:'sitac-sim',
       html:`<span class="sitac-disco"></span><span class="sitac-glifo"${gir}>${svgSimbolo(k, o)}</span>`,
-      iconSize:[42,42], iconAnchor:[21,21], popupAnchor:[0,-21]});
+      iconSize:[56,56], iconAnchor:[28,28], popupAnchor:[0,-28]});
   }
 
   /* Opzioni di stile per Leaflet: le chiavi nostre non devono arrivargli.
@@ -1929,19 +1929,29 @@ function mostraComandoAfferente(sigla, nome){
     strumento = null;
   }
 
-  /* Cambio di stato: se uno strumento è in uso va riacceso, perché il
-     tratto e il disegno del simbolo dipendono dallo stato. */
+    /* Cambiare stato tocca due cose sole: quale dei due pulsanti è acceso e
+     come sono disegnati i simboli di QUELLA tavola. Ricostruire la barra
+     faceva anche il resto — e richiudeva la fisarmonica sotto le mani di
+     chi aveva appena premuto. Le swatch delle linee non cambiano: il
+     tratteggio del previsto lo mette stileLinea al momento del disegno. */
   function cambiaStato(tavola, s){
-  if (stati[tavola] === s) return;
-  stati[tavola] = s;
-  const attuale = strumento;
-  creaPulsanti();
-  if (attuale){
-    strumento = attuale;
-    marcaAttivo(attuale.genere, attuale.chiave);
-    riattivaStrumento();
+    if (stati[tavola] === s) return;
+    stati[tavola] = s;
+
+    qq(`#sitac-barra .sitac-stato-btn[data-tavola="${tavola}"]`).forEach(b =>
+      b.classList.toggle('attivo', b.dataset.stato === s));
+
+    qq('#sitac-barra button[data-genere="simbolo"][data-chiave]').forEach(b => {
+      const k = b.dataset.chiave, d = SIM[k];
+      if (!d || d.g !== tavola) return;
+      const sw = b.querySelector('.sitac-swatch');
+      if (sw) sw.innerHTML = svgSimbolo(k, {stato: s});
+    });
+
+    /* Lo strumento in uso va riacceso: l'icona del marcatore che Geoman
+       tiene sotto il cursore è quella dello stato di prima. */
+    if (strumento) riattivaStrumento();
   }
-}
 
   /* =======================================================================
      7. CREAZIONE
@@ -2041,7 +2051,7 @@ function mostraComandoAfferente(sigla, nome){
       testo += '\n' + t('lancioDi', {a: layer._a * 2, b: layer._b * 2,
         s: (areaMq(layer) / 10000).toFixed(2)});
     layer.unbindTooltip();
-    layer.bindTooltip(testo, {direction:'top', offset:[0, LIN[k] || AREE[k] ? 0 : -22],
+    layer.bindTooltip(testo, {direction:'top', offset:[0, LIN[k] || AREE[k] ? 0 : -29],
       className:'sitac-tip', sticky: !!(LIN[k] || AREE[k])});
   }
 
