@@ -289,8 +289,18 @@ agg('eli','dispositivo','sgAereo','Elicotteri medi e leggeri','Light and medium 
 agg('eli_com','dispositivo','sgAereo','Elicottero Comando','Command helicopter', mezzoAereo('Eli Com'), {s:1, e:1, lbl:'ID Eli Com'});
 agg('aereo_altro','dispositivo','sgAereo','Altro mezzo aereo','Other air means', mezzoAereo(''), {s:1, e:1, lbl:'ID mezzo'});
 
-/* DOS e squadre sono femminili nella tavola: prevista / attiva. */
-agg('dos','dispositivo','sgTerra','DOS — Direttore Operazioni Spegnimento','Fire operations director', mezzoTerra('DOS', 1), {s:1, e:1, f:1});
+/* Il DOS non porta la sigla accanto: è uno solo sulla carta, e quello che
+   conta è vederlo a colpo d'occhio. L'identificativo sta nell'intestazione
+   e nel tooltip, non dentro il riquadro. */
+agg('dos','dispositivo','sgTerra','DOS — Direttore Operazioni Spegnimento','Fire operations director',
+  o => {
+    const p = attivo(o), K = C.rosso;
+    const x1 = 2, y1 = 18, x2 = 62, y2 = 48, xc = 32;
+    return T(`<line x1="${xc}" y1="${y1}" x2="${xc}" y2="${y1-9}" stroke="${K}" stroke-width="2.6"/>
+      <rect x="${x1}" y="${y1}" width="${x2-x1}" height="${y2-y1}" fill="#fff" stroke="${K}" stroke-width="3"/>
+      ${p ? `<path d="M${x2-(y2-y1)} ${y2}H${x2}V${y1}Z" fill="${K}"/>` : ''}
+      ${txt(p ? 27 : 32, y2-8, 'DOS', K, 21)}`);
+  }, {s:1, f:1});
 agg('vvf','dispositivo','sgTerra','Squadra VVF','VVF crew', mezzoTerra('VVF', 1), {s:1, e:1, f:1});
 agg('vol','dispositivo','sgTerra','Squadra VOL','Volunteer crew', mezzoTerra('VOL', 1), {s:1, e:1, f:1});
 agg('gos','dispositivo','sgTerra','Squadra GOS','GOS crew', mezzoTerra('GOS', 1), {s:1, e:1, f:1});
