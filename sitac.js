@@ -493,13 +493,13 @@ function avvia(app){
     /* La rotazione la applica il contenitore, ma il glifo può averne bisogno
        per raddrizzare il proprio testo: gliela si passa. */
     const gradi = o.rotazione != null ? ((o.rotazione - d0) % 360 + 360) % 360 : 0;
-        /* Il TP non gira: la direzione sta nell'asta, e una sigla ruotata non si
+    /* Il TP non gira: la direzione sta nell'asta, e una sigla ruotata non si
        legge. Gli altri orientabili hanno il disegno che punta da sé. */
     const gir = (o.rotazione != null && k !== 'tp')
       ? ` style="transform:rotate(${((o.rotazione - d0) % 360 + 360) % 360}deg)"` : '';
     return L.divIcon({className:'sitac-sim',
       html:`<span class="sitac-disco"></span><span class="sitac-glifo"${gir}>`
-        + `${svgSimbolo(k, Object.assign({giro: gradi}, o))}</span>`,
+        + `${svgSimbolo(k, o)}</span>`,
       iconSize:[56,56], iconAnchor:[28,28], popupAnchor:[0,-28]});
   }
 
