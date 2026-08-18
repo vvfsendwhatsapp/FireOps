@@ -3295,7 +3295,10 @@ a.btn-icon-hamburger:hover {
 /* Verde quando c'è ancora da convalidare, giallo quando i dati sono fermi
    e il pulsante è diventato Modifica: il colore dice a colpo d'occhio in
    che stato sta l'intestazione senza leggere l'etichetta. */
-#sitac-app #sitac-bConvalida{background:#1a7f37;border-color:#1a7f37;color:#fff}
+/* Il testo viene riscritto da mostraBlocco() come nodo diretto, non dentro
+   uno <span> come negli altri bottoni: il centraggio va messo sul bottone. */
+#sitac-app #sitac-bConvalida{background:#1a7f37;border-color:#1a7f37;color:#fff;
+  display:flex;align-items:center;justify-content:center;text-align:center}
 #sitac-app #sitac-bConvalida.attivo{background:#e8a000;border-color:#e8a000;color:#1a1a1a}
 
 /* Riquadro interno di una tavola (Dispositivo aereo, Squadre a terra…):
