@@ -59,7 +59,7 @@ function avvia(app){
     it:{
       sub:'Segui i passi a sinistra: prima i dati, poi lo scenario, poi le quattro tavole. Doppio clic o Invio per chiudere una linea.',
       gStato:'Stato', statoPrevisto:'Previsto', statoAttivo:'In atto',
-      nIntervento:'N. intervento', nDos:'DOS', dosAiuto:'Lettera e tre cifre, es. A123',
+      nIntervento:'N. intervento', nDos:'DOS', dosAiuto:'Cifre o lettere, fino a sei. Es. VF 12A4',
       ventoLeggo:'Lettura del vento in corso…',
       ventoErrore:'Vento non disponibile: {e}',
       gPunti:'Punti', gLinee:'Linee', gAree:'Aree',
@@ -301,7 +301,8 @@ function avvia(app){
       supPercorsa:'Percorsa: {v} ha',
       supAttiva:'A fuoco attivo: {v} ha',
       supTotale:'Coinvolta in totale: {v} ha',
-      ventoRiancorato:'Posizione DOS modificata.\nLa freccia del vento è stata riancorata: verifica la direzione.', },
+      ventoRiancorato:'Posizione DOS modificata.\nLa freccia del vento è stata riancorata: verifica la direzione.',
+      bModificaDati:'Modifica', datiBloccati:'Dati bloccati.\nPremi Modifica per correggerli.', },
     en:{ bCono:'Add cone', conoModo:'How should the cone be built?',
       conoSettore:'From the point of origin', conoSettoreNota:'30° sector from the origin; a second click marks where the front is now (T0).',
       conoFronte:'From the fire front line', conoFronteNota:'Draw the observed front and push it forward at 15, 30 and 60 minutes.',
@@ -616,14 +617,15 @@ function avvia(app){
   const inPosizione  = q('#sitac-posizione');
   const CHIAVE_SESS  = 'fireops_sitac_intestazione';
 
-    /* VF è fisso e sta nel markup: qui viaggiano solo i 4 caratteri liberi,
-    cifre o lettere indifferentemente. Lo strip di ^VF serve ai file
-    importati, che portano la sigla intera. */
+      /* VF è fisso e sta nel markup: qui viaggia solo la parte libera. Non c'è
+     più una lunghezza obbligata — le sigle reali variano — ma il campo va
+     compilato: una SITAC che gira senza dire chi la firma non serve.
+     Il tetto a 6 non è una regola, è lo spazio che sta nel simbolo. */
   function normalizzaDos(v){
     return String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
-      .replace(/^VF/, '').slice(0, 4);
+      .replace(/^VF/, '').slice(0, 6);
   }
-  const dosValido = () => /^[A-Z0-9]{4}$/.test(inDos.value);
+  const dosValido = () => /^[A-Z0-9]{1,6}$/.test(inDos.value);
   const dosCompleto = () => dosValido() ? 'VF ' + inDos.value : '';
   const interventoValido = () => /^[0-9]+$/.test(inIntervento.value);
   const telefonoValido = () =>
@@ -664,8 +666,28 @@ function avvia(app){
 
   /* Convalida: la posizione resta facoltativa, perché il GPS in sala
      operativa non dice niente di utile e su http non locale è bloccato.
-     Il segno verde sulla testata del passo 1 lo scrive aggiornaPassi. */
-  q('#sitac-bConvalida').onclick = () => {
+     Convalidati, i campi si chiudono: sono l'intestazione della carta, e
+     una volta detta va lasciata ferma. Il pulsante diventa Modifica. */
+  let datiBloccati = false;
+  const bDati = q('#sitac-bConvalida');
+
+  function mostraBlocco(){
+    [inIntervento, inDos, inNominativo, inTelefono].forEach(c => {
+      c.readOnly = datiBloccati;
+      c.classList.toggle('campo-bloccato', datiBloccati);
+    });
+    q('#sitac-bPosizione').disabled = datiBloccati;
+    bDati.textContent = t(datiBloccati ? 'bModificaDati' : 'bConvalida');
+    bDati.classList.toggle('attivo', datiBloccati);
+  }
+
+  bDati.onclick = () => {
+    if (datiBloccati){
+      datiBloccati = false;
+      mostraBlocco();
+      inIntervento.focus();
+      return;
+    }
     const manca = [];
     if (!interventoValido()) manca.push(t('nIntervento'));
     if (!dosValido()) manca.push(t('nDos'));
@@ -673,7 +695,10 @@ function avvia(app){
     if (!telefonoValido()) manca.push(t('nTelefono'));
     segnaIntestazione();
     if (manca.length) return stato(t('datiMancanti', {c: manca.join(', ')}));
-    stato(t('datiOk', {i: inIntervento.value, n: inNominativo.value.trim()}));
+    datiBloccati = true;
+    mostraBlocco();
+    stato(t('datiOk', {i: inIntervento.value, n: inNominativo.value.trim()})
+      + '\n' + t('datiBloccati'));
   };
 
   try {
@@ -2459,6 +2484,7 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
       b.classList.toggle('attivo', b.dataset.lingua === lingua));
     q('#sitac-bCentra').title = t('bCentra');
     inDos.title = t('dosAiuto');
+    mostraBlocco();   // il ciclo su [data-t] ha appena riscritto "Convalida"
     creaPulsanti();
     etichettaSfondo();
     disegni.eachLayer(etichettaElemento);

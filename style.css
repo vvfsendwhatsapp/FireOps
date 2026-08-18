@@ -3365,6 +3365,8 @@ a.btn-icon-hamburger:hover {
 #sitac-app .sitac-conta-cliccabile{cursor:pointer;line-height:1.5}
 #sitac-app .sitac-conta-cliccabile:hover{color:var(--primary-color)}
 
+#sitac-app input.campo-bloccato{opacity:.72;cursor:default;border-style:dashed}
+
 /* Chiudi SITAC: rosso, non verde smeraldo come Espandi/Riduci. Non cambia
    l'inquadratura, smonta il modulo — e in mezzo a una SITAC in corso è un
    gesto che va pensato, non premuto per abitudine. */
