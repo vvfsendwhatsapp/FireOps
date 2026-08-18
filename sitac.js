@@ -1066,10 +1066,17 @@ function mostraComandoAfferente(sigla, nome){
     const puntaSvg = g => `<svg viewBox="0 0 26 26" style="transform:rotate(${g}deg)">`
       + `<path d="M13 1l7 16-7-4-7 4Z" fill="#0070c0" stroke="#fff" stroke-width="1.6"`
       + ` stroke-linejoin="round"/></svg>`;
+        /* La freccia solo dove la direzione È il dato: il Transit Point dice da
+       che parte si entra in zona. Su pendenze e venti il simbolo la direzione
+       la disegna già da sé, e una seconda punta accanto sarebbe un doppione. */
+    const conPunta = layer._tipo === 'tp';
     layer._maniglia = L.marker(p, {draggable:true, keyboard:false,
-      icon: L.divIcon({className:'sitac-maniglia sitac-mn-vento',
-        iconSize:[26,26], iconAnchor:[13,13],
-        html: puntaSvg(layer._rotazione || 0)})}).addTo(decori);
+      icon: conPunta
+        ? L.divIcon({className:'sitac-maniglia sitac-mn-vento',
+            iconSize:[26,26], iconAnchor:[13,13],
+            html: puntaSvg(layer._rotazione || 0)})
+        : L.divIcon({className:'sitac-maniglia', iconSize:[18,18],
+            iconAnchor:[9,9], html:'<span></span>'})}).addTo(decori);
 
     layer._maniglia.on('drag', () => {
       const m = layer._maniglia.getLatLng(), o = layer.getLatLng();
