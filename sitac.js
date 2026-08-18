@@ -2045,13 +2045,16 @@ function mostraComandoAfferente(sigla, nome){
     etichettaElemento(layer);
     aggiornaStato();
 
-    if (def.r){
+        if (def.r){
       /* Dopo aggiornaStato, che riscriverebbe sopra l'istruzione. Il
-         setTimeout serve perché il clic che ha posato il simbolo è ancora
-         in corso e verrebbe consumato subito come direzione, con azimut
-         nullo: è il motivo per cui serviva cliccare due volte. */
-      map.pm.disableDraw();
-      setTimeout(() => { attesaDirezione = layer; }, 0);
+         setTimeout serve per due motivi: il clic che ha posato il simbolo
+         è ancora in corso e verrebbe consumato subito come direzione con
+         azimut nullo, e `continueDrawing` riaccende il disegno DOPO
+         pm:create — spegnerlo prima non serve a niente. */
+      setTimeout(() => {
+        map.pm.disableDraw();
+        attesaDirezione = layer;
+      }, 0);
       stato(`${nm(def)}\n${t('chiediDirezione')}`);
     }
   });
