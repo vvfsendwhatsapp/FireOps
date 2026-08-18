@@ -128,34 +128,34 @@ function mezzoAereo(sigla){
   };
 }
 
-/* Dispositivo terrestre: nel quarto di sinistra la sigla fissa, e sotto la
-   riga su cui si scrive il numero. Dove la sigla non c'è (Squadra.....,
-   Modulo, Colonna) è il testo digitato a occupare il posto della sigla.
-   L'asta sopra il divisorio conta il livello: una per la squadra, due per
-   il modulo/gruppo, tre per il modulo UE/colonna.
-   Attivo = triangolo pieno nella metà destra. */
-function mezzoTerra(sigla, aste, col, senzaDivisione){
+/* Dispositivo terrestre: riquadro con la sigla al centro e l'asta sopra
+   che conta il livello — una per la squadra, due per il modulo/gruppo, tre
+   per il modulo UE/colonna. Il numero digitato sta accanto alla sigla
+   ("VVF 12"): la tavola lo scrive sui puntini, ma a dimensione di simbolo
+   su carta il divisorio con la riga sotto rendeva la sigla illeggibile.
+   Attivo = triangolo pieno appoggiato al montante destro. */
+function mezzoTerra(sigla, aste, col){
   return o => {
     const p = attivo(o), K = col || C.rosso;
-    const x1 = 3, y1 = 20, x2 = 61, y2 = 46, xd = 30, ym = 33;
+    const x1 = 3, y1 = 20, x2 = 61, y2 = 46, xc = (x1 + x2) / 2;
     let a = '';
     for (let i = 0; i < aste; i++){
-      const x = (xd - (aste - 1) * 4 + i * 8).toFixed(1);
+      const x = (xc - (aste - 1) * 4 + i * 8).toFixed(1);
       a += `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y1-8}" stroke="${K}" stroke-width="2.2"/>`;
     }
-    const s = sigla || idTesto(o) || '';
-    const n = sigla ? idTesto(o) : '';
-    if (senzaDivisione)
-      return T(`${a}<rect x="${x1}" y="${y1}" width="${x2-x1}" height="${y2-y1}" fill="#fff" stroke="${K}" stroke-width="2.6"/>
-        ${p ? `<path d="M${x2-(y2-y1)} ${y2}H${x2}V${y1}Z" fill="${K}"/>` : ''}
-        ${txt(p ? 28 : 32, y2-8, s, K, 15)}`);
+    /* La sigla è fissa; dove non c'è (Squadra…, Modulo, Colonna) il testo
+       digitato ne prende il posto invece di restare senza etichetta. */
+    const s = sigla || '';
+    const n = idTesto(o);
+    const et = s ? (n ? s + ' ' + n : s) : n;
+    /* Con l'angolo pieno il testo si sposta a sinistra per non finirci
+       sotto, e il corpo si stringe sullo spazio che resta. */
+    const largo = (p ? x2 - 16 : x2) - x1 - 8;
+    const dim = et ? Math.min(15, largo / (et.length * 0.6)) : 15;
     return T(`${a}
       <rect x="${x1}" y="${y1}" width="${x2-x1}" height="${y2-y1}" fill="#fff" stroke="${K}" stroke-width="2.6"/>
-      ${p ? `<path d="M${xd} ${y2}L${x2} ${y1}V${y2}Z" fill="${K}"/>` : ''}
-      <line x1="${xd}" y1="${y1}" x2="${xd}" y2="${y2}" stroke="${K}" stroke-width="2.2"/>
-      <line x1="${x1}" y1="${ym}" x2="${xd}" y2="${ym}" stroke="${K}" stroke-width="2.2"/>
-      ${s ? txt((x1+xd)/2, ym-3, s, K, 11) : ''}
-      ${n ? txt((x1+xd)/2, y2-7, n, K, 10) : puntini(x1+3, xd-3, y2-8, K)}`);
+      ${p ? `<path d="M${x2-(y2-y1)} ${y2}H${x2}V${y1}Z" fill="${K}"/>` : ''}
+      ${et ? txt(p ? xc - 5 : xc, y2 - 8, et, K, dim) : ''}`);
   };
 }
 
@@ -298,9 +298,9 @@ agg('squadra_altra','dispositivo','sgTerra','Squadra\u2026','Other crew', mezzoT
 agg('modulo_vvf','dispositivo','sgTerra','Modulo VVF / Gruppo','VVF module / Group', mezzoTerra('', 2), {s:1, e:1});
 agg('modulo_ue','dispositivo','sgTerra','Modulo UE / Colonna','EU module / Column', mezzoTerra('', 3), {s:1, e:1});
 /* CP, SS e Pol nella tavola non hanno la riga di puntini: nessun testo. */
-agg('cp','dispositivo','sgTerra','Posto di Comando','Command post', mezzoTerra('CP', 0, C.rosso, 1), {s:1});
-agg('ss','dispositivo','sgTerra','Soccorso Sanitario','Ambulance', mezzoTerra('SS', 0, C.verde, 1), {s:1});
-agg('pol','dispositivo','sgTerra','Forze di Polizia','Police forces', mezzoTerra('Pol', 0, C.polizia, 1), {s:1, f:1});
+agg('cp','dispositivo','sgTerra','Posto di Comando','Command post', mezzoTerra('CP', 0, C.rosso), {s:1});
+agg('ss','dispositivo','sgTerra','Soccorso Sanitario','Ambulance', mezzoTerra('SS', 0, C.verde), {s:1});
+agg('pol','dispositivo','sgTerra','Forze di Polizia','Police forces', mezzoTerra('Pol', 0, C.polizia), {s:1, f:1});
 
 /* Transit Point: il cerchio sta su una linea di transito e la freccia dice
    da che parte si entra in zona, quindi va orientato. Attivo = cerchio
