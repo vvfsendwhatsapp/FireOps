@@ -89,19 +89,35 @@ const RIG = (id, col, largo) => `<pattern id="${id}" width="7" height="7" patter
 function mezzoAereo(sigla){
   return o => {
     const p = attivo(o), R = C.rosso;
-    const x1 = 5, y1 = 14, x2 = 59, y2 = 42, ym = 51;
-    const corpo = p
-      ? `<path d="M${x1} ${y1}H${x2}L${x1} ${y2}H${x2}Z" fill="${R}"/>`
-      : `<path d="M${x1} ${y1}L${x2} ${y2}M${x2} ${y1}L${x1} ${y2}" stroke="${R}" stroke-width="2" fill="none"/>`;
+    const x1 = 2, y1 = 9, x2 = 62, y2 = 41, ym = 55;
+    const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2;
+    /* Previsto = sole diagonali; attivo = triangolo alto e triangolo basso
+       pieni, con le diagonali ripassate sopra: a dimensione di pulsante la
+       X resta leggibile e il simbolo non diventa una macchia rossa. */
+    const dia = `<path d="M${x1} ${y1}L${x2} ${y2}M${x2} ${y1}L${x1} ${y2}" stroke="${R}" stroke-width="2.2" fill="none"/>`;
+    const corpo = (p ? `<path d="M${x1} ${y1}H${x2}L${cx} ${cy}ZM${x1} ${y2}H${x2}L${cx} ${cy}Z" fill="${R}"/>` : '') + dia;
+
+    /* La banda: sigla fissa a sinistra, poi la matricola digitata oppure i
+       puntini su cui sulla carta la si scrive a penna. Arial bold occupa
+       circa 0.58 em per carattere: basta a non far uscire nulla dal bordo. */
     const s = sigla || '';
     const n = (o && o.testo) || '';
-    const dimS = s.length > 5 ? 8.5 : 10;
-    const xn = s ? x1 + 5 + s.length * dimS * 0.62 : x1 + 4;
-    return T(`<rect x="${x1}" y="${y1}" width="${x2-x1}" height="${y2-y1}" fill="#fff" stroke="${R}" stroke-width="2.6"/>
+    const bx1 = x1 + 3, bx2 = x2 - 3, base = ym - 4;
+    const dim = (t, max, cap) => Math.min(max, cap / (t.length * 0.58));
+    let banda;
+    if (s){
+      const dimS = dim(s, 12, 38), xn = bx1 + s.length * dimS * 0.58 + 3;
+      banda = txt(bx1, base, s, R, dimS, 'start')
+        + (n ? txt(xn, base, n, R, dim(n, 10, bx2 - xn), 'start')
+             : puntini(xn, bx2, base - 4, R));
+    } else {
+      banda = n ? txt(bx1, base, n, R, dim(n, 12, bx2 - bx1), 'start')
+                : puntini(bx1, bx2, base - 4, R);
+    }
+    return T(`<rect x="${x1}" y="${y1}" width="${x2-x1}" height="${y2-y1}" fill="#fff" stroke="${R}" stroke-width="2.8"/>
       ${corpo}
-      <rect x="${x1}" y="${y2}" width="${x2-x1}" height="${ym-y2}" fill="#fff" stroke="${R}" stroke-width="2.6"/>
-      ${s ? txt(x1+3, ym-2.5, s, R, dimS, 'start') : ''}
-      ${n ? txt(xn, ym-2.5, n, R, 9.5, 'start') : puntini(xn, x2-3, ym-3.5, R)}`);
+      <rect x="${x1}" y="${y2}" width="${x2-x1}" height="${ym-y2}" fill="#fff" stroke="${R}" stroke-width="2.8"/>
+      ${banda}`);
   };
 }
 
