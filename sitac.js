@@ -67,7 +67,7 @@ function avvia(app){
       gModifica:'Modifica', gMappa:'Mappa e dati', gEsporta:'Esportazione',
       legenda:'Legenda', legVuota:'Nessun elemento sulla mappa.',
       bSposta:'Sposta', bElimina:'Elimina', bAnnulla:'Annulla ultimo', bPulisci:'Cancella tutto',
-      bSfondo:'Sfondo', bImporta:'Importa', bStampa:'Stampa PDF', bCentra:'Centra sulla mia posizione',
+      bSfondo:'Sfondo', bImporta:'Importa GeoJSON', bStampa:'Stampa PDF', bCentra:'Centra sulla mia posizione',
       pronto:'Pronto.\nApri un passo a sinistra e scegli uno strumento.',
       spento:'Strumento disattivato.',
       suggLinea:'Clic per i vertici, doppio clic per chiudere.',
@@ -93,7 +93,9 @@ function avvia(app){
       areaDi:'Superficie {a} ha · perimetro {p} km', lunghezzaDi:'Lunghezza {v} km',
       kmlDoc:'SITAC incendio boschivo', kmlAree:'Aree', kmlLinee:'Linee', kmlSimboli:'Simboli',
       sfSat:'Satellite', sfTopo:'Topografico', sfStrada:'Stradale',
-      stTitolo:'SITAC — Incendio boschivo', stData:'Redatta il {d}'
+      stTitolo:'SITAC — Incendio boschivo', stData:'Redatta il {d}',
+      importAree:'Importati {n} perimetri.', importScarti:'\n{n} elementi non poligonali ignorati.',
+      importNiente:'Nessun poligono nel file: si importano solo aree.',
     },
     en:{
       sub:'Follow the steps on the left: data first, then the scenario, then the four tables. Double-click or Enter closes a line.',
@@ -106,7 +108,7 @@ function avvia(app){
       gModifica:'Edit', gMappa:'Map and data', gEsporta:'Export',
       legenda:'Legend', legVuota:'Nothing on the map yet.',
       bSposta:'Move', bElimina:'Delete', bAnnulla:'Undo last', bPulisci:'Clear all',
-      bSfondo:'Basemap', bImporta:'Import', bStampa:'Print PDF', bCentra:'Centre on my position',
+      bSfondo:'Basemap', bImporta:'Import GeoJSON', bStampa:'Print PDF', bCentra:'Centre on my position',
       pronto:'Ready.\nOpen a step on the left and pick a tool.',
       spento:'Tool switched off.',
       suggLinea:'Click each vertex, double-click to close.',
@@ -145,7 +147,7 @@ function avvia(app){
       gModifica:'Modifier', gMappa:'Carte et données', gEsporta:'Exportation',
       legenda:'Légende', legVuota:'Rien sur la carte pour le moment.',
       bSposta:'Déplacer', bElimina:'Supprimer', bAnnulla:'Annuler le dernier', bPulisci:'Tout effacer',
-      bSfondo:'Fond de carte', bImporta:'Importer', bStampa:'Imprimer PDF', bCentra:'Centrer sur ma position',
+      bSfondo:'Fond de carte', bImporta:'Importer GeoJSON', bStampa:'Imprimer PDF', bCentra:'Centrer sur ma position',
       pronto:'Prêt.\nOuvrez une étape à gauche et choisissez un outil.',
       spento:'Outil désactivé.',
       suggLinea:'Cliquez chaque sommet, double-clic pour fermer.',
@@ -184,7 +186,7 @@ function avvia(app){
       gModifica:'Editar', gMappa:'Mapa y datos', gEsporta:'Exportación',
       legenda:'Leyenda', legVuota:'Todavía no hay nada en el mapa.',
       bSposta:'Mover', bElimina:'Eliminar', bAnnulla:'Deshacer último', bPulisci:'Borrar todo',
-      bSfondo:'Fondo', bImporta:'Importar', bStampa:'Imprimir PDF', bCentra:'Centrar en mi posición',
+      bSfondo:'Fondo', bImporta:'Importar GeoJSON', bStampa:'Imprimir PDF', bCentra:'Centrar en mi posición',
       pronto:'Listo.\nAbre un paso a la izquierda y elige una herramienta.',
       spento:'Herramienta desactivada.',
       suggLinea:'Haz clic en cada vértice, doble clic para cerrar.',
@@ -288,9 +290,6 @@ function avvia(app){
       ventoRiusaNota:'Quello impostato al passo 2 ({f}).',
       ventoAltro:'Un vento locale diverso',
       ventoAltroNota:'Vale solo per questo cono: il quadro dello scenario non cambia.',
-      reqInnesco:'punto d\u2019innesco', reqSuperficie:'superficie coinvolta',
-      reqManca:'Prima servono: {c}.\nSono i dati su cui poggia tutto il resto.',
-      reqBreve:'servono i passi 2 e 3',
       rilLeggo:'Lettura del rilievo in corso\u2026',
       rilErrore:'Rilievo non disponibile: {e} — cono non corretto.',
       rilFatto:'Raggi corretti per pendenza: {k}\nStima empirica, non SI.TA.C.',
@@ -524,6 +523,10 @@ function avvia(app){
       const ok = modale.querySelector('#sitac-modale-ok');
       input.style.display = soloConferma ? 'none' : '';
       input.value = opz.valore || '';
+      input.maxLength = opz.max || 524288;
+      /* Il filtro normalizza mentre si digita: incollare "VF-12/A4" deve
+         lasciare 12A4, non far fallire il campo in silenzio. */
+      input.oninput = opz.filtro ? () => { input.value = opz.filtro(input.value); } : null;
       ok.textContent = t('ok');
       ok.style.display = '';   // scegli() lo nasconde: qui va rimesso
       modale.querySelector('#sitac-modale-no').textContent = t('annulla');
@@ -1666,21 +1669,7 @@ function mostraComandoAfferente(sigla, nome){
     return b;
   }
 
-/* =====================================================================
-     PREREQUISITI
-     I passi 5-8 descrivono un dispositivo e delle azioni su uno scenario:
-     senza sapere dove è partito, quanto è grande e dove tira il vento,
-     quei simboli sono decorazione. La barra li tiene chiusi e dice cosa
-     manca, invece di lasciar disegnare una carta che non si può leggere.
-     =================================================================== */
-  function mancanti(){
-    const m = [];
-    if (!ventoCono) m.push(t('p2'));
-    if (!disegni.getLayers().some(x => x._tipo === 'origine')) m.push(t('reqInnesco'));
-    if (!superfici().totale) m.push(t('reqSuperficie'));
-    return m;
-  }
-  const scenarioPronto = () => mancanti().length === 0;
+
 
   function creaPulsanti(){
     const tav = q('#sitac-tavola');
@@ -1782,7 +1771,6 @@ function mostraComandoAfferente(sigla, nome){
     TAVOLE.forEach((tv, i) => {
       passo(5 + i, t('p' + (5 + i)), 'T' + tv.k, corpo => {
         if (stati[tv.k] !== undefined) rigaStato(tv.k, corpo);
-        let n = 0;
         const gs = perRiquadro(SIM, tv.k);
         const gl = perRiquadro(LIN, tv.k);
         const chiavi = new Set([...gs.keys(), ...gl.keys()]);
@@ -1795,7 +1783,6 @@ function mostraComandoAfferente(sigla, nome){
             griglia.className = 'sitac-strumenti';
             voci.forEach(([k, d]) => griglia.appendChild(bottoneSimbolo(k, d)));
             corpo.appendChild(griglia);
-            n += voci.length;
           }
           const linee = gl.get(sg);
           if (linee){
@@ -1803,7 +1790,6 @@ function mostraComandoAfferente(sigla, nome){
             el.className = 'sitac-strumenti';
             linee.forEach(([k, d]) => el.appendChild(bottoneLinea(k, d)));
             corpo.appendChild(el);
-            n += linee.length;
           }
         });
         if (tv.k === 'azioni'){
@@ -1811,14 +1797,7 @@ function mostraComandoAfferente(sigla, nome){
           el.className = 'sitac-strumenti';
           el.appendChild(bottoneAzione('simbolo', 'nota', nm(NOTA)));
           corpo.appendChild(el);
-          n += 1;
         }
-        /* Zona di intervento ed evoluzione restano sempre agibili: sono
-           terreno e scenario, cioè i dati su cui poggia il blocco. */
-        if (tv.k === 'dispositivo' || tv.k === 'azioni')
-          corpo.querySelectorAll('button[data-chiave]')
-            .forEach(b => { b.dataset.bloccabile = '1'; });
-        return n;
       });
     });
 
@@ -1880,18 +1859,6 @@ function mostraComandoAfferente(sigla, nome){
         lista.appendChild(r);
       });
     }
-
-    /* Le testate dei passi bloccati si spengono e dicono perché. La
-       fisarmonica si apre lo stesso: si deve poter guardare la tavola
-       anche quando non la si può ancora usare. */
-    const pronto = scenarioPronto();
-    ['dispositivo','azioni'].forEach(k => {
-      const e = q('#sitac-stT' + k);
-      if (!e) return;
-      const fisa = e.closest('.sitac-fisa');
-      if (fisa) fisa.classList.toggle('sitac-bloccato', !pronto);
-      if (!pronto) e.textContent = t('reqBreve');
-    });
   }
 
   function marcaAttivo(genere, chiave){
@@ -1910,13 +1877,6 @@ function mostraComandoAfferente(sigla, nome){
   }
 
   function attiva(genere, chiave, bottone){
-    /* Il blocco vale per le tavole 7-8, non per gli strumenti dei passi
-       3-4: quelli servono proprio a soddisfare il prerequisito, e
-       filtrarli per `g` bloccava l'innesco con la scusa che manca
-       l'innesco. Il passo di provenienza sta sul pulsante. */
-    if (bottone && bottone.dataset.bloccabile && !scenarioPronto())
-      return stato(t('reqManca', {c: mancanti().join(', ')}));
-
     const gia = bottone && bottone.classList.contains('attivo');
     fermaTutto();
     if (gia){ spegniPulsanti(); stato(t('spento')); return; }
@@ -2036,7 +1996,12 @@ function mostraComandoAfferente(sigla, nome){
        dentro, e ridisegnarlo dopo farebbe lampeggiare il riquadro vuoto. */
     if (def.libero || def.e){
       map.pm.disableDraw();
-      const val = await chiedi({campo:1, testo: t(def.libero ? 'chiediNota' : 'chiediSigla')});
+      const idm = NS.SITAC_ID_MAX || 4;
+      const val = await chiedi(
+        def.libero ? {campo:1, testo: t('chiediNota')}
+        : def.lbl  ? {campo:1, testo: def.lbl, max: idm,
+                      filtro: v => v.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0, idm)}
+        :            {campo:1, testo: t('chiediSigla')});
       if (def.libero && !val){ disegni.removeLayer(layer); riattivaStrumento(); return; }
       layer._testo = val || null;
       layer.setIcon(iconaSimbolo(k, {stato:layer._stato, testo:layer._testo}));
@@ -2277,6 +2242,15 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
 
   function carica(fc){
     let n = 0;
+  /* Si importano SOLO poligoni. Un GeoJSON esterno — perimetro da satellite,
+     traccia di volo, confine comunale — porta l'ingombro, non la simbologia
+     SITAC: punti e linee altrui arriverebbero senza `tipo` e resterebbero
+     muti sulla carta, cliccabili ma illeggibili. */
+  const tutte = (fc && fc.features) || (fc && fc.type === 'Feature' ? [fc] : []);
+  const poligoni = tutte.filter(x => x && x.geometry &&
+    (x.geometry.type === 'Polygon' || x.geometry.type === 'MultiPolygon'));
+  const scarti = tutte.length - poligoni.length;
+  if (!poligoni.length) return stato(t('importNiente'));
     /* Un file altrui porta con sé il suo intervento: si adottano, invece di
        lasciare in testata i numeri di quello precedente. `p` può mancare
        del tutto in un GeoJSON non nostro, quindi tutto sta dentro il test. */
@@ -2300,7 +2274,7 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
         mostraVento(p.vento);
       segnaIntestazione();
     }
-    L.geoJSON(fc, {
+    L.geoJSON({type:'FeatureCollection', features: poligoni}, {
       pointToLayer: (feat, latlng) => {
         const pr = feat.properties || {};
         const tp = VECCHI[pr.tipo] || pr.tipo;
@@ -2318,19 +2292,21 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
       },
       onEachFeature: (feat, layer) => {
         const pr = feat.properties || {};
-        layer._tipo = VECCHI[pr.tipo] || pr.tipo;
+        /* Ogni poligono importato è superficie percorsa. Si importa un
+           perimetro per sapere quanto è bruciato: che il file lo chiami
+           zona minacciata o area di lancio non cambia cosa rappresenta
+           qui, e lasciargli il suo tipo lo terrebbe fuori dal conto degli
+           ettari — che è il motivo per cui lo si è importato. */
+        layer._tipo = 'percorsa';
+        /* Un poligono che arriva da fuori non ha un tipo nostro: entra come
+          superficie percorsa, che è il caso per cui si importa (un perimetro
+          rilevato). */
+        if (!AREE[layer._tipo] && pr.genere !== 'lancio') layer._tipo = 'percorsa';
         layer._genere = pr.genere;
         layer._stato = pr.stato || 'previsto';
         layer._testo = pr.testo || null;
         layer._rotazione = pr.rotazione || null;
         disegni.addLayer(layer);
-        if (pr.genere === 'lancio' && pr.centro && SIM[layer._tipo] && SIM[layer._tipo].poly){
-          disegni.removeLayer(layer);
-          creaLancio(layer._tipo, L.latLng(pr.centro[1], pr.centro[0]),
-            {stato: layer._stato, a: pr.a, b: pr.b, rotazione: pr.rotazione});
-          n++;
-          return;
-        }
         if (LIN[layer._tipo]){
           decora(layer);
           layer.on('pm:edit', () => { decora(layer); etichettaElemento(layer); aggiornaStato(); });
@@ -2346,7 +2322,7 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
     if (n && disegni.getBounds().isValid())
       map.fitBounds(disegni.getBounds(), {padding:[40,40]});
     aggiornaStato();
-    stato(t('importati', {n}));
+    stato(t('importAree', {n}) + (scarti ? t('importScarti', {n: scarti}) : ''));
   }
 
   /* =======================================================================
