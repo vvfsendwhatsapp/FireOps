@@ -493,7 +493,10 @@ function avvia(app){
     /* La rotazione la applica il contenitore, ma il glifo può averne bisogno
        per raddrizzare il proprio testo: gliela si passa. */
     const gradi = o.rotazione != null ? ((o.rotazione - d0) % 360 + 360) % 360 : 0;
-    const gir = o.rotazione != null ? ` style="transform:rotate(${gradi}deg)"` : '';
+        /* Il TP non gira: la direzione sta nell'asta, e una sigla ruotata non si
+       legge. Gli altri orientabili hanno il disegno che punta da sé. */
+    const gir = (o.rotazione != null && k !== 'tp')
+      ? ` style="transform:rotate(${((o.rotazione - d0) % 360 + 360) % 360}deg)"` : '';
     return L.divIcon({className:'sitac-sim',
       html:`<span class="sitac-disco"></span><span class="sitac-glifo"${gir}>`
         + `${svgSimbolo(k, Object.assign({giro: gradi}, o))}</span>`,
@@ -1058,7 +1061,16 @@ function mostraComandoAfferente(sigla, nome){
     if (layer._asta){ decori.removeLayer(layer._asta); }
     const c = layer.getLatLng();
     const p = puntoDaAzimut(c, layer._rotazione || 0, distanzaManiglia());
-
+    const tp = layer._tipo === 'tp';
+    /* Il TP sta SU una linea di transito: la strada attraversa il simbolo ed
+       esce da entrambi i lati. Una linea che parte dal bordo sembra un
+       puntatore, non una via. */
+    const coda = tp ? puntoDaAzimut(c, (layer._rotazione || 0) + 180,
+      distanzaManiglia() * 0.55) : c;
+    layer._asta = L.polyline([coda, p], tp
+      ? {color:COL.rosso, weight:3.4, interactive:false}
+      : {color:'#0070c0', weight:2.5, dashArray:'6,5', interactive:false}).addTo(decori);
+    if (tp) layer._asta.bringToBack();
     /* Sul TP l'asta è la strada di transito: rossa come il simbolo, continua,
        e sotto di esso. Sugli altri orientabili resta la guida blu tratteggiata,
        che è un attrezzo di regolazione e non un elemento della carta. */
@@ -1086,7 +1098,9 @@ function mostraComandoAfferente(sigla, nome){
       layer._rotazione = Math.round(azimut(o, m));
       layer.setIcon(iconaSimbolo(layer._tipo, {stato:layer._stato,
         testo:layer._testo, rotazione:layer._rotazione}));
-      layer._asta.setLatLngs([o, m]);
+            layer._asta.setLatLngs(tp
+        ? [puntoDaAzimut(o, layer._rotazione + 180, distanzaManiglia() * 0.55), m]
+        : [o, m]);
       /* L'HTML del divIcon è fissato alla creazione: si scrive direttamente
          sull'SVG a schermo invece di ricostruire il marker sotto il dito. */
       const el = layer._maniglia.getElement();
@@ -1101,7 +1115,9 @@ function mostraComandoAfferente(sigla, nome){
       const o = layer.getLatLng();
       const np = puntoDaAzimut(o, layer._rotazione || 0, distanzaManiglia());
       layer._maniglia.setLatLng(np);
-      layer._asta.setLatLngs([o, np]);
+            layer._asta.setLatLngs(tp
+        ? [puntoDaAzimut(o, (layer._rotazione || 0) + 180, distanzaManiglia() * 0.55), np]
+        : [o, np]);
     });
   }
 

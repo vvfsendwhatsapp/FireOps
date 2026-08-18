@@ -3055,10 +3055,13 @@ a.btn-icon-hamburger:hover {
    bianca, e su ortofoto o bosco fitto il nero e il rosso sparirebbero.
    Senza width/height espliciti l'SVG (che ha solo il viewBox) collassa a
    zero dentro il divIcon: è il motivo per cui i punti non si vedevano. */
-#sitac-app .sitac-sim{background:none;border:none}
-#sitac-app .sitac-disco{position:absolute;left:3px;top:3px;width:36px;height:36px;
-  border-radius:50%;background:rgba(255,255,255,.82);box-shadow:0 1px 4px rgba(0,0,0,.55)}
-#sitac-app .sitac-glifo{position:absolute;left:5px;top:5px;width:32px;height:32px;display:block}
+/* Disco e glifo riempiono l'icona invece di essere posizionati a pixel: con
+   misure fisse restavano tarati sulla dimensione precedente, e il simbolo
+   finiva fuori centro rispetto al punto geografico — l'asta del Transit
+   Point sembrava partire di fianco. */
+#sitac-app .sitac-disco{position:absolute;inset:8%;border-radius:50%;
+  background:rgba(255,255,255,.82);box-shadow:0 1px 4px rgba(0,0,0,.55)}
+#sitac-app .sitac-glifo{position:absolute;inset:12%;display:block}
 #sitac-app .sitac-glifo svg{width:100%;height:100%;display:block}
 #sitac-app .sitac-etichetta{font-size:12px;font-weight:bold;line-height:1.2;color:#fff;
   white-space:nowrap;text-shadow:0 0 4px #000,0 0 4px #000,0 1px 2px #000;
