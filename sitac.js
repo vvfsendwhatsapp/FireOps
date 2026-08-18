@@ -1058,21 +1058,24 @@ function mostraComandoAfferente(sigla, nome){
     if (layer._asta){ decori.removeLayer(layer._asta); }
     const c = layer.getLatLng();
     const p = puntoDaAzimut(c, layer._rotazione || 0, distanzaManiglia());
-    layer._asta = L.polyline([c, p], {color:'#0070c0', weight:2.5, dashArray:'6,5',
-      interactive:false}).addTo(decori);
+
+    /* Sul TP l'asta è la strada di transito: rossa come il simbolo, continua,
+       e sotto di esso. Sugli altri orientabili resta la guida blu tratteggiata,
+       che è un attrezzo di regolazione e non un elemento della carta. */
+    const tp = layer._tipo === 'tp';
+    layer._asta = L.polyline([c, p], tp
+      ? {color:COL.rosso, weight:3.4, interactive:false}
+      : {color:'#0070c0', weight:2.5, dashArray:'6,5', interactive:false}).addTo(decori);
+    if (tp) layer._asta.bringToBack();
 
     /* La punta dice da che parte si entra in zona: un pallino non lo dice.
-       È la stessa forma della maniglia del vento, orientata sull'azimut. */
+       Sugli altri simboli la direzione la disegna già il glifo, e una
+       seconda punta accanto sarebbe un doppione. */
     const puntaSvg = g => `<svg viewBox="0 0 26 26" style="transform:rotate(${g}deg)">`
-      + `<path d="M13 1l7 16-7-4-7 4Z" fill="#0070c0" stroke="#fff" stroke-width="1.6"`
-      + ` stroke-linejoin="round"/></svg>`;
-        /* La freccia solo dove la direzione È il dato: il Transit Point dice da
-       che parte si entra in zona. Su pendenze e venti il simbolo la direzione
-       la disegna già da sé, e una seconda punta accanto sarebbe un doppione. */
-    const conPunta = layer._tipo === 'tp';
+      + `<path d="M13 2l9 22-9-6-9 6Z" fill="${COL.rosso}"/></svg>`;
     layer._maniglia = L.marker(p, {draggable:true, keyboard:false,
-      icon: conPunta
-        ? L.divIcon({className:'sitac-maniglia sitac-mn-vento',
+      icon: tp
+        ? L.divIcon({className:'sitac-maniglia sitac-mn-tp',
             iconSize:[26,26], iconAnchor:[13,13],
             html: puntaSvg(layer._rotazione || 0)})
         : L.divIcon({className:'sitac-maniglia', iconSize:[18,18],
@@ -2068,6 +2071,9 @@ function mostraComandoAfferente(sigla, nome){
     etichettaElemento(layer);
     aggiornaStato();
         if (def.r){
+      /* Sul TP l'asta esiste già col simbolo: si vede che c'è una direzione
+         da dare, invece di doverlo indovinare. Il clic la corregge. */
+      if (k === 'tp'){ layer._rotazione = 90; creaManiglia(layer); }
       /* Dopo aggiornaStato, che riscriverebbe sopra l'istruzione. Il
          setTimeout serve per due motivi: il clic che ha posato il simbolo
          è ancora in corso e verrebbe consumato subito come direzione con

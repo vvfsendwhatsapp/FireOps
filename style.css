@@ -3367,6 +3367,8 @@ a.btn-icon-hamburger:hover {
 
 #sitac-app input.campo-bloccato{opacity:.72;cursor:default;border-style:dashed}
 
+#sitac-app .sitac-maniglia.sitac-mn-tp{background:none;border:0;box-shadow:none}
+
 /* Chiudi SITAC: rosso, non verde smeraldo come Espandi/Riduci. Non cambia
    l'inquadratura, smonta il modulo — e in mezzo a una SITAC in corso è un
    gesto che va pensato, non premuto per abitudine. */
