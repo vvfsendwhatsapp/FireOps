@@ -74,8 +74,9 @@ const idTesto = o => String((o && o.testo) || '').trim().slice(0, ID_MAX);
 let seq = 0;
 const uid = p => `sitac-${p}-${++seq}`;
 
-function txt(x, y, s, col, dim, ancora){
+function txt(x, y, s, col, dim, ancora, trasforma){
   return `<text x="${x}" y="${y}" text-anchor="${ancora || 'middle'}" font-size="${dim || 13}"`
+    + (trasforma ? ` transform="${trasforma}"` : '')
     + ` font-family="Arial,Helvetica,sans-serif" font-weight="700" fill="${col}">${esc(s)}</text>`;
 }
 /* La riga di puntini è il posto dove sulla carta si scrive a penna il
@@ -310,7 +311,8 @@ agg('tp','dispositivo','sgTerra','Transit Point','Transit point', o => {
   return T(`<line x1="2" y1="32" x2="58" y2="32" stroke="${R}" stroke-width="2.6"/>
     <path d="M50 25l12 7-12 7Z" fill="${R}"/>
     <circle cx="28" cy="32" r="13" fill="${p ? R : '#fff'}" stroke="${R}" stroke-width="2.6"/>
-    ${txt(28, 36, (o && o.testo) || 'TP', p ? '#fff' : R, 13)}`);
+    ${txt(28, 36, (o && o.testo) || 'TP', p ? '#fff' : R, 13, null,
+      `rotate(${-((o && o.giro) || 0)} 28 32)`)}`);
 }, {s:1, r:1, r0:90});
 
 /* ---- TAVOLA 4: le azioni ---- */
