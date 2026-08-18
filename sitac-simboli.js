@@ -65,7 +65,7 @@ const attivo = o => (o && o.stato) === 'attivo';
    caratteri sono il massimo che sta nella banda senza rimpicciolire il
    simbolo. Il taglio va fatto qui e non solo nell'input, o un GeoJSON
    arrivato da fuori sfonda comunque il riquadro. */
-const ID_MAX = 4;
+const ID_MAX = 6;
 const idTesto = o => String((o && o.testo) || '').trim().slice(0, ID_MAX);
 
 /* Lo stesso simbolo può comparire nel pannello e sulla mappa: con un id
