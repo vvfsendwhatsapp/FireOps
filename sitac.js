@@ -2037,15 +2037,19 @@ function mostraComandoAfferente(sigla, nome){
      anche superficie e perimetro, per le linee la lunghezza: sono i numeri
      che servono davvero mentre si guarda la carta.
      ===================================================================== */
-  function etichettaElemento(layer){
+    function etichettaElemento(layer){
     const k = layer._tipo;
     const def = LIN[k] || AREE[k] || SIM[k] || (k === 'nota' ? NOTA : null);
     if (!def || def.libero){ if (layer.unbindTooltip) layer.unbindTooltip(); return; }
-    let testo = nm(def) + statoDi(def, layer._stato);
+    /* Nome, sigla digitata, e SOLO ALLA FINE lo stato: sulla carta si cerca
+       prima quale mezzo è e con che matricola. Lo stato in mezzo spezzava
+       "Canadair CAN1" in due pezzi che si leggono separati. */
+    let testo = nm(def);
+    if (layer._testo && !AREE[k] && !LIN[k]) testo += ` ${layer._testo}`;
+    testo += statoDi(def, layer._stato);
     if (AREE[k]) testo += '\n' + t('areaDi', {a:(areaMq(layer)/10000).toFixed(2),
       p:(perimetroM(layer)/1000).toFixed(2)});
     else if (LIN[k]) testo += '\n' + t('lunghezzaDi', {v:(lunghezzaM(layer)/1000).toFixed(2)});
-    else if (layer._testo) testo += ` — ${layer._testo}`;
     if (layer._genere === 'lancio')
       testo += '\n' + t('lancioDi', {a: layer._a * 2, b: layer._b * 2,
         s: (areaMq(layer) / 10000).toFixed(2)});
