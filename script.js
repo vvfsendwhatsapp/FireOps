@@ -1156,16 +1156,10 @@ const CHIAVE_STORAGE_PANNELLI = "fireops_pagine_pannelli";
         if (splitScreenEl) splitScreenEl.classList.remove("ha-pannello-fullscreen");
         document.body.classList.remove("fullscreen-attivo");
 
-        // Tutti i pulsanti tornano a "Espandi": quello espanso potrebbe già
-        // essere stato spostato altrove, quindi si normalizzano in blocco
         document.querySelectorAll(".btn-fullscreen-pagina").forEach(pulsante => {
-        pulsante.addEventListener("click", () => {
-            // Dentro la SITAC il pulsante non espande mai a mano: l'espansione
-            // è automatica, quindi qui può solo chiudere
-            if (pulsante.closest("#sitac-aib")) { chiudiSitacEsclusiva(); return; }
-            toggleFullscreenPagina(pulsante);
+            pulsante.textContent = "⛶ Espandi";
+            pulsante.title = "Espandi a schermo intero";
         });
-    });
 
         // Qualsiasi uscita dal fullscreen chiude anche la modalità esclusiva:
         // un pannello ridotto con il body ancora marcato "sitac-esclusiva"
@@ -1243,8 +1237,13 @@ const CHIAVE_STORAGE_PANNELLI = "fireops_pagine_pannelli";
         if (lato) assegnaPagina(lato, daRipristinare);
     }
 
-    document.querySelectorAll(".btn-fullscreen-pagina").forEach(pulsante => {
-        pulsante.addEventListener("click", () => toggleFullscreenPagina(pulsante));
+        document.querySelectorAll(".btn-fullscreen-pagina").forEach(pulsante => {
+        pulsante.addEventListener("click", () => {
+            // Dentro la SITAC il pulsante non espande mai a mano: l'espansione
+            // è automatica, quindi qui può solo chiudere
+            if (pulsante.closest("#sitac-aib")) { chiudiSitacEsclusiva(); return; }
+            toggleFullscreenPagina(pulsante);
+        });
     });
 
     document.addEventListener("keydown", (e) => {
@@ -1252,7 +1251,6 @@ const CHIAVE_STORAGE_PANNELLI = "fireops_pagine_pannelli";
         // In SITAC l'ESC serve ad annullare il disegno in corso, non a
         // smontare il modulo: si esce solo dal pulsante
         if (document.body.classList.contains("sitac-esclusiva")) return;
-        const pannelloAttivo = document.querySelector(".pannello.pannello-fullscreen");
         const pannelloAttivo = document.querySelector(".pannello.pannello-fullscreen");
         if (!pannelloAttivo) return;
         const pulsanteAttivo = pannelloAttivo.querySelector(".btn-fullscreen-pagina");
