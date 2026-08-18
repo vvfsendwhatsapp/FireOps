@@ -61,6 +61,12 @@ const esc = s => String(s == null ? '' : s).replace(/[<>&"]/g,
   c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
 const attivo = o => (o && o.stato) === 'attivo';
 
+/* Lo stesso simbolo può comparire nel pannello e sulla mappa: con un id
+   fisso il browser risolve url(#...) sulla prima occorrenza nel documento
+   e le altre restano senza campitura appena quella viene rimossa dal DOM. */
+let seq = 0;
+const uid = p => `sitac-${p}-${++seq}`;
+
 function txt(x, y, s, col, dim, ancora){
   return `<text x="${x}" y="${y}" text-anchor="${ancora || 'middle'}" font-size="${dim || 13}"`
     + ` font-family="Arial,Helvetica,sans-serif" font-weight="700" fill="${col}">${esc(s)}</text>`;
@@ -71,7 +77,7 @@ const puntini = (x1, x2, y, col) =>
   `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="${col}" stroke-width="1.6" stroke-dasharray="1.5,2.5"/>`;
 
 const RIG = (id, col, largo) => `<pattern id="${id}" width="7" height="7" patternUnits="userSpaceOnUse"`
-  + ` patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="7" stroke="${col}" stroke-width="${largo}"/></pattern>`;
+  + ` patternTransform="rotate(45)"><line x1="3.5" y1="0" x2="3.5" y2="7" stroke="${col}" stroke-width="${largo}"/></pattern>`;
 
 /* =====================================================================
    1. FAMIGLIE
@@ -119,7 +125,7 @@ function mezzoTerra(sigla, aste, col, senzaDivisione){
     if (senzaDivisione)
       return T(`${a}<rect x="${x1}" y="${y1}" width="${x2-x1}" height="${y2-y1}" fill="#fff" stroke="${K}" stroke-width="2.6"/>
         ${p ? `<path d="M${x2-(y2-y1)} ${y2}H${x2}V${y1}Z" fill="${K}"/>` : ''}
-        ${txt(p ? 28 : 32, y2-8, sigla, K, 15)}`);
+        ${txt(p ? 28 : 32, y2-8, s, K, 15)}`);
     return T(`${a}
       <rect x="${x1}" y="${y1}" width="${x2-x1}" height="${y2-y1}" fill="#fff" stroke="${K}" stroke-width="2.6"/>
       ${p ? `<path d="M${xd} ${y2}L${x2} ${y1}V${y2}Z" fill="${K}"/>` : ''}
@@ -137,8 +143,9 @@ function lancio(grande, ritardante){
     const p = attivo(o), K = ritardante ? C.rosso : C.acqua;
     const tratto = p ? '' : ' stroke-dasharray="5,4"';
     const forma = grande ? `<ellipse cx="32" cy="32" rx="29" ry="14"` : `<circle cx="32" cy="32" r="17"`;
-    return T((ritardante ? `<defs>${RIG('sitacRigR', C.rosso, 2.2)}</defs>` : '')
-      + `${forma} fill="${ritardante ? 'url(#sitacRigR)' : 'none'}" stroke="${K}" stroke-width="2.6"${tratto}/>`);
+    const id = uid('rig');
+    return T((ritardante ? `<defs>${RIG(id, C.rosso, 2.2)}</defs>` : '')
+      + `${forma} fill="${ritardante ? `url(#${id})` : 'none'}" stroke="${K}" stroke-width="2.6"${tratto}/>`);
   };
 }
 
@@ -217,16 +224,18 @@ agg('acqua','zona',null,'Punto d\u2019acqua per mezzi terrestri','Water point, g
 /* Il punto d'acqua per mezzi aerei porta scritto Eli/CAN sotto il simbolo:
    dice quale macchina ci si può approvvigionare. */
 agg('acqua_aerei','zona',null,'Punto d\u2019acqua per mezzi aerei','Water point, air means',
-  o => T(`<clipPath id="sitacTondo"><circle cx="32" cy="28" r="19"/></clipPath>
+    o => { const id = uid('clip');
+    return T(`<clipPath id="${id}"><circle cx="32" cy="28" r="19"/></clipPath>
     <circle cx="32" cy="28" r="19" fill="#fff" stroke="${C.acqua}" stroke-width="1.6"/>
-    <path d="M13 9h38L13 47h38Z" fill="${C.acqua}" clip-path="url(#sitacTondo)"/>
-    ${txt(32, 60, (o && o.testo) || 'Eli/CAN', C.acqua, 12)}`), {e:1});
+    <path d="M13 9h38L13 47h38Z" fill="${C.acqua}" clip-path="url(#${id})"/>
+    ${txt(32, 60, (o && o.testo) || 'Eli/CAN', C.acqua, 12)}`); }, {e:1});
 
 agg('sensibile','zona',null,'Punto sensibile','Sensitive point',
   () => T(`<path d="M6 12h52L32 57Z" fill="${C.rosso}"/>`));
 agg('sensibile_wui','zona',null,'Punto sensibile per interfaccia','Sensitive point for WUI',
-  () => T(`<defs>${RIG('sitacRigV', C.verde, 1.6)}</defs>
-    <path d="M6 12h52L32 57Z" fill="url(#sitacRigV)" stroke="${C.verde}" stroke-width="2.2"/>`));
+  () => { const id = uid('rig');
+    return T(`<defs>${RIG(id, C.verde, 1.6)}</defs>
+      <path d="M6 12h52L32 57Z" fill="url(#${id})" stroke="${C.verde}" stroke-width="2.2"/>`); });
 
 agg('elisuperficie','zona',null,'Piazzola per elicottero','Helispot',
   () => T(`<circle cx="32" cy="32" r="20" fill="#fff" stroke="${C.nero}" stroke-width="2.8"/>
@@ -268,7 +277,7 @@ agg('modulo_ue','dispositivo','sgTerra','Modulo UE / Colonna','EU module / Colum
 /* CP, SS e Pol nella tavola non hanno la riga di puntini: nessun testo. */
 agg('cp','dispositivo','sgTerra','Posto di Comando','Command post', mezzoTerra('CP', 0, C.rosso, 1), {s:1});
 agg('ss','dispositivo','sgTerra','Soccorso Sanitario','Ambulance', mezzoTerra('SS', 0, C.verde, 1), {s:1});
-agg('pol','dispositivo','sgTerra','Forze di Polizia','Police forces', mezzoTerra('Pol', 0, C.polizia, 1), {s:1});
+agg('pol','dispositivo','sgTerra','Forze di Polizia','Police forces', mezzoTerra('Pol', 0, C.polizia, 1), {s:1, f:1});
 
 /* Transit Point: il cerchio sta su una linea di transito e la freccia dice
    da che parte si entra in zona, quindi va orientato. Attivo = cerchio
@@ -302,8 +311,11 @@ agg('difesa_perimetrale','azioni','sgTerra','Difesa perimetrale','Perimeter defe
     const a = i * Math.PI / 4, b = a + Math.PI / 8, c = a - Math.PI / 8;
     const px = 32 + 26 * Math.cos(a), py = 32 + 26 * Math.sin(a);
     const bx = 32 + 14 * Math.cos(b), by = 32 + 14 * Math.sin(b);
-    const cx = 32 + 14 * Math.cos(c), cy = 32 + 14 * Math.sin(c);
-    d += `M${cx.toFixed(1)} ${cy.toFixed(1)}L${px.toFixed(1)} ${py.toFixed(1)}L${bx.toFixed(1)} ${by.toFixed(1)}`;
+    if (i === 0){
+      const cx = 32 + 14 * Math.cos(c), cy = 32 + 14 * Math.sin(c);
+      d += `M${cx.toFixed(1)} ${cy.toFixed(1)}`;
+    }
+    d += `L${px.toFixed(1)} ${py.toFixed(1)}L${bx.toFixed(1)} ${by.toFixed(1)}`;
   }
   const tr = p ? '' : ' stroke-dasharray="4,3"';
   return T(`<path d="${d}Z" fill="none" stroke="${R}" stroke-width="2.4" stroke-linejoin="round"${tr}/>
