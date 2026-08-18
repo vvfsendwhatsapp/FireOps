@@ -1058,7 +1058,7 @@ function mostraComandoAfferente(sigla, nome){
     if (layer._asta){ decori.removeLayer(layer._asta); }
     const c = layer.getLatLng();
     const p = puntoDaAzimut(c, layer._rotazione || 0, distanzaManiglia());
-    layer._asta = L.polyline([c, p], {color:'#0070c0', weight:2, dashArray:'4,5',
+    layer._asta = L.polyline([c, p], {color:'#0070c0', weight:2.5, dashArray:'6,5',
       interactive:false}).addTo(decori);
     layer._maniglia = L.marker(p, {draggable:true, keyboard:false,
       icon: L.divIcon({className:'sitac-maniglia', iconSize:[18,18], iconAnchor:[9,9],

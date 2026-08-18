@@ -303,17 +303,15 @@ agg('cp','dispositivo','sgTerra','Posto di Comando','Command post', mezzoTerra('
 agg('ss','dispositivo','sgTerra','Soccorso Sanitario','Ambulance', mezzoTerra('SS', 0, C.verde), {s:1});
 agg('pol','dispositivo','sgTerra','Forze di Polizia','Police forces', mezzoTerra('Pol', 0, C.polizia), {s:1, f:1});
 
-/* Transit Point: il cerchio sta su una linea di transito e la freccia dice
-   da che parte si entra in zona, quindi va orientato. Attivo = cerchio
-   interamente pieno, come nella tavola. */
+/* Transit Point: solo il cerchio. La direzione d'ingresso in zona non sta
+   nel glifo ma nella maniglia trascinabile, che parte dal centro: la freccia
+   disegnata dentro obbligava a controruotare la sigla e restava comunque
+   lunga la metà dell'asta vera. Attivo = cerchio pieno, come nella tavola. */
 agg('tp','dispositivo','sgTerra','Transit Point','Transit point', o => {
   const R = C.rosso, p = attivo(o);
-  return T(`<line x1="2" y1="32" x2="58" y2="32" stroke="${R}" stroke-width="2.6"/>
-    <path d="M50 25l12 7-12 7Z" fill="${R}"/>
-    <circle cx="28" cy="32" r="13" fill="${p ? R : '#fff'}" stroke="${R}" stroke-width="2.6"/>
-    ${txt(28, 36, (o && o.testo) || 'TP', p ? '#fff' : R, 13, null,
-      `rotate(${-((o && o.giro) || 0)} 28 32)`)}`);
-}, {s:1, r:1, r0:90});
+  return T(`<circle cx="32" cy="32" r="22" fill="${p ? R : '#fff'}" stroke="${R}" stroke-width="3"/>
+    ${txt(32, 38, 'TP', p ? '#fff' : R, 18)}`);
+}, {s:1, r:1, r0:0});
 
 /* ---- TAVOLA 4: le azioni ---- */
 /* Sulla carta il lancio è un poligono georeferenziato, non un simbolo di
