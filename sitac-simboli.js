@@ -445,7 +445,6 @@ NS.SITAC_RIQUADRI = {
 /* Etichetta e lunghezza per la finestra di inserimento: la chiede sitac.js
    quando si posa un simbolo con il flag `e`. */
 NS.SITAC_ID_MAX = ID_MAX;
-NS.SITAC_ETICHETTA = k => (S[k] && S[k].lbl) || 'ID';
 
 /* Compatibilità con la versione precedente del modulo: i vecchi GeoJSON
    rientrano ricondotti alle chiavi nuove. */

@@ -432,7 +432,6 @@ function avvia(app){
      mano il pieghevole ritrova le voci dove se le aspetta. */
   const TAVOLE = NS.SITAC_TAVOLE || [];
   const RIQUADRI = NS.SITAC_RIQUADRI || {};
-  const VECCHI = NS.SITAC_VECCHI || {};
   const nmRiquadro = k => { const x = RIQUADRI[k]; return (x && (x[lingua] || x.it)) || ''; };
 
   /* Perimetri: la tavola SITAC non prevede poligoni campiti, ma l'area
@@ -2285,46 +2284,19 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
       segnaIntestazione();
     }
     L.geoJSON({type:'FeatureCollection', features: poligoni}, {
-      pointToLayer: (feat, latlng) => {
-        const pr = feat.properties || {};
-        const tp = VECCHI[pr.tipo] || pr.tipo;
-        if (tp !== 'nota' && !SIM[tp]) return L.marker(latlng, {draggable:true});
-        return L.marker(latlng, {draggable:true,
-          icon: iconaSimbolo(tp, {stato:pr.stato || 'previsto',
-            testo:pr.testo, rotazione:pr.rotazione})});
-      },
-      style: feat => {
-        const pr = feat.properties || {};
-        const tp = VECCHI[pr.tipo] || pr.tipo;
-        if (LIN[tp]) return stileLinea(LIN[tp], pr.stato || 'previsto');
-        if (AREE[tp]) return stileArea(AREE[tp]);
-        return {color: COL.rosso};
-      },
+      /* Ogni poligono importato è superficie percorsa: lo stile è uno solo,
+         e pointToLayer non serve perché i punti sono già stati filtrati via. */
+      style: () => stileArea(AREE.percorsa),
       onEachFeature: (feat, layer) => {
         const pr = feat.properties || {};
-        /* Ogni poligono importato è superficie percorsa. Si importa un
-           perimetro per sapere quanto è bruciato: che il file lo chiami
-           zona minacciata o area di lancio non cambia cosa rappresenta
-           qui, e lasciargli il suo tipo lo terrebbe fuori dal conto degli
-           ettari — che è il motivo per cui lo si è importato. */
         layer._tipo = 'percorsa';
-        /* Un poligono che arriva da fuori non ha un tipo nostro: entra come
-          superficie percorsa, che è il caso per cui si importa (un perimetro
-          rilevato). */
-        if (!AREE[layer._tipo] && pr.genere !== 'lancio') layer._tipo = 'percorsa';
-        layer._genere = pr.genere;
+        layer._genere = 'area';
         layer._stato = pr.stato || 'previsto';
         layer._testo = pr.testo || null;
-        layer._rotazione = pr.rotazione || null;
+        layer._rotazione = null;
         disegni.addLayer(layer);
-        if (LIN[layer._tipo]){
-          decora(layer);
-          layer.on('pm:edit', () => { decora(layer); etichettaElemento(layer); aggiornaStato(); });
-        } else if (AREE[layer._tipo]){
-          layer.on('pm:edit', () => { etichettaElemento(layer); aggiornaStato(); });
-        }
+        layer.on('pm:edit', () => { etichettaElemento(layer); aggiornaStato(); });
         layer.on('pm:remove', () => scollega(layer));
-        if (layer._rotazione && SIM[layer._tipo] && SIM[layer._tipo].r) creaManiglia(layer);
         etichettaElemento(layer);
         n++;
       }
