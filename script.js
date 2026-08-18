@@ -1107,6 +1107,7 @@ const CHIAVE_STORAGE_PANNELLI = "fireops_pagine_pannelli";
         aggiornaSelettori();
         salvaPaginePannelli();
         eseguiEffettiPagina(nuovoId);
+        if (nuovoId === ID_SITAC) entraInSitacEsclusiva(lato, idAttualeLato);
     }
 
     if (selectPannelloSinistra) {
@@ -1158,11 +1159,88 @@ const CHIAVE_STORAGE_PANNELLI = "fireops_pagine_pannelli";
         // Tutti i pulsanti tornano a "Espandi": quello espanso potrebbe già
         // essere stato spostato altrove, quindi si normalizzano in blocco
         document.querySelectorAll(".btn-fullscreen-pagina").forEach(pulsante => {
-            pulsante.textContent = "⛶ Espandi";
-            pulsante.title = "Espandi a schermo intero";
+        pulsante.addEventListener("click", () => {
+            // Dentro la SITAC il pulsante non espande mai a mano: l'espansione
+            // è automatica, quindi qui può solo chiudere
+            if (pulsante.closest("#sitac-aib")) { chiudiSitacEsclusiva(); return; }
+            toggleFullscreenPagina(pulsante);
         });
+    });
+
+        // Qualsiasi uscita dal fullscreen chiude anche la modalità esclusiva:
+        // un pannello ridotto con il body ancora marcato "sitac-esclusiva"
+        // lascerebbe il pulsante su "Chiudi SITAC" senza nulla da chiudere
+        document.body.classList.remove("sitac-esclusiva");
+        latoSitacEsclusiva = null;
+        paginaPrimaDiSitac = null;
+        aggiornaPulsanteSitac();
 
         setTimeout(() => window.dispatchEvent(new Event("resize")), 150);
+    }
+
+    // ==========================================================
+    // SITAC IN MODALITÀ ESCLUSIVA
+    //
+    // La SITAC non convive con un'altra pagina: la barra dei passi più la
+    // mappa non stanno in mezzo pannello, e mentre si disegna un dispositivo
+    // non si guarda altro. Quindi il pannello va a tutta larghezza da sé, e
+    // il pulsante "Espandi" diventa l'unica uscita: "✖ Chiudi SITAC".
+    //
+    // Non si crea un secondo stato accanto a .pannello-fullscreen: si usa
+    // QUELLO, con una classe in più sul body che ne cambia solo il comando.
+    // Due meccanismi paralleli finirebbero prima o poi disallineati.
+    // ==========================================================
+    const ID_SITAC = "sitac-aib";
+    let latoSitacEsclusiva = null;   // "sinistra" | "destra"
+    let paginaPrimaDiSitac = null;   // cosa rimettere alla chiusura
+
+    function aggiornaPulsanteSitac() {
+        const btn = document.querySelector("#sitac-aib .btn-fullscreen-pagina");
+        if (!btn) return;
+        const attiva = document.body.classList.contains("sitac-esclusiva");
+        btn.textContent = attiva ? "✖ Chiudi SITAC" : "⛶ Espandi";
+        btn.title = attiva
+            ? "Chiudi la SITAC e torna alla vista a due colonne"
+            : "Espandi a schermo intero";
+        btn.classList.toggle("btn-chiudi-sitac", attiva);
+    }
+
+    function entraInSitacEsclusiva(lato, paginaPrecedente) {
+        const sezione = document.getElementById(ID_SITAC);
+        const pannello = sezione && sezione.closest(".pannello");
+        if (!pannello) return;
+
+        latoSitacEsclusiva = lato;
+        paginaPrimaDiSitac = paginaPrecedente;
+
+        pannello.classList.add("pannello-fullscreen");
+        const splitScreenEl = document.querySelector(".split-screen");
+        if (splitScreenEl) splitScreenEl.classList.add("ha-pannello-fullscreen");
+        document.body.classList.add("fullscreen-attivo", "sitac-esclusiva");
+
+        aggiornaPulsanteSitac();
+        // Leaflet crede ancora di essere largo mezzo pannello: senza questo
+        // i tile restano grigi a metà
+        setTimeout(() => window.dispatchEvent(new Event("resize")), 150);
+    }
+
+    function chiudiSitacEsclusiva() {
+        if (!document.body.classList.contains("sitac-esclusiva")) return;
+
+        // Letti PRIMA di esciDaFullscreen(), che azzera lo stato
+        const lato = latoSitacEsclusiva;
+        const precedente = paginaPrimaDiSitac;
+
+        esciDaFullscreen();
+
+        // Si torna dove si era, non a un default. Unica eccezione: se quella
+        // pagina è nel frattempo l'altra colonna, rimetterla qui provocherebbe
+        // uno SCAMBIO e la SITAC finirebbe nell'altro pannello, riaprendosi.
+        const altra = lato === "sinistra" ? paginaDestra : paginaSinistra;
+        let daRipristinare = (precedente && precedente !== ID_SITAC) ? precedente : "homepage";
+        if (daRipristinare === altra) daRipristinare = altra === "homepage" ? "mappa-meteo" : "homepage";
+
+        if (lato) assegnaPagina(lato, daRipristinare);
     }
 
     document.querySelectorAll(".btn-fullscreen-pagina").forEach(pulsante => {
@@ -1171,6 +1249,10 @@ const CHIAVE_STORAGE_PANNELLI = "fireops_pagine_pannelli";
 
     document.addEventListener("keydown", (e) => {
         if (e.key !== "Escape") return;
+        // In SITAC l'ESC serve ad annullare il disegno in corso, non a
+        // smontare il modulo: si esce solo dal pulsante
+        if (document.body.classList.contains("sitac-esclusiva")) return;
+        const pannelloAttivo = document.querySelector(".pannello.pannello-fullscreen");
         const pannelloAttivo = document.querySelector(".pannello.pannello-fullscreen");
         if (!pannelloAttivo) return;
         const pulsanteAttivo = pannelloAttivo.querySelector(".btn-fullscreen-pagina");
@@ -1405,6 +1487,10 @@ collegaModaleJson({
     });
     spostaSezione(paginaSinistra, "sinistra");
     spostaSezione(paginaDestra, "destra");
+        // SITAC già in un pannello da sessione precedente: si riapre esclusiva,
+    // altrimenti resterebbe schiacciata in mezza colonna
+    if (paginaSinistra === ID_SITAC) entraInSitacEsclusiva("sinistra", "homepage");
+    else if (paginaDestra === ID_SITAC) entraInSitacEsclusiva("destra", "mappa-meteo");
 
 // ==========================================================
 // REGOLAMENTO DI SERVIZIO (D.P.R. 64/2012)

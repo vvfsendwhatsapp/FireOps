@@ -3363,6 +3363,15 @@ a.btn-icon-hamburger:hover {
 #sitac-app .sitac-conta-cliccabile{cursor:pointer;line-height:1.5}
 #sitac-app .sitac-conta-cliccabile:hover{color:var(--primary-color)}
 
+/* Chiudi SITAC: rosso, non verde smeraldo come Espandi/Riduci. Non cambia
+   l'inquadratura, smonta il modulo — e in mezzo a una SITAC in corso è un
+   gesto che va pensato, non premuto per abitudine. */
+#sitac-aib .btn-fullscreen-pagina.btn-chiudi-sitac{
+  background:var(--dark-color);border-color:var(--danger-color);
+  color:var(--danger-color);font-weight:bold}
+#sitac-aib .btn-fullscreen-pagina.btn-chiudi-sitac:hover{
+  background:var(--danger-color);color:var(--text-main)}
+
 /* ==========================================================
    ==========================================================
    RESPONSIVE
