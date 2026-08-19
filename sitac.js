@@ -493,7 +493,7 @@ function avvia(app){
     /* La rotazione la applica il contenitore, ma il glifo può averne bisogno
        per raddrizzare il proprio testo: gliela si passa. */
     const gradi = o.rotazione != null ? ((o.rotazione - d0) % 360 + 360) % 360 : 0;
-    /* Il TP non gira: la direzione sta nell'asta, e una sigla ruotata non si
+      /* Il TP non gira: la direzione sta nell'asta, e una sigla ruotata non si
        legge. Gli altri orientabili hanno il disegno che punta da sé. */
     const gir = (o.rotazione != null && k !== 'tp')
       ? ` style="transform:rotate(${((o.rotazione - d0) % 360 + 360) % 360}deg)"` : '';
@@ -637,26 +637,37 @@ function avvia(app){
   const telefonoValido = () =>
     /^\+?[0-9]{6,15}$/.test(inTelefono.value.replace(/[ .\-]/g, ''));
 
+    /* Convalida: la posizione resta facoltativa, perché il GPS in sala
+     operativa non dice niente di utile e su http non locale è bloccato.
+     Convalidati, i campi si chiudono: sono l'intestazione della carta, e
+     una volta detta va lasciata ferma. Il pulsante diventa Modifica. */
+  let datiBloccati = false;
+  const bDati = q('#sitac-bConvalida');
+  
   function segnaIntestazione(){
-    inDos.classList.toggle('campo-mancante', !!inDos.value && !dosValido());
-    inIntervento.classList.toggle('campo-mancante',
-      !!inIntervento.value && !interventoValido());
-    inTelefono.classList.toggle('campo-mancante',
-      !!inTelefono.value && !telefonoValido());
+    /* Rosso su tutto ciò che manca o non è valido, come in Messaggistica:
+       il campo vuoto e quello sbagliato sono entrambi un ostacolo, e finché
+       ce n'è uno la convalida non parte. Non si segnala mentre i campi sono
+       ancora bloccati: lì non c'è niente da correggere. */
+    if (!datiBloccati){
+      inIntervento.classList.toggle('campo-mancante', !interventoValido());
+      inDos.classList.toggle('campo-mancante', !dosValido());
+      inNominativo.classList.toggle('campo-mancante', !inNominativo.value.trim());
+      inTelefono.classList.toggle('campo-mancante', !telefonoValido());
+    }
     try {
       sessionStorage.setItem(CHIAVE_SESS, JSON.stringify({
         intervento: inIntervento.value, dos: inDos.value,
         nominativo: inNominativo.value, telefono: inTelefono.value,
         posizione: inPosizione.value}));
     } catch(e){ /* sessione non disponibile: si perde solo il ricordo */ }
-    /* Il simbolo sulla carta porta la sigla DOS: se la si scrive dopo aver
-       posato la posizione, l'etichetta va riscritta o resta vuota. */
     const mDos = dosSullaCarta();
     if (mDos){
       mDos._testo = inDos.value || null;
       mDos.setIcon(iconaSimbolo('dos', {stato:'attivo', testo: mDos._testo}));
       etichettaElemento(mDos);
     }
+    mostraBlocco();
     aggiornaPassi();
   }
   inIntervento.oninput = () => {
@@ -670,13 +681,6 @@ function avvia(app){
     segnaIntestazione();
   };
 
-  /* Convalida: la posizione resta facoltativa, perché il GPS in sala
-     operativa non dice niente di utile e su http non locale è bloccato.
-     Convalidati, i campi si chiudono: sono l'intestazione della carta, e
-     una volta detta va lasciata ferma. Il pulsante diventa Modifica. */
-  let datiBloccati = false;
-  const bDati = q('#sitac-bConvalida');
-
   function mostraBlocco(){
     [inIntervento, inDos, inNominativo, inTelefono].forEach(c => {
       c.readOnly = datiBloccati;
@@ -685,6 +689,11 @@ function avvia(app){
     q('#sitac-bPosizione').disabled = datiBloccati;
     bDati.textContent = t(datiBloccati ? 'bModificaDati' : 'bConvalida');
     bDati.classList.toggle('attivo', datiBloccati);
+        /* Il pulsante non è premibile finché i quattro campi non sono a posto:
+       il messaggio "mancano X, Y" arrivava solo dopo aver premuto, e i campi
+       rossi lo dicono già. Bloccati, il pulsante torna vivo per sbloccarli. */
+    bDati.disabled = !datiBloccati && !(interventoValido() && dosValido()
+      && !!inNominativo.value.trim() && telefonoValido());
   }
 
   bDati.onclick = () => {
