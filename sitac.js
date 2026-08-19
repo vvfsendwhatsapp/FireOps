@@ -656,6 +656,7 @@ function avvia(app){
       inDos.classList.toggle('campo-mancante', !dosValido());
       inNominativo.classList.toggle('campo-mancante', !inNominativo.value.trim());
       inTelefono.classList.toggle('campo-mancante', !telefonoValido());
+      inPosizione.classList.toggle('campo-mancante', !posDos);
     }
     try {
       sessionStorage.setItem(CHIAVE_SESS, JSON.stringify({
@@ -695,7 +696,7 @@ function avvia(app){
        il messaggio "mancano X, Y" arrivava solo dopo aver premuto, e i campi
        rossi lo dicono già. Bloccati, il pulsante torna vivo per sbloccarli. */
     bDati.disabled = !datiBloccati && !(interventoValido() && dosValido()
-      && !!inNominativo.value.trim() && telefonoValido());
+      && !!inNominativo.value.trim() && telefonoValido() && !!posDos);
   }
 
   bDati.onclick = () => {
@@ -2570,6 +2571,10 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
   stato(t('pronto'));
   aggiornaLegenda();
   centraSuGps(false);
+  /* Il passo 1 si apre da solo: è il primo gesto di ogni SITAC, e trovarlo
+     chiuso costa un clic a ogni apertura del modulo. */
+  const testa1 = q('#sitac-barra .sitac-fisa-testa');
+  if (testa1) apriFisa(testa1);
 
   /* -------------------------------------------------------------------
      Stampa: la sezione viene appesa al body per il tempo della stampa,
