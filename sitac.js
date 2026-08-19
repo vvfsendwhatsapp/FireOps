@@ -302,7 +302,9 @@ function avvia(app){
       supAttiva:'A fuoco attivo: {v} ha',
       supTotale:'Coinvolta in totale: {v} ha',
       ventoRiancorato:'Posizione DOS modificata.\nLa freccia del vento è stata riancorata: verifica la direzione.',
-      bModificaDati:'Modifica', datiBloccati:'Dati bloccati.\nPremi Modifica per correggerli.', },
+      bModificaDati:'Modifica', datiBloccati:'Dati bloccati.\nPremi Modifica per correggerli.',
+      posComando:'Sede del Comando', posComandoNota:'Le coordinate della caserma di {c}.',
+      posComandoNo:'Nessun Comando attivo selezionato.', },
     en:{ bCono:'Add cone', conoModo:'How should the cone be built?',
       conoSettore:'From the point of origin', conoSettoreNota:'30° sector from the origin; a second click marks where the front is now (T0).',
       conoFronte:'From the fire front line', conoFronteNota:'Draw the observed front and push it forward at 15, 30 and 60 minutes.',
@@ -798,23 +800,20 @@ q('#sitac-bPosizione').onclick = async () => {
     /* 'no' cade nel percorso qui sotto */
   }
 
+  /* La sede del Comando è la caserma, non l'incendio: in sala è quasi
+     sempre il dato sbagliato per il DOS. Resta però la scorciatoia onesta
+     quando il DOS È in sede — succede a incendio appena aperto — e quando
+     serve un punto qualsiasi per far partire la lettura del vento. */
+  const cmd = centroComando();
+  const nomeCmd = (window.FireOpsComandoAttivo || {}).Comando || '';
   const modo = await scegli({testo: t('posComeQuale'), voci: [
+    {k:'comando', et:t('posComando'),
+      nota: cmd ? t('posComandoNota', {c: nomeCmd}) : t('posComandoNo'), off: !cmd},
     {k:'coord', et:t('posCoord'), nota:t('posCoordNota')},
     {k:'mappa', et:t('posMappa'), nota:t('posMappaNota')}
   ]});
   if (!modo) return;
-  if (modo === 'mappa'){
-    /* La vista va portata sul Comando attivo prima di chiedere il clic:
-       il GPS ha lasciato la mappa dove sta questo computer, che in sala non
-       è dove brucia. L'incendio è quasi sempre nel proprio territorio, e da
-       lì si arriva col trascinamento invece che cercandolo da zero. Se
-       l'operatore ha già disegnato non si tocca niente: sa dov'è. */
-    const c = centroComando();
-    if (c && !disegni.getLayers().length) map.setView(c, 12);
-    const p = await attendiClic(t('posClicMappa'));
-    if (p) scriviPosizione(p);
-    return;
-  }
+  if (modo === 'comando') return scriviPosizione(L.latLng(cmd[0], cmd[1]));
   const v = await chiedi({campo:1, testo: t('chiediCoord'), valore: inPosizione.value});
   if (!v) return;
   const n = v.split(/[,;\s]+/).map(Number).filter(x => !isNaN(x));
