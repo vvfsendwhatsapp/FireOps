@@ -7,12 +7,19 @@
  * Stile:  style.css, sezione MODULI AGGIUNTIVI
  *
  * IMPIANTO
- * Due colonne: a sinistra i comandi, a destra la mappa. La barra segue
- * l'ordine in cui una SITAC si compila davvero — intervento, posizione,
- * area d'origine, vento, fronte, superficie, e solo dopo le quattro tavole
- * della pubblicazione. La sequenza SUGGERISCE, non impone: una SITAC si
- * apre spesso a incendio già in corso, col numero d'intervento che arriva
- * dopo e il fronte dettato per radio.
+ * Due schede. La prima è l'intestazione: intervento, DOS, posizione. La
+ * seconda è la carta — comandi a sinistra, mappa a destra — e resta muta
+ * finché la prima non è convalidata.
+ *
+ * Non è una sequenza didattica imposta a un operatore che ha fretta: il
+ * DOS lo nomina il ROS su un intervento già aperto, quindi quando qualcuno
+ * apre questa pagina il numero e il nominativo ESISTONO GIÀ. Chiederli
+ * prima non ferma nessuno, e una SITAC che gira fra sale operative senza
+ * dire a quale intervento si riferisce e chi la firma non serve a niente.
+ *
+ * L'unica eccezione prevista è la posizione scelta sulla carta: lì si
+ * passa alla scheda 2 con la sola mappa viva, si clicca, e la convalida
+ * arriva dal popup senza tornare indietro.
  *
  * NIENTE DIALOGHI DEL BROWSER
  * prompt() e confirm() intestano la finestra col dominio del sito
@@ -304,7 +311,15 @@ function avvia(app){
       ventoRiancorato:'Posizione DOS modificata.\nLa freccia del vento è stata riancorata: verifica la direzione.',
       bModificaDati:'Modifica', datiBloccati:'Dati bloccati.\nPremi Modifica per correggerli.',
       posComando:'Sede del Comando', posComandoNota:'Le coordinate della caserma di {c}.',
-      posComandoNo:'Nessun Comando attivo selezionato.', },
+      posComandoNo:'Nessun Comando attivo selezionato.',
+      sch1:'1 · Dati intervento', sch2:'2 · Carta',
+      dataOra:'Data e ora', nQualifica:'Qualifica', qualificaVuota:'—',
+      datiNota:'Compila tutti i campi: la posizione si sblocca dopo, e la carta dopo la convalida.',
+      posBloccata:'Prima compila intervento, qualifica, nominativo, ID DOS e telefono.',
+      cartaBloccata:'Convalida i dati del passo 1 per usare la carta.',
+      popPosTit:'Posizione del DOS', popPosOk:'Convalida', popPosSposta:'Sposta',
+      posAnnullata:'Scelta della posizione annullata.',
+      redatta:'Redatta', },
     en:{ bCono:'Add cone', conoModo:'How should the cone be built?',
       conoSettore:'From the point of origin', conoSettoreNota:'30° sector from the origin; a second click marks where the front is now (T0).',
       conoFronte:'From the fire front line', conoFronteNota:'Draw the observed front and push it forward at 15, 30 and 60 minutes.',
@@ -339,7 +354,10 @@ function avvia(app){
       pEttari:'{v} ha', pNessuno:'none',
       dosDove:'Position acquired. What should I do with it?',
       dosPosa:'Place the DOS symbol here', dosSposta:'Move the DOS here',
-      dosSolo:'Keep the coordinates only', dosPosato:'DOS placed on the acquired position.' },
+      dosSolo:'Keep the coordinates only', dosPosato:'DOS placed on the acquired position.',
+      sch1:'1 · Incident data', sch2:'2 · Map', dataOra:'Date and time',
+      nQualifica:'Rank', qualificaVuota:'—',
+      popPosTit:'DOS position', popPosOk:'Confirm', popPosSposta:'Move', },
     fr:{ bCono:'Ajouter un c\u00f4ne', conoModo:'Comment construire le c\u00f4ne ?',
       conoSettore:'Depuis le point d\u2019origine', conoSettoreNota:'Secteur \u00e0 30° depuis l\u2019origine ; un second clic indique o\u00f9 est le front (T0).',
       conoFronte:'Depuis la ligne de front', conoFronteNota:'Tracez le front relev\u00e9 et faites-le avancer \u00e0 15, 30 et 60 minutes.',
@@ -374,7 +392,10 @@ function avvia(app){
       pEttari:'{v} ha', pNessuno:'aucun',
       dosDove:'Position relev\u00e9e. Qu\u2019en fait-on ?',
       dosPosa:'Poser ici le symbole DOS', dosSposta:'D\u00e9placer le DOS ici',
-      dosSolo:'Garder seulement les coordonn\u00e9es', dosPosato:'DOS pos\u00e9 sur la position relev\u00e9e.' },
+      dosSolo:'Garder seulement les coordonn\u00e9es', dosPosato:'DOS pos\u00e9 sur la position relev\u00e9e.',
+      sch1:'1 · Données', sch2:'2 · Carte', dataOra:'Date et heure',
+      nQualifica:'Grade', qualificaVuota:'—',
+      popPosTit:'Position du DOS', popPosOk:'Valider', popPosSposta:'Déplacer', },
     es:{ bCono:'A\u00f1adir cono', conoModo:'\u00bfC\u00f3mo se construye el cono?',
       conoSettore:'Desde el punto de origen', conoSettoreNota:'Sector de 30° desde el origen; un segundo clic marca d\u00f3nde est\u00e1 el frente (T0).',
       conoFronte:'Desde la l\u00ednea del frente', conoFronteNota:'Dibuja el frente observado y hazlo avanzar a 15, 30 y 60 minutos.',
@@ -409,7 +430,10 @@ function avvia(app){
       pEttari:'{v} ha', pNessuno:'ninguno',
       dosDove:'Posici\u00f3n obtenida. \u00bfQu\u00e9 hago con ella?',
       dosPosa:'Coloca aqu\u00ed el s\u00edmbolo DOS', dosSposta:'Mueve aqu\u00ed el DOS',
-      dosSolo:'Conserva solo las coordenadas', dosPosato:'DOS colocado en la posici\u00f3n obtenida.' }
+      dosSolo:'Conserva solo las coordenadas', dosPosato:'DOS colocado en la posici\u00f3n obtenida.',
+      sch1:'1 · Datos', sch2:'2 · Carta', dataOra:'Fecha y hora',
+      nQualifica:'Categoría', qualificaVuota:'—',
+      popPosTit:'Posición del DOS', popPosOk:'Validar', popPosSposta:'Mover', }
   };
   Object.keys(L10N_EXTRA).forEach(k => Object.assign(L10N[k], L10N_EXTRA[k]));
 
@@ -618,17 +642,14 @@ function avvia(app){
      riferisce, e chi la firma, non serve a niente. Finiscono nel GeoJSON,
      nel nome del file e nella testata di stampa.
      ===================================================================== */
-  const inIntervento = q('#sitac-nIntervento');
+    const inIntervento = q('#sitac-nIntervento');
+  const inQualifica  = q('#sitac-qualifica');
   const inDos        = q('#sitac-nDos');
   const inNominativo = q('#sitac-nominativo');
   const inTelefono   = q('#sitac-telefono');
   const inPosizione  = q('#sitac-posizione');
   const CHIAVE_SESS  = 'fireops_sitac_intestazione';
 
-      /* VF è fisso e sta nel markup: qui viaggia solo la parte libera. Non c'è
-     più una lunghezza obbligata — le sigle reali variano — ma il campo va
-     compilato: una SITAC che gira senza dire chi la firma non serve.
-     Il tetto a 6 non è una regola, è lo spazio che sta nel simbolo. */
   function normalizzaDos(v){
     return String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
       .replace(/^VF/, '').slice(0, 6);
@@ -639,20 +660,41 @@ function avvia(app){
   const telefonoValido = () =>
     /^\+?[0-9]{6,15}$/.test(inTelefono.value.replace(/[ .\-]/g, ''));
 
-    /* Convalida: la posizione resta facoltativa, perché il GPS in sala
-     operativa non dice niente di utile e su http non locale è bloccato.
-     Convalidati, i campi si chiudono: sono l'intestazione della carta, e
-     una volta detta va lasciata ferma. Il pulsante diventa Modifica. */
+  /* Due soglie distinte. L'anagrafica sblocca il pulsante della posizione:
+     finché non si sa CHI è il DOS non ha senso chiedere DOVE sta. La
+     posizione in più sblocca la convalida. */
+  const anagraficaOk = () => interventoValido() && !!inQualifica.value
+    && !!inNominativo.value.trim() && dosValido() && telefonoValido();
+  const datiCompleti = () => anagraficaOk() && !!posDos;
+
+  /* datiBloccati = campi in sola lettura adesso.
+     datiConvalidati = lo sono stati almeno una volta, ed è QUESTO che apre
+     la carta. Premere Modifica per correggere un numero non deve spegnere
+     la barra sotto le mani di chi ha già disegnato mezza SITAC. */
   let datiBloccati = false;
+  let datiConvalidati = false;
+  let oraRedazione = null;      // congelata alla convalida
+  let orologio = null;
   const bDati = q('#sitac-bConvalida');
 
+  const fmtOra = d => new Intl.DateTimeFormat(lingua === 'it' ? 'it-IT' : lingua, {
+    dateStyle:'short', timeStyle:'medium', timeZone:'Europe/Rome'}).format(d);
+
+  function mostraOra(){
+    q('#sitac-dataOra').textContent = fmtOra(oraRedazione || new Date());
+  }
+  function avviaOrologio(){
+    if (orologio) return;
+    orologio = setInterval(mostraOra, 1000);
+  }
+  function fermaOrologio(){
+    if (orologio){ clearInterval(orologio); orologio = null; }
+  }
+
   function segnaIntestazione(){
-    /* Rosso su tutto ciò che manca o non è valido, come in Messaggistica:
-       il campo vuoto e quello sbagliato sono entrambi un ostacolo, e finché
-       ce n'è uno la convalida non parte. Non si segnala mentre i campi sono
-       ancora bloccati: lì non c'è niente da correggere. */
     if (!datiBloccati){
       inIntervento.classList.toggle('campo-mancante', !interventoValido());
+      inQualifica.classList.toggle('campo-mancante', !inQualifica.value);
       inDos.classList.toggle('campo-mancante', !dosValido());
       inNominativo.classList.toggle('campo-mancante', !inNominativo.value.trim());
       inTelefono.classList.toggle('campo-mancante', !telefonoValido());
@@ -660,9 +702,9 @@ function avvia(app){
     }
     try {
       sessionStorage.setItem(CHIAVE_SESS, JSON.stringify({
-        intervento: inIntervento.value, dos: inDos.value,
-        nominativo: inNominativo.value, telefono: inTelefono.value,
-        posizione: inPosizione.value}));
+        intervento: inIntervento.value, qualifica: inQualifica.value,
+        dos: inDos.value, nominativo: inNominativo.value,
+        telefono: inTelefono.value, posizione: inPosizione.value}));
     } catch(e){ /* sessione non disponibile: si perde solo il ricordo */ }
     const mDos = dosSullaCarta();
     if (mDos){
@@ -677,6 +719,7 @@ function avvia(app){
     inIntervento.value = inIntervento.value.replace(/[^0-9]/g, '');
     segnaIntestazione();
   };
+  inQualifica.onchange = segnaIntestazione;
   inDos.oninput = () => { inDos.value = normalizzaDos(inDos.value); segnaIntestazione(); };
   inNominativo.oninput = segnaIntestazione;
   inTelefono.oninput = () => {
@@ -689,35 +732,47 @@ function avvia(app){
       c.readOnly = datiBloccati;
       c.classList.toggle('campo-bloccato', datiBloccati);
     });
-    q('#sitac-bPosizione').disabled = datiBloccati;
+    /* Un <select> non ha readOnly: si disabilita e basta. */
+    inQualifica.disabled = datiBloccati;
+    inQualifica.classList.toggle('campo-bloccato', datiBloccati);
+    q('#sitac-bPosizione').disabled = datiBloccati || !anagraficaOk();
     bDati.textContent = t(datiBloccati ? 'bModificaDati' : 'bConvalida');
     bDati.classList.toggle('attivo', datiBloccati);
-        /* Il pulsante non è premibile finché i quattro campi non sono a posto:
-       il messaggio "mancano X, Y" arrivava solo dopo aver premuto, e i campi
-       rossi lo dicono già. Bloccati, il pulsante torna vivo per sbloccarli. */
-    bDati.disabled = !datiBloccati && !(interventoValido() && dosValido()
-      && !!inNominativo.value.trim() && telefonoValido() && !!posDos);
+    bDati.disabled = !datiBloccati && !datiCompleti();
+
+    const barra = q('#sitac-barra');
+    if (barra) barra.classList.toggle('sitac-barra-spenta', !datiConvalidati);
+    const lin = q('.sitac-scheda-btn[data-scheda="carta"]');
+    if (lin) lin.classList.toggle('sitac-scheda-bloccata', !datiConvalidati);
+  }
+
+  function convalida(){
+    if (!datiCompleti()){ segnaIntestazione(); return; }
+    datiBloccati = true;
+    datiConvalidati = true;
+    oraRedazione = new Date();
+    fermaOrologio();
+    mostraOra();
+    mostraBlocco();
+    aggiornaPassi();
+    vaiAScheda('carta');
+    stato(t('datiOk', {i: inIntervento.value, n: inNominativo.value.trim()})
+      + '\n' + t('datiBloccati'));
   }
 
   bDati.onclick = () => {
     if (datiBloccati){
       datiBloccati = false;
+      oraRedazione = null;        // riprende a scorrere, si ricongela alla convalida
+      avviaOrologio();
       mostraBlocco();
       inIntervento.focus();
       return;
     }
-    const manca = [];
-    if (!interventoValido()) manca.push(t('nIntervento'));
-    if (!dosValido()) manca.push(t('nDos'));
-    if (!inNominativo.value.trim()) manca.push(t('nNominativo'));
-    if (!telefonoValido()) manca.push(t('nTelefono'));
-    segnaIntestazione();
-    if (manca.length) return stato(t('datiMancanti', {c: manca.join(', ')}));
-    datiBloccati = true;
-    mostraBlocco();
-    stato(t('datiOk', {i: inIntervento.value, n: inNominativo.value.trim()})
-      + '\n' + t('datiBloccati'));
+    convalida();
   };
+  avviaOrologio();
+  mostraOra();
 
   try {
     const salvato = JSON.parse(sessionStorage.getItem(CHIAVE_SESS) || '{}');
@@ -728,12 +783,16 @@ function avvia(app){
     inPosizione.value  = salvato.posizione || '';
   } catch(e){ /* niente da ripristinare */ }
 
-  const intestazione = () => ({
+    const intestazione = () => ({
     intervento: inIntervento.value || null,
+    qualifica: inQualifica.value || null,
     dos: dosCompleto() || null,
     nominativo: inNominativo.value.trim() || null,
     telefono: inTelefono.value.trim() || null,
-    posizione: inPosizione.value || null
+    posizione: inPosizione.value || null,
+    /* L'ora della REDAZIONE, non quella della stampa o dell'export: una
+       SITAC dice quando è stata fatta, non quando è stata riletta. */
+    redatta: oraRedazione ? oraRedazione.toISOString() : null
   });
   function siglaFile(){
     const i = intestazione();
@@ -746,7 +805,8 @@ function avvia(app){
 let posDos = null;
 let provinciaDos = null;
 
-async function scriviPosizione(latlng, acc){
+async function scriviPosizione(latlng, acc, opz){
+  const o = opz || {};
   posDos = L.latLng(latlng.lat, latlng.lng);
   inPosizione.value = `${posDos.lat.toFixed(5)}, ${posDos.lng.toFixed(5)}`
     + (acc ? ` (\u00b1${Math.round(acc)} m)` : '');
@@ -754,10 +814,10 @@ async function scriviPosizione(latlng, acc){
   ventoSeguiDos();
   cercaProvincia(posDos);
 
-  /* Il simbolo non si posa da sé: la posizione può servire solo come punto
-     di riferimento — per la lettura del vento, o per la provincia — senza
-     che il DOS sia davvero lì. Se il simbolo c'è già la domanda cambia:
-     non è "poso" ma "sposto", e va detto con le parole giuste. */
+  /* Dal clic sulla carta il simbolo si posa e basta: il clic ERA la
+     posizione del DOS, chiederlo di nuovo è una domanda senza contenuto. */
+  if (o.posa){ posaDos(posDos); return; }
+
   const gia = dosSullaCarta();
   const scelta = await scegli({testo: t('dosDove'), voci: [
     {k:'posa', et: t(gia ? 'dosSposta' : 'dosPosa')},
@@ -827,6 +887,7 @@ q('#sitac-bPosizione').onclick = async () => {
     {k:'mappa', et:t('posMappa'), nota:t('posMappaNota')}
   ]});
   if (!modo) return;
+    if (modo === 'mappa') return posizionaSuMappa();
   if (modo === 'comando') return scriviPosizione(L.latLng(cmd[0], cmd[1]));
   const v = await chiedi({campo:1, testo: t('chiediCoord'), valore: inPosizione.value});
   if (!v) return;
@@ -835,6 +896,49 @@ q('#sitac-bPosizione').onclick = async () => {
     return stato(t('coordErrate'));
   scriviPosizione(L.latLng(n[0], n[1]));
 };
+
+/* Popup sulla carta: mostra il punto cliccato e chiede se è quello buono.
+   Non è un modale: coprirebbe proprio la mappa che si sta guardando. */
+function popupPosizione(latlng){
+  return new Promise(risolvi => {
+    const box = document.createElement('div');
+    box.className = 'sitac-popup-pos';
+    box.innerHTML = `<b>${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}</b>`;
+    const az = document.createElement('div');
+    az.className = 'sitac-popup-azioni';
+    const fai = (cls, et, k) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = cls; b.textContent = t(et);
+      b.onclick = () => { map.closePopup(pop); risolvi(k); };
+      az.appendChild(b);
+    };
+    fai('ok', 'popPosOk', 'ok');
+    fai('', 'popPosSposta', 'sposta');
+    box.appendChild(az);
+    const pop = L.popup({closeButton:false, autoClose:false, closeOnClick:false})
+      .setLatLng(latlng).setContent(box).openOn(map);
+  });
+}
+
+/* Percorso "scelgo sulla carta": si passa alla scheda 2 con la sola mappa
+   viva, si clicca, si conferma dal popup. La convalida arriva da qui e si
+   RESTA sulla carta: tornare indietro per premere un pulsante che si è già
+   di fatto premuto è un giro a vuoto. */
+async function posizionaSuMappa(){
+  vaiAScheda('carta');
+  let p = await attendiClic(t('posClicMappa'));
+  while (p){
+    const scelta = await popupPosizione(p);
+    if (scelta === 'ok'){
+      await scriviPosizione(p, null, {posa:1});
+      convalida();
+      return;
+    }
+    p = await attendiClic(t('posClicMappa'));
+  }
+  vaiAScheda('dati');
+  stato(t('posAnnullata'));
+}
 
 /* Reverse geocoding: da Nominatim si prende ISO3166-2-lvl6, che è la sigla
    della provincia ("IT-BO"). `county` e `state_district` in Italia si
@@ -1756,8 +1860,6 @@ function mostraComandoAfferente(sigla, nome){
     return b;
   }
 
-
-
   function creaPulsanti(){
     const tav = q('#sitac-tavola');
     tav.innerHTML = '';
@@ -1791,7 +1893,7 @@ function mostraComandoAfferente(sigla, nome){
     /* 3 — innesco e superficie insieme: il punto d'origine e l'area bruciata
        si rilevano nello stesso momento, e separarli obbligava a saltare
        avanti e indietro fra due passi. */
-    passo(3, t('p3'), 3, corpo => {
+    passo(2, t('p3'), 3, corpo => {
       const el = document.createElement('div');
       el.className = 'sitac-strumenti';
       if (SIM.origine) el.appendChild(bottoneSimbolo('origine', SIM.origine));
@@ -1805,7 +1907,7 @@ function mostraComandoAfferente(sigla, nome){
         + `<p class="sitac-avviso">${esc(t('areeFuori'))}</p>`);
     });
 
-    passo(4, t('p4'), 4, corpo => {
+    passo(3, t('p4'), 4, corpo => {
       const el = document.createElement('div');
       el.className = 'sitac-azioni';
       const b = document.createElement('button');
@@ -1856,7 +1958,7 @@ function mostraComandoAfferente(sigla, nome){
 
     /* 5-8: le quattro tavole, nell'ordine della pubblicazione. */
     TAVOLE.forEach((tv, i) => {
-      passo(5 + i, t('p' + (5 + i)), 'T' + tv.k, corpo => {
+      passo(4 + i, t('p' + (5 + i)), 'T' + tv.k, corpo => {
         if (stati[tv.k] !== undefined) rigaStato(tv.k, corpo);
         const gs = perRiquadro(SIM, tv.k);
         const gl = perRiquadro(LIN, tv.k);
@@ -1906,8 +2008,7 @@ function mostraComandoAfferente(sigla, nome){
       e.classList.toggle('manca', !ok);
     };
 
-    const completo = interventoValido() && dosValido()
-      && !!inNominativo.value.trim() && telefonoValido() && !!posDos;
+    const completo = datiCompleti();
     segna(1, completo ? `${t('pFatto')} ${inIntervento.value} \u00b7 ${dosCompleto()}`
       : t('pManca'), completo);
     segna(2, ventoCono ? `${t('pFatto')} ${ventoCono.velocita} km/h \u2192 ${ventoCono.verso}\u00b0`
@@ -2596,16 +2697,17 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
      La testata (titolo, data, conteggi) esiste solo su carta: a video
      sarebbe una ripetizione del riquadro di stato.
      ----------------------------------------------------------------- */
-  function stampa(){
+    function stampa(){
     const testata = q('#sitac-testata-stampa');
     testata.querySelector('.t').textContent = t('stTitolo');
     const i = intestazione();
     testata.querySelector('.i').textContent =
       [i.intervento ? `${t('nIntervento')} ${i.intervento}` : '',
+       i.qualifica || '',
        i.dos ? `${t('nDos')} ${i.dos}` : '',
        i.nominativo || '', i.telefono || ''].filter(Boolean).join('  ·  ');
     testata.querySelector('.d').textContent =
-      t('stData', {d:new Date().toLocaleString(lingua)})
+      t('stData', {d: fmtOra(oraRedazione || new Date())})
       + (ventoCono ? `  ·  ${t('stVento', {v:ventoCono.velocita, d:ventoCono.verso,
           o:ventoCono.letto ? new Date(ventoCono.letto).toLocaleTimeString(lingua) : '—'})}` : '')
       + (coni.some(c => c.fattori) ? `  ·  ${NS.SitacRilievo.avvertenza[lingua]
@@ -2643,6 +2745,21 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
     radice.classList.toggle('sitac-sez-stretta', stretto);
     map.invalidateSize();
   }
+    /* Leaflet non sopporta di nascere o riapparire senza dimensioni: ogni
+     volta che la carta torna a schermo va rimisurata. */
+  function vaiAScheda(k){
+    qq('.sitac-scheda-btn').forEach(b =>
+      b.classList.toggle('attivo', b.dataset.scheda === k));
+    qq('.sitac-pannello').forEach(p =>
+      p.classList.toggle('attivo', p.dataset.scheda === k));
+    if (k === 'carta') setTimeout(() => { map.invalidateSize(); adatta(); }, 0);
+  }
+  qq('.sitac-scheda-btn').forEach(b => {
+    b.onclick = () => {
+      vaiAScheda(b.dataset.scheda);
+      if (b.dataset.scheda === 'carta' && !datiConvalidati) stato(t('cartaBloccata'));
+    };
+  });
   if (window.ResizeObserver) new ResizeObserver(adatta).observe(app);
   setTimeout(adatta, 150);
 
@@ -2700,6 +2817,7 @@ NS.Sitac = {
                       'sitac-bElimina','sitac-bAnnulla','sitac-bPulisci',
                       'sitac-bSfondo','sitac-bImporta','sitac-bStampa',
                       'sitac-bGeojson','sitac-bKml','sitac-file',
+                      'sitac-qualifica','sitac-dataOra','sitac-carta',
                       'sitac-provincia','sitac-comando','sitac-bVentoDir','sitac-bVentoWeb','sitac-ventoScala','sitac-ventoValore' ]){
       if (!radice.querySelector('#' + id)){
         console.error('[SITAC] manca #' + id + ' nel markup della sezione.');

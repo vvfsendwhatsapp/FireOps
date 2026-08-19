@@ -2952,17 +2952,21 @@ a.btn-icon-hamburger:hover {
 
 #sitac-aib .pagina-box-header { margin-bottom: 15px; }
 
+/* #sitac-app è il contenitore delle due schede: dà l'altezza e basta.
+   Le due colonne stanno su #sitac-carta, dentro la scheda 2. */
 #sitac-app{
-  display:flex; position:relative; overflow:hidden;
+  position:relative; overflow:hidden;
   background:var(--surface-color); color:var(--text-main);
   border:1px solid var(--border-color); border-radius:8px;
-  /* .page-section ha altezza automatica, quindi height:100% non risolverebbe:
-     l'altezza si ricava dalle variabili con cui è calcolata .pannello, meno
-     i 32px di padding di .pannello-corpo, i 40px dello split-screen e i 48px
-     della riga con Espandi. */
-  height:calc(100vh - var(--header-height) - var(--subheader-height) - 120px);
+  height:calc(100vh - var(--header-height) - var(--subheader-height) - 160px);
   min-height:480px;
 }
+.sitac-pannello{ display:none; height:100%; }
+.sitac-pannello.attivo{ display:flex; flex-direction:column; }
+.sitac-pannello[data-scheda="dati"]{ overflow-y:auto; padding:14px; }
+/* La carta prende lo spazio che resta, lo stato sta sotto e non si comprime */
+#sitac-carta{ display:flex; flex:1 1 auto; min-height:0; }
+.sitac-pannello #sitac-stato{ flex:0 0 auto; margin:10px 12px 12px; }
 .pannello-fullscreen #sitac-app{
   height:calc(100vh - var(--header-height) - var(--subheader-height) - 80px);
 }
@@ -3164,11 +3168,12 @@ a.btn-icon-hamburger:hover {
 
 /* In split-screen un pannello può essere stretto anche su schermo largo:
    la classe arriva dal ResizeObserver, come .um-root.narrow */
-#sitac-app.sitac-stretto{flex-direction:column;height:auto;min-height:0}
-#sitac-app.sitac-stretto #sitac-barra{width:100%;flex:0 0 auto;max-height:42vh;
-  border-right:0;border-bottom:1px solid var(--border-color)}
-#sitac-app.sitac-stretto .sitac-mapwrap{flex:0 0 auto;height:54vh;min-height:300px}
-#sitac-app.sitac-stretto .sitac-simboli{grid-template-columns:repeat(7,1fr)}
+#sitac-app.sitac-stretto{ height:auto; min-height:0; }
+.sitac-stretto #sitac-carta{ flex-direction:column; }
+.sitac-stretto #sitac-barra{ width:100%; flex:0 0 auto; max-height:42vh;
+  border-right:0; border-bottom:1px solid var(--border-color); }
+.sitac-stretto .sitac-mapwrap{ flex:0 0 auto; height:54vh; min-height:300px; }
+.sitac-stretto .sitac-simboli{ grid-template-columns:repeat(7,1fr); }
 
 /* Quadro del vento: sta fermo in alto a sinistra, con il nord accanto —
    la mappa è sempre a nord in alto, quindi la freccia si legge subito. */
@@ -3186,7 +3191,8 @@ a.btn-icon-hamburger:hover {
   font-weight:bold;line-height:1.3;white-space:nowrap}
 
 @media (max-width:900px){
-  #sitac-app{height:auto;min-height:0;flex-direction:column}
+  #sitac-app{height:auto;min-height:0}
+  #sitac-carta{flex-direction:column}
   #sitac-barra{width:100%;flex:0 0 auto;max-height:42vh;border-right:0;
     border-bottom:1px solid var(--border-color)}
   #sitac-app .sitac-mapwrap{flex:0 0 auto;height:54vh;min-height:300px}
@@ -3218,6 +3224,12 @@ a.btn-icon-hamburger:hover {
   body.sitac-stampa>#sitac-app #sitac-legVoci{max-height:none;color:#000}
   body.sitac-stampa>#sitac-app #sitac-legTesta .freccia{display:none}
   @page{size:A4 landscape;margin:10mm}
+  body.sitac-stampa>#sitac-app .sitac-pannello[data-scheda="carta"]{
+    display:block!important;height:auto}
+  body.sitac-stampa>#sitac-app .sitac-pannello[data-scheda="dati"],
+  body.sitac-stampa .sitac-schede{display:none!important}
+  body.sitac-stampa>#sitac-app #sitac-carta{display:block;height:auto}
+  body.sitac-stampa>#sitac-app #sitac-stato{display:none!important}
 }
 
 /* La riga sopra il riquadro — nota, campi, bandiere, Espandi — sta FUORI da
@@ -3386,6 +3398,63 @@ a.btn-icon-hamburger:hover {
   color:var(--danger-color);font-weight:bold}
 #sitac-aib .btn-fullscreen-pagina.btn-chiudi-sitac:hover{
   background:var(--danger-color);color:var(--text-main)}
+
+/* ---- SITAC: schede ------------------------------------------------ */
+.sitac-schede{ display:flex; gap:6px; margin:0 0 10px; }
+.sitac-scheda-btn{
+  flex:1; padding:9px 14px; cursor:pointer;
+  background:var(--dark-color); color:var(--text-color);
+  border:1px solid var(--border-color); border-bottom:none;
+  border-radius:8px 8px 0 0; font-size:.95rem;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+}
+.sitac-sched/* ---- SITAC: schede ------------------------------------------------ */
+.sitac-schede{ display:flex; gap:6px; margin:0 0 10px; }
+#sitac-aib .sitac-scheda-btn{
+  flex:1 1 0; padding:9px 14px; cursor:pointer;
+  background:var(--dark-color); color:var(--text-main);
+  border:1px solid var(--border-color); border-bottom:none;
+  border-radius:8px 8px 0 0; font-size:13px; font-weight:bold;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+}
+#sitac-aib .sitac-scheda-btn.attivo{
+  background:var(--primary-color); color:var(--dark-color);
+  border-color:var(--primary-color);
+}
+/* Bloccata NON vuol dire non premibile: la carta si può guardare sempre,
+   è la barra dei passi che resta spenta. La linguetta lo dice e basta. */
+#sitac-aib .sitac-scheda-bloccata:not(.attivo){ opacity:.6; }
+/* L'indicatore del passo 1 vive qui, non più dentro #sitac-app */
+.sitac-schede .sitac-passo-stato{ font-size:10.5px; font-weight:normal;
+  color:var(--text-muted); white-space:nowrap; }
+.sitac-schede .sitac-passo-stato.fatto{ color:#4cd94c; }
+.sitac-schede .sitac-passo-stato.manca{ color:var(--primary-color); }
+.sitac-scheda-btn.attivo .sitac-passo-stato{ color:var(--dark-color); }
+
+/* Barra spenta: opacità e clic tolti alla SOLA colonna dei comandi.
+   Su #sitac-app spegnerebbe anche la mappa, e il clic per posare il DOS
+   non arriverebbe mai. */
+#sitac-barra.sitac-barra-spenta{
+  opacity:.4; pointer-events:none; filter:grayscale(.6);
+}
+
+/* Il select della qualifica non è coperto da .sitac-dati-campo input */
+#sitac-app .sitac-dati-campo select{ width:100%; padding:7px 8px;
+  background:var(--dark-color); color:var(--text-main);
+  border:1px solid var(--border-color); border-radius:4px; font-size:13px; }
+#sitac-app .sitac-dati-campo select.campo-mancante{ border-color:#cc0000; }
+#sitac-app .sitac-dati-campo select.campo-bloccato{ opacity:.72; border-style:dashed; }
+
+/* Popup di conferma della posizione scelta con un clic sulla carta.
+   I selettori partono da #sitac-app: lì "button" è già flex a tutta
+   larghezza e allineato a sinistra, e questi due vanno affiancati. */
+#sitac-app .sitac-popup-pos b{ display:block; font-family:"Courier New",monospace;
+  font-size:13px; color:var(--dark-color); margin-bottom:8px; }
+#sitac-app .sitac-popup-azioni{ display:flex; gap:6px; }
+#sitac-app .sitac-popup-azioni button{ flex:1 1 0; width:auto;
+  justify-content:center; font-weight:bold; }
+#sitac-app .sitac-popup-azioni button.ok{ background:var(--primary-color);
+  color:var(--dark-color); border-color:var(--primary-color); }
 
 /* ==========================================================
    ==========================================================
