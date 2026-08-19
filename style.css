@@ -3401,15 +3401,6 @@ a.btn-icon-hamburger:hover {
 
 /* ---- SITAC: schede ------------------------------------------------ */
 .sitac-schede{ display:flex; gap:6px; margin:0 0 10px; }
-.sitac-scheda-btn{
-  flex:1; padding:9px 14px; cursor:pointer;
-  background:var(--dark-color); color:var(--text-color);
-  border:1px solid var(--border-color); border-bottom:none;
-  border-radius:8px 8px 0 0; font-size:.95rem;
-  display:flex; align-items:center; justify-content:center; gap:8px;
-}
-.sitac-sched/* ---- SITAC: schede ------------------------------------------------ */
-.sitac-schede{ display:flex; gap:6px; margin:0 0 10px; }
 #sitac-aib .sitac-scheda-btn{
   flex:1 1 0; padding:9px 14px; cursor:pointer;
   background:var(--dark-color); color:var(--text-main);
