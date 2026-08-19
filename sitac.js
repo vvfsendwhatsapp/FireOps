@@ -643,7 +643,7 @@ function avvia(app){
      una volta detta va lasciata ferma. Il pulsante diventa Modifica. */
   let datiBloccati = false;
   const bDati = q('#sitac-bConvalida');
-  
+
   function segnaIntestazione(){
     /* Rosso su tutto ciò che manca o non è valido, come in Messaggistica:
        il campo vuoto e quello sbagliato sono entrambi un ostacolo, e finché
@@ -782,10 +782,9 @@ function posaDos(latlng){
 }
 
 q('#sitac-bPosizione').onclick = async () => {
-  /* Se il GPS ha risposto all'avvio, la posizione c'è già: si chiede solo
-     se è quella del DOS. In sala operativa la risposta è no — il computer
-     non sta sull'incendio — ma su un tablet in campo è sì, ed è un clic
-     invece di tre. */
+  /* Se il GPS ha risposto, la posizione c'è già: si chiede solo se è quella
+     del DOS. In sala operativa la risposta è no — il computer non sta
+     sull'incendio — ma su un tablet in campo è sì, ed è un clic invece di tre. */
   if (posizioneOttenuta && cerchioPosizione){
     const p = cerchioPosizione.getLatLng();
     const usa = await scegli({
@@ -805,6 +804,13 @@ q('#sitac-bPosizione').onclick = async () => {
   ]});
   if (!modo) return;
   if (modo === 'mappa'){
+    /* La vista va portata sul Comando attivo prima di chiedere il clic:
+       il GPS ha lasciato la mappa dove sta questo computer, che in sala non
+       è dove brucia. L'incendio è quasi sempre nel proprio territorio, e da
+       lì si arriva col trascinamento invece che cercandolo da zero. Se
+       l'operatore ha già disegnato non si tocca niente: sa dov'è. */
+    const c = centroComando();
+    if (c && !disegni.getLayers().length) map.setView(c, 12);
     const p = await attendiClic(t('posClicMappa'));
     if (p) scriviPosizione(p);
     return;
