@@ -746,14 +746,27 @@ function avvia(app){
 let posDos = null;
 let provinciaDos = null;
 
-function scriviPosizione(latlng, acc){
+async function scriviPosizione(latlng, acc){
   posDos = L.latLng(latlng.lat, latlng.lng);
   inPosizione.value = `${posDos.lat.toFixed(5)}, ${posDos.lng.toFixed(5)}`
     + (acc ? ` (\u00b1${Math.round(acc)} m)` : '');
   segnaIntestazione();
-  posaDos(posDos);
   ventoSeguiDos();
   cercaProvincia(posDos);
+
+  /* Il simbolo non si posa da sé: la posizione può servire solo come punto
+     di riferimento — per la lettura del vento, o per la provincia — senza
+     che il DOS sia davvero lì. Se il simbolo c'è già la domanda cambia:
+     non è "poso" ma "sposto", e va detto con le parole giuste. */
+  const gia = dosSullaCarta();
+  const scelta = await scegli({testo: t('dosDove'), voci: [
+    {k:'posa', et: t(gia ? 'dosSposta' : 'dosPosa')},
+    {k:'solo', et: t('dosSolo')}
+  ]});
+  if (scelta === 'posa'){
+    posaDos(posDos);
+    stato(t('dosPosato'));
+  }
 }
 
 const dosSullaCarta = () => {
