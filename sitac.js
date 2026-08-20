@@ -325,7 +325,7 @@ function avvia(app){
       bModificaDati:'Modifica', datiBloccati:'Dati bloccati.\nPremi Modifica per correggerli.',
       posComando:'Sede del Comando', posComandoNota:'Le coordinate della caserma di {c}.',
       posComandoNo:'Nessun Comando attivo selezionato.',
-      sch1:'1 · Dati intervento', sch2:'2 · Carta',
+      sch1:'1 · Dati intervento', sch2:'2 · Mappa',
       dataOra:'Data e ora', nQualifica:'Qualifica', qualificaVuota:'—',
       datiNota:'Compila tutti i campi: la posizione si sblocca dopo, e la carta dopo la convalida.',
       posBloccata:'Prima compila intervento, qualifica, nominativo, ID DOS e telefono.',
@@ -444,7 +444,7 @@ function avvia(app){
       dosDove:'Posici\u00f3n obtenida. \u00bfQu\u00e9 hago con ella?',
       dosPosa:'Coloca aqu\u00ed el s\u00edmbolo DOS', dosSposta:'Mueve aqu\u00ed el DOS',
       dosSolo:'Conserva solo las coordenadas', dosPosato:'DOS colocado en la posici\u00f3n obtenida.',
-      sch1:'1 · Datos', sch2:'2 · Carta', dataOra:'Fecha y hora',
+      sch1:'1 · Datos', sch2:'2 · Mapa', dataOra:'Fecha y hora',
       nQualifica:'Categoría', qualificaVuota:'—',
       popPosTit:'Posición del DOS', popPosOk:'Validar', popPosSposta:'Mover', }
   };
@@ -1068,16 +1068,25 @@ function mostraComandoAfferente(sigla, nome){
   let posizioneOttenuta = false;
   let cerchioPosizione = null;
 
+    /* `setView:true` di Leaflet fa un fitBounds sul cerchio di accuratezza, e
+     su un contenitore ancora nascosto — la scheda 2 nasce display:none —
+     getBoundsZoom misura zero pixel e risponde zoom 0, il mondo intero.
+     La vista la si imposta a mano, con uno zoom scelto da noi. */
   function centraSuGps(annuncia){
     if (annuncia) stato(t('localizzo'));
-    map.locate({setView:true, maxZoom:15, enableHighAccuracy:true});
+    map.locate({setView:false, enableHighAccuracy:true});
   }
   map.on('locationfound', e => {
     posizioneOttenuta = true;
     if (cerchioPosizione) decori.removeLayer(cerchioPosizione);
     cerchioPosizione = L.circleMarker(e.latlng, {radius:7, color:'#fff', weight:2,
       fillColor:'#0070c0', fillOpacity:1, interactive:false}).addTo(decori);
+    /* Non si sposta la vista se c'è già qualcosa disegnato: il GPS può
+       rispondere con dieci secondi di ritardo, e strappare la carta sotto
+       le mani è peggio di una vista imprecisa. */
+    if (!disegni.getLayers().length) map.setView(e.latlng, 15);
   });
+
   map.on('locationerror', () => {
     if (posizioneOttenuta) stato(t('posErrore'));
     tornaAlComando();
@@ -2876,10 +2885,11 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
     if (app.offsetParent === null) return;          // in magazzino: niente da fare
     const stretto = app.clientWidth < LARGHEZZA_STRETTA;
     app.classList.toggle('sitac-stretto', stretto);
-    /* La riga sopra il riquadro (nota, bandiere, Espandi) vive FUORI da
-       #sitac-app: senza una classe sulla sezione resterebbe fuori portata. */
     radice.classList.toggle('sitac-sez-stretta', stretto);
-    map.invalidateSize();
+    /* La mappa vive nella scheda 2: se è chiusa, invalidateSize la
+       registrerebbe a zero e al rientro i tile restano grigi. */
+    const carta = q('.sitac-pannello[data-scheda="carta"]');
+    if (carta && carta.classList.contains('attivo')) map.invalidateSize();
   }
     /* Leaflet non sopporta di nascere o riapparire senza dimensioni: ogni
      volta che la carta torna a schermo va rimisurata. */

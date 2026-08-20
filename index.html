@@ -275,16 +275,16 @@
                 <!-- SCHEDA 1: intestazione della SITAC -->
                 <div class="sitac-pannello attivo" data-scheda="dati">
                     <div class="sitac-dati">
-                        <div class="sitac-dati-campo">
+                        <div class="sitac-dati-campo" data-c="ora">
                             <label data-t="dataOra"></label>
                             <div id="sitac-dataOra" class="sitac-derivato">—</div>
                         </div>
-                        <div class="sitac-dati-campo">
+                        <div class="sitac-dati-campo" data-c="int">
                             <label for="sitac-nIntervento" data-t="nIntervento"></label>
                             <input type="text" id="sitac-nIntervento" inputmode="numeric" maxlength="10"
                                 autocomplete="off">
                         </div>
-                        <div class="sitac-dati-campo">
+                        <div class="sitac-dati-campo" data-c="qual">
                             <label for="sitac-qualifica" data-t="nQualifica"></label>
                             <select id="sitac-qualifica">
                                 <option value="" selected disabled data-t="qualificaVuota"></option>
@@ -299,11 +299,11 @@
                                 <option value="VV">VV</option>
                             </select>
                         </div>
-                        <div class="sitac-dati-campo">
+                        <div class="sitac-dati-campo" data-c="nom">
                             <label for="sitac-nominativo" data-t="nNominativo"></label>
                             <input type="text" id="sitac-nominativo" maxlength="60" autocomplete="off">
                         </div>
-                        <div class="sitac-dati-campo">
+                        <div class="sitac-dati-campo" data-c="dos">
                             <label for="sitac-nDos" data-t="nDos"></label>
                             <div class="sitac-dos-riga">
                                 <span class="sitac-dos-vf">VF</span>
@@ -312,27 +312,27 @@
                                     autocomplete="off">
                             </div>
                         </div>
-                        <div class="sitac-dati-campo">
+                        <div class="sitac-dati-campo" data-c="tel">
                             <label for="sitac-telefono" data-t="nTelefono"></label>
                             <input type="tel" id="sitac-telefono" maxlength="20" inputmode="tel"
                                 autocomplete="off">
                         </div>
-                        <div class="sitac-dati-campo">
+                        <div class="sitac-dati-campo" data-c="pos">
                             <label for="sitac-posizione" data-t="posDos"></label>
                             <div class="sitac-dati-riga">
                                 <input type="text" id="sitac-posizione" readonly>
                                 <button id="sitac-bPosizione" type="button" disabled>⌖</button>
                             </div>
                         </div>
-                        <div class="sitac-dati-campo">
+                        <div class="sitac-dati-campo" data-c="prov">
                             <label data-t="provincia"></label>
                             <div id="sitac-provincia" class="sitac-derivato">—</div>
                         </div>
-                        <div class="sitac-dati-campo">
+                        <div class="sitac-dati-campo" data-c="cmd">
                             <label data-t="comando"></label>
                             <div id="sitac-comando" class="sitac-derivato">—</div>
                         </div>
-                        <div class="sitac-dati-azioni">
+                        <div class="sitac-dati-azioni" data-c="az">
                             <button id="sitac-bConvalida" type="button" data-t="bConvalida" disabled></button>
                         </div>
                     </div>
