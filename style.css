@@ -3469,11 +3469,14 @@ a.btn-icon-hamburger:hover {
 #sitac-app .sitac-pannello[data-scheda="dati"] [data-c="prov"]{ grid-column:6/10; }
 #sitac-app .sitac-pannello[data-scheda="dati"] [data-c="cmd"] { grid-column:10/13;}
 
-#sitac-app .sitac-pannello[data-scheda="dati"] [data-c="az"]  { grid-column:1/13; }
-#sitac-app .sitac-pannello[data-scheda="dati"] [data-c="az"]{
-  display:flex; gap:10px; flex-wrap:wrap;
-}
-#sitac-app .sitac-pannello[data-scheda="dati"] [data-c="az"] button{ max-width:280px; }
+/* Convalida e Pulisci ricalcano la prima riga: 4 colonne e 8, così le due
+   azioni finali stanno a piombo sotto i due campi che aprono la scheda.
+   `display:contents` sul contenitore fa sì che i pulsanti siano celle
+   della griglia invece di figli suoi: senza, gli span sotto cadrebbero
+   su un contenitore flex e non avrebbero effetto. */
+#sitac-app .sitac-pannello[data-scheda="dati"] [data-c="az"]{ display:contents; }
+#sitac-app .sitac-pannello[data-scheda="dati"] #sitac-bConvalida  { grid-column:1/5;  }
+#sitac-app .sitac-pannello[data-scheda="dati"] #sitac-bPulisciDati{ grid-column:5/13; }
 /* Svuotare i campi non è l'azione principale: guscio neutro, non verde */
 #sitac-app #sitac-bPulisciDati{ background:var(--dark-color);
   border-color:var(--border-color); color:var(--text-muted);
@@ -3493,6 +3496,10 @@ a.btn-icon-hamburger:hover {
    in colonna singola e cadono anche i separatori di riga. */
 #sitac-app.sitac-stretto .sitac-pannello[data-scheda="dati"] .sitac-dati{
   grid-template-columns:1fr;
+}
+#sitac-app.sitac-stretto .sitac-pannello[data-scheda="dati"] #sitac-bConvalida,
+#sitac-app.sitac-stretto .sitac-pannello[data-scheda="dati"] #sitac-bPulisciDati{
+  grid-column:1/-1!important;
 }
 
 /* La scala è il riferimento con cui si legge un cono: a 10px sotto il
