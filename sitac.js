@@ -1081,8 +1081,27 @@ function mostraComandoAfferente(sigla, nome){
   const partenza = centroComando();
   const map = L.map(q('#sitac-mappa'), {center: partenza || [42.74, 12.74],
     zoom: partenza ? 12 : 6, zoomControl:true, layers:[sfondi[0].l]});
-    L.control.scale({imperial:false, maxWidth:220, position:'bottomright'}).addTo(map);
+        L.control.scale({imperial:false, maxWidth:220, position:'bottomright'}).addTo(map);
 
+    /* Gli agganci della misura vivono qui e non accanto alle sue funzioni:
+       `map` esiste solo da questa riga in poi. */
+    map.on('pm:drawstart', e => {
+      if (e.shape !== 'Line' && e.shape !== 'Polygon') return;
+      misuraPoligono = e.shape === 'Polygon';
+      misuraPunti = [];
+      if (!misuraBox){
+        misuraBox = document.createElement('div');
+        misuraBox.className = 'sitac-misura';
+        misuraBox.hidden = true;
+        const wrap = q('.sitac-mapwrap');
+        if (wrap) wrap.appendChild(misuraBox);
+      }
+      /* I vertici li annuncia il layer provvisorio, non la mappa. */
+      e.workingLayer.on('pm:vertexadded', ev => { misuraPunti.push(ev.latlng); });
+    });
+    map.on('mousemove', e => { misuraMostra(e.latlng, e.containerPoint); });
+    map.on('pm:drawend', misuraSpegni);
+    
   const disegni = L.featureGroup().addTo(map);   // esportabile
   const decori  = L.layerGroup().addTo(map);     // motivi, maniglie, coni: mai esportati
   map.pm.setGlobalOptions({layerGroup: disegni, snappable:true, snapDistance:15,
@@ -2309,23 +2328,6 @@ function mostraComandoAfferente(sigla, nome){
     misuraPunti = [];
     if (misuraBox) misuraBox.hidden = true;
   }
-
-  map.on('pm:drawstart', e => {
-    if (e.shape !== 'Line' && e.shape !== 'Polygon') return;
-    misuraPoligono = e.shape === 'Polygon';
-    misuraPunti = [];
-    if (!misuraBox){
-      misuraBox = document.createElement('div');
-      misuraBox.className = 'sitac-misura';
-      misuraBox.hidden = true;
-      const wrap = q('.sitac-mapwrap');
-      if (wrap) wrap.appendChild(misuraBox);
-    }
-    /* I vertici li annuncia il layer provvisorio, non la mappa. */
-    e.workingLayer.on('pm:vertexadded', ev => { misuraPunti.push(ev.latlng); });
-  });
-  map.on('mousemove', e => { misuraMostra(e.latlng, e.containerPoint); });
-  map.on('pm:drawend', misuraSpegni);
 
   function fermaTutto(){
     map.pm.disableDraw();
