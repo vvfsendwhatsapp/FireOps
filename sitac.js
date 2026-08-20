@@ -1101,7 +1101,7 @@ function mostraComandoAfferente(sigla, nome){
     });
     map.on('mousemove', e => { misuraMostra(e.latlng, e.containerPoint); });
     map.on('pm:drawend', misuraSpegni);
-    
+
   const disegni = L.featureGroup().addTo(map);   // esportabile
   const decori  = L.layerGroup().addTo(map);     // motivi, maniglie, coni: mai esportati
   map.pm.setGlobalOptions({layerGroup: disegni, snappable:true, snapDistance:15,
@@ -2914,6 +2914,22 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
     if (e.key !== 'Escape') return;
     if (chiudiModale){ chiudiModale(); return; }
     fermaTutto(); spegniPulsanti(); stato(t('spento'));
+  });
+
+  /* Canc e Backspace tolgono l'elemento selezionato. Il guardiano è il
+     bersaglio dell'evento: dentro un campo di testo Backspace cancella una
+     lettera, e intercettarlo lì significherebbe far sparire un fronte
+     mentre si corregge il numero d'intervento. */
+  document.addEventListener('keydown', e => {
+    if (app.offsetParent === null) return;
+    if (e.key !== 'Delete' && e.key !== 'Backspace') return;
+    if (chiudiModale) return;
+    if (!selezionato) return;
+    const a = document.activeElement;
+    if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA'
+      || a.tagName === 'SELECT' || a.isContentEditable)) return;
+    e.preventDefault();
+    eliminaSelezionato();
   });
 
   creaBandiere();
