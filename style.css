@@ -3470,30 +3470,51 @@ a.btn-icon-hamburger:hover {
 #sitac-app .sitac-pannello[data-scheda="dati"] [data-c="cmd"] { grid-column:10/13;}
 
 #sitac-app .sitac-pannello[data-scheda="dati"] [data-c="az"]  { grid-column:1/13; }
+#sitac-app .sitac-pannello[data-scheda="dati"] [data-c="az"]{
+  display:flex; gap:10px; flex-wrap:wrap;
+}
 #sitac-app .sitac-pannello[data-scheda="dati"] [data-c="az"] button{ max-width:280px; }
+/* Svuotare i campi non è l'azione principale: guscio neutro, non verde */
+#sitac-app #sitac-bPulisciDati{ background:var(--dark-color);
+  border-color:var(--border-color); color:var(--text-muted);
+  justify-content:center; font-weight:bold; }
 
 /* Le tre righe sono separate da una riga sottile: senza, dieci campi
    allineati sono una griglia indistinta e il raggruppamento si perde. */
 #sitac-app .sitac-pannello[data-scheda="dati"] [data-c="qual"],
-#sitac-app .sitac-pannello[data-scheda="dati"] [data-c="pos"]{
-  border-top:1px solid var(--border-color); padding-top:12px;
-}
+#sitac-app .sitac-pannello[data-scheda="dati"] [data-c="pos"],
 #sitac-app .sitac-pannello[data-scheda="dati"] [data-c="nom"],
 #sitac-app .sitac-pannello[data-scheda="dati"] [data-c="dos"],
 #sitac-app .sitac-pannello[data-scheda="dati"] [data-c="tel"],
 #sitac-app .sitac-pannello[data-scheda="dati"] [data-c="prov"],
-#sitac-app .sitac-pannello[data-scheda="dati"] [data-c="cmd"]{
-  border-top:1px solid var(--border-color); padding-top:12px;
-}
+#sitac-app .sitac-pannello[data-scheda="dati"] [data-c="cmd"]
 
 /* Pannello stretto: dodici colonne su 380px sono illeggibili, si torna
    in colonna singola e cadono anche i separatori di riga. */
 #sitac-app.sitac-stretto .sitac-pannello[data-scheda="dati"] .sitac-dati{
   grid-template-columns:1fr;
 }
-#sitac-app.sitac-stretto .sitac-pannello[data-scheda="dati"] .sitac-dati>*{
-  grid-column:1/-1!important; border-top:0; padding-top:0;
+
+/* La scala è il riferimento con cui si legge un cono: a 10px sotto il
+   bordo non la guarda nessuno. */
+#sitac-app .leaflet-control-scale-line{
+  font-size:13px; font-weight:bold; padding:3px 8px; line-height:1.5;
+  background:rgba(18,18,18,.88); color:var(--text-main);
+  border:2px solid var(--primary-color); border-top:none;
 }
+
+/* Misura in corso di disegno: segue il cursore, non intercetta i clic.
+   Fondo pieno e non semitrasparente — su ortofoto un numero su fondo
+   chiaro non si legge, ed è il numero per cui il riquadro esiste. */
+#sitac-app .sitac-misura{
+  position:absolute; z-index:1000; pointer-events:none; white-space:pre-line;
+  background:#141414; color:var(--primary-color);
+  border:1px solid var(--primary-color); border-radius:4px;
+  padding:4px 8px; font-family:"Courier New",monospace;
+  font-size:12.5px; font-weight:bold; line-height:1.35;
+  box-shadow:0 2px 8px rgba(0,0,0,.6);
+}
+#sitac-app .sitac-misura[hidden]{ display:none; }
 
 /* ==========================================================
    ==========================================================

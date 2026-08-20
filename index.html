@@ -257,7 +257,7 @@
                     Espandi</button>
             </div>
 
-                        <!-- Due schede: intestazione e carta. La barra sta FUORI da
+            <!-- Due schede: intestazione e carta. La barra sta FUORI da
                  #sitac-app perché stampa() sposta app nel body, e queste
                  linguette sulla carta stampata non servono. -->
             <div class="sitac-schede">
@@ -308,14 +308,12 @@
                             <div class="sitac-dos-riga">
                                 <span class="sitac-dos-vf">VF</span>
                                 <!-- maxlength 6: normalizzaDos taglia a 6, non a 4 -->
-                                <input type="text" id="sitac-nDos" maxlength="6" placeholder="0000"
-                                    autocomplete="off">
+                                <input type="text" id="sitac-nDos" maxlength="6" placeholder="0000" autocomplete="off">
                             </div>
                         </div>
                         <div class="sitac-dati-campo" data-c="tel">
                             <label for="sitac-telefono" data-t="nTelefono"></label>
-                            <input type="tel" id="sitac-telefono" maxlength="20" inputmode="tel"
-                                autocomplete="off">
+                            <input type="tel" id="sitac-telefono" maxlength="20" inputmode="tel" autocomplete="off">
                         </div>
                         <div class="sitac-dati-campo" data-c="pos">
                             <label for="sitac-posizione" data-t="posDos"></label>
@@ -333,7 +331,8 @@
                             <div id="sitac-comando" class="sitac-derivato">—</div>
                         </div>
                         <div class="sitac-dati-azioni" data-c="az">
-                            <button id="sitac-bConvalida" type="button" data-t="bConvalida" disabled></button>
+                            <button id="sitac-bConvalida" type="button" data-t="bConvalida"></button>
+                            <button id="sitac-bPulisciDati" type="button" data-t="bPulisciDati"></button>
                         </div>
                     </div>
                     <p class="sitac-avviso" data-t="datiNota"></p>
@@ -400,8 +399,8 @@
                                         <button id="sitac-bGeojson" type="button">GeoJSON</button>
                                         <button id="sitac-bKml" type="button">KML</button>
                                     </div>
-                                    <input type="file" id="sitac-file"
-                                        accept=".geojson,.json,application/geo+json" hidden>
+                                    <input type="file" id="sitac-file" accept=".geojson,.json,application/geo+json"
+                                        hidden>
                                 </div>
                             </div>
 
