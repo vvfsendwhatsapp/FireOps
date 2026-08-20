@@ -103,6 +103,19 @@ function avvia(app){
       stTitolo:'SITAC — Incendio boschivo', stData:'Redatta il {d}',
       importAree:'Importati {n} perimetri.', importScarti:'\n{n} elementi non poligonali ignorati.',
       importNiente:'Nessun poligono nel file: si importano solo aree.',
+      conoPendenza:'Dalla linea di massima pendenza',
+      conoPendenzaNota:'Fig. 4: senza vento la bisettrice \u00e8 la massima salita, letta dal rilievo.',
+      pendLeggo:'Lettura del rilievo attorno al fronte\u2026',
+      pendPiatto:'Terreno quasi piano attorno al fronte: qui la pendenza non guida la propagazione.',
+      pendTrovata:'Massima salita verso {a}\u00b0 · pendenza {p}%',
+      pendFonte:'massima pendenza',
+      pendVelQuale:'Da dove viene la velocit\u00e0 di avanzamento?',
+      pendVelPercorso:'Dal terreno gi\u00e0 percorso',
+      pendVelPercorsoNota:'{d} m dall\u2019innesco al fronte, divisi per le ore trascorse.',
+      pendVelVista:'Stimata a vista', pendVelVistaNota:'In metri all\u2019ora, guardando il fronte.',
+      chiediOraInnesco:'Ora d\u2019innesco (hh:mm)', oraErrata:'Ora non valida.',
+      chiediMetriOra:'Avanzamento del fronte in metri all\u2019ora\n300 = come vento 10 km/h · 900 = come 30 km/h · 1800 = come 60 km/h',
+      conoPendFatto:'Cono {a}\u00b0 su massima salita {d}\u00b0 (pendenza {p}%)\nFronte a {m} m in un\u2019ora — velocit\u00e0 stimata, non SI.TA.C.',
     },
     en:{
       sub:'Follow the steps on the left: data first, then the scenario, then the four tables. Double-click or Enter closes a line.',
@@ -777,6 +790,7 @@ function avvia(app){
   try {
     const salvato = JSON.parse(sessionStorage.getItem(CHIAVE_SESS) || '{}');
     inIntervento.value = salvato.intervento || '';
+    inQualifica.value  = salvato.qualifica || '';
     inDos.value        = salvato.dos || '';
     inNominativo.value = salvato.nominativo || '';
     inTelefono.value   = salvato.telefono || '';
@@ -1552,14 +1566,16 @@ function mostraComandoAfferente(sigla, nome){
     if (coni.length) voci.push({k:'via', et:t('conoVia'), nota:t('conoViaNota')});
     voci.push({k:'elemento', et:t('conoElemento'), nota:t('conoElementoNota'), off: !basi});
     voci.push({k:'settore', et:t('conoSettore'), nota:t('conoSettoreNota')});
-    voci.push({k:'fronte',  et:t('conoFronte'),  nota:t('conoFronteNota')});
-    voci.push({k:'terzo',   et:t('conoTerzo'),   nota:t('conoStandby'), off:1});
+    voci.push({k:'fronte',   et:t('conoFronte'),   nota:t('conoFronteNota')});
+    voci.push({k:'pendenza', et:t('conoPendenza'), nota:t('conoPendenzaNota')});
+    voci.push({k:'terzo',    et:t('conoTerzo'),    nota:t('conoStandby'), off:1});
     try {
       const modo = await scegli({testo: t('conoModo'), voci});
       if (!modo) return stato(t('conoAnnullato'));
       if (modo === 'via'){ togliTuttiConi(); aggiornaStato(); return stato(t('conoTolto')); }
       if (modo === 'elemento') await conoDaElemento();
       else if (modo === 'settore') await conoSettore();
+      else if (modo === 'pendenza') await conoPendenza();
       else await conoFronte();
     } catch(e){
       stato(t('ventoErrore', {e: e.message}));
@@ -1688,6 +1704,124 @@ function mostraComandoAfferente(sigla, nome){
     decori.addLayer(layer);
     coni.push({id: ++nCono, layer, vento, tipo:'elemento'});
     riassunto(vento);
+  }
+
+  /* =====================================================================
+     5bis-ter. CONO DA PENDENZA — fig. 4 della pubblicazione
+     Senza vento la bisettrice non è la direzione del vento ma la linea di
+     massima pendenza, e l'apertura resta 30°. La velocità NON si ricava
+     dal 3%: quella regola parte dal vento, e con vento nullo darebbe zero
+     mentre il fuoco in salita corre. Il PDF dice di stimarla sul posto.
+     =================================================================== */
+  const RAGGI_PENDENZA = 16;
+
+  /* Open-Meteo accetta più coordinate in una chiamata sola: 17 punti sono
+     una richiesta, non diciassette. */
+  async function quote(punti){
+    const la = punti.map(p => p.lat.toFixed(6)).join(',');
+    const lo = punti.map(p => p.lng.toFixed(6)).join(',');
+    const r = await fetch(`https://api.open-meteo.com/v1/elevation`
+      + `?latitude=${la}&longitude=${lo}`);
+    if (!r.ok) throw new Error('elevation ' + r.status);
+    const d = await r.json();
+    if (!d.elevation || d.elevation.length !== punti.length)
+      throw new Error('quote incomplete');
+    return d.elevation;
+  }
+
+  /* Piano ai minimi quadrati su una corona di 16 punti: la prima armonica
+     delle quote dà direttamente il gradiente. Un solo profilo lungo una
+     direzione non basterebbe — direbbe quanto sale DA QUELLA parte, non
+     da quale parte sale di più. */
+  async function massimaPendenza(centro, raggio){
+    const az = [];
+    for (let i = 0; i < RAGGI_PENDENZA; i++) az.push(i * 360 / RAGGI_PENDENZA);
+    const z = await quote(az.map(a => puntoDaAzimut(centro, a, raggio)));
+    const z0 = z.reduce((s, x) => s + x, 0) / z.length;
+    let gx = 0, gy = 0;
+    az.forEach((a, i) => {
+      gx += (z[i] - z0) * Math.sin(rad(a));
+      gy += (z[i] - z0) * Math.cos(rad(a));
+    });
+    const k = 2 / (RAGGI_PENDENZA * raggio);
+    gx *= k; gy *= k;
+    return {azimut: (gra(Math.atan2(gx, gy)) + 360) % 360,
+            pendenza: Math.sqrt(gx*gx + gy*gy)};
+  }
+
+  /* Ore trascorse da un'ora dettata. Se l'ora è nel futuro l'incendio è
+     partito ieri sera: un fuoco acceso alle 23 e guardato alle 2 non ha
+     ventun ore. */
+  function oreDa(hhmm){
+    const p = String(hhmm).split(':').map(Number);
+    if (p.length < 2 || isNaN(p[0]) || isNaN(p[1])) return 0;
+    const ora = new Date(), inizio = new Date(ora);
+    inizio.setHours(p[0], p[1], 0, 0);
+    if (inizio > ora) inizio.setDate(inizio.getDate() - 1);
+    return (ora - inizio) / 3600000;
+  }
+
+  async function scegliVelocitaSalita(dist){
+    const modo = await scegli({testo: t('pendVelQuale'), voci: [
+      {k:'percorso', et: t('pendVelPercorso'), nota: t('pendVelPercorsoNota', {d: dist})},
+      {k:'vista',    et: t('pendVelVista'),    nota: t('pendVelVistaNota')}
+    ]});
+    if (!modo) return null;
+    if (modo === 'percorso'){
+      const h = await chiedi({campo:1, testo: t('chiediOraInnesco'), max:5,
+        filtro: v => v.replace(/[^0-9:]/g, '').slice(0, 5)});
+      if (!h) return null;
+      const ore = oreDa(h);
+      if (!(ore > 0)){ stato(t('oraErrata')); return null; }
+      return Math.round(dist / ore);
+    }
+    const v = await chiedi({campo:1, testo: t('chiediMetriOra'), max:5,
+      filtro: x => x.replace(/[^0-9]/g, '').slice(0, 5)});
+    const n = Number(v);
+    return n > 0 ? n : null;
+  }
+
+  async function conoPendenza(){
+    const V = NS.SitacVento;
+    const m = origineSullaCarta();
+    const origine = m ? m.getLatLng() : await attendiClic(t('conoClicOrigine'));
+    if (!origine) return stato(t('conoAnnullato'));
+    const p0 = await attendiClic(t('conoClicFronte'));
+    if (!p0) return stato(t('conoAnnullato'));
+    const r0 = Math.round(origine.distanceTo(p0));
+
+    /* Il rilievo si legge attorno al FRONTE, non attorno all'innesco: se
+       l'incendio ha scavalcato un crinale, di là il fuoco scende, e una
+       pendenza misurata sul punto di partenza manderebbe il cono in salita
+       oltre il colmo. */
+    stato(t('pendLeggo'));
+    let pend;
+    try { pend = await massimaPendenza(p0, Math.max(300, r0)); }
+    catch(e){ return stato(t('rilErrore', {e: e.message})); }
+    if (pend.pendenza < 0.02) return stato(t('pendPiatto'));
+    stato(t('pendTrovata', {a: Math.round(pend.azimut),
+      p: (pend.pendenza * 100).toFixed(0)}));
+
+    const mh = await scegliVelocitaSalita(r0);
+    if (!mh) return stato(t('conoAnnullato'));
+
+    /* disegnaCono ricava i raggi da vento.velocita passando per il 3%.
+       Qui la velocità del fronte è nota e il vento non c'è, quindi si
+       inverte quella conversione invece di riscrivere la geometria: il
+       fattore si chiede al modulo, così se un domani cambiasse là non
+       resterebbe una costante sbagliata qui. */
+    const perKmh = V.distanzaFronte(100, 60) / 100;
+    const finto = V.ventoDa(mh / perKmh, pend.azimut, t('pendFonte'));
+    finto.letto = new Date().toISOString();
+
+    const layer = V.disegnaCono(origine, finto,
+      {colore: COL.rosso, raggio0: r0, etichetta0: t('conoT0')});
+    decori.addLayer(layer);
+    coni.push({id: ++nCono, layer, vento: finto, tipo:'pendenza',
+      mh, pendenza: pend.pendenza});
+    aggiornaStato();
+    stato(t('conoPendFatto', {a: V.APERTURA, d: Math.round(pend.azimut),
+      p: (pend.pendenza * 100).toFixed(0), m: Math.round(mh)}));
   }
 
   /* =====================================================================
@@ -2038,8 +2172,10 @@ function mostraComandoAfferente(sigla, nome){
       coni.forEach(c => {
         const r = document.createElement('div');
         r.className = 'sitac-cono-voce';
-        r.innerHTML = `<span>${c.id} — ${esc(String(c.vento.velocita))} km/h `
-          + `\u2192 ${esc(String(c.vento.verso))}\u00b0</span>`;
+                r.innerHTML = `<span>${c.id} — ` + (c.tipo === 'pendenza'
+          ? `${esc(String(Math.round(c.mh)))} m/h \u2197 ${esc(String(c.vento.verso))}\u00b0`
+          : `${esc(String(c.vento.velocita))} km/h \u2192 ${esc(String(c.vento.verso))}\u00b0`)
+          + `</span>`;
         const b = document.createElement('button');
         b.type = 'button'; b.textContent = '\u00d7';
         b.onclick = () => togliCono(c.id);
