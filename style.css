@@ -3447,6 +3447,18 @@ a.btn-icon-hamburger:hover {
 #sitac-app .sitac-popup-azioni button.ok{ background:var(--primary-color);
   color:var(--dark-color); border-color:var(--primary-color); }
 
+/* Scheda 1 a due colonne: ora che la carta sta altrove i campi non devono
+   più stare in una striscia stretta. auto-fit e non un 2 fisso, così in
+   split-screen stretto tornano da soli su una colonna sola. */
+.sitac-pannello[data-scheda="dati"] .sitac-dati{
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  align-content:start; gap:10px 18px; max-width:900px;
+}
+/* Convalida e nota prendono la riga intera: sono la conclusione dei campi
+   sopra, non un campo accanto all'ultimo. */
+.sitac-pannello[data-scheda="dati"] .sitac-dati-azioni{ grid-column:1/-1; }
+.sitac-pannello[data-scheda="dati"] .sitac-dati-azioni button{ max-width:280px; }
+
 /* ==========================================================
    ==========================================================
    RESPONSIVE
