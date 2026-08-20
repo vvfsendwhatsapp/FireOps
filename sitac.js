@@ -1486,11 +1486,44 @@ function mostraComandoAfferente(sigla, nome){
       attesaElemento = l => { evidenzia(lista, false); risolvi(l); };
     });
   }
-  /* Il FeatureGroup inoltra i clic dei figli e mette il layer in e.layer:
+    /* Il FeatureGroup inoltra i clic dei figli e mette il layer in e.layer:
      non serve agganciare un listener per elemento. */
   disegni.on('click', e => {
-    if (!attesaElemento) return;
-    const f = attesaElemento; attesaElemento = null; f(e.layer);
+    if (attesaElemento){
+      const f = attesaElemento; attesaElemento = null; f(e.layer);
+      return;
+    }
+    /* In modalità elimina il clic lo consuma Geoman: selezionare qualcosa
+       che sta per sparire non ha senso. */
+    if (map.pm.globalRemovalModeEnabled && map.pm.globalRemovalModeEnabled()) return;
+    selezionaElemento(e.layer);
+  });
+
+  /* SELEZIONE — non esisteva: Geoman offre solo la modalità "elimina a
+     clic", che è un'altra cosa. Un elemento selezionato serve per Canc e
+     per qualsiasi azione futura che agisca su uno solo. */
+  let selezionato = null;
+  const elementoDom = l => l && (l._path || (l.getElement && l.getElement())) || null;
+  function selezionaElemento(l){
+    if (selezionato === l) return;
+    const vecchio = elementoDom(selezionato);
+    if (vecchio && vecchio.classList) vecchio.classList.remove('sitac-selezionato');
+    selezionato = l || null;
+    const nuovo = elementoDom(selezionato);
+    if (nuovo && nuovo.classList) nuovo.classList.add('sitac-selezionato');
+  }
+  function eliminaSelezionato(){
+    if (!selezionato) return;
+    const l = selezionato;
+    selezionaElemento(null);
+    scollega(l);              // motivi, maniglie, asta, maniglie del lancio
+    disegni.removeLayer(l);
+    aggiornaStato();
+  }
+  /* Clic sul vuoto: si deseleziona. I clic sugli elementi non arrivano
+     qui — Leaflet li ferma sul layer. */
+  map.on('click', () => {
+    if (!attesaClic && !attesaDirezione && !attesaElemento) selezionaElemento(null);
   });
 
   /* Il vento non è un simbolo posato sulla carta ma un quadro fisso in alto

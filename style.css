@@ -4581,6 +4581,15 @@ a.btn-icon-hamburger:hover {
     display: none;
 }
 
+/* Elemento selezionato: alone giallo. Vale sia per i tracciati SVG sia per
+   i simboli, che sono divIcon HTML — un contorno funzionerebbe solo sui
+   secondi. Diverso da .sitac-eleggibile, che invece pulsa perché chiede
+   un clic. */
+#sitac-app .sitac-selezionato{
+  filter:drop-shadow(0 0 4px var(--primary-color))
+         drop-shadow(0 0 9px var(--primary-color));
+}
+
 /* ==========================================================
    ==========================================================
    RESPONSIVE
