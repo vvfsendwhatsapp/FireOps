@@ -3455,7 +3455,7 @@ a.btn-icon-hamburger:hover {
    .sitac-dati{gap:8px}`, e un ID batte tre classi. */
 #sitac-app .sitac-pannello[data-scheda="dati"] .sitac-dati{
   grid-template-columns:repeat(12,1fr);
-  align-content:start; gap:12px 14px; max-width:1100px;
+  align-content:start; gap:12px 14px;
 }
 #sitac-app .sitac-pannello[data-scheda="dati"] [data-c="ora"] { grid-column:1/7;  }
 #sitac-app .sitac-pannello[data-scheda="dati"] [data-c="int"] { grid-column:7/13; }
