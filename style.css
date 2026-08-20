@@ -3465,8 +3465,8 @@ a.btn-icon-hamburger:hover {
 #sitac-app .sitac-pannello[data-scheda="dati"] [data-c="dos"] { grid-column:7/10; }
 #sitac-app .sitac-pannello[data-scheda="dati"] [data-c="tel"] { grid-column:10/13;}
 
-#sitac-app .sitac-pannello[data-scheda="dati"] [data-c="pos"] { grid-column:1/6;  }
-#sitac-app .sitac-pannello[data-scheda="dati"] [data-c="prov"]{ grid-column:6/10; }
+#sitac-app .sitac-pannello[data-scheda="dati"] [data-c="pos"] { grid-column:1/7;  }
+#sitac-app .sitac-pannello[data-scheda="dati"] [data-c="prov"]{ grid-column:7/10; }
 #sitac-app .sitac-pannello[data-scheda="dati"] [data-c="cmd"] { grid-column:10/13;}
 
 /* Convalida e Pulisci ricalcano la prima riga: 4 colonne e 8, così le due
