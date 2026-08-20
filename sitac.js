@@ -242,6 +242,7 @@ function avvia(app){
      che manca in una lingua ricade sull'italiano, come fa `t`. */
   const L10N_EXTRA = {
     it:{ bCono:'Aggiungi cono',
+      bPosizione:'Inserisci coordinate',
       conoModo:'Come si costruisce il cono?',
       conoSettore:'Dal punto d\u2019innesco', conoSettoreNota:'Settore a 30° dall\u2019origine; un secondo clic dice dove sta il fronte adesso (T0).',
       conoFronte:'Dalla linea del fronte', conoFronteNota:'Si disegna il fronte rilevato e lo si fa avanzare a 15, 30 e 60 minuti.',
@@ -337,6 +338,7 @@ function avvia(app){
       confPulisciDati:'Svuotare tutti i campi dell\u2019intervento?\nIl disegno sulla mappa non viene toccato.',
       datiPuliti:'Campi svuotati.', },
     en:{ bCono:'Add cone', conoModo:'How should the cone be built?',
+      bPosizione:'Enter coordinates',
       conoSettore:'From the point of origin', conoSettoreNota:'30° sector from the origin; a second click marks where the front is now (T0).',
       conoFronte:'From the fire front line', conoFronteNota:'Draw the observed front and push it forward at 15, 30 and 60 minutes.',
       conoTerzo:'Slope and wind combined', conoStandby:'Not available yet (fig. 4 and 5 of the publication).',
@@ -375,6 +377,7 @@ function avvia(app){
       nQualifica:'Rank', qualificaVuota:'—',
       popPosTit:'DOS position', popPosOk:'Confirm', popPosSposta:'Move', },
     fr:{ bCono:'Ajouter un c\u00f4ne', conoModo:'Comment construire le c\u00f4ne ?',
+      bPosizione:'Saisir les coordonnées',
       conoSettore:'Depuis le point d\u2019origine', conoSettoreNota:'Secteur \u00e0 30° depuis l\u2019origine ; un second clic indique o\u00f9 est le front (T0).',
       conoFronte:'Depuis la ligne de front', conoFronteNota:'Tracez le front relev\u00e9 et faites-le avancer \u00e0 15, 30 et 60 minutes.',
       conoTerzo:'Pente et vent compos\u00e9s', conoStandby:'Pas encore disponible (fig. 4 et 5 de la publication).',
@@ -413,6 +416,7 @@ function avvia(app){
       nQualifica:'Grade', qualificaVuota:'—',
       popPosTit:'Position du DOS', popPosOk:'Valider', popPosSposta:'Déplacer', },
     es:{ bCono:'A\u00f1adir cono', conoModo:'\u00bfC\u00f3mo se construye el cono?',
+      bPosizione:'Introducir coordenadas',
       conoSettore:'Desde el punto de origen', conoSettoreNota:'Sector de 30° desde el origen; un segundo clic marca d\u00f3nde est\u00e1 el frente (T0).',
       conoFronte:'Desde la l\u00ednea del frente', conoFronteNota:'Dibuja el frente observado y hazlo avanzar a 15, 30 y 60 minutos.',
       conoTerzo:'Pendiente y viento compuestos', conoStandby:'A\u00fan no disponible (fig. 4 y 5 de la publicaci\u00f3n).',
@@ -2786,7 +2790,7 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
   });
   map.on('mousemove', e => { misuraMostra(e.latlng, e.containerPoint); });
   map.on('pm:drawend', misuraSpegni);
-  
+
   /* --- stato e legenda --- */
   function stato(x){ $('stato').textContent = x; }
 
