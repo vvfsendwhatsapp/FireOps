@@ -328,9 +328,9 @@ function avvia(app){
       posComandoNo:'Nessun Comando attivo selezionato.',
       sch1:'1 · Dati intervento', sch2:'2 · Mappa',
       dataOra:'Data e ora', nQualifica:'Qualifica', qualificaVuota:'—',
-      datiNota:'Compila tutti i campi: la posizione si sblocca dopo, e la carta dopo la convalida.',
+      datiNota:'Compila tutti i campi: la posizione si sblocca dopo, e la mappa dopo la convalida.',
       posBloccata:'Prima compila intervento, qualifica, nominativo, ID DOS e telefono.',
-      cartaBloccata:'Convalida i dati del passo 1 per usare la carta.',
+      cartaBloccata:'Convalida i dati del passo 1 per usare la mappa.',
       popPosTit:'Posizione del DOS', popPosOk:'Convalida', popPosSposta:'Sposta',
       posAnnullata:'Scelta della posizione annullata.',
       redatta:'Redatta',
@@ -2285,6 +2285,7 @@ function mostraComandoAfferente(sigla, nome){
     if (attesaClic){ const f = attesaClic; attesaClic = null; f(null); }
     if (attesaLinea){ const f = attesaLinea; attesaLinea = null; f(null); }
     if (attesaElemento){ const f = attesaElemento; attesaElemento = null; f(null); }
+    misuraSpegni();
     strumento = null;
   }
 
@@ -3050,6 +3051,7 @@ NS.Sitac = {
                       'sitac-bSfondo','sitac-bImporta','sitac-bStampa',
                       'sitac-bGeojson','sitac-bKml','sitac-file',
                       'sitac-qualifica','sitac-dataOra','sitac-carta',
+                      'sitac-bPulisciDati',
                       'sitac-provincia','sitac-comando','sitac-bVentoDir','sitac-bVentoWeb','sitac-ventoScala','sitac-ventoValore' ]){
       if (!radice.querySelector('#' + id)){
         console.error('[SITAC] manca #' + id + ' nel markup della sezione.');
