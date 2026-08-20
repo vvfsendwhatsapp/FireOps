@@ -3457,8 +3457,8 @@ a.btn-icon-hamburger:hover {
   grid-template-columns:repeat(12,1fr);
   align-content:start; gap:12px 14px; max-width:1100px;
 }
-#sitac-app .sitac-pannello[data-scheda="dati"] [data-c="ora"] { grid-column:1/5;  }
-#sitac-app .sitac-pannello[data-scheda="dati"] [data-c="int"] { grid-column:5/13; }
+#sitac-app .sitac-pannello[data-scheda="dati"] [data-c="ora"] { grid-column:1/7;  }
+#sitac-app .sitac-pannello[data-scheda="dati"] [data-c="int"] { grid-column:7/13; }
 
 #sitac-app .sitac-pannello[data-scheda="dati"] [data-c="qual"]{ grid-column:1/3;  }
 #sitac-app .sitac-pannello[data-scheda="dati"] [data-c="nom"] { grid-column:3/7;  }
@@ -3475,8 +3475,8 @@ a.btn-icon-hamburger:hover {
    della griglia invece di figli suoi: senza, gli span sotto cadrebbero
    su un contenitore flex e non avrebbero effetto. */
 #sitac-app .sitac-pannello[data-scheda="dati"] [data-c="az"]{ display:contents; }
-#sitac-app .sitac-pannello[data-scheda="dati"] #sitac-bConvalida  { grid-column:1/6;  }
-#sitac-app .sitac-pannello[data-scheda="dati"] #sitac-bPulisciDati{ grid-column:8/13; }
+#sitac-app .sitac-pannello[data-scheda="dati"] #sitac-bConvalida  { grid-column:1/7;  }
+#sitac-app .sitac-pannello[data-scheda="dati"] #sitac-bPulisciDati{ grid-column:7/13; }
 /* Svuotare i campi non è l'azione principale: guscio neutro, non verde */
 #sitac-app #sitac-bPulisciDati{ background:var(--dark-color);
   border-color:var(--border-color); color:var(--text-muted);
