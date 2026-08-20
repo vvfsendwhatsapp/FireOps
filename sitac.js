@@ -236,7 +236,7 @@ function avvia(app){
     }
   };
 
-  /* *************************************** Le voci dei passi e del percorso guidato del cono stanno qui in blocco
+  /* Le voci dei passi e del percorso guidato del cono stanno qui in blocco
      invece che dentro L10N: sono un'aggiunta successiva, e tenerle insieme
      rende evidente cosa appartiene al percorso e cosa alla tavola. Quello
      che manca in una lingua ricade sull'italiano, come fa `t`. */
@@ -791,7 +791,7 @@ function avvia(app){
     }
     convalida();
   };
-    /* /////////////////////////////////// Svuota SOLO l'intestazione: il disegno resta. Sono due cose diverse —
+    /* Svuota SOLO l'intestazione: il disegno resta. Sono due cose diverse —
      "ho sbagliato a digitare" non è "ricomincio la SITAC", e per quello
      c'è già Cancella tutto al passo 8. */
   q('#sitac-bPulisciDati').onclick = async () => {
@@ -2273,6 +2273,60 @@ function mostraComandoAfferente(sigla, nome){
   const statoDi = (d, s) => (d && (d.s || d.stati))
     ? ` — ${t(paroleStato(d)[s === 'attivo' ? 1 : 0])}` : '';
 
+        /* =====================================================================
+     6bis. MISURA IN CORSO DI DISEGNO
+     Geoman disegna e basta: quanto è lungo il tracciato lo si scopre solo
+     dopo aver chiuso. Su una carta operativa la domanda è l'opposto —
+     "quanto manca al crinale" si chiede MENTRE si tira la linea. Il
+     riquadro segue il cursore e sparisce alla chiusura.
+     =================================================================== */
+  let misuraBox = null, misuraPunti = [], misuraPoligono = false;
+
+  const inKm = m => m < 1000 ? Math.round(m) + ' m' : (m/1000).toFixed(2) + ' km';
+
+  function misuraMostra(latlng, pt){
+    if (!misuraBox || !misuraPunti.length) return;
+    const ultimo = misuraPunti[misuraPunti.length - 1];
+    const seg = ultimo.distanceTo(latlng);
+    let tot = seg;
+    for (let i = 0; i < misuraPunti.length - 1; i++)
+      tot += misuraPunti[i].distanceTo(misuraPunti[i+1]);
+    let testo = inKm(seg);
+    if (misuraPunti.length > 1) testo += ` · \u03a3 ${inKm(tot)}`;
+    if (misuraPoligono && misuraPunti.length >= 2)
+      testo += `\n${inHa(areaAnello(misuraPunti.concat(latlng)))} ha`;
+    misuraBox.textContent = testo;
+    misuraBox.hidden = false;
+    /* A destra del cursore, tranne vicino al bordo: lì passa a sinistra,
+       o il riquadro esce dal riquadro della mappa. */
+    const w = misuraBox.offsetWidth || 120;
+    const dx = (pt.x + w + 26 > map.getSize().x) ? -(w + 16) : 16;
+    misuraBox.style.left = (pt.x + dx) + 'px';
+    misuraBox.style.top  = (pt.y + 14) + 'px';
+  }
+
+  function misuraSpegni(){
+    misuraPunti = [];
+    if (misuraBox) misuraBox.hidden = true;
+  }
+
+  map.on('pm:drawstart', e => {
+    if (e.shape !== 'Line' && e.shape !== 'Polygon') return;
+    misuraPoligono = e.shape === 'Polygon';
+    misuraPunti = [];
+    if (!misuraBox){
+      misuraBox = document.createElement('div');
+      misuraBox.className = 'sitac-misura';
+      misuraBox.hidden = true;
+      const wrap = q('.sitac-mapwrap');
+      if (wrap) wrap.appendChild(misuraBox);
+    }
+    /* I vertici li annuncia il layer provvisorio, non la mappa. */
+    e.workingLayer.on('pm:vertexadded', ev => { misuraPunti.push(ev.latlng); });
+  });
+  map.on('mousemove', e => { misuraMostra(e.latlng, e.containerPoint); });
+  map.on('pm:drawend', misuraSpegni);
+
   function fermaTutto(){
     map.pm.disableDraw();
     /* Solo se accese: Geoman prova a sganciare listener mai agganciati e
@@ -2738,59 +2792,7 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
     return d;
   }
 
-    /* =====================================================================
-     6bis. MISURA IN CORSO DI DISEGNO
-     Geoman disegna e basta: quanto è lungo il tracciato lo si scopre solo
-     dopo aver chiuso. Su una carta operativa la domanda è l'opposto —
-     "quanto manca al crinale" si chiede MENTRE si tira la linea. Il
-     riquadro segue il cursore e sparisce alla chiusura.
-     =================================================================== */
-  let misuraBox = null, misuraPunti = [], misuraPoligono = false;
 
-  const inKm = m => m < 1000 ? Math.round(m) + ' m' : (m/1000).toFixed(2) + ' km';
-
-  function misuraMostra(latlng, pt){
-    if (!misuraBox || !misuraPunti.length) return;
-    const ultimo = misuraPunti[misuraPunti.length - 1];
-    const seg = ultimo.distanceTo(latlng);
-    let tot = seg;
-    for (let i = 0; i < misuraPunti.length - 1; i++)
-      tot += misuraPunti[i].distanceTo(misuraPunti[i+1]);
-    let testo = inKm(seg);
-    if (misuraPunti.length > 1) testo += ` · \u03a3 ${inKm(tot)}`;
-    if (misuraPoligono && misuraPunti.length >= 2)
-      testo += `\n${inHa(areaAnello(misuraPunti.concat(latlng)))} ha`;
-    misuraBox.textContent = testo;
-    misuraBox.hidden = false;
-    /* A destra del cursore, tranne vicino al bordo: lì passa a sinistra,
-       o il riquadro esce dal riquadro della mappa. */
-    const w = misuraBox.offsetWidth || 120;
-    const dx = (pt.x + w + 26 > map.getSize().x) ? -(w + 16) : 16;
-    misuraBox.style.left = (pt.x + dx) + 'px';
-    misuraBox.style.top  = (pt.y + 14) + 'px';
-  }
-
-  function misuraSpegni(){
-    misuraPunti = [];
-    if (misuraBox) misuraBox.hidden = true;
-  }
-
-  map.on('pm:drawstart', e => {
-    if (e.shape !== 'Line' && e.shape !== 'Polygon') return;
-    misuraPoligono = e.shape === 'Polygon';
-    misuraPunti = [];
-    if (!misuraBox){
-      misuraBox = document.createElement('div');
-      misuraBox.className = 'sitac-misura';
-      misuraBox.hidden = true;
-      const wrap = q('.sitac-mapwrap');
-      if (wrap) wrap.appendChild(misuraBox);
-    }
-    /* I vertici li annuncia il layer provvisorio, non la mappa. */
-    e.workingLayer.on('pm:vertexadded', ev => { misuraPunti.push(ev.latlng); });
-  });
-  map.on('mousemove', e => { misuraMostra(e.latlng, e.containerPoint); });
-  map.on('pm:drawend', misuraSpegni);
 
   /* --- stato e legenda --- */
   function stato(x){ $('stato').textContent = x; }
