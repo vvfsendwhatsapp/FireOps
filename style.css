@@ -3302,11 +3302,16 @@ a.btn-icon-hamburger:hover {
 #sitac-app .sitac-dati-campo input[readonly]{font-family:"Courier New",monospace;
   color:var(--text-muted)}
 #sitac-app .sitac-dati-riga{display:flex;gap:6px}
-/* Non più una crocetta: un pulsante con l'etichetta scritta. Il glifo da
-   solo non diceva che cosa apriva, e il modale offre quattro modi. */
+/* Non più una crocetta: un pulsante con l'etichetta scritta. Spento finché
+   non si sa CHI è il DOS; giallo pieno appena l'anagrafica è a posto,
+   perché a quel punto è l'unica cosa che resta da fare. */
 #sitac-app #sitac-bPosizione{ flex:0 0 auto; width:auto; padding:7px 12px;
   justify-content:center; white-space:nowrap;
-  color:var(--primary-color); border-color:var(--primary-color); }
+  background:var(--dark-color); border-color:var(--border-color);
+  color:var(--text-muted); }
+#sitac-app #sitac-bPosizione:not(:disabled){
+  background:var(--primary-color); border-color:var(--primary-color);
+  color:var(--dark-color); font-weight:bold; }
 /* Il verde significa "premi qui": finché manca un campo il pulsante è
    spento e resta grigio, come qualsiasi altro disabilitato. Giallo quando
    i dati sono fermi e l'etichetta è diventata Modifica. */
