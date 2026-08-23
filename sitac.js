@@ -1348,10 +1348,44 @@ function mostraComandoAfferente(sigla, nome){
   const ellisseDi = l => ellisse(l._centro, l._a, l._b, l._rotazione);
 
   function scollegaLancio(l){
-    if (!l || !l._manig) return;
+    if (!l) return;
+    if (l._glifo){ decori.removeLayer(l._glifo); l._glifo = null; }
+    if (!l._manig) return;
     l._manig.forEach(m => decori.removeLayer(m));
     l._manig = null;
   }
+
+    /* Sotto i 40 px di asse lungo l'ellisse non si legge più: al suo posto
+     il simbolo della tavola, a dimensione fissa come tutti gli altri.
+     `_a` e `_b` NON si toccano — restano i metri veri, e l'export continua
+     a portare l'ingombro reale invece di quello dello zoom corrente. */
+  const LANCIO_MIN_PX = 40;
+
+  function pxPerMetro(lat){
+    const c = L.latLng(lat, 0);
+    const a = map.latLngToLayerPoint(c);
+    const b = map.latLngToLayerPoint(puntoDaAzimut(c, 90, 100));
+    return Math.abs(b.x - a.x) / 100;
+  }
+
+  function scalaLancio(l){
+    const piccolo = 2 * l._a * pxPerMetro(l._centro.lat) < LANCIO_MIN_PX;
+    if (piccolo && !l._glifo){
+      l.setStyle({opacity:0, fillOpacity:0});
+      scollegaLancio(l);
+      l._glifo = L.marker(l._centro, {interactive:false,
+        icon: iconaSimbolo(l._tipo, {stato: l._stato})}).addTo(decori);
+    } else if (!piccolo && l._glifo){
+      decori.removeLayer(l._glifo);
+      l._glifo = null;
+      l.setStyle(stileLancio(l._tipo, l._stato));
+      maniglieLancio(l);
+    }
+  }
+  const scalaLanci = () => disegni.eachLayer(l => {
+    if (l._genere === 'lancio') scalaLancio(l);
+  });
+  map.on('zoomend', scalaLanci);
 
   function maniglieLancio(l){
     scollegaLancio(l);
@@ -1407,6 +1441,7 @@ function mostraComandoAfferente(sigla, nome){
     disegni.addLayer(l);
     etichettaElemento(l);
     maniglieLancio(l);
+    scalaLancio(l);
     return l;
   }
 
