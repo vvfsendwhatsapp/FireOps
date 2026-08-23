@@ -2447,7 +2447,12 @@ function mostraComandoAfferente(sigla, nome){
       creaLancio(k, centro, {stato: statoPer(SIM[k])});
       aggiornaStato();
       stato(`${nm(def)}${etichettaStato(def)}\n${t('lancioManiglie')}`);
-      riattivaStrumento();
+      /* Niente riattivaStrumento: il lancio nasce con tre maniglie, e in
+         modalità disegno il trascinamento lo intercetta Geoman. Come per
+         il TP, il disableDraw va dopo pm:create o continueDrawing lo annulla. */
+      setTimeout(() => { map.pm.disableDraw(); }, 0);
+      strumento = null;
+      spegniPulsanti();
       return;
     }
 
