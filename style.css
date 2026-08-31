@@ -5019,8 +5019,22 @@ a.btn-icon-hamburger:hover {
 .mappa-meteo-lato .meteo-ora-icona     { font-size: 15px; line-height: 1; margin: 0; text-align: center; }
 .mappa-meteo-lato .meteo-ora-temp      { font-size: 13px; }
 .mappa-meteo-lato .meteo-ora-pioggia   { font-size: 11px; margin: 0; }
-.mappa-meteo-lato .meteo-ora-vento     { font-size: 11px; color: var(--text-muted);
-                                         font-variant-numeric: tabular-nums; }
+.mappa-meteo-lato .meteo-ora-vento {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.mappa-meteo-lato .meteo-freccia {
+    width: 13px; height: 13px;
+    flex: 0 0 13px;
+    color: #4fc3f7;
+}
+
+.mappa-meteo-lato .meteo-ora-vento small { font-size: 9px; opacity: .75; }
 
 /* pannello troppo stretto: si torna impilati */
 @container (max-width: 620px) {
