@@ -1639,10 +1639,11 @@ html.comando-gia-scelto #modal-comando {
 .pannello-fullscreen .coord-tab-bar {
     display: none;
 }
-
 .pannello-fullscreen .coord-tab-corpo {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    /* 1 : 4 : 1 → 1/6, 2/3, 1/6. La mappa è la colonna su cui si lavora;
+       Dati e Messaggio sono di consultazione e stanno strette. */
+    grid-template-columns: 1fr 4fr 1fr;
     grid-auto-rows: auto;
     gap: 16px;
     margin-top: 0;
@@ -1650,6 +1651,12 @@ html.comando-gia-scelto #modal-comando {
     padding: 0;
     background: transparent;
     align-items: start;
+}
+
+/* Senza questo una colonna stretta non scende sotto la larghezza del suo
+   contenuto e sfonda la griglia: gli item grid hanno min-width auto */
+.pannello-fullscreen .coord-colonna {
+    min-width: 0;
 }
 
 .coord-colonna-titolo {
