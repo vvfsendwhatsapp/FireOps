@@ -1162,6 +1162,8 @@ function iconaFrecciaDirezione(colore, azimutGradi) {
     // carta rovesciata via CSS, quindi il tema non ricarica nulla.
     // ==========================================================
     const CHIAVE_TEMA_COORD = "fireops_tema_coord";
+    const ZOOM_INIZIALE_COMANDO = 12;
+    let comandoAttivoCache = window.FireOpsComandoAttivo || null;
     let coordLayerBase = null;
     let temaCoordScelto = "auto";
     let temaCoordApplicato = null;
@@ -1325,9 +1327,6 @@ function iconaFrecciaDirezione(colore, azimutGradi) {
 
     assicuraMappaCoordInizializzata();
 
-    const ZOOM_INIZIALE_COMANDO = 12;
-let comandoAttivoCache = window.FireOpsComandoAttivo || null;
-
 function estraiCoordinateComando(comando) {
     if (!comando || !comando["Coordinate"]) return null;
     const parti = comando["Coordinate"].split(",").map(s => parseFloat(s.trim()));
@@ -1340,6 +1339,7 @@ function applicaComandoAttivo(comando) {
     const coord = estraiCoordinateComando(comando);
     if (coord && coordMappaLeaflet) coordMappaLeaflet.setView([coord.lat, coord.lon], ZOOM_INIZIALE_COMANDO);
     aggiornaAnteprimaMessaggioCoordinate();
+    applicaTemaCoord();   // senza target il tema segue il Comando
 }
 
 // Se script.js ha già impostato il Comando attivo prima che questo script
@@ -2662,7 +2662,6 @@ function disegnaGraficoAltimetria(geojson) {
         centraMappaSulTarget(lat, lon);
         mostraEffemeridiPunto(lat, lon);
         aggiornaAnteprimaMessaggioCoordinate();
-        applicaTemaCoord();   // senza target il tema segue il Comando
 
         // Nuova conversione: il percorso calcolato verso il target precedente
         // viene sempre cancellato (la tipologia scelta invece resta)

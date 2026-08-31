@@ -206,7 +206,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const ZOOM_VISTA_COMANDO = 11;   // zoom di dettaglio usato quando si seleziona/aggiorna il Comando
     const ZOOM_RITORNO_COMANDO = 11; // zoom più ampio usato dal pulsante "Torna al Comando"
     let layerBaseLeaflet = null;      // layer di sfondo attivo (grigia o OSM)
-    let stileMappaAttuale = "grigia"; // stile di sfondo scelto dall'utente
+    let stileMappaAttuale = "chiara"; // stile di sfondo scelto dall'utente
     let crocinoCentroMappa = null;    // overlay fisso col mirino che indica il centro inquadratura
     let intervalloMeteo = null;
 
@@ -333,7 +333,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 ? L.map("mappa-comando").setView([vista.lat, vista.lng], vista.zoom)
                 : L.map("mappa-comando").setView([coord.lat, coord.lng], ZOOM_VISTA_COMANDO);
 
-            impostaStileMappa(stileMappaAttuale);
+            impostaStileMappa(stileEffettivo());
             markerComandoLeaflet = L.marker([coord.lat, coord.lng], { icon: iconaCasermaVVF() }).addTo(mappaComandoLeaflet);
 
             aggiornaCoordinateCentroMappa();
