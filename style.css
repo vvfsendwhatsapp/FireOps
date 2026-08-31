@@ -4977,7 +4977,7 @@ a.btn-icon-hamburger:hover {
 }
 
 .mappa-meteo-carta { flex: 3 1 0; min-width: 0; position: relative; }
-.mappa-meteo-lato  { flex: 1 1 0; min-width: 0;
+.mappa-meteo-lato  { flex: 2 1 0; min-width: 0;
                      display: flex; flex-direction: column;
                      overflow-y: auto; overscroll-behavior: contain;
                      border: 1px solid var(--border-color);
