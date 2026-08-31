@@ -4322,19 +4322,19 @@ a.btn-icon-hamburger:hover {
     box-shadow: none
 }
 
-/* Chiudi SITAC: rosso, non verde smeraldo come Espandi/Riduci. Non cambia
-   l'inquadratura, smonta il modulo — e in mezzo a una SITAC in corso è un
-   gesto che va pensato, non premuto per abitudine. */
-#sitac-aib .btn-fullscreen-pagina.btn-chiudi-sitac {
+/* Chiudi (pagina esclusiva): rosso, non verde smeraldo come Espandi/Riduci.
+   Non cambia l'inquadratura, smonta il modulo — e in mezzo a una SITAC o a
+   un percorso in corso è un gesto che va pensato, non premuto per abitudine. */
+.btn-toggle-radar.btn-fullscreen-pagina.btn-chiudi-esclusiva {
     background: var(--dark-color);
     border-color: var(--danger-color);
     color: var(--danger-color);
-    font-weight: bold
+    font-weight: bold;
 }
 
-#sitac-aib .btn-fullscreen-pagina.btn-chiudi-sitac:hover {
+.btn-toggle-radar.btn-fullscreen-pagina.btn-chiudi-esclusiva:hover {
     background: var(--danger-color);
-    color: var(--text-main)
+    color: var(--text-main);
 }
 
 /* ---- SITAC: schede ------------------------------------------------ */
