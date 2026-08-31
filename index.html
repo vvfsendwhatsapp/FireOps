@@ -493,12 +493,12 @@
                 <div class="coord-tab-bar">
                     <button type="button" class="coord-tab-btn attivo" data-tab="dati">📋 Dati</button>
                     <button type="button" class="coord-tab-btn" data-tab="messaggio">✉️ Invia messaggio</button>
+                    <p class="pagina-nota coord-nota-mappa">Scorri la mappa e, all'occorrenza, abilita la
+                        funzione "Crea percorso".</p>
                     <button class="btn-toggle-radar btn-fullscreen-pagina" type="button"
                         title="Espandi a schermo intero">⛶ Espandi</button>
                 </div>
-
                 <div class="coord-tab-corpo">
-
                     <!-- SCHEDA/COLONNA: DATI -->
                     <div class="coord-colonna" data-colonna="dati">
                         <div id="coord-tab-content-dati" style="display:block;">
@@ -508,6 +508,7 @@
                                 <label for="coord-formato-input">Formato coordinate in ingresso</label>
                                 <select id="coord-formato-input">
                                     <option value="dd">Gradi decimali (DD.dddddd)</option>
+                                    <option value="appunti">📋 Gradi decimali da appunti</option>
                                     <option value="dmm">Gradi e primi decimali (DD MM.mmmm)</option>
                                     <option value="dms">Gradi primi secondi (DD MM SS.ss)</option>
                                     <option value="olc">OLC / Plus Code</option>
@@ -546,6 +547,15 @@
                                             </div>
                                         </div>
                                     </div>
+                                </div>
+                                <div id="coord-input-appunti" class="coord-input-gruppo" style="display:none;">
+                                    <label for="coord-appunti">Coppia latitudine, longitudine</label>
+                                    <input type="text" id="coord-appunti"
+                                        placeholder="45.123456789012, 9.123456789012" autocomplete="off">
+                                    <p class="pagina-nota">
+                                        Incolla la coppia copiata altrove: la conversione parte da sé, senza
+                                        premere nulla. Separatore virgola, punto come separatore decimale.
+                                    </p>
                                 </div>
                                 <div id="coord-input-dmm" class="coord-input-gruppo" style="display:none;">
                                     <div class="msg-riga-campi">
@@ -780,8 +790,6 @@
                     <!-- SCHEDA/COLONNA: MAPPA -->
                     <div class="coord-colonna" data-colonna="mappa">
                         <div id="coord-tab-content-mappa" style="display:none;">
-                            <p class="pagina-nota">Scorri la mappa e, all'occorrenza, abilita la funzione "Crea
-                                percorso".</p>
                             <div class="coord-mappa-controlli">
                                 <div class="msg-campo">
                                     <label for="coord-profilo-percorso">Tipologia percorso</label>

@@ -1657,6 +1657,18 @@ html.comando-gia-scelto #modal-comando {
     padding: 0;
 }
 
+/* La nota della mappa vive nella riga delle linguette: nella colonna di
+   destra partiva più in basso, sfalsata rispetto a tutto il resto */
+.coord-tab-bar .coord-nota-mappa {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0 16px;
+    align-self: flex-end;
+    padding-bottom: 8px;      /* a filo con la base di linguette e pulsante */
+    font-size: 12px;
+    text-align: left;
+}
+
 /* In fullscreen le due schede di sinistra stanno nel loro terzo, non
    larghe mezza pagina */
 .pannello-fullscreen .coord-tab-btn {

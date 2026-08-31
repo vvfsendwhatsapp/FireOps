@@ -780,6 +780,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const gruppiInput = {
         dd: document.getElementById("coord-input-dd"),
+        appunti: document.getElementById("coord-input-appunti"),
         dmm: document.getElementById("coord-input-dmm"),
         dms: document.getElementById("coord-input-dms"),
         olc: document.getElementById("coord-input-olc"),
@@ -794,6 +795,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const val = id => (document.getElementById(id)?.value || "").trim();
     switch (formato) {
         case "dd": return !!(val("coord-dd-lat") && val("coord-dd-lon"));
+        case "appunti": return !!val("coord-appunti");
         case "dmm": return ["coord-dmm-lat-gradi", "coord-dmm-lat-primi",
                             "coord-dmm-lon-gradi", "coord-dmm-lon-primi"].every(val);
         case "dms": return ["coord-dms-lat-gradi", "coord-dms-lat-primi", "coord-dms-lat-secondi",
@@ -838,6 +840,7 @@ function aggiornaBottoneConverti() {
     const CAMPI_PERSISTENTI_COORD = [
         "coord-formato-input",
         "coord-dd-lat-segno", "coord-dd-lat", "coord-dd-lon-segno", "coord-dd-lon",
+        "coord-appunti",
         "coord-dmm-lat-segno", "coord-dmm-lat-gradi", "coord-dmm-lat-primi",
         "coord-dmm-lon-segno", "coord-dmm-lon-gradi", "coord-dmm-lon-primi",
         "coord-dms-lat-segno", "coord-dms-lat-gradi", "coord-dms-lat-primi", "coord-dms-lat-secondi",
@@ -1031,6 +1034,11 @@ if (contenitoreFormCoord) {
                 lat: Math.abs(lat) * segnoDaSelettore("coord-dd-lat-segno"),
                 lon: Math.abs(lon) * segnoDaSelettore("coord-dd-lon-segno"),
             };
+        }
+        if (formato === "appunti") {
+            const coord = leggiCoppiaAppunti(document.getElementById("coord-appunti").value);
+            if (!coord) { mostraErrore(TESTO_ERRORE_APPUNTI); return null; }
+            return coord;
         }
         if (formato === "dmm") {
             const valore = id => (document.getElementById(id)?.value || "");
@@ -2698,15 +2706,6 @@ function disegnaGraficoAltimetria(geojson) {
         const corpoSchede = document.querySelector(".coord-tab-corpo");
         if (corpoSchede) {
             corpoSchede.classList.remove("corpo-tab-primo-attivo", "corpo-tab-centro-attivo", "corpo-tab-ultimo-attivo");
-            // In fullscreen la colonna di sinistra alterna Dati e Messaggio;
-            // la mappa sta a destra e non entra in questa scelta
-            if (chiave !== "mappa") {
-                corpoSchede.classList.toggle("sx-dati", chiave === "dati");
-                corpoSchede.classList.toggle("sx-messaggio", chiave === "messaggio");
-            } else if (!corpoSchede.classList.contains("sx-dati")
-                    && !corpoSchede.classList.contains("sx-messaggio")) {
-                corpoSchede.classList.add("sx-dati");
-            }
             // In fullscreen la colonna di sinistra alterna Dati e Messaggio:
             // la mappa sta a destra e non entra in questa scelta, quindi
             // cliccandola la scheda di sinistra resta quella che era.
@@ -2739,4 +2738,61 @@ function disegnaGraficoAltimetria(geojson) {
         if (tabSalvata && contenutiScheda[tabSalvata]) tabInizialeCoord = tabSalvata;
     } catch (err) { }
     impostaSchedaColonnaAttiva(tabInizialeCoord, false); // false: non ri-salvare quello che abbiamo appena letto
+    
+    // ==========================================================
+    // FORMATO "GRADI DECIMALI DA APPUNTI"
+    //
+    // Una casella sola: si incolla la coppia copiata da SO115, da Maps o da
+    // un messaggio, e la conversione parte da sé. Separatore virgola,
+    // decimali col punto — è così che arrivano da tutte le fonti che usiamo.
+    // Il campo NON è .coord-campo-num: quel filtro toglierebbe la virgola,
+    // cioè proprio il carattere che separa le due coordinate.
+    // ==========================================================
+    const TESTO_ERRORE_APPUNTI =
+        "Formato coordinate appunti errato: attesa una coppia \"latitudine, longitudine\" " +
+        "in gradi decimali, esempio 45.123456789012, 9.123456789012";
+
+    function leggiCoppiaAppunti(testo) {
+        const parti = String(testo || "").trim().split(/\s*,\s*/);
+        if (parti.length !== 2) return null;
+
+        const numeri = parti.map(p => (/^[+-]?\d{1,3}(\.\d+)?$/.test(p.trim()) ? parseFloat(p) : NaN));
+        if (numeri.some(Number.isNaN)) return null;
+
+        const [lat, lon] = numeri;
+        if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return null;
+        return { lat, lon };
+    }
+
+    function convertiDaAppunti() {
+        const campo = document.getElementById("coord-appunti");
+        const testo = (campo && campo.value || "").trim();
+        if (!testo) return;
+
+        const coord = leggiCoppiaAppunti(testo);
+        if (!coord) {
+            alert("Formato coordinate appunti errato!\n\nAtteso: 45.123456789012, 9.123456789012");
+            mostraErrore(TESTO_ERRORE_APPUNTI);
+            return;
+        }
+        nascondiErrore();
+        elaboraCoordinateConvertite(coord.lat, coord.lon);
+    }
+
+    const inputAppunti = document.getElementById("coord-appunti");
+    if (inputAppunti) {
+        // Il valore del campo arriva DOPO l'evento paste: si legge al giro
+        // successivo dell'event loop, altrimenti si legge il testo di prima
+        inputAppunti.addEventListener("paste", () => setTimeout(convertiDaAppunti, 0));
+        inputAppunti.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") { e.preventDefault(); convertiDaAppunti(); }
+        });
+        // Entrando si svuota: una coppia incollata si sostituisce, non si corregge
+        inputAppunti.addEventListener("focus", () => {
+            if (!inputAppunti.value) return;
+            inputAppunti.value = "";
+            salvaStatoFormCoord();
+            aggiornaBottoneConverti();
+        });
+    }
 });
