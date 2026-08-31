@@ -4965,14 +4965,14 @@ a.btn-icon-hamburger:hover {
     white-space: nowrap;
 }
 
-/* ---- Mappa e Meteo: 3/4 carta + 1/4 previsioni ---- */
+/* ---- Mappa e Meteo: 3/4 carta + 1/4 previsioni 12 ore ---- */
 .mappa-meteo-box { container-type: inline-size; }
 
 .mappa-meteo-split {
     display: flex;
     gap: 10px;
     align-items: stretch;
-    height: 60vh;          /* altezza unica per i due lati */
+    height: 60vh;
     min-height: 320px;
 }
 
@@ -4988,11 +4988,37 @@ a.btn-icon-hamburger:hover {
 .mappa-meteo-carta > .windy-comando { width: 100%; height: 100%; margin: 0; }
 .mappa-meteo-carta > .windy-comando > iframe { width: 100%; height: 100%; border: 0; }
 
-/* colonna stretta: le ore una sotto l'altra */
-.mappa-meteo-lato .meteo-orario { display: flex; flex-direction: column; gap: 6px; margin: 0; }
-.mappa-meteo-lato .meteo-orario > * { width: 100%; margin: 0; }
+/* Nella colonna il bordo superiore della striscia non serve: separava il
+   meteo dalla mappa quando stava sotto, qui c'è già la cornice dell'aside. */
+.mappa-meteo-lato .meteo-orario {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0;
+    padding-top: 0;
+    border-top: none;
+}
 
-/* se il pannello è troppo stretto si torna impilati */
+/* Una riga per ora: orario, cielo, temperatura, pioggia, vento */
+.mappa-meteo-lato .meteo-ora-card {
+    display: grid;
+    grid-template-columns: 38px 20px 32px 1fr auto;
+    align-items: center;
+    gap: 4px;
+    width: auto; min-width: 0; margin: 0;
+    padding: 3px 6px;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.mappa-meteo-lato .meteo-ora-etichetta { font-size: 11px; font-variant-numeric: tabular-nums; }
+.mappa-meteo-lato .meteo-ora-icona     { font-size: 15px; line-height: 1; margin: 0; text-align: center; }
+.mappa-meteo-lato .meteo-ora-temp      { font-size: 13px; }
+.mappa-meteo-lato .meteo-ora-pioggia   { font-size: 11px; margin: 0; }
+.mappa-meteo-lato .meteo-ora-vento     { font-size: 11px; color: var(--text-muted);
+                                         font-variant-numeric: tabular-nums; }
+
+/* pannello troppo stretto: si torna impilati */
 @container (max-width: 620px) {
     .mappa-meteo-split { flex-direction: column; height: auto; }
     .mappa-meteo-carta { height: 45vh; }

@@ -259,6 +259,14 @@ document.addEventListener("DOMContentLoaded", () => {
         return METEO_CODICI[codice] || ["🌡️", "Condizioni non disponibili"];
     }
 
+    const ROSA_VENTI = ["N","NNE","NE","ENE","E","ESE","SE","SSE",
+                    "S","SSO","SO","OSO","O","ONO","NO","NNO"];
+
+    function settoreVento(gradi) {
+        if (!Number.isFinite(gradi)) return "";
+        return ROSA_VENTI[Math.round(gradi / 22.5) % 16];
+    }
+
     // Open-Meteo restituisce is_day (1 = giorno, 0 = notte) allineato a hourly.time.
     // Se il campo mancasse (risposta parziale, cache vecchia), si ricade su una
     // stima grezza dall'ora locale invece di mostrare per forza il sole.
@@ -559,7 +567,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const contenitoreOrario = document.getElementById("meteo-orario");
         if (!contenitoreOrario || !coord) return;
 
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=${coord.lat}&longitude=${coord.lng}&hourly=temperature_2m,weather_code,precipitation_probability,is_day&forecast_hours=12&timezone=auto`;
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${coord.lat}&longitude=${coord.lng}&hourly=temperature_2m,weather_code,precipitation_probability,is_day,wind_speed_10m,wind_direction_10m&forecast_hours=12&timezone=auto`;
 
         fetch(url)
             .then(r => {
@@ -593,12 +601,21 @@ document.addEventListener("DOMContentLoaded", () => {
             const temp = Math.round(hourly.temperature_2m[i]);
             const probabilitaPioggia = Array.isArray(hourly.precipitation_probability) ? hourly.precipitation_probability[i] : null;
 
+            const ventoKmh = Array.isArray(hourly.wind_speed_10m) ? Math.round(hourly.wind_speed_10m[i]) : null;
+            const ventoGradi = Array.isArray(hourly.wind_direction_10m) ? hourly.wind_direction_10m[i] : null;
+            const settore = settoreVento(ventoGradi);
+
+            const cellaVento = ventoKmh === null ? "" :
+                `<div class="meteo-ora-vento" title="Vento da ${settore} (${Math.round(ventoGradi)}°) — ${ventoKmh} km/h">${settore} ${ventoKmh}</div>`;
+
+
             html += `
                 <div class="meteo-ora-card">
                     <div class="meteo-ora-etichetta">${ora}</div>
                     <div class="meteo-ora-icona">${icona}</div>
                     <div class="meteo-ora-temp">${temp}°</div>
-                    ${probabilitaPioggia !== null ? `<div class="meteo-ora-pioggia">💧 ${probabilitaPioggia}%</div>` : ""}
+                    <div class="meteo-ora-pioggia">${probabilitaPioggia !== null ? `💧${probabilitaPioggia}%` : ""}</div>
+                    ${cellaVento || '<div class="meteo-ora-vento"></div>'}
                 </div>`;
         });
 
