@@ -144,16 +144,24 @@
                             target="_blank" rel="noopener">🌐 Bollettino DPC</a>
                     </div>
                 </div>
-                <div id="mappa-comando" class="mappa-comando"></div>
-                <div id="windy-comando" class="windy-comando" style="display:none;">
-                    <iframe id="windy-iframe" title="Windy — radar e vento" loading="lazy" frameborder="0"
-                        allow="fullscreen"></iframe>
+                <div class="mappa-meteo-split">
+                    <div class="mappa-meteo-carta">
+                        <div id="mappa-comando" class="mappa-comando"></div>
+                        <div id="windy-comando" class="windy-comando" style="display:none;">
+                            <iframe id="windy-iframe" title="Windy — radar e vento" loading="lazy" frameborder="0"
+                                allow="fullscreen"></iframe>
+                        </div>
+                    </div>
+
+                    <aside class="mappa-meteo-lato">
+                        <div id="meteo-orario" class="meteo-orario">
+                            <p class="pagina-nota">Seleziona un Comando per visualizzare le previsioni.</p>
+                        </div>
+                    </aside>
                 </div>
-                <p class="pagina-nota meteo-nota-centro">📍 Il meteo mostrato segue il centro della mappa: spostala per
-                    vedere le previsioni di un'altra zona.</p>
-                <div id="meteo-orario" class="meteo-orario">
-                    <p class="pagina-nota">Seleziona un Comando per visualizzare le previsioni.</p>
-                </div>
+
+                <p class="pagina-nota meteo-nota-centro">📍 Il meteo mostrato segue il centro della mappa:
+                    spostala per vedere le previsioni di un'altra zona.</p>
             </div>
         </section>
 

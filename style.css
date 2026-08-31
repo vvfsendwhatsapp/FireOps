@@ -4964,3 +4964,37 @@ a.btn-icon-hamburger:hover {
 .reparto-volo-testata .distanza {
     white-space: nowrap;
 }
+
+/* ---- Mappa e Meteo: 3/4 carta + 1/4 previsioni ---- */
+.mappa-meteo-box { container-type: inline-size; }
+
+.mappa-meteo-split {
+    display: flex;
+    gap: 10px;
+    align-items: stretch;
+    height: 60vh;          /* altezza unica per i due lati */
+    min-height: 320px;
+}
+
+.mappa-meteo-carta { flex: 3 1 0; min-width: 0; position: relative; }
+.mappa-meteo-lato  { flex: 1 1 0; min-width: 0; overflow-y: auto;
+                     overscroll-behavior: contain;
+                     border: 1px solid var(--border-color);
+                     border-radius: 8px; padding: 6px;
+                     background: var(--dark-color); }
+
+/* carta e Windy riempiono la colonna: le altezze fisse qui non valgono più */
+.mappa-meteo-carta > #mappa-comando,
+.mappa-meteo-carta > .windy-comando { width: 100%; height: 100%; margin: 0; }
+.mappa-meteo-carta > .windy-comando > iframe { width: 100%; height: 100%; border: 0; }
+
+/* colonna stretta: le ore una sotto l'altra */
+.mappa-meteo-lato .meteo-orario { display: flex; flex-direction: column; gap: 6px; margin: 0; }
+.mappa-meteo-lato .meteo-orario > * { width: 100%; margin: 0; }
+
+/* se il pannello è troppo stretto si torna impilati */
+@container (max-width: 620px) {
+    .mappa-meteo-split { flex-direction: column; height: auto; }
+    .mappa-meteo-carta { height: 45vh; }
+    .mappa-meteo-lato  { max-height: 260px; }
+}
