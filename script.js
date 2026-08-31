@@ -605,9 +605,17 @@ document.addEventListener("DOMContentLoaded", () => {
             const ventoGradi = Array.isArray(hourly.wind_direction_10m) ? hourly.wind_direction_10m[i] : null;
             const settore = settoreVento(ventoGradi);
 
-            const cellaVento = ventoKmh === null ? "" :
-                `<div class="meteo-ora-vento" title="Vento da ${settore} (${Math.round(ventoGradi)}°) — ${ventoKmh} km/h">${settore} ${ventoKmh}</div>`;
-
+            // La freccia punta DOVE VA il vento, non da dove viene: Open-Meteo
+            // dà la provenienza (convenzione meteo), quindi +180°.
+            const cellaVento = ventoKmh === null ? "" : `
+                <div class="meteo-ora-vento" title="Vento da ${settore} (${Math.round(ventoGradi)}°) — ${ventoKmh} km/h">
+                    <svg class="meteo-freccia" viewBox="0 0 24 24" aria-hidden="true"
+                         style="transform:rotate(${(Math.round(ventoGradi) + 180) % 360}deg)">
+                        <path d="M12 21V4M12 3l-5 6M12 3l5 6" fill="none" stroke="currentColor"
+                              stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>${ventoKmh}<small> km/h</small></span>
+                </div>`;
 
             html += `
                 <div class="meteo-ora-card">
