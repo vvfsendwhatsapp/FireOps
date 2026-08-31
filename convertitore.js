@@ -1152,16 +1152,149 @@ function iconaFrecciaDirezione(colore, azimutGradi) {
     });
 }
 
+    // ==========================================================
+    // TEMA DELLA CARTA + EFFEMERIDI DEL PUNTO CONVERTITO
+    //
+    // L'automatismo guarda il PUNTO, non il Comando: su un intervento in
+    // valle o su un versante il tramonto arriva prima che in capoluogo, ed
+    // è il punto che dice se la squadra ci arriva con la luce.
+    // Le tile sono sempre le stesse (OSM): la versione scura è la stessa
+    // carta rovesciata via CSS, quindi il tema non ricarica nulla.
+    // ==========================================================
+    const CHIAVE_TEMA_COORD = "fireops_tema_coord";
+    let coordLayerBase = null;
+    let temaCoordScelto = "auto";
+    let temaCoordApplicato = null;
+    let effemeridiTarget = null;
+
+    try { temaCoordScelto = sessionStorage.getItem(CHIAVE_TEMA_COORD) || "auto"; } catch (err) {}
+
+    function puntoDiRiferimentoTema() {
+        if (coordinateTargetCorrenti) return coordinateTargetCorrenti;
+        return estraiCoordinateComando(comandoAttivoCache);
+    }
+
+    function stileEffettivoCoord() {
+        if (temaCoordScelto !== "auto") return temaCoordScelto;
+        const p = puntoDiRiferimentoTema();
+        if (!p) return "chiara";
+        return FireOps.eGiorno(p.lat, p.lon) ? "chiara" : "scura";
+    }
+
+    function applicaTemaCoord() {
+        const eff = stileEffettivoCoord();
+        if (coordLayerBase && eff !== temaCoordApplicato) {
+            const contenitore = coordLayerBase.getContainer();
+            if (contenitore) contenitore.classList.toggle("tile-scure", eff === "scura");
+            temaCoordApplicato = eff;
+        }
+
+        const btn = document.getElementById("btn-coord-tema");
+        if (!btn) return;
+        btn.textContent = temaCoordScelto === "auto"
+            ? (eff === "chiara" ? "🌗 Auto · chiara" : "🌗 Auto · scura")
+            : (temaCoordScelto === "chiara" ? "☀️ Chiara" : "🌙 Scura");
+        btn.title = temaCoordScelto === "auto"
+            ? "Segue alba e tramonto del punto convertito — clicca per fissare la carta"
+            : "Clicca per cambiare (torna in automatico al terzo clic)";
+    }
+
+    const btnTemaCoord = document.getElementById("btn-coord-tema");
+    if (btnTemaCoord) {
+        btnTemaCoord.addEventListener("click", () => {
+            temaCoordScelto = temaCoordScelto === "auto" ? "chiara"
+                            : temaCoordScelto === "chiara" ? "scura" : "auto";
+            try { sessionStorage.setItem(CHIAVE_TEMA_COORD, temaCoordScelto); } catch (err) {}
+            applicaTemaCoord();
+        });
+    }
+
+    // Quanta luce resta: è la domanda operativa, più delle ore in sé
+    function testoLuceResidua(e) {
+        const adesso = new Date();
+        const durata = ms => {
+            const m = Math.max(0, Math.round(ms / 60000));
+            return m >= 60 ? `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")} min` : `${m} min`;
+        };
+        if (!e.alba || !e.tramonto) return "Sole sempre sopra o sotto l'orizzonte a questa latitudine";
+        if (adesso < e.alba) return `🌑 Notte — prime luci fra ${durata(e.crepuscoloInizio - adesso)}`;
+        if (adesso <= e.tramonto) return `☀️ Giorno — tramonto fra ${durata(e.tramonto - adesso)}, buio alle ${FireOps.oraBreve(e.crepuscoloFine)}`;
+        if (adesso <= e.crepuscoloFine) return `🌆 Crepuscolo — buio fra ${durata(e.crepuscoloFine - adesso)}`;
+        return `🌑 Notte — alba domani`;
+    }
+
+    function aggiornaRigheEffemeridi() {
+        if (!effemeridiTarget) return;
+        const elLuce = document.getElementById("coord-out-luce");
+        if (elLuce) elLuce.textContent = testoLuceResidua(effemeridiTarget);
+    }
+
+    function apriPopupEffemeridiCoord(evento) {
+        evento.stopPropagation();
+        const esistente = document.getElementById("popup-effemeridi-coord");
+        if (esistente) { esistente.remove(); return; }
+        if (!effemeridiTarget || !coordinateTargetCorrenti) return;
+
+        const e = effemeridiTarget;
+        const g = v => `${Math.round(v)}°`;
+        const popup = document.createElement("div");
+        popup.id = "popup-effemeridi-coord";
+        popup.className = "popup-canali";
+        popup.innerHTML = `
+            <span class="popup-close" title="Chiudi">&times;</span>
+            <h5>Effemeridi del punto — ${coordinateTargetCorrenti.lat.toFixed(4)}, ${coordinateTargetCorrenti.lon.toFixed(4)}</h5>
+            <table><tbody>
+                <tr><td class="nome">Prime luci (crep. civile)</td><td class="canale">${FireOps.oraBreve(e.crepuscoloInizio)}</td></tr>
+                <tr><td class="nome">Alba</td><td class="canale">${FireOps.oraBreve(e.alba)}</td></tr>
+                <tr><td class="nome">Mezzogiorno solare</td><td class="canale">${FireOps.oraBreve(e.mezzogiorno)}</td></tr>
+                <tr><td class="nome">Tramonto</td><td class="canale">${FireOps.oraBreve(e.tramonto)}</td></tr>
+                <tr><td class="nome">Ultime luci (crep. civile)</td><td class="canale">${FireOps.oraBreve(e.crepuscoloFine)}</td></tr>
+                <tr><td class="nome">Ore di luce</td><td class="canale">${e.oreLuce ? e.oreLuce.toFixed(1) + " h" : "-"}</td></tr>
+                <tr><td class="nome">Sole adesso (alt. / az.)</td><td class="canale">${g(e.sole.altezza)} / ${g(e.sole.azimut)}</td></tr>
+                <tr><td class="nome">Luna illuminata</td><td class="canale">${Math.round(e.luna.illuminazione * 100)}%</td></tr>
+            </tbody></table>
+            <p class="pagina-nota" style="margin:8px 0 0;">${e.luna.nome} · orari calcolati sul punto, in ora italiana</p>`;
+
+        document.body.appendChild(popup);
+        const rect = evento.currentTarget.getBoundingClientRect();
+        popup.style.top = `${rect.bottom + 10}px`;
+        popup.style.left = `${Math.max(10, Math.min(rect.left, window.innerWidth - popup.offsetWidth - 10))}px`;
+        popup.querySelector(".popup-close").addEventListener("click", () => popup.remove());
+        popup.addEventListener("click", ev => ev.stopPropagation());
+    }
+
+    document.addEventListener("click", () => {
+        const p = document.getElementById("popup-effemeridi-coord");
+        if (p) p.remove();
+    });
+
+    function mostraEffemeridiPunto(lat, lon) {
+        effemeridiTarget = FireOps.effemeridi(lat, lon);
+
+        const elOrari = document.getElementById("coord-out-effemeridi");
+        if (elOrari) {
+            elOrari.textContent = `🌅 ${FireOps.oraBreve(effemeridiTarget.alba)}   🌇 ${FireOps.oraBreve(effemeridiTarget.tramonto)}`;
+            elOrari.classList.add("cliccabile");
+            elOrari.onclick = apriPopupEffemeridiCoord;   // dettaglio completo su richiesta
+        }
+        aggiornaRigheEffemeridi();
+        applicaTemaCoord();
+    }
+
+    // Il tramonto arriva anche se nessuno tocca nulla
+    setInterval(() => { aggiornaRigheEffemeridi(); applicaTemaCoord(); }, 60000);
+
     function assicuraMappaCoordInizializzata() {
         if (coordMappaLeaflet) return;
         const contenitore = document.getElementById("coord-mappa");
         if (!contenitore || typeof L === "undefined") return;
 
         coordMappaLeaflet = L.map("coord-mappa").setView([41.9, 12.5], 6);
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        coordLayerBase = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
             maxZoom: 19,
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         }).addTo(coordMappaLeaflet);
+        applicaTemaCoord();
 
         coordMappaLeaflet.on("click", (e) => {
     // Secondo punto di "Crea percorso": funziona sempre, indipendentemente
@@ -1260,6 +1393,7 @@ document.addEventListener("fireops:comando-attivo-cambiato", (e) => {
         coordinateTargetCorrenti = null;
         rimuoviRepartiVoloDallaMappa();
         rimuoviMarkerComandoCompetente();
+        effemeridiTarget = null;
 
         // Vista riportata sul Comando attivo, o sull'Italia se non c'è
         if (coordMappaLeaflet) {
@@ -2526,7 +2660,9 @@ function disegnaGraficoAltimetria(geojson) {
         if (elDatiNotaVuota) elDatiNotaVuota.style.display = "none";
 
         centraMappaSulTarget(lat, lon);
+        mostraEffemeridiPunto(lat, lon);
         aggiornaAnteprimaMessaggioCoordinate();
+        applicaTemaCoord();   // senza target il tema segue il Comando
 
         // Nuova conversione: il percorso calcolato verso il target precedente
         // viene sempre cancellato (la tipologia scelta invece resta)

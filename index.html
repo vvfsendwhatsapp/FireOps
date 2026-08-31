@@ -638,7 +638,6 @@
                                         </div>
                                     </div>
                                 </div>
-
                                 <div id="coord-input-olc" class="coord-input-gruppo" style="display:none;">
                                     <label for="coord-olc">Codice OLC / Plus Code (completo)</label>
                                     <input type="text" id="coord-olc" placeholder="8FQFF57Q+MX" autocomplete="off">
@@ -648,7 +647,6 @@
                                         supportati.
                                     </p>
                                 </div>
-
                                 <div id="coord-input-utm" class="coord-input-gruppo" style="display:none;">
                                     <div class="msg-riga-campi">
                                         <div class="msg-campo" style="max-width:90px;">
@@ -674,7 +672,6 @@
                                         </div>
                                     </div>
                                 </div>
-
                                 <div id="coord-input-mappa" class="coord-input-gruppo" style="display:none;">
                                     <p class="pagina-nota">
                                         Vai alla scheda "Mappa" e clicca direttamente sul punto desiderato: le
@@ -682,7 +679,6 @@
                                         vengono generate automaticamente da quel click. Nessun campo da compilare qui.
                                     </p>
                                 </div>
-
                                 <div id="coord-input-indirizzo" class="coord-input-gruppo" style="display:none;">
                                     <div class="msg-riga-campi">
                                         <div class="msg-campo">
@@ -704,17 +700,13 @@
                                     <p class="pagina-nota">Seleziona il comune dall'elenco. Indirizzo facoltativo, ma
                                         aiuta la precisione.</p>
                                 </div>
-
                                 <div class="msg-azioni">
                                     <button id="btn-coord-converti" class="btn-whatsapp" type="button">📐 Converti e
                                         scopri le funzioni a lato</button>
                                 </div>
-
                                 <p id="coord-errore" class="pagina-nota"
                                     style="display:none; color:var(--danger-color);"></p>
-
                             </div> <!-- chiusura #coord-input-colonna -->
-
                             <div id="coord-risultati" class="riepilogo-comando" style="display:none;">
                                 <div class="riepilogo-box">
                                     <table class="riepilogo-tabella">
@@ -750,6 +742,14 @@
                                             <tr>
                                                 <th>Quota</th>
                                                 <td id="coord-out-quota">-</td>
+                                            </tr>
+                                                                                        <tr>
+                                                <th>Alba / Tramonto</th>
+                                                <td id="coord-out-effemeridi">-</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Luce</th>
+                                                <td id="coord-out-luce">-</td>
                                             </tr>
                                             <tr>
                                                 <th>Google Maps</th>
@@ -804,6 +804,10 @@
                                     <label for="btn-coord-reparti-volo">Supporto aereo</label>
                                     <button id="btn-coord-reparti-volo" class="btn-toggle-radar" type="button"
                                         disabled>🚁 Reparti Volo più vicini</button>
+                                </div>
+                                                                <div class="msg-campo coord-mappa-azione-campo">
+                                    <label for="btn-coord-tema">Tema carta</label>
+                                    <button id="btn-coord-tema" class="btn-toggle-radar" type="button">🌗 Auto</button>
                                 </div>
                             </div>
 
