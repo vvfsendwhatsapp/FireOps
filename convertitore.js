@@ -2701,6 +2701,16 @@ function disegnaGraficoAltimetria(geojson) {
             if (chiave === "dati") corpoSchede.classList.add("corpo-tab-primo-attivo");
             else if (chiave === "mappa") corpoSchede.classList.add("corpo-tab-centro-attivo");
             else if (chiave === "messaggio") corpoSchede.classList.add("corpo-tab-ultimo-attivo");
+            // In fullscreen la colonna di sinistra alterna Dati e Messaggio:
+            // la mappa sta a destra e non entra in questa scelta, quindi
+            // cliccandola la scheda di sinistra resta quella che era.
+            if (chiave !== "mappa") {
+                corpoSchede.classList.toggle("sx-dati", chiave === "dati");
+                corpoSchede.classList.toggle("sx-messaggio", chiave === "messaggio");
+            } else if (!corpoSchede.classList.contains("sx-dati")
+                    && !corpoSchede.classList.contains("sx-messaggio")) {
+                corpoSchede.classList.add("sx-dati");
+            }
         }
         Object.entries(contenutiScheda).forEach(([k, el]) => {
             if (!el) return;
