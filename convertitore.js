@@ -2698,9 +2698,15 @@ function disegnaGraficoAltimetria(geojson) {
         const corpoSchede = document.querySelector(".coord-tab-corpo");
         if (corpoSchede) {
             corpoSchede.classList.remove("corpo-tab-primo-attivo", "corpo-tab-centro-attivo", "corpo-tab-ultimo-attivo");
-            if (chiave === "dati") corpoSchede.classList.add("corpo-tab-primo-attivo");
-            else if (chiave === "mappa") corpoSchede.classList.add("corpo-tab-centro-attivo");
-            else if (chiave === "messaggio") corpoSchede.classList.add("corpo-tab-ultimo-attivo");
+            // In fullscreen la colonna di sinistra alterna Dati e Messaggio;
+            // la mappa sta a destra e non entra in questa scelta
+            if (chiave !== "mappa") {
+                corpoSchede.classList.toggle("sx-dati", chiave === "dati");
+                corpoSchede.classList.toggle("sx-messaggio", chiave === "messaggio");
+            } else if (!corpoSchede.classList.contains("sx-dati")
+                    && !corpoSchede.classList.contains("sx-messaggio")) {
+                corpoSchede.classList.add("sx-dati");
+            }
             // In fullscreen la colonna di sinistra alterna Dati e Messaggio:
             // la mappa sta a destra e non entra in questa scelta, quindi
             // cliccandola la scheda di sinistra resta quella che era.
@@ -2725,12 +2731,6 @@ function disegnaGraficoAltimetria(geojson) {
 
     pulsantiScheda.forEach(pulsante => {
         pulsante.addEventListener("click", () => impostaSchedaColonnaAttiva(pulsante.dataset.tab));
-    });
-
-    // In modalità espansa la barra schede è nascosta, ma le 3 colonne
-    // restano cliccabili per spostare l'evidenziazione tra loro
-    Object.entries(contenutiScheda).forEach(([chiave, el]) => {
-        if (el) el.addEventListener("click", () => impostaSchedaColonnaAttiva(chiave));
     });
 
     let tabInizialeCoord = "dati";

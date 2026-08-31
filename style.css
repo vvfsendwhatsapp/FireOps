@@ -1391,6 +1391,15 @@ html.comando-gia-scelto #modal-comando {
     padding: 8px 0 0;
 }
 
+/* Il Chiudi/Espandi non è una linguetta: niente flex:1, niente
+   sovrapposizione, e uno stacco che lo separa dalle schede */
+.coord-tab-bar .btn-fullscreen-pagina {
+    flex: 0 0 auto;
+    margin-left: 12px;
+    margin-bottom: 1px;   /* a filo con la base delle linguette */
+    white-space: nowrap;
+}
+
 .coord-tab-btn {
     background: var(--dark-color);
     color: var(--text-muted);
@@ -1636,21 +1645,39 @@ html.comando-gia-scelto #modal-comando {
 }
 
 /* ===== Convertitore Coordinate espanso =====
-   Colonna sinistra 1/3 con due schede alternate (Dati / Messaggio),
-   mappa 2/3 sempre visibile. Le due tendine di sinistra valgono 1fr
-   ciascuna e la mappa 4fr: 2 su 6 contro 4 su 6.
-   `display:contents` sulle .coord-colonna serve a far diventare titoli e
-   contenuti celle di QUESTA griglia: senza, resterebbero figli del loro
-   div e ogni colonna sarebbe una cella sola. */
+   Riga 1: due linguette (Dati / Invia messaggio) a sinistra e Chiudi a
+   destra. Riga 2: la scheda scelta a sinistra (1/3) e la mappa a destra
+   (2/3), nuda — niente linguetta, niente cornice: è la carta, non una
+   scheda fra le altre. */
 .pannello-fullscreen .coord-tab-bar {
+    display: flex;
+    align-items: flex-end;
+    gap: 0;
+    margin: 0 0 -1px;
+    padding: 0;
+}
+
+/* In fullscreen le due schede di sinistra stanno nel loro terzo, non
+   larghe mezza pagina */
+.pannello-fullscreen .coord-tab-btn {
+    flex: 0 0 auto;
+    min-width: 150px;
+}
+
+/* La mappa non è più una scheda selezionabile: si vede sempre */
+.pannello-fullscreen .coord-tab-btn[data-tab="mappa"] {
     display: none;
+}
+
+.pannello-fullscreen .coord-tab-bar .btn-fullscreen-pagina {
+    margin-left: auto;    /* spinto a destra, sul bordo del contenuto */
+    margin-bottom: 1px;
 }
 
 .pannello-fullscreen .coord-tab-corpo {
     display: grid;
-    grid-template-columns: 1fr 1fr 4fr;
-    grid-template-rows: auto 1fr;
-    gap: 0 16px;          /* riga a zero: la linguetta tocca il contenuto */
+    grid-template-columns: 1fr 2fr;
+    gap: 16px;
     margin-top: 0;
     border: none;
     padding: 0;
@@ -1658,77 +1685,51 @@ html.comando-gia-scelto #modal-comando {
     align-items: start;
 }
 
+/* `display:contents`: i contenuti diventano celle di QUESTA griglia,
+   altrimenti ogni .coord-colonna sarebbe una cella sola */
 .pannello-fullscreen .coord-colonna {
     display: contents;
 }
-
-/* Riga 1: le tre linguette. Riga 2: i contenuti. */
-.pannello-fullscreen .coord-colonna[data-colonna="dati"] .coord-colonna-titolo { grid-column: 1; grid-row: 1; }
-.pannello-fullscreen .coord-colonna[data-colonna="messaggio"] .coord-colonna-titolo { grid-column: 2; grid-row: 1; }
-.pannello-fullscreen .coord-colonna[data-colonna="mappa"] .coord-colonna-titolo { grid-column: 3; grid-row: 1; }
-
-/* Dati e Messaggio condividono la stessa cella: se ne vede una alla volta */
-.pannello-fullscreen #coord-tab-content-dati,
-.pannello-fullscreen #coord-tab-content-messaggio { grid-column: 1 / 3; grid-row: 2; }
-.pannello-fullscreen #coord-tab-content-mappa { grid-column: 3; grid-row: 2; }
 
 .coord-colonna-titolo {
     display: none;
 }
 
-.pannello-fullscreen .coord-colonna-titolo {
-    display: block;
-    background: var(--dark-color);
-    color: var(--text-muted);
-    border: 1px solid var(--border-color);
-    border-bottom: none;
-    border-radius: 8px 8px 0 0;
-    padding: 9px 20px;
-    font-size: 13px;
-    font-weight: bold;
-    text-align: center;
-    margin: 0;
-    cursor: pointer;
-}
-
-.pannello-fullscreen .coord-colonna-titolo.attivo,
-.pannello-fullscreen .coord-colonna.attiva .coord-colonna-titolo {
-    background: var(--dark-color);
-    color: var(--primary-color);
-    border-color: var(--primary-color);
-}
-
+/* Dati e Messaggio condividono la cella di sinistra: una alla volta */
 .pannello-fullscreen #coord-tab-content-dati,
-.pannello-fullscreen #coord-tab-content-mappa,
 .pannello-fullscreen #coord-tab-content-messaggio {
-    display: block !important;
-    border: 1px solid var(--border-color);
-    border-radius: 0 0 8px 8px;
+    grid-column: 1;
+    grid-row: 1;
+    border: 1px solid var(--primary-color);
+    border-radius: 0 8px 8px 8px;
     padding: 14px;
     background: var(--surface-color);
     min-width: 0;
 }
 
-/* La scheda di sinistra non scelta esce di scena. Queste due regole devono
-   stare DOPO il display:block qui sopra: fra due !important vince l'ultima. */
-.pannello-fullscreen .coord-tab-corpo.sx-dati #coord-tab-content-messaggio { display: none !important; }
-.pannello-fullscreen .coord-tab-corpo.sx-messaggio #coord-tab-content-dati { display: none !important; }
-
-/* La linguetta di sinistra effettivamente aperta resta riconoscibile anche
-   quando si sta lavorando sulla mappa (che è la colonna "attiva") */
-.pannello-fullscreen .coord-tab-corpo.sx-dati .coord-colonna[data-colonna="dati"] .coord-colonna-titolo,
-.pannello-fullscreen .coord-tab-corpo.sx-messaggio .coord-colonna[data-colonna="messaggio"] .coord-colonna-titolo {
-    color: var(--text-main);
-    border-color: var(--text-muted);
+/* La mappa non ha cornice né fondo: la carta si stacca da sé */
+.pannello-fullscreen #coord-tab-content-mappa {
+    display: block !important;
+    grid-column: 2;
+    grid-row: 1;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    background: transparent;
+    min-width: 0;
 }
 
-.pannello-fullscreen .coord-colonna.attiva #coord-tab-content-dati,
-.pannello-fullscreen .coord-colonna.attiva #coord-tab-content-mappa,
-.pannello-fullscreen .coord-colonna.attiva #coord-tab-content-messaggio {
-    border-color: var(--primary-color) !important;
+/* Quale delle due schede di sinistra è aperta */
+.pannello-fullscreen .coord-tab-corpo.sx-dati #coord-tab-content-dati,
+.pannello-fullscreen .coord-tab-corpo.sx-messaggio #coord-tab-content-messaggio {
+    display: block !important;
 }
 
-/* Adesso la mappa è la colonna grande: tanto vale darle l'altezza */
+.pannello-fullscreen .coord-tab-corpo.sx-dati #coord-tab-content-messaggio,
+.pannello-fullscreen .coord-tab-corpo.sx-messaggio #coord-tab-content-dati {
+    display: none !important;
+}
+
 .pannello-fullscreen .mappa-comando {
     height: 62vh;
 }
@@ -4687,20 +4688,12 @@ a.btn-icon-hamburger:hover {
 
     /* Schermo stretto: si torna a una colonna sola, quindi le .coord-colonna
        tornano contenitori normali e cade la sovrapposizione Dati/Messaggio */
-    .pannello-fullscreen .coord-colonna {
-        display: block;
-    }
-
-    .pannello-fullscreen .coord-tab-corpo {
-        grid-template-columns: 1fr;
-        grid-template-rows: none;
-        gap: 16px;
-    }
-
-    .pannello-fullscreen .coord-tab-corpo.sx-dati #coord-tab-content-messaggio,
-    .pannello-fullscreen .coord-tab-corpo.sx-messaggio #coord-tab-content-dati {
-        display: block !important;
-    }
+        /* Schermo stretto: una colonna sola, e la mappa torna una scheda
+       come le altre */
+    .pannello-fullscreen .coord-colonna { display: block; }
+    .pannello-fullscreen .coord-tab-corpo { grid-template-columns: 1fr; }
+    .pannello-fullscreen .coord-tab-btn[data-tab="mappa"] { display: block; }
+    .pannello-fullscreen .coord-tab-bar { flex-wrap: wrap; }
 }
 
 @media (max-width: 700px) {
