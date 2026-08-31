@@ -1703,7 +1703,9 @@ html.comando-gia-scelto #modal-comando {
 }
 
 /* Dati e Messaggio condividono la cella di sinistra: una alla volta */
-.pannello-fullscreen #coord-tab-content-dati,
+/* Le tre schede condividono la cella di sinistra: una alla volta */
+.pannello-fullscreen #coord-tab-content-input,
+.pannello-fullscreen #coord-tab-content-output,
 .pannello-fullscreen #coord-tab-content-messaggio {
     grid-column: 1;
     grid-row: 1;
@@ -1726,14 +1728,16 @@ html.comando-gia-scelto #modal-comando {
     min-width: 0;
 }
 
-/* Quale delle due schede di sinistra è aperta */
-.pannello-fullscreen .coord-tab-corpo.sx-dati #coord-tab-content-dati,
+/* Quale delle tre schede di sinistra è aperta */
+.pannello-fullscreen .coord-tab-corpo.sx-input #coord-tab-content-input,
+.pannello-fullscreen .coord-tab-corpo.sx-output #coord-tab-content-output,
 .pannello-fullscreen .coord-tab-corpo.sx-messaggio #coord-tab-content-messaggio {
     display: block !important;
 }
 
-.pannello-fullscreen .coord-tab-corpo.sx-dati #coord-tab-content-messaggio,
-.pannello-fullscreen .coord-tab-corpo.sx-messaggio #coord-tab-content-dati {
+.pannello-fullscreen .coord-tab-corpo:not(.sx-input) #coord-tab-content-input,
+.pannello-fullscreen .coord-tab-corpo:not(.sx-output) #coord-tab-content-output,
+.pannello-fullscreen .coord-tab-corpo:not(.sx-messaggio) #coord-tab-content-messaggio {
     display: none !important;
 }
 

@@ -491,7 +491,8 @@
                      più in .pagina-box-header: là era su una riga sua e non si
                      allineava al bordo del contenuto. -->
                 <div class="coord-tab-bar">
-                    <button type="button" class="coord-tab-btn attivo" data-tab="dati">📋 Dati</button>
+                    <button type="button" class="coord-tab-btn attivo" data-tab="input">📋 Input</button>
+                    <button type="button" class="coord-tab-btn" data-tab="output">📐 Output</button>
                     <button type="button" class="coord-tab-btn" data-tab="messaggio">✉️ Invia messaggio</button>
                     <p class="pagina-nota coord-nota-mappa">Scorri la mappa e, all'occorrenza, abilita la
                         funzione "Crea percorso".</p>
@@ -499,12 +500,14 @@
                         title="Espandi a schermo intero">⛶ Espandi</button>
                 </div>
                 <div class="coord-tab-corpo">
-                    <!-- SCHEDA/COLONNA: DATI -->
-                    <div class="coord-colonna" data-colonna="dati">
-                        <div id="coord-tab-content-dati" style="display:block;">
+
+                    <!-- SCHEDA/COLONNA: INPUT -->
+                    <div class="coord-colonna" data-colonna="input">
+                        <div id="coord-tab-content-input" style="display:block;">
                             <p class="pagina-nota">Scegli il formato, inserisci le coordinate da convertire e segui le
                                 funzioni disponibili.</p>
                             <div id="coord-input-colonna">
+                                <div id="coord-input-colonna">
                                 <label for="coord-formato-input">Formato coordinate in ingresso</label>
                                 <select id="coord-formato-input">
                                     <option value="dd">Gradi decimali (DD.dddddd)</option>
@@ -714,6 +717,12 @@
                                 <p id="coord-errore" class="pagina-nota"
                                     style="display:none; color:var(--danger-color);"></p>
                             </div> <!-- chiusura #coord-input-colonna -->
+                        </div>
+                    </div>
+
+                    <!-- SCHEDA/COLONNA: OUTPUT -->
+                    <div class="coord-colonna" data-colonna="output">
+                        <div id="coord-tab-content-output" style="display:none;">
                             <div id="coord-risultati" class="riepilogo-comando" style="display:none;">
                                 <div class="riepilogo-box">
                                     <table class="riepilogo-tabella">

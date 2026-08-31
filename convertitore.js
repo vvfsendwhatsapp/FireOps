@@ -809,15 +809,30 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 }
 
+// Dopo una conversione riuscita il pulsante cambia mestiere: non converte
+// più, riporta su Input per correggere i dati. Torna "Converti" appena si
+// tocca un campo o si cambia formato — cioè appena c'è di nuovo qualcosa
+// da convertire.
+let conversioneFatta = false;
+
 function aggiornaBottoneConverti() {
     const btn = document.getElementById("btn-coord-converti");
     if (!btn || !selectFormato) return;
     const formato = selectFormato.value;
-        btn.textContent = formato === "mappa"
+
+    if (conversioneFatta) {
+        btn.textContent = "✏️ Modifica dati inseriti";
+        btn.disabled = false;
+        btn.title = "Torna alla scheda Input per correggere le coordinate";
+        return;
+    }
+
+    btn.textContent = formato === "mappa"
         ? "🗺️ Vai alla mappa"
         : formato === "gps"
             ? "📍 Rileva la mia posizione"
             : "📐 Converti e scopri le funzioni a lato";
+    btn.title = "";
     btn.disabled = !tuttiCampiCompilatiPerFormato(formato);
 }
 
@@ -905,6 +920,7 @@ function aggiornaBottoneConverti() {
         campo.addEventListener("focus", () => {
             if (!campo.value) return;
             campo.value = "";
+            conversioneFatta = false;
             salvaStatoFormCoord();
             aggiornaBottoneConverti();
         });
@@ -927,8 +943,16 @@ function aggiornaBottoneConverti() {
     // (compreso quello nascosto della combo Comune) senza doverli agganciare uno per uno
     const contenitoreFormCoord = document.getElementById("coord-input-colonna");
 if (contenitoreFormCoord) {
-    contenitoreFormCoord.addEventListener("input", () => { salvaStatoFormCoord(); aggiornaBottoneConverti(); });
-    contenitoreFormCoord.addEventListener("change", () => { salvaStatoFormCoord(); aggiornaBottoneConverti(); });
+    contenitoreFormCoord.addEventListener("input", () => {
+        conversioneFatta = false;   // si è tornati a modificare: il pulsante riconverte
+        salvaStatoFormCoord();
+        aggiornaBottoneConverti();
+    });
+    contenitoreFormCoord.addEventListener("change", () => {
+        conversioneFatta = false;
+        salvaStatoFormCoord();
+        aggiornaBottoneConverti();
+    });
 }
 
     // ==========================================================
@@ -1320,9 +1344,6 @@ function iconaFrecciaDirezione(colore, azimutGradi) {
     const formatoAttuale = selectFormato ? selectFormato.value : "dd";
     if (formatoAttuale !== "mappa") return;
     elaboraCoordinateConvertite(e.latlng.lat, e.latlng.lng);
-    // Dopo il click, torna automaticamente sulla scheda Dati per mostrare
-    // subito tutti i formati convertiti e i dati aggiornati
-    impostaSchedaColonnaAttiva("dati");
 });
 
         if (typeof ResizeObserver !== "undefined") {
@@ -1413,7 +1434,10 @@ document.addEventListener("fireops:comando-attivo-cambiato", (e) => {
         if (elRisultati) elRisultati.style.display = "none";
         const elDatiNotaVuota = document.getElementById("coord-dati-nota-vuota");
         if (elDatiNotaVuota) elDatiNotaVuota.style.display = "block";
-
+        impostaSchedaColonnaAttiva("input");
+        conversioneFatta = false;
+        salvaStatoFormCoord();
+        aggiornaBottoneConverti();
         nascondiErrore();
         aggiornaAnteprimaMessaggioCoordinate();
         aggiornaStatoBottonePercorso();
@@ -2431,6 +2455,14 @@ function disegnaGraficoAltimetria(geojson) {
 
     if (btnConverti) {
         btnConverti.addEventListener("click", async (event) => {
+            // Stato "Modifica dati inseriti": il pulsante non converte, riporta
+            // su Input. Il ritorno a "Converti" lo fa il primo tocco su un campo.
+            if (conversioneFatta) {
+                conversioneFatta = false;
+                aggiornaBottoneConverti();
+                impostaSchedaColonnaAttiva("input");
+                return;
+            }
             nascondiErrore();
             const formatoScelto = selectFormato ? selectFormato.value : "dd";
             if (formatoScelto === "mappa") {
@@ -2667,6 +2699,12 @@ function disegnaGraficoAltimetria(geojson) {
         const elDatiNotaVuota = document.getElementById("coord-dati-nota-vuota");
         if (elDatiNotaVuota) elDatiNotaVuota.style.display = "none";
 
+        // Convertito: si passa da sé alla scheda dei risultati, che è il
+        // motivo per cui si è premuto Converti
+        impostaSchedaColonnaAttiva("output");
+        conversioneFatta = true;
+        aggiornaBottoneConverti();
+
         centraMappaSulTarget(lat, lon);
         mostraEffemeridiPunto(lat, lon);
         aggiornaAnteprimaMessaggioCoordinate();
@@ -2694,7 +2732,8 @@ function disegnaGraficoAltimetria(geojson) {
     // ==========================================================
     const pulsantiScheda = document.querySelectorAll(".coord-tab-btn");
     const contenutiScheda = {
-        dati: document.getElementById("coord-tab-content-dati"),
+        input: document.getElementById("coord-tab-content-input"),
+        output: document.getElementById("coord-tab-content-output"),
         mappa: document.getElementById("coord-tab-content-mappa"),
         messaggio: document.getElementById("coord-tab-content-messaggio"),
     };
@@ -2706,15 +2745,16 @@ function disegnaGraficoAltimetria(geojson) {
         const corpoSchede = document.querySelector(".coord-tab-corpo");
         if (corpoSchede) {
             corpoSchede.classList.remove("corpo-tab-primo-attivo", "corpo-tab-centro-attivo", "corpo-tab-ultimo-attivo");
-            // In fullscreen la colonna di sinistra alterna Dati e Messaggio:
-            // la mappa sta a destra e non entra in questa scelta, quindi
-            // cliccandola la scheda di sinistra resta quella che era.
+            // In fullscreen la colonna di sinistra alterna Input, Output e
+            // Messaggio; la mappa sta a destra e non entra in questa scelta,
+            // quindi cliccandola la scheda di sinistra resta quella che era.
             if (chiave !== "mappa") {
-                corpoSchede.classList.toggle("sx-dati", chiave === "dati");
-                corpoSchede.classList.toggle("sx-messaggio", chiave === "messaggio");
-            } else if (!corpoSchede.classList.contains("sx-dati")
-                    && !corpoSchede.classList.contains("sx-messaggio")) {
-                corpoSchede.classList.add("sx-dati");
+                ["input", "output", "messaggio"].forEach(k => {
+                    corpoSchede.classList.toggle("sx-" + k, k === chiave);
+                });
+            } else if (!["sx-input", "sx-output", "sx-messaggio"]
+                        .some(c => corpoSchede.classList.contains(c))) {
+                corpoSchede.classList.add("sx-input");
             }
         }
         Object.entries(contenutiScheda).forEach(([k, el]) => {
@@ -2732,7 +2772,7 @@ function disegnaGraficoAltimetria(geojson) {
         pulsante.addEventListener("click", () => impostaSchedaColonnaAttiva(pulsante.dataset.tab));
     });
 
-    let tabInizialeCoord = "dati";
+    let tabInizialeCoord = "input";
     try {
         const tabSalvata = sessionStorage.getItem(CHIAVE_STORAGE_TAB_COORD);
         if (tabSalvata && contenutiScheda[tabSalvata]) tabInizialeCoord = tabSalvata;
