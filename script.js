@@ -375,15 +375,20 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ==========================================================
-    // STILE DI SFONDO DELLA MAPPA (grigia in stile Windy oppure OpenStreetMap classica)
+    // STILE DI SFONDO DELLA MAPPA (scura oppure OpenStreetMap classica)
+    //
+    // Entrambe le voci usano le tile OSM: la "grigia" è la stessa carta
+    // rovesciata via CSS. Prima veniva da CARTO, che ha iniziato a chiedere
+    // una API key per i basemap raster e li sta ritirando — e una chiave in
+    // chiaro dentro un repo pubblico è di tutti tranne che nostra.
     // ==========================================================
     const STILI_MAPPA = {
         grigia: {
-            url: "https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png",
+            url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+            scura: true,
             opzioni: {
-                maxZoom: 20,
-                subdomains: "abcd",
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                maxZoom: 19,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             }
         },
         osm: {
@@ -403,6 +408,12 @@ document.addEventListener("DOMContentLoaded", () => {
         const conf = STILI_MAPPA[stile];
         layerBaseLeaflet = L.tileLayer(conf.url, conf.opzioni).addTo(mappaComandoLeaflet);
         layerBaseLeaflet.bringToBack();
+
+        // Il filtro va sul contenitore DI QUESTO layer, non sul tile-pane e
+        // meno che mai sulla mappa: marker, crocino e radar stanno in pane
+        // diversi e verrebbero rovesciati anche loro.
+        const contenitoreTile = layerBaseLeaflet.getContainer();
+        if (contenitoreTile) contenitoreTile.classList.toggle("tile-scure", !!conf.scura);
 
         stileMappaAttuale = stile;
         if (btnStileMappa) {
