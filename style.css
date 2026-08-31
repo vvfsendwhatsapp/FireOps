@@ -5043,9 +5043,13 @@ a.btn-icon-hamburger:hover {
     .mappa-meteo-lato  { max-height: 260px; }
 }
 
-/* Sfondo scuro senza provider terzi: le tile OSM rovesciate.
-   hue-rotate rimette i blu al loro posto dopo l'invert, altrimenti
-   l'acqua diventa arancione. */
+/* Sfondo scuro senza provider terzi: tile OSM rovesciate.
+   hue-rotate rimette i blu a posto dopo l'invert, altrimenti l'acqua
+   diventa arancione. */
 .tile-scure {
     filter: invert(1) hue-rotate(180deg) brightness(.86) contrast(1.05) saturate(.7);
 }
+
+/* Alba/tramonto: le emoji portano già il significato, un quarto colore
+   in testata accanto a giallo, azzurro e arancione sarebbe rumore */
+.valore-effemeridi { font-size: 15px; color: var(--text-main); }

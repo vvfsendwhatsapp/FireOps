@@ -362,3 +362,94 @@ window.FireOps = (function () {
         caricaJson,
     };
 })();
+
+// ==========================================================
+// EFFEMERIDI — calcolo locale (NOAA), nessuna chiamata di rete.
+// Precisione ~1 minuto in Italia: serve a sapere se c'è luce, non
+// a fare astronomia.
+// ==========================================================
+(function () {
+    window.FireOps = window.FireOps || {};
+
+    const RAD = Math.PI / 180;
+    const J2000 = 2451545.0;
+    const EPS = 23.4397 * RAD;                       // obliquità dell'eclittica
+
+    const aJuliano = d => d.getTime() / 86400000 + 2440587.5;
+    const aData = j => new Date((j - 2440587.5) * 86400000);
+
+    // Posizione del Sole sull'eclittica, per un istante in giorni da J2000
+    function sole(d) {
+        const M = (357.5291 + 0.98560028 * d) * RAD;
+        const C = (1.9148 * Math.sin(M) + 0.0200 * Math.sin(2 * M) + 0.0003 * Math.sin(3 * M)) * RAD;
+        const lambda = M + C + (102.9372 + 180) * RAD;
+        return {
+            M, lambda,
+            decl: Math.asin(Math.sin(lambda) * Math.sin(EPS)),
+            ar: Math.atan2(Math.sin(lambda) * Math.cos(EPS), Math.cos(lambda))
+        };
+    }
+
+    // Istanti in cui il Sole tocca una data altezza, salendo e scendendo
+    function eventi(n, lat, lon, altezzaGradi) {
+        const Js = n - lon / 360;
+        const s = sole(Js);
+        const transito = J2000 + Js + 0.0053 * Math.sin(s.M) - 0.0069 * Math.sin(2 * s.lambda);
+        const cosW = (Math.sin(altezzaGradi * RAD) - Math.sin(lat * RAD) * Math.sin(s.decl)) /
+                     (Math.cos(lat * RAD) * Math.cos(s.decl));
+        // |cosW|>1: sole sempre sopra o sempre sotto l'orizzonte (latitudini polari)
+        if (cosW > 1 || cosW < -1) return { transito: aData(transito), salita: null, discesa: null };
+        const w = Math.acos(cosW) / RAD / 360;
+        return { transito: aData(transito), salita: aData(transito - w), discesa: aData(transito + w) };
+    }
+
+    function posizioneSole(lat, lon, data) {
+        const d = aJuliano(data) - J2000;
+        const s = sole(d);
+        const H = (280.16 + 360.9856235 * d) * RAD + lon * RAD - s.ar;   // angolo orario
+        const alt = Math.asin(Math.sin(lat * RAD) * Math.sin(s.decl) +
+                              Math.cos(lat * RAD) * Math.cos(s.decl) * Math.cos(H));
+        const az = Math.atan2(Math.sin(H),
+                              Math.cos(H) * Math.sin(lat * RAD) - Math.tan(s.decl) * Math.cos(lat * RAD));
+        return { altezza: alt / RAD, azimut: (az / RAD + 180) % 360 };
+    }
+
+    const FASI_LUNA = ["Luna nuova", "Luna crescente", "Primo quarto", "Gibbosa crescente",
+                       "Luna piena", "Gibbosa calante", "Ultimo quarto", "Luna calante"];
+
+    function luna(data) {
+        const eta = (aJuliano(data) - 2451550.1) / 29.530588853;   // lunazioni dalla nuova del 2000
+        const fase = eta - Math.floor(eta);
+        return {
+            nome: FASI_LUNA[Math.round(fase * 8) % 8],
+            illuminazione: (1 - Math.cos(2 * Math.PI * fase)) / 2
+        };
+    }
+
+    FireOps.effemeridi = function (lat, lon, data) {
+        const quando = data || new Date();
+        const n = Math.round(aJuliano(quando) - J2000 + lon / 360);
+        const g = eventi(n, lat, lon, -0.833);   // bordo superiore del disco + rifrazione
+        const c = eventi(n, lat, lon, -6);       // crepuscolo civile
+        return {
+            alba: g.salita, tramonto: g.discesa, mezzogiorno: g.transito,
+            crepuscoloInizio: c.salita, crepuscoloFine: c.discesa,
+            oreLuce: (g.salita && g.discesa) ? (g.discesa - g.salita) / 3600000 : null,
+            sole: posizioneSole(lat, lon, quando),
+            luna: luna(quando)
+        };
+    };
+
+    // La domanda che decide il tema della carta
+    FireOps.eGiorno = function (lat, lon, data) {
+        const quando = data || new Date();
+        const e = FireOps.effemeridi(lat, lon, quando);
+        if (!e.alba || !e.tramonto) return e.sole.altezza > -0.833;
+        return quando >= e.alba && quando <= e.tramonto;
+    };
+
+    FireOps.oraBreve = function (data) {
+        return data ? new Intl.DateTimeFormat("it-IT",
+            { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Rome" }).format(data) : "--:--";
+    };
+})();

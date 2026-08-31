@@ -374,6 +374,61 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    //Effemeridi
+        const displayEffemeridi = document.getElementById("display-effemeridi");
+    let effemeridiComando = null;
+
+    function aggiornaEffemeridi() {
+        if (!displayEffemeridi || !coordinateComandoAttivo) return;
+        effemeridiComando = FireOps.effemeridi(coordinateComandoAttivo.lat, coordinateComandoAttivo.lng);
+        displayEffemeridi.textContent =
+            `🌅 ${FireOps.oraBreve(effemeridiComando.alba)} 🌇 ${FireOps.oraBreve(effemeridiComando.tramonto)}`;
+    }
+
+    function apriPopupEffemeridi(event) {
+        event.stopPropagation();
+        const esistente = document.getElementById("popup-effemeridi-attivo");
+        if (esistente) { esistente.remove(); return; }
+        if (!effemeridiComando) return;
+
+        const e = effemeridiComando;
+        const g = v => `${Math.round(v)}°`;
+        const popup = document.createElement("div");
+        popup.id = "popup-effemeridi-attivo";
+        popup.className = "popup-canali";
+        popup.innerHTML = `
+            <span class="popup-close" title="Chiudi">&times;</span>
+            <h5>Effemeridi — Comando ${sessionStorage.getItem(CHIAVE_STORAGE) || "-"}</h5>
+            <table><tbody>
+                <tr><td class="nome">Prime luci (crep. civile)</td><td class="canale">${FireOps.oraBreve(e.crepuscoloInizio)}</td></tr>
+                <tr><td class="nome">Alba</td><td class="canale">${FireOps.oraBreve(e.alba)}</td></tr>
+                <tr><td class="nome">Mezzogiorno solare</td><td class="canale">${FireOps.oraBreve(e.mezzogiorno)}</td></tr>
+                <tr><td class="nome">Tramonto</td><td class="canale">${FireOps.oraBreve(e.tramonto)}</td></tr>
+                <tr><td class="nome">Ultime luci (crep. civile)</td><td class="canale">${FireOps.oraBreve(e.crepuscoloFine)}</td></tr>
+                <tr><td class="nome">Ore di luce</td><td class="canale">${e.oreLuce ? e.oreLuce.toFixed(1) + " h" : "-"}</td></tr>
+                <tr><td class="nome">Sole adesso (alt. / az.)</td><td class="canale">${g(e.sole.altezza)} / ${g(e.sole.azimut)}</td></tr>
+                <tr><td class="nome">Luna illuminata</td><td class="canale">${Math.round(e.luna.illuminazione * 100)}%</td></tr>
+            </tbody></table>
+            <p class="pagina-nota" style="margin:8px 0 0;">${e.luna.nome} · orari in ora italiana</p>`;
+
+        document.body.appendChild(popup);
+        const rect = event.currentTarget.getBoundingClientRect();
+        popup.style.top = `${rect.bottom + 10}px`;
+        popup.style.left = `${Math.max(10, Math.min(rect.left, window.innerWidth - popup.offsetWidth - 10))}px`;
+        popup.querySelector(".popup-close").addEventListener("click", () => popup.remove());
+        popup.addEventListener("click", ev => ev.stopPropagation());
+    }
+
+    if (displayEffemeridi) {
+        displayEffemeridi.classList.add("cliccabile-canali");
+        displayEffemeridi.addEventListener("click", apriPopupEffemeridi);
+    }
+
+    document.addEventListener("click", () => {
+        const p = document.getElementById("popup-effemeridi-attivo");
+        if (p) p.remove();
+    });
+
     // ==========================================================
     // STILE DI SFONDO DELLA MAPPA (scura oppure OpenStreetMap classica)
     //
@@ -383,20 +438,15 @@ document.addEventListener("DOMContentLoaded", () => {
     // chiaro dentro un repo pubblico è di tutti tranne che nostra.
     // ==========================================================
     const STILI_MAPPA = {
-        grigia: {
+        chiara: {
+            url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+            opzioni: { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' }
+        },
+        // Stesse tile, rovesciate via CSS
+        scura: {
             url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
             scura: true,
-            opzioni: {
-                maxZoom: 19,
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            }
-        },
-        osm: {
-            url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-            opzioni: {
-                maxZoom: 19,
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            }
+            opzioni: { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' }
         }
     };
 
@@ -416,15 +466,41 @@ document.addEventListener("DOMContentLoaded", () => {
         if (contenitoreTile) contenitoreTile.classList.toggle("tile-scure", !!conf.scura);
 
         stileMappaAttuale = stile;
-        if (btnStileMappa) {
-            btnStileMappa.textContent = stile === "grigia" ? "🗺️ OSM" : "🗺️ Scura";
-        }
     }
 
     const btnStileMappa = document.getElementById("btn-stile-mappa");
+        // auto (segue alba/tramonto del Comando) → chiara → scura → auto
+    const CHIAVE_TEMA_MAPPA = "fireops_tema_mappa";
+    let temaScelto = sessionStorage.getItem(CHIAVE_TEMA_MAPPA) || "auto";
+
+    function stileEffettivo() {
+        if (temaScelto !== "auto") return temaScelto;
+        if (!coordinateComandoAttivo) return "chiara";
+        return FireOps.eGiorno(coordinateComandoAttivo.lat, coordinateComandoAttivo.lng) ? "chiara" : "scura";
+    }
+
+    function aggiornaPulsanteTema() {
+        if (!btnStileMappa) return;
+        const eff = stileEffettivo();
+        btnStileMappa.textContent = temaScelto === "auto"
+            ? (eff === "chiara" ? "🌗 Auto · chiara" : "🌗 Auto · scura")
+            : (temaScelto === "chiara" ? "☀️ Chiara" : "🌙 Scura");
+        btnStileMappa.title = temaScelto === "auto"
+            ? "Segue alba e tramonto del Comando — clicca per fissare la carta"
+            : "Clicca per cambiare (torna in automatico al terzo clic)";
+    }
+
+    function applicaTemaMappa() {
+        const eff = stileEffettivo();
+        if (eff !== stileMappaAttuale) impostaStileMappa(eff);
+        aggiornaPulsanteTema();
+    }
+
     if (btnStileMappa) {
         btnStileMappa.addEventListener("click", () => {
-            impostaStileMappa(stileMappaAttuale === "grigia" ? "osm" : "grigia");
+            temaScelto = temaScelto === "auto" ? "chiara" : temaScelto === "chiara" ? "scura" : "auto";
+            try { sessionStorage.setItem(CHIAVE_TEMA_MAPPA, temaScelto); } catch (err) {}
+            applicaTemaMappa();
         });
     }
 
@@ -646,6 +722,8 @@ document.addEventListener("DOMContentLoaded", () => {
         aggiornaMappaComando(comando);
         aggiornaMeteoComando(comando);
         aggiornaWindy();
+        aggiornaEffemeridi();
+        applicaTemaMappa();
 
         if (intervalloMeteo) clearInterval(intervalloMeteo);
         intervalloMeteo = setInterval(() => {
@@ -2864,6 +2942,8 @@ Koordináták küldéséhez:
 
     setInterval(updateClockAndShift, 1000);
     updateClockAndShift();
+        // La carta cambia da sola al tramonto; il minuto basta e avanza
+    setInterval(() => { aggiornaEffemeridi(); applicaTemaMappa(); }, 60000);
 
     // ==========================================================
     // FOCUS INIZIALE SU "COMANDO" + CONFERMA CON INVIO (Enter)
