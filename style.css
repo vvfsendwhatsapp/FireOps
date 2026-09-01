@@ -5318,6 +5318,7 @@ body.fullscreen-attivo #modal-comando {
 }
 .terremoti-comandi { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 12px; flex: 0 0 auto; }
 .terremoti-campo { flex: 1 1 0; min-width: 150px; display: flex; flex-direction: column; gap: 6px; }
+.terremoti-campo[hidden] { display: none; }
 .terremoti-campo-stretto { flex: 0 1 150px; min-width: 120px; }
 /* Etichetta sopra il campo, come .pagina-box label: la sezione non è dentro
    .pagina-box, quindi quei valori vanno ridichiarati qui. */
