@@ -3396,6 +3396,35 @@ function sfTabellaLinee(){
     + `<th>lunghezza km</th></tr></thead><tbody>${righe}</tbody></table>`;
 }
 
+/* Gradi decimali per il copia-incolla in SO115, gradi primi secondi per
+   dettarli via radio: sulla carta stampata servono tutti e due. */
+function sfDms(v, pos, neg){
+  const a = Math.abs(v);
+  const g = Math.floor(a);
+  const m = Math.floor((a - g) * 60);
+  const s = ((a - g) * 60 - m) * 60;
+  return `${g}° ${String(m).padStart(2, '0')}' ${s.toFixed(1)}" `
+    + (v < 0 ? neg : pos);
+}
+
+function sfTabellaInneschi(){
+  const punti = [];
+  disegni.eachLayer(x => { if (x._tipo === 'origine' && x.getLatLng) punti.push(x); });
+  if (!punti.length) return `<p class="sf-vuoto">\u2014</p>`;
+
+  const righe = punti.map((x, i) => {
+    const p = x.getLatLng();
+    return `<tr><td>${i + 1}${x._testo ? ' \u2014 ' + esc(x._testo) : ''}</td>`
+      + `<td>${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}</td>`
+      + `<td>${esc(sfDms(p.lat, 'N', 'S'))}</td>`
+      + `<td>${esc(sfDms(p.lng, 'E', 'O'))}</td></tr>`;
+  }).join('');
+
+  return `<table class="sf-tab"><thead><tr><th>Innesco</th>`
+    + `<th>Gradi decimali</th><th>Latitudine</th><th>Longitudine</th>`
+    + `</tr></thead><tbody>${righe}</tbody></table>`;
+}
+
 /* I tile della nuova inquadratura arrivano dopo il fitBounds: stampare
    subito darebbe una carta a mattonelle grigie. Si aspetta il `load` del
    fondo attivo, con un tetto perché su rete lenta o cache vuota quel
@@ -3438,6 +3467,8 @@ async function stampa(){
          <h1>Riepilogo dei dati</h1>
          <p>${esc(t('stTitolo'))} \u00b7 ${esc(quando)}</p>
        </header>
+        <h2>Punti d'innesco</h2>${sfTabellaInneschi()}
+       <h2>Superfici</h2>${sfTabellaAree()}
        <h2>Superfici</h2>${sfTabellaAree()}
        <h2>Vento</h2>${sfTabellaVento()}
        <h2>Coni di propagazione</h2>${sfTabellaConi()}${avvertenza}
