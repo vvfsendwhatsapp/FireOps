@@ -5517,3 +5517,17 @@ body.fullscreen-attivo #modal-reparti-volo,
 body.fullscreen-attivo #modal-comando {
     z-index: 1700;
 }
+
+.terremoti-comandi { display: flex; flex-wrap: wrap; gap: 14px; align-items: end; margin-bottom: 8px; }
+.terremoti-comandi label { display: flex; flex-direction: column; gap: 3px; font-size: .85em; }
+.terremoti-comandi input { width: 90px; }
+.terremoti-mappa { height: 340px; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 12px; }
+.terremoti-elenco td { vertical-align: middle; }
+.sisma-ora, .sisma-luogo { white-space: nowrap; }
+.sisma-mag { display: inline-block; min-width: 34px; padding: 1px 6px; border-radius: 4px;
+    font-family: "Courier New", monospace; font-weight: bold; text-align: center; color: #111; }
+.sisma-lieve  { background: #f2e06b; }
+.sisma-medio  { background: #e8a33d; }
+.sisma-forte  { background: #d43d1a; color: #fff; }
+.sisma-grave  { background: #7a0000; color: #fff; }
+.sisma-errore { color: var(--danger-color); }

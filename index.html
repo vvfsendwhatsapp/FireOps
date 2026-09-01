@@ -1046,6 +1046,34 @@
             </div>
         </section>
 
+        <section id="terremoti" class="page-section">
+            <h3>Terremoti — INGV</h3>
+            <div class="terremoti-comandi">
+                <label>Ambito <select id="terremoti-ambito"></select></label>
+                <label>Periodo <select id="terremoti-periodo"></select></label>
+                <label>Magnitudo min. <input type="number" id="terremoti-magnitudo" min="0" max="8" step="0.5"
+                        value="3"></label>
+                <label>Raggio km <input type="number" id="terremoti-raggio" min="10" max="1000" step="10"
+                        value="200"></label>
+                <button type="button" id="terremoti-aggiorna">Aggiorna</button>
+            </div>
+            <p id="terremoti-stato" class="pagina-nota"></p>
+            <div id="terremoti-mappa" class="terremoti-mappa"></div>
+            <table class="riepilogo-tabella terremoti-elenco">
+                <thead>
+                    <tr>
+                        <th>Ora</th>
+                        <th>Magn.</th>
+                        <th>Prof.</th>
+                        <th>Località</th>
+                        <th>Distanza</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="terremoti-tabella"></tbody>
+            </table>
+        </section>
+
         <!-- SOSTANZE PERICOLOSE (Schede ICSC ILO/OMS) -->
         <section id="sostanze-pericolose" class="page-section">
             <div class="pagina-box pagina-box-larga">
@@ -1095,7 +1123,7 @@
                 🏷️ Versione: <span id="display-versione">—</span>
             </p>
         </div>
-    </div>  
+    </div>
 
     <!-- MODALE GLI 8 PASSI -->
     <div id="modal-otto-passi" class="modal-overlay" style="display:none;">
@@ -1159,6 +1187,7 @@
                 "script.js",
                 "turnario.js",
                 "convertitore.js",
+                "terremoti.js",
                 "unitamisura.js",
                 "sitac-simboli.js",
                 "sitac-vento.js",
