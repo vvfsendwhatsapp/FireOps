@@ -809,6 +809,25 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 }
 
+// Dati convalidati = campi in sola lettura. In Sala il convertitore resta
+// aperto mentre si guarda la carta o si detta il messaggio: un tab di
+// troppo, o un clic su un campo, e la coordinata dell'intervento se ne va.
+// I select non hanno readonly, quindi si disabilitano: è l'unico modo,
+// e il pulsante Modifica li restituisce tutti insieme.
+function applicaBloccoCampiCoord() {
+    const contenitore = document.getElementById("coord-input-colonna");
+    if (!contenitore) return;
+
+    contenitore.querySelectorAll("input").forEach(campo => {
+        campo.readOnly = conversioneFatta;
+        campo.classList.toggle("campo-bloccato", conversioneFatta);
+    });
+    contenitore.querySelectorAll("select").forEach(campo => {
+        campo.disabled = conversioneFatta;
+        campo.classList.toggle("campo-bloccato", conversioneFatta);
+    });
+}
+
 // Dopo una conversione riuscita il pulsante cambia mestiere: non converte
 // più, riporta su Input per correggere i dati. Torna "Converti" appena si
 // tocca un campo o si cambia formato — cioè appena c'è di nuovo qualcosa
@@ -823,7 +842,9 @@ function aggiornaBottoneConverti() {
     if (conversioneFatta) {
         btn.textContent = "✏️ Modifica dati inseriti";
         btn.disabled = false;
-        btn.title = "Torna alla scheda Input per correggere le coordinate";
+        btn.title = "Sblocca i campi per correggere le coordinate";
+        btn.classList.add("convalidato");
+        applicaBloccoCampiCoord();
         return;
     }
 
@@ -834,6 +855,8 @@ function aggiornaBottoneConverti() {
             : "📐 Converti e scopri le funzioni a lato";
     btn.title = "";
     btn.disabled = !tuttiCampiCompilatiPerFormato(formato);
+    btn.classList.remove("convalidato");
+    applicaBloccoCampiCoord();
 }
 
     if (selectFormato) {
@@ -918,9 +941,9 @@ function aggiornaBottoneConverti() {
             if (ripulito !== campo.value) campo.value = ripulito;
         });
         campo.addEventListener("focus", () => {
+            if (conversioneFatta) return;   // dati fermi: non si azzera nulla
             if (!campo.value) return;
             campo.value = "";
-            conversioneFatta = false;
             salvaStatoFormCoord();
             aggiornaBottoneConverti();
         });
@@ -1290,10 +1313,7 @@ function iconaFrecciaDirezione(colore, azimutGradi) {
             <p class="pagina-nota" style="margin:8px 0 0;">${e.luna.nome} · orari calcolati sul punto, in ora italiana</p>`;
 
         document.body.appendChild(popup);
-        const rect = evento.currentTarget.getBoundingClientRect();
-        popup.style.top = `${rect.bottom + 10}px`;
-        popup.style.left = `${Math.max(10, Math.min(rect.left, window.innerWidth - popup.offsetWidth - 10))}px`;
-        FireOps.ancoraPopup(popup, event.currentTarget);
+        FireOps.ancoraPopup(popup, evento.currentTarget);
         popup.querySelector(".popup-close").addEventListener("click", () => popup.remove());
         popup.addEventListener("click", ev => ev.stopPropagation());
     }
@@ -2830,6 +2850,7 @@ function disegnaGraficoAltimetria(geojson) {
         });
         // Entrando si svuota: una coppia incollata si sostituisce, non si corregge
         inputAppunti.addEventListener("focus", () => {
+            if (conversioneFatta) return;
             if (!inputAppunti.value) return;
             inputAppunti.value = "";
             salvaStatoFormCoord();

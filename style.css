@@ -2427,6 +2427,28 @@ a.btn-icon-hamburger:hover {
 }
 
 /* ==========================================================
+   CONVERTITORE COORDINATE — CONVALIDA E BLOCCO DATI
+
+   Stesso linguaggio della SITAC: verde = "premi qui", giallo = "i dati
+   sono fermi, questo pulsante li sblocca". Un target inserito e
+   convertito non si deve poter cambiare con un clic distratto mentre
+   si guarda la carta.
+   ========================================================== */
+#btn-coord-converti.convalidato {
+    background-color: #e8a000;
+    color: #1a1a1a;
+}
+
+/* Campi bloccati dopo la conversione: leggibili, chiaramente non
+   editabili. Il tratteggio è lo stesso della SITAC. */
+#convertitore input.campo-bloccato,
+#convertitore select.campo-bloccato {
+    opacity: .72;
+    cursor: default;
+    border-style: dashed;
+}
+
+/* ==========================================================
    FISARMONICHE: VADEMECUM EVENTO RILEVANTE, 8 PASSI, NORMATIVE
 
    Stesso impianto per tutti e tre: le classi .evento-rilevante-* sono
