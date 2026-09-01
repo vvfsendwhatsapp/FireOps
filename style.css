@@ -5398,6 +5398,10 @@ body.sitac-stampa .leaflet-control-zoom { display: none !important; }
 @media print {
     @page { size: A3 landscape; margin: 10mm; }
 
+    /* Il foglio è figlio del body, che riserva 144px all'header fisso
+       dell'app: a schermo non si vedono perché il foglio è assoluto, in
+       stampa sì. Sono i 38mm di bianco sopra il titolo. */
+    body.sitac-stampa { padding: 0 !important; margin: 0 !important; }
     body.sitac-stampa #sitac-stampa-doc { position: static; }
     .sf-pagina { width: auto; }
 
@@ -5443,3 +5447,14 @@ body.sitac-stampa .leaflet-control-zoom { display: none !important; }
 .sf-mappa .sitac-vento-glifo svg { width: 100%; height: 100%; display: block; }
 .sf-mappa .sitac-vento-dati { font-family: "Courier New", monospace;
     font-size: 12px; font-weight: bold; line-height: 1.3; white-space: nowrap; }
+
+    /* Il pannello espanso è fixed a z-index 1500 e copre la finestra: i modali
+   dell'header devono stargli sopra, o premendo ❓ o R non compare niente
+   mentre SITAC o Convertitore sono a schermo pieno. */
+body.fullscreen-attivo #modal-help,
+body.fullscreen-attivo #modal-otto-passi,
+body.fullscreen-attivo #modal-evento-rilevante,
+body.fullscreen-attivo #modal-reparti-volo,
+body.fullscreen-attivo #modal-comando {
+    z-index: 1700;
+}

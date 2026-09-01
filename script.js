@@ -3185,6 +3185,12 @@ Koordináták küldéséhez:
             .catch(() => {
                 display.textContent = "N/D";
             });
+    })();    
+    /* La versione è quella con cui il browser ha scaricato i moduli: se
+       qualcuno segnala un problema, dice subito su quale build. */
+    (function mostraVersione(){
+        const display = document.getElementById("display-versione");
+        if (display) display.textContent = window.FIREOPS_VERSIONE || "n/d";
     })();
 });
 
