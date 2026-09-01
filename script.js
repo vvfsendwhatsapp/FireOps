@@ -1124,15 +1124,46 @@ const CHIAVE_STORAGE_PANNELLI = "fireops_pagine_pannelli";
     let paginePannelliSalvate = null;
     try { paginePannelliSalvate = JSON.parse(sessionStorage.getItem(CHIAVE_STORAGE_PANNELLI)); } catch (err) {}
 
-    let paginaSinistra = (paginePannelliSalvate && document.getElementById(paginePannelliSalvate.sinistra))
+        let paginaSinistra = (paginePannelliSalvate && document.getElementById(paginePannelliSalvate.sinistra))
         ? paginePannelliSalvate.sinistra : "homepage";
     let paginaDestra = (paginePannelliSalvate && document.getElementById(paginePannelliSalvate.destra))
         ? paginePannelliSalvate.destra : "mappa-meteo";
 
+    // Cosa ha spostato ogni pagina esclusiva per prendersi il pannello.
+    // È una pila e non una variabile sola perché le esclusive si possono
+    // incatenare (Convertitore → SITAC): chiudendo si torna indietro di un
+    // passo per volta, senza rimbalzare fra le due all'infinito.
+    let pilaEsclusiva = (paginePannelliSalvate && Array.isArray(paginePannelliSalvate.pila))
+        ? paginePannelliSalvate.pila.filter(v => v && document.getElementById(v.idPagina))
+        : [];
+
     function salvaPaginePannelli() {
         try {
-            sessionStorage.setItem(CHIAVE_STORAGE_PANNELLI, JSON.stringify({ sinistra: paginaSinistra, destra: paginaDestra }));
+            sessionStorage.setItem(CHIAVE_STORAGE_PANNELLI, JSON.stringify({
+                sinistra: paginaSinistra,
+                destra: paginaDestra,
+                pila: pilaEsclusiva
+            }));
         } catch (err) {}
+    }
+
+    // Pagina di servizio con cui riempire un pannello rimasto senza
+    // contenuto. Diverse per lato: a sinistra la Home, a destra il meteo —
+    // le due di partenza. Se il ripiego è proprio la pagina da evitare si
+    // prende quello dell'altro lato.
+    const PAGINA_RIPIEGO = { sinistra: "homepage", destra: "mappa-meteo" };
+
+    function ripiegoPer(lato, idDaEvitare) {
+        const scelta = PAGINA_RIPIEGO[lato];
+        if (scelta !== idDaEvitare) return scelta;
+        return lato === "sinistra" ? PAGINA_RIPIEGO.destra : PAGINA_RIPIEGO.sinistra;
+    }
+
+    function altroLatoDi(lato) { return lato === "sinistra" ? "destra" : "sinistra"; }
+    function paginaDelLato(lato) { return lato === "sinistra" ? paginaSinistra : paginaDestra; }
+    function impostaPagina(lato, idPagina) {
+        if (lato === "sinistra") paginaSinistra = idPagina;
+        else paginaDestra = idPagina;
     }
 
     function contenitorePerLato(lato) {
@@ -1182,47 +1213,67 @@ const CHIAVE_STORAGE_PANNELLI = "fireops_pagine_pannelli";
         }
     }
 
-    // Assegna una pagina a un pannello ("sinistra"/"destra"). Se la pagina scelta
-    // è già mostrata nell'altro pannello, le due pagine si scambiano di posto:
-    // così non possono mai coincidere.
-    function assegnaPagina(lato, nuovoId) {
+        // Assegna una pagina a un pannello ("sinistra"/"destra"). Tre strade
+    // diverse, e vanno tenute separate: entrare in esclusiva, uscirne,
+    // oppure il normale scambio fra due colonne.
+    function assegnaPagina(lato, nuovoId, opzioni = {}) {
         if (!document.getElementById(nuovoId)) return;
 
-        const altroLato = lato === "sinistra" ? "destra" : "sinistra";
-        const idAttualeLato = lato === "sinistra" ? paginaSinistra : paginaDestra;
-        const idAttualeAltro = lato === "sinistra" ? paginaDestra : paginaSinistra;
+        const idAttualeLato = paginaDelLato(lato);
+        if (nuovoId === idAttualeLato) return;
 
-        if (nuovoId === idAttualeLato) return; // nessun cambiamento
+        const eraEsclusiva = !!idPaginaEsclusiva;
+        const altro = altroLatoDi(lato);
 
-        // Una pagina espansa che cambia pannello lascerebbe il pannello
-        // vecchio marcato come fullscreen e quello nuovo nascosto dal CSS:
-        // si torna alla vista affiancata prima di spostare qualsiasi cosa
-        esciDaFullscreen();
-
-        if (nuovoId === idAttualeAltro) {
-            // Scambio: la pagina che era in questo pannello va nell'altro, e viceversa
-            spostaSezione(idAttualeLato, altroLato);
-            spostaSezione(nuovoId, lato);
-            if (lato === "sinistra") {
-                paginaSinistra = nuovoId;
-                paginaDestra = idAttualeLato;
-            } else {
-                paginaDestra = nuovoId;
-                paginaSinistra = idAttualeLato;
+        if (PAGINE_ESCLUSIVE[nuovoId]) {
+            // Prende il pannello da sola. L'ALTRA COLONNA NON SI TOCCA:
+            // resta com'è, nascosta, e si ritrova identica alla chiusura.
+            if (!opzioni.daChiusura) {
+                pilaEsclusiva.push({ lato, idPagina: idAttualeLato });
+                if (pilaEsclusiva.length > 10) pilaEsclusiva.shift();
             }
-        } else {
-            // La pagina che c'era prima in questo pannello torna nel magazzino nascosto,
-            // altrimenti resterebbe incolonnata sotto quella nuova
+            smontaEsclusiva();
             spostaSezione(idAttualeLato, "magazzino");
             spostaSezione(nuovoId, lato);
-            if (lato === "sinistra") paginaSinistra = nuovoId;
-            else paginaDestra = nuovoId;
+            impostaPagina(lato, nuovoId);
+            entraInEsclusiva(nuovoId, lato);
+
+        } else if (eraEsclusiva) {
+            // Si torna a due colonne. L'altro pannello ha ancora la pagina
+            // di prima: se è proprio quella scelta qui non può stare in due
+            // posti, quindi quel lato ripiega su una pagina di servizio.
+            esciDaFullscreen();
+            pilaEsclusiva.length = 0;
+            spostaSezione(idAttualeLato, "magazzino");
+            spostaSezione(nuovoId, lato);
+            impostaPagina(lato, nuovoId);
+
+            if (paginaDelLato(altro) === nuovoId) {
+                const ripiego = ripiegoPer(altro, nuovoId);
+                spostaSezione(ripiego, altro);
+                impostaPagina(altro, ripiego);
+                eseguiEffettiPagina(ripiego);
+            }
+
+        } else {
+            // Due colonne: una pagina già aperta nell'altro pannello non si
+            // duplica, le due si scambiano di posto.
+            esciDaFullscreen();
+            if (nuovoId === paginaDelLato(altro)) {
+                spostaSezione(idAttualeLato, altro);
+                spostaSezione(nuovoId, lato);
+                impostaPagina(altro, idAttualeLato);
+                impostaPagina(lato, nuovoId);
+            } else {
+                spostaSezione(idAttualeLato, "magazzino");
+                spostaSezione(nuovoId, lato);
+                impostaPagina(lato, nuovoId);
+            }
         }
 
         aggiornaSelettori();
         salvaPaginePannelli();
         eseguiEffettiPagina(nuovoId);
-        if (PAGINE_ESCLUSIVE[nuovoId]) entraInEsclusiva(nuovoId, lato, idAttualeLato);
     }
 
     if (selectPannelloSinistra) {
@@ -1259,14 +1310,12 @@ const CHIAVE_STORAGE_PANNELLI = "fireops_pagine_pannelli";
     }
 
     // Uscita forzata dal fullscreen, indipendente dal pulsante che l'aveva
-    // attivato. Serve quando una pagina cambia pannello: il pulsante "Riduci"
-    // viaggia insieme alla sezione, quindi non si può contare su di lui per
-    // ripulire lo stato del pannello che resta indietro.
+    // attivato: il pulsante "Riduci" viaggia insieme alla sezione, quindi
+    // non si può contare su di lui per ripulire il pannello che resta.
     function esciDaFullscreen() {
         const pannelloEspanso = document.querySelector(".pannello.pannello-fullscreen");
-        if (!pannelloEspanso) return;
+        if (pannelloEspanso) pannelloEspanso.classList.remove("pannello-fullscreen");
 
-        pannelloEspanso.classList.remove("pannello-fullscreen");
         const splitScreenEl = document.querySelector(".split-screen");
         if (splitScreenEl) splitScreenEl.classList.remove("ha-pannello-fullscreen");
         document.body.classList.remove("fullscreen-attivo");
@@ -1276,16 +1325,20 @@ const CHIAVE_STORAGE_PANNELLI = "fireops_pagine_pannelli";
             pulsante.title = "Espandi a schermo intero";
         });
 
-        // Qualsiasi uscita dal fullscreen chiude anche la modalità esclusiva:
-        // un pannello ridotto con il body ancora marcato lascerebbe il
-        // pulsante su "Chiudi" senza nulla da chiudere
+        smontaEsclusiva();
+        setTimeout(() => window.dispatchEvent(new Event("resize")), 150);
+    }
+
+    // Spegne SOLO lo stato "pagina esclusiva", lasciando il pannello
+    // espanso dov'è. Passando da SITAC a Convertitore lo schermo resta
+    // pieno: senza questa separazione ci sarebbe un fotogramma a mezza
+    // pagina in mezzo, con Leaflet che si ridimensiona due volte.
+    function smontaEsclusiva() {
         document.body.classList.remove("sitac-esclusiva", "pagina-esclusiva");
         idPaginaEsclusiva = null;
         latoEsclusiva = null;
-        paginaPrimaDiEsclusiva = null;
         aggiornaPulsanteEsclusiva();
-
-        setTimeout(() => window.dispatchEvent(new Event("resize")), 150);
+        aggiornaSubheader();
     }
 
     // ==========================================================
@@ -1325,7 +1378,6 @@ const CHIAVE_STORAGE_PANNELLI = "fireops_pagine_pannelli";
 
     let idPaginaEsclusiva = null;    // quale pagina è esclusiva adesso
     let latoEsclusiva = null;        // "sinistra" | "destra"
-    let paginaPrimaDiEsclusiva = null; // cosa rimettere alla chiusura
 
     function aggiornaPulsanteEsclusiva() {
         Object.keys(PAGINE_ESCLUSIVE).forEach(id => {
@@ -1338,48 +1390,67 @@ const CHIAVE_STORAGE_PANNELLI = "fireops_pagine_pannelli";
         });
     }
 
-    function entraInEsclusiva(idPagina, lato, paginaPrecedente) {
+        // In esclusiva resta un solo selettore, quello del lato che ha preso lo
+    // schermo. L'altro comanderebbe un pannello invisibile: sceglierci una
+    // pagina già aperta faceva scattare lo scambio, e l'esclusiva
+    // ricompariva in mezza colonna.
+    function aggiornaSubheader() {
+        [["sinistra", selectPannelloSinistra], ["destra", selectPannelloDestra]]
+            .forEach(([lato, select]) => {
+                const contenitore = select && select.closest(".subheader-pannello");
+                if (!contenitore) return;
+                contenitore.classList.toggle("subheader-pannello-nascosto",
+                    !!idPaginaEsclusiva && lato !== latoEsclusiva);
+            });
+    }
+
+    function entraInEsclusiva(idPagina, lato) {
         const sezione = document.getElementById(idPagina);
         const pannello = sezione && sezione.closest(".pannello");
         if (!pannello) return;
 
         idPaginaEsclusiva = idPagina;
         latoEsclusiva = lato;
-        paginaPrimaDiEsclusiva = paginaPrecedente;
 
         pannello.classList.add("pannello-fullscreen");
         const splitScreenEl = document.querySelector(".split-screen");
         if (splitScreenEl) splitScreenEl.classList.add("ha-pannello-fullscreen");
         document.body.classList.add("fullscreen-attivo", "pagina-esclusiva");
-        // sitac.js potrebbe leggere ancora la vecchia classe: resta, ma solo
-        // quando la pagina esclusiva è davvero la SITAC
+        // sitac.js legge ancora la vecchia classe: resta, ma solo quando la
+        // pagina esclusiva è davvero la SITAC
         document.body.classList.toggle("sitac-esclusiva", idPagina === ID_SITAC);
 
         aggiornaPulsanteEsclusiva();
-        // Leaflet crede ancora di essere largo mezzo pannello: senza questo
-        // i tile restano grigi a metà
+        aggiornaSubheader();
+        // Leaflet crede ancora di essere largo mezzo pannello
         setTimeout(() => window.dispatchEvent(new Event("resize")), 150);
     }
 
     function chiudiEsclusiva() {
         if (!idPaginaEsclusiva) return;
 
-        // Letti PRIMA di esciDaFullscreen(), che azzera lo stato
         const lato = latoEsclusiva;
-        const precedente = paginaPrimaDiEsclusiva;
         const idUscita = idPaginaEsclusiva;
 
-        esciDaFullscreen();
+        // La pila dice cosa questa pagina aveva spostato: si torna
+        // esattamente lì, fosse anche un'altra pagina esclusiva.
+        let daRipristinare = "";
+        while (pilaEsclusiva.length > 0 && !daRipristinare) {
+            const voce = pilaEsclusiva.pop();
+            if (voce && voce.lato === lato && voce.idPagina !== idUscita
+                && document.getElementById(voce.idPagina)) {
+                daRipristinare = voce.idPagina;
+            }
+        }
+        if (!daRipristinare) daRipristinare = ripiegoPer(lato, idUscita);
 
-        // Si torna dove si era, non a un default. Unica eccezione: se quella
-        // pagina è nel frattempo l'altra colonna, rimetterla qui provocherebbe
-        // uno SCAMBIO e la pagina esclusiva finirebbe nell'altro pannello,
-        // riaprendosi.
-        const altra = lato === "sinistra" ? paginaDestra : paginaSinistra;
-        let daRipristinare = (precedente && precedente !== idUscita) ? precedente : "homepage";
-        if (daRipristinare === altra) daRipristinare = altra === "homepage" ? "mappa-meteo" : "homepage";
+        // Se nel frattempo quella pagina è nell'altra colonna, rimetterla
+        // qui provocherebbe uno SCAMBIO e l'esclusiva si riaprirebbe
+        // dall'altra parte.
+        const idAltro = paginaDelLato(altroLatoDi(lato));
+        if (daRipristinare === idAltro) daRipristinare = ripiegoPer(lato, idAltro);
 
-        if (lato) assegnaPagina(lato, daRipristinare);
+        assegnaPagina(lato, daRipristinare, { daChiusura: true });
     }
 
     document.querySelectorAll(".btn-fullscreen-pagina").forEach(pulsante => {
@@ -1623,8 +1694,12 @@ collegaModaleJson({
     prefissoTitolo: "👣",
 });
 
-    // Assegnazione iniziale: Home a sinistra, Mappa e Meteo a destra.
-    // Tutte le altre pagine restano parcheggiate nel magazzino nascosto.
+    // Una sola pagina per volta può essere esclusiva: se una sessione
+    // salvata da una versione precedente ne ha due, la seconda ripiega.
+    if (PAGINE_ESCLUSIVE[paginaSinistra] && PAGINE_ESCLUSIVE[paginaDestra]) {
+        paginaDestra = ripiegoPer("destra", paginaSinistra);
+    }
+
     CATALOGO_PAGINE.forEach(pagina => {
         if (pagina.id !== paginaSinistra && pagina.id !== paginaDestra && magazzinoPagine) {
             spostaSezione(pagina.id, "magazzino");
@@ -1632,10 +1707,12 @@ collegaModaleJson({
     });
     spostaSezione(paginaSinistra, "sinistra");
     spostaSezione(paginaDestra, "destra");
+
     // Pagina esclusiva già in un pannello da sessione precedente: si riapre
     // esclusiva, altrimenti resterebbe schiacciata in mezza colonna
-    if (PAGINE_ESCLUSIVE[paginaSinistra]) entraInEsclusiva(paginaSinistra, "sinistra", "homepage");
-    else if (PAGINE_ESCLUSIVE[paginaDestra]) entraInEsclusiva(paginaDestra, "destra", "mappa-meteo");
+    if (PAGINE_ESCLUSIVE[paginaSinistra]) entraInEsclusiva(paginaSinistra, "sinistra");
+    else if (PAGINE_ESCLUSIVE[paginaDestra]) entraInEsclusiva(paginaDestra, "destra");
+    else aggiornaSubheader();
 
 // ==========================================================
 // REGOLAMENTO DI SERVIZIO (D.P.R. 64/2012)

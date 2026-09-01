@@ -5128,3 +5128,21 @@ a.btn-icon-hamburger:hover {
 ::-webkit-scrollbar-thumb:hover {
     background: var(--primary-color);
 }
+
+/* ==========================================================
+   SUBHEADER IN MODALITÀ ESCLUSIVA
+
+   Resta un solo selettore, a tutta larghezza: l'altro comanderebbe
+   un pannello che non si vede, ed è da lì che nasceva lo scambio a
+   sorpresa (sceglievi una pagina già aperta e l'esclusiva finiva
+   nella colonna nascosta).
+   ========================================================== */
+.app-subheader .subheader-pannello-nascosto {
+    display: none;
+}
+
+/* Sparito l'altro selettore, il separatore verticale resterebbe
+   appeso sul bordo destro dello schermo */
+body.pagina-esclusiva .subheader-pannello:first-child {
+    border-right: none;
+}
