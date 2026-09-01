@@ -5263,6 +5263,7 @@ body.sitac-stampa #sitac-stampa-doc {
 /* --- pagina ------------------------------------------------------------ */
 .sf-pagina {
     width: 400mm;
+    height: 265mm;
     padding: 4mm;
     display: flex;
     flex-direction: column;
@@ -5317,7 +5318,8 @@ body.sitac-stampa #sitac-stampa-doc {
 .sf-val { font-weight: 600; }
 
 .sf-carta {
-    height: 150mm;
+    flex: 1 1 auto;
+    min-height: 0;
     display: grid;
     grid-template-columns: 1fr 80mm;
     gap: 4mm;

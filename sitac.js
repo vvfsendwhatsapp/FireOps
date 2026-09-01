@@ -3357,7 +3357,7 @@ function sfTabellaVento(){
     + `<tr><th>Fonte del dato</th><td>${esc(String(ventoCono.fonte || '\u2014'))}</td></tr>`
     + `<tr><th>Rilevato alle</th><td>${esc(ora)}</td></tr>`
     + `<tr><th>Apertura del cono</th><td>${esc(String(V.APERTURA))}\u00b0`
-    + ` \u00b7 quota ${esc(String(V.QUOTA_VENTO))} m</td></tr>`
+    + `</td></tr>`
     + `<tr><th>Avanzamento del fronte</th><td>15 min ${avanza(15)}`
     + ` \u00b7 30 min ${avanza(30)} \u00b7 60 min ${avanza(60)}</td></tr>`
     + `</tbody></table>`;
@@ -3468,7 +3468,6 @@ async function stampa(){
          <p>${esc(t('stTitolo'))} \u00b7 ${esc(quando)}</p>
        </header>
         <h2>Punti d'innesco</h2>${sfTabellaInneschi()}
-       <h2>Superfici</h2>${sfTabellaAree()}
        <h2>Superfici</h2>${sfTabellaAree()}
        <h2>Vento</h2>${sfTabellaVento()}
        <h2>Coni di propagazione</h2>${sfTabellaConi()}${avvertenza}
