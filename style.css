@@ -1660,23 +1660,27 @@ html.comando-gia-scelto #modal-comando {
     padding: 0;
 }
 
-/* La nota della mappa vive nella riga delle linguette: nella colonna di
-   destra partiva più in basso, sfalsata rispetto a tutto il resto */
+/* La nota parte dal bordo sinistro della carta, non da dove finiscono le
+   linguette: 16px di gap più i 2px che le linguette si mangiano
+   sovrapponendo i bordi (margin-left:-1px sulla seconda e sulla terza).
+   Cresce fino a spingere Espandi/Chiudi contro il bordo destro. */
 .coord-tab-bar .coord-nota-mappa {
-    flex: 1 1 auto;
+    flex: 1 1 0;
     min-width: 0;
-    margin: 0 16px;
+    margin: 0 0 0 18px;
     align-self: flex-end;
     padding-bottom: 8px;      /* a filo con la base di linguette e pulsante */
     font-size: 12px;
     text-align: left;
 }
 
-/* In fullscreen le due schede di sinistra stanno nel loro terzo, non
-   larghe mezza pagina */
+/* Le tre linguette si dividono in parti uguali la colonna di sinistra,
+   che è 1fr di una griglia `1fr 2fr` con 16px di gap: un nono della
+   larghezza a testa. La misura è legata a quella del corpo sotto — se
+   cambia la griglia lì, va cambiata anche qui. */
 .pannello-fullscreen .coord-tab-btn {
-    flex: 0 0 auto;
-    min-width: 150px;
+    flex: 0 0 calc((100% - 16px) / 9);
+    min-width: 0;
 }
 
 .pannello-fullscreen .coord-tab-bar .btn-fullscreen-pagina {
@@ -4707,6 +4711,11 @@ a.btn-icon-hamburger:hover {
     .pannello-fullscreen .coord-colonna { display: block; }
     .pannello-fullscreen .coord-tab-corpo { grid-template-columns: 1fr; }
     .pannello-fullscreen .coord-tab-bar { flex-wrap: wrap; }
+
+        /* A una colonna il nono non ha più senso: le linguette tornano a
+       dividersi la riga fra loro */
+    .pannello-fullscreen .coord-tab-btn { flex: 1 1 0; }
+    .pannello-fullscreen .coord-nota-mappa { flex: 1 1 100%; margin-left: 0; }
 }
 
 @media (max-width: 700px) {
