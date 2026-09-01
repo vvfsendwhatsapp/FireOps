@@ -1,0 +1,41 @@
+name: Notiziario — scopri e verifica
+
+# Si lancia solo a mano, dalla scheda Actions: serve a trovare gli indirizzi
+# dei feed e a provarli senza avere Node sul proprio computer.
+# Non tocca nessun file del repo: scrive soltanto nel riepilogo del job.
+on:
+  workflow_dispatch:
+    inputs:
+      operazione:
+        description: 'Cosa fare'
+        type: choice
+        required: true
+        default: scopri
+        options:
+          - scopri
+          - verifica
+
+permissions:
+  contents: read
+
+jobs:
+  ispeziona:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - run: npm install --no-save fast-xml-parser
+
+      - name: Esegui
+        run: |
+          echo "## Notiziario — ${{ inputs.operazione }}" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          # tee: l'esito finisce sia nel log sia nel riepilogo del job, che è
+          # la pagina che si apre per prima e si legge senza aprire i passi.
+          node tools/notiziario.mjs --${{ inputs.operazione }} 2>&1 \
+            | tee -a "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
