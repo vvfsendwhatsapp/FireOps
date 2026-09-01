@@ -322,7 +322,7 @@ window.FireOps = (function () {
     function rendiCopiabile(elemento, testo, testoDaCopiare) {
         if (!elemento) return;
         elemento.textContent = testo;
-        elemento.classList.add("cliccabile");
+        elemento.classList.add("cliccabile", "cliccabile-copia");
         const daCopiare = (testoDaCopiare === undefined || testoDaCopiare === null) ? testo : testoDaCopiare;
         elemento.onclick = (e) => copiaTesto(e, daCopiare);
     }

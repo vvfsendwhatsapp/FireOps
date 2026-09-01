@@ -4643,6 +4643,95 @@ a.btn-icon-hamburger:hover {
 }
 
 /* ==========================================================
+   AFFORDANCE DEI TESTI CLICCABILI
+
+   Il punteggiato diceva solo "qui succede qualcosa". Il glifo dice
+   cosa: ↗ esce dall'app, ⧉ copia negli appunti, ☰ apre un riquadro.
+   Il colore resta quello di prima (azzurro = agibile), cambia il segno.
+   ========================================================== */
+
+/* Tratto comune ai tre: staccato dal testo, un filo più piccolo, e
+   mai selezionabile — non fa parte del dato che si copia. */
+.indirizzo-link::after,
+.riepilogo-box a::after,
+.modal-content a::after,
+.popup-dati a::after,
+.link-utili-pulsante::after,
+.telefono-cliccabile::after,
+.email-cliccabile::after,
+.cliccabile::after,
+.cliccabile-canali::after {
+    margin-left: .35em;
+    font-size: .9em;
+    line-height: 1;
+    display: inline-block;
+    user-select: none;
+    text-decoration: none;
+}
+
+/* 1. LINK ESTERNI */
+.indirizzo-link,
+.riepilogo-box a,
+.modal-content a,
+.popup-dati a {
+    text-decoration: none;
+}
+
+.indirizzo-link::after,
+.riepilogo-box a::after,
+.modal-content a::after,
+.popup-dati a::after,
+.link-utili-pulsante::after {
+    content: "↗";
+}
+
+/* Voci senza URL: niente freccia, non portano da nessuna parte */
+.link-utili-pulsante-disabilitato::after {
+    content: "";
+}
+
+/* 2. TESTI DA COPIARE */
+.telefono-cliccabile,
+.email-cliccabile,
+.cliccabile-copia {
+    text-decoration: none;
+}
+
+.telefono-cliccabile::after,
+.email-cliccabile::after,
+.cliccabile-copia::after {
+    content: "📋";
+}
+
+/* 3. TESTI CHE APRONO UN POPUP */
+.cliccabile,
+.cliccabile-canali {
+    text-decoration: none;
+}
+
+.cliccabile::after,
+.cliccabile-canali::after {
+    content: "☰";
+}
+
+/* .cliccabile-copia viene DOPO .cliccabile: gli elementi resi copiabili
+   da FireOps.rendiCopiabile hanno entrambe le classi, e su uno stesso
+   ::after vince l'ultima regola. Non spostare questo blocco più in alto. */
+.cliccabile-copia::after {
+    content: "📋";
+}
+
+/* L'emoji porta i propri colori e non eredita l'azzurro del testo:
+   la si smorza un po' e la si tiene piccola, così resta un segno di
+   servizio e non un'icona che pesa più del dato. */
+.telefono-cliccabile::after,
+.email-cliccabile::after,
+.cliccabile-copia::after {
+    font-size: .78em;
+    opacity: .75;
+}
+
+/* ==========================================================
    ==========================================================
    RESPONSIVE
 
