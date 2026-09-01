@@ -4693,6 +4693,36 @@ a.btn-icon-hamburger:hover {
          drop-shadow(0 0 9px var(--primary-color));
 }
 
+/* La × della selezione: rossa e piena, perché cancella. Sta sopra la
+   legenda (900) — un elemento selezionato lì sotto avrebbe la × nascosta
+   proprio mentre si cerca di premerla. */
+#sitac-app .sitac-x-sel {
+    position: absolute;
+    z-index: 950;
+    width: 26px;
+    height: 26px;
+    flex: 0 0 26px;
+    padding: 0;
+    justify-content: center;
+    font-size: 17px;
+    font-weight: bold;
+    line-height: 1;
+    background: #cc0000;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    color: #fff;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, .6);
+}
+
+#sitac-app .sitac-x-sel:hover {
+    background: #ff2020;
+    border-color: #fff;
+}
+
+#sitac-app .sitac-x-sel[hidden] {
+    display: none;
+}
+
 /* ==========================================================
    AFFORDANCE DEI TESTI CLICCABILI
 

@@ -1468,6 +1468,7 @@ function mostraComandoAfferente(sigla, nome){
   function togliCono(id){
     const i = coni.findIndex(c => c.id === id);
     if (i < 0) return;
+    if (selezionato === coni[i].layer) selezionaElemento(null);
     decori.removeLayer(coni[i].layer);
     coni.splice(i, 1);
     aggiornaStato();
@@ -1537,19 +1538,93 @@ function mostraComandoAfferente(sigla, nome){
     selezionaElemento(e.layer);
   });
 
-  /* SELEZIONE — non esisteva: Geoman offre solo la modalità "elimina a
-     clic", che è un'altra cosa. Un elemento selezionato serve per Canc e
-     per qualsiasi azione futura che agisca su uno solo. */
-  let selezionato = null;
-  const elementoDom = l => l && (l._path || (l.getElement && l.getElement())) || null;
+  /* SELEZIONE — Geoman offre solo la modalità "elimina a clic", che è
+     un'altra cosa. Un elemento selezionato serve per Canc, per la × e per
+     qualsiasi azione futura che agisca su uno solo.
+     Un elemento può occupare più nodi nel DOM: un cono sono tre archi più
+     le etichette. La selezione li marca tutti, o si illumina mezzo cono. */
+  function nodiDi(l){
+    if (!l) return [];
+    if (l.eachLayer){
+      const out = [];
+      l.eachLayer(x => { out.push.apply(out, nodiDi(x)); });
+      return out;
+    }
+    const el = l._path || (l.getElement && l.getElement());
+    return el ? [el] : [];
+  }
+
+    let selezionato = null;
   function selezionaElemento(l){
     if (selezionato === l) return;
-    const vecchio = elementoDom(selezionato);
-    if (vecchio && vecchio.classList) vecchio.classList.remove('sitac-selezionato');
+    nodiDi(selezionato).forEach(e => e.classList.remove('sitac-selezionato'));
+    /* La × segue l'elemento mentre lo si trascina: staccarsi dal simbolo
+       e restare dov'era la farebbe sembrare la × di qualcos'altro. */
+    if (selezionato && selezionato.off) selezionato.off('move drag', posizionaX);
     selezionato = l || null;
-    const nuovo = elementoDom(selezionato);
-    if (nuovo && nuovo.classList) nuovo.classList.add('sitac-selezionato');
+    nodiDi(selezionato).forEach(e => e.classList.add('sitac-selezionato'));
+    if (selezionato && selezionato.on) selezionato.on('move drag', posizionaX);
+    posizionaX();
   }
+
+    /* La × sta sull'angolo in alto a destra di ciò che è selezionato, non in
+     un angolo fisso della carta: dice CHE COSA sta per sparire. Vive in
+     .sitac-mapwrap come il riquadro di misura, cioè fuori dal contenitore
+     Leaflet: dentro, il clic finirebbe nella gestione eventi della mappa. */
+  let bottoneX = null;
+  function creaX(){
+    if (bottoneX) return bottoneX;
+    bottoneX = document.createElement('button');
+    bottoneX.type = 'button';
+    bottoneX.className = 'sitac-x-sel';
+    bottoneX.textContent = '\u00d7';
+    bottoneX.hidden = true;
+    bottoneX.onclick = eliminaSelezionato;
+    const wrap = q('.sitac-mapwrap');
+    if (wrap) wrap.appendChild(bottoneX);
+    return bottoneX;
+  }
+
+  /* getBounds esiste su FeatureGroup, non su LayerGroup: i coni arrivano da
+     L.layerGroup e vanno misurati sui figli. */
+  function estremiDi(l){
+    if (!l) return null;
+    if (l.getBounds) return l.getBounds();
+    if (l.getLatLng) return L.latLngBounds([l.getLatLng()]);
+    if (!l.eachLayer) return null;
+    let b = null;
+    l.eachLayer(x => {
+      const e = estremiDi(x);
+      if (!e || !e.isValid()) return;
+      b = b ? b.extend(e) : L.latLngBounds(e.getSouthWest(), e.getNorthEast());
+    });
+    return b;
+  }
+
+  function posizionaX(){
+    const b = creaX();
+    /* Mentre si disegna la × sparisce: non serve, e sta proprio dove passa
+       il tracciato. `passanti` è acceso esattamente in quei momenti. */
+    if (!selezionato || passanti){ b.hidden = true; return; }
+    let p;
+    if (selezionato.getLatLng){
+      p = map.latLngToContainerPoint(selezionato.getLatLng());
+      p = L.point(p.x + 26, p.y - 26);          // spigolo dell'icona 56×56
+    } else {
+      const bb = estremiDi(selezionato);
+      if (!bb || !bb.isValid()){ b.hidden = true; return; }
+      p = map.latLngToContainerPoint(bb.getNorthEast());
+    }
+    /* Un'area può uscire dallo schermo: la × resta sul bordo, o si
+       cancella al buio un elemento che non si vede. */
+    const s = map.getSize();
+    b.hidden = false;
+    b.title = t('bElimina');
+    b.style.left = Math.max(4, Math.min(s.x - 30, p.x - 13)) + 'px';
+    b.style.top  = Math.max(4, Math.min(s.y - 30, p.y - 13)) + 'px';
+  }
+  map.on('move zoom viewreset', posizionaX);
+
   function eliminaSelezionato(){
     if (!selezionato) return;
     const l = selezionato;
@@ -1707,6 +1782,42 @@ function mostraComandoAfferente(sigla, nome){
     }
   }
 
+  /* Il cono è un gruppo di archi ed etichette, e L.LayerGroup non inoltra i
+     clic dei figli come fa un FeatureGroup: si aggancia foglia per foglia.
+     Gli archi nascono decorativi, quindi l'interattività va accesa qui —
+     prima dell'addLayer, o Leaflet non mette la classe che serve. */
+  function agganciaCono(gruppo, id){
+    gruppo._cono = id;
+    const bind = x => {
+      if (x.eachLayer) return x.eachLayer(bind);
+      x.options.interactive = true;
+      x.on('click', () => {
+        if (attesaClic || attesaDirezione || attesaElemento) return;
+        if (map.pm.globalRemovalModeEnabled && map.pm.globalRemovalModeEnabled())
+          return togliCono(id);
+        selezionaElemento(gruppo);
+      });
+    };
+    bind(gruppo);
+  }
+
+  const coniDi = l => coni.filter(c => c.base === l);
+
+  /* Chi cancella un'area cancella la previsione che ne discende: un cono
+     orfano resta sulla carta a indicare un fronte che non c'è più, ed è
+     peggio di nessun cono. Il contrario no — togliere la previsione non
+     tocca il terreno rilevato. */
+  function eliminaSelezionato(){
+    if (!selezionato) return;
+    const l = selezionato;
+    selezionaElemento(null);
+    if (l._cono != null) return togliCono(l._cono);
+    coniDi(l).forEach(c => togliCono(c.id));
+    scollega(l);
+    disegni.removeLayer(l);
+    aggiornaStato();
+  }
+
   /* Modo 1: vertice sul punto d'innesco, secondo clic per dire dove sta il
      fronte adesso. Gli archi partono da lì, non dal vertice. */
   async function conoSettore(){
@@ -1742,9 +1853,10 @@ function mostraComandoAfferente(sigla, nome){
 
     const opz = {colore: COL.rosso, raggio0: r0, etichetta0: t('conoT0'), fattori};
     const layer = V.disegnaCono(origine, vento, opz);
-    decori.addLayer(layer);
     const id = ++nCono;
-    coni.push({id, layer, vento, fattori, tipo:'settore'});
+    agganciaCono(layer, id);
+    decori.addLayer(layer);
+    coni.push({id, layer, vento, fattori, tipo:'settore', base: m || null});
 
     /* Spostando l'area d'origine la previsione la segue col vento e i
        fattori di prima: il terreno sotto però è cambiato. Per rileggere
@@ -1778,6 +1890,8 @@ function mostraComandoAfferente(sigla, nome){
     if (!vento) return stato(t('conoAnnullato'));
     const layer = V.disegnaFronti(punti, vento,
       {colore: COL.rosso, etichetta0: t('conoT0')});
+    const id = ++nCono;
+    agganciaCono(layer, id);
     decori.addLayer(layer);
     coni.push({id: ++nCono, layer, vento, tipo:'fronte'});
     riassunto(vento);
@@ -1826,8 +1940,10 @@ function mostraComandoAfferente(sigla, nome){
 
     const layer = V.disegnaFronti(punti, vento,
       {colore: COL.rosso, etichetta0: t('conoT0')});
+    const id = ++nCono;
+    agganciaCono(layer, id);
     decori.addLayer(layer);
-    coni.push({id: ++nCono, layer, vento, tipo:'elemento'});
+    coni.push({id: ++nCono, layer, vento, tipo:'elemento', base: l});
     riassunto(vento);
   }
 
@@ -1941,9 +2057,11 @@ function mostraComandoAfferente(sigla, nome){
 
     const layer = V.disegnaCono(origine, finto,
       {colore: COL.rosso, raggio0: r0, etichetta0: t('conoT0')});
+    const id = ++nCono;
+    agganciaCono(layer, id);
     decori.addLayer(layer);
-    coni.push({id: ++nCono, layer, vento: finto, tipo:'pendenza',
-      mh, pendenza: pend.pendenza});
+    coni.push({id, layer, vento: finto, tipo:'pendenza', mh, pendenza: pend.pendenza,
+      base: m || null});
     aggiornaStato();
     stato(t('conoPendFatto', {a: V.APERTURA, d: Math.round(pend.azimut),
       p: (pend.pendenza * 100).toFixed(0), m: Math.round(mh)}));
@@ -2494,7 +2612,7 @@ function mostraComandoAfferente(sigla, nome){
     gruppo.eachLayer(l => { l.eachLayer ? ognunoDentro(l, f) : f(l); });
   }
   function passaAnche(l){
-    const el = passanti && elementoDom(l);
+    const el = passanti && nodiDi(l)[0];
     if (!el) return;
     passanti.push([el, el.style.pointerEvents]);
     el.style.pointerEvents = 'none';
