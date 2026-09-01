@@ -1293,6 +1293,7 @@ function iconaFrecciaDirezione(colore, azimutGradi) {
         const rect = evento.currentTarget.getBoundingClientRect();
         popup.style.top = `${rect.bottom + 10}px`;
         popup.style.left = `${Math.max(10, Math.min(rect.left, window.innerWidth - popup.offsetWidth - 10))}px`;
+        FireOps.ancoraPopup(popup, event.currentTarget);
         popup.querySelector(".popup-close").addEventListener("click", () => popup.remove());
         popup.addEventListener("click", ev => ev.stopPropagation());
     }

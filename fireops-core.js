@@ -327,6 +327,34 @@ window.FireOps = (function () {
         elemento.onclick = (e) => copiaTesto(e, daCopiare);
     }
 
+    /* Ancora un popup a un elemento, sotto se c'è spazio, sopra altrimenti.
+    Il popup dev'essere GIÀ nel DOM: offsetHeight su un elemento non
+    ancora inserito vale zero, e il ribaltamento non scatterebbe mai.
+    Tutto in coordinate di viewport, perché questi popup sono fixed. */
+    function ancoraPopup(popup, elemento, distanza = 10) {
+        const rect = elemento.getBoundingClientRect();
+        const altezza = popup.offsetHeight;
+        const spazioSotto = window.innerHeight - rect.bottom;
+
+        // Si ribalta solo se sotto non ci sta E sopra c'è più spazio:
+        // senza la seconda condizione, un elemento in cima allo schermo
+        // aprirebbe il popup verso l'alto contro il bordo.
+        if (spazioSotto < altezza + distanza + 6 && rect.top > spazioSotto) {
+            popup.style.top = "auto";
+            popup.style.bottom = `${window.innerHeight - rect.top + distanza}px`;
+        } else {
+            popup.style.bottom = "auto";
+            popup.style.top = `${rect.bottom + distanza}px`;
+        }
+
+        const larghezza = popup.offsetWidth;
+        let sinistra = rect.left;
+        if (sinistra + larghezza > window.innerWidth - 10) {
+            sinistra = window.innerWidth - larghezza - 10;
+        }
+        popup.style.left = `${Math.max(10, sinistra)}px`;
+    }
+
     // ==========================================================
     // CARICAMENTO JSON con cache: lo stesso file richiesto da due pagine
     // viene scaricato una volta sola
@@ -359,6 +387,7 @@ window.FireOps = (function () {
         copiaTesto,
         mostraFeedbackCopia,
         rendiCopiabile,
+        ancoraPopup,
         caricaJson,
     };
 })();

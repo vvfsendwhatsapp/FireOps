@@ -412,9 +412,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <p class="pagina-nota" style="margin:8px 0 0;">${e.luna.nome} · orari in ora italiana</p>`;
 
         document.body.appendChild(popup);
-        const rect = event.currentTarget.getBoundingClientRect();
-        popup.style.top = `${rect.bottom + 10}px`;
-        popup.style.left = `${Math.max(10, Math.min(rect.left, window.innerWidth - popup.offsetWidth - 10))}px`;
+        FireOps.ancoraPopup(popup, event.currentTarget);
         popup.querySelector(".popup-close").addEventListener("click", () => popup.remove());
         popup.addEventListener("click", ev => ev.stopPropagation());
     }
@@ -3146,15 +3144,7 @@ Koordináták küldéséhez:
             </table>`;
 
         document.body.appendChild(popup);
-
-        // Ancorato sotto l'intestazione che l'ha aperto, rientrando nello
-        // schermo se il pannello è largo e la finestra stretta
-        const rect = event.currentTarget.getBoundingClientRect();
-        popup.style.top = `${rect.bottom + 10}px`;
-        const larghezza = popup.offsetWidth;
-        let sinistra = rect.left;
-        if (sinistra + larghezza > window.innerWidth - 10) sinistra = window.innerWidth - larghezza - 10;
-        popup.style.left = `${Math.max(10, sinistra)}px`;
+        FireOps.ancoraPopup(popup, event.currentTarget);
 
         const chiusura = document.getElementById("popup-canali-close");
         if (chiusura) chiusura.addEventListener("click", chiudiPopupCanali);
