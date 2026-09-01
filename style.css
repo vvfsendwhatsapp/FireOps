@@ -3853,118 +3853,6 @@ a.btn-icon-hamburger:hover {
     }
 }
 
-/* stampa: il modulo si sposta in coda al body e mette a tacere il resto.
-   Restano mappa, legenda e testata: è quello che serve su carta. */
-@media print {
-    body.sitac-stampa>* {
-        display: none !important
-    }
-
-    body.sitac-stampa>#sitac-app {
-        display: block !important;
-        position: static;
-        height: auto;
-        min-height: 0;
-        border: 0;
-        border-radius: 0;
-        overflow: visible;
-        background: #fff;
-        color: #000
-    }
-
-    body.sitac-stampa>#sitac-app #sitac-barra,
-    body.sitac-stampa>#sitac-app .sitac-centra,
-    body.sitac-stampa>#sitac-app .sitac-modale,
-    body.sitac-stampa>#sitac-app .leaflet-control-zoom {
-        display: none !important
-    }
-
-    body.sitac-stampa>#sitac-app #sitac-testata-stampa {
-        display: block;
-        margin-bottom: 6mm;
-        border-bottom: 2px solid #000;
-        padding-bottom: 3mm
-    }
-
-    body.sitac-stampa>#sitac-app #sitac-testata-stampa .t {
-        font-size: 17pt;
-        font-weight: bold
-    }
-
-    body.sitac-stampa>#sitac-app #sitac-testata-stampa .i {
-        font-size: 12pt;
-        font-weight: bold;
-        margin-top: 2mm;
-        font-family: "Courier New", monospace
-    }
-
-    body.sitac-stampa>#sitac-app #sitac-testata-stampa .d {
-        font-size: 10pt;
-        margin-top: 2mm
-    }
-
-    body.sitac-stampa>#sitac-app #sitac-testata-stampa .n {
-        font-size: 11pt;
-        font-weight: bold;
-        margin-top: 2mm
-    }
-
-    body.sitac-stampa>#sitac-app .sitac-mapwrap {
-        position: relative;
-        height: 15.5cm
-    }
-
-    body.sitac-stampa>#sitac-app #sitac-mappa {
-        position: absolute;
-        inset: 0;
-        height: 15.5cm
-    }
-
-    body.sitac-stampa>#sitac-app #sitac-legenda {
-        background: #fff;
-        color: #000;
-        border: 1.5px solid #000;
-        max-width: 6cm
-    }
-
-    body.sitac-stampa>#sitac-app #sitac-legenda b {
-        color: #000
-    }
-
-    body.sitac-stampa>#sitac-app #sitac-legVoci {
-        max-height: none;
-        color: #000
-    }
-
-    body.sitac-stampa>#sitac-app #sitac-legTesta .freccia {
-        display: none
-    }
-
-    @page {
-        size: A4 landscape;
-        margin: 10mm
-    }
-
-    body.sitac-stampa>#sitac-app .sitac-pannello[data-scheda="carta"] {
-        display: block !important;
-        height: auto
-    }
-
-    body.sitac-stampa>#sitac-app .sitac-pannello[data-scheda="dati"],
-    body.sitac-stampa .sitac-schede {
-        display: none !important
-    }
-
-    body.sitac-stampa>#sitac-app #sitac-carta {
-        display: block;
-        height: auto
-    }
-
-    body.sitac-stampa>#sitac-app #sitac-stato {
-        display: none !important
-    }
-}
-
 /* La riga sopra il riquadro — nota, campi, bandiere, Espandi — sta FUORI da
    #sitac-app: nessuna regola di quel contenitore la raggiunge, e nemmeno
    .sitac-stretto. La nota prende la riga intera e spinge il resto sotto,
@@ -5338,3 +5226,219 @@ a.btn-icon-hamburger:hover {
 .app-subheader .subheader-pannello-nascosto {
     display: none;
 }
+
+/* ==========================================================================
+   SITAC — FOGLIO DI STAMPA A3 ORIZZONTALE (due pagine)
+   Da incollare in style.css, sezione MODULI AGGIUNTIVI.
+
+   Il foglio esiste sempre nel DOM ma è nascosto: si accende con
+   body.sitac-stampa, che spegne tutto il resto. Deve essere VISIBILE a
+   schermo in quel momento, non solo in @media print: Leaflet misura zero
+   in un contenitore display:none e la carta uscirebbe grigia.
+
+   Le misure sono in millimetri perché il foglio è un foglio: A3
+   orizzontale meno 10 mm di margine fa 400 × 277 mm utili.
+   ========================================================================== */
+
+#sitac-stampa-doc { display: none; }
+
+body.sitac-stampa > *:not(#sitac-stampa-doc) { display: none !important; }
+
+body.sitac-stampa {
+    overflow: auto;
+    background: #fff;
+}
+
+body.sitac-stampa #sitac-stampa-doc {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 99999;
+    background: #fff;
+    color: #111;
+    font-family: system-ui, "Segoe UI", Arial, sans-serif;
+}
+
+/* --- pagina ------------------------------------------------------------ */
+.sf-pagina {
+    width: 400mm;
+    height: 277mm;
+    padding: 4mm;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+}
+.sf-pagina + .sf-pagina {
+    page-break-before: always;
+    break-before: page;
+}
+
+.sf-testata {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    border-bottom: 1mm solid #af2b1e;
+    padding-bottom: 2mm;
+    margin-bottom: 3mm;
+    flex: 0 0 auto;
+}
+.sf-testata h1 { font-size: 6mm; margin: 0; letter-spacing: .2mm; }
+.sf-testata p { font-size: 3.4mm; margin: 0; color: #444; }
+
+/* --- pagina 1: dati in testa, carta e legenda sotto -------------------- */
+.sf-dati {
+    display: grid;
+    grid-template-columns: 1fr 1.6fr;
+    gap: 4mm;
+    margin-bottom: 3mm;
+    flex: 0 0 auto;
+}
+.sf-box {
+    border: .3mm solid #999;
+    border-radius: 1mm;
+    padding: 2mm 3mm;
+}
+.sf-box h2 {
+    font-size: 3.4mm;
+    margin: 0 0 1.5mm;
+    color: #af2b1e;
+}
+/* Due colonne dentro il riquadro del DOS: otto campi in fila renderebbero
+   la testata più alta della carta. */
+.sf-box:last-child { columns: 2; column-gap: 6mm; }
+.sf-campo {
+    display: flex;
+    gap: 2mm;
+    font-size: 3.2mm;
+    line-height: 1.55;
+    break-inside: avoid;
+}
+.sf-et { min-width: 30mm; color: #555; }
+.sf-val { font-weight: 600; }
+
+.sf-carta {
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-columns: 1fr 80mm;
+    gap: 4mm;
+    min-height: 0;
+}
+.sf-mappa {
+    position: relative;
+    border: .3mm solid #666;
+    overflow: hidden;
+}
+/* Il .sitac-mapwrap arriva qui dalla scheda 2 e deve riempire il riquadro:
+   le sue misure native sono quelle del pannello, non del foglio. */
+.sf-mappa .sitac-mapwrap,
+.sf-mappa #sitac-mappa {
+    position: absolute;
+    inset: 0;
+    width: 100% !important;
+    height: 100% !important;
+    max-height: none !important;
+    border-radius: 0;
+}
+
+.sf-legenda {
+    border: .3mm solid #999;
+    border-radius: 1mm;
+    padding: 2mm 3mm;
+    font-size: 3.2mm;
+    overflow: hidden;
+}
+.sf-legenda h2 { font-size: 3.4mm; margin: 0 0 2mm; color: #af2b1e; }
+.sf-legenda div {
+    display: flex;
+    align-items: center;
+    gap: 2mm;
+    padding: .7mm 0;
+    break-inside: avoid;
+}
+.sf-sim { width: 7mm; height: 7mm; display: inline-flex; flex: 0 0 auto; }
+.sf-sim svg { width: 100%; height: 100%; }
+.sf-tratto { display: inline-block; width: 10mm; flex: 0 0 auto; }
+.sf-vuoto { font-size: 3.2mm; color: #666; margin: 0 0 4mm; }
+
+/* --- pagina 2: tabelle ------------------------------------------------- */
+.sf-pagina-dati { overflow: hidden; }
+.sf-pagina-dati h2 {
+    font-size: 4mm;
+    margin: 0 0 1.5mm;
+    color: #af2b1e;
+}
+.sf-tab {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 3.2mm;
+    margin: 0 0 5mm;
+}
+.sf-tab th,
+.sf-tab td {
+    border: .25mm solid #999;
+    padding: 1.2mm 2mm;
+    text-align: right;
+}
+.sf-tab th:first-child,
+.sf-tab td:first-child { text-align: left; }
+.sf-tab thead th { background: #eee; }
+.sf-tab tbody th { background: #f6f6f6; text-align: left; width: 60mm; }
+.sf-tot td { font-weight: 700; background: #f6f6f6; }
+.sf-avvertenza { font-size: 3mm; color: #666; margin: -3mm 0 5mm; }
+
+/* --- cosa non va sulla carta ------------------------------------------ */
+body.sitac-stampa #sitac-legenda,
+body.sitac-stampa .sitac-centra,
+body.sitac-stampa .sitac-misura,
+body.sitac-stampa .sitac-x-sel,
+body.sitac-stampa .leaflet-control-zoom { display: none !important; }
+
+@media print {
+    @page { size: A3 landscape; margin: 10mm; }
+
+    body.sitac-stampa #sitac-stampa-doc { position: static; }
+    .sf-pagina { width: auto; padding: 0; }
+
+    /* I riquadri devono restare leggibili anche con "stampa senza sfondi" */
+    .sf-tab thead th,
+    .sf-tab tbody th,
+    .sf-tot td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    .leaflet-control-attribution { font-size: 2.4mm; }
+}
+
+/* In stampa la carta esce da #sitac-app: gli stessi selettori vanno
+   ripetuti sotto .sf-mappa, o i simboli collassano a zero. */
+.sf-mappa .leaflet-container { background: #fff; }
+.sf-mappa .sitac-disco { position: absolute; inset: 8%; border-radius: 50%;
+    background: rgba(255,255,255,.82); box-shadow: 0 1px 4px rgba(0,0,0,.55); }
+.sf-mappa .sitac-glifo { position: absolute; inset: 12%; display: block; }
+.sf-mappa .sitac-glifo svg { width: 100%; height: 100%; display: block; }
+.sf-mappa .sitac-etichetta { font-size: 12px; font-weight: bold; color: #fff;
+    white-space: nowrap; text-shadow: 0 0 4px #000, 0 0 4px #000;
+    background: none; border: none; padding: 2px 4px; }
+.sf-mappa .sitac-deco,
+.sf-mappa .sitac-badge { background: none; border: none; pointer-events: none; }
+.sf-mappa .sitac-badge { display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: bold; color: #000; background: #fff;
+    border: 2px solid #000; border-radius: 999px; }
+.sf-mappa .sitac-maniglia { background: none; border: none; }
+.sf-mappa .sitac-maniglia span { display: block; width: 14px; height: 14px; margin: 2px;
+    border-radius: 50%; background: #0070c0; border: 2px solid #fff; }
+.sf-mappa .sitac-mn-asse span { background: #cc0000; }
+.sf-mappa .sitac-mn-largo span { background: #29abe2; }
+.sf-mappa .sitac-mn-centro span { background: #666; }
+.sf-mappa .sitac-mn-vento svg,
+.sf-mappa .sitac-mn-tp svg { width: 26px; height: 26px; display: block; }
+.sf-mappa .sitac-vento { position: absolute; top: 8px; left: 8px; z-index: 900;
+    display: flex; align-items: center; gap: 8px; padding: 6px 9px;
+    background: #fff; border: 1px solid #999; border-radius: 6px; color: #111; }
+.sf-mappa .sitac-vento[hidden] { display: none; }
+.sf-mappa .sitac-vento-nord { display: flex; flex-direction: column; align-items: center;
+    font-size: 10px; font-weight: bold; line-height: 1; }
+.sf-mappa .sitac-vento-nord svg { width: 18px; height: 18px; }
+.sf-mappa .sitac-vento-glifo { width: 38px; height: 38px; display: block; }
+.sf-mappa .sitac-vento-glifo svg { width: 100%; height: 100%; display: block; }
+.sf-mappa .sitac-vento-dati { font-family: "Courier New", monospace;
+    font-size: 12px; font-weight: bold; line-height: 1.3; white-space: nowrap; }

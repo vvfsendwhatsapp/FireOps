@@ -1425,7 +1425,7 @@ function mostraComandoAfferente(sigla, nome){
   function creaLancio(k, centro, opz){
     const o = opz || {};
     const d = SIM[k].poly;
-    const l = L.polygon([], Object.assign({pmIgnore:true},
+    const l = L.polygon([], Object.assign({pmIgnore:true, bubblingMouseEvents:false},
       stileLancio(k, o.stato || 'previsto')));
     l._tipo = k; l._genere = 'lancio'; l._stato = o.stato || 'previsto';
     l._centro = centro;
@@ -1629,10 +1629,17 @@ function mostraComandoAfferente(sigla, nome){
     if (!selezionato) return;
     const l = selezionato;
     selezionaElemento(null);
+    /* Un cono vive nei decori, non in `disegni`: va tolto dal suo elenco,
+       o resta nel riepilogo e nella stampa dopo essere sparito dalla carta. */
+    if (l._cono != null) return togliCono(l._cono);
+    /* Chi cancella un'area cancella la previsione che ne discende: un cono
+       orfano indica un fronte che non c'è più, ed è peggio di nessun cono.
+       Il contrario no — togliere la previsione non tocca il rilievo. */
+    coniDi(l).forEach(c => togliCono(c.id));
     scollega(l);              // motivi, maniglie, asta, maniglie del lancio
     disegni.removeLayer(l);
     aggiornaStato();
-  }
+}
   /* Clic sul vuoto: si deseleziona. I clic sugli elementi non arrivano
      qui — Leaflet li ferma sul layer. */
   map.on('click', () => {
@@ -1803,21 +1810,6 @@ function mostraComandoAfferente(sigla, nome){
 
   const coniDi = l => coni.filter(c => c.base === l);
 
-  /* Chi cancella un'area cancella la previsione che ne discende: un cono
-     orfano resta sulla carta a indicare un fronte che non c'è più, ed è
-     peggio di nessun cono. Il contrario no — togliere la previsione non
-     tocca il terreno rilevato. */
-  function eliminaSelezionato(){
-    if (!selezionato) return;
-    const l = selezionato;
-    selezionaElemento(null);
-    if (l._cono != null) return togliCono(l._cono);
-    coniDi(l).forEach(c => togliCono(c.id));
-    scollega(l);
-    disegni.removeLayer(l);
-    aggiornaStato();
-  }
-
   /* Modo 1: vertice sul punto d'innesco, secondo clic per dire dove sta il
      fronte adesso. Gli archi partono da lì, non dal vertice. */
   async function conoSettore(){
@@ -1893,7 +1885,7 @@ function mostraComandoAfferente(sigla, nome){
     const id = ++nCono;
     agganciaCono(layer, id);
     decori.addLayer(layer);
-    coni.push({id: ++nCono, layer, vento, tipo:'fronte'});
+    coni.push({id, layer, vento, tipo:'fronte'});
     riassunto(vento);
   }
 
@@ -1908,6 +1900,7 @@ function mostraComandoAfferente(sigla, nome){
     if (!attesaDirezione) return;
     const layer = attesaDirezione;
     attesaDirezione = null;
+    clicPassante(false);
     layer._rotazione = Math.round(azimut(layer.getLatLng(), e.latlng));
     layer.setIcon(iconaSimbolo(layer._tipo, {stato:layer._stato,
       testo:layer._testo, rotazione:layer._rotazione}));
@@ -1943,7 +1936,7 @@ function mostraComandoAfferente(sigla, nome){
     const id = ++nCono;
     agganciaCono(layer, id);
     decori.addLayer(layer);
-    coni.push({id: ++nCono, layer, vento, tipo:'elemento', base: l});
+    coni.push({id, layer, vento, tipo:'elemento', base: l});
     riassunto(vento);
   }
 
@@ -2646,6 +2639,9 @@ function mostraComandoAfferente(sigla, nome){
     if (!strumento) return;
     layer._tipo = strumento.chiave;
     layer._genere = strumento.genere;
+      /* I Path risalgono alla mappa e il clic finisce nel deseleziona; i Marker
+    no, e infatti loro si cancellavano. Stesso default per tutti. */
+    if (layer.options) layer.options.bubblingMouseEvents = false;
     passaAnche(layer); 
     const kk = strumento.chiave;
     layer._stato = statoPer(kk === 'nota' ? NOTA
@@ -2981,6 +2977,9 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
          e pointToLayer non serve perché i punti sono già stati filtrati via. */
       style: () => stileArea(AREE.percorsa),
       onEachFeature: (feat, layer) => {
+        /* I Path risalgono alla mappa e il clic finisce nel deseleziona; i Marker
+         no, e infatti loro si cancellavano. Stesso default per tutti. */
+    if (layer.options) layer.options.bubblingMouseEvents = false;
         const pr = feat.properties || {};
         layer._tipo = 'percorsa';
         layer._genere = 'area';
@@ -3217,39 +3216,275 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
      La testata (titolo, data, conteggi) esiste solo su carta: a video
      sarebbe una ripetizione del riquadro di stato.
      ----------------------------------------------------------------- */
-    function stampa(){
-    const testata = q('#sitac-testata-stampa');
-    testata.querySelector('.t').textContent = t('stTitolo');
-    const i = intestazione();
-    testata.querySelector('.i').textContent =
-      [i.intervento ? `${t('nIntervento')} ${i.intervento}` : '',
-       i.qualifica || '',
-       i.dos ? `${t('nDos')} ${i.dos}` : '',
-       i.nominativo || '', i.telefono || ''].filter(Boolean).join('  ·  ');
-    testata.querySelector('.d').textContent =
-      t('stData', {d: fmtOra(oraRedazione || new Date())})
-      + (ventoCono ? `  ·  ${t('stVento', {v:ventoCono.velocita, d:ventoCono.verso,
-          o:ventoCono.letto ? new Date(ventoCono.letto).toLocaleTimeString(lingua) : '—'})}` : '')
-      + (coni.some(c => c.fattori) ? `  ·  ${NS.SitacRilievo.avvertenza[lingua]
-          || NS.SitacRilievo.avvertenza.it}` : '');
-    testata.querySelector('.n').textContent = $('stato').textContent.replace(/\n/g, ' · ');
-    legenda.classList.remove('chiusa');   // sulla carta la legenda serve aperta
+    /* =======================================================================
+   STAMPA — A3 ORIZZONTALE, DUE PAGINE
 
-    const segno = document.createComment('sitac');
-    app.parentNode.insertBefore(segno, app);
-    document.body.appendChild(app);
-    document.body.classList.add('sitac-stampa');
-    map.invalidateSize();
-    const ripristina = () => {
-      document.body.classList.remove('sitac-stampa');
-      segno.parentNode.insertBefore(app, segno);
-      segno.remove();
-      setTimeout(() => map.invalidateSize(), 60);
-      window.removeEventListener('afterprint', ripristina);
-    };
-    window.addEventListener('afterprint', ripristina);
-    setTimeout(() => window.print(), 400);
-  }
+   Sostituisce l'intera funzione stampa() dentro avvia(), in sitac.js.
+   Va incollato nello stesso punto (sezione 11, prima di adatta()): usa
+   variabili di quella closure — map, disegni, coni, ventoCono, AREE, LIN,
+   SIM, NOTA, comandoSitac, provinciaDos, intestazione(), fmtOra, areaMq,
+   perimetroM, lunghezzaM, inMq, nm, t, esc, svgSimbolo, statoDi, sfondi,
+   iSfondo, AREE_SUPERFICIE.
+
+   #sitac-testata-stampa non serve più e resta inerte: il CSS di stampa
+   mostra soltanto il foglio costruito qui.
+   ===================================================================== */
+
+let foglioStampa = null;
+let segnoMappa = null;
+
+function creaFoglioStampa(){
+  if (foglioStampa) return foglioStampa;
+  foglioStampa = document.createElement('div');
+  foglioStampa.id = 'sitac-stampa-doc';
+  document.body.appendChild(foglioStampa);
+  return foglioStampa;
+}
+
+const sfCampo = (et, val) =>
+  `<div class="sf-campo"><span class="sf-et">${esc(et)}</span>`
+  + `<span class="sf-val">${val == null || val === '' ? '\u2014' : esc(String(val))}</span></div>`;
+
+/* Il Comando è quello AFFERENTE alla posizione del DOS, non quello della
+   sala che disegna: su un incendio in provincia confinante sono due cose
+   diverse, e sulla carta stampata deve comparire chi ha la competenza.
+   Se la provincia non è stata determinata resta il Comando attivo. */
+function sfBloccoComando(){
+  const c = comandoSitac || window.FireOpsComandoAttivo || null;
+  if (!c) return sfCampo('Comando', '');
+  return sfCampo('Comando', c.Comando)
+    + sfCampo('CH VHF Comando', c['Canale Radio Comando'])
+    + sfCampo('TEL SO Comando', c['Telefono SO Comando'])
+    + sfCampo('Direzione', c['Direzione VVF'])
+    + sfCampo('CH VHF Direzione', c['Canale Radio Direzione'])
+    + sfCampo('Indirizzo', c['Indirizzo Completo']);
+}
+
+function sfBloccoDos(){
+  const i = intestazione();
+  return sfCampo(t('nIntervento'), i.intervento)
+    + sfCampo(t('dataOra'), fmtOra(oraRedazione || new Date()))
+    + sfCampo(t('nQualifica'), i.qualifica)
+    + sfCampo(t('nNominativo'), i.nominativo)
+    + sfCampo(t('nDos'), i.dos)
+    + sfCampo(t('nTelefono'), i.telefono)
+    + sfCampo(t('posDos'), i.posizione)
+    + sfCampo(t('provincia'), provinciaDos
+        ? `${provinciaDos.sigla || ''} ${provinciaDos.nome || ''}`.trim() : '');
+}
+
+/* Stessa scansione di aggiornaLegenda, ma il markup è quello del foglio:
+   la legenda a schermo vive dentro .sitac-mapwrap, che in stampa finisce
+   sotto la carta e verrebbe coperta. */
+function sfLegenda(){
+  const visti = new Map();
+  disegni.eachLayer(x => {
+    if (!x._tipo) return;
+    const k = x._tipo + '|' + (x._stato || '');
+    if (!visti.has(k)) visti.set(k, x);
+  });
+  if (!visti.size) return `<p class="sf-vuoto">${esc(t('legVuota'))}</p>`;
+
+  const righe = [];
+  visti.forEach(x => {
+    const k = x._tipo;
+    if (LIN[k]){
+      const d = LIN[k];
+      righe.push(`<div><i class="sf-tratto" style="background:${d.color};`
+        + `height:${Math.min(d.weight || 3, 5)}px"></i>`
+        + `<span>${esc(nm(d) + statoDi(d, x._stato))}</span></div>`);
+    } else if (AREE[k]){
+      const d = AREE[k];
+      righe.push(`<div><i class="sf-tratto" style="height:3mm;border-radius:.5mm;`
+        + `background:${d.fillColor};opacity:.85;border:.4mm solid ${d.color}"></i>`
+        + `<span>${esc(nm(d))}</span></div>`);
+    } else if (SIM[k]){
+      righe.push(`<div><span class="sf-sim">${svgSimbolo(k, {stato: x._stato})}</span>`
+        + `<span>${esc(nm(SIM[k]) + statoDi(SIM[k], x._stato))}</span></div>`);
+    } else if (k === 'nota'){
+      righe.push(`<div><span class="sf-sim">\u270e</span>`
+        + `<span>${esc(nm(NOTA))}</span></div>`);
+    }
+  });
+  return righe.join('');
+}
+
+/* Ettari per la radio, metri quadri sotto l'ettaro, chilometri quadri per
+   gli incendi grandi: sono tre letture della stessa misura e chi riceve il
+   foglio non deve rifare la divisione a mano. */
+function sfTabellaAree(){
+  const per = new Map();
+  disegni.eachLayer(x => {
+    if (!AREE[x._tipo]) return;
+    const r = per.get(x._tipo) || {n:0, mq:0, per:0};
+    r.n++; r.mq += areaMq(x); r.per += perimetroM(x);
+    per.set(x._tipo, r);
+  });
+  if (!per.size) return `<p class="sf-vuoto">\u2014</p>`;
+
+  let righe = '', coinvolta = 0;
+  per.forEach((r, k) => {
+    if (AREE_SUPERFICIE.indexOf(k) >= 0) coinvolta += r.mq;
+    righe += `<tr><td>${esc(nm(AREE[k]))}</td><td>${r.n}</td>`
+      + `<td>${(r.mq / 10000).toFixed(2)}</td>`
+      + `<td>${inMq(r.mq)}</td>`
+      + `<td>${(r.mq / 1e6).toFixed(4)}</td>`
+      + `<td>${(r.per / 1000).toFixed(2)}</td></tr>`;
+  });
+  righe += `<tr class="sf-tot"><td>Superficie coinvolta (percorsa + a fuoco attivo)</td>`
+    + `<td>\u2014</td><td>${(coinvolta / 10000).toFixed(2)}</td>`
+    + `<td>${inMq(coinvolta)}</td><td>${(coinvolta / 1e6).toFixed(4)}</td>`
+    + `<td>\u2014</td></tr>`;
+
+  return `<table class="sf-tab"><thead><tr><th>Area</th><th>N.</th><th>ha</th>`
+    + `<th>m\u00b2</th><th>km\u00b2</th><th>perimetro km</th></tr></thead>`
+    + `<tbody>${righe}</tbody></table>`;
+}
+
+function sfTabellaVento(){
+  if (!ventoCono) return `<p class="sf-vuoto">\u2014</p>`;
+  const V = NS.SitacVento;
+  const ora = ventoCono.letto
+    ? new Date(ventoCono.letto).toLocaleTimeString(lingua) : '\u2014';
+  const avanza = m => Math.round(V.distanzaFronte(ventoCono.velocita, m)) + ' m';
+
+  return `<table class="sf-tab"><tbody>`
+    + `<tr><th>Intensit\u00e0</th><td>${esc(String(ventoCono.velocita))} km/h`
+    + ` \u00b7 ${esc(t(V.simboloVento(ventoCono.velocita)))}</td></tr>`
+    + `<tr><th>Direzione (verso cui va)</th><td>${esc(String(ventoCono.verso))}\u00b0</td></tr>`
+    + `<tr><th>Provenienza</th><td>${esc(String(ventoCono.provenienza != null
+        ? ventoCono.provenienza : (ventoCono.verso + 180) % 360))}\u00b0</td></tr>`
+    + `<tr><th>Fonte del dato</th><td>${esc(String(ventoCono.fonte || '\u2014'))}</td></tr>`
+    + `<tr><th>Rilevato alle</th><td>${esc(ora)}</td></tr>`
+    + `<tr><th>Apertura del cono</th><td>${esc(String(V.APERTURA))}\u00b0`
+    + ` \u00b7 quota ${esc(String(V.QUOTA_VENTO))} m</td></tr>`
+    + `<tr><th>Avanzamento del fronte</th><td>15 min ${avanza(15)}`
+    + ` \u00b7 30 min ${avanza(30)} \u00b7 60 min ${avanza(60)}</td></tr>`
+    + `</tbody></table>`;
+}
+
+function sfTabellaConi(){
+  if (!coni.length) return `<p class="sf-vuoto">\u2014</p>`;
+  const righe = coni.map(c => `<tr><td>${c.id}</td><td>${esc(c.tipo)}</td>`
+    + `<td>${c.tipo === 'pendenza'
+        ? esc(Math.round(c.mh) + ' m/h')
+        : esc(c.vento.velocita + ' km/h')}</td>`
+    + `<td>${esc(String(c.vento.verso))}\u00b0</td>`
+    + `<td>${c.pendenza != null ? esc((c.pendenza * 100).toFixed(0) + '%') : '\u2014'}</td>`
+    + `<td>${esc(String(c.vento.fonte || '\u2014'))}</td></tr>`).join('');
+  return `<table class="sf-tab"><thead><tr><th>N.</th><th>Costruzione</th>`
+    + `<th>Velocit\u00e0</th><th>Direzione</th><th>Pendenza</th><th>Fonte</th></tr></thead>`
+    + `<tbody>${righe}</tbody></table>`;
+}
+
+function sfTabellaLinee(){
+  const per = new Map();
+  disegni.eachLayer(x => {
+    if (!LIN[x._tipo]) return;
+    const k = x._tipo + '|' + (x._stato || '');
+    const r = per.get(k) || {tipo:x._tipo, stato:x._stato, n:0, m:0};
+    r.n++; r.m += lunghezzaM(x);
+    per.set(k, r);
+  });
+  if (!per.size) return `<p class="sf-vuoto">\u2014</p>`;
+  let righe = '';
+  per.forEach(r => {
+    righe += `<tr><td>${esc(nm(LIN[r.tipo]) + statoDi(LIN[r.tipo], r.stato))}</td>`
+      + `<td>${r.n}</td><td>${(r.m / 1000).toFixed(2)}</td></tr>`;
+  });
+  return `<table class="sf-tab"><thead><tr><th>Elemento</th><th>N.</th>`
+    + `<th>lunghezza km</th></tr></thead><tbody>${righe}</tbody></table>`;
+}
+
+/* I tile della nuova inquadratura arrivano dopo il fitBounds: stampare
+   subito darebbe una carta a mattonelle grigie. Si aspetta il `load` del
+   fondo attivo, con un tetto perché su rete lenta o cache vuota quel
+   segnale può non arrivare mai. */
+function attendiTile(ms){
+  return new Promise(risolvi => {
+    let fatto = false;
+    const fine = () => { if (!fatto){ fatto = true; risolvi(); } };
+    sfondi[iSfondo].l.once('load', fine);
+    setTimeout(fine, ms);
+  });
+}
+
+async function stampa(){
+  const f = creaFoglioStampa();
+  const quando = fmtOra(oraRedazione || new Date());
+  const i = intestazione();
+  const avvertenza = coni.some(c => c.fattori) && NS.SitacRilievo
+    ? `<p class="sf-avvertenza">${esc(NS.SitacRilievo.avvertenza[lingua]
+        || NS.SitacRilievo.avvertenza.it)}</p>` : '';
+
+  f.innerHTML =
+    `<section class="sf-pagina sf-pagina-carta">
+       <header class="sf-testata">
+         <h1>${esc(t('stTitolo'))}</h1>
+         <p>${esc(t('stData', {d: quando}))}${i.intervento
+            ? ` \u00b7 ${esc(t('nIntervento'))} ${esc(i.intervento)}` : ''}</p>
+       </header>
+       <div class="sf-dati">
+         <div class="sf-box"><h2>Comando competente</h2>${sfBloccoComando()}</div>
+         <div class="sf-box"><h2>Direttore delle operazioni di spegnimento</h2>${sfBloccoDos()}</div>
+       </div>
+       <div class="sf-carta">
+         <div class="sf-mappa" id="sitac-stampa-mappa"></div>
+         <aside class="sf-legenda"><h2>${esc(t('legenda'))}</h2>${sfLegenda()}</aside>
+       </div>
+     </section>
+     <section class="sf-pagina sf-pagina-dati">
+       <header class="sf-testata">
+         <h1>Riepilogo dei dati</h1>
+         <p>${esc(t('stTitolo'))} \u00b7 ${esc(quando)}</p>
+       </header>
+       <h2>Superfici</h2>${sfTabellaAree()}
+       <h2>Vento</h2>${sfTabellaVento()}
+       <h2>Coni di propagazione</h2>${sfTabellaConi()}${avvertenza}
+       <h2>Linee tracciate</h2>${sfTabellaLinee()}
+     </section>`;
+
+  /* La mappa viva si sposta dentro il foglio e poi torna esattamente dov'era:
+     un secondo Leaflet solo per la stampa vorrebbe ricostruire ogni simbolo,
+     ogni decorazione e ogni cono. */
+  const wrap = q('.sitac-mapwrap');
+  segnoMappa = document.createComment('sitac-mappa');
+  wrap.parentNode.insertBefore(segnoMappa, wrap);
+  f.querySelector('#sitac-stampa-mappa').appendChild(wrap);
+  document.body.classList.add('sitac-stampa');
+
+  const vistaPrima = {c: map.getCenter(), z: map.getZoom()};
+  map.invalidateSize();
+
+  /* La carta stampata inquadra il DISEGNO, non quello che si stava
+     guardando: chi la riceve vuole l'incendio intero, non la porzione su
+     cui era rimasto lo zoom di chi l'ha redatta. I coni stanno nei decori,
+     quindi entrano anche loro nel calcolo. */
+  let b = disegni.getBounds();
+  coni.forEach(c => {
+    const e = estremiDi(c.layer);
+    if (!e || !e.isValid()) return;
+    b = b.isValid() ? b.extend(e) : L.latLngBounds(e.getSouthWest(), e.getNorthEast());
+  });
+  if (b.isValid()) map.fitBounds(b, {padding:[28, 28]});
+
+  await attendiTile(2500);
+
+  const ripristina = () => {
+    window.removeEventListener('afterprint', ripristina);
+    document.body.classList.remove('sitac-stampa');
+    segnoMappa.parentNode.insertBefore(wrap, segnoMappa);
+    segnoMappa.remove();
+    segnoMappa = null;
+    setTimeout(() => {
+      map.invalidateSize();
+      map.setView(vistaPrima.c, vistaPrima.z);
+      adatta();
+    }, 60);
+  };
+  window.addEventListener('afterprint', ripristina);
+  window.print();
+}
 
   /* La sezione nasce nel magazzino e vive dentro un pannello che cambia
      larghezza: qui si fanno due cose insieme, il ridisegno della mappa e la
