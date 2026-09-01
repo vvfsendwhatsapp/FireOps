@@ -43,6 +43,13 @@
     --header-height-mobile: 150px;
     /* Altezza header quando va a capo (mobile) */
     --subheader-height: 64px;
+    /* Tema scuro di default*/
+    color-scheme: dark;
+}
+
+html {
+    scrollbar-color: #4a4a4a var(--dark-color);
+    scrollbar-width: thin;
 }
 
 * {
@@ -5102,3 +5109,22 @@ a.btn-icon-hamburger:hover {
 /* Alba/tramonto: le emoji portano già il significato, un quarto colore
    in testata accanto a giallo, azzurro e arancione sarebbe rumore */
 .valore-effemeridi { font-size: 15px; color: var(--text-main); }
+
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--dark-color);
+}
+
+::-webkit-scrollbar-thumb {
+    background: #4a4a4a;
+    border-radius: 5px;
+    border: 2px solid var(--dark-color);   /* stacco dal canale */
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-color);
+}
