@@ -5136,9 +5136,3 @@ a.btn-icon-hamburger:hover {
 .app-subheader .subheader-pannello-nascosto {
     display: none;
 }
-
-/* Sparito l'altro selettore, il separatore verticale resterebbe
-   appeso sul bordo destro dello schermo */
-body.pagina-esclusiva .subheader-pannello:first-child {
-    border-right: none;
-}
