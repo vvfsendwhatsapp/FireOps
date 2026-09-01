@@ -28,7 +28,7 @@ const USCITA = 'db/notiziario.json';
 const PER_FONTE = 8;        // quante voci tenere per ciascuna fonte
 const TOTALE = 120;         // tetto complessivo
 const GIORNI = 30;          // si scartano le voci più vecchie di così
-const TIMEOUT = 15000;
+const TIMEOUT = 25000;      // vigilfuoco.it risponde lento: 15s non bastavano
 
 const UA = 'FireOps-VVF/notiziario (+https://github.com/)';
 
@@ -112,6 +112,16 @@ function trovaFeedInPagina(html, base) {
     if (/(\.xml|\/rss\b|rss\.|\/feed\b|feed\.|rsshandler)/i.test(href)
         && !/sitemap/i.test(href)) {
       try { trovati.add(new URL(href, base).href); } catch { /* href non valido */ }
+    }
+  }
+
+  // Indirizzi nudi dentro il testo: i siti fatti in Gatsby o simili non
+  // hanno <a href> nell'HTML servito, ma spediscono i link dentro un JSON.
+  for (const m of html.matchAll(/https?:\/\/[^\s"'<>\\)]+/gi)) {
+    const url = m[0].replace(/[.,;]+$/, '');
+    if (/(\.xml$|\/rss\/?$|\/feed\/?$|rsshandler)/i.test(url)
+        && !/sitemap/i.test(url)) {
+      trovati.add(url);
     }
   }
   return [...trovati];
