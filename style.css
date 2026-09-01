@@ -4968,7 +4968,7 @@ a.btn-icon-hamburger:hover {
 
 .cliccabile-canali {
     cursor: pointer;
-    text-decoration: underline dotted;
+    text-decoration: none;
     text-underline-offset: 4px;
 }
 
