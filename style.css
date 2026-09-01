@@ -203,10 +203,6 @@ html.comando-gia-scelto #modal-comando {
     padding: 0 20px;
 }
 
-.subheader-pannello:first-child {
-    border-right: 1px solid var(--border-color);
-}
-
 /* La posizione (sinistra/destra) dice già a quale pannello si riferisce:
    l'etichetta è ridondante e ruba larghezza al nome della pagina.
    REGOLA UNICA: prima era dichiarata due volte, con il display:none in una
