@@ -3362,6 +3362,23 @@ a.btn-icon-hamburger:hover {
     transform: translateY(-50%)
 }
 
+/* --- SITAC · cursore secondo lo strumento --------------------------- */
+.leaflet-container.sitac-cur-mirino,
+.leaflet-container.sitac-cur-mirino .leaflet-interactive { cursor: crosshair; }
+
+/* Il glifo arriva come stile in linea sul contenitore: i figli devono
+   ereditarlo, o passando sopra un elemento ricompare la manina. */
+.leaflet-container.sitac-cur-simbolo { cursor: crosshair; }
+.leaflet-container.sitac-cur-simbolo .leaflet-interactive,
+.leaflet-container.sitac-cur-simbolo .leaflet-marker-icon { cursor: inherit; }
+
+.leaflet-container.sitac-cur-elimina,
+.leaflet-container.sitac-cur-elimina .leaflet-interactive {
+  cursor: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Cpath d='M6 6l16 16M22 6L6 22' stroke='%23fff' stroke-width='7' stroke-linecap='round'/%3E%3Cpath d='M6 6l16 16M22 6L6 22' stroke='%23cc0000' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E") 14 14, crosshair;
+}
+.leaflet-container.sitac-cur-modifica { cursor: default; }
+.leaflet-container.sitac-cur-modifica .leaflet-interactive { cursor: move; }
+
 /* I SIMBOLI SULLA MAPPA
    Il disco chiaro dietro non è decorazione: la tavola è pensata per carta
    bianca, e su ortofoto o bosco fitto il nero e il rosso sparirebbero.

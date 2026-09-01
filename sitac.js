@@ -1086,6 +1086,7 @@ function mostraComandoAfferente(sigla, nome){
     /* Gli agganci della misura vivono qui e non accanto alle sue funzioni:
        `map` esiste solo da questa riga in poi. */
     map.on('pm:drawstart', e => {
+      clicPassante(true); 
       if (e.shape !== 'Line' && e.shape !== 'Polygon') return;
       misuraPoligono = e.shape === 'Polygon';
       misuraPunti = [];
@@ -1100,7 +1101,7 @@ function mostraComandoAfferente(sigla, nome){
       e.workingLayer.on('pm:vertexadded', ev => { misuraPunti.push(ev.latlng); });
     });
     map.on('mousemove', e => { misuraMostra(e.latlng, e.containerPoint); });
-    map.on('pm:drawend', misuraSpegni);
+    map.on('pm:drawend', () => { clicPassante(false); misuraSpegni(); });
 
   const disegni = L.featureGroup().addTo(map);   // esportabile
   const decori  = L.layerGroup().addTo(map);     // motivi, maniglie, coni: mai esportati
@@ -1479,11 +1480,11 @@ function mostraComandoAfferente(sigla, nome){
   /* Attese: risolvono con null se qualcuno preme Esc o cambia strumento —
      fermaTutto() le chiude, così il percorso guidato non resta appeso. */
   function attendiClic(msg){
-    fermaTutto(); spegniPulsanti(); stato(msg);
+    fermaTutto(); spegniPulsanti(); stato(msg); cursore('mirino');clicPassante(true);
     return new Promise(risolvi => { attesaClic = risolvi; });
   }
   function attendiLinea(msg){
-    fermaTutto(); spegniPulsanti(); stato(msg);
+    fermaTutto(); spegniPulsanti(); stato(msg); cursore('mirino');
     return new Promise(risolvi => {
       attesaLinea = risolvi;
       map.pm.enableDraw('Line', {pathOptions:{color:COL.rosso, weight:3.5},
@@ -1492,7 +1493,9 @@ function mostraComandoAfferente(sigla, nome){
   }
   map.on('click', e => {
     if (!attesaClic) return;
-    const f = attesaClic; attesaClic = null; f(e.latlng);
+    const f = attesaClic; attesaClic = null;
+    clicPassante(false); cursore(null);
+    f(e.latlng);
   });
 
   const origineSullaCarta = () => {
@@ -2338,16 +2341,19 @@ function mostraComandoAfferente(sigla, nome){
       const d = LIN[chiave];
       map.pm.enableDraw('Line', {pathOptions: stileLinea(d, statoPer(d)), continueDrawing:true});
       stato(`${nm(d)}${etichettaStato(d)}\n${t('suggLinea')}`);
+      cursore('mirino');
     } else if (genere === 'area'){
       const d = AREE[chiave];
       map.pm.enableDraw('Polygon', {pathOptions: stileArea(d), continueDrawing:true});
       stato(`${nm(d)}\n${t('suggArea')}`);
+      cursore('mirino');
     } else {
       const d = chiave === 'nota' ? NOTA : SIM[chiave];
       map.pm.enableDraw('Marker', {
         markerStyle:{icon: iconaSimbolo(chiave, {stato: statoPer(d)}), draggable:true},
         continueDrawing:true});
       stato(`${nm(d)}${etichettaStato(d)}\n${t('suggSimbolo')}`);
+      cursore('simbolo', chiave, statoPer(d));
     }
   }
 
@@ -2410,6 +2416,8 @@ function mostraComandoAfferente(sigla, nome){
     if (attesaLinea){ const f = attesaLinea; attesaLinea = null; f(null); }
     if (attesaElemento){ const f = attesaElemento; attesaElemento = null; f(null); }
     misuraSpegni();
+    cursore(null);
+    clicPassante(false);
     strumento = null;
   }
 
@@ -2437,6 +2445,71 @@ function mostraComandoAfferente(sigla, nome){
     if (strumento) riattivaStrumento();
   }
 
+    /* =======================================================================
+     6ter. CURSORE
+     Il puntatore dice cosa succede al prossimo clic: mirino per i tracciati,
+     il glifo stesso per i simboli, la croce per l'eliminazione. Davanti a una
+     carta si guarda la carta, non la barra a sinistra.
+     ===================================================================== */
+  const CURSORI = ['mirino','simbolo','elimina','modifica'];
+  const curCache = {};
+
+  /* 32 px è il massimo che Windows accetta: oltre, il cursore viene
+     scartato in silenzio e resta la freccia di sistema. */
+  function cursoreGlifo(k, st){
+    const key = k + '|' + st;
+    if (key in curCache) return curCache[key];
+    let s = svgSimbolo(k, {stato: st, senzaTesto:1});
+    if (!s || s.trim().indexOf('<svg') !== 0) return (curCache[key] = null);
+    if (!/xmlns=/.test(s))
+      s = s.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+    s = s.replace(/\s(width|height)="[^"]*"/g, '')
+         .replace('<svg', '<svg width="32" height="32"');
+    return (curCache[key] =
+      'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(s));
+  }
+
+  function cursore(nome, chiave, st){
+    const el = map.getContainer();
+    CURSORI.forEach(c => el.classList.remove('sitac-cur-' + c));
+    el.style.cursor = '';
+    if (!nome) return;
+    el.classList.add('sitac-cur-' + nome);
+    if (nome !== 'simbolo' || !chiave) return;
+    /* Il mirino resta come ripiego dietro al glifo: se il data-URI non passa
+       si vede almeno la croce. */
+    const u = cursoreGlifo(chiave, st || 'attivo');
+    if (u) el.style.cursor = `url("${u}") 16 16, crosshair`;
+  }
+
+    /* =======================================================================
+     6quater. CLIC PASSANTE
+     Leaflet consegna il clic al layer e si ferma lì: alla mappa non arriva,
+     e Geoman i vertici li prende da lì. Finché si disegna, quindi, il
+     disegno non intercetta più il puntatore. Lo snap resta: è geometrico.
+     ===================================================================== */
+  let passanti = null;
+
+  function ognunoDentro(gruppo, f){
+    gruppo.eachLayer(l => { l.eachLayer ? ognunoDentro(l, f) : f(l); });
+  }
+  function passaAnche(l){
+    const el = passanti && elementoDom(l);
+    if (!el) return;
+    passanti.push([el, el.style.pointerEvents]);
+    el.style.pointerEvents = 'none';
+  }
+  function clicPassante(on){
+    if (on){
+      if (passanti) return;              // già acceso: non si impila
+      passanti = [];
+      [disegni, decori].forEach(g => ognunoDentro(g, passaAnche));
+    } else if (passanti){
+      passanti.forEach(([el, v]) => { el.style.pointerEvents = v || ''; });
+      passanti = null;
+    }
+  }
+
   /* =======================================================================
      7. CREAZIONE
      ===================================================================== */
@@ -2455,6 +2528,7 @@ function mostraComandoAfferente(sigla, nome){
     if (!strumento) return;
     layer._tipo = strumento.chiave;
     layer._genere = strumento.genere;
+    passaAnche(layer); 
     const kk = strumento.chiave;
     layer._stato = statoPer(kk === 'nota' ? NOTA
       : (LIN[kk] || AREE[kk] || SIM[kk]));
@@ -2520,6 +2594,7 @@ function mostraComandoAfferente(sigla, nome){
       setTimeout(() => {
         map.pm.disableDraw();
         attesaDirezione = layer;
+        clicPassante(true);
       }, 0);
       stato(`${nm(def)}\n${t('chiediDirezione')}`);
     }
@@ -2562,13 +2637,15 @@ function mostraComandoAfferente(sigla, nome){
   $('bModifica').onclick = function(){
     const on = this.classList.contains('attivo');
     fermaTutto(); spegniPulsanti();
-    if (!on){ this.classList.add('attivo'); map.pm.enableGlobalEditMode(); stato(t('modOn')); }
+    if (!on){ this.classList.add('attivo'); map.pm.enableGlobalEditMode();
+            cursore('modifica'); stato(t('modOn')); }
     else stato(t('modOff'));
   };
   $('bElimina').onclick = function(){
     const on = this.classList.contains('attivo');
     fermaTutto(); spegniPulsanti();
-    if (!on){ this.classList.add('attivo'); map.pm.enableGlobalRemovalMode(); stato(t('elimOn')); }
+    if (!on){ this.classList.add('attivo'); map.pm.enableGlobalRemovalMode();
+            cursore('elimina'); stato(t('elimOn')); }
     else stato(t('elimOff'));
   };
   $('bAnnulla').onclick = () => {
