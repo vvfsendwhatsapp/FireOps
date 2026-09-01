@@ -1054,23 +1054,27 @@
                         value="3"></label>
                 <label>Raggio km <input type="number" id="terremoti-raggio" min="10" max="1000" step="10"
                         value="200"></label>
-                <button type="button" id="terremoti-aggiorna" class="btn-toggle-radar">Aggiorna</button>
+                <div class="terremoti-campo terremoti-campo-stretto terremoti-campo-azione">
+                    <button type="button" id="terremoti-aggiorna" class="btn-toggle-radar">Aggiorna</button>
+                </div>
             </div>
             <p id="terremoti-stato" class="pagina-nota"></p>
             <div id="terremoti-mappa" class="terremoti-mappa"></div>
-            <table class="riepilogo-tabella terremoti-elenco">
-                <thead>
-                    <tr>
-                        <th>Ora</th>
-                        <th>Magn.</th>
-                        <th>Prof.</th>
-                        <th>Località</th>
-                        <th>Distanza</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody id="terremoti-tabella"></tbody>
-            </table>
+            <div class="terremoti-elenco-scroll">
+                <table class="riepilogo-tabella terremoti-elenco">
+                    <thead>
+                        <tr>
+                            <th>Ora</th>
+                            <th>Magn.</th>
+                            <th>Prof.</th>
+                            <th>Località</th>
+                            <th>Distanza</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="terremoti-tabella"></tbody>
+                </table>
+            </div>
         </section>
 
         <!-- SOSTANZE PERICOLOSE (Schede ICSC ILO/OMS) -->

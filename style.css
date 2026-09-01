@@ -191,7 +191,8 @@ html.comando-gia-scelto #modal-comando {
     border-bottom: 3px solid var(--primary-color);
     display: flex;
     z-index: 999;
-    /* sotto l'header (1000) */
+    padding: 0 20px;
+    gap: 16px;
 }
 
 .subheader-pannello {
@@ -200,7 +201,7 @@ html.comando-gia-scelto #modal-comando {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 0 20px;
+    padding: 0;
 }
 
 /* La posizione (sinistra/destra) dice già a quale pannello si riferisce:
@@ -5307,19 +5308,42 @@ body.fullscreen-attivo #modal-comando {
     z-index: 1700;
 }
 
-.terremoti-comandi { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; margin-bottom: 10px; }
-.terremoti-campo { display: flex; flex-direction: column; gap: 4px; min-width: 170px; }
-.terremoti-campo-stretto { min-width: 120px; max-width: 140px; }
-/* Etichette come nella pagina Messaggistica: maiuscoletto spaziato sopra il campo */
-.terremoti-campo label { font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; opacity: .8; }
-.terremoti-comandi .btn-toggle-radar { align-self: flex-end; }
+/* La sezione riempie il pannello: la carta si prende lo spazio libero,
+   l'elenco scorre dentro di sé invece di spingerla fuori vista. */
+.pannello-corpo > #terremoti {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+}
+.terremoti-comandi { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 12px; flex: 0 0 auto; }
+.terremoti-campo { flex: 1 1 0; min-width: 150px; display: flex; flex-direction: column; gap: 6px; }
+.terremoti-campo-stretto { flex: 0 1 150px; min-width: 120px; }
+/* Etichetta sopra il campo, come .pagina-box label: la sezione non è dentro
+   .pagina-box, quindi quei valori vanno ridichiarati qui. */
+.terremoti-campo label { color: var(--text-muted); font-size: 12px;
+    text-transform: uppercase; letter-spacing: .5px; }
+#terremoti .combo-input { padding: 10px; font-size: 14px; }
+/* Il padding destro di .combo-input lascia posto alla freccetta dei combo
+   ricercabili; un select nativo la sua freccia ce l'ha già. */
+#terremoti select.combo-input { padding-right: 10px; }
+/* Senza etichetta il pulsante andrebbe in cima: qui si allinea alla base
+   degli altri campi. */
+.terremoti-campo-azione { justify-content: flex-end; }
+#terremoti-aggiorna { width: 100%; padding: 10px 16px; font-size: 14px; }
 
-.terremoti-mappa { height: clamp(240px, 38vh, 520px); border: 1px solid var(--border-color);
-    border-radius: 8px; margin-bottom: 12px; }
+.terremoti-mappa { flex: 1 1 auto; min-height: 220px;
+    border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 12px; }
+#terremoti .leaflet-container { background: var(--dark-color); }
 #terremoti .leaflet-popup-content { color: #111; }
 #terremoti .leaflet-popup-content a { color: #0057a8; }
-#terremoti .leaflet-container { background: var(--dark-color); }
 
+.terremoti-elenco-scroll { flex: 0 1 42%; min-height: 120px; overflow-y: auto;
+    border: 1px solid var(--border-color); border-radius: 8px; }
+/* Intestazione ancorata: scorrendo l'elenco si continua a sapere quale
+   colonna è la distanza e quale la profondità. */
+.terremoti-elenco thead th { position: sticky; top: 0; z-index: 1;
+    background: var(--dark-color); }
 .sisma-ora, .sisma-luogo { white-space: nowrap; }
 .sisma-mag { display: inline-block; min-width: 34px; padding: 1px 6px; border-radius: 4px;
     font-family: "Courier New", monospace; font-weight: bold; text-align: center; color: #111; }

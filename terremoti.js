@@ -271,7 +271,7 @@
         function cambiaAmbito() {
             const a = AMBITI[el.ambito.value];
             el.magnitudo.value = String(a.mag);
-            el.raggio.closest('label').hidden = el.ambito.value !== 'comando';
+            el.raggio.closest('.terremoti-campo').hidden = el.ambito.value !== 'comando';
             scarica();
         }
 
@@ -298,7 +298,7 @@
             else if (eventi.length) disegna();
         });
 
-        el.raggio.closest('label').hidden = true;
+        el.raggio.closest('.terremoti-campo').hidden = true;
         scarica();
         rinfresco = setInterval(scarica, RINFRESCO);
     }
