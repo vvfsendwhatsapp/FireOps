@@ -5263,7 +5263,6 @@ body.sitac-stampa #sitac-stampa-doc {
 /* --- pagina ------------------------------------------------------------ */
 .sf-pagina {
     width: 400mm;
-    height: 265mm;
     padding: 4mm;
     display: flex;
     flex-direction: column;
@@ -5318,12 +5317,12 @@ body.sitac-stampa #sitac-stampa-doc {
 .sf-val { font-weight: 600; }
 
 .sf-carta {
-    flex: 1 1 auto;
+    height: 185mm;
     display: grid;
     grid-template-columns: 1fr 80mm;
     gap: 4mm;
-    min-height: 0;
 }
+
 .sf-mappa {
     position: relative;
     border: .3mm solid #666;
@@ -5398,8 +5397,7 @@ body.sitac-stampa .leaflet-control-zoom { display: none !important; }
     @page { size: A3 landscape; margin: 10mm; }
 
     body.sitac-stampa #sitac-stampa-doc { position: static; }
-    .sf-pagina { width: auto; overflow: hidden; }
-    .sf-carta { break-inside: avoid; page-break-inside: avoid; }
+    .sf-pagina { width: auto; }
 
     /* I riquadri devono restare leggibili anche con "stampa senza sfondi" */
     .sf-tab thead th,
