@@ -4812,6 +4812,24 @@ a.btn-icon-hamburger:hover {
     opacity: .75;
 }
 
+.normative-ricerca { margin-bottom: 12px; }
+.normative-ricerca-riga { display: flex; align-items: center; gap: 14px; margin-top: 6px; }
+.normative-ricerca-frase { display: flex; align-items: center; gap: 6px; font-size: .9em; cursor: pointer; }
+.normative-risultati { margin-bottom: 16px; display: flex; flex-direction: column; gap: 8px; }
+.normativa-risultato { background: var(--dark-color); border: 1px solid var(--border-color);
+    border-radius: 8px; padding: 10px 12px; cursor: pointer; }
+.normativa-risultato.esteso { border-color: var(--accent-color, #ffd700); }
+.normativa-risultato-testa { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.normativa-risultato-fonte { font-size: .8em; opacity: .75; white-space: nowrap; }
+.normativa-risultato-titolo { font-weight: 600; flex: 1 1 auto; }
+.normativa-risultato-apri { flex: 0 0 auto; font-size: .8em; padding: 3px 8px;
+    background: transparent; color: inherit; border: 1px solid var(--border-color);
+    border-radius: 6px; cursor: pointer; }
+.normativa-risultato-testo, .normativa-risultato-completo p { margin: 6px 0 0; line-height: 1.55; }
+.normative-risultati mark { background: rgba(255, 215, 0, .35); color: inherit;
+    border-radius: 3px; padding: 0 1px; }
+.normativa-evidenziato { outline: 2px solid var(--accent-color, #ffd700); outline-offset: 3px; }
+
 /* ==========================================================
    ==========================================================
    RESPONSIVE
