@@ -1,5 +1,5 @@
 {
-  "_nota": "url vuoto = feed non ancora verificato. Eseguire 'node tools/notiziario.mjs --scopri' per estrarre gli indirizzi reali dalle pagine indicate in 'pagina', poi incollarli in 'url'. Le fonti con url vuoto vengono saltate senza far fallire il resto.",
+  "_nota": "url vuoto = fonte saltata, senza far fallire le altre. 'pagina' serve solo a --scopri. Le voci polizia-* sono candidate: si tengono quelle i cui titoli, in db/notiziario.json, sono davvero notizie e non concorsi o bandi di gara.",
   "fonti": [
     {
       "id": "vvf",
@@ -7,47 +7,79 @@
       "categoria": "corpo",
       "priorita": 1,
       "url": "",
-      "pagina": "https://www.vigilfuoco.it/"
+      "pagina": "https://www.vigilfuoco.it/aspx/home.aspx"
     },
     {
       "id": "dpc-news",
-      "nome": "Protezione Civile — news",
+      "nome": "Protezione Civile",
       "categoria": "emergenza",
       "priorita": 1,
       "url": "",
-      "pagina": "https://www.protezionecivile.gov.it/it/rss/"
-    },
-    {
-      "id": "dpc-criticita",
-      "nome": "Protezione Civile — bollettino criticità",
-      "categoria": "emergenza",
-      "priorita": 1,
-      "url": "",
-      "pagina": "https://www.protezionecivile.gov.it/it/rss/"
-    },
-    {
-      "id": "dpc-meteo",
-      "nome": "Protezione Civile — vigilanza meteo",
-      "categoria": "emergenza",
-      "priorita": 1,
-      "url": "",
-      "pagina": "https://www.protezionecivile.gov.it/it/rss/"
+      "pagina": "https://www.protezionecivile.gov.it/page-data/it/rss/page-data.json"
     },
     {
       "id": "ingv",
-      "nome": "INGV — eventi sismici",
+      "nome": "INGV - eventi sismici",
       "categoria": "emergenza",
       "priorita": 1,
-      "url": "",
+      "url": "https://terremoti.ingv.it/feed/atom/all_week",
       "pagina": "https://terremoti.ingv.it/"
     },
     {
-      "id": "polizia",
-      "nome": "Polizia di Stato",
+      "id": "interno",
+      "nome": "Ministero dell'Interno",
+      "categoria": "governo",
+      "priorita": 2,
+      "url": "https://www.interno.gov.it/it/rss/news.xml",
+      "pagina": "https://www.interno.gov.it/it"
+    },
+    {
+      "id": "esteri",
+      "nome": "Ministero degli Esteri",
+      "categoria": "governo",
+      "priorita": 3,
+      "url": "https://www.esteri.it/it/feed/",
+      "pagina": "https://www.esteri.it/it/"
+    },
+    {
+      "id": "viaggiaresicuri",
+      "nome": "Viaggiare Sicuri - avvisi",
+      "categoria": "governo",
+      "priorita": 3,
+      "url": "https://www.viaggiaresicuri.it/assets/rss.xml",
+      "pagina": "https://www.viaggiaresicuri.it/"
+    },
+    {
+      "id": "polizia-1298",
+      "nome": "Polizia di Stato (1298)",
       "categoria": "forze",
       "priorita": 2,
-      "url": "",
+      "url": "https://www.poliziadistato.it/feed/category/1298",
       "pagina": "https://www.poliziadistato.it/articolo/feed-rss"
+    },
+    {
+      "id": "polizia-178",
+      "nome": "Polizia di Stato (178)",
+      "categoria": "forze",
+      "priorita": 2,
+      "url": "https://www.poliziadistato.it/feed/category/178",
+      "pagina": ""
+    },
+    {
+      "id": "polizia-1815",
+      "nome": "Polizia di Stato (1815)",
+      "categoria": "forze",
+      "priorita": 2,
+      "url": "https://www.poliziadistato.it/feed/category/1815",
+      "pagina": ""
+    },
+    {
+      "id": "polizia-1051",
+      "nome": "Polizia di Stato (1051)",
+      "categoria": "forze",
+      "priorita": 2,
+      "url": "https://www.poliziadistato.it/feed/fullcategories/1051",
+      "pagina": ""
     },
     {
       "id": "carabinieri",
@@ -55,7 +87,7 @@
       "categoria": "forze",
       "priorita": 2,
       "url": "",
-      "pagina": "https://www.carabinieri.it/cittadino/informazioni/rss"
+      "pagina": "https://www.carabinieri.it/"
     },
     {
       "id": "guardiacostiera",
@@ -63,7 +95,7 @@
       "categoria": "forze",
       "priorita": 2,
       "url": "",
-      "pagina": "https://www.guardiacostiera.gov.it/portale/notizie-e-comunicati-stampa"
+      "pagina": "https://www.guardiacostiera.gov.it/"
     },
     {
       "id": "gdf",
@@ -71,15 +103,7 @@
       "categoria": "forze",
       "priorita": 3,
       "url": "",
-      "pagina": "https://www.gdf.gov.it/"
-    },
-    {
-      "id": "interno",
-      "nome": "Ministero dell'Interno",
-      "categoria": "governo",
-      "priorita": 2,
-      "url": "",
-      "pagina": "https://www.interno.gov.it/it"
+      "pagina": "https://www.gdf.gov.it/it/stampa/comunicati-stampa"
     },
     {
       "id": "salute",
@@ -87,37 +111,21 @@
       "categoria": "governo",
       "priorita": 2,
       "url": "",
-      "pagina": "https://www.salute.gov.it/portale/home.html"
-    },
-    {
-      "id": "esteri",
-      "nome": "Ministero degli Esteri",
-      "categoria": "governo",
-      "priorita": 3,
-      "url": "",
-      "pagina": "https://www.esteri.it/it/"
-    },
-    {
-      "id": "viaggiaresicuri",
-      "nome": "Viaggiare Sicuri — avvisi",
-      "categoria": "governo",
-      "priorita": 3,
-      "url": "",
-      "pagina": "https://www.viaggiaresicuri.it/"
+      "pagina": "https://www.salute.gov.it/portale/news/p3_2.html"
     },
     {
       "id": "anas",
-      "nome": "ANAS — viabilità",
+      "nome": "ANAS - viabilita",
       "categoria": "viabilita",
       "priorita": 3,
       "url": "",
-      "pagina": "https://www.stradeanas.it/it"
+      "pagina": "https://www.stradeanas.it/it/media"
     }
   ],
   "_escluse": [
     {
       "id": "ansa",
-      "motivo": "Le condizioni del servizio RSS di ANSA vietano l'uso dei feed per pubblicare i titoli delle ultime notizie su siti web. FireOps è pubblico: non si può includere."
+      "motivo": "Le condizioni del servizio RSS di ANSA vietano l'uso dei feed per pubblicare i titoli delle ultime notizie su siti web. FireOps e pubblico: non si puo includere."
     }
   ]
 }
