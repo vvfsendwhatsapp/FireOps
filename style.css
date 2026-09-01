@@ -1717,10 +1717,22 @@ html.comando-gia-scelto #modal-comando {
     grid-column: 1;
     grid-row: 1;
     border: 1px solid var(--primary-color);
-    border-radius: 0 8px 8px 8px;
+    border-radius: 8px;
     padding: 14px;
     background: var(--surface-color);
     min-width: 0;
+}
+
+/* Lo spigolo squadrato è quello sotto la linguetta attiva: con "Input"
+   è in alto a sinistra, con "Invia messaggio" in alto a destra. Le tre
+   linguette occupano un terzo ciascuna della colonna, quindi la terza
+   finisce esattamente sul bordo destro del riquadro. */
+.pannello-fullscreen .coord-tab-corpo.sx-input #coord-tab-content-input {
+    border-top-left-radius: 0;
+}
+
+.pannello-fullscreen .coord-tab-corpo.sx-messaggio #coord-tab-content-messaggio {
+    border-top-right-radius: 0;
 }
 
 /* La mappa non ha cornice né fondo: la carta si stacca da sé */
