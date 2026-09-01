@@ -21,3 +21,5 @@ correggere legenda se cambio lingua
 
  INGV LINK
  FEED RSS
+
+ https://opendata.vigilfuoco.it/ LINK

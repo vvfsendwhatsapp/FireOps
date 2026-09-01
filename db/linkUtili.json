@@ -36,6 +36,7 @@
   { "Categoria": "Sala Operativa", "Sottocategoria": "SO Reale", "Nome": "Sala Situazioni Virtuale", "URL": "http://ssv.dipvvf.it/default.asp" },
   { "Categoria": "Sala Operativa", "Sottocategoria": "SO Reale", "Nome": "SUPREME ROSSO", "URL": "http://supreme.dipvvf.it" },
   { "Categoria": "Sala Operativa", "Sottocategoria": "SO Reale", "Nome": "WEB Conference", "URL": "https://webconference.dipvvf.it/ext/conference/join" },
+  { "Categoria": "Sala Operativa", "Sottocategoria": "SO Reale", "Nome": "OpenData", "URL": "https://opendata.vigilfuoco.it/" },
 
   { "Categoria": "Sala Operativa", "Sottocategoria": "SO Demo", "Nome": "Bottone Rosso DEMO", "URL": "http://bottonerosso-test.dipvvf.it" },
   { "Categoria": "Sala Operativa", "Sottocategoria": "SO Demo", "Nome": "GAC Web DEMO", "URL": "http://gacweb-demo.dipvvf.it" },
