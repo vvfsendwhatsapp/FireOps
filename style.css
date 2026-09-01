@@ -4723,6 +4723,65 @@ a.btn-icon-hamburger:hover {
 .normativa-liv-3 { padding-left: 40px; }
 .normativa-parte-num { font-weight: 600; opacity: .8; margin-right: 3px; }
 
+/* ===== SALVASCHERMO A BANNER ===== */
+
+#salvaschermo {
+    position: fixed;
+    inset: 0;
+    z-index: 1800;      /* sopra il pannello espanso, sotto i modali (2000) */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 1.2s ease;
+    pointer-events: none;   /* non intercetta nulla: sotto resta tutto vivo */
+}
+#salvaschermo.attivo {
+    opacity: 1;
+    visibility: visible;
+}
+
+.salvaschermo-banner {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    padding: 22px 40px;
+    border-radius: 14px;
+    background: rgba(0, 0, 0, .55);
+    backdrop-filter: blur(2px);
+    /* Il banner non sta mai fermo: un'immagine immobile per ore marchia
+       i pannelli OLED, e in Sala il monitor resta acceso tutta la notte. */
+    animation: salvaschermo-deriva 90s ease-in-out infinite alternate;
+}
+.salvaschermo-banner img {
+    height: 110px;
+    width: auto;
+    display: block;
+    opacity: .9;
+}
+.salvaschermo-ora {
+    font-family: "Courier New", monospace;
+    font-size: 3rem;
+    font-weight: bold;
+    color: rgba(255, 255, 255, .85);
+    letter-spacing: 2px;
+}
+
+@keyframes salvaschermo-deriva {
+    0%   { transform: translate(-16vw, -14vh); }
+    25%  { transform: translate( 14vw, -6vh); }
+    50%  { transform: translate( 18vw, 12vh); }
+    75%  { transform: translate(-10vw, 15vh); }
+    100% { transform: translate(-16vw, -14vh); }
+}
+
+/* Chi ha chiesto meno movimento al sistema operativo lo ottiene anche qui:
+   il banner resta fermo, e il rischio marchiatura si sposta sull'utente. */
+@media (prefers-reduced-motion: reduce) {
+    .salvaschermo-banner { animation: none; }
+}
+
 /* ==========================================================
    ==========================================================
    RESPONSIVE
