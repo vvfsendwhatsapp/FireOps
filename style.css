@@ -4706,7 +4706,7 @@ a.btn-icon-hamburger:hover {
 .normative-risultati { margin-bottom: 16px; display: flex; flex-direction: column; gap: 8px; }
 .normativa-risultato { background: var(--dark-color); border: 1px solid var(--border-color);
     border-radius: 8px; padding: 10px 12px; cursor: pointer; }
-.normativa-risultato.esteso { border-color: var(--accent-color, #ffd700); }
+.normativa-risultato.esteso { border-color: var(--primary-color, #ffd700); }
 .normativa-risultato-testa { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .normativa-risultato-fonte { font-size: .8em; opacity: .75; white-space: nowrap; }
 .normativa-risultato-titolo { font-weight: 600; flex: 1 1 auto; }
@@ -4716,7 +4716,7 @@ a.btn-icon-hamburger:hover {
 .normativa-risultato-testo, .normativa-risultato-completo p { margin: 6px 0 0; line-height: 1.55; }
 .normative-risultati mark { background: rgba(255, 215, 0, .35); color: inherit;
     border-radius: 3px; padding: 0 1px; }
-.normativa-evidenziato { outline: 2px solid var(--accent-color, #ffd700); outline-offset: 3px; }
+.normativa-evidenziato { outline: 2px solid var(--primary-color, #ffd700); outline-offset: 3px; }
 .normativa-risultato-percorso { font-size: .8em; opacity: .7; margin-top: 3px; }
 .normativa-parte { margin: 6px 0 0; line-height: 1.55; }
 .normativa-liv-2 { padding-left: 20px; }
@@ -4780,217 +4780,6 @@ a.btn-icon-hamburger:hover {
    il banner resta fermo, e il rischio marchiatura si sposta sull'utente. */
 @media (prefers-reduced-motion: reduce) {
     .salvaschermo-banner { animation: none; }
-}
-
-/* ==========================================================
-   ==========================================================
-   RESPONSIVE
-
-   In fondo a tutto: le media query devono poter sovrascrivere sia le
-   regole di base sia quelle dei moduli qui sopra.
-   ==========================================================
-   ========================================================== */
-
-/* L'header non si schiaccia più su schermi stretti. Sotto i 900px il
-   blocco centrale (comando/orario/turno) va a capo su una riga propria e
-   l'header diventa più alto. Ridefinire --header-height è sufficiente: la
-   posizione della subheader, il padding del body e il fullscreen sono già
-   espressi in funzione di quella variabile e si riallineano da soli. */
-@media (max-width: 900px) {
-    :root {
-        --header-height: var(--header-height-tablet);
-    }
-
-    .app-header {
-        flex-wrap: wrap;
-        height: auto;
-        min-height: var(--header-height);
-        padding: 10px 15px;
-    }
-
-    body {
-        padding-top: calc(var(--header-height) + var(--subheader-height));
-    }
-
-    .header-center {
-        order: 3;
-        width: 100%;
-        justify-content: flex-start;
-    }
-
-    .header-right {
-        order: 2;
-    }
-
-    .split-screen {
-        flex-direction: column;
-    }
-
-    .pannello {
-        height: auto;
-        max-height: 70vh;
-    }
-
-    .meteo-orario {
-        grid-template-columns: repeat(6, minmax(0, 1fr));
-    }
-
-    body.fullscreen-attivo .app-subheader {
-        display: none;
-    }
-
-    body.fullscreen-attivo .pannello.pannello-fullscreen {
-        top: var(--header-height);
-        height: calc(100vh - var(--header-height));
-    }
-
-    /* Schermo stretto: si torna a una colonna sola, quindi le .coord-colonna
-       tornano contenitori normali e cade la sovrapposizione Dati/Messaggio */
-        /* Schermo stretto: una colonna sola, e la mappa torna una scheda
-       come le altre */
-    .pannello-fullscreen .coord-colonna { display: block; }
-    .pannello-fullscreen .coord-tab-corpo { grid-template-columns: 1fr; }
-    .pannello-fullscreen .coord-tab-bar { flex-wrap: wrap; }
-
-        /* A una colonna il nono non ha più senso: le linguette tornano a
-       dividersi la riga fra loro */
-    .pannello-fullscreen .coord-tab-btn { flex: 1 1 0; }
-    .pannello-fullscreen .coord-nota-mappa { flex: 1 1 100%; margin-left: 0; }
-}
-
-@media (max-width: 700px) {
-    .um-root .um-io {
-        grid-template-columns: 1fr;
-        gap: 8px;
-    }
-
-    .um-root .um-io-singolo {
-        grid-template-columns: 1fr;
-    }
-
-    .um-root .um-swap {
-        width: 100%;
-        transform: rotate(90deg);
-    }
-
-    .um-root .um-swap:hover {
-        transform: rotate(270deg);
-    }
-
-    .um-root .um-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-@media (max-width: 520px) {
-    :root {
-        --header-height: var(--header-height-mobile);
-    }
-
-    .app-header {
-        min-height: var(--header-height);
-        gap: 8px;
-    }
-
-    body {
-        padding-top: calc(var(--header-height) + var(--subheader-height));
-    }
-
-    .site-titles .subtitle {
-        display: none;
-    }
-
-    .site-titles h1 {
-        font-size: 16px;
-    }
-
-    .site-logo {
-        height: 34px;
-    }
-
-    .info-box {
-        padding: 4px 8px;
-    }
-
-    .info-box .value {
-        font-size: 14px;
-    }
-
-    .valore-turno {
-        font-size: 15px;
-    }
-
-    .subheader-pannello {
-        padding: 0 10px;
-        gap: 6px;
-    }
-
-    .subheader-pannello .pannello-select {
-        font-size: 14px;
-        padding: 8px 6px;
-    }
-
-    .mappa-meteo-header {
-        flex-wrap: wrap;
-    }
-
-    .mappa-meteo-header h3 {
-        white-space: normal;
-    }
-
-    .msg-azioni button {
-        min-width: 140px;
-    }
-
-    .mappa-comando {
-        height: 280px;
-        flex-basis: 100%;
-    }
-
-    .windy-comando {
-        height: 280px;
-    }
-
-    .meteo-orario {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 5px;
-    }
-
-    .meteo-ora-card {
-        padding: 6px 2px;
-    }
-
-    .meteo-ora-etichetta {
-        font-size: 10px;
-    }
-
-    .meteo-ora-icona {
-        font-size: 17px;
-        margin: 3px 0;
-    }
-
-    .meteo-ora-temp {
-        font-size: 12px;
-    }
-
-    .meteo-ora-pioggia {
-        font-size: 9px;
-    }
-
-    /* I tre pulsanti di salvataggio QR restano in fila anche qui: le
-       etichette sono di tre lettere, ci stanno */
-    .qr-azioni-download .btn-toggle-radar {
-        padding: 10px 4px;
-        font-size: 13px;
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-
-    .um-root *,
-    .um-toast {
-        transition: none !important;
-    }
 }
 
 /* Canale radio in evidenza sopra la tabella del popup: è il dato per cui
@@ -5518,21 +5307,235 @@ body.fullscreen-attivo #modal-comando {
     z-index: 1700;
 }
 
-.terremoti-comandi { display: flex; flex-wrap: wrap; gap: 14px; align-items: end; margin-bottom: 8px; }
-.terremoti-comandi label { display: flex; flex-direction: column; gap: 3px; font-size: .85em; }
-.terremoti-comandi input { width: 90px; }
-.terremoti-mappa {
-    height: clamp(240px, 38vh, 520px);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    margin-bottom: 12px;
-}
-.terremoti-elenco td { vertical-align: middle; }
+.terremoti-comandi { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; margin-bottom: 10px; }
+.terremoti-campo { display: flex; flex-direction: column; gap: 4px; min-width: 170px; }
+.terremoti-campo-stretto { min-width: 120px; max-width: 140px; }
+/* Etichette come nella pagina Messaggistica: maiuscoletto spaziato sopra il campo */
+.terremoti-campo label { font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; opacity: .8; }
+.terremoti-comandi .btn-toggle-radar { align-self: flex-end; }
+
+.terremoti-mappa { height: clamp(240px, 38vh, 520px); border: 1px solid var(--border-color);
+    border-radius: 8px; margin-bottom: 12px; }
+#terremoti .leaflet-popup-content { color: #111; }
+#terremoti .leaflet-popup-content a { color: #0057a8; }
+#terremoti .leaflet-container { background: var(--dark-color); }
+
 .sisma-ora, .sisma-luogo { white-space: nowrap; }
 .sisma-mag { display: inline-block; min-width: 34px; padding: 1px 6px; border-radius: 4px;
     font-family: "Courier New", monospace; font-weight: bold; text-align: center; color: #111; }
-.sisma-lieve  { background: #f2e06b; }
-.sisma-medio  { background: #e8a33d; }
-.sisma-forte  { background: #d43d1a; color: #fff; }
-.sisma-grave  { background: #7a0000; color: #fff; }
+.sisma-lieve { background: #f2e06b; }
+.sisma-medio { background: #e8a33d; }
+.sisma-forte { background: #d43d1a; color: #fff; }
+.sisma-grave { background: #7a0000; color: #fff; }
 .sisma-errore { color: var(--danger-color); }
+
+/* ==========================================================
+   ==========================================================
+   RESPONSIVE
+
+   In fondo a tutto: le media query devono poter sovrascrivere sia le
+   regole di base sia quelle dei moduli qui sopra.
+   ==========================================================
+   ========================================================== */
+
+/* L'header non si schiaccia più su schermi stretti. Sotto i 900px il
+   blocco centrale (comando/orario/turno) va a capo su una riga propria e
+   l'header diventa più alto. Ridefinire --header-height è sufficiente: la
+   posizione della subheader, il padding del body e il fullscreen sono già
+   espressi in funzione di quella variabile e si riallineano da soli. */
+@media (max-width: 900px) {
+    :root {
+        --header-height: var(--header-height-tablet);
+    }
+
+    .app-header {
+        flex-wrap: wrap;
+        height: auto;
+        min-height: var(--header-height);
+        padding: 10px 15px;
+    }
+
+    body {
+        padding-top: calc(var(--header-height) + var(--subheader-height));
+    }
+
+    .header-center {
+        order: 3;
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .header-right {
+        order: 2;
+    }
+
+    .split-screen {
+        flex-direction: column;
+    }
+
+    .pannello {
+        height: auto;
+        max-height: 70vh;
+    }
+
+    .meteo-orario {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+
+    body.fullscreen-attivo .app-subheader {
+        display: none;
+    }
+
+    body.fullscreen-attivo .pannello.pannello-fullscreen {
+        top: var(--header-height);
+        height: calc(100vh - var(--header-height));
+    }
+
+    /* Schermo stretto: si torna a una colonna sola, quindi le .coord-colonna
+       tornano contenitori normali e cade la sovrapposizione Dati/Messaggio */
+        /* Schermo stretto: una colonna sola, e la mappa torna una scheda
+       come le altre */
+    .pannello-fullscreen .coord-colonna { display: block; }
+    .pannello-fullscreen .coord-tab-corpo { grid-template-columns: 1fr; }
+    .pannello-fullscreen .coord-tab-bar { flex-wrap: wrap; }
+
+        /* A una colonna il nono non ha più senso: le linguette tornano a
+       dividersi la riga fra loro */
+    .pannello-fullscreen .coord-tab-btn { flex: 1 1 0; }
+    .pannello-fullscreen .coord-nota-mappa { flex: 1 1 100%; margin-left: 0; }
+}
+
+@media (max-width: 700px) {
+    .um-root .um-io {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .um-root .um-io-singolo {
+        grid-template-columns: 1fr;
+    }
+
+    .um-root .um-swap {
+        width: 100%;
+        transform: rotate(90deg);
+    }
+
+    .um-root .um-swap:hover {
+        transform: rotate(270deg);
+    }
+
+    .um-root .um-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 520px) {
+    :root {
+        --header-height: var(--header-height-mobile);
+    }
+
+    .app-header {
+        min-height: var(--header-height);
+        gap: 8px;
+    }
+
+    body {
+        padding-top: calc(var(--header-height) + var(--subheader-height));
+    }
+
+    .site-titles .subtitle {
+        display: none;
+    }
+
+    .site-titles h1 {
+        font-size: 16px;
+    }
+
+    .site-logo {
+        height: 34px;
+    }
+
+    .info-box {
+        padding: 4px 8px;
+    }
+
+    .info-box .value {
+        font-size: 14px;
+    }
+
+    .valore-turno {
+        font-size: 15px;
+    }
+
+    .subheader-pannello {
+        padding: 0 10px;
+        gap: 6px;
+    }
+
+    .subheader-pannello .pannello-select {
+        font-size: 14px;
+        padding: 8px 6px;
+    }
+
+    .mappa-meteo-header {
+        flex-wrap: wrap;
+    }
+
+    .mappa-meteo-header h3 {
+        white-space: normal;
+    }
+
+    .msg-azioni button {
+        min-width: 140px;
+    }
+
+    .mappa-comando {
+        height: 280px;
+        flex-basis: 100%;
+    }
+
+    .windy-comando {
+        height: 280px;
+    }
+
+    .meteo-orario {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 5px;
+    }
+
+    .meteo-ora-card {
+        padding: 6px 2px;
+    }
+
+    .meteo-ora-etichetta {
+        font-size: 10px;
+    }
+
+    .meteo-ora-icona {
+        font-size: 17px;
+        margin: 3px 0;
+    }
+
+    .meteo-ora-temp {
+        font-size: 12px;
+    }
+
+    .meteo-ora-pioggia {
+        font-size: 9px;
+    }
+
+    /* I tre pulsanti di salvataggio QR restano in fila anche qui: le
+       etichette sono di tre lettere, ci stanno */
+    .qr-azioni-download .btn-toggle-radar {
+        padding: 10px 4px;
+        font-size: 13px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .um-root *,
+    .um-toast {
+        transition: none !important;
+    }
+}
