@@ -4829,6 +4829,11 @@ a.btn-icon-hamburger:hover {
 .normative-risultati mark { background: rgba(255, 215, 0, .35); color: inherit;
     border-radius: 3px; padding: 0 1px; }
 .normativa-evidenziato { outline: 2px solid var(--accent-color, #ffd700); outline-offset: 3px; }
+.normativa-risultato-percorso { font-size: .8em; opacity: .7; margin-top: 3px; }
+.normativa-parte { margin: 6px 0 0; line-height: 1.55; }
+.normativa-liv-2 { padding-left: 20px; }
+.normativa-liv-3 { padding-left: 40px; }
+.normativa-parte-num { font-weight: 600; opacity: .8; margin-right: 3px; }
 
 /* ==========================================================
    ==========================================================

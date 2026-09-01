@@ -6,11 +6,12 @@
    ricerca senza toccare questo file.
 
    Per ogni fonte serve sapere DOVE finisce ogni pezzo di testo nell'albero
-   della fisarmonica, altrimenti "Apri nella norma" non saprebbe quali voci
-   espandere. Da qui la mappa INDICIZZATORI, gemella di RENDERER_NORMATIVE in
-   script.js: chi ha un indicizzatore dedicato produce una catena di codici
-   esatta (Titolo I › Capo II › Art. 12), chi non ce l'ha passa dal lettore
-   generico e viene comunque indicizzato — solo con una navigazione
+   della fisarmonica: senza, "Apri nella norma" non saprebbe quali voci
+   espandere e il risultato non potrebbe mostrare la partizione di
+   appartenenza. Da qui la mappa INDICIZZATORI, gemella di RENDERER_NORMATIVE
+   in script.js: chi ha un indicizzatore dedicato produce percorso e catena
+   esatti (Titolo IV › Capo II › Art. 71), chi non ce l'ha passa dal lettore
+   generico e viene comunque indicizzato, solo con una navigazione
    approssimata.
 
    Va caricato dopo script.js. Usa FireOps.caricaJson, quindi i file già
@@ -71,28 +72,45 @@
         });
     }
 
-    // Una voce dell'indice. `catena` sono i codici delle testate da aprire,
-    // nell'ordine, per arrivare a questo pezzo di testo partendo dalla fonte.
+    /* Una voce dell'indice.
+       - `catena`: le tappe da aprire, nell'ordine, per arrivare a questo
+         pezzo di testo partendo dalla fonte. Ogni tappa è { codice, rubrica }:
+         il codice serve a ritrovare la testata nel DOM, la rubrica a scrivere
+         il percorso per esteso.
+       - `parti`: i blocchi di testo con il loro livello (comma, lettera,
+         numero), così la resa mantiene i rientri invece di essere un blocco
+         unico. */
     function voceIndice(fonte, codice, rubrica, catena, parti) {
-        const testo = parti.join(' ');
+        const testo = parti.map(p => p.testo).join(' ');
+        const rami = catena.slice(0, -1);
+        const percorso = rami.map(r => r.codice).join(' › ');
+        const percorsoEsteso = rami
+            .map(r => r.rubrica ? r.codice + ' — ' + spazi(r.rubrica) : r.codice)
+            .join(' · ');
         const titolo = rubrica ? codice + ' — ' + spazi(rubrica) : codice;
+
         return {
             fonte: fonte,
             codice: codice,
             titolo: titolo,
+            percorso: percorso,
+            percorsoEsteso: percorsoEsteso,
             catena: catena,
             parti: parti,
             testo: testo,
             nTesto: norm(testo),
-            nTitolo: norm(titolo)
+            nTitolo: norm(titolo + ' ' + percorsoEsteso)
         };
     }
 
     /* ---------- indicizzatore del D.P.R. 64/2012 ---------------------------
        Stessa forma che usa disegnaRegolamentoDpr: struttura ad albero con i
        soli NUMERI degli articoli, e articoli veri in un elenco piatto a
-       parte. Vale anche qui la regola del renderer: se un nodo ha figli, il
-       suo campo `articoli` è un doppione di quelli dei figli e va ignorato. */
+       parte. Valgono le stesse due regole del renderer:
+       - se un nodo ha figli, il suo campo `articoli` è un doppione di quelli
+         dei figli e va ignorato;
+       - il campo `testo` dell'articolo è il testo integrale, che nei commi è
+         già ripetuto: si usa solo se l'articolo non ha commi. */
     function indicizzaDpr(dati, fonte, out) {
         const mappa = new Map();
         (dati.articoli || []).forEach(a => mappa.set(a.numero, a));
@@ -100,13 +118,19 @@
 
         function partiArticolo(a) {
             const parti = [];
-            if (a.testo) parti.push(spazi(a.testo));
-            (a.commi || []).forEach(c => {
-                if (c.testo) parti.push(spazi(c.numero + '. ' + c.testo));
+            const commi = a.commi || [];
+
+            if (!commi.length) {
+                if (a.testo) parti.push({ liv: 0, num: '', testo: spazi(a.testo) });
+                return parti;
+            }
+
+            commi.forEach(c => {
+                if (c.testo) parti.push({ liv: 1, num: spazi(c.numero) + '.', testo: spazi(c.testo) });
                 (c.lettere || []).forEach(l => {
-                    if (l.testo) parti.push(spazi(l.lettera + ') ' + l.testo));
+                    if (l.testo) parti.push({ liv: 2, num: spazi(l.lettera) + ')', testo: spazi(l.testo) });
                     (l.numeri || []).forEach(n => {
-                        if (n.testo) parti.push(spazi(n.numero + ') ' + n.testo));
+                        if (n.testo) parti.push({ liv: 3, num: spazi(n.numero) + ')', testo: spazi(n.testo) });
                     });
                 });
             });
@@ -119,12 +143,17 @@
             collocati.add(numero);
             const codice = a.etichetta || ('Art. ' + numero);
             const parti = partiArticolo(a);
-            if (parti.length) out.push(voceIndice(fonte, codice, a.rubrica, catena.concat(codice), parti));
+            if (!parti.length) return;
+            out.push(voceIndice(fonte, codice, a.rubrica,
+                catena.concat([{ codice: codice, rubrica: a.rubrica || '' }]), parti));
         }
 
         function scendi(nodo, catena) {
             const tipo = String(nodo.tipo || '').replace(/^./, c => c.toUpperCase());
-            const qui = catena.concat(spazi(tipo + ' ' + nodo.numero));
+            const qui = catena.concat([{
+                codice: spazi(tipo + ' ' + nodo.numero),
+                rubrica: nodo.rubrica || ''
+            }]);
             const figli = nodo.figli || [];
             if (figli.length) figli.forEach(f => scendi(f, qui));
             else (nodo.articoli || []).forEach(n => aggiungiArticolo(n, qui));
@@ -132,7 +161,7 @@
 
         (dati.struttura || []).forEach(n => scendi(n, []));
         // Articoli non agganciati ad alcuna partizione: indicizzati lo stesso,
-        // con catena vuota (l'apertura si ferma alla fonte).
+        // con catena minima (l'apertura si ferma alla fonte).
         (dati.articoli || []).forEach(a => {
             if (!collocati.has(a.numero)) aggiungiArticolo(a.numero, []);
         });
@@ -162,11 +191,13 @@
         return '';
     }
 
+    // Le stringhe di 1-2 caratteri sono quasi sempre numerazioni ("1", "a"):
+    // come testo non dicono nulla e sporcherebbero il risultato.
     function raccogliTesto(v, out) {
         if (v == null) return;
         if (typeof v === 'string' || typeof v === 'number') {
             const t = spazi(v);
-            if (t) out.push(t);
+            if (t.length > 2) out.push(t);
             return;
         }
         if (Array.isArray(v)) { v.forEach(x => raccogliTesto(x, out)); return; }
@@ -180,16 +211,17 @@
         }
         if (!nodo || typeof nodo !== 'object') return;
 
-        // Sulla radice l'etichetta è il titolo lungo della norma: entrerebbe
-        // come prefisso di ogni singola voce senza aggiungere nulla.
+        // Sulla radice l'etichetta è il titolo o il numero della norma:
+        // entrerebbe come prefisso di ogni voce senza aggiungere nulla.
         const etichetta = radice ? '' : etichettaDi(nodo);
-        const qui = etichetta ? catena.concat(etichetta) : catena;
+        const qui = etichetta ? catena.concat([{ codice: etichetta, rubrica: '' }]) : catena;
 
-        const parti = [];
-        CAMPI_TESTO.forEach(c => { if (c in nodo) raccogliTesto(nodo[c], parti); });
-        if (parti.length) {
-            const codice = qui[qui.length - 1] || fonte.nome;
-            out.push(voceIndice(fonte, codice, '', qui, parti));
+        const grezze = [];
+        CAMPI_TESTO.forEach(c => { if (c in nodo) raccogliTesto(nodo[c], grezze); });
+        if (grezze.length) {
+            const codice = qui.length ? qui[qui.length - 1].codice : fonte.nome;
+            out.push(voceIndice(fonte, codice, '', qui,
+                grezze.map(t => ({ liv: 0, num: '', testo: t }))));
         }
 
         Object.keys(nodo).forEach(k => {
@@ -345,9 +377,9 @@
             contenitore = pronto;
             let ultima = null;
 
-            voce.catena.forEach(passo => {
+            voce.catena.forEach(tappa => {
                 if (!contenitore) return;
-                const voceDom = trovaVoce(contenitore, passo);
+                const voceDom = trovaVoce(contenitore, tappa.codice);
                 if (!voceDom) { contenitore = null; return; }
                 const t = voceDom.querySelector(':scope > .evento-rilevante-testata');
                 if (t && t.getAttribute('aria-expanded') !== 'true') t.click();
@@ -377,6 +409,29 @@
         mostraStato('');
     }
 
+    function schedaRisultato(voce, ck, indice) {
+        const percorso = voce.percorso
+            ? '<div class="normativa-risultato-percorso" title="' + esc(voce.percorsoEsteso) + '">' +
+              esc(voce.percorso) + '</div>'
+            : '';
+
+        const completo = voce.parti.map(p =>
+            '<p class="normativa-parte normativa-liv-' + p.liv + '">' +
+            (p.num ? '<span class="normativa-parte-num">' + esc(p.num) + '</span> ' : '') +
+            evidenzia(p.testo, ck) + '</p>').join('');
+
+        return '<article class="normativa-risultato" data-i="' + indice + '">' +
+            '<header class="normativa-risultato-testa">' +
+            '<span class="normativa-risultato-fonte">' + esc(voce.fonte.nome) + '</span>' +
+            '<span class="normativa-risultato-titolo">' + evidenzia(voce.titolo, ck) + '</span>' +
+            '<button type="button" class="normativa-risultato-apri">Apri nella norma</button>' +
+            '</header>' +
+            percorso +
+            '<p class="normativa-risultato-testo">' + anteprima(voce, ck) + '</p>' +
+            '<div class="normativa-risultato-completo" hidden>' + completo + '</div>' +
+            '</article>';
+    }
+
     function disegna(esiti, ck, query) {
         if (!esiti.length) {
             el.risultati.hidden = false;
@@ -392,21 +447,8 @@
             ' in ' + norme.size + (norme.size === 1 ? ' norma' : ' norme') +
             (esiti.length > MAX_RISULTATI ? ' — mostrati i primi ' + MAX_RISULTATI : ''));
 
-        el.risultati.innerHTML = esiti.slice(0, MAX_RISULTATI).map((e, i) => {
-            const v = e.voce;
-            return '<article class="normativa-risultato" data-i="' + i + '">' +
-                '<header class="normativa-risultato-testa">' +
-                '<span class="normativa-risultato-fonte">' + esc(v.fonte.nome) + '</span>' +
-                '<span class="normativa-risultato-titolo">' + evidenzia(v.titolo, ck) + '</span>' +
-                '<button type="button" class="normativa-risultato-apri">Apri nella norma</button>' +
-                '</header>' +
-                '<p class="normativa-risultato-testo">' + anteprima(v, ck) + '</p>' +
-                '<div class="normativa-risultato-completo" hidden>' +
-                v.parti.map(p => '<p>' + evidenzia(p, ck) + '</p>').join('') +
-                '</div>' +
-                '</article>';
-        }).join('');
-
+        el.risultati.innerHTML = esiti.slice(0, MAX_RISULTATI)
+            .map((e, i) => schedaRisultato(e.voce, ck, i)).join('');
         el.risultati.hidden = false;
         el.risultati.__esiti = esiti;
     }
