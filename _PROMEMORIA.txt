@@ -14,4 +14,10 @@ punto d'innseco
 correggere legenda se cambio lingua
  e stampa pdf!
 
- Una nota su come funziona: filter: drop-shadow sui path SVG di Leaflet colora l'alone attorno al tratto, quindi si vede sia sui poligoni delle aree sia sulle polilinee del fronte. Se sullo sfondo satellitare risultasse poco leggibile, l'alternativa più marcata è aggiungere stroke-width alla regola — ma provalo prima così, che è meno invasivo.
+ Una nota su come funziona: filter: drop-shadow sui path SVG di Leaflet colora l'alone attorno al tratto,
+ quindi si vede sia sui poligoni delle aree sia sulle polilinee del fronte. Se sullo sfondo satellitare risultasse poco leggibile,
+ l'alternativa più marcata è aggiungere stroke-width alla regola — ma provalo prima così, che è meno invasivo.
+
+
+ INGV LINK
+ FEED RSS
