@@ -5317,7 +5317,7 @@ body.sitac-stampa #sitac-stampa-doc {
 .sf-val { font-weight: 600; }
 
 .sf-carta {
-    height: 185mm;
+    height: 150mm;
     display: grid;
     grid-template-columns: 1fr 80mm;
     gap: 4mm;
