@@ -53,6 +53,6 @@ window.FireOpsSchede = {
     // Messaggistica, che si prende il focus da solo.
     ripiego: {
         sinistra: "homepage",
-        destra: "mappa-meteo"
+        destra: "messaggistica"
     }
 };
