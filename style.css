@@ -5424,6 +5424,9 @@ select:focus {
     background-image: var(--freccia-giu-attiva);
 }
 
+/* Schede in lavorazione: selezionabili, ma visivamente in secondo piano */
+.pannello-select .scheda-wip { opacity: .75; font-style: italic; }
+
 /* ==========================================================
    ==========================================================
    RESPONSIVE

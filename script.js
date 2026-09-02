@@ -1092,25 +1092,11 @@ document.addEventListener("DOMContentLoaded", () => {
     // Selezionare in un pannello una pagina già aperta nell'altro fa scambiare
     // automaticamente le due pagine, così restano sempre univoche.
     // ==========================================================
-    const CATALOGO_PAGINE = [
-        { id: "homepage", label: "Home page - Informazioni generali comando" },
-        { id: "mappa-meteo", label: "Meteo locale" },
-        { id: "messaggistica", label: "Messaggistica" },
-        { id: "info-comando", label: "Info altro comando" },
-        { id: "gestione-fpds", label: "Gestione interventi FPDS" },
-        { id: "contatti", label: "Link utili" },
-        { id: "convertitore", label: "Convertitore coordinate e calcolo percorso" },
-        { id: "convertitoreunita", label: "Convertitore unità" },
-        { id: "terremoti", label: "Terremoti INGV" },
-        { id: "sitac-aib", label: "SITAC AIB" },
-        { id: "schede-soccorso", label: "Schede di soccorso" },
-        { id: "radio-telefoni", label: "Radio e telefoni" },
-        { id: "qrcode", label: "QrCode" },
-        { id: "turnario", label: "Turnario" },
-        { id: "moduli-cmr", label: "Moduli CMR" },
-        { id: "sostanze-pericolose", label: "Sostanze pericolose" },
-        { id: "normative", label: "Normative, Circolari e Disposizioni" }
-    ];
+    // Elenco, ordine, etichette e stato 🚧 vivono in schede.js
+    const CATALOGO_PAGINE = (window.FireOpsSchede && window.FireOpsSchede.pagine) || [];
+    if (CATALOGO_PAGINE.length === 0) {
+        console.error("schede.js non caricato: i selettori dei pannelli resteranno vuoti.");
+    }
 
     const magazzinoPagine = document.getElementById("magazzino-pagine");
     const selectPannelloSinistra = document.getElementById("select-pannello-sinistra");
@@ -1123,10 +1109,13 @@ const CHIAVE_STORAGE_PANNELLI = "fireops_pagine_pannelli";
     let paginePannelliSalvate = null;
     try { paginePannelliSalvate = JSON.parse(sessionStorage.getItem(CHIAVE_STORAGE_PANNELLI)); } catch (err) {}
 
-        let paginaSinistra = (paginePannelliSalvate && document.getElementById(paginePannelliSalvate.sinistra))
-        ? paginePannelliSalvate.sinistra : "homepage";
+    const PREDEFINITE = (window.FireOpsSchede && window.FireOpsSchede.predefinite)
+        || { sinistra: "homepage", destra: "messaggistica" };
+
+    let paginaSinistra = (paginePannelliSalvate && document.getElementById(paginePannelliSalvate.sinistra))
+        ? paginePannelliSalvate.sinistra : PREDEFINITE.sinistra;
     let paginaDestra = (paginePannelliSalvate && document.getElementById(paginePannelliSalvate.destra))
-        ? paginePannelliSalvate.destra : "mappa-meteo";
+        ? paginePannelliSalvate.destra : PREDEFINITE.destra;
 
     // Cosa ha spostato ogni pagina esclusiva per prendersi il pannello.
     // È una pila e non una variabile sola perché le esclusive si possono
@@ -1150,7 +1139,8 @@ const CHIAVE_STORAGE_PANNELLI = "fireops_pagine_pannelli";
     // contenuto. Diverse per lato: a sinistra la Home, a destra il meteo —
     // le due di partenza. Se il ripiego è proprio la pagina da evitare si
     // prende quello dell'altro lato.
-    const PAGINA_RIPIEGO = { sinistra: "homepage", destra: "mappa-meteo" };
+    const PAGINA_RIPIEGO = (window.FireOpsSchede && window.FireOpsSchede.ripiego)
+        || { sinistra: "homepage", destra: "messaggistica" };
 
     function ripiegoPer(lato, idDaEvitare) {
         const scelta = PAGINA_RIPIEGO[lato];
@@ -1178,13 +1168,18 @@ const CHIAVE_STORAGE_PANNELLI = "fireops_pagine_pannelli";
         if (sezione && contenitore) contenitore.appendChild(sezione);
     }
 
+    function etichettaScheda(pagina) {
+        return pagina.lavori ? `🚧 ${pagina.label}` : pagina.label;
+    }
+
     function popolaSelettorePannello(select) {
         if (!select) return;
         select.innerHTML = "";
         CATALOGO_PAGINE.forEach(pagina => {
             const opzione = document.createElement("option");
             opzione.value = pagina.id;
-            opzione.textContent = pagina.label;
+            opzione.textContent = etichettaScheda(pagina);
+            if (pagina.lavori) opzione.classList.add("scheda-wip");
             select.appendChild(opzione);
         });
     }
