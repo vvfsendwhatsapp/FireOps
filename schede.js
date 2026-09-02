@@ -23,7 +23,7 @@ window.FireOpsSchede = {
         { id: "homepage", label: "Home page - Informazioni generali comando" },
         { id: "messaggistica", label: "Messaggistica" },
         { id: "contatti", label: "Link utili" },
-        { id: "info-comando", label: "Info altro comando" },
+        { id: "info-comando", label: "Info altro Comando" },
         { id: "mappa-meteo", label: "Meteo locale" },
         { id: "sitac-aib", label: "SITAC AIB" },
         { id: "convertitore", label: "Convertitore coordinate e calcolo percorso" },

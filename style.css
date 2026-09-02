@@ -2355,10 +2355,23 @@ a.btn-icon-hamburger:hover {
     font-size: 20px;
 }
 
-.btn-icon-hamburger.btn-icon-rilevante:hover {
-    background: var(--dark-color);
+/* Al passaggio del mouse tutti e cinque si comportano allo stesso modo:
+   fondo giallo pieno, glifo scuro. La R conservava un hover proprio che la
+   lasciava scura, e 8P perdeva contro `.btn-icon-hamburger:hover` per
+   ordine — due classi contro una classe più una pseudo-classe, stessa
+   specificità, e vinceva chi veniva dopo.
+   Sono selezionati per classe e non con `.btn-icon-hamburger:hover` da solo
+   perché quella regola sta più in alto nel file e non basterebbe. */
+.btn-icon-hamburger.btn-icon-testo:hover {
+    background: var(--primary-color);
     border-color: var(--primary-color);
-    color: #ff0000;
+    color: var(--dark-color);
+}
+
+.btn-icon-hamburger.btn-icon-rilevante:hover {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: var(--danger-color);
 }
 
 /* ==========================================================
@@ -3246,14 +3259,25 @@ a.btn-icon-hamburger:hover {
     outline-offset: 1px
 }
 
-/* Stato: non più in cima alla barra ma dentro i passi 7 e 8, dove serve.
-   In cima valeva per tutto e nessuno lo vedeva scorrendo la tavola. */
+/* L'altezza della testata sta in una variabile perché serve due volte: qui
+   e come `top` della riga di stato, che deve fermarsi esattamente sotto.
+   Cambiando il padding di .sitac-fisa-testa va aggiornata questa riga, non
+   due valori sparsi. */
+#sitac-app { --sitac-testa-h: 36px; }
+
+/* Stato: non più in cima alla barra ma dentro i passi 6 e 7, dove serve.
+   Ancorato sotto la testata: scorrendo sessanta voci di tavola il
+   Previsto/In atto usciva di vista, e si posavano simboli nello stato
+   sbagliato senza accorgersene. */
 #sitac-app .sitac-stato-sez {
+    position: sticky;
+    top: var(--sitac-testa-h);
+    z-index: 4;
     margin: 0 0 10px;
     padding: 8px;
     border-radius: 4px;
     background: var(--surface-color);
-    border: 1px solid var(--border-color)
+    border: 1px solid var(--border-color);
 }
 
 #sitac-app .sitac-stato-sez>span {
