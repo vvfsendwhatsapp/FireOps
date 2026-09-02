@@ -87,4 +87,6 @@ correggere legenda se cambio lingua
 
 * accensione per linee è una freccia a L di default la sistemiamo tra le ultime.
 
-* rinomina file stampa pdf (intervento, data sigla comando id dos)
+* rinomina file stampa pdf (intervento, data sigla comando id dos nominativo)
+
+* sistemare intestazione stampa lato dos e intervento
