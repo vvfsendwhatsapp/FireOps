@@ -5405,18 +5405,18 @@ select:focus {
     line-height: 1;
 }
 
-/* Questi tre dichiarano `background:` in forma abbreviata, che cancella
-   l'immagine: vanno ridichiarati per esteso, o la freccia sparisce
-   proprio dove si usa di più. */
-.pannello-select,
+/* Stessa specificità della regola in sezione 2 (.subheader-pannello
+   .pannello-select): con una classe sola perdeva, e restava l'immagine
+   della regola generica `select` senza posizione né no-repeat. */
+.subheader-pannello .pannello-select,
 #sitac-app .sitac-dati-campo select,
 .um-root .um-field select {
     background: var(--dark-color) var(--freccia-giu) no-repeat right 12px center;
     background-size: 10px 6px;
     padding-right: 34px;
 }
-.pannello-select:hover,
-.pannello-select:focus,
+.subheader-pannello .pannello-select:hover,
+.subheader-pannello .pannello-select:focus,
 #sitac-app .sitac-dati-campo select:hover,
 #sitac-app .sitac-dati-campo select:focus,
 .um-root .um-field select:hover,
