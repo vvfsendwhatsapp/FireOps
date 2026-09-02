@@ -86,3 +86,5 @@ correggere legenda se cambio lingua
 * creazione linea di sicurezza sono due serie di triangoli equilateri consecutivi con la base in comune vuoti o pieni
 
 * accensione per linee è una freccia a L di default la sistemiamo tra le ultime.
+
+* rinomina file stampa pdf (intervento, data sigla comando id dos)
