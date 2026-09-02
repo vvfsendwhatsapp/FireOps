@@ -1140,7 +1140,7 @@ const CHIAVE_STORAGE_PANNELLI = "fireops_pagine_pannelli";
     // le due di partenza. Se il ripiego è proprio la pagina da evitare si
     // prende quello dell'altro lato.
     const PAGINA_RIPIEGO = (window.FireOpsSchede && window.FireOpsSchede.ripiego)
-        || { sinistra: "homepage", destra: "messaggistica" };
+        || { sinistra: "homepage", destra: "mappa-meteo" };
 
     function ripiegoPer(lato, idDaEvitare) {
         const scelta = PAGINA_RIPIEGO[lato];
