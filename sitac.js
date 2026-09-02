@@ -336,7 +336,17 @@ function avvia(app){
       redatta:'Redatta',
       bPulisciDati:'Pulisci campi',
       confPulisciDati:'Svuotare tutti i campi dell\u2019intervento?\nIl disegno sulla mappa non viene toccato.',
-      datiPuliti:'Campi svuotati.', },
+      datiPuliti:'Campi svuotati.',
+      menuSposta:'Sposta', menuElimina:'Elimina',
+      menuVertici:'Modifica i vertici', menuTesto:'Modifica la sigla',
+      menuDirezione:'Cambia direzione', menuManiglie:'Modifica ingombro',
+      menuStato:'Segna come {s}', menuCono:'Cono {n}',
+      menuVerticiOn:'Vertici modificabili.\nTrascina i pallini, Esc per finire.',
+      menuSpostaPunto:'Trascina il simbolo dove serve.',
+      menuSpostaArea:'Trascina la geometria intera.\nEsc per finire.',
+      lanciChiedi:'Lanci del dispositivo aereo',
+      lanciNota:'Lascia vuoto ci\u00f2 che non \u00e8 intervenuto: nel foglio compare solo chi ha lanciato.',
+      lanciTot:'Totale lanci', stampaAnnullata:'Stampa annullata.', },
     en:{ bCono:'Add cone', conoModo:'How should the cone be built?',
       bPosizione:'Enter coordinates',
       conoSettore:'From the point of origin', conoSettoreNota:'30° sector from the origin; a second click marks where the front is now (T0).',
@@ -1804,6 +1814,14 @@ function mostraComandoAfferente(sigla, nome){
           return togliCono(id);
         selezionaElemento(gruppo);
       });
+      x.on('contextmenu', ev => {
+        if (ev.originalEvent){
+          L.DomEvent.preventDefault(ev.originalEvent);
+          L.DomEvent.stopPropagation(ev.originalEvent);
+        }
+        selezionaElemento(gruppo);
+        apriMenu(ev.containerPoint, vociMenu(gruppo));
+      });
     };
     bind(gruppo);
   }
@@ -1939,6 +1957,191 @@ function mostraComandoAfferente(sigla, nome){
     coni.push({id, layer, vento, tipo:'elemento', base: l});
     riassunto(vento);
   }
+
+    /* =====================================================================
+     5bis-bis. MENU DEL TASTO DESTRO
+     Il sinistro posa e basta: è il gesto con cui si disegna, e non deve mai
+     aprire finestre. Quello che si fa DOPO su un elemento già posato —
+     correggerlo, spostarlo, toglierlo — sta tutto sul destro, dove il
+     puntatore è già sopra la cosa da cambiare.
+     Mentre si disegna il menu non compare: pm:drawstart accende
+     clicPassante, e gli elementi non intercettano più il puntatore.
+     =================================================================== */
+  let menuBox = null;
+  let elModifica = null;      // elemento lasciato in modifica o trascinabile
+
+  function creaMenuBox(){
+    if (menuBox) return menuBox;
+    menuBox = document.createElement('div');
+    menuBox.className = 'sitac-menu';
+    menuBox.hidden = true;
+    const wrap = q('.sitac-mapwrap');
+    if (wrap) wrap.appendChild(menuBox);
+    return menuBox;
+  }
+  const menuAperto = () => !!(menuBox && !menuBox.hidden);
+  function chiudiMenu(){ if (menuBox){ menuBox.hidden = true; menuBox.innerHTML = ''; } }
+
+  function apriMenu(pt, voci){
+    const m = creaMenuBox();
+    m.innerHTML = '';
+    voci.forEach(v => {
+      if (v.titolo){
+        const h = document.createElement('p');
+        h.className = 'sitac-menu-tit';
+        h.textContent = v.titolo;
+        m.appendChild(h);
+        return;
+      }
+      const b = document.createElement('button');
+      b.type = 'button';
+      if (v.rosso) b.className = 'rosso';
+      b.textContent = v.et;
+      b.onclick = () => { chiudiMenu(); v.fai(); };
+      m.appendChild(b);
+    });
+    m.hidden = false;
+    /* Si misura DOPO averlo mostrato: nascosto ha altezza zero e si
+       piazzerebbe sempre in basso. Vicino al bordo si ribalta, o una voce
+       finisce fuori dal riquadro della mappa e non si clicca. */
+    const s = map.getSize(), w = m.offsetWidth, h = m.offsetHeight;
+    m.style.left = Math.max(4, Math.min(s.x - w - 4, pt.x + 2)) + 'px';
+    m.style.top  = Math.max(4, Math.min(s.y - h - 4, pt.y + 2)) + 'px';
+  }
+
+  /* Chiude la modifica aperta dal menu. fermaTutto() spegne le modalità
+     GLOBALI di Geoman, non un layer acceso da solo: senza questo un
+     poligono resta coi vertici trascinabili per sempre. */
+  function fermaMenuModifica(){
+    const l = elModifica;
+    elModifica = null;
+    if (!l || !l.pm) return;
+    if (l.pm.disable) l.pm.disable();
+    if (l.pm.layerDragEnabled && l.pm.layerDragEnabled()) l.pm.disableLayerDrag();
+  }
+
+  function modificaVertici(l){
+    fermaTutto(); spegniPulsanti();
+    if (!l.pm) return;
+    l.pm.enable({allowSelfIntersection:false});
+    elModifica = l;
+    stato(t('menuVerticiOn'));
+  }
+
+  function spostaElemento(l){
+    fermaTutto(); spegniPulsanti();
+    if (l.getLatLng){                       // simboli: già draggable dalla posa
+      if (l.dragging) l.dragging.enable();
+      stato(t('menuSpostaPunto'));
+      return;
+    }
+    if (!l.pm || !l.pm.enableLayerDrag) return;
+    l.pm.enableLayerDrag();
+    elModifica = l;
+    /* Trascinando la geometria intera i motivi ripetuti e le misure
+       restano dov'erano: si rifanno a fine trascinamento. Il flag evita di
+       impilare un listener a ogni apertura del menu. */
+    if (!l._aggancioDrag){
+      l._aggancioDrag = 1;
+      l.on('pm:dragend', () => { decora(l); etichettaElemento(l); aggiornaStato(); });
+    }
+    stato(t('menuSpostaArea'));
+  }
+
+  async function rinominaElemento(l, def){
+    const idm = NS.SITAC_ID_MAX || 4;
+    const val = await chiedi(
+      def.libero ? {campo:1, testo: t('chiediNota'), valore: l._testo || ''}
+      : def.lbl  ? {campo:1, testo: def.lbl, max: idm, valore: l._testo || '',
+                    filtro: v => v.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0, idm)}
+      :            {campo:1, testo: t('chiediSigla'), valore: l._testo || ''});
+    if (val === null) return;
+    l._testo = val || null;
+    l.setIcon(iconaSimbolo(l._tipo, {stato:l._stato, testo:l._testo,
+      rotazione:l._rotazione}));
+    etichettaElemento(l);
+  }
+
+  function ridaiDirezione(l){
+    fermaTutto(); spegniPulsanti();
+    attesaDirezione = l;
+    clicPassante(true);
+    stato(`${nm(SIM[l._tipo])}\n${t('chiediDirezione')}`);
+  }
+
+  /* Lo stato si scambia sul singolo elemento, non sulla tavola: quando una
+     squadra prevista entra in azione si cambia quella, non tutte. */
+  function scambiaStatoElemento(l){
+    const k = l._tipo;
+    l._stato = l._stato === 'attivo' ? 'previsto' : 'attivo';
+    if (l._genere === 'lancio'){
+      l.setStyle(stileLancio(k, l._stato));
+      if (l._glifo) l._glifo.setIcon(iconaSimbolo(k, {stato: l._stato}));
+    } else if (LIN[k]){
+      l.setStyle(stileLinea(LIN[k], l._stato));
+      decora(l);
+    } else if (l.setIcon){
+      l.setIcon(iconaSimbolo(k, {stato:l._stato, testo:l._testo, rotazione:l._rotazione}));
+    }
+    etichettaElemento(l);
+    aggiornaStato();
+  }
+
+  /* Le voci cambiano con l'elemento: un simbolo non ha vertici, una linea
+     non ha una sigla, un cono non è un rilievo e si tocca solo per toglierlo. */
+  function vociMenu(l){
+    const voci = [];
+    if (l._cono != null){
+      voci.push({titolo: t('menuCono', {n: l._cono})});
+      voci.push({et: t('menuElimina'), rosso:1, fai: () => togliCono(l._cono)});
+      return voci;
+    }
+    const k = l._tipo;
+    const def = LIN[k] || AREE[k] || SIM[k] || (k === 'nota' ? NOTA : null);
+    voci.push({titolo: nm(def) || k || ''});
+
+    if (l._genere === 'lancio'){
+      voci.push({et: t('menuManiglie'),
+        fai: () => { maniglieLancio(l); stato(t('lancioManiglie')); }});
+    } else if (l.getLatLng){
+      if (def && (def.libero || def.e))
+        voci.push({et: t('menuTesto'), fai: () => rinominaElemento(l, def)});
+      if (def && def.r)
+        voci.push({et: t('menuDirezione'), fai: () => ridaiDirezione(l)});
+      voci.push({et: t('menuSposta'), fai: () => spostaElemento(l)});
+    } else {
+      voci.push({et: t('menuVertici'), fai: () => modificaVertici(l)});
+      voci.push({et: t('menuSposta'),  fai: () => spostaElemento(l)});
+    }
+    if (def && (def.s || def.stati))
+      voci.push({et: t('menuStato',
+        {s: t(paroleStato(def)[l._stato === 'attivo' ? 0 : 1])}),
+        fai: () => scambiaStatoElemento(l)});
+    voci.push({et: t('menuElimina'), rosso:1,
+      fai: () => { selezionaElemento(l); eliminaSelezionato(); }});
+    return voci;
+  }
+
+  /* Il FeatureGroup inoltra anche il contextmenu dei figli, come fa col
+     clic: un listener solo per tutto il disegno. */
+  disegni.on('contextmenu', e => {
+    if (e.originalEvent){
+      L.DomEvent.preventDefault(e.originalEvent);
+      L.DomEvent.stopPropagation(e.originalEvent);
+    }
+    /* A metà di un percorso guidato il destro non apre niente: il gesto
+       atteso è un altro, e un menu sopra la carta lo interromperebbe. */
+    if (attesaClic || attesaDirezione || attesaElemento) return;
+    selezionaElemento(e.layer);
+    apriMenu(e.containerPoint, vociMenu(e.layer));
+  });
+
+  map.on('contextmenu', e => {
+    if (e.originalEvent) L.DomEvent.preventDefault(e.originalEvent);
+    chiudiMenu();
+  });
+  map.on('movestart zoomstart', chiudiMenu);
+  map.on('click', chiudiMenu);
 
   /* =====================================================================
      5bis-ter. CONO DA PENDENZA — fig. 4 della pubblicazione
@@ -2526,6 +2729,8 @@ function mostraComandoAfferente(sigla, nome){
     if (attesaClic){ const f = attesaClic; attesaClic = null; f(null); }
     if (attesaLinea){ const f = attesaLinea; attesaLinea = null; f(null); }
     if (attesaElemento){ const f = attesaElemento; attesaElemento = null; f(null); }
+    chiudiMenu();
+    fermaMenuModifica();
     misuraSpegni();
     cursore(null);
     clicPassante(false);
@@ -3180,6 +3385,7 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
     if (app.offsetParent === null) return;
     if (e.key !== 'Escape') return;
     if (chiudiModale){ chiudiModale(); return; }
+    if (menuAperto()){ chiudiMenu(); return; }
     fermaTutto(); spegniPulsanti(); stato(t('spento'));
   });
 
@@ -3438,7 +3644,115 @@ function attendiTile(ms){
   });
 }
 
+/* I mezzi aerei sono quelli che si sentono per radio. Il volume è la
+   capacità nominale di un lancio pieno: serve a dare un ordine di
+   grandezza sul foglio, non a rendicontare. Zero = non si stima. */
+const MEZZI_AEREI = [
+  {k:'canadair', n:'Canadair CL-415',            l:6100},
+  {k:'s64',      n:'Erickson S-64 Air Crane',    l:9500},
+  {k:'fireboss', n:'Fire Boss AT-802F',          l:3100},
+  {k:'drago',    n:'Elicottero VVF (Drago)',     l:1000},
+  {k:'elireg',   n:'Elicottero regionale',       l:0},
+  {k:'altro',    n:'Altro mezzo aereo',          l:0}
+];
+let lanciAerei = null;      // sopravvive fra due stampe: si ristampa senza ridigitare
+
+/* Stessi elementi del modale, ma al posto del campo unico una riga per
+   mezzo. Quello che resta vuoto non è intervenuto e non compare: la
+   tabella dice chi ha lanciato, non l'elenco della flotta nazionale. */
+function chiediLanci(){
+  return new Promise(risolvi => {
+    const testo = modale.querySelector('.sitac-modale-testo');
+    const input = modale.querySelector('#sitac-modale-input');
+    const ok = modale.querySelector('#sitac-modale-ok');
+    const no = modale.querySelector('#sitac-modale-no');
+    let chiuso = false;
+    const fine = val => {
+      if (chiuso) return;
+      chiuso = true;
+      modale.hidden = true; chiudiModale = null;
+      input.style.display = ''; ok.style.display = ''; testo.textContent = '';
+      risolvi(val);
+    };
+
+    modale.querySelector('.sitac-modale-titolo').textContent = t('titoloModale');
+    testo.textContent = '';
+    const p = document.createElement('p');
+    p.textContent = t('lanciChiedi');
+    testo.appendChild(p);
+
+    const el = document.createElement('div');
+    el.className = 'sitac-lanci';
+    const campi = {};
+    MEZZI_AEREI.forEach(m => {
+      const r = document.createElement('label');
+      r.className = 'sitac-lancio-riga';
+      r.innerHTML = `<span>${esc(m.n)}</span>`;
+      const i = document.createElement('input');
+      i.type = 'text'; i.inputMode = 'numeric'; i.placeholder = '0';
+      const gia = lanciAerei && lanciAerei[m.k];
+      i.value = gia ? String(gia.lanci) : '';
+      i.oninput = () => { i.value = i.value.replace(/[^0-9]/g, '').slice(0, 3); };
+      r.appendChild(i);
+      campi[m.k] = i;
+      el.appendChild(r);
+    });
+    testo.appendChild(el);
+    const nota = document.createElement('p');
+    nota.className = 'sitac-lanci-nota';
+    nota.textContent = t('lanciNota');
+    testo.appendChild(nota);
+
+    input.style.display = 'none';
+    ok.style.display = '';
+    ok.textContent = t('ok');
+    no.textContent = t('annulla');
+    ok.onclick = () => {
+      const out = {};
+      MEZZI_AEREI.forEach(m => {
+        const n = Number(campi[m.k].value) || 0;
+        if (n > 0) out[m.k] = {nome:m.n, lanci:n, litri: m.l ? n * m.l : 0};
+      });
+      fine(out);
+    };
+    no.onclick = () => fine(null);
+    chiudiModale = () => fine(null);
+    modale.hidden = false;
+    setTimeout(() => { const f = el.querySelector('input'); if (f) f.focus(); }, 30);
+  });
+}
+
+/* Niente mezzi aerei, niente sezione: un titolo con sotto una riga di
+   trattini fa credere che il dato manchi, non che non ci sia stato. */
+function sfBloccoLanci(){
+  if (!lanciAerei) return '';
+  let righe = '', tot = 0, litri = 0;
+  MEZZI_AEREI.forEach(m => {
+    const r = lanciAerei[m.k];
+    if (!r) return;
+    tot += r.lanci; litri += r.litri;
+    righe += `<tr><td>${esc(r.nome)}</td><td>${r.lanci}</td>`
+      + `<td>${r.litri ? r.litri.toLocaleString('it-IT') : '\u2014'}</td></tr>`;
+  });
+  if (!righe) return '';
+  const disegnati = disegni.getLayers().filter(x => x._genere === 'lancio').length;
+  return `<h2>Dispositivo aereo</h2>`
+    + `<table class="sf-tab"><thead><tr><th>Mezzo</th><th>N. lanci</th>`
+    + `<th>Volume stimato L</th></tr></thead><tbody>${righe}`
+    + `<tr class="sf-tot"><td>${esc(t('lanciTot'))}</td><td>${tot}</td>`
+    + `<td>${litri ? litri.toLocaleString('it-IT') : '\u2014'}</td></tr></tbody></table>`
+    + `<p class="sf-nota">Volumi nominali a pieno carico.`
+    + (disegnati ? ` Lanci riportati sulla carta: ${disegnati}.` : '') + `</p>`;
+}
+
 async function stampa(){
+  /* I lanci non stanno sulla carta: si contano a voce lungo la giornata, e
+     il numero lo sa solo chi ha tenuto il conto. Si chiede qui, una volta,
+     prima di mandare il foglio in stampa. Annulla ferma la stampa: chi
+     stava per firmare un foglio incompleto se ne accorge adesso. */
+  const lanci = await chiediLanci();
+  if (lanci === null) return stato(t('stampaAnnullata'));
+  lanciAerei = Object.keys(lanci).length ? lanci : null;
   const f = creaFoglioStampa();
   const quando = fmtOra(oraRedazione || new Date());
   const i = intestazione();
@@ -3471,6 +3785,7 @@ async function stampa(){
        <h2>Superfici</h2>${sfTabellaAree()}
        <h2>Vento</h2>${sfTabellaVento()}
        <h2>Coni di propagazione</h2>${sfTabellaConi()}${avvertenza}
+        ${sfBloccoLanci()}
        <h2>Linee tracciate</h2>${sfTabellaLinee()}
      </section>`;
 

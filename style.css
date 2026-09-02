@@ -5427,6 +5427,27 @@ select:focus {
 /* Schede in lavorazione: selezionabili, ma visivamente in secondo piano */
 .pannello-select .scheda-wip { opacity: .75; font-style: italic; }
 
+/* Menu del tasto destro — vive in .sitac-mapwrap come la × e il riquadro
+   di misura: dentro il contenitore Leaflet il clic finirebbe nella mappa. */
+.sitac-menu{position:absolute;z-index:1200;min-width:11rem;padding:.25rem;
+  background:var(--sfondo-riquadro,#fff);color:inherit;
+  border:1px solid rgba(0,0,0,.25);border-radius:.4rem;
+  box-shadow:0 .4rem 1.2rem rgba(0,0,0,.35);font-size:.86rem}
+.sitac-menu .sitac-menu-tit{margin:.2rem .45rem .3rem;font-weight:700;
+  font-size:.76rem;letter-spacing:.03em;text-transform:uppercase;opacity:.65}
+.sitac-menu button{display:block;width:100%;text-align:left;border:0;
+  background:none;color:inherit;padding:.4rem .55rem;border-radius:.3rem;
+  cursor:pointer;font:inherit}
+.sitac-menu button:hover,.sitac-menu button:focus{background:rgba(127,127,127,.18)}
+.sitac-menu button.rosso{color:#cc0000;font-weight:600}
+
+/* Lanci del dispositivo aereo, dentro il modale */
+.sitac-lanci{display:grid;gap:.3rem;margin:.5rem 0}
+.sitac-lancio-riga{display:flex;align-items:center;justify-content:space-between;gap:.6rem}
+.sitac-lancio-riga input{width:4.5rem;text-align:right}
+.sitac-lanci-nota{font-size:.8rem;opacity:.75;margin:.2rem 0 0}
+.sf-nota{font-size:2.6mm;opacity:.8;margin:.5mm 0 2mm}
+
 /* ==========================================================
    ==========================================================
    RESPONSIVE
