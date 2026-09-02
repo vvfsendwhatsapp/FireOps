@@ -22,12 +22,10 @@ window.FireOpsSchede = {
     pagine: [
         { id: "homepage", label: "Home page - Informazioni generali comando" },
         { id: "messaggistica", label: "Messaggistica" },
+        { id: "contatti", label: "Link utili" },
         { id: "info-comando", label: "Info altro comando" },
         { id: "mappa-meteo", label: "Meteo locale" },
         { id: "sitac-aib", label: "SITAC AIB" },
-        { id: "gestione-fpds", label: "Gestione interventi FPDS", lavori: true },
-        { id: "schede-soccorso", label: "Schede di soccorso", lavori: true },
-        { id: "radio-telefoni", label: "Radio e telefoni", lavori: true },
         { id: "convertitore", label: "Convertitore coordinate e calcolo percorso" },
         { id: "convertitoreunita", label: "Convertitore unità" },
         { id: "turnario", label: "Turnario" },
@@ -36,7 +34,9 @@ window.FireOpsSchede = {
         { id: "terremoti", label: "Terremoti INGV" },
         { id: "normative", label: "Normative, Circolari e Disposizioni" },
         { id: "qrcode", label: "QrCode" },
-        { id: "contatti", label: "Link utili" }
+        { id: "gestione-fpds", label: "Gestione interventi FPDS", lavori: true },
+        { id: "schede-soccorso", label: "Schede di soccorso", lavori: true },
+        { id: "radio-telefoni", label: "Radio e telefoni", lavori: true }
     ],
 
     // Schede aperte all'apertura di una sessione nuova. Dentro la stessa
