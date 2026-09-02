@@ -19,7 +19,5 @@ correggere legenda se cambio lingua
  l'alternativa più marcata è aggiungere stroke-width alla regola — ma provalo prima così, che è meno invasivo.
 
 
- INGV LINK
- FEED RSS
 
- https://opendata.vigilfuoco.it/ LINK
+ rimuoivere box sparsi e riordinare tendine! ed inserire titoli con workin progress
