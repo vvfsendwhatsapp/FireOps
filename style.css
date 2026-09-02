@@ -5378,28 +5378,6 @@ select:focus {
     background-image: var(--freccia-giu-attiva);
 }
 
-/* Questi tre dichiarano `background:` in forma abbreviata, che cancella
-   l'immagine: vanno ridichiarati per esteso, o la freccia sparisce
-   proprio dove si usa di più. */
-.pannello-select,
-#sitac-app .sitac-dati-campo select,
-.um-root .um-field select {
-    background-color: var(--dark-color);
-    background-image: var(--freccia-giu);
-    background-repeat: no-repeat;
-    background-position: right 12px center;
-    background-size: 10px 6px;
-    padding-right: 34px;
-}
-.pannello-select:hover,
-.pannello-select:focus,
-#sitac-app .sitac-dati-campo select:hover,
-#sitac-app .sitac-dati-campo select:focus,
-.um-root .um-field select:hover,
-.um-root .um-field select:focus {
-    background-image: var(--freccia-giu-attiva);
-}
-
 /* Il selettore di segno del convertitore è largo 58px e ha il testo
    centrato: una freccia lì coprirebbe il + o il −. */
 .coord-campi-riga .coord-campo-segno {
@@ -5425,6 +5403,25 @@ select:focus {
 .valore-effemeridi {
     font-size: 15px;
     line-height: 1;
+}
+
+/* Questi tre dichiarano `background:` in forma abbreviata, che cancella
+   l'immagine: vanno ridichiarati per esteso, o la freccia sparisce
+   proprio dove si usa di più. */
+.pannello-select,
+#sitac-app .sitac-dati-campo select,
+.um-root .um-field select {
+    background: var(--dark-color) var(--freccia-giu) no-repeat right 12px center;
+    background-size: 10px 6px;
+    padding-right: 34px;
+}
+.pannello-select:hover,
+.pannello-select:focus,
+#sitac-app .sitac-dati-campo select:hover,
+#sitac-app .sitac-dati-campo select:focus,
+.um-root .um-field select:hover,
+.um-root .um-field select:focus {
+    background-image: var(--freccia-giu-attiva);
 }
 
 /* ==========================================================
