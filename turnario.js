@@ -130,28 +130,53 @@
     // Ogni mese è un <tbody> a sé: serve al CSS di stampa per non spezzare
     // un mese a metà fra due pagine.
     //
+    // Diurno e notturno stanno su DUE righe, non affiancati nella stessa
+    // cella. In una cella sola la colonna doveva reggere "A1/b2" — cinque
+    // caratteri più il separatore — e trentuno colonne così non entravano in
+    // mezzo schermo: restava lo scorrimento orizzontale, che sul turnario è
+    // la cosa peggiore, perché la colonna del giorno esce di vista proprio
+    // mentre si legge la sigla. Su due righe la colonna deve reggere due
+    // caratteri, e la larghezza si dimezza. In verticale non si perde nulla:
+    // la riga in più è alta quanto una riga di testo.
+    //
     // La quarta riga (annotazioni a penna per ferie e permessi) è sempre
     // presente nel markup ed è nascosta a schermo dal CSS: su carta serve,
     // a video sarebbe solo una striscia vuota che allontana i mesi.
     // ----------------------------------------------------------
-    function costruisciTabella(anno, def, salto, oggi) {
-        let html = '<table class="turnario-tabella">';
+        // `dueRighe` decide se diurno e notturno stanno su due righe o affiancati
+    // nella stessa cella. Il markup resta uno solo — è la stessa funzione — ma
+    // le due destinazioni hanno vincoli opposti: a schermo la larghezza è
+    // quella del pannello e comanda lei, su A3 la larghezza è fissa e abbondante
+    // mentre il vincolo è l'altezza, perché i dodici mesi devono stare su un
+    // foglio. Da qui la scelta diversa.
+    function costruisciTabella(anno, def, salto, oggi, dueRighe) {
+        let html = '<table class="turnario-tabella' +
+            (dueRighe ? ' turnario-due-righe' : '') + '">';
 
         for (let mese = 1; mese <= 12; mese++) {
             const quantiGiorni = giorniNelMese(anno, mese);
 
-            html += '<tbody class="turnario-mese">';
-            html += `<tr class="turnario-riga-mese"><th colspan="${COLONNE}">${MESI[mese - 1]} ${anno}</th></tr>`;
+            const meseCorrente = !!oggi && oggi.year === anno && oggi.month === mese;
+            const classeMese = meseCorrente ? " turnario-mese-corrente" : "";
+
+            html += `<tbody class="turnario-mese${classeMese}">`;
+            html += `<tr class="turnario-riga-mese"><th colspan="${COLONNE}">` +
+                `${MESI[mese - 1]} ${anno}` +
+                (meseCorrente ? '<span class="turnario-mese-ora">in corso</span>' : "") +
+                `</th></tr>`;
 
             let rigaGiorni = '<tr class="turnario-riga-giorni">';
-            let rigaTurni = '<tr class="turnario-riga-turni">';
-            let rigaNote = '<tr class="turnario-riga-note">';
+            let rigaDiurno = '<tr class="turnario-riga-turni turnario-riga-diurno">';
+            let rigaNotte  = '<tr class="turnario-riga-turni turnario-riga-notte">';
+            let rigaUnica  = '<tr class="turnario-riga-turni">';
+            let rigaNote   = '<tr class="turnario-riga-note">';
 
             for (let giorno = 1; giorno <= COLONNE; giorno++) {
                 if (giorno > quantiGiorni) {
-                    rigaGiorni += '<td class="turnario-cella-vuota"></td>';
-                    rigaTurni += '<td class="turnario-cella-vuota"></td>';
-                    rigaNote += '<td class="turnario-cella-vuota"></td>';
+                    const vuota = '<td class="turnario-cella-vuota"></td>';
+                    rigaGiorni += vuota;
+                    rigaDiurno += vuota; rigaNotte += vuota; rigaUnica += vuota;
+                    rigaNote += vuota;
                     continue;
                 }
 
@@ -159,10 +184,6 @@
                 const turni = FireOps.turniDelGiorno(anno, mese, giorno);
                 const esito = analizzaGiorno(def, salto, turni, giornoSettimana);
 
-                // Un solo nome per il colore della giornata: la corrispondenza
-                // col saltoturno vince sulla distinzione giorno/notte.
-                // Il colore riempie la cella intera e basta da solo a dire se
-                // e' diurno o notturno: nessuna marcatura sulla singola sigla.
                 const colore = esito.fascia ? (esito.esatto ? "salto" : esito.fascia) : "";
                 const tinta = colore ? ` turnario-tinta-${colore}` : "";
 
@@ -174,14 +195,23 @@
                     `<span class="turnario-sett">${GIORNI_SETTIMANA[giornoSettimana]}</span>` +
                     `<span class="turnario-num">${giorno}</span></td>`;
 
-                const spanG = `<span class="turnario-turno turnario-turno-giorno">${testoSicuro(turni.giorno)}</span>`;
-                const spanN = `<span class="turnario-turno turnario-turno-notte">${testoSicuro(turni.notte.toLowerCase())}</span>`;
-
-                rigaTurni += `<td class="turnario-cella-turni${tinta}${oggiClasse}">${spanG}<span class="turnario-separatore">/</span>${spanN}</td>`;
+                if (dueRighe) {
+                    rigaDiurno += `<td class="turnario-cella-turni turnario-cella-diurno${tinta}${oggiClasse}">` +
+                        `${testoSicuro(turni.giorno)}</td>`;
+                    rigaNotte += `<td class="turnario-cella-turni turnario-cella-notte${tinta}${oggiClasse}">` +
+                        `${testoSicuro(turni.notte.toLowerCase())}</td>`;
+                } else {
+                    const spanG = `<span class="turnario-turno turnario-turno-giorno">${testoSicuro(turni.giorno)}</span>`;
+                    const spanN = `<span class="turnario-turno turnario-turno-notte">${testoSicuro(turni.notte.toLowerCase())}</span>`;
+                    rigaUnica += `<td class="turnario-cella-turni${tinta}${oggiClasse}">` +
+                        `${spanG}<span class="turnario-separatore">/</span>${spanN}</td>`;
+                }
                 rigaNote += `<td class="turnario-cella-note${tinta}"></td>`;
             }
 
-            html += rigaGiorni + '</tr>' + rigaTurni + '</tr>' + rigaNote + '</tr>';
+            html += rigaGiorni + '</tr>' +
+                (dueRighe ? rigaDiurno + '</tr>' + rigaNotte + '</tr>' : rigaUnica + '</tr>') +
+                rigaNote + '</tr>';
             html += '</tbody>';
         }
 
@@ -320,7 +350,7 @@
                     <span class="turnario-conteggio">${giorniAnno} giorni</span>
                 </div>
                 ${legendaHtml(def, salto)}
-                <div class="turnario-scroll">${costruisciTabella(anno, def, salto, oggi)}</div>
+                <div class="turnario-scroll">${costruisciTabella(anno, def, salto, oggi, true)}</div>
             `;
             giaVisualizzato = true;
         }
@@ -377,8 +407,8 @@
                 .turnario-sett { display: block; color: #666; font-size: 8px; text-transform: uppercase; }
                 .turnario-num { display: block; font-weight: bold; }
                 .turnario-domenica .turnario-sett, .turnario-domenica .turnario-num { color: #b00; }
-                .turnario-turno { display: inline-block; padding: 0 1px; }
-                .turnario-separatore { color: #888; }
+                .turnario-riga-turni td { line-height: 1.25; }
+                .turnario-cella-notte { color: #333; }
                 .turnario-cella-vuota { background: #fff; border-color: #ddd; }
 
                 /* Colore pieno su tutta la cella, data compresa */
@@ -386,8 +416,7 @@
                 .turnario-tinta-notte  { background: #4fc3f7; }
                 .turnario-tinta-salto  { background: #ff4fd8; }
                 .turnario-tinta-giorno .turnario-sett, .turnario-tinta-notte .turnario-sett, .turnario-tinta-salto .turnario-sett,
-                .turnario-tinta-giorno .turnario-num,  .turnario-tinta-notte .turnario-num,  .turnario-tinta-salto .turnario-num,
-                .turnario-tinta-giorno .turnario-separatore, .turnario-tinta-notte .turnario-separatore, .turnario-tinta-salto .turnario-separatore { color: #111; }
+                .turnario-tinta-giorno .turnario-num,  .turnario-tinta-notte .turnario-num,  .turnario-tinta-salto .turnario-num { color: #111; }
 
                 /* Riga libera per segnare ferie e permessi a penna: eredita
                    la tinta della giornata, così la colonna colorata scende
@@ -411,7 +440,7 @@
                 <title>${testoSicuro(titolo)}</title><style>${stile}</style></head><body>
                 <h1>${testoSicuro(titolo)}</h1>
                 <p class="legenda">${legendaStampa}</p>
-                ${costruisciTabella(anno, def, salto, null)}
+                ${costruisciTabella(anno, def, salto, null, false)}
                 </body></html>`);
             finestra.document.close();
 

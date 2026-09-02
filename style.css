@@ -2813,36 +2813,47 @@ a.btn-icon-hamburger:hover {
     flex-shrink: 0;
 }
 
-/* 31 colonne non entrano in mezzo schermo: la griglia scorre in
-   orizzontale dentro il suo contenitore invece di sfondare il pannello */
+/* 31 colonne: lo scorrimento resta come rete di sicurezza sui pannelli
+   davvero minuscoli, ma non è più la condizione normale.
+   container-type fa sì che le misure in cqw qui sotto seguano la larghezza
+   di QUESTO riquadro e non della finestra: in split-screen il turnario ha
+   metà larghezza, e un carattere tarato sulla finestra sarebbe grande il
+   doppio del necessario. */
 .turnario-scroll {
+    container-type: inline-size;
     overflow-x: auto;
     border: 1px solid var(--border-color);
     border-radius: 8px;
     background: var(--dark-color);
 }
 
+/* table-layout:fixed impedisce alla tabella di allargarsi seguendo il
+   contenuto. La larghezza di colonna si mette sulla SOLA riga dei giorni:
+   sulla riga del mese la cella ha colspan=31, e una width lì è ambigua. */
 .turnario-tabella {
+    table-layout: fixed;
+    width: 100%;
+    font-size: clamp(7.5px, 2.2cqw, 13px);
     border-collapse: collapse;
     font-family: "Courier New", monospace;
-    font-size: 11px;
-    width: max-content;
-    min-width: 100%;
 }
 
 .turnario-tabella th,
 .turnario-tabella td {
     border: 1px solid var(--border-color);
     text-align: center;
-    padding: 2px 3px;
-    min-width: 44px;
+    padding: 1px 2px;
+    min-width: 0;        /* era 44px: è la riga che impediva la compressione */
+    overflow: hidden;
 }
+
+.turnario-riga-giorni td { width: calc(100% / 31); }
 
 .turnario-riga-mese th {
     background: var(--surface-color);
     color: var(--primary-color);
     text-align: left;
-    font-size: 13px;
+    font-size: clamp(9px, 2.6cqw, 14px);
     letter-spacing: .5px;
     padding: 6px 10px;
     min-width: 0;
@@ -2935,15 +2946,79 @@ a.btn-icon-hamburger:hover {
     display: none;
 }
 
-/* La giornata odierna resta riconoscibile anche quando non è di servizio */
+/* La giornata odierna usa outline, non box-shadow: così non entra in
+   concorrenza con la cornice del mese corrente, che sta sulla stessa
+   proprietà e vince per specificità. */
 .turnario-oggi {
-    box-shadow: inset 0 0 0 2px #ff0000;
+    outline: 2px solid #ff0000;
+    outline-offset: -2px;
+    position: relative;
+    z-index: 1;
 }
 
 .turnario-cella-vuota {
     background: transparent;
     border-color: transparent;
 }
+
+/* MESE CORRENTE — cornice sul blocco, non tinta di fondo: una tinta
+   entrerebbe in concorrenza con i tre colori delle giornate, che sono
+   l'informazione vera. */
+.turnario-mese-corrente .turnario-riga-mese th {
+    background: rgba(255, 255, 255, .14);
+    box-shadow: inset 3px 0 0 #ff8c00;
+}
+.turnario-mese-corrente td { box-shadow: inset 0 0 0 1px rgba(255, 140, 0, .28); }
+.turnario-mese-ora {
+    float: right;
+    font-size: .8em;
+    font-weight: 400;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    opacity: .8;
+}
+
+/* Trentun colonne in un pannello stretto: larghezza fissa e ripartita in
+   parti uguali. table-layout:fixed è quello che impedisce alla tabella di
+   allargarsi seguendo il contenuto — senza, basta una sigla per far
+   scappare fuori tutta la griglia. */
+.turnario-tabella{table-layout:fixed;width:100%;border-collapse:collapse;
+  font-family:"Courier New",monospace}
+.turnario-tabella td,.turnario-tabella th{
+  width:calc(100% / 31);padding:0;text-align:center;overflow:hidden}
+
+/* Il corpo si adatta alla larghezza disponibile invece di essere fissato a
+   una misura: in split-screen il pannello può essere metà di uno schermo da
+   1280 o metà di uno da 3840, e una dimensione buona per l'uno è illeggibile
+   nell'altro. Il minimo è la soglia sotto cui una sigla di due caratteri non
+   si legge più. */
+.turnario-tabella{font-size:clamp(7.5px,0.92vw,12px)}
+.turnario-riga-mese th{font-size:clamp(9px,1.05vw,13px)}
+
+.turnario-cella-giorno{line-height:1.15}
+.turnario-sett{display:block;font-size:.78em;text-transform:uppercase;opacity:.7}
+.turnario-num{display:block;font-weight:700}
+
+/* Le due righe dei turni: la notturna leggermente più spenta, così la
+   colonna si legge dall'alto in basso come giorno → notte anche in bianco
+   e nero. */
+.turnario-riga-turni td{line-height:1.35;letter-spacing:-.02em}
+.turnario-cella-notte{opacity:.88}
+
+/* Lo scorrimento resta come rete di sicurezza per i pannelli davvero
+   minuscoli, ma non è più la condizione normale. */
+.turnario-scroll{overflow-x:auto}
+
+/* MESE CORRENTE — cornice sul blocco, non tinta di fondo: una tinta
+   entrerebbe in concorrenza con i tre colori delle giornate, che sono
+   l'informazione vera. */
+.turnario-mese-corrente .turnario-riga-mese th{
+  background:rgba(255,255,255,.14);
+  box-shadow:inset 3px 0 0 #ff8c00}
+.turnario-mese-corrente td { box-shadow: inset 0 0 0 1px rgba(255,140,0,.28); }
+.turnario-oggi { box-shadow: inset 0 0 0 2px #ff0000; }
+.turnario-mese-ora{float:right;font-size:.8em;font-weight:400;
+  letter-spacing:.06em;text-transform:uppercase;opacity:.8}
 
 /* ==========================================================
    SEZIONE QRCODE
@@ -3742,6 +3817,12 @@ a.btn-icon-hamburger:hover {
 #sitac-app .sitac-scelta[disabled]:hover {
     border-color: var(--border-color)
 }
+
+/* Lanci del dispositivo aereo, dentro il modale */
+.sitac-lanci{display:grid;gap:.3rem;margin:.5rem 0}
+.sitac-lancio-riga{display:flex;align-items:center;justify-content:space-between;gap:.6rem}
+.sitac-lancio-riga input{width:4.5rem;text-align:right}
+.sitac-lanci-nota{font-size:.8rem;opacity:.75;margin:.2rem 0 0}
 
 /* Testata di stampa: esiste solo su carta, a video ripeterebbe lo stato */
 #sitac-testata-stampa {
@@ -5113,6 +5194,21 @@ body.sitac-stampa #sitac-stampa-doc {
     font-family: system-ui, "Segoe UI", Arial, sans-serif;
 }
 
+.sitac-stampa .sitac-maniglia,
+.sitac-stampa .sitac-x-sel,
+.sitac-stampa .sitac-misura,
+.sitac-stampa .sitac-menu,
+.sitac-stampa .marker-icon,
+.sitac-stampa .marker-icon-middle,
+.sitac-stampa .leaflet-pm-draggable,
+.sitac-stampa .leaflet-control-zoom{display:none !important}
+/* La freccia del vento resta: è un dato dello scenario, non una maniglia.
+   Perde solo la punta trascinabile, che è già esclusa dalla riga sopra. */
+.sitac-stampa .sitac-selezionato{filter:none}
+.sitac-stampa .sitac-eleggibile{filter:none}
+/* La punta del vento non è una maniglia come le altre: è il dato. Resta. */
+.sitac-stampa .sitac-mn-vento { display: block !important; }
+
 /* --- pagina ------------------------------------------------------------ */
 .sf-pagina {
     width: 400mm;
@@ -5428,24 +5524,49 @@ select:focus {
 .pannello-select .scheda-wip { opacity: .75; font-style: italic; }
 
 /* Menu del tasto destro — vive in .sitac-mapwrap come la × e il riquadro
-   di misura: dentro il contenitore Leaflet il clic finirebbe nella mappa. */
-.sitac-menu{position:absolute;z-index:1200;min-width:11rem;padding:.25rem;
-  background:var(--sfondo-riquadro,#fff);color:inherit;
-  border:1px solid rgba(0,0,0,.25);border-radius:.4rem;
-  box-shadow:0 .4rem 1.2rem rgba(0,0,0,.35);font-size:.86rem}
-.sitac-menu .sitac-menu-tit{margin:.2rem .45rem .3rem;font-weight:700;
-  font-size:.76rem;letter-spacing:.03em;text-transform:uppercase;opacity:.65}
-.sitac-menu button{display:block;width:100%;text-align:left;border:0;
-  background:none;color:inherit;padding:.4rem .55rem;border-radius:.3rem;
-  cursor:pointer;font:inherit}
-.sitac-menu button:hover,.sitac-menu button:focus{background:rgba(127,127,127,.18)}
-.sitac-menu button.rosso{color:#cc0000;font-weight:600}
+   di misura: dentro il contenitore Leaflet il clic finirebbe nella mappa.
+   I selettori partono da #sitac-app perché lì `button` è già dichiarato
+   con un ID, e una classe sola non lo raggiunge. */
+#sitac-app .sitac-menu {
+    position: absolute;
+    z-index: 1100;
+    min-width: 180px;
+    padding: 4px;
+    background: #141414;
+    border: 1px solid var(--primary-color);
+    border-radius: 6px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, .7);
+}
 
-/* Lanci del dispositivo aereo, dentro il modale */
-.sitac-lanci{display:grid;gap:.3rem;margin:.5rem 0}
-.sitac-lancio-riga{display:flex;align-items:center;justify-content:space-between;gap:.6rem}
-.sitac-lancio-riga input{width:4.5rem;text-align:right}
-.sitac-lanci-nota{font-size:.8rem;opacity:.75;margin:.2rem 0 0}
+#sitac-app .sitac-menu[hidden] { display: none; }
+
+#sitac-app .sitac-menu-tit {
+    margin: 3px 7px 5px;
+    font-size: 10.5px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: var(--text-muted);
+}
+
+#sitac-app .sitac-menu button {
+    background: none;
+    border: none;
+    border-radius: 4px;
+    padding: 7px 9px;
+    font-size: 13px;
+    color: var(--text-main);
+}
+
+#sitac-app .sitac-menu button:hover {
+    background: rgba(255, 215, 0, .12);
+    border-color: transparent;
+}
+
+#sitac-app .sitac-menu button.rosso { color: #ff5a5a; font-weight: bold; }
+
+#sitac-app .sitac-menu button.rosso:hover { background: rgba(204, 0, 0, .22); }
+
 .sf-nota{font-size:2.6mm;opacity:.8;margin:.5mm 0 2mm}
 
 /* ==========================================================

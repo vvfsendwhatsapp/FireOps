@@ -346,7 +346,8 @@ function avvia(app){
       menuSpostaArea:'Trascina la geometria intera.\nEsc per finire.',
       lanciChiedi:'Lanci del dispositivo aereo',
       lanciNota:'Lascia vuoto ci\u00f2 che non \u00e8 intervenuto: nel foglio compare solo chi ha lanciato.',
-      lanciTot:'Totale lanci', stampaAnnullata:'Stampa annullata.', },
+      lanciTot:'Totale lanci', stampaAnnullata:'Stampa annullata.',
+      disegnoAnnullato:'Disegno annullato: troppi pochi vertici.', },
     en:{ bCono:'Add cone', conoModo:'How should the cone be built?',
       bPosizione:'Enter coordinates',
       conoSettore:'From the point of origin', conoSettoreNota:'30° sector from the origin; a second click marks where the front is now (T0).',
@@ -1202,10 +1203,14 @@ function mostraComandoAfferente(sigla, nome){
         symbol: L.Symbol.arrowHead({pixelSize: dc.dim, headAngle: 60, polygon: !!pieno,
           pathOptions:{color:col, fillColor:col, fillOpacity: pieno ? 1 : 0,
             weight: pieno ? 1 : 2.5}})};
-    /* `dritto` per i glifi che non vanno ruotati lungo il percorso: il
-       pilone del filo a sbalzo sta in piedi, non segue la campata. */
-    return {offset: dc.passo === '50%' ? '50%' : 8, repeat: dc.passo,
-      symbol: L.Symbol.marker({rotate: !dc.dritto,
+        /* Il fulmine sta dritto sulla pagina. Ruotato lungo la campata finisce
+       capovolto sui tratti che vanno verso ovest, e un fulmine a testa in
+       giù non lo riconosce nessuno: vale tanto per la linea attiva quanto
+       per quella disattivata, che è lo stesso glifo con la croce sopra.
+       Il pilone lo dichiara già la simbologia; qui è coperto comunque. */
+      const dritto = dc.dritto || ['fulmine','fulmineOff','pilone'].indexOf(dc.tipo) >= 0;
+      return {offset: dc.passo === '50%' ? '50%' : 8, repeat: dc.passo,
+      symbol: L.Symbol.marker({rotate: !dritto,
         markerOptions:{icon: glifoDeco(dc.tipo, dc.dim, col, pieno), interactive:false}})};
   }
 
@@ -2121,6 +2126,54 @@ function mostraComandoAfferente(sigla, nome){
       fai: () => { selezionaElemento(l); eliminaSelezionato(); }});
     return voci;
   }
+
+    /* Il destro durante il disegno CHIUDE quello che c'è: un'area con i
+     vertici già posati diventa un poligono, una linea si ferma lì, uno
+     strumento a punti si spegne. È lo stesso esito del doppio clic, ma col
+     dito già sul tasto — e su una carta il gesto di "basta così" è uno solo,
+     non due a seconda di cosa si sta disegnando. */
+  function chiudeDisegnoInCorso(){
+    const D = map.pm && map.pm.Draw;
+    if (!D || !map.pm.globalDrawModeEnabled || !map.pm.globalDrawModeEnabled())
+      return false;
+    const forma = D.getActiveShape ? D.getActiveShape() : null;
+    const h = forma && D[forma];
+    if (!h) return false;
+
+    /* Marker: non c'è niente da chiudere — il simbolo o è posato o non
+       esiste. Il destro spegne lo strumento e basta. */
+    if (forma !== 'Line' && forma !== 'Polygon'){
+      fermaTutto(); spegniPulsanti(); stato(t('spento'));
+      return true;
+    }
+
+    /* I vertici posati stanno nel layer provvisorio; il segmento che segue
+       il cursore è l'hintline, che è un'altra cosa e non conta. */
+    const wl = h._layer;
+    const p = (wl && wl.getLatLngs) ? wl.getLatLngs() : [];
+    if (p.length < (forma === 'Polygon' ? 3 : 2)){
+      /* Sotto il minimo non c'è geometria: un poligono di due vertici non è
+         un poligono. Si annulla, invece di lasciare in carta un moncone. */
+      fermaTutto(); spegniPulsanti(); stato(t('disegnoAnnullato'));
+      return true;
+    }
+    /* `_finishShape` è interno a Geoman, ma è l'unica via per chiudere da
+       codice: si prende prima il nome pubblico, dove esiste. */
+    const chiudi = h.finishShape || h._finishShape;
+    if (typeof chiudi !== 'function') return false;
+    chiudi.call(h);          // pm:create fa il resto, come col doppio clic
+    return true;
+  }
+
+  /* In cattura sul contenitore, non su map.on: mentre si disegna il puntatore
+     sta sull'hintmarker di Geoman, e l'evento sintetico della mappa può non
+     arrivare mai. Se non c'è un disegno aperto l'evento prosegue intatto e il
+     menu del tasto destro funziona come prima. */
+  map.getContainer().addEventListener('contextmenu', ev => {
+    if (!chiudeDisegnoInCorso()) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+  }, true);
 
   /* Il FeatureGroup inoltra anche il contextmenu dei figli, come fa col
      clic: un listener solo per tutto il disegno. */
@@ -3745,6 +3798,32 @@ function sfBloccoLanci(){
     + (disegnati ? ` Lanci riportati sulla carta: ${disegnati}.` : '') + `</p>`;
 }
 
+/* I pieni della tavola sono tarati per lo schermo. Su carta un grigio al 50%
+   sopra l'ortofoto copre proprio il terreno che chi riceve il foglio deve
+   leggere: si alleggerisce il riempimento e si tiene il contorno, che è
+   quello che porta l'informazione. I metri veri non si toccano. */
+const PIENO_STAMPA = 0.18;
+let stiliPrima = null;
+
+function alleggerisciPerStampa(){
+  stiliPrima = [];
+  disegni.eachLayer(l => {
+    if (!l.setStyle || !l.options) return;
+    if (l._glifo) return;              // lancio ridotto a simbolo: già trasparente
+    const o = l.options;
+    stiliPrima.push([l, {fillOpacity:o.fillOpacity, opacity:o.opacity, weight:o.weight}]);
+    l.setStyle({
+      fillOpacity: o.fillOpacity ? Math.min(o.fillOpacity, PIENO_STAMPA) : 0,
+      opacity: 1,
+      weight: Math.max(1.4, (o.weight || 2) * 0.75)});
+  });
+}
+function ripristinaStile(){
+  if (!stiliPrima) return;
+  stiliPrima.forEach(([l, s]) => l.setStyle(s));
+  stiliPrima = null;
+}
+
 async function stampa(){
   /* I lanci non stanno sulla carta: si contano a voce lungo la giornata, e
      il numero lo sa solo chi ha tenuto il conto. Si chiede qui, una volta,
@@ -3798,6 +3877,12 @@ async function stampa(){
   f.querySelector('#sitac-stampa-mappa').appendChild(wrap);
   document.body.classList.add('sitac-stampa');
 
+  /* Le maniglie sono comandi, non rilievo: stampate sembrano vertici veri, e
+     chi legge il foglio non ha niente da trascinare. Anche la selezione se
+     ne va, o un elemento resta evidenziato senza motivo. */
+  selezionaElemento(null);
+  alleggerisciPerStampa();
+
   const vistaPrima = {c: map.getCenter(), z: map.getZoom()};
   map.invalidateSize();
 
@@ -3817,6 +3902,7 @@ async function stampa(){
 
   const ripristina = () => {
     window.removeEventListener('afterprint', ripristina);
+    ripristinaStile();
     document.body.classList.remove('sitac-stampa');
     segnoMappa.parentNode.insertBefore(wrap, segnoMappa);
     segnoMappa.remove();
