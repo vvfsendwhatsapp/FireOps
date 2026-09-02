@@ -5343,7 +5343,7 @@ body.fullscreen-attivo #modal-comando {
 #terremoti .leaflet-popup-content { color: #111; }
 #terremoti .leaflet-popup-content a { color: #0057a8; }
 
-.terremoti-elenco-scroll { flex: 0 1 42%; min-height: 120px; overflow-y: auto;
+.terremoti-elenco-scroll { flex: 0 1 30%; min-height: 120px; overflow-y: auto;
     border: 1px solid var(--border-color); border-radius: 8px; }
 /* Intestazione ancorata: scorrendo l'elenco si continua a sapere quale
    colonna è la distanza e quale la profondità. */
@@ -5405,6 +5405,26 @@ select:focus {
 .coord-campi-riga .coord-campo-segno {
     background-image: none;
     padding-right: 4px;
+}
+
+/* I quattro riquadri della testata devono stare sulla stessa linea: le
+   emoji di alba/tramonto sono più alte del testo e alzano la riga di base
+   del solo riquadro che le contiene. Altezza comune e contenuto centrato. */
+.header-center .info-box {
+    height: 42px;
+    justify-content: center;
+}
+.header-center .info-box .value {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    line-height: 1;
+}
+/* Le emoji tornano alla dimensione del testo che le circonda invece di
+   dettare l'altezza della riga */
+.valore-effemeridi {
+    font-size: 15px;
+    line-height: 1;
 }
 
 /* ==========================================================
