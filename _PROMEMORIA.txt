@@ -90,3 +90,5 @@ correggere legenda se cambio lingua
 * rinomina file stampa pdf (intervento, data sigla comando id dos nominativo)
 
 * sistemare intestazione stampa lato dos e intervento
+
+* quale formato import geojson?
