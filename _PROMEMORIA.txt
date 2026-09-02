@@ -21,3 +21,68 @@ correggere legenda se cambio lingua
 
 
  rimuoivere box sparsi e riordinare tendine! ed inserire titoli con workin progress
+
+
+ riepilogo modifiche punti linee ed aree:
+
+
+
+* quando modifico un'area, al tasto destro concludo la modifica
+
+* quando fai tasto destro su qualcosa
+
+   * punto > oltre descrizione metti coordinate
+
+   * linea > oltre descrizione metti lunghezza
+
+   * area > oltre descrizione metti superficie e perimetro
+
+* la x rossa su oggetti eliminiamola, facciamo in due passaggi con tasto dx ed elimina
+
+* Pendenza lieve, non è un punto ma una linea con freccia e 1 codina a T a fine linea
+
+* Pendenza moderata, non è un punto ma una linea con freccia e e 2 codine a T in successione a fine linea
+
+* Pendenza forte, non è un punto ma una linea con freccia e 3 codine a T in successione a fine linea
+
+* Punti d'acqua , Punti sensibili, Piazzole elicottero e Ripetitori il simbolo sembra comparire due volte (tipo il puntatore ed il logo magari mettiamo la freccia sul puntatore)
+
+* nella colonna di sinistra nell'icona strade sterrate aggiungi il 4x4 anche lì
+
+* le aree riduciamo la trasparenza, un poco più scure
+
+* zona minacciata va con bordo giallo non tratteggiato
+
+* Area d'origine la chiamiamo Punto d'innesco
+
+* Direzione del vento intensità debole, non è un punto ma una linea con freccia e 1 codine a 45° rispetto alla linea
+
+* Direzione del vento intensità moderata, non è un punto ma una linea con freccia e 2 codine a 45° rispetto alla linea
+
+* Direzione del vento intensità forte, non è un punto ma una linea con freccia e 3 codine a 45° rispetto alla linea
+
+* Quando inserisco punto incendio di chioma, radente, sotterraneo il simbolo sembra comparire due volte
+
+* Il fronte dell'incendio è una doppia linea parallela rossa a mo di denti, collegata da tante lineette
+
+* quando passo in Azioni tra Prevista ed Effettuata e viceversa, di lanci si blocca e devo ricliccare sul logo per inserire lo stesso disegno
+
+* ricognizione è una linea grecata a omega quadra tratteggiate se prevista piena se effettuata
+
+* difesa perimetrale va con stella formata da due quadrati con le punte piene o vuote
+
+* difesa in linea una linea di triangoli equilateri contigui appoggiati sulla linea di base
+
+* attacco sui fianchi va con linea e 3 frecce a 45°tratteggiata/piena
+
+* attacco localizzato freccia rossa sottile, tratteggiata o piena
+
+* bonifica è freccia con quadro con B all'interno
+
+* le punte delle frecce vanno attaccate alla punta del segmento
+
+* la simbologia deve restare anche su legenda
+
+* creazione linea di sicurezza sono due serie di triangoli equilateri consecutivi con la base in comune vuoti o pieni
+
+* accensione per linee è una freccia a L di default la sistemiamo tra le ultime.
