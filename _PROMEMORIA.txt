@@ -92,3 +92,5 @@ correggere legenda se cambio lingua
 * sistemare intestazione stampa lato dos e intervento
 
 * quale formato import geojson?
+
+* su terremoti metti anche "mondo"
