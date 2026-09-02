@@ -5300,13 +5300,13 @@ body.sitac-stampa .leaflet-control-zoom { display: none !important; }
     /* Il pannello espanso è fixed a z-index 1500 e copre la finestra: i modali
    dell'header devono stargli sopra, o premendo ❓ o R non compare niente
    mentre SITAC o Convertitore sono a schermo pieno. */
-body.fullscreen-attivo #modal-help,
+/*body.fullscreen-attivo #modal-help,
 body.fullscreen-attivo #modal-otto-passi,
 body.fullscreen-attivo #modal-evento-rilevante,
 body.fullscreen-attivo #modal-reparti-volo,
 body.fullscreen-attivo #modal-comando {
     z-index: 1700;
-}
+}*/
 
 /* La sezione riempie il pannello: la carta si prende lo spazio libero,
    l'elenco scorre dentro di sé invece di spingerla fuori vista. */
