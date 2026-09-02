@@ -45,6 +45,10 @@
     --subheader-height: 64px;
     /* Tema scuro di default*/
     color-scheme: dark;
+    /* Freccia dei select: stesso triangolo di .combo-arrow, che sui select
+       nativi non può essere un elemento figlio. */
+    --freccia-giu: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0h10L5 6z' fill='%23aaaaaa'/%3E%3C/svg%3E");
+    --freccia-giu-attiva: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0h10L5 6z' fill='%23ffd700'/%3E%3C/svg%3E");
 }
 
 html {
@@ -5353,6 +5357,55 @@ body.fullscreen-attivo #modal-comando {
 .sisma-forte { background: #d43d1a; color: #fff; }
 .sisma-grave { background: #7a0000; color: #fff; }
 .sisma-errore { color: var(--danger-color); }
+
+/* ==========================================================
+   FRECCIA UNICA PER TUTTI I SELECT
+   La freccia di sistema cambia con browser e sistema operativo, e
+   accanto ai combo ricercabili di FireOps stonava. Qui si spegne e si
+   ridisegna identica a .combo-arrow.
+   ========================================================== */
+select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: var(--freccia-giu);
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 10px 6px;
+    padding-right: 34px;
+}
+select:hover,
+select:focus {
+    background-image: var(--freccia-giu-attiva);
+}
+
+/* Questi tre dichiarano `background:` in forma abbreviata, che cancella
+   l'immagine: vanno ridichiarati per esteso, o la freccia sparisce
+   proprio dove si usa di più. */
+.pannello-select,
+#sitac-app .sitac-dati-campo select,
+.um-root .um-field select {
+    background-color: var(--dark-color);
+    background-image: var(--freccia-giu);
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 10px 6px;
+    padding-right: 34px;
+}
+.pannello-select:hover,
+.pannello-select:focus,
+#sitac-app .sitac-dati-campo select:hover,
+#sitac-app .sitac-dati-campo select:focus,
+.um-root .um-field select:hover,
+.um-root .um-field select:focus {
+    background-image: var(--freccia-giu-attiva);
+}
+
+/* Il selettore di segno del convertitore è largo 58px e ha il testo
+   centrato: una freccia lì coprirebbe il + o il −. */
+.coord-campi-riga .coord-campo-segno {
+    background-image: none;
+    padding-right: 4px;
+}
 
 /* ==========================================================
    ==========================================================
