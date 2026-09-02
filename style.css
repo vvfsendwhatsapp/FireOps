@@ -3319,6 +3319,27 @@ a.btn-icon-hamburger:hover {
     transform: rotate(90deg)
 }
 
+/* La testata del passo aperto resta in cima mentre le voci scorrono sotto.
+   Sticky solo su .aperto: le testate chiuse sono alte quanto il loro
+   contenitore e non avrebbero nulla da scorrere, ma restando sticky
+   creerebbero un accavallamento al bordo superiore.
+   Lo sticky è delimitato da .sitac-fisa: la testata smette di seguire
+   quando il passo esce di vista, invece di accompagnare tutta la colonna. */
+#sitac-app .sitac-fisa-testa.aperto {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+}
+
+/* Il fondo deve essere pieno: --surface-color è già dichiarato più su su
+   .sitac-fisa-testa, ma sotto ci passano le swatch chiare dei simboli e
+   qualsiasi trasparenza le lascerebbe intravedere. L'ombra stacca la
+   testata dal contenuto che le scivola dietro. */
+#sitac-app .sitac-fisa-testa.aperto {
+    background: var(--surface-color);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, .55);
+}
+
 /* Prende il titolo per classe, non per posizione: inserire un elemento
    prima — com'è successo col numero del passo — spostava il bersaglio e
    allungava il pallino a ovale. */
