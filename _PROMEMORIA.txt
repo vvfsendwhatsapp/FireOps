@@ -1,29 +1,40 @@
-distanza elinuclei in NM§
-CONO INCENDIO
-INNESCCO+FRONTE FUOCO IN DIREZIONE VENTO
-recuperare velocità e direzione del vento su coordinate inserite
-https://api.openweathermap.org/data/2.5/weather?lat=44.06&lon=12.56&appid=LA_TUA_API_KEY&units=metric
-https://api.open-meteo.com/v1/forecast?latitude=44.06&longitude=12.56&current=wind_speed_10m,wind_direction_10m&wind_speed_unit=kmh
-https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=44.06&lon=12.56
-poi i popup sitac devono poter inserire numeri e lettere
+ E in applicaVento la riga del ridisegno diventa:
 
-punti orientabili col secondo clic
-popup da scrivere!!!!
-punto d'innseco
+js
 
-correggere legenda se cambio lingua
- e stampa pdf!
+    if (!senzaRidisegno && ventoAsta) disegnaFrecciaVento();
 
- Una nota su come funziona: filter: drop-shadow sui path SVG di Leaflet colora l'alone attorno al tratto,
- quindi si vede sia sui poligoni delle aree sia sulle polilinee del fronte. Se sullo sfondo satellitare risultasse poco leggibile,
- l'alternativa più marcata è aggiungere stroke-width alla regola — ma provalo prima così, che è meno invasivo.
+Il parametro senzaRidisegno non serve più a nessuno — non c'è più un trascinamento da proteggere — ma lasciarlo non fa danno.
 
 
 
- rimuoivere box sparsi e riordinare tendine! ed inserire titoli con workin progress
+non ho capito
+
+function applicaVento(fonte, senzaRidisegno){
+
+    if (!senzaRidisegno && ventoAsta) disegnaFrecciaVento();
+
+    const v = NS.SitacVento.ventoDa(ventoVelocita, ventoVerso, fonte || 'manuale');
+
+    v.letto = new Date().toISOString();
+
+    mostraVento(v);
+
+    /* Il numero di codine dipende dall'intensità: muovendo lo slider il
+
+       simbolo si rifà da sé invece di restare quello di prima. Non durante
+
+       il trascinamento della punta, però — vedi sotto. */
+
+    if (!senzaRidisegno && (ventoAsta || ventoPunta)) disegnaFrecciaVento();
+
+    aggiornaPassi();
+
+    stato(t('ventoImpostato', {v:v.velocita, d:v.verso, f:v.fonte}));
+
+  } è giusta?
 
 
- riepilogo modifiche punti linee ed aree:
 
 
 

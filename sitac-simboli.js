@@ -292,22 +292,35 @@ agg('lancio_leggero_ritardante','azioni','sgAereo','Lancio elicotteri medi e leg
 agg('lancio_leggero_acqua','azioni','sgAereo','Lancio elicotteri medi e leggeri con acqua','Water drop, light helicopters', lancio(0,0), {s:1, poly:{a:35, b:35}});
 
 /* Difesa perimetrale: stella a otto punte formata da DUE QUADRATI ruotati
-   di 45° l'uno rispetto all'altro. Punte piene = effettuata, vuote =
-   prevista: è il riempimento a cambiare, non il tratto, perché a
-   dimensione di simbolo un tratteggio su otto punte diventa una nuvola. */
+   di 45° l'uno rispetto all'altro.
+   Effettuata NON vuol dire stella tutta rossa: si campiscono le sole PUNTE,
+   e il nocciolo ottagonale al centro resta bianco. Piena per intero, a
+   dimensione di simbolo su una carta, diventava una macchia rossa che a
+   colpo d'occhio si confondeva con un punto sensibile.
+   L'ottagono su cui poggiano le punte è l'intersezione dei due quadrati: i
+   suoi vertici stanno a 22,5° + 45k, a raggio r·cos(22,5°)/... — in pratica
+   0,765·r, che è il numero qui sotto. */
 agg('difesa_perimetrale','azioni','sgTerra','Difesa perimetrale','Perimeter defence', o => {
-  const R = C.rosso, p = attivo(o), r = 27;
+  const R = C.rosso, p = attivo(o), r = 27, rO = r * 0.765;
+  const pt = (raggio, gradi) => {
+    const a = gradi * Math.PI / 180;
+    return (32 + raggio * Math.cos(a)).toFixed(1) + ' '
+         + (32 + raggio * Math.sin(a)).toFixed(1);
+  };
   const quadrato = a0 => {
     let d = '';
-    for (let i = 0; i < 4; i++){
-      const a = (a0 + i * 90) * Math.PI / 180;
-      d += (i ? 'L' : 'M') + (32 + r * Math.cos(a)).toFixed(1)
-                     + ' ' + (32 + r * Math.sin(a)).toFixed(1);
-    }
+    for (let i = 0; i < 4; i++) d += (i ? 'L' : 'M') + pt(r, a0 + i * 90);
     return d + 'Z';
   };
-  const st = ` fill="${p ? R : '#fff'}" stroke="${R}" stroke-width="2.6" stroke-linejoin="round"`;
-  return T(`<path d="${quadrato(45)}"${st}/><path d="${quadrato(0)}"${st}/>`);
+  /* Le otto punte: apice sul vertice della stella, base sulla corda
+     dell'ottagono che le sta sotto. */
+  let punte = '';
+  if (p) for (let i = 0; i < 8; i++){
+    const a = i * 45;
+    punte += `<path d="M${pt(r, a)}L${pt(rO, a - 22.5)}L${pt(rO, a + 22.5)}Z" fill="${R}"/>`;
+  }
+  const st = ` fill="#fff" stroke="${R}" stroke-width="2.6" stroke-linejoin="round"`;
+  return T(`<path d="${quadrato(45)}"${st}/><path d="${quadrato(0)}"${st}/>${punte}`);
 }, {s:1});
 
 agg('accensione_punti','azioni','sgControfuoco','Accensione per punti','Ignition by points', o => T(
@@ -349,6 +362,11 @@ function decoGlifo(tipo, opz){
   const n = Math.max(1, o.n || 1);
   const dim = o.dim || 14;
   const riempi = pieno ? col : '#fff';
+  /* `lato` dice da che parte del tracciato guarda il motivo: +1 a destra del
+     verso di percorrenza, -1 a sinistra. Lo sceglie chi disegna con un terzo
+     clic — un attacco sui fianchi che punta dalla parte sbagliata manda le
+     squadre nel fuoco invece che addosso al fianco. */
+  const lato = o.lato === -1 ? -1 : 1;
   const f = x => (+x).toFixed(1);
   let w, h, d = '';
 
@@ -434,58 +452,109 @@ function decoGlifo(tipo, opz){
       break;
     }
 
-    /* Pendenze e vento — freccia in punta con le codine in coda: a T
-       (perpendicolari) per la pendenza, a 45° per il vento. Una, due o tre
-       secondo l'intensità.
-       Stessa regola della punta: il baricentro del triangolo sta sul vertice
-       finale. Le codine partono dalla BASE della freccia, cioè esattamente
-       dalla fine del segmento, e proseguono all'indietro: prima stavano più
-       avanti e sembravano appese a metà del tracciato.
-       `dim` è la base della freccia. */
-    case 'fine': {
-      const hT = dim * 1.15, bT = dim, wa = bT / 2;
-      const passo = dim * 0.5;
-      const dietro = hT / 3 + (n - 1) * passo + (o.forma === '45' ? wa * 1.3 : 0);
-      w = Math.ceil(bT * 1.1 + (o.forma === '45' ? wa * 1.3 : 0)) + 4;
-      h = Math.ceil(Math.max(dietro, hT * 2 / 3) * 2) + 6;
+    /* Pendenze e vento — le CODINE dell'intensità, una due o tre: a T per la
+       pendenza, a 45° per il vento.
+       Stanno all'estremità OPPOSTA alla punta, non accanto ad essa: è la
+       convenzione con cui si legge un vento su qualunque carta — la freccia
+       dice dove va, le barbe in coda dicono quanto forte — e con la freccia
+       e le codine allo stesso capo il simbolo diventava un grumo in cui non
+       si distingueva più né l'una né le altre. Per questo il tracciato porta
+       DUE motivi, la punta a fine linea e le codine a inizio linea, invece di
+       un glifo solo.
+       Il primo trattino cade sul primo vertice e gli altri proseguono in
+       avanti. `dim` è la larghezza della codina. */
+    case 'codine': {
+      const s = dim * 0.62, passo = dim * 0.5;
+      w = Math.ceil(dim * 1.3) + 4;
+      h = Math.ceil(Math.max(s * 1.3 + (n - 1) * passo, s) * 2) + 6;
       const cx = w / 2, cy = h / 2;
-      const ay = cy - hT * 2 / 3, by = cy + hT / 3;
-      d = `<path d="M${f(cx)} ${f(ay)}L${f(cx + wa)} ${f(by)}L${f(cx - wa)} ${f(by)}Z"`
-        + ` fill="${col}" stroke="${col}" stroke-width="1.2" stroke-linejoin="round"/>`;
       for (let i = 0; i < n; i++){
-        const y = by + i * passo;
+        const y = cy - i * passo;
         d += (o.forma === '45')
-          ? `<line x1="${f(cx)}" y1="${f(y)}" x2="${f(cx + wa * 1.3)}" y2="${f(y + wa * 1.3)}"`
+          /* La barba è inclinata all'indietro, come su una carta del vento:
+             in avanti sembrerebbe una seconda punta. */
+          ? `<line x1="${f(cx)}" y1="${f(y)}" x2="${f(cx + s * lato)}" y2="${f(y + s)}"`
             + ` stroke="${col}" stroke-width="2.8" stroke-linecap="round"/>`
-          : `<line x1="${f(cx - wa)}" y1="${f(y)}" x2="${f(cx + wa)}" y2="${f(y)}"`
+          : `<line x1="${f(cx - s / 2)}" y1="${f(y)}" x2="${f(cx + s / 2)}" y2="${f(y)}"`
             + ` stroke="${col}" stroke-width="2.8" stroke-linecap="round"/>`;
       }
       break;
     }
 
-    /* Attacco sui fianchi — freccia inclinata di 45° sulla linea, che parte
-       dal tracciato e punta avanti-fuori. `dim` è la lunghezza dell'asta. */
-    case 'freccia45': {
-      w = Math.ceil(dim * 1.5); h = Math.ceil(dim * 1.5);
-      const cx = w / 2, cy = h / 2, k = dim * 0.707;
-      const tx = cx + k, ty = cy - k;
-      const bx = cx + k * 0.62, by = cy - k * 0.62;
-      const p = dim * 0.2;
-      d = `<line x1="${f(cx)}" y1="${f(cy)}" x2="${f(tx)}" y2="${f(ty)}"`
-        + ` stroke="${col}" stroke-width="2.6"/>`
-        + `<path d="M${f(tx)} ${f(ty)}L${f(bx - p)} ${f(by - p)}L${f(bx + p)} ${f(by + p)}Z"`
-        + ` fill="${pieno ? col : '#fff'}" stroke="${col}" stroke-width="1.6" stroke-linejoin="round"/>`;
+    /* Bonifica — il quadro con la B, posato a metà del tracciato. Non ruota
+       con la linea: una lettera capovolta non si legge. Campito di bianco
+       perché il tratto non gli passi dentro sopra la B; tratteggiato quando
+       l'azione è prevista, continuo quando è fatta, esattamente come la
+       linea che lo porta. `dim` è il lato. */
+    case 'quadro': {
+      const s = dim;
+      w = h = Math.ceil(s) + 8;
+      const cx = w / 2, cy = h / 2;
+      const tr = pieno ? '' : ' stroke-dasharray="3.5,3"';
+      d = `<rect x="${f(cx - s/2)}" y="${f(cy - s/2)}" width="${f(s)}" height="${f(s)}"`
+        + ` fill="#fff" stroke="${col}" stroke-width="2.4"${tr}/>`
+        + txt(cx, cy + s * 0.28, o.testo || '', col, s * 0.72);
       break;
     }
 
-    /* Via di fuga — chevron rivolto nel verso di percorrenza. Mancava del
-       tutto: il tracciato usciva senza alcun segno. */
+    /* Accensione per linee — alla fine del tracciato il braccio gira di 90°
+       verso il lato scelto e ci mette una punta: è quello il verso in cui si
+       manda il fuoco, e non è mai quello della linea, che è la linea di
+       appoggio. `dim` è la lunghezza del braccio. */
+    case 'ortogonale': {
+      const hT = dim * 0.5, bT = dim * 0.44;
+      w = Math.ceil(dim * 2 + bT) + 6;
+      h = Math.ceil(bT * 2) + 6;
+      const cx = w / 2, cy = h / 2;
+      const tip = cx + lato * dim;
+      const base = tip - lato * hT;
+      d = `<line x1="${f(cx)}" y1="${f(cy)}" x2="${f(base)}" y2="${f(cy)}"`
+        + ` stroke="${col}" stroke-width="${f(bT * 0.8)}" stroke-linecap="butt"/>`
+        + `<path d="M${f(tip)} ${f(cy)}L${f(base)} ${f(cy - bT)}L${f(base)} ${f(cy + bT)}Z"`
+        + ` fill="${pieno ? col : '#fff'}" stroke="${col}"`
+        + ` stroke-width="${pieno ? 1.2 : 2.2}" stroke-linejoin="round"/>`;
+      break;
+    }
+
+    /* Attacco sui fianchi — freccia inclinata di 45° che parte dal tracciato
+       e punta verso il fianco scelto. Lunga: era un trattino, e su una carta
+       a scala d'incendio tre trattini non dicono da che parte si attacca.
+       `dim` è la lunghezza dell'asta misurata sulla diagonale. */
+    case 'freccia45': {
+      const k = dim * 0.707;                 // proiezione sui due assi
+      w = Math.ceil(k * 2) + 8; h = Math.ceil(k * 2) + 8;
+      const cx = w / 2, cy = h / 2;
+      const tx = cx + k * lato, ty = cy - k;
+      const hT = dim * 0.34, bT = dim * 0.2;
+      /* Base della punta arretrata di hT lungo la diagonale, larga bT per
+         parte: la punta resta un triangolo anche a 45°. */
+      const bx = tx - hT * 0.707 * lato, by = ty + hT * 0.707;
+      d = `<line x1="${f(cx)}" y1="${f(cy)}" x2="${f(bx)}" y2="${f(by)}"`
+        + ` stroke="${col}" stroke-width="2.6"/>`
+        + `<path d="M${f(tx)} ${f(ty)}L${f(bx - bT * lato)} ${f(by - bT)}`
+        + `L${f(bx + bT * lato)} ${f(by + bT)}Z"`
+        + ` fill="${pieno ? col : '#fff'}" stroke="${col}"`
+        + ` stroke-width="1.6" stroke-linejoin="round"/>`;
+      break;
+    }
+
+    /* Via di fuga — chevron nel verso di percorrenza. È l'unico tracciato
+       della tavola in cui fra prevista ed effettuata non cambia il tratto ma
+       il NUMERO dei segni: uno quando è prevista, due quando è percorribile
+       davvero. Un tratteggio qui non si sarebbe letto, perché il chevron è
+       già fatto di segmenti staccati. */
     case 'chevron': {
-      w = dim + 6; h = dim;
-      const cx = w / 2, cy = h / 2, b = dim * 0.42;
-      d = `<path d="M${f(cx - b)} ${f(cy + b * 0.7)}L${f(cx)} ${f(cy - b * 0.7)}`
-        + `L${f(cx + b)} ${f(cy + b * 0.7)}" fill="none" stroke="${col}"`
-        + ` stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>`;
+      const b = dim * 0.42, sep = dim * 0.5;
+      const quanti = pieno ? 2 : 1;
+      w = dim + 6;
+      h = Math.ceil(b * 1.4 + (quanti - 1) * sep) + 8;
+      const cx = w / 2, cy = h / 2;
+      for (let i = 0; i < quanti; i++){
+        const y = cy + (i - (quanti - 1) / 2) * sep;
+        d += `<path d="M${f(cx - b)} ${f(y + b * 0.7)}L${f(cx)} ${f(y - b * 0.7)}`
+          + `L${f(cx + b)} ${f(y + b * 0.7)}" fill="none" stroke="${col}"`
+          + ` stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>`;
+      }
       break;
     }
 
@@ -554,15 +623,20 @@ const aggL = (k, g, sg, it, en, stile, extra) => {
    segmento, e una spezzata a cinque vertici con una freccia in fondo non
    dice da dove a dove, mentre in export porterebbe una lunghezza che
    nessuno ha misurato. Il limite lo applica sitac.js in fase di disegno. */
+/* `deco` può essere un ELENCO: qui la punta sta a fine linea e le codine
+   dell'intensità all'altro capo, che è il solo modo di vederle entrambe. */
+const puntaFine = dim => ({tipo:'punta', dim: dim || 20, pieno:1, passo:0, offset:'100%'});
+const codeInizio = (forma, n) => ({tipo:'codine', forma, n, dim:20, passo:0, offset:0});
+
 aggL('pend_lieve','zona',null,'Pendenza lieve','Light slope',
   {color:C.nero, weight:2.8},
-  {punti2:1, deco:{tipo:'fine', forma:'T', n:1, dim:20, passo:0, offset:'100%'}});
+  {punti2:1, deco:[puntaFine(), codeInizio('T', 1)]});
 aggL('pend_moderata','zona',null,'Pendenza moderata','Moderate slope',
   {color:C.nero, weight:2.8},
-  {punti2:1, deco:{tipo:'fine', forma:'T', n:2, dim:20, passo:0, offset:'100%'}});
+  {punti2:1, deco:[puntaFine(), codeInizio('T', 2)]});
 aggL('pend_forte','zona',null,'Pendenza forte','Steep slope',
   {color:C.nero, weight:2.8},
-  {punti2:1, deco:{tipo:'fine', forma:'T', n:3, dim:20, passo:0, offset:'100%'}});
+  {punti2:1, deco:[puntaFine(), codeInizio('T', 3)]});
 
 aggL('sentiero','zona',null,'Sentiero o mulattiera','Trail',
   {color:C.nero, weight:3, dashArray:'14,5,3,5'});
@@ -589,13 +663,13 @@ aggL('elettrodotto_off','zona',null,'Linea elettrica disattivata','Power line of
 /* La freccia dice dove VA il vento; le codine a 45° l'intensità. */
 aggL('vento_debole','evoluzione',null,'Direzione del vento, intensit\u00e0 debole','Wind direction, light',
   {color:C.nero, weight:2.6},
-  {punti2:1, deco:{tipo:'fine', forma:'45', n:1, dim:20, passo:0, offset:'100%'}});
+  {punti2:1, deco:[puntaFine(), codeInizio('45', 1)]});
 aggL('vento_moderato','evoluzione',null,'Direzione del vento, intensit\u00e0 moderata','Wind direction, moderate',
   {color:C.nero, weight:2.6},
-  {punti2:1, deco:{tipo:'fine', forma:'45', n:2, dim:20, passo:0, offset:'100%'}});
+  {punti2:1, deco:[puntaFine(), codeInizio('45', 2)]});
 aggL('vento_forte','evoluzione',null,'Direzione del vento, intensit\u00e0 forte','Wind direction, strong',
   {color:C.nero, weight:2.6},
-  {punti2:1, deco:{tipo:'fine', forma:'45', n:3, dim:20, passo:0, offset:'100%'}});
+  {punti2:1, deco:[puntaFine(), codeInizio('45', 3)]});
 
 aggL('asse_principale','evoluzione',null,'Asse di sviluppo principale','Head of the fire',
   {color:C.rosso, weight:10, lineCap:'butt'}, {deco:{tipo:'punta', passo:'100%', dim:34, pieno:1}});
@@ -613,21 +687,32 @@ aggL('ricognizione','azioni','sgTerra','Ricognizione','Patrol',
   {color:C.rosso, weight:2.6}, {stati:1, deco:{tipo:'omega', passo:'auto', dim:16}});
 aggL('difesa_linea','azioni','sgTerra','Difesa in linea','Defence on a line',
   {color:C.rosso, weight:3}, {stati:1, deco:{tipo:'triangoloBase', passo:'auto', dim:13, pieno:1}});
+/* Tre frecce a 45° verso il fianco scelto: `lato` dice quale, e lo chiede
+   sitac.js con un terzo clic dopo aver chiuso la linea. */
 aggL('attacco_fianchi','azioni','sgTerra','Attacco sui fianchi','Containment attack',
   {color:C.rosso, weight:2.8},
-  {stati:1, deco:{tipo:'freccia45', dim:20, offset:'20%', passo:'30%', pieno:1}});
+  {stati:1, lato:1, deco:{tipo:'freccia45', dim:34, offset:'20%', passo:'30%', pieno:1}});
+/* Un attacco localizzato è un punto in cui si entra da una direzione: due
+   vertici, origine e punta, come pendenza e vento. */
 aggL('attacco_localizzato','azioni','sgTerra','Attacco localizzato','Hot spotting',
-  {color:C.rosso, weight:2}, {stati:1, deco:{tipo:'punta', passo:'100%', dim:18, pieno:1}});
-/* Il quadro con la B è il badge in testa: quadrato, non tondo. */
+  {color:C.rosso, weight:2},
+  {stati:1, punti2:1, deco:{tipo:'punta', passo:0, offset:'100%', dim:18, pieno:1}});
+/* Il quadro con la B non è più un badge CSS ma un motivo: così può essere
+   tratteggiato quando l'azione è prevista, come la linea che lo porta. */
 aggL('bonifica','azioni','sgTerra','Bonifica','Mop up',
   {color:C.rosso, weight:2.8},
-  {stati:1, deco:{tipo:'punta', passo:'100%', dim:20, pieno:1}, badge:'B', badgeQuadro:1});
+  {stati:1, deco:[{tipo:'punta', passo:0, offset:'100%', dim:20, pieno:1},
+                  {tipo:'quadro', testo:'B', dim:20, passo:0, offset:'50%',
+                   dritto:1, pieno:1}]});
 aggL('linea_sicurezza','azioni','sgControfuoco','Creazione linea di sicurezza','Creation of a safety line',
   {color:C.rosso, weight:3}, {stati:1, deco:{tipo:'bifronte', passo:'auto', dim:12, pieno:1}});
+/* La linea è la linea di appoggio, spessa; il fuoco si manda di lato, e il
+   braccio con la punta gira di 90° verso il fianco scelto. */
 aggL('accensione_linee','azioni','sgControfuoco','Accensione per linee','Ignition by lines',
-  {color:C.rosso, weight:7}, {stati:1, deco:{tipo:'punta', passo:'100%', dim:24, pieno:1}});
+  {color:C.rosso, weight:9, lineCap:'butt'},
+  {stati:1, lato:1, deco:{tipo:'ortogonale', dim:30, passo:0, offset:'100%', pieno:1}});
 aggL('via_fuga','azioni','sgEvacuazione','Via di fuga per evacuazione','Evacuation escape route',
-  {color:C.nero, weight:2.6}, {stati:1, deco:{tipo:'chevron', passo:'33%', dim:16}});
+  {color:C.nero, weight:2.6}, {stati:1, deco:{tipo:'chevron', passo:'33%', dim:16, pieno:1}});
 
 /* =====================================================================
    5. ANTEPRIMA DI UNA LINEA
@@ -650,29 +735,31 @@ function anteprimaLinea(k, stato){
   const y = A_H / 2, col = d.color || C.rosso;
   const previsto = !!(d.stati && stato !== 'attivo');
   const tratto = previsto ? '8,6' : (d.dashArray || null);
-  const peso = Math.min(d.weight || 3, 5);
+  const peso = Math.min(d.weight || 3, 6);
   let s = `<line x1="1" y1="${y}" x2="${A_W - 1}" y2="${y}" stroke="${col}"`
     + ` stroke-width="${peso}"` + (tratto ? ` stroke-dasharray="${tratto}"` : '') + `/>`;
 
-  const dc = d.deco;
-  if (dc){
+  /* `deco` può essere uno o un elenco: pendenza, vento e bonifica ne hanno
+     due, e l'anteprima deve mostrarli tutti o il pulsante mente. */
+  [].concat(d.deco || []).forEach(dc => {
     const pieno = !!(dc.pieno && !previsto);
-    const g = decoGlifo(dc.tipo, {col, pieno, n:dc.n, forma:dc.forma, dim:dc.dim});
+    const g = decoGlifo(dc.tipo,
+      {col, pieno, n:dc.n, forma:dc.forma, dim:dc.dim, testo:dc.testo, lato:1});
     const sc = Math.min(1, (A_H - 2) / g.w, (A_W - 2) / g.h);
     const posa = px => `<g transform="translate(${px.toFixed(1)} ${y}) rotate(90) `
       + `scale(${sc.toFixed(3)}) translate(${-g.w/2} ${-g.h/2})">${g.html}</g>`;
-    if (dc.tipo === 'fine' || dc.tipo === 'punta'){
-      /* Sul tracciato stanno sull'ultimo vertice, e il baricentro del
-         triangolo cade lì: nell'anteprima si fa lo stesso, così la punta
-         sporge oltre la linea come sulla carta. */
-      s += posa(A_W - 3);
-    } else if (DECO_CONTIGUI.indexOf(dc.tipo) >= 0){
+    /* Le posizioni ricalcano quelle sul tracciato: offset 0 è l'inizio,
+       '100%' la fine, '50%' la metà. Un motivo che nell'anteprima sta dove
+       non starà mai sulla carta non serve a decidere. */
+    if (dc.offset === '100%')      s += posa(A_W - 3);
+    else if (dc.offset === 0)      s += posa(3);
+    else if (dc.offset === '50%')  s += posa(A_W / 2);
+    else if (DECO_CONTIGUI.indexOf(dc.tipo) >= 0){
       const passo = g.h * sc;
       for (let x = passo / 2; x < A_W; x += passo) s += posa(x);
-    } else {
-      s += posa(A_W * 0.34) + posa(A_W * 0.72);
-    }
-  }
+    } else s += posa(A_W * 0.34) + posa(A_W * 0.72);
+  });
+
   if (d.badge){
     const bw = d.badge.length > 1 ? 20 : 14;
     s += `<rect x="2" y="${y - 8}" width="${bw}" height="16" rx="${d.badgeQuadro ? 2 : 8}"`

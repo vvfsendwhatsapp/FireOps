@@ -572,7 +572,7 @@ function avvia(app){
   /* Opzioni di stile per Leaflet: le chiavi nostre non devono arrivargli.
      Previsto = tratto spezzato, come nella tavola. */
   function stileLinea(d, stato){
-    const {n, deco, badge, stati, g, sg, r0, ...resto} = d;
+    const {n, deco, badge, badgeQuadro, stati, lato, punti2, g, sg, r0, ...resto} = d;
     if (stati && stato === 'previsto')
       return Object.assign({}, resto, {dashArray: resto.dashArray || '9,7'});
     return resto;
@@ -1192,8 +1192,7 @@ function mostraComandoAfferente(sigla, nome){
      il verso di percorrenza è in alto, il centro dell'icona sta sul tracciato
      ed è il centro di rotazione), e lì si aggiungono i motivi nuovi senza
      toccare questo file. Qui resta solo la scelta di DOVE posarli. */
-  function motivo(def, stato){
-    const dc = def.deco;
+  function motivo(def, dc, stato, lato){
     if (!dc) return null;
     const pieno = dc.pieno && !(def.stati && stato === 'previsto');
     const col = def.color || COL.rosso;
@@ -1203,7 +1202,7 @@ function mostraComandoAfferente(sigla, nome){
        fin sulla punta e sporgeva oltre. Il glifo lo ancora per il baricentro
        e il vertice finale resta coperto dalla figura. */
     const g = NS.SITAC_DECO(dc.tipo,
-      {col, pieno, n: dc.n, forma: dc.forma, dim: dc.dim});
+      {col, pieno, n: dc.n, forma: dc.forma, dim: dc.dim, testo: dc.testo, lato});
 
     /* `passo:'auto'` sono i motivi che si toccano fra loro — i triangoli
        della difesa in linea, la greca della ricognizione, i denti del fronte:
@@ -1223,13 +1222,50 @@ function mostraComandoAfferente(sigla, nome){
             iconAnchor:[g.w / 2, g.h / 2], html: NS.SITAC_DECO_SVG(g)})}})};
   }
 
+    /* Da che parte del tracciato sta il punto cliccato. Si misura in pixel
+     schermo e non in gradi: alle nostre latitudini un grado di longitudine
+     è mezzo grado di latitudine, e il prodotto vettoriale su lat/lng
+     darebbe il lato sbagliato sulle linee quasi diagonali.
+     y cresce verso il basso, quindi il prodotto positivo è la destra del
+     verso di percorrenza — lo stesso +1 con cui il glifo si disegna. */
+  function latoDi(layer, p){
+    const v = layer.getLatLngs && layer.getLatLngs();
+    if (!v || v.length < 2) return 1;
+    const a = map.latLngToContainerPoint(v[0]);
+    const b = map.latLngToContainerPoint(v[v.length - 1]);
+    const c = map.latLngToContainerPoint(p);
+    return ((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x)) >= 0 ? 1 : -1;
+  }
+
+  /* Il lato si chiede DOPO aver chiuso la linea: prima non c'è ancora un
+     tracciato rispetto a cui stare da una parte. Annullando resta il lato
+     predefinito, che è meglio di un tracciato senza frecce. */
+  async function chiediLato(layer){
+    const def = LIN[layer._tipo];
+    if (!def || !def.lato) return;
+    if (layer._lato == null) layer._lato = 1;
+    decora(layer);
+    const p = await attendiClic(t('scegliLato'));
+    if (p) layer._lato = latoDi(layer, p);
+    decora(layer);
+    aggiornaStato();
+    stato(t('latoScelto'));
+    if (strumento) riattivaStrumento();
+  }
+
   function decora(layer){
     if (layer._deco){ decori.removeLayer(layer._deco); layer._deco = null; }
     const def = LIN[layer._tipo];
     if (!def) return;
     const patterns = [];
-    const m = motivo(def, layer._stato);
-    if (m) patterns.push(m);
+    /* Un tracciato può portare più motivi: la pendenza ha la punta a un capo
+       e le codine all'altro, la bonifica la punta e il quadro con la B. Con
+       un motivo solo le codine finivano appiccicate alla freccia e il
+       simbolo diventava un grumo. */
+    [].concat(def.deco || []).forEach(dc => {
+      const m = motivo(def, dc, layer._stato, layer._lato);
+      if (m) patterns.push(m);
+    });
     /* Il badge (4x4, B) sta in testa alla linea: dice di che strada o di
        che azione si tratta, e va letto una volta sola. */
     if (def.badge)
@@ -2133,6 +2169,8 @@ function mostraComandoAfferente(sigla, nome){
     } else {
       voci.push({et: t('menuVertici'), fai: () => modificaVertici(l)});
       voci.push({et: t('menuSposta'),  fai: () => spostaElemento(l)});
+      if (LIN[k] && LIN[k].lato)
+        voci.push({et: t('menuLato'), fai: () => chiediLato(l)});
     }
     if (def && (def.s || def.stati))
       voci.push({et: t('menuStato',
@@ -2368,7 +2406,7 @@ function mostraComandoAfferente(sigla, nome){
      trascinabile dicono dove VA il vento, e il quadro in alto a sinistra
      segue in tempo reale. È la stessa grammatica dei simboli orientabili.
      =================================================================== */
-  let ventoAsta = null, ventoPunta = null;
+  let ventoAsta = null, ventoDeco = null;
   let ventoVelocita = 0, ventoVerso = 0;
 
   /* Il rosso sulla carta è il fuoco e il dispositivo VVF, il nero il terreno,
@@ -2378,7 +2416,7 @@ function mostraComandoAfferente(sigla, nome){
   const COL_VENTO_DOS = '#b515c9';
 
   function applicaVento(fonte, senzaRidisegno){
-    if (!ventoVelocita){ mostraVento(null); aggiornaPassi(); return; }
+    if (!senzaRidisegno && ventoAsta) disegnaFrecciaVento();
     const v = NS.SitacVento.ventoDa(ventoVelocita, ventoVerso, fonte || 'manuale');
     v.letto = new Date().toISOString();
     mostraVento(v);
@@ -2401,36 +2439,71 @@ function mostraComandoAfferente(sigla, nome){
     return NS.SITAC_DECO('fine', {forma:'45', n, dim:22, col: COL_VENTO_DOS});
   }
 
+  /* Il vento del DOS ha la stessa grammatica del simbolo di tavola: punta a
+     un capo, codine dell'intensità all'altro. Con tutto allo stesso capo non
+     si distingueva più né la direzione né quante barbe ci fossero.
+     E NON si trascina. Una freccia trascinabile in mezzo a una carta piena
+     di simboli si sposta per sbaglio mentre si fa altro, e il vento è un
+     dato di scenario: si cambia apposta, dal tasto destro, non per attrito.
+     Il numero di codine lo legge dalla simbologia invece di riscriverlo qui,
+     così le soglie di Beaufort restano dichiarate in un posto solo. */
+  const COL_VENTO_DOS = '#b515c9';
+
+  function codineVento(){
+    const k = NS.SitacVento.simboloVento(ventoVelocita || 0);
+    const dc = [].concat((LIN[k] || {}).deco || [])
+      .filter(x => x.tipo === 'codine')[0];
+    return dc ? dc.n : 1;
+  }
+
   function disegnaFrecciaVento(){
+    if (ventoDeco){ decori.removeLayer(ventoDeco); ventoDeco = null; }
     if (ventoAsta){ decori.removeLayer(ventoAsta); ventoAsta = null; }
-    if (ventoPunta){ decori.removeLayer(ventoPunta); ventoPunta = null; }
     if (!posDos) return;
-    const d = distanzaManiglia() * 1.8;
-    const p = puntoDaAzimut(posDos, ventoVerso, d);
+    const p = puntoDaAzimut(posDos, ventoVerso, distanzaManiglia() * 1.8);
     ventoAsta = L.polyline([posDos, p],
-      {color: COL_VENTO_DOS, weight: 2.8, interactive: false}).addTo(decori);
+      {color: COL_VENTO_DOS, weight: 3, pmIgnore: true,
+       bubblingMouseEvents: false}).addTo(decori);
 
-    const g = glifoVentoDos();
-    ventoPunta = L.marker(p, {draggable:true, keyboard:false,
-      icon: L.divIcon({className:'sitac-maniglia sitac-mn-vento',
-        iconSize:[g.w, g.h], iconAnchor:[g.w / 2, g.h / 2],
-        html:`<svg viewBox="0 0 ${g.w} ${g.h}" xmlns="http://www.w3.org/2000/svg"`
-          + ` style="transform:rotate(${ventoVerso}deg)">${g.html}</svg>`})})
-      .addTo(decori);
+    const finto = {color: COL_VENTO_DOS};
+    ventoDeco = L.polylineDecorator(ventoAsta, {patterns: [
+      motivo(finto, {tipo:'punta', dim:20, pieno:1, passo:0, offset:'100%'}, 'attivo', 1),
+      motivo(finto, {tipo:'codine', forma:'45', n: codineVento(), dim:20,
+                     passo:0, offset:0}, 'attivo', 1)
+    ]}).addTo(decori);
 
-    ventoPunta.on('drag', () => {
-      ventoVerso = Math.round(azimut(posDos, ventoPunta.getLatLng()));
-      ventoAsta.setLatLngs([posDos, ventoPunta.getLatLng()]);
-      /* L'HTML del divIcon è fissato alla creazione: per far girare la
-         freccia durante il trascinamento si scrive direttamente sull'SVG
-         che è già a schermo. Ricostruire il marcatore lo farebbe sparire da
-         sotto il dito e il gesto si interromperebbe: per questo si passa
-         `senzaRidisegno`. */
-      const el = ventoPunta.getElement();
-      const svg = el && el.querySelector('svg');
-      if (svg) svg.style.transform = `rotate(${ventoVerso}deg)`;
-      if (ventoVelocita) applicaVento('mappa', true);
+    ventoAsta.on('contextmenu', ev => {
+      if (ev.originalEvent){
+        L.DomEvent.preventDefault(ev.originalEvent);
+        L.DomEvent.stopPropagation(ev.originalEvent);
+      }
+      if (attesaClic || attesaDirezione || attesaElemento) return;
+      apriMenu(ev.containerPoint, [
+        {titolo: t('ventoTit')},
+        {info: `${ventoVelocita} km/h \u2192 ${ventoVerso}\u00b0`},
+        {et: t('menuVentoDir'), fai: ventoCambiaDirezione},
+        {et: t('menuVentoInt'), fai: ventoCambiaIntensita}
+      ]);
     });
+    ventoAsta.on('click', () => stato(t('ventoBloccato')));
+  }
+
+  async function ventoCambiaDirezione(){
+    const p = await attendiClic(t('ventoClicDir'));
+    if (!p) return;
+    ventoVerso = Math.round(azimut(posDos, p));
+    disegnaFrecciaVento();
+    applicaVento('mappa');
+  }
+
+  async function ventoCambiaIntensita(){
+    const v = await scegliVelocita();
+    if (!v) return;
+    ventoVelocita = v;
+    q('#sitac-ventoScala').value = ventoVelocita;
+    q('#sitac-ventoValore').textContent = ventoVelocita + ' km/h';
+    disegnaFrecciaVento();
+    applicaVento('scala');
   }
   /* La freccia sta a distanza fissa sullo SCHERMO: cambiando zoom va rifatta,
      o a zoom 10 finisce sotto il simbolo del DOS. */
@@ -2675,12 +2748,13 @@ function mostraComandoAfferente(sigla, nome){
             corpo.appendChild(el);
           }
         });
-        if (tv.k === 'azioni'){
-          const el = document.createElement('div');
-          el.className = 'sitac-strumenti';
-          el.appendChild(bottoneAzione('simbolo', 'nota', nm(NOTA)));
-          corpo.appendChild(el);
-        }
+        /* L'annotazione libera non è più uno strumento: quello che si
+           scriveva a mano sulla carta adesso sta nel campo Note, dove
+           finisce anche nel GeoJSON e sul foglio stampato invece di
+           restare un'etichetta appesa a una coordinata.
+           `NOTA` resta dichiarata più su, e con lei il ramo di
+           iconaSimbolo: un GeoJSON vecchio con dentro delle annotazioni
+           deve continuare a rientrare leggibile. */
       });
     });
 
@@ -2991,6 +3065,14 @@ function mostraComandoAfferente(sigla, nome){
       if (strumento.genere === 'linea'){
         decora(layer);
         layer.on('pm:edit', () => { decora(layer); etichettaElemento(layer); aggiornaStato(); });
+        /* Fuori dal ramo sincrono: chiediLato aspetta un clic, e nel
+           frattempo pm:create deve essere finito. */
+        if (LIN[layer._tipo] && LIN[layer._tipo].lato){
+          etichettaElemento(layer);
+          aggiornaStato();
+          chiediLato(layer);
+          return;
+        }
       } else {
         layer.on('pm:edit', () => { etichettaElemento(layer); aggiornaStato(); });
       }
@@ -3143,7 +3225,8 @@ function mostraComandoAfferente(sigla, nome){
     return disegni.getLayers().map(l => {
       const f = l.toGeoJSON();
       f.properties = {tipo:l._tipo || null, genere:l._genere || null,
-        stato:l._stato || null, testo:l._testo || null, rotazione:l._rotazione || null};
+        stato:l._stato || null, testo:l._testo || null, rotazione:l._rotazione || null,
+        lato:l._lato || null};
       /* Il poligono viaggia come geometria — QGIS e Google Earth vedono
          l'ingombro vero — ma i parametri viaggiano accanto, così rientrando
          qui l'ellisse torna modificabile invece che come sessanta vertici. */
@@ -3365,6 +3448,7 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
         const l = L.polyline(verso(g.coordinates), stileLinea(def, st));
         l._tipo = tipo; l._genere = 'linea'; l._stato = st;
         l._testo = pr.testo || null;
+        l._lato = pr.lato === -1 ? -1 : 1;
         aggancia(l);
         decora(l);
         l.on('pm:edit', () => { decora(l); etichettaElemento(l); aggiornaStato(); });
@@ -3492,9 +3576,26 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
       const chiave = x._tipo + '|' + (x._stato || '');
       if (!visti.has(chiave)) visti.set(chiave, x);
     });
+    /* La freccia del vento non è un elemento disegnato ma sulla carta si
+       vede, e chi legge il foglio deve trovarne il significato in legenda.
+       Anche a 0 km/h: "zero" è un dato rilevato, non un dato mancante, e
+       una freccia senza voce in legenda sembra un errore di disegno. */
+    if (ventoAsta){
+      const n = codineVento();
+      let g = '';
+      for (let i = 0; i < n; i++)
+        g += `<line x1="${14 - i * 5}" y1="15" x2="${8 - i * 5}" y2="21"`
+          + ` stroke="${COL_VENTO_DOS}" stroke-width="2.6" stroke-linecap="round"/>`;
+      leg.insertAdjacentHTML('beforeend',
+        `<div><i class="sitac-leg-lin"><svg viewBox="0 0 64 30">`
+        + `<line x1="6" y1="15" x2="52" y2="15" stroke="${COL_VENTO_DOS}" stroke-width="3"/>`
+        + `<path d="M61 15L47 9L47 21Z" fill="${COL_VENTO_DOS}"/>${g}</svg></i>`
+        + `<span>${esc(t('legVento', {v: ventoVelocita, d: ventoVerso}))}</span></div>`);
+    }
+
     const quanti = q('#sitac-legQuanti');
     if (quanti) quanti.textContent = visti.size || '';
-    if (!visti.size){
+    if (!visti.size && !ventoAsta){
       leg.innerHTML = `<div class="sitac-leg-vuota">${esc(t('legVuota'))}</div>`;
       return;
     }
