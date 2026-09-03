@@ -695,25 +695,25 @@ function decoGlifo(tipo, opz){
       break;
     }
 
-    /* Seggiolino — pendino perpendicolare alla fune e sedile appeso in
-       punta. NON è "dritto sulla pagina" come il pilone: un seggiolino che
-       resta verticale mentre la fune sale in diagonale sembra staccato dal
-       cavo. Ruota col tracciato, quindi il pendino esce sempre ad angolo
-       retto dalla fune e il sedile resta parallelo alla linea di marcia.
-       `dim` è la lunghezza del pendino, `lato` da che parte pende. */
+    /* Seggiovia — la morsa sulla fune, lo stelo, il seggiolino appeso. NON
+       ruota col tracciato: pende per gravità, quindi resta dritto sulla
+       pagina qualunque sia la pendenza della campata, e rispetto alla fune
+       risulta inclinato. Tenuto perpendicolare al cavo, su una campata
+       ripida uscirebbe coricato di fianco: non è quello che si vede
+       alzando gli occhi.
+       La morsa sta nel CENTRO del glifo, che è il punto che cade sul
+       tracciato: da lì in giù c'è tutto il resto, e la metà alta del
+       riquadro resta vuota apposta. `dim` è la larghezza del seggiolino. */
     case 'seggiolino': {
-      const s = dim, INCL = 0.18;          // inclinazione del sedile sulla fune
-      w = Math.ceil(s * 2) + 6; h = Math.ceil(s * 1.4) + 6;
-      const cx = w / 2, cy = h / 2;
-      const hx = cx + lato * s * 0.62;     // attacco del sedile
-      const sx = hx + lato * s * 0.52;     // punta del sedile
-      d = `<line x1="${f(cx)}" y1="${f(cy)}" x2="${f(hx)}" y2="${f(cy)}"`
-        + ` stroke="${col}" stroke-width="1.8"/>`
-        /* schienale verso la coda, sedile verso la punta: si legge il verso
-           di marcia anche senza frecce. */
-        + `<path d="M${f(hx)} ${f(cy - s * 0.46)}L${f(hx)} ${f(cy + s * 0.16)}`
-        + `L${f(sx)} ${f(cy + s * 0.16 + s * INCL)}" fill="none" stroke="${col}"`
-        + ` stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>`;
+      const bw = dim, bh = dim * 0.78, stelo = dim * 0.64, r = dim * 0.17;
+      w = Math.ceil(bw) + 6;
+      h = Math.ceil((stelo + bh) * 2) + 4;
+      const cx = w / 2, cy = h / 2, yb = cy + stelo;
+      d = `<line x1="${f(cx)}" y1="${f(cy)}" x2="${f(cx)}" y2="${f(yb)}"`
+        + ` stroke="${col}" stroke-width="${f(Math.max(1.8, dim * 0.14))}"/>`
+        + `<rect x="${f(cx - bw/2)}" y="${f(yb)}" width="${f(bw)}" height="${f(bh)}"`
+        + ` fill="${col}"/>`
+        + `<circle cx="${f(cx)}" cy="${f(cy)}" r="${f(r)}" fill="${col}"/>`;
       break;
     }
 
@@ -814,12 +814,10 @@ aggL('accesso_interrotto','zona',null,'Accesso interrotto','Road closed',
 aggL('fune_sbalzo','zona',null,'Funivie, fili a sbalzo, ecc.','Cableways and aerial wires',
   {color:C.nero, weight:2.6}, {deco:{tipo:'pilone', passo:'50%', dim:22, dritto:1}});
 /* La seggiovia non è un filo a sbalzo qualunque: sotto ci passa gente, e
-   sulla carta va distinta a colpo d'occhio dalla teleferica di servizio.
-   Piloni a metà campata, seggiolini lungo la fune. */
+   sulla carta va distinta a colpo d'occhio dalla teleferica di servizio. */
 aggL('seggiovia','zona',null,'Seggiovia','Chairlift',
   {color:C.nero, weight:2.6},
-  {deco:[{tipo:'seggiolino', passo:36, dim:15, offset:18},
-         {tipo:'pilone', passo:'50%', dim:22, dritto:1}]});
+  {deco:{tipo:'seggiolino', passo:40, dim:14, offset:20, dritto:1}});
 aggL('elettrodotto','zona',null,'Linea elettrica attiva','Power line on',
   {color:C.nero, weight:2.4, dashArray:'14,5,3,5'}, {deco:{tipo:'fulmine', passo:70, dim:24, dritto:1}});
 aggL('elettrodotto_off','zona',null,'Linea elettrica disattivata','Power line off',
@@ -911,8 +909,16 @@ function anteprimaLinea(k, stato){
     const pieno = !!(dc.pieno && !previsto);
     const g = decoGlifo(dc.tipo,
       {col, pieno, n:dc.n, forma:dc.forma, dim:dc.dim, testo:dc.testo, lato:1});
-    const sc = Math.min(1, (A_H - 2) / g.w, (A_W - 2) / g.h);
-    const posa = px => `<g transform="translate(${px.toFixed(1)} ${y}) rotate(90) `
+    /* I motivi che non ruotano col tracciato non devono ruotare nemmeno
+       qui: il glifo è disegnato con la linea verticale, ma un pilone o un
+       seggiolino stanno dritti sulla pagina, e ruotarli di 90° per
+       l'anteprima li corica. Cambiando la rotazione cambia anche quale
+       lato del glifo occupa la larghezza del riquadro. */
+    const lw = dc.dritto ? g.w : g.h;
+    const lh = dc.dritto ? g.h : g.w;
+    const sc = Math.min(1, (A_H - 2) / lh, (A_W - 2) / lw);
+    const posa = px => `<g transform="translate(${px.toFixed(1)} ${y}) `
+      + `rotate(${dc.dritto ? 0 : 90}) `
       + `scale(${sc.toFixed(3)}) translate(${-g.w/2} ${-g.h/2})">${g.html}</g>`;
     /* Le posizioni ricalcano quelle sul tracciato: offset 0 è l'inizio,
        '100%' la fine, '50%' la metà. Un motivo che nell'anteprima sta dove
