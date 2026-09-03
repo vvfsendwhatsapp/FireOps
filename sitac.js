@@ -347,8 +347,17 @@ function avvia(app){
       lanciChiedi:'Lanci del dispositivo aereo',
       lanciNota:'Lascia vuoto ci\u00f2 che non \u00e8 intervenuto: nel foglio compare solo chi ha lanciato.',
       lanciTot:'Totale lanci', stampaAnnullata:'Stampa annullata.',
-      lancioPosato:'Lancio posato.\nSelezionalo, o tasto destro, per regolarne l\u2019ingombro.',
+      lancioPosato:'Lancio posato.\u000aSelezionalo, o tasto destro, per regolarne l\u2019ingombro.',
       menuMisure:'Misure',
+      scegliLato:'Scegli il lato: clicca sulla mappa dalla parte verso cui\u000avanno le frecce.',
+      latoScelto:'Lato impostato.\u000aTasto destro sul tracciato per cambiarlo.',
+      menuLato:'Cambia lato',
+      ventoTit:'Vento locale',
+      menuVentoDir:'Modifica direzione',
+      menuVentoInt:'Modifica intensit\u00e0',
+      ventoClicDir:'Clicca sulla mappa nella direzione verso cui VA il vento.',
+      ventoBloccato:'La freccia del vento non si trascina.\u000aTasto destro per direzione e intensit\u00e0.',
+      legVento:'Direzione del vento \u2014 {v} km/h verso {d}\u00b0',
       disegnoAnnullato:'Disegno annullato: troppi pochi vertici.', },
     en:{ bCono:'Add cone', conoModo:'How should the cone be built?',
       bPosizione:'Enter coordinates',
@@ -2416,27 +2425,17 @@ function mostraComandoAfferente(sigla, nome){
   const COL_VENTO_DOS = '#b515c9';
 
   function applicaVento(fonte, senzaRidisegno){
+    /* Il ridisegno sta PRIMA della guardia: anche a zero la freccia deve
+       seguire la direzione, ed è l'unica cosa che a zero ha ancora senso
+       aggiornare. Il numero di codine lo decide l'intensità, quindi muovendo
+       lo slider il simbolo si rifà da sé. */
     if (!senzaRidisegno && ventoAsta) disegnaFrecciaVento();
+    if (!ventoVelocita){ mostraVento(null); aggiornaPassi(); return; }
     const v = NS.SitacVento.ventoDa(ventoVelocita, ventoVerso, fonte || 'manuale');
     v.letto = new Date().toISOString();
     mostraVento(v);
-    /* Il numero di codine dipende dall'intensità: muovendo lo slider il
-       simbolo si rifà da sé invece di restare quello di prima. Non durante
-       il trascinamento della punta, però — vedi sotto. */
-    if (!senzaRidisegno && (ventoAsta || ventoPunta)) disegnaFrecciaVento();
     aggiornaPassi();
     stato(t('ventoImpostato', {v:v.velocita, d:v.verso, f:v.fonte}));
-  }
-
-  /* La punta non è più una freccia generica ma IL SIMBOLO DEL VENTO della
-     tavola: la stessa asta con le codine a 45°, una due o tre secondo
-     l'intensità. Il numero lo legge dalla simbologia invece di riscriverlo
-     qui, così se un domani cambiano le soglie di Beaufort cambia in un
-     posto solo. */
-  function glifoVentoDos(){
-    const k = NS.SitacVento.simboloVento(ventoVelocita || 0);
-    const n = (LIN[k] && LIN[k].deco && LIN[k].deco.n) || 1;
-    return NS.SITAC_DECO('fine', {forma:'45', n, dim:22, col: COL_VENTO_DOS});
   }
 
   /* Il vento del DOS ha la stessa grammatica del simbolo di tavola: punta a
@@ -2447,7 +2446,6 @@ function mostraComandoAfferente(sigla, nome){
      dato di scenario: si cambia apposta, dal tasto destro, non per attrito.
      Il numero di codine lo legge dalla simbologia invece di riscriverlo qui,
      così le soglie di Beaufort restano dichiarate in un posto solo. */
-  const COL_VENTO_DOS = '#b515c9';
 
   function codineVento(){
     const k = NS.SitacVento.simboloVento(ventoVelocita || 0);
@@ -2507,7 +2505,7 @@ function mostraComandoAfferente(sigla, nome){
   }
   /* La freccia sta a distanza fissa sullo SCHERMO: cambiando zoom va rifatta,
      o a zoom 10 finisce sotto il simbolo del DOS. */
-  const aggiornaAncoraVento = () => { if (ventoAsta || ventoPunta) disegnaFrecciaVento(); };
+  const aggiornaAncoraVento = () => { if (ventoAsta) disegnaFrecciaVento(); };
 
   /* Spostando il DOS la freccia lo segue mantenendo l'azimut: il vento è un
      dato di scenario, non del singolo punto, e 200 m non cambiano dove tira.
@@ -2515,7 +2513,7 @@ function mostraComandoAfferente(sigla, nome){
      punto, quindi lo si avvisa invece di rileggere il servizio e
      sovrascrivergli la correzione. */
   function ventoSeguiDos(){
-    if (!ventoAsta && !ventoPunta) return;
+    if (!ventoAsta) return;
     disegnaFrecciaVento();
     stato(t('ventoRiancorato'));
   }
@@ -2525,7 +2523,7 @@ function mostraComandoAfferente(sigla, nome){
   q('#sitac-bVentoDir').onclick = () => {
     if (!posDos) return stato(t('ventoNoDos'));
     disegnaFrecciaVento();
-    stato(t('ventoTrascina'));
+    stato(t('ventoBloccato'));
   };
 
   q('#sitac-bVentoWeb').onclick = async () => {
@@ -3068,6 +3066,7 @@ function mostraComandoAfferente(sigla, nome){
         /* Fuori dal ramo sincrono: chiediLato aspetta un clic, e nel
            frattempo pm:create deve essere finito. */
         if (LIN[layer._tipo] && LIN[layer._tipo].lato){
+          layer.on('pm:remove', () => scollega(layer));          
           etichettaElemento(layer);
           aggiornaStato();
           chiediLato(layer);
