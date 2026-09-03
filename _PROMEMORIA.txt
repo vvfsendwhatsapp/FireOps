@@ -115,3 +115,5 @@ function applicaVento(fonte, senzaRidisegno){
 ** Assi di sviluppo. Una polilinea Leaflet ha un colore e basta, quindi la freccia vuota bordata non si ottiene con il tracciato da solo: serve una seconda linea sotto, più larga, del colore del bordo. Il tracciato vero diventa bianco e la punta si disegna col colore del bordo, non con quello della linea — altrimenti esce bianca su bianco. Questo tocca anche legenda, anteprima ed export KML, e le patch li coprono tutti.
 ** e se facciamo due linee sovrapposte, una da 6 px e l'altra da 4px che copre il centro?
 ** si voglio "Se vuoi, la correzione di pendenza si può portare anche su quei due"
+
+*** tracetrack topo osm

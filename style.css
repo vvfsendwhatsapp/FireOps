@@ -5863,6 +5863,24 @@ select:focus {
   font-size:3.2mm; line-height:1.45; margin:1mm 0 0; white-space:normal;
 }
 
+/* Le due linguette non scorrono via: sono il punto in cui si torna
+   indietro ai dati, e cercarle risalendo tutta la carta è il gesto che si
+   fa venti volte in un intervento. */
+#sitac-aib .sitac-schede{
+  position:sticky; top:0; z-index:6;
+  background:var(--dark-color);
+  /* Senza questo il bordo del riquadro sotto trapela nello spazio che
+     resta quando il contenuto ci scorre dietro. */
+  padding-top:.25rem;
+}
+
+#sitac-aib .pagina-box-header{
+  position:sticky; top:0; z-index:7; background:var(--dark-color);
+}
+/* Le linguette si fermano SOTTO l'intestazione, non sopra: il valore è
+   l'altezza di quella riga, e va misurato una volta sul tema in uso. */
+#sitac-aib .sitac-schede{ top:2.6rem; }
+
 /* ==========================================================
    ==========================================================
    RESPONSIVE

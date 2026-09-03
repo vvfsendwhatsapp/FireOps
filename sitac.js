@@ -365,7 +365,8 @@ function avvia(app){
       dirSegui:'\u25b6 Muovi il puntatore: il simbolo gira.\u000aSecondo clic per fermare la direzione.',
       p8note:'Note', bNotePulisci:'Svuota le note',
       noteAiuto:'Quello che si scriveva a mano nel margine della carta: orari, nominativi, quello che non ha un simbolo.',
-      stNote:'Note', },
+      stNote:'Note',
+      datiOkAuto:'Dati completi: convalidati da s\u00e9 \u2014 intervento {i}, {n}.\u000aLa scheda 2 \u00e8 sbloccata.', },
     en:{ bCono:'Add cone', conoModo:'How should the cone be built?',
       bPosizione:'Enter coordinates',
       conoSettore:'From the point of origin', conoSettoreNota:'30° sector from the origin; a second click marks where the front is now (T0).',
@@ -764,6 +765,7 @@ function avvia(app){
      la barra sotto le mani di chi ha già disegnato mezza SITAC. */
   let datiBloccati = false;
   let datiConvalidati = false;
+  let autoFatta = false;      // la convalida da sé avviene una volta sola
   let oraRedazione = null;      // congelata alla convalida
   let orologio = null;
   const bDati = q('#sitac-bConvalida');
@@ -805,7 +807,21 @@ function avvia(app){
     }
     mostraBlocco();
     aggiornaPassi();
+    autoConvalida();
   }
+
+  /* Quando i campi ci sono tutti non c'è più niente da chiedere: premere
+     Convalida sarebbe un passaggio a vuoto. L'ultimo campo a completarsi è
+     sempre la posizione — il suo pulsante si sblocca solo ad anagrafica
+     piena — quindi il momento in cui scatta è prevedibile e non coglie
+     nessuno a metà digitazione. */
+  function autoConvalida(){
+    if (autoFatta || datiBloccati || datiConvalidati) return;
+    if (!datiCompleti()) return;
+    autoFatta = true;
+    convalida({auto:1});
+  }
+
   inIntervento.oninput = () => {
     inIntervento.value = inIntervento.value.replace(/[^0-9]/g, '');
     segnaIntestazione();
@@ -837,7 +853,8 @@ function avvia(app){
     if (lin) lin.classList.toggle('sitac-scheda-bloccata', !datiConvalidati);
   }
 
-  function convalida(){
+  function convalida(opz){
+    const auto = !!(opz && opz.auto);
     if (!datiCompleti()){ segnaIntestazione(); return; }
     datiBloccati = true;
     datiConvalidati = true;
@@ -846,8 +863,12 @@ function avvia(app){
     mostraOra();
     mostraBlocco();
     aggiornaPassi();
-    vaiAScheda('carta');
-    stato(t('datiOk', {i: inIntervento.value, n: inNominativo.value.trim()})
+    /* Chi ha premuto Convalida ha chiesto di passare alla carta; chi ha
+       solo finito di compilare no. ← togli il `if (!auto)` per saltare
+       comunque alla carta anche in automatico. */
+    if (!auto) vaiAScheda('carta');
+    stato(t(auto ? 'datiOkAuto' : 'datiOk',
+        {i: inIntervento.value, n: inNominativo.value.trim()})
       + '\n' + t('datiBloccati'));
   }
 
@@ -1926,6 +1947,36 @@ function mostraComandoAfferente(sigla, nome){
 
   const coniDi = l => coni.filter(c => c.base === l);
 
+  /* Il rilievo si legge attorno al FRONTE e nella direzione in cui il
+     fuoco andrà: il terreno già percorso non conta più, il fuoco lo
+     attraversa nel prossimo quarto d'ora.
+     Stava dentro conoSettore, cioè nel modo che in sala si usa di meno:
+     l'area percorsa la si disegna comunque, quindi i coni che partono da
+     lì sono la maggioranza, e proprio quelli facevano avanzare il fronte
+     col solo vento. Su un versante ripido sottostimano, ed è l'errore che
+     non si scopre finché non serve. */
+  async function fattoriPendenza(base, verso, velocita){
+    if (!NS.SitacRilievo) return {fattori:null, errore:null};
+    const V = NS.SitacVento;
+    const dist = V.MINUTI.map(x => V.distanzaFronte(velocita, x));
+    /* Con distanze nulle il profilo degenera: passo zero, dislivello
+       diviso zero, e la pendenza esce a 90° tagliata al massimo. */
+    if (!(Math.max.apply(null, dist) > 50)) return {fattori:null, errore:null};
+    try {
+      stato(t('rilLeggo'));
+      const r = await NS.SitacRilievo.analizza(base, verso, dist);
+      return {fattori: r.fattori, errore:null};
+    } catch(e){ return {fattori:null, errore:e.message}; }
+  }
+
+  /* Il riepilogo scrive SOTTO quello che c'è già: aggiornaStato lo
+     riscriverebbe sopra se lo si mettesse prima. */
+  function riferisciRilievo(fattori, errore){
+    if (fattori) stato($('stato').textContent + '\n' + t('rilFatto', {
+      k: fattori.map(f => '\u00d7' + f.k.toFixed(1)).join(' \u00b7 ')}));
+    else if (errore) stato($('stato').textContent + '\n' + t('rilErrore', {e: errore}));
+  }
+
   /* Modo 1: vertice sul punto d'innesco, secondo clic per dire dove sta il
      fronte adesso. Gli archi partono da lì, non dal vertice. */
   async function conoSettore(){
@@ -1945,19 +1996,9 @@ function mostraComandoAfferente(sigla, nome){
        Il profilo parte da dove sta il fronte ADESSO, non dal punto
        d'innesco: il terreno già percorso non conta più, il fuoco lo
        attraversa nel prossimo quarto d'ora. */
-    let fattori = null, rilErrore = null;
-    if (NS.SitacRilievo){
-      const dist = V.MINUTI.map(x => V.distanzaFronte(vento.velocita, x));
-      /* Con distanze nulle il profilo degenera: passo zero, dislivello
-         diviso zero, e la pendenza esce a 90° tagliata al massimo. */
-      if (Math.max.apply(null, dist) > 50){
-        try {
-          stato(t('rilLeggo'));
-          const base = V.puntoDaAzimut(origine, vento.verso, r0);
-          fattori = (await NS.SitacRilievo.analizza(base, vento.verso, dist)).fattori;
-        } catch(e){ rilErrore = e.message; }
-      }
-    }
+    const ril = await fattoriPendenza(
+      V.puntoDaAzimut(origine, vento.verso, r0), vento.verso, vento.velocita);
+    const fattori = ril.fattori, rilErrore = ril.errore;
 
     const opz = {colore: COL.rosso, raggio0: r0, etichetta0: t('conoT0'), fattori};
     const layer = V.disegnaCono(origine, vento, opz);
@@ -1980,10 +2021,7 @@ function mostraComandoAfferente(sigla, nome){
       m.on('pm:remove', () => togliCono(id));
     }
     riassunto(vento);
-    if (fattori) stato($('stato').textContent + '\n' + t('rilFatto', {
-      k: fattori.map(f => '\u00d7' + f.k.toFixed(1)).join(' \u00b7 ')}));
-    else if (rilErrore) stato($('stato').textContent + '\n'
-      + t('rilErrore', {e: rilErrore}));
+    riferisciRilievo(fattori, rilErrore);
   }
 
   /* Modo 2: si disegna il fronte com'è adesso e lo si fa avanzare nel
@@ -1996,13 +2034,15 @@ function mostraComandoAfferente(sigla, nome){
     const centro = punti[Math.floor(punti.length / 2)];
     const vento = await scegliVento(centro);
     if (!vento) return stato(t('conoAnnullato'));
+    const ril = await fattoriPendenza(centro, vento.verso, vento.velocita);
     const layer = V.disegnaFronti(punti, vento,
-      {colore: COL.rosso, etichetta0: t('conoT0')});
+      {colore: COL.rosso, etichetta0: t('conoT0'), fattori: ril.fattori});
     const id = ++nCono;
     agganciaCono(layer, id);
     decori.addLayer(layer);
-    coni.push({id, layer, vento, tipo:'fronte'});
+    coni.push({id, layer, vento, fattori: ril.fattori, tipo:'fronte'});
     riassunto(vento);
+    riferisciRilievo(ril.fattori, ril.errore);
   }
 
   function riassunto(vento){
@@ -2077,13 +2117,19 @@ function mostraComandoAfferente(sigla, nome){
     const punti = AREE[l._tipo] ? V.fronteSottovento(anello, vento.verso) : anello;
     if (punti.length < 2) return stato(t('conoBaseCorta'));
 
+    /* Il profilo si legge dal centro del fronte sottovento, che è il bordo
+       da cui il fuoco riparte — non dal centro dell'area, che sta dentro
+       il terreno già bruciato. */
+    const ril = await fattoriPendenza(
+      punti[Math.floor(punti.length / 2)], vento.verso, vento.velocita);
     const layer = V.disegnaFronti(punti, vento,
-      {colore: COL.rosso, etichetta0: t('conoT0')});
+      {colore: COL.rosso, etichetta0: t('conoT0'), fattori: ril.fattori});
     const id = ++nCono;
     agganciaCono(layer, id);
     decori.addLayer(layer);
-    coni.push({id, layer, vento, tipo:'elemento', base: l});
+    coni.push({id, layer, vento, fattori: ril.fattori, tipo:'elemento', base: l});
     riassunto(vento);
+    riferisciRilievo(ril.fattori, ril.errore);
   }
 
     /* =====================================================================
@@ -4050,7 +4096,9 @@ function sfTabellaConi(){
         ? esc(Math.round(c.mh) + ' m/h')
         : esc(c.vento.velocita + ' km/h')}</td>`
     + `<td>${esc(String(c.vento.verso))}\u00b0</td>`
-    + `<td>${c.pendenza != null ? esc((c.pendenza * 100).toFixed(0) + '%') : '\u2014'}</td>`
+    + `<td>${c.pendenza != null ? esc((c.pendenza * 100).toFixed(0) + '%')
+        : c.fattori ? esc(c.fattori.map(f => '\u00d7' + f.k.toFixed(1)).join(' '))
+        : '\u2014'}</td>`
     + `<td>${esc(String(c.vento.fonte || '\u2014'))}</td></tr>`).join('');
   return `<table class="sf-tab"><thead><tr><th>N.</th><th>Costruzione</th>`
     + `<th>Velocit\u00e0</th><th>Direzione</th><th>Pendenza</th><th>Fonte</th></tr></thead>`
