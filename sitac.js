@@ -347,6 +347,8 @@ function avvia(app){
       lanciChiedi:'Lanci del dispositivo aereo',
       lanciNota:'Lascia vuoto ci\u00f2 che non \u00e8 intervenuto: nel foglio compare solo chi ha lanciato.',
       lanciTot:'Totale lanci', stampaAnnullata:'Stampa annullata.',
+      lancioPosato:'Lancio posato.\nSelezionalo, o tasto destro, per regolarne l\u2019ingombro.',
+      menuMisure:'Misure',
       disegnoAnnullato:'Disegno annullato: troppi pochi vertici.', },
     en:{ bCono:'Add cone', conoModo:'How should the cone be built?',
       bPosizione:'Enter coordinates',
@@ -496,16 +498,23 @@ function avvia(app){
      percorsa e il fronte attivo sono ciò che si legge per primo su una
      carta, e superficie ed ettari si calcolano solo su un poligono.
      Restano quindi qui, dichiaratamente fuori standard. */
+  /* I pieni erano tarati per non coprire l'ortofoto, ma a schermo un 15% su
+     fondo scuro non si distingue dal terreno: un'area disegnata deve LEGGERSI
+     come area. In stampa restano alleggeriti da alleggerisciPerStampa(), che
+     è il posto giusto per quel compromesso.
+     La zona minacciata ha il bordo giallo CONTINUO: il tratteggio nella
+     tavola vuol dire "previsto", e una zona minacciata non è una previsione
+     di zona — è una zona, con dentro gente da avvisare. */
   const AREE = {
-    percorsa:   {color:'#6b6b6b', fillColor:'#3a3a3a', fillOpacity:.5, dashArray:'8,6', weight:2,
+    percorsa:   {color:'#6b6b6b', fillColor:'#3a3a3a', fillOpacity:.62, dashArray:'8,6', weight:2,
       n:{it:'Superficie percorsa', en:'Burned area', fr:'Surface parcourue', es:'Superficie quemada'}},
-    attiva:     {color:COL.rosso, fillColor:COL.rosso, fillOpacity:.25, weight:3,
+    attiva:     {color:COL.rosso, fillColor:COL.rosso, fillOpacity:.42, weight:3,
       n:{it:'Area a fuoco attivo', en:'Active fire area', fr:'Zone en feu', es:'Área en llamas'}},
-    minacciata: {color:'#e8a000', fillColor:'#e8a000', fillOpacity:.15, weight:2, dashArray:'4,5',
+    minacciata: {color:'#e8a000', fillColor:'#e8a000', fillOpacity:.3, weight:2.6,
       n:{it:'Zona minacciata', en:'Threatened area', fr:'Zone menacée', es:'Zona amenazada'}},
-    evacuata:   {color:COL.verde, fillColor:COL.verde, fillOpacity:.15, weight:2,
+    evacuata:   {color:COL.verde, fillColor:COL.verde, fillOpacity:.3, weight:2,
       n:{it:'Zona evacuata', en:'Evacuated area', fr:'Zone évacuée', es:'Zona evacuada'}},
-    bonificata: {color:'#0070c0', fillColor:'#0070c0', fillOpacity:.15, weight:2,
+    bonificata: {color:'#0070c0', fillColor:'#0070c0', fillOpacity:.3, weight:2,
       n:{it:'Zona bonificata', en:'Mopped up area', fr:'Zone noyée', es:'Zona liquidada'}}
   };
   /* Solo queste due contano come "superficie coinvolta": le altre sono
@@ -1209,9 +1218,36 @@ function mostraComandoAfferente(sigla, nome){
        per quella disattivata, che è lo stesso glifo con la croce sopra.
        Il pilone lo dichiara già la simbologia; qui è coperto comunque. */
       const dritto = dc.dritto || ['fulmine','fulmineOff','pilone'].indexOf(dc.tipo) >= 0;
-      return {offset: dc.passo === '50%' ? '50%' : 8, repeat: dc.passo,
-      symbol: L.Symbol.marker({rotate: !dritto,
-        markerOptions:{icon: glifoDeco(dc.tipo, dc.dim, col, pieno), interactive:false}})};
+  /* I disegni dei motivi stanno in sitac-simboli.js insieme al resto della
+     tavola: lì c'è la convenzione (la linea attraversa il glifo in verticale,
+     il verso di percorrenza è in alto, il centro dell'icona sta sul tracciato
+     ed è il centro di rotazione), e lì si aggiungono i motivi nuovi senza
+     toccare questo file. Qui resta solo la scelta di DOVE posarli. */
+  function motivo(def, stato){
+    const dc = def.deco;
+    if (!dc) return null;
+    const pieno = dc.pieno && !(def.stati && stato === 'previsto');
+    const col = def.color || COL.rosso;
+
+    if (dc.tipo === 'punta' || dc.tipo === 'freccia')
+      return {offset: dc.tipo === 'punta' ? '100%' : '12%', repeat: dc.passo,
+        symbol: L.Symbol.arrowHead({pixelSize: dc.dim, headAngle: 60, polygon: !!pieno,
+          pathOptions:{color:col, fillColor:col, fillOpacity: pieno ? 1 : 0,
+            weight: pieno ? 1 : 2.5}})};
+
+    const g = NS.SITAC_DECO(dc.tipo,
+      {col, pieno, n: dc.n, forma: dc.forma, dim: dc.dim});
+    /* `passo:'auto'` sono i motivi che si toccano fra loro — i triangoli
+       della difesa in linea, la greca della ricognizione, i denti del fronte:
+       il passo è l'ingombro del glifo lungo la linea, e lo sa il glifo. */
+    const passo = dc.passo === 'auto' ? g.h : dc.passo;
+    const offset = dc.offset != null ? dc.offset
+      : (NS.SITAC_DECO_CONTIGUI.indexOf(dc.tipo) >= 0 ? 0 : 8);
+    return {offset, repeat: passo,
+      symbol: L.Symbol.marker({rotate: !dc.dritto,
+        markerOptions:{interactive:false,
+          icon: L.divIcon({className:'sitac-deco', iconSize:[g.w, g.h],
+            iconAnchor:[g.w / 2, g.h / 2], html: NS.SITAC_DECO_SVG(g)})}})};
   }
 
   function decora(layer){
@@ -1225,7 +1261,8 @@ function mostraComandoAfferente(sigla, nome){
        che azione si tratta, e va letto una volta sola. */
     if (def.badge)
       patterns.push({offset:0, repeat:0, symbol: L.Symbol.marker({rotate:false,
-        markerOptions:{interactive:false, icon: L.divIcon({className:'sitac-badge',
+        markerOptions:{interactive:false, icon: L.divIcon({
+          className: 'sitac-badge' + (def.badgeQuadro ? ' sitac-badge-q' : ''),
           html: esc(def.badge), iconSize:[26,18], iconAnchor:[13,9]})}})});
     if (!patterns.length) return;
     layer._deco = L.polylineDecorator(layer, {patterns});
@@ -1363,12 +1400,15 @@ function mostraComandoAfferente(sigla, nome){
 
   const ellisseDi = l => ellisse(l._centro, l._a, l._b, l._rotazione);
 
+  function togliManiglieLancio(l){
+    if (!l || !l._manig) return;
+    l._manig.forEach(m => decori.removeLayer(m));
+    l._manig = null;
+  }
   function scollegaLancio(l){
     if (!l) return;
     if (l._glifo){ decori.removeLayer(l._glifo); l._glifo = null; }
-    if (!l._manig) return;
-    l._manig.forEach(m => decori.removeLayer(m));
-    l._manig = null;
+    togliManiglieLancio(l);
   }
 
     /* Sotto i 40 px di asse lungo l'ellisse non si legge più: al suo posto
@@ -1395,7 +1435,7 @@ function mostraComandoAfferente(sigla, nome){
       decori.removeLayer(l._glifo);
       l._glifo = null;
       l.setStyle(stileLancio(l._tipo, l._stato));
-      maniglieLancio(l);
+      if (selezionato === l) maniglieLancio(l);
     }
   }
   const scalaLanci = () => disegni.eachLayer(l => {
@@ -1456,7 +1496,6 @@ function mostraComandoAfferente(sigla, nome){
     });
     disegni.addLayer(l);
     etichettaElemento(l);
-    maniglieLancio(l);
     scalaLancio(l);
     return l;
   }
@@ -1569,35 +1608,23 @@ function mostraComandoAfferente(sigla, nome){
     return el ? [el] : [];
   }
 
-    let selezionato = null;
+  /* La × sulla carta non c'è più: cancellare era un solo clic, e un solo clic
+     su una carta piena di simboli è troppo poco per un gesto che non si
+     annulla. L'eliminazione passa dal tasto destro, dove sopra la voce c'è
+     scritto CHE COSA si sta per togliere e quanto misura. Il tasto Canc resta:
+     lì la selezione l'ha già fatta chi preme. */
+  let selezionato = null;
   function selezionaElemento(l){
     if (selezionato === l) return;
     nodiDi(selezionato).forEach(e => e.classList.remove('sitac-selezionato'));
-    /* La × segue l'elemento mentre lo si trascina: staccarsi dal simbolo
-       e restare dov'era la farebbe sembrare la × di qualcos'altro. */
-    if (selezionato && selezionato.off) selezionato.off('move drag', posizionaX);
+    /* Le maniglie del lancio vivono con la selezione: sempre accese sarebbero
+       tre pallini trascinabili per ogni lancio, e in modalità disegno le
+       intercetta Geoman. */
+    if (selezionato && selezionato._genere === 'lancio') togliManiglieLancio(selezionato);
     selezionato = l || null;
     nodiDi(selezionato).forEach(e => e.classList.add('sitac-selezionato'));
-    if (selezionato && selezionato.on) selezionato.on('move drag', posizionaX);
-    posizionaX();
-  }
-
-    /* La × sta sull'angolo in alto a destra di ciò che è selezionato, non in
-     un angolo fisso della carta: dice CHE COSA sta per sparire. Vive in
-     .sitac-mapwrap come il riquadro di misura, cioè fuori dal contenitore
-     Leaflet: dentro, il clic finirebbe nella gestione eventi della mappa. */
-  let bottoneX = null;
-  function creaX(){
-    if (bottoneX) return bottoneX;
-    bottoneX = document.createElement('button');
-    bottoneX.type = 'button';
-    bottoneX.className = 'sitac-x-sel';
-    bottoneX.textContent = '\u00d7';
-    bottoneX.hidden = true;
-    bottoneX.onclick = eliminaSelezionato;
-    const wrap = q('.sitac-mapwrap');
-    if (wrap) wrap.appendChild(bottoneX);
-    return bottoneX;
+    if (selezionato && selezionato._genere === 'lancio' && !selezionato._glifo)
+      maniglieLancio(selezionato);
   }
 
   /* getBounds esiste su FeatureGroup, non su LayerGroup: i coni arrivano da
@@ -1615,30 +1642,6 @@ function mostraComandoAfferente(sigla, nome){
     });
     return b;
   }
-
-  function posizionaX(){
-    const b = creaX();
-    /* Mentre si disegna la × sparisce: non serve, e sta proprio dove passa
-       il tracciato. `passanti` è acceso esattamente in quei momenti. */
-    if (!selezionato || passanti){ b.hidden = true; return; }
-    let p;
-    if (selezionato.getLatLng){
-      p = map.latLngToContainerPoint(selezionato.getLatLng());
-      p = L.point(p.x + 26, p.y - 26);          // spigolo dell'icona 56×56
-    } else {
-      const bb = estremiDi(selezionato);
-      if (!bb || !bb.isValid()){ b.hidden = true; return; }
-      p = map.latLngToContainerPoint(bb.getNorthEast());
-    }
-    /* Un'area può uscire dallo schermo: la × resta sul bordo, o si
-       cancella al buio un elemento che non si vede. */
-    const s = map.getSize();
-    b.hidden = false;
-    b.title = t('bElimina');
-    b.style.left = Math.max(4, Math.min(s.x - 30, p.x - 13)) + 'px';
-    b.style.top  = Math.max(4, Math.min(s.y - 30, p.y - 13)) + 'px';
-  }
-  map.on('move zoom viewreset', posizionaX);
 
   function eliminaSelezionato(){
     if (!selezionato) return;
@@ -1672,15 +1675,19 @@ function mostraComandoAfferente(sigla, nome){
     if (!vento){ box.hidden = true; box.innerHTML = ''; return; }
     const V = NS.SitacVento;
     const k = V.simboloVento(vento.velocita);
-    const d0 = (SIM[k] && SIM[k].r0) || 0;
+    /* Sulla tavola il vento è diventato un tracciato, ma qui non c'è nulla da
+       tracciare: è un dato di scenario in un riquadro fisso. Il glifo puntuale
+       resta disponibile in SITAC_GLIFI apposta per questo. Il disegno punta a
+       ovest, quindi 270 è la sua direzione naturale. */
+    const glifo = (NS.SITAC_GLIFI || {})[k];
     box.hidden = false;
     box.innerHTML =
       `<span class="sitac-vento-nord"><svg viewBox="0 0 24 24">`
       + `<path d="M12 2l5 11h-10Z" fill="#cc0000"/>`
       + `<path d="M12 22l-5-9h10Z" fill="#888"/></svg><b>N</b></span>`
       + `<span class="sitac-vento-glifo" style="transform:rotate(`
-      + `${((vento.verso - d0) % 360 + 360) % 360}deg)">`
-      + `${svgSimbolo(k, {senzaTesto:1})}</span>`
+      + `${((vento.verso - 270) % 360 + 360) % 360}deg)">`
+      + `${glifo ? glifo({senzaTesto:1}) : ''}</span>`
       + `<span class="sitac-vento-dati">${esc(String(vento.velocita))} km/h<br>`
       + `${esc(String(vento.verso))}\u00b0</span>`;
   }
@@ -1991,6 +1998,16 @@ function mostraComandoAfferente(sigla, nome){
     const m = creaMenuBox();
     m.innerHTML = '';
     voci.forEach(v => {
+      /* Le misure stanno IN CIMA al menu e non in un tooltip: quando si apre
+         il destro su un'area il puntatore è già lì, e "quanti ettari" è la
+         domanda che si fa mentre si decide se tenerla o rifarla. */
+      if (v.info){
+        const p = document.createElement('p');
+        p.className = 'sitac-menu-info';
+        p.textContent = v.info;
+        m.appendChild(p);
+        return;
+      }
       if (v.titolo){
         const h = document.createElement('p');
         h.className = 'sitac-menu-tit';
@@ -2092,6 +2109,30 @@ function mostraComandoAfferente(sigla, nome){
     aggiornaStato();
   }
 
+    /* Un punto ha coordinate, una linea una lunghezza, un'area superficie e
+     perimetro: sono i tre numeri che si leggono su una carta, e ognuno vale
+     per la sua geometria. Il lancio porta anche l'ingombro, che è il dato
+     per cui esiste come poligono invece che come simbolo. */
+  function misureDi(l){
+    if (!l) return null;
+    if (l._genere === 'lancio')
+      return t('lancioDi', {a: l._a * 2, b: l._b * 2,
+        s: (areaMq(l) / 10000).toFixed(2)});
+    if (l.getLatLng){
+      const p = l.getLatLng();
+      return `${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}`;
+    }
+    const pt = l.getLatLngs && l.getLatLngs();
+    if (!pt || !pt.length) return null;
+    /* Un poligono restituisce un elenco di anelli, una linea un elenco di
+       vertici: è il modo più diretto per distinguerli senza consultare AREE,
+       che non copre i perimetri importati da fuori. */
+    if (Array.isArray(pt[0]))
+      return t('areaDi', {a: (areaMq(l) / 10000).toFixed(2),
+        p: (perimetroM(l) / 1000).toFixed(2)});
+    return t('lunghezzaDi', {v: (lunghezzaM(l) / 1000).toFixed(2)});
+  }
+
   /* Le voci cambiano con l'elemento: un simbolo non ha vertici, una linea
      non ha una sigla, un cono non è un rilievo e si tocca solo per toglierlo. */
   function vociMenu(l){
@@ -2104,6 +2145,8 @@ function mostraComandoAfferente(sigla, nome){
     const k = l._tipo;
     const def = LIN[k] || AREE[k] || SIM[k] || (k === 'nota' ? NOTA : null);
     voci.push({titolo: nm(def) || k || ''});
+    const mis = misureDi(l);
+    if (mis) voci.push({info: mis});
 
     if (l._genere === 'lancio'){
       voci.push({et: t('menuManiglie'),
@@ -2170,6 +2213,24 @@ function mostraComandoAfferente(sigla, nome){
      arrivare mai. Se non c'è un disegno aperto l'evento prosegue intatto e il
      menu del tasto destro funziona come prima. */
   map.getContainer().addEventListener('contextmenu', ev => {
+    /* Prima di ogni altra cosa: se una modifica è aperta — i vertici di
+       un'area, un trascinamento, la modalità globale — il destro la CHIUDE.
+       È lo stesso "ho finito" con cui si chiude un disegno, e su una carta
+       quel gesto deve essere uno solo. Aprire un menu sopra una geometria
+       che si sta ancora spostando non serve a nessuno. */
+    const inModifica = !!elModifica
+      || !!(map.pm.globalEditModeEnabled && map.pm.globalEditModeEnabled());
+    if (inModifica){
+      fermaMenuModifica();
+      if (map.pm.globalEditModeEnabled && map.pm.globalEditModeEnabled())
+        map.pm.disableGlobalEditMode();
+      spegniPulsanti();
+      cursore(null);
+      stato(t('modOff'));
+      ev.preventDefault();
+      ev.stopPropagation();
+      return;
+    }
     if (!chiudeDisegnoInCorso()) return;
     ev.preventDefault();
     ev.stopPropagation();
@@ -2455,13 +2516,12 @@ function mostraComandoAfferente(sigla, nome){
     const b = document.createElement('button');
     b.type = 'button';
     b.dataset.genere = 'linea'; b.dataset.chiave = k;
-    /* Stessa swatch chiara dei simboli: la tavola è disegnata per la carta
-       bianca, e un tracciato nero su fondo grigio scuro non si distingue
-       da uno rosso scuro. La barretta va dentro la cornice, non nuda. */
+    /* Una barretta colorata diceva solo il colore, e mezza tavola è rossa:
+       due tracciati dello stesso peso si distinguono SOLO per il motivo, e
+       quello va visto prima di premere — il 4x4 delle sterrate compreso.
+       La cornice resta chiara: la tavola è disegnata per la carta bianca. */
     b.innerHTML = `<i class="sitac-swatch sitac-swatch-linea">`
-      + `<span class="sitac-tratto" style="background:${d.color};`
-      + `height:${Math.min(d.weight || 3, 5)}px${d.dashArray
-        ? ';background-image:repeating-linear-gradient(90deg,#0000 0 3px,#f2f0e8 3px 6px)' : ''}"></span></i>`
+      + NS.SITAC_ANTEPRIMA(k, statoPer(d)) + `</i>`
       + `<span>${esc(nm(d))}</span>`;
     b.onclick = () => attiva('linea', k, b);
     return b;
@@ -2720,7 +2780,11 @@ function mostraComandoAfferente(sigla, nome){
         markerStyle:{icon: iconaSimbolo(chiave, {stato: statoPer(d)}), draggable:true},
         continueDrawing:true});
       stato(`${nm(d)}${etichettaStato(d)}\n${t('suggSimbolo')}`);
-      cursore('simbolo', chiave, statoPer(d));
+      /* Geoman tiene GIÀ il simbolo attaccato al puntatore mentre si sceglie
+         dove posarlo: disegnarlo anche come cursore lo mostrava due volte, uno
+         sopra l'altro e sfalsati. Resta il mirino, che dice dove cade il clic
+         — che è l'unica cosa che il cursore deve dire. */
+      cursore('mirino');
     }
   }
 
@@ -2807,6 +2871,26 @@ function mostraComandoAfferente(sigla, nome){
       if (!d || d.g !== tavola) return;
       const sw = b.querySelector('.sitac-swatch');
       if (sw) sw.innerHTML = svgSimbolo(k, {stato: s});
+    });
+
+    /* Anche le linee cambiano faccia: tratteggiata e vuota quando è prevista,
+       piena quando è fatta. Prima l'anteprima era una barretta e non aveva
+       niente da dire, adesso sì. */
+    qq('#sitac-barra button[data-genere="linea"][data-chiave]').forEach(b => {
+      const k = b.dataset.chiave, d = LIN[k];
+      if (!d || d.g !== tavola) return;
+      const sw = b.querySelector('.sitac-swatch');
+      if (sw) sw.innerHTML = NS.SITAC_ANTEPRIMA(k, s);
+    });
+
+    /* Anche le linee cambiano faccia: tratteggiata e vuota quando è prevista,
+       piena quando è fatta. Prima l'anteprima era una barretta e non aveva
+       niente da dire, adesso sì. */
+    qq('#sitac-barra button[data-genere="linea"][data-chiave]').forEach(b => {
+      const k = b.dataset.chiave, d = LIN[k];
+      if (!d || d.g !== tavola) return;
+      const sw = b.querySelector('.sitac-swatch');
+      if (sw) sw.innerHTML = NS.SITAC_ANTEPRIMA(k, s);
     });
 
     /* Lo strumento in uso va riacceso: l'icona del marcatore che Geoman
@@ -2927,13 +3011,14 @@ function mostraComandoAfferente(sigla, nome){
       disegni.removeLayer(layer);
       creaLancio(k, centro, {stato: statoPer(SIM[k])});
       aggiornaStato();
-      stato(`${nm(def)}${etichettaStato(def)}\n${t('lancioManiglie')}`);
-      /* Niente riattivaStrumento: il lancio nasce con tre maniglie, e in
-         modalità disegno il trascinamento lo intercetta Geoman. Come per
-         il TP, il disableDraw va dopo pm:create o continueDrawing lo annulla. */
-      setTimeout(() => { map.pm.disableDraw(); }, 0);
-      strumento = null;
-      spegniPulsanti();
+      /* Lo strumento NON si spegne più. Si spegneva perché il lancio nasceva
+         con tre maniglie che in modalità disegno Geoman intercetta — ma il
+         prezzo era tornare al pulsante dopo ogni lancio, e soprattutto: al
+         cambio Prevista/Effettuata `strumento` era già null, riattivaStrumento
+         non trovava niente da riaccendere e sembrava che il modulo si fosse
+         piantato. Adesso le maniglie compaiono selezionando il lancio, e qui
+         si continua a posare come con ogni altro simbolo. */
+      stato(`${nm(def)}${etichettaStato(def)}\n${t('lancioPosato')}`);
       return;
     }
 
@@ -3195,66 +3280,125 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
     };
     r.readAsText(f);
   };
-
+  
+    /* FORMATO ATTESO
+     Una FeatureCollection. Ogni feature porta in `properties` la chiave
+     tecnica del simbolo (`tipo`), il genere, lo stato previsto/attivo,
+     l'eventuale testo e — per i lanci — i semiassi in metri e il centro:
+     è esattamente quello che scrive il pulsante GeoJSON, e da lì rientra
+     identico, simbologia compresa.
+     Un file ALTRUI (perimetro da satellite, traccia di volo, confine
+     comunale) non ha quelle properties: i suoi poligoni entrano come
+     superficie percorsa, che è l'uso per cui si importa un perimetro, e
+     punti e linee senza `tipo` restano fuori — sulla carta sarebbero
+     geometrie mute, cliccabili e illeggibili.
+     Le properties di testa (intervento, DOS, posizione, vento) si adottano
+     se ci sono: un file altrui porta con sé il suo intervento. */
   function carica(fc){
-    let n = 0;
-  /* Si importano SOLO poligoni. Un GeoJSON esterno — perimetro da satellite,
-     traccia di volo, confine comunale — porta l'ingombro, non la simbologia
-     SITAC: punti e linee altrui arriverebbero senza `tipo` e resterebbero
-     muti sulla carta, cliccabili ma illeggibili. */
-  const tutte = (fc && fc.features) || (fc && fc.type === 'Feature' ? [fc] : []);
-  const poligoni = tutte.filter(x => x && x.geometry &&
-    (x.geometry.type === 'Polygon' || x.geometry.type === 'MultiPolygon'));
-  const scarti = tutte.length - poligoni.length;
-  if (!poligoni.length) return stato(t('importNiente'));
-    /* Un file altrui porta con sé il suo intervento: si adottano, invece di
-       lasciare in testata i numeri di quello precedente. `p` può mancare
-       del tutto in un GeoJSON non nostro, quindi tutto sta dentro il test. */
+    const tutte = (fc && fc.features) || (fc && fc.type === 'Feature' ? [fc] : []);
+    if (!tutte.length) return stato(t('importNiente'));
+
     const p = fc && fc.properties;
     if (p){
       if (p.intervento) inIntervento.value = String(p.intervento).replace(/[^0-9]/g,'');
       if (p.dos)        inDos.value        = normalizzaDos(p.dos);
+      if (p.qualifica)  inQualifica.value  = String(p.qualifica);
       if (p.nominativo) inNominativo.value = String(p.nominativo);
       if (p.telefono)   inTelefono.value   = String(p.telefono);
-      /* La posizione rientra come dato vivo, non come testo: senza questo
-         il passo 2 crede che il DOS non ci sia. */
       if (p.posizione){
         const c = String(p.posizione).split(/[,;\s]+/).map(Number)
           .filter(x => !isNaN(x));
-        if (c.length >= 2){ posDos = L.latLng(c[0], c[1]); posaDos(posDos); cercaProvincia(posDos); }
+        if (c.length >= 2){ posDos = L.latLng(c[0], c[1]); cercaProvincia(posDos); }
       }
-      /* Il vento rientra come dato, non come disegno: i coni sono stime e
-         si rifanno dal pulsante, ma il quadro dice subito con che vento la
-         carta è stata redatta. */
+      /* Il vento rientra come dato, non come disegno: i coni sono stime e si
+         rifanno dal pulsante, ma il quadro dice subito con che vento la carta
+         è stata redatta. */
       if (p.vento && p.vento.velocita != null && p.vento.verso != null)
         mostraVento(p.vento);
       segnaIntestazione();
     }
-    L.geoJSON({type:'FeatureCollection', features: poligoni}, {
-      /* Ogni poligono importato è superficie percorsa: lo stile è uno solo,
-         e pointToLayer non serve perché i punti sono già stati filtrati via. */
-      style: () => stileArea(AREE.percorsa),
-      onEachFeature: (feat, layer) => {
-        /* I Path risalgono alla mappa e il clic finisce nel deseleziona; i Marker
-         no, e infatti loro si cancellavano. Stesso default per tutti. */
-    if (layer.options) layer.options.bubblingMouseEvents = false;
-        const pr = feat.properties || {};
-        layer._tipo = 'percorsa';
-        layer._genere = 'area';
-        layer._stato = pr.stato || 'previsto';
-        layer._testo = pr.testo || null;
-        layer._rotazione = null;
-        disegni.addLayer(layer);
-        layer.on('pm:edit', () => { etichettaElemento(layer); aggiornaStato(); });
-        layer.on('pm:remove', () => scollega(layer));
-        etichettaElemento(layer);
-        n++;
+
+    const gg = f => (f && f.geometry) || {};
+    const latlng = c => L.latLng(c[1], c[0]);
+    const verso = c => c.map(latlng);
+    let n = 0, scarti = 0;
+
+    const aggancia = layer => {
+      if (layer.options) layer.options.bubblingMouseEvents = false;
+      disegni.addLayer(layer);
+      layer.on('pm:remove', () => scollega(layer));
+      etichettaElemento(layer);
+      n++;
+    };
+
+    tutte.forEach(f => {
+      const g = gg(f), pr = f.properties || {};
+      if (!g.type || !g.coordinates){ scarti++; return; }
+      const tipo = (NS.SITAC_VECCHI && NS.SITAC_VECCHI[pr.tipo]) || pr.tipo || null;
+      const st = pr.stato === 'attivo' ? 'attivo' : 'previsto';
+
+      /* Il lancio viaggia come poligono perché QGIS e Google Earth devono
+         vederne l'ingombro vero, ma i parametri viaggiano accanto: si
+         ricostruisce l'ellisse invece di importarne i sessanta vertici. */
+      if (pr.genere === 'lancio' && SIM[tipo] && SIM[tipo].poly && pr.centro){
+        const l = creaLancio(tipo, latlng(pr.centro),
+          {stato: st, a: pr.a, b: pr.b, rotazione: pr.rotazione});
+        if (l) n++;
+        return;
       }
+
+      if (g.type === 'Point'){
+        const def = tipo === 'nota' ? NOTA : SIM[tipo];
+        if (!def){ scarti++; return; }
+        const m = L.marker(latlng(g.coordinates), {draggable:true,
+          icon: iconaSimbolo(tipo, {stato:st, testo:pr.testo || null,
+            rotazione: pr.rotazione != null ? pr.rotazione : undefined})});
+        m._tipo = tipo; m._genere = 'simbolo'; m._stato = st;
+        m._testo = pr.testo || null;
+        m._rotazione = pr.rotazione != null ? pr.rotazione : null;
+        aggancia(m);
+        if (def.r && m._rotazione != null) creaManiglia(m);
+        return;
+      }
+
+      if (g.type === 'LineString'){
+        const def = LIN[tipo];
+        if (!def){ scarti++; return; }
+        const l = L.polyline(verso(g.coordinates), stileLinea(def, st));
+        l._tipo = tipo; l._genere = 'linea'; l._stato = st;
+        l._testo = pr.testo || null;
+        aggancia(l);
+        decora(l);
+        l.on('pm:edit', () => { decora(l); etichettaElemento(l); aggiornaStato(); });
+        return;
+      }
+
+      if (g.type === 'Polygon' || g.type === 'MultiPolygon'){
+        const anelli = g.type === 'Polygon' ? [g.coordinates]
+          : g.coordinates;
+        anelli.forEach(poly => {
+          const k = AREE[tipo] ? tipo : 'percorsa';
+          const l = L.polygon(poly.map(verso), stileArea(AREE[k]));
+          l._tipo = k; l._genere = 'area'; l._stato = st;
+          l._testo = pr.testo || null;
+          aggancia(l);
+          l.on('pm:edit', () => { etichettaElemento(l); aggiornaStato(); });
+        });
+        return;
+      }
+
+      scarti++;
     });
+
+    /* La posizione del DOS rientra come dato vivo, non come testo: senza
+       questo il passo 1 crede che il DOS non ci sia. Il simbolo, se c'era,
+       è già arrivato con le feature. */
+    if (posDos && !dosSullaCarta()) posaDos(posDos);
+
     if (n && disegni.getBounds().isValid())
       map.fitBounds(disegni.getBounds(), {padding:[40,40]});
     aggiornaStato();
-    stato(t('importAree', {n}) + (scarti ? t('importScarti', {n: scarti}) : ''));
+    stato(t('importati', {n}) + (scarti ? t('importScarti', {n: scarti}) : ''));
   }
 
   /* =======================================================================
@@ -3360,8 +3504,11 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
       const k = x._tipo;
       if (LIN[k]){
         const d = LIN[k];
+        /* Stessa anteprima del pulsante: una legenda che mostra un trattino
+           rosso accanto a "Difesa in linea" e un trattino rosso identico
+           accanto a "Ricognizione" non è una legenda. */
         leg.insertAdjacentHTML('beforeend',
-          `<div><i class="sitac-tratto" style="background:${d.color};height:${Math.min(d.weight||3,5)}px"></i>`
+          `<div><i class="sitac-leg-lin">${NS.SITAC_ANTEPRIMA(k, x._stato)}</i>`
           + `<span>${esc(nm(d) + statoDi(d, x._stato))}</span></div>`);
       } else if (AREE[k]){
         const d = AREE[k];
@@ -3519,17 +3666,43 @@ function sfBloccoComando(){
     + sfCampo('Indirizzo', c['Indirizzo Completo']);
 }
 
-function sfBloccoDos(){
+/* Erano otto campi in un riquadro solo, su due colonne, e la lettura si
+   perdeva: il numero d'intervento finiva accanto al telefono del DOS. Sono
+   due cose diverse — QUANDO e DOVE succede, e CHI lo dirige — e vanno lette
+   separate, come separate le si detta per radio. */
+function sfBloccoIntervento(){
   const i = intestazione();
   return sfCampo(t('nIntervento'), i.intervento)
     + sfCampo(t('dataOra'), fmtOra(oraRedazione || new Date()))
-    + sfCampo(t('nQualifica'), i.qualifica)
+    + sfCampo(t('provincia'), provinciaDos
+        ? `${provinciaDos.sigla || ''} ${provinciaDos.nome || ''}`.trim() : '')
+    + sfCampo(t('posDos'), i.posizione);
+}
+
+function sfBloccoDos(){
+  const i = intestazione();
+  return sfCampo(t('nQualifica'), i.qualifica)
     + sfCampo(t('nNominativo'), i.nominativo)
     + sfCampo(t('nDos'), i.dos)
-    + sfCampo(t('nTelefono'), i.telefono)
-    + sfCampo(t('posDos'), i.posizione)
-    + sfCampo(t('provincia'), provinciaDos
-        ? `${provinciaDos.sigla || ''} ${provinciaDos.nome || ''}`.trim() : '');
+    + sfCampo(t('nTelefono'), i.telefono);
+}
+
+/* Il nome del file lo decide il titolo del documento: la finestra di stampa
+   del browser lo propone così com'è. Senza, esce "FireOps VVF.pdf" per ogni
+   SITAC di ogni intervento, e in una cartella di sala non si distinguono. */
+function nomeStampa(){
+  const i = intestazione();
+  const d = oraRedazione || new Date();
+  const dd = n => String(n).padStart(2, '0');
+  const data = `${d.getFullYear()}${dd(d.getMonth()+1)}${dd(d.getDate())}`
+    + `-${dd(d.getHours())}${dd(d.getMinutes())}`;
+  const cmd = (comandoSitac || window.FireOpsComandoAttivo || {}).Comando || '';
+  const puliscia = s => String(s == null ? '' : s)
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Za-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  return ['SITAC', i.intervento, data, puliscia(cmd),
+          puliscia(i.dos), puliscia(i.nominativo)]
+    .filter(Boolean).join('_');
 }
 
 /* Stessa scansione di aggiornaLegenda, ma il markup è quello del foglio:
@@ -3549,8 +3722,8 @@ function sfLegenda(){
     const k = x._tipo;
     if (LIN[k]){
       const d = LIN[k];
-      righe.push(`<div><i class="sf-tratto" style="background:${d.color};`
-        + `height:${Math.min(d.weight || 3, 5)}px"></i>`
+      righe.push(`<div><i class="sf-tratto sf-tratto-lin">`
+        + `${NS.SITAC_ANTEPRIMA(k, x._stato)}</i>`
         + `<span>${esc(nm(d) + statoDi(d, x._stato))}</span></div>`);
     } else if (AREE[k]){
       const d = AREE[k];
@@ -3843,12 +4016,12 @@ async function stampa(){
     `<section class="sf-pagina sf-pagina-carta">
        <header class="sf-testata">
          <h1>${esc(t('stTitolo'))}</h1>
-         <p>${esc(t('stData', {d: quando}))}${i.intervento
-            ? ` \u00b7 ${esc(t('nIntervento'))} ${esc(i.intervento)}` : ''}</p>
+         <p>${esc(t('stData', {d: quando}))}</p>
        </header>
        <div class="sf-dati">
+         <div class="sf-box"><h2>Intervento</h2>${sfBloccoIntervento()}</div>
          <div class="sf-box"><h2>Comando competente</h2>${sfBloccoComando()}</div>
-         <div class="sf-box"><h2>Direttore delle operazioni di spegnimento</h2>${sfBloccoDos()}</div>
+         <div class="sf-box sf-box-dos"><h2>Direttore delle operazioni di spegnimento</h2>${sfBloccoDos()}</div>
        </div>
        <div class="sf-carta">
          <div class="sf-mappa" id="sitac-stampa-mappa"></div>
@@ -3883,6 +4056,9 @@ async function stampa(){
   selezionaElemento(null);
   alleggerisciPerStampa();
 
+  const titoloPrima = document.title;
+  document.title = nomeStampa();
+
   const vistaPrima = {c: map.getCenter(), z: map.getZoom()};
   map.invalidateSize();
 
@@ -3902,6 +4078,7 @@ async function stampa(){
 
   const ripristina = () => {
     window.removeEventListener('afterprint', ripristina);
+    document.title = titoloPrima;
     ripristinaStile();
     document.body.classList.remove('sitac-stampa');
     segnoMappa.parentNode.insertBefore(wrap, segnoMappa);
