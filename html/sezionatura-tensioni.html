@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sezionatura — analisi delle tensioni e quote di taglio</title>
+<style>
+:root{
+  --fondo:#232B26;
+  --pannello:#2C352E;
+  --pannello2:#333D35;
+  --linea:#47544A;
+  --testo:#E7EBE3;
+  --tenue:#9BA89E;
+  --compr:#E4572E;
+  --traz:#4A93C8;
+  --legno:#C9A227;
+  --allarme:#F2C14E;
+  --grave:#D93B3B;
+  --ok:#7FB069;
+  --mono:ui-monospace,"SFMono-Regular","Cascadia Mono",Menlo,Consolas,monospace;
+  --sans:ui-sans-serif,system-ui,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--fondo);color:var(--testo);
+  font-family:var(--sans);font-size:15px;line-height:1.5;
+  -webkit-text-size-adjust:100%;
+}
+.eyebrow{
+  font-family:var(--sans);text-transform:uppercase;
+  letter-spacing:.14em;font-size:10.5px;font-weight:700;color:var(--tenue);
+}
+header{
+  border-bottom:1px solid var(--linea);
+  padding:14px 20px;display:flex;flex-wrap:wrap;gap:14px;align-items:baseline;
+  background:linear-gradient(180deg,#28312A,#232B26);
+  position:sticky;top:0;z-index:5;
+}
+header h1{
+  margin:0;font-size:19px;font-weight:700;letter-spacing:-.015em;
+  text-transform:uppercase;
+}
+header .sub{font-size:12px;color:var(--tenue);font-family:var(--mono)}
+
+.wrap{display:grid;grid-template-columns:340px minmax(0,1fr);gap:0;align-items:start}
+@media(max-width:900px){.wrap{grid-template-columns:1fr}}
+
+/* ---- pannello parametri ---- */
+aside{
+  border-right:1px solid var(--linea);padding:18px 18px 40px;
+  position:sticky;top:56px;max-height:calc(100vh - 56px);overflow:auto;
+}
+@media(max-width:900px){aside{position:static;max-height:none;border-right:0;border-bottom:1px solid var(--linea)}}
+.gruppo{margin-bottom:20px}
+.gruppo > .eyebrow{display:block;margin-bottom:9px;padding-bottom:5px;border-bottom:1px solid var(--linea)}
+.campo{margin-bottom:11px}
+.campo label{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;color:var(--tenue);margin-bottom:3px}
+.campo label b{font-family:var(--mono);font-size:13.5px;color:var(--testo);font-weight:600}
+input[type=range]{width:100%;accent-color:var(--legno);margin:2px 0 0}
+input[type=number],select{
+  width:100%;background:var(--pannello2);color:var(--testo);
+  border:1px solid var(--linea);border-radius:3px;padding:7px 8px;
+  font-family:var(--mono);font-size:13.5px;
+}
+input:focus-visible,select:focus-visible,button:focus-visible,input[type=range]:focus-visible{
+  outline:2px solid var(--legno);outline-offset:2px;
+}
+.segmenti{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.segmenti button{
+  background:var(--pannello2);color:var(--tenue);border:1px solid var(--linea);
+  border-radius:3px;padding:9px 6px;font-family:var(--sans);font-size:11.5px;
+  text-transform:uppercase;letter-spacing:.06em;font-weight:700;cursor:pointer;
+}
+.segmenti button[aria-pressed=true]{background:var(--legno);color:#1E241F;border-color:var(--legno)}
+.duecol{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+details summary{cursor:pointer;font-size:12.5px;color:var(--tenue);padding:4px 0}
+
+/* ---- area disegno ---- */
+main{padding:18px 20px 60px;min-width:0;display:grid;grid-template-columns:minmax(0,1fr);gap:0 18px;align-items:start}
+.col-graf,.col-dati{min-width:0}
+@media(min-width:1240px){
+  main{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)}
+}
+.tela{background:var(--pannello);border:1px solid var(--linea);border-radius:4px;padding:12px 12px 6px;margin-bottom:14px}
+.tela > .eyebrow{display:block;margin-bottom:6px}
+svg{display:block;width:100%;height:auto;max-height:72vh}
+
+/* ---- quote ---- */
+.esito{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--linea);border:1px solid var(--linea);border-radius:4px;overflow:hidden;margin-bottom:14px}
+.cella{background:var(--pannello);padding:11px 12px}
+.cella .eyebrow{display:block;margin-bottom:4px}
+.cella .val{font-family:var(--mono);font-size:23px;font-weight:600;letter-spacing:-.02em;line-height:1.15}
+.cella .val small{font-size:12px;color:var(--tenue);font-weight:400;letter-spacing:0}
+.cella .nota{font-size:11.5px;color:var(--tenue);margin-top:3px}
+.c-compr .val{color:var(--compr)} .c-traz .val{color:var(--traz)}
+
+/* ---- sequenza tagli ---- */
+.seq{border:1px solid var(--linea);border-radius:4px;overflow:hidden;margin-bottom:14px}
+.passo{display:grid;grid-template-columns:52px 1fr;gap:0;background:var(--pannello);border-bottom:1px solid var(--linea)}
+.passo:last-child{border-bottom:0}
+.passo .n{
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:22px;font-weight:700;
+  background:var(--pannello2);color:var(--legno);
+}
+.passo .txt{padding:11px 13px}
+.passo .txt h4{margin:0 0 3px;font-size:13.5px;letter-spacing:.02em;text-transform:uppercase}
+.passo .txt p{margin:0;font-size:13px;color:var(--tenue)}
+.passo .txt p b{color:var(--testo);font-family:var(--mono)}
+
+.avviso{border-left:3px solid var(--allarme);background:rgba(242,193,78,.09);padding:10px 13px;border-radius:0 4px 4px 0;font-size:13px;margin-bottom:10px}
+.avviso.grave{border-color:var(--grave);background:rgba(217,59,59,.11)}
+.avviso.ok{border-color:var(--ok);background:rgba(127,176,105,.09)}
+.avviso b{display:block;text-transform:uppercase;letter-spacing:.07em;font-size:10.5px;margin-bottom:3px}
+
+footer{border-top:1px solid var(--linea);padding:16px 20px 40px;font-size:12px;color:var(--tenue)}
+footer h5{margin:0 0 6px;font-size:10.5px;text-transform:uppercase;letter-spacing:.14em;color:var(--tenue)}
+footer ul{margin:0;padding-left:18px} footer li{margin-bottom:4px}
+.legenda{display:flex;flex-wrap:wrap;gap:14px;font-size:11.5px;color:var(--tenue);padding:6px 2px 2px}
+.legenda i{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+@media(prefers-reduced-motion:no-preference){
+  .cella .val,.passo .txt{transition:color .18s ease}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Sezionatura — tensioni e quote di taglio</h1>
+  <span class="sub" id="riepilogo">—</span>
+</header>
+
+<div class="wrap">
+<aside>
+
+  <div class="gruppo">
+    <span class="eyebrow">Vincoli</span>
+    <div class="segmenti" role="group" aria-label="Tipo di vincolo">
+      <button id="btn-appoggi" aria-pressed="true">Due appoggi</button>
+      <button id="btn-incastro" aria-pressed="false">Incastro / attaccato</button>
+    </div>
+    <p class="nota" style="font-size:11.5px;color:var(--tenue);margin:7px 0 0" id="nota-vincolo"></p>
+  </div>
+
+  <div class="gruppo">
+    <span class="eyebrow">Geometria</span>
+    <div class="duecol">
+      <div class="campo">
+        <label for="D">Diametro <b><span id="D-v">30</span> cm</b></label>
+        <input type="number" id="D" value="30" min="5" max="150" step="1">
+      </div>
+      <div class="campo">
+        <label for="L">Lunghezza <b><span id="L-v">6.0</span> m</b></label>
+        <input type="number" id="L" value="6" min="0.5" max="40" step="0.1">
+      </div>
+    </div>
+    <div class="campo" id="w-a1">
+      <label for="x1">Appoggio A <b><span id="x1-v">0.50</span> m</b></label>
+      <input type="range" id="x1" value="0.5" min="0" max="6" step="0.05">
+    </div>
+    <div class="campo" id="w-a2">
+      <label for="x2">Appoggio B <b><span id="x2-v">4.00</span> m</b></label>
+      <input type="range" id="x2" value="4" min="0" max="6" step="0.05">
+    </div>
+    <div class="campo" id="w-am">
+      <label for="xa">Appoggio mobile <b><span id="xa-v">6.00</span> m</b></label>
+      <input type="range" id="xa" value="6" min="0" max="6" step="0.05">
+      <p style="font-size:11px;color:var(--tenue);margin:3px 0 0">0 = nessun appoggio, ramo a sbalzo libero.</p>
+    </div>
+    <div class="campo">
+      <label for="alfa">Inclinazione asse <b><span id="alfa-v">0</span>°</b></label>
+      <input type="range" id="alfa" value="0" min="-90" max="90" step="1">
+      <p style="font-size:11px;color:var(--tenue);margin:3px 0 0">Positiva se l'estremità libera è più in alto. ±90° = asse verticale.</p>
+    </div>
+    <div class="campo">
+      <label for="xt">Posizione del taglio <b><span id="xt-v">5.00</span> m</b></label>
+      <input type="range" id="xt" value="5" min="0" max="6" step="0.05">
+    </div>
+  </div>
+
+  <div class="gruppo">
+    <span class="eyebrow">Materiale</span>
+    <div class="campo">
+      <label for="essenza">Essenza (legno fresco)</label>
+      <select id="essenza">
+        <option value="750">Conifera — abete, pino · 750</option>
+        <option value="800" selected>Pioppo, salice · 800</option>
+        <option value="900">Castagno · 900</option>
+        <option value="1000">Faggio, robinia · 1000</option>
+        <option value="1080">Quercia, roverella · 1080</option>
+        <option value="1100">Eucalipto, platano · 1100</option>
+        <option value="0">Densità personalizzata…</option>
+      </select>
+    </div>
+    <div class="campo" id="w-rho" hidden>
+      <label for="rho">Densità <b><span id="rho-v">800</span> kg/m³</b></label>
+      <input type="number" id="rho" value="800" min="300" max="1300" step="10">
+    </div>
+    <div class="campo">
+      <label for="fm">Resistenza a flessione assunta</label>
+      <select id="fm">
+        <option value="12">Ramo nodoso o degradato · 12 MPa</option>
+        <option value="20" selected>Fusto verde sano · 20 MPa</option>
+        <option value="30">Legno netto · 30 MPa</option>
+        <option value="45">Legno netto d'alta qualità · 45 MPa</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="gruppo">
+    <details>
+      <summary>Carico concentrato aggiuntivo</summary>
+      <div style="padding-top:8px">
+        <div class="campo">
+          <label for="P">Massa <b><span id="P-v">0</span> kg</b></label>
+          <input type="number" id="P" value="0" min="0" max="20000" step="10">
+        </div>
+        <div class="campo">
+          <label for="xp">Posizione <b><span id="xp-v">6.00</span> m</b></label>
+          <input type="range" id="xp" value="6" min="0" max="6" step="0.05">
+        </div>
+        <p style="font-size:11.5px;color:var(--tenue);margin:0">Chioma, tronco sovrapposto, veicolo, carico impigliato.</p>
+      </div>
+    </details>
+  </div>
+
+  <div class="gruppo">
+    <div class="campo">
+      <label for="frac">Quota scarico di riferimento <b><span id="frac-v">1/3</span> Ø</b></label>
+      <input type="range" id="frac" value="33" min="15" max="45" step="1">
+    </div>
+  </div>
+
+</aside>
+
+<main>
+ <div class="col-graf">
+
+  <div class="tela">
+    <span class="eyebrow">Vista laterale — stato delle fibre lungo il tronco</span>
+    <svg id="sv-lat" viewBox="0 0 1000 260" role="img" aria-label="Schema del tronco con appoggi e stato delle fibre"></svg>
+    <div class="legenda">
+      <span><i style="background:var(--compr)"></i>fibre compresse — il taglio si chiude, pinza la barra</span>
+      <span><i style="background:var(--traz)"></i>fibre tese — il taglio si apre, strappa e scheggia</span>
+      <span><i style="background:var(--tenue)"></i>tratteggio — asse a riposo, sempre a Ø/2</span>
+      <span><i style="background:var(--testo)"></i>curva — lo stesso asse deformato, curvatura = M(x)/EI</span>
+      <span><i style="background:var(--legno)"></i>flessi: curvatura nulla, non spostamento nullo</span>
+    </div>
+  </div>
+
+  <div class="tela">
+    <span class="eyebrow">Momento flettente M(x)</span>
+    <svg id="sv-mom" viewBox="0 0 1000 190" role="img" aria-label="Diagramma del momento flettente"></svg>
+  </div>
+
+  <div class="tela">
+    <span class="eyebrow">Rotazione delle sezioni φ(x) = v′(x)</span>
+    <svg id="sv-rot" viewBox="0 0 1000 160" role="img" aria-label="Diagramma delle rotazioni delle sezioni"></svg>
+  </div>
+
+  <div class="tela">
+    <span class="eyebrow">Sezione al taglio — quote</span>
+    <svg id="sv-sez" viewBox="0 0 1000 380" role="img" aria-label="Sezione trasversale con quote di taglio"></svg>
+  </div>
+
+ </div>
+ <div class="col-dati">
+
+  <div id="avvisi"></div>
+
+  <div class="esito" id="esito"></div>
+
+  <span class="eyebrow" style="display:block;margin:0 0 8px">Sequenza operativa</span>
+  <div class="seq" id="seq"></div>
+
+ </div>
+</main>
+</div>
+
+<footer>
+  <h5>Limiti del modello</h5>
+  <ul>
+    <li>Trave elastica prismatica omogenea a sezione circolare piena. Il legno reale ha nodi, cipollature, marciumi, fibratura deviata e tensioni di crescita che il calcolo non vede.</li>
+    <li>Sono considerati solo peso proprio ed eventuale carico concentrato verticale. Non sono considerati vento, torsione, tensioni laterali né il ritorno elastico di un ramo piegato a molla.</li>
+    <li>Un ramo curvato lateralmente o piegato a molla ha le fibre compresse sul lato <b>concavo</b> (interno della curva): lì va lo scarico, e si procede a fette successive senza mai completare il taglio in un colpo.</li>
+    <li>L'inclinazione scompone il peso in una componente perpendicolare, che flette, e una assiale, che scorre lungo il tronco. La componente assiale è supposta scaricarsi sull'incastro o sull'estremità a valle: se il tronco è libero di scivolare, il modello non vale più.</li>
+    <li>Valutazione dell'operatore, posizione dei piedi, via di fuga e DPI restano l'unica cosa che decide. Questo è un ausilio didattico, non una procedura.</li>
+  </ul>
+</footer>
+
+<script>
+"use strict";
+const g = 9.81;
+const $ = id => document.getElementById(id);
+const el = {};
+["D","L","x1","x2","xa","xt","alfa","rho","P","xp","fm","frac","essenza"].forEach(k=>el[k]=$(k));
+let modo = "appoggi";
+
+/* ---------------- statica ---------------- */
+
+function stato(){
+  const D = Math.max(0.05, (+el.D.value||30)/100);          // m
+  const L = Math.max(0.5, +el.L.value||6);                   // m
+  const rho = el.essenza.value === "0" ? (+el.rho.value||800) : +el.essenza.value;
+  const A = Math.PI*D*D/4;
+  const alfa = (+el.alfa.value||0)*Math.PI/180;
+  const q0 = rho*g*A;                                        // peso proprio verticale, N/m
+  const P0 = (+el.P.value||0)*g;                             // carico concentrato verticale, N
+  // componenti nel riferimento locale della trave
+  const q = q0*Math.cos(alfa), P = P0*Math.cos(alfa);        // flettono
+  const qa = q0*Math.sin(alfa), Pa = P0*Math.sin(alfa);      // scorrono lungo l'asse
+  const xp = Math.min(L, +el.xp.value||0);
+  let x1 = Math.min(L, +el.x1.value||0), x2 = Math.min(L, +el.x2.value||0);
+  if (x2 < x1) [x1,x2] = [x2,x1];
+  if (x2 - x1 < 0.05) x2 = Math.min(L, x1 + 0.05);
+  const xt = Math.min(L, +el.xt.value||0);
+  const xa = Math.min(L, +el.xa.value||0);
+  const fm = (+el.fm.value)*1e6;                             // Pa
+  const frac = (+el.frac.value)/100;
+  const s = {D,L,rho,A,alfa,q0,P0,q,P,qa,Pa,xp,x1,x2,xa,xt,fm,frac};
+  s.Rap = reazAppoggio(s);
+  return s;
+}
+
+/* Sforzo normale nella sezione x. Positivo = TRAZIONE.
+   La componente assiale del peso deve scaricarsi da qualche parte:
+   - incastro: la prende la base a x=0, la sezione porta tutto ciò che sta oltre;
+   - due appoggi: la prende l'estremità a valle, contro cui il tronco si appoggia. */
+function assiale(s,x){
+  const {L,qa,Pa,xp,alfa} = s;
+  if (modo === "incastro" || alfa >= 0){
+    let N = -qa*(L-x);
+    if (xp >= x) N -= Pa;
+    return N;
+  }
+  let N = qa*x;
+  if (xp < x) N += Pa;
+  return N;
+}
+
+/* Mensola incastrata a x=0 con appoggio semplice cedevole-nullo in x=a.
+   Congruenza: freccia in a dovuta ai carichi + freccia dovuta a R = 0.
+   EI si semplifica.  a=0 => appoggio coincidente con l'incastro => nessun vincolo aggiunto. */
+function reazAppoggio(s){
+  const {L,q,P,xp} = s, a = s.xa;
+  if (a < 0.02*L) return 0;
+  const dq = q*a*a*(6*L*L - 4*L*a + a*a)/24;
+  const dp = P>0 ? (a <= xp ? P*a*a*(3*xp - a)/6 : P*xp*xp*(3*a - xp)/6) : 0;
+  return Math.max(0, 3*(dq + dp)/(a*a*a));   // appoggio unilaterale: non tira in basso
+}
+
+// M(x) — convenzione: M > 0 => fibre superiori COMPRESSE (inflessione a concavità in alto)
+function momento(s,x){
+  const {L,q,P,xp,x1,x2} = s;
+  const mac = v => v>0 ? v : 0;
+  if (modo === "incastro"){
+    // incastro a x = 0, appoggio in x = xa, estremità libera a x = L
+    let M = -q*Math.pow(L-x,2)/2;
+    if (xp >= x) M -= P*(xp-x);
+    if (s.xa >= x) M += s.Rap*(s.xa - x);
+    return M;
+  }
+  const den = (x2-x1);
+  const R2 = (q*L*(L/2 - x1) + P*(xp - x1))/den;
+  const R1 = q*L + P - R2;
+  return R1*mac(x-x1) + R2*mac(x-x2) - q*x*x/2 - P*mac(x-xp);
+}
+
+function reazioni(s){
+  if (modo === "incastro") return null;
+  const {L,q,P,xp,x1,x2} = s;
+  const R2 = (q*L*(L/2 - x1) + P*(xp - x1))/(x2-x1);
+  return {R1: q*L + P - R2, R2};
+}
+
+/* ---- proprietà della sezione residua dopo lo scarico di profondità p ---- */
+// cerchio raggio R; il taglio rimuove la fascia y ∈ [R-p, R] (lato compresso in alto)
+function sezioneResidua(D,p){
+  const R = D/2, n = 1200, y0 = -R, y1 = R - p;
+  if (y1 <= y0) return null;
+  const h = (y1-y0)/n;
+  let A=0,S=0,I0=0;
+  for (let i=0;i<n;i++){
+    const y = y0 + (i+0.5)*h;
+    const b = 2*Math.sqrt(Math.max(0,R*R - y*y));
+    A += b*h; S += y*b*h; I0 += y*y*b*h;
+  }
+  if (A <= 1e-12) return null;
+  const yc = S/A;
+  const I = I0 - A*yc*yc;
+  const cTeso = Math.abs(-R - yc);          // fibra tesa estrema
+  const cCompr = Math.abs(y1 - yc);         // fibra compressa residua
+  const c = Math.max(cTeso,cCompr);
+  return {A,yc,I,c,W: I/c};
+}
+
+/* W e A dipendono solo dal diametro: tabulo una volta e poi inverto per interpolazione */
+let _tabW = {D:null, t:null};
+function tabellaW(D){
+  if (_tabW.D === D) return _tabW.t;
+  const t = [], N = 80;
+  for (let i=0;i<=N;i++){
+    const p = 0.49*D*i/N, r = sezioneResidua(D,p);
+    t.push({p, W: r ? r.W : 0, A: r ? r.A : 0});
+  }
+  _tabW = {D, t};
+  return t;
+}
+
+// tensione massima nella fibra estrema: flessione + sforzo normale
+function sigmaDa(W,A,M,N){
+  if (W<=0 || A<=0) return Infinity;
+  return Math.abs(M)/W + Math.abs(N)/A;
+}
+
+// massima profondita di scarico prima che la sigma superi fm
+function pMax(s,M,N){
+  const {D,fm} = s, tab = tabellaW(D);
+  if (sigmaDa(tab[0].W,tab[0].A,M,N) >= fm) return 0;     // cede gia a sezione intera
+  for (let i=1;i<tab.length;i++){
+    if (sigmaDa(tab[i].W,tab[i].A,M,N) >= fm){
+      const a = tab[i-1], b = tab[i];
+      const sa = sigmaDa(a.W,a.A,M,N), sb = sigmaDa(b.W,b.A,M,N);
+      const f = (fm - sa)/(sb - sa);
+      return a.p + f*(b.p - a.p);
+    }
+  }
+  return 0.49*D;
+}
+
+
+/* ---- linea elastica: asse neutro deformato ----
+   v''(x) = M(x)/EI.  Doppia integrazione numerica con θ(0)=0, v(0)=0,
+   poi si somma la retta rigida  v0 + θ0·x  che soddisfa i vincoli:
+   due appoggi -> v(x1)=v(x2)=0 ;  incastro -> v(0)=v'(0)=0 (già soddisfatta). */
+const E_LEGNO = 9e9;   // Pa — modulo elastico del legno verde, ordine di grandezza
+function lineaElastica(s){
+  const N = 240, h = s.L/N;
+  const I = Math.PI*Math.pow(s.D,4)/64, EI = E_LEGNO*I;
+  const xs = [], k = [];
+  for (let i=0;i<=N;i++){ const x = i*h; xs.push(x); k.push(momento(s,x)/EI); }
+  const th=[0], vp=[0];
+  for (let i=1;i<=N;i++){
+    th.push(th[i-1] + (k[i-1]+k[i])/2*h);
+    vp.push(vp[i-1] + (th[i-1]+th[i])/2*h);
+  }
+  const interp = arr => x => {
+    const t = Math.min(N, Math.max(0, x/h)), i = Math.floor(t);
+    return i>=N ? arr[N] : arr[i] + (arr[i+1]-arr[i])*(t-i);
+  };
+  let v0 = 0, th0 = 0;
+  if (modo === "appoggi"){
+    const f = interp(vp), a = f(s.x1), b = f(s.x2);
+    th0 = -(b-a)/(s.x2-s.x1);
+    v0  = -a - th0*s.x1;
+  }
+  const pts = xs.map((x,i)=>({x, v: vp[i] + v0 + th0*x}));
+  const vals = pts.map(p=>p.v);
+  const rot = th.map(t => t + th0);                      // φ(x) = v'(x)
+  return {
+    pts, vmax: Math.max(...vals.map(Math.abs)), at: interp(vals),
+    rot: xs.map((x,i)=>({x, f: rot[i]})),
+    fmax: Math.max(...rot.map(Math.abs)), fAt: interp(rot)
+  };
+}
+
+function zeriMomento(s){
+  const {L} = s, n = 800, out = [];
+  let prev = momento(s,0), px = 0;
+  for (let i=1;i<=n;i++){
+    const x = L*i/n, m = momento(s,x);
+    if (m === 0) out.push(x);
+    else if (prev !== 0 && ((prev<0&&m>0)||(prev>0&&m<0))){
+      let a=px,b=x;
+      for(let k=0;k<40;k++){const c=(a+b)/2; if((momento(s,a)<0)===(momento(s,c)<0)) a=c; else b=c;}
+      out.push((a+b)/2);
+    }
+    prev = m; px = x;
+  }
+  // scarta le estremità libere (M=0 banale) e deduplica
+  return out.filter(z => z > 0.02*L && z < 0.98*L)
+            .filter((z,i,a) => i===0 || z - a[i-1] > 0.01*L);
+}
+
+/* ---------------- disegno ---------------- */
+const NS = "http://www.w3.org/2000/svg";
+function mk(t,a){const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e;}
+function txt(x,y,s,a={}){const e=mk("text",Object.assign({x,y,fill:"#9BA89E","font-size":15,"font-family":"ui-monospace,Menlo,Consolas,monospace"},a));e.textContent=s;return e;}
+
+const CX = {compr:"#E4572E", traz:"#4A93C8", legno:"#C9A227", linea:"#47544A", tenue:"#9BA89E", testo:"#E7EBE3", fondo:"#2C352E", grave:"#D93B3B", ok:"#7FB069"};
+
+/* Ruota tutto il contenuto già disegnato di α (asse locale della trave -> orizzonte).
+   I <text> vengono contro-ruotati attorno al proprio ancoraggio così restano leggibili.
+   Il viewBox viene riadattato all'ingombro ruotato. */
+function inclina(sv, aRad, cx, cy, W, H){
+  const G = mk("g",{});
+  while (sv.firstChild) G.appendChild(sv.firstChild);
+  sv.appendChild(G);
+  const deg = -aRad*180/Math.PI;
+  G.setAttribute("transform",`rotate(${deg} ${cx} ${cy})`);
+  G.querySelectorAll("text").forEach(t=>{
+    const x = +t.getAttribute("x")||0, y = +t.getAttribute("y")||0;
+    const cur = t.getAttribute("transform");
+    t.setAttribute("transform",`rotate(${-deg} ${x} ${y})`+(cur?" "+cur:""));
+  });
+  const c = Math.abs(Math.cos(aRad)), sn = Math.abs(Math.sin(aRad));
+  const w = W*c + H*sn, h = W*sn + H*c;
+  sv.setAttribute("viewBox", `${cx-w/2} ${cy-h/2} ${w} ${h}`);
+  return G;
+}
+
+function disegnaLaterale(s,d){
+  const sv = $("sv-lat"); sv.textContent = "";
+  const W=1000,H=260,ml=55,mr=55,y0=118;
+  const sx = x => ml + x/s.L*(W-ml-mr);
+  const hh = Math.max(11, Math.min(34, s.D*90));   // semispessore in px
+
+  // strisce colorate: stato delle fibre sopra/sotto lungo x
+  const n=260, Mmax=Math.max(1e-9,...Array.from({length:n+1},(_,i)=>Math.abs(momento(s,s.L*i/n))));
+  const gr = mk("g",{}); sv.appendChild(gr);
+  for(let i=0;i<n;i++){
+    const xa=s.L*i/n, xb=s.L*(i+1)/n, M=momento(s,(xa+xb)/2);
+    const op = 0.16 + 0.72*Math.min(1,Math.abs(M)/Mmax);
+    const sopra = M>0 ? CX.compr : CX.traz, sotto = M>0 ? CX.traz : CX.compr;
+    const x=sx(xa), w=sx(xb)-sx(xa)+0.6;
+    gr.appendChild(mk("rect",{x,y:y0-hh,width:w,height:hh,fill:sopra,opacity:op}));
+    gr.appendChild(mk("rect",{x,y:y0,width:w,height:hh,fill:sotto,opacity:op}));
+  }
+  // profilo tronco + asse neutro
+  sv.appendChild(mk("rect",{x:sx(0),y:y0-hh,width:sx(s.L)-sx(0),height:2*hh,fill:"none",stroke:CX.testo,"stroke-width":1.6,rx:3}));
+  sv.appendChild(mk("line",{x1:sx(0),y1:y0,x2:sx(s.L),y2:y0,stroke:CX.testo,"stroke-width":1,"stroke-dasharray":"5 4",opacity:.55}));
+  sv.appendChild(txt(sx(s.L)+6,y0+4,"indef.",{fill:CX.tenue,"font-size":12.5}));
+
+  // ---- asse neutro deformato: linea elastica, curvatura = M(x)/EI ----
+  const le = d.elastica;
+  const ampl = (le && le.vmax > 1e-12) ? (hh*0.9)/le.vmax : 0;
+  if (ampl){
+    const dPath = "M"+le.pts.map(pt=>sx(pt.x).toFixed(1)+" "+(y0-pt.v*ampl).toFixed(1)).join(" L");
+    sv.appendChild(mk("path",{d:dPath,fill:"none",stroke:"#1B211C","stroke-width":6.5,opacity:.5,"stroke-linecap":"round"}));
+    sv.appendChild(mk("path",{d:dPath,fill:"none",stroke:CX.testo,"stroke-width":2.6,"stroke-linecap":"round"}));
+    sv.appendChild(txt(sx(0)+4,y0-hh-34,
+      `asse neutro deformato \u00b7 freccia max ${(le.vmax*1000).toFixed(1)} mm \u00b7 scala \u00d7${ampl<9999?ampl.toFixed(0):ampl.toExponential(1)}`,
+      {fill:CX.testo,"font-size":12.5,"letter-spacing":".5"}));
+  }
+
+  // punti a momento nullo = flessi della linea elastica
+  d.zeri.forEach(z=>{
+    sv.appendChild(mk("line",{x1:sx(z),y1:y0-hh-13,x2:sx(z),y2:y0+hh+13,stroke:CX.legno,"stroke-width":2}));
+    sv.appendChild(txt(sx(z),y0-hh-14,"flesso",{fill:CX.legno,"text-anchor":"middle","font-size":13}));
+    if (ampl) sv.appendChild(mk("circle",{cx:sx(z),cy:y0-le.at(z)*ampl,r:5,fill:CX.legno,stroke:"#1B211C","stroke-width":1.5}));
+  });
+
+
+  // vincoli
+  const app = x => {
+    const g2=mk("g",{});
+    g2.appendChild(mk("path",{d:`M${sx(x)-13} ${y0+hh+22} L${sx(x)} ${y0+hh+1} L${sx(x)+13} ${y0+hh+22} Z`,fill:CX.tenue}));
+    g2.appendChild(mk("line",{x1:sx(x)-19,y1:y0+hh+22,x2:sx(x)+19,y2:y0+hh+22,stroke:CX.tenue,"stroke-width":2.5}));
+    return g2;
+  };
+  if (modo==="appoggi"){
+    sv.appendChild(app(s.x1)); sv.appendChild(app(s.x2));
+    sv.appendChild(txt(sx(s.x1),y0+hh+38,"A",{"text-anchor":"middle",fill:CX.tenue}));
+    sv.appendChild(txt(sx(s.x2),y0+hh+38,"B",{"text-anchor":"middle",fill:CX.tenue}));
+  } else {
+    sv.appendChild(mk("rect",{x:sx(0)-16,y:y0-hh-14,width:14,height:2*hh+28,fill:CX.tenue,opacity:.85}));
+    for(let i=0;i<9;i++) sv.appendChild(mk("line",{x1:sx(0)-16,y1:y0-hh-14+i*(2*hh+28)/8,x2:sx(0)-27,y2:y0-hh-4+i*(2*hh+28)/8,stroke:CX.tenue,"stroke-width":1.6}));
+    sv.appendChild(txt(sx(0)-20,y0+hh+44,"incastro",{"text-anchor":"middle",fill:CX.tenue,"font-size":12.5}));
+    if (s.xa >= 0.02*s.L && s.Rap > 0){
+      sv.appendChild(app(s.xa));
+      sv.appendChild(txt(sx(s.xa),y0+hh+38,(s.Rap/1000).toFixed(2)+" kN",{"text-anchor":"middle",fill:CX.tenue}));
+    }
+  }
+
+  // carico concentrato
+  if (s.P>0){
+    const x=sx(s.xp);
+    sv.appendChild(mk("line",{x1:x,y1:y0-hh-46,x2:x,y2:y0-hh-6,stroke:CX.legno,"stroke-width":2.4}));
+    sv.appendChild(mk("path",{d:`M${x-6} ${y0-hh-14} L${x} ${y0-hh-4} L${x+6} ${y0-hh-14} Z`,fill:CX.legno}));
+    sv.appendChild(txt(x,y0-hh-52,(+el.P.value)+" kg",{"text-anchor":"middle",fill:CX.legno,"font-size":13.5}));
+  }
+
+  // sezione di taglio
+  const xt = sx(s.xt);
+  sv.appendChild(mk("line",{x1:xt,y1:y0-hh-30,x2:xt,y2:y0+hh+30,stroke:CX.testo,"stroke-width":2,"stroke-dasharray":"7 5"}));
+
+  // frecce dei due tagli
+  const comprSopra = d.M > 0;
+  const y1a = comprSopra ? y0-hh-8  : y0+hh+8;
+  const y1b = comprSopra ? y0-hh-36 : y0+hh+36;
+  const y2a = comprSopra ? y0+hh+8  : y0-hh-8;
+  const y2b = comprSopra ? y0+hh+36 : y0-hh-36;
+  const freccia=(ya,yb,col,lab)=>{
+    const dir = yb>ya ? -1 : 1;
+    sv.appendChild(mk("line",{x1:xt,y1:yb,x2:xt,y2:ya,stroke:col,"stroke-width":3}));
+    sv.appendChild(mk("path",{d:`M${xt-6} ${ya+8*dir} L${xt} ${ya} L${xt+6} ${ya+8*dir}`,fill:"none",stroke:col,"stroke-width":3}));
+    const c=mk("circle",{cx:xt+20,cy:(ya+yb)/2,r:10,fill:col}); sv.appendChild(c);
+    sv.appendChild(txt(xt+20,(ya+yb)/2+4.5,lab,{fill:"#1E241F","text-anchor":"middle","font-size":16,"font-weight":700}));
+  };
+  if (Math.abs(d.M) > 1e-6){
+    freccia(y1a,y1b,CX.compr,"1");
+    freccia(y2a,y2b,CX.traz,"2");
+  } else {
+    sv.appendChild(txt(xt+16,y0-hh-20,"taglio unico",{fill:CX.legno,"font-size":13.5}));
+  }
+  sv.appendChild(txt(20,20,"0 m",{fill:CX.tenue,"font-size":13}));
+  sv.appendChild(txt(W-20,20,s.L.toFixed(1)+" m",{fill:CX.tenue,"font-size":13,"text-anchor":"end"}));
+
+  // ---- sforzo normale lungo l'asse ----
+  if (Math.abs(s.qa) > 1e-6 || Math.abs(s.Pa) > 1e-6){
+    const Nmax = Math.max(...Array.from({length:41},(_,i)=>Math.abs(assiale(s,s.L*i/40))));
+    if (Nmax > 1){
+      const Nt = assiale(s,s.xt);
+      sv.appendChild(txt(W-20,H-8,
+        `N ${Nt<0?"compr.":"traz."} ${(Math.abs(Nt)/1000).toFixed(2)} kN`,
+        {fill:Nt<0?CX.compr:CX.traz,"font-size":13,"text-anchor":"end"}));
+    }
+  }
+
+  // ---- inclina tutto, poi aggiungi il riferimento orizzonte (che NON ruota) ----
+  inclina(sv, s.alfa, W/2, H/2, W, H);
+  const vb = sv.getAttribute("viewBox").split(" ").map(Number);
+  const ox = vb[0]+34, oy = vb[1]+vb[3]-38;
+  sv.appendChild(mk("line",{x1:ox,y1:oy,x2:ox+52,y2:oy,stroke:CX.tenue,"stroke-width":1.4,"stroke-dasharray":"5 3"}));
+  sv.appendChild(mk("line",{x1:ox,y1:oy,x2:ox+52*Math.cos(s.alfa),y2:oy-52*Math.sin(s.alfa),stroke:CX.testo,"stroke-width":2.6,"stroke-linecap":"round"}));
+  sv.appendChild(mk("line",{x1:ox,y1:oy,x2:ox,y2:oy+20,stroke:CX.legno,"stroke-width":1.8}));
+  sv.appendChild(mk("path",{d:`M${ox-4} ${oy+15} L${ox} ${oy+21} L${ox+4} ${oy+15}`,fill:"none",stroke:CX.legno,"stroke-width":1.8}));
+  sv.appendChild(txt(ox+58,oy+4,(+el.alfa.value||0)+"° · orizzonte",{fill:CX.tenue,"font-size":13.5}));
+}
+
+function disegnaMomento(s,d){
+  const sv=$("sv-mom"); sv.textContent="";
+  const W=1000,H=190,ml=55,mr=55,mt=22,mb=34;
+  const sx=x=>ml+x/s.L*(W-ml-mr);
+  const n=400, vals=[];
+  for(let i=0;i<=n;i++) vals.push(momento(s,s.L*i/n));
+  const mx=Math.max(1e-6,...vals.map(Math.abs));
+  const yz=mt+(H-mt-mb)/2;
+  const sy=m=> yz + m/mx*((H-mt-mb)/2 - 4);   // M>0 verso il basso: diagramma dal lato teso
+
+  // area unica: sta sempre dalla parte delle fibre tese
+  let area=`M${sx(0)} ${yz}`;
+  for(let i=0;i<=n;i++) area+=` L${sx(s.L*i/n)} ${sy(vals[i])}`;
+  area+=` L${sx(s.L)} ${yz} Z`;
+  sv.appendChild(mk("path",{d:area,fill:CX.traz,opacity:.32}));
+
+  let line=`M${sx(0)} ${sy(vals[0])}`;
+  for(let i=1;i<=n;i++) line+=` L${sx(s.L*i/n)} ${sy(vals[i])}`;
+  sv.appendChild(mk("path",{d:line,fill:"none",stroke:CX.testo,"stroke-width":2}));
+  sv.appendChild(mk("line",{x1:sx(0),y1:yz,x2:sx(s.L),y2:yz,stroke:CX.tenue,"stroke-width":1.2}));
+
+  d.zeri.forEach(z=>{
+    sv.appendChild(mk("circle",{cx:sx(z),cy:yz,r:5,fill:CX.legno}));
+    sv.appendChild(txt(sx(z),yz-11,z.toFixed(2)+" m",{fill:CX.legno,"text-anchor":"middle","font-size":13}));
+  });
+
+  const xt=sx(s.xt);
+  sv.appendChild(mk("line",{x1:xt,y1:mt-8,x2:xt,y2:H-mb+8,stroke:CX.testo,"stroke-width":1.6,"stroke-dasharray":"6 4"}));
+  sv.appendChild(mk("circle",{cx:xt,cy:sy(d.M),r:5.5,fill:CX.testo}));
+  sv.appendChild(txt(xt+10, sy(d.M) + (d.M>=0?26:-16), (d.M/1000).toFixed(2)+" kN·m",{fill:CX.testo,"text-anchor":"start","font-size":14,"font-weight":600}));
+
+  sv.appendChild(txt(ml-8,yz+4,"0",{fill:CX.tenue,"text-anchor":"end","font-size":13}));
+  sv.appendChild(txt(ml,mt-8,"area sopra: fibre tese in alto",{fill:CX.traz,"font-size":13}));
+  sv.appendChild(txt(ml,H-9,"area sotto: fibre tese in basso",{fill:CX.traz,"font-size":13}));
+  sv.appendChild(txt(W-mr,H-9,"diagramma tracciato dal lato teso",{fill:CX.tenue,"font-size":13,"text-anchor":"end"}));
+  inclina(sv, s.alfa, W/2, H/2, W, H);
+}
+
+function disegnaSezione(s,d){
+  const sv=$("sv-sez"); sv.textContent="";
+  const W=1000,H=340, cx=330, cy=170, R=125;
+  const Dcm=s.D*100, pcm=d.pCons*100, comprSopra = d.M>0;
+  const k=R/(s.D/2);                    // px per m
+  const pPx=d.pCons*k;
+  const yCut = comprSopra ? cy-R+pPx : cy+R-pPx;
+
+  // posizione dell'asse neutro reale, in px, positiva verso il lato compresso
+  const yANpx = d.anFuori ? Math.sign(d.yAN||1)*R*1.6 : d.yAN*k;
+  const yn = comprSopra ? cy - yANpx : cy + yANpx;   // ordinata SVG dell'asse neutro
+
+  // Segmento circolare delimitato dalla corda a quota yc.
+  // large-arc va calcolato: se la corda non passa per il centro uno dei due
+  // segmenti e' maggiore della semicirconferenza e l'arco minore non basta.
+  const segmento = (yc, sopra) => {
+    const dy = yc - cy, hc = Math.sqrt(Math.max(0, R*R - dy*dy));
+    const sweep = sopra ? 1 : 0;
+    const large = sopra ? (dy > 0 ? 1 : 0) : (dy < 0 ? 1 : 0);
+    return `M${cx-hc} ${yc} A${R} ${R} 0 ${large} ${sweep} ${cx+hc} ${yc} Z`;
+  };
+
+  // le due zone sono disgiunte: mai due riempimenti sovrapposti
+  if (d.anFuori || Math.abs(yn-cy) >= R){
+    sv.appendChild(mk("circle",{cx,cy,r:R,fill:d.tuttaCompressa?CX.compr:CX.traz,opacity:.28}));
+  } else {
+    sv.appendChild(mk("path",{d:segmento(yn, comprSopra),  fill:CX.compr,opacity:.28}));
+    sv.appendChild(mk("path",{d:segmento(yn,!comprSopra),  fill:CX.traz, opacity:.28}));
+  }
+  sv.appendChild(mk("circle",{cx,cy,r:R,fill:"none",stroke:CX.testo,"stroke-width":2}));
+
+  // segmento rimosso dallo scarico
+  const half=Math.sqrt(Math.max(0,R*R-Math.pow(R-pPx,2)));
+  if (pPx>0.5){
+    sv.appendChild(mk("path",{d:segmento(yCut, comprSopra),
+      fill:CX.fondo,stroke:CX.compr,"stroke-width":2.5}));
+  }
+  // asse neutro reale, con il baricentro come riferimento se se ne discosta
+  const spostato = Math.abs(d.yAN) > 0.0005;
+  if (spostato){
+    sv.appendChild(mk("line",{x1:cx-R-10,y1:cy,x2:cx+R+10,y2:cy,stroke:CX.tenue,"stroke-width":1,"stroke-dasharray":"3 4",opacity:.5}));
+    sv.appendChild(txt(cx-R-16,cy+5,"baricentro",{fill:CX.tenue,"font-size":12,"text-anchor":"end"}));
+  }
+  if (d.anFuori){
+    sv.appendChild(txt(cx, comprSopra?cy+R+28:cy-R-26,"ASSE NEUTRO FUORI SEZIONE",{fill:CX.legno,"font-size":13,"font-weight":700,"text-anchor":"middle","letter-spacing":"1"}));
+  } else {
+    sv.appendChild(mk("line",{x1:cx-R-16,y1:yn,x2:cx+R+16,y2:yn,stroke:spostato?CX.legno:CX.testo,
+      "stroke-width":spostato?2.4:1.3,"stroke-dasharray":spostato?"none":"6 4",opacity:spostato?1:.6}));
+    sv.appendChild(txt(cx+R+22,yn+5,"asse neutro",{fill:spostato?CX.legno:CX.tenue,"font-size":13.5,"font-weight":spostato?600:400}));
+    if (spostato){
+      sv.appendChild(mk("line",{x1:cx+R*0.6,y1:cy,x2:cx+R*0.6,y2:yn,stroke:CX.legno,"stroke-width":1.6}));
+      sv.appendChild(txt(cx+R*0.6+8,(cy+yn)/2+5,(Math.abs(d.yAN)*100).toFixed(1)+" cm",{fill:CX.legno,"font-size":13}));
+    }
+  }
+
+  // quota profondità
+  const qx=cx-R-46, ya=comprSopra?cy-R:cy+R;
+  sv.appendChild(mk("line",{x1:qx,y1:ya,x2:qx,y2:yCut,stroke:CX.compr,"stroke-width":2}));
+  [[ya,comprSopra?1:-1],[yCut,comprSopra?-1:1]].forEach(([yy,dd])=>
+    sv.appendChild(mk("path",{d:`M${qx-5} ${yy+7*dd} L${qx} ${yy} L${qx+5} ${yy+7*dd}`,fill:"none",stroke:CX.compr,"stroke-width":2})));
+  sv.appendChild(mk("line",{x1:qx-8,y1:ya,x2:cx,y2:ya,stroke:CX.compr,"stroke-width":.9,opacity:.5}));
+  sv.appendChild(mk("line",{x1:qx-8,y1:yCut,x2:cx+half,y2:yCut,stroke:CX.compr,"stroke-width":.9,opacity:.5}));
+  sv.appendChild(txt(qx-10,(ya+yCut)/2+5,pcm.toFixed(1)+" cm",{fill:CX.compr,"text-anchor":"end","font-size":20,"font-weight":700}));
+
+  // quota diametro
+  const dy=cy+R+42;
+  sv.appendChild(mk("line",{x1:cx-R,y1:dy,x2:cx+R,y2:dy,stroke:CX.tenue,"stroke-width":1.6}));
+  sv.appendChild(txt(cx,dy+18,"Ø "+Dcm.toFixed(0)+" cm",{fill:CX.tenue,"text-anchor":"middle","font-size":16}));
+
+  sv.appendChild(txt(cx, comprSopra?cy-R-22:cy+R+24, comprSopra?"LATO ALTO DEL TRONCO":"LATO BASSO DEL TRONCO",
+    {fill:CX.compr,"text-anchor":"middle","font-size":14,"font-weight":700,"letter-spacing":"1.5"}));
+
+  // la sezione si guarda sempre in asse: mai inclinata
+
+  // tabella quote a destra
+  const tx=580; let ty=44;
+  const riga=(k2,v,col)=>{
+    sv.appendChild(txt(tx,ty,k2,{fill:CX.tenue,"font-size":14,"letter-spacing":"1.3"}));
+    const t=txt(tx,ty+29,v,{fill:col||CX.testo,"font-size":25,"font-weight":700}); sv.appendChild(t);
+    sv.appendChild(mk("line",{x1:tx,y1:ty+44,x2:W-50,y2:ty+44,stroke:CX.linea,"stroke-width":1}));
+    ty+=66;
+  };
+  riga("TAGLIO 1 · SCARICO", `lato ${comprSopra?"alto":"basso"} · ${pcm.toFixed(1)} cm`, CX.compr);
+  riga("TAGLIO 2 · CHIUSURA", `lato ${comprSopra?"basso":"alto"} · fino a incontro`, CX.traz);
+  riga("PROFONDITÀ MAX AMMESSA", `${(d.pmax*100).toFixed(1)} cm · a.n. a ${d.anFuori?"—":(d.dAN*100).toFixed(1)+" cm"}`, CX.legno);
+  riga("SEZIONE RESIDUA", `σ ${(d.sigma/1e6).toFixed(2)} MPa · FS ${d.FS>99?"> 99":d.FS.toFixed(1)}`, d.FS<1.5?CX.grave:CX.testo);
+}
+
+/* ---------------- esiti testuali ---------------- */
+
+function render(){
+  const s = stato();
+
+  // sincronizza i range con L
+  ["x1","x2","xa","xt","xp"].forEach(k=>{ el[k].max = s.L; if (+el[k].value > s.L) el[k].value = s.L; });
+  $("D-v").textContent = (s.D*100).toFixed(0);
+  $("L-v").textContent = s.L.toFixed(1);
+  $("x1-v").textContent = (+el.x1.value).toFixed(2);
+  $("x2-v").textContent = (+el.x2.value).toFixed(2);
+  $("xt-v").textContent = s.xt.toFixed(2);
+  $("xp-v").textContent = (+el.xp.value).toFixed(2);
+  $("P-v").textContent = (+el.P.value||0);
+  $("rho-v").textContent = s.rho;
+  $("frac-v").textContent = "1/"+ (1/s.frac).toFixed(1).replace(".0","");
+  $("w-rho").hidden = el.essenza.value !== "0";
+  $("alfa-v").textContent = (+el.alfa.value||0);
+  $("xa-v").textContent = (+el.xa.value).toFixed(2);
+  $("w-a1").style.display = $("w-a2").style.display = modo==="appoggi" ? "" : "none";
+  $("w-am").style.display = modo==="incastro" ? "" : "none";
+  $("nota-vincolo").textContent = modo==="appoggi"
+    ? "Tronco a terra su due punti di contatto, o su cavalletti."
+    : (s.Rap>0
+        ? "Ramo attaccato alla pianta e appoggiato in un punto. Schema iperstatico: reazione "+(s.Rap/1000).toFixed(2)+" kN."
+        : "Ramo attaccato alla pianta, a sbalzo libero.");
+
+  const M = momento(s, s.xt);
+  const N = assiale(s, s.xt);
+  const comprSopra = M > 0;
+  const pmax = pMax(s, M, N);
+  const pRif = s.frac*s.D;
+  const pCons = Math.max(0, Math.min(pRif, 0.75*pmax, 0.45*s.D));
+  const res = sezioneResidua(s.D, pCons);
+  const sigma = res ? sigmaDa(res.W, res.A, M, N) : Infinity;
+  const sigmaFl = res ? Math.abs(M)/res.W : Infinity;
+  const sigmaAx = res ? N/res.A : 0;
+  const tuttaCompressa = res ? (sigmaFl + sigmaAx <= 0) : false;
+  const FS = sigma>0 ? s.fm/sigma : 999;
+
+  /* Asse neutro reale della sezione: σ(y) = N/A + M·y/I, con y misurato dal
+     baricentro e positivo verso il lato compresso dalla flessione.
+     σ=0  =>  yAN = N·I / (A·|M|).  N<0 (compressione) lo sposta verso il lato teso. */
+  const Ifull = Math.PI*Math.pow(s.D,4)/64;
+  let yAN = 0, anFuori = false;
+  if (Math.abs(M) > 1e-9) yAN = (N*Ifull)/(s.A*Math.abs(M));
+  else { yAN = Math.abs(N) > 1e-9 ? Infinity*Math.sign(N||1) : 0; }
+  if (!isFinite(yAN) || Math.abs(yAN) > s.D/2) anFuori = true;
+  // distanza dal bordo compresso all'asse neutro
+  const dAN = Math.max(0, Math.min(s.D, s.D/2 - (anFuori ? Math.sign(yAN||1)*s.D/2 : yAN)));
+  const zeri = zeriMomento(s);
+  const elastica = lineaElastica(s);
+  const d = {M,N,comprSopra,pmax,pCons,sigma,FS,zeri,res,elastica,yAN,anFuori,dAN,tuttaCompressa};
+
+  disegnaLaterale(s,d); disegnaMomento(s,d); disegnaSezione(s,d);
+
+  // riepilogo header
+  const massaTot = s.rho*s.A*s.L;
+  $("riepilogo").textContent = `Ø${(s.D*100).toFixed(0)} · L${s.L.toFixed(1)} m · ${massaTot.toFixed(0)} kg · q ${(s.q/1000).toFixed(2)} kN/m`;
+
+  // ---- celle esito ----
+  const oltre = modo==="incastro" ? (s.Rap<=0 || s.xt >= s.xa) : (s.xt > s.x2 || s.xt < s.x1);
+  const massaDx = s.rho*s.A*(s.L - s.xt) + ((+el.P.value||0) * (s.xp>=s.xt?1:0));
+  const massaSx = s.rho*s.A*s.xt + ((+el.P.value||0) * (s.xp<s.xt?1:0));
+  const neutro = Math.abs(M) < 0.02*Math.max(...zeriScala(s));
+
+  $("esito").innerHTML = `
+    <div class="cella ${comprSopra?"c-compr":"c-traz"}">
+      <span class="eyebrow">Fibre superiori</span>
+      <div class="val">${comprSopra?"COMPRESSE":"TESE"}</div>
+      <div class="nota">${comprSopra?"il taglio dall'alto si chiude":"il taglio dall'alto si apre"}</div>
+    </div>
+    <div class="cella ${comprSopra?"c-traz":"c-compr"}">
+      <span class="eyebrow">Fibre inferiori</span>
+      <div class="val">${comprSopra?"TESE":"COMPRESSE"}</div>
+      <div class="nota">${comprSopra?"il taglio dal basso si apre":"il taglio dal basso si chiude"}</div>
+    </div>
+    <div class="cella">
+      <span class="eyebrow">Scarico — profondità</span>
+      <div class="val">${(pCons*100).toFixed(1)}<small> cm</small></div>
+      <div class="nota">${(pCons/s.D*100).toFixed(0)} % del diametro</div>
+    </div>
+    <div class="cella">
+      <span class="eyebrow">Momento nella sezione</span>
+      <div class="val">${(Math.abs(M)/1000).toFixed(2)}<small> kN·m</small></div>
+      <div class="nota">σ residua ${(sigma/1e6).toFixed(2)} MPa · FS ${FS>99?"> 99":FS.toFixed(1)}</div>
+    </div>
+    <div class="cella">
+      <span class="eyebrow">Sforzo normale</span>
+      <div class="val" style="color:${Math.abs(N)<1?"var(--tenue)":(N<0?"var(--compr)":"var(--traz)")}">${(Math.abs(N)/1000).toFixed(2)}<small> kN</small></div>
+      <div class="nota">${Math.abs(N)<1?"asse orizzontale, nessun assiale":(N<0?"compressione lungo l'asse":"trazione lungo l'asse")}</div>
+    </div>
+    <div class="cella">
+      <span class="eyebrow">Massa oltre il taglio</span>
+      <div class="val">${massaDx.toFixed(0)}<small> kg</small></div>
+      <div class="nota">a monte del taglio ${massaSx.toFixed(0)} kg</div>
+    </div>`;
+
+  // ---- avvisi ----
+  const av = [];
+  if (Math.abs(M) < 1e-6){
+    av.push(["ok","Sezione a momento nullo","Nessuna tensione flessionale in questo punto: si può eseguire un taglio unico. Verifica comunque che il tronco non ruoti o rotoli una volta separato."]);
+  }
+  if (zeri.length){
+    av.push(["ok","Punti scarichi disponibili", "Momento nullo a "+zeri.map(z=>z.toFixed(2)+" m").join(", ")+". Spostare lì il taglio elimina il problema alla radice."]);
+  }
+  if (pmax < pRif && pmax > 0){
+    av.push(["","Sezione molto sollecitata","Alla quota di riferimento la sezione residua cederebbe da sola. Lo scarico è stato ridotto a "+(pCons*100).toFixed(1)+" cm. Meglio ridurre la luce con un appoggio o un cuneo prima di tagliare."]);
+  }
+  if (pmax <= 0.001){
+    av.push(["grave","Rottura imminente","La sezione intera è già oltre la resistenza assunta: il tronco può cedere durante il taglio o prima. Non tagliare qui. Sostieni il carico, riduci la luce o allontanati e rivaluta."]);
+  }
+  if (FS < 2 && pmax > 0.001){
+    av.push(["","Margine ridotto","Fattore di sicurezza "+FS.toFixed(1)+" sulla sezione residua. Esegui il taglio 2 senza soste e non lasciare la sezione aperta."]);
+  }
+  if (oltre && massaDx > 80){
+    av.push(["","Porzione a sbalzo pesante", massaDx.toFixed(0)+" kg si liberano al completamento del taglio 2. Definisci prima dove cadono e da che parte esci."]);
+  }
+  if (modo==="incastro" && s.Rap>0 && s.xt < s.xa){
+    av.push(["","Taglio fra incastro e appoggio","Recidendo qui il ramo perde il vincolo alla pianta e resta in equilibrio sul solo appoggio a "+s.xa.toFixed(2)+" m, che diventa un fulcro: la parte più pesante scende e l'altra si solleva. Valuta da che lato pende il baricentro prima di completare il taglio 2."]);
+  }
+  if (modo==="incastro" && s.Rap>0){
+    av.push(["","Schema iperstatico","La reazione dell'appoggio ("+(s.Rap/1000).toFixed(2)+" kN) dipende dalla rigidezza della trave intera. Appena il taglio 1 indebolisce la sezione lo schema si ridistribuisce: il momento reale scende sotto quello calcolato, ma il ramo si assesta e il punto di contatto si sposta."]);
+  }
+  const gradi = +el.alfa.value||0;
+  if (Math.abs(gradi) >= 5 && Math.abs(gradi) < 85){
+    av.push(["","Scorrimento lungo l'asse","Con "+Math.abs(gradi)+"° serve un attrito μ ≥ "+Math.abs(Math.tan(s.alfa)).toFixed(2)+" per non far scivolare il tronco. Blocca a valle prima di tagliare: al completamento del taglio 2 la porzione recisa parte lungo la linea di massima pendenza, non verticalmente."]);
+  } else if (Math.abs(gradi) >= 85){
+    av.push(["grave","Nessun attrito utile","Con l'asse quasi verticale l'attrito non trattiene più nulla: la porzione recisa cade libera lungo l'asse. Deve essere imbracata o sostenuta prima di completare il taglio."]);
+  }
+  if (tuttaCompressa && Math.abs(M) > 1e-6){
+    av.push(["grave","Sezione interamente compressa","Lo sforzo normale supera la flessione: non esistono fibre tese. Il taglio si chiude da entrambi i lati e la barra viene pinzata comunque. La sequenza scarico-chiusura non protegge: usa cunei nel taglio, o taglia a fette dalla periferia."]);
+  }
+  if (Math.abs(gradi) >= 80){
+    av.push(["","Asse quasi verticale","La flessione da peso proprio è praticamente nulla: la sezione lavora quasi solo di sforzo normale. Il comportamento al taglio è governato da carichi laterali, vento e vincoli, che questo modello non considera."]);
+  }
+  if (!oltre && modo==="appoggi"){
+    av.push(["","Taglio in campata","Le due parti restano appoggiate: il taglio non si apre da solo e le estremità tendono a ruotare verso il basso attorno agli appoggi. Attenzione al pizzicamento a fine corsa."]);
+  }
+  $("avvisi").innerHTML = av.map(([c,t,p])=>`<div class="avviso ${c}"><b>${t}</b>${p}</div>`).join("");
+
+  // ---- sequenza ----
+  const inclinato = Math.abs(+el.alfa.value||0) >= 15;
+  const rif = inclinato ? " (rispetto all'asse del tronco, non alla verticale)" : "";
+  const latoC = comprSopra ? "sul lato alto" : "sul lato basso";
+  const latoT = comprSopra ? "sul lato basso" : "sul lato alto";
+  const passi = Math.abs(M) < 1e-6
+    ? [["1","Taglio unico","Sezione scarica: taglia in un'unica passata, preferibilmente dall'alto. Controlla che la parte recisa non rotoli."]]
+    : [
+      ["1",`Scarico ${latoC} — ${(pCons*100).toFixed(1)} cm`,
+       `Lato <b>${comprSopra?"compresso alto":"compresso basso"}</b>${rif}. Affonda ${(pCons*100).toFixed(1)} cm su Ø ${(s.D*100).toFixed(0)} cm, pari al ${(pCons/s.D*100).toFixed(0)} %. Fermati ben prima dell'asse neutro, che dal bordo compresso sta a <b>${(dAN*100).toFixed(1)} cm</b>: oltre quella quota la barra viene pinzata.`],
+      ["2",`Chiusura ${latoT} — fino a incontro`,
+       `Lato <b>${comprSopra?"teso inferiore":"teso superiore"}</b>, sullo stesso piano del taglio 1. Qui la fessura si apre: la barra resta libera e la rottura avviene sulla linea dei due tagli senza strappare le fibre.`]
+    ];
+  $("seq").innerHTML = passi.map(([n,h,p])=>`<div class="passo"><div class="n">${n}</div><div class="txt"><h4>${h}</h4><p>${p}</p></div></div>`).join("");
+}
+
+function zeriScala(s){ const o=[]; for(let i=0;i<=40;i++) o.push(Math.abs(momento(s,s.L*i/40))||0); return o; }
+
+/* ---------------- eventi ---------------- */
+Object.values(el).forEach(e=>{e.addEventListener("input",render);e.addEventListener("change",render);});
+$("btn-appoggi").addEventListener("click",()=>{modo="appoggi";$("btn-appoggi").setAttribute("aria-pressed","true");$("btn-incastro").setAttribute("aria-pressed","false");render();});
+$("btn-incastro").addEventListener("click",()=>{modo="incastro";$("btn-incastro").setAttribute("aria-pressed","true");$("btn-appoggi").setAttribute("aria-pressed","false");render();});
+render();
+</script>
+</body>
+</html>

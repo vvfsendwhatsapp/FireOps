@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analisi Ribaltamento Scala — Sistema Discensore</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #f4f2ed;
+    --surface: #ffffff;
+    --surface2: #f0ede6;
+    --border: #d6d2c9;
+    --text: #1a1814;
+    --text2: #6b6860;
+    --text3: #9a9890;
+    --accent: #c0390a;
+    --accent2: #185FA5;
+    --green: #1a7a4a;
+    --amber: #a05a00;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* HEADER */
+  .header {
+    background: var(--text);
+    color: #f4f2ed;
+    padding: 32px 40px 28px;
+    border-bottom: 3px solid var(--accent);
+  }
+  .header-eyebrow {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: #9a9890;
+    margin-bottom: 8px;
+  }
+  .header h1 {
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: -.02em;
+  }
+  .header-sub {
+    font-size: 13px;
+    color: #c2bfb8;
+    margin-top: 6px;
+  }
+
+  /* LAYOUT */
+  .main { max-width: 960px; margin: 0 auto; padding: 32px 24px 60px; }
+
+  /* SECTION TITLES */
+  .sec-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .sec-title::after { content:''; flex:1; height:1px; background:var(--border); }
+  .sec-num {
+    font-family: var(--mono);
+    font-size: 10px;
+    background: var(--accent);
+    color: white;
+    padding: 1px 6px;
+    border-radius: 2px;
+  }
+
+  /* CARD */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+  }
+
+  /* CONTROLS */
+  .ctrl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 28px; }
+  .ctrl-item label {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 12px;
+    color: var(--text2);
+    margin-bottom: 5px;
+  }
+  .ctrl-item label span {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 100%; height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    background: var(--accent);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 0 3px rgba(192,57,10,.15);
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 14px; height: 14px;
+    background: var(--accent);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  /* METRICS ROW */
+  .metrics { display: grid; grid-template-columns: repeat(6,1fr); gap: 10px; margin: 16px 0; }
+  .metric { background: var(--surface2); border-radius: 4px; padding: 10px 12px; }
+  .metric-label { font-size: 10px; color: var(--text3); margin-bottom: 3px; font-family: var(--mono); }
+  .metric-val { font-size: 18px; font-weight: 600; font-family: var(--mono); color: var(--text); }
+  .metric-val.ok  { color: var(--green); }
+  .metric-val.warn { color: var(--amber); }
+  .metric-val.err { color: var(--accent); }
+  .metric-unit { font-size: 10px; color: var(--text3); }
+
+  /* STATUS BANNER */
+  .status-banner {
+    border-radius: 4px; padding: 10px 16px;
+    font-family: var(--mono); font-size: 12px; font-weight: 600;
+    letter-spacing: .04em; margin: 12px 0;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .status-banner.ok   { background: #edfaf3; color: var(--green); border-left: 3px solid var(--green); }
+  .status-banner.warn { background: #fff8ec; color: var(--amber); border-left: 3px solid var(--amber); }
+  .status-banner.err  { background: #fef2f0; color: var(--accent); border-left: 3px solid var(--accent); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex-shrink:0; }
+
+  /* CANVAS DIAGRAM */
+  canvas#diag { width:100%; display:block; border-radius:4px; background: #fafaf7; border:1px solid var(--border); }
+  .chart-wrap { position:relative; width:100%; height:280px; }
+
+  /* FORMULA BOX */
+  .fbox {
+    background: var(--surface2);
+    border-left: 3px solid var(--accent2);
+    border-radius: 0 4px 4px 0;
+    padding: 12px 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 2;
+    color: var(--text2);
+    margin: 12px 0;
+  }
+  .fbox b { color: var(--text); }
+
+  /* TWO-COL */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+
+  /* RELAZIONE */
+  .relazione { margin-top: 8px; }
+  .rl-block { margin-bottom: 28px; }
+  .rl-block h3 {
+    font-size: 13px; font-weight: 600; letter-spacing: .01em;
+    margin-bottom: 8px; color: var(--text);
+    border-bottom: 1px solid var(--border); padding-bottom: 5px;
+  }
+  .rl-block p { font-size: 13px; line-height: 1.75; color: var(--text2); margin-bottom: 6px; }
+  .rl-block ul { padding-left: 18px; }
+  .rl-block li { font-size: 13px; line-height: 1.75; color: var(--text2); margin-bottom: 3px; }
+
+  .formula-display {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px 18px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 2.1;
+    margin: 10px 0;
+    color: var(--text);
+  }
+  .formula-display .highlight { color: var(--accent); font-weight: 600; }
+  .formula-display .dim { color: var(--text3); }
+
+  /* TABLE */
+  .data-table { width:100%; border-collapse:collapse; font-size:12px; font-family: var(--mono); }
+  .data-table th {
+    background: var(--text); color: #f4f2ed;
+    padding: 7px 10px; text-align: center;
+    font-weight: 600; font-size: 11px; letter-spacing: .05em;
+  }
+  .data-table td { padding: 6px 10px; text-align: center; border-bottom: 1px solid var(--border); }
+  .data-table tr:nth-child(even) td { background: var(--surface2); }
+  .data-table .td-warn { background: #fff8ec !important; color: var(--amber); font-weight: 600; }
+  .data-table .td-err  { background: #fef2f0 !important; color: var(--accent); font-weight: 600; }
+  .data-table .td-ok   { color: var(--green); font-weight: 600; }
+
+  /* LEGEND ROW */
+  .legend { display:flex; gap:20px; font-size:11px; color:var(--text2); margin-bottom:6px; flex-wrap:wrap; }
+  .leg-dot { width:12px; height:3px; border-radius:2px; display:inline-block; vertical-align:middle; margin-right:5px; }
+
+  /* DIVIDER */
+  .divider { border:none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+  /* NOTE */
+  .note { font-size: 11px; color: var(--text3); font-style: italic; margin-top: 4px; }
+
+  /* PRINT */
+  @media print {
+    body { background: white; }
+    .card { break-inside: avoid; }
+  }
+
+  @media (max-width: 680px) {
+    .ctrl-grid { grid-template-columns: 1fr; }
+    .metrics { grid-template-columns: repeat(3,1fr); }
+    .two-col { grid-template-columns: 1fr; }
+    .header { padding: 20px; }
+    .main { padding: 20px 16px 40px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-eyebrow">Tecnico — Analisi strutturale scala appoggiata</div>
+  <h1>Stato limite di ribaltamento<br>Sistema corde con discensore — Taglia 2:1</h1>
+  <div class="header-sub">Scala L = 10,33 m · Calcolo piede minimo in funzione dell'angolo di uscita corda</div>
+</div>
+
+<div class="main">
+
+  <!-- CALCOLATORE -->
+  <div class="sec-title"><span class="sec-num">01</span> Calcolatore interattivo</div>
+
+  <div class="card">
+    <div class="ctrl-grid">
+      <div class="ctrl-item">
+        <label>Carico operatore P <span id="lP">100 kg</span></label>
+        <input type="range" id="P" min="50" max="200" value="100" step="5" oninput="upd()">
+      </div>
+      <div class="ctrl-item">
+        <label>Peso scala W<sub>l</sub> <span id="lWl">35 kg</span></label>
+        <input type="range" id="Wl" min="0" max="80" value="35" step="1" oninput="upd()">
+      </div>
+      <div class="ctrl-item">
+        <label>Alzo discensore α &nbsp;<small style="color:var(--text3);font-size:10px">(+=giù, −=su)</small> <span id="lAlzo">0°</span></label>
+        <input type="range" id="alzo" min="-90" max="90" value="0" step="5" oninput="upd()">
+      </div>
+      <div class="ctrl-item">
+        <label>Piede effettivo d <span id="lPiede">4.00 m</span></label>
+        <input type="range" id="piede" min="0.5" max="8" value="4" step="0.1" oninput="upd()">
+      </div>
+    </div>
+
+    <div id="status-banner" class="status-banner ok"><span class="dot"></span><span id="status-text">STABILE</span></div>
+
+    <div class="metrics" id="metrics"></div>
+
+    <div class="fbox" id="fbox"></div>
+  </div>
+
+  <div class="two-col">
+    <div>
+      <div class="sec-title" style="margin-top:0"><span class="sec-num">02</span> Schema forze</div>
+      <canvas id="diag" width="460" height="420"></canvas>
+      <div class="note" style="margin-top:6px">
+        Forza risultante (rosso) · Corda discensore (blu) · Piede min. (verde)
+      </div>
+    </div>
+    <div>
+      <div class="sec-title" style="margin-top:0"><span class="sec-num">03</span> Curva d<sub>min</sub> vs α</div>
+      <div class="legend">
+        <span><span class="leg-dot" style="background:#378ADD"></span>Senza W<sub>l</sub></span>
+        <span><span class="leg-dot" style="background:#1a7a4a"></span>Con W<sub>l</sub></span>
+        <span><span class="leg-dot" style="background:#a05a00;height:12px;width:2px;border-radius:0"></span>α corrente</span>
+      </div>
+      <div class="chart-wrap"><canvas id="ch"></canvas></div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- TABELLA -->
+  <div class="sec-title"><span class="sec-num">04</span> Tabella stati limite</div>
+  <div class="card" style="padding:0;overflow:hidden;">
+    <table class="data-table" id="tbl">
+      <thead>
+        <tr>
+          <th>Alzo α (°)</th>
+          <th>d<sub>min</sub> senza W<sub>l</sub> (m)</th>
+          <th>d<sub>min</sub> con W<sub>l</sub> (m)</th>
+          <th>Angolo β scala (°)</th>
+          <th>|F| ancoraggio (N)</th>
+          <th>Stato (d eff)</th>
+        </tr>
+      </thead>
+      <tbody id="tbl-body"></tbody>
+    </table>
+  </div>
+  <div class="note">I valori in <span style="color:var(--accent);font-weight:600">rosso</span> indicano ribaltamento con il piede impostato. In <span style="color:var(--amber);font-weight:600">arancio</span> margine &lt; 0.50 m.</div>
+
+  <hr class="divider">
+
+  <!-- RELAZIONE -->
+  <div class="sec-title"><span class="sec-num">05</span> Relazione di calcolo</div>
+
+  <div class="relazione">
+
+    <div class="rl-block">
+      <h3>1. Descrizione del sistema</h3>
+      <p>La scala (lunghezza L = 10,33 m) è appoggiata contro una parete verticale con il piede a terra su piano orizzontale. Alla sommità della scala è posizionato un ancoraggio da cui pende il sistema di manovra:</p>
+      <ul>
+        <li>Una <strong>taglia 2:1</strong> è formata da una corda che parte fissa all'ancoraggio, scende verticalmente fino al carico (operatore P), risale e si avvolge sul rinvio posizionato sullo stesso ancoraggio.</li>
+        <li>Il tratto di corda che esce dal rinvio è guidato verso un <strong>discensore</strong> con angolo α rispetto all'orizzontale (positivo verso il basso, negativo verso l'alto).</li>
+        <li>Il sistema genera una forza risultante all'ancoraggio che è la somma vettoriale dei tre tratti di corda che vi convergono.</li>
+      </ul>
+    </div>
+
+    <div class="rl-block">
+      <h3>2. Ipotesi di calcolo</h3>
+      <ul>
+        <li>Analisi statica piana (2D). Si trascurano effetti dinamici e impulsivi.</li>
+        <li>La scala è incernierata in testa (parete liscia, solo reazione normale) e in coda (terreno con attrito).</li>
+        <li>Il carico P è applicato in testa scala tramite la corda; il peso della scala W<sub>l</sub> è applicato nel baricentro (mezzeria).</li>
+        <li>La tensione in ogni tratto di taglia 2:1 è uniforme: T = P / 2.</li>
+        <li>Lo stato limite di ribaltamento corrisponde al momento ribaltante uguale al momento stabilizzante (coefficiente di sicurezza = 1,0).</li>
+      </ul>
+    </div>
+
+    <div class="rl-block">
+      <h3>3. Analisi della forza risultante all'ancoraggio</h3>
+      <p>Con tensione T = P/2, i tre contributi all'ancoraggio (sistema di riferimento: x orizzontale positivo lato discensore, y verticale positivo verso l'alto) sono:</p>
+      <div class="formula-display">
+        <span class="dim">Tratto fisso taglia:     </span>  F₁ = (0 , −T)<br>
+        <span class="dim">Tratto risalita da carico:</span>  F₂ = (0 , −T)<br>
+        <span class="dim">Tratto corda discensore:  </span>  F₃ = (+T·cos α , +T·sin α)<br>
+        ─────────────────────────────────────────────<br>
+        <span class="highlight">F = T·(cos α , sin α − 2)</span><br>
+        <span class="dim">|F| = T·√[cos²α + (2−sin α)²]</span><br>
+        <span class="highlight">|F| = (P/2)·√(5 + 4·sin α)</span>
+      </div>
+      <p class="note">Nota: il modulo massimo si ottiene per α = +90° (corda verticale verso il basso), dando |F| = 3T = 3P/2, il minimo per α = −90° con |F| = T = P/2.</p>
+    </div>
+
+    <div class="rl-block">
+      <h3>4. Equazione dello stato limite di ribaltamento</h3>
+      <p>Si impone l'equilibrio dei momenti rispetto al <strong>piede della scala</strong> (punto A).</p>
+      <p>Sia β l'angolo della scala rispetto all'orizzontale. La forza all'ancoraggio F è applicata in testa (distanza L dalla coda).</p>
+      <p>Momento ribaltante (dovuto alla componente orizzontale di F):</p>
+      <div class="formula-display">
+        M<sub>rib</sub> = F<sub>y_perp</sub> · L  =  |F|·sin(γ) · L
+      </div>
+      <p>dove γ è l'angolo tra F e l'asse della scala. Per l'equilibrio rotazionale, espressa in termini di piede d = L·cos β:</p>
+      <div class="formula-display">
+        <span class="highlight">d<sub>min</sub> = L · cos α / √(5 + 4·sin α)</span><br>
+        <span class="dim">(senza considerare il peso proprio della scala)</span>
+      </div>
+      <p>Includendo il peso della scala W<sub>l</sub> come momento stabilizzante:</p>
+      <div class="formula-display">
+        k = 2 + W<sub>l</sub> / P<br>
+        <span class="highlight">d<sub>min,Wl</sub> = L · cos α / √(1 + k² + 2k·sin α)</span>
+      </div>
+    </div>
+
+    <div class="rl-block">
+      <h3>5. Angolo della scala in condizione critica</h3>
+      <p>L'angolo β della scala (rispetto all'orizzontale) allo stato limite vale:</p>
+      <div class="formula-display">
+        <span class="highlight">β = arctan[(k − sin α) / cos α]</span>
+      </div>
+      <p>Per la configurazione base (P = 100 kg, W<sub>l</sub> = 35 kg, α = 0°): β ≈ <span id="rl-beta">—</span>°, piede minimo ≈ <span id="rl-dmin">—</span> m.</p>
+    </div>
+
+    <div class="rl-block">
+      <h3>6. Caso peggiore</h3>
+      <p>Il piede massimo richiesto si verifica attorno ad α ≈ −30° (corda discensore orientata circa 30° sopra l'orizzontale). In questa configurazione la componente orizzontale della forza è massima rispetto alla verticale, incrementando il momento ribaltante. Orientare il discensore verso il basso (α > 0) riduce significativamente il piede necessario.</p>
+      <p>Per α = ±90° il piede richiesto è nullo: la corda è verticale e non genera momento di ribaltamento rispetto al piede.</p>
+    </div>
+
+    <div class="rl-block">
+      <h3>7. Raccomandazioni operative</h3>
+      <ul>
+        <li>Applicare un <strong>fattore di sicurezza ≥ 2</strong> sul piede minimo calcolato per tenere conto degli effetti dinamici e dell'incertezza sulle azioni.</li>
+        <li>Verificare la resistenza dell'attrito al piede: il coefficiente di attrito richiesto è f = F<sub>x</sub> / F<sub>y</sub> = cos α / (2 − sin α).</li>
+        <li>Il peso proprio della scala ha effetto stabilizzante: una scala più pesante riduce il piede minimo.</li>
+        <li>Verificare la resistenza dell'ancoraggio alla forza risultante |F| = (P/2)·√(5 + 4·sin α).</li>
+        <li>Non superare il carico massimo P per cui è stato dimensionato il sistema.</li>
+      </ul>
+    </div>
+
+    <div class="rl-block">
+      <h3>8. Parametri di riferimento</h3>
+      <div class="formula-display">
+        L   = 10,33 m     (lunghezza scala)<br>
+        g   =  9,81 m/s²  (accelerazione di gravità)<br>
+        α   = angolo corda discensore rispetto all'orizzontale [−90°, +90°]<br>
+        P   = peso operatore [kg]<br>
+        W<sub>l</sub>  = peso scala [kg]<br>
+        T   = P·g / 2     (tensione corda taglia 2:1)<br>
+        d   = piede della scala [m]<br>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+const L = 10.33, g = 9.81;
+let chartInst = null;
+
+function calc(P_kg, Wl_kg, a_deg) {
+  const P = P_kg * g, Wl = Wl_kg * g, T = P / 2;
+  // Convenzione tabella originale: α<0 = corda verso il basso, α>0 = corda verso l'alto
+  const a = a_deg * Math.PI / 180;
+  const ca = Math.cos(a), sa = Math.sin(a);
+  const k2 = 2, kw = 2 + Wl / P;
+  const d2 = Math.sqrt(Math.max(0, 5 + 4 * sa));
+  const dw = Math.sqrt(Math.max(0, 1 + kw*kw + 2*kw*sa));
+  return {
+    piede2: d2 > 0 ? L * ca / d2 : 0,
+    piedeW: dw > 0 ? L * ca / dw : 0,
+    beta:   Math.atan2(k2 - sa, ca) * 180 / Math.PI,
+    Fx: T * ca,
+    Fy: T * (sa - 2),   // sempre negativo (verso il basso) ✓
+    Fmag: T * Math.sqrt(5 + 4 * sa),
+    T, P, kw, ca, sa
+  };
+}
+
+function statusClass(margin) {
+  if (margin < 0) return 'err';
+  if (margin < 0.5) return 'warn';
+  return 'ok';
+}
+
+function upd() {
+  const P_kg   = +document.getElementById('P').value;
+  const Wl_kg  = +document.getElementById('Wl').value;
+  const alzo   = +document.getElementById('alzo').value;
+  const piede  = +document.getElementById('piede').value;
+
+  document.getElementById('lP').textContent    = P_kg + ' kg';
+  document.getElementById('lWl').textContent   = Wl_kg + ' kg';
+  document.getElementById('lAlzo').textContent = alzo + '°';
+  document.getElementById('lPiede').textContent= piede.toFixed(2) + ' m';
+
+  const r = calc(P_kg, Wl_kg, alzo);
+  const margin = piede - r.piede2;
+  const sc = statusClass(margin);
+
+  const banner = document.getElementById('status-banner');
+  banner.className = 'status-banner ' + sc;
+  const msgs = { ok: 'STABILE — margine positivo', warn: 'ATTENZIONE — margine ridotto (< 0,50 m)', err: 'RIBALTAMENTO — aumentare il piede!' };
+  document.getElementById('status-text').textContent = msgs[sc];
+
+  document.getElementById('metrics').innerHTML = `
+    <div class="metric"><div class="metric-label">d<sub>min</sub> senza W<sub>l</sub></div><div class="metric-val">${r.piede2.toFixed(2)}</div><div class="metric-unit">m</div></div>
+    <div class="metric"><div class="metric-label">d<sub>min</sub> con W<sub>l</sub></div><div class="metric-val">${r.piedeW.toFixed(2)}</div><div class="metric-unit">m</div></div>
+    <div class="metric"><div class="metric-label">Margine</div><div class="metric-val ${sc}">${margin >= 0 ? '+' : ''}${margin.toFixed(2)}</div><div class="metric-unit">m</div></div>
+    <div class="metric"><div class="metric-label">Angolo β scala</div><div class="metric-val">${r.beta.toFixed(1)}</div><div class="metric-unit">°</div></div>
+    <div class="metric"><div class="metric-label">|F| ancoraggio</div><div class="metric-val">${Math.round(r.Fmag)}</div><div class="metric-unit">N</div></div>
+    <div class="metric"><div class="metric-label">T corda</div><div class="metric-val">${Math.round(r.T)}</div><div class="metric-unit">N</div></div>
+  `;
+
+  document.getElementById('fbox').innerHTML =
+    `<b>F</b> = T·(cos α, sin α − 2) &nbsp;=&nbsp; ` +
+    `(${Math.round(r.Fx)} N, ${Math.round(r.Fy)} N) &nbsp;|&nbsp; ` +
+    `<b>|F|</b> = (P/2)·√(5+4·sin α) = <b>${Math.round(r.Fmag)} N</b><br>` +
+    `<b>d<sub>min</sub></b> = L·cos α / √(5+4·sin α) = <b>${r.piede2.toFixed(3)} m</b> &nbsp;|&nbsp; ` +
+    `f<sub>attrito req.</sub> = cos α / (2−sin α) = <b>${(r.ca / (2 - r.sa)).toFixed(3)}</b>`;
+
+  drawDiag(P_kg, Wl_kg, alzo, piede, r);
+  drawChart(P_kg, Wl_kg, alzo, piede);
+  buildTable(P_kg, Wl_kg, piede);
+
+  const r0 = calc(P_kg, Wl_kg, 0);
+  const rlb = document.getElementById('rl-beta');
+  const rld = document.getElementById('rl-dmin');
+  if (rlb) rlb.textContent = r0.beta.toFixed(1);
+  if (rld) rld.textContent = r0.piede2.toFixed(2);
+}
+
+function drawDiag(P_kg, Wl_kg, alzo, piede_eff, r) {
+  const cv = document.getElementById('diag');
+  const ctx = cv.getContext('2d');
+  const CW = cv.width, CH = cv.height;
+  ctx.clearRect(0,0,CW,CH);
+  ctx.fillStyle = '#fafaf7';
+  ctx.fillRect(0,0,CW,CH);
+
+  const mono   = 'bold 10px IBM Plex Mono, monospace';
+  const monoSm = '9px IBM Plex Mono, monospace';
+  const monoLg = 'bold 11px IBM Plex Mono, monospace';
+
+  // ── GEOMETRIA SCALA ──────────────────────────────────────────────────
+  // betaR = angolo scala da orizzontale (es. ~63° con P=100kg, α=0°)
+  // TESTA (ancoraggio) = in alto a sinistra, contro la parete
+  // PIEDE              = in basso a destra, sul terreno
+  const betaR = r.beta * Math.PI / 180;
+  const SL    = 230;
+  const hx    = 90,  hy = 40;                           // testa (head)
+  const fx    = hx + SL * Math.cos(betaR);              // piede x
+  const fy    = hy + SL * Math.sin(betaR);              // piede y  (canvas: y↓)
+
+  // ── PARETE E TERRENO ─────────────────────────────────────────────────
+  ctx.strokeStyle = '#c8c4bb'; ctx.lineWidth = 1.5;
+  // parete verticale (sinistra)
+  ctx.beginPath(); ctx.moveTo(hx-2, 10); ctx.lineTo(hx-2, fy+4); ctx.stroke();
+  // terreno (orizzontale basso)
+  ctx.beginPath(); ctx.moveTo(20, fy+2); ctx.lineTo(CW-20, fy+2); ctx.stroke();
+  // hatch parete
+  ctx.lineWidth=0.7;
+  for(let i=0;i<10;i++){ctx.beginPath();ctx.moveTo(hx-2,14+i*26);ctx.lineTo(hx-14,14+i*26+11);ctx.stroke();}
+  // hatch terreno
+  for(let i=0;i<9;i++){ctx.beginPath();ctx.moveTo(30+i*36,fy+2);ctx.lineTo(30+i*36-10,fy+14);ctx.stroke();}
+
+  // ── SCALA ─────────────────────────────────────────────────────────────
+  ctx.strokeStyle='#c0390a'; ctx.lineWidth=6; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(hx,hy); ctx.lineTo(fx,fy); ctx.stroke();
+
+  // etichetta L (ruotata lungo la scala)
+  ctx.save();
+  ctx.translate((hx+fx)/2, (hy+fy)/2);
+  ctx.rotate(betaR);
+  ctx.fillStyle='#c0390a'; ctx.font=monoSm; ctx.textAlign='center';
+  ctx.fillText('L = 10,33 m', 0, -8);
+  ctx.restore();
+
+  // angolo beta al piede
+  ctx.strokeStyle='#6b6860'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.arc(fx, fy, 30, Math.PI, Math.PI+betaR); ctx.stroke();
+  ctx.fillStyle='#6b6860'; ctx.font=monoSm; ctx.textAlign='right';
+  ctx.fillText('β='+r.beta.toFixed(0)+'°', fx-26, fy-10);
+
+  // ── ANCORAGGIO (testa scala) ───────────────────────────────────────────
+  ctx.fillStyle='#1a1814';
+  ctx.beginPath(); ctx.arc(hx,hy,5,0,2*Math.PI); ctx.fill();
+  ctx.strokeStyle='#1a1814'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.arc(hx,hy,11,0,2*Math.PI); ctx.stroke();
+  ctx.fillStyle='#1a1814'; ctx.font=monoSm; ctx.textAlign='left';
+  ctx.fillText('ANCORAGGIO', hx+14, hy+4);
+
+  // ── SISTEMA TAGLIA 2:1 ────────────────────────────────────────────────
+  // Due corde scendono dall'ancoraggio verso il basso (carico)
+  const ropeDY = 75;
+  const t1x = hx+10, t2x = hx-10;   // due tratti separati
+  // carrucola (semicerchio)
+  ctx.strokeStyle='#5f5e5a'; ctx.lineWidth=1.5; ctx.setLineDash([]);
+  ctx.beginPath(); ctx.arc(hx, hy+ropeDY+2, 8, 0, Math.PI); ctx.stroke();
+  // T1 (tratto fisso → giù)
+  arrowLine2(ctx, t1x, hy+12, t1x, hy+ropeDY, '#5f5e5a', 1.5, [4,3]);
+  // T2 (tratto mobile → giù)
+  arrowLine2(ctx, t2x, hy+12, t2x, hy+ropeDY, '#5f5e5a', 1.5, [4,3]);
+  // etichette T1, T2
+  ctx.fillStyle='#5f5e5a'; ctx.font=monoSm;
+  ctx.textAlign='left';  ctx.fillText('T₁', t1x+3, hy+ropeDY/2+4);
+  ctx.textAlign='right'; ctx.fillText('T₂', t2x-3, hy+ropeDY/2+4);
+  // blocco carico
+  const loadY = hy+ropeDY+10;
+  ctx.fillStyle='rgba(24,95,165,.15)';
+  ctx.strokeStyle='#185FA5'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.roundRect(hx-28, loadY, 56, 26, 3); ctx.fill(); ctx.stroke();
+  ctx.fillStyle='#185FA5'; ctx.font=mono; ctx.textAlign='center';
+  ctx.fillText('P = '+P_kg+' kg', hx, loadY+17);
+
+  // ── CORDA VERSO DISCENSORE ────────────────────────────────────────────
+  // Convenzione: α > 0 = corda verso il basso-destra, α < 0 = verso l'alto-destra
+  // Canvas (y↓): α>0 → sin>0 → rdy > hy → GIÙ ✓
+  const aRad   = alzo * Math.PI / 180;
+  const discL  = 88;
+  const rdx    = hx + discL * Math.cos(aRad);
+  const rdy    = hy + discL * Math.sin(aRad);   // α>0 → giù ✓
+  arrowLine2(ctx, hx, hy, rdx, rdy, '#185FA5', 2.5, []);
+
+  // Etichetta DISC. all'estremità
+  ctx.fillStyle='#185FA5'; ctx.font=mono; ctx.textAlign='left';
+  ctx.fillText('DISC.', rdx+4, rdy + (alzo >= 0 ? 8 : -10));
+
+  // T₃ a metà corda
+  ctx.fillStyle='#185FA5'; ctx.font=monoSm; ctx.textAlign='center';
+  ctx.fillText('T₃=P/2', (hx+rdx)/2 + 10, (hy+rdy)/2 + (alzo >= 0 ? -8 : 8));
+
+  // Linea orizzontale di riferimento al discensore (tratteggiata)
+  ctx.strokeStyle='#b0aaa0'; ctx.lineWidth=0.8; ctx.setLineDash([4,3]);
+  ctx.beginPath(); ctx.moveTo(rdx-30, rdy); ctx.lineTo(rdx+30, rdy); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Arco α al discensore: α>0 = sotto orizzontale, α<0 = sopra orizzontale
+  ctx.strokeStyle='#185FA5'; ctx.lineWidth=1;
+  ctx.beginPath();
+  if (alzo > 0)      ctx.arc(rdx, rdy, 20, Math.PI - aRad, Math.PI);  // α>0: sotto ✓
+  else if (alzo < 0) ctx.arc(rdx, rdy, 20, Math.PI, Math.PI - aRad);  // α<0: sopra ✓
+  ctx.stroke();
+  ctx.fillStyle='#185FA5'; ctx.font=monoSm; ctx.textAlign='right';
+  ctx.fillText('α='+alzo+'°', rdx - 24, rdy + (alzo >= 0 ? 18 : -8));
+
+  // ── FORZA RISULTANTE F ALL'ANCORAGGIO ────────────────────────────────
+  // La forza sull'ancoraggio è la somma vettoriale di:
+  //   T₁ (giù) + T₂ (giù) + T₃ (verso discensore ad angolo α)
+  //
+  // In coordinate fisiche (y↑):
+  //   T₁+T₂ = (0, -2T)
+  //   T₃     = T*(cosα,  sinα)    [α>0=su, α<0=giù]
+  //   F      = T*(cosα, sinα−2)
+  //
+  // In canvas (y↓), gli y si invertono:
+  //   T₁+T₂ → (0, +2T) → freccia verso BASSO
+  //   T₃     → (T cosα, -T sinα)  [α>0 → −sinα<0 → UP in canvas = su ✓]
+  //   F      → (T cosα, T(2−sinα)) → sempre verso BASSO-DESTRA
+
+  const fscale  = 70 / r.T;      // scala comune per tutti i vettori
+  const T = r.T;
+
+  // Punto di applicazione: ancoraggio (hx, hy)
+  // Disegno T₁+T₂ (risultante delle due corde verso il basso)
+  const t12ex = hx;
+  const t12ey = hy + 2 * T * fscale;   // verso basso in canvas
+  arrowLine2(ctx, hx, hy, t12ex, t12ey, '#5f5e5a', 2, []);
+  ctx.fillStyle='#5f5e5a'; ctx.font=monoSm; ctx.textAlign='left';
+  ctx.fillText('T₁+T₂ = '+Math.round(2*T)+'N↓', t12ex+5, (hy+t12ey)/2+3);
+
+  // T₃ tira l'ancoraggio VERSO il discensore → stessa direzione della corda
+  // α>0 = giù in canvas → t3ey > hy
+  const t3ex = hx + T * r.ca * fscale;
+  const t3ey = hy + T * r.sa * fscale;   // α>0 → sa>0 → t3ey > hy → giù ✓
+  arrowLine2(ctx, hx, hy, t3ex, t3ey, '#185FA5', 2, []);
+  ctx.fillStyle='#185FA5'; ctx.font=monoSm;
+  ctx.textAlign = t3ex > hx ? 'left' : 'right';
+  ctx.fillText('T₃ = '+Math.round(T)+'N', t3ex + (t3ex>hx?5:-5), t3ey - 6);
+
+  // Parallelogramma delle forze (tratteggiato)
+  const fex = hx + r.Fx * fscale;
+  const fey = hy + T * (2 - r.sa) * fscale;   // Fy_canvas = T(2−sinα) > 0 sempre → GIÙ ✓
+  // lati tratteggiati del parallelogramma
+  ctx.strokeStyle='#c0390a'; ctx.lineWidth=0.8; ctx.setLineDash([4,3]);
+  ctx.beginPath(); ctx.moveTo(t12ex, t12ey); ctx.lineTo(fex, fey); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(t3ex,  t3ey ); ctx.lineTo(fex, fey); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Vettore risultante F (rosso spesso)
+  arrowLine2(ctx, hx, hy, fex, fey, '#c0390a', 3, []);
+  ctx.fillStyle='#c0390a'; ctx.font=monoLg; ctx.textAlign='left';
+  ctx.fillText('F = '+Math.round(r.Fmag)+' N', fex + 5, fey + 3);
+
+  // ── REAZIONI AL PIEDE ────────────────────────────────────────────────
+  const rvsc = 55 / r.P;
+  // Ry verticale verso l'alto (positivo in canvas = verso y minore)
+  arrowLine2(ctx, fx, fy, fx, fy - r.P*rvsc, '#1a7a4a', 2, []);
+  ctx.fillStyle='#1a7a4a'; ctx.font=monoSm; ctx.textAlign='left';
+  ctx.fillText('Ry='+Math.round(r.P)+'N', fx+5, fy-r.P*rvsc/2);
+  // attrito orizzontale verso la parete (→ sinistra)
+  const fric = r.Fx;
+  arrowLine2(ctx, fx, fy, fx - fric*rvsc, fy, '#1a7a4a', 2, []);
+  ctx.fillStyle='#1a7a4a'; ctx.font=monoSm; ctx.textAlign='center';
+  ctx.fillText('f='+Math.round(fric)+'N', fx - fric*rvsc/2, fy+14);
+
+  // ── QUOTA PIEDE MIN / EFF ─────────────────────────────────────────────
+  const isSafe = piede_eff >= r.piede2;
+  const qy1 = fy+24, qy2 = fy+40;
+  // d_min
+  ctx.strokeStyle='#6b6860'; ctx.lineWidth=1; ctx.setLineDash([3,3]);
+  ctx.beginPath(); ctx.moveTo(hx,fy+2); ctx.lineTo(hx,qy1+5); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(fx,fy+2); ctx.lineTo(fx,qy1+5); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.strokeStyle='#6b6860'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(hx,qy1); ctx.lineTo(fx,qy1); ctx.stroke();
+  ctx.fillStyle='#6b6860'; ctx.font=monoSm; ctx.textAlign='center';
+  ctx.fillText('d_min = '+r.piede2.toFixed(2)+' m', (hx+fx)/2, qy1+12);
+  // d_eff
+  const peff_px = Math.min((piede_eff/r.piede2)*(fx-hx), CW-hx-8);
+  ctx.strokeStyle = isSafe ? '#1a7a4a' : '#c0390a'; ctx.lineWidth=2.5;
+  ctx.beginPath(); ctx.moveTo(hx,qy2); ctx.lineTo(hx+peff_px,qy2); ctx.stroke();
+  ctx.fillStyle = isSafe ? '#1a7a4a' : '#c0390a'; ctx.font=mono; ctx.textAlign='center';
+  ctx.fillText('d_eff = '+piede_eff.toFixed(2)+' m', hx+peff_px/2, qy2+13);
+
+  // ── LEGENDA ───────────────────────────────────────────────────────────
+  const lx2 = CW-158, ly2 = 10;
+  ctx.fillStyle='rgba(250,250,247,0.94)'; ctx.strokeStyle='#d6d2c9'; ctx.lineWidth=0.8;
+  ctx.beginPath(); ctx.roundRect(lx2-6, ly2-4, 162, 86, 4); ctx.fill(); ctx.stroke();
+  [
+    {col:'#c0390a',dash:[],    lw:3,   txt:'F risultante (= T₁+T₂+T₃)'},
+    {col:'#185FA5',dash:[],    lw:2.5, txt:'T₃: corda discensore'},
+    {col:'#5f5e5a',dash:[],    lw:2,   txt:'T₁+T₂: corde taglia (↓)'},
+    {col:'#1a7a4a',dash:[],    lw:2,   txt:'Reazioni vincolo piede'},
+  ].forEach((it,i) => {
+    const iy = ly2+10+i*18;
+    ctx.strokeStyle=it.col; ctx.lineWidth=it.lw; ctx.setLineDash(it.dash);
+    ctx.beginPath(); ctx.moveTo(lx2,iy); ctx.lineTo(lx2+22,iy); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#3d3d3a'; ctx.font='9px IBM Plex Mono,monospace'; ctx.textAlign='left';
+    ctx.fillText(it.txt, lx2+27, iy+3);
+  });
+}
+
+function arrowLine2(ctx, x1,y1,x2,y2,col,w,dash) {
+  ctx.save();
+  ctx.strokeStyle=col; ctx.lineWidth=w; ctx.lineCap='round';
+  ctx.setLineDash(dash||[]);
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  ctx.setLineDash([]);
+  if (dash && dash.length===0 || !dash) {
+    const a=Math.atan2(y2-y1,x2-x1), hs=6+w*1.5;
+    ctx.fillStyle=col;
+    ctx.beginPath();
+    ctx.moveTo(x2,y2);
+    ctx.lineTo(x2-hs*Math.cos(a-.38),y2-hs*Math.sin(a-.38));
+    ctx.lineTo(x2-hs*Math.cos(a+.38),y2-hs*Math.sin(a+.38));
+    ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+}
+
+function arrowLine(ctx, x1,y1,x2,y2,col,w) {
+  ctx.save();
+  ctx.strokeStyle=col; ctx.lineWidth=w;
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  arrowHead(ctx, x2,y2, Math.atan2(y2-y1,x2-x1), col, 6);
+  ctx.restore();
+}
+
+function arrowHead(ctx, x,y,ang,col,sz) {
+  ctx.save();
+  ctx.fillStyle=col;
+  ctx.beginPath();
+  ctx.moveTo(x,y);
+  ctx.lineTo(x-sz*Math.cos(ang-.35), y-sz*Math.sin(ang-.35));
+  ctx.lineTo(x-sz*Math.cos(ang+.35), y-sz*Math.sin(ang+.35));
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+function drawChart(P_kg, Wl_kg, alzo_cur, piede_eff) {
+  const step = 3;
+  const angles = [], d2=[], dw=[];
+  for (let a=-90;a<=90;a+=step) {
+    angles.push(a+'°');
+    const r  = calc(P_kg, 0,      a);
+    const rw = calc(P_kg, Wl_kg,  a);
+    d2.push(+Math.max(0, r.piede2 ).toFixed(3));
+    dw.push(+Math.max(0, rw.piedeW).toFixed(3));
+  }
+
+  // Indice corrispondente all'angolo corrente
+  const curIdx = Math.round((alzo_cur + 90) / step);
+  const curD2  = d2[curIdx]  ?? 0;
+  const curDw  = dw[curIdx]  ?? 0;
+
+  // Dataset punto singolo sull'asse α corrente (cerchio visibile)
+  const ptD2 = angles.map((_,i) => i === curIdx ? curD2  : null);
+  const ptDw = angles.map((_,i) => i === curIdx ? curDw  : null);
+
+  if (chartInst) { chartInst.destroy(); chartInst=null; }
+  chartInst = new Chart(document.getElementById('ch'), {
+    type:'line',
+    data:{
+      labels: angles,
+      datasets:[
+        { label:'Senza Wl',
+          data: d2,
+          borderColor:'#378ADD', backgroundColor:'rgba(55,138,221,.07)',
+          borderWidth:2, pointRadius:0, tension:.4, fill:false },
+        { label:'Con Wl',
+          data: dw,
+          borderColor:'#1a7a4a', backgroundColor:'rgba(26,122,74,.07)',
+          borderWidth:2, pointRadius:0, tension:.4, fill:false },
+        { label:'α corrente (senza Wl)',
+          data: ptD2,
+          borderColor:'#378ADD', backgroundColor:'#378ADD',
+          pointRadius:6, pointHoverRadius:8,
+          pointStyle:'circle', showLine:false,
+          spanGaps:false },
+        { label:'α corrente (con Wl)',
+          data: ptDw,
+          borderColor:'#1a7a4a', backgroundColor:'#1a7a4a',
+          pointRadius:6, pointHoverRadius:8,
+          pointStyle:'circle', showLine:false,
+          spanGaps:false },
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{ display:false },
+        tooltip:{ callbacks:{ label: c => c.dataset.label+': '+c.parsed.y.toFixed(2)+' m' } },
+        annotation: undefined
+      },
+      scales:{
+        x:{
+          ticks:{ maxTicksLimit:13, color:'#9a9890', font:{size:10, family:'IBM Plex Mono'} },
+          grid:{ color:'rgba(0,0,0,.06)' },
+          title:{ display:true, text:'Alzo α (°)', color:'#9a9890', font:{size:10} }
+        },
+        y:{
+          min:0, max:7,
+          ticks:{ color:'#9a9890', font:{size:10, family:'IBM Plex Mono'}, callback:v=>v.toFixed(1)+' m' },
+          grid:{ color:'rgba(0,0,0,.06)' },
+          title:{ display:true, text:'d_min (m)', color:'#9a9890', font:{size:10} }
+        }
+      }
+    },
+    plugins:[{
+      id:'vline',
+      afterDraw(chart) {
+        const {ctx:c, scales:{x,y}, chartArea:{top,bottom}} = chart;
+        const xi = x.getPixelForValue(curIdx);
+        c.save();
+        c.strokeStyle = 'rgba(160,90,0,.55)';
+        c.lineWidth = 1.5;
+        c.setLineDash([5,4]);
+        c.beginPath(); c.moveTo(xi,top); c.lineTo(xi,bottom); c.stroke();
+        c.setLineDash([]);
+        // etichetta angolo
+        c.fillStyle='#a05a00';
+        c.font='bold 10px IBM Plex Mono,monospace';
+        c.textAlign='center';
+        c.fillText('α = '+alzo_cur+'°', xi, top-5);
+        // etichette valori esatti
+        const y2px = y.getPixelForValue(curD2);
+        const ywpx = y.getPixelForValue(curDw);
+        c.font='9px IBM Plex Mono,monospace';
+        c.fillStyle='#378ADD'; c.textAlign='left';
+        c.fillText(curD2.toFixed(2)+' m', xi+6, y2px-5);
+        c.fillStyle='#1a7a4a';
+        c.fillText(curDw.toFixed(2)+' m', xi+6, ywpx+12);
+        c.restore();
+      }
+    }]
+  });
+}
+
+function buildTable(P_kg, Wl_kg, piede_eff) {
+  const body = document.getElementById('tbl-body');
+  let html = '';
+  for (let a=-90;a<=90;a+=10) {
+    const r = calc(P_kg, Wl_kg, a);
+    const margin = piede_eff - r.piede2;
+    const sc = statusClass(margin);
+    const stateText = sc==='ok' ? '&#10003; OK' : sc==='warn' ? '&#9651; Margine ridotto' : '&#10007; Ribaltamento';
+    const stateStyle = sc==='ok' ? 'color:#1a7a4a' : sc==='warn' ? 'color:#a05a00;font-weight:600' : 'color:#c0390a;font-weight:600';
+    const dClass = r.piede2 > piede_eff ? 'td-err' : (piede_eff - r.piede2 < 0.5 ? 'td-warn' : 'td-ok');
+    html += `<tr>
+      <td>${a}</td>
+      <td class="${dClass}">${r.piede2.toFixed(2)}</td>
+      <td>${r.piedeW.toFixed(2)}</td>
+      <td>${r.beta.toFixed(1)}</td>
+      <td>${Math.round(r.Fmag)}</td>
+      <td style="${stateStyle}">${stateText}</td>
+    </tr>`;
+  }
+  body.innerHTML = html;
+}
+
+upd();
+</script>
+</body>
+</html>
