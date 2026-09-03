@@ -5849,6 +5849,12 @@ select:focus {
     display: block;
 }
 
+/* Bandiera nella riga di scelta della nazione */
+.sitac-scelta .sitac-bandiera{
+  display:inline-block; vertical-align:middle; margin-right:.5rem; line-height:0;
+}
+.sitac-scelta .sitac-bandiera svg{ display:block; border-radius:1px; }
+
 /* ==========================================================
    ==========================================================
    RESPONSIVE

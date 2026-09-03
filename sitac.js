@@ -358,7 +358,10 @@ function avvia(app){
       ventoClicDir:'Clicca sulla mappa nella direzione verso cui VA il vento.',
       ventoBloccato:'La freccia del vento non si trascina.\u000aTasto destro per direzione e intensit\u00e0.',
       legVento:'Direzione del vento \u2014 {v} km/h verso {d}\u00b0',
-      disegnoAnnullato:'Disegno annullato: troppi pochi vertici.', },
+      disegnoAnnullato:'Disegno annullato: troppi pochi vertici.',
+      chiediPaese:'Nazione del modulo',
+      menuPaese:'Cambia nazione',
+      stSquadre:'Dispositivo a terra \u2014 squadre previste e attive', },
     en:{ bCono:'Add cone', conoModo:'How should the cone be built?',
       bPosizione:'Enter coordinates',
       conoSettore:'From the point of origin', conoSettoreNota:'30° sector from the origin; a second click marks where the front is now (T0).',
@@ -502,6 +505,31 @@ function avvia(app){
   const TAVOLE = NS.SITAC_TAVOLE || [];
   const RIQUADRI = NS.SITAC_RIQUADRI || {};
   const nmRiquadro = k => { const x = RIQUADRI[k]; return (x && (x[lingua] || x.it)) || ''; };
+
+  /* Sul simbolo la nazione è la bandiera più il codice ISO: è quanto ci sta
+     dentro un riquadro largo mezzo centimetro. Il nome per esteso vive nel
+     suggerimento e nel foglio stampato, dove lo spazio c'è. */
+  const STATI = {};
+  (NS.SITAC_STATI || []).forEach(s => { STATI[s.k] = s; });
+  const nmStato = k => { const s = STATI[k]; return s ? (s.n[lingua] || s.n.it) : (k || ''); };
+
+  function scegliPaese(gia){
+    const voci = (NS.SITAC_STATI || []).map(s => ({
+      k: s.k, nota: s.k,
+      et: (s.n[lingua] || s.n.it) + (gia === s.k ? ' \u2713' : ''),
+      svg: NS.SITAC_BANDIERA ? NS.SITAC_BANDIERA(s.k, 26, 17) : ''}));
+    return scegli({testo: t('chiediPaese'), voci});
+  }
+
+  async function cambiaPaese(l){
+    const cod = await scegliPaese(l._paese);
+    if (!cod) return;
+    l._paese = cod;
+    l.setIcon(iconaSimbolo(l._tipo, {stato:l._stato, testo:l._testo,
+      rotazione:l._rotazione, paese:l._paese}));
+    etichettaElemento(l);
+    aggiornaStato();
+  }
 
   /* Perimetri: la tavola SITAC non prevede poligoni campiti, ma l'area
      percorsa e il fronte attivo sono ciò che si legge per primo su una
@@ -666,7 +694,10 @@ function avvia(app){
         b.type = 'button';
         b.className = 'sitac-scelta';
         b.disabled = !!v.off;
-        b.innerHTML = `<b>${esc(v.et)}</b>${v.nota ? `<span>${esc(v.nota)}</span>` : ''}`;
+        /* `v.svg` lo costruiamo noi (bandiere), non arriva da fuori: è
+           l'unico pezzo di questo pannello che non passa da esc(). */
+        b.innerHTML = (v.svg ? `<i class="sitac-bandiera">${v.svg}</i>` : '')
+          + `<b>${esc(v.et)}</b>${v.nota ? `<span>${esc(v.nota)}</span>` : ''}`;
         b.onclick = () => fine(v.k);
         el.appendChild(b);
       });
@@ -1134,8 +1165,13 @@ function mostraComandoAfferente(sigla, nome){
          forma appena il secondo è posato. Il setTimeout lascia finire il
          giro di eventi in corso: chiudere dentro pm:vertexadded significa
          far arrivare pm:create mentre Geoman sta ancora aggiornando. */
-      const soloDue = strumento && strumento.genere === 'linea'
-        && LIN[strumento.chiave] && LIN[strumento.chiave].punti2;
+      /* Due vertici e basta anche per i tracciati che vogliono un lato:
+         il lato si sceglie DOPO aver chiuso la linea, e con la linea
+         ancora aperta si finiva per posare vertici in attesa di un doppio
+         clic che nessuno aveva detto di fare. Al secondo punto si chiude e
+         parte subito "Scegli il lato". */
+      const defL = strumento && strumento.genere === 'linea' && LIN[strumento.chiave];
+      const soloDue = !!(defL && (defL.punti2 || defL.lato));
       e.workingLayer.on('pm:vertexadded', ev => {
         misuraPunti.push(ev.latlng);
         if (soloDue && misuraPunti.length >= 2) setTimeout(chiudiFormaAperta, 0);
@@ -1254,7 +1290,7 @@ function mostraComandoAfferente(sigla, nome){
     if (!def || !def.lato) return;
     if (layer._lato == null) layer._lato = 1;
     decora(layer);
-    const p = await attendiClic(t('scegliLato'));
+    const p = await attendiClic('\u25b6 ' + t('scegliLato'));
     if (p) layer._lato = latoDi(layer, p);
     decora(layer);
     aggiornaStato();
@@ -1442,19 +1478,13 @@ function mostraComandoAfferente(sigla, nome){
     return Math.abs(b.x - a.x) / 100;
   }
 
+  /* Il lancio si vede SEMPRE con l'ingombro vero, a qualunque zoom. La
+     sostituzione col pittogramma a dimensione fissa faceva credere che il
+     lancio coprisse quanto il simbolo: su una carta è esattamente il tipo
+     di errore che non si scopre finché non serve. */
   function scalaLancio(l){
-    const piccolo = 2 * l._a * pxPerMetro(l._centro.lat) < LANCIO_MIN_PX;
-    if (piccolo && !l._glifo){
-      l.setStyle({opacity:0, fillOpacity:0});
-      scollegaLancio(l);
-      l._glifo = L.marker(l._centro, {interactive:false,
-        icon: iconaSimbolo(l._tipo, {stato: l._stato})}).addTo(decori);
-    } else if (!piccolo && l._glifo){
-      decori.removeLayer(l._glifo);
-      l._glifo = null;
-      l.setStyle(stileLancio(l._tipo, l._stato));
-      if (selezionato === l) maniglieLancio(l);
-    }
+    if (l._glifo){ decori.removeLayer(l._glifo); l._glifo = null; }
+    l.setStyle(stileLancio(l._tipo, l._stato));
   }
   const scalaLanci = () => disegni.eachLayer(l => {
     if (l._genere === 'lancio') scalaLancio(l);
@@ -2098,7 +2128,7 @@ function mostraComandoAfferente(sigla, nome){
     if (val === null) return;
     l._testo = val || null;
     l.setIcon(iconaSimbolo(l._tipo, {stato:l._stato, testo:l._testo,
-      rotazione:l._rotazione}));
+      rotazione:l._rotazione, paese:l._paese}));
     etichettaElemento(l);
   }
 
@@ -2121,7 +2151,8 @@ function mostraComandoAfferente(sigla, nome){
       l.setStyle(stileLinea(LIN[k], l._stato));
       decora(l);
     } else if (l.setIcon){
-      l.setIcon(iconaSimbolo(k, {stato:l._stato, testo:l._testo, rotazione:l._rotazione}));
+      l.setIcon(iconaSimbolo(k, {stato:l._stato, testo:l._testo,
+        rotazione:l._rotazione, paese:l._paese}));
     }
     etichettaElemento(l);
     aggiornaStato();
@@ -2172,6 +2203,8 @@ function mostraComandoAfferente(sigla, nome){
     } else if (l.getLatLng){
       if (def && (def.libero || def.e))
         voci.push({et: t('menuTesto'), fai: () => rinominaElemento(l, def)});
+      if (def && def.paese)
+        voci.push({et: t('menuPaese'), fai: () => cambiaPaese(l)});
       if (def && def.r)
         voci.push({et: t('menuDirezione'), fai: () => ridaiDirezione(l)});
       voci.push({et: t('menuSposta'), fai: () => spostaElemento(l)});
@@ -2856,8 +2889,18 @@ function mostraComandoAfferente(sigla, nome){
       cursore('mirino');
     } else {
       const d = chiave === 'nota' ? NOTA : SIM[chiave];
+      /* Sui lanci il simbolo appeso al puntatore inganna: quello che si sta
+         per posare non è un pittogramma ma un'ellisse di centoventicinque
+         metri d'asse. Resta un mirino, che dice dove cade il clic e non
+         promette una dimensione. */
+      const anteprima = (d && d.poly)
+        ? L.divIcon({className:'sitac-deco', iconSize:[18,18], iconAnchor:[9,9],
+            html:`<svg viewBox="0 0 18 18" width="18" height="18">`
+              + `<circle cx="9" cy="9" r="6" fill="none" stroke="${COL.rosso}"`
+              + ` stroke-width="2" stroke-dasharray="3,2.5"/></svg>`})
+        : iconaSimbolo(chiave, {stato: statoPer(d)});
       map.pm.enableDraw('Marker', {
-        markerStyle:{icon: iconaSimbolo(chiave, {stato: statoPer(d)}), draggable:true},
+        markerStyle:{icon: anteprima, draggable:true},
         continueDrawing:true});
       stato(`${nm(d)}${etichettaStato(d)}\n${t('suggSimbolo')}`);
       /* Geoman tiene GIÀ il simbolo attaccato al puntatore mentre si sceglie
@@ -3103,17 +3146,25 @@ function mostraComandoAfferente(sigla, nome){
 
     /* Il testo va chiesto prima di mostrare il simbolo: la sigla ci sta
        dentro, e ridisegnarlo dopo farebbe lampeggiare il riquadro vuoto. */
-    if (def.libero || def.e){
+    if (def.libero || def.e || def.paese){
       map.pm.disableDraw();
-      const idm = NS.SITAC_ID_MAX || 4;
-      const val = await chiedi(
-        def.libero ? {campo:1, testo: t('chiediNota')}
-        : def.lbl  ? {campo:1, testo: def.lbl, max: idm,
-                      filtro: v => v.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0, idm)}
-        :            {campo:1, testo: t('chiediSigla')});
-      if (def.libero && !val){ disegni.removeLayer(layer); riattivaStrumento(); return; }
-      layer._testo = val || null;
-      layer.setIcon(iconaSimbolo(k, {stato:layer._stato, testo:layer._testo}));
+      /* Sul modulo internazionale la prima domanda è la nazione: la
+         bandiera è l'etichetta del simbolo, e un numero senza bandiera non
+         dice di chi è il modulo. Annullando resta il riquadro vuoto coi
+         puntini, che si compila dal tasto destro. */
+      if (def.paese) layer._paese = (await scegliPaese(null)) || null;
+      if (def.libero || def.e){
+        const idm = NS.SITAC_ID_MAX || 4;
+        const val = await chiedi(
+          def.libero ? {campo:1, testo: t('chiediNota')}
+          : def.lbl  ? {campo:1, testo: def.lbl, max: idm,
+                        filtro: v => v.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0, idm)}
+          :            {campo:1, testo: t('chiediSigla')});
+        if (def.libero && !val){ disegni.removeLayer(layer); riattivaStrumento(); return; }
+        layer._testo = val || null;
+      }
+      layer.setIcon(iconaSimbolo(k, {stato:layer._stato, testo:layer._testo,
+        paese:layer._paese}));
       if (!def.r) riattivaStrumento();
     }
     etichettaElemento(layer);
@@ -3150,6 +3201,7 @@ function mostraComandoAfferente(sigla, nome){
        prima quale mezzo è e con che matricola. Lo stato in mezzo spezzava
        "Canadair CAN1" in due pezzi che si leggono separati. */
     let testo = nm(def);
+    if (layer._paese) testo += ` \u2014 ${nmStato(layer._paese)}`;
     if (layer._testo && !AREE[k] && !LIN[k]) testo += ` ${layer._testo}`;
     testo += statoDi(def, layer._stato);
     if (AREE[k]) testo += '\n' + t('areaDi', {a:(areaMq(layer)/10000).toFixed(2),
@@ -3225,7 +3277,7 @@ function mostraComandoAfferente(sigla, nome){
       const f = l.toGeoJSON();
       f.properties = {tipo:l._tipo || null, genere:l._genere || null,
         stato:l._stato || null, testo:l._testo || null, rotazione:l._rotazione || null,
-        lato:l._lato || null};
+        lato:l._lato || null, paese:l._paese || null};
       /* Il poligono viaggia come geometria — QGIS e Google Earth vedono
          l'ingombro vero — ma i parametri viaggiano accanto, così rientrando
          qui l'ellisse torna modificabile invece che come sessanta vertici. */
@@ -3432,9 +3484,11 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
         if (!def){ scarti++; return; }
         const m = L.marker(latlng(g.coordinates), {draggable:true,
           icon: iconaSimbolo(tipo, {stato:st, testo:pr.testo || null,
+            paese: pr.paese || null,
             rotazione: pr.rotazione != null ? pr.rotazione : undefined})});
         m._tipo = tipo; m._genere = 'simbolo'; m._stato = st;
         m._testo = pr.testo || null;
+        m._paese = pr.paese || null;
         m._rotazione = pr.rotazione != null ? pr.rotazione : null;
         aggancia(m);
         if (def.r && m._rotazione != null) creaManiglia(m);
@@ -3968,6 +4022,44 @@ function attendiTile(ms){
   });
 }
 
+/* Chi c'è a terra, previsto e in atto. Sulla carta i simboli si contano a
+   occhio e si sbaglia; sul foglio è un elenco, con le sigle accanto — che
+   sono poi i numeri che si chiamano per radio. Il DOS e il Posto di
+   Comando entrano: fanno parte del dispositivo a terra tanto quanto le
+   squadre, e chi riceve il foglio vuole sapere se il CP era già attivo. */
+function sfTabellaSquadre(){
+  const per = new Map();
+  disegni.eachLayer(x => {
+    const d = SIM[x._tipo];
+    if (!d || d.sg !== 'sgTerra' || x._genere === 'lancio') return;
+    const k = x._tipo + '|' + (x._stato || '');
+    const r = per.get(k) || {tipo:x._tipo, stato:x._stato, n:0, id:[]};
+    r.n++;
+    const sig = [x._paese ? nmStato(x._paese) : '', x._testo || '']
+      .filter(Boolean).join(' ');
+    if (sig) r.id.push(sig);
+    per.set(k, r);
+  });
+  if (!per.size) return `<p class="sf-vuoto">\u2014</p>`;
+
+  let prev = 0, att = 0, righe = '';
+  per.forEach(r => {
+    if (r.stato === 'attivo') att += r.n; else prev += r.n;
+    const d = SIM[r.tipo];
+    righe += `<tr><td>${esc(nm(d))}</td>`
+      + `<td>${esc(t(paroleStato(d)[r.stato === 'attivo' ? 1 : 0]))}</td>`
+      + `<td>${r.n}</td>`
+      + `<td>${r.id.length ? esc(r.id.join(' \u00b7 ')) : '\u2014'}</td></tr>`;
+  });
+  righe += `<tr class="sf-tot"><td>Totale</td>`
+    + `<td>previste ${prev} \u00b7 attive ${att}</td>`
+    + `<td>${prev + att}</td><td>\u2014</td></tr>`;
+
+  return `<table class="sf-tab"><thead><tr><th>Squadra / mezzo a terra</th>`
+    + `<th>Stato</th><th>N.</th><th>Sigle</th></tr></thead>`
+    + `<tbody>${righe}</tbody></table>`;
+}
+
 /* I mezzi aerei sono quelli che si sentono per radio. Il volume è la
    capacità nominale di un lancio pieno: serve a dare un ordine di
    grandezza sul foglio, non a rendicontare. Zero = non si stima. */
@@ -4135,6 +4227,7 @@ async function stampa(){
        <h2>Superfici</h2>${sfTabellaAree()}
        <h2>Vento</h2>${sfTabellaVento()}
        <h2>Coni di propagazione</h2>${sfTabellaConi()}${avvertenza}
+       <h2>${esc(t('stSquadre'))}</h2>${sfTabellaSquadre()}
         ${sfBloccoLanci()}
        <h2>Linee tracciate</h2>${sfTabellaLinee()}
      </section>`;

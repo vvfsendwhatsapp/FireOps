@@ -95,6 +95,88 @@ const puntini = (x1, x2, y, col) =>
 const RIG = (id, col, largo) => `<pattern id="${id}" width="7" height="7" patternUnits="userSpaceOnUse"`
   + ` patternTransform="rotate(45)"><line x1="3.5" y1="0" x2="3.5" y2="7" stroke="${col}" stroke-width="${largo}"/></pattern>`;
 
+/* Larghezza del cuneo pieno che dice "attivo" sui riquadri terrestri.
+   È UNA costante e non due numeri scritti in due posti: il testo si centra
+   nella parte bianca che resta, e finché le due misure erano diverse la
+   sigla ci finiva sopra — rossa su rosso, cioè invisibile, e a sparire per
+   primo era il numero della squadra, che sta in coda. */
+const CUNEO = 16;
+
+/* ---- BANDIERE DEI MODULI INTERNAZIONALI ----------------------------
+   Sono a bande: due o tre colori, verticali o orizzontali. Niente
+   dettagli araldici — a 14 px per 9 una stella non si vede — ma il colpo
+   d'occhio su "di chi è quel modulo" sì. Il codice ISO resta scritto
+   accanto: le bandiere a tinta unita (DK, CH, TR, AL) da sole non si
+   distinguono, e su una carta operativa l'ambiguità non è un'opzione. */
+const STATI = [
+  ['EU','Unione Europea','European Union','eu','#003399','#FFCC00'],
+  ['IT','Italia','Italy','v','#008C45','#F4F5F0','#CD212A'],
+  ['FR','Francia','France','v','#002395','#FFFFFF','#ED2939'],
+  ['ES','Spagna','Spain','h','#AA151B','#F1BF00','#AA151B'],
+  ['PT','Portogallo','Portugal','v','#046A38','#DA291C'],
+  ['GR','Grecia','Greece','h','#0D5EAF','#FFFFFF','#0D5EAF','#FFFFFF','#0D5EAF'],
+  ['DE','Germania','Germany','h','#000000','#DD0000','#FFCE00'],
+  ['AT','Austria','Austria','h','#ED2939','#FFFFFF','#ED2939'],
+  ['SI','Slovenia','Slovenia','h','#FFFFFF','#0000C6','#FF0000'],
+  ['HR','Croazia','Croatia','h','#FF0000','#FFFFFF','#171796'],
+  ['HU','Ungheria','Hungary','h','#CD2A3E','#FFFFFF','#436F4D'],
+  ['RO','Romania','Romania','v','#002B7F','#FCD116','#CE1126'],
+  ['BG','Bulgaria','Bulgaria','h','#FFFFFF','#00966E','#D62612'],
+  ['PL','Polonia','Poland','h','#FFFFFF','#DC143C'],
+  ['CZ','Cechia','Czechia','h','#FFFFFF','#D7141A'],
+  ['SK','Slovacchia','Slovakia','h','#FFFFFF','#0B4EA2','#EE1C25'],
+  ['CY','Cipro','Cyprus','h','#FFFFFF','#D57800','#FFFFFF'],
+  ['MT','Malta','Malta','v','#FFFFFF','#CF142B'],
+  ['IE','Irlanda','Ireland','v','#169B62','#FFFFFF','#FF883E'],
+  ['NL','Paesi Bassi','Netherlands','h','#AE1C28','#FFFFFF','#21468B'],
+  ['BE','Belgio','Belgium','v','#000000','#FDDA24','#EF3340'],
+  ['LU','Lussemburgo','Luxembourg','h','#ED2939','#FFFFFF','#00A1DE'],
+  ['DK','Danimarca','Denmark','h','#C8102E','#C8102E','#C8102E'],
+  ['SE','Svezia','Sweden','h','#006AA7','#FECC00','#006AA7'],
+  ['FI','Finlandia','Finland','h','#FFFFFF','#003580','#FFFFFF'],
+  ['EE','Estonia','Estonia','h','#0072CE','#000000','#FFFFFF'],
+  ['LV','Lettonia','Latvia','h','#9E3039','#FFFFFF','#9E3039'],
+  ['LT','Lituania','Lithuania','h','#FDB913','#006A44','#C1272D'],
+  ['CH','Svizzera','Switzerland','h','#FF0000','#FF0000','#FF0000'],
+  ['NO','Norvegia','Norway','h','#BA0C2F','#FFFFFF','#00205B'],
+  ['AL','Albania','Albania','h','#E41E20','#E41E20','#E41E20'],
+  ['MK','Macedonia del Nord','North Macedonia','h','#D20000','#FFE600','#D20000'],
+  ['RS','Serbia','Serbia','h','#C6363C','#0C4076','#FFFFFF'],
+  ['ME','Montenegro','Montenegro','h','#C40308','#C40308','#C40308'],
+  ['BA','Bosnia ed Erzegovina','Bosnia and Herzegovina','h','#002F6C','#FECB00','#002F6C'],
+  ['TR','Turchia','T\u00fcrkiye','h','#E30A17','#E30A17','#E30A17'],
+  ['UA','Ucraina','Ukraine','h','#0057B7','#FFD700']
+];
+const ST = {};
+STATI.forEach(r => { ST[r[0]] = {k:r[0], n:{it:r[1], en:r[2]}, d:r[3], c:r.slice(4)}; });
+
+function bandeStati(cod, x, y, w, h){
+  const s = ST[String(cod || '').toUpperCase()];
+  const bordo = `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none"`
+    + ` stroke="${C.nero}" stroke-width="1.1"/>`;
+  if (!s) return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#fff"/>` + bordo;
+  if (s.d === 'eu')
+    return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${s.c[0]}"/>`
+      + `<circle cx="${(x + w/2).toFixed(2)}" cy="${(y + h/2).toFixed(2)}"`
+      + ` r="${(h*0.26).toFixed(2)}" fill="none" stroke="${s.c[1]}"`
+      + ` stroke-width="${(h*0.17).toFixed(2)}"`
+      + ` stroke-dasharray="${(h*0.09).toFixed(2)},${(h*0.09).toFixed(2)}"/>` + bordo;
+  const n = s.c.length;
+  let out = '';
+  for (let i = 0; i < n; i++){
+    out += s.d === 'v'
+      ? `<rect x="${(x + w*i/n).toFixed(2)}" y="${y}" width="${(w/n + .3).toFixed(2)}"`
+        + ` height="${h}" fill="${s.c[i]}"/>`
+      : `<rect x="${x}" y="${(y + h*i/n).toFixed(2)}" width="${w}"`
+        + ` height="${(h/n + .3).toFixed(2)}" fill="${s.c[i]}"/>`;
+  }
+  return out + bordo;
+}
+/* Bandiera come SVG a sé: la consuma il pannello di scelta in sitac.js. */
+const bandieraTag = (cod, w, h) =>
+  `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">`
+  + bandeStati(cod, 0.6, 0.6, w - 1.2, h - 1.2) + `</svg>`;
+
 /* =====================================================================
    1. FAMIGLIE
    ===================================================================== */
@@ -145,13 +227,62 @@ function mezzoTerra(sigla, aste, col){
     }
     const s = sigla || '';
     const n = idTesto(o);
-    const et = s ? (n ? s + ' ' + n : s) : n;
-    const largo = (p ? x2 - 16 : x2) - x1 - 8;
-    const dim = et ? Math.min(15, largo / (et.length * 0.6)) : 15;
+    /* La zona bianca finisce dove comincia il cuneo dell'attivo: sigla e
+       numero si centrano LÌ DENTRO. Prima il testo era centrato sul
+       riquadro intero e sull'attivo finiva sotto il cuneo, rosso su rosso:
+       spariva il numero della squadra, che è il dato per cui il simbolo
+       esiste. */
+    const xd = p ? x2 - CUNEO : x2;
+    const largo = xd - x1 - 6;
+    let dentro;
+    if (s && !n){
+      /* Sigla senza numero: restano i puntini, che sulla carta sono il
+         posto dove il numero si scrive a penna. Sul simbolo aereo c'erano
+         già, qui mancavano — e un riquadro senza puntini non dice che
+         quel numero va messo. */
+      const dimS = Math.min(15, largo / (s.length * 0.62));
+      const xs = x1 + 4;
+      const xn = xs + s.length * dimS * 0.6 + 3;
+      dentro = txt(xs, y2 - 9, s, K, dimS, 'start')
+        + (xn < xd - 6 ? puntini(xn, xd - 4, y2 - 13, K) : '');
+    } else {
+      const et = s ? (n ? s + ' ' + n : s) : n;
+      const dim = et ? Math.max(8, Math.min(15, largo / (et.length * 0.6))) : 15;
+      dentro = et ? txt((x1 + xd) / 2, y2 - 9, et, K, dim) : '';
+    }
     return T(`${a}
       <rect x="${x1}" y="${y1}" width="${x2-x1}" height="${y2-y1}" fill="#fff" stroke="${K}" stroke-width="2.6"/>
-      ${p ? `<path d="M${x2-(y2-y1)} ${y2}H${x2}V${y1}Z" fill="${K}"/>` : ''}
-      ${et ? txt(p ? xc - 5 : xc, y2 - 8, et, K, dim) : ''}`);
+      ${p ? `<path d="M${x2-CUNEO} ${y2}H${x2}V${y1}Z" fill="${K}"/>` : ''}
+      ${dentro}`);
+  };
+}
+
+/* Modulo UE / colonna: tre aste come gli altri livelli, ma dentro il
+   riquadro ci va la bandiera. È l'etichetta del modulo — su una carta con
+   sei nazioni in campo il nome scritto non si legge, il tricolore sì — e
+   accanto restano il codice ISO e il numero del modulo. */
+function moduloUE(){
+  return o => {
+    const p = attivo(o), K = C.rosso;
+    const x1 = 3, y1 = 20, x2 = 61, y2 = 46, xc = (x1 + x2) / 2;
+    let a = '';
+    for (let i = 0; i < 3; i++){
+      const x = (xc - 8 + i * 8).toFixed(1);
+      a += `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y1-8}" stroke="${K}" stroke-width="2.2"/>`;
+    }
+    const xd = p ? x2 - CUNEO : x2;
+    const cod = String((o && o.paese) || '').toUpperCase().slice(0, 3);
+    const n = idTesto(o);
+    const bw = 14, bh = 9, bx = x1 + 4, by = (y1 + y2) / 2 - bh / 2;
+    const xs = cod ? bx + bw + 3 : x1 + 4;
+    const et = [cod, n].filter(Boolean).join(' ');
+    const largo = Math.max(10, xd - xs - 4);
+    const dim = et ? Math.max(7.5, Math.min(14, largo / (et.length * 0.62))) : 14;
+    return T(`${a}
+      <rect x="${x1}" y="${y1}" width="${x2-x1}" height="${y2-y1}" fill="#fff" stroke="${K}" stroke-width="2.6"/>
+      ${p ? `<path d="M${x2-CUNEO} ${y2}H${x2}V${y1}Z" fill="${K}"/>` : ''}
+      ${cod ? bandeStati(cod, bx, by, bw, bh) : ''}
+      ${et ? txt(xs, y2 - 9, et, K, dim, 'start') : puntini(xs, xd - 4, y2 - 13, K)}`);
   };
 }
 
@@ -265,16 +396,16 @@ agg('dos','dispositivo','sgTerra','DOS — Direttore Operazioni Spegnimento','Fi
     const x1 = 2, y1 = 18, x2 = 62, y2 = 48, xc = 32;
     return T(`<line x1="${xc}" y1="${y1}" x2="${xc}" y2="${y1-9}" stroke="${K}" stroke-width="2.6"/>
       <rect x="${x1}" y="${y1}" width="${x2-x1}" height="${y2-y1}" fill="#fff" stroke="${K}" stroke-width="3"/>
-      ${p ? `<path d="M${x2-(y2-y1)} ${y2}H${x2}V${y1}Z" fill="${K}"/>` : ''}
-      ${txt(p ? 27 : 32, y2-8, 'DOS', K, 21)}`);
+      ${p ? `<path d="M${x2-CUNEO-4} ${y2}H${x2}V${y1}Z" fill="${K}"/>` : ''}
+      ${txt(p ? 24 : 32, y2-8, 'DOS', K, p ? 18 : 21)}`);
   }, {s:1, f:1});
-agg('vvf','dispositivo','sgTerra','Squadra VVF','VVF crew', mezzoTerra('VVF', 1), {s:1, e:1, f:1});
-agg('vol','dispositivo','sgTerra','Squadra VOL','Volunteer crew', mezzoTerra('VOL', 1), {s:1, e:1, f:1});
-agg('gos','dispositivo','sgTerra','Squadra GOS','GOS crew', mezzoTerra('GOS', 1), {s:1, e:1, f:1});
-agg('sai','dispositivo','sgTerra','Squadra SAI','SAI crew', mezzoTerra('SAI', 1), {s:1, e:1, f:1});
-agg('squadra_altra','dispositivo','sgTerra','Squadra\u2026','Other crew', mezzoTerra('', 1), {s:1, e:1, f:1});
-agg('modulo_vvf','dispositivo','sgTerra','Modulo VVF / Gruppo','VVF module / Group', mezzoTerra('', 2), {s:1, e:1});
-agg('modulo_ue','dispositivo','sgTerra','Modulo UE / Colonna','EU module / Column', mezzoTerra('', 3), {s:1, e:1});
+agg('vvf','dispositivo','sgTerra','Squadra VVF','VVF crew', mezzoTerra('VVF', 1), {s:1, e:1, f:1, lbl:'N. squadra'});
+agg('vol','dispositivo','sgTerra','Squadra VOL','Volunteer crew', mezzoTerra('VOL', 1), {s:1, e:1, f:1, lbl:'N. squadra'});
+agg('gos','dispositivo','sgTerra','Squadra GOS','GOS crew', mezzoTerra('GOS', 1), {s:1, e:1, f:1, lbl:'N. squadra'});
+agg('sai','dispositivo','sgTerra','Squadra SAI','SAI crew', mezzoTerra('SAI', 1), {s:1, e:1, f:1, lbl:'N. squadra'});
+agg('squadra_altra','dispositivo','sgTerra','Squadra\u2026','Other crew', mezzoTerra('', 1), {s:1, e:1, f:1, lbl:'Sigla e numero'});
+agg('modulo_vvf','dispositivo','sgTerra','Modulo VVF / Gruppo','VVF module / Group', mezzoTerra('', 2), {s:1, e:1, lbl:'N. modulo'});
+agg('modulo_ue','dispositivo','sgTerra','Modulo UE / Colonna','EU module / Column', moduloUE(), {s:1, e:1, paese:1, lbl:'N. modulo'});
 agg('cp','dispositivo','sgTerra','Posto di Comando','Command post', mezzoTerra('CP', 0, C.rosso), {s:1});
 agg('ss','dispositivo','sgTerra','Soccorso Sanitario','Ambulance', mezzoTerra('SS', 0, C.verde), {s:1});
 agg('pol','dispositivo','sgTerra','Forze di Polizia','Police forces', mezzoTerra('Pol', 0, C.polizia), {s:1, f:1});
@@ -446,9 +577,13 @@ function decoGlifo(tipo, opz){
       /* Vuota = campita di bianco, non a V aperta: il bianco è quello che
          nasconde il tratto sotto, ed è il motivo per cui si è spostato il
          baricentro. Una V aperta rimetterebbe la linea in vista. */
+      /* Tratteggiata quando è prevista, come la linea che la porta: una
+         punta continua in fondo a un tratto spezzato diceva due cose
+         diverse sullo stesso simbolo. */
       d = `<path d="M${f(cx)} ${f(ay)}L${f(cx + bT/2)} ${f(by)}L${f(cx - bT/2)} ${f(by)}Z"`
         + ` fill="${pieno ? col : '#fff'}" stroke="${col}"`
-        + ` stroke-width="${pieno ? 1.2 : 2.2}" stroke-linejoin="round"/>`;
+        + ` stroke-width="${pieno ? 1.2 : 2.2}" stroke-linejoin="round"`
+        + (pieno ? '' : ' stroke-dasharray="3.5,3"') + `/>`;
       break;
     }
 
@@ -512,7 +647,8 @@ function decoGlifo(tipo, opz){
         + ` stroke="${col}" stroke-width="${f(bT * 0.8)}" stroke-linecap="butt"/>`
         + `<path d="M${f(tip)} ${f(cy)}L${f(base)} ${f(cy - bT)}L${f(base)} ${f(cy + bT)}Z"`
         + ` fill="${pieno ? col : '#fff'}" stroke="${col}"`
-        + ` stroke-width="${pieno ? 1.2 : 2.2}" stroke-linejoin="round"/>`;
+        + ` stroke-width="${pieno ? 1.2 : 2.2}" stroke-linejoin="round"`
+        + (pieno ? '' : ' stroke-dasharray="3.5,3"') + `/>`;
       break;
     }
 
@@ -534,7 +670,8 @@ function decoGlifo(tipo, opz){
         + `<path d="M${f(tx)} ${f(ty)}L${f(bx - bT * lato)} ${f(by - bT)}`
         + `L${f(bx + bT * lato)} ${f(by + bT)}Z"`
         + ` fill="${pieno ? col : '#fff'}" stroke="${col}"`
-        + ` stroke-width="1.6" stroke-linejoin="round"/>`;
+        + ` stroke-width="1.6" stroke-linejoin="round"`
+        + (pieno ? '' : ' stroke-dasharray="3,2.5"') + `/>`;
       break;
     }
 
@@ -555,6 +692,28 @@ function decoGlifo(tipo, opz){
           + `L${f(cx + b)} ${f(y + b * 0.7)}" fill="none" stroke="${col}"`
           + ` stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>`;
       }
+      break;
+    }
+
+    /* Seggiolino — pendino perpendicolare alla fune e sedile appeso in
+       punta. NON è "dritto sulla pagina" come il pilone: un seggiolino che
+       resta verticale mentre la fune sale in diagonale sembra staccato dal
+       cavo. Ruota col tracciato, quindi il pendino esce sempre ad angolo
+       retto dalla fune e il sedile resta parallelo alla linea di marcia.
+       `dim` è la lunghezza del pendino, `lato` da che parte pende. */
+    case 'seggiolino': {
+      const s = dim, INCL = 0.18;          // inclinazione del sedile sulla fune
+      w = Math.ceil(s * 2) + 6; h = Math.ceil(s * 1.4) + 6;
+      const cx = w / 2, cy = h / 2;
+      const hx = cx + lato * s * 0.62;     // attacco del sedile
+      const sx = hx + lato * s * 0.52;     // punta del sedile
+      d = `<line x1="${f(cx)}" y1="${f(cy)}" x2="${f(hx)}" y2="${f(cy)}"`
+        + ` stroke="${col}" stroke-width="1.8"/>`
+        /* schienale verso la coda, sedile verso la punta: si legge il verso
+           di marcia anche senza frecce. */
+        + `<path d="M${f(hx)} ${f(cy - s * 0.46)}L${f(hx)} ${f(cy + s * 0.16)}`
+        + `L${f(sx)} ${f(cy + s * 0.16 + s * INCL)}" fill="none" stroke="${col}"`
+        + ` stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>`;
       break;
     }
 
@@ -654,6 +813,13 @@ aggL('accesso_interrotto','zona',null,'Accesso interrotto','Road closed',
   {color:C.nero, weight:3.5}, {deco:{tipo:'croce', passo:'50%', dim:18}});
 aggL('fune_sbalzo','zona',null,'Funivie, fili a sbalzo, ecc.','Cableways and aerial wires',
   {color:C.nero, weight:2.6}, {deco:{tipo:'pilone', passo:'50%', dim:22, dritto:1}});
+/* La seggiovia non è un filo a sbalzo qualunque: sotto ci passa gente, e
+   sulla carta va distinta a colpo d'occhio dalla teleferica di servizio.
+   Piloni a metà campata, seggiolini lungo la fune. */
+aggL('seggiovia','zona',null,'Seggiovia','Chairlift',
+  {color:C.nero, weight:2.6},
+  {deco:[{tipo:'seggiolino', passo:36, dim:15, offset:18},
+         {tipo:'pilone', passo:'50%', dim:22, dritto:1}]});
 aggL('elettrodotto','zona',null,'Linea elettrica attiva','Power line on',
   {color:C.nero, weight:2.4, dashArray:'14,5,3,5'}, {deco:{tipo:'fulmine', passo:70, dim:24, dritto:1}});
 aggL('elettrodotto_off','zona',null,'Linea elettrica disattivata','Power line off',
@@ -702,7 +868,7 @@ aggL('attacco_localizzato','azioni','sgTerra','Attacco localizzato','Hot spottin
 aggL('bonifica','azioni','sgTerra','Bonifica','Mop up',
   {color:C.rosso, weight:2.8},
   {stati:1, deco:[{tipo:'punta', passo:0, offset:'100%', dim:20, pieno:1},
-                  {tipo:'quadro', testo:'B', dim:20, passo:0, offset:'50%',
+                  {tipo:'quadro', testo:'B', dim:18, passo:'25%', offset:'12%',
                    dritto:1, pieno:1}]});
 aggL('linea_sicurezza','azioni','sgControfuoco','Creazione linea di sicurezza','Creation of a safety line',
   {color:C.rosso, weight:3}, {stati:1, deco:{tipo:'bifronte', passo:'auto', dim:12, pieno:1}});
@@ -807,6 +973,10 @@ NS.SITAC_GLIFI = {
 /* Etichetta e lunghezza per la finestra di inserimento: la chiede sitac.js
    quando si posa un simbolo con il flag `e`. */
 NS.SITAC_ID_MAX = ID_MAX;
+
+/* Nazioni e bandiere: le consuma il pannello di scelta di sitac.js. */
+NS.SITAC_STATI = STATI.map(r => ST[r[0]]);
+NS.SITAC_BANDIERA = bandieraTag;
 
 /* Compatibilità con le versioni precedenti del modulo: i vecchi GeoJSON
    rientrano ricondotti alle chiavi nuove. Pendenze e vento NON stanno qui:
