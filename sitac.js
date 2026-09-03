@@ -1174,50 +1174,7 @@ function mostraComandoAfferente(sigla, nome){
      della difesa in linea, i rombi della linea di sicurezza, la scaletta
      del fronte. PolylineDecorator li ripete e li orienta lungo il percorso.
      ===================================================================== */
-  function glifoDeco(tipo, d, col, pieno){
-    const riempi = pieno ? col : '#fff';
-    let dentro = '';
-    if (tipo === 'triangolo')
-      dentro = `<path d="M2 ${d-2}L${d/2} 2L${d-2} ${d-2}Z" fill="${riempi}" stroke="${col}" stroke-width="2"/>`;
-    else if (tipo === 'rombo')
-      dentro = `<path d="M${d/2} 1L${d-1} ${d/2}L${d/2} ${d-1}L1 ${d/2}Z" fill="${riempi}" stroke="${col}" stroke-width="2"/>`;
-    else if (tipo === 'croce')
-      dentro = `<path d="M2 2L${d-2} ${d-2}M${d-2} 2L2 ${d-2}" stroke="${col}" stroke-width="2.6"/>`;
-    else if (tipo === 'scaletta')
-      dentro = `<path d="M${d/2} 1V${d-1}" stroke="${col}" stroke-width="2.6"/>`;
-    else if (tipo === 'onda')
-      dentro = `<path d="M1 ${d-2}V3h${d-2}v${d-5}" fill="none" stroke="${col}" stroke-width="2.4"/>`;
-    else if (tipo === 'obliqua')
-      dentro = `<path d="M1 ${d-2}L${d-3} 3M${d-3} 3l-5 .5M${d-3} 3l.5 5" fill="none" stroke="${col}" stroke-width="2.2"/>`;
-    else if (tipo === 'fulmine' || tipo === 'fulmineOff')
-      dentro = `<g transform="scale(${(d/64).toFixed(3)})">`
-        + `<path d="M38 5L17 35h11l-5 24 25-33H36l8-21Z" fill="#ffe000" stroke="${col}" stroke-width="4" stroke-linejoin="round"/>`
-        + (tipo === 'fulmineOff'
-            ? `<path d="M9 9L55 55M55 9L9 55" stroke="${col}" stroke-width="5"/>` : '')
-        + `</g>`;
-    else if (tipo === 'pilone')
-      dentro = `<path d="M${d/2} 2V${d-7}" stroke="${col}" stroke-width="2.4"/>`
-        + `<rect x="${d/2-4}" y="${d-8}" width="8" height="6" fill="${col}"/>`;
-    return L.divIcon({className:'sitac-deco', iconSize:[d,d], iconAnchor:[d/2,d/2],
-      html:`<svg viewBox="0 0 ${d} ${d}" width="${d}" height="${d}">${dentro}</svg>`});
-  }
 
-  function motivo(def, stato){
-    const dc = def.deco;
-    if (!dc) return null;
-    const pieno = dc.pieno && !(def.stati && stato === 'previsto');
-    const col = def.color || COL.rosso;
-    if (dc.tipo === 'punta' || dc.tipo === 'freccia')
-      return {offset: dc.tipo === 'punta' ? '100%' : '12%', repeat: dc.passo,
-        symbol: L.Symbol.arrowHead({pixelSize: dc.dim, headAngle: 60, polygon: !!pieno,
-          pathOptions:{color:col, fillColor:col, fillOpacity: pieno ? 1 : 0,
-            weight: pieno ? 1 : 2.5}})};
-        /* Il fulmine sta dritto sulla pagina. Ruotato lungo la campata finisce
-       capovolto sui tratti che vanno verso ovest, e un fulmine a testa in
-       giù non lo riconosce nessuno: vale tanto per la linea attiva quanto
-       per quella disattivata, che è lo stesso glifo con la croce sopra.
-       Il pilone lo dichiara già la simbologia; qui è coperto comunque. */
-      const dritto = dc.dritto || ['fulmine','fulmineOff','pilone'].indexOf(dc.tipo) >= 0;
   /* I disegni dei motivi stanno in sitac-simboli.js insieme al resto della
      tavola: lì c'è la convenzione (la linea attraversa il glifo in verticale,
      il verso di percorrenza è in alto, il centro dell'icona sta sul tracciato
