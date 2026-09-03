@@ -2840,16 +2840,6 @@ function mostraComandoAfferente(sigla, nome){
       if (sw) sw.innerHTML = NS.SITAC_ANTEPRIMA(k, s);
     });
 
-    /* Anche le linee cambiano faccia: tratteggiata e vuota quando è prevista,
-       piena quando è fatta. Prima l'anteprima era una barretta e non aveva
-       niente da dire, adesso sì. */
-    qq('#sitac-barra button[data-genere="linea"][data-chiave]').forEach(b => {
-      const k = b.dataset.chiave, d = LIN[k];
-      if (!d || d.g !== tavola) return;
-      const sw = b.querySelector('.sitac-swatch');
-      if (sw) sw.innerHTML = NS.SITAC_ANTEPRIMA(k, s);
-    });
-
     /* Lo strumento in uso va riacceso: l'icona del marcatore che Geoman
        tiene sotto il cursore è quella dello stato di prima. */
     if (strumento) riattivaStrumento();
