@@ -1118,7 +1118,19 @@ function mostraComandoAfferente(sigla, nome){
         if (wrap) wrap.appendChild(misuraBox);
       }
       /* I vertici li annuncia il layer provvisorio, non la mappa. */
-      e.workingLayer.on('pm:vertexadded', ev => { misuraPunti.push(ev.latlng); });
+      /* Pendenza e vento sono un SEGMENTO: origine e punta, niente altro.
+         Una spezzata a cinque vertici con una freccia in fondo non dice da
+         dove a dove, e in export porterebbe una lunghezza che nessuno ha
+         misurato. Geoman non sa limitare i vertici, quindi si chiude la
+         forma appena il secondo è posato. Il setTimeout lascia finire il
+         giro di eventi in corso: chiudere dentro pm:vertexadded significa
+         far arrivare pm:create mentre Geoman sta ancora aggiornando. */
+      const soloDue = strumento && strumento.genere === 'linea'
+        && LIN[strumento.chiave] && LIN[strumento.chiave].punti2;
+      e.workingLayer.on('pm:vertexadded', ev => {
+        misuraPunti.push(ev.latlng);
+        if (soloDue && misuraPunti.length >= 2) setTimeout(chiudiFormaAperta, 0);
+      });
     });
     map.on('mousemove', e => { misuraMostra(e.latlng, e.containerPoint); });
     map.on('pm:drawend', () => { clicPassante(false); misuraSpegni(); });
@@ -1186,20 +1198,24 @@ function mostraComandoAfferente(sigla, nome){
     const pieno = dc.pieno && !(def.stati && stato === 'previsto');
     const col = def.color || COL.rosso;
 
-    if (dc.tipo === 'punta' || dc.tipo === 'freccia')
-      return {offset: dc.tipo === 'punta' ? '100%' : '12%', repeat: dc.passo,
-        symbol: L.Symbol.arrowHead({pixelSize: dc.dim, headAngle: 60, polygon: !!pieno,
-          pathOptions:{color:col, fillColor:col, fillOpacity: pieno ? 1 : 0,
-            weight: pieno ? 1 : 2.5}})};
-
+    /* Tutto passa dal glifo, punte comprese. `L.Symbol.arrowHead` ancorava
+       il triangolo per l'apice e non offriva alternative: il tratto arrivava
+       fin sulla punta e sporgeva oltre. Il glifo lo ancora per il baricentro
+       e il vertice finale resta coperto dalla figura. */
     const g = NS.SITAC_DECO(dc.tipo,
       {col, pieno, n: dc.n, forma: dc.forma, dim: dc.dim});
+
     /* `passo:'auto'` sono i motivi che si toccano fra loro — i triangoli
        della difesa in linea, la greca della ricognizione, i denti del fronte:
        il passo è l'ingombro del glifo lungo la linea, e lo sa il glifo. */
-    const passo = dc.passo === 'auto' ? g.h : dc.passo;
+    const unaSola = dc.tipo === 'punta' || dc.tipo === 'fine';
+    const passo = unaSola ? 0
+      : dc.passo === 'auto' ? g.h : dc.passo;
     const offset = dc.offset != null ? dc.offset
+      : unaSola ? '100%'
+      : dc.tipo === 'freccia' ? '12%'
       : (NS.SITAC_DECO_CONTIGUI.indexOf(dc.tipo) >= 0 ? 0 : 8);
+
     return {offset, repeat: passo,
       symbol: L.Symbol.marker({rotate: !dc.dritto,
         markerOptions:{interactive:false,
@@ -2127,6 +2143,21 @@ function mostraComandoAfferente(sigla, nome){
     return voci;
   }
 
+    /* Chiude da codice il disegno in corso, come farebbe il doppio clic.
+     `_finishShape` è interno a Geoman ma è l'unica via: si prova prima il
+     nome pubblico, dove esiste. */
+  function chiudiFormaAperta(){
+    const D = map.pm && map.pm.Draw;
+    if (!D || !map.pm.globalDrawModeEnabled || !map.pm.globalDrawModeEnabled())
+      return false;
+    const forma = D.getActiveShape ? D.getActiveShape() : null;
+    const h = forma && D[forma];
+    const chiudi = h && (h.finishShape || h._finishShape);
+    if (typeof chiudi !== 'function') return false;
+    chiudi.call(h);
+    return true;
+  }
+
     /* Il destro durante il disegno CHIUDE quello che c'è: un'area con i
      vertici già posati diventa un poligono, una linea si ferma lì, uno
      strumento a punti si spegne. È lo stesso esito del doppio clic, ma col
@@ -2159,10 +2190,7 @@ function mostraComandoAfferente(sigla, nome){
     }
     /* `_finishShape` è interno a Geoman, ma è l'unica via per chiudere da
        codice: si prende prima il nome pubblico, dove esiste. */
-    const chiudi = h.finishShape || h._finishShape;
-    if (typeof chiudi !== 'function') return false;
-    chiudi.call(h);          // pm:create fa il resto, come col doppio clic
-    return true;
+    return chiudiFormaAperta();   // pm:create fa il resto, come col doppio clic
   }
 
   /* In cattura sul contenitore, non su map.on: mentre si disegna il puntatore
@@ -2343,13 +2371,34 @@ function mostraComandoAfferente(sigla, nome){
   let ventoAsta = null, ventoPunta = null;
   let ventoVelocita = 0, ventoVerso = 0;
 
-  function applicaVento(fonte){
+  /* Il rosso sulla carta è il fuoco e il dispositivo VVF, il nero il terreno,
+     l'azzurro l'acqua: una freccia che non è nessuna di quelle cose non può
+     prendere in prestito nessuno di quei colori, o a colpo d'occhio si legge
+     come un asse di sviluppo. Il viola non è di nessun altro. */
+  const COL_VENTO_DOS = '#b515c9';
+
+  function applicaVento(fonte, senzaRidisegno){
     if (!ventoVelocita){ mostraVento(null); aggiornaPassi(); return; }
     const v = NS.SitacVento.ventoDa(ventoVelocita, ventoVerso, fonte || 'manuale');
     v.letto = new Date().toISOString();
     mostraVento(v);
+    /* Il numero di codine dipende dall'intensità: muovendo lo slider il
+       simbolo si rifà da sé invece di restare quello di prima. Non durante
+       il trascinamento della punta, però — vedi sotto. */
+    if (!senzaRidisegno && (ventoAsta || ventoPunta)) disegnaFrecciaVento();
     aggiornaPassi();
     stato(t('ventoImpostato', {v:v.velocita, d:v.verso, f:v.fonte}));
+  }
+
+  /* La punta non è più una freccia generica ma IL SIMBOLO DEL VENTO della
+     tavola: la stessa asta con le codine a 45°, una due o tre secondo
+     l'intensità. Il numero lo legge dalla simbologia invece di riscriverlo
+     qui, così se un domani cambiano le soglie di Beaufort cambia in un
+     posto solo. */
+  function glifoVentoDos(){
+    const k = NS.SitacVento.simboloVento(ventoVelocita || 0);
+    const n = (LIN[k] && LIN[k].deco && LIN[k].deco.n) || 1;
+    return NS.SITAC_DECO('fine', {forma:'45', n, dim:22, col: COL_VENTO_DOS});
   }
 
   function disegnaFrecciaVento(){
@@ -2358,27 +2407,29 @@ function mostraComandoAfferente(sigla, nome){
     if (!posDos) return;
     const d = distanzaManiglia() * 1.8;
     const p = puntoDaAzimut(posDos, ventoVerso, d);
-    ventoAsta = L.polyline([posDos, p], {color:'#0070c0', weight:2.5,
-      dashArray:'8,6', interactive:false}).addTo(decori);
-    /* La punta è una freccia orientata, non un pallino: su una carta il
-       vento si legge dalla forma prima che dal colore, e un cerchio non
-       dice da che parte va. */
+    ventoAsta = L.polyline([posDos, p],
+      {color: COL_VENTO_DOS, weight: 2.8, interactive: false}).addTo(decori);
+
+    const g = glifoVentoDos();
     ventoPunta = L.marker(p, {draggable:true, keyboard:false,
       icon: L.divIcon({className:'sitac-maniglia sitac-mn-vento',
-        iconSize:[26,26], iconAnchor:[13,13],
-        html:`<svg viewBox="0 0 26 26" style="transform:rotate(${ventoVerso}deg)">`
-          + `<path d="M13 1l7 16-7-4-7 4Z" fill="#0070c0" stroke="#fff" stroke-width="1.6"`
-          + ` stroke-linejoin="round"/></svg>`})}).addTo(decori);
+        iconSize:[g.w, g.h], iconAnchor:[g.w / 2, g.h / 2],
+        html:`<svg viewBox="0 0 ${g.w} ${g.h}" xmlns="http://www.w3.org/2000/svg"`
+          + ` style="transform:rotate(${ventoVerso}deg)">${g.html}</svg>`})})
+      .addTo(decori);
+
     ventoPunta.on('drag', () => {
       ventoVerso = Math.round(azimut(posDos, ventoPunta.getLatLng()));
       ventoAsta.setLatLngs([posDos, ventoPunta.getLatLng()]);
       /* L'HTML del divIcon è fissato alla creazione: per far girare la
          freccia durante il trascinamento si scrive direttamente sull'SVG
-         che è già a schermo, invece di ricostruire il marker sotto il dito. */
+         che è già a schermo. Ricostruire il marcatore lo farebbe sparire da
+         sotto il dito e il gesto si interromperebbe: per questo si passa
+         `senzaRidisegno`. */
       const el = ventoPunta.getElement();
       const svg = el && el.querySelector('svg');
       if (svg) svg.style.transform = `rotate(${ventoVerso}deg)`;
-      if (ventoVelocita) applicaVento('mappa');
+      if (ventoVelocita) applicaVento('mappa', true);
     });
   }
   /* La freccia sta a distanza fissa sullo SCHERMO: cambiando zoom va rifatta,

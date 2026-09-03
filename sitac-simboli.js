@@ -409,19 +409,51 @@ function decoGlifo(tipo, opz){
       break;
     }
 
+    /* Punta di freccia — il triangolo sta sul tracciato con il BARICENTRO nel
+       punto, non con l'apice. Ancorandolo per l'apice il tratto arrivava fino
+       alla punta e sporgeva oltre, perché il linecap e lo spessore della linea
+       aggiungono qualche pixel dopo l'ultimo vertice: si vedeva una codina
+       fuori dal triangolo. Col baricentro il vertice finale cade DENTRO la
+       figura, che lo copre, e la freccia sporge in avanti come su una carta
+       disegnata a mano.
+       Il baricentro di un triangolo sta a un terzo dell'altezza dalla base:
+       apice a 2/3 davanti, base a 1/3 dietro. `dim` è la base. */
+    case 'freccia':          // ripetuta lungo la linea (senso di marcia)
+    case 'punta': {          // una sola, sull'ultimo vertice
+      const hT = dim * 1.15, bT = dim;
+      w = Math.ceil(bT) + 4;
+      h = Math.ceil(hT) + 6;
+      const cx = w / 2, cy = h / 2;
+      const ay = cy - hT * 2 / 3, by = cy + hT / 3;
+      /* Vuota = campita di bianco, non a V aperta: il bianco è quello che
+         nasconde il tratto sotto, ed è il motivo per cui si è spostato il
+         baricentro. Una V aperta rimetterebbe la linea in vista. */
+      d = `<path d="M${f(cx)} ${f(ay)}L${f(cx + bT/2)} ${f(by)}L${f(cx - bT/2)} ${f(by)}Z"`
+        + ` fill="${pieno ? col : '#fff'}" stroke="${col}"`
+        + ` stroke-width="${pieno ? 1.2 : 2.2}" stroke-linejoin="round"/>`;
+      break;
+    }
+
     /* Pendenze e vento — freccia in punta con le codine in coda: a T
        (perpendicolari) per la pendenza, a 45° per il vento. Una, due o tre
-       secondo l'intensità. `dim` è la larghezza della freccia. */
+       secondo l'intensità.
+       Stessa regola della punta: il baricentro del triangolo sta sul vertice
+       finale. Le codine partono dalla BASE della freccia, cioè esattamente
+       dalla fine del segmento, e proseguono all'indietro: prima stavano più
+       avanti e sembravano appese a metà del tracciato.
+       `dim` è la base della freccia. */
     case 'fine': {
-      const la = dim * 0.9, wa = dim / 2, passo = dim * 0.52, stacco = dim * 0.35;
-      const coda = la + stacco + (n - 1) * passo + (o.forma === '45' ? wa : 0);
-      w = Math.ceil(dim + wa * 1.6) + 2;
-      h = Math.ceil(coda * 2) + 4;
+      const hT = dim * 1.15, bT = dim, wa = bT / 2;
+      const passo = dim * 0.5;
+      const dietro = hT / 3 + (n - 1) * passo + (o.forma === '45' ? wa * 1.3 : 0);
+      w = Math.ceil(bT * 1.1 + (o.forma === '45' ? wa * 1.3 : 0)) + 4;
+      h = Math.ceil(Math.max(dietro, hT * 2 / 3) * 2) + 6;
       const cx = w / 2, cy = h / 2;
-      d = `<path d="M${f(cx)} ${f(cy)}L${f(cx + wa)} ${f(cy + la)}`
-        + `L${f(cx)} ${f(cy + la * 0.74)}L${f(cx - wa)} ${f(cy + la)}Z" fill="${col}"/>`;
+      const ay = cy - hT * 2 / 3, by = cy + hT / 3;
+      d = `<path d="M${f(cx)} ${f(ay)}L${f(cx + wa)} ${f(by)}L${f(cx - wa)} ${f(by)}Z"`
+        + ` fill="${col}" stroke="${col}" stroke-width="1.2" stroke-linejoin="round"/>`;
       for (let i = 0; i < n; i++){
-        const y = cy + la + stacco + i * passo;
+        const y = by + i * passo;
         d += (o.forma === '45')
           ? `<line x1="${f(cx)}" y1="${f(y)}" x2="${f(cx + wa * 1.3)}" y2="${f(y + wa * 1.3)}"`
             + ` stroke="${col}" stroke-width="2.8" stroke-linecap="round"/>`
@@ -517,16 +549,20 @@ const aggL = (k, g, sg, it, en, stile, extra) => {
 
 /* ---- TAVOLA 1: pendenze, viabilità, infrastrutture ---- */
 /* La pendenza si traccia da monte a valle come la si legge sulla carta: la
-   freccia sta a valle, le codine dicono quanto è ripido. */
+   freccia sta a valle, le codine dicono quanto è ripido.
+   `punti2` la limita a DUE vertici, origine e punta: una direzione è un
+   segmento, e una spezzata a cinque vertici con una freccia in fondo non
+   dice da dove a dove, mentre in export porterebbe una lunghezza che
+   nessuno ha misurato. Il limite lo applica sitac.js in fase di disegno. */
 aggL('pend_lieve','zona',null,'Pendenza lieve','Light slope',
   {color:C.nero, weight:2.8},
-  {deco:{tipo:'fine', forma:'T', n:1, dim:22, passo:0, offset:'100%'}});
+  {punti2:1, deco:{tipo:'fine', forma:'T', n:1, dim:20, passo:0, offset:'100%'}});
 aggL('pend_moderata','zona',null,'Pendenza moderata','Moderate slope',
   {color:C.nero, weight:2.8},
-  {deco:{tipo:'fine', forma:'T', n:2, dim:22, passo:0, offset:'100%'}});
+  {punti2:1, deco:{tipo:'fine', forma:'T', n:2, dim:20, passo:0, offset:'100%'}});
 aggL('pend_forte','zona',null,'Pendenza forte','Steep slope',
   {color:C.nero, weight:2.8},
-  {deco:{tipo:'fine', forma:'T', n:3, dim:22, passo:0, offset:'100%'}});
+  {punti2:1, deco:{tipo:'fine', forma:'T', n:3, dim:20, passo:0, offset:'100%'}});
 
 aggL('sentiero','zona',null,'Sentiero o mulattiera','Trail',
   {color:C.nero, weight:3, dashArray:'14,5,3,5'});
@@ -553,13 +589,13 @@ aggL('elettrodotto_off','zona',null,'Linea elettrica disattivata','Power line of
 /* La freccia dice dove VA il vento; le codine a 45° l'intensità. */
 aggL('vento_debole','evoluzione',null,'Direzione del vento, intensit\u00e0 debole','Wind direction, light',
   {color:C.nero, weight:2.6},
-  {deco:{tipo:'fine', forma:'45', n:1, dim:22, passo:0, offset:'100%'}});
+  {punti2:1, deco:{tipo:'fine', forma:'45', n:1, dim:20, passo:0, offset:'100%'}});
 aggL('vento_moderato','evoluzione',null,'Direzione del vento, intensit\u00e0 moderata','Wind direction, moderate',
   {color:C.nero, weight:2.6},
-  {deco:{tipo:'fine', forma:'45', n:2, dim:22, passo:0, offset:'100%'}});
+  {punti2:1, deco:{tipo:'fine', forma:'45', n:2, dim:20, passo:0, offset:'100%'}});
 aggL('vento_forte','evoluzione',null,'Direzione del vento, intensit\u00e0 forte','Wind direction, strong',
   {color:C.nero, weight:2.6},
-  {deco:{tipo:'fine', forma:'45', n:3, dim:22, passo:0, offset:'100%'}});
+  {punti2:1, deco:{tipo:'fine', forma:'45', n:3, dim:20, passo:0, offset:'100%'}});
 
 aggL('asse_principale','evoluzione',null,'Asse di sviluppo principale','Head of the fire',
   {color:C.rosso, weight:10, lineCap:'butt'}, {deco:{tipo:'punta', passo:'100%', dim:34, pieno:1}});
@@ -621,24 +657,20 @@ function anteprimaLinea(k, stato){
   const dc = d.deco;
   if (dc){
     const pieno = !!(dc.pieno && !previsto);
-    if (dc.tipo === 'punta' || dc.tipo === 'freccia'){
-      /* arrowHead di PolylineDecorator: qui basta ridisegnarne la punta. */
-      const lu = 12, la = 7, x = A_W - 1;
-      s += `<path d="M${x} ${y}L${x - lu} ${y - la}${pieno ? '' : `M${x} ${y}`}L${x - lu} ${y + la}${pieno ? 'Z' : ''}"`
-        + ` fill="${pieno ? col : 'none'}" stroke="${col}" stroke-width="2.2" stroke-linejoin="round"/>`;
+    const g = decoGlifo(dc.tipo, {col, pieno, n:dc.n, forma:dc.forma, dim:dc.dim});
+    const sc = Math.min(1, (A_H - 2) / g.w, (A_W - 2) / g.h);
+    const posa = px => `<g transform="translate(${px.toFixed(1)} ${y}) rotate(90) `
+      + `scale(${sc.toFixed(3)}) translate(${-g.w/2} ${-g.h/2})">${g.html}</g>`;
+    if (dc.tipo === 'fine' || dc.tipo === 'punta'){
+      /* Sul tracciato stanno sull'ultimo vertice, e il baricentro del
+         triangolo cade lì: nell'anteprima si fa lo stesso, così la punta
+         sporge oltre la linea come sulla carta. */
+      s += posa(A_W - 3);
+    } else if (DECO_CONTIGUI.indexOf(dc.tipo) >= 0){
+      const passo = g.h * sc;
+      for (let x = passo / 2; x < A_W; x += passo) s += posa(x);
     } else {
-      const g = decoGlifo(dc.tipo, {col, pieno, n:dc.n, forma:dc.forma, dim:dc.dim});
-      const sc = Math.min(1, (A_H - 2) / g.w, (A_W - 2) / g.h);
-      const posa = px => `<g transform="translate(${px.toFixed(1)} ${y}) rotate(90) `
-        + `scale(${sc.toFixed(3)}) translate(${-g.w/2} ${-g.h/2})">${g.html}</g>`;
-      if (dc.tipo === 'fine'){
-        s += posa(A_W - 1);                       // la punta sull'estremità
-      } else if (DECO_CONTIGUI.indexOf(dc.tipo) >= 0){
-        const passo = g.h * sc;
-        for (let x = passo / 2; x < A_W; x += passo) s += posa(x);
-      } else {
-        s += posa(A_W * 0.34) + posa(A_W * 0.72);
-      }
+      s += posa(A_W * 0.34) + posa(A_W * 0.72);
     }
   }
   if (d.badge){

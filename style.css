@@ -5693,6 +5693,133 @@ select:focus {
     display: none !important;
 }
 
+/* ==========================================================================
+   SITAC — AGGIUNTE
+
+   Va IN CODA a style.css, dopo il blocco SITAC AIB e dopo quello di stampa:
+   qui si sovrascrivono regole dichiarate più su (la swatch delle linee, la
+   griglia della testata di stampa) e a parità di specificità vince l'ultima.
+   ========================================================================== */
+
+/* ---------- anteprima delle linee ----------
+   Il pulsante di una linea non porta più una barretta colorata ma un
+   ritaglio di tavola: la linea con il suo motivo, e il badge 4x4 dove c'è.
+   Serve più larghezza dei 30px quadrati dei simboli — un triangolo solo non
+   dice se sono contigui — ma l'altezza resta quella, o le due colonne di
+   pulsanti non si allineano più. */
+#sitac-app .sitac-swatch-linea {
+    flex: 0 0 58px;
+    width: 58px;
+    height: 30px;
+    padding: 2px 3px;
+}
+
+#sitac-app .sitac-swatch-linea svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* Legenda a video: stessa anteprima, rimpicciolita. Il fondo chiaro è quello
+   dei simboli — la tavola è disegnata per la carta bianca, e un tracciato
+   nero su #141414 non si vede. */
+#sitac-app .sitac-leg-lin {
+    display: inline-flex;
+    width: 46px;
+    height: 20px;
+    flex: 0 0 46px;
+    background: #f2f0e8;
+    border-radius: 3px;
+    padding: 1px 2px;
+}
+
+#sitac-app .sitac-leg-lin svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* ---------- badge quadrato ----------
+   La bonifica porta un quadro con la B, non un tondo: nella tavola il
+   riquadro distingue l'azione dal 4x4 delle sterrate, che è un'indicazione
+   di percorribilità. */
+#sitac-app .sitac-badge-q {
+    border-radius: 3px;
+}
+
+/* ---------- misure nel menu del tasto destro ----------
+   Prima voce del menu, sotto il nome dell'elemento: coordinate per un punto,
+   lunghezza per una linea, superficie e perimetro per un'area. Monospaziata
+   e incolonnata, perché sono numeri che si leggono e si dettano. */
+#sitac-app .sitac-menu-info {
+    margin: 0 7px 6px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border-color);
+    font-family: "Courier New", monospace;
+    font-size: 11.5px;
+    line-height: 1.4;
+    color: var(--primary-color);
+    white-space: pre-line;
+}
+
+/* La × sulla carta non viene più costruita: la regola resta per i fogli di
+   stile ancora in cache e per non lasciare un elemento orfano visibile. */
+#sitac-app .sitac-x-sel {
+    display: none !important;
+}
+
+/* ---------- stampa: testata a tre riquadri ----------
+   Intervento, Comando, DOS. Prima erano due e il numero d'intervento stava
+   nel riquadro del DOS, accanto al suo telefono. */
+.sf-dati {
+    grid-template-columns: 1fr 1.35fr 1fr;
+}
+
+/* Il riquadro del DOS ha quattro campi: la doppia colonna che serviva quando
+   ne aveva otto adesso spezzerebbe due righe a metà. La regola generica
+   `.sf-box:last-child{columns:2}` più su va annullata qui. */
+.sf-box-dos {
+    columns: 1;
+}
+
+/* Legenda stampata: la stessa anteprima delle linee, in millimetri. */
+.sf-tratto-lin {
+    width: 16mm;
+    height: 5mm;
+    display: inline-flex;
+    flex: 0 0 auto;
+    background: none;
+}
+
+.sf-tratto-lin svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* ---------- freccia del vento sul DOS ----------
+   Non è più un pallino di 26px fissi ma il simbolo della tavola, che cambia
+   ingombro con il numero di codine: le misure le detta il divIcon, qui si
+   dice solo di riempirlo. Senza questo l'SVG resta schiacciato nei 26px
+   della regola precedente e le codine si accavallano.
+   Il viola non è un colore della tavola, ed è voluto: sulla carta il rosso è
+   il fuoco, il nero il terreno, l'azzurro l'acqua — il vento del DOS non è
+   nessuna di quelle cose e non deve poter essere scambiato per una di loro. */
+#sitac-app .sitac-mn-vento,
+.sf-mappa .sitac-mn-vento {
+    background: none;
+    border: 0;
+    box-shadow: none;
+}
+
+#sitac-app .sitac-mn-vento svg,
+.sf-mappa .sitac-mn-vento svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, .6));
+}
+
 /* ---------- stampa: testata a tre riquadri ----------
    Intervento, Comando, DOS. Prima erano due e il numero d'intervento stava
    nel riquadro del DOS, accanto al suo telefono. */
