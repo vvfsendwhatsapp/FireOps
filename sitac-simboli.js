@@ -270,7 +270,7 @@ function moduloUE(){
       const x = (xc - 8 + i * 8).toFixed(1);
       a += `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y1-8}" stroke="${K}" stroke-width="2.2"/>`;
     }
-    const xd = p ? x2 - CUNEO : x2;
+    const xd = x2 - CUNEO;              // corpo fisso nei due stati
     const cod = String((o && o.paese) || '').toUpperCase().slice(0, 3);
     const n = idTesto(o);
     const bw = 14, bh = 9, bx = x1 + 4, by = (y1 + y2) / 2 - bh / 2;
@@ -397,7 +397,7 @@ agg('dos','dispositivo','sgTerra','DOS — Direttore Operazioni Spegnimento','Fi
     return T(`<line x1="${xc}" y1="${y1}" x2="${xc}" y2="${y1-9}" stroke="${K}" stroke-width="2.6"/>
       <rect x="${x1}" y="${y1}" width="${x2-x1}" height="${y2-y1}" fill="#fff" stroke="${K}" stroke-width="3"/>
       ${p ? `<path d="M${x2-CUNEO-4} ${y2}H${x2}V${y1}Z" fill="${K}"/>` : ''}
-      ${txt(p ? 24 : 32, y2-8, 'DOS', K, p ? 18 : 21)}`);
+      ${txt(24, y2-8, 'DOS', K, 18)}`);
   }, {s:1, f:1});
 agg('vvf','dispositivo','sgTerra','Squadra VVF','VVF crew', mezzoTerra('VVF', 1), {s:1, e:1, f:1, lbl:'N. squadra'});
 agg('vol','dispositivo','sgTerra','Squadra VOL','Volunteer crew', mezzoTerra('VOL', 1), {s:1, e:1, f:1, lbl:'N. squadra'});
@@ -582,8 +582,7 @@ function decoGlifo(tipo, opz){
          diverse sullo stesso simbolo. */
       d = `<path d="M${f(cx)} ${f(ay)}L${f(cx + bT/2)} ${f(by)}L${f(cx - bT/2)} ${f(by)}Z"`
         + ` fill="${pieno ? col : '#fff'}" stroke="${col}"`
-        + ` stroke-width="${pieno ? 1.2 : 2.2}" stroke-linejoin="round"`
-        + (pieno ? '' : ' stroke-dasharray="3.5,3"') + `/>`;
+        + ` stroke-width="${pieno ? 1.2 : 2.2}" stroke-linejoin="round"/>`;
       break;
     }
 
@@ -647,8 +646,7 @@ function decoGlifo(tipo, opz){
         + ` stroke="${col}" stroke-width="${f(bT * 0.8)}" stroke-linecap="butt"/>`
         + `<path d="M${f(tip)} ${f(cy)}L${f(base)} ${f(cy - bT)}L${f(base)} ${f(cy + bT)}Z"`
         + ` fill="${pieno ? col : '#fff'}" stroke="${col}"`
-        + ` stroke-width="${pieno ? 1.2 : 2.2}" stroke-linejoin="round"`
-        + (pieno ? '' : ' stroke-dasharray="3.5,3"') + `/>`;
+        + ` stroke-width="${pieno ? 1.2 : 2.2}" stroke-linejoin="round"/>`;
       break;
     }
 
@@ -670,8 +668,7 @@ function decoGlifo(tipo, opz){
         + `<path d="M${f(tx)} ${f(ty)}L${f(bx - bT * lato)} ${f(by - bT)}`
         + `L${f(bx + bT * lato)} ${f(by + bT)}Z"`
         + ` fill="${pieno ? col : '#fff'}" stroke="${col}"`
-        + ` stroke-width="1.6" stroke-linejoin="round"`
-        + (pieno ? '' : ' stroke-dasharray="3,2.5"') + `/>`;
+        + ` stroke-width="1.6" stroke-linejoin="round"/>`;
       break;
     }
 
@@ -695,28 +692,6 @@ function decoGlifo(tipo, opz){
       break;
     }
 
-    /* Seggiovia — la morsa sulla fune, lo stelo, il seggiolino appeso. NON
-       ruota col tracciato: pende per gravità, quindi resta dritto sulla
-       pagina qualunque sia la pendenza della campata, e rispetto alla fune
-       risulta inclinato. Tenuto perpendicolare al cavo, su una campata
-       ripida uscirebbe coricato di fianco: non è quello che si vede
-       alzando gli occhi.
-       La morsa sta nel CENTRO del glifo, che è il punto che cade sul
-       tracciato: da lì in giù c'è tutto il resto, e la metà alta del
-       riquadro resta vuota apposta. `dim` è la larghezza del seggiolino. */
-    case 'seggiolino': {
-      const bw = dim, bh = dim * 0.78, stelo = dim * 0.64, r = dim * 0.17;
-      w = Math.ceil(bw) + 6;
-      h = Math.ceil((stelo + bh) * 2) + 4;
-      const cx = w / 2, cy = h / 2, yb = cy + stelo;
-      d = `<line x1="${f(cx)}" y1="${f(cy)}" x2="${f(cx)}" y2="${f(yb)}"`
-        + ` stroke="${col}" stroke-width="${f(Math.max(1.8, dim * 0.14))}"/>`
-        + `<rect x="${f(cx - bw/2)}" y="${f(yb)}" width="${f(bw)}" height="${f(bh)}"`
-        + ` fill="${col}"/>`
-        + `<circle cx="${f(cx)}" cy="${f(cy)}" r="${f(r)}" fill="${col}"/>`;
-      break;
-    }
-
     /* Accesso interrotto — croce sul tracciato, simmetrica: la rotazione non
        la cambia. */
     case 'croce': {
@@ -725,12 +700,15 @@ function decoGlifo(tipo, opz){
       break;
     }
 
-    /* Fili a sbalzo — il pilone: sta dritto sulla pagina, non ruota. */
+    /* Fili a sbalzo — il pilone è una traversa PERPENDICOLARE alla campata.
+       Ruota col tracciato: è la rotazione a tenerla ad angolo retto sulla
+       fune. Tenuta dritta sulla pagina, su una campata in diagonale usciva
+       sghemba, e una traversa sghemba su un cavo non vuol dire niente. */
     case 'pilone': {
       w = h = dim;
-      const cx = dim / 2;
-      d = `<line x1="${cx}" y1="2" x2="${cx}" y2="${dim-7}" stroke="${col}" stroke-width="2.4"/>`
-        + `<rect x="${cx-4}" y="${dim-8}" width="8" height="6" fill="${col}"/>`;
+      const cx = dim / 2, b = dim * 0.40;
+      d = `<line x1="${f(cx - b)}" y1="${f(cx)}" x2="${f(cx + b)}" y2="${f(cx)}"`
+        + ` stroke="${col}" stroke-width="3.4" stroke-linecap="butt"/>`;
       break;
     }
 
@@ -812,12 +790,7 @@ aggL('senso_unico','zona',null,'Senso di marcia obbligatorio','One way only',
 aggL('accesso_interrotto','zona',null,'Accesso interrotto','Road closed',
   {color:C.nero, weight:3.5}, {deco:{tipo:'croce', passo:'50%', dim:18}});
 aggL('fune_sbalzo','zona',null,'Funivie, fili a sbalzo, ecc.','Cableways and aerial wires',
-  {color:C.nero, weight:2.6}, {deco:{tipo:'pilone', passo:'50%', dim:22, dritto:1}});
-/* La seggiovia non è un filo a sbalzo qualunque: sotto ci passa gente, e
-   sulla carta va distinta a colpo d'occhio dalla teleferica di servizio. */
-aggL('seggiovia','zona',null,'Seggiovia','Chairlift',
-  {color:C.nero, weight:2.6},
-  {deco:{tipo:'seggiolino', passo:40, dim:14, offset:20, dritto:1}});
+  {color:C.nero, weight:2.6}, {deco:{tipo:'pilone', passo:'50%', dim:22}});
 aggL('elettrodotto','zona',null,'Linea elettrica attiva','Power line on',
   {color:C.nero, weight:2.4, dashArray:'14,5,3,5'}, {deco:{tipo:'fulmine', passo:70, dim:24, dritto:1}});
 aggL('elettrodotto_off','zona',null,'Linea elettrica disattivata','Power line off',
@@ -835,12 +808,23 @@ aggL('vento_forte','evoluzione',null,'Direzione del vento, intensit\u00e0 forte'
   {color:C.nero, weight:2.6},
   {punti2:1, deco:[puntaFine(), codeInizio('45', 3)]});
 
+/* Fig. della tavola: il principale è un blocco rosso pieno, i secondari
+   sono frecce VUOTE col contorno — riempimento bianco e bordo rosso — e si
+   distinguono fra loro per il calibro, non per il colore. `guaina` è la
+   seconda linea che sta sotto e fa da bordo; `bordo` è il colore con cui si
+   disegnano guaina, punta e legenda, perché il tracciato vero è bianco e
+   una punta bianca su fondo bianco non c'è. */
 aggL('asse_principale','evoluzione',null,'Asse di sviluppo principale','Head of the fire',
-  {color:C.rosso, weight:10, lineCap:'butt'}, {deco:{tipo:'punta', passo:'100%', dim:34, pieno:1}});
+  {color:C.rosso, weight:11, lineCap:'butt'},
+  {deco:{tipo:'punta', passo:'100%', dim:38, pieno:1, sempre:1}});
 aggL('asse_veloce','evoluzione',null,'Asse secondario (veloce)','Secondary axis (fast)',
-  {color:C.rosso, weight:3}, {deco:{tipo:'punta', passo:'100%', dim:22}});
+  {color:'#ffffff', weight:7, lineCap:'butt'},
+  {bordo:C.rosso, guaina:{weight:11},
+   deco:{tipo:'punta', passo:'100%', dim:30, sempre:1}});
 aggL('asse_lento','evoluzione',null,'Asse secondario (lento)','Secondary axis (slow)',
-  {color:C.rosso, weight:2.5}, {deco:{tipo:'punta', passo:'100%', dim:14}});
+  {color:'#ffffff', weight:4.5, lineCap:'butt'},
+  {bordo:C.rosso, guaina:{weight:8},
+   deco:{tipo:'punta', passo:'100%', dim:22, sempre:1}});
 /* Doppia linea parallela a denti: il tracciato è la linea di monte, il
    motivo aggiunge quella affiancata e le traversine. */
 aggL('fronte','evoluzione',null,'Fronte dell\u2019incendio','Fire front',
@@ -874,7 +858,8 @@ aggL('linea_sicurezza','azioni','sgControfuoco','Creazione linea di sicurezza','
    braccio con la punta gira di 90° verso il fianco scelto. */
 aggL('accensione_linee','azioni','sgControfuoco','Accensione per linee','Ignition by lines',
   {color:C.rosso, weight:9, lineCap:'butt'},
-  {stati:1, lato:1, deco:{tipo:'ortogonale', dim:30, passo:0, offset:'100%', pieno:1}});
+  {stati:1, lato:1, deco:{tipo:'ortogonale', dim:30, passo:0, offset:'100%',
+                          pieno:1, sempre:1}});
 aggL('via_fuga','azioni','sgEvacuazione','Via di fuga per evacuazione','Evacuation escape route',
   {color:C.nero, weight:2.6}, {stati:1, deco:{tipo:'chevron', passo:'33%', dim:16, pieno:1}});
 
@@ -896,12 +881,21 @@ const A_W = 64, A_H = 30;
 function anteprimaLinea(k, stato){
   const d = L[k];
   if (!d) return '';
-  const y = A_H / 2, col = d.color || C.rosso;
+  const y = A_H / 2;
+  /* Il colore dei motivi è quello del BORDO, non del tratto: sugli assi
+     secondari il tracciato è bianco. */
+  const col = d.bordo || d.color || C.rosso;
+  const dentro = d.color || C.rosso;
   const previsto = !!(d.stati && stato !== 'attivo');
   const tratto = previsto ? '8,6' : (d.dashArray || null);
   const peso = Math.min(d.weight || 3, 6);
-  let s = `<line x1="1" y1="${y}" x2="${A_W - 1}" y2="${y}" stroke="${col}"`
-    + ` stroke-width="${peso}"` + (tratto ? ` stroke-dasharray="${tratto}"` : '') + `/>`;
+  let s = '';
+  if (d.guaina)
+    s += `<line x1="1" y1="${y}" x2="${A_W - 1}" y2="${y}" stroke="${col}"`
+      + ` stroke-width="${Math.min(peso + 3.5, 9)}"/>`;
+  s += `<line x1="1" y1="${y}" x2="${A_W - 1}" y2="${y}"`
+    + ` stroke="${d.guaina ? dentro : col}" stroke-width="${peso}"`
+    + (tratto ? ` stroke-dasharray="${tratto}"` : '') + `/>`;
 
   /* `deco` può essere uno o un elenco: pendenza, vento e bonifica ne hanno
      due, e l'anteprima deve mostrarli tutti o il pulsante mente. */
@@ -934,10 +928,14 @@ function anteprimaLinea(k, stato){
 
   if (d.badge){
     const bw = d.badge.length > 1 ? 20 : 14;
-    s += `<rect x="2" y="${y - 8}" width="${bw}" height="16" rx="${d.badgeQuadro ? 2 : 8}"`
-      + ` fill="#fff" stroke="#000" stroke-width="1.8"/>`
-      + `<text x="${2 + bw/2}" y="${y + 4}" text-anchor="middle" font-size="10"`
-      + ` font-family="Arial,Helvetica,sans-serif" font-weight="700" fill="#000">${esc(d.badge)}</text>`;
+    /* Ai due capi, come sul tracciato: l'anteprima deve dire dove il bollo
+       comparirà davvero. */
+    [2, A_W - bw - 2].forEach(bx => {
+      s += `<rect x="${bx}" y="${y - 8}" width="${bw}" height="16" rx="${d.badgeQuadro ? 2 : 8}"`
+        + ` fill="#fff" stroke="#000" stroke-width="1.8"/>`
+        + `<text x="${bx + bw/2}" y="${y + 4}" text-anchor="middle" font-size="10"`
+        + ` font-family="Arial,Helvetica,sans-serif" font-weight="700" fill="#000">${esc(d.badge)}</text>`;
+    });
   }
   return `<svg viewBox="0 0 ${A_W} ${A_H}" xmlns="http://www.w3.org/2000/svg">${s}</svg>`;
 }

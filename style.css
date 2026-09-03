@@ -5855,6 +5855,14 @@ select:focus {
 }
 .sitac-scelta .sitac-bandiera svg{ display:block; border-radius:1px; }
 
+.sitac-note{
+  width:100%; box-sizing:border-box; resize:vertical; min-height:7em;
+  font:inherit; line-height:1.4; padding:.5rem .6rem;
+}
+#sitac-stampa-doc .sf-note-testo{
+  font-size:3.2mm; line-height:1.45; margin:1mm 0 0; white-space:normal;
+}
+
 /* ==========================================================
    ==========================================================
    RESPONSIVE

@@ -361,7 +361,11 @@ function avvia(app){
       disegnoAnnullato:'Disegno annullato: troppi pochi vertici.',
       chiediPaese:'Nazione del modulo',
       menuPaese:'Cambia nazione',
-      stSquadre:'Dispositivo a terra \u2014 squadre previste e attive', },
+      stSquadre:'Dispositivo a terra \u2014 squadre previste e attive',
+      dirSegui:'\u25b6 Muovi il puntatore: il simbolo gira.\u000aSecondo clic per fermare la direzione.',
+      p8note:'Note', bNotePulisci:'Svuota le note',
+      noteAiuto:'Quello che si scriveva a mano nel margine della carta: orari, nominativi, quello che non ha un simbolo.',
+      stNote:'Note', },
     en:{ bCono:'Add cone', conoModo:'How should the cone be built?',
       bPosizione:'Enter coordinates',
       conoSettore:'From the point of origin', conoSettoreNota:'30° sector from the origin; a second click marks where the front is now (T0).',
@@ -609,7 +613,8 @@ function avvia(app){
   /* Opzioni di stile per Leaflet: le chiavi nostre non devono arrivargli.
      Previsto = tratto spezzato, come nella tavola. */
   function stileLinea(d, stato){
-    const {n, deco, badge, badgeQuadro, stati, lato, punti2, g, sg, r0, ...resto} = d;
+    const {n, deco, badge, badgeQuadro, stati, lato, punti2, guaina, bordo,
+      g, sg, r0, ...resto} = d;
     if (stati && stato === 'previsto')
       return Object.assign({}, resto, {dashArray: resto.dashArray || '9,7'});
     return resto;
@@ -729,6 +734,12 @@ function avvia(app){
   const inTelefono   = q('#sitac-telefono');
   const inPosizione  = q('#sitac-posizione');
   const CHIAVE_SESS  = 'fireops_sitac_intestazione';
+  const CHIAVE_NOTE  = 'fireops_sitac_note';
+  let noteTesto = '';
+  try { noteTesto = sessionStorage.getItem(CHIAVE_NOTE) || ''; } catch(e){ }
+  const salvaNote = () => {
+    try { sessionStorage.setItem(CHIAVE_NOTE, noteTesto); } catch(e){ }
+  };
 
   function normalizzaDos(v){
     return String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
@@ -1239,8 +1250,13 @@ function mostraComandoAfferente(sigla, nome){
      toccare questo file. Qui resta solo la scelta di DOVE posarli. */
   function motivo(def, dc, stato, lato){
     if (!dc) return null;
-    const pieno = dc.pieno && !(def.stati && stato === 'previsto');
-    const col = def.color || COL.rosso;
+    /* `sempre` sono i motivi che NON cambiano faccia con lo stato: la punta
+       di un asse di sviluppo è piena sempre — lo stato dell'asse non
+       esiste — e quella dell'accensione per linee va piena comunque, perché
+       è già il tracciato tratteggiato a dire che l'azione è prevista. */
+    const pieno = dc.sempre ? !!dc.pieno
+      : (dc.pieno && !(def.stati && stato === 'previsto'));
+    const col = dc.col || def.bordo || def.color || COL.rosso;
 
     /* Tutto passa dal glifo, punte comprese. `L.Symbol.arrowHead` ancorava
        il triangolo per l'apice e non offriva alternative: il tratto arrivava
@@ -1294,14 +1310,34 @@ function mostraComandoAfferente(sigla, nome){
     if (p) layer._lato = latoDi(layer, p);
     decora(layer);
     aggiornaStato();
+    /* Lo strumento si spegne. Scelto il lato, il clic successivo sulla
+       carta NON deve far partire un altro tracciato: chi ha appena finito
+       di rispondere a una domanda non si aspetta di aver già posato il
+       primo vertice della prossima linea. Chi ne vuole un'altra ripreme il
+       pulsante — un clic in più, contro un tracciato nato per sbaglio. */
+    fermaTutto(); spegniPulsanti();
     stato(t('latoScelto'));
-    if (strumento) riattivaStrumento();
   }
 
   function decora(layer){
     if (layer._deco){ decori.removeLayer(layer._deco); layer._deco = null; }
+    if (layer._guaina){ decori.removeLayer(layer._guaina); layer._guaina = null; }
     const def = LIN[layer._tipo];
     if (!def) return;
+    /* La guaina è la seconda linea sotto, più larga, che fa da contorno: è
+       il solo modo di ottenere una freccia vuota bordata, perché una
+       polilinea ha un colore e basta. `bringToBack` la manda dietro al
+       tracciato bianco — i tile stanno in un altro pannello e non c'entrano. */
+    if (def.guaina){
+      layer._guaina = L.polyline(layer.getLatLngs(),
+        Object.assign({interactive:false, pmIgnore:true,
+          color: def.bordo || COL.rosso,
+          weight: (def.weight || 3) + 4,
+          lineCap: def.lineCap || 'round',
+          dashArray: (def.stati && layer._stato === 'previsto') ? '9,7' : (def.dashArray || null)},
+          def.guaina)).addTo(decori);
+      layer._guaina.bringToBack();
+    }
     const patterns = [];
     /* Un tracciato può portare più motivi: la pendenza ha la punta a un capo
        e le codine all'altro, la bonifica la punta e il quadro con la B. Con
@@ -1325,6 +1361,8 @@ function mostraComandoAfferente(sigla, nome){
   function scollega(layer){
     if (!layer) return;
     if (layer._deco){ decori.removeLayer(layer._deco); layer._deco = null; }
+    if (layer._guaina){ decori.removeLayer(layer._guaina); layer._guaina = null; }
+    if (layer._guaina){ decori.removeLayer(layer._guaina); layer._guaina = null; }
     if (layer._maniglia){ decori.removeLayer(layer._maniglia); layer._maniglia = null; }
     if (layer._asta){ decori.removeLayer(layer._asta); layer._asta = null; }
     scollegaLancio(layer);
@@ -1974,10 +2012,40 @@ function mostraComandoAfferente(sigla, nome){
       a: V.APERTURA, m: Math.round(V.distanzaFronte(vento.velocita, 60))}));
   }
   let attesaDirezione = null;
+
+  /* Il simbolo gira sotto il puntatore fino al secondo clic. Digitare un
+     azimut non lo fa nessuno, ma nemmeno cliccare al buio: la direzione si
+     sceglie GUARDANDOLA, come su una carta di carta si gira la matita
+     prima di tirare la riga. */
+  function anteprimaDirezione(e){
+    const l = attesaDirezione;
+    if (!l || !l.getLatLng) return;
+    const o = l.getLatLng();
+    l._rotazione = Math.round(azimut(o, e.latlng));
+    l.setIcon(iconaSimbolo(l._tipo, {stato:l._stato, testo:l._testo,
+      rotazione:l._rotazione, paese:l._paese}));
+    if (!l._maniglia) return;
+    const dm = distanzaManiglia();
+    const np = puntoDaAzimut(o, l._rotazione, dm);
+    l._maniglia.setLatLng(np);
+    const el = l._maniglia.getElement();
+    const svg = el && el.querySelector('svg');
+    if (svg) svg.style.transform = `rotate(${l._rotazione}deg)`;
+    if (l._asta) l._asta.setLatLngs(l._tipo === 'tp'
+      ? [puntoDaAzimut(o, l._rotazione + 180, dm * 0.55), np] : [o, np]);
+  }
+
+  function avviaDirezione(layer){
+    attesaDirezione = layer;
+    clicPassante(true);
+    map.on('mousemove', anteprimaDirezione);
+  }
+
   map.on('click', e => {
     if (!attesaDirezione) return;
     const layer = attesaDirezione;
     attesaDirezione = null;
+    map.off('mousemove', anteprimaDirezione);
     clicPassante(false);
     layer._rotazione = Math.round(azimut(layer.getLatLng(), e.latlng));
     layer.setIcon(iconaSimbolo(layer._tipo, {stato:layer._stato,
@@ -2134,9 +2202,10 @@ function mostraComandoAfferente(sigla, nome){
 
   function ridaiDirezione(l){
     fermaTutto(); spegniPulsanti();
-    attesaDirezione = l;
-    clicPassante(true);
-    stato(`${nm(SIM[l._tipo])}\n${t('chiediDirezione')}`);
+    if (l._rotazione == null) l._rotazione = 90;
+    if (!l._maniglia) creaManiglia(l);
+    avviaDirezione(l);
+    stato(`${nm(SIM[l._tipo])}\n${t('dirSegui')}`);
   }
 
   /* Lo stato si scambia sul singolo elemento, non sulla tavola: quando una
@@ -2789,6 +2858,20 @@ function mostraComandoAfferente(sigla, nome){
       });
     });
 
+    /* 8 — le note. Non è un'etichetta appesa a una coordinata ma un testo
+       del foglio: chi lo legge lo cerca in fondo, insieme ai numeri, non
+       sparso sulla carta accanto a un simbolo. */
+    passo(8, t('p8note'), 'Note', corpo => {
+      const ta = document.createElement('textarea');
+      ta.id = 'sitac-note';
+      ta.className = 'sitac-note';
+      ta.rows = 7;
+      ta.placeholder = t('noteAiuto');
+      ta.value = noteTesto;
+      ta.oninput = () => { noteTesto = ta.value; salvaNote(); aggiornaPassi(); };
+      corpo.appendChild(ta);
+    });
+
     agganciaFisa(tav);
     aggiornaPassi();
     if (strumento) marcaAttivo(strumento.genere, strumento.chiave);
@@ -2820,6 +2903,8 @@ function mostraComandoAfferente(sigla, nome){
         + `${sf.totale ? t('pEttari', {v: inHa(sf.totale)}) : ''}`
       : t('pNessuno'), nIn > 0 || sf.totale > 0);
     segna(4, coni.length ? t('pConi', {n:coni.length}) : t('pNessuno'), coni.length > 0);
+    const nn = noteTesto.trim().length;
+    segna('Note', nn ? `${t('pFatto')} ${nn}` : t('pNessuno'), nn > 0);
 
     const box = q('#sitac-superficie');
     if (box){
@@ -2966,6 +3051,7 @@ function mostraComandoAfferente(sigla, nome){
     if (map.pm.globalRemovalModeEnabled && map.pm.globalRemovalModeEnabled())
       map.pm.disableGlobalRemovalMode();
     attesaDirezione = null;
+    map.off('mousemove', anteprimaDirezione);
     if (attesaClic){ const f = attesaClic; attesaClic = null; f(null); }
     if (attesaLinea){ const f = attesaLinea; attesaLinea = null; f(null); }
     if (attesaElemento){ const f = attesaElemento; attesaElemento = null; f(null); }
@@ -3172,7 +3258,12 @@ function mostraComandoAfferente(sigla, nome){
         if (def.r){
       /* Sul TP l'asta esiste già col simbolo: si vede che c'è una direzione
          da dare, invece di doverlo indovinare. Il clic la corregge. */
-      if (k === 'tp'){ layer._rotazione = 90; creaManiglia(layer); }
+      /* La maniglia nasce con TUTTI gli orientabili, non solo col TP: è
+         quella che si vede girare mentre si muove il puntatore, e senza
+         resta solo il glifo — su cui la rotazione, prima del clic, non si
+         legge. */
+      layer._rotazione = layer._rotazione != null ? layer._rotazione : 90;
+      creaManiglia(layer);
       /* Dopo aggiornaStato, che riscriverebbe sopra l'istruzione. Il
          setTimeout serve per due motivi: il clic che ha posato il simbolo
          è ancora in corso e verrebbe consumato subito come direzione con
@@ -3180,10 +3271,9 @@ function mostraComandoAfferente(sigla, nome){
          pm:create — spegnerlo prima non serve a niente. */
       setTimeout(() => {
         map.pm.disableDraw();
-        attesaDirezione = layer;
-        clicPassante(true);
+        avviaDirezione(layer);
       }, 0);
-      stato(`${nm(def)}\n${t('chiediDirezione')}`);
+      stato(`${nm(def)}\n${t('dirSegui')}`);
     }
   });
 
@@ -3338,7 +3428,7 @@ function mostraComandoAfferente(sigla, nome){
   function costruisciKml(feat){
     const stili = [];
     Object.entries(LIN).forEach(([k,d]) => stili.push(
-      `<Style id="${k}"><LineStyle><color>${kmlCol(d.color)}</color>`
+      `<Style id="${k}"><LineStyle><color>${kmlCol(d.bordo || d.color)}</color>`
       + `<width>${d.weight || 3}</width></LineStyle></Style>`));
     Object.entries(AREE).forEach(([k,d]) => stili.push(
       `<Style id="${k}"><LineStyle><color>${kmlCol(d.color)}</color>`
@@ -3437,6 +3527,12 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
       if (p.qualifica)  inQualifica.value  = String(p.qualifica);
       if (p.nominativo) inNominativo.value = String(p.nominativo);
       if (p.telefono)   inTelefono.value   = String(p.telefono);
+      if (p.note){
+        noteTesto = String(p.note);
+        salvaNote();
+        const ta = q('#sitac-note');
+        if (ta) ta.value = noteTesto;
+      }
       if (p.posizione){
         const c = String(p.posizione).split(/[,;\s]+/).map(Number)
           .filter(x => !isNaN(x));
@@ -4230,6 +4326,9 @@ async function stampa(){
        <h2>${esc(t('stSquadre'))}</h2>${sfTabellaSquadre()}
         ${sfBloccoLanci()}
        <h2>Linee tracciate</h2>${sfTabellaLinee()}
+       ${noteTesto.trim()
+         ? `<h2>${esc(t('stNote'))}</h2><p class="sf-note-testo">`
+           + esc(noteTesto.trim()).replace(/\n/g, '<br>') + `</p>` : ''}
      </section>`;
 
   /* La mappa viva si sposta dentro il foglio e poi torna esattamente dov'era:
