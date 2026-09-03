@@ -94,3 +94,6 @@ correggere legenda se cambio lingua
 * quale formato import geojson?
 
 * su terremoti metti anche "mondo"
+
+** lingue e traduzioni sitac
+** vento viola o fucsia
