@@ -232,7 +232,11 @@ function mezzoTerra(sigla, aste, col){
        riquadro intero e sull'attivo finiva sotto il cuneo, rosso su rosso:
        spariva il numero della squadra, che è il dato per cui il simbolo
        esiste. */
-    const xd = p ? x2 - CUNEO : x2;
+    /* La zona utile è SEMPRE quella dell'attivo, anche quando il cuneo non
+       c'è: così la sigla ha lo stesso corpo nei due stati. Con la larghezza
+       che cambia, "VVF 3" si rimpiccioliva passando a in atto e sulla carta
+       sembrava un altro simbolo. */
+    const xd = x2 - CUNEO;
     const largo = xd - x1 - 6;
     let dentro;
     if (s && !n){
@@ -577,9 +581,6 @@ function decoGlifo(tipo, opz){
       /* Vuota = campita di bianco, non a V aperta: il bianco è quello che
          nasconde il tratto sotto, ed è il motivo per cui si è spostato il
          baricentro. Una V aperta rimetterebbe la linea in vista. */
-      /* Tratteggiata quando è prevista, come la linea che la porta: una
-         punta continua in fondo a un tratto spezzato diceva due cose
-         diverse sullo stesso simbolo. */
       d = `<path d="M${f(cx)} ${f(ay)}L${f(cx + bT/2)} ${f(by)}L${f(cx - bT/2)} ${f(by)}Z"`
         + ` fill="${pieno ? col : '#fff'}" stroke="${col}"`
         + ` stroke-width="${pieno ? 1.2 : 2.2}" stroke-linejoin="round"/>`;
