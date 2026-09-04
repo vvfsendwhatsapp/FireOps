@@ -731,15 +731,21 @@ function decoGlifo(tipo, opz){
       break;
     }
 
-    /* Fili a sbalzo — il pilone è una traversa PERPENDICOLARE alla campata.
-       Ruota col tracciato: è la rotazione a tenerla ad angolo retto sulla
-       fune. Tenuta dritta sulla pagina, su una campata in diagonale usciva
-       sghemba, e una traversa sghemba su un cavo non vuol dire niente. */
+    /* Funivie e seggiovie — un seggiolino appeso al cavo. Ruota CON la
+       linea: un seggiolino sempre verticale su un cavo che sale o scende
+       sembra sospeso nel vuoto invece che appeso al cavo. L'aggancio è
+       inclinato di qualche grado rispetto al cavo, come un seggiolino che
+       oscilla — dritto lungo il cavo si confondeva con un piolo.
+       `dim` è l'altezza del motivo. */
     case 'pilone': {
-      w = h = dim;
-      const cx = dim / 2, b = dim * 0.40;
-      d = `<line x1="${f(cx - b)}" y1="${f(cx)}" x2="${f(cx + b)}" y2="${f(cx)}"`
-        + ` stroke="${col}" stroke-width="3.4" stroke-linecap="butt"/>`;
+      w = Math.ceil(dim * 0.9); h = Math.ceil(dim);
+      const cx = w / 2, cy = 3;
+      const ex = cx + dim * 0.16, ey = dim * 0.6;
+      const bw = dim * 0.34, bh = dim * 0.24;
+      d = `<line x1="${f(cx)}" y1="${f(cy)}" x2="${f(ex)}" y2="${f(ey)}"`
+        + ` stroke="${col}" stroke-width="1.8"/>`
+        + `<rect x="${f(ex - bw/2)}" y="${f(ey)}" width="${f(bw)}" height="${f(bh)}"`
+        + ` rx="1.4" fill="${col}"/>`;
       break;
     }
 
@@ -845,11 +851,12 @@ aggL('vento_forte','evoluzione',null,'Direzione del vento, intensit\u00e0 forte'
    seconda linea che sta sotto e fa da bordo; `bordo` è il colore con cui si
    disegnano guaina, punta e legenda, perché il tracciato vero è bianco e
    una punta bianca su fondo bianco non c'è. */
+/* Il principale è un blocco ROSSO PIENO, non un contorno: le due secondarie
+   sono le sole aperte, ed è quello che le distingue a colpo d'occhio dalla
+   principale — non lo spessore soltanto. */
 aggL('asse_principale','evoluzione',null,'Asse di sviluppo principale','Head of the fire',
-  {color:'#ffffff', weight:10, lineCap:'butt'},
-  {bordo:C.rosso, guaina:{weight:15},
-   deco:[{tipo:'punta', passo:0, offset:'100%', dim:38, aperta:1, sempre:1},
-         {tipo:'tappo', passo:0, offset:0, dim:15}]});
+  {color:C.rosso, weight:11, lineCap:'butt'},
+  {deco:{tipo:'punta', passo:0, offset:'100%', dim:38, pieno:1, sempre:1}});
 aggL('asse_veloce','evoluzione',null,'Asse secondario (veloce)','Secondary axis (fast)',
   {color:'#ffffff', weight:7, lineCap:'butt'},
   {bordo:C.rosso, guaina:{weight:11},
@@ -886,7 +893,7 @@ aggL('bonifica','azioni','sgTerra','Bonifica','Mop up',
   {color:C.rosso, weight:2.8},
   {stati:1, deco:[{tipo:'punta', passo:0, offset:'100%', dim:20, pieno:1},
                   {tipo:'quadro', testo:'B', dim:18, passo:'25%', offset:'12%',
-                   dritto:1, pieno:1}]});
+                   pieno:1}]});
 aggL('linea_sicurezza','azioni','sgControfuoco','Creazione linea di sicurezza','Creation of a safety line',
   {color:C.rosso, weight:3}, {stati:1, deco:{tipo:'bifronte', passo:'auto', dim:12, pieno:1}});
 /* La linea è la linea di appoggio, spessa; il fuoco si manda di lato, e il
