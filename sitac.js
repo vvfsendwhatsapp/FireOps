@@ -922,6 +922,7 @@ function avvia(app){
     nominativo: inNominativo.value.trim() || null,
     telefono: inTelefono.value.trim() || null,
     posizione: inPosizione.value || null,
+    note: noteTesto.trim() || null,
     /* L'ora della REDAZIONE, non quella della stampa o dell'export: una
        SITAC dice quando è stata fatta, non quando è stata riletta. */
     redatta: oraRedazione ? oraRedazione.toISOString() : null
@@ -1368,13 +1369,17 @@ function mostraComandoAfferente(sigla, nome){
       const m = motivo(def, dc, layer._stato, layer._lato);
       if (m) patterns.push(m);
     });
-    /* Il badge (4x4, B) sta in testa alla linea: dice di che strada o di
-       che azione si tratta, e va letto una volta sola. */
-    if (def.badge)
-      patterns.push({offset:0, repeat:0, symbol: L.Symbol.marker({rotate:false,
+    /* Il badge sta ai DUE capi. In una sola posizione lo si trovava solo
+       imboccando la strada dal lato giusto, e da che mezzi è percorribile è
+       la prima cosa che si guarda arrivando — da qualunque parte si arrivi. */
+    if (def.badge){
+      const bollo = () => L.Symbol.marker({rotate:false,
         markerOptions:{interactive:false, icon: L.divIcon({
           className: 'sitac-badge' + (def.badgeQuadro ? ' sitac-badge-q' : ''),
-          html: esc(def.badge), iconSize:[26,18], iconAnchor:[13,9]})}})});
+          html: esc(def.badge), iconSize:[26,18], iconAnchor:[13,9]})}});
+      patterns.push({offset:0,      repeat:0, symbol: bollo()});
+      patterns.push({offset:'100%', repeat:0, symbol: bollo()});
+    }
     if (!patterns.length) return;
     layer._deco = L.polylineDecorator(layer, {patterns});
     decori.addLayer(layer._deco);
@@ -1382,7 +1387,6 @@ function mostraComandoAfferente(sigla, nome){
   function scollega(layer){
     if (!layer) return;
     if (layer._deco){ decori.removeLayer(layer._deco); layer._deco = null; }
-    if (layer._guaina){ decori.removeLayer(layer._guaina); layer._guaina = null; }
     if (layer._guaina){ decori.removeLayer(layer._guaina); layer._guaina = null; }
     if (layer._maniglia){ decori.removeLayer(layer._maniglia); layer._maniglia = null; }
     if (layer._asta){ decori.removeLayer(layer._asta); layer._asta = null; }
@@ -2606,8 +2610,13 @@ function mostraComandoAfferente(sigla, nome){
     if (ventoDeco){ decori.removeLayer(ventoDeco); ventoDeco = null; }
     if (ventoAsta){ decori.removeLayer(ventoAsta); ventoAsta = null; }
     if (!posDos) return;
-    const p = puntoDaAzimut(posDos, ventoVerso, distanzaManiglia() * 1.8);
-    ventoAsta = L.polyline([posDos, p],
+    /* Il DOS sta a METÀ dell'asta: mezza da dove il vento viene, mezza verso
+       dove va. Con la coda ancorata al simbolo le codine dell'intensità ci
+       finivano sopra e non si contavano più. */
+    const semi = distanzaManiglia() * 1.15;
+    const coda = puntoDaAzimut(posDos, (ventoVerso + 180) % 360, semi);
+    const p = puntoDaAzimut(posDos, ventoVerso, semi);
+    ventoAsta = L.polyline([coda, p],
       {color: COL_VENTO_DOS, weight: 3, pmIgnore: true,
        bubblingMouseEvents: false}).addTo(decori);
 
@@ -4458,6 +4467,13 @@ async function stampa(){
   }
   qq('.sitac-scheda-btn').forEach(b => {
     b.onclick = () => {
+      /* Passare alla carta È la conferma. Chi ha compilato tutto e clicca
+         sulla seconda linguetta ha già detto quello che direbbe premendo
+         Convalida, e chiederglielo due volte è un passaggio a vuoto —
+         vale anche dopo una Modifica, dove il pulsante resta necessario
+         solo finché i campi non sono a posto. */
+      if (b.dataset.scheda === 'carta' && !datiBloccati && datiCompleti())
+        convalida({auto:1});
       vaiAScheda(b.dataset.scheda);
       if (b.dataset.scheda === 'carta' && !datiConvalidati) stato(t('cartaBloccata'));
     };
