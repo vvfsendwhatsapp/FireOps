@@ -3006,10 +3006,18 @@ function mostraComandoAfferente(sigla, nome){
   }
 
   function attiva(genere, chiave, bottone){
-    const gia = bottone && bottone.classList.contains('attivo');
-    fermaTutto();
-    if (gia){ spegniPulsanti(); stato(t('spento')); return; }
+    /* Lo spegnimento si decide sullo STRUMENTO IN USO, non sulla classe del
+       pulsante. La classe è una conseguenza dello stato, non lo stato: la
+       scrivono e la cancellano in cinque punti diversi, e appena una resta
+       indietro il primo clic su un simbolo NUOVO viene scambiato per un
+       riclic su quello acceso — si spegne e basta, e ne serve un secondo.
+       Con `strumento` la domanda è quella giusta: sto premendo di nuovo
+       quello che sto già usando? */
+    const gia = !!strumento && strumento.genere === genere
+      && strumento.chiave === chiave;
+    fermaTutto();                 // azzera `strumento`: `gia` va letto prima
     spegniPulsanti();
+    if (gia){ stato(t('spento')); return; }
     if (bottone) bottone.classList.add('attivo');
     strumento = {genere, chiave};
     riattivaStrumento();
