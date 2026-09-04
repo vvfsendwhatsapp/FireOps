@@ -1285,7 +1285,8 @@ function mostraComandoAfferente(sigla, nome){
        fin sulla punta e sporgeva oltre. Il glifo lo ancora per il baricentro
        e il vertice finale resta coperto dalla figura. */
     const g = NS.SITAC_DECO(dc.tipo,
-      {col, pieno, n: dc.n, forma: dc.forma, dim: dc.dim, testo: dc.testo, lato});
+      {col, pieno, n: dc.n, forma: dc.forma, dim: dc.dim, testo: dc.testo,
+       aperta: dc.aperta, lato});
 
     /* `passo:'auto'` sono i motivi che si toccano fra loro — i triangoli
        della difesa in linea, la greca della ricognizione, i denti del fronte:
@@ -1328,6 +1329,14 @@ function mostraComandoAfferente(sigla, nome){
     if (!def || !def.lato) return;
     if (layer._lato == null) layer._lato = 1;
     decora(layer);
+    /* Il modale ferma davvero: il riquadro di stato, con la carta piena e
+       lo sguardo sulla mappa, non lo legge nessuno. Annullando resta il
+       lato predefinito — meglio un tracciato dalla parte sbagliata, che si
+       corregge dal tasto destro, di uno senza frecce. */
+    if (await chiedi({testo: t('scegliLato')}) == null){
+      fermaTutto(); spegniPulsanti();
+      return stato(t('latoScelto'));
+    }
     const p = await attendiClic('\u25b6 ' + t('scegliLato'));
     if (p) layer._lato = latoDi(layer, p);
     decora(layer);
@@ -3258,10 +3267,15 @@ function mostraComandoAfferente(sigla, nome){
         /* Fuori dal ramo sincrono: chiediLato aspetta un clic, e nel
            frattempo pm:create deve essere finito. */
         if (LIN[layer._tipo] && LIN[layer._tipo].lato){
-          layer.on('pm:remove', () => scollega(layer));          
+          layer.on('pm:remove', () => scollega(layer));
           etichettaElemento(layer);
           aggiornaStato();
-          chiediLato(layer);
+          /* Stessa ragione del simbolo orientabile: `continueDrawing`
+             riaccende il disegno DOPO pm:create, quindi spegnerlo adesso
+             non serve a niente — un istante dopo è già riacceso. Il clic
+             del lato finiva a posare il primo vertice di un'altra linea, e
+             il messaggio spariva sotto a quello dello strumento. */
+          setTimeout(() => chiediLato(layer), 0);
           return;
         }
       } else {

@@ -581,9 +581,18 @@ function decoGlifo(tipo, opz){
       /* Vuota = campita di bianco, non a V aperta: il bianco è quello che
          nasconde il tratto sotto, ed è il motivo per cui si è spostato il
          baricentro. Una V aperta rimetterebbe la linea in vista. */
-      d = `<path d="M${f(cx)} ${f(ay)}L${f(cx + bT/2)} ${f(by)}L${f(cx - bT/2)} ${f(by)}Z"`
+      /* `aperta` toglie la BASE del triangolo: sugli assi secondari l'asta
+         è già bianca bordata di rosso, e una base disegnata di traverso
+         taglia la freccia in due invece di lasciarla sfociare nella punta.
+         Il tratto non chiude il percorso, il riempimento sì — quindi il
+         bianco copre lo stesso i bordi dell'asta che entrano nel
+         triangolo, e quei bordi finiscono esattamente sulla base. */
+      const chiudi = o.aperta ? '' : 'Z';
+      d = `<path d="M${f(cx - bT/2)} ${f(by)}L${f(cx)} ${f(ay)}`
+        + `L${f(cx + bT/2)} ${f(by)}${chiudi}"`
         + ` fill="${pieno ? col : '#fff'}" stroke="${col}"`
-        + ` stroke-width="${pieno ? 1.2 : 2.2}" stroke-linejoin="round"/>`;
+        + ` stroke-width="${pieno ? 1.2 : 2.2}" stroke-linejoin="round"`
+        + ` stroke-linecap="butt"/>`;
       break;
     }
 
@@ -636,18 +645,26 @@ function decoGlifo(tipo, opz){
        verso il lato scelto e ci mette una punta: è quello il verso in cui si
        manda il fuoco, e non è mai quello della linea, che è la linea di
        appoggio. `dim` è la lunghezza del braccio. */
+    /* Accensione per linee — alla fine del tracciato il braccio gira di 90°
+       verso il lato scelto: è quello il verso in cui si manda il fuoco, e
+       non è mai quello della linea, che è la linea di appoggio.
+       È UNA sagoma chiusa, asta e punta insieme, non una linea più un
+       triangolo: solo così la freccia prevista può essere vuota col
+       contorno, come gli assi di sviluppo. Con l'asta disegnata a tratto e
+       la punta a parte, il vuoto avrebbe lasciato l'asta piena — mezza
+       freccia prevista e mezza fatta. `dim` è la lunghezza del braccio. */
     case 'ortogonale': {
-      const hT = dim * 0.5, bT = dim * 0.44;
-      w = Math.ceil(dim * 2 + bT) + 6;
-      h = Math.ceil(bT * 2) + 6;
+      const sw = dim * 0.15, hw = dim * 0.34, hl = dim * 0.42;
+      w = Math.ceil(dim * 2 + hw) + 6;
+      h = Math.ceil(hw * 2) + 6;
       const cx = w / 2, cy = h / 2;
       const tip = cx + lato * dim;
-      const base = tip - lato * hT;
-      d = `<line x1="${f(cx)}" y1="${f(cy)}" x2="${f(base)}" y2="${f(cy)}"`
-        + ` stroke="${col}" stroke-width="${f(bT * 0.8)}" stroke-linecap="butt"/>`
-        + `<path d="M${f(tip)} ${f(cy)}L${f(base)} ${f(cy - bT)}L${f(base)} ${f(cy + bT)}Z"`
+      const base = tip - lato * hl;
+      d = `<path d="M${f(cx)} ${f(cy - sw)}L${f(base)} ${f(cy - sw)}`
+        + `L${f(base)} ${f(cy - hw)}L${f(tip)} ${f(cy)}L${f(base)} ${f(cy + hw)}`
+        + `L${f(base)} ${f(cy + sw)}L${f(cx)} ${f(cy + sw)}Z"`
         + ` fill="${pieno ? col : '#fff'}" stroke="${col}"`
-        + ` stroke-width="${pieno ? 1.2 : 2.2}" stroke-linejoin="round"/>`;
+        + ` stroke-width="2" stroke-linejoin="round"/>`;
       break;
     }
 
@@ -690,6 +707,19 @@ function decoGlifo(tipo, opz){
           + `L${f(cx + b)} ${f(y + b * 0.7)}" fill="none" stroke="${col}"`
           + ` stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>`;
       }
+      break;
+    }
+
+    /* Tappo di coda — la traversa che chiude il capo dell'asta. Una guaina
+       è una polilinea, e una polilinea i capi non li chiude: i due bordi
+       correvano paralleli e in fondo finivano nel nulla, come un tubo
+       tagliato. `dim` è la larghezza della guaina, cioè quanto deve essere
+       lunga la traversa. */
+    case 'tappo': {
+      w = Math.ceil(dim) + 4; h = 10;
+      const cx = w / 2, cy = h / 2, sp = Math.max(1.8, dim * 0.18);
+      d = `<line x1="${f(cx - dim / 2)}" y1="${f(cy)}" x2="${f(cx + dim / 2)}" y2="${f(cy)}"`
+        + ` stroke="${col}" stroke-width="${f(sp)}" stroke-linecap="butt"/>`;
       break;
     }
 
@@ -821,11 +851,13 @@ aggL('asse_principale','evoluzione',null,'Asse di sviluppo principale','Head of 
 aggL('asse_veloce','evoluzione',null,'Asse secondario (veloce)','Secondary axis (fast)',
   {color:'#ffffff', weight:7, lineCap:'butt'},
   {bordo:C.rosso, guaina:{weight:11},
-   deco:{tipo:'punta', passo:'100%', dim:30, sempre:1}});
+   deco:[{tipo:'punta', passo:0, offset:'100%', dim:30, aperta:1, sempre:1},
+         {tipo:'tappo', passo:0, offset:0, dim:11}]});
 aggL('asse_lento','evoluzione',null,'Asse secondario (lento)','Secondary axis (slow)',
   {color:'#ffffff', weight:4.5, lineCap:'butt'},
   {bordo:C.rosso, guaina:{weight:8},
-   deco:{tipo:'punta', passo:'100%', dim:22, sempre:1}});
+   deco:[{tipo:'punta', passo:0, offset:'100%', dim:22, aperta:1, sempre:1},
+         {tipo:'tappo', passo:0, offset:0, dim:8}]});
 /* Doppia linea parallela a denti: il tracciato è la linea di monte, il
    motivo aggiunge quella affiancata e le traversine. */
 aggL('fronte','evoluzione',null,'Fronte dell\u2019incendio','Fire front',
@@ -860,7 +892,7 @@ aggL('linea_sicurezza','azioni','sgControfuoco','Creazione linea di sicurezza','
 aggL('accensione_linee','azioni','sgControfuoco','Accensione per linee','Ignition by lines',
   {color:C.rosso, weight:9, lineCap:'butt'},
   {stati:1, lato:1, deco:{tipo:'ortogonale', dim:30, passo:0, offset:'100%',
-                          pieno:1, sempre:1}});
+                          pieno:1}});
 aggL('via_fuga','azioni','sgEvacuazione','Via di fuga per evacuazione','Evacuation escape route',
   {color:C.nero, weight:2.6}, {stati:1, deco:{tipo:'chevron', passo:'33%', dim:16, pieno:1}});
 
@@ -903,7 +935,8 @@ function anteprimaLinea(k, stato){
   [].concat(d.deco || []).forEach(dc => {
     const pieno = !!(dc.pieno && !previsto);
     const g = decoGlifo(dc.tipo,
-      {col, pieno, n:dc.n, forma:dc.forma, dim:dc.dim, testo:dc.testo, lato:1});
+      {col, pieno, n:dc.n, forma:dc.forma, dim:dc.dim, testo:dc.testo,
+       aperta:dc.aperta, lato:1});
     /* I motivi che non ruotano col tracciato non devono ruotare nemmeno
        qui: il glifo è disegnato con la linea verticale, ma un pilone o un
        seggiolino stanno dritti sulla pagina, e ruotarli di 90° per
