@@ -846,18 +846,20 @@ aggL('vento_forte','evoluzione',null,'Direzione del vento, intensit\u00e0 forte'
    disegnano guaina, punta e legenda, perché il tracciato vero è bianco e
    una punta bianca su fondo bianco non c'è. */
 aggL('asse_principale','evoluzione',null,'Asse di sviluppo principale','Head of the fire',
-  {color:C.rosso, weight:11, lineCap:'butt'},
-  {deco:{tipo:'punta', passo:'100%', dim:38, pieno:1, sempre:1}});
+  {color:'#ffffff', weight:10, lineCap:'butt'},
+  {bordo:C.rosso, guaina:{weight:15},
+   deco:[{tipo:'punta', passo:0, offset:'100%', dim:38, aperta:1, sempre:1},
+         {tipo:'tappo', passo:0, offset:0, dim:15}]});
 aggL('asse_veloce','evoluzione',null,'Asse secondario (veloce)','Secondary axis (fast)',
   {color:'#ffffff', weight:7, lineCap:'butt'},
   {bordo:C.rosso, guaina:{weight:11},
-   deco:[{tipo:'punta', passo:0, offset:'100%', dim:30, aperta:1, sempre:1},
-         {tipo:'tappo', passo:0, offset:0, dim:11}]});
+   deco:[{tipo:'punta', passo:0, offset:'100%', dim:30, sempre:1},
+         {tipo:'tappo', passo:0, offset:4, dim:14}]});
 aggL('asse_lento','evoluzione',null,'Asse secondario (lento)','Secondary axis (slow)',
   {color:'#ffffff', weight:4.5, lineCap:'butt'},
   {bordo:C.rosso, guaina:{weight:8},
-   deco:[{tipo:'punta', passo:0, offset:'100%', dim:22, aperta:1, sempre:1},
-         {tipo:'tappo', passo:0, offset:0, dim:8}]});
+   deco:[{tipo:'punta', passo:0, offset:'100%', dim:22, sempre:1},
+         {tipo:'tappo', passo:0, offset:3, dim:11}]});
 /* Doppia linea parallela a denti: il tracciato è la linea di monte, il
    motivo aggiunge quella affiancata e le traversine. */
 aggL('fronte','evoluzione',null,'Fronte dell\u2019incendio','Fire front',
@@ -889,10 +891,16 @@ aggL('linea_sicurezza','azioni','sgControfuoco','Creazione linea di sicurezza','
   {color:C.rosso, weight:3}, {stati:1, deco:{tipo:'bifronte', passo:'auto', dim:12, pieno:1}});
 /* La linea è la linea di appoggio, spessa; il fuoco si manda di lato, e il
    braccio con la punta gira di 90° verso il fianco scelto. */
+/* La linea è la linea di appoggio; il fuoco si manda di lato, e il braccio
+   con la punta gira di 90° verso il fianco scelto.
+   `vuota` dice che fra prevista ed effettuata NON cambia il tratto ma il
+   riempimento: bianca col bordo rosso quando è prevista, rossa piena quando
+   è fatta. Il tratteggio qui non si poteva usare — su una linea spessa nove
+   pixel diventa una fila di quadrotti, ed è quello che si vedeva. */
 aggL('accensione_linee','azioni','sgControfuoco','Accensione per linee','Ignition by lines',
   {color:C.rosso, weight:9, lineCap:'butt'},
-  {stati:1, lato:1, deco:{tipo:'ortogonale', dim:30, passo:0, offset:'100%',
-                          pieno:1}});
+  {stati:1, lato:1, vuota:1, bordo:C.rosso, guaina:{weight:13},
+   deco:{tipo:'ortogonale', dim:30, passo:0, offset:'100%', pieno:1}});
 aggL('via_fuga','azioni','sgEvacuazione','Via di fuga per evacuazione','Evacuation escape route',
   {color:C.nero, weight:2.6}, {stati:1, deco:{tipo:'chevron', passo:'33%', dim:16, pieno:1}});
 
@@ -920,14 +928,15 @@ function anteprimaLinea(k, stato){
   const col = d.bordo || d.color || C.rosso;
   const dentro = d.color || C.rosso;
   const previsto = !!(d.stati && stato !== 'attivo');
-  const tratto = previsto ? '8,6' : (d.dashArray || null);
-  const peso = Math.min(d.weight || 3, 6);
+  const tratto = (previsto && !d.vuota) ? '8,6' : (d.dashArray || null);
+  const corpo = (previsto && d.vuota) ? '#ffffff' : dentro;
+  const peso = Math.min(d.weight || 3, 9);
   let s = '';
   if (d.guaina)
     s += `<line x1="1" y1="${y}" x2="${A_W - 1}" y2="${y}" stroke="${col}"`
       + ` stroke-width="${Math.min(peso + 3.5, 9)}"/>`;
   s += `<line x1="1" y1="${y}" x2="${A_W - 1}" y2="${y}"`
-    + ` stroke="${d.guaina ? dentro : col}" stroke-width="${peso}"`
+    + ` stroke="${d.guaina ? corpo : col}" stroke-width="${peso}"`
     + (tratto ? ` stroke-dasharray="${tratto}"` : '') + `/>`;
 
   /* `deco` può essere uno o un elenco: pendenza, vento e bonifica ne hanno

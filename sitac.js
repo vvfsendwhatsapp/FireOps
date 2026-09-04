@@ -615,7 +615,12 @@ function avvia(app){
      Previsto = tratto spezzato, come nella tavola. */
   function stileLinea(d, stato){
     const {n, deco, badge, badgeQuadro, stati, lato, punti2, guaina, bordo,
-      g, sg, r0, ...resto} = d;
+      vuota, g, sg, r0, ...resto} = d;
+    /* `vuota`: lo stato cambia il riempimento, non il tratto. Il tracciato
+       diventa bianco quando è previsto e resta la guaina a fare da bordo. */
+    if (stati && vuota)
+      return Object.assign({}, resto,
+        {color: stato === 'previsto' ? '#ffffff' : (bordo || resto.color)});
     if (stati && stato === 'previsto')
       return Object.assign({}, resto, {dashArray: resto.dashArray || '9,7'});
     return resto;
@@ -1210,7 +1215,10 @@ function mostraComandoAfferente(sigla, nome){
         if (soloDue && misuraPunti.length >= 2) setTimeout(chiudiFormaAperta, 0);
       });
     });
-    map.on('mousemove', e => { misuraMostra(e.latlng, e.containerPoint); });
+      map.on('mousemove', e => {
+      misuraMostra(e.latlng, e.containerPoint);
+      suggSegui(e.containerPoint);
+    });
     map.on('pm:drawend', () => { clicPassante(false); misuraSpegni(); });
 
   const disegni = L.featureGroup().addTo(map);   // esportabile
@@ -1365,7 +1373,8 @@ function mostraComandoAfferente(sigla, nome){
           color: def.bordo || COL.rosso,
           weight: (def.weight || 3) + 4,
           lineCap: def.lineCap || 'round',
-          dashArray: (def.stati && layer._stato === 'previsto') ? '9,7' : (def.dashArray || null)},
+          dashArray: (def.stati && !def.vuota && layer._stato === 'previsto')
+            ? '9,7' : (def.dashArray || null)},
           def.guaina)).addTo(decori);
       layer._guaina.bringToBack();
     }
@@ -1654,8 +1663,39 @@ function mostraComandoAfferente(sigla, nome){
 
   /* Attese: risolvono con null se qualcuno preme Esc o cambia strumento —
      fermaTutto() le chiude, così il percorso guidato non resta appeso. */
+  /* Il suggerimento segue il puntatore: sul riquadro di stato, con lo
+     sguardo sulla carta, non lo legge nessuno, e un modale da confermare
+     mette un clic in mezzo a un gesto che ne vuole uno solo. Compare al
+     primo movimento e sparisce al clic. */
+  let suggBox = null;
+  function suggMostra(testo){
+    if (!suggBox){
+      suggBox = document.createElement('div');
+      suggBox.className = 'sitac-sugg';
+      const wrap = q('.sitac-mapwrap');
+      if (wrap) wrap.appendChild(suggBox);
+    }
+    suggBox.textContent = testo;
+    suggBox.hidden = true;          // il primo mousemove lo accende
+    suggBox._vivo = true;
+  }
+  function suggSegui(pt){
+    if (!suggBox || !suggBox._vivo) return;
+    suggBox.hidden = false;
+    const w = suggBox.offsetWidth || 160;
+    const dx = (pt.x + w + 26 > map.getSize().x) ? -(w + 16) : 16;
+    suggBox.style.left = (pt.x + dx) + 'px';
+    suggBox.style.top  = (pt.y + 18) + 'px';
+  }
+  function suggSpegni(){
+    if (!suggBox) return;
+    suggBox._vivo = false;
+    suggBox.hidden = true;
+  }
+
   function attendiClic(msg){
-    fermaTutto(); spegniPulsanti(); stato(msg); cursore('mirino');clicPassante(true);
+    fermaTutto(); spegniPulsanti(); stato(msg); cursore('mirino'); clicPassante(true);
+    suggMostra(msg);
     return new Promise(risolvi => { attesaClic = risolvi; });
   }
   function attendiLinea(msg){
@@ -1669,7 +1709,7 @@ function mostraComandoAfferente(sigla, nome){
   map.on('click', e => {
     if (!attesaClic) return;
     const f = attesaClic; attesaClic = null;
-    clicPassante(false); cursore(null);
+    clicPassante(false); cursore(null); suggSpegni();
     f(e.latlng);
   });
 
@@ -3130,6 +3170,7 @@ function mostraComandoAfferente(sigla, nome){
     chiudiMenu();
     fermaMenuModifica();
     misuraSpegni();
+    suggSpegni();
     cursore(null);
     clicPassante(false);
     strumento = null;

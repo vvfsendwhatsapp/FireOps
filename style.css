@@ -5881,6 +5881,14 @@ select:focus {
    l'altezza di quella riga, e va misurato una volta sul tema in uso. */
 #sitac-aib .sitac-schede{ top:2.6rem; }
 
+.sitac-sugg{
+  position:absolute; z-index:900; pointer-events:none;
+  max-width:22ch; padding:.35rem .55rem; border-radius:4px;
+  background:rgba(20,20,20,.92); color:#fff;
+  font-size:.82rem; line-height:1.25; white-space:pre-line;
+  box-shadow:0 2px 8px rgba(0,0,0,.4);
+}
+
 /* ==========================================================
    ==========================================================
    RESPONSIVE
