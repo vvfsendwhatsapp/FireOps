@@ -5889,6 +5889,36 @@ select:focus {
   box-shadow:0 2px 8px rgba(0,0,0,.4);
 }
 
+/* La × sta nell'angolo della nota, piccola: è un ripensamento su una riga
+   di diario, non un comando da barra. A 22px in colonna rubava spazio al
+   testo e pesava quanto la nota stessa. */
+#sitac-app .sitac-nota-voce {
+    position: relative;
+    padding-right: 22px;
+}
+
+#sitac-app .sitac-nota-voce button {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 16px;
+    height: 16px;
+    flex: 0 0 16px;
+    padding: 0;
+    background: none;
+    border: none;
+    font-size: 13px;
+    line-height: 1;
+    color: var(--text-muted);
+    justify-content: center;
+}
+
+#sitac-app .sitac-nota-voce button:hover {
+    background: none;
+    border: none;
+    color: #ff5a5a;
+}
+
 /* ==========================================================
    ==========================================================
    RESPONSIVE

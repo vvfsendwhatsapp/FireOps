@@ -608,8 +608,14 @@ function avvia(app){
        legge. Gli altri orientabili hanno il disegno che punta da sé. */
     const gir = (o.rotazione != null && k !== 'tp')
       ? ` style="transform:rotate(${((o.rotazione - d0) % 360 + 360) % 360}deg)"` : '';
+    /* Il disco chiaro serve ai simboli campiti, che su ortofoto sparirebbero.
+       Un'asta con la punta no: è già leggibile per forma, e il pallino le
+       ritaglia intorno un bollo bianco che sulla carta sembra un simbolo a
+       sé. Stessa scelta della freccia del vento sul DOS. */
+    const disco = (SIM[k] && SIM[k].senzaDisco)
+      ? '' : '<span class="sitac-disco"></span>';
     return L.divIcon({className:'sitac-sim',
-      html:`<span class="sitac-disco"></span><span class="sitac-glifo"${gir}>`
+      html:`${disco}<span class="sitac-glifo"${gir}>`
         + `${svgSimbolo(k, o)}</span>`,
       iconSize:[56,56], iconAnchor:[28,28], popupAnchor:[0,-28]});
   }

@@ -353,15 +353,25 @@ function quotaFuoco(pieno){
 function direzione(forma, n){
   return () => {
     const col = C.nero;
-    let d = `<path d="M32 4L45 24L38 24L38 38L26 38L26 24L19 24Z"`
-      + ` fill="${col}" stroke="${col}" stroke-width="2.4" stroke-linejoin="miter"/>`;
-    const passo = 6, s = 6;
+    /* Asta sottile con la punta a un capo e le codine all'altro: la stessa
+       grammatica della freccia del vento sul DOS. La sagoma piena di prima
+       era un blocco che a colpo d'occhio si leggeva come il cursore del
+       mouse, non come una direzione.
+       Il disegno occupa la tela DA UN ESTREMO ALL'ALTRO e l'ancoraggio sta
+       al centro: il punto cliccato cade a metà dell'asta, metà da dove si
+       viene e metà verso dove si va, come il vento del DOS. Con la punta
+       ancorata al clic il simbolo cresceva tutto da una parte sola. */
+    let d = `<line x1="32" y1="26" x2="32" y2="60" stroke="${col}" stroke-width="3"/>`
+      + `<path d="M32 3L42 27L32 22L22 27Z" fill="${col}"/>`;
+    /* Le codine partono dal capo opposto alla punta e risalgono: così una,
+       due o tre restano tutte alla coda invece di allungare il simbolo. */
+    const passo = 6;
     for (let i = 0; i < n; i++){
-      const y = 44 + i * passo;
+      const y = (forma === '45' ? 54 : 58) - (n - 1 - i) * passo;
       d += forma === '45'
-        ? `<line x1="32" y1="${y}" x2="${32+s}" y2="${y+s}"`
+        ? `<line x1="32" y1="${y}" x2="40" y2="${y + 8}"`
           + ` stroke="${col}" stroke-width="3" stroke-linecap="round"/>`
-        : `<line x1="${32-s}" y1="${y}" x2="${32+s}" y2="${y}"`
+        : `<line x1="25" y1="${y}" x2="39" y2="${y}"`
           + ` stroke="${col}" stroke-width="3" stroke-linecap="round"/>`;
     }
     return T(d);
@@ -410,9 +420,9 @@ agg('ripetitore','zona',null,'Ripetitori, antenne, pale eoliche, ecc.','Masts, a
   () => T(`<circle cx="32" cy="11" r="6" fill="${C.nero}"/>
     <path d="M32 15L20 56h24Z" fill="none" stroke="${C.nero}" stroke-width="2.6" stroke-linejoin="round"/>
     <line x1="32" y1="15" x2="32" y2="56" stroke="${C.nero}" stroke-width="2"/>`));
-agg('pend_lieve','zona',null,'Pendenza lieve','Light slope', direzione('T', 1), {r:1, r0:0});
-agg('pend_moderata','zona',null,'Pendenza moderata','Moderate slope', direzione('T', 2), {r:1, r0:0});
-agg('pend_forte','zona',null,'Pendenza forte','Steep slope', direzione('T', 3), {r:1, r0:0});
+agg('pend_lieve','zona',null,'Pendenza lieve','Light slope', direzione('T', 1), {r:1, r0:0, senzaDisco:1});
+agg('pend_moderata','zona',null,'Pendenza moderata','Moderate slope', direzione('T', 2), {r:1, r0:0, senzaDisco:1});
+agg('pend_forte','zona',null,'Pendenza forte','Steep slope', direzione('T', 3), {r:1, r0:0, senzaDisco:1});
 
 /* ---- TAVOLA 2: l'evoluzione dell'incendio ---- */
 /* "Punto d'innesco" e non "Area d'origine": sulla carta è un punto, e la
@@ -423,11 +433,11 @@ agg('inc_chioma','evoluzione',null,'Incendio di chioma','Crown fire', quotaFuoco
 agg('inc_radente','evoluzione',null,'Incendio radente','Surface fire', quotaFuoco(1));
 agg('inc_sotterraneo','evoluzione',null,'Incendio sotterraneo','Ground fire', quotaFuoco(2));
 agg('vento_debole','evoluzione',null,'Direzione del vento, intensit\u00e0 debole','Wind direction, light',
-  direzione('45', 1), {r:1, r0:0});
+  direzione('45', 1), {r:1, r0:0, senzaDisco:1});
 agg('vento_moderato','evoluzione',null,'Direzione del vento, intensit\u00e0 moderata','Wind direction, moderate',
-  direzione('45', 2), {r:1, r0:0});
+  direzione('45', 2), {r:1, r0:0, senzaDisco:1});
 agg('vento_forte','evoluzione',null,'Direzione del vento, intensit\u00e0 forte','Wind direction, strong',
-  direzione('45', 3), {r:1, r0:0});
+  direzione('45', 3), {r:1, r0:0, senzaDisco:1});
 
 /* ---- TAVOLA 3: il dispositivo di intervento ---- */
 agg('can','dispositivo','sgAereo','Canadair','Canadair', mezzoAereo('CAN'), {s:1, e:1, lbl:'ID CAN'});
