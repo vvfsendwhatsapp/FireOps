@@ -334,6 +334,40 @@ function quotaFuoco(pieno){
   };
 }
 
+/* Pendenza e vento — un disegno solo, non più un tratto più una freccia
+   incollata sopra: da linea la cucitura fra i due si vedeva ai bordi
+   (era la causa del gradino che si rompeva sulla punta), e il gesto per
+   posarli era diverso da ogni altro simbolo orientabile. Da qui in poi si
+   comportano come il Transit Point — un clic per posare, si punta col
+   mouse guardando il simbolo girare, secondo clic per confermare — e
+   quell'intero meccanismo (anteprima che ruota, maniglia, "Cambia
+   direzione" dal tasto destro, rotazione nel GeoJSON) arriva gratis:
+   è lo stesso di TP e DOS, non c'è niente da riscrivere.
+   Non hanno un "previsto": un pendio o un vento non sono un'azione
+   programmata, sono un dato del terreno o dell'aria, quindi il glifo è
+   uno solo — niente stato spento a metà.
+   Disegnato con la punta in alto: r0:0, la rotazione applicata dal
+   contenitore corrisponde già all'azimut, senza correzioni.
+   `forma` è 'T' per la pendenza o '45' per il vento, `n` le codine — una,
+   due o tre secondo l'intensità. */
+function direzione(forma, n){
+  return () => {
+    const col = C.nero;
+    let d = `<path d="M32 4L45 24L38 24L38 38L26 38L26 24L19 24Z"`
+      + ` fill="${col}" stroke="${col}" stroke-width="2.4" stroke-linejoin="miter"/>`;
+    const passo = 6, s = 6;
+    for (let i = 0; i < n; i++){
+      const y = 44 + i * passo;
+      d += forma === '45'
+        ? `<line x1="32" y1="${y}" x2="${32+s}" y2="${y+s}"`
+          + ` stroke="${col}" stroke-width="3" stroke-linecap="round"/>`
+        : `<line x1="${32-s}" y1="${y}" x2="${32+s}" y2="${y}"`
+          + ` stroke="${col}" stroke-width="3" stroke-linecap="round"/>`;
+    }
+    return T(d);
+  };
+}
+
 /* Cerchio con sigla: Area da evacuare (Ev) e Zona Sicura (SZ), entrambe
    verdi. Effettuata = cerchio interamente pieno con la sigla in bianco. */
 function tondoSigla(sigla, col){
@@ -376,6 +410,9 @@ agg('ripetitore','zona',null,'Ripetitori, antenne, pale eoliche, ecc.','Masts, a
   () => T(`<circle cx="32" cy="11" r="6" fill="${C.nero}"/>
     <path d="M32 15L20 56h24Z" fill="none" stroke="${C.nero}" stroke-width="2.6" stroke-linejoin="round"/>
     <line x1="32" y1="15" x2="32" y2="56" stroke="${C.nero}" stroke-width="2"/>`));
+agg('pend_lieve','zona',null,'Pendenza lieve','Light slope', direzione('T', 1), {r:1, r0:0});
+agg('pend_moderata','zona',null,'Pendenza moderata','Moderate slope', direzione('T', 2), {r:1, r0:0});
+agg('pend_forte','zona',null,'Pendenza forte','Steep slope', direzione('T', 3), {r:1, r0:0});
 
 /* ---- TAVOLA 2: l'evoluzione dell'incendio ---- */
 /* "Punto d'innesco" e non "Area d'origine": sulla carta è un punto, e la
@@ -385,6 +422,12 @@ agg('origine','evoluzione',null,'Punto d\u2019innesco','Point of origin',
 agg('inc_chioma','evoluzione',null,'Incendio di chioma','Crown fire', quotaFuoco(0));
 agg('inc_radente','evoluzione',null,'Incendio radente','Surface fire', quotaFuoco(1));
 agg('inc_sotterraneo','evoluzione',null,'Incendio sotterraneo','Ground fire', quotaFuoco(2));
+agg('vento_debole','evoluzione',null,'Direzione del vento, intensit\u00e0 debole','Wind direction, light',
+  direzione('45', 1), {r:1, r0:0});
+agg('vento_moderato','evoluzione',null,'Direzione del vento, intensit\u00e0 moderata','Wind direction, moderate',
+  direzione('45', 2), {r:1, r0:0});
+agg('vento_forte','evoluzione',null,'Direzione del vento, intensit\u00e0 forte','Wind direction, strong',
+  direzione('45', 3), {r:1, r0:0});
 
 /* ---- TAVOLA 3: il dispositivo di intervento ---- */
 agg('can','dispositivo','sgAereo','Canadair','Canadair', mezzoAereo('CAN'), {s:1, e:1, lbl:'ID CAN'});
@@ -790,28 +833,7 @@ const aggL = (k, g, sg, it, en, stile, extra) => {
   L[k] = Object.assign({g, sg, n:{it, en}}, stile, extra || {});
 };
 
-/* ---- TAVOLA 1: pendenze, viabilità, infrastrutture ---- */
-/* La pendenza si traccia da monte a valle come la si legge sulla carta: la
-   freccia sta a valle, le codine dicono quanto è ripido.
-   `punti2` la limita a DUE vertici, origine e punta: una direzione è un
-   segmento, e una spezzata a cinque vertici con una freccia in fondo non
-   dice da dove a dove, mentre in export porterebbe una lunghezza che
-   nessuno ha misurato. Il limite lo applica sitac.js in fase di disegno. */
-/* `deco` può essere un ELENCO: qui la punta sta a fine linea e le codine
-   dell'intensità all'altro capo, che è il solo modo di vederle entrambe. */
-const puntaFine = dim => ({tipo:'punta', dim: dim || 20, pieno:1, passo:0, offset:'100%'});
-const codeInizio = (forma, n) => ({tipo:'codine', forma, n, dim:20, passo:0, offset:0});
-
-aggL('pend_lieve','zona',null,'Pendenza lieve','Light slope',
-  {color:C.nero, weight:2.8},
-  {punti2:1, deco:[puntaFine(), codeInizio('T', 1)]});
-aggL('pend_moderata','zona',null,'Pendenza moderata','Moderate slope',
-  {color:C.nero, weight:2.8},
-  {punti2:1, deco:[puntaFine(), codeInizio('T', 2)]});
-aggL('pend_forte','zona',null,'Pendenza forte','Steep slope',
-  {color:C.nero, weight:2.8},
-  {punti2:1, deco:[puntaFine(), codeInizio('T', 3)]});
-
+/* ---- TAVOLA 1: sentiero e viabilità ---- */
 aggL('sentiero','zona',null,'Sentiero o mulattiera','Trail',
   {color:C.nero, weight:3, dashArray:'14,5,3,5'});
 aggL('strada_leggeri','zona',null,'Strada per mezzi leggeri','Light means road',
@@ -833,18 +855,7 @@ aggL('elettrodotto','zona',null,'Linea elettrica attiva','Power line on',
 aggL('elettrodotto_off','zona',null,'Linea elettrica disattivata','Power line off',
   {color:C.nero, weight:2.4, dashArray:'14,5,3,5'}, {deco:{tipo:'fulmineOff', passo:70, dim:24, dritto:1}});
 
-/* ---- TAVOLA 2: vento, assi di sviluppo, fronte ---- */
-/* La freccia dice dove VA il vento; le codine a 45° l'intensità. */
-aggL('vento_debole','evoluzione',null,'Direzione del vento, intensit\u00e0 debole','Wind direction, light',
-  {color:C.nero, weight:2.6},
-  {punti2:1, deco:[puntaFine(), codeInizio('45', 1)]});
-aggL('vento_moderato','evoluzione',null,'Direzione del vento, intensit\u00e0 moderata','Wind direction, moderate',
-  {color:C.nero, weight:2.6},
-  {punti2:1, deco:[puntaFine(), codeInizio('45', 2)]});
-aggL('vento_forte','evoluzione',null,'Direzione del vento, intensit\u00e0 forte','Wind direction, strong',
-  {color:C.nero, weight:2.6},
-  {punti2:1, deco:[puntaFine(), codeInizio('45', 3)]});
-
+/* ---- TAVOLA 2: assi di sviluppo, fronte ---- */
 /* Fig. della tavola: il principale è un blocco rosso pieno, i secondari
    sono frecce VUOTE col contorno — riempimento bianco e bordo rosso — e si
    distinguono fra loro per il calibro, non per il colore. `guaina` è la
@@ -1023,6 +1034,11 @@ NS.SITAC_GLIFI = {
   vento_moderato: glifoVento(2),
   vento_forte:    glifoVento(3)
 };
+
+/* Quante codine per intensità. La legge `codineVento` in sitac.js per la
+   freccia del vento sul DOS: non può più ricavarlo da una riga di LIN,
+   perché il vento è diventato un simbolo. */
+NS.SITAC_INTENSITA = {vento_debole:1, vento_moderato:2, vento_forte:3};
 
 /* Etichetta e lunghezza per la finestra di inserimento: la chiede sitac.js
    quando si posa un simbolo con il flag `e`. */

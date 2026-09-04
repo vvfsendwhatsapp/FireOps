@@ -1,1 +1,9 @@
-* ICS emergenze. 
+* ICS emergenze.
+* su funivie foto 1 manca il seggiolino..foto 2
+      le frecce foto 3 asse sviluppo primario e assi secondario lento e veloce, sono imprecise ed aperte come invece vanno in foto 4 
+      frecce vento e pendenza possiamo farle come freccia transit point?
+      B di Bonifica foto 5  va parallela al percorso come foto 6
+      foto 7 accensione sui fianchi va migliorata perchè è impresentabile così, inoltre va chiusa. anche il logo nella colonna sinistra.
+      anche la scelta del lato ovunque, il popup va in alto a sinistra vicino al riquadro Nord e vento e senza i tasti di annulla e conferma
+      nel campo note, fai che si possono inserire note nel tempo col tasto + e le aggiungein un breve riepilogo come cono di propagazione
+* seggiovie piu perpendicolari rispetto alla linea 

@@ -358,6 +358,9 @@ function avvia(app){
       ventoClicDir:'Clicca sulla mappa nella direzione verso cui VA il vento.',
       ventoBloccato:'La freccia del vento non si trascina.\u000aTasto destro per direzione e intensit\u00e0.',
       legVento:'Direzione del vento \u2014 {v} km/h verso {d}\u00b0',
+      chiediNotaLibera:'Nota',
+      notaAggiunta:'Nota aggiunta.',
+      bAggiungiNota:'Aggiungi nota',
       disegnoAnnullato:'Disegno annullato: troppi pochi vertici.',
       chiediPaese:'Nazione del modulo',
       menuPaese:'Cambia nazione',
@@ -741,11 +744,6 @@ function avvia(app){
   const inPosizione  = q('#sitac-posizione');
   const CHIAVE_SESS  = 'fireops_sitac_intestazione';
   const CHIAVE_NOTE  = 'fireops_sitac_note';
-  let noteTesto = '';
-  try { noteTesto = sessionStorage.getItem(CHIAVE_NOTE) || ''; } catch(e){ }
-  const salvaNote = () => {
-    try { sessionStorage.setItem(CHIAVE_NOTE, noteTesto); } catch(e){ }
-  };
 
   function normalizzaDos(v){
     return String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '')
@@ -927,7 +925,7 @@ function avvia(app){
     nominativo: inNominativo.value.trim() || null,
     telefono: inTelefono.value.trim() || null,
     posizione: inPosizione.value || null,
-    note: noteTesto.trim() || null,
+    
     /* L'ora della REDAZIONE, non quella della stampa o dell'export: una
        SITAC dice quando è stata fatta, non quando è stata riletta. */
     redatta: oraRedazione ? oraRedazione.toISOString() : null
@@ -1329,6 +1327,28 @@ function mostraComandoAfferente(sigla, nome){
     return ((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x)) >= 0 ? 1 : -1;
   }
 
+    /* Riquadro dell'istruzione "scegli il lato": vive vicino al quadro del
+     vento, non nella barra di stato in fondo. Niente pulsanti — la conferma
+     è il clic sulla mappa, un OK qui sarebbe un secondo gesto per una cosa
+     già decisa col primo. */
+  function avvisoLato(msg){
+    let box = q('#sitac-avviso-lato');
+    if (!box){
+      box = document.createElement('div');
+      box.id = 'sitac-avviso-lato';
+      box.className = 'sitac-avviso-lato';
+      const wrap = q('.sitac-mapwrap');
+      if (wrap) wrap.appendChild(box);
+    }
+    box.textContent = msg;
+    box.hidden = false;
+    return box;
+  }
+  function nascondiAvvisoLato(){
+    const box = q('#sitac-avviso-lato');
+    if (box) box.hidden = true;
+  }
+
   /* Il lato si chiede DOPO aver chiuso la linea: prima non c'è ancora un
      tracciato rispetto a cui stare da una parte. Annullando resta il lato
      predefinito, che è meglio di un tracciato senza frecce. */
@@ -1337,23 +1357,17 @@ function mostraComandoAfferente(sigla, nome){
     if (!def || !def.lato) return;
     if (layer._lato == null) layer._lato = 1;
     decora(layer);
-    /* Il modale ferma davvero: il riquadro di stato, con la carta piena e
-       lo sguardo sulla mappa, non lo legge nessuno. Annullando resta il
-       lato predefinito — meglio un tracciato dalla parte sbagliata, che si
-       corregge dal tasto destro, di uno senza frecce. */
-    if (await chiedi({testo: t('scegliLato')}) == null){
-      fermaTutto(); spegniPulsanti();
-      return stato(t('latoScelto'));
-    }
-    const p = await attendiClic('\u25b6 ' + t('scegliLato'));
+    fermaTutto(); spegniPulsanti(); stato(''); cursore('mirino'); clicPassante(true);
+    avvisoLato(t('scegliLato'));
+    /* Non passa da attendiClic: quello accende il fumetto agganciato al
+       puntatore, giusto per i passi del cono ma non qui — il lato lo si
+       decide guardando il tracciato, e il messaggio deve stare fermo
+       accanto al riquadro del vento. */
+    const p = await new Promise(risolvi => { attesaClic = risolvi; });
+    nascondiAvvisoLato();
     if (p) layer._lato = latoDi(layer, p);
     decora(layer);
     aggiornaStato();
-    /* Lo strumento si spegne. Scelto il lato, il clic successivo sulla
-       carta NON deve far partire un altro tracciato: chi ha appena finito
-       di rispondere a una domanda non si aspetta di aver già posato il
-       primo vertice della prossima linea. Chi ne vuole un'altra ripreme il
-       pulsante — un clic in più, contro un tracciato nato per sbaglio. */
     fermaTutto(); spegniPulsanti();
     stato(t('latoScelto'));
   }
@@ -2650,9 +2664,7 @@ function mostraComandoAfferente(sigla, nome){
 
   function codineVento(){
     const k = NS.SitacVento.simboloVento(ventoVelocita || 0);
-    const dc = [].concat((LIN[k] || {}).deco || [])
-      .filter(x => x.tipo === 'codine')[0];
-    return dc ? dc.n : 1;
+    return (NS.SITAC_INTENSITA || {})[k] || 1;
   }
 
   function disegnaFrecciaVento(){
@@ -2754,6 +2766,53 @@ function mostraComandoAfferente(sigla, nome){
     applicaVento('manuale');
   };
 
+    /* =======================================================================
+     5quinquies. NOTE
+     Non un'annotazione sulla carta ma un diario dell'intervento: orario e
+     testo libero, aggiunti col tempo con un pulsante "+", come i coni di
+     propagazione — stesso elenco con la possibilità di togliere una voce.
+     Viaggiano nel GeoJSON e sul foglio stampato.
+     ===================================================================== */
+  const note = [];
+  let nNota = 0;
+  const salvaNote = () => {
+    try { sessionStorage.setItem(CHIAVE_NOTE,
+      JSON.stringify(note.map(n => ({t:n.testo, q:n.quando.toISOString()})))); }
+    catch(e){ }
+  };
+  try {
+    JSON.parse(sessionStorage.getItem(CHIAVE_NOTE) || '[]').forEach(n => {
+      note.push({id: ++nNota, testo: n.t, quando: new Date(n.q)}); });
+  } catch(e){ }
+
+  function aggiornaNote(){
+    const lista = q('#sitac-note');
+    salvaNote();
+    if (!lista) return;
+    lista.innerHTML = '';
+    note.forEach(n => {
+      const r = document.createElement('div');
+      r.className = 'sitac-nota-voce';
+      r.innerHTML = `<span class="sitac-nota-ora">${esc(fmtOra(n.quando))}</span>`
+        + `<span class="sitac-nota-testo">${esc(n.testo)}</span>`;
+      const b = document.createElement('button');
+      b.type = 'button'; b.textContent = '\u00d7';
+      b.onclick = () => { note.splice(note.indexOf(n), 1); aggiornaNote(); };
+      r.appendChild(b);
+      lista.appendChild(r);
+    });
+    const conta = q('#sitac-stNote');
+    if (conta) conta.textContent = note.length || '';
+  }
+
+  async function aggiungiNota(){
+    const val = await chiedi({campo:1, testo: t('chiediNotaLibera')});
+    if (!val) return;
+    note.push({id: ++nNota, testo: val, quando: new Date()});
+    aggiornaNote();
+    stato(t('notaAggiunta'));
+  }
+
   /* =======================================================================
      6. STRUMENTI E PASSI
      ===================================================================== */
@@ -2791,7 +2850,11 @@ function mostraComandoAfferente(sigla, nome){
     const b = document.createElement('button');
     b.type = 'button';
     b.dataset.genere = 'simbolo'; b.dataset.chiave = k;
-    b.title = nm(d);
+    /* Per i lanci il titolo porta anche l'ingombro reale: il simbolo nel
+       pulsante è per forza un'icona a dimensione fissa, e senza la misura
+       scritta da qualche parte inganna — sembra un punto, non un'ellisse
+       che in mappa può superare i cento metri. */
+    b.title = d.poly ? `${nm(d)} — ${d.poly.a * 2}\u00d7${d.poly.b * 2} m` : nm(d);
     b.innerHTML = `<i class="sitac-swatch">${svgSimbolo(k, {stato: statoPer(d)})}</i>`
       + `<span>${esc(nm(d))}</span>`;
     b.onclick = () => attiva('simbolo', k, b);
@@ -2966,14 +3029,20 @@ function mostraComandoAfferente(sigla, nome){
        del foglio: chi lo legge lo cerca in fondo, insieme ai numeri, non
        sparso sulla carta accanto a un simbolo. */
     passo(8, t('p8note'), 'Note', corpo => {
-      const ta = document.createElement('textarea');
-      ta.id = 'sitac-note';
-      ta.className = 'sitac-note';
-      ta.rows = 7;
-      ta.placeholder = t('noteAiuto');
-      ta.value = noteTesto;
-      ta.oninput = () => { noteTesto = ta.value; salvaNote(); aggiornaPassi(); };
-      corpo.appendChild(ta);
+      const el = document.createElement('div');
+      el.className = 'sitac-azioni';
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'largo'; b.id = 'sitac-bAggiungiNota';
+      b.innerHTML = `<span>+ ${esc(t('bAggiungiNota'))}</span>`;
+      b.onclick = aggiungiNota;
+      el.appendChild(b);
+      corpo.appendChild(el);
+      const lista = document.createElement('div');
+      lista.id = 'sitac-note';
+      corpo.appendChild(lista);
+      corpo.insertAdjacentHTML('beforeend',
+        `<p class="sitac-avviso">${esc(t('noteAiuto'))}</p>`);
+      aggiornaNote();
     });
 
     agganciaFisa(tav);
@@ -3007,7 +3076,7 @@ function mostraComandoAfferente(sigla, nome){
         + `${sf.totale ? t('pEttari', {v: inHa(sf.totale)}) : ''}`
       : t('pNessuno'), nIn > 0 || sf.totale > 0);
     segna(4, coni.length ? t('pConi', {n:coni.length}) : t('pNessuno'), coni.length > 0);
-    const nn = noteTesto.trim().length;
+    const nn = note.length;
     segna('Note', nn ? `${t('pFatto')} ${nn}` : t('pNessuno'), nn > 0);
 
     const box = q('#sitac-superficie');
@@ -3171,6 +3240,7 @@ function mostraComandoAfferente(sigla, nome){
     fermaMenuModifica();
     misuraSpegni();
     suggSpegni();
+    nascondiAvvisoLato();
     cursore(null);
     clicPassante(false);
     strumento = null;
@@ -3516,7 +3586,8 @@ function mostraComandoAfferente(sigla, nome){
         ventoCono ? {vento:{velocita:ventoCono.velocita, verso:ventoCono.verso,
           provenienza:ventoCono.provenienza, fonte:ventoCono.fonte,
           letto:ventoCono.letto || null,
-          apertura:NS.SitacVento.APERTURA, quota:NS.SitacVento.QUOTA_VENTO}} : {})};
+          apertura:NS.SitacVento.APERTURA, quota:NS.SitacVento.QUOTA_VENTO}} : {},
+        note.length ? {note: note.map(n => ({testo:n.testo, quando:n.quando.toISOString()}))} : {})};
     scarica(JSON.stringify(fc,null,1), nomeFile('geojson'), 'application/geo+json');
     stato(t('geojsonFatto', {n:feat.length}));
   };
@@ -3645,12 +3716,10 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
       if (p.qualifica)  inQualifica.value  = String(p.qualifica);
       if (p.nominativo) inNominativo.value = String(p.nominativo);
       if (p.telefono)   inTelefono.value   = String(p.telefono);
-      if (p.note){
-        noteTesto = String(p.note);
-        salvaNote();
-        const ta = q('#sitac-note');
-        if (ta) ta.value = noteTesto;
-      }
+      if (Array.isArray(p.note))
+        p.note.forEach(n => { if (n && n.testo)
+          note.push({id: ++nNota, testo: String(n.testo),
+            quando: n.quando ? new Date(n.quando) : new Date()}); });
       if (p.posizione){
         const c = String(p.posizione).split(/[,;\s]+/).map(Number)
           .filter(x => !isNaN(x));
@@ -3743,7 +3812,7 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
        questo il passo 1 crede che il DOS non ci sia. Il simbolo, se c'era,
        è già arrivato con le feature. */
     if (posDos && !dosSullaCarta()) posaDos(posDos);
-
+    aggiornaNote(); 
     if (n && disegni.getBounds().isValid())
       map.fitBounds(disegni.getBounds(), {padding:[40,40]});
     aggiornaStato();
@@ -4403,6 +4472,14 @@ function ripristinaStile(){
   stiliPrima = null;
 }
 
+function sfTabellaNote(){
+  if (!note.length) return `<p class="sf-vuoto">\u2014</p>`;
+  const righe = note.map(n => `<tr><td>${esc(fmtOra(n.quando))}</td>`
+    + `<td>${esc(n.testo)}</td></tr>`).join('');
+  return `<table class="sf-tab"><thead><tr><th>Ora</th><th>Nota</th>`
+    + `</tr></thead><tbody>${righe}</tbody></table>`;
+}
+
 async function stampa(){
   /* I lanci non stanno sulla carta: si contano a voce lungo la giornata, e
      il numero lo sa solo chi ha tenuto il conto. Si chiede qui, una volta,
@@ -4446,9 +4523,7 @@ async function stampa(){
        <h2>${esc(t('stSquadre'))}</h2>${sfTabellaSquadre()}
         ${sfBloccoLanci()}
        <h2>Linee tracciate</h2>${sfTabellaLinee()}
-       ${noteTesto.trim()
-         ? `<h2>${esc(t('stNote'))}</h2><p class="sf-note-testo">`
-           + esc(noteTesto.trim()).replace(/\n/g, '<br>') + `</p>` : ''}
+       <h2>${esc(t('stNote'))}</h2>${sfTabellaNote()}
      </section>`;
 
   /* La mappa viva si sposta dentro il foglio e poi torna esattamente dov'era:
