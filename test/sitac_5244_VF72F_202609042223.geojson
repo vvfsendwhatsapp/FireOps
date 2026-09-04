@@ -1,0 +1,405 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "tipo": "dos",
+    "genere": "simbolo",
+    "stato": "attivo",
+    "testo": "72F",
+    "rotazione": null,
+    "lato": null,
+    "paese": null
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     12.098757,
+     44.142723
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "tipo": "asse_lento",
+    "genere": "linea",
+    "stato": "previsto",
+    "testo": null,
+    "rotazione": null,
+    "lato": null,
+    "paese": null
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      12.085384,
+      44.141078
+     ],
+     [
+      12.087917,
+      44.148167
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "tipo": "accensione_linee",
+    "genere": "linea",
+    "stato": "previsto",
+    "testo": null,
+    "rotazione": null,
+    "lato": 1,
+    "paese": null
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      12.09517,
+      44.142278
+     ],
+     [
+      12.093286,
+      44.151206
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "tipo": "fune_sbalzo",
+    "genere": "linea",
+    "stato": "previsto",
+    "testo": null,
+    "rotazione": null,
+    "lato": null,
+    "paese": null
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      12.080362,
+      44.144405
+     ],
+     [
+      12.085727,
+      44.149459
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "tipo": "sterrata_leggeri",
+    "genere": "linea",
+    "stato": "previsto",
+    "testo": null,
+    "rotazione": null,
+    "lato": null,
+    "paese": null
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      12.088861,
+      44.14151
+     ],
+     [
+      12.090234,
+      44.146996
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "tipo": "attacco_fianchi",
+    "genere": "linea",
+    "stato": "previsto",
+    "testo": null,
+    "rotazione": null,
+    "lato": -1,
+    "paese": null
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      12.104828,
+      44.141908
+     ],
+     [
+      12.104484,
+      44.14986
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "tipo": "ricognizione",
+    "genere": "linea",
+    "stato": "previsto",
+    "testo": null,
+    "rotazione": null,
+    "lato": null,
+    "paese": null
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      12.093625,
+      44.141631
+     ],
+     [
+      12.091436,
+      44.149582
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "tipo": "ricognizione",
+    "genere": "linea",
+    "stato": "attivo",
+    "testo": null,
+    "rotazione": null,
+    "lato": null,
+    "paese": null
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      12.094465,
+      44.143353
+     ],
+     [
+      12.093134,
+      44.149225
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "tipo": "difesa_perimetrale",
+    "genere": "simbolo",
+    "stato": "attivo",
+    "testo": null,
+    "rotazione": null,
+    "lato": null,
+    "paese": null
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     12.08311,
+     44.144097
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "tipo": "difesa_perimetrale",
+    "genere": "simbolo",
+    "stato": "previsto",
+    "testo": null,
+    "rotazione": null,
+    "lato": null,
+    "paese": null
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     12.085041,
+     44.146447
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "tipo": "difesa_linea",
+    "genere": "linea",
+    "stato": "attivo",
+    "testo": null,
+    "rotazione": null,
+    "lato": null,
+    "paese": null
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      12.081135,
+      44.14909
+     ],
+     [
+      12.090149,
+      44.152325
+     ],
+     [
+      12.08723,
+      44.152664
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "tipo": "difesa_linea",
+    "genere": "linea",
+    "stato": "attivo",
+    "testo": null,
+    "rotazione": null,
+    "lato": null,
+    "paese": null
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      12.082595,
+      44.151742
+     ],
+     [
+      12.088604,
+      44.148786
+     ],
+     [
+      12.091694,
+      44.142998
+     ],
+     [
+      12.090621,
+      44.140627
+     ],
+     [
+      12.091265,
+      44.139057
+     ],
+     [
+      12.094226,
+      44.138811
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "tipo": "vento_debole",
+    "genere": "simbolo",
+    "stato": "previsto",
+    "testo": null,
+    "rotazione": 29,
+    "lato": null,
+    "paese": null
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     12.100751,
+     44.147949
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "tipo": "pend_forte",
+    "genere": "simbolo",
+    "stato": "previsto",
+    "testo": null,
+    "rotazione": 344,
+    "lato": null,
+    "paese": null
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     12.081436,
+     44.141631
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "tipo": "ripetitore",
+    "genere": "simbolo",
+    "stato": "previsto",
+    "testo": null,
+    "rotazione": null,
+    "lato": null,
+    "paese": null
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     12.079418,
+     44.147056
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "tipo": "modulo_ue",
+    "genere": "simbolo",
+    "stato": "previsto",
+    "testo": "22",
+    "rotazione": null,
+    "lato": null,
+    "paese": "ES"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     12.077744,
+     44.144011
+    ]
+   }
+  }
+ ],
+ "properties": {
+  "applicazione": "FireOps VVF — SITAC",
+  "simbologia": "SI.TA.C. CNVVF 2021",
+  "lingua": "it",
+  "creato": "2026-09-04T22:23:16.771Z",
+  "intervento": "5244",
+  "qualifica": "CSE",
+  "dos": "VF 72F",
+  "nominativo": "Luca Giardini",
+  "telefono": "3315776859",
+  "posizione": "44.14272, 12.09876",
+  "redatta": "2026-09-04T22:03:02.762Z",
+  "vento": {
+   "velocita": 10,
+   "verso": 346,
+   "provenienza": 166,
+   "fonte": "Open-Meteo",
+   "letto": "2026-09-04T22:04:03.930Z",
+   "apertura": 30,
+   "quota": 0.03
+  }
+ }
+}

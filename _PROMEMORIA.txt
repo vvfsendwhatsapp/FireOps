@@ -6,4 +6,25 @@
       foto 7 accensione sui fianchi va migliorata perchè è impresentabile così, inoltre va chiusa. anche il logo nella colonna sinistra.
       anche la scelta del lato ovunque, il popup va in alto a sinistra vicino al riquadro Nord e vento e senza i tasti di annulla e conferma
       nel campo note, fai che si possono inserire note nel tempo col tasto + e le aggiungein un breve riepilogo come cono di propagazione
-* seggiovie piu perpendicolari rispetto alla linea 
+* seggiovie piu perpendicolari rispetto alla linea
+* Bonifica
+   la B va ruotata ed il quadrato con un lato sulla linea. preferisci sempre a nordovest della linea.
+   inoltre la linea va piena se effettuata, tratteggiata se prevista 
+* accensione per linee dobbiamo curare di piu sia il logo a sinistra che la freccia in se per se e manca alert scelta lato in alto a sinistra vicino al nord e vento.
+* attacco sui fianchi va bene ma voglio vedere che si sposta quando sposto il mouse e manca alert scelta lato in alto a sinistra vicino al nord e vento
+* ricognizione va fatta la greca, l'omega...altrimenti non si capisce tanto
+* nei punti riusciamo a colorare il logo senza il cerchio dietro bianco
+* far scegliere lato su linee asimmetriche tipo difesa in linea
+* direzione del vento va bene ma togli la direttrice azzurra ed il pallino. fai la freccia piu lunga.
+* stessa cosa per pendenza, solo che il secondo clic determina anche la lunghezza della freccia
+* seggiovia ecc vanno a sudest della linea quasi perpendicolari rispetto alla linea.
+* su modulo ue riusciamo a mettere la bandiera ed il numero piu grandi, col numero del modulo? la sigla solo su popup o riepilogo pdf squadre
+* quando faccio cancella tutto cancella anche il vento locale DOS.
+* passa automaticamente a mappa se inserisco "qui" poosizione dos
+* colore nero dietro etichette dati intervento e mappa
+* lo scroll esterno mi comprime etichetta mappa
+* sistemare icone asse primario e secondario.
+* sistemare frecce primario e secondario con chiusure giuste
+* mi spieghi importgeojson con campi diversi per campi coordinate?
+* anche su direzione vento dos non mi sposta la freccia in base al puntatore.
+* Inoltre direzione sulla mappa non funziona
