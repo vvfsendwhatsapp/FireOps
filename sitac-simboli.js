@@ -872,9 +872,9 @@ aggL('sterrata_pesanti','zona',null,'Strada sterrata per mezzi pesanti','Unpaved
 aggL('senso_unico','zona',null,'Senso di marcia obbligatorio','One way only',
   {color:C.nero, weight:3}, {deco:{tipo:'freccia', passo:'25%', dim:13}});
 aggL('accesso_interrotto','zona',null,'Accesso interrotto','Road closed',
-  {color:C.nero, weight:3.5}, {deco:{tipo:'croce', passo:'50%', dim:18}});
+  {color:C.nero, weight:3.5}, {deco:{tipo:'croce', passo:34, dim:18}});
 aggL('fune_sbalzo','zona',null,'Funivie, fili a sbalzo, ecc.','Cableways and aerial wires',
-  {color:C.nero, weight:2.6}, {deco:{tipo:'pilone', passo:'50%', dim:22, verso:135}});
+  {color:C.nero, weight:2.6}, {deco:{tipo:'pilone', passo:'10%', dim:22, verso:135}});
 aggL('elettrodotto','zona',null,'Linea elettrica attiva','Power line on',
   {color:C.nero, weight:2.4, dashArray:'14,5,3,5'}, {deco:{tipo:'fulmine', passo:70, dim:24, dritto:1}});
 aggL('elettrodotto_off','zona',null,'Linea elettrica disattivata','Power line off',
