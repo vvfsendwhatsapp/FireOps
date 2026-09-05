@@ -261,10 +261,15 @@ function mezzoTerra(sigla, aste, col){
   };
 }
 
-/* Modulo UE / colonna: tre aste come gli altri livelli, ma dentro il
-   riquadro ci va la bandiera. È l'etichetta del modulo — su una carta con
-   sei nazioni in campo il nome scritto non si legge, il tricolore sì — e
-   accanto restano il codice ISO e il numero del modulo. */
+/* Modulo UE / colonna: tre aste come gli altri livelli, ma il riquadro è la
+   bandiera. Il francobollo da 14×9 accanto al testo era illeggibile a
+   dimensione di simbolo — tre bande di quattro pixel non si distinguono — e
+   soprattutto rubava spazio al numero, che è il dato per cui il simbolo
+   esiste: su una carta con sei nazioni in campo si cerca "il 4", non "IT".
+   Il codice ISO non sparisce, cambia posto: sta nel suggerimento e nel
+   riepilogo stampato, dove lo spazio c'è e la nazione si legge per esteso.
+   Il numero va in bianco bordato di nero: una bandiera può essere chiara o
+   scura, e nessun colore fisso si leggerebbe su tutte e trentasette. */
 function moduloUE(){
   return o => {
     const p = attivo(o), K = C.rosso;
@@ -274,19 +279,25 @@ function moduloUE(){
       const x = (xc - 8 + i * 8).toFixed(1);
       a += `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y1-8}" stroke="${K}" stroke-width="2.2"/>`;
     }
-    const xd = x2 - CUNEO;              // corpo fisso nei due stati
     const cod = String((o && o.paese) || '').toUpperCase().slice(0, 3);
     const n = idTesto(o);
-    const bw = 14, bh = 9, bx = x1 + 4, by = (y1 + y2) / 2 - bh / 2;
-    const xs = cod ? bx + bw + 3 : x1 + 4;
-    const et = [cod, n].filter(Boolean).join(' ');
-    const largo = Math.max(10, xd - xs - 4);
-    const dim = et ? Math.max(7.5, Math.min(14, largo / (et.length * 0.62))) : 14;
+    const w = x2 - x1, h = y2 - y1;
+    const xd = x2 - CUNEO;              // corpo utile: fisso nei due stati
+    const largo = xd - x1 - 6;
+    const dim = n ? Math.max(11, Math.min(22, largo / (n.length * 0.62))) : 22;
+    const numero = n
+      ? `<text x="${((x1 + xd) / 2).toFixed(1)}" y="${(y2 - 8).toFixed(1)}"`
+        + ` text-anchor="middle" font-size="${dim.toFixed(1)}"`
+        + ` font-family="Arial,Helvetica,sans-serif" font-weight="700"`
+        + ` fill="#fff" stroke="#000" stroke-width="3"`
+        + ` paint-order="stroke fill" stroke-linejoin="round">${esc(n)}</text>`
+      : puntini(x1 + 6, xd - 4, (y1 + y2) / 2, '#000');
     return T(`${a}
-      <rect x="${x1}" y="${y1}" width="${x2-x1}" height="${y2-y1}" fill="#fff" stroke="${K}" stroke-width="2.6"/>
+      ${cod ? bandeStati(cod, x1, y1, w, h)
+            : `<rect x="${x1}" y="${y1}" width="${w}" height="${h}" fill="#fff"/>`}
+      <rect x="${x1}" y="${y1}" width="${w}" height="${h}" fill="none" stroke="${K}" stroke-width="2.6"/>
       ${p ? `<path d="M${x2-CUNEO} ${y2}H${x2}V${y1}Z" fill="${K}"/>` : ''}
-      ${cod ? bandeStati(cod, bx, by, bw, bh) : ''}
-      ${et ? txt(xs, y2 - 9, et, K, dim, 'start') : puntini(xs, xd - 4, y2 - 13, K)}`);
+      ${numero}`);
   };
 }
 
@@ -462,7 +473,8 @@ agg('gos','dispositivo','sgTerra','Squadra GOS','GOS crew', mezzoTerra('GOS', 1)
 agg('sai','dispositivo','sgTerra','Squadra SAI','SAI crew', mezzoTerra('SAI', 1), {s:1, e:1, f:1, lbl:'N. squadra'});
 agg('squadra_altra','dispositivo','sgTerra','Squadra\u2026','Other crew', mezzoTerra('', 1), {s:1, e:1, f:1, lbl:'Sigla e numero'});
 agg('modulo_vvf','dispositivo','sgTerra','Modulo VVF / Gruppo','VVF module / Group', mezzoTerra('', 2), {s:1, e:1, lbl:'N. modulo'});
-agg('modulo_ue','dispositivo','sgTerra','Modulo UE / Colonna','EU module / Column', moduloUE(), {s:1, e:1, paese:1, lbl:'N. modulo'});
+agg('modulo_ue','dispositivo','sgTerra','Modulo UE / Colonna','EU module / Column', moduloUE(),
+  {s:1, e:1, paese:1, lbl:'N. modulo'});
 agg('cp','dispositivo','sgTerra','Posto di Comando','Command post', mezzoTerra('CP', 0, C.rosso), {s:1});
 agg('ss','dispositivo','sgTerra','Soccorso Sanitario','Ambulance', mezzoTerra('SS', 0, C.verde), {s:1});
 agg('pol','dispositivo','sgTerra','Forze di Polizia','Police forces', mezzoTerra('Pol', 0, C.polizia), {s:1, f:1});
