@@ -3675,23 +3675,19 @@ function mostraComandoAfferente(sigla, nome){
        riferimento, o il pulsante della posizione crede di averlo ancora. */
     cerchioPosizione = null;
     posizioneOttenuta = false;
-    /* Con la carta vuota il DOS non è più posato da nessuna parte, e il
-       pulsante deve tornare a chiedere le coordinate invece di dichiararle
-       rilevate. Non si toccano gli altri campi dell'intestazione: "cancella
-       tutto" parla del disegno, non di chi firma la SITAC — per quello c'è
-       Pulisci campi al passo 1.
-       `datiBloccati` cade insieme alla posizione: senza, i campi restano in
-       sola lettura e non si potrebbe rimettere il DOS da nessuna parte. */
-    posDos = null;
-    inPosizione.value = '';
-    datiBloccati = false;
-    avviaOrologio();
-    segnaIntestazione();
-    /* Si torna alla scheda 1 col fuoco sul primo campo: quello che si fa
-       dopo aver svuotato la carta è ricominciare, e ricominciare parte da
-       lì. Il fuoco va dato DOPO il cambio scheda — su un elemento nascosto
-       il browser lo ignora — e con un giro di ritardo, perché vaiAScheda
-       rimisura la mappa in un setTimeout. */
+    /* `posDos` NON si tocca: la posizione del DOS è un dato
+       dell'intestazione, come il numero d'intervento e il nominativo —
+       sta nel campo del passo 1, nel GeoJSON e sul foglio stampato.
+       Cancella tutto parla del disegno; per svuotare l'intestazione c'è
+       Pulisci campi.
+       Il SIMBOLO invece se n'è andato con gli altri, e un dato senza il
+       suo segno sulla carta è peggio di nessuno dei due: si riposa. */
+    if (posDos) posaDos(posDos);
+    /* Si torna alla scheda 1: quello che si fa dopo aver svuotato la carta
+       è ricominciare, e ricominciare parte da lì. Il fuoco va dato DOPO il
+       cambio scheda — su un elemento nascosto il browser lo ignora — e con
+       un giro di ritardo, perché vaiAScheda rimisura la mappa in un
+       setTimeout. */
     vaiAScheda('dati');
     setTimeout(() => inIntervento.focus(), 20);
     aggiornaStato();
