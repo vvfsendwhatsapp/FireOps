@@ -1406,16 +1406,34 @@ function mostraComandoAfferente(sigla, nome){
     const def = LIN[layer._tipo];
     if (!def || !def.lato) return;
     if (layer._lato == null) layer._lato = 1;
+    const prima = layer._lato;
     decora(layer);
     fermaTutto(); spegniPulsanti(); stato(''); cursore('mirino'); clicPassante(true);
     avvisoLato(t('scegliLato'));
+    /* Le frecce si spostano da una parte all'altra mentre si muove il
+       puntatore: il lato si SCEGLIE guardandolo, non si indovina cliccando.
+       Si ridecora solo quando il lato cambia davvero — `decora` ricostruisce
+       il decoratore da zero, e rifarlo a ogni pixel di movimento vuol dire
+       sessanta ricostruzioni al secondo per un dato che cambia due o tre
+       volte in tutto. */
+    const anteprima = e => {
+      const l = latoDi(layer, e.latlng);
+      if (l === layer._lato) return;
+      layer._lato = l;
+      decora(layer);
+    };
+    map.on('mousemove', anteprima);
     /* Non passa da attendiClic: quello accende il fumetto agganciato al
        puntatore, giusto per i passi del cono ma non qui — il lato lo si
        decide guardando il tracciato, e il messaggio deve stare fermo
        accanto al riquadro del vento. */
     const p = await new Promise(risolvi => { attesaClic = risolvi; });
+    map.off('mousemove', anteprima);
     nascondiAvvisoLato();
-    if (p) layer._lato = latoDi(layer, p);
+    /* Annullando con Esc si torna al lato di partenza: l'anteprima l'ha
+       riscritto a ogni movimento, e restare sull'ultimo sfiorato sarebbe
+       una scelta che nessuno ha fatto. */
+    layer._lato = p ? latoDi(layer, p) : prima;
     decora(layer);
     aggiornaStato();
     fermaTutto(); spegniPulsanti();
