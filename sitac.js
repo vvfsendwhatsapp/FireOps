@@ -1562,7 +1562,7 @@ function mostraComandoAfferente(sigla, nome){
     return Math.max(c.distanceTo(b), 30);
   }
 
-    function creaManiglia(layer){
+  function creaManiglia(layer){
     if (layer._maniglia){ decori.removeLayer(layer._maniglia); }
     if (layer._asta){ decori.removeLayer(layer._asta); }
     const c = layer.getLatLng();
@@ -1602,6 +1602,22 @@ function mostraComandoAfferente(sigla, nome){
         : {color:'#0070c0', weight:2.5, dashArray:'6,5', interactive:false}).addTo(decori);
       if (tp) layer._asta.bringToBack();
     }
+    /* PolylineDecorator riposiziona i marcatori ma non sempre butta quelli
+       vecchi: dopo qualche movimento restano in carta le punte e le codine
+       di tutte le direzioni provate. Si distrugge e si rifà il decoratore —
+       l'unico modo sicuro — invece di chiamare setPaths. */
+    const rifaiDeco = () => {
+      if (!senzAsta) return;
+      if (layer._astaDeco) decori.removeLayer(layer._astaDeco);
+      const rc = (NS.SITAC_CODINE || {})[layer._tipo] || {forma:'T', n:1};
+      const finto = {color: COL.nero};
+      layer._astaDeco = L.polylineDecorator(layer._asta, {patterns: [
+        motivo(finto, {tipo:'punta', dim:20, pieno:1, passo:0, offset:'100%'}, 'attivo', 1),
+        motivo(finto, {tipo:'codine', forma:rc.forma, n:rc.n, dim:20,
+                       passo:0, offset:0}, 'attivo', 1)
+      ]}).addTo(decori);
+    };
+    layer._rifaiDeco = rifaiDeco;
 
     const puntaSvg = g => `<svg viewBox="0 0 26 26" style="transform:rotate(${g}deg)">`
       + `<path d="M13 2l9 22-9-6-9 6Z" fill="${COL.rosso}"/></svg>`;
@@ -1623,8 +1639,7 @@ function mostraComandoAfferente(sigla, nome){
       if (senzAsta){
         if (allungabile) layer._lung = Math.round(o.distanceTo(m));
         layer._asta.setLatLngs([o, m]);
-        if (layer._astaDeco && layer._astaDeco.setPaths)
-          layer._astaDeco.setPaths(layer._asta);
+        rifaiDeco();
       } else {
         layer.setIcon(iconaSimbolo(layer._tipo, {stato:layer._stato,
           testo:layer._testo, rotazione:layer._rotazione}));
@@ -1648,8 +1663,7 @@ function mostraComandoAfferente(sigla, nome){
       if (layer._asta) layer._asta.setLatLngs(senzAsta ? [o, np] : (tp
         ? [puntoDaAzimut(o, (layer._rotazione || 0) + 180, distanzaManiglia() * 0.55), np]
         : [o, np]));
-      if (layer._astaDeco && layer._astaDeco.setPaths)
-        layer._astaDeco.setPaths(layer._asta);
+      rifaiDeco();
     });
   }
 
@@ -2286,7 +2300,7 @@ function mostraComandoAfferente(sigla, nome){
       : (l._tipo === 'tp'
           ? [puntoDaAzimut(o, l._rotazione + 180, distanzaManiglia() * 0.55), np]
           : [o, np]));
-    if (l._astaDeco && l._astaDeco.setPaths) l._astaDeco.setPaths(l._asta);
+    if (l._rifaiDeco) l._rifaiDeco();
     const el = l._maniglia.getElement();
     const svg = el && el.querySelector('svg');
     if (svg) svg.style.transform = `rotate(${l._rotazione}deg)`;
@@ -2834,14 +2848,14 @@ function mostraComandoAfferente(sigla, nome){
     const p = puntoDaAzimut(posDos, ventoVerso, semi);
     ventoAsta = L.polyline([coda, p],
       {color: COL_VENTO_DOS, weight: 3, pmIgnore: true,
-       bubblingMouseEvents: false}).addTo(ventoGruppo);
+       bubblingMouseEvents: false}).addTo(decori);
 
     const finto = {color: COL_VENTO_DOS};
     ventoDeco = L.polylineDecorator(ventoAsta, {patterns: [
       motivo(finto, {tipo:'punta', dim:20, pieno:1, passo:0, offset:'100%'}, 'attivo', 1),
       motivo(finto, {tipo:'codine', forma:'45', n: codineVento(), dim:20,
                      passo:0, offset:0}, 'attivo', 1)
-    ]}).addTo(ventoGruppo);
+    ]}).addTo(decori);
 
     ventoAsta.on('contextmenu', ev => {
       if (ev.originalEvent){
@@ -2866,11 +2880,11 @@ function mostraComandoAfferente(sigla, nome){
   function anteprimaVento(e){
     if (!posDos || !ventoAsta) return;
     ventoVerso = Math.round(azimut(posDos, e.latlng));
-    /* Asta e decoratore si rifanno da zero a ogni movimento. Costa più
-       lavoro per fotogramma, ma è l'unico modo sicuro di non lasciare in
-       carta le punte delle direzioni già provate: PolylineDecorator
-       riposiziona i marcatori senza sempre buttare i vecchi. */
-    disegnaFrecciaVento();
+    const semi = distanzaManiglia() * 1.15;
+    ventoAsta.setLatLngs([
+      puntoDaAzimut(posDos, (ventoVerso + 180) % 360, semi),
+      puntoDaAzimut(posDos, ventoVerso, semi)]);
+    if (ventoDeco && ventoDeco.setPaths) ventoDeco.setPaths(ventoAsta);
   }
 
   async function ventoCambiaDirezione(){
