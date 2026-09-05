@@ -1381,21 +1381,23 @@ function mostraComandoAfferente(sigla, nome){
     stato(t('latoScelto'));
   }
 
-    /* Il quadro della bonifica va tenuto sempre dalla stessa parte, e la parte
-     è il quadrante di nordovest: su una carta orientata a nord è quello che
-     resta più libero — le etichette di OSM corrono da ovest a est sotto i
-     tracciati — e bolli tutti allineati si leggono come una fila, sparsi sui
-     due lati come rumore.
-     Si sceglie fra le due perpendicolari quella che punta più verso NO. */
-  const NORDOVEST = 315;
+  /* Alcuni motivi stanno da una parte sola del tracciato, e quale sia non è
+     una scelta operativa — è solo dove stanno più comodi. Si sceglie fra le
+     due perpendicolari quella che punta più vicino a un quadrante fissato:
+     nordovest per il quadro della bonifica, perché su una carta orientata a
+     nord è il lato che resta più libero dalle etichette di OSM; sudest per i
+     seggiolini, così non finiscono addosso ai bolli quando una funivia corre
+     accanto a una linea di bonifica.
+     In entrambi i casi il vantaggio è la costanza: motivi tutti dalla stessa
+     parte si leggono come una fila, alternati sui due lati come rumore. */
   const distAng = (a, b) => { const d = Math.abs((a - b) % 360); return d > 180 ? 360 - d : d; };
   function bearingLinea(l){
     const v = l.getLatLngs && l.getLatLngs();
     if (!v || v.length < 2) return 0;
     return azimut(v[0], v[v.length - 1]);
   }
-  const latoNord = b =>
-    distAng(b + 90, NORDOVEST) <= distAng(b - 90, NORDOVEST) ? 1 : -1;
+  const latoVerso = (b, meta) =>
+    distAng(b + 90, meta) <= distAng(b - 90, meta) ? 1 : -1;
 
   function decora(layer){
     if (layer._deco){ decori.removeLayer(layer._deco); layer._deco = null; }
@@ -1429,9 +1431,14 @@ function mostraComandoAfferente(sigla, nome){
          bollo. L'azimut è quello fra primo e ultimo vertice — su un
          tracciato molto curvo la controrotazione della lettera è esatta
          solo in media, ma una bonifica si traccia quasi sempre dritta. */
-      if (dc.nord){
+      /* `verso` decide il lato da sé invece di chiederlo, a differenza del
+         fianco d'attacco che è un dato operativo. L'azimut è quello fra
+         primo e ultimo vertice: su un tracciato molto curvo la scelta è
+         esatta solo in media, ma né una bonifica né una campata di funivia
+         si tracciano a serpentina. */
+      if (dc.verso != null){
         const b = bearingLinea(layer);
-        lt = latoNord(b);
+        lt = latoVerso(b, dc.verso);
         gi = -b;
       }
       const m = motivo(def, dc, layer._stato, lt, gi);
@@ -1452,6 +1459,7 @@ function mostraComandoAfferente(sigla, nome){
     layer._deco = L.polylineDecorator(layer, {patterns});
     decori.addLayer(layer._deco);
   }
+
   function scollega(layer){
     if (!layer) return;
     if (layer._deco){ decori.removeLayer(layer._deco); layer._deco = null; }

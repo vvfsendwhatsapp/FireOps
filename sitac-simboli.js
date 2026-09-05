@@ -874,7 +874,7 @@ aggL('senso_unico','zona',null,'Senso di marcia obbligatorio','One way only',
 aggL('accesso_interrotto','zona',null,'Accesso interrotto','Road closed',
   {color:C.nero, weight:3.5}, {deco:{tipo:'croce', passo:'50%', dim:18}});
 aggL('fune_sbalzo','zona',null,'Funivie, fili a sbalzo, ecc.','Cableways and aerial wires',
-  {color:C.nero, weight:2.6}, {deco:{tipo:'pilone', passo:'50%', dim:22}});
+  {color:C.nero, weight:2.6}, {deco:{tipo:'pilone', passo:'50%', dim:22, verso:135}});
 aggL('elettrodotto','zona',null,'Linea elettrica attiva','Power line on',
   {color:C.nero, weight:2.4, dashArray:'14,5,3,5'}, {deco:{tipo:'fulmine', passo:70, dim:24, dritto:1}});
 aggL('elettrodotto_off','zona',null,'Linea elettrica disattivata','Power line off',
@@ -929,7 +929,7 @@ aggL('bonifica','azioni','sgTerra','Bonifica','Mop up',
   {color:C.rosso, weight:2.8},
   {stati:1, deco:[{tipo:'punta', passo:0, offset:'100%', dim:20, pieno:1},
                   {tipo:'quadro', testo:'B', dim:18, passo:'25%', offset:'12%',
-                   pieno:1, nord:1}]});
+                   pieno:1, verso:315}]});
 aggL('linea_sicurezza','azioni','sgControfuoco','Creazione linea di sicurezza','Creation of a safety line',
   {color:C.rosso, weight:3}, {stati:1, deco:{tipo:'bifronte', passo:'auto', dim:12, pieno:1}});
 /* La linea è la linea di appoggio, spessa; il fuoco si manda di lato, e il
