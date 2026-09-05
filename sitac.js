@@ -593,10 +593,12 @@ function avvia(app){
   /* Sulla mappa il simbolo ha bisogno di un disco chiaro dietro: la
      tavola è disegnata per la carta bianca, e su ortofoto o bosco fitto
      il nero e il rosso sparirebbero. */
-  function iconaSimbolo(k, opz){
+    function iconaSimbolo(k, opz){
     const o = opz || {};
     if (k === 'nota')
-          /* Pendenza e vento: il punto resta invisibile. Il simbolo lo porta la
+      return L.divIcon({className:'sitac-etichetta', html: esc(o.testo || ''),
+        iconSize:null, iconAnchor:[0,10]});
+    /* Pendenza e vento: il punto resta invisibile. Il simbolo lo porta la
        maniglia, e disegnarlo anche qui vorrebbe dire vederlo due volte —
        uno fermo sull'origine e uno in punta, che è quello che conta.
        L'icona esiste lo stesso, vuota: serve a Leaflet per avere qualcosa
@@ -604,8 +606,6 @@ function avvia(app){
     if (SIM[k] && SIM[k].senzaDisco)
       return L.divIcon({className:'sitac-sim sitac-invisibile',
         html:'', iconSize:[22,22], iconAnchor:[11,11], popupAnchor:[0,-11]});
-      return L.divIcon({className:'sitac-etichetta', html: esc(o.testo || ''),
-        iconSize:null, iconAnchor:[0,10]});
     /* `rotazione` è un azimut vero; `r0` dice verso dove punta il disegno
        così com'è (il vento è disegnato verso ovest, la pendenza verso
        sud-ovest). Senza la differenza i simboli escono ruotati di novanta
@@ -1557,15 +1557,21 @@ function mostraComandoAfferente(sigla, nome){
     layer._asta = L.polyline([coda, p], tp
       ? {color:COL.rosso, weight:3.4, interactive:false}
       : {color:'#0070c0', weight:2.5, dashArray:'6,5', interactive:false}).addTo(decori);
-    if (tp) layer._asta.bringToBack();
-    
+    if (!/^(pend_|vento_)/.test(layer._tipo || ''))
+      layer._asta = L.polyline([coda, p], tp
+        ? {color:COL.rosso, weight:3.4, interactive:false}
+        : {color:'#0070c0', weight:2.5, dashArray:'6,5', interactive:false}).addTo(decori);
+    if (tp && layer._asta) layer._asta.bringToBack();
     /* La punta dice da che parte si entra in zona: un pallino non lo dice.
        Sugli altri simboli la direzione la disegna già il glifo, e una
        seconda punta accanto sarebbe un doppione. */
     const puntaSvg = g => `<svg viewBox="0 0 26 26" style="transform:rotate(${g}deg)">`
       + `<path d="M13 2l9 22-9-6-9 6Z" fill="${COL.rosso}"/></svg>`;
+        /* Pendenza e vento non hanno asta né pallino: il simbolo intero è la
+       maniglia, e quello che si trascina è la freccia stessa. */
+    const senzAsta = /^(pend_|vento_)/.test(layer._tipo || '');
     layer._maniglia = L.marker(p, {draggable:true, keyboard:false,
-            icon: tp
+      icon: tp
         ? L.divIcon({className:'sitac-maniglia sitac-mn-tp',
             iconSize:[26,26], iconAnchor:[13,13],
             html: puntaSvg(layer._rotazione || 0)})
@@ -1580,13 +1586,13 @@ function mostraComandoAfferente(sigla, nome){
                   ? NS.SITAC_DIREZIONE[layer._tipo]({}).replace(/^<svg[^>]*>|<\/svg>$/g, '')
                   : '') + `</svg>`})
         : L.divIcon({className:'sitac-maniglia', iconSize:[18,18],
-            iconAnchor:[9,9], html:'<span></span>'})
+            iconAnchor:[9,9], html:'<span></span>'})}).addTo(decori);
     layer._maniglia.on('drag', () => {
       const m = layer._maniglia.getLatLng(), o = layer.getLatLng();
       layer._rotazione = Math.round(azimut(o, m));
       layer.setIcon(iconaSimbolo(layer._tipo, {stato:layer._stato,
         testo:layer._testo, rotazione:layer._rotazione}));
-            layer._asta.setLatLngs(tp
+      if (layer._asta) layer._asta.setLatLngs(tp
         ? [puntoDaAzimut(o, layer._rotazione + 180, distanzaManiglia() * 0.55), m]
         : [o, m]);
       /* L'HTML del divIcon è fissato alla creazione: si scrive direttamente
@@ -1603,7 +1609,7 @@ function mostraComandoAfferente(sigla, nome){
       const o = layer.getLatLng();
       const np = puntoDaAzimut(o, layer._rotazione || 0, distanzaManiglia());
       layer._maniglia.setLatLng(np);
-            layer._asta.setLatLngs(tp
+      if (layer._asta) layer._asta.setLatLngs(tp
         ? [puntoDaAzimut(o, (layer._rotazione || 0) + 180, distanzaManiglia() * 0.55), np]
         : [o, np]);
     });
