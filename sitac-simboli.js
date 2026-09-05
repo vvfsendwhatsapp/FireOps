@@ -1083,6 +1083,19 @@ NS.SITAC_GLIFI = {
   vento_forte:    glifoVento(3)
 };
 
+/* Il glifo di pendenza e vento serve a sitac.js per la MANIGLIA, non per il
+   punto: quei due simboli non si disegnano dove si cliccano — lì c'è solo
+   una coordinata — ma sulla punta che si trascina, che è dove la direzione
+   si legge e si corregge. */
+NS.SITAC_DIREZIONE = {
+  pend_lieve:    direzione('T', 1),
+  pend_moderata: direzione('T', 2),
+  pend_forte:    direzione('T', 3),
+  vento_debole:   direzione('45', 1),
+  vento_moderato: direzione('45', 2),
+  vento_forte:    direzione('45', 3)
+};
+
 /* Quante codine per intensità. La legge `codineVento` in sitac.js per la
    freccia del vento sul DOS: non può più ricavarlo da una riga di LIN,
    perché il vento è diventato un simbolo. */

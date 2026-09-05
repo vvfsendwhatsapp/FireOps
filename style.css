@@ -5861,6 +5861,23 @@ select:focus {
     white-space: nowrap;
 }
 
+/* Il punto di pendenza e vento non si disegna: resta un'area cliccabile,
+   per il tasto destro e per il trascinamento. */
+#sitac-app .sitac-invisibile { background: none; border: none; }
+
+/* La maniglia-simbolo: nera come la tavola, con l'ombra che la stacca
+   dall'ortofoto — il disco bianco degli altri simboli qui non c'è. */
+#sitac-app .sitac-mn-dir,
+.sf-mappa .sitac-mn-dir { background: none; border: 0; box-shadow: none; }
+
+#sitac-app .sitac-mn-dir svg,
+.sf-mappa .sitac-mn-dir svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+    filter: drop-shadow(0 0 2px #fff) drop-shadow(0 1px 3px rgba(0, 0, 0, .7));
+}
+
 /* ==========================================================
    ==========================================================
    RESPONSIVE

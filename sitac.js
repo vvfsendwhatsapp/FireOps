@@ -596,6 +596,14 @@ function avvia(app){
   function iconaSimbolo(k, opz){
     const o = opz || {};
     if (k === 'nota')
+          /* Pendenza e vento: il punto resta invisibile. Il simbolo lo porta la
+       maniglia, e disegnarlo anche qui vorrebbe dire vederlo due volte —
+       uno fermo sull'origine e uno in punta, che è quello che conta.
+       L'icona esiste lo stesso, vuota: serve a Leaflet per avere qualcosa
+       da spostare, e a chi disegna per poterci cliccare sopra col destro. */
+    if (SIM[k] && SIM[k].senzaDisco)
+      return L.divIcon({className:'sitac-sim sitac-invisibile',
+        html:'', iconSize:[22,22], iconAnchor:[11,11], popupAnchor:[0,-11]});
       return L.divIcon({className:'sitac-etichetta', html: esc(o.testo || ''),
         iconSize:null, iconAnchor:[0,10]});
     /* `rotazione` è un azimut vero; `r0` dice verso dove punta il disegno
@@ -1557,13 +1565,22 @@ function mostraComandoAfferente(sigla, nome){
     const puntaSvg = g => `<svg viewBox="0 0 26 26" style="transform:rotate(${g}deg)">`
       + `<path d="M13 2l9 22-9-6-9 6Z" fill="${COL.rosso}"/></svg>`;
     layer._maniglia = L.marker(p, {draggable:true, keyboard:false,
-      icon: tp
+            icon: tp
         ? L.divIcon({className:'sitac-maniglia sitac-mn-tp',
             iconSize:[26,26], iconAnchor:[13,13],
             html: puntaSvg(layer._rotazione || 0)})
+        : senzAsta
+        /* La maniglia È il simbolo: la freccia con le codine, ruotata
+           secondo l'azimut. L'ancoraggio sta al centro, così la trascina
+           chi la afferra ovunque e non solo sulla punta. */
+        ? L.divIcon({className:'sitac-maniglia sitac-mn-dir',
+            iconSize:[62,62], iconAnchor:[31,31],
+            html:`<svg viewBox="0 0 64 64" style="transform:rotate(${layer._rotazione || 0}deg)">`
+              + ((NS.SITAC_DIREZIONE || {})[layer._tipo]
+                  ? NS.SITAC_DIREZIONE[layer._tipo]({}).replace(/^<svg[^>]*>|<\/svg>$/g, '')
+                  : '') + `</svg>`})
         : L.divIcon({className:'sitac-maniglia', iconSize:[18,18],
-            iconAnchor:[9,9], html:'<span></span>'})}).addTo(decori);
-
+            iconAnchor:[9,9], html:'<span></span>'})
     layer._maniglia.on('drag', () => {
       const m = layer._maniglia.getLatLng(), o = layer.getLatLng();
       layer._rotazione = Math.round(azimut(o, m));
