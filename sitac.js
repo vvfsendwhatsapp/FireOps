@@ -2865,7 +2865,17 @@ function mostraComandoAfferente(sigla, nome){
     ventoAsta.setLatLngs([
       puntoDaAzimut(posDos, (ventoVerso + 180) % 360, semi),
       puntoDaAzimut(posDos, ventoVerso, semi)]);
-    if (ventoDeco && ventoDeco.setPaths) ventoDeco.setPaths(ventoAsta);
+    /* `setPaths` ricalcola le posizioni ma lascia in carta i marcatori già
+       posati: dopo qualche movimento restano punte e codine di tutte le
+       direzioni provate. Si riassegnano i motivi da capo, che è l'unico
+       modo di farglieli buttare. */
+    if (ventoDeco) ventoDeco.setPatterns([
+      motivo({color: COL_VENTO_DOS},
+        {tipo:'punta', dim:20, pieno:1, passo:0, offset:'100%'}, 'attivo', 1),
+      motivo({color: COL_VENTO_DOS},
+        {tipo:'codine', forma:'45', n: codineVento(), dim:20,
+         passo:0, offset:0}, 'attivo', 1)
+    ]);
   }
 
   async function ventoCambiaDirezione(){
