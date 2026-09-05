@@ -3638,8 +3638,16 @@ function mostraComandoAfferente(sigla, nome){
        I riferimenti vanno azzerati PRIMA: puntano a layer ormai staccati
        dalla mappa, e disegnaFrecciaVento proverebbe a rimuoverli da un
        gruppo che non li contiene più. */
+    /* `decori.clearLayers()` ha già portato via la freccia insieme a motivi
+       e maniglie, ma i riferimenti restano puntati a layer staccati dalla
+       mappa: senza azzerarli il vento risulta ancora impostato per la
+       legenda e per il passo 2, e disegnaFrecciaVento proverebbe a
+       rimuoverli da un gruppo che non li contiene più.
+       Cancella tutto vuol dire tutto: anche il vento se ne va, e con lui il
+       quadro in alto a sinistra. I km/h e la direzione restano nei campi
+       del passo 2, quindi ridisegnarlo è un clic, non una rilettura. */
     ventoAsta = null; ventoDeco = null;
-    if (posDos && ventoVelocita) disegnaFrecciaVento();
+    mostraVento(null);
     /* Il cerchio del GPS sparisce con gli altri decori: si azzera il
        riferimento, o il pulsante della posizione crede di averlo ancora. */
     cerchioPosizione = null;
