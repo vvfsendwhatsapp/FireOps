@@ -794,26 +794,37 @@ function decoGlifo(tipo, opz){
     }
 
     /* Funivie e seggiovie — un seggiolino appeso al cavo, di traverso.
-       L'attacco esce PERPENDICOLARE alla linea, cioè lungo l'asse x locale:
+       L'attacco esce dall'asse x locale, cioè perpendicolare alla linea:
        tracciato lungo y stava nel verso di percorrenza, quindi pendeva lungo
        il cavo invece che da esso, e su una campata verticale scendeva giù
        per la pagina come un piolo.
-       Il seggiolino tiene il lato lungo parallelo al cavo: è come lo si vede
-       dall'alto, appeso a una carrucola che corre sulla fune.
+       `incl` è l'angolo FRA il braccio e il cavo: 90 lo tiene perpendicolare,
+       meno lo inclina all'indietro — un seggiolino in movimento non sta a
+       squadra, e a 75° la fila si legge subito come qualcosa che scorre
+       invece che come una serie di trattini.
+       Ruota tutto il seggiolino attorno al punto d'attacco, seduta compresa:
+       inclinare il solo braccio lascerebbe la seduta a squadra col cavo, cioè
+       storta rispetto a ciò che la regge.
        `dim` è la misura complessiva. */
     case 'pilone': {
       const st = dim * 0.45;        // braccio d'attacco
       const sl = dim * 0.5;         // seggiolino: lunghezza lungo il cavo
       const sw = dim * 0.22;        //             spessore, di traverso
-      w = Math.ceil((st + sw) * 2) + 6;
-      h = Math.ceil(sl) + 6;
+      const incl = o.incl != null ? o.incl : 90;
+      const gr = 90 - incl;         // scarto dalla perpendicolare, in gradi
+      /* Il riquadro va misurato SULLA figura ruotata: con l'ingombro della
+         perpendicolare la seduta usciva tagliata dal bordo dell'icona. */
+      const a = gr * Math.PI / 180, rag = st + sw;
+      w = Math.ceil((rag * Math.cos(a) + sl / 2 * Math.sin(a)) * 2) + 6;
+      h = Math.ceil((rag * Math.sin(a) + sl / 2 * Math.cos(a)) * 2) + 6;
       const cx = w / 2, cy = h / 2;
       const x1 = cx + lato * st;
       const x0 = lato > 0 ? x1 : x1 - sw;
-      d = `<line x1="${f(cx)}" y1="${f(cy)}" x2="${f(x1)}" y2="${f(cy)}"`
+      d = `<g transform="rotate(${f(lato * gr)} ${f(cx)} ${f(cy)})">`
+        + `<line x1="${f(cx)}" y1="${f(cy)}" x2="${f(x1)}" y2="${f(cy)}"`
         + ` stroke="${col}" stroke-width="1.8"/>`
         + `<rect x="${f(x0)}" y="${f(cy - sl/2)}" width="${f(sw)}" height="${f(sl)}"`
-        + ` rx="1" fill="${col}"/>`;
+        + ` rx="1" fill="${col}"/></g>`;
       break;
     }
 
@@ -874,7 +885,7 @@ aggL('senso_unico','zona',null,'Senso di marcia obbligatorio','One way only',
 aggL('accesso_interrotto','zona',null,'Accesso interrotto','Road closed',
   {color:C.nero, weight:3.5}, {deco:{tipo:'croce', passo:34, dim:18}});
 aggL('fune_sbalzo','zona',null,'Funivie, fili a sbalzo, ecc.','Cableways and aerial wires',
-  {color:C.nero, weight:2.6}, {deco:{tipo:'pilone', passo:'10%', dim:22, verso:135}});
+  {color:C.nero, weight:2.6}, {deco:{tipo:'pilone', passo:'10%', dim:22, verso:135, incl:75}});
 aggL('elettrodotto','zona',null,'Linea elettrica attiva','Power line on',
   {color:C.nero, weight:2.4, dashArray:'14,5,3,5'}, {deco:{tipo:'fulmine', passo:70, dim:24, dritto:1}});
 aggL('elettrodotto_off','zona',null,'Linea elettrica disattivata','Power line off',

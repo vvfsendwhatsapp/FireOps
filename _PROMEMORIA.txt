@@ -24,3 +24,4 @@
 * sistemare frecce primario e secondario con chiusure giuste
 * mi spieghi importgeojson con campi diversi per campi coordinate?
 * Inoltre direzione sulla mappa non funziona
+* passaggio automatico a mappa dopo i popup confermati delle coordinate
