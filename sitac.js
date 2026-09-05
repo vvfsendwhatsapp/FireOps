@@ -243,6 +243,7 @@ function avvia(app){
   const L10N_EXTRA = {
     it:{ bCono:'Aggiungi cono',
       bPosizione:'Inserisci coordinate',
+      bPosizioneFatta:'Modifica posizione',
       conoModo:'Come si costruisce il cono?',
       conoSettore:'Dal punto d\u2019innesco', conoSettoreNota:'Settore a 30° dall\u2019origine; un secondo clic dice dove sta il fronte adesso (T0).',
       conoFronte:'Dalla linea del fronte', conoFronteNota:'Si disegna il fronte rilevato e lo si fa avanzare a 15, 30 e 60 minuti.',
@@ -854,7 +855,12 @@ function avvia(app){
     /* Un <select> non ha readOnly: si disabilita e basta. */
     inQualifica.disabled = datiBloccati;
     inQualifica.classList.toggle('campo-bloccato', datiBloccati);
-    q('#sitac-bPosizione').disabled = datiBloccati || !anagraficaOk();
+    const bPos = q('#sitac-bPosizione');
+    bPos.disabled = datiBloccati || !anagraficaOk();
+    /* L'etichetta segue il dato, non la funzione: a posizione acquisita quel
+       clic non inserisce più niente, corregge — ed è anche l'unico modo di
+       vedere a colpo d'occhio, dal solo pulsante, che il DOS è già a posto. */
+    bPos.textContent = t(posDos ? 'bPosizioneFatta' : 'bPosizione');
     bDati.textContent = t(datiBloccati ? 'bModificaDati' : 'bConvalida');
     bDati.classList.toggle('attivo', datiBloccati);
     bDati.disabled = !datiBloccati && !datiCompleti();
