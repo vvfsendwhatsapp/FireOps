@@ -3726,6 +3726,13 @@ function mostraComandoAfferente(sigla, nome){
   };
   function etichettaSfondo(){
     $('bSfondo').innerHTML = `<span>${esc(t('bSfondo', {n: t(sfondi[iSfondo].k)}))}</span>`;
+    /* Il disco chiaro dietro i simboli serve dove il fondo è scuro e pieno
+       di dettaglio — ortofoto, bosco fitto — e non sullo stradale, che è
+       già chiaro e uniforme: lì diventa un bollo bianco che nasconde la
+       carta senza aggiungere leggibilità.
+       La classe la legge il CSS: quale sfondo abbia bisogno del disco è una
+       questione di resa, non di logica. */
+    app.classList.toggle('sitac-sfondo-scuro', sfondi[iSfondo].k === 'sfSat');
   }
   $('bSfondo').onclick = () => {
     map.removeLayer(sfondi[iSfondo].l);

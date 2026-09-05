@@ -5885,6 +5885,21 @@ select:focus {
     cursor: grab;
 }
 
+/* Il disco compare solo sul satellite. Sullo stradale e sul topografico il
+   fondo è già chiaro: i colori normati della tavola — rosso, nero, verde,
+   azzurro — si leggono da sé, e il bollo bianco copriva strade e curve di
+   livello proprio dove serve guardarle.
+   Sul satellite invece resta: nero su bosco non si vede. */
+#sitac-app .sitac-disco { display: none; }
+#sitac-app.sitac-sfondo-scuro .sitac-disco { display: block; }
+
+/* Senza disco il simbolo ha bisogno di staccarsi lo stesso: un alone
+   bianco stretto attorno al tratto costa molto meno di un cerchio pieno e
+   non nasconde niente della carta sotto. */
+#sitac-app:not(.sitac-sfondo-scuro) .sitac-glifo svg {
+    filter: drop-shadow(0 0 1.5px #fff) drop-shadow(0 0 1.5px #fff);
+}
+
 /* ==========================================================
    ==========================================================
    RESPONSIVE
