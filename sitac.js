@@ -974,7 +974,7 @@ async function scriviPosizione(latlng, acc, opz){
 
   /* Dal clic sulla carta il simbolo si posa e basta: il clic ERA la
      posizione del DOS, chiederlo di nuovo è una domanda senza contenuto. */
-  if (o.posa){ posaDos(posDos); return; }
+  if (o.posa){ posaDos(posDos); vaiAllaCarta(); return; }
 
   const gia = dosSullaCarta();
   const scelta = await scegli({testo: t('dosDove'), voci: [
@@ -985,6 +985,17 @@ async function scriviPosizione(latlng, acc, opz){
     posaDos(posDos);
     stato(t('dosPosato'));
   }
+  vaiAllaCarta();
+}
+
+/* La posizione è l'ultimo dato del passo 1: appena entra, l'anagrafica era
+   già piena (è la condizione che sblocca quel pulsante) e autoConvalida ha
+   già chiuso la scheda. Restarci davanti a guardare campi in sola lettura
+   non serve a niente — quello che si vuole fare adesso è disegnare.
+   Il ramo del clic sulla carta esce prima e non passa di qui: lì si è già
+   sulla mappa, e convalida() ci pensa da sé. */
+function vaiAllaCarta(){
+  if (datiConvalidati) vaiAScheda('carta');
 }
 
 const dosSullaCarta = () => {
