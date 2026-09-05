@@ -2861,21 +2861,11 @@ function mostraComandoAfferente(sigla, nome){
   function anteprimaVento(e){
     if (!posDos || !ventoAsta) return;
     ventoVerso = Math.round(azimut(posDos, e.latlng));
-    const semi = distanzaManiglia() * 1.15;
-    ventoAsta.setLatLngs([
-      puntoDaAzimut(posDos, (ventoVerso + 180) % 360, semi),
-      puntoDaAzimut(posDos, ventoVerso, semi)]);
-    /* `setPaths` ricalcola le posizioni ma lascia in carta i marcatori già
-       posati: dopo qualche movimento restano punte e codine di tutte le
-       direzioni provate. Si riassegnano i motivi da capo, che è l'unico
-       modo di farglieli buttare. */
-    if (ventoDeco) ventoDeco.setPatterns([
-      motivo({color: COL_VENTO_DOS},
-        {tipo:'punta', dim:20, pieno:1, passo:0, offset:'100%'}, 'attivo', 1),
-      motivo({color: COL_VENTO_DOS},
-        {tipo:'codine', forma:'45', n: codineVento(), dim:20,
-         passo:0, offset:0}, 'attivo', 1)
-    ]);
+    /* Asta e decoratore si rifanno da zero a ogni movimento. Costa più
+       lavoro per fotogramma, ma è l'unico modo sicuro di non lasciare in
+       carta le punte delle direzioni già provate: PolylineDecorator
+       riposiziona i marcatori senza sempre buttare i vecchi. */
+    disegnaFrecciaVento();
   }
 
   async function ventoCambiaDirezione(){
