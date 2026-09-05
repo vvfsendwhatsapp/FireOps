@@ -5919,6 +5919,35 @@ select:focus {
     color: #ff5a5a;
 }
 
+/* ---------- linguette Dati / Mappa ancorate ----------
+   Vivono dentro .pannello-corpo, che scorre: senza ancoraggio uscivano di
+   vista insieme al resto, e in un contenitore flex si lasciavano anche
+   schiacciare in altezza. Sono il comando con cui si passa da una scheda
+   all'altra — se non si vedono, per tornare ai dati bisogna prima risalire.
+   Stesso criterio delle testate dei passi, che sono già sticky. */
+#sitac-aib .sitac-schede {
+    position: sticky;
+    top: 0;
+    z-index: 6;
+    /* Fondo pieno: sotto ci passano le swatch chiare dei simboli, e con una
+       trasparenza qualsiasi si intravedono dietro le linguette. */
+    background: var(--surface-color);
+    padding-top: 6px;
+    /* `flex: 0 0 auto` vale quando la sezione finisce dentro un contenitore
+       flex in colonna: lì il valore predefinito le lascerebbe cedere
+       l'altezza per far posto alla mappa. */
+    flex: 0 0 auto;
+    flex-shrink: 0;
+}
+
+#sitac-aib .sitac-scheda-btn {
+    min-height: 38px;
+    white-space: nowrap;
+}
+
+/* La riga sopra — nota, bandiere, Espandi — scorre invece via: è roba che
+   si legge una volta, non un comando che serve mentre si lavora. */
+
 /* ==========================================================
    ==========================================================
    RESPONSIVE
