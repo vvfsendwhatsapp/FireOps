@@ -3630,7 +3630,18 @@ function mostraComandoAfferente(sigla, nome){
     if (!await chiedi({testo: t('confPulisci')})) return;
     disegni.clearLayers(); decori.clearLayers();
     coni.length = 0;
-    mostraVento(null);
+    /* `decori.clearLayers()` porta via anche la freccia del vento, che vive
+       lì insieme a motivi e maniglie. Ma il vento NON è un disegno: è un
+       dato dello scenario, come l'intervento e il DOS, e chi svuota la carta
+       per ridisegnarla non sta dicendo che il vento è cambiato. Si ridisegna
+       da capo con i valori che ci sono già.
+       I riferimenti vanno azzerati PRIMA: puntano a layer ormai staccati
+       dalla mappa, e disegnaFrecciaVento proverebbe a rimuoverli da un
+       gruppo che non li contiene più. */
+    ventoAsta = null; ventoDeco = null;
+    if (posDos && ventoVelocita) disegnaFrecciaVento();
+    /* Il cerchio del GPS sparisce con gli altri decori: si azzera il
+       riferimento, o il pulsante della posizione crede di averlo ancora. */
     cerchioPosizione = null;
     posizioneOttenuta = false;
     aggiornaStato();
