@@ -17,3 +17,4 @@
 * sistemare frecce primario e secondario con chiusure giuste
 * mi spieghi importgeojson con campi diversi per campi coordinate?
 * Inoltre direzione sulla mappa non funziona
+* cancella tutto cancella solo il disegno a parte il dos e non reindirizza su dati intervento
