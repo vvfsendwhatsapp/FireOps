@@ -625,14 +625,17 @@ function avvia(app){
   function stileLinea(d, stato){
     const {n, deco, badge, badgeQuadro, stati, lato, punti2, guaina, bordo,
       vuota, g, sg, r0, ...resto} = d;
-    /* `vuota`: lo stato cambia il riempimento, non il tratto. Il tracciato
-       diventa bianco quando è previsto e resta la guaina a fare da bordo. */
+    /* `dashArray` va dichiarato SEMPRE, anche a null. Leaflet fonde le
+       opzioni invece di sostituirle: omettendo la chiave, una linea che
+       passa da prevista a effettuata si tiene il tratteggio di prima e
+       continua a dirsi prevista quando non lo è più. */
+    const base = Object.assign({}, resto, {dashArray: resto.dashArray || null});
     if (stati && vuota)
-      return Object.assign({}, resto,
+      return Object.assign(base,
         {color: stato === 'previsto' ? '#ffffff' : (bordo || resto.color)});
     if (stati && stato === 'previsto')
-      return Object.assign({}, resto, {dashArray: resto.dashArray || '9,7'});
-    return resto;
+      return Object.assign(base, {dashArray: resto.dashArray || '9,7'});
+    return base;
   }
   const stileArea = d => { const {n, ...resto} = d; return resto; };
 
@@ -1282,7 +1285,7 @@ function mostraComandoAfferente(sigla, nome){
      il verso di percorrenza è in alto, il centro dell'icona sta sul tracciato
      ed è il centro di rotazione), e lì si aggiungono i motivi nuovi senza
      toccare questo file. Qui resta solo la scelta di DOVE posarli. */
-  function motivo(def, dc, stato, lato){
+  function motivo(def, dc, stato, lato, giro){
     if (!dc) return null;
     /* `sempre` sono i motivi che NON cambiano faccia con lo stato: la punta
        di un asse di sviluppo è piena sempre — lo stato dell'asse non
@@ -1298,7 +1301,7 @@ function mostraComandoAfferente(sigla, nome){
        e il vertice finale resta coperto dalla figura. */
     const g = NS.SITAC_DECO(dc.tipo,
       {col, pieno, n: dc.n, forma: dc.forma, dim: dc.dim, testo: dc.testo,
-       aperta: dc.aperta, lato});
+       aperta: dc.aperta, lato, giro});
 
     /* `passo:'auto'` sono i motivi che si toccano fra loro — i triangoli
        della difesa in linea, la greca della ricognizione, i denti del fronte:
@@ -1378,6 +1381,22 @@ function mostraComandoAfferente(sigla, nome){
     stato(t('latoScelto'));
   }
 
+    /* Il quadro della bonifica va tenuto sempre dalla stessa parte, e la parte
+     è il quadrante di nordovest: su una carta orientata a nord è quello che
+     resta più libero — le etichette di OSM corrono da ovest a est sotto i
+     tracciati — e bolli tutti allineati si leggono come una fila, sparsi sui
+     due lati come rumore.
+     Si sceglie fra le due perpendicolari quella che punta più verso NO. */
+  const NORDOVEST = 315;
+  const distAng = (a, b) => { const d = Math.abs((a - b) % 360); return d > 180 ? 360 - d : d; };
+  function bearingLinea(l){
+    const v = l.getLatLngs && l.getLatLngs();
+    if (!v || v.length < 2) return 0;
+    return azimut(v[0], v[v.length - 1]);
+  }
+  const latoNord = b =>
+    distAng(b + 90, NORDOVEST) <= distAng(b - 90, NORDOVEST) ? 1 : -1;
+
   function decora(layer){
     if (layer._deco){ decori.removeLayer(layer._deco); layer._deco = null; }
     if (layer._guaina){ decori.removeLayer(layer._guaina); layer._guaina = null; }
@@ -1404,7 +1423,18 @@ function mostraComandoAfferente(sigla, nome){
        un motivo solo le codine finivano appiccicate alla freccia e il
        simbolo diventava un grumo. */
     [].concat(def.deco || []).forEach(dc => {
-      const m = motivo(def, dc, layer._stato, layer._lato);
+      let lt = layer._lato, gi = 0;
+      /* `nord` decide il lato da sé invece di chiederlo: non è una scelta
+         operativa come il fianco d'attacco, è solo dove sta più comodo il
+         bollo. L'azimut è quello fra primo e ultimo vertice — su un
+         tracciato molto curvo la controrotazione della lettera è esatta
+         solo in media, ma una bonifica si traccia quasi sempre dritta. */
+      if (dc.nord){
+        const b = bearingLinea(layer);
+        lt = latoNord(b);
+        gi = -b;
+      }
+      const m = motivo(def, dc, layer._stato, lt, gi);
       if (m) patterns.push(m);
     });
     /* Il badge sta ai DUE capi. In una sola posizione lo si trovava solo

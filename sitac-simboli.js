@@ -678,19 +678,28 @@ function decoGlifo(tipo, opz){
       break;
     }
 
-    /* Bonifica — il quadro con la B, posato a metà del tracciato. Non ruota
-       con la linea: una lettera capovolta non si legge. Campito di bianco
-       perché il tratto non gli passi dentro sopra la B; tratteggiato quando
-       l'azione è prevista, continuo quando è fatta, esattamente come la
-       linea che lo porta. `dim` è il lato. */
+    /* Bonifica — il quadro con la B. Appoggia UN LATO sulla linea invece di
+       esserne attraversato: il tratto resta continuo e leggibile, e la
+       lettera non ci finisce sopra.
+       Il glifo ruota col tracciato, così il lato resta a filo anche sulle
+       diagonali — ma la B no: `giro` la controruota dell'esatto azimut
+       della linea, e resta dritta sulla pagina. Una B coricata non si legge,
+       e a testa in giù si legge peggio.
+       Tratteggiato quando l'azione è prevista, continuo quando è fatta,
+       come la linea che lo porta. `dim` è il lato. */
     case 'quadro': {
       const s = dim;
-      w = h = Math.ceil(s) + 8;
+      w = Math.ceil(s * 2) + 6;
+      h = Math.ceil(s) + 6;
       const cx = w / 2, cy = h / 2;
+      const x0 = lato > 0 ? cx : cx - s;   // il lato che tocca il tracciato
+      const bx = cx + lato * s / 2;        // centro del quadro, dove sta la B
       const tr = pieno ? '' : ' stroke-dasharray="3.5,3"';
-      d = `<rect x="${f(cx - s/2)}" y="${f(cy - s/2)}" width="${f(s)}" height="${f(s)}"`
+      const giro = o.giro || 0;
+      d = `<rect x="${f(x0)}" y="${f(cy - s/2)}" width="${f(s)}" height="${f(s)}"`
         + ` fill="#fff" stroke="${col}" stroke-width="2.4"${tr}/>`
-        + txt(cx, cy + s * 0.28, o.testo || '', col, s * 0.72);
+        + txt(bx, cy + s * 0.28, o.testo || '', col, s * 0.72, 'middle',
+            giro ? `rotate(${f(giro)} ${f(bx)} ${f(cy)})` : '');
       break;
     }
 
@@ -914,7 +923,7 @@ aggL('bonifica','azioni','sgTerra','Bonifica','Mop up',
   {color:C.rosso, weight:2.8},
   {stati:1, deco:[{tipo:'punta', passo:0, offset:'100%', dim:20, pieno:1},
                   {tipo:'quadro', testo:'B', dim:18, passo:'25%', offset:'12%',
-                   pieno:1}]});
+                   pieno:1, nord:1}]});
 aggL('linea_sicurezza','azioni','sgControfuoco','Creazione linea di sicurezza','Creation of a safety line',
   {color:C.rosso, weight:3}, {stati:1, deco:{tipo:'bifronte', passo:'auto', dim:12, pieno:1}});
 /* La linea è la linea di appoggio, spessa; il fuoco si manda di lato, e il
