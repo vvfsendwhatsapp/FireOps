@@ -612,12 +612,16 @@ function decoGlifo(tipo, opz){
     case 'omega': {
       h = dim * 2; w = dim * 2 + 6;
       const cx = w / 2, s = dim * 0.62;
-      /* Il tracciato sotto va coperto: la greca lo sostituisce, e lasciarlo
-         in vista raddoppierebbe le linee dentro la sporgenza. */
+      /* Il tracciato sotto è spento (weight:0 sulla riga della ricognizione):
+         la greca È la linea, quindi il tratteggio del "prevista" lo porta
+         lei. `pieno` qui non riempie niente — non c'è area da campire — ma
+         resta il flag che distingue i due stati, come sull'accensione per
+         linee. */
+      const tr = pieno ? '' : ' stroke-dasharray="5,4"';
       d = `<path d="M${f(cx)} ${f(h)}V${f(h/2 + s/2)}H${f(cx - s)}`
         + `V${f(h/2 - s/2)}H${f(cx)}V0"`
         + ` fill="none" stroke="${col}" stroke-width="2.4"`
-        + ` stroke-linejoin="miter" stroke-linecap="butt"/>`;
+        + ` stroke-linejoin="miter" stroke-linecap="butt"${tr}/>`;
       break;
     }
 
@@ -943,7 +947,7 @@ aggL('fronte','evoluzione',null,'Fronte dell\u2019incendio','Fire front',
 /* ---- TAVOLA 4: azioni su linea ---- */
 aggL('ricognizione','azioni','sgTerra','Ricognizione','Patrol',
   {color:C.rosso, weight:0, opacity:0},
-  {stati:1, deco:{tipo:'omega', passo:'auto', dim:14}});
+  {stati:1, deco:{tipo:'omega', passo:'auto', dim:14, pieno:1}});
 aggL('difesa_linea','azioni','sgTerra','Difesa in linea','Defence on a line',
   {color:C.rosso, weight:3}, {stati:1, deco:{tipo:'triangoloBase', passo:'auto', dim:13, pieno:1}});
 /* Tre frecce a 45° verso il fianco scelto: `lato` dice quale, e lo chiede
