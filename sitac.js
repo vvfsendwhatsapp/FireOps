@@ -861,7 +861,13 @@ function avvia(app){
     /* L'etichetta segue il dato, non la funzione: a posizione acquisita quel
        clic non inserisce più niente, corregge — ed è anche l'unico modo di
        vedere a colpo d'occhio, dal solo pulsante, che il DOS è già a posto. */
-    bPos.textContent = t(posDos ? 'bPosizioneFatta' : 'bPosizione');
+    /* Tre stati, non due. Quando il GPS ha già risposto la posizione esiste
+       ma non è ancora quella del DOS — in sala operativa non lo è quasi mai,
+       il computer non sta sull'incendio — e il pulsante lo dice invece di
+       chiedere di inserire qualcosa che è lì da acquisire con un clic. */
+    bPos.textContent = t(posDos ? 'bPosizioneFatta'
+      : (posizioneOttenuta && cerchioPosizione) ? 'bPosizionePronta'
+      : 'bPosizione');
     bDati.textContent = t(datiBloccati ? 'bModificaDati' : 'bConvalida');
     bDati.classList.toggle('attivo', datiBloccati);
     bDati.disabled = !datiBloccati && !datiCompleti();
@@ -1022,7 +1028,12 @@ q('#sitac-bPosizione').onclick = async () => {
         {k:'no', et: t('posRilevataNo'), nota: t('posRilevataNoNota')}
       ]});
     if (!usa) return;                       // Annulla: si esce del tutto
-    if (usa === 'si') return scriviPosizione(p);
+    /* `posa` salta la seconda domanda: chi ha appena risposto "sì, è la
+       posizione del DOS" ha già detto tutto quello che serve, e chiedergli
+       subito dopo se posare il simbolo è la stessa domanda in altre parole.
+       È lo stesso motivo per cui il clic sulla carta non la fa: lì il clic
+       ERA la posizione, qui lo è la conferma. */
+    if (usa === 'si') return scriviPosizione(p, null, {posa:1});
     /* 'no' cade nel percorso qui sotto */
   }
 
@@ -1263,6 +1274,10 @@ function mostraComandoAfferente(sigla, nome){
        rispondere con dieci secondi di ritardo, e strappare la carta sotto
        le mani è peggio di una vista imprecisa. */
     if (!disegni.getLayers().length) map.setView(e.latlng, 15);
+      /* Il GPS risponde con secondi di ritardo, a interfaccia già disegnata:
+       senza questo il pulsante resta sull'etichetta di quando la posizione
+       non c'era, e la scorciatoia da un clic non la vede nessuno. */
+    mostraBlocco();
   });
 
   map.on('locationerror', () => {
