@@ -2879,9 +2879,6 @@ function mostraComandoAfferente(sigla, nome){
      dire rifarli sessanta volte al secondo per un dato che cambia una
      volta sola. Il residuo delle punte non veniva da qui — era la
      maniglia di pendenza e vento, e si risolve in creaManiglia. */
-     simbolo orientabile. Si muove la sola geometria e si riaggancia il
-     decoratore: ricostruire asta e motivi da zero a ogni mousemove vuol dire
-     rifarli sessanta volte al secondo per un dato che cambia una volta. */
   function anteprimaVento(e){
     if (!posDos || !ventoAsta) return;
     ventoVerso = Math.round(azimut(posDos, e.latlng));
