@@ -243,6 +243,7 @@ function avvia(app){
   const L10N_EXTRA = {
     it:{ bCono:'Aggiungi cono',
       bPosizione:'Inserisci coordinate',
+      bPosizionePronta:'Posizione disponibile',
       bPosizioneFatta:'Coordinate rilevate',
       conoModo:'Come si costruisce il cono?',
       conoSettore:'Dal punto d\u2019innesco', conoSettoreNota:'Settore a 30° dall\u2019origine; un secondo clic dice dove sta il fronte adesso (T0).',
