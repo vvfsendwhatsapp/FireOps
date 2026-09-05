@@ -1526,6 +1526,7 @@ function mostraComandoAfferente(sigla, nome){
     if (layer._maniglia){ decori.removeLayer(layer._maniglia); layer._maniglia = null; }
     if (layer._asta){ decori.removeLayer(layer._asta); layer._asta = null; }
     if (layer._astaDeco){ decori.removeLayer(layer._astaDeco); layer._astaDeco = null; }
+    if (layer._gruppo){ decori.removeLayer(layer._gruppo); layer._gruppo = null; }
     scollegaLancio(layer);
   }
   map.on('pm:remove', e => { scollega(e.layer); aggiornaStato(); });
@@ -1565,6 +1566,15 @@ function mostraComandoAfferente(sigla, nome){
   function creaManiglia(layer){
     if (layer._maniglia){ decori.removeLayer(layer._maniglia); }
     if (layer._asta){ decori.removeLayer(layer._asta); }
+    /* Asta e decorazioni in un gruppo proprio, come la freccia del DOS:
+       `creaManiglia` viene richiamata più volte sullo stesso layer — alla
+       posa, al clic che ferma la direzione, dal menu — e ogni volta
+       sovrascriveva `_astaDeco` senza buttare il precedente, lasciando in
+       carta due marcatori per chiamata. Un gruppo si svuota tutto insieme
+       e non lascia orfani per definizione. */
+    if (!layer._gruppo) layer._gruppo = L.layerGroup().addTo(decori);
+    layer._gruppo.clearLayers();
+    layer._astaDeco = null;
     const c = layer.getLatLng();
     const tp = layer._tipo === 'tp';
     /* Pendenza e vento non hanno un'asta di servizio: il tracciato fra
@@ -1585,13 +1595,13 @@ function mostraComandoAfferente(sigla, nome){
       const rc = (NS.SITAC_CODINE || {})[layer._tipo] || {forma:'T', n:1};
       layer._asta = L.polyline([c, p],
         {color: COL.nero, weight: 2.8, interactive: false, pmIgnore: true})
-        .addTo(decori);
+        .addTo(layer._gruppo);
       const finto = {color: COL.nero};
       layer._astaDeco = L.polylineDecorator(layer._asta, {patterns: [
         motivo(finto, {tipo:'punta', dim:20, pieno:1, passo:0, offset:'100%'}, 'attivo', 1),
         motivo(finto, {tipo:'codine', forma:rc.forma, n:rc.n, dim:20,
                        passo:0, offset:0}, 'attivo', 1)
-      ]}).addTo(decori);
+      ]}).addTo(layer._gruppo);
     } else {
       /* Il TP sta SU una linea di transito: la strada attraversa il simbolo
          ed esce da entrambi i lati. */
@@ -1599,7 +1609,7 @@ function mostraComandoAfferente(sigla, nome){
         distanzaManiglia() * 0.55) : c;
       layer._asta = L.polyline([coda, p], tp
         ? {color:COL.rosso, weight:3.4, interactive:false}
-        : {color:'#0070c0', weight:2.5, dashArray:'6,5', interactive:false}).addTo(decori);
+        : {color:'#0070c0', weight:2.5, dashArray:'6,5', interactive:false}).addTo(layer._gruppo);
       if (tp) layer._asta.bringToBack();
     }
     /* PolylineDecorator riposiziona i marcatori ma non sempre butta quelli
@@ -1608,14 +1618,14 @@ function mostraComandoAfferente(sigla, nome){
        l'unico modo sicuro — invece di chiamare setPaths. */
     const rifaiDeco = () => {
       if (!senzAsta) return;
-      if (layer._astaDeco) decori.removeLayer(layer._astaDeco);
+      if (layer._astaDeco) layer._gruppo.removeLayer(layer._astaDeco);
       const rc = (NS.SITAC_CODINE || {})[layer._tipo] || {forma:'T', n:1};
       const finto = {color: COL.nero};
       layer._astaDeco = L.polylineDecorator(layer._asta, {patterns: [
         motivo(finto, {tipo:'punta', dim:20, pieno:1, passo:0, offset:'100%'}, 'attivo', 1),
         motivo(finto, {tipo:'codine', forma:rc.forma, n:rc.n, dim:20,
                        passo:0, offset:0}, 'attivo', 1)
-      ]}).addTo(decori);
+      ]}).addTo(layer._gruppo);
     };
     layer._rifaiDeco = rifaiDeco;
 
@@ -1632,7 +1642,7 @@ function mostraComandoAfferente(sigla, nome){
         ? L.divIcon({className:'sitac-maniglia sitac-mn-dir',
             iconSize:[24,24], iconAnchor:[12,12], html:''})
         : L.divIcon({className:'sitac-maniglia', iconSize:[18,18],
-            iconAnchor:[9,9], html:'<span></span>'})}).addTo(decori);
+            iconAnchor:[9,9], html:'<span></span>'})}).addTo(layer._gruppo);
         layer._maniglia.on('drag', () => {
       const m = layer._maniglia.getLatLng(), o = layer.getLatLng();
       layer._rotazione = Math.round(azimut(o, m));
