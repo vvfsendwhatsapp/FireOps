@@ -793,21 +793,27 @@ function decoGlifo(tipo, opz){
       break;
     }
 
-    /* Funivie e seggiovie — un seggiolino appeso al cavo. Ruota CON la
-       linea: un seggiolino sempre verticale su un cavo che sale o scende
-       sembra sospeso nel vuoto invece che appeso al cavo. L'aggancio è
-       inclinato di qualche grado rispetto al cavo, come un seggiolino che
-       oscilla — dritto lungo il cavo si confondeva con un piolo.
-       `dim` è l'altezza del motivo. */
+    /* Funivie e seggiovie — un seggiolino appeso al cavo, di traverso.
+       L'attacco esce PERPENDICOLARE alla linea, cioè lungo l'asse x locale:
+       tracciato lungo y stava nel verso di percorrenza, quindi pendeva lungo
+       il cavo invece che da esso, e su una campata verticale scendeva giù
+       per la pagina come un piolo.
+       Il seggiolino tiene il lato lungo parallelo al cavo: è come lo si vede
+       dall'alto, appeso a una carrucola che corre sulla fune.
+       `dim` è la misura complessiva. */
     case 'pilone': {
-      w = Math.ceil(dim * 0.9); h = Math.ceil(dim);
-      const cx = w / 2, cy = 3;
-      const ex = cx + dim * 0.16, ey = dim * 0.6;
-      const bw = dim * 0.34, bh = dim * 0.24;
-      d = `<line x1="${f(cx)}" y1="${f(cy)}" x2="${f(ex)}" y2="${f(ey)}"`
+      const st = dim * 0.45;        // braccio d'attacco
+      const sl = dim * 0.5;         // seggiolino: lunghezza lungo il cavo
+      const sw = dim * 0.22;        //             spessore, di traverso
+      w = Math.ceil((st + sw) * 2) + 6;
+      h = Math.ceil(sl) + 6;
+      const cx = w / 2, cy = h / 2;
+      const x1 = cx + lato * st;
+      const x0 = lato > 0 ? x1 : x1 - sw;
+      d = `<line x1="${f(cx)}" y1="${f(cy)}" x2="${f(x1)}" y2="${f(cy)}"`
         + ` stroke="${col}" stroke-width="1.8"/>`
-        + `<rect x="${f(ex - bw/2)}" y="${f(ey)}" width="${f(bw)}" height="${f(bh)}"`
-        + ` rx="1.4" fill="${col}"/>`;
+        + `<rect x="${f(x0)}" y="${f(cy - sl/2)}" width="${f(sw)}" height="${f(sl)}"`
+        + ` rx="1" fill="${col}"/>`;
       break;
     }
 

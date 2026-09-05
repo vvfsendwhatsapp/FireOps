@@ -23,5 +23,4 @@
 * sistemare icone asse primario e secondario.
 * sistemare frecce primario e secondario con chiusure giuste
 * mi spieghi importgeojson con campi diversi per campi coordinate?
-* anche su direzione vento dos non mi sposta la freccia in base al puntatore.
 * Inoltre direzione sulla mappa non funziona
