@@ -2782,6 +2782,11 @@ function mostraComandoAfferente(sigla, nome){
      =================================================================== */
   let ventoAsta = null, ventoDeco = null;
   let ventoVelocita = 0, ventoVerso = 0;
+  /* Asta e decorazioni vivono in un gruppo proprio dentro i decori. Serve a
+     poterle buttare TUTTE con una chiamata sola: rimuovere i due riferimenti
+     uno per uno lasciava in carta le punte delle direzioni già provate, e
+     quali marcatori PolylineDecorator tenga vivi non è visibile da qui. */
+  const ventoGruppo = L.layerGroup().addTo(decori);
 
   /* Il rosso sulla carta è il fuoco e il dispositivo VVF, il nero il terreno,
      l'azzurro l'acqua: una freccia che non è nessuna di quelle cose non può
@@ -2818,8 +2823,8 @@ function mostraComandoAfferente(sigla, nome){
   }
 
   function disegnaFrecciaVento(){
-    if (ventoDeco){ decori.removeLayer(ventoDeco); ventoDeco = null; }
-    if (ventoAsta){ decori.removeLayer(ventoAsta); ventoAsta = null; }
+    ventoGruppo.clearLayers();
+    ventoAsta = null; ventoDeco = null;
     if (!posDos) return;
     /* Il DOS sta a METÀ dell'asta: mezza da dove il vento viene, mezza verso
        dove va. Con la coda ancorata al simbolo le codine dell'intensità ci
@@ -2829,14 +2834,14 @@ function mostraComandoAfferente(sigla, nome){
     const p = puntoDaAzimut(posDos, ventoVerso, semi);
     ventoAsta = L.polyline([coda, p],
       {color: COL_VENTO_DOS, weight: 3, pmIgnore: true,
-       bubblingMouseEvents: false}).addTo(decori);
+       bubblingMouseEvents: false}).addTo(ventoGruppo);
 
     const finto = {color: COL_VENTO_DOS};
     ventoDeco = L.polylineDecorator(ventoAsta, {patterns: [
       motivo(finto, {tipo:'punta', dim:20, pieno:1, passo:0, offset:'100%'}, 'attivo', 1),
       motivo(finto, {tipo:'codine', forma:'45', n: codineVento(), dim:20,
                      passo:0, offset:0}, 'attivo', 1)
-    ]}).addTo(decori);
+    ]}).addTo(ventoGruppo);
 
     ventoAsta.on('contextmenu', ev => {
       if (ev.originalEvent){
@@ -3720,6 +3725,8 @@ function mostraComandoAfferente(sigla, nome){
        quadro in alto a sinistra. I km/h e la direzione restano nei campi
        del passo 2, quindi ridisegnarlo è un clic, non una rilettura. */
     ventoAsta = null; ventoDeco = null;
+    ventoGruppo.clearLayers();
+    decori.addLayer(ventoGruppo);
     mostraVento(null);
     /* Il cerchio del GPS sparisce con gli altri decori: si azzera il
        riferimento, o il pulsante della posizione crede di averlo ancora. */
