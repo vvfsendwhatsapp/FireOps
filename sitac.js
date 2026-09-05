@@ -1507,6 +1507,7 @@ function mostraComandoAfferente(sigla, nome){
     if (layer._guaina){ decori.removeLayer(layer._guaina); layer._guaina = null; }
     if (layer._maniglia){ decori.removeLayer(layer._maniglia); layer._maniglia = null; }
     if (layer._asta){ decori.removeLayer(layer._asta); layer._asta = null; }
+    if (layer._astaDeco){ decori.removeLayer(layer._astaDeco); layer._astaDeco = null; }
     scollegaLancio(layer);
   }
   map.on('pm:remove', e => { scollega(e.layer); aggiornaStato(); });
@@ -1547,59 +1548,73 @@ function mostraComandoAfferente(sigla, nome){
     if (layer._maniglia){ decori.removeLayer(layer._maniglia); }
     if (layer._asta){ decori.removeLayer(layer._asta); }
     const c = layer.getLatLng();
-    const p = puntoDaAzimut(c, layer._rotazione || 0, distanzaManiglia());
+    /* `_lung` è la lunghezza in METRI, non in pixel: è un dato del terreno
+       come la direzione, e a zoom diverso deve restare la stessa. */
+    const p = puntoDaAzimut(c, layer._rotazione || 0,
+      layer._lung || distanzaManiglia());
     const tp = layer._tipo === 'tp';
     /* Il TP sta SU una linea di transito: la strada attraversa il simbolo ed
        esce da entrambi i lati. Una linea che parte dal bordo sembra un
        puntatore, non una via. */
-    const coda = tp ? puntoDaAzimut(c, (layer._rotazione || 0) + 180,
-      distanzaManiglia() * 0.55) : c;
-    layer._asta = L.polyline([coda, p], tp
-      ? {color:COL.rosso, weight:3.4, interactive:false}
-      : {color:'#0070c0', weight:2.5, dashArray:'6,5', interactive:false}).addTo(decori);
-    if (!/^(pend_|vento_)/.test(layer._tipo || ''))
+    /* Pendenza e vento non hanno un'asta di servizio: il tracciato fra
+       origine e maniglia È il simbolo. Disegnarlo come polilinea invece che
+       come icona è quello che gli permette di allungarsi fino a dove si
+       clicca — un divIcon ha una misura fissa e non si stira. */
+    const senzAsta = /^(pend_|vento_)/.test(layer._tipo || '');
+    if (senzAsta){
+      const rc = (NS.SITAC_CODINE || {})[layer._tipo] || {forma:'T', n:1};
+      layer._asta = L.polyline([c, p],
+        {color: COL.nero, weight: 2.8, interactive: false, pmIgnore: true})
+        .addTo(decori);
+      const finto = {color: COL.nero};
+      layer._astaDeco = L.polylineDecorator(layer._asta, {patterns: [
+        motivo(finto, {tipo:'punta', dim:20, pieno:1, passo:0, offset:'100%'}, 'attivo', 1),
+        motivo(finto, {tipo:'codine', forma:rc.forma, n:rc.n, dim:20,
+                       passo:0, offset:0}, 'attivo', 1)
+      ]}).addTo(decori);
+    } else {
+      /* Il TP sta SU una linea di transito: la strada attraversa il simbolo
+         ed esce da entrambi i lati. */
+      const coda = tp ? puntoDaAzimut(c, (layer._rotazione || 0) + 180,
+        distanzaManiglia() * 0.55) : c;
       layer._asta = L.polyline([coda, p], tp
         ? {color:COL.rosso, weight:3.4, interactive:false}
         : {color:'#0070c0', weight:2.5, dashArray:'6,5', interactive:false}).addTo(decori);
-    if (tp && layer._asta) layer._asta.bringToBack();
-    /* La punta dice da che parte si entra in zona: un pallino non lo dice.
-       Sugli altri simboli la direzione la disegna già il glifo, e una
-       seconda punta accanto sarebbe un doppione. */
+      if (tp) layer._asta.bringToBack();
+    }
+
     const puntaSvg = g => `<svg viewBox="0 0 26 26" style="transform:rotate(${g}deg)">`
       + `<path d="M13 2l9 22-9-6-9 6Z" fill="${COL.rosso}"/></svg>`;
-        /* Pendenza e vento non hanno asta né pallino: il simbolo intero è la
-       maniglia, e quello che si trascina è la freccia stessa. */
-    const senzAsta = /^(pend_|vento_)/.test(layer._tipo || '');
     layer._maniglia = L.marker(p, {draggable:true, keyboard:false,
       icon: tp
         ? L.divIcon({className:'sitac-maniglia sitac-mn-tp',
             iconSize:[26,26], iconAnchor:[13,13],
             html: puntaSvg(layer._rotazione || 0)})
         : senzAsta
-        /* La maniglia È il simbolo: la freccia con le codine, ruotata
-           secondo l'azimut. L'ancoraggio sta al centro, così la trascina
-           chi la afferra ovunque e non solo sulla punta. */
+        /* Sulla punta della freccia non serve un pallino: la freccia c'è
+           già. Resta un'area afferrabile, invisibile. */
         ? L.divIcon({className:'sitac-maniglia sitac-mn-dir',
-            iconSize:[62,62], iconAnchor:[31,31],
-            html:`<svg viewBox="0 0 64 64" style="transform:rotate(${layer._rotazione || 0}deg)">`
-              + ((NS.SITAC_DIREZIONE || {})[layer._tipo]
-                  ? NS.SITAC_DIREZIONE[layer._tipo]({}).replace(/^<svg[^>]*>|<\/svg>$/g, '')
-                  : '') + `</svg>`})
+            iconSize:[24,24], iconAnchor:[12,12], html:''})
         : L.divIcon({className:'sitac-maniglia', iconSize:[18,18],
             iconAnchor:[9,9], html:'<span></span>'})}).addTo(decori);
-    layer._maniglia.on('drag', () => {
+        layer._maniglia.on('drag', () => {
       const m = layer._maniglia.getLatLng(), o = layer.getLatLng();
       layer._rotazione = Math.round(azimut(o, m));
-      layer.setIcon(iconaSimbolo(layer._tipo, {stato:layer._stato,
-        testo:layer._testo, rotazione:layer._rotazione}));
-      if (layer._asta) layer._asta.setLatLngs(tp
-        ? [puntoDaAzimut(o, layer._rotazione + 180, distanzaManiglia() * 0.55), m]
-        : [o, m]);
-      /* L'HTML del divIcon è fissato alla creazione: si scrive direttamente
-         sull'SVG a schermo invece di ricostruire il marker sotto il dito. */
-      const el = layer._maniglia.getElement();
-      const svg = el && el.querySelector('svg');
-      if (svg) svg.style.transform = `rotate(${layer._rotazione}deg)`;
+      if (senzAsta){
+        layer._lung = Math.round(o.distanceTo(m));
+        layer._asta.setLatLngs([o, m]);
+        if (layer._astaDeco && layer._astaDeco.setPaths)
+          layer._astaDeco.setPaths(layer._asta);
+      } else {
+        layer.setIcon(iconaSimbolo(layer._tipo, {stato:layer._stato,
+          testo:layer._testo, rotazione:layer._rotazione}));
+        if (layer._asta) layer._asta.setLatLngs(tp
+          ? [puntoDaAzimut(o, layer._rotazione + 180, distanzaManiglia() * 0.55), m]
+          : [o, m]);
+        const el = layer._maniglia.getElement();
+        const svg = el && el.querySelector('svg');
+        if (svg) svg.style.transform = `rotate(${layer._rotazione}deg)`;
+      }
       etichettaElemento(layer);
     });
 
@@ -1607,11 +1622,14 @@ function mostraComandoAfferente(sigla, nome){
     layer.on('move', () => {
       if (!layer._maniglia) return;
       const o = layer.getLatLng();
-      const np = puntoDaAzimut(o, layer._rotazione || 0, distanzaManiglia());
+      const np = puntoDaAzimut(o, layer._rotazione || 0,
+      layer._lung || distanzaManiglia());
       layer._maniglia.setLatLng(np);
-      if (layer._asta) layer._asta.setLatLngs(tp
+      if (layer._asta) layer._asta.setLatLngs(senzAsta ? [o, np] : (tp
         ? [puntoDaAzimut(o, (layer._rotazione || 0) + 180, distanzaManiglia() * 0.55), np]
-        : [o, np]);
+        : [o, np]));
+      if (layer._astaDeco && layer._astaDeco.setPaths)
+        layer._astaDeco.setPaths(layer._asta);
     });
   }
 
@@ -2228,18 +2246,25 @@ function mostraComandoAfferente(sigla, nome){
     const l = attesaDirezione;
     if (!l || !l.getLatLng) return;
     const o = l.getLatLng();
+    const senzAsta = /^(pend_|vento_)/.test(l._tipo || '');
     l._rotazione = Math.round(azimut(o, e.latlng));
-    l.setIcon(iconaSimbolo(l._tipo, {stato:l._stato, testo:l._testo,
+    /* Sulla pendenza il puntatore non dà solo la direzione ma anche la
+       lunghezza: si tira la freccia fin dove serve, come una riga a mano. */
+    if (senzAsta) l._lung = Math.round(o.distanceTo(e.latlng));
+    else l.setIcon(iconaSimbolo(l._tipo, {stato:l._stato, testo:l._testo,
       rotazione:l._rotazione, paese:l._paese}));
     if (!l._maniglia) return;
-    const dm = distanzaManiglia();
-    const np = puntoDaAzimut(o, l._rotazione, dm);
+    const np = puntoDaAzimut(o, l._rotazione,
+      senzAsta ? l._lung : distanzaManiglia());
     l._maniglia.setLatLng(np);
+    if (l._asta) l._asta.setLatLngs(senzAsta ? [o, np]
+      : (l._tipo === 'tp'
+          ? [puntoDaAzimut(o, l._rotazione + 180, distanzaManiglia() * 0.55), np]
+          : [o, np]));
+    if (l._astaDeco && l._astaDeco.setPaths) l._astaDeco.setPaths(l._asta);
     const el = l._maniglia.getElement();
     const svg = el && el.querySelector('svg');
     if (svg) svg.style.transform = `rotate(${l._rotazione}deg)`;
-    if (l._asta) l._asta.setLatLngs(l._tipo === 'tp'
-      ? [puntoDaAzimut(o, l._rotazione + 180, dm * 0.55), np] : [o, np]);
   }
 
   function avviaDirezione(layer){
@@ -3716,7 +3741,7 @@ function mostraComandoAfferente(sigla, nome){
       const f = l.toGeoJSON();
       f.properties = {tipo:l._tipo || null, genere:l._genere || null,
         stato:l._stato || null, testo:l._testo || null, rotazione:l._rotazione || null,
-        lato:l._lato || null, paese:l._paese || null};
+        lato:l._lato || null, paese:l._paese || null, lung:l._lung || null};
       /* Il poligono viaggia come geometria — QGIS e Google Earth vedono
          l'ingombro vero — ma i parametri viaggiano accanto, così rientrando
          qui l'ellisse torna modificabile invece che come sessanta vertici. */
@@ -3933,6 +3958,7 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
         m._tipo = tipo; m._genere = 'simbolo'; m._stato = st;
         m._testo = pr.testo || null;
         m._paese = pr.paese || null;
+        m._lung = pr.lung || null;
         m._rotazione = pr.rotazione != null ? pr.rotazione : null;
         aggancia(m);
         if (def.r && m._rotazione != null) creaManiglia(m);

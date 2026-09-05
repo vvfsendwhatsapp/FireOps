@@ -431,9 +431,9 @@ agg('ripetitore','zona',null,'Ripetitori, antenne, pale eoliche, ecc.','Masts, a
   () => T(`<circle cx="32" cy="11" r="6" fill="${C.nero}"/>
     <path d="M32 15L20 56h24Z" fill="none" stroke="${C.nero}" stroke-width="2.6" stroke-linejoin="round"/>
     <line x1="32" y1="15" x2="32" y2="56" stroke="${C.nero}" stroke-width="2"/>`));
-agg('pend_lieve','zona',null,'Pendenza lieve','Light slope', direzione('T', 1), {r:1, r0:0, senzaDisco:1});
-agg('pend_moderata','zona',null,'Pendenza moderata','Moderate slope', direzione('T', 2), {r:1, r0:0, senzaDisco:1});
-agg('pend_forte','zona',null,'Pendenza forte','Steep slope', direzione('T', 3), {r:1, r0:0, senzaDisco:1});
+agg('pend_lieve','zona',null,'Pendenza lieve','Light slope', direzione('T', 1), {r:1, r0:0, senzaDisco:1, lungo:1});
+agg('pend_moderata','zona',null,'Pendenza moderata','Moderate slope', direzione('T', 2), {r:1, r0:0, senzaDisco:1, lungo:1});
+agg('pend_forte','zona',null,'Pendenza forte','Steep slope', direzione('T', 3), {r:1, r0:0, senzaDisco:1, lungo:1});
 
 /* ---- TAVOLA 2: l'evoluzione dell'incendio ---- */
 /* "Punto d'innesco" e non "Area d'origine": sulla carta è un punto, e la
@@ -1083,17 +1083,16 @@ NS.SITAC_GLIFI = {
   vento_forte:    glifoVento(3)
 };
 
-/* Il glifo di pendenza e vento serve a sitac.js per la MANIGLIA, non per il
-   punto: quei due simboli non si disegnano dove si cliccano — lì c'è solo
-   una coordinata — ma sulla punta che si trascina, che è dove la direzione
-   si legge e si corregge. */
-NS.SITAC_DIREZIONE = {
-  pend_lieve:    direzione('T', 1),
-  pend_moderata: direzione('T', 2),
-  pend_forte:    direzione('T', 3),
-  vento_debole:   direzione('45', 1),
-  vento_moderato: direzione('45', 2),
-  vento_forte:    direzione('45', 3)
+/* Quale codina e quante, per i due simboli che si allungano. La freccia
+   non è più un glifo a misura fissa ma un tracciato decorato, quindi qui
+   basta la ricetta: la disegna sitac.js con gli stessi motivi delle linee. */
+NS.SITAC_CODINE = {
+  pend_lieve:    {forma:'T',  n:1},
+  pend_moderata: {forma:'T',  n:2},
+  pend_forte:    {forma:'T',  n:3},
+  vento_debole:   {forma:'45', n:1},
+  vento_moderato: {forma:'45', n:2},
+  vento_forte:    {forma:'45', n:3}
 };
 
 /* Quante codine per intensità. La legge `codineVento` in sitac.js per la
