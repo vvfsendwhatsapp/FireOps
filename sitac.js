@@ -2740,9 +2740,34 @@ function mostraComandoAfferente(sigla, nome){
     ventoAsta.on('click', () => stato(t('ventoBloccato')));
   }
 
+    /* La freccia gira sotto il puntatore mentre si sceglie, come ogni altro
+     simbolo orientabile. Si muove la sola geometria e si riaggancia il
+     decoratore: ricostruire asta e motivi da zero a ogni mousemove vuol dire
+     rifarli sessanta volte al secondo per un dato che cambia una volta. */
+  function anteprimaVento(e){
+    if (!posDos || !ventoAsta) return;
+    ventoVerso = Math.round(azimut(posDos, e.latlng));
+    const semi = distanzaManiglia() * 1.15;
+    ventoAsta.setLatLngs([
+      puntoDaAzimut(posDos, (ventoVerso + 180) % 360, semi),
+      puntoDaAzimut(posDos, ventoVerso, semi)]);
+    if (ventoDeco && ventoDeco.setPaths) ventoDeco.setPaths(ventoAsta);
+  }
+
   async function ventoCambiaDirezione(){
-    const p = await attendiClic(t('ventoClicDir'));
-    if (!p) return;
+    if (!posDos) return stato(t('ventoNoDos'));
+    if (!ventoAsta) disegnaFrecciaVento();
+    /* L'azimut di partenza va conservato: l'anteprima lo riscrive a ogni
+       movimento, e annullando con Esc resterebbe l'ultima direzione
+       sfiorata invece di quella che c'era prima. */
+    const prima = ventoVerso;
+    /* attendiClic chiama fermaTutto() nel suo corpo sincrono: il listener si
+       aggancia DOPO, o verrebbe staccato un istante dopo essere nato. */
+    const attesa = attendiClic(t('ventoClicDir'));
+    map.on('mousemove', anteprimaVento);
+    const p = await attesa;
+    map.off('mousemove', anteprimaVento);
+    if (!p){ ventoVerso = prima; disegnaFrecciaVento(); return; }
     ventoVerso = Math.round(azimut(posDos, p));
     disegnaFrecciaVento();
     applicaVento('mappa');
@@ -2776,8 +2801,9 @@ function mostraComandoAfferente(sigla, nome){
 
   q('#sitac-bVentoDir').onclick = () => {
     if (!posDos) return stato(t('ventoNoDos'));
-    disegnaFrecciaVento();
-    stato(t('ventoBloccato'));
+    /* Il pulsante si chiama "Direzione sulla mappa": deve far scegliere la
+       direzione, non limitarsi a mostrare la freccia dov'era. */
+    ventoCambiaDirezione();
   };
 
   q('#sitac-bVentoWeb').onclick = async () => {
@@ -3269,6 +3295,7 @@ function mostraComandoAfferente(sigla, nome){
       map.pm.disableGlobalRemovalMode();
     attesaDirezione = null;
     map.off('mousemove', anteprimaDirezione);
+    map.off('mousemove', anteprimaVento);
     if (attesaClic){ const f = attesaClic; attesaClic = null; f(null); }
     if (attesaLinea){ const f = attesaLinea; attesaLinea = null; f(null); }
     if (attesaElemento){ const f = attesaElemento; attesaElemento = null; f(null); }
