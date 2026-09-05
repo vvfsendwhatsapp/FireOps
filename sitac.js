@@ -1544,18 +1544,11 @@ function mostraComandoAfferente(sigla, nome){
     return Math.max(c.distanceTo(b), 30);
   }
 
-  function creaManiglia(layer){
+    function creaManiglia(layer){
     if (layer._maniglia){ decori.removeLayer(layer._maniglia); }
     if (layer._asta){ decori.removeLayer(layer._asta); }
     const c = layer.getLatLng();
-    /* `_lung` è la lunghezza in METRI, non in pixel: è un dato del terreno
-       come la direzione, e a zoom diverso deve restare la stessa. */
-    const p = puntoDaAzimut(c, layer._rotazione || 0,
-      (allungabile && layer._lung) || distanzaManiglia());
     const tp = layer._tipo === 'tp';
-    /* Il TP sta SU una linea di transito: la strada attraversa il simbolo ed
-       esce da entrambi i lati. Una linea che parte dal bordo sembra un
-       puntatore, non una via. */
     /* Pendenza e vento non hanno un'asta di servizio: il tracciato fra
        origine e maniglia È il simbolo. Disegnarlo come polilinea invece che
        come icona è quello che gli permette di allungarsi fino a dove si
@@ -1565,7 +1558,11 @@ function mostraComandoAfferente(sigla, nome){
        lì a lì, e la freccia lo dice. Il vento no — non ha una lunghezza, e
        lasciarla tirare metterebbe nel file un numero che non significa
        niente ma che qualcuno prima o poi leggerà come se significasse. */
-    const allungabile = !!(SIM[layer._tipo] && SIM[layer._tipo].lungo);    
+    const allungabile = !!(SIM[layer._tipo] && SIM[layer._tipo].lungo);
+    /* `_lung` è la lunghezza in METRI, non in pixel: è un dato del terreno
+       come la direzione, e a zoom diverso deve restare la stessa. */
+    const p = puntoDaAzimut(c, layer._rotazione || 0,
+      (allungabile && layer._lung) || distanzaManiglia());
     if (senzAsta){
       const rc = (NS.SITAC_CODINE || {})[layer._tipo] || {forma:'T', n:1};
       layer._asta = L.polyline([c, p],
@@ -2256,16 +2253,16 @@ function mostraComandoAfferente(sigla, nome){
       lì a lì, e la freccia lo dice. Il vento no — non ha una lunghezza, e
       lasciarla tirare metterebbe nel file un numero che non significa
       niente ma che qualcuno prima o poi leggerà come se significasse. */
-    const allungabile = !!(SIM[l._tipo] && SIM[layer._tipo].lungo);
+    const allungabile = !!(SIM[l._tipo] && SIM[l._tipo].lungo);
     l._rotazione = Math.round(azimut(o, e.latlng));
     /* Sulla pendenza il puntatore non dà solo la direzione ma anche la
        lunghezza: si tira la freccia fin dove serve, come una riga a mano. */
-    if (senzAsta) l._lung = Math.round(o.distanceTo(e.latlng));
-    else l.setIcon(iconaSimbolo(l._tipo, {stato:l._stato, testo:l._testo,
-      rotazione:l._rotazione, paese:l._paese}));
+    if (allungabile) l._lung = Math.round(o.distanceTo(e.latlng));
+    else if (!senzAsta) l.setIcon(iconaSimbolo(l._tipo, {stato:l._stato,
+      testo:l._testo, rotazione:l._rotazione, paese:l._paese}));
     if (!l._maniglia) return;
     const np = puntoDaAzimut(o, l._rotazione,
-      senzAsta ? l._lung : distanzaManiglia());
+      (allungabile && l._lung) || distanzaManiglia());
     l._maniglia.setLatLng(np);
     if (l._asta) l._asta.setLatLngs(senzAsta ? [o, np]
       : (l._tipo === 'tp'
@@ -3751,7 +3748,7 @@ function mostraComandoAfferente(sigla, nome){
       const f = l.toGeoJSON();
       f.properties = {tipo:l._tipo || null, genere:l._genere || null,
         stato:l._stato || null, testo:l._testo || null, rotazione:l._rotazione || null,
-        lato:l._lato || null, paese:l._paese || null, lung:l._lung || null};
+        lato:l._lato || null, paese:l._paese || null};
       /* Il poligono viaggia come geometria — QGIS e Google Earth vedono
          l'ingombro vero — ma i parametri viaggiano accanto, così rientrando
          qui l'ellisse torna modificabile invece che come sessanta vertici. */
@@ -3926,8 +3923,7 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
          rifanno dal pulsante, ma il quadro dice subito con che vento la carta
          è stata redatta. */
       if (p.vento && p.vento.velocita != null && p.vento.verso != null)
-        mostraVento(p.vento);
-      if (SIM[tipo] && SIM[tipo].lungo && pr.lung) m._lung = pr.lung; 
+        mostraVento(p.vento); 
       segnaIntestazione();
     }
 
