@@ -2848,14 +2848,14 @@ function mostraComandoAfferente(sigla, nome){
     const p = puntoDaAzimut(posDos, ventoVerso, semi);
     ventoAsta = L.polyline([coda, p],
       {color: COL_VENTO_DOS, weight: 3, pmIgnore: true,
-       bubblingMouseEvents: false}).addTo(decori);
+       bubblingMouseEvents: false}).addTo(ventoGruppo);
 
     const finto = {color: COL_VENTO_DOS};
     ventoDeco = L.polylineDecorator(ventoAsta, {patterns: [
       motivo(finto, {tipo:'punta', dim:20, pieno:1, passo:0, offset:'100%'}, 'attivo', 1),
       motivo(finto, {tipo:'codine', forma:'45', n: codineVento(), dim:20,
                      passo:0, offset:0}, 'attivo', 1)
-    ]}).addTo(decori);
+    ]}).addTo(ventoGruppo);
 
     ventoAsta.on('contextmenu', ev => {
       if (ev.originalEvent){
@@ -2873,7 +2873,12 @@ function mostraComandoAfferente(sigla, nome){
     ventoAsta.on('click', () => stato(t('ventoBloccato')));
   }
 
-    /* La freccia gira sotto il puntatore mentre si sceglie, come ogni altro
+  /* La freccia gira sotto il puntatore mentre si sceglie, come ogni altro
+     simbolo orientabile. Si muove la sola geometria e si riaggancia il
+     decoratore: ricostruire asta e motivi da zero a ogni mousemove vuol
+     dire rifarli sessanta volte al secondo per un dato che cambia una
+     volta sola. Il residuo delle punte non veniva da qui — era la
+     maniglia di pendenza e vento, e si risolve in creaManiglia. */
      simbolo orientabile. Si muove la sola geometria e si riaggancia il
      decoratore: ricostruire asta e motivi da zero a ogni mousemove vuol dire
      rifarli sessanta volte al secondo per un dato che cambia una volta. */
