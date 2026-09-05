@@ -17,8 +17,8 @@
 * su modulo ue riusciamo a mettere la bandiera ed il numero piu grandi, col numero del modulo? la sigla solo su popup o riepilogo pdf squadre
 * quando faccio cancella tutto cancella anche il vento locale DOS.
 * passa automaticamente a mappa se inserisco "qui" poosizione dos
-* colore nero dietro etichette dati intervento e mappa
-* lo scroll esterno mi comprime etichetta mappa
+      * colore nero dietro etichette dati intervento e mappa
+      * lo scroll esterno mi comprime etichetta mappa
 * sistemare icone asse primario e secondario.
 * sistemare frecce primario e secondario con chiusure giuste
 * mi spieghi importgeojson con campi diversi per campi coordinate?

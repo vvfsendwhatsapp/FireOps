@@ -4016,20 +4016,48 @@ a.btn-icon-hamburger:hover {
     margin-left: 0
 }
 
-
-
-/* La riga sopra il riquadro sta FUORI da #sitac-app: nessuna regola di quel
-   contenitore la raggiunge, nemmeno .sitac-stretto.
-   Riga 1: nota, bandiere ed Espandi, allineati in alto — la nota è alta due
-   righe e gli altri due devono restare alla sua prima riga, non al centro.
-   Riga 2: i campi. Riga 3: la tendina. */
+/* ---------- testata SITAC ancorata ----------
+   Le linguette non si ancoravano perché `position:sticky` cerca l'antenato
+   scorrevole più vicino e trova #sitac-app, che ha overflow:hidden: un
+   contenitore che non scorre non offre nulla a cui agganciarsi, e lo sticky
+   viene ignorato in silenzio.
+   Si ancora quindi il blocco che sta FUORI da #sitac-app — la testata della
+   sezione — dentro .pannello-corpo, che è il contenitore che scorre davvero.
+   Nota, bandiere, Mappa e Chiudi restano visibili con le linguette: è tutta
+   roba che serve mentre si lavora, e il costo è una striscia di due righe. */
 #sitac-aib .pagina-box-header-con-nota {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    gap: 10px 14px;
-    max-width: 100%
+    position: sticky;
+    top: 0;
+    z-index: 7;
+    background: var(--surface-color);
+    padding: 8px 0 6px;
+    margin-bottom: 0;
+    border-bottom: 1px solid var(--border-color);
 }
+
+/* Le linguette si fermano SOTTO la testata, non a filo del bordo: sovrapposte
+   si coprirebbero a vicenda, ed è quello che produceva la striscia gialla
+   tagliata a metà. L'altezza della testata è variabile — la nota va a capo
+   su pannello stretto — quindi si dichiara qui una misura sola, usata da
+   entrambe le regole. */
+#sitac-aib { --sitac-testata-h: 76px; }
+
+#sitac-aib .sitac-schede {
+    position: sticky;
+    top: var(--sitac-testata-h);
+    z-index: 6;
+    background: var(--surface-color);
+    padding-top: 6px;
+    flex: 0 0 auto;
+}
+
+#sitac-aib .sitac-scheda-btn {
+    min-height: 38px;
+    white-space: nowrap;
+}
+
+/* Pannello stretto: la nota va a capo e la testata cresce. */
+.sitac-sez-stretta { --sitac-testata-h: 104px; }
 
 /* `min-width:0` è la riga che conta: senza, un elemento flex non scende sotto
    la larghezza del proprio contenuto e sfonda il contenitore anche con
