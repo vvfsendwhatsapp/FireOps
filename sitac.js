@@ -1551,7 +1551,7 @@ function mostraComandoAfferente(sigla, nome){
     /* `_lung` è la lunghezza in METRI, non in pixel: è un dato del terreno
        come la direzione, e a zoom diverso deve restare la stessa. */
     const p = puntoDaAzimut(c, layer._rotazione || 0,
-      layer._lung || distanzaManiglia());
+      (allungabile && layer._lung) || distanzaManiglia());
     const tp = layer._tipo === 'tp';
     /* Il TP sta SU una linea di transito: la strada attraversa il simbolo ed
        esce da entrambi i lati. Una linea che parte dal bordo sembra un
@@ -1561,6 +1561,11 @@ function mostraComandoAfferente(sigla, nome){
        come icona è quello che gli permette di allungarsi fino a dove si
        clicca — un divIcon ha una misura fissa e non si stira. */
     const senzAsta = /^(pend_|vento_)/.test(layer._tipo || '');
+    /* Una pendenza ha un'estensione sul terreno: quel versante è ripido da
+       lì a lì, e la freccia lo dice. Il vento no — non ha una lunghezza, e
+       lasciarla tirare metterebbe nel file un numero che non significa
+       niente ma che qualcuno prima o poi leggerà come se significasse. */
+    const allungabile = !!(SIM[layer._tipo] && SIM[layer._tipo].lungo);    
     if (senzAsta){
       const rc = (NS.SITAC_CODINE || {})[layer._tipo] || {forma:'T', n:1};
       layer._asta = L.polyline([c, p],
@@ -1601,7 +1606,7 @@ function mostraComandoAfferente(sigla, nome){
       const m = layer._maniglia.getLatLng(), o = layer.getLatLng();
       layer._rotazione = Math.round(azimut(o, m));
       if (senzAsta){
-        layer._lung = Math.round(o.distanceTo(m));
+        if (allungabile) layer._lung = Math.round(o.distanceTo(m));
         layer._asta.setLatLngs([o, m]);
         if (layer._astaDeco && layer._astaDeco.setPaths)
           layer._astaDeco.setPaths(layer._asta);
@@ -1623,7 +1628,7 @@ function mostraComandoAfferente(sigla, nome){
       if (!layer._maniglia) return;
       const o = layer.getLatLng();
       const np = puntoDaAzimut(o, layer._rotazione || 0,
-      layer._lung || distanzaManiglia());
+        (allungabile && layer._lung) || distanzaManiglia());
       layer._maniglia.setLatLng(np);
       if (layer._asta) layer._asta.setLatLngs(senzAsta ? [o, np] : (tp
         ? [puntoDaAzimut(o, (layer._rotazione || 0) + 180, distanzaManiglia() * 0.55), np]
@@ -2247,6 +2252,11 @@ function mostraComandoAfferente(sigla, nome){
     if (!l || !l.getLatLng) return;
     const o = l.getLatLng();
     const senzAsta = /^(pend_|vento_)/.test(l._tipo || '');
+    /* Una pendenza ha un'estensione sul terreno: quel versante è ripido da
+      lì a lì, e la freccia lo dice. Il vento no — non ha una lunghezza, e
+      lasciarla tirare metterebbe nel file un numero che non significa
+      niente ma che qualcuno prima o poi leggerà come se significasse. */
+    const allungabile = !!(SIM[l._tipo] && SIM[layer._tipo].lungo);
     l._rotazione = Math.round(azimut(o, e.latlng));
     /* Sulla pendenza il puntatore non dà solo la direzione ma anche la
        lunghezza: si tira la freccia fin dove serve, come una riga a mano. */
@@ -3748,6 +3758,7 @@ function mostraComandoAfferente(sigla, nome){
       if (l._genere === 'lancio')
         Object.assign(f.properties, {a:l._a, b:l._b,
           centro:[l._centro.lng, l._centro.lat]});
+      if (l._lung && SIM[l._tipo] && SIM[l._tipo].lungo) f.properties.lung = l._lung;
       return f;
     });
   }
@@ -3916,6 +3927,7 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
          è stata redatta. */
       if (p.vento && p.vento.velocita != null && p.vento.verso != null)
         mostraVento(p.vento);
+      if (SIM[tipo] && SIM[tipo].lungo && pr.lung) m._lung = pr.lung; 
       segnaIntestazione();
     }
 
