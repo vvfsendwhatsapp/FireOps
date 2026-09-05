@@ -951,7 +951,7 @@ aggL('attacco_localizzato','azioni','sgTerra','Attacco localizzato','Hot spottin
 aggL('bonifica','azioni','sgTerra','Bonifica','Mop up',
   {color:C.rosso, weight:2.8},
   {stati:1, deco:[{tipo:'punta', passo:0, offset:'100%', dim:20, pieno:1},
-                  {tipo:'quadro', testo:'B', dim:18, passo:'25%', offset:'12%',
+                  {tipo:'quadro', testo:'B', dim:18, passo:60, offset:'12%',
                    pieno:1, verso:0}]});
 aggL('linea_sicurezza','azioni','sgControfuoco','Creazione linea di sicurezza','Creation of a safety line',
   {color:C.rosso, weight:3}, {stati:1, deco:{tipo:'bifronte', passo:'auto', dim:12, pieno:1}});
