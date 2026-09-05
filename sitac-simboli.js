@@ -600,15 +600,24 @@ function decoGlifo(tipo, opz){
       break;
     }
 
-    /* Ricognizione — greca a omega quadra: il tracciato resta dritto e il
-       motivo gli aggiunge la sporgenza quadra, ripetuta senza stacchi.
-       `dim` è il lato del quadro. */
+    /* Ricognizione — greca continua. Il motivo disegna UN periodo completo:
+       mezzo tratto sulla linea, la sporgenza quadra, mezzo tratto sulla
+       linea. Ripetuto con passo pari alla propria altezza, i mezzi tratti
+       si saldano con quelli dei vicini e la greca corre senza interruzioni.
+       Prima il glifo portava la sola sporgenza e la linea restava scoperta
+       fra un motivo e l'altro: si leggeva come una fila di gradini staccati,
+       non come la greca della tavola.
+       `dim` è il lato del quadro; l'altezza del motivo È il periodo, quindi
+       `passo:'auto'` lo prende da qui e i conti tornano da sé. */
     case 'omega': {
-      h = dim; w = dim * 2 + 6;
-      const cx = w / 2, cy = h / 2, s = dim * 0.62;
-      d = `<path d="M${f(cx)} ${f(cy + dim/2)}V${f(cy + s/2)}H${f(cx - s)}V${f(cy - s/2)}`
-        + `H${f(cx)}V${f(cy - dim/2)}" fill="none" stroke="${col}" stroke-width="2.4"`
-        + ` stroke-linejoin="round"/>`;
+      h = dim * 2; w = dim * 2 + 6;
+      const cx = w / 2, s = dim * 0.62;
+      /* Il tracciato sotto va coperto: la greca lo sostituisce, e lasciarlo
+         in vista raddoppierebbe le linee dentro la sporgenza. */
+      d = `<path d="M${f(cx)} ${f(h)}V${f(h/2 + s/2)}H${f(cx - s)}`
+        + `V${f(h/2 - s/2)}H${f(cx)}V0"`
+        + ` fill="none" stroke="${col}" stroke-width="2.4"`
+        + ` stroke-linejoin="miter" stroke-linecap="butt"/>`;
       break;
     }
 
@@ -933,7 +942,8 @@ aggL('fronte','evoluzione',null,'Fronte dell\u2019incendio','Fire front',
 
 /* ---- TAVOLA 4: azioni su linea ---- */
 aggL('ricognizione','azioni','sgTerra','Ricognizione','Patrol',
-  {color:C.rosso, weight:2.6}, {stati:1, deco:{tipo:'omega', passo:'auto', dim:16}});
+  {color:C.rosso, weight:0, opacity:0},
+  {stati:1, deco:{tipo:'omega', passo:'auto', dim:14}});
 aggL('difesa_linea','azioni','sgTerra','Difesa in linea','Defence on a line',
   {color:C.rosso, weight:3}, {stati:1, deco:{tipo:'triangoloBase', passo:'auto', dim:13, pieno:1}});
 /* Tre frecce a 45° verso il fianco scelto: `lato` dice quale, e lo chiede
