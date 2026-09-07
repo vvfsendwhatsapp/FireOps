@@ -1326,7 +1326,7 @@ function mostraComandoAfferente(sigla, nome){
      il verso di percorrenza è in alto, il centro dell'icona sta sul tracciato
      ed è il centro di rotazione), e lì si aggiungono i motivi nuovi senza
      toccare questo file. Qui resta solo la scelta di DOVE posarli. */
-  function motivo(def, dc, stato, lato, giro){
+    function motivo(def, dc, stato, lato, giro, layerCorrente){
     if (!dc) return null;
     /* `sempre` sono i motivi che NON cambiano faccia con lo stato: la punta
        di un asse di sviluppo è piena sempre — lo stato dell'asse non
@@ -1351,11 +1351,27 @@ function mostraComandoAfferente(sigla, nome){
     const unaSola = dc.tipo === 'punta' || dc.tipo === 'fine';
     const passo = unaSola ? 0
       : dc.passo === 'auto' ? g.h : dc.passo;
-    const offset = dc.offset != null ? dc.offset
+        /* `arretra` è uno scostamento in PIXEL dal capo della linea, non una
+       percentuale: la punta deve stare sempre alla stessa distanza dal
+       vertice finale, e una percentuale su una linea corta arretra di
+       niente mentre su una lunga la porta a metà tracciato.
+       Si converte in percentuale qui perché è l'unico punto che conosce la
+       lunghezza del tracciato — il glifo non la vede, e la riga della
+       tavola nemmeno. */
+    let offset = dc.offset != null ? dc.offset
       : unaSola ? '100%'
       : dc.tipo === 'freccia' ? '12%'
       : (NS.SITAC_DECO_CONTIGUI.indexOf(dc.tipo) >= 0 ? 0 : 8);
-
+    if (dc.arretra && layerCorrente){
+      const v = layerCorrente.getLatLngs && layerCorrente.getLatLngs();
+      if (v && v.length > 1){
+        const a = map.latLngToContainerPoint(v[0]);
+        const b = map.latLngToContainerPoint(v[v.length - 1]);
+        const px = Math.hypot(b.x - a.x, b.y - a.y);
+        if (px > dc.arretra)
+          offset = (100 - dc.arretra * 100 / px).toFixed(2) + '%';
+      }
+    }
     return {offset, repeat: passo,
       symbol: L.Symbol.marker({rotate: !dc.dritto,
         markerOptions:{interactive:false,
@@ -1510,7 +1526,7 @@ function mostraComandoAfferente(sigla, nome){
         lt = latoVerso(b, dc.verso);
         gi = -b;
       }
-      const m = motivo(def, dc, layer._stato, lt, gi);
+      const m = motivo(def, dc, layer._stato, lt, gi, layer);
       if (m) patterns.push(m);
     });
     /* Il badge sta ai DUE capi. In una sola posizione lo si trovava solo
