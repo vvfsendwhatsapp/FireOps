@@ -2365,7 +2365,7 @@ function anteprimaDirezione(e){
     console.log('anteprima', !!l, l && l._tipo, !!(l && l._maniglia), !!(l && l._rifaiDeco));
     if (!l || !l.getLatLng) return;
     const o = l.getLatLng();
-    const senzAsta = /^(pend_|vento_)/.test(l._tipo || '');
+    const senzAsta = !!(SIM[l._tipo] && SIM[l._tipo].senzAsta);
     /* Una pendenza ha un'estensione sul terreno: quel versante è ripido da
       lì a lì, e la freccia lo dice. Il vento no — non ha una lunghezza, e
       lasciarla tirare metterebbe nel file un numero che non significa
