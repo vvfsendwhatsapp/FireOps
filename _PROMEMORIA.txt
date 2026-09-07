@@ -17,6 +17,6 @@
 * espansione menu sempre al top colonna
 * frecce 45 attacco fianco vanno spostate e non messe in mezzo
 * anteprim e loghi piu semplici e piu larghe
-
+* frecce vento e pendenza però vanno viste in anteprima, le altre no!
 
 Prima di darti il codice, una cosa che c'è nel file che hai incollato e che va sistemata comunque, perché è un errore vero: in q('#sitac-bPosizione').onclick la variabile del modale si chiama usa nell'if, ma la const che la dichiara è sparita — resta const usa = await scegli(...) sostituito da nulla, e le due righe dopo usano usa che non esiste. Guarda quel blocco: se manca const usa = davanti a await scegli({...}), il pulsante della posizione va in errore.
