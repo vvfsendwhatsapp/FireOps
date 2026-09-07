@@ -440,24 +440,21 @@ function accensioneDiretta(){
     const K = C.rosso;
     const fatta = attivo(o);
 
-    const c = 9;              // semilarghezza del gambo (guaina 22 → ~11)
-    const yp = 34;            // dove la punta incontra il gambo
-    const bordo = 3;          // il bordo rosso che sporge dalla guaina
+    /* Tarato per essere leggibile SCHIACCIATO: in tavolozza questo
+       riquadro da 64 finisce in venti pixel, e quello che regge a quella
+       scala sono pochi segni grossi. Tratteggio a due trattini soli — a
+       tre diventavano puntini — e punta rialzata, così non copre il
+       gambo ma gli esce di fianco. */
+    const c = 11;             // semilarghezza del gambo
+    const yp = 30;            // attacco della punta
+    const sw = 5;             // bordo: grosso, o sparisce
 
-    /* Gambo: un rettangolo bordato, che è quello che in mappa nasce dalla
-       polilinea bianca sopra la guaina rossa. Tratteggiato solo il
-       contorno quando è prevista, come la linea sulla carta. */
-    const gambo = `<path d="M${32 - c} 60L${32 - c} ${yp}L${32 + c} ${yp}L${32 + c} 60"`
-      + ` fill="${fatta ? K : '#fff'}" stroke="${K}" stroke-width="${bordo}"`
-      + ` stroke-linejoin="round"${fatta ? '' : ' stroke-dasharray="7,5"'}/>`;
+    const gambo = `<path d="M${32 - c} 62L${32 - c} ${yp}L${32 + c} ${yp}L${32 + c} 62"`
+      + ` fill="${fatta ? K : '#fff'}" stroke="${K}" stroke-width="${sw}"`
+      + ` stroke-linejoin="round"${fatta ? '' : ' stroke-dasharray="14,10"'}/>`;
 
-    /* Punta di traverso, a destra: base sul fianco del gambo, apice fuori.
-       Piena sempre — è il tratteggio del gambo a dire che è prevista, non
-       la freccia: una punta vuota a questa scala sparisce. */
-    const x0 = 32 + c, x1 = 58;
-    const punta = `<path d="M${x0} ${yp - 15}L${x1} ${yp - 2}L${x0} ${yp + 11}Z"`
-      + ` fill="${K}" stroke="${K}" stroke-width="2"`
-      + ` stroke-linejoin="round"/>`;
+    const punta = `<path d="M${32 + c} 6L60 ${yp - 4}L${32 + c} ${yp + 6}Z"`
+      + ` fill="${K}" stroke="${K}" stroke-width="3" stroke-linejoin="round"/>`;
 
     return T(gambo + punta);
   };
