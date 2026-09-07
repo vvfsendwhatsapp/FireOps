@@ -1169,7 +1169,7 @@ const CHIAVE_STORAGE_PANNELLI = "fireops_pagine_pannelli";
     }
 
     function etichettaScheda(pagina) {
-        return pagina.lavori ? `${pagina.label} 🚧 Pagina in costruzione! 🚧` : pagina.label;
+        return pagina.lavori ? `🚧 Pagina in costruzione! 🚧 ${pagina.label}` : pagina.label;
     }
 
     function popolaSelettorePannello(select) {
