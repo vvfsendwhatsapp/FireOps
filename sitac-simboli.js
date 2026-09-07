@@ -657,9 +657,16 @@ case 'punta': {
   const bw = o.bordoW || 0;
   const a  = Math.abs(gr) * Math.PI / 180;
   const pari = x => { const v = Math.ceil(x); return v % 2 ? v + 1 : v; };
-      w = pari(bT * Math.cos(a) + hT * Math.sin(a)
-               + Math.abs(o.fuori || 0) * 2 + bw * 4 + 6);
-      h = pari(hT * Math.cos(a) + bT * Math.sin(a) + bw * 4 + 6);
+  /* Il margine attorno alla figura contiene lo stroke INTERO, non metà:
+     `stroke-linejoin:round` arrotonda i vertici di base e li fa sporgere in
+     diagonale oltre il contorno geometrico. Col conto vecchio — `bw * 4` più
+     sei fissi — la punta si tagliava sul fianco appena il calibro cresceva.
+     `marg` resta regolabile perché quanto serva dipende anche da `dim`. */
+  const marg = o.marg != null ? o.marg : 6;
+  const sbordo = bw * 2 + 2;
+  w = pari(bT * Math.cos(a) + hT * Math.sin(a)
+           + Math.abs(o.fuori || 0) * 2 + sbordo * 2 + marg);
+  h = pari(hT * Math.cos(a) + bT * Math.sin(a) + sbordo * 2 + marg);
   const cx = w / 2, cy = h / 2;
   const ay = cy - hT * 2 / 3, by = cy + hT / 3;
   const chiudi = o.aperta ? '' : 'Z';
