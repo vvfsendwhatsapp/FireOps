@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FireOps VVF</title>
+    <link rel="icon" type="image/png" href="images/logo.png">
+    <script src="versione.js?v=0"></script>
+
+    <!-- Tutto lo stile sta in style.css: nessun blocco <style> in questa
+         pagina. Se serve una regola nuova, va in fondo a style.css, nella
+         sezione MODULI AGGIUNTIVI. -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+    <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.15.0/dist/leaflet-geoman.css">
+
+    <script>
+        // Controllo sincrono PRIMA del rendering: se c'è già un comando in sessione,
+        // nascondo il modale via classe CSS, così non lampeggia mai a schermo.
+        if (sessionStorage.getItem('fireops_comando_selezionato')) {
+            document.documentElement.classList.add('comando-gia-scelto');
+        }
+    </script>
+</head>
+
+<body>
+
+    <!-- MODALE SELEZIONE COMANDO (Bloccante) -->
+    <div id="modal-comando" class="modal-overlay">
+        <div class="modal-content">
+            <span class="modal-close" title="Chiudi">&times;</span>
+            <h2>Selezione Comando VVF</h2>
+            <p>Seleziona il tuo Comando<br>per configurare il sistema:</p>
+            <select id="select-comando">
+                <option value="" disabled selected>Caricamento comandi in corso...</option>
+            </select>
+            <button id="btn-conferma-comando" disabled>Conferma e Accedi</button>
+        </div>
+    </div>
+
+    <!-- INTESTAZIONE SUPERIORE -->
+    <header class="app-header">
+        <div class="header-left">
+            <img src="images/logo.png" alt="Logo VVF" class="site-logo">
+            <div class="site-titles">
+                <h1>FireOps VVF</h1>
+                <span class="subtitle">Smart Emergency Management</span>
+                <div id="display-versione" class="site-versione"></div>
+            </div>
+        </div>
+
+        <div class="header-center">
+            <div class="info-box">
+                <span id="display-comando" class="value valore-comando">Sala Operativa Comando VVF -</span>
+            </div>
+            <div class="info-box">
+                <span id="display-datetime" class="value valore-orario">--/--/---- --:--:--</span>
+            </div>
+            <div class="info-box">
+                <span id="display-effemeridi" class="value valore-effemeridi" title="Effemeridi">🌅 --:-- 🌇
+                    --:--</span>
+            </div>
+            <div class="info-box">
+                <span id="display-turno" class="value valore-turno">Turno -</span>
+            </div>
+        </div>
+
+        <div class="header-right">
+            <button id="btn-otto-passi" class="btn-icon-hamburger btn-icon-testo" type="button"
+                title="Gli 8 Passi">8P</button>
+            <button id="btn-evento-rilevante" class="btn-icon-hamburger btn-icon-rilevante" type="button"
+                title="Vademecum: determinazione evento rilevante">R</button>
+            <a id="btn-protocollo" class="btn-icon-hamburger" href="https://protocollo.dipvvf.it" target="_blank"
+                rel="noopener" title="Protocollo informatico">@</a>
+            <button id="btn-help" class="btn-icon-hamburger" title="Aiuto e contatti">❓</button>
+            <button id="btn-cambia-comando" class="btn-icon-hamburger" title="Cambia comando">☰</button>
+        </div>
+
+
+    </header>
+
+    <!-- BARRA FISSA: selettori pagina per pannello sinistro/destro -->
+    <div class="app-subheader">
+        <div class="subheader-pannello">
+            <label for="select-pannello-sinistra" class="pannello-etichetta">Pannello sinistro</label>
+            <select id="select-pannello-sinistra" class="pannello-select"></select>
+        </div>
+        <div class="subheader-pannello">
+            <label for="select-pannello-destra" class="pannello-etichetta">Pannello destro</label>
+            <select id="select-pannello-destra" class="pannello-select"></select>
+        </div>
+    </div>
+
+    <!-- CONTENUTO PRINCIPALE: schermo diviso in due pannelli indipendenti -->
+    <main class="main-content">
+
+        <div class="split-screen">
+            <div class="pannello" id="pannello-sinistra">
+                <div class="pannello-corpo" id="corpo-sinistra"></div>
+            </div>
+
+            <div class="pannello" id="pannello-destra">
+                <div class="pannello-corpo" id="corpo-destra"></div>
+            </div>
+        </div>
+
+        <!-- MAGAZZINO PAGINE: contiene le sezioni non assegnate a nessun pannello.
+             Ogni pagina esiste una sola volta nel DOM e viene spostata (non duplicata)
+             dentro il pannello che la mostra, così ID e listener restano unici. -->
+        <div id="magazzino-pagine" class="magazzino-pagine"></div>
+
+        <!-- HOME -->
+        <section id="homepage" class="page-section">
+            <p class="pagina-nota">
+                Dati del Comando attivo, della sua Direzione, del CON e della SOCAV: clicca
+                un'intestazione gialla per aprirla. Nella tabella dei Comandi Limitrofi,
+                in fondo, i nomi di Comando e Direzione aprono una scheda rapida con
+                canale radio e contatti. Telefoni ed email si copiano con un clic.
+            </p>
+            <div id="riepilogo-comando" class="riepilogo-comando"></div>
+        </section>
+
+        <!-- MAPPA E METEO -->
+        <section id="mappa-meteo" class="page-section">
+            <div class="pagina-box mappa-meteo-box">
+                <div class="mappa-meteo-header">
+                    <h3>Mappa e Meteo Comando</h3>
+                    <div class="mappa-meteo-azioni">
+                        <button id="btn-stile-mappa" class="btn-toggle-radar" type="button">🗺️ OSM</button>
+                        <button id="btn-windy" class="btn-toggle-radar" type="button">🌪️ Windy</button>
+                        <button id="btn-torna-comando" class="btn-toggle-radar" type="button">🏠 Comando</button>
+                        <a class="btn-toggle-radar link-bollettino"
+                            href="https://mappe.protezionecivile.gov.it/it/mappe-rischi/bollettino-di-criticita/"
+                            target="_blank" rel="noopener">🌐 Bollettino DPC</a>
+                    </div>
+                </div>
+                <div class="mappa-meteo-split">
+                    <div class="mappa-meteo-carta">
+                        <div id="mappa-comando" class="mappa-comando"></div>
+                        <div id="windy-comando" class="windy-comando" style="display:none;">
+                            <iframe id="windy-iframe" title="Windy — radar e vento" loading="lazy" frameborder="0"
+                                allow="fullscreen"></iframe>
+                        </div>
+                    </div>
+
+                    <aside class="mappa-meteo-lato">
+                        <div id="meteo-orario" class="meteo-orario">
+                            <p class="pagina-nota">Seleziona un Comando per visualizzare le previsioni.</p>
+                        </div>
+                    </aside>
+                </div>
+
+                <p class="pagina-nota meteo-nota-centro">📍 Il meteo mostrato segue il centro della mappa:
+                    spostala per vedere le previsioni di un'altra zona.</p>
+            </div>
+        </section>
+
+        <!-- MESSAGGISTICA -->
+        <section id="messaggistica" class="page-section">
+            <div class="pagina-box">
+                <h3>Messaggistica</h3>
+                <p class="pagina-nota">
+                    Il messaggio viene generato automaticamente in base al Comando attivo e alla lingua selezionata.
+                    Tutti e tre i campi (prefisso, numero e
+                    lingua) sono obbligatori: quelli mancanti vengono evidenziati in rosso.
+                </p>
+
+                <div class="msg-riga-campi">
+                    <div class="msg-campo combo-campo">
+                        <label for="msg-prefisso-input">Prefisso internazionale</label>
+                        <div class="combo-wrapper">
+                            <input type="text" id="msg-prefisso-input" class="combo-input"
+                                placeholder="Cerca prefisso o paese..." autocomplete="off">
+                            <input type="hidden" id="msg-prefisso">
+                            <span class="combo-arrow" aria-hidden="true"></span>
+                            <div id="msg-prefisso-dropdown" class="combo-dropdown"></div>
+                        </div>
+                    </div>
+                    <div class="msg-campo">
+                        <label for="msg-numero">Numero di telefono</label>
+                        <input type="tel" id="msg-numero" placeholder="Es. 3331234567" autocomplete="off">
+                    </div>
+                    <div class="msg-campo combo-campo">
+                        <label for="msg-lingua-input">Lingua messaggio</label>
+                        <div class="combo-wrapper">
+                            <input type="text" id="msg-lingua-input" class="combo-input" placeholder="Cerca lingua..."
+                                autocomplete="off">
+                            <input type="hidden" id="msg-lingua">
+                            <span class="combo-arrow" aria-hidden="true"></span>
+                            <div id="msg-lingua-dropdown" class="combo-dropdown"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <label for="msg-testo">Anteprima messaggio</label>
+                <textarea id="msg-testo" rows="16" readonly></textarea>
+
+                <div class="msg-azioni">
+                    <button id="btn-whatsapp-web" class="btn-whatsapp" type="button" disabled>📱 WhatsApp Web</button>
+                    <button id="btn-whatsapp-app" class="btn-whatsapp" type="button" disabled>💻 WhatsApp
+                        Desktop</button>
+                    <button id="btn-invia-telegram" class="btn-telegram" type="button" disabled>✈️ Telegram</button>
+                </div>
+
+                <p class="pagina-nota">
+                    Telegram non permette di aprire una chat con testo precompilato partendo dal numero di telefono:
+                    il messaggio viene copiato automaticamente negli appunti e si apre il contatto (se disponibile con
+                    questo numero),
+                    basterà incollarlo nella chat.
+                </p>
+            </div>
+        </section>
+
+        <!-- INFO ALTRO COMANDO -->
+        <section id="info-comando" class="page-section">
+            <div class="pagina-box pagina-box-larga">
+                <h3>Info Altro Comando</h3>
+                <p class="pagina-nota">
+                    Consulta rapidamente i dati di qualsiasi Comando senza cambiare il Comando attivo
+                    dal menu ☰: la scelta qui sotto è solo una consultazione, non modifica la sessione.
+                </p>
+
+                <label for="altro-comando-select">Comando da consultare</label>
+                <select id="altro-comando-select">
+                    <option value="" disabled selected>-- Seleziona un Comando --</option>
+                </select>
+
+                <div id="riepilogo-altro-comando" class="riepilogo-comando"></div>
+            </div>
+        </section>
+
+        <!-- GESTIONE INTERVENTI FPDS -->
+        <section id="gestione-fpds" class="page-section">
+            <div class="pagina-box">
+                <h3>Gestione Interventi FPDS</h3>
+                <p class="pagina-nota">Sezione in costruzione.</p>
+            </div>
+        </section>
+
+        <!-- LINK UTILI -->
+        <section id="contatti" class="page-section">
+            <div class="pagina-box pagina-box-larga">
+                <h3>Link Utili</h3>
+                <div id="link-utili-contenuto"></div>
+            </div>
+        </section>
+
+        <!-- SITAC AIB -->
+        <section id="sitac-aib" class="page-section">
+            <div class="pagina-box-header pagina-box-header-con-nota">
+                <p class="pagina-nota pagina-nota-inline" data-t="sub"></p>
+                <div id="sitac-lingue"></div>
+                <button id="sitac-bSfondo" class="btn-toggle-radar" type="button"></button>
+                <button class="btn-toggle-radar btn-fullscreen-pagina" type="button" title="Espandi a schermo intero">⛶
+                    Espandi</button>
+            </div>
+
+            <!-- Due schede: intestazione e carta. La barra sta FUORI da
+                 #sitac-app perché stampa() sposta app nel body, e queste
+                 linguette sulla carta stampata non servono. -->
+            <div class="sitac-schede">
+                <button class="sitac-scheda-btn attivo" type="button" data-scheda="dati">
+                    <span data-t="sch1"></span>
+                    <span class="sitac-passo-stato" id="sitac-st1"></span>
+                </button>
+                <button class="sitac-scheda-btn sitac-scheda-bloccata" type="button" data-scheda="carta">
+                    <span data-t="sch2"></span>
+                </button>
+            </div>
+
+            <div id="sitac-app">
+
+                <!-- SCHEDA 1: intestazione della SITAC -->
+                <div class="sitac-pannello attivo" data-scheda="dati">
+                    <div class="sitac-dati">
+                        <div class="sitac-dati-campo" data-c="ora">
+                            <label data-t="dataOra"></label>
+                            <div id="sitac-dataOra" class="sitac-derivato">—</div>
+                        </div>
+                        <div class="sitac-dati-campo" data-c="int">
+                            <label for="sitac-nIntervento" data-t="nIntervento"></label>
+                            <input type="text" id="sitac-nIntervento" inputmode="numeric" maxlength="10"
+                                autocomplete="off">
+                        </div>
+                        <div class="sitac-dati-campo" data-c="qual">
+                            <label for="sitac-qualifica" data-t="nQualifica"></label>
+                            <select id="sitac-qualifica">
+                                <option value="" selected disabled data-t="qualificaVuota"></option>
+                                <option value="IA">IA</option>
+                                <option value="CR">CR</option>
+                                <option value="CSE">CSE</option>
+                                <option value="CS">CS</option>
+                                <option value="VC">VC</option>
+                                <option value="VE">VE</option>
+                                <option value="VF">VF</option>
+                                <option value="CSV">CSV</option>
+                                <option value="VV">VV</option>
+                            </select>
+                        </div>
+                        <div class="sitac-dati-campo" data-c="nom">
+                            <label for="sitac-nominativo" data-t="nNominativo"></label>
+                            <input type="text" id="sitac-nominativo" maxlength="60" autocomplete="off">
+                        </div>
+                        <div class="sitac-dati-campo" data-c="dos">
+                            <label for="sitac-nDos" data-t="nDos"></label>
+                            <div class="sitac-dos-riga">
+                                <span class="sitac-dos-vf">VF</span>
+                                <!-- maxlength 6: normalizzaDos taglia a 6, non a 4 -->
+                                <input type="text" id="sitac-nDos" maxlength="6" placeholder="00A" autocomplete="off">
+                            </div>
+                        </div>
+                        <div class="sitac-dati-campo" data-c="tel">
+                            <label for="sitac-telefono" data-t="nTelefono"></label>
+                            <input type="tel" id="sitac-telefono" maxlength="20" inputmode="tel" autocomplete="off">
+                        </div>
+                        <div class="sitac-dati-campo" data-c="pos">
+                            <label for="sitac-posizione" data-t="posDos"></label>
+                            <div class="sitac-dati-riga">
+                                <input type="text" id="sitac-posizione" readonly>
+                                <button id="sitac-bPosizione" type="button"></button>
+                            </div>
+                        </div>
+                        <div class="sitac-dati-campo" data-c="prov">
+                            <label data-t="provincia"></label>
+                            <div id="sitac-provincia" class="sitac-derivato">—</div>
+                        </div>
+                        <div class="sitac-dati-campo" data-c="cmd">
+                            <label data-t="comando"></label>
+                            <div id="sitac-comando" class="sitac-derivato">—</div>
+                        </div>
+                        <div class="sitac-dati-azioni" data-c="az">
+                            <button id="sitac-bConvalida" type="button" data-t="bConvalida"></button>
+                            <button id="sitac-bPulisciDati" type="button" data-t="bPulisciDati"></button>
+                        </div>
+                    </div>
+                    <p class="sitac-avviso" data-t="datiNota"></p>
+                </div>
+
+                <!-- SCHEDA 2: la carta. #sitac-carta porta la griglia a due
+                     colonne che prima stava su #sitac-app. -->
+                <div class="sitac-pannello" data-scheda="carta">
+                    <div id="sitac-carta">
+
+                        <div id="sitac-barra">
+
+                            <div class="sitac-fisa">
+                                <button class="sitac-fisa-testa" type="button" aria-expanded="false">
+                                    <span class="freccia">▶</span><span class="sitac-passo-n">1</span>
+                                    <span class="sitac-passo-tit" data-t="p2"></span>
+                                    <span class="sitac-passo-stato" id="sitac-st2"></span>
+                                </button>
+                                <div class="sitac-fisa-corpo">
+                                    <div class="sitac-azioni">
+                                        <button id="sitac-bVentoDir" type="button" class="largo"
+                                            data-t="bVentoDir"></button>
+                                        <button id="sitac-bVentoWeb" type="button" class="largo"
+                                            data-t="bVentoWeb"></button>
+                                    </div>
+                                    <div class="sitac-vento-scala">
+                                        <input type="range" id="sitac-ventoScala" min="0" max="110" step="5" value="0">
+                                        <span class="sitac-vento-valore" id="sitac-ventoValore">0 km/h</span>
+                                    </div>
+                                    <p class="sitac-avviso" data-t="ventoNota"></p>
+                                </div>
+                            </div>
+
+                            <div id="sitac-tavola"></div>
+
+                            <div class="sitac-fisa">
+                                <button class="sitac-fisa-testa" type="button" aria-expanded="false">
+                                    <span class="freccia">▶</span><span class="sitac-passo-n">9</span>
+                                    <span class="sitac-passo-tit" data-t="p9"></span>
+                                    <span class="sitac-passo-stato" id="sitac-st9"></span>
+                                </button>
+                                <div class="sitac-fisa-corpo">
+                                    <div class="sitac-azioni">
+                                        <button id="sitac-bModifica" type="button" data-t="bSposta"></button>
+                                        <button id="sitac-bElimina" type="button" data-t="bElimina"></button>
+                                        <button id="sitac-bAnnulla" type="button" class="largo"
+                                            data-t="bAnnulla"></button>
+                                        <button id="sitac-bPulisci" type="button" class="largo"
+                                            data-t="bPulisci"></button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="sitac-fisa">
+                                <button class="sitac-fisa-testa" type="button" aria-expanded="false">
+                                    <span class="freccia">▶</span><span class="sitac-passo-n">10</span>
+                                    <span class="sitac-passo-tit" data-t="p10"></span>
+                                    <span class="sitac-passo-stato" id="sitac-st10"></span>
+                                </button>
+                                <div class="sitac-fisa-corpo">
+                                    <div class="sitac-azioni">
+                                        <button id="sitac-bImporta" type="button" data-t="bImporta"></button>
+                                        <button id="sitac-bStampa" type="button" data-t="bStampa"></button>
+                                        <button id="sitac-bGeojson" type="button">GeoJSON</button>
+                                        <button id="sitac-bKml" type="button">KML</button>
+                                    </div>
+                                    <input type="file" id="sitac-file" accept=".geojson,.json,application/geo+json"
+                                        hidden>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div class="sitac-mapwrap">
+                            <div id="sitac-mappa"></div>
+                            <div id="sitac-vento" class="sitac-vento" hidden></div>
+                            <div id="sitac-legenda">
+                                <button id="sitac-legTesta" type="button">
+                                    <b data-t="legenda"></b>
+                                    <span id="sitac-legQuanti" class="sitac-quanti"></span>
+                                    <span class="freccia">▾</span>
+                                </button>
+                                <div id="sitac-legVoci"></div>
+                            </div>
+                            <button id="sitac-bCentra" class="sitac-centra" type="button">
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" stroke-width="2" />
+                                    <circle cx="12" cy="12" r="1.6" fill="currentColor" />
+                                    <path d="M12 1v4M12 19v4M1 12h4M19 12h4" stroke="currentColor" stroke-width="2"
+                                        stroke-linecap="round" />
+                                </svg>
+                            </button>
+                        </div>
+
+                    </div>
+                    <!-- Il riquadro di stato esce dalla fisarmonica: con la barra
+                         spenta era irraggiungibile, ed è lì che si legge cosa
+                         viene chiesto. -->
+                    <div id="sitac-stato"></div>
+                </div>
+
+                <!-- Fuori dai pannelli: la testata serve alla stampa, il modale
+                     serve da entrambe le schede -->
+                <div id="sitac-testata-stampa">
+                    <div class="t"></div>
+                    <div class="i"></div>
+                    <div class="d"></div>
+                    <div class="n"></div>
+                </div>
+
+                <div id="sitac-modale" class="sitac-modale" hidden>
+                    <div class="sitac-modale-box">
+                        <div class="sitac-modale-titolo"></div>
+                        <div class="sitac-modale-testo"></div>
+                        <input type="text" id="sitac-modale-input" autocomplete="off">
+                        <div class="sitac-modale-azioni">
+                            <button id="sitac-modale-no" type="button"></button>
+                            <button id="sitac-modale-ok" type="button"></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCHEDE DI SOCCORSO -->
+        <section id="schede-soccorso" class="page-section">
+            <div class="pagina-box pagina-box-larga">
+                <h3>Schede Di Soccorso</h3>
+                <p class="pagina-nota">Sezione in costruzione.</p>
+                <div id="schede-soccorso-contenuto"></div>
+            </div>
+        </section>
+
+        <!-- CONVERTITORE UNITA DI MISURA -->
+        <section id="convertitoreunita" class="page-section">
+            <div class="um-root" data-unitamisura></div>
+        </section>
+
+        <!-- CONVERTITORE COORDINATE -->
+        <section id="convertitore" class="page-section">
+            <div class="pagina-box pagina-box-larga">
+                <!-- Linguette a sinistra e Chiudi a destra sulla stessa riga,
+                     come la barra schede della SITAC. Il pulsante sta qui e non
+                     più in .pagina-box-header: là era su una riga sua e non si
+                     allineava al bordo del contenuto. -->
+                <div class="coord-tab-bar">
+                    <button type="button" class="coord-tab-btn attivo" data-tab="input">📋 Input</button>
+                    <button type="button" class="coord-tab-btn" data-tab="output">📐 Output</button>
+                    <button type="button" class="coord-tab-btn" data-tab="messaggio">✉️ Invia messaggio</button>
+                    <p class="pagina-nota coord-nota-mappa">Scorri la mappa e, all'occorrenza, abilita la
+                        funzione "Crea percorso".</p>
+                    <button class="btn-toggle-radar btn-fullscreen-pagina" type="button"
+                        title="Espandi a schermo intero">⛶ Espandi</button>
+                </div>
+                <div class="coord-tab-corpo">
+
+                    <!-- SCHEDA/COLONNA: INPUT -->
+                    <div class="coord-colonna" data-colonna="input">
+                        <div id="coord-tab-content-input" style="display:block;">
+                            <p class="pagina-nota">Scegli il formato, inserisci le coordinate da convertire e segui le
+                                funzioni disponibili.</p>
+                            <div id="coord-input-colonna">
+                                <div id="coord-input-colonna">
+                                    <label for="coord-formato-input">Formato coordinate in ingresso</label>
+                                    <select id="coord-formato-input">
+                                        <option value="dd">Gradi decimali (DD.dddddd)</option>
+                                        <option value="appunti">📋 Gradi decimali da appunti</option>
+                                        <option value="dmm">Gradi e primi decimali (DD MM.mmmm)</option>
+                                        <option value="dms">Gradi primi secondi (DD MM SS.ss)</option>
+                                        <option value="olc">OLC / Plus Code</option>
+                                        <option value="utm">UTM</option>
+                                        <option value="gps">📍 La mia posizione</option>
+                                        <option value="mappa">Scelta su mappa (clic diretto)</option>
+                                    </select>
+                                    <div id="coord-input-dd" class="coord-input-gruppo">
+                                        <div class="msg-riga-campi">
+                                            <div class="msg-campo">
+                                                <label for="coord-dd-lat">Latitudine</label>
+                                                <div class="coord-campi-riga">
+                                                    <select class="coord-campo-segno" id="coord-dd-lat-segno"
+                                                        aria-label="Segno latitudine">
+                                                        <option value="+" selected>+</option>
+                                                        <option value="-">&#8722;</option>
+                                                    </select>
+                                                    <input type="text" id="coord-dd-lat" class="coord-campo-num"
+                                                        placeholder="DD.dddddd" maxlength="12" inputmode="decimal"
+                                                        autocomplete="off">
+                                                    <span class="coord-campo-unita">°</span>
+                                                </div>
+                                            </div>
+                                            <div class="msg-campo">
+                                                <label for="coord-dd-lon">Longitudine</label>
+                                                <div class="coord-campi-riga">
+                                                    <select class="coord-campo-segno" id="coord-dd-lon-segno"
+                                                        aria-label="Segno longitudine">
+                                                        <option value="+" selected>+</option>
+                                                        <option value="-">&#8722;</option>
+                                                    </select>
+                                                    <input type="text" id="coord-dd-lon" class="coord-campo-num"
+                                                        placeholder="DDD.dddddd" maxlength="13" inputmode="decimal"
+                                                        autocomplete="off">
+                                                    <span class="coord-campo-unita">°</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="coord-input-appunti" class="coord-input-gruppo" style="display:none;">
+                                        <label for="coord-appunti">Coppia latitudine, longitudine</label>
+                                        <input type="text" id="coord-appunti"
+                                            placeholder="45.123456789012, 9.123456789012" autocomplete="off">
+                                        <p class="pagina-nota">
+                                            Incolla la coppia copiata altrove: la conversione parte da sé, senza
+                                            premere nulla. Separatore virgola, punto come separatore decimale.
+                                        </p>
+                                    </div>
+                                    <div id="coord-input-dmm" class="coord-input-gruppo" style="display:none;">
+                                        <div class="msg-riga-campi">
+                                            <div class="msg-campo">
+                                                <label for="coord-dmm-lat-gradi">Latitudine</label>
+                                                <div class="coord-campi-riga">
+                                                    <select class="coord-campo-segno" id="coord-dmm-lat-segno"
+                                                        aria-label="Segno latitudine">
+                                                        <option value="+" selected>+</option>
+                                                        <option value="-">&#8722;</option>
+                                                    </select>
+                                                    <input type="text" id="coord-dmm-lat-gradi"
+                                                        class="coord-campo-num coord-campo-gradi" placeholder="DD"
+                                                        maxlength="3" inputmode="numeric" data-avanza
+                                                        autocomplete="off">
+                                                    <span class="coord-campo-unita">°</span>
+                                                    <input type="text" id="coord-dmm-lat-primi" class="coord-campo-num"
+                                                        placeholder="MM.mmmm" maxlength="7" inputmode="decimal"
+                                                        autocomplete="off">
+                                                    <span class="coord-campo-unita">&#8242;</span>
+                                                </div>
+                                            </div>
+                                            <div class="msg-campo">
+                                                <label for="coord-dmm-lon-gradi">Longitudine</label>
+                                                <div class="coord-campi-riga">
+                                                    <select class="coord-campo-segno" id="coord-dmm-lon-segno"
+                                                        aria-label="Segno longitudine">
+                                                        <option value="+" selected>+</option>
+                                                        <option value="-">&#8722;</option>
+                                                    </select>
+                                                    <input type="text" id="coord-dmm-lon-gradi"
+                                                        class="coord-campo-num coord-campo-gradi" placeholder="DDD"
+                                                        maxlength="4" inputmode="numeric" data-avanza
+                                                        autocomplete="off">
+                                                    <span class="coord-campo-unita">°</span>
+                                                    <input type="text" id="coord-dmm-lon-primi" class="coord-campo-num"
+                                                        placeholder="MM.mmmm" maxlength="7" inputmode="decimal"
+                                                        autocomplete="off">
+                                                    <span class="coord-campo-unita">&#8242;</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="coord-input-dms" class="coord-input-gruppo" style="display:none;">
+                                        <div class="msg-riga-campi">
+                                            <div class="msg-campo">
+                                                <label for="coord-dms-lat-gradi">Latitudine</label>
+                                                <div class="coord-campi-riga">
+                                                    <select class="coord-campo-segno" id="coord-dms-lat-segno"
+                                                        aria-label="Segno latitudine">
+                                                        <option value="+" selected>+</option>
+                                                        <option value="-">&#8722;</option>
+                                                    </select>
+                                                    <input type="text" id="coord-dms-lat-gradi"
+                                                        class="coord-campo-num coord-campo-gradi" placeholder="DD"
+                                                        maxlength="3" inputmode="numeric" data-avanza
+                                                        autocomplete="off">
+                                                    <span class="coord-campo-unita">°</span>
+                                                    <input type="text" id="coord-dms-lat-primi"
+                                                        class="coord-campo-num coord-campo-gradi" placeholder="MM"
+                                                        maxlength="2" inputmode="numeric" data-avanza
+                                                        autocomplete="off">
+                                                    <span class="coord-campo-unita">&#8242;</span>
+                                                    <input type="text" id="coord-dms-lat-secondi"
+                                                        class="coord-campo-num" placeholder="SS.ss" maxlength="6"
+                                                        inputmode="decimal" autocomplete="off">
+                                                    <span class="coord-campo-unita">&#8243;</span>
+                                                </div>
+                                            </div>
+                                            <div class="msg-campo">
+                                                <label for="coord-dms-lon-gradi">Longitudine</label>
+                                                <div class="coord-campi-riga">
+                                                    <select class="coord-campo-segno" id="coord-dms-lon-segno"
+                                                        aria-label="Segno longitudine">
+                                                        <option value="+" selected>+</option>
+                                                        <option value="-">&#8722;</option>
+                                                    </select>
+                                                    <input type="text" id="coord-dms-lon-gradi"
+                                                        class="coord-campo-num coord-campo-gradi" placeholder="DDD"
+                                                        maxlength="4" inputmode="numeric" data-avanza
+                                                        autocomplete="off">
+                                                    <span class="coord-campo-unita">°</span>
+                                                    <input type="text" id="coord-dms-lon-primi"
+                                                        class="coord-campo-num coord-campo-gradi" placeholder="MM"
+                                                        maxlength="2" inputmode="numeric" data-avanza
+                                                        autocomplete="off">
+                                                    <span class="coord-campo-unita">&#8242;</span>
+                                                    <input type="text" id="coord-dms-lon-secondi"
+                                                        class="coord-campo-num" placeholder="SS.ss" maxlength="6"
+                                                        inputmode="decimal" autocomplete="off">
+                                                    <span class="coord-campo-unita">&#8243;</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="coord-input-olc" class="coord-input-gruppo" style="display:none;">
+                                        <label for="coord-olc">Codice OLC / Plus Code (completo)</label>
+                                        <input type="text" id="coord-olc" placeholder="8FQFF57Q+MX" autocomplete="off">
+                                        <p class="pagina-nota">
+                                            Serve il codice completo (8-11 caratteri prima del "+"): i codici brevi tipo
+                                            "F57Q+MX Milano" richiedono una località di riferimento e qui non sono
+                                            supportati.
+                                        </p>
+                                    </div>
+                                    <div id="coord-input-utm" class="coord-input-gruppo" style="display:none;">
+                                        <div class="msg-riga-campi">
+                                            <div class="msg-campo" style="max-width:90px;">
+                                                <label for="coord-utm-zona">Zona</label>
+                                                <input type="text" id="coord-utm-zona" placeholder="32"
+                                                    autocomplete="off">
+                                            </div>
+                                            <div class="msg-campo" style="max-width:110px;">
+                                                <label for="coord-utm-emisfero">Emisfero</label>
+                                                <select id="coord-utm-emisfero">
+                                                    <option value="N">Nord</option>
+                                                    <option value="S">Sud</option>
+                                                </select>
+                                            </div>
+                                            <div class="msg-campo">
+                                                <label for="coord-utm-est">Est (Easting)</label>
+                                                <input type="text" id="coord-utm-est" placeholder="514852"
+                                                    autocomplete="off">
+                                            </div>
+                                            <div class="msg-campo">
+                                                <label for="coord-utm-nord">Nord (Northing)</label>
+                                                <input type="text" id="coord-utm-nord" placeholder="5034537"
+                                                    autocomplete="off">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="coord-input-mappa" class="coord-input-gruppo" style="display:none;">
+                                        <p class="pagina-nota">
+                                            Vai alla scheda "Mappa" e clicca direttamente sul punto desiderato: le
+                                            coordinate
+                                            vengono generate automaticamente da quel click. Nessun campo da compilare
+                                            qui.
+                                        </p>
+                                    </div>
+                                    <div id="coord-input-indirizzo" class="coord-input-gruppo" style="display:none;">
+                                        <div class="msg-riga-campi">
+                                            <div class="msg-campo">
+                                                <label for="coord-indirizzo-via">Indirizzo</label>
+                                                <input type="text" id="coord-indirizzo-via" placeholder="Via Roma 10"
+                                                    autocomplete="off">
+                                            </div>
+                                            <div class="msg-campo combo-campo">
+                                                <label for="coord-indirizzo-comune-input">Comune</label>
+                                                <div class="combo-wrapper">
+                                                    <input type="text" id="coord-indirizzo-comune-input"
+                                                        class="combo-input" placeholder="Cerca comune..."
+                                                        autocomplete="off">
+                                                    <input type="hidden" id="coord-indirizzo-comune">
+                                                    <span class="combo-arrow" aria-hidden="true"></span>
+                                                    <div id="coord-indirizzo-comune-dropdown" class="combo-dropdown">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <p class="pagina-nota">Seleziona il comune dall'elenco. Indirizzo facoltativo,
+                                            ma
+                                            aiuta la precisione.</p>
+                                    </div>
+                                    <div class="msg-azioni">
+                                        <button id="btn-coord-converti" class="btn-whatsapp" type="button">📐 Converti e
+                                            scopri le funzioni a lato</button>
+                                    </div>
+                                    <p id="coord-errore" class="pagina-nota"
+                                        style="display:none; color:var(--danger-color);"></p>
+                                </div> <!-- chiusura #coord-input-colonna -->
+                            </div>
+                        </div>
+
+                        <!-- SCHEDA/COLONNA: OUTPUT -->
+                        <div class="coord-colonna" data-colonna="output">
+                            <div id="coord-tab-content-output" style="display:none;">
+                                <div id="coord-risultati" class="riepilogo-comando" style="display:none;">
+                                    <div class="riepilogo-box">
+                                        <table class="riepilogo-tabella">
+                                            <tbody>
+                                                <tr>
+                                                    <th>DD.dddddd</th>
+                                                    <td id="coord-out-dd">-</td>
+                                                </tr>
+                                                <tr>
+                                                    <th>DD MM.mmmm</th>
+                                                    <td id="coord-out-dmm">-</td>
+                                                </tr>
+                                                <tr>
+                                                    <th>DD MM SS.ss</th>
+                                                    <td id="coord-out-dms">-</td>
+                                                </tr>
+                                                <tr>
+                                                    <th>OLC</th>
+                                                    <td id="coord-out-olc">-</td>
+                                                </tr>
+                                                <tr>
+                                                    <th>UTM</th>
+                                                    <td id="coord-out-utm">-</td>
+                                                </tr>
+                                                <tr>
+                                                    <th>SO115 — Longitudine</th>
+                                                    <td id="coord-out-so115-lon">-</td>
+                                                </tr>
+                                                <tr>
+                                                    <th>SO115 — Latitudine</th>
+                                                    <td id="coord-out-so115-lat">-</td>
+                                                </tr>
+                                                <tr>
+                                                    <th>Quota</th>
+                                                    <td id="coord-out-quota">-</td>
+                                                </tr>
+                                                <tr>
+                                                    <th>Alba / Tramonto</th>
+                                                    <td id="coord-out-effemeridi">-</td>
+                                                </tr>
+                                                <tr>
+                                                    <th>Luce</th>
+                                                    <td id="coord-out-luce">-</td>
+                                                </tr>
+                                                <tr>
+                                                    <th>Google Maps</th>
+                                                    <td id="coord-out-maps">-</td>
+                                                </tr>
+                                                <tr>
+                                                    <th>Toponimo</th>
+                                                    <td id="coord-out-toponimo">-</td>
+                                                </tr>
+                                                <tr>
+                                                    <th>Comando competente</th>
+                                                    <td id="coord-out-comando">-</td>
+                                                </tr>
+                                                <tr>
+                                                    <th>CH VHF Comando</th>
+                                                    <td id="coord-out-comando-canale">-</td>
+                                                </tr>
+                                                <tr>
+                                                    <th>TEL SO Comando</th>
+                                                    <td id="coord-out-comando-telefono">-</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <p class="pagina-nota" id="coord-dati-nota-vuota">Converti delle coordinate per vedere
+                                    qui
+                                    tutti i formati (cliccabili per copiarli).</p>
+                            </div>
+                        </div>
+
+                        <!-- SCHEDA/COLONNA: MAPPA -->
+                        <div class="coord-colonna" data-colonna="mappa">
+                            <div id="coord-tab-content-mappa" style="display:none;">
+                                <div class="coord-mappa-controlli">
+                                    <div class="msg-campo">
+                                        <label for="coord-profilo-percorso">Tipologia percorso</label>
+                                        <select id="coord-profilo-percorso">
+                                            <option value="trekking" selected>🥾 A piedi / sentiero</option>
+                                            <option value="car-fast">🚗 Automezzo</option>
+                                            <option value="linea-diretta">📏 Linea diretta (misura distanza)</option>
+                                        </select>
+                                    </div>
+                                    <div class="msg-campo coord-mappa-azione-campo">
+                                        <label for="btn-coord-percorso">Crea percorso</label>
+                                        <button id="btn-coord-percorso" class="btn-toggle-radar" type="button"
+                                            disabled>🧭
+                                            Attiva crea percorso</button>
+                                    </div>
+                                    <div class="msg-campo coord-mappa-azione-campo">
+                                        <label for="btn-coord-reparti-volo">Supporto aereo</label>
+                                        <button id="btn-coord-reparti-volo" class="btn-toggle-radar" type="button"
+                                            disabled>🚁 Reparti Volo più vicini</button>
+                                    </div>
+                                    <div class="msg-campo coord-mappa-azione-campo">
+                                        <label for="btn-coord-tema">Tema della mappa</label>
+                                        <button id="btn-coord-tema" class="btn-toggle-radar" type="button">🌗
+                                            Auto</button>
+                                    </div>
+                                </div>
+
+                                <div class="coord-mappa-controlli-percorso-attivo"
+                                    id="coord-mappa-controlli-percorso-attivo">
+                                    <button id="btn-coord-annulla-percorso" class="btn-toggle-radar" type="button">❌
+                                        Annulla
+                                        percorso</button>
+                                    <button id="btn-coord-scarica-kml" class="btn-toggle-radar" type="button"
+                                        disabled>💾
+                                        Esporta Percorso KML</button>
+                                    <button id="btn-coord-scarica-gpx" class="btn-toggle-radar" type="button"
+                                        disabled>🛰️
+                                        Esporta Percorso GPX</button>
+                                </div>
+
+                                <div class="coord-mappa-wrapper">
+                                    <div id="coord-mappa" class="mappa-comando"></div>
+                                    <div id="coord-mappa-overlay-percorso"
+                                        class="coord-mappa-overlay coord-mappa-overlay-sx" style="display:none;"></div>
+                                    <div class="coord-mappa-overlay coord-mappa-overlay-dx">
+                                        <div class="coord-mappa-legenda-voce"><svg width="16" height="16"
+                                                viewBox="0 0 22 22" aria-hidden="true"
+                                                style="vertical-align:middle; margin-right:6px; flex:0 0 auto;">
+                                                <polygon points="11,1 20,20 11,15 2,20" fill="#ffd700" stroke="#121212"
+                                                    stroke-width="1.5" stroke-linejoin="round" />
+                                            </svg> Squadra VF (verso il target)</div>
+                                        <div class="coord-mappa-legenda-voce"><span class="coord-mappa-pallino"
+                                                style="background:#AF2B1E;"></span> Target intervento</div>
+                                        <div class="coord-mappa-legenda-voce"><span class="coord-mappa-pallino"
+                                                style="background:#2E7DD1;"></span> Comando competente</div>
+                                        <div class="coord-mappa-legenda-voce"><span class="coord-mappa-pallino"
+                                                style="background:#00b3a4; border-radius:2px; transform:rotate(45deg);"></span>
+                                            Reparti Volo più vicini</div>
+                                    </div>
+                                </div> <!-- chiusura .coord-mappa-wrapper -->
+                                <canvas id="coord-grafico-altimetria" width="700" height="200"
+                                    style="display:none; width:100%; max-width:100%; background:var(--dark-color); border:1px solid var(--border-color); border-radius:8px; margin-top:10px;"></canvas>
+                                <p class="pagina-nota" id="coord-altimetria-nota" style="display:none;"></p>
+                            </div>
+                        </div>
+
+                        <!-- SCHEDA/COLONNA: MESSAGGIO -->
+                        <div class="coord-colonna" data-colonna="messaggio">
+                            <div id="coord-tab-content-messaggio" style="display:none;">
+                                <p class="pagina-nota">Invia le coordinate convertite a una squadra VVF via WhatsApp o
+                                    Telegram, con lo stesso formato usato in Sala Operativa.</p>
+                                <div class="msg-riga-campi">
+                                    <div class="msg-campo combo-campo">
+                                        <label for="coord-msg-prefisso-input">Prefisso internazionale</label>
+                                        <div class="combo-wrapper">
+                                            <input type="text" id="coord-msg-prefisso-input" class="combo-input"
+                                                placeholder="Cerca prefisso o paese..." autocomplete="off">
+                                            <input type="hidden" id="coord-msg-prefisso">
+                                            <span class="combo-arrow" aria-hidden="true"></span>
+                                            <div id="coord-msg-prefisso-dropdown" class="combo-dropdown"></div>
+                                        </div>
+                                    </div>
+                                    <div class="msg-campo">
+                                        <label for="coord-msg-numero">Numero di telefono squadra</label>
+                                        <input type="tel" id="coord-msg-numero" placeholder="Es. 3331234567"
+                                            autocomplete="off">
+                                    </div>
+                                </div>
+
+                                <label for="coord-msg-testo">Anteprima messaggio</label>
+                                <textarea id="coord-msg-testo" rows="16" readonly
+                                    placeholder="Converti prima delle coordinate per generare il messaggio."></textarea>
+
+                                <div class="msg-azioni">
+                                    <button id="coord-btn-whatsapp-web" class="btn-whatsapp" type="button" disabled>📱
+                                        WhatsApp Web</button>
+                                    <button id="coord-btn-whatsapp-app" class="btn-whatsapp" type="button" disabled>💻
+                                        WhatsApp Desktop</button>
+                                    <button id="coord-btn-invia-telegram" class="btn-telegram" type="button" disabled>✈️
+                                        Telegram</button>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div> <!-- chiusura .coord-tab-corpo -->
+                </div> <!-- chiusura .pagina-box.pagina-box-larga -->
+        </section>
+
+        <!-- RADIO E TELEFONI -->
+        <section id="radio-telefoni" class="page-section">
+            <div class="pagina-box">
+                <h3>Radio e Telefoni</h3>
+                <p class="pagina-nota">Sezione in costruzione.</p>
+            </div>
+        </section>
+
+        <!-- QRCODE -->
+        <section id="qrcode" class="page-section">
+            <div class="pagina-box">
+                <h3>QrCode</h3>
+                <p class="pagina-nota">
+                    Scrivi o incolla qualsiasi contenuto — un indirizzo web, coordinate, un numero
+                    di telefono, il testo di una comunicazione — e genera il codice QR corrispondente.
+                    Il codice si crea sul posto, senza inviare nulla in rete: quello che scrivi non
+                    esce da questo computer.
+                </p>
+
+                <label for="qr-testo">Testo da codificare</label>
+                <textarea id="qr-testo" rows="5" placeholder="Inserisci il testo od il link per creare il qrcode."
+                    autocomplete="off"></textarea>
+
+                <div class="qr-azioni">
+                    <button id="btn-qr-visualizza" class="btn-whatsapp qr-azione-primaria" type="button" disabled>🔳
+                        Visualizza QR</button>
+                    <div class="qr-azioni-download">
+                        <button id="btn-qr-png" class="btn-toggle-radar" type="button" disabled>🖼️ PNG</button>
+                        <button id="btn-qr-jpg" class="btn-toggle-radar" type="button" disabled>📷 JPG</button>
+                        <button id="btn-qr-pdf" class="btn-toggle-radar" type="button" disabled>📄 PDF</button>
+                    </div>
+                </div>
+
+                <div id="qr-anteprima" class="qr-anteprima"></div>
+                <p id="qr-messaggio" class="qr-messaggio" style="display:none;"></p>
+            </div>
+        </section>
+
+        <!-- TURNARIO -->
+        <section id="turnario" class="page-section">
+            <div class="pagina-box pagina-box-larga">
+                <div class="pagina-box-header pagina-box-header-con-nota">
+                    <p class="pagina-nota pagina-nota-inline">
+                        Scegli anno e turno per generare il calendario annuale. In ogni giornata sono
+                        indicati i due turni: in <strong>MAIUSCOLO</strong> il diurno (08:00–20:00),
+                        in minuscolo il notturno (20:00–08:00). Il saltoturno è facoltativo e serve a
+                        distinguere le tue giornate da quelle delle altre squadre con la stessa lettera.
+                    </p>
+                    <button class="btn-toggle-radar btn-fullscreen-pagina" type="button"
+                        title="Espandi a schermo intero">⛶ Espandi</button>
+                </div>
+
+                <div class="msg-riga-campi">
+                    <div class="msg-campo" style="max-width:140px;">
+                        <label for="turnario-anno">Anno</label>
+                        <select id="turnario-anno"></select>
+                    </div>
+                    <div class="msg-campo" style="max-width:260px;">
+                        <label for="turnario-turno">Turno</label>
+                        <select id="turnario-turno"></select>
+                    </div>
+                    <div class="msg-campo" style="max-width:140px;">
+                        <label for="turnario-salto">Saltoturno</label>
+                        <select id="turnario-salto"></select>
+                    </div>
+                </div>
+
+                <div class="msg-azioni">
+                    <button id="btn-turnario-visualizza" class="btn-whatsapp" type="button" disabled>📅 Visualizza
+                        turnario</button>
+                    <button id="btn-turnario-pdf" class="btn-toggle-radar" type="button" disabled>🖨️ Stampa / Salva
+                        PDF</button>
+                    <button id="btn-turnario-gestione" class="btn-toggle-radar" type="button" disabled>🌐 SIPEC
+                        Web</button>
+                </div>
+
+                <div id="turnario-griglia"></div>
+            </div>
+        </section>
+
+        <!-- MODULI CMR -->
+        <section id="moduli-cmr" class="page-section">
+            <div class="pagina-box pagina-box-larga">
+                <h3>Moduli CMR</h3>
+                <p class="pagina-sottotitolo">
+                    Circolare EM-01/2020<br>
+                    Riorganizzazione delle Colonne Mobili Regionali e del dispositivo di mobilitazione per calamità
+                    nazionale.
+                </p>
+
+                <label for="cmr-modulo-input">Cerca modulo</label>
+                <div class="combo-wrapper">
+                    <input type="text" id="cmr-modulo-input" class="combo-input" placeholder="Cerca per descrizione..."
+                        autocomplete="off">
+                    <input type="hidden" id="cmr-modulo">
+                    <span class="combo-arrow" aria-hidden="true"></span>
+                    <div id="cmr-modulo-dropdown" class="combo-dropdown"></div>
+                </div>
+
+                <div id="riepilogo-modulo-cmr" class="riepilogo-modulo-cmr"></div>
+            </div>
+        </section>
+
+        <!-- NORMATIVE, CIRCOLARI E DISPOSIZIONI -->
+        <section id="normative" class="page-section">
+            <div class="pagina-box pagina-box-larga">
+                <h3>Normative, Circolari e Disposizioni</h3>
+                <p class="pagina-nota">
+                    Raccolta consultabile dei testi di riferimento. Clicca una voce per aprirla: il testo
+                    viene caricato solo alla prima apertura, e si naviga per titoli, capi, sezioni e articoli.
+                </p>
+
+                <div class="normative-ricerca">
+                    <label for="normative-cerca">Cerca nel testo delle norme</label>
+                    <input type="text" id="normative-cerca" class="combo-input"
+                        placeholder="Es. squadra, dirigente, servizio di vigilanza..." autocomplete="off">
+                    <div class="normative-ricerca-riga">
+                        <label class="normative-ricerca-frase">
+                            <input type="checkbox" id="normative-cerca-frase"> Frase esatta
+                        </label>
+                        <span id="normative-cerca-stato" class="pagina-nota"></span>
+                    </div>
+                </div>
+                <div id="normative-risultati" class="normative-risultati" hidden></div>
+
+                <div id="normative-contenuto">
+                    <!-- Ogni fonte è una voce con il proprio file: data-fonte dice quale
+                         JSON caricare, il contenuto viene costruito alla prima espansione -->
+                    <div class="evento-rilevante-voce">
+                        <button type="button" class="evento-rilevante-testata" aria-expanded="false"
+                            data-fonte="/FireOps/db/dpr642012.json">
+                            <span class="freccia">▶</span>
+                            <span class="evento-rilevante-codice">DPR 64/2012</span>
+                            <span>Regolamento di servizio del Corpo nazionale dei vigili del fuoco</span>
+                        </button>
+                        <div class="evento-rilevante-dettaglio"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="terremoti" class="page-section">
+            <div class="terremoti-comandi">
+                <div class="terremoti-campo">
+                    <label for="terremoti-ambito">Ambito</label>
+                    <select id="terremoti-ambito" class="combo-input"></select>
+                </div>
+                <div class="terremoti-campo">
+                    <label for="terremoti-periodo">Periodo</label>
+                    <select id="terremoti-periodo" class="combo-input"></select>
+                </div>
+                <div class="terremoti-campo terremoti-campo-stretto">
+                    <label for="terremoti-magnitudo">Magnitudo minima</label>
+                    <input type="number" id="terremoti-magnitudo" class="combo-input" min="0" max="8" step="0.5"
+                        value="3">
+                </div>
+                <div class="terremoti-campo terremoti-campo-stretto">
+                    <label for="terremoti-raggio">Raggio km</label>
+                    <input type="number" id="terremoti-raggio" class="combo-input" min="10" max="1000" step="10"
+                        value="200">
+                </div>
+                <div class="terremoti-campo terremoti-campo-stretto terremoti-campo-azione">
+                    <button type="button" id="terremoti-aggiorna" class="btn-toggle-radar">Aggiorna</button>
+                </div>
+            </div>
+            <p id="terremoti-stato" class="pagina-nota"></p>
+            <div id="terremoti-mappa" class="terremoti-mappa"></div>
+            <div class="terremoti-elenco-scroll">
+                <table class="riepilogo-tabella terremoti-elenco">
+                    <thead>
+                        <tr>
+                            <th>Ora</th>
+                            <th>Magn.</th>
+                            <th>Prof.</th>
+                            <th>Località</th>
+                            <th>Distanza</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="terremoti-tabella"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- SOSTANZE PERICOLOSE (Schede ICSC ILO/OMS) -->
+        <section id="sostanze-pericolose" class="page-section">
+            <div class="pagina-box pagina-box-larga">
+                <h3>Sostanze Pericolose — Schede ICSC (ILO/OMS)</h3>
+                <p class="pagina-nota">
+                    Ricerca sul database internazionale delle Schede Internazionali di Sicurezza Chimica
+                    (International Chemical Safety Cards, ILO/OMS). Cerca per nome, sinonimo, numero CAS o numero
+                    scheda ICSC: selezionando un risultato si apre subito la scheda esatta.
+                </p>
+
+                <label for="icsc-cerca-input">Cerca sostanza</label>
+                <div class="combo-wrapper">
+                    <input type="text" id="icsc-cerca-input" class="combo-input"
+                        placeholder="Nome, sinonimo, CAS o numero scheda..." autocomplete="off">
+                    <input type="hidden" id="icsc-cerca-hidden">
+                    <span class="combo-arrow" aria-hidden="true"></span>
+                    <div id="icsc-cerca-dropdown" class="combo-dropdown"></div>
+                </div>
+                <div id="icsc-scheda-selezionata" class="icsc-scheda-selezionata"></div>
+                <p class="pagina-nota" id="icsc-nota-fallback">
+                    Non trovi la sostanza nell'elenco? Il database locale copre nome/sinonimo e numero scheda per
+                    ~1690 sostanze, ma il CAS è verificato solo per 449 di esse. Puoi comunque provare la ricerca
+                    diretta sul sito ILO con quello che hai digitato (mostra l'elenco completo se il filtro non
+                    viene riconosciuto):
+                </p>
+                <div class="msg-azioni">
+                    <button id="btn-cerca-icsc-online" class="btn-toggle-radar" type="button">🌐 Cerca comunque su
+                        ILO</button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODALE AIUTO E CONTATTI -->
+    <div id="modal-help" class="modal-overlay" style="display:none;">
+        <div class="modal-content chiudibile">
+            <span class="modal-close" id="modal-help-close" title="Chiudi">&times;</span>
+            <h2>Aiuto e Contatti</h2>
+            <p style="text-align:left; line-height:1.7;">
+                Sviluppato dal VESC Andrea Pelizza.<br><br>
+                Per ogni necessità, sviluppi, segnalazioni o correzioni, contattatemi via:<br><br>
+                📧 <a href="mailto:andrea.pelizza@vigilfuoco.it">andrea.pelizza@vigilfuoco.it</a><br>
+                ✈️ <a href="https://t.me/AndreaPelizza_DeltaAlfa" target="_blank"
+                    rel="noopener">t.me/AndreaPelizza_DeltaAlfa</a><br><br>
+                👥 Accessi: <span id="display-contatore-accessi">...</span><br>
+                🏷️ Versione: <span id="display-versione-modale">—</span>
+            </p>
+        </div>
+    </div>
+
+    <!-- MODALE GLI 8 PASSI -->
+    <div id="modal-otto-passi" class="modal-overlay" style="display:none;">
+        <div class="modal-content chiudibile modal-content-largo">
+            <span class="modal-close" id="modal-otto-passi-close" title="Chiudi">&times;</span>
+            <h2 id="otto-passi-titolo">Gli 8 Passi</h2>
+            <div id="otto-passi-contenuto"></div>
+        </div>
+    </div>
+
+    <!-- MODALE VADEMECUM EVENTO RILEVANTE -->
+    <div id="modal-evento-rilevante" class="modal-overlay" style="display:none;">
+        <div class="modal-content chiudibile modal-content-largo">
+            <span class="modal-close" id="modal-evento-rilevante-close" title="Chiudi">&times;</span>
+            <h2 id="evento-rilevante-titolo">Determinazione evento rilevante</h2>
+            <div id="evento-rilevante-contenuto"></div>
+        </div>
+    </div>
+
+    <!-- MODALE REPARTI VOLO PIU' VICINI AL TARGET -->
+    <div id="modal-reparti-volo" class="modal-overlay" style="display:none;">
+        <div class="modal-content chiudibile modal-content-largo">
+            <span class="modal-close" id="modal-reparti-volo-close" title="Chiudi">&times;</span>
+            <h2>🚁 Reparti Volo più vicini al target</h2>
+            <div class="reparti-volo-barra">
+                <label for="reparti-volo-unita">Distanze:</label>
+                <select id="reparti-volo-unita">
+                    <option value="km">Chilometri (km)</option>
+                    <option value="nm">Miglia nautiche (NM)</option>
+                </select>
+            </div>
+            <div id="reparti-volo-contenuto"></div>
+        </div>
+    </div>
+
+    <!-- Leaflet: esterno, con integrity, quindi resta un tag statico -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.15.0/dist/leaflet-geoman.min.js"></script>
+    <script src="https://unpkg.com/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.js"></script>
+
+    <!-- ==========================================================
+         MODULI LOCALI
+
+         La versione si cambia SOLO nella costante qui sotto e vale per
+         tutti: serve a far scaricare al browser i file aggiornati invece
+         di riusare quelli in cache.
+
+         ATTENZIONE: la stessa versione va messa a mano anche nel <link>
+         di style.css nel <head>, che non passa da qui.
+
+         L'ordine dell'elenco è l'ordine di caricamento: fireops-core.js
+         prima di tutti, qrcode.js prima di qrcoder.js.
+         ========================================================== -->
+    <script>
+        (function () {
+            const VERSIONE = window.FIREOPS_VERSIONE || "0";
+
+            const MODULI = [
+                "fireops-core.js",   // nucleo condiviso: deve precedere gli altri
+                "schede.js",
+                "script.js",
+                "turnario.js",
+                "convertitore.js",
+                "terremoti.js",
+                "unitamisura.js",
+                "sitac-simboli.js",
+                "sitac-vento.js",
+                "sitac-rilievo.js",
+                "sitac.js",
+                "qrcode.js",
+                "normative-ricerca.js",
+                "qrcoder.js"
+            ];
+
+            // document.write e non appendChild: gli script inseriti a mano nel
+            // DOM non sono bloccanti, quindi DOMContentLoaded può scattare prima
+            // che siano stati eseguiti — e tutti i moduli si agganciano proprio
+            // a quell'evento, che non arriverebbe mai. Con document.write il
+            // parser li tratta come se fossero scritti nella pagina: ordine
+            // garantito ed evento al momento giusto.
+            MODULI.forEach(file => {
+                document.write(`<script src="${file}?v=${VERSIONE}"><\/script>`);
+            });
+        })();
+    </script>
+</body>
+
+</html>
