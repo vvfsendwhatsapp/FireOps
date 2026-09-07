@@ -416,6 +416,27 @@ function asseDiretto(calibro, vuoto){
   };
 }
 
+/* Accensione per linee, versione PUNTO: due clic come gli assi, ma la
+   punta esce di TRAVERSO. Sulla tavola la freccia dice da che parte si
+   manda il fuoco, e non è mai il verso della linea — quella è la linea
+   d'appoggio, che si segue camminando.
+   Il lato lo decide `lato` sul motivo, e nella versione punto è sempre
+   quello destro: chi deve accendere dall'altra parte gira la freccia. */
+function accensioneDiretta(){
+  return o => {
+    const K = C.rosso;
+    const p = attivo(o);
+    const c = 8, b = 15, yp = 30;
+    return T(`<path d="M${32 - c} 61L${32 - c} ${yp}L${32 + c} ${yp}L${32 + c} 61Z"`
+      + ` fill="${p ? K : '#fff'}" stroke="${K}" stroke-width="2.6"`
+      + ` stroke-linejoin="round"/>`
+      + `<path d="M${32 + c + 4} ${yp - 14}L${32 + c + 4 + b} ${yp - 4}`
+      + `L${32 + c + 4} ${yp + 6}Z"`
+      + ` fill="${p ? K : '#fff'}" stroke="${K}" stroke-width="2.6"`
+      + ` stroke-linejoin="round"/>`);
+  };
+}
+
 /* Cerchio con sigla: Area da evacuare (Ev) e Zona Sicura (SZ), entrambe
    verdi. Effettuata = cerchio interamente pieno con la sigla in bianco. */
 function tondoSigla(sigla, col){
@@ -961,6 +982,12 @@ agg('asse_lento_p','evoluzione',null,'Asse secondario lento (punto)',
   {r:1, r0:0, senzaDisco:1, lungo:1, senzAsta:1,
    asta:{color:'#ffffff', weight:4.5, guaina:8, bordo:C.rosso,
          punta:22, bordoW:1.75, pieno:0}});
+
+agg('accensione_linee_p','azioni','sgControfuoco','Accensione per linee (punto)',
+  'Line firing (point)', accensioneDiretta(),
+  {r:1, r0:0, s:1, senzaDisco:1, lungo:1, senzAsta:1,
+   asta:{color:'#ffffff', weight:16, guaina:22, bordo:C.rosso,
+         punta:40, bordoW:3.5, pieno:1, incl:90, fuori:-7}});
 
 /* Doppia linea parallela a denti: il tracciato è la linea di monte, il
    motivo aggiunge quella affiancata e le traversine. */

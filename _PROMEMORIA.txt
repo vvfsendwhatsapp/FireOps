@@ -10,10 +10,13 @@
 * sistemare icone asse primario e secondario. come accensione linee con freccia dritta!
 * sistemare frecce primario e secondario con chiusure giuste
 * mi spieghi importgeojson con campi diversi per campi coordinate?
-* Inoltre direzione sulla mappa non funziona
+* Inoltre "direzione sulla mappa" non funziona
 * cancella tutto cancella solo il disegno a parte il dos e non reindirizza su dati intervento
 * difesa in lina, attqacco sui fianchi serve anteprima per scelta lato
 * bonifica la B va verticale rispetto alla pagina
 * espansione menu sempre al top colonna
 * frecce 45 attacco fianco vanno spostate e non messe in mezzo
 * anteprim e loghi piu semplici e piu larghe
+
+
+Prima di darti il codice, una cosa che c'è nel file che hai incollato e che va sistemata comunque, perché è un errore vero: in q('#sitac-bPosizione').onclick la variabile del modale si chiama usa nell'if, ma la const che la dichiara è sparita — resta const usa = await scegli(...) sostituito da nulla, e le due righe dopo usano usa che non esiste. Guarda quel blocco: se manca const usa = davanti a await scegli({...}), il pulsante della posizione va in errore.

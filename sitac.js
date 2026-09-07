@@ -1667,6 +1667,7 @@ function mostraComandoAfferente(sigla, nome){
       const finto = {color: colSegno};
       const motivi = [motivo(finto, {tipo:'punta', dim: A.punta || 20,
         pieno: A.pieno != null ? A.pieno : 1, bordoW: A.bordoW,
+        incl: A.incl, fuori: A.fuori,
         passo:0, offset:'100%'}, 'attivo', 1)];
       if (rc) motivi.push(motivo(finto, {tipo:'codine', forma:rc.forma,
         n:rc.n, dim:20, passo:0, offset:0}, 'attivo', 1));
