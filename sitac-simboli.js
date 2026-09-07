@@ -1226,6 +1226,7 @@ NS.SITAC_DECO          = decoGlifo;
 NS.SITAC_DECO_SVG      = decoSvg;
 NS.SITAC_DECO_CONTIGUI = DECO_CONTIGUI;
 NS.SITAC_ANTEPRIMA     = anteprimaLinea;
+NS.SITAC_ANTEPRIMA_ASTA = anteprimaAsta;
 
 /* Il quadro del vento in alto a sinistra sulla carta non è un elemento
    della tavola ma un dato di scenario: lì il vento resta un glifo. */
