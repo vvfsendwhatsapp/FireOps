@@ -4633,8 +4633,13 @@ function sfLegenda(){
         + `background:${d.fillColor};opacity:.85;border:.4mm solid ${d.color}"></i>`
         + `<span>${esc(nm(d))}</span></div>`);
     } else if (SIM[k]){
-      righe.push(`<div><span class="sf-sim">${svgSimbolo(k, {stato: x._stato})}</span>`
-        + `<span>${esc(nm(SIM[k]) + statoDi(SIM[k], x._stato))}</span></div>`);
+      /* Come in legenda a schermo: i simboli con asta sono tracciati, e il
+         loro segno sul foglio è la fascia orizzontale, non il glifo. */
+      const d = SIM[k];
+      righe.push((d.asta && NS.SITAC_ANTEPRIMA_ASTA
+          ? `<div><i class="sf-tratto sf-tratto-lin">${NS.SITAC_ANTEPRIMA_ASTA(k, x._stato)}</i>`
+          : `<div><span class="sf-sim">${svgSimbolo(k, {stato: x._stato})}</span>`)
+        + `<span>${esc(nm(d) + statoDi(d, x._stato))}</span></div>`);
     } else if (k === 'nota'){
       righe.push(`<div><span class="sf-sim">\u270e</span>`
         + `<span>${esc(nm(NOTA))}</span></div>`);
