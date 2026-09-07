@@ -1016,7 +1016,7 @@ agg('asse_lento_p','evoluzione',null,'Asse secondario lento (punto)',
 
 aggL('fronte','evoluzione',null,'Fronte dell\u2019incendio','Fire front',
   {color:'#ffffff', weight:5, dashArray:'12,7', lineCap:'butt', bordo:C.rosso},
-  {guaina:{}});
+  {guaina:{weight:11, dashArray:null}});
 
 /* ---- TAVOLA 4: azioni su linea ---- */
 aggL('ricognizione','azioni','sgTerra','Ricognizione','Patrol',
