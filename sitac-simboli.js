@@ -566,7 +566,6 @@ function decoGlifo(tipo, opz){
      clic — un attacco sui fianchi che punta dalla parte sbagliata manda le
      squadre nel fuoco invece che addosso al fianco. */
   const lato = o.lato === -1 ? -1 : 1;
-  if (tipo === 'freccia45') console.log('glifo freccia45', 'o.lato', o.lato, '→', lato);
   const f = x => (+x).toFixed(1);
   let w, h, d = '';
 

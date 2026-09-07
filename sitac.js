@@ -2343,8 +2343,9 @@ function mostraComandoAfferente(sigla, nome){
      azimut non lo fa nessuno, ma nemmeno cliccare al buio: la direzione si
      sceglie GUARDANDOLA, come su una carta di carta si gira la matita
      prima di tirare la riga. */
-  function anteprimaDirezione(e){
+function anteprimaDirezione(e){
     const l = attesaDirezione;
+    console.log('anteprima', !!l, l && l._tipo, !!(l && l._maniglia), !!(l && l._rifaiDeco));
     if (!l || !l.getLatLng) return;
     const o = l.getLatLng();
     const senzAsta = /^(pend_|vento_)/.test(l._tipo || '');
