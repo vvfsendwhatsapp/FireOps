@@ -652,7 +652,7 @@ function decoGlifo(tipo, opz){
     case 'triangoloBase': {
       h = dim; w = Math.ceil(alt * 2) + 2;
       const cx = w / 2, cy = h / 2;
-      d = `<path d="M${f(cx)} ${f(cy - dim/2)}L${f(cx - alt * lato)} ${f(cy)}L${f(cx)} ${f(cy + dim/2)}Z"`
+      d = `<path d="M${f(cx)} ${f(cy - dim/2)}L${f(cx + alt * lato)} ${f(cy)}L${f(cx)} ${f(cy + dim/2)}Z"`
         + ` fill="${riempi}" stroke="${col}" stroke-width="1.8" stroke-linejoin="round"/>`;
       break;
     }

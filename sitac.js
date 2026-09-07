@@ -2434,8 +2434,6 @@ async function chiediLatoSimbolo(layer){
     const o = l.getLatLng();
     const senzAsta = !!(SIM[l._tipo] && SIM[l._tipo].senzAsta);
     const allungabile = !!(SIM[l._tipo] && SIM[l._tipo].lungo);
-    console.log(l._tipo, 'senzAsta', senzAsta, 'lungo', allungabile,
-                'asta', !!l._asta, 'man', !!l._maniglia);
     l._rotazione = Math.round(azimut(o, e.latlng));
     /* Sulla pendenza il puntatore non dà solo la direzione ma anche la
        lunghezza: si tira la freccia fin dove serve, come una riga a mano. */
