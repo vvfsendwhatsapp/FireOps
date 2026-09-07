@@ -67,7 +67,13 @@ const C = {
 const T = dentro => `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">${dentro}</svg>`;
 const esc = s => String(s == null ? '' : s).replace(/[<>&"]/g,
   c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
-const attivo = o => (o && o.stato) === 'attivo';
+//      const attivo = o => (o && o.stato) === 'attivo';
+/* Il secondo momento cambia nome per famiglia (attivo/attiva/effettuata),
+   il primo no: è sempre previsto/prevista. Quindi si nega quello. */
+const attivo = o => {
+  const s = o && o.stato;
+  return !!s && s !== 'prevista' && s !== 'previsto';
+};
 
 /* La tavola lascia sulla carta lo spazio per una matricola breve: quattro
    caratteri sono il massimo che sta nella banda senza rimpicciolire il
@@ -1037,7 +1043,7 @@ aggL('linea_sicurezza','azioni','sgControfuoco','Creazione linea di sicurezza','
 
 agg('accensione_linee_p','azioni','sgControfuoco','Accensione per linee (punto) DA SISTEMARE',
   'Line firing (point)', accensioneDiretta(),
-  {r:1, r0:0, s:1, senzaDisco:1, lungo:1, senzAsta:1,
+  {r:1, r0:0, s:1, senzaDisco:1, lungo:1, senzAsta:1, lato:1,
    asta:{color:'#ffffff', weight:16, guaina:22, bordo:C.rosso,
          punta:40, bordoW:3.5, pieno:1, incl:90, fuori:-7}});
 

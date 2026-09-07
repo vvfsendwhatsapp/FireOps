@@ -1602,6 +1602,77 @@ function mostraComandoAfferente(sigla, nome){
     return Math.max(c.distanceTo(b), 30);
   }
 
+  /* La punta dell'asta segue stato e lato del simbolo, come i motivi di una
+   linea. Erano cablati 'attivo' e 1: sull'accensione per linee voleva dire
+   una freccia sempre piena e sempre dallo stesso fianco. */
+function decoraAsta(layer){
+  if (!layer._asta || !layer._gruppo) return;
+  const D = SIM[layer._tipo] || {};
+  const A = D.asta || {};
+  const colSegno = A.bordo || A.color || COL.nero;
+  const rc = (NS.SITAC_CODINE || {})[layer._tipo];
+  /* Solo i simboli che DICHIARANO uno stato lo seguono: pendenza e vento
+     non ne hanno, e leggerlo lì darebbe una punta vuota su ogni versante. */
+  const conStato = !!(D.s || D.stati);
+  const st = conStato ? (layer._stato || 'previsto') : 'attivo';
+  const lt = layer._lato || 1;
+
+  if (layer._astaDeco){ layer._gruppo.removeLayer(layer._astaDeco); layer._astaDeco = null; }
+  const tratteg = (conStato && st === 'previsto') ? '9,7' : null;
+  layer._asta.setStyle({dashArray: tratteg});
+  if (layer._astaGuaina) layer._astaGuaina.setStyle({dashArray: tratteg});
+
+  const finto = {color: colSegno, stati: conStato ? 1 : 0};
+  const motivi = [motivo(finto, {tipo:'punta', dim: A.punta || 20,
+    pieno: A.pieno != null ? A.pieno : 1, bordoW: A.bordoW,
+    incl: (A.incl || 0) * lt, fuori: (A.fuori || 0) * lt,
+    passo:0, offset:'100%'}, st, lt)];
+  /* Le codine sono l'intensità del vento, non un'azione: restano piene. */
+  if (rc) motivi.push(motivo(finto, {tipo:'codine', forma:rc.forma, n:rc.n,
+    dim:20, passo:0, offset:0, sempre:1, pieno:1}, 'attivo', 1));
+
+  layer._astaDeco = L.polylineDecorator(layer._asta, {patterns: motivi})
+    .addTo(layer._gruppo);
+}
+
+/* Come latoDi, ma il segmento è origine → maniglia: un simbolo orientabile
+   non ha vertici, ha una punta. */
+function latoDiAsta(layer, p){
+  const o = layer.getLatLng && layer.getLatLng();
+  const m = layer._maniglia && layer._maniglia.getLatLng();
+  if (!o || !m) return 1;
+  const a = map.latLngToContainerPoint(o);
+  const b = map.latLngToContainerPoint(m);
+  const c = map.latLngToContainerPoint(p);
+  return ((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x)) >= 0 ? 1 : -1;
+}
+
+/* Gemella di chiediLato per i simboli con asta. Stessa grammatica: le
+   frecce si spostano mentre si muove il puntatore, il clic ferma la scelta,
+   Esc torna al lato di partenza. */
+async function chiediLatoSimbolo(layer){
+  if (layer._lato == null) layer._lato = 1;
+  const prima = layer._lato;
+  fermaTutto(); spegniPulsanti(); stato(''); cursore('mirino'); clicPassante(true);
+  avvisoLato(t('scegliLato'));
+  const anteprima = e => {
+    const l = latoDiAsta(layer, e.latlng);
+    if (l === layer._lato) return;
+    layer._lato = l;
+    decoraAsta(layer);          // NON creaManiglia: riaggancerebbe i listener
+  };
+  map.on('mousemove', anteprima);
+  const p = await new Promise(risolvi => { attesaClic = risolvi; });
+  map.off('mousemove', anteprima);
+  nascondiAvvisoLato();
+  layer._lato = p ? latoDiAsta(layer, p) : prima;
+  decoraAsta(layer);
+  aggiornaStato();
+  fermaTutto(); spegniPulsanti();
+  stato(t('latoScelto'));
+  if (strumento) riattivaStrumento();
+}
+
   function creaManiglia(layer){
     if (layer._maniglia){ decori.removeLayer(layer._maniglia); }
     if (layer._asta){ decori.removeLayer(layer._asta); }
@@ -1664,15 +1735,7 @@ function mostraComandoAfferente(sigla, nome){
         selezionaElemento(layer);
         apriMenu(ev.containerPoint, vociMenu(layer));
       });
-      const finto = {color: colSegno};
-      const motivi = [motivo(finto, {tipo:'punta', dim: A.punta || 20,
-        pieno: A.pieno != null ? A.pieno : 1, bordoW: A.bordoW,
-        incl: A.incl, fuori: A.fuori,
-        passo:0, offset:'100%'}, 'attivo', 1)];
-      if (rc) motivi.push(motivo(finto, {tipo:'codine', forma:rc.forma,
-        n:rc.n, dim:20, passo:0, offset:0}, 'attivo', 1));
-      layer._astaDeco = L.polylineDecorator(layer._asta, {patterns: motivi})
-        .addTo(layer._gruppo);
+      decoraAsta(layer);
     } else {
       /* Il TP sta SU una linea di transito: la strada attraversa il simbolo
          ed esce da entrambi i lati. */
@@ -2409,6 +2472,10 @@ function mostraComandoAfferente(sigla, nome){
     creaManiglia(layer);
     etichettaElemento(layer);
     aggiornaStato();
+    if (SIM[layer._tipo] && SIM[layer._tipo].lato){
+      setTimeout(() => chiediLatoSimbolo(layer), 0);
+      return;
+    }
     if (strumento) riattivaStrumento();
   });
 
@@ -2602,6 +2669,8 @@ function mostraComandoAfferente(sigla, nome){
     } else if (LIN[k]){
       l.setStyle(stileLinea(LIN[k], l._stato));
       decora(l);
+    } else if (SIM[k] && SIM[k].senzAsta){
+      decoraAsta(l);
     } else if (l.setIcon){
       l.setIcon(iconaSimbolo(k, {stato:l._stato, testo:l._testo,
         rotazione:l._rotazione, paese:l._paese}));
@@ -2659,6 +2728,8 @@ function mostraComandoAfferente(sigla, nome){
         voci.push({et: t('menuPaese'), fai: () => cambiaPaese(l)});
       if (def && def.r)
         voci.push({et: t('menuDirezione'), fai: () => ridaiDirezione(l)});
+      if (def && def.lato)
+        voci.push({et: t('menuLato'), fai: () => chiediLatoSimbolo(l)});
       /* Solo pendenza e vento: sugli altri orientabili — TP, lanci —
          l'intensità non esiste come concetto. */
       if (/^(pend_|vento_)/.test(l._tipo || ''))
@@ -4124,6 +4195,7 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
         m._tipo = tipo; m._genere = 'simbolo'; m._stato = st;
         m._testo = pr.testo || null;
         m._paese = pr.paese || null;
+        m._lato = pr.lato === -1 ? -1 : 1;
         m._lung = pr.lung || null;
         m._rotazione = pr.rotazione != null ? pr.rotazione : null;
         aggancia(m);
