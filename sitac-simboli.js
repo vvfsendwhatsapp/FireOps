@@ -529,7 +529,7 @@ agg('eli','dispositivo','sgAereo','Elicotteri medi e leggeri','Light and medium 
 agg('eli_com','dispositivo','sgAereo','Elicottero Comando','Command helicopter', mezzoAereo('Eli Com'), {s:1, e:1, lbl:'ID Eli Com'});
 agg('aereo_altro','dispositivo','sgAereo','Altro mezzo aereo','Other air means', mezzoAereo(''), {s:1, e:1, lbl:'ID mezzo'});
 
-agg('dos','dispositivo','sgTerra','DOS — Direttore Operazioni Spegnimento','Fire operations director',
+agg('dos','dispositivo','sgTerra','DOS - Direttore Operazioni Spegnimento','WIC - Wildfire Incident Commander','COS - Commandant des Opérations de Secours','DOE - Director de Operaciones de Extinción',
   o => {
     const p = attivo(o), K = C.rosso;
     const x1 = 2, y1 = 18, x2 = 62, y2 = 48, xc = 32;
