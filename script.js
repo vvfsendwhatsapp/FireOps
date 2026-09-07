@@ -2917,7 +2917,7 @@ Koordináták küldéséhez:
         const offsetOre = calcolaOffsetRoma(adesso);
         const etichettaFuso = offsetOre === 2 ? "CEST" : "CET";
 
-        return `credit by VVFsendWhatsApp\n${nomeGiornoMaiuscolo} ${dataFormattata} ore ${oraFormattata} - Turno ${turno}\n(GMT+0${offsetOre}.00) Roma (${etichettaFuso})`;
+        return `Credits: FireOps VVF\n${nomeGiornoMaiuscolo} ${dataFormattata} ore ${oraFormattata} - Turno ${turno}\n(GMT+0${offsetOre}.00) Roma (${etichettaFuso})`;
     }
 
     // Rigenera il messaggio completo nella textarea, in base al Comando attivo e alla lingua scelta.
