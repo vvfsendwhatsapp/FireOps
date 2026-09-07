@@ -965,7 +965,7 @@ aggL('asse_lento','evoluzione',null,'Asse secondario (lento)','Secondary axis (s
 agg('asse_principale_p','evoluzione',null,'Asse di sviluppo principale (punto)',
   'Head of the fire (point)', asseDiretto(9, 0),
   {r:1, r0:0, senzaDisco:1, lungo:1, senzAsta:1,
-   asta:{color:C.rosso, weight:11, punta:38, pieno:1}});
+   asta:{color:C.rosso, weight:11, punta:44, pieno:1}});
 agg('asse_veloce_p','evoluzione',null,'Asse secondario veloce (punto)',
   'Secondary axis fast (point)', asseDiretto(6, 1),
   {r:1, r0:0, senzaDisco:1, lungo:1, senzAsta:1,
