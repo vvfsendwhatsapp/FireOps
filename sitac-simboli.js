@@ -998,7 +998,7 @@ aggL('difesa_linea','azioni','sgTerra','Difesa in linea','Defence on a line',
    sitac.js con un terzo clic dopo aver chiuso la linea. */
 aggL('attacco_fianchi','azioni','sgTerra','Attacco sui fianchi','Containment attack',
   {color:C.rosso, weight:2.8},
-  {stati:1, lato:1, deco:{tipo:'freccia45', dim:34, offset:'20%', passo:'30%', pieno:1}});
+  {stati:1, lato:1, deco:{tipo:'freccia45', dim:34, offset:'40%', passo:'30%', pieno:1}});
 /* Un attacco localizzato è un punto in cui si entra da una direzione: due
    vertici, origine e punta, come pendenza e vento. */
 aggL('attacco_localizzato','azioni','sgTerra','Attacco localizzato','Hot spotting',
