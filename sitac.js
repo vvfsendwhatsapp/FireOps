@@ -2360,17 +2360,14 @@ function mostraComandoAfferente(sigla, nome){
      azimut non lo fa nessuno, ma nemmeno cliccare al buio: la direzione si
      sceglie GUARDANDOLA, come su una carta di carta si gira la matita
      prima di tirare la riga. */
-function anteprimaDirezione(e){
+  function anteprimaDirezione(e){
     const l = attesaDirezione;
-    console.log('anteprima', !!l, l && l._tipo, !!(l && l._maniglia), !!(l && l._rifaiDeco));
     if (!l || !l.getLatLng) return;
     const o = l.getLatLng();
     const senzAsta = !!(SIM[l._tipo] && SIM[l._tipo].senzAsta);
-    /* Una pendenza ha un'estensione sul terreno: quel versante è ripido da
-      lì a lì, e la freccia lo dice. Il vento no — non ha una lunghezza, e
-      lasciarla tirare metterebbe nel file un numero che non significa
-      niente ma che qualcuno prima o poi leggerà come se significasse. */
     const allungabile = !!(SIM[l._tipo] && SIM[l._tipo].lungo);
+    console.log(l._tipo, 'senzAsta', senzAsta, 'lungo', allungabile,
+                'asta', !!l._asta, 'man', !!l._maniglia);
     l._rotazione = Math.round(azimut(o, e.latlng));
     /* Sulla pendenza il puntatore non dà solo la direzione ma anche la
        lunghezza: si tira la freccia fin dove serve, come una riga a mano. */
