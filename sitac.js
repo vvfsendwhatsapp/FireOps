@@ -1641,7 +1641,19 @@ function mostraComandoAfferente(sigla, nome){
       layer._asta = L.polyline([c, p],
         {color: colAsta, weight: A.weight || 2.8, pmIgnore: true,
          bubblingMouseEvents: false}).addTo(layer._gruppo);
-      // …i due listener click/contextmenu restano invariati…
+      layer._asta.on('click', () => {
+        if (attesaClic || attesaDirezione || attesaElemento) return;
+        selezionaElemento(layer);
+      });
+      layer._asta.on('contextmenu', ev => {
+        if (ev.originalEvent){
+          L.DomEvent.preventDefault(ev.originalEvent);
+          L.DomEvent.stopPropagation(ev.originalEvent);
+        }
+        if (attesaClic || attesaDirezione || attesaElemento) return;
+        selezionaElemento(layer);
+        apriMenu(ev.containerPoint, vociMenu(layer));
+      });
       const finto = {color: colAsta};
       const motivi = [motivo(finto, {tipo:'punta', dim: A.punta || 20,
         pieno: A.pieno != null ? A.pieno : 1, bordoW: A.bordoW,
@@ -1667,41 +1679,10 @@ function mostraComandoAfferente(sigla, nome){
        direzione già provata; si pulisce cambiando zoom o riposando il
        simbolo, ed è meno grave di un'anteprima che non si vede. */
     const rifaiDeco = () => {
-      if (senzAsta){
-        /* Come va disegnata l'asta lo dice la TAVOLA, non questo codice: il
-          nero con punta e codine è di pendenza e vento, ma un asse di
-          sviluppo è rosso, spesso e senza barbe. `asta` porta colore,
-          calibro e misura della punta; le codine restano solo dove la
-          simbologia le prevede. */
-        const A = (SIM[layer._tipo] && SIM[layer._tipo].asta) || {};
-        const colAsta = A.color || COL.nero;
-        const rc = (NS.SITAC_CODINE || {})[layer._tipo];
-        layer._asta = L.polyline([c, p],
-          {color: colAsta, weight: A.weight || 2.8, pmIgnore: true,
-          bubblingMouseEvents: false}).addTo(layer._gruppo);
-        // …i due listener click/contextmenu restano invariati…
-        const finto = {color: colAsta};
-        const motivi = [motivo(finto, {tipo:'punta', dim: A.punta || 20,
-          pieno: A.pieno != null ? A.pieno : 1, bordoW: A.bordoW,
-          passo:0, offset:'100%'}, 'attivo', 1)];
-        if (rc) motivi.push(motivo(finto, {tipo:'codine', forma:rc.forma,
-          n:rc.n, dim:20, passo:0, offset:0}, 'attivo', 1));
-        layer._astaDeco = L.polylineDecorator(layer._asta, {patterns: motivi})
-          .addTo(layer._gruppo);
-      };
       if (layer._astaDeco && layer._astaDeco.setPaths)
         layer._astaDeco.setPaths(layer._asta);
     };
-    /* Durante l'anteprima l'asta si muove NUDA: il decoratore lascia un
-       marcatore per ogni movimento del mouse, e su una punta grande e rossa
-       diventa una macchia che copre la carta. La punta compare al secondo
-       clic, quando la direzione è decisa — e a quel punto `creaManiglia`
-       ricostruisce tutto da zero. */
-    if (l._astaDeco){
-      l._gruppo.removeLayer(l._astaDeco);
-      l._astaDeco = null;
-    }
-    //layer._rifaiDeco = rifaiDeco;
+    layer._rifaiDeco = rifaiDeco;
 
     const puntaSvg = g => `<svg viewBox="0 0 26 26" style="transform:rotate(${g}deg)">`
       + `<path d="M13 2l9 22-9-6-9 6Z" fill="${COL.rosso}"/></svg>`;
