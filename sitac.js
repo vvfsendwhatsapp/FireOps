@@ -1616,6 +1616,11 @@ function decoraAsta(layer){
   const conStato = !!(D.s || D.stati);
   const st = conStato ? (layer._stato || 'previsto') : 'attivo';
   const lt = layer._lato || 1;
+  
+    /* Freccia vuota: il gambo è bianco finché l'azione è prevista, e si
+     riempie del colore del bordo quando è effettuata. */
+  const colAsta = (conStato && st !== 'previsto' && A.bordo)
+    ? A.bordo : (A.color || COL.nero);
 
   if (layer._astaDeco){ layer._gruppo.removeLayer(layer._astaDeco); layer._astaDeco = null; }
   const tratteg = (conStato && st === 'previsto') ? '9,7' : null;
