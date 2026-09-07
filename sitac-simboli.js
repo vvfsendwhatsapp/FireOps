@@ -662,11 +662,16 @@ case 'punta': {
      diagonale oltre il contorno geometrico. Col conto vecchio — `bw * 4` più
      sei fissi — la punta si tagliava sul fianco appena il calibro cresceva.
      `marg` resta regolabile perché quanto serva dipende anche da `dim`. */
-  const marg = o.marg != null ? o.marg : 6;
+    const marg = o.marg != null ? o.marg : 6;
   const sbordo = bw * 2 + 2;
-  w = pari(bT * Math.cos(a) + hT * Math.sin(a)
-           + Math.abs(o.fuori || 0) * 2 + sbordo * 2 + marg);
-  h = pari(hT * Math.cos(a) + bT * Math.sin(a) + sbordo * 2 + marg);
+  /* Il baricentro sta a un TERZO dell'altezza dalla base, quindi la punta
+     sporge di 2/3 sopra il centro del riquadro: contare `hT` come se fosse
+     centrato lascia fuori un sesto dell'altezza, ed è la fetta di punta che
+     si vedeva tagliata. Il semiasse che conta è il maggiore dei due. */
+  const semiY = Math.max(hT * 2 / 3, hT / 3);
+  w = pari((bT / 2 * Math.cos(a) + semiY * Math.sin(a)
+            + Math.abs(o.fuori || 0) + sbordo) * 2 + marg);
+  h = pari((semiY * Math.cos(a) + bT / 2 * Math.sin(a) + sbordo) * 2 + marg);
   const cx = w / 2, cy = h / 2;
   const ay = cy - hT * 2 / 3, by = cy + hT / 3;
   const chiudi = o.aperta ? '' : 'Z';
