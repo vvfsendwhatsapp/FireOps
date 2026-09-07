@@ -983,12 +983,6 @@ agg('asse_lento_p','evoluzione',null,'Asse secondario lento (punto)',
    asta:{color:'#ffffff', weight:4.5, guaina:8, bordo:C.rosso,
          punta:22, bordoW:1.75, pieno:0}});
 
-agg('accensione_linee_p','azioni','sgControfuoco','Accensione per linee (punto)',
-  'Line firing (point)', accensioneDiretta(),
-  {r:1, r0:0, s:1, senzaDisco:1, lungo:1, senzAsta:1,
-   asta:{color:'#ffffff', weight:16, guaina:22, bordo:C.rosso,
-         punta:40, bordoW:3.5, pieno:1, incl:90, fuori:-7}});
-
 /* Doppia linea parallela a denti: il tracciato è la linea di monte, il
    motivo aggiunge quella affiancata e le traversine. */
 aggL('fronte','evoluzione',null,'Fronte dell\u2019incendio','Fire front',
@@ -1030,6 +1024,14 @@ aggL('linea_sicurezza','azioni','sgControfuoco','Creazione linea di sicurezza','
    `guaina` meno `weight` dà il bordo della fascia, `bordoW` è quello della
    punta e deve pareggiarlo, `fuori` porta la base sul bordo. Cambiandone
    uno vanno rivisti gli altri. */
+
+agg('accensione_linee_p','azioni','sgControfuoco','Accensione per linee (punto)',
+  'Line firing (point)', accensioneDiretta(),
+  {r:1, r0:0, s:1, senzaDisco:1, lungo:1, senzAsta:1,
+   asta:{color:'#ffffff', weight:16, guaina:22, bordo:C.rosso,
+         punta:40, bordoW:3.5, pieno:1, incl:90, fuori:-7}});
+
+
 aggL('accensione_linee','azioni','sgControfuoco','Accensione per linee','Line firing',
   {color:'#ffffff', weight:16, lineCap:'butt'},
   {stati:1, lato:1, punti2:1, vuota:1, bordo:C.rosso,
