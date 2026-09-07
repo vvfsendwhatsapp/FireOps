@@ -969,11 +969,13 @@ agg('asse_principale_p','evoluzione',null,'Asse di sviluppo principale (punto)',
 agg('asse_veloce_p','evoluzione',null,'Asse secondario veloce (punto)',
   'Secondary axis fast (point)', asseDiretto(6, 1),
   {r:1, r0:0, senzaDisco:1, lungo:1, senzAsta:1,
-   asta:{color:C.rosso, weight:7, punta:30, bordoW:2}});
+   asta:{color:'#ffffff', weight:7, guaina:11, bordo:C.rosso,
+         punta:30, bordoW:2}});
 agg('asse_lento_p','evoluzione',null,'Asse secondario lento (punto)',
   'Secondary axis slow (point)', asseDiretto(4, 1),
   {r:1, r0:0, senzaDisco:1, lungo:1, senzAsta:1,
-   asta:{color:C.rosso, weight:4.5, punta:22, bordoW:1.75}});
+   asta:{color:'#ffffff', weight:4.5, guaina:8, bordo:C.rosso,
+         punta:22, bordoW:1.75}});
 
 /* Doppia linea parallela a denti: il tracciato è la linea di monte, il
    motivo aggiunge quella affiancata e le traversine. */

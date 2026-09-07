@@ -1565,6 +1565,7 @@ function mostraComandoAfferente(sigla, nome){
     if (layer._asta){ decori.removeLayer(layer._asta); layer._asta = null; }
     if (layer._astaDeco){ decori.removeLayer(layer._astaDeco); layer._astaDeco = null; }
     if (layer._gruppo){ decori.removeLayer(layer._gruppo); layer._gruppo = null; }
+    if (layer._astaGuaina){ decori.removeLayer(layer._astaGuaina); layer._astaGuaina = null; }
     scollegaLancio(layer);
   }
   map.on('pm:remove', e => { scollega(e.layer); aggiornaStato(); });
@@ -1637,6 +1638,10 @@ function mostraComandoAfferente(sigla, nome){
          simbologia le prevede. */
       const A = (SIM[layer._tipo] && SIM[layer._tipo].asta) || {};
       const colAsta = A.color || COL.nero;
+      /* Il colore dei motivi è quello del BORDO, non del tratto: su un asse
+         secondario l'asta è bianca, e una punta bianca su fondo chiaro non
+         c'è. Dove la guaina non esiste il bordo coincide col tratto. */
+      const colSegno = A.bordo || colAsta;
       const rc = (NS.SITAC_CODINE || {})[layer._tipo];
       layer._asta = L.polyline([c, p],
         {color: colAsta, weight: A.weight || 2.8, pmIgnore: true,
@@ -1654,7 +1659,7 @@ function mostraComandoAfferente(sigla, nome){
         selezionaElemento(layer);
         apriMenu(ev.containerPoint, vociMenu(layer));
       });
-      const finto = {color: colAsta};
+      const finto = {color: colSegno};
       const motivi = [motivo(finto, {tipo:'punta', dim: A.punta || 20,
         pieno: A.pieno != null ? A.pieno : 1, bordoW: A.bordoW,
         passo:0, offset:'100%'}, 'attivo', 1)];
@@ -1698,12 +1703,13 @@ function mostraComandoAfferente(sigla, nome){
             iconSize:[24,24], iconAnchor:[12,12], html:''})
         : L.divIcon({className:'sitac-maniglia', iconSize:[18,18],
             iconAnchor:[9,9], html:'<span></span>'})}).addTo(layer._gruppo);
-        layer._maniglia.on('drag', () => {
+      layer._maniglia.on('drag', () => {
       const m = layer._maniglia.getLatLng(), o = layer.getLatLng();
       layer._rotazione = Math.round(azimut(o, m));
       if (senzAsta){
         if (allungabile) layer._lung = Math.round(o.distanceTo(m));
         layer._asta.setLatLngs([o, m]);
+        if (layer._astaGuaina) layer._astaGuaina.setLatLngs([o, m]);
         rifaiDeco();
       } else {
         layer.setIcon(iconaSimbolo(layer._tipo, {stato:layer._stato,
@@ -1728,6 +1734,7 @@ function mostraComandoAfferente(sigla, nome){
       if (layer._asta) layer._asta.setLatLngs(senzAsta ? [o, np] : (tp
         ? [puntoDaAzimut(o, (layer._rotazione || 0) + 180, distanzaManiglia() * 0.55), np]
         : [o, np]));
+      if (layer._astaGuaina) layer._astaGuaina.setLatLngs([o, np]);
       rifaiDeco();
     });
   }
@@ -2363,6 +2370,7 @@ function mostraComandoAfferente(sigla, nome){
       : (l._tipo === 'tp'
           ? [puntoDaAzimut(o, l._rotazione + 180, distanzaManiglia() * 0.55), np]
           : [o, np]));
+    if (l._astaGuaina) l._astaGuaina.setLatLngs([o, np]);
     /* Durante l'anteprima l'asta si muove NUDA: il decoratore lascia un
        marcatore per ogni movimento del mouse, e su una punta grande e rossa
        diventa una macchia che copre la carta. La punta compare al secondo
@@ -2372,7 +2380,6 @@ function mostraComandoAfferente(sigla, nome){
       l._gruppo.removeLayer(l._astaDeco);
       l._astaDeco = null;
     }
-    //if (l._rifaiDeco) l._rifaiDeco();
     const el = l._maniglia.getElement();
     const svg = el && el.querySelector('svg');
     if (svg) svg.style.transform = `rotate(${l._rotazione}deg)`;
