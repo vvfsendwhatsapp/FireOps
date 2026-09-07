@@ -29,14 +29,14 @@ window.FireOpsSchede = {
         { id: "moduli-cmr", label: "Moduli CMR" },
         { id: "mappa-meteo", label: "Meteo locale" },
         { id: "normative", label: "Normative, Circolari e Disposizioni" },
-        { id: "sitac-aib", label: "SITAC AIB" },
+        //{ id: "sitac-aib", label: "SITAC AIB" },
         { id: "sostanze-pericolose", label: "Sostanze pericolose" },
         { id: "qrcode", label: "QrCode" },
         { id: "terremoti", label: "Terremoti INGV" },
         { id: "turnario", label: "Turnario" },
-        { id: "gestione-fpds", label: "Gestione interventi FPDS", lavori: true },
-        { id: "schede-soccorso", label: "Schede di soccorso", lavori: true },
-        { id: "radio-telefoni", label: "Radio e telefoni", lavori: true }
+        //{ id: "gestione-fpds", label: "Gestione interventi FPDS", lavori: true },
+        //{ id: "schede-soccorso", label: "Schede di soccorso", lavori: true },
+        //{ id: "radio-telefoni", label: "Radio e telefoni", lavori: true }
     ],
 
     // Schede aperte all'apertura di una sessione nuova. Dentro la stessa
