@@ -3244,7 +3244,13 @@ async function chiediLatoSimbolo(layer){
        scritta da qualche parte inganna — sembra un punto, non un'ellisse
        che in mappa può superare i cento metri. */
     b.title = d.poly ? `${nm(d)} — ${d.poly.a * 2}\u00d7${d.poly.b * 2} m` : nm(d);
-    b.innerHTML = `<i class="sitac-swatch">${svgSimbolo(k, {stato: statoPer(d)})}</i>`
+    /* I simboli con asta in mappa sono tracciati, non glifi: l'anteprima la
+       costruisce anteprimaAsta con gli stessi pezzi, orizzontale come le
+       linee. Gli altri restano il disegno della tavola. */
+    const ant = (d.asta && NS.SITAC_ANTEPRIMA_ASTA)
+      ? NS.SITAC_ANTEPRIMA_ASTA(k, statoPer(d))
+      : svgSimbolo(k, {stato: statoPer(d)});
+    b.innerHTML = `<i class="sitac-swatch${d.asta ? ' sitac-swatch-linea' : ''}">${ant}</i>`
       + `<span>${esc(nm(d))}</span>`;
     b.onclick = () => attiva('simbolo', k, b);
     return b;
@@ -3652,7 +3658,8 @@ async function chiediLatoSimbolo(layer){
       const k = b.dataset.chiave, d = SIM[k];
       if (!d || d.g !== tavola) return;
       const sw = b.querySelector('.sitac-swatch');
-      if (sw) sw.innerHTML = svgSimbolo(k, {stato: s});
+      if (sw) sw.innerHTML = (d.asta && NS.SITAC_ANTEPRIMA_ASTA)
+        ? NS.SITAC_ANTEPRIMA_ASTA(k, s) : svgSimbolo(k, {stato: s});
     });
 
     /* Anche le linee cambiano faccia: tratteggiata e vuota quando è prevista,
@@ -4411,7 +4418,9 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
       } else if (SIM[k]){
         const d = SIM[k];
         leg.insertAdjacentHTML('beforeend',
-          `<div><span class="sitac-leg-sim">${svgSimbolo(k, {stato:x._stato})}</span>`
+          (d.asta && NS.SITAC_ANTEPRIMA_ASTA
+            ? `<div><i class="sitac-leg-lin">${NS.SITAC_ANTEPRIMA_ASTA(k, x._stato)}</i>`
+            : `<div><span class="sitac-leg-sim">${svgSimbolo(k, {stato:x._stato})}</span>`)
           + `<span>${esc(nm(d) + statoDi(d, x._stato))}</span></div>`);
       } else if (k === 'nota'){
         leg.insertAdjacentHTML('beforeend',
