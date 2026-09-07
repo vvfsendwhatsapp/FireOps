@@ -1616,7 +1616,7 @@ function decoraAsta(layer){
   const conStato = !!(D.s || D.stati);
   const st = conStato ? (layer._stato || 'previsto') : 'attivo';
   const lt = layer._lato || 1;
-  
+
     /* Freccia vuota: il gambo è bianco finché l'azione è prevista, e si
      riempie del colore del bordo quando è effettuata. */
   const colAsta = (conStato && st !== 'previsto' && A.bordo)
@@ -1630,7 +1630,9 @@ function decoraAsta(layer){
   const finto = {color: colSegno, stati: conStato ? 1 : 0};
   const motivi = [motivo(finto, {tipo:'punta', dim: A.punta || 20,
     pieno: A.pieno != null ? A.pieno : 1, bordoW: A.bordoW,
-    incl: (A.incl || 0) * lt, fuori: (A.fuori || 0) * lt,
+    /* `incl` e `fuori` vanno grezzi: è decoGlifo a moltiplicarli per
+       `lato`, e premoltiplicarli qui li specchiava due volte. */
+    incl: A.incl, fuori: A.fuori,
     passo:0, offset:'100%'}, st, lt)];
   /* Le codine sono l'intensità del vento, non un'azione: restano piene. */
   if (rc) motivi.push(motivo(finto, {tipo:'codine', forma:rc.forma, n:rc.n,
