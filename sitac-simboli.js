@@ -1031,15 +1031,8 @@ agg('accensione_linee_p','azioni','sgControfuoco','Accensione per linee (punto)'
    asta:{color:'#ffffff', weight:16, guaina:22, bordo:C.rosso,
          punta:40, bordoW:3.5, pieno:1, incl:90, fuori:-7}});
 
-
-aggL('accensione_linee','azioni','sgControfuoco','Accensione per linee','Line firing',
-  {color:'#ffffff', weight:16, lineCap:'butt'},
-  {stati:1, lato:1, punti2:1, vuota:1, bordo:C.rosso,
-   guaina:{weight:22, lineCap:'butt'},
-   deco:{tipo:'punta', dim:40, passo:0, offset:'100%', incl:90,
-         pieno:1, fuori:-7, bordoW:3.5}});
 aggL('via_fuga','azioni','sgEvacuazione','Via di fuga per evacuazione','Evacuation escape route',
-  {color:C.nero, weight:2.6}, {stati:1, deco:{tipo:'chevron', passo:'33%', dim:16, pieno:1}});
+  {color:C.nero, weight:2.6}, {stati:1, deco:{tipo:'chevron', passo:'33%', dim:16, pieno:0}});
 
 /* =====================================================================
    5. ANTEPRIMA DI UNA LINEA
