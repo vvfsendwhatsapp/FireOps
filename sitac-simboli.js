@@ -389,24 +389,29 @@ function direzione(forma, n){
   };
 }
 
-/* Assi e accensione in versione PUNTO: stesso gesto di pendenza e vento —
-   un clic per posare, si punta col mouse, secondo clic per fermare — invece
-   della spezzata disegnata con Geoman.
-   Convivono con le versioni a linea, che restano: si prova questa sul campo
-   e la vecchia si toglie solo quando è chiaro che questa regge. Le chiavi
-   sono diverse, quindi i due gruppi non si confondono nel GeoJSON.
-   `calibro` è lo spessore dell'asta, `vuoto` dice se la sagoma è bianca col
-   bordo o piena: è la sola differenza fra principale e secondari. */
-function asseDiretto(calibro, vuoto, col){
+/* Assi in versione PUNTO: stesso gesto di pendenza e vento — un clic per
+   posare, si punta col mouse, secondo clic per fermare — invece della
+   spezzata disegnata con Geoman. Le versioni a linea restano: si prova
+   questa sul campo e la vecchia si toglie quando è chiaro che regge.
+   Il calibro è nel DISEGNO e non nello stile Leaflet: qui non c'è una
+   polilinea da ingrossare, c'è una sagoma. `calibro` è la semilarghezza
+   dell'asta sulla tela 64×64 — il principale è un blocco, i secondari
+   sono aste sottili col contorno.
+   `vuoto` è la sola altra differenza: bianco col bordo rosso per i
+   secondari, pieno per il principale. È quello che li distingue a colpo
+   d'occhio sulla carta, non lo spessore da solo. */
+function asseDiretto(calibro, vuoto){
   return o => {
-    const K = col || C.rosso;
+    const K = C.rosso;
     const p = attivo(o);
-    /* Punta ancorata in alto e asta fino in fondo alla tela, come
-       `direzione()`: la rotazione del contenitore corrisponde all'azimut. */
-    const pieno = vuoto ? (p ? K : '#fff') : K;
-    const sw = vuoto ? 2.4 : 0;
-    return T(`<path d="M32 4L48 30L38 30L38 60L26 60L26 30L16 30Z"`
-      + ` fill="${pieno}" stroke="${K}" stroke-width="${sw}"`
+    const c = calibro;                 // semilarghezza dell'asta
+    const b = Math.max(c + 6, 16);     // semibase della punta
+    const yp = 30;                     // dove la punta incontra l'asta
+    const riempi = vuoto ? (p ? K : '#fff') : K;
+    const sw = vuoto ? 2.6 : 0;
+    return T(`<path d="M32 3L${32 + b} ${yp}L${32 + c} ${yp}L${32 + c} 61`
+      + `L${32 - c} 61L${32 - c} ${yp}L${32 - b} ${yp}Z"`
+      + ` fill="${riempi}" stroke="${K}" stroke-width="${sw}"`
       + ` stroke-linejoin="round"/>`);
   };
 }
