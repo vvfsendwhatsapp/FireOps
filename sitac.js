@@ -4132,6 +4132,28 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
 
       if (g.type === 'LineString'){
         const def = LIN[tipo];
+        /* Gli assi erano linee e adesso sono simboli a due punti: un file
+           salvato prima porta una LineString con una chiave che ora sta
+           fra i simboli. Invece di scartarla si converte — primo vertice
+           come origine, ultimo per la direzione e la lunghezza — così una
+           SITAC archiviata si riapre intera.
+           Se la linea era una spezzata, gli eventuali vertici intermedi si
+           perdono: il simbolo è un segmento. È il prezzo del cambio, ed è
+           meglio di un asse che sparisce. */
+        if (!def && SIM[tipo] && SIM[tipo].senzAsta){
+          const v = verso(g.coordinates);
+          if (v.length >= 2){
+            const m = L.marker(v[0], {draggable:true,
+              icon: iconaSimbolo(tipo, {stato:st})});
+            m._tipo = tipo; m._genere = 'simbolo'; m._stato = st;
+            m._rotazione = Math.round(azimut(v[0], v[v.length - 1]));
+            if (SIM[tipo].lungo)
+              m._lung = Math.round(v[0].distanceTo(v[v.length - 1]));
+            aggancia(m);
+            creaManiglia(m);
+            return;
+          }
+        }
         if (!def){ scarti++; return; }
         const l = L.polyline(verso(g.coordinates), stileLinea(def, st));
         l._tipo = tipo; l._genere = 'linea'; l._stato = st;

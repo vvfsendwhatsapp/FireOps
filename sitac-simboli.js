@@ -946,21 +946,6 @@ aggL('elettrodotto_off','zona',null,'Linea elettrica disattivata','Power line of
    il fuoco VA, e la direzione è quella della linea. `incl` e `fuori` restano
    fuori: sono dell'accensione, dove la freccia esce di traverso perché
    indica da che parte si manda il fuoco, non dove finisce il tracciato. */
-aggL('asse_principale','evoluzione',null,'Asse di sviluppo principale','Head of the fire',
-  {color:C.rosso, weight:11, lineCap:'butt'},
-  {deco:{tipo:'punta', passo:0, offset:'100%', arretra:0, dim:38, pieno:1, sempre:1}});
-
-aggL('asse_veloce','evoluzione',null,'Asse secondario (veloce)','Secondary axis (fast)',
-  {color:'#ffffff', weight:7, lineCap:'butt'},
-  {bordo:C.rosso, guaina:{weight:11},
-   deco:[{tipo:'punta', passo:0, offset:'100%', arretra:0, dim:30, sempre:1, bordoW:2},
-         {tipo:'tappo', passo:0, offset:4, dim:14}]});
-
-aggL('asse_lento','evoluzione',null,'Asse secondario (lento)','Secondary axis (slow)',
-  {color:'#ffffff', weight:4.5, lineCap:'butt'},
-  {bordo:C.rosso, guaina:{weight:8},
-   deco:[{tipo:'punta', passo:0, offset:'100%', arretra:0, dim:22, sempre:1, bordoW:1.75},
-         {tipo:'tappo', passo:0, offset:3, dim:11}]});
 
 agg('asse_principale_p','evoluzione',null,'Asse di sviluppo principale (punto)',
   'Head of the fire (point)', asseDiretto(9, 0),
@@ -1168,6 +1153,13 @@ NS.SITAC_BANDIERA = bandieraTag;
    la chiave è la stessa, cambia solo la geometria, e l'import se ne accorge
    da sé trovando un Point dove ora c'è una linea. */
 NS.SITAC_VECCHI = {gruppo:'modulo_vvf', colonna:'modulo_ue', acqua_eli:'acqua_aerei',
-  ostacolo_volo:'fune_sbalzo', evacuazione:'area_evacuare'};
-
+  ostacolo_volo:'fune_sbalzo', evacuazione:'area_evacuare',
+  /* Gli assi sono passati da linea a simbolo: la chiave cambia, e un file
+     vecchio va ricondotto. La geometria però resta una LineString, che
+     `carica` non sa più trattare per queste chiavi — quei tracciati
+     entreranno come scarti. È il prezzo del cambio, e va saputo prima di
+     riaprire una SITAC archiviata. */
+  asse_principale:'asse_principale_p',
+  asse_veloce:'asse_veloce_p',
+  asse_lento:'asse_lento_p'};
 })();
