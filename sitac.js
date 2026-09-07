@@ -1627,7 +1627,7 @@ function decoraAsta(layer){
     ? A.bordo : (A.color || COL.nero);
 
   if (layer._astaDeco){ layer._gruppo.removeLayer(layer._astaDeco); layer._astaDeco = null; }
-  const tratteg = (conStato && st === 'previsto') ? '9,7' : null;
+  const tratteg = null;
   layer._asta.setStyle({dashArray: tratteg, color: colAsta});
   if (layer._astaGuaina) layer._astaGuaina.setStyle({dashArray: tratteg});
 

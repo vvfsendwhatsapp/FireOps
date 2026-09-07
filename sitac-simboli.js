@@ -1160,7 +1160,7 @@ function anteprimaAsta(k, stato){
   /* Il gambo bianco si riempie quando l'azione è fatta, come in mappa. */
   const colGambo = (d.s && !previsto && A.bordo) ? A.bordo : (A.color || C.nero);
   const colSegno = A.bordo || A.color || C.nero;
-  const tratteg = (d.s && previsto) ? ' stroke-dasharray="7,5"' : '';
+    const tratteg = '';
 
   /* Le misure della carta sono in pixel di mappa e qui il riquadro è alto
      30: si riducono tutte dello stesso fattore, o una punta da 40 coprirebbe
@@ -1172,7 +1172,8 @@ function anteprimaAsta(k, stato){
   /* La punta sta a destra e occupa il suo spazio: il gambo si ferma prima,
      o passa sotto la freccia e si vede spuntare. */
   const g = decoGlifo('punta', {col: colSegno, dim: (A.punta || 20) * sc,
-    pieno: A.pieno != null ? A.pieno : 1, bordoW: (A.bordoW || 0) * sc,
+    pieno: (A.pieno != null ? !!A.pieno : true) && !previsto,
+    bordoW: (A.bordoW || 0) * sc,
     incl: A.incl, fuori: A.fuori, lato: 1});
   const xPunta = A_W - g.h / 2 - 1;
   const xFine = xPunta - g.h * 0.2;
