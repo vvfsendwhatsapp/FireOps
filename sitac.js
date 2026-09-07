@@ -1692,7 +1692,16 @@ function mostraComandoAfferente(sigla, nome){
       if (layer._astaDeco && layer._astaDeco.setPaths)
         layer._astaDeco.setPaths(layer._asta);
     };
-    layer._rifaiDeco = rifaiDeco;
+    /* Durante l'anteprima l'asta si muove NUDA: il decoratore lascia un
+       marcatore per ogni movimento del mouse, e su una punta grande e rossa
+       diventa una macchia che copre la carta. La punta compare al secondo
+       clic, quando la direzione è decisa — e a quel punto `creaManiglia`
+       ricostruisce tutto da zero. */
+    if (l._astaDeco){
+      l._gruppo.removeLayer(l._astaDeco);
+      l._astaDeco = null;
+    }
+    //layer._rifaiDeco = rifaiDeco;
 
     const puntaSvg = g => `<svg viewBox="0 0 26 26" style="transform:rotate(${g}deg)">`
       + `<path d="M13 2l9 22-9-6-9 6Z" fill="${COL.rosso}"/></svg>`;
@@ -2376,7 +2385,16 @@ function anteprimaDirezione(e){
       : (l._tipo === 'tp'
           ? [puntoDaAzimut(o, l._rotazione + 180, distanzaManiglia() * 0.55), np]
           : [o, np]));
-    if (l._rifaiDeco) l._rifaiDeco();
+    /* Durante l'anteprima l'asta si muove NUDA: il decoratore lascia un
+       marcatore per ogni movimento del mouse, e su una punta grande e rossa
+       diventa una macchia che copre la carta. La punta compare al secondo
+       clic, quando la direzione è decisa — e a quel punto `creaManiglia`
+       ricostruisce tutto da zero. */
+    if (l._astaDeco){
+      l._gruppo.removeLayer(l._astaDeco);
+      l._astaDeco = null;
+    }
+    //if (l._rifaiDeco) l._rifaiDeco();
     const el = l._maniglia.getElement();
     const svg = el && el.querySelector('svg');
     if (svg) svg.style.transform = `rotate(${l._rotazione}deg)`;
