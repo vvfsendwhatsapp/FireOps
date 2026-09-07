@@ -1139,6 +1139,69 @@ function anteprimaLinea(k, stato){
 }
 
 /* =====================================================================
+   5bis. ANTEPRIMA DI UN SIMBOLO CON ASTA
+   Pendenza, vento, i tre assi e l'accensione in mappa non sono glifi ma
+   TRACCIATI: una polilinea con sopra il motivo `punta` e, dove servono,
+   le codine. In tavolozza però `senzaDisco` restituisce un'icona vuota, e
+   quello che si vedeva era o niente o un secondo disegno fatto a mano che
+   si scollegava al primo ritocco di `asta:{...}`.
+   Qui si costruisce l'anteprima con gli STESSI pezzi della carta, letti
+   dalla stessa registrazione: se cambia il calibro dell'asta o la misura
+   della punta, tavolozza e legenda seguono da sé.
+   Orizzontale come le linee, per avere lo spazio di leggersi.
+   ===================================================================== */
+function anteprimaAsta(k, stato){
+  const d = S[k];
+  if (!d || !d.asta) return '';
+  const A = d.asta;
+  const y = A_H / 2;
+  const previsto = !!(d.s && stato !== 'attivo');
+
+  /* Il gambo bianco si riempie quando l'azione è fatta, come in mappa. */
+  const colGambo = (d.s && !previsto && A.bordo) ? A.bordo : (A.color || C.nero);
+  const colSegno = A.bordo || A.color || C.nero;
+  const tratteg = (d.s && previsto) ? ' stroke-dasharray="7,5"' : '';
+
+  /* Le misure della carta sono in pixel di mappa e qui il riquadro è alto
+     30: si riducono tutte dello stesso fattore, o una punta da 40 coprirebbe
+     l'anteprima intera. */
+  const sc = 0.42;
+  const peso = Math.max(2, (A.weight || 3) * sc);
+  const gua  = A.guaina ? Math.max(peso + 2, A.guaina * sc) : 0;
+
+  /* La punta sta a destra e occupa il suo spazio: il gambo si ferma prima,
+     o passa sotto la freccia e si vede spuntare. */
+  const g = decoGlifo('punta', {col: colSegno, dim: (A.punta || 20) * sc,
+    pieno: A.pieno != null ? A.pieno : 1, bordoW: (A.bordoW || 0) * sc,
+    incl: A.incl, fuori: A.fuori, lato: 1});
+  const xPunta = A_W - g.h / 2 - 1;
+  const xFine = xPunta - g.h * 0.2;
+
+  let s = '';
+  if (gua)
+    s += `<line x1="2" y1="${y}" x2="${xFine}" y2="${y}" stroke="${colSegno}"`
+      + ` stroke-width="${gua.toFixed(1)}"/>`;
+  s += `<line x1="2" y1="${y}" x2="${xFine}" y2="${y}" stroke="${colGambo}"`
+    + ` stroke-width="${peso.toFixed(1)}"${tratteg}/>`;
+
+  /* Il glifo nasce con la linea VERTICALE e la punta in alto: ruotato di 90°
+     punta a destra, come il tracciato qui. `fuori` è lo scostamento di
+     traverso, che dopo la rotazione diventa verticale. */
+  s += `<g transform="translate(${xPunta.toFixed(1)} ${y}) rotate(90)`
+    + ` translate(${-g.w/2} ${-g.h/2})">${g.html}</g>`;
+
+  /* Le codine dell'intensità stanno all'altro capo, come sulla carta. */
+    const rc = (NS.SITAC_CODINE || {})[k];
+  if (rc){
+    const c = decoGlifo('codine', {col: colSegno, forma: rc.forma, n: rc.n,
+      dim: 20 * sc, pieno: 1, lato: 1});
+    s += `<g transform="translate(${(2 + c.h / 2).toFixed(1)} ${y}) rotate(90)`
+      + ` translate(${-c.w/2} ${-c.h/2})">${c.html}</g>`;
+  }
+  return `<svg viewBox="0 0 ${A_W} ${A_H}" xmlns="http://www.w3.org/2000/svg">${s}</svg>`;
+}
+
+/* =====================================================================
    6. TAVOLE E RIQUADRI
    L'ordine è quello della pubblicazione.
    ===================================================================== */
