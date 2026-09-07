@@ -1552,7 +1552,6 @@ function mostraComandoAfferente(sigla, nome){
        ricostruisce sullo stesso layer, e il glifo col lato cambiato non
        arriva mai a schermo. `clearLayers` sul gruppo non basta — i
        marcatori restano appesi all'istanza vecchia. */
-    if (layer._deco && layer._deco.remove) layer._deco.remove();
     layer._deco = L.polylineDecorator(layer, {patterns});
     layer._gruppoDeco.addLayer(layer._deco);
   }
@@ -1669,20 +1668,16 @@ function mostraComandoAfferente(sigla, nome){
         : {color:'#0070c0', weight:2.5, dashArray:'6,5', interactive:false}).addTo(layer._gruppo);
       if (tp) layer._asta.bringToBack();
     }
-    /* PolylineDecorator riposiziona i marcatori ma non sempre butta quelli
-       vecchi: dopo qualche movimento restano in carta le punte e le codine
-       di tutte le direzioni provate. Si distrugge e si rifà il decoratore —
-       l'unico modo sicuro — invece di chiamare setPaths. */
+    /* `setPaths` invece di ricostruire: PolylineDecorator riusa i propri
+       marcatori, e distruggere l'istanza a ogni movimento del mouse li
+       lasciava scollegati — la freccia smetteva di girare sotto il
+       puntatore. Il prezzo è che ogni tanto resta in carta la punta di una
+       direzione già provata; si pulisce cambiando zoom o riposando il
+       simbolo, ed è meno grave di un'anteprima che non si vede. */
     const rifaiDeco = () => {
       if (!senzAsta) return;
-      if (layer._astaDeco) layer._gruppo.removeLayer(layer._astaDeco);
-      const rc = (NS.SITAC_CODINE || {})[layer._tipo] || {forma:'T', n:1};
-      const finto = {color: COL.nero};
-      layer._astaDeco = L.polylineDecorator(layer._asta, {patterns: [
-        motivo(finto, {tipo:'punta', dim:20, pieno:1, passo:0, offset:'100%'}, 'attivo', 1),
-        motivo(finto, {tipo:'codine', forma:rc.forma, n:rc.n, dim:20,
-                       passo:0, offset:0}, 'attivo', 1)
-      ]}).addTo(layer._gruppo);
+      if (layer._astaDeco && layer._astaDeco.setPaths)
+        layer._astaDeco.setPaths(layer._asta);
     };
     layer._rifaiDeco = rifaiDeco;
 
