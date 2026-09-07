@@ -1253,7 +1253,11 @@ function mostraComandoAfferente(sigla, nome){
          clic che nessuno aveva detto di fare. Al secondo punto si chiude e
          parte subito "Scegli il lato". */
       const defL = strumento && strumento.genere === 'linea' && LIN[strumento.chiave];
-      const soloDue = !!(defL && (defL.punti2 || defL.lato));
+      /* `punti2` chiude al secondo vertice, `lato` no: sono due cose
+         diverse. L'accensione è un segmento e si chiude da sé; la difesa
+         in linea corre lungo un crinale, quindi resta una spezzata libera
+         e il lato lo si sceglie dopo il doppio clic. */
+      const soloDue = !!(defL && defL.punti2);
       e.workingLayer.on('pm:vertexadded', ev => {
         misuraPunti.push(ev.latlng);
         if (soloDue && misuraPunti.length >= 2) setTimeout(chiudiFormaAperta, 0);

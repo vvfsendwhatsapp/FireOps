@@ -425,31 +425,41 @@ function asseDiretto(calibro, vuoto){
 /* Accensione per linee, versione PUNTO: due clic come gli assi, ma la
    punta esce di TRAVERSO. La freccia dice da che parte si manda il fuoco,
    mai il verso della linea — quella è la linea d'appoggio.
-   `lato` specchia la freccia; lo stato distingue prevista da effettuata. */
+   Questo è il glifo della TAVOLOZZA e della legenda: in mappa il simbolo
+   lo disegna creaManiglia con la polilinea e il motivo `punta`, leggendo
+   `asta:{...}` dalla registrazione. Le proporzioni qui sono tarate a
+   occhio su quelle — gambo 16 su guaina 22, punta 40, bordo 3.5 — e se
+   quei numeri cambiano vanno riviste anche qui: sono due disegni della
+   stessa cosa, e non si aggiornano da soli.
+   Lo stato lo legge `attivo`, come ogni altro simbolo della tavola:
+   prevista = gambo bianco bordato, tratteggiato; effettuata = rosso pieno,
+   continuo. Il lato è sempre il destro — in tavolozza non esiste ancora,
+   lo si sceglie col terzo clic sulla carta. */
 function accensioneDiretta(){
   return o => {
     const K = C.rosso;
+    const fatta = attivo(o);
 
-    // --- i due assi che prima mancavano ---------------------------------
-    const dx  = (o.lato === 'sx' || o.lato === 'sinistra') ? -1 : 1;
-    const eff = (o.stato === 'effettuata');   // altrimenti: prevista
-    const p   = attivo(o);                    // solo evidenziazione tavolozza
+    const c = 9;              // semilarghezza del gambo (guaina 22 → ~11)
+    const yp = 34;            // dove la punta incontra il gambo
+    const bordo = 3;          // il bordo rosso che sporge dalla guaina
 
-    const riemp  = eff ? K : '#fff';
-    const appog  = eff ? '' : ' stroke-dasharray="6 4"';
-    const spess  = p ? 3.4 : 2.6;
-    // --------------------------------------------------------------------
+    /* Gambo: un rettangolo bordato, che è quello che in mappa nasce dalla
+       polilinea bianca sopra la guaina rossa. Tratteggiato solo il
+       contorno quando è prevista, come la linea sulla carta. */
+    const gambo = `<path d="M${32 - c} 60L${32 - c} ${yp}L${32 + c} ${yp}L${32 + c} 60"`
+      + ` fill="${fatta ? K : '#fff'}" stroke="${K}" stroke-width="${bordo}"`
+      + ` stroke-linejoin="round"${fatta ? '' : ' stroke-dasharray="7,5"'}/>`;
 
-    const c = 8, b = 15, yp = 30;
-    const x0 = 32 + dx * (c + 4);   // attacco della freccia sul fianco
-    const x1 = x0 + dx * b;         // punta
+    /* Punta di traverso, a destra: base sul fianco del gambo, apice fuori.
+       Piena sempre — è il tratteggio del gambo a dire che è prevista, non
+       la freccia: una punta vuota a questa scala sparisce. */
+    const x0 = 32 + c, x1 = 58;
+    const punta = `<path d="M${x0} ${yp - 15}L${x1} ${yp - 2}L${x0} ${yp + 11}Z"`
+      + ` fill="${K}" stroke="${K}" stroke-width="2"`
+      + ` stroke-linejoin="round"/>`;
 
-    return T(`<path d="M${32 - c} 61L${32 - c} ${yp}L${32 + c} ${yp}L${32 + c} 61Z"`
-      + ` fill="${riemp}" stroke="${K}" stroke-width="${spess}"`
-      + ` stroke-linejoin="round"${appog}/>`
-      + `<path d="M${x0} ${yp - 14}L${x1} ${yp - 4}L${x0} ${yp + 6}Z"`
-      + ` fill="${riemp}" stroke="${K}" stroke-width="${spess}"`
-      + ` stroke-linejoin="round"/>`);
+    return T(gambo + punta);
   };
 }
 
@@ -1001,20 +1011,24 @@ agg('asse_lento_p','evoluzione',null,'Asse secondario lento (punto)',
 
 /* Doppia linea parallela a denti: il tracciato è la linea di monte, il
    motivo aggiunge quella affiancata e le traversine. */
+/*aggL('fronte','evoluzione',null,'Fronte dell\u2019incendio','Fire front',
+  {color:C.rosso, weight:3}, {deco:{tipo:'denti', passo:'auto', dim:9}});*/
+
 aggL('fronte','evoluzione',null,'Fronte dell\u2019incendio','Fire front',
-  {color:C.rosso, weight:3}, {deco:{tipo:'denti', passo:'auto', dim:9}});
+  {color:C.rosso, weight:6, dashArray:'12,7', lineCap:'butt'},
+  {deco:{tipo:'denti', passo:'auto', dim:9}});
 
 /* ---- TAVOLA 4: azioni su linea ---- */
 aggL('ricognizione','azioni','sgTerra','Ricognizione','Patrol',
   {color:C.rosso, weight:0, opacity:0},
   {stati:1, deco:{tipo:'omega', passo:'auto', dim:14, pieno:1}});
 aggL('difesa_linea','azioni','sgTerra','Difesa in linea','Defence on a line',
-  {color:C.rosso, weight:3}, {stati:1, deco:{tipo:'triangoloBase', passo:'auto', dim:13, pieno:1}});
+  {color:C.rosso, weight:3}, {stati:1, lato:1, deco:{tipo:'triangoloBase', passo:'auto', dim:13, pieno:1}});
 /* Tre frecce a 45° verso il fianco scelto: `lato` dice quale, e lo chiede
    sitac.js con un terzo clic dopo aver chiuso la linea. */
 aggL('attacco_fianchi','azioni','sgTerra','Attacco sui fianchi','Containment attack',
   {color:C.rosso, weight:2.8},
-  {stati:1, lato:1, deco:{tipo:'freccia45', dim:34, offset:'39%', passo:'30%', pieno:1}});
+  {stati:1, lato:1, punti2:1, deco:{tipo:'freccia45', dim:34, offset:'39%', passo:'30%', pieno:1}});
 /* Un attacco localizzato è un punto in cui si entra da una direzione: due
    vertici, origine e punta, come pendenza e vento. */
 aggL('attacco_localizzato','azioni','sgTerra','Attacco localizzato','Hot spotting',
