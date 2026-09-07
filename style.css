@@ -5966,9 +5966,9 @@ select:focus {
    sopra una strada o un campo giallo. Solo su questi elementi, non su
    tutto il pannello: un filtro globale costa un livello di composizione
    che durante l'animazione di zoom si riscala per conto suo. */
-#sitac-app .sitac-ombra {
+/*#sitac-app .sitac-ombra {
     filter: drop-shadow(0 0 2.5px rgba(255,0,0,1));
-}
+}*/
 
 /* ==========================================================
    ==========================================================
