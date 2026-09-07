@@ -417,22 +417,32 @@ function asseDiretto(calibro, vuoto){
 }
 
 /* Accensione per linee, versione PUNTO: due clic come gli assi, ma la
-   punta esce di TRAVERSO. Sulla tavola la freccia dice da che parte si
-   manda il fuoco, e non è mai il verso della linea — quella è la linea
-   d'appoggio, che si segue camminando.
-   Il lato lo decide `lato` sul motivo, e nella versione punto è sempre
-   quello destro: chi deve accendere dall'altra parte gira la freccia. */
+   punta esce di TRAVERSO. La freccia dice da che parte si manda il fuoco,
+   mai il verso della linea — quella è la linea d'appoggio.
+   `lato` specchia la freccia; lo stato distingue prevista da effettuata. */
 function accensioneDiretta(){
   return o => {
     const K = C.rosso;
-    const p = attivo(o);
+
+    // --- i due assi che prima mancavano ---------------------------------
+    const dx  = (o.lato === 'sx' || o.lato === 'sinistra') ? -1 : 1;
+    const eff = (o.stato === 'effettuata');   // altrimenti: prevista
+    const p   = attivo(o);                    // solo evidenziazione tavolozza
+
+    const riemp  = eff ? K : '#fff';
+    const appog  = eff ? '' : ' stroke-dasharray="6 4"';
+    const spess  = p ? 3.4 : 2.6;
+    // --------------------------------------------------------------------
+
     const c = 8, b = 15, yp = 30;
+    const x0 = 32 + dx * (c + 4);   // attacco della freccia sul fianco
+    const x1 = x0 + dx * b;         // punta
+
     return T(`<path d="M${32 - c} 61L${32 - c} ${yp}L${32 + c} ${yp}L${32 + c} 61Z"`
-      + ` fill="${p ? K : '#fff'}" stroke="${K}" stroke-width="2.6"`
-      + ` stroke-linejoin="round"/>`
-      + `<path d="M${32 + c + 4} ${yp - 14}L${32 + c + 4 + b} ${yp - 4}`
-      + `L${32 + c + 4} ${yp + 6}Z"`
-      + ` fill="${p ? K : '#fff'}" stroke="${K}" stroke-width="2.6"`
+      + ` fill="${riemp}" stroke="${K}" stroke-width="${spess}"`
+      + ` stroke-linejoin="round"${appog}/>`
+      + `<path d="M${x0} ${yp - 14}L${x1} ${yp - 4}L${x0} ${yp + 6}Z"`
+      + ` fill="${riemp}" stroke="${K}" stroke-width="${spess}"`
       + ` stroke-linejoin="round"/>`);
   };
 }
