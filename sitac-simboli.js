@@ -1025,7 +1025,7 @@ aggL('linea_sicurezza','azioni','sgControfuoco','Creazione linea di sicurezza','
    punta e deve pareggiarlo, `fuori` porta la base sul bordo. Cambiandone
    uno vanno rivisti gli altri. */
 
-agg('accensione_linee_p','azioni','sgControfuoco','Accensione per linee (punto)',
+agg('accensione_linee_p','azioni','sgControfuoco','Accensione per linee (punto) DA SISTEMARE',
   'Line firing (point)', accensioneDiretta(),
   {r:1, r0:0, s:1, senzaDisco:1, lungo:1, senzAsta:1,
    asta:{color:'#ffffff', weight:16, guaina:22, bordo:C.rosso,
