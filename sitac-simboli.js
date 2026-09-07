@@ -963,11 +963,17 @@ aggL('asse_lento','evoluzione',null,'Asse secondario (lento)','Secondary axis (s
          {tipo:'tappo', passo:0, offset:3, dim:11}]});
 
 agg('asse_principale_p','evoluzione',null,'Asse di sviluppo principale (punto)',
-  'Head of the fire (point)', asseDiretto(11, 0), {r:1, r0:0, senzaDisco:1, lungo:1, senzAsta:1});
+  'Head of the fire (point)', asseDiretto(9, 0),
+  {r:1, r0:0, senzaDisco:1, lungo:1, senzAsta:1,
+   asta:{color:C.rosso, weight:11, punta:38, pieno:1}});
 agg('asse_veloce_p','evoluzione',null,'Asse secondario veloce (punto)',
-  'Secondary axis fast (point)', asseDiretto(7, 1), {r:1, r0:0, senzaDisco:1, lungo:1, senzAsta:1});
+  'Secondary axis fast (point)', asseDiretto(6, 1),
+  {r:1, r0:0, senzaDisco:1, lungo:1, senzAsta:1,
+   asta:{color:C.rosso, weight:7, punta:30, bordoW:2}});
 agg('asse_lento_p','evoluzione',null,'Asse secondario lento (punto)',
-  'Secondary axis slow (point)', asseDiretto(4.5, 1), {r:1, r0:0, senzaDisco:1, lungo:1, senzAsta:1});
+  'Secondary axis slow (point)', asseDiretto(4, 1),
+  {r:1, r0:0, senzaDisco:1, lungo:1, senzAsta:1,
+   asta:{color:C.rosso, weight:4.5, punta:22, bordoW:1.75}});
 
 /* Doppia linea parallela a denti: il tracciato è la linea di monte, il
    motivo aggiunge quella affiancata e le traversine. */

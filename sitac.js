@@ -1630,34 +1630,26 @@ function mostraComandoAfferente(sigla, nome){
     const p = puntoDaAzimut(c, layer._rotazione || 0,
       (allungabile && layer._lung) || distanzaManiglia());
     if (senzAsta){
-      const rc = (NS.SITAC_CODINE || {})[layer._tipo] || {forma:'T', n:1};
-      /* L'asta È il simbolo, quindi deve rispondere come un simbolo: il
-         punto d'origine è invisibile e largo 22px, e cercarlo per aprire il
-         menu su una freccia lunga mezzo schermo non lo fa nessuno.
-         `weight` sottile per il disegno, `pmIgnore` perché Geoman non deve
-         metterci vertici: la geometria la comanda la maniglia. */
+      /* Come va disegnata l'asta lo dice la TAVOLA, non questo codice: il
+         nero con punta e codine è di pendenza e vento, ma un asse di
+         sviluppo è rosso, spesso e senza barbe. `asta` porta colore,
+         calibro e misura della punta; le codine restano solo dove la
+         simbologia le prevede. */
+      const A = (SIM[layer._tipo] && SIM[layer._tipo].asta) || {};
+      const colAsta = A.color || COL.nero;
+      const rc = (NS.SITAC_CODINE || {})[layer._tipo];
       layer._asta = L.polyline([c, p],
-        {color: COL.nero, weight: 2.8, pmIgnore: true,
+        {color: colAsta, weight: A.weight || 2.8, pmIgnore: true,
          bubblingMouseEvents: false}).addTo(layer._gruppo);
-      layer._asta.on('click', () => {
-        if (attesaClic || attesaDirezione || attesaElemento) return;
-        selezionaElemento(layer);
-      });
-      layer._asta.on('contextmenu', ev => {
-        if (ev.originalEvent){
-          L.DomEvent.preventDefault(ev.originalEvent);
-          L.DomEvent.stopPropagation(ev.originalEvent);
-        }
-        if (attesaClic || attesaDirezione || attesaElemento) return;
-        selezionaElemento(layer);
-        apriMenu(ev.containerPoint, vociMenu(layer));
-      });
-      const finto = {color: COL.nero};
-      layer._astaDeco = L.polylineDecorator(layer._asta, {patterns: [
-        motivo(finto, {tipo:'punta', dim:20, pieno:1, passo:0, offset:'100%'}, 'attivo', 1),
-        motivo(finto, {tipo:'codine', forma:rc.forma, n:rc.n, dim:20,
-                       passo:0, offset:0}, 'attivo', 1)
-      ]}).addTo(layer._gruppo);
+      // …i due listener click/contextmenu restano invariati…
+      const finto = {color: colAsta};
+      const motivi = [motivo(finto, {tipo:'punta', dim: A.punta || 20,
+        pieno: A.pieno != null ? A.pieno : 1, bordoW: A.bordoW,
+        passo:0, offset:'100%'}, 'attivo', 1)];
+      if (rc) motivi.push(motivo(finto, {tipo:'codine', forma:rc.forma,
+        n:rc.n, dim:20, passo:0, offset:0}, 'attivo', 1));
+      layer._astaDeco = L.polylineDecorator(layer._asta, {patterns: motivi})
+        .addTo(layer._gruppo);
     } else {
       /* Il TP sta SU una linea di transito: la strada attraversa il simbolo
          ed esce da entrambi i lati. */
@@ -1675,7 +1667,28 @@ function mostraComandoAfferente(sigla, nome){
        direzione già provata; si pulisce cambiando zoom o riposando il
        simbolo, ed è meno grave di un'anteprima che non si vede. */
     const rifaiDeco = () => {
-      if (!senzAsta) return;
+      if (senzAsta){
+        /* Come va disegnata l'asta lo dice la TAVOLA, non questo codice: il
+          nero con punta e codine è di pendenza e vento, ma un asse di
+          sviluppo è rosso, spesso e senza barbe. `asta` porta colore,
+          calibro e misura della punta; le codine restano solo dove la
+          simbologia le prevede. */
+        const A = (SIM[layer._tipo] && SIM[layer._tipo].asta) || {};
+        const colAsta = A.color || COL.nero;
+        const rc = (NS.SITAC_CODINE || {})[layer._tipo];
+        layer._asta = L.polyline([c, p],
+          {color: colAsta, weight: A.weight || 2.8, pmIgnore: true,
+          bubblingMouseEvents: false}).addTo(layer._gruppo);
+        // …i due listener click/contextmenu restano invariati…
+        const finto = {color: colAsta};
+        const motivi = [motivo(finto, {tipo:'punta', dim: A.punta || 20,
+          pieno: A.pieno != null ? A.pieno : 1, bordoW: A.bordoW,
+          passo:0, offset:'100%'}, 'attivo', 1)];
+        if (rc) motivi.push(motivo(finto, {tipo:'codine', forma:rc.forma,
+          n:rc.n, dim:20, passo:0, offset:0}, 'attivo', 1));
+        layer._astaDeco = L.polylineDecorator(layer._asta, {patterns: motivi})
+          .addTo(layer._gruppo);
+      };
       if (layer._astaDeco && layer._astaDeco.setPaths)
         layer._astaDeco.setPaths(layer._asta);
     };
