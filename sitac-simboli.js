@@ -1160,7 +1160,7 @@ function anteprimaAsta(k, stato){
   /* Il gambo bianco si riempie quando l'azione è fatta, come in mappa. */
   const colGambo = (d.s && !previsto && A.bordo) ? A.bordo : (A.color || C.nero);
   const colSegno = A.bordo || A.color || C.nero;
-    const tratteg = '';
+  const tratteg = '';
 
   /* Le misure della carta sono in pixel di mappa e qui il riquadro è alto
      30: si riducono tutte dello stesso fattore, o una punta da 40 coprirebbe
