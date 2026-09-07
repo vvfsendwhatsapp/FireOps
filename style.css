@@ -5961,6 +5961,15 @@ select:focus {
 }
 #sitac-app .sitac-avviso-lato[hidden] { display: none; }
 
+/* Ombra sulle aste degli assi: la fascia bianca su carta chiara non ha
+   contorno che la stacchi dal fondo, e il bordo rosso da solo si perde
+   sopra una strada o un campo giallo. Solo su questi elementi, non su
+   tutto il pannello: un filtro globale costa un livello di composizione
+   che durante l'animazione di zoom si riscala per conto suo. */
+#sitac-app .sitac-ombra {
+    filter: drop-shadow(0 0 2.5px rgba(255,0,0,1));
+}
+
 /* ==========================================================
    ==========================================================
    RESPONSIVE

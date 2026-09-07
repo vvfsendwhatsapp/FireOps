@@ -1643,8 +1643,13 @@ function mostraComandoAfferente(sigla, nome){
          c'è. Dove la guaina non esiste il bordo coincide col tratto. */
       const colSegno = A.bordo || colAsta;
       const rc = (NS.SITAC_CODINE || {})[layer._tipo];
+      if (A.guaina)
+        layer._astaGuaina = L.polyline([c, p], {color: colSegno, weight: A.guaina,
+          interactive: false, pmIgnore: true,
+          className: 'sitac-ombra'}).addTo(layer._gruppo);
       layer._asta = L.polyline([c, p],
         {color: colAsta, weight: A.weight || 2.8, pmIgnore: true,
+         className: 'sitac-ombra',
          bubblingMouseEvents: false}).addTo(layer._gruppo);
       layer._asta.on('click', () => {
         if (attesaClic || attesaDirezione || attesaElemento) return;
