@@ -389,6 +389,28 @@ function direzione(forma, n){
   };
 }
 
+/* Assi e accensione in versione PUNTO: stesso gesto di pendenza e vento —
+   un clic per posare, si punta col mouse, secondo clic per fermare — invece
+   della spezzata disegnata con Geoman.
+   Convivono con le versioni a linea, che restano: si prova questa sul campo
+   e la vecchia si toglie solo quando è chiaro che questa regge. Le chiavi
+   sono diverse, quindi i due gruppi non si confondono nel GeoJSON.
+   `calibro` è lo spessore dell'asta, `vuoto` dice se la sagoma è bianca col
+   bordo o piena: è la sola differenza fra principale e secondari. */
+function asseDiretto(calibro, vuoto, col){
+  return o => {
+    const K = col || C.rosso;
+    const p = attivo(o);
+    /* Punta ancorata in alto e asta fino in fondo alla tela, come
+       `direzione()`: la rotazione del contenitore corrisponde all'azimut. */
+    const pieno = vuoto ? (p ? K : '#fff') : K;
+    const sw = vuoto ? 2.4 : 0;
+    return T(`<path d="M32 4L48 30L38 30L38 60L26 60L26 30L16 30Z"`
+      + ` fill="${pieno}" stroke="${K}" stroke-width="${sw}"`
+      + ` stroke-linejoin="round"/>`);
+  };
+}
+
 /* Cerchio con sigla: Area da evacuare (Ev) e Zona Sicura (SZ), entrambe
    verdi. Effettuata = cerchio interamente pieno con la sigla in bianco. */
 function tondoSigla(sigla, col){
@@ -431,9 +453,9 @@ agg('ripetitore','zona',null,'Ripetitori, antenne, pale eoliche, ecc.','Masts, a
   () => T(`<circle cx="32" cy="11" r="6" fill="${C.nero}"/>
     <path d="M32 15L20 56h24Z" fill="none" stroke="${C.nero}" stroke-width="2.6" stroke-linejoin="round"/>
     <line x1="32" y1="15" x2="32" y2="56" stroke="${C.nero}" stroke-width="2"/>`));
-agg('pend_lieve','zona',null,'Pendenza lieve','Light slope', direzione('T', 1), {r:1, r0:0, senzaDisco:1, lungo:1});
-agg('pend_moderata','zona',null,'Pendenza moderata','Moderate slope', direzione('T', 2), {r:1, r0:0, senzaDisco:1, lungo:1});
-agg('pend_forte','zona',null,'Pendenza forte','Steep slope', direzione('T', 3), {r:1, r0:0, senzaDisco:1, lungo:1});
+agg('pend_lieve','zona',null,'Pendenza lieve','Light slope', direzione('T', 1), {r:1, r0:0, senzaDisco:1, lungo:1, senzAsta:1});
+agg('pend_moderata','zona',null,'Pendenza moderata','Moderate slope', direzione('T', 2), {r:1, r0:0, senzaDisco:1, lungo:1, senzAsta:1});
+agg('pend_forte','zona',null,'Pendenza forte','Steep slope', direzione('T', 3), {r:1, r0:0, senzaDisco:1, lungo:1, senzAsta:1});
 
 /* ---- TAVOLA 2: l'evoluzione dell'incendio ---- */
 /* "Punto d'innesco" e non "Area d'origine": sulla carta è un punto, e la
@@ -444,11 +466,11 @@ agg('inc_chioma','evoluzione',null,'Incendio di chioma','Crown fire', quotaFuoco
 agg('inc_radente','evoluzione',null,'Incendio radente','Surface fire', quotaFuoco(1));
 agg('inc_sotterraneo','evoluzione',null,'Incendio sotterraneo','Ground fire', quotaFuoco(2));
 agg('vento_debole','evoluzione',null,'Direzione del vento, intensit\u00e0 debole','Wind direction, light',
-  direzione('45', 1), {r:1, r0:0, senzaDisco:1});
+  direzione('45', 1), {r:1, r0:0, senzaDisco:1, senzAsta:1});
 agg('vento_moderato','evoluzione',null,'Direzione del vento, intensit\u00e0 moderata','Wind direction, moderate',
-  direzione('45', 2), {r:1, r0:0, senzaDisco:1});
+  direzione('45', 2), {r:1, r0:0, senzaDisco:1, senzAsta:1});
 agg('vento_forte','evoluzione',null,'Direzione del vento, intensit\u00e0 forte','Wind direction, strong',
-  direzione('45', 3), {r:1, r0:0, senzaDisco:1});
+  direzione('45', 3), {r:1, r0:0, senzaDisco:1, senzAsta:1});
 
 /* ---- TAVOLA 3: il dispositivo di intervento ---- */
 agg('can','dispositivo','sgAereo','Canadair','Canadair', mezzoAereo('CAN'), {s:1, e:1, lbl:'ID CAN'});
@@ -934,21 +956,14 @@ aggL('asse_lento','evoluzione',null,'Asse secondario (lento)','Secondary axis (s
   {bordo:C.rosso, guaina:{weight:8},
    deco:[{tipo:'punta', passo:0, offset:'100%', arretra:0, dim:22, sempre:1, bordoW:1.75},
          {tipo:'tappo', passo:0, offset:3, dim:11}]});
-/*              
-aggL('asse_principale','evoluzione',null,'Asse di sviluppo principale','Head of the fire',
-  {color:C.rosso, weight:11, lineCap:'butt'},
-  {deco:{tipo:'punta', passo:0, offset:'100%', dim:38, pieno:1, sempre:1}});
-aggL('asse_veloce','evoluzione',null,'Asse secondario (veloce)','Secondary axis (fast)',
-  {color:'#ffffff', weight:7, lineCap:'butt'},
-  {bordo:C.rosso, guaina:{weight:11},
-   deco:[{tipo:'punta', passo:0, offset:'100%', dim:30, sempre:1},
-         {tipo:'tappo', passo:0, offset:4, dim:14}]});
-aggL('asse_lento','evoluzione',null,'Asse secondario (lento)','Secondary axis (slow)',
-  {color:'#ffffff', weight:4.5, lineCap:'butt'},
-  {bordo:C.rosso, guaina:{weight:8},
-   deco:[{tipo:'punta', passo:0, offset:'100%', dim:22, sempre:1},
-         {tipo:'tappo', passo:0, offset:3, dim:11}]});
-*/
+
+agg('asse_principale_p','evoluzione',null,'Asse di sviluppo principale (punto)',
+  'Head of the fire (point)', asseDiretto(11, 0), {r:1, r0:0, senzaDisco:1, lungo:1, senzAsta:1});
+agg('asse_veloce_p','evoluzione',null,'Asse secondario veloce (punto)',
+  'Secondary axis fast (point)', asseDiretto(7, 1), {r:1, r0:0, senzaDisco:1, lungo:1, senzAsta:1});
+agg('asse_lento_p','evoluzione',null,'Asse secondario lento (punto)',
+  'Secondary axis slow (point)', asseDiretto(4.5, 1), {r:1, r0:0, senzaDisco:1, lungo:1, senzAsta:1});
+
 /* Doppia linea parallela a denti: il tracciato è la linea di monte, il
    motivo aggiunge quella affiancata e le traversine. */
 aggL('fronte','evoluzione',null,'Fronte dell\u2019incendio','Fire front',

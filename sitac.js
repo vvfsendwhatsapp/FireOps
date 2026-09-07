@@ -1619,7 +1619,7 @@ function mostraComandoAfferente(sigla, nome){
        origine e maniglia È il simbolo. Disegnarlo come polilinea invece che
        come icona è quello che gli permette di allungarsi fino a dove si
        clicca — un divIcon ha una misura fissa e non si stira. */
-    const senzAsta = /^(pend_|vento_)/.test(layer._tipo || '');
+    const senzAsta = !!(SIM[layer._tipo] && SIM[layer._tipo].senzAsta);
     /* Una pendenza ha un'estensione sul terreno: quel versante è ripido da
        lì a lì, e la freccia lo dice. Il vento no — non ha una lunghezza, e
        lasciarla tirare metterebbe nel file un numero che non significa
