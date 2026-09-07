@@ -1353,8 +1353,32 @@ function mostraComandoAfferente(sigla, nome){
        della difesa in linea, la greca della ricognizione, i denti del fronte:
        il passo è l'ingombro del glifo lungo la linea, e lo sa il glifo. */
     const unaSola = dc.tipo === 'punta' || dc.tipo === 'fine';
-    const passo = unaSola ? 0
+    let passo = unaSola ? 0
       : dc.passo === 'auto' ? g.h : dc.passo;
+
+    /* I motivi contigui lasciavano un moncone di linea nuda in fondo: il
+       resto della divisione fra lunghezza del tracciato e passo. Si stira
+       il passo di quel poco che serve perché ne entrino un numero intero,
+       così l'ultimo cade sul vertice finale invece che dove capita.
+       Il passo non è più identico fra tracciati di lunghezza diversa — lo
+       scarto sta sempre sotto un passo — ma una fila che finisce a metà si
+       vede, un triangolo largo mezzo pixel in più no. */
+    if (passo && NS.SITAC_DECO_CONTIGUI.indexOf(dc.tipo) >= 0 && layerCorrente){
+      const v = layerCorrente.getLatLngs && layerCorrente.getLatLngs();
+      if (v && v.length > 1){
+        let px = 0;
+        for (let i = 0; i < v.length - 1; i++){
+          const a = map.latLngToContainerPoint(v[i]);
+          const b = map.latLngToContainerPoint(v[i + 1]);
+          px += Math.hypot(b.x - a.x, b.y - a.y);
+        }
+        /* Si conta sui CENTRI: il primo sta mezzo passo dopo l'inizio e
+           l'ultimo mezzo passo prima della fine, quindi i motivi che ci
+           stanno sono px/passo, non px/passo meno uno. */
+        const quanti = Math.max(1, Math.round(px / passo));
+        if (px > 0) passo = px / quanti;
+      }
+    }
         /* `arretra` è uno scostamento in PIXEL dal capo della linea, non una
        percentuale: la punta deve stare sempre alla stessa distanza dal
        vertice finale, e una percentuale su una linea corta arretra di
@@ -1365,7 +1389,9 @@ function mostraComandoAfferente(sigla, nome){
     let offset = dc.offset != null ? dc.offset
       : unaSola ? '100%'
       : dc.tipo === 'freccia' ? '12%'
-      : (NS.SITAC_DECO_CONTIGUI.indexOf(dc.tipo) >= 0 ? 0 : 8);
+      /* Mezzo passo: il primo triangolo appoggia la base sull'inizio del
+         tracciato invece di sporgere indietro per metà. */
+      : (NS.SITAC_DECO_CONTIGUI.indexOf(dc.tipo) >= 0 ? passo / 2 : 8);
     if (dc.arretra && layerCorrente){
       const v = layerCorrente.getLatLngs && layerCorrente.getLatLngs();
       if (v && v.length > 1){
