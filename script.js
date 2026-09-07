@@ -3171,7 +3171,7 @@ Koordináták küldéséhez:
         const display = document.getElementById("display-contatore-accessi");
         if (!display) return;
 
-        fetch("https://abacus.jasoncameron.dev/hit/fireops-vvf-pel/accessi")
+        fetch("https://abacus.jasoncameron.dev/hit/fireops-vvf-pel/accessi-v2")
             .then(r => r.json())
             .then(dati => {
                 const valore = Number(dati.value);
