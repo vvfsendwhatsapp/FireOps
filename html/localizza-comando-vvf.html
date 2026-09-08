@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Localizza Comando VVF</title>
+<style>
+:root{
+  --bg:#10141a;
+  --panel:#171d25;
+  --panel-2:#1d242e;
+  --line:#2a323d;
+  --red:#c8202b;
+  --red-dim:#5c1216;
+  --amber:#e8a33d;
+  --text:#eceff3;
+  --text-dim:#8b96a3;
+  --green:#3fa66b;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", Consolas, "Liberation Mono", monospace;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--sans);
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+  padding-bottom:64px;
+}
+.wrap{max-width:520px;margin:0 auto;padding:0 16px;}
+
+/* header */
+header{
+  padding:20px 16px 14px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  border-bottom:1px solid var(--line);
+}
+.mark{flex:none;width:34px;height:34px;}
+.htitle{flex:1;min-width:0;}
+.htitle h1{margin:0;font-size:17px;font-weight:600;letter-spacing:.1px;}
+.htitle p{margin:2px 0 0;font-size:12.5px;color:var(--text-dim);}
+
+/* sections */
+section{margin-top:18px;}
+.panel{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:4px;
+  overflow:hidden;
+}
+.panel + .panel{margin-top:10px;}
+.row-group-label{
+  padding:10px 14px 6px;
+  font-size:12.5px;
+  color:var(--text-dim);
+  border-left:3px solid var(--line);
+}
+.row-group-label.radio{border-left-color:var(--amber);}
+.row-group-label.so{border-left-color:var(--red);}
+
+/* locate button */
+.locate-btn{
+  width:100%;
+  padding:16px;
+  font-size:16px;
+  font-weight:600;
+  color:#fff;
+  background:var(--red);
+  border:none;
+  border-radius:4px;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+}
+.locate-btn:active{background:var(--red-dim);}
+.locate-btn svg{flex:none;}
+.locate-btn.loading{opacity:.7;}
+
+.link-btn{
+  display:block;
+  width:100%;
+  text-align:center;
+  background:none;
+  border:none;
+  color:var(--text-dim);
+  font-size:13.5px;
+  padding:12px 8px 2px;
+  cursor:pointer;
+  text-decoration:underline;
+  text-underline-offset:3px;
+}
+.link-btn:active{color:var(--text);}
+
+.status-msg{
+  margin-top:10px;
+  font-size:13px;
+  color:var(--amber);
+  padding:0 2px;
+  line-height:1.5;
+}
+.status-msg.error{color:#e8734a;}
+
+/* result header */
+.result-top{
+  padding:16px 14px;
+  border-left:3px solid var(--green);
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  gap:10px;
+}
+.result-top .name{font-size:24px;font-weight:700;letter-spacing:.2px;}
+.result-top .dist{font-family:var(--mono);font-size:15px;color:var(--green);white-space:nowrap;}
+.result-sub{padding:0 14px 14px;font-size:13px;color:var(--text-dim);margin-top:-8px;}
+
+/* data rows */
+.data-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:12px 14px;
+  border-top:1px solid var(--line);
+  min-height:26px;
+}
+.data-row .label{font-size:14px;color:var(--text-dim);}
+.data-row .value{
+  font-family:var(--mono);
+  font-size:16px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+a.value-link{color:var(--text);text-decoration:none;display:flex;align-items:center;gap:8px;}
+a.value-link:active{color:var(--amber);}
+.copy-btn{
+  border:1px solid var(--line);
+  background:var(--panel-2);
+  color:var(--text-dim);
+  border-radius:4px;
+  font-size:11px;
+  padding:5px 8px;
+  cursor:pointer;
+  font-family:var(--sans);
+}
+.copy-btn:active{border-color:var(--amber);color:var(--amber);}
+.copy-btn.copied{color:var(--green);border-color:var(--green);}
+
+.addr-row{padding:12px 14px;border-top:1px solid var(--line);font-size:13px;color:var(--text-dim);line-height:1.6;}
+.addr-row a{color:var(--text-dim);}
+
+/* border warning */
+.border-note{
+  margin-top:10px;
+  padding:12px 14px;
+  background:var(--panel-2);
+  border:1px solid var(--line);
+  border-left:3px solid var(--amber);
+  border-radius:4px;
+  font-size:13px;
+  color:var(--text-dim);
+  line-height:1.55;
+}
+.border-note strong{color:var(--text);}
+
+.method-badge{
+  padding:0 14px 14px;
+  margin-top:-6px;
+  font-size:12px;
+}
+.method-badge.geo{color:var(--green);}
+.method-badge.dist{color:var(--amber);}
+.method-badge.manual{color:var(--text-dim);}
+
+/* confinanti chips */
+.chips{display:flex;flex-wrap:wrap;gap:8px;padding:12px 14px 14px;}
+.chip{
+  font-size:13px;
+  padding:7px 12px;
+  background:var(--panel-2);
+  border:1px solid var(--line);
+  border-radius:20px;
+  color:var(--text);
+  cursor:pointer;
+}
+.chip:active{border-color:var(--amber);}
+
+/* search */
+.search-wrap{position:relative;}
+input.search-input{
+  width:100%;
+  padding:14px 14px;
+  font-size:16px;
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:4px;
+  color:var(--text);
+  font-family:var(--sans);
+}
+input.search-input:focus{outline:none;border-color:var(--amber);}
+.search-results{
+  margin-top:6px;
+  border:1px solid var(--line);
+  border-radius:4px;
+  overflow:hidden;
+  max-height:280px;
+  overflow-y:auto;
+}
+.search-item{
+  padding:12px 14px;
+  border-top:1px solid var(--line);
+  cursor:pointer;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.search-item:first-child{border-top:none;}
+.search-item:active{background:var(--panel-2);}
+.search-item .sname{font-size:15px;}
+.search-item .sprov{font-family:var(--mono);font-size:12.5px;color:var(--text-dim);}
+
+/* footer national numbers */
+footer{
+  position:fixed;
+  left:0;right:0;bottom:0;
+  background:var(--panel);
+  border-top:1px solid var(--line);
+  padding:9px 16px;
+  display:flex;
+  gap:0;
+}
+footer .fitem{
+  flex:1;
+  text-align:center;
+  color:var(--text-dim);
+  text-decoration:none;
+  font-size:12px;
+  line-height:1.4;
+  padding:4px 6px;
+}
+footer .fitem b{display:block;color:var(--text);font-family:var(--mono);font-size:14px;font-weight:600;}
+footer .fitem + .fitem{border-left:1px solid var(--line);}
+
+.hidden{display:none !important;}
+.section-title{font-size:12.5px;color:var(--text-dim);padding:0 2px 8px;}
+</style>
+</head>
+<body>
+
+<header>
+  <svg class="mark" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="17" cy="14" r="4.5" stroke="#e8a33d" stroke-width="2"/>
+    <path d="M17 18.5V29" stroke="#c8202b" stroke-width="2" stroke-linecap="round"/>
+    <path d="M9 29h16" stroke="#c8202b" stroke-width="2" stroke-linecap="round"/>
+    <path d="M11 9c0-4 3-7 6-7s6 3 6 7" stroke="#8b96a3" stroke-width="1.4" stroke-linecap="round" opacity="0.6"/>
+  </svg>
+  <div class="htitle">
+    <h1>Localizza Comando</h1>
+    <p>Comando, canale radio e Sala Operativa per posizione</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+<section id="locate-section">
+  <button class="locate-btn" id="locateBtn">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3.2" stroke="white" stroke-width="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
+    Trova la mia posizione
+  </button>
+  <button class="link-btn" id="toggleSearchBtn">oppure cerca un comando manualmente</button>
+  <div class="status-msg hidden" id="statusMsg"></div>
+</section>
+
+<section id="search-section" class="hidden">
+  <div class="search-wrap">
+    <input type="text" class="search-input" id="searchInput" placeholder="Cerca per comando o comune...">
+    <div class="search-results hidden" id="searchResults"></div>
+  </div>
+</section>
+
+<section id="result-section" class="hidden">
+  <div class="panel">
+    <div class="result-top">
+      <div class="name" id="rComando">—</div>
+      <div class="dist" id="rDist"></div>
+    </div>
+    <div class="result-sub" id="rSub"></div>
+    <div class="method-badge" id="rMethod"></div>
+  </div>
+
+  <div class="panel">
+    <div class="row-group-label radio">Canale radio</div>
+    <div class="data-row">
+      <div class="label">Comando</div>
+      <div class="value"><span id="rRadioComando">—</span><button class="copy-btn" data-copy-target="rRadioComando">copia</button></div>
+    </div>
+    <div class="data-row">
+      <div class="label">Direzione regionale</div>
+      <div class="value"><span id="rRadioDirezione">—</span><button class="copy-btn" data-copy-target="rRadioDirezione">copia</button></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="row-group-label so">Sala operativa</div>
+    <div class="data-row">
+      <div class="label">Comando</div>
+      <div class="value" id="rTelComandoWrap">—</div>
+    </div>
+    <div class="data-row">
+      <div class="label">Direzione regionale</div>
+      <div class="value" id="rTelDirezioneWrap">—</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="addr-row" id="rAddr"></div>
+  </div>
+
+  <div class="border-note hidden" id="borderNote"></div>
+
+  <div class="panel hidden" id="confinantiPanel">
+    <div class="row-group-label">Comandi confinanti — verifica se sei vicino al limite di competenza</div>
+    <div class="chips" id="confinantiChips"></div>
+  </div>
+
+  <button class="link-btn" id="backToSearchBtn">cerca un altro comando</button>
+</section>
+
+</div>
+
+<footer>
+  <a class="fitem" href="tel:06478321"><b>026 · 06 478321</b>CON nazionale</a>
+  <a class="fitem" href="tel:0679340903"><b>06 79340903</b>SOCAV</a>
+</footer>
+
+<script>
+const COMANDI = [{"c":"Agrigento","pr":"AG","rg":"Sicilia","cm":"Agrigento","dz":"Sicilia","lat":37.295379,"lon":13.566121,"ind":"Viale Caduti di Marzabotto, 1, 92100, Agrigento, AG","rc":"002","rd":"028","tsc":"0922 511900","tsd":"091 6057500","tc":"","nue":"1 1 2","esc":"so.agrigento@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-agrigento","conf":["Caltanissetta","Palermo","Trapani"]},{"c":"Alessandria","pr":"AL","rg":"Piemonte","cm":"Alessandria","dz":"Piemonte","lat":44.90146,"lon":8.627335,"ind":"Corso Giuseppe Romita, 91, 15121, Alessandria, AL","rc":"022","rd":"080","tsc":"0131 316710","tsd":"011 41465200","tc":"","nue":"1 1 2","esc":"so.alessandria@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-alessandria","conf":["Asti","Genova","Pavia","Piacenza","Savona","Torino","Vercelli"]},{"c":"Ancona","pr":"AN","rg":"Marche","cm":"Ancona","dz":"Marche","lat":43.609234,"lon":13.514938,"ind":"Via Valle Miano, 50, 60125, Ancona, AN","rc":"014","rd":"008","tsc":"071 28080203","tsd":"071 227511","tc":"","nue":"1 1 2","esc":"so.ancona@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-ancona","conf":["Macerata","Perugia","Pesaro e Urbino"]},{"c":"Aosta","pr":"AO","rg":"Valle d'Aosta","cm":"Aosta","dz":"Valle d'Aosta","lat":45.740728,"lon":7.347497,"ind":"Via Croix Noire, 2, 11100, Aosta, AO","rc":"050","rd":"080","tsc":"0165 528431","tsd":"011 41465200","tc":"","nue":"1 1 2","esc":"cus.115@centraleunicavda.it","web":"https://www.regione.vda.it/protezione_civile/centrale_unica_soccorso/cusvvf_i.aspx","conf":["Biella","Torino","Vercelli"]},{"c":"Arezzo","pr":"AR","rg":"Toscana","cm":"Arezzo","dz":"Toscana","lat":43.454989,"lon":11.88418,"ind":"Via degli Accolti, 35, 52100, Arezzo, AR","rc":"088","rd":"050","tsc":"0575 350777","tsd":"055 5525600","tc":"","nue":"1 1 2","esc":"so.arezzo@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-arezzo","conf":["Firenze","Forlì-Cesena","Perugia","Pesaro e Urbino","Rimini","Siena"]},{"c":"Ascoli Piceno","pr":"AP","rg":"Marche","cm":"Ascoli Piceno","dz":"Marche","lat":42.845111,"lon":13.620114,"ind":"Via dei Gorghi, 48, 63100, Ascoli Piceno, AP","rc":"026","rd":"008","tsc":"0736 353200","tsd":"071 227511","tc":"","nue":"1 1 2","esc":"so.ascolipiceno@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-ascoli-piceno","conf":["Fermo","Macerata","Perugia","Rieti","Teramo"]},{"c":"Asti","pr":"AT","rg":"Piemonte","cm":"Asti","dz":"Piemonte","lat":44.91217,"lon":8.20517,"ind":"Via Monsignor Marello, 7, 14100, Asti, AT","rc":"016","rd":"080","tsc":"0141 413705","tsd":"011 41465200","tc":"","nue":"1 1 2","esc":"so.asti@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-asti","conf":["Alessandria","Cuneo","Savona","Torino"]},{"c":"Avellino","pr":"AV","rg":"Campania","cm":"Avellino","dz":"Campania","lat":40.907,"lon":14.783922,"ind":"Località Quattrograne, 4, 83100, Avellino, AV","rc":"066","rd":"060","tsc":"0825 709201","tsd":"081 2476114","tc":"","nue":"1 1 5","esc":"so.avellino@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-avellino","conf":["Benevento","Foggia","Napoli","Potenza","Salerno"]},{"c":"Bari","pr":"BA","rg":"Puglia","cm":"Bari","dz":"Puglia","lat":41.091453,"lon":16.889838,"ind":"Via Ottavio Tupputi, 52, 70125, Bari, BA","rc":"072","rd":"054","tsc":"080 5483257","tsd":"080 5411220","tc":"","nue":"1 1 2","esc":"so.bari@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-bari","conf":["Barletta-Andria-Trani","Brindisi","Matera","Potenza","Taranto"]},{"c":"Barletta-Andria-Trani","pr":"BT","rg":"Puglia","cm":"Barletta","dz":"Puglia","lat":41.308632,"lon":16.311277,"ind":"Via Turi, 2, 76121, Barletta, BT","rc":110,"rd":"054","tsc":"0883 1848699","tsd":"080 5411220","tc":"","nue":"1 1 2","esc":"com.barlettaandriatrani@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-barletta-andria-trani","conf":["Bari","Foggia","Potenza"]},{"c":"Belluno","pr":"BL","rg":"Veneto","cm":"Belluno","dz":"Veneto e TAA","lat":46.130014,"lon":12.194446,"ind":"Via Col da Ren, 1, 32100, Belluno, BL","rc":102,"rd":"084","tsc":"0437 940941","tsd":"049 8229211","tc":"","nue":"1 1 5","esc":"so.belluno@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-belluno","conf":["Bolzano","Pordenone","Trento","Treviso","Udine","Vicenza"]},{"c":"Benevento","pr":"BN","rg":"Campania","cm":"Benevento","dz":"Campania","lat":41.139445,"lon":14.801765,"ind":"Contrada Capodimonte, 1, 82100, Benevento, BN","rc":"062","rd":"060","tsc":"0824 372577","tsd":"081 2476114","tc":"","nue":"1 1 5","esc":"so.benevento@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-benevento","conf":["Avellino","Campobasso","Caserta","Foggia","Napoli"]},{"c":"Bergamo","pr":"BG","rg":"Lombardia","cm":"Bergamo","dz":"Lombardia","lat":45.702083,"lon":9.684451,"ind":"Via Mauro Codussi, 9, 24124, Bergamo, BG","rc":"054","rd":"014","tsc":"035 2278255","tsd":"02 8546461","tc":"035 2278211","nue":"1 1 2","esc":"so.bergamo@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-bergamo","conf":["Brescia","Cremona","Lecco","Milano","Monza e della Brianza","Sondrio"]},{"c":"Biella","pr":"BI","rg":"Piemonte","cm":"Biella","dz":"Piemonte","lat":45.55035,"lon":8.077076,"ind":"Via S. Barbara, 3/a, 13900, Biella, BI","rc":"052","rd":"080","tsc":"015 8555699","tsd":"011 41465200","tc":"","nue":"1 1 2","esc":"so.biella@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-biella","conf":["Aosta","Torino","Vercelli"]},{"c":"Bologna","pr":"BO","rg":"Emilia-Romagna","cm":"Bologna","dz":"Emilia-Romagna","lat":44.535729,"lon":11.368313,"ind":"Via Ferrarese, 166/2, 40128, Bologna, BO","rc":"032","rd":"028","tsc":"051 6385115","tsd":"051 4199512","tc":"","nue":"1 1 2","esc":"so.bologna@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-bologna","conf":["Ferrara","Firenze","Modena","Pistoia","Prato","Ravenna"]},{"c":"Bolzano","pr":"BZ","rg":"Trentino-Alto Adige","cm":"Bolzano","dz":"Veneto e TAA","lat":46.494333,"lon":11.318592,"ind":"Viale Druso, 116, 39100, Bolzano, BZ","rc":"004","rd":"084","tsc":"0471 202222","tsd":"049 8229211","tc":"","nue":"1 1 2","esc":"cpvvf-bz@provincia.bz.it","web":"https://www.provincia.bz.it/sicurezza-protezione-civile/antincendio/corpo-permanente-vvf.asp","conf":["Belluno","Sondrio","Trento"]},{"c":"Brescia","pr":"BS","rg":"Lombardia","cm":"Brescia","dz":"Lombardia","lat":45.561196,"lon":10.214577,"ind":"Via delle Scuole, 6, 25128, Brescia, BS","rc":"012","rd":"014","tsc":"030 3719219","tsd":"02 8546461","tc":"","nue":"1 1 2","esc":"so.brescia@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-brescia","conf":["Bergamo","Cremona","Mantova","Sondrio","Trento","Verona"]},{"c":"Brindisi","pr":"BR","rg":"Puglia","cm":"Brindisi","dz":"Puglia","lat":40.64468,"lon":17.92693,"ind":"Via Nicola Brandi, , 72100, Brindisi, BR","rc":"082","rd":"054","tsc":"0831 554402","tsd":"080 5411220","tc":"","nue":"1 1 2","esc":"so.brindisi@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-brindisi","conf":["Bari","Lecce","Taranto"]},{"c":"Cagliari","pr":"CA","rg":"Sardegna","cm":"Cagliari","dz":"Sardegna","lat":39.2427,"lon":9.15188,"ind":"Viale Marconi, 300, 09131, Cagliari, CA","rc":"050","rd":"062","tsc":"070 4749374","tsd":"070 528061","tc":"","nue":"1 1 2","esc":"so.cagliari@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-cagliari","conf":["Nuoro","Oristano"]},{"c":"Caltanissetta","pr":"CL","rg":"Sicilia","cm":"Caltanissetta","dz":"Sicilia","lat":37.493099,"lon":14.043109,"ind":"Viale della Regione, 192, 93100, Caltanissetta, CL","rc":"010","rd":"028","tsc":"0934 510200","tsd":"091 6057500","tc":"","nue":"1 1 2","esc":"so.caltanissetta@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-caltanissetta","conf":["Agrigento","Catania","Enna","Palermo","Ragusa"]},{"c":"Campobasso","pr":"CB","rg":"Molise","cm":"Campobasso","dz":"Molise","lat":41.566684,"lon":14.665048,"ind":"Via Sant'Antonio dei Lazzari, 5, 86100, Campobasso, CB","rc":"036","rd":"006","tsc":"0874 604190","tsd":"0874 604180","tc":"","nue":"1 1 2","esc":"so.campobasso@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-campobasso","conf":["Benevento","Caserta","Chieti","Foggia","Isernia"]},{"c":"Caserta","pr":"CE","rg":"Campania","cm":"Caserta","dz":"Campania","lat":41.08044,"lon":14.35766,"ind":"Via Giovanni Falcone, , 81100, Caserta, CE","rc":"070","rd":"060","tsc":"0823 4905555","tsd":"081 2476114","tc":"","nue":"1 1 5","esc":"so.caserta@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-caserta","conf":["Benevento","Campobasso","Frosinone","Isernia","Latina","Napoli"]},{"c":"Catania","pr":"CT","rg":"Sicilia","cm":"Catania","dz":"Sicilia","lat":37.515386,"lon":15.07598,"ind":"Via Cesare Beccaria, 31, 95123, Catania, CT","rc":"006","rd":"028","tsc":"095 7248600","tsd":"091 6057500","tc":"","nue":"1 1 2","esc":"so.catania@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-catania","conf":["Caltanissetta","Enna","Messina","Ragusa","Siracusa"]},{"c":"Catanzaro","pr":"CZ","rg":"Calabria","cm":"Catanzaro","dz":"Calabria","lat":38.91765,"lon":16.58478,"ind":"Via Cortese Vinicio, 11, 88100, Catanzaro, CZ","rc":"004","rd":"042","tsc":"0961 531960","tsd":"0961 7175111","tc":"","nue":"1 1 2","esc":"so.catanzaro@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-catanzaro","conf":["Cosenza","Crotone","Reggio Calabria","Vibo Valentia"]},{"c":"Chieti","pr":"CH","rg":"Abruzzo","cm":"Chieti","dz":"Abruzzo","lat":42.360796,"lon":14.193533,"ind":"Via Filippo Masci, 115, 66100, Chieti, CH","rc":"052","rd":"004","tsc":"0871 3177214","tsd":"086 234931","tc":"","nue":"1 1 2","esc":"so.chieti@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-chieti","conf":["Campobasso","Isernia","L'Aquila","Pescara"]},{"c":"Como","pr":"CO","rg":"Lombardia","cm":"Como","dz":"Lombardia","lat":45.800936,"lon":9.095749,"ind":"Via Valleggio, 15, 22100, Como, CO","rc":"094","rd":"014","tsc":"031 3313322","tsd":"02 8546461","tc":"031 331331","nue":"1 1 2","esc":"so.como@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-como","conf":["Lecco","Monza e della Brianza","Sondrio","Varese"]},{"c":"Cosenza","pr":"CS","rg":"Calabria","cm":"Cosenza","dz":"Calabria","lat":39.300745,"lon":16.247562,"ind":"Viale della Repubblica, 56, 87100, Cosenza, CS","rc":"024","rd":"042","tsc":"0984 8952611","tsd":"0961 7175111","tc":"","nue":"1 1 2","esc":"so.cosenza@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-cosenza","conf":["Catanzaro","Crotone","Matera","Potenza"]},{"c":"Cremona","pr":"CR","rg":"Lombardia","cm":"Cremona","dz":"Lombardia","lat":45.150983,"lon":10.025946,"ind":"Via Nazario Sauro, 14, 26100, Cremona, CR","rc":"008","rd":"014","tsc":"0372 415790","tsd":"02 8546461","tc":"","nue":"1 1 2","esc":"so.cremona@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-cremona","conf":["Bergamo","Brescia","Lodi","Mantova","Milano","Parma","Piacenza"]},{"c":"Crotone","pr":"KR","rg":"Calabria","cm":"Crotone","dz":"Calabria","lat":39.072108,"lon":17.112836,"ind":"Via Gioacchino da Fiore, , 88900, Crotone, KR","rc":"012","rd":"042","tsc":"0962 9684610","tsd":"0961 7175111","tc":"","nue":"1 1 2","esc":"so.crotone@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-crotone","conf":["Catanzaro","Cosenza"]},{"c":"Cuneo","pr":"CN","rg":"Piemonte","cm":"Cuneo","dz":"Piemonte","lat":44.373638,"lon":7.524173,"ind":"Corso Alcide de Gasperi, 71, 12100, Cuneo, CN","rc":"086","rd":"080","tsc":"0171 3290","tsd":"011 41465200","tc":"","nue":"1 1 2","esc":"so.cuneo@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-cuneo","conf":["Asti","Imperia","Savona","Torino"]},{"c":"Enna","pr":"EN","rg":"Sicilia","cm":"Enna","dz":"Sicilia","lat":37.548773,"lon":14.302971,"ind":"SS561 Pergusina, , 94100, Enna, EN","rc":"020","rd":"028","tsc":"0935 530901","tsd":"091 6057500","tc":"","nue":"1 1 2","esc":"so.enna@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-enna","conf":["Caltanissetta","Catania","Messina","Palermo"]},{"c":"Fermo","pr":"FM","rg":"Marche","cm":"Fermo","dz":"Marche","lat":43.168099,"lon":13.741514,"ind":"Via Giuseppe Leti, 105, 63900, Fermo, FM","rc":118,"rd":"008","tsc":"0734 217038","tsd":"071 227511","tc":"","nue":"1 1 2","esc":"so.fermo@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-fermo","conf":["Ascoli Piceno","Macerata"]},{"c":"Ferrara","pr":"FE","rg":"Emilia-Romagna","cm":"Ferrara","dz":"Emilia-Romagna","lat":44.826428,"lon":11.594326,"ind":"Via Giovanni Verga, 125, 44124, Ferrara, FE","rc":"090","rd":"028","tsc":"0532 973100","tsd":"051 4199512","tc":"","nue":"1 1 2","esc":"so.ferrara@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-ferrara","conf":["Bologna","Mantova","Modena","Ravenna","Rovigo","Rovigo"]},{"c":"Firenze","pr":"FI","rg":"Toscana","cm":"Firenze","dz":"Toscana","lat":43.778416,"lon":11.272012,"ind":"Via Giuseppe la Farina, 18, 50132, Firenze, FI","rc":112,"rd":"050","tsc":"055 2490305","tsd":"055 5525600","tc":"","nue":"1 1 2","esc":"so.firenze@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-firenze","conf":["Arezzo","Bologna","Forlì-Cesena","Lucca","Pisa","Pistoia","Prato","Ravenna","Siena"]},{"c":"Foggia","pr":"FG","rg":"Puglia","cm":"Foggia","dz":"Puglia","lat":41.449231,"lon":15.560242,"ind":"Via Napoli, , 71122, Foggia, FG","rc":104,"rd":"054","tsc":"0881 309099","tsd":"080 5411220","tc":"","nue":"1 1 2","esc":"so.foggia@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-foggia","conf":["Avellino","Barletta-Andria-Trani","Benevento","Campobasso","Potenza"]},{"c":"Forlì-Cesena","pr":"FC","rg":"Emilia-Romagna","cm":"Forlì","dz":"Emilia-Romagna","lat":44.213465,"lon":12.061362,"ind":"Viale Roma, 97, 47122, Forlì, FC","rc":"038","rd":"028","tsc":"0543 410855","tsd":"051 4199512","tc":"0543 410803","nue":"1 1 2","esc":"so.forli@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-forli-cesena","conf":["Arezzo","Firenze","Ravenna","Rimini"]},{"c":"Frosinone","pr":"FR","rg":"Lazio","cm":"Frosinone","dz":"Lazio","lat":41.637815,"lon":13.33066,"ind":"Viale Volsci, 104, 03100, Frosinone, FR","rc":"038","rd":"020","tsc":"0775 884800","tsd":"06 66179600","tc":"","nue":"1 1 2","esc":"so.frosinone@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-frosinone","conf":["Caserta","Isernia","L'Aquila","Latina","Roma"]},{"c":"Genova","pr":"GE","rg":"Liguria","cm":"Genova","dz":"Liguria","lat":44.409213,"lon":8.905213,"ind":"Via Ariberto Albertazzi, 2, 16149, Genova, GE","rc":"076","rd":"046","tsc":"010 24411","tsd":"010 5455738","tc":"","nue":"1 1 2","esc":"so.genova@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-genova","conf":["Alessandria","La Spezia","Parma","Piacenza","Savona"]},{"c":"Gorizia","pr":"GO","rg":"Friuli Venezia Giulia","cm":"Gorizia","dz":"Friuli Venezia Giulia","lat":45.939569,"lon":13.609605,"ind":"Via dei Leoni, 33, 34170, Gorizia, GO","rc":"050","rd":"036","tsc":"0481 596399","tsd":"040 7707511","tc":"","nue":"1 1 2","esc":"so.gorizia@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-gorizia","conf":["Trieste","Udine"]},{"c":"Grosseto","pr":"GR","rg":"Toscana","cm":"Grosseto","dz":"Toscana","lat":42.77841,"lon":11.10975,"ind":"Via Paolo Carnicelli, 2, 58100, Grosseto, GR","rc":102,"rd":"050","tsc":"0564 444699","tsd":"055 5525600","tc":"","nue":"1 1 2","esc":"so.grosseto@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-grosseto","conf":["Livorno","Pisa","Siena","Viterbo"]},{"c":"Imperia","pr":"IM","rg":"Liguria","cm":"Imperia","dz":"Liguria","lat":43.88666,"lon":8.02639,"ind":"Via Giovanni Strato, 2, 18100, Imperia, IM","rc":"084","rd":"046","tsc":"0183 2839699","tsd":"010 5455738","tc":"","nue":"1 1 2","esc":"so.imperia@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-imperia","conf":["Cuneo","Savona"]},{"c":"Isernia","pr":"IS","rg":"Molise","cm":"Isernia","dz":"Molise","lat":41.58718,"lon":14.239528,"ind":"Piazzale Angelo Guglielmi 2, 12, 86170, Isernia, IS","rc":"028","rd":"006","tsc":"0865 415820","tsd":"0874 604180","tc":"","nue":"1 1 2","esc":"so.isernia@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-isernia","conf":["Campobasso","Caserta","Chieti","Frosinone","L'Aquila"]},{"c":"L'Aquila","pr":"AQ","rg":"Abruzzo","cm":"L'Aquila","dz":"Abruzzo","lat":42.353921,"lon":13.409381,"ind":"Via Pescara, 87, 67100, L'Aquila, AQ","rc":"064","rd":"004","tsc":"0862 6609300","tsd":"086 234931","tc":"","nue":"1 1 2","esc":"so.laquila@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-laquila","conf":["Chieti","Frosinone","Isernia","Pescara","Rieti","Roma","Teramo"]},{"c":"La Spezia","pr":"SP","rg":"Liguria","cm":"La Spezia","dz":"Liguria","lat":44.116546,"lon":9.829936,"ind":"Via Antoniana, 20, 19125, La Spezia, SP","rc":"068","rd":"046","tsc":"0187 523564","tsd":"010 5455738","tc":"","nue":"1 1 2","esc":"so.laspezia@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-la-spezia","conf":["Genova","Massa-Carrara","Parma"]},{"c":"Latina","pr":"LT","rg":"Lazio","cm":"Latina","dz":"Lazio","lat":41.474515,"lon":12.903124,"ind":"Piazzale G. Carturan, 1, 04100, Latina, LT","rc":"084","rd":"020","tsc":"0773 4086500","tsd":"06 66179600","tc":"","nue":"1 1 2","esc":"so.latina@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-latina","conf":["Caserta","Frosinone","Roma"]},{"c":"Lecce","pr":"LE","rg":"Puglia","cm":"Lecce","dz":"Puglia","lat":40.343462,"lon":18.158421,"ind":"Viale Giuseppe Grassi, 86, 73100, Lecce, LE","rc":"094","rd":"054","tsc":"0832 223300","tsd":"080 5411220","tc":"","nue":"1 1 2","esc":"so.lecce@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-lecce","conf":["Brindisi","Taranto"]},{"c":"Lecco","pr":"LC","rg":"Lombardia","cm":"Lecco","dz":"Lombardia","lat":45.842195,"lon":9.400329,"ind":"Piazza Bione, 12, 23900, Lecco, LC","rc":110,"rd":"014","tsc":"0341 364251","tsd":"02 8546461","tc":"","nue":"1 1 2","esc":"so.lecco@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-lecco","conf":["Bergamo","Como","Monza e della Brianza","Sondrio"]},{"c":"Livorno","pr":"LI","rg":"Toscana","cm":"Livorno","dz":"Toscana","lat":43.534227,"lon":10.324384,"ind":"Via Campania, 5, 57124, Livorno, LI","rc":"078","rd":"050","tsc":"0586 868142","tsd":"055 5525600","tc":"","nue":"1 1 2","esc":"so.livorno@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-livorno","conf":["Grosseto","Pisa"]},{"c":"Lodi","pr":"LO","rg":"Lombardia","cm":"Lodi","dz":"Lombardia","lat":45.295965,"lon":9.521598,"ind":"Viale Piacenza, 83, 26900, Lodi, LO","rc":"064","rd":"014","tsc":"0371 32520","tsd":"02 8546461","tc":"0371 428101","nue":"1 1 2","esc":"so.lodi@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-lodi","conf":["Cremona","Milano","Pavia","Piacenza"]},{"c":"Lombardia COR AIB CURNO","pr":"BG","rg":"Lombardia","cm":"Curno","dz":"Lombardia","lat":45.689794,"lon":9.611449,"ind":"Via Galileo Galilei, snc, 24035, Curno, BG","rc":"014","rd":"014","tsc":"035 611009","tsd":"02 8546461","tc":"","nue":"1 1 2","esc":"coaib.lombardia@vigilfuoco.it","web":"https://www.vigilfuoco.it/direzione-regionale-vigili-del-fuoco-lombardia","conf":[]},{"c":"Lucca","pr":"LU","rg":"Toscana","cm":"Lucca","dz":"Toscana","lat":43.852578,"lon":10.517598,"ind":"Via Barbantini, 896/B, 55100, Lucca, LU","rc":"058","rd":"050","tsc":"0583 430044","tsd":"055 5525600","tc":"","nue":"1 1 2","esc":"so.lucca@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-lucca","conf":["Firenze","Massa-Carrara","Modena","Pisa","Pistoia","Reggio Emilia"]},{"c":"Macerata","pr":"MC","rg":"Marche","cm":"Macerata","dz":"Marche","lat":43.293195,"lon":13.420793,"ind":"Viale dell'Indipendenza, 158, 62100, Macerata, MC","rc":"002","rd":"008","tsc":"0733 279496","tsd":"071 227511","tc":"","nue":"1 1 2","esc":"so.macerata@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-macerata","conf":["Ancona","Ascoli Piceno","Fermo","Perugia"]},{"c":"Mantova","pr":"MN","rg":"Lombardia","cm":"Mantova","dz":"Lombardia","lat":45.147746,"lon":10.794115,"ind":"Viale Risorgimento, 16, 46100, Mantova, MN","rc":"020","rd":"014","tsc":"0376 227777","tsd":"02 8546461","tc":"","nue":"1 1 2","esc":"so.mantova@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-mantova","conf":["Brescia","Cremona","Ferrara","Modena","Parma","Reggio Emilia","Rovigo","Verona"]},{"c":"Massa-Carrara","pr":"MS","rg":"Toscana","cm":"Massa","dz":"Toscana","lat":44.025649,"lon":10.098371,"ind":"Via Massa Avenza, 121/P, 54100, Massa, MS","rc":"096","rd":"050","tsc":"0585 2597100","tsd":"055 5525600","tc":"","nue":"1 1 2","esc":"so.massacarrara@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-massa-carrara","conf":["La Spezia","Lucca","Parma","Reggio Emilia"]},{"c":"Matera","pr":"MT","rg":"Basilicata","cm":"Matera","dz":"Basilicata","lat":40.663147,"lon":16.59616,"ind":"Via Giuseppe Giglio, 3, 75100, Matera, MT","rc":112,"rd":"078","tsc":"0835 338301","tsd":"0971 609511","tc":"","nue":"1 1 5","esc":"so.matera@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-matera","conf":["Bari","Cosenza","Potenza","Taranto"]},{"c":"Messina","pr":"ME","rg":"Sicilia","cm":"Messina","dz":"Sicilia","lat":38.176526,"lon":15.550093,"ind":"Via Antonio Salandra, 39, 98124, Messina, ME","rc":"032","rd":"028","tsc":"090 65074200","tsd":"091 6057500","tc":"","nue":"1 1 2","esc":"so.messina@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-messina","conf":["Catania","Enna","Palermo"]},{"c":"Milano","pr":"MI","rg":"Lombardia","cm":"Milano","dz":"Lombardia","lat":45.485159,"lon":9.174045,"ind":"Via Messina, 35/37, 20100, Milano, MI","rc":"026","rd":"014","tsc":"02 3190301","tsd":"02 8546461","tc":"","nue":"1 1 2","esc":"so.milano@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-milano","conf":["Bergamo","Cremona","Lodi","Monza e della Brianza","Novara","Pavia"]},{"c":"Modena","pr":"MO","rg":"Emilia-Romagna","cm":"Modena","dz":"Emilia-Romagna","lat":44.644948,"lon":10.900411,"ind":"Strada Formigina, 125, 41126, Modena, MO","rc":"018","rd":"028","tsc":"059 824701","tsd":"051 4199512","tc":"","nue":"1 1 2","esc":"so.modena@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-modena","conf":["Bologna","Ferrara","Lucca","Mantova","Pistoia","Reggio Emilia"]},{"c":"Monza e della Brianza","pr":"MB","rg":"Lombardia","cm":"Monza","dz":"Lombardia","lat":45.579596,"lon":9.261129,"ind":"Via Felice Cavallotti, 67, 20900, Monza, MB","rc":118,"rd":"014","tsc":"039 322222","tsd":"02 8546461","tc":"","nue":"1 1 2","esc":"so.monza@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-monza","conf":["Bergamo","Como","Lecco","Milano","Varese"]},{"c":"Napoli","pr":"NA","rg":"Campania","cm":"Napoli","dz":"Campania","lat":40.865595,"lon":14.292197,"ind":"Via Leopoldo Tarantini, 1, 80143, Napoli, NA","rc":"080","rd":"060","tsc":"081 2595185","tsd":"081 2476114","tc":"","nue":"1 1 5","esc":"so.napoli@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-napoli","conf":["Avellino","Benevento","Caserta","Salerno"]},{"c":"Novara","pr":"NO","rg":"Piemonte","cm":"Novara","dz":"Piemonte","lat":45.430554,"lon":8.605112,"ind":"Via Pietro Generali, 19, 28100, Novara, NO","rc":"088","rd":"080","tsc":"0321 4406201","tsd":"011 41465200","tc":"","nue":"1 1 2","esc":"so.novara@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-novara","conf":["Milano","Pavia","Varese","Verbano-Cusio-Ossola","Vercelli"]},{"c":"Nuoro","pr":"NU","rg":"Sardegna","cm":"Nuoro","dz":"Sardegna","lat":40.320536,"lon":9.303766,"ind":"Viale Sandro Pertini, , 08100, Nuoro, NU","rc":"052","rd":"062","tsc":"0784 226601","tsd":"070 528061","tc":"","nue":"1 1 2","esc":"so.nuoro@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-nuoro","conf":["Cagliari","Oristano","Sassari"]},{"c":"Oristano","pr":"OR","rg":"Sardegna","cm":"Oristano","dz":"Sardegna","lat":39.891775,"lon":8.597639,"ind":"Via del Porto, 8, 09170, Oristano, OR","rc":"054","rd":"062","tsc":"0783 375000","tsd":"070 528061","tc":"","nue":"1 1 2","esc":"so.oristano@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-oristano","conf":["Cagliari","Nuoro","Sassari"]},{"c":"Padova","pr":"PD","rg":"Veneto","cm":"Padova","dz":"Veneto e TAA","lat":45.408415,"lon":11.90819,"ind":"Via San Fidenzio, 3, 35129, Padova, PD","rc":"072","rd":"084","tsc":"049 7921786","tsd":"049 8229211","tc":"049 7921711","nue":"1 1 5","esc":"so.padova@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-padova","conf":["Rovigo","Treviso","Venezia","Verona","Vicenza"]},{"c":"Palermo","pr":"PA","rg":"Sicilia","cm":"Palermo","dz":"Sicilia","lat":38.127864,"lon":13.367714,"ind":"Via Alessandro Scarlatti, 16, 90134, Palermo, PA","rc":114,"rd":"028","tsc":"091 6059382","tsd":"091 6057500","tc":"","nue":"1 1 2","esc":"so.palermo@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-palermo","conf":["Agrigento","Caltanissetta","Enna","Messina","Trapani"]},{"c":"Parma","pr":"PR","rg":"Emilia-Romagna","cm":"Parma","dz":"Emilia-Romagna","lat":44.786328,"lon":10.303721,"ind":"Via Chiavari, 11, 43125, Parma, PR","rc":"006","rd":"028","tsc":"0521 953201","tsd":"051 4199512","tc":"","nue":"1 1 2","esc":"so.parma@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-parma","conf":["Cremona","Genova","La Spezia","Mantova","Massa-Carrara","Piacenza","Reggio Emilia"]},{"c":"Pavia","pr":"PV","rg":"Lombardia","cm":"Pavia","dz":"Lombardia","lat":45.188858,"lon":9.168954,"ind":"Via Camillo Campari, 34, 27100, Pavia, PV","rc":"030","rd":"014","tsc":"0382 439601","tsd":"02 8546461","tc":"","nue":"1 1 2","esc":"so.pavia@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-pavia","conf":["Alessandria","Lodi","Milano","Novara","Piacenza","Vercelli"]},{"c":"Perugia","pr":"PG","rg":"Umbria","cm":"Perugia","dz":"Umbria","lat":43.091218,"lon":12.363121,"ind":"Via Gianluca Pennetti Pennella, , 06129, Perugia, PG","rc":"034","rd":"040","tsc":"075 50639600","tsd":"075 54472","tc":"","nue":"1 1 2","esc":"so.perugia@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-perugia","conf":["Ancona","Arezzo","Ascoli Piceno","Macerata","Pesaro e Urbino","Rieti","Siena","Terni"]},{"c":"Pesaro e Urbino","pr":"PU","rg":"Marche","cm":"Pesaro","dz":"Marche","lat":43.910795,"lon":12.88982,"ind":"SS 16 Adriatica, 92, 61121, Pesaro, PU","rc":"062","rd":"008","tsc":"0721 4088201","tsd":"071 227511","tc":"","nue":"1 1 2","esc":"so.pesaro@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-pesaro-urbino","conf":["Ancona","Arezzo","Perugia","Rimini"]},{"c":"Pescara","pr":"PE","rg":"Abruzzo","cm":"Pescara","dz":"Abruzzo","lat":42.452913,"lon":14.221218,"ind":"Viale Pindaro, 2/8, 65127, Pescara, PE","rc":"018","rd":"004","tsc":"085 4554662","tsd":"086 234931","tc":"","nue":"1 1 2","esc":"so.pescara@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-pescara","conf":["Chieti","L'Aquila","Teramo"]},{"c":"Piacenza","pr":"PC","rg":"Emilia-Romagna","cm":"Piacenza","dz":"Emilia-Romagna","lat":45.025573,"lon":9.687293,"ind":"Strada Val Nure, 9A, 29122, Piacenza, PC","rc":"024","rd":"028","tsc":"0523 607851","tsd":"051 4199512","tc":"","nue":"1 1 2","esc":"so.piacenza@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-piacenza","conf":["Alessandria","Cremona","Genova","Lodi","Parma","Pavia"]},{"c":"Pisa","pr":"PI","rg":"Toscana","cm":"Pisa","dz":"Toscana","lat":43.709527,"lon":10.410812,"ind":"Via Giacomo Matteotti, 1, 56100, Pisa, PI","rc":"082","rd":"050","tsc":"050 941911","tsd":"055 5525600","tc":"","nue":"1 1 2","esc":"so.pisa@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-pisa","conf":["Firenze","Grosseto","Livorno","Lucca","Siena"]},{"c":"Pistoia","pr":"PT","rg":"Toscana","cm":"Pistoia","dz":"Toscana","lat":43.921804,"lon":10.922521,"ind":"Via Luigi Russo, 77, 51100, Pistoia, PT","rc":"080","rd":"050","tsc":"0573 984392","tsd":"055 5525600","tc":"","nue":"1 1 2","esc":"so.pistoia@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-pistoia","conf":["Bologna","Firenze","Lucca","Modena","Prato"]},{"c":"Pordenone","pr":"PN","rg":"Friuli Venezia Giulia","cm":"Pordenone","dz":"Friuli Venezia Giulia","lat":45.970836,"lon":12.661217,"ind":"Via Interna, 14, 33170, Pordenone, PN","rc":"076","rd":"036","tsc":"0434 391200","tsd":"040 7707511","tc":"0434 391111","nue":"1 1 2","esc":"so.pordenone@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-pordenone","conf":["Belluno","Treviso","Udine","Venezia"]},{"c":"Potenza","pr":"PZ","rg":"Basilicata","cm":"Potenza","dz":"Basilicata","lat":40.644781,"lon":15.833181,"ind":"Via Appia, 321/b, 85100, Potenza, PZ","rc":116,"rd":"078","tsc":"0971 658198","tsd":"0971 609511","tc":"","nue":"1 1 5","esc":"so.potenza@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-potenza","conf":["Avellino","Bari","Barletta-Andria-Trani","Cosenza","Foggia","Matera","Salerno"]},{"c":"Prato","pr":"PO","rg":"Toscana","cm":"Prato","dz":"Toscana","lat":43.85834,"lon":11.066279,"ind":"Via Paronese, 100, 59100, Prato, PO","rc":114,"rd":"050","tsc":"0574 6278200","tsd":"055 5525600","tc":"","nue":"1 1 2","esc":"so.prato@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-prato","conf":["Bologna","Firenze","Pistoia"]},{"c":"Ragusa","pr":"RG","rg":"Sicilia","cm":"Ragusa","dz":"Sicilia","lat":36.923915,"lon":14.719324,"ind":"Viale dei Platani, 2, 97100, Ragusa, RG","rc":"016","rd":"028","tsc":"0932 658288","tsd":"091 6057500","tc":"","nue":"1 1 2","esc":"so.ragusa@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-ragusa","conf":["Caltanissetta","Catania","Siracusa"]},{"c":"Ravenna","pr":"RA","rg":"Emilia-Romagna","cm":"Ravenna","dz":"Emilia-Romagna","lat":44.407593,"lon":12.189539,"ind":"Viale Vincenzo Randi, 25, 48121, Ravenna, RA","rc":"086","rd":"028","tsc":"0544 281515","tsd":"051 4199512","tc":"","nue":"1 1 2","esc":"so.ravenna@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-ravenna","conf":["Bologna","Ferrara","Firenze","Forlì-Cesena"]},{"c":"Reggio Calabria","pr":"RC","rg":"Calabria","cm":"Reggio Calabria","dz":"Calabria","lat":38.090289,"lon":15.64555,"ind":"Via Sbarre Superiori, 115, 89132, Reggio Calabria, RC","rc":"040","rd":"042","tsc":"0965 632601","tsd":"0961 7175111","tc":"","nue":"1 1 2","esc":"so.reggiocalabria@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-reggio-calabria","conf":["Catanzaro","Vibo Valentia"]},{"c":"Reggio Emilia","pr":"RE","rg":"Emilia-Romagna","cm":"Reggio Emilia","dz":"Emilia-Romagna","lat":44.687594,"lon":10.618521,"ind":"Via della Canalina, 8, 42123, Reggio Emilia, RE","rc":"010","rd":"028","tsc":"0522 325490","tsd":"051 4199512","tc":"","nue":"1 1 2","esc":"so.reggioemilia@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-reggio-emilia","conf":["Lucca","Mantova","Massa-Carrara","Modena","Parma"]},{"c":"Rieti","pr":"RI","rg":"Lazio","cm":"Rieti","dz":"Lazio","lat":42.396047,"lon":12.859292,"ind":"Via Sacchetti Sassetti, 1, 02100, Rieti, RI","rc":"068","rd":"020","tsc":"0746 2812200","tsd":"06 66179600","tc":"","nue":"1 1 2","esc":"so.rieti@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-rieti","conf":["Ascoli Piceno","L'Aquila","Perugia","Roma","Teramo","Terni","Viterbo"]},{"c":"Rimini","pr":"RN","rg":"Emilia-Romagna","cm":"Rimini","dz":"Emilia-Romagna","lat":44.037589,"lon":12.597118,"ind":"Via Bernardino Varisco, 1/a, 47924, Rimini, RN","rc":"060","rd":"028","tsc":"0541 478059","tsd":"051 4199512","tc":"","nue":"1 1 2","esc":"so.rimini@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-rimini","conf":["Arezzo","Forlì-Cesena","Pesaro e Urbino"]},{"c":"Roma","pr":"RM","rg":"Lazio","cm":"Roma","dz":"Lazio","lat":41.89996,"lon":12.491037,"ind":"Via Genova, 1, 00184, Roma, RM","rc":"044","rd":"020","tsc":"06 46722699","tsd":"06 66179600","tc":"","nue":"1 1 2","esc":"so.roma@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-roma","conf":["Frosinone","L'Aquila","Latina","Rieti","Viterbo"]},{"c":"Rovigo","pr":"RO","rg":"Veneto","cm":"Rovigo","dz":"Veneto e TAA","lat":45.077112,"lon":11.803715,"ind":"Via dell'Ippodromo, 4/6, 45100, Rovigo, RO","rc":106,"rd":"084","tsc":"0425 398911","tsd":"049 8229211","tc":"","nue":"1 1 5","esc":"so.rovigo@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-rovigo","conf":["Ferrara","Mantova","Padova","Venezia","Verona"]},{"c":"Salerno","pr":"SA","rg":"Campania","cm":"Salerno","dz":"Campania","lat":40.665646,"lon":14.810406,"ind":"Via Sant' Eustachio, 35, 84133, Salerno, SA","rc":"074","rd":"060","tsc":"089 3089400","tsd":"081 2476114","tc":"","nue":"1 1 5","esc":"so.salerno@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-salerno","conf":["Avellino","Napoli","Potenza"]},{"c":"Sassari","pr":"SS","rg":"Sardegna","cm":"Sassari","dz":"Sardegna","lat":40.718855,"lon":8.570639,"ind":"Piazza Conte di Moriana, 1, 07100, Sassari, SS","rc":"056","rd":"062","tsc":"079 2831201","tsd":"070 528061","tc":"","nue":"1 1 2","esc":"so.sassari@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-sassari","conf":["Nuoro","Oristano"]},{"c":"Savona","pr":"SV","rg":"Liguria","cm":"Savona","dz":"Liguria","lat":44.292153,"lon":8.455497,"ind":"Via Nizza, 35, 17100, Savona, SV","rc":"092","rd":"046","tsc":"019 264753","tsd":"010 5455738","tc":"","nue":"1 1 2","esc":"so.savona@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-savona","conf":["Alessandria","Asti","Cuneo","Genova","Imperia"]},{"c":"Siena","pr":"SI","rg":"Toscana","cm":"Siena","dz":"Toscana","lat":43.33205,"lon":11.31339,"ind":"Strada del Ruffolo, 2, 53100, Siena, SI","rc":"070","rd":"050","tsc":"0577 248947","tsd":"055 5525600","tc":"","nue":"1 1 2","esc":"so.siena@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-siena","conf":["Arezzo","Firenze","Grosseto","Perugia","Pisa","Terni","Viterbo"]},{"c":"Siracusa","pr":"SR","rg":"Sicilia","cm":"Siracusa","dz":"Sicilia","lat":37.07827,"lon":15.28745,"ind":"Via Augusto Von Platen, 35, 96100, Siracusa, SR","rc":"048","rd":"028","tsc":"0931 481901","tsd":"091 6057500","tc":"","nue":"1 1 2","esc":"so.siracusa@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-siracusa","conf":["Catania","Ragusa"]},{"c":"Sondrio","pr":"SO","rg":"Lombardia","cm":"Sondrio","dz":"Lombardia","lat":46.16267,"lon":9.8616,"ind":"Via Giuliani, 27/21, 23100, Sondrio, SO","rc":"046","rd":"014","tsc":"0342 533001","tsd":"02 8546461","tc":"","nue":"1 1 2","esc":"so.sondrio@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-sondrio","conf":["Bergamo","Bolzano","Brescia","Como","Lecco","Trento"]},{"c":"Taranto","pr":"TA","rg":"Puglia","cm":"Taranto","dz":"Puglia","lat":40.443644,"lon":17.263883,"ind":"Piazzale Nicola Resta, , 74121, Taranto, TA","rc":108,"rd":"054","tsc":"099 7766220","tsd":"080 5411220","tc":"","nue":"1 1 2","esc":"so.taranto@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-taranto","conf":["Bari","Brindisi","Lecce","Matera"]},{"c":"Teramo","pr":"TE","rg":"Abruzzo","cm":"Teramo","dz":"Abruzzo","lat":42.656955,"lon":13.69331,"ind":"Via Armando Diaz, 3, 64100, Teramo, TE","rc":"056","rd":"004","tsc":"0861 3234474","tsd":"086 234931","tc":"","nue":"1 1 2","esc":"so.teramo@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-teramo","conf":["Ascoli Piceno","L'Aquila","Pescara","Rieti"]},{"c":"Terni","pr":"TR","rg":"Umbria","cm":"Terni","dz":"Umbria","lat":42.56003,"lon":12.65298,"ind":"Viale E. Proietti Divi, 115, 05100, Terni, TR","rc":"012","rd":"040","tsc":"0744 54649","tsd":"075 54472","tc":"","nue":"1 1 2","esc":"so.terni@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-terni","conf":["Perugia","Rieti","Siena","Viterbo"]},{"c":"Torino","pr":"TO","rg":"Piemonte","cm":"Torino","dz":"Piemonte","lat":45.088278,"lon":7.649333,"ind":"Corso Regina Margherita, 330, 10143, Torino, TO","rc":"056","rd":"080","tsc":"011 7422777","tsd":"011 41465200","tc":"","nue":"1 1 2","esc":"so.torino@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-torino","conf":["Alessandria","Aosta","Asti","Biella","Cuneo","Vercelli"]},{"c":"Trapani","pr":"TP","rg":"Sicilia","cm":"Trapani","dz":"Sicilia","lat":38.01199,"lon":12.57833,"ind":"Strada Palermo-Milo, , 91100, Trapani, TP","rc":"036","rd":"028","tsc":"0923 550380","tsd":"091 6057500","tc":"","nue":"1 1 2","esc":"so.trapani@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-trapani","conf":["Agrigento","Palermo"]},{"c":"Trento","pr":"TN","rg":"Trentino-Alto Adige","cm":"Trento","dz":"Veneto e TAA","lat":46.076589,"lon":11.1229,"ind":"Via Secondo da Trento, 2, 38121, Trento, TN","rc":"042","rd":"084","tsc":"0461 492298","tsd":"049 8229211","tc":"","nue":"1 1 2","esc":"so115.trento@provincia.tn.it","web":"https://www.provincia.tn.it/Amministrazione/Strutture-organizzative/Servizio-antincendi-e-protezione-civile/(people)/78","conf":["Belluno","Bolzano","Brescia","Sondrio","Verona","Vicenza"]},{"c":"Treviso","pr":"TV","rg":"Veneto","cm":"Treviso","dz":"Veneto e TAA","lat":45.671993,"lon":12.216606,"ind":"Via Santa Barbara, 5, 31100, Treviso, TV","rc":"092","rd":"084","tsc":"0422 358100","tsd":"049 8229211","tc":"","nue":"1 1 5","esc":"so.treviso@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-treviso","conf":["Belluno","Padova","Pordenone","Venezia","Vicenza"]},{"c":"Trieste","pr":"TS","rg":"Friuli Venezia Giulia","cm":"Trieste","dz":"Friuli Venezia Giulia","lat":45.63651,"lon":13.77961,"ind":"Via Bartolomeo D'Alviano, 15/1, 34144, Trieste, TS","rc":"080","rd":"036","tsc":"040 3789924","tsd":"040 7707511","tc":"","nue":"1 1 2","esc":"so.trieste@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-trieste","conf":["Gorizia"]},{"c":"Udine","pr":"UD","rg":"Friuli Venezia Giulia","cm":"Udine","dz":"Friuli Venezia Giulia","lat":46.04706,"lon":13.21274,"ind":"Via Popone, 55, 33100, Udine, UD","rc":116,"rd":"036","tsc":"0432 538800","tsd":"040 7707511","tc":"","nue":"1 1 2","esc":"so.udine@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-udine","conf":["Belluno","Gorizia","Pordenone","Venezia"]},{"c":"Varese","pr":"VA","rg":"Lombardia","cm":"Varese","dz":"Lombardia","lat":45.835855,"lon":8.819546,"ind":"Via Legnani, 8, 21100, Varese, VA","rc":"036","rd":"014","tsc":"0332 232844","tsd":"02 8546461","tc":"","nue":"1 1 2","esc":"so.varese@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-varese","conf":["Como","Milano","Monza e della Brianza","Novara","Verbano-Cusio-Ossola"]},{"c":"Venezia","pr":"VE","rg":"Veneto","cm":"Venezia","dz":"Veneto e TAA","lat":45.51779,"lon":12.243812,"ind":"Strada della Motorizzazione Civile, 6, 30174, Venezia, VE","rc":"040","rd":"084","tsc":"041 2697150","tsd":"049 8229211","tc":"","nue":"1 1 5","esc":"so.venezia@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-venezia","conf":["Padova","Pordenone","Rovigo","Treviso","Udine"]},{"c":"Verbano-Cusio-Ossola","pr":"VB","rg":"Piemonte","cm":"Verbania","dz":"Piemonte","lat":45.92679,"lon":8.559999,"ind":"Corso Europa, 62/c, 28922, Verbania, VB","rc":"066","rd":"080","tsc":"0323 5556699","tsd":"011 41465200","tc":"","nue":"1 1 2","esc":"so.verbania@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-verbano-cusio-ossola","conf":["Novara","Varese","Vercelli"]},{"c":"Vercelli","pr":"VC","rg":"Piemonte","cm":"Vercelli","dz":"Piemonte","lat":45.313491,"lon":8.422973,"ind":"Viale dell'Aeronautica Francis Lombardi, 8/10, 13100, Vercelli, VC","rc":"038","rd":"080","tsc":"0161 261479","tsd":"011 41465200","tc":"","nue":"1 1 2","esc":"so.vercelli@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-vercelli","conf":["Alessandria","Aosta","Biella","Novara","Pavia","Torino","Verbano-Cusio-Ossola"]},{"c":"Verona","pr":"VR","rg":"Veneto","cm":"Verona","dz":"Veneto e TAA","lat":45.412414,"lon":10.99033,"ind":"Via Polveriera Vecchia, 12, 37134, Verona, VR","rc":"048","rd":"084","tsc":"045 8294202","tsd":"049 8229211","tc":"","nue":"1 1 5","esc":"so.verona@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-verona","conf":["Brescia","Mantova","Padova","Rovigo","Trento","Vicenza"]},{"c":"Vibo Valentia","pr":"VV","rg":"Calabria","cm":"Vibo Valentia","dz":"Calabria","lat":38.67606,"lon":16.08998,"ind":"Piazza Giovanni XXIII, , 89900, Vibo Valentia, VV","rc":"044","rd":"042","tsc":"0963 9969100","tsd":"0961 7175111","tc":"","nue":"1 1 2","esc":"so.vibovalentia@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-vibo-valentia","conf":["Catanzaro","Reggio Calabria"]},{"c":"Vicenza","pr":"VI","rg":"Veneto","cm":"Vicenza","dz":"Veneto e TAA","lat":45.54632,"lon":11.5202,"ind":"Via Carlo Farini, 16, 36100, Vicenza, VI","rc":"016","rd":"084","tsc":"0444 565022","tsd":"049 8229211","tc":"0444 565022","nue":"1 1 5","esc":"so.vicenza@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-vicenza","conf":["Belluno","Padova","Trento","Treviso","Verona"]},{"c":"Viterbo","pr":"VT","rg":"Lazio","cm":"Viterbo","dz":"Lazio","lat":42.439397,"lon":12.090688,"ind":"Strada Cassia Nord, km 84/500, 01100, Viterbo, VT","rc":"072","rd":"020","tsc":"0761 2443","tsd":"06 66179600","tc":"","nue":"1 1 2","esc":"so.viterbo@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-viterbo","conf":["Grosseto","Rieti","Roma","Siena","Terni"]}];
+const CON = {radio:"026", tel:"06 478321"};
+const SOCAV = {tel:"06 79340903"};
+
+function norm(s){
+  return (s||"").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+}
+
+function haversine(lat1,lon1,lat2,lon2){
+  const R=6371;
+  const dLat=(lat2-lat1)*Math.PI/180;
+  const dLon=(lon2-lon1)*Math.PI/180;
+  const a=Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+function telHref(num){
+  return "tel:"+ (num||"").replace(/[^0-9+]/g,"");
+}
+
+async function reverseGeocodeProvincia(lat, lon){
+  try{
+    const url = "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat="+lat+"&lon="+lon+"&addressdetails=1&accept-language=it&zoom=8";
+    const resp = await fetch(url, {headers:{"Accept":"application/json"}});
+    if(!resp.ok) throw new Error("http "+resp.status);
+    const data = await resp.json();
+    const addr = data.address || {};
+
+    let provCode = null;
+    if(addr["ISO3166-2-lvl6"]){
+      provCode = addr["ISO3166-2-lvl6"].split("-").pop().toUpperCase();
+    }
+    let rec = provCode ? COMANDI.find(r => r.pr === provCode) : null;
+
+    if(!rec && addr.county){
+      const countyName = norm(addr.county.replace(/^(provincia di|libera consortile di|libero consorzio( comunale)? di|citt[aà] metropolitana di)\s*/i, ""));
+      rec = COMANDI.find(r => norm(r.cm) === countyName || norm(r.c) === countyName);
+    }
+    return rec || null;
+  } catch(e){
+    return null;
+  }
+}
+
+function showResult(record, distanceKm, nearbyList, method){
+  document.getElementById("locate-section").classList.add("hidden");
+  document.getElementById("search-section").classList.add("hidden");
+  const rs = document.getElementById("result-section");
+  rs.classList.remove("hidden");
+
+  document.getElementById("rComando").textContent = record.c;
+  document.getElementById("rDist").textContent = (distanceKm!=null) ? distanceKm.toFixed(1)+" km" : "";
+  document.getElementById("rSub").textContent = record.rg + " · Direzione regionale " + record.dz;
+
+  document.getElementById("rRadioComando").textContent = record.rc || "—";
+  document.getElementById("rRadioDirezione").textContent = record.rd || "—";
+
+  const tsc = document.getElementById("rTelComandoWrap");
+  tsc.innerHTML = record.tsc
+    ? '<a class="value-link" href="'+telHref(record.tsc)+'">'+record.tsc+' <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 3h4l2 5-2.5 1.5a11 11 0 005 5L16 12l5 2v4a2 2 0 01-2 2C10.6 20 4 13.4 4 5a2 2 0 012-2z" stroke="currentColor" stroke-width="1.6"/></svg></a>'
+    : "—";
+  const tsd = document.getElementById("rTelDirezioneWrap");
+  tsd.innerHTML = record.tsd
+    ? '<a class="value-link" href="'+telHref(record.tsd)+'">'+record.tsd+' <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 3h4l2 5-2.5 1.5a11 11 0 005 5L16 12l5 2v4a2 2 0 01-2 2C10.6 20 4 13.4 4 5a2 2 0 012-2z" stroke="currentColor" stroke-width="1.6"/></svg></a>'
+    : "—";
+
+  let addr = record.ind || "";
+  let extra = [];
+  if(record.nue) extra.push("NUE " + record.nue);
+  if(record.tc) extra.push("Centralino " + record.tc);
+  document.getElementById("rAddr").innerHTML = addr + (extra.length ? "<br>" + extra.join(" · ") : "");
+
+  const methodEl = document.getElementById("rMethod");
+  const borderNote = document.getElementById("borderNote");
+  if(method === "geo"){
+    methodEl.className = "method-badge geo";
+    methodEl.textContent = "Determinato dalla provincia di competenza";
+    borderNote.classList.add("hidden");
+  } else if(method === "dist"){
+    methodEl.className = "method-badge dist";
+    methodEl.textContent = "Stima per vicinanza — provincia non determinabile via rete";
+    borderNote.classList.remove("hidden");
+    borderNote.innerHTML = "Non è stato possibile determinare la provincia via rete: mostrato il comando con sede più vicina. Verifica la competenza effettiva, specie vicino a un confine provinciale.";
+  } else {
+    methodEl.className = "method-badge manual";
+    methodEl.textContent = "";
+    borderNote.classList.add("hidden");
+  }
+
+  const confPanel = document.getElementById("confinantiPanel");
+  const chips = document.getElementById("confinantiChips");
+  chips.innerHTML = "";
+  if(record.conf && record.conf.length){
+    confPanel.classList.remove("hidden");
+    record.conf.forEach(name=>{
+      const rec = COMANDI.find(x=>x.c===name);
+      if(!rec) return;
+      const chip = document.createElement("div");
+      chip.className = "chip";
+      chip.textContent = name;
+      chip.onclick = ()=> selectComando(rec, userPos);
+      chips.appendChild(chip);
+    });
+  } else {
+    confPanel.classList.add("hidden");
+  }
+
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+let userPos = null;
+
+function selectComando(record, pos){
+  let dist = null;
+  if(pos){
+    dist = haversine(pos.lat, pos.lon, record.lat, record.lon);
+  }
+  showResult(record, dist, null, "manual");
+}
+
+document.getElementById("locateBtn").addEventListener("click", function(){
+  const btn = this;
+  const statusEl = document.getElementById("statusMsg");
+  statusEl.classList.remove("hidden","error");
+  statusEl.textContent = "Localizzazione in corso...";
+  btn.classList.add("loading");
+
+  if(!navigator.geolocation){
+    statusEl.classList.add("error");
+    statusEl.textContent = "Il dispositivo non supporta la geolocalizzazione. Cerca il comando manualmente.";
+    btn.classList.remove("loading");
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(async function(pos){
+    userPos = {lat: pos.coords.latitude, lon: pos.coords.longitude};
+    statusEl.textContent = "Determinazione provincia di competenza...";
+
+    const geoRec = await reverseGeocodeProvincia(userPos.lat, userPos.lon);
+    btn.classList.remove("loading");
+    statusEl.classList.add("hidden");
+
+    if(geoRec){
+      const dist = haversine(userPos.lat, userPos.lon, geoRec.lat, geoRec.lon);
+      showResult(geoRec, dist, null, "geo");
+    } else {
+      const withDist = COMANDI.map(r=>({rec:r, dist:haversine(userPos.lat,userPos.lon,r.lat,r.lon)}))
+        .sort((a,b)=>a.dist-b.dist);
+      showResult(withDist[0].rec, withDist[0].dist, withDist.slice(1), "dist");
+    }
+  }, function(err){
+    btn.classList.remove("loading");
+    statusEl.classList.add("error");
+    if(err.code === 1) statusEl.textContent = "Permesso posizione negato. Cerca il comando manualmente.";
+    else if(err.code === 2) statusEl.textContent = "Posizione non disponibile. Cerca il comando manualmente.";
+    else statusEl.textContent = "Localizzazione non riuscita. Cerca il comando manualmente.";
+  }, {enableHighAccuracy:true, timeout:12000, maximumAge:60000});
+});
+
+document.getElementById("toggleSearchBtn").addEventListener("click", function(){
+  document.getElementById("search-section").classList.remove("hidden");
+  document.getElementById("searchInput").focus();
+});
+
+document.getElementById("backToSearchBtn").addEventListener("click", function(){
+  document.getElementById("result-section").classList.add("hidden");
+  document.getElementById("locate-section").classList.remove("hidden");
+  document.getElementById("search-section").classList.remove("hidden");
+  document.getElementById("searchInput").focus();
+});
+
+const searchInput = document.getElementById("searchInput");
+const searchResults = document.getElementById("searchResults");
+searchInput.addEventListener("input", function(){
+  const q = norm(this.value);
+  if(q.length < 2){ searchResults.classList.add("hidden"); searchResults.innerHTML=""; return; }
+  const matches = COMANDI.filter(r => norm(r.c).includes(q) || norm(r.cm).includes(q) || norm(r.pr).includes(q)).slice(0,8);
+  searchResults.innerHTML = "";
+  if(!matches.length){ searchResults.classList.add("hidden"); return; }
+  searchResults.classList.remove("hidden");
+  matches.forEach(rec=>{
+    const item = document.createElement("div");
+    item.className = "search-item";
+    item.innerHTML = '<span class="sname">'+rec.c+'</span><span class="sprov">'+rec.pr+' · '+rec.rg+'</span>';
+    item.onclick = ()=>{ selectComando(rec, userPos); searchResults.classList.add("hidden"); searchInput.value=""; };
+    searchResults.appendChild(item);
+  });
+});
+
+document.querySelectorAll(".copy-btn").forEach(btn=>{
+  btn.addEventListener("click", function(){
+    const target = document.getElementById(this.dataset.copyTarget);
+    const text = target.textContent;
+    const done = ()=>{
+      this.textContent = "copiato";
+      this.classList.add("copied");
+      setTimeout(()=>{ this.textContent = "copia"; this.classList.remove("copied"); }, 1500);
+    };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(done).catch(done);
+    } else {
+      done();
+    }
+  });
+});
+</script>
+</body>
+</html>
