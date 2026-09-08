@@ -62,7 +62,7 @@ function avvia(app){
     es:'<svg viewBox="0 0 12 8"><rect width="12" height="8" fill="#AA151B"/><rect y="2" width="12" height="4" fill="#F1BF00"/></svg>'
   };
 
-const L10N = {
+  const L10N = {
     it:{
       sub:'Segui i passi a sinistra: prima i dati, poi lo scenario, poi le quattro tavole. Doppio clic o Invio per chiudere una linea.',
       gStato:'Stato', statoPrevisto:'Previsto', statoAttivo:'In atto',
@@ -288,7 +288,7 @@ const L10N = {
      invece che dentro L10N: sono un'aggiunta successiva, e tenerle insieme
      rende evidente cosa appartiene al percorso e cosa alla tavola. Quello
      che manca in una lingua ricade sull'italiano, come fa `t`. */
- const L10N_EXTRA = {
+  const L10N_EXTRA = {
     it:{ bCono:'Aggiungi cono',
       bPosizione:'Inserisci coordinate',
       bPosizionePronta:'Posizione disponibile',
