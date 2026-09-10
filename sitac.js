@@ -5519,7 +5519,7 @@ async function stampa(){
 
   /* comando attivo condiviso con script.js / convertitore.js: si sposta la
      vista solo se il GPS non ha risposto e non c'è ancora nulla disegnato */
-  window.addEventListener('fireops:comando-attivo-cambiato', ev => {
+  document.addEventListener('fireops:comando-attivo-cambiato', ev => {
     const d = ev.detail || {};
     const la = parseFloat(d.lat != null ? d.lat : d.latitudine);
     const lo = parseFloat(d.lon != null ? d.lon : d.longitudine);
