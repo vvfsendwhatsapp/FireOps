@@ -954,7 +954,7 @@ const DECO_CONTIGUI = ['triangoloBase', 'bifronte', 'omega', 'denti'];
    quando è prevista, pieno quando è fatta.
    ===================================================================== */
 const L = {};
-const aggL = (k, g, sg, it, en, stile, extra) => {
+const aggL = (k, g, sg, it, en, fr, es, stile, extra) => {
   L[k] = Object.assign({g, sg, n:{it, en}}, stile, extra || {});
 };
 
