@@ -4,11 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Una piattaforma digitale pensata per gli operatori dei Vigili del Fuoco, progettata per raccogliere e rendere immediatamente accessibili strumenti, informazioni, procedure e risorse operative.">
+    <meta name="description"
+        content="Una piattaforma digitale pensata per gli operatori dei Vigili del Fuoco, progettata per raccogliere e rendere immediatamente accessibili strumenti, informazioni, procedure e risorse operative.">
 
     <!-- Open Graph -->
     <meta property="og:title" content="FireOps VVF">
-    <meta property="og:description" content="Smart Emergency Management — Una piattaforma digitale pensata per gli operatori dei Vigili del Fuoco, progettata per raccogliere e rendere immediatamente accessibili strumenti, informazioni, procedure e risorse operative. FireOps VVF semplifica il lavoro dell'operatore, supporta il processo decisionale e favorisce una gestione dell'emergenza più rapida, organizzata ed efficace. Un unico ambiente. Tutto il supporto necessario. Quando ogni secondo conta.">
+    <meta property="og:description"
+        content="Smart Emergency Management — Una piattaforma digitale pensata per gli operatori dei Vigili del Fuoco, progettata per raccogliere e rendere immediatamente accessibili strumenti, informazioni, procedure e risorse operative. FireOps VVF semplifica il lavoro dell'operatore, supporta il processo decisionale e favorisce una gestione dell'emergenza più rapida, organizzata ed efficace. Un unico ambiente. Tutto il supporto necessario. Quando ogni secondo conta.">
     <meta property="og:image" content="https://vvfsendwhatsapp.github.io/FireOps/images/logo.png">
     <meta property="og:url" content="https://vvfsendwhatsapp.github.io/FireOps/index.html">
     <meta property="og:type" content="website">
@@ -17,10 +19,13 @@
     <!-- Twitter / X -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="FireOps VVF">
-    <meta name="twitter:description" content="Smart Emergency Management — Una piattaforma digitale pensata per gli operatori dei Vigili del Fuoco, progettata per raccogliere e rendere immediatamente accessibili strumenti, informazioni, procedure e risorse operative. FireOps VVF semplifica il lavoro dell'operatore, supporta il processo decisionale e favorisce una gestione dell'emergenza più rapida, organizzata ed efficace. Un unico ambiente. Tutto il supporto necessario. Quando ogni secondo conta.">
+    <meta name="twitter:description"
+        content="Smart Emergency Management — Una piattaforma digitale pensata per gli operatori dei Vigili del Fuoco, progettata per raccogliere e rendere immediatamente accessibili strumenti, informazioni, procedure e risorse operative. FireOps VVF semplifica il lavoro dell'operatore, supporta il processo decisionale e favorisce una gestione dell'emergenza più rapida, organizzata ed efficace. Un unico ambiente. Tutto il supporto necessario. Quando ogni secondo conta.">
     <meta name="twitter:image" content="https://vvfsendwhatsapp.github.io/FireOps/images/logo.png">
 
-    <meta name="theme-color" content="Smart Emergency Management — Una piattaforma digitale pensata per gli operatori dei Vigili del Fuoco, progettata per raccogliere e rendere immediatamente accessibili strumenti, informazioni, procedure e risorse operative. FireOps VVF semplifica il lavoro dell'operatore, supporta il processo decisionale e favorisce una gestione dell'emergenza più rapida, organizzata ed efficace. Un unico ambiente. Tutto il supporto necessario. Quando ogni secondo conta."> <!-- colore barra su Android/Chrome -->
+    <meta name="theme-color"
+        content="Smart Emergency Management — Una piattaforma digitale pensata per gli operatori dei Vigili del Fuoco, progettata per raccogliere e rendere immediatamente accessibili strumenti, informazioni, procedure e risorse operative. FireOps VVF semplifica il lavoro dell'operatore, supporta il processo decisionale e favorisce una gestione dell'emergenza più rapida, organizzata ed efficace. Un unico ambiente. Tutto il supporto necessario. Quando ogni secondo conta.">
+    <!-- colore barra su Android/Chrome -->
     <link rel="apple-touch-icon" href="images/logo.png"> <!-- icona se salvata su home iOS -->
 
     <title>FireOps VVF</title>
@@ -250,7 +255,7 @@
         </section>
 
         <!-- GESTIONE INTERVENTI FPDS -->
-<!--
+        <!--
         <section id="gestione-fpds" class="page-section">
             <div class="pagina-box">
                 <h3>Gestione Interventi FPDS</h3>
@@ -300,8 +305,14 @@
                         </div>
                         <div class="sitac-dati-campo" data-c="int">
                             <label for="sitac-nIntervento" data-t="nIntervento"></label>
-                            <input type="text" id="sitac-nIntervento" inputmode="numeric" maxlength="10"
-                                autocomplete="off">
+                            <div class="sitac-dati-riga">
+                                <input type="text" id="sitac-nIntervento" inputmode="numeric" maxlength="10"
+                                    autocomplete="off">
+                                <label class="sitac-senza-scheda">
+                                    <input type="checkbox" id="sitac-senzaScheda">
+                                    <span data-t="senzaScheda"></span>
+                                </label>
+                            </div>
                         </div>
                         <div class="sitac-dati-campo" data-c="qual">
                             <label for="sitac-qualifica" data-t="nQualifica"></label>
@@ -416,7 +427,7 @@
                                         <button id="sitac-bImporta" type="button" data-t="bImporta"></button>
                                         <button id="sitac-bStampa" type="button" data-t="bStampa"></button>
                                         <button id="sitac-bGeojson" type="button" data-t="bExpGeoJSON"></button>
-                                        <button id="sitac-bKml" type="button"ata-t="bExpKML"></button>
+                                        <button id="sitac-bKml" type="button" ata-t="bExpKML"></button>
                                     </div>
                                     <input type="file" id="sitac-file" accept=".geojson,.json,application/geo+json"
                                         hidden>
@@ -477,7 +488,7 @@
         </section>
 
         <!-- SCHEDE DI SOCCORSO -->
-<!--
+        <!--
         <section id="schede-soccorso" class="page-section">
             <div class="pagina-box pagina-box-larga">
                 <h3>Schede Di Soccorso</h3>
@@ -929,7 +940,7 @@
         </section>
 
         <!-- RADIO E TELEFONI -->
-<!--
+        <!--
         <section id="radio-telefoni" class="page-section">
             <div class="pagina-box">
                 <h3>Radio e Telefoni</h3>

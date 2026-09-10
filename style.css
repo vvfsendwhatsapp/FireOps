@@ -5961,6 +5961,11 @@ select:focus {
 }
 #sitac-app .sitac-avviso-lato[hidden] { display: none; }
 
+.sitac-senza-scheda{display:inline-flex;align-items:center;gap:.4em;margin-top:.3em;
+  font-size:.85em;cursor:pointer;user-select:none}
+.sitac-senza-scheda input{margin:0}
+#sitac-nIntervento:disabled{opacity:.45;cursor:not-allowed}
+
 /* Ombra sulle aste degli assi: la fascia bianca su carta chiara non ha
    contorno che la stacchi dal fondo, e il bordo rosso da solo si perde
    sopra una strada o un campo giallo. Solo su questi elementi, non su

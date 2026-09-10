@@ -18,3 +18,69 @@
 
 Prima di darti il codice, una cosa che c'è nel file che hai incollato e che va sistemata comunque, perché è un errore vero: in q('#sitac-bPosizione').onclick la variabile del modale si chiama usa nell'if, ma la const che la dichiara è sparita — resta const usa = await scegli(...) sostituito da nulla, e le due righe dopo usano usa che non esiste. Guarda quel blocco: se manca const usa = davanti a await scegli({...}), il pulsante della posizione va in errore.
 INTERVENTI ALL'ESTERO
+
+                <!-- SCHEDA 1: intestazione della SITAC -->
+                <div class="sitac-pannello attivo" data-scheda="dati">
+                    <div class="sitac-dati">
+                        <div class="sitac-dati-campo" data-c="ora">
+                            <label data-t="dataOra"></label>
+                            <div id="sitac-dataOra" class="sitac-derivato">—</div>
+                        </div>
+                        <div class="sitac-dati-campo" data-c="int">
+                            <label for="sitac-nIntervento" data-t="nIntervento"></label>
+                            <input type="text" id="sitac-nIntervento" inputmode="numeric" maxlength="10"
+                                autocomplete="off">
+                        </div>
+                        <div class="sitac-dati-campo" data-c="qual">
+                            <label for="sitac-qualifica" data-t="nQualifica"></label>
+                            <select id="sitac-qualifica">
+                                <option value="" selected disabled data-t="qualificaVuota"></option>
+                                <option value="IA">IA</option>
+                                <option value="CR">CR</option>
+                                <option value="CSE">CSE</option>
+                                <option value="CS">CS</option>
+                                <option value="VC">VC</option>
+                                <option value="VE">VE</option>
+                                <option value="VF">VF</option>
+                                <option value="CSV">CSV</option>
+                                <option value="VV">VV</option>
+                            </select>
+                        </div>
+                        <div class="sitac-dati-campo" data-c="nom">
+                            <label for="sitac-nominativo" data-t="nNominativo"></label>
+                            <input type="text" id="sitac-nominativo" maxlength="60" autocomplete="off">
+                        </div>
+                        <div class="sitac-dati-campo" data-c="dos">
+                            <label for="sitac-nDos" data-t="nDos"></label>
+                            <div class="sitac-dos-riga">
+                                <span class="sitac-dos-vf">VF</span>
+                                <!-- maxlength 6: normalizzaDos taglia a 6, non a 4 -->
+                                <input type="text" id="sitac-nDos" maxlength="6" placeholder="00A" autocomplete="off">
+                            </div>
+                        </div>
+                        <div class="sitac-dati-campo" data-c="tel">
+                            <label for="sitac-telefono" data-t="nTelefono"></label>
+                            <input type="tel" id="sitac-telefono" maxlength="20" inputmode="tel" autocomplete="off">
+                        </div>
+                        <div class="sitac-dati-campo" data-c="pos">
+                            <label for="sitac-posizione" data-t="posDos"></label>
+                            <div class="sitac-dati-riga">
+                                <input type="text" id="sitac-posizione" readonly>
+                                <button id="sitac-bPosizione" type="button"></button>
+                            </div>
+                        </div>
+                        <div class="sitac-dati-campo" data-c="prov">
+                            <label data-t="provincia"></label>
+                            <div id="sitac-provincia" class="sitac-derivato">—</div>
+                        </div>
+                        <div class="sitac-dati-campo" data-c="cmd">
+                            <label data-t="comando"></label>
+                            <div id="sitac-comando" class="sitac-derivato">—</div>
+                        </div>
+                        <div class="sitac-dati-azioni" data-c="az">
+                            <button id="sitac-bConvalida" type="button" data-t="bConvalida"></button>
+                            <button id="sitac-bPulisciDati" type="button" data-t="bPulisciDati"></button>
+                        </div>
+                    </div>
+                    <p class="sitac-avviso" data-t="datiNota"></p>
+                </div>

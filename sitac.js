@@ -17,9 +17,12 @@
  * prima non ferma nessuno, e una SITAC che gira fra sale operative senza
  * dire a quale intervento si riferisce e chi la firma non serve a niente.
  *
- * L'unica eccezione prevista è la posizione scelta sulla carta: lì si
+ * Le eccezioni previste sono due. La posizione scelta sulla carta: lì si
  * passa alla scheda 2 con la sola mappa viva, si clicca, e la convalida
- * arriva dal popup senza tornare indietro.
+ * arriva dal popup senza tornare indietro. E la casella "senza scheda
+ * intervento", per le SITAC che un numero non ce l'hanno: il numero si
+ * spegne, ma chi firma resta obbligatorio — è proprio quando manca
+ * l'aggancio a un intervento che serve sapere chi l'ha redatta.
  *
  * NIENTE DIALOGHI DEL BROWSER
  * prompt() e confirm() intestano la finestra col dominio del sito
@@ -814,7 +817,16 @@ function avvia(app){
       stNote:'Notas',
       datiOkAuto:'Datos completos: validados por s\u00ed solos \u2014 intervenci\u00f3n {i}, {n}.\u000aLa pesta\u00f1a 2 est\u00e1 desbloqueada.', }
   };
-  Object.keys(L10N_EXTRA).forEach(k => Object.assign(L10N[k], L10N_EXTRA[k]));
+  /* Casella "senza scheda intervento": aggiunta dopo, e tenuta a parte
+     come L10N_EXTRA per la stessa ragione. La voce breve prende il posto
+     del numero nei messaggi e sulla testata del passo 1. */
+  const L10N_SCHEDA = {
+    it:{senzaScheda:'Senza scheda intervento', senzaSchedaBreve:'senza scheda'},
+    en:{senzaScheda:'No incident report', senzaSchedaBreve:'without report'},
+    fr:{senzaScheda:'Sans fiche d\u2019intervention', senzaSchedaBreve:'sans fiche'},
+    es:{senzaScheda:'Sin parte de intervención', senzaSchedaBreve:'sin parte'}
+  };
+  Object.keys(L10N_SCHEDA).forEach(k => Object.assign(L10N[k], L10N_SCHEDA[k]));
 
   let lingua = 'it';
   const t = (chiave, val) => {
@@ -1079,12 +1091,15 @@ function avvia(app){
      riferisce, e chi la firma, non serve a niente. Finiscono nel GeoJSON,
      nel nome del file e nella testata di stampa.
      ===================================================================== */
-    const inIntervento = q('#sitac-nIntervento');
+  const inIntervento = q('#sitac-nIntervento');
   const inQualifica  = q('#sitac-qualifica');
   const inDos        = q('#sitac-nDos');
   const inNominativo = q('#sitac-nominativo');
   const inTelefono   = q('#sitac-telefono');
-  const inPosizione  = q('#sitac-posizione');
+  const chkScheda    = q('#sitac-senzaScheda');
+  /* Il numero digitato prima di spuntare la casella: se la si spunta per
+     sbaglio e la si toglie, il numero torna invece di doverlo ridettare. */
+  let numeroMesso = '';
   const CHIAVE_SESS  = 'fireops_sitac_intestazione';
   const CHIAVE_NOTE  = 'fireops_sitac_note';
 
@@ -1094,7 +1109,14 @@ function avvia(app){
   }
   const dosValido = () => /^[A-Z0-9]{1,6}$/.test(inDos.value);
   const dosCompleto = () => dosValido() ? 'VF ' + inDos.value : '';
-  const interventoValido = () => /^[0-9]+$/.test(inIntervento.value);
+  /* Senza scheda il numero non manca: non esiste. Il resto del passo 1
+     resta obbligatorio. */
+  const senzaScheda = () => !!chkScheda.checked;
+  const interventoValido = () => senzaScheda() || /^[0-9]+$/.test(inIntervento.value);
+  /* Quello che si scrive al posto del numero nei messaggi e sulle testate. */
+  const etichettaIntervento = () => senzaScheda() ? t('senzaSchedaBreve') : inIntervento.value;
+  /* Il campo a cui dare il fuoco: il numero spento non lo prende. */
+  const primoCampo = () => senzaScheda() ? chkScheda : inIntervento;
   const telefonoValido = () =>
     /^\+?[0-9]{6,15}$/.test(inTelefono.value.replace(/[ .\-]/g, ''));
 
@@ -1141,7 +1163,8 @@ function avvia(app){
     }
     try {
       sessionStorage.setItem(CHIAVE_SESS, JSON.stringify({
-        intervento: inIntervento.value, qualifica: inQualifica.value,
+        intervento: inIntervento.value, senzaScheda: senzaScheda(),
+        qualifica: inQualifica.value,
         dos: inDos.value, nominativo: inNominativo.value,
         telefono: inTelefono.value, posizione: inPosizione.value}));
     } catch(e){ /* sessione non disponibile: si perde solo il ricordo */ }
@@ -1172,7 +1195,12 @@ function avvia(app){
     inIntervento.value = inIntervento.value.replace(/[^0-9]/g, '');
     segnaIntestazione();
   };
-  inQualifica.onchange = segnaIntestazione;
+  chkScheda.onchange = () => {
+    if (chkScheda.checked){ numeroMesso = inIntervento.value; inIntervento.value = ''; }
+    else { inIntervento.value = numeroMesso; numeroMesso = ''; }
+    segnaIntestazione();
+    if (!chkScheda.checked) inIntervento.focus();
+  };
   inDos.oninput = () => { inDos.value = normalizzaDos(inDos.value); segnaIntestazione(); };
   inNominativo.oninput = segnaIntestazione;
   inTelefono.oninput = () => {
@@ -1187,7 +1215,12 @@ function avvia(app){
     });
     /* Un <select> non ha readOnly: si disabilita e basta. */
     inQualifica.disabled = datiBloccati;
-    inQualifica.classList.toggle('campo-bloccato', datiBloccati);
+    /* Senza scheda il numero si spegne del tutto: disabled, non readOnly.
+       Non è un campo fermo in attesa di Modifica, è un campo che non si
+       compila, e così esce anche dal giro del Tab. La casella segue il
+       blocco come gli altri campi. */
+    inIntervento.disabled = senzaScheda();
+    chkScheda.disabled = datiBloccati;
     const bPos = q('#sitac-bPosizione');
     bPos.disabled = datiBloccati || !anagraficaOk();
     /* L'etichetta segue il dato, non la funzione: a posizione acquisita quel
@@ -1225,7 +1258,7 @@ function avvia(app){
        comunque alla carta anche in automatico. */
     if (!auto) vaiAScheda('carta');
     stato(t(auto ? 'datiOkAuto' : 'datiOk',
-        {i: inIntervento.value, n: inNominativo.value.trim()})
+        {i: etichettaIntervento(), n: inNominativo.value.trim()})
       + '\n' + t('datiBloccati'));
   }
 
@@ -1235,7 +1268,7 @@ function avvia(app){
       oraRedazione = null;        // riprende a scorrere, si ricongela alla convalida
       avviaOrologio();
       mostraBlocco();
-      inIntervento.focus();
+      primoCampo().focus();
       return;
     }
     convalida();
@@ -1248,6 +1281,8 @@ function avvia(app){
     [inIntervento, inDos, inNominativo, inTelefono, inPosizione]
       .forEach(c => { c.value = ''; });
     inQualifica.value = '';
+    chkScheda.checked = false;
+    numeroMesso = '';
     posDos = null;
     provinciaDos = null;
     comandoSitac = null;
@@ -1265,6 +1300,7 @@ function avvia(app){
   try {
     const salvato = JSON.parse(sessionStorage.getItem(CHIAVE_SESS) || '{}');
     inIntervento.value = salvato.intervento || '';
+    chkScheda.checked  = !!salvato.senzaScheda;
     inQualifica.value  = salvato.qualifica || '';
     inDos.value        = salvato.dos || '';
     inNominativo.value = salvato.nominativo || '';
@@ -1286,7 +1322,8 @@ function avvia(app){
   });
   function siglaFile(){
     const i = intestazione();
-    return (i.intervento ? '_' + i.intervento : '') + (i.dos ? '_' + i.dos.replace(/\s/g, '') : '');
+    return (i.intervento ? '_' + i.intervento : i.senzaScheda ? '_senza-scheda' : '')
+      + (i.dos ? '_' + i.dos.replace(/\s/g, '') : '');
   }
 
   /* La posizione del DOS non è più "dove sta questo dispositivo": si sceglie
@@ -3807,7 +3844,7 @@ async function chiediLatoSimbolo(layer){
     };
 
     const completo = datiCompleti();
-    segna(1, completo ? `${t('pFatto')} ${inIntervento.value} \u00b7 ${dosCompleto()}`
+    segna(1, completo ? `${t('pFatto')} ${etichettaIntervento()} \u00b7 ${dosCompleto()}`
       : t('pManca'), completo);
     segna(2, ventoCono ? `${t('pFatto')} ${ventoCono.velocita} km/h \u2192 ${ventoCono.verso}\u00b0`
       : t('pManca'), !!ventoCono);
@@ -4309,7 +4346,7 @@ async function chiediLatoSimbolo(layer){
        un giro di ritardo, perché vaiAScheda rimisura la mappa in un
        setTimeout. */
     vaiAScheda('dati');
-    setTimeout(() => inIntervento.focus(), 20);
+    setTimeout(() => primoCampo().focus(), 20);
     aggiornaStato();
   };
   function etichettaSfondo(){
@@ -4500,7 +4537,15 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
 
     const p = fc && fc.properties;
     if (p){
-      if (p.intervento) inIntervento.value = String(p.intervento).replace(/[^0-9]/g,'');
+      /* La casella segue il file: un file senza scheda la accende, uno col
+         numero la spegne. Un file che non dice né l'uno né l'altro — altrui,
+         o di prima della casella — lascia le cose come stanno. */
+      if (p.senzaScheda || p.intervento){
+        chkScheda.checked = !!p.senzaScheda && !p.intervento;
+        inIntervento.value = chkScheda.checked ? ''
+          : String(p.intervento).replace(/[^0-9]/g, '');
+        numeroMesso = '';
+      }
       if (p.dos)        inDos.value        = normalizzaDos(p.dos);
       if (p.qualifica)  inQualifica.value  = String(p.qualifica);
       if (p.nominativo) inNominativo.value = String(p.nominativo);
@@ -4805,6 +4850,10 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
   }
   function applicaLingua(){
     radice.setAttribute('lang', lingua);
+    /* La simbologia legge la lingua da qui: il DOS scrive nel riquadro la
+       sigla della lingua scelta (DOS, WIC, COS, DOE). Va impostata PRIMA di
+       creaPulsanti e delle legende, che disegnano i simboli. */
+    NS.SITAC_LINGUA = lingua;
     qq('[data-t]').forEach(e => { e.textContent = t(e.dataset.t); });
     qq('#sitac-lingue button').forEach(b =>
       b.classList.toggle('attivo', b.dataset.lingua === lingua));
@@ -4814,6 +4863,18 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
     creaPulsanti();
     etichettaSfondo();
     disegni.eachLayer(etichettaElemento);
+    /* I simboli già posati hanno l'icona costruita alla posa: quelli che
+       dipendono dalla lingua — oggi il solo DOS — resterebbero con la sigla
+       di prima. Si rifanno tutti i simboli puntuali invece del DOS soltanto,
+       così il prossimo glifo con un testo in lingua non va ricordato qui.
+       setIcon butta il nodo vecchio, e con lui la classe della selezione:
+       la si rimette. */
+    disegni.eachLayer(x => {
+      if (x._genere !== 'simbolo' || !x.setIcon || !SIM[x._tipo]) return;
+      x.setIcon(iconaSimbolo(x._tipo, {stato:x._stato, testo:x._testo,
+        rotazione:x._rotazione, paese:x._paese}));
+    });
+    nodiDi(selezionato).forEach(e => e.classList.add('sitac-selezionato'));
     if (ventoCono) mostraVento(ventoCono);
     if (strumento){
       const d = strumento.genere === 'linea' ? LIN[strumento.chiave]
@@ -4922,7 +4983,9 @@ function sfBloccoComando(){
    separate, come separate le si detta per radio. */
 function sfBloccoIntervento(){
   const i = intestazione();
-  return sfCampo(t('nIntervento'), i.intervento)
+  /* Il trattino sul foglio vuol dire "dato mancante": qui il dato c'è, ed
+     è che la scheda non esiste. Va scritto. */
+  return sfCampo(t('nIntervento'), i.senzaScheda ? t('senzaScheda') : i.intervento)
     + sfCampo(t('dataOra'), fmtOra(oraRedazione || new Date()))
     + sfCampo(t('provincia'), provinciaDos
         ? `${provinciaDos.sigla || ''} ${provinciaDos.nome || ''}`.trim() : '')
@@ -4950,7 +5013,7 @@ function nomeStampa(){
   const puliscia = s => String(s == null ? '' : s)
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/[^A-Za-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-  return ['SITAC', i.intervento, data, puliscia(cmd),
+  return ['SITAC', i.intervento || (i.senzaScheda ? 'senza-scheda' : ''), data, puliscia(cmd),
           puliscia(i.dos), puliscia(i.nominativo)]
     .filter(Boolean).join('_');
 }
@@ -5494,7 +5557,7 @@ NS.Sitac = {
                       'sitac-bSfondo','sitac-bImporta','sitac-bStampa',
                       'sitac-bGeojson','sitac-bKml','sitac-file',
                       'sitac-qualifica','sitac-dataOra','sitac-carta',
-                      'sitac-bPulisciDati',
+                      'sitac-bPulisciDati', 'sitac-senzaScheda',
                       'sitac-provincia','sitac-comando','sitac-bVentoDir','sitac-bVentoWeb','sitac-ventoScala','sitac-ventoValore' ]){
       if (!radice.querySelector('#' + id)){
         console.error('[SITAC] manca #' + id + ' nel markup della sezione.');
