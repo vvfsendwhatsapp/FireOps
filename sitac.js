@@ -817,6 +817,7 @@ function avvia(app){
       stNote:'Notas',
       datiOkAuto:'Datos completos: validados por s\u00ed solos \u2014 intervenci\u00f3n {i}, {n}.\u000aLa pesta\u00f1a 2 est\u00e1 desbloqueada.', }
   };
+    Object.keys(L10N_EXTRA).forEach(k => Object.assign(L10N[k], L10N_EXTRA[k]));
   /* Casella "senza scheda intervento": aggiunta dopo, e tenuta a parte
      come L10N_EXTRA per la stessa ragione. La voce breve prende il posto
      del numero nei messaggi e sulla testata del passo 1. */
@@ -1096,6 +1097,7 @@ function avvia(app){
   const inDos        = q('#sitac-nDos');
   const inNominativo = q('#sitac-nominativo');
   const inTelefono   = q('#sitac-telefono');
+  const inPosizione  = q('#sitac-posizione');
   const chkScheda    = q('#sitac-senzaScheda');
   /* Il numero digitato prima di spuntare la casella: se la si spunta per
      sbaglio e la si toglie, il numero torna invece di doverlo ridettare. */
@@ -1201,6 +1203,7 @@ function avvia(app){
     segnaIntestazione();
     if (!chkScheda.checked) inIntervento.focus();
   };
+  inQualifica.onchange = segnaIntestazione;  
   inDos.oninput = () => { inDos.value = normalizzaDos(inDos.value); segnaIntestazione(); };
   inNominativo.oninput = segnaIntestazione;
   inTelefono.oninput = () => {
@@ -1215,6 +1218,7 @@ function avvia(app){
     });
     /* Un <select> non ha readOnly: si disabilita e basta. */
     inQualifica.disabled = datiBloccati;
+    inQualifica.classList.toggle('campo-bloccato', datiBloccati);
     /* Senza scheda il numero si spegne del tutto: disabled, non readOnly.
        Non è un campo fermo in attesa di Modifica, è un campo che non si
        compila, e così esce anche dal giro del Tab. La casella segue il
@@ -1309,7 +1313,8 @@ function avvia(app){
   } catch(e){ /* niente da ripristinare */ }
 
     const intestazione = () => ({
-    intervento: inIntervento.value || null,
+    intervento: senzaScheda() ? null : (inIntervento.value || null),
+    senzaScheda: senzaScheda(),
     qualifica: inQualifica.value || null,
     dos: dosCompleto() || null,
     nominativo: inNominativo.value.trim() || null,
