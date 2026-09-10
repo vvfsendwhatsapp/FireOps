@@ -31,7 +31,7 @@ window.FireOpsSchede = {
         { id: "moduli-cmr", label: "Moduli CMR" },
         { id: "mappa-meteo", label: "Meteo locale" },
         { id: "normative", label: "Normative, Circolari e Disposizioni" },
-        { id: "radio-telefoni", label: "Radio e telefoni", lavori: true }
+        //{ id: "radio-telefoni", label: "Radio e telefoni", lavori: true }
         //{ id: "schede-soccorso", label: "Schede di soccorso", lavori: true },
         { id: "sostanze-pericolose", label: "Schede Sostanze Pericolose" },
         { id: "sitac-aib", label: "SITAC AIB"},
