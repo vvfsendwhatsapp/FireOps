@@ -379,7 +379,8 @@ function avvia(app){
       bModificaDati:'Modifica', datiBloccati:'Dati bloccati.\nPremi Modifica per correggerli.',
       posComando:'Sede del Comando', posComandoNota:'Le coordinate della caserma di {c}.',
       posComandoNo:'Nessun Comando attivo selezionato.',
-      sch1:'1 · Dati intervento', sch2:'2 · Mappa',
+      sch1:'1 · Dati intervento', sch2:'2 · Mappa', chiudiSitac:'Chiudi SITAC',
+      chiudiSitacTit:'Chiudi la SITAC e torna alla vista a due colonne',
       dataOra:'Data e ora', nQualifica:'Qualifica', qualificaVuota:'—',
       datiNota:'Compila tutti i campi: la posizione si sblocca dopo, e la mappa dopo la convalida.',
       posBloccata:'Prima compila intervento, qualifica, nominativo, ID DOS e telefono.',
@@ -510,7 +511,8 @@ function avvia(app){
       bModificaDati:'Edit', datiBloccati:'Data locked.\nPress Edit to correct it.',
       posComando:'Command headquarters', posComandoNota:'The coordinates of the {c} fire station.',
       posComandoNo:'No active Command selected.',
-      sch1:'1 · Incident data', sch2:'2 · Map',
+      sch1:'1 · Incident data', sch2:'2 · Map', chiudiSitac:'Close SITAC',
+      chiudiSitacTit:'Close the SITAC and go back to the two-column view',
       dataOra:'Date and time', nQualifica:'Rank', qualificaVuota:'—',
       datiNota:'Fill in every field: the position unlocks after that, and the map after validation.',
       posBloccata:'Fill in incident, rank, name, WIC ID and phone first.',
@@ -641,7 +643,8 @@ function avvia(app){
       bModificaDati:'Modifier', datiBloccati:'Donn\u00e9es verrouill\u00e9es.\nAppuyez sur Modifier pour les corriger.',
       posComando:'Si\u00e8ge du Commandement', posComandoNota:'Les coordonn\u00e9es de la caserne de {c}.',
       posComandoNo:'Aucun Commandement actif s\u00e9lectionn\u00e9.',
-      sch1:'1 · Donn\u00e9es', sch2:'2 · Carte',
+      sch1:'1 · Donn\u00e9es', sch2:'2 · Carte', chiudiSitac:'Fermer la SITAC',
+      chiudiSitacTit:'Fermer la SITAC et revenir \u00e0 l\u2019affichage en deux colonnes',
       dataOra:'Date et heure', nQualifica:'Grade', qualificaVuota:'—',
       datiNota:'Remplissez tous les champs : la position se d\u00e9bloque ensuite, et la carte apr\u00e8s la validation.',
       posBloccata:'Remplissez d\u2019abord intervention, grade, nom, ID COS et t\u00e9l\u00e9phone.',
@@ -772,7 +775,8 @@ function avvia(app){
       bModificaDati:'Editar', datiBloccati:'Datos bloqueados.\nPulsa Editar para corregirlos.',
       posComando:'Sede del Mando', posComandoNota:'Las coordenadas del parque de {c}.',
       posComandoNo:'Ning\u00fan Mando activo seleccionado.',
-      sch1:'1 · Datos', sch2:'2 · Mapa',
+      sch1:'1 · Datos', sch2:'2 · Mapa', chiudiSitac:'Cerrar SITAC',
+      chiudiSitacTit:'Cerrar la SITAC y volver a la vista de dos columnas',
       dataOra:'Fecha y hora', nQualifica:'Categor\u00eda', qualificaVuota:'—',
       datiNota:'Rellena todos los campos: la posici\u00f3n se desbloquea despu\u00e9s, y el mapa tras la validaci\u00f3n.',
       posBloccata:'Rellena antes intervenci\u00f3n, categor\u00eda, nombre, ID DOE y tel\u00e9fono.',
@@ -4894,6 +4898,12 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
       stato(t('pronto'));
       aggiornaLegenda();
     }
+    /* Il pulsante "Chiudi SITAC" non è di questo modulo: lo scrive script.js,
+       che gestisce l'esclusiva dei pannelli. Gli si passa il testo già
+       tradotto invece di fargli leggere il dizionario. Sta in fondo, dopo il
+       giro su [data-t], così l'ultima parola sul pulsante è quella giusta. */
+    document.dispatchEvent(new CustomEvent('fireops:sitac-lingua', {detail:{
+      lingua, chiudi: t('chiudiSitac'), titolo: t('chiudiSitacTit')}}));
   }
 
   /* Esc annulla lo strumento corrente, o chiude il modale */

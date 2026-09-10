@@ -1384,7 +1384,17 @@ const CHIAVE_STORAGE_PANNELLI = "fireops_pagine_pannelli";
         });
     }
 
-        // In esclusiva resta un solo selettore, quello del lato che ha preso lo
+    // Il testo del pulsante di uscita dalla SITAC segue la lingua scelta
+    // dentro la SITAC: sitac.js lo manda già tradotto a ogni cambio. L'icona
+    // resta qui, perché è di questo pulsante e non della traduzione.
+    document.addEventListener("fireops:sitac-lingua", (e) => {
+        const d = e.detail || {};
+        if (d.chiudi) PAGINE_ESCLUSIVE[ID_SITAC].chiudi = "✖ " + d.chiudi;
+        if (d.titolo) PAGINE_ESCLUSIVE[ID_SITAC].titolo = d.titolo;
+        aggiornaPulsanteEsclusiva();
+    });
+
+    // In esclusiva resta un solo selettore, quello del lato che ha preso lo
     // schermo. L'altro comanderebbe un pannello invisibile: sceglierci una
     // pagina già aperta faceva scattare lo scambio, e l'esclusiva
     // ricompariva in mezza colonna.
