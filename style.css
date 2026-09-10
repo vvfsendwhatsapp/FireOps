@@ -5961,25 +5961,63 @@ select:focus {
 }
 #sitac-app .sitac-avviso-lato[hidden] { display: none; }
 
-.sitac-senza-scheda{display:inline-flex;align-items:center;gap:.4em;margin-top:.3em;
-  font-size:.85em;cursor:pointer;user-select:none}
-.sitac-senza-scheda input{margin:0}
-#sitac-nIntervento:disabled{opacity:.45;cursor:not-allowed}
-
-/* Casella "senza scheda": sta nella riga del numero come il pulsante sta
-   in quella della posizione. Le regole dei campi del passo 1 prendono
-   anche questa label e questa casella: si azzerano qui invece di
-   indovinare quali siano. */
-.sitac-dati .sitac-dati-campo label.sitac-senza-scheda{
-  display:inline-flex; align-items:center; gap:.35em; flex:0 1 auto;
-  margin:0; padding:0; font-size:.8em; line-height:1.15;
-  text-transform:none; letter-spacing:normal; font-weight:normal;
-  white-space:normal; cursor:pointer; user-select:none;
+/* Riga del numero: campo che si allarga, casella col testo accanto.
+   Se lo spazio non basta, la casella va a capo sotto il campo invece
+   di schiacciarsi. */
+#sitac-aib .sitac-int-riga{
+  display:flex; align-items:center; flex-wrap:wrap; gap:.5em 1em;
 }
-.sitac-dati .sitac-senza-scheda input[type="checkbox"]{
+#sitac-aib .sitac-dati-campo #sitac-nIntervento{
+  flex:1 1 8em; min-width:6em; width:auto;
+}
+/* Le regole delle etichette di campo (maiuscolo, blocco, spaziatura)
+   prendono anche questa: si annullano qui. */
+#sitac-aib .sitac-dati-campo label.sitac-senza-scheda{
+  display:inline-flex; align-items:center; gap:.45em;
+  flex:0 0 auto; width:auto; margin:0; padding:0;
+  font-size:.85em; font-weight:normal; letter-spacing:normal;
+  text-transform:none; white-space:nowrap;
+  cursor:pointer; user-select:none;
+}
+#sitac-aib .sitac-dati-campo label.sitac-senza-scheda span{
+  display:inline; width:auto; margin:0; padding:0;
+  text-transform:none; letter-spacing:normal; font-weight:normal;
+}
+/* La casella torna nativa, a misura di casella. */
+#sitac-aib .sitac-dati-campo #sitac-senzaScheda{
   all:revert; margin:0; flex:none; cursor:pointer;
 }
-#sitac-nIntervento:disabled{opacity:.45; cursor:not-allowed}
+#sitac-aib .sitac-dati-campo #sitac-nIntervento:disabled{
+  opacity:.45; cursor:not-allowed;
+}/* Riga del numero: campo che si allarga, casella col testo accanto.
+   Se lo spazio non basta, la casella va a capo sotto il campo invece
+   di schiacciarsi. */
+#sitac-aib .sitac-int-riga{
+  display:flex; align-items:center; flex-wrap:wrap; gap:.5em 1em;
+}
+#sitac-aib .sitac-dati-campo #sitac-nIntervento{
+  flex:1 1 8em; min-width:6em; width:auto;
+}
+/* Le regole delle etichette di campo (maiuscolo, blocco, spaziatura)
+   prendono anche questa: si annullano qui. */
+#sitac-aib .sitac-dati-campo label.sitac-senza-scheda{
+  display:inline-flex; align-items:center; gap:.45em;
+  flex:0 0 auto; width:auto; margin:0; padding:0;
+  font-size:.85em; font-weight:normal; letter-spacing:normal;
+  text-transform:none; white-space:nowrap;
+  cursor:pointer; user-select:none;
+}
+#sitac-aib .sitac-dati-campo label.sitac-senza-scheda span{
+  display:inline; width:auto; margin:0; padding:0;
+  text-transform:none; letter-spacing:normal; font-weight:normal;
+}
+/* La casella torna nativa, a misura di casella. */
+#sitac-aib .sitac-dati-campo #sitac-senzaScheda{
+  all:revert; margin:0; flex:none; cursor:pointer;
+}
+#sitac-aib .sitac-dati-campo #sitac-nIntervento:disabled{
+  opacity:.45; cursor:not-allowed;
+}
 
 /* Ombra sulle aste degli assi: la fascia bianca su carta chiara non ha
    contorno che la stacchi dal fondo, e il bordo rosso da solo si perde
