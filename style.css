@@ -6044,9 +6044,9 @@ select:focus {
 
 .rt-tab{width:100%;border-collapse:collapse;table-layout:fixed;
   font-variant-numeric:tabular-nums lining-nums}
-.rt-c-nome{width:50%}
-.rt-c-ch{width:14%}
-.rt-c-tel{width:36%}
+.rt-c-nome{width:55%}
+.rt-c-ch{width:12%}
+.rt-c-tel{width:33%}
 .rt-tab th,.rt-tab td{padding:5px 8px;text-align:left;white-space:nowrap;
   overflow:hidden;text-overflow:ellipsis;
   border-bottom:1px solid var(--border-color,#333)}
