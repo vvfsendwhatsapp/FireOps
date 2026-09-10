@@ -592,14 +592,23 @@ agg('aereo_altro','dispositivo','sgAereo','Altro mezzo aereo','Other air means',
   'Autre moyen aérien','Otro medio aéreo',
   mezzoAereo(''), {s:1, e:1, lbl:'ID mezzo'});
  
+/* La sigla nel riquadro segue la lingua: è la parola prima del trattino nel
+   nome registrato, così non esiste una seconda tabella da tenere allineata.
+   La lingua la imposta sitac.js in NS.SITAC_LINGUA; `o.lingua` la scavalca
+   per un singolo disegno (una legenda stampata in un'altra lingua). Le sigle
+   di oggi sono tutte di tre lettere e restano a corpo 18; una più lunga si
+   stringe invece di finire sotto il cuneo. */
 agg('dos','dispositivo','sgTerra','DOS - Direttore Operazioni Spegnimento','WIC - Wildfire Incident Commander','COS - Commandant des Opérations de Secours','DOE - Director de Operaciones de Extinción',
   o => {
     const p = attivo(o), K = C.rosso;
     const x1 = 2, y1 = 18, x2 = 62, y2 = 48, xc = 32;
+    const l = (o && o.lingua) || NS.SITAC_LINGUA || 'it';
+    const sigla = (S.dos.n[l] || S.dos.n.it).split(' - ')[0];
+    const dim = Math.min(18, 40 / (sigla.length * 0.74));
     return T(`<line x1="${xc}" y1="${y1}" x2="${xc}" y2="${y1-9}" stroke="${K}" stroke-width="2.6"/>
       <rect x="${x1}" y="${y1}" width="${x2-x1}" height="${y2-y1}" fill="#fff" stroke="${K}" stroke-width="3"/>
       ${p ? `<path d="M${x2-CUNEO-4} ${y2}H${x2}V${y1}Z" fill="${K}"/>` : ''}
-      ${txt(24, y2-8, 'DOS', K, 18)}`);
+      ${txt(24, y2-8, sigla, K, +dim.toFixed(1))}`);
   }, {s:1, f:1});
 agg('vvf','dispositivo','sgTerra','Squadra VVF','FF crew',
   'Équipe VVF','Dotación VVF',
