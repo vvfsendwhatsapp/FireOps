@@ -1335,16 +1335,24 @@ NS.SITAC_SIMBOLI = S;
 NS.SITAC_LINEE   = L;
 NS.SITAC_COLORI  = C;
 NS.SITAC_TAVOLE  = [
-  {k:'zona',       n:{it:'La zona di intervento', en:'The operating area'}},
-  {k:'evoluzione', n:{it:'L\u2019evoluzione dell\u2019incendio', en:'Fire progression'}},
-  {k:'dispositivo',n:{it:'Il dispositivo di intervento', en:'The deployed means'}},
-  {k:'azioni',     n:{it:'Le azioni', en:'The actions'}}
+  {k:'zona',       n:{it:'La zona di intervento', en:'The operating area',
+                      fr:'La zone d\u2019intervention', es:'La zona de intervención'}},
+  {k:'evoluzione', n:{it:'L\u2019evoluzione dell\u2019incendio', en:'Fire progression',
+                      fr:'L\u2019évolution de l\u2019incendie', es:'La evolución del incendio'}},
+  {k:'dispositivo',n:{it:'Il dispositivo di intervento', en:'The deployed means',
+                      fr:'Le dispositif d\u2019intervention', es:'El dispositivo de intervención'}},
+  {k:'azioni',     n:{it:'Le azioni', en:'The actions',
+                      fr:'Les actions', es:'Las acciones'}}
 ];
 NS.SITAC_RIQUADRI = {
-  sgAereo:      {it:'Dispositivo aereo', en:'Air means'},
-  sgTerra:      {it:'Squadre a terra', en:'Ground crews'},
-  sgControfuoco:{it:'Controfuoco e fuoco prescritto', en:'Backfire and prescribed fire'},
-  sgEvacuazione:{it:'Evacuazione', en:'Evacuation'}
+  sgAereo:      {it:'Dispositivo aereo', en:'Air means',
+                 fr:'Dispositif aérien', es:'Dispositivo aéreo'},
+  sgTerra:      {it:'Squadre a terra', en:'Ground crews',
+                 fr:'Équipes au sol', es:'Dotaciones terrestres'},
+  sgControfuoco:{it:'Controfuoco e fuoco prescritto', en:'Backfire and prescribed fire',
+                 fr:'Contre-feu et brûlage dirigé', es:'Contrafuego y quema prescrita'},
+  sgEvacuazione:{it:'Evacuazione', en:'Evacuation',
+                 fr:'Évacuation', es:'Evacuación'}
 };
 
 /* Motivi, anteprime e glifo del vento: li consuma sitac.js. */
