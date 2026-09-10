@@ -939,19 +939,20 @@
                 </div> <!-- chiusura .pagina-box.pagina-box-larga -->
         </section>
 
-        <!-- RADIO E TELEFONI — nel contenitore delle altre sezioni.
-     Se le altre pagine hanno una riga d'intestazione (titolo, pulsante
-     Espandi), copiala qui sopra .rt-app: questa sezione non ne dipende. -->
+    <!-- RADIO E TELEFONI — stesso guscio delle altre pagine: .pagina-box con la
+        testata a destra (il titolo lo nasconde il CSS, lo dice già il selettore
+        del pannello). Il campo di ricerca è un input di testo per prendere lo
+        stile dei campi di .pagina-box senza regole in più. -->
         <section class="page-section" id="radio-telefoni">
-            <div class="rt-app">
-                <div class="rt-barra">
-                    <input type="search" id="rt-cerca" autocomplete="off"
-                        placeholder="Cerca un Comando, una Direzione, un canale o un numero"
-                        aria-label="Cerca nell'elenco">
-                    <button type="button" id="rt-bStampa">Stampa fronte e retro</button>
+            <div class="pagina-box pagina-box-larga">
+                <div class="pagina-box-header">
+                    <h3>Radio e telefoni</h3>
+                    <button type="button" id="rt-bStampa" class="btn-toggle-radar">🖨 Stampa fronte e retro</button>
                 </div>
-                <p class="pagina-nota">Esce su un solo foglio A4: nella finestra di stampa scegli fronte e retro, lato
-                    lungo.</p>
+                <p class="pagina-nota">Canali VHF e telefoni delle sale operative di tutti i Comandi e le Direzioni. Il
+                    foglio stampato è un A4: nella finestra di stampa scegli fronte e retro, lato lungo.</p>
+                <label for="rt-cerca">Cerca una sala operativa</label>
+                <input type="text" id="rt-cerca" autocomplete="off" placeholder="Comando, Direzione, canale o numero">
                 <div id="rt-nazionali"></div>
                 <div id="rt-elenco">
                     <p class="pagina-nota">L'elenco si compila appena è scelto il Comando attivo.</p>

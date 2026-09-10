@@ -6020,123 +6020,389 @@ select:focus {
 }
 
 /* =========================================================================
-   RADIO E TELEFONI
-   A video: elenco da cercare, nel tema dell'app. Su carta: un A4 fronte e
-   retro in bianco e nero, pensato per stare appeso accanto alla consolle.
-   In entrambi il dato più grande della riga è il canale: è quello che si
-   cerca con gli occhi, il telefono si legge dopo.
+   RADIO E TELEFONI (radiotelefoni.js)
+
+   A video parla la stessa lingua del resto di FireOps: le Direzioni sono
+   fasce gialle come le intestazioni del riepilogo Comando, i canali sono in
+   Courier giallo come nel popup dei canali radio, i telefoni azzurri con il
+   segno 📋 come ovunque si copi, la propria SO ha il fondo giallo tenue del
+   Comando attivo. Niente palette locale: solo le variabili di :root.
+
+   Su carta vale la grammatica della stampa SITAC: nero su bianco, grigi
+   #eee/#999 per le tabelle e l'accento RAL3000 per la struttura.
+
+   Ogni regola a video parte da #radio-telefoni, ogni regola di stampa da
+   .rt-foglio: niente esce dal proprio contenitore.
    ========================================================================= */
 
-/* ---- a video ---- */
-.rt-app{display:flex;flex-direction:column;gap:12px}
-.rt-barra{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
-.rt-barra input[type="search"]{flex:1 1 16em;min-width:12em}
-.rt-barra + .pagina-nota{margin:-4px 0 0}
+/* ---------- a video ---------- */
 
-.rt-naz{display:flex;flex-wrap:wrap;gap:6px 28px;padding:10px 12px;
-  border:1px solid var(--border-color,#3a3a3a);
-  border-left:4px solid var(--primary-color,#c62828);border-radius:4px}
-.rt-naz-voce{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 14px}
-.rt-naz-nome{font-weight:700;font-size:1.1em}
-.rt-naz-desc{opacity:.7}
-.rt-naz-dato{white-space:nowrap}
-.rt-naz-et{font-size:.8em;opacity:.7;margin-right:5px}
+/* Il campo di ricerca prende già l'aspetto dai campi di .pagina-box: qui
+   manca solo il bordo giallo al fuoco, come nei combo ricercabili. */
+#radio-telefoni #rt-cerca:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
 
-.rt-tab{width:100%;border-collapse:collapse;table-layout:fixed;
-  font-variant-numeric:tabular-nums lining-nums}
-.rt-c-nome{width:55%}
-.rt-c-ch{width:12%}
-.rt-c-tel{width:33%}
-.rt-tab th,.rt-tab td{padding:5px 8px;text-align:left;white-space:nowrap;
-  overflow:hidden;text-overflow:ellipsis;
-  border-bottom:1px solid var(--border-color,#333)}
-/* La testata resta in vista scorrendo: sotto ci sono cento righe. Lo
-   sfondo deve essere pieno, o le righe ci scorrono sotto a vista. */
-.rt-tab thead th{position:sticky;top:0;z-index:1;font-size:.8em;font-weight:600;
-  color:var(--text-muted,#9a9a9a);background:var(--card-bg,var(--bg-color,#1e1e1e));
-  border-bottom:2px solid var(--border-color,#3a3a3a)}
-.rt-tab .rt-ch{text-align:center}
-.rt-tab td.rt-ch{font-weight:700;font-size:1.25em;letter-spacing:.02em}
-.rt-tab .rt-dir th,.rt-tab .rt-dir td{padding-top:14px;font-weight:700;
-  border-bottom:2px solid var(--primary-color,#c62828)}
-.rt-tab .rt-manca{opacity:.45}
+/* CON e SOCAV: stesso riquadro del canale in evidenza nei popup di
+   Comando e Direzione. Una griglia a quattro colonne tiene incolonnati
+   i due telefoni anche se la SOCAV non ha un canale. */
+#radio-telefoni .rt-naz {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    align-items: baseline;
+    gap: 8px 22px;
+    background: var(--dark-color);
+    border: 1px solid var(--primary-color);
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin: 16px 0;
+}
 
-.rt-copia{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:copy;
-  border-bottom:1px dotted currentColor}
-.rt-copia:hover{color:var(--primary-color,#e57373)}
-.rt-copia:focus-visible{outline:2px solid var(--primary-color,#e57373);outline-offset:2px}
+#radio-telefoni .rt-naz-voce { display: contents; }
 
-.rt-tab .rt-attivo td{background:rgba(198,40,40,.16)}
-.rt-tab .rt-attivo .rt-nome{font-weight:700}
-.rt-tab .rt-limitrofo .rt-nome{box-shadow:inset 3px 0 0 var(--primary-color,#c62828)}
+#radio-telefoni .rt-naz-nome {
+    color: var(--primary-color);
+    font-weight: bold;
+    font-size: 14px;
+}
 
-/* ---- su carta ---- */
-#rt-stampa-doc{display:none}
+#radio-telefoni .rt-naz-desc {
+    color: var(--text-muted);
+    font-size: 13px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 
-/* Pagina con nome: se la SITAC o un'altra stampa dichiarano un @page
-   diverso (A3 orizzontale), questo foglio resta comunque un A4 verticale. */
-@page rt-foglio{size:A4 portrait;margin:8mm}
+#radio-telefoni .rt-naz-dato {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    white-space: nowrap;
+    font-size: 14px;
+}
 
-@media print{
-  body.rt-stampa > *:not(#rt-stampa-doc){display:none !important}
-  body.rt-stampa #rt-stampa-doc{display:block !important}
-  body.rt-stampa{margin:0 !important;background:#fff !important;color:#000 !important}
+#radio-telefoni .rt-naz-et {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+}
+
+#radio-telefoni .rt-naz-ch {
+    font-family: "Courier New", monospace;
+    font-size: 22px;
+    font-weight: bold;
+    color: var(--primary-color);
+    line-height: 1;
+}
+
+/* Legenda: stessa misura e stessi campioni del turnario */
+#radio-telefoni .rt-legenda {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+}
+
+#radio-telefoni .rt-legenda-voce {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+#radio-telefoni .rt-campione {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    border: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+#radio-telefoni .rt-campione-attivo { background: rgba(255, 215, 0, .22); }
+#radio-telefoni .rt-campione-lim { box-shadow: inset 3px 0 0 var(--primary-color); }
+
+/* Tabella: le misure di .riepilogo-tabella-limitrofi */
+#radio-telefoni .rt-tab {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+}
+
+#radio-telefoni .rt-c-nome { width: 55%; }
+#radio-telefoni .rt-c-ch { width: 12%; }
+#radio-telefoni .rt-c-tel { width: 33%; }
+
+#radio-telefoni .rt-tab th,
+#radio-telefoni .rt-tab td {
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border-color);
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Intestazione ancorata: scorrendo cento righe si continua a sapere
+   quale colonna è il canale. Fondo pieno, o le righe ci passano sotto. */
+#radio-telefoni .rt-tab thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    color: var(--primary-color);
+    background: var(--dark-color);
+    text-transform: uppercase;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+#radio-telefoni .rt-tab .rt-ch { text-align: center; }
+
+/* Il canale è il dato che si cerca con gli occhi: stesso trattamento del
+   popup dei canali radio, leggibile senza avvicinarsi allo schermo. */
+#radio-telefoni .rt-tab td.rt-ch {
+    font-family: "Courier New", monospace;
+    font-size: 19px;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+/* Direzioni: la fascia gialla delle intestazioni del riepilogo. Il bordo
+   superiore del colore del riquadro fa da stacco fra un gruppo e l'altro,
+   che in una tabella a bordi collassati non si ottiene col margine. */
+#radio-telefoni .rt-tab .rt-dir th,
+#radio-telefoni .rt-tab .rt-dir td {
+    background: var(--primary-color);
+    color: var(--dark-color);
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    border-bottom: none;
+}
+
+#radio-telefoni .rt-tab tbody.rt-gruppo + tbody.rt-gruppo .rt-dir > * {
+    border-top: 14px solid var(--surface-color);
+}
+
+/* Sulla fascia gialla canale e telefono diventano scuri: il giallo su
+   giallo e l'azzurro su giallo non si leggerebbero. */
+#radio-telefoni .rt-tab .rt-dir td.rt-ch,
+#radio-telefoni .rt-tab .rt-dir .telefono-cliccabile,
+#radio-telefoni .rt-tab .rt-dir .telefono-cliccabile:hover {
+    color: var(--dark-color);
+}
+
+#radio-telefoni .rt-tab .rt-dir .telefono-cliccabile:hover { text-decoration: underline; }
+
+/* La propria SO: il fondo tenue del Comando attivo nel popup dei canali */
+#radio-telefoni .rt-tab .rt-attivo td { background: rgba(255, 215, 0, .10); }
+#radio-telefoni .rt-tab .rt-attivo .rt-nome { font-weight: bold; }
+
+#radio-telefoni .rt-tab .rt-limitrofo .rt-nome {
+    box-shadow: inset 3px 0 0 var(--primary-color);
+}
+
+#radio-telefoni .rt-tab .rt-manca { color: var(--text-muted); }
+
+#radio-telefoni .rt-segue-et { display: none; }
+
+/* ---------- su carta ---------- */
+
+#rt-stampa-doc { display: none; }
+
+/* Pagina con nome: la stampa SITAC dichiara un @page A3 orizzontale per
+   tutto il documento, e senza nome varrebbe anche per questo foglio. */
+@page rt-foglio {
+    size: A4 portrait;
+    margin: 8mm;
+}
+
+@media print {
+    body.rt-stampa > *:not(#rt-stampa-doc) { display: none !important; }
+    body.rt-stampa #rt-stampa-doc { display: block !important; }
+
+    /* Il body riserva 144px all'header fisso dell'app: senza azzerarli il
+       foglio parte 38 mm più in basso e le righe finali scivolano su un
+       terzo foglio. È lo stesso scalino già corretto per la SITAC. */
+    body.rt-stampa {
+        padding: 0 !important;
+        margin: 0 !important;
+        background: #fff !important;
+        color: #111 !important;
+    }
+    /* L'app dichiara color-scheme:dark su :root, e Chrome dipinge di scuro
+       anche i margini del foglio quando si stampano gli sfondi — che qui
+       servono, per le fasce delle Direzioni. */
+    :root:has(body.rt-stampa) {
+        background: #fff !important;
+        color-scheme: light;
+    }
 }
 
 /* 297 − 2×8 = 281 mm: se ne usano 280, o l'arrotondamento del motore di
    stampa spinge l'ultima riga su un terzo foglio bianco. Le altezze di
    testata (12,5), riquadro (17,5), piede (6) e intestazione (5) sono quelle
-   da cui radiotelefoni.js ricava FOGLIO.area e FOGLIO.naz. */
-.rt-foglio{page:rt-foglio;box-sizing:border-box;width:194mm;height:280mm;
-  display:flex;flex-direction:column;overflow:hidden;background:#fff;color:#000;
-  font-family:"Arial Narrow","Roboto Condensed","Helvetica Neue",Arial,sans-serif;
-  font-size:var(--rt-corpo,9pt);line-height:1.1;
-  -webkit-print-color-adjust:exact;print-color-adjust:exact}
-.rt-foglio + .rt-foglio{break-before:page}
+   da cui radiotelefoni.js ricava FOGLIO.area e FOGLIO.naz: cambiandole qui
+   vanno cambiate anche là. */
+.rt-foglio {
+    page: rt-foglio;
+    box-sizing: border-box;
+    width: 194mm;
+    height: 280mm;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: #fff;
+    color: #111;
+    font-size: var(--rt-corpo, 9pt);
+    line-height: 1.1;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+}
 
-.rt-f-testa{box-sizing:border-box;height:10mm;margin-bottom:2.5mm;display:flex;
-  justify-content:space-between;align-items:flex-end;padding-bottom:1.2mm;
-  border-bottom:1.4pt solid #000}
-.rt-f-testa h1{margin:0;font-size:15pt;font-weight:700;letter-spacing:-.01em}
-.rt-f-testa p{margin:0;font-size:8.5pt}
+.rt-foglio + .rt-foglio { break-before: page; }
 
-.rt-foglio .rt-naz{box-sizing:border-box;height:15mm;margin-bottom:2.5mm;padding:1.5mm 3mm;
-  display:flex;flex-direction:column;justify-content:center;gap:1mm;
-  border:.8pt solid #000;border-left:3pt solid #000;border-radius:0}
-.rt-foglio .rt-naz-voce{gap:0 5mm;flex-wrap:nowrap}
-.rt-foglio .rt-naz-nome{min-width:14mm;font-size:10.5pt}
-.rt-foglio .rt-naz-desc{min-width:42mm;opacity:1;font-size:8.5pt}
-.rt-foglio .rt-naz-dato{font-size:10pt}
-.rt-foglio .rt-naz-et{opacity:1;font-size:7.5pt}
+/* Testata: la stessa della stampa SITAC, filetto RAL3000 compreso */
+.rt-f-testa {
+    box-sizing: border-box;
+    height: 10mm;
+    margin-bottom: 2.5mm;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding-top: 2mm;
+    border-bottom: .8mm solid #af2b1e;
+}
 
-.rt-f-colonne{flex:1;display:grid;grid-template-columns:1fr 1fr;column-gap:6mm;
-  align-items:start;min-height:0}
+.rt-f-testa h1 { font-size: 5.5mm; letter-spacing: .2mm; }
+.rt-f-testa p { font-size: 3.2mm; color: #444; }
 
-.rt-f-tab{width:100%;border-collapse:collapse;table-layout:fixed;
-  font-variant-numeric:tabular-nums lining-nums}
-.rt-f-tab th,.rt-f-tab td{box-sizing:border-box;height:var(--rt-riga,6mm);padding:0 1.2mm;
-  text-align:left;vertical-align:middle;white-space:nowrap;overflow:hidden;
-  text-overflow:ellipsis;border-bottom:.3pt solid #b5b5b5}
-.rt-f-tab td,.rt-f-tab th{padding:0 1mm}
-.rt-f-tab thead th{height:5mm;font-size:7pt;font-weight:700;border-bottom:.9pt solid #000}
-.rt-f-tab .rt-ch{text-align:center}
+/* CON e SOCAV: un .sf-box della stampa SITAC */
+.rt-foglio .rt-naz {
+    box-sizing: border-box;
+    height: 15mm;
+    margin-bottom: 2.5mm;
+    padding: 1.5mm 3mm;
+    display: grid;
+    grid-template-columns: 15mm 48mm 32mm 1fr;
+    align-content: center;
+    align-items: baseline;
+    gap: 1.2mm 4mm;
+    border: .3mm solid #999;
+    border-radius: 1mm;
+    font-size: 3.3mm;
+}
+
+.rt-foglio .rt-naz-voce { display: contents; }
+.rt-foglio .rt-naz-nome { font-weight: 700; color: #af2b1e; }
+.rt-foglio .rt-naz-desc { color: #555; }
+.rt-foglio .rt-naz-dato { display: flex; align-items: baseline; gap: 1.5mm; white-space: nowrap; }
+.rt-foglio .rt-naz-et { color: #555; font-size: 2.6mm; }
+.rt-foglio .rt-naz-ch { font-family: "Courier New", monospace; font-size: 4.4mm; }
+
+.rt-f-colonne {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 6mm;
+    align-items: start;
+}
+
+.rt-f-tab {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-variant-numeric: tabular-nums;
+}
+
+.rt-f-tab .rt-c-nome { width: 55%; }
+.rt-f-tab .rt-c-ch { width: 12%; }
+.rt-f-tab .rt-c-tel { width: 33%; }
+
+.rt-f-tab th,
+.rt-f-tab td {
+    box-sizing: border-box;
+    height: var(--rt-riga, 6mm);
+    padding: 0 1mm;
+    text-align: left;
+    vertical-align: middle;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    border-bottom: .25mm solid #bbb;
+}
+
+/* Intestazione di colonna: il grigio delle tabelle della stampa SITAC */
+.rt-f-tab thead th {
+    height: 5mm;
+    font-size: 2.5mm;
+    font-weight: 700;
+    color: #333;
+    background: #eee;
+    border-bottom: .3mm solid #999;
+}
+
+.rt-f-tab .rt-ch { text-align: center; }
+
 /* "CH VHF" è più largo della sua colonna: l'intestazione può sbordare,
-   i valori (due o tre cifre) no. */
-.rt-f-tab thead th.rt-ch{overflow:visible;text-overflow:clip;padding:0}
-.rt-f-tab td.rt-ch{font-weight:700;font-size:1.3em}
-.rt-f-tab tr.rt-com:nth-child(even) td{background:#f1f1f1}
-.rt-f-tab .rt-dir th,.rt-f-tab .rt-dir td{background:#dcdcdc;font-weight:700;
-  border-top:.9pt solid #000;border-bottom:.9pt solid #000}
-.rt-f-tab .rt-segue-et{font-weight:400;font-style:italic;font-size:.85em}
-/* La propria SO non prende il grigio: sarebbe una Direzione. Prende due
-   filetti pieni e il grassetto, e si trova lo stesso al primo sguardo. */
-.rt-f-tab .rt-attivo td{font-weight:700;background:#fff;
-  border-top:1.2pt solid #000;border-bottom:1.2pt solid #000}
-.rt-f-tab .rt-limitrofo .rt-nome{border-left:1.8pt solid #000;padding-left:1mm}
-.rt-f-tab .rt-manca{color:#777}
+   i valori (tre cifre) no. */
+.rt-f-tab thead th.rt-ch { overflow: visible; text-overflow: clip; padding: 0; }
 
-.rt-f-piede{box-sizing:border-box;height:6mm;display:flex;justify-content:space-between;
-  align-items:flex-end;gap:4mm;font-size:7pt;border-top:.5pt solid #000}
+/* Canale in Courier come a video: tre cifre incolonnate si confrontano
+   a colpo d'occhio, e 0 e O non si confondono. */
+.rt-f-tab td.rt-ch {
+    font-family: "Courier New", monospace;
+    font-weight: 700;
+    font-size: 1.3em;
+}
+
+.rt-f-tab tr.rt-com:nth-child(even) td { background: #f6f6f6; }
+
+/* Direzioni: grigio pieno, nome in RAL3000 e filetto sopra dello stesso
+   colore, come i titoli di sezione della stampa SITAC. In bianco e nero
+   il rosso esce grigio scuro e la fascia si legge lo stesso. */
+.rt-f-tab .rt-dir th,
+.rt-f-tab .rt-dir td {
+    background: #e6e6e6;
+    font-weight: 700;
+    border-top: .5mm solid #af2b1e;
+    border-bottom: .25mm solid #999;
+}
+
+.rt-f-tab .rt-dir th { color: #af2b1e; }
+.rt-f-tab .rt-segue-et { font-weight: 400; font-style: italic; font-size: .85em; color: #555; }
+
+/* La propria SO non prende il grigio, che è delle Direzioni: due filetti
+   neri e il grassetto, e si trova lo stesso al primo sguardo. */
+.rt-f-tab .rt-attivo td {
+    font-weight: 700;
+    background: #fff;
+    border-top: .4mm solid #111;
+    border-bottom: .4mm solid #111;
+}
+
+.rt-f-tab .rt-limitrofo .rt-nome { border-left: .6mm solid #111; padding-left: 1mm; }
+.rt-f-tab .rt-manca { color: #888; }
+
+.rt-f-piede {
+    box-sizing: border-box;
+    height: 6mm;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 4mm;
+    font-size: 2.5mm;
+    color: #555;
+    border-top: .25mm solid #999;
+}
 
 /* ==========================================================
    ==========================================================

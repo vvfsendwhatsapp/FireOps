@@ -109,17 +109,20 @@ const nomeDirezione = (n, schermo) => {
 
 /* =====================================================================
    RIGHE — le stesse per lo schermo e per la carta. A video il telefono
-   è un pulsante che copia, con lo zero davanti come nel resto dell'app;
-   su carta è testo.
+   è lo stesso .telefono-cliccabile del riepilogo e dei popup: azzurro,
+   con il segno 📋, e copiato con lo zero davanti. Su carta è testo.
    ===================================================================== */
-function cellaNumero(v, schermo, comeTelefono){
+function numeroCopiabile(v){
+  const t = val(v);
+  const copia = typeof window.formattaTelefonoPerCopia === 'function'
+    ? window.formattaTelefonoPerCopia(t) : t.replace(/\s+/g, '');
+  return `<span class="telefono-cliccabile" data-copia="${esc(copia)}">${esc(t)}</span>`;
+}
+
+function cellaNumero(v, schermo){
   const t = val(v);
   if (!t) return '<td class="rt-num rt-manca">\u2014</td>';
-  if (!schermo) return `<td class="rt-num">${esc(t)}</td>`;
-  const copia = comeTelefono && typeof window.formattaTelefonoPerCopia === 'function'
-    ? window.formattaTelefonoPerCopia(t) : t.replace(/\s+/g, '');
-  return `<td class="rt-num"><button type="button" class="rt-copia"`
-    + ` data-copia="${esc(copia)}" title="Copia ${esc(copia)}">${esc(t)}</button></td>`;
+  return `<td class="rt-num">${schermo ? numeroCopiabile(t) : esc(t)}</td>`;
 }
 
 function rigaDir(g, schermo, segue){
@@ -127,7 +130,7 @@ function rigaDir(g, schermo, segue){
     + `<th scope="rowgroup">${esc(nomeDirezione(g.nome, schermo))}`
     + (segue ? ' <span class="rt-segue-et">segue</span>' : '') + `</th>`
     + `<td class="rt-ch">${esc(oTrattino(g.ch))}</td>`
-    + cellaNumero(g.tel, schermo, true)
+    + cellaNumero(g.tel, schermo)
     + `</tr>`;
 }
 
@@ -139,7 +142,7 @@ function rigaCom(c, st, schermo){
   return `<tr class="rt-com${classe}"${cerca}>`
     + `<td class="rt-nome">${esc(nome)}</td>`
     + `<td class="rt-ch">${esc(oTrattino(c[CAMPI.comCh]))}</td>`
-    + cellaNumero(c[CAMPI.comTel], schermo, true)
+    + cellaNumero(c[CAMPI.comTel], schermo)
     + `</tr>`;
 }
 
@@ -148,20 +151,21 @@ const COLONNE = `<colgroup><col class="rt-c-nome"><col class="rt-c-ch">`
 const TESTATA = `<thead><tr><th scope="col">Sala operativa</th>`
   + `<th scope="col" class="rt-ch">CH VHF</th><th scope="col">TEL SO</th></tr></thead>`;
 
+/* Quattro celle per riga, anche dove il dato manca: il riquadro è una
+   griglia, e la SOCAV senza canale deve lasciare vuota la colonna del
+   canale invece di far scivolare il telefono sotto quello del CON. */
 function bloccoNaz(n, schermo){
-  const dato = (et, v, tel) => `<span class="rt-naz-dato"><span class="rt-naz-et">${et}</span>`
-    + (val(v) ? (schermo
-        ? `<button type="button" class="rt-copia" data-copia="${esc(tel && typeof window.formattaTelefonoPerCopia === 'function'
-            ? window.formattaTelefonoPerCopia(val(v)) : val(v).replace(/\s+/g, ''))}">${esc(v)}</button>`
-        : `<b>${esc(v)}</b>`)
-      : '\u2014') + `</span>`;
+  const tel = (et, v) => `<span class="rt-naz-dato"><span class="rt-naz-et">${et}</span>`
+    + (val(v) ? (schermo ? numeroCopiabile(v) : `<b>${esc(v)}</b>`) : '\u2014') + `</span>`;
+  const ch = v => `<span class="rt-naz-dato"><span class="rt-naz-et">CH VHF</span>`
+    + `<b class="rt-naz-ch">${esc(oTrattino(v))}</b></span>`;
   return `<div class="rt-naz">`
     + `<div class="rt-naz-voce"><span class="rt-naz-nome">CON</span>`
     + `<span class="rt-naz-desc">Centro Operativo Nazionale</span>`
-    + dato('CH VHF', n.con.ch) + dato('TEL SO', n.con.tel, true)
+    + ch(n.con.ch) + tel('TEL SO', n.con.tel)
     + `</div><div class="rt-naz-voce"><span class="rt-naz-nome">SOCAV</span>`
     + `<span class="rt-naz-desc">Assistenza al volo</span>`
-    + dato('TEL', n.socav.tel, true)
+    + `<span></span>` + tel('TEL', n.socav.tel)
     + `</div></div>`;
 }
 
@@ -266,7 +270,14 @@ function avvia(){
     naz = nazionali(comandi);
     const st = statoAttivo();
     boxNaz.innerHTML = bloccoNaz(naz, true);
-    elenco.innerHTML = `<table class="rt-tab">${COLONNE}${TESTATA}`
+    /* La legenda c'è solo se c'è qualcosa da spiegare: senza Comando
+       attivo non ci sono evidenze in tabella. */
+    const legenda = st.nome
+      ? `<p class="rt-legenda"><span class="rt-legenda-voce"><i class="rt-campione rt-campione-attivo"></i>`
+        + `SO di ${esc(st.nome)}</span><span class="rt-legenda-voce">`
+        + `<i class="rt-campione rt-campione-lim"></i>Comandi confinanti</span></p>`
+      : '';
+    elenco.innerHTML = legenda + `<table class="rt-tab">${COLONNE}${TESTATA}`
       + gruppi.map(g => `<tbody class="rt-gruppo" data-cerca="${esc(norm([g.nome, g.ch, g.tel].join(' ')))}">`
         + rigaDir(g, true, false)
         + g.comandi.map(c => rigaCom(c, st, true)).join('')
@@ -325,8 +336,11 @@ function avvia(){
     window.print();
   }
 
+  /* Un solo ascoltatore per tutti i numeri: l'elenco si ricostruisce a
+     ogni cambio di Comando, e agganciarne uno per riga vorrebbe dire
+     rifarlo cento volte. */
   sez.addEventListener('click', ev => {
-    const b = ev.target.closest('.rt-copia');
+    const b = ev.target.closest('.telefono-cliccabile');
     if (!b) return;
     if (typeof NS.copiaTesto === 'function') NS.copiaTesto(ev, b.dataset.copia);
     else if (navigator.clipboard) navigator.clipboard.writeText(b.dataset.copia).catch(() => {});
