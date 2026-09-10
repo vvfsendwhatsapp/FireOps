@@ -25,7 +25,6 @@
  */
 (function () {
 'use strict';
-const NS = (window.FireOps = window.FireOps || {});
 
 /* I nomi delle colonne di comandi.json, scritti una volta sola. */
 const CAMPI = {
@@ -248,105 +247,128 @@ function htmlStampa(gruppi, naz, st){
 
 /* =====================================================================
    PAGINA
+
+   Gli ascoltatori stanno sul DOCUMENTO e gli elementi si cercano per id a
+   ogni gesto, invece di agganciarsi una volta sola ai nodi della sezione.
+   Un ascoltatore attaccato a un nodo muore con lui: se la sezione viene
+   ricostruita — un innerHTML su un contenitore, una copia, un secondo
+   caricamento del markup — l'elenco resta a schermo come testo, ma
+   pulsante, ricerca e numeri smettono di rispondere senza un errore.
+   Delegando al documento funzionano con qualunque copia sia a schermo.
    ===================================================================== */
-function avvia(){
-  const sez = document.getElementById('radio-telefoni');
-  if (!sez) return;
-  const elenco = sez.querySelector('#rt-elenco');
-  const boxNaz = sez.querySelector('#rt-nazionali');
-  const cerca = sez.querySelector('#rt-cerca');
-  const bStampa = sez.querySelector('#rt-bStampa');
-  if (!elenco || !boxNaz || !cerca || !bStampa){
-    console.error('[Radio e telefoni] markup incompleto nella sezione #radio-telefoni.');
-    return;
-  }
-  let gruppi = null, naz = null;
-  bStampa.disabled = true;
+const $ = id => document.getElementById(id);
+let gruppi = null, naz = null;
 
-  function aggiorna(){
-    const comandi = Array.isArray(window.FireOpsComandi) ? window.FireOpsComandi : [];
-    if (!comandi.length) return;
-    gruppi = raggruppa(comandi);
-    naz = nazionali(comandi);
-    const st = statoAttivo();
-    boxNaz.innerHTML = bloccoNaz(naz, true);
-    /* La legenda c'è solo se c'è qualcosa da spiegare: senza Comando
-       attivo non ci sono evidenze in tabella. */
-    const legenda = st.nome
-      ? `<p class="rt-legenda"><span class="rt-legenda-voce"><i class="rt-campione rt-campione-attivo"></i>`
-        + `SO di ${esc(st.nome)}</span><span class="rt-legenda-voce">`
-        + `<i class="rt-campione rt-campione-lim"></i>Comandi confinanti</span></p>`
-      : '';
-    elenco.innerHTML = legenda + `<table class="rt-tab">${COLONNE}${TESTATA}`
-      + gruppi.map(g => `<tbody class="rt-gruppo" data-cerca="${esc(norm([g.nome, g.ch, g.tel].join(' ')))}">`
-        + rigaDir(g, true, false)
-        + g.comandi.map(c => rigaCom(c, st, true)).join('')
-        + `</tbody>`).join('')
-      + `</table><p class="rt-vuoto pagina-nota" hidden></p>`;
-    bStampa.disabled = false;
-    filtra();
-  }
+function aggiorna(){
+  const elenco = $('rt-elenco'), boxNaz = $('rt-nazionali');
+  if (!elenco || !boxNaz) return false;
+  const comandi = Array.isArray(window.FireOpsComandi) ? window.FireOpsComandi : [];
+  if (!comandi.length) return false;
+  gruppi = raggruppa(comandi);
+  naz = nazionali(comandi);
+  const st = statoAttivo();
+  boxNaz.innerHTML = bloccoNaz(naz, true);
+  /* La legenda c'è solo se c'è qualcosa da spiegare: senza Comando
+     attivo non ci sono evidenze in tabella. */
+  const legenda = st.nome
+    ? `<p class="rt-legenda"><span class="rt-legenda-voce"><i class="rt-campione rt-campione-attivo"></i>`
+      + `SO di ${esc(st.nome)}</span><span class="rt-legenda-voce">`
+      + `<i class="rt-campione rt-campione-lim"></i>Comandi confinanti</span></p>`
+    : '';
+  elenco.innerHTML = legenda + `<table class="rt-tab">${COLONNE}${TESTATA}`
+    + gruppi.map(g => `<tbody class="rt-gruppo" data-cerca="${esc(norm([g.nome, g.ch, g.tel].join(' ')))}">`
+      + rigaDir(g, true, false)
+      + g.comandi.map(c => rigaCom(c, st, true)).join('')
+      + `</tbody>`).join('')
+    + `</table><p class="rt-vuoto pagina-nota" hidden></p>`;
+  filtra();
+  return true;
+}
 
-  /* Cercando il nome di una Direzione si vede tutto il gruppo; cercando
-     un Comando, un canale o un numero si vede la riga con la sua testata. */
-  function filtra(){
-    const t = norm(cerca.value);
-    let visibili = 0;
-    elenco.querySelectorAll('tbody.rt-gruppo').forEach(tb => {
-      const tuttoIlGruppo = !t || tb.dataset.cerca.includes(t);
-      let qui = 0;
-      tb.querySelectorAll('tr.rt-com').forEach(tr => {
-        const ok = tuttoIlGruppo || tr.dataset.cerca.includes(t);
-        tr.hidden = !ok;
-        if (ok) qui++;
-      });
-      tb.hidden = !tuttoIlGruppo && !qui;
-      visibili += tb.hidden ? 0 : 1;
+/* Se l'elenco non c'è ancora — dati arrivati prima che la sezione fosse
+   nel DOM, o un avvio andato storto — il primo gesto lo costruisce. */
+const pronto = () => !!document.querySelector('#rt-elenco .rt-tab') || aggiorna();
+
+function avvisaDatiMancanti(){
+  const elenco = $('rt-elenco');
+  if (elenco) elenco.innerHTML = '<p class="pagina-nota">I dati dei Comandi non sono ancora '
+    + 'caricati: scegli il Comando attivo dal menu \u2630 e riprova.</p>';
+}
+
+/* Cercando il nome di una Direzione si vede tutto il gruppo; cercando
+   un Comando, un canale o un numero si vede la riga con la sua testata. */
+function filtra(){
+  const cerca = $('rt-cerca'), elenco = $('rt-elenco');
+  if (!cerca || !elenco) return;
+  const t = norm(cerca.value);
+  let visibili = 0;
+  elenco.querySelectorAll('tbody.rt-gruppo').forEach(tb => {
+    const tuttoIlGruppo = !t || (tb.dataset.cerca || '').includes(t);
+    let qui = 0;
+    tb.querySelectorAll('tr.rt-com').forEach(tr => {
+      const ok = tuttoIlGruppo || (tr.dataset.cerca || '').includes(t);
+      tr.hidden = !ok;
+      if (ok) qui++;
     });
-    const vuoto = elenco.querySelector('.rt-vuoto');
-    if (vuoto){
-      vuoto.hidden = visibili > 0;
-      vuoto.textContent = `Nessuna sala corrisponde a \u00ab${cerca.value.trim()}\u00bb.`;
-    }
-  }
-
-  /* Il foglio è costruito a parte e appeso al body per il tempo della
-     stampa: la pagina a video vive dentro un pannello a mezza larghezza,
-     e da lì non uscirebbe mai un A4 pulito. Il titolo del documento è il
-     nome che la finestra di stampa propone per il PDF. */
-  function stampa(){
-    if (!gruppi) return;
-    let doc = document.getElementById('rt-stampa-doc');
-    if (!doc){
-      doc = document.createElement('div');
-      doc.id = 'rt-stampa-doc';
-      document.body.appendChild(doc);
-    }
-    doc.innerHTML = htmlStampa(gruppi, naz, statoAttivo());
-    const titolo = document.title;
-    const oggi = new Intl.DateTimeFormat('sv-SE', {timeZone:'Europe/Rome'}).format(new Date());
-    document.title = `Radio-telefoni-SO-VVF_${oggi}`;
-    document.body.classList.add('rt-stampa');
-    const fine = () => {
-      window.removeEventListener('afterprint', fine);
-      document.body.classList.remove('rt-stampa');
-      document.title = titolo;
-    };
-    window.addEventListener('afterprint', fine);
-    window.print();
-  }
-
-  /* Un solo ascoltatore per tutti i numeri: l'elenco si ricostruisce a
-     ogni cambio di Comando, e agganciarne uno per riga vorrebbe dire
-     rifarlo cento volte. */
-  sez.addEventListener('click', ev => {
-    const b = ev.target.closest('.telefono-cliccabile');
-    if (!b) return;
-    if (typeof NS.copiaTesto === 'function') NS.copiaTesto(ev, b.dataset.copia);
-    else if (navigator.clipboard) navigator.clipboard.writeText(b.dataset.copia).catch(() => {});
+    tb.hidden = !tuttoIlGruppo && !qui;
+    if (!tb.hidden) visibili++;
   });
-  cerca.addEventListener('input', filtra);
-  bStampa.addEventListener('click', stampa);
+  const vuoto = elenco.querySelector('.rt-vuoto');
+  if (vuoto){
+    vuoto.hidden = visibili > 0;
+    vuoto.textContent = `Nessuna sala corrisponde a \u00ab${cerca.value.trim()}\u00bb.`;
+  }
+}
+
+/* Il foglio è costruito a parte e appeso al body per il tempo della
+   stampa: la pagina a video vive dentro un pannello a mezza larghezza,
+   e da lì non uscirebbe mai un A4 pulito. Il titolo del documento è il
+   nome che la finestra di stampa propone per il PDF. */
+function stampa(){
+  if (!gruppi && !aggiorna()) return avvisaDatiMancanti();
+  let doc = $('rt-stampa-doc');
+  if (!doc){
+    doc = document.createElement('div');
+    doc.id = 'rt-stampa-doc';
+    document.body.appendChild(doc);
+  }
+  doc.innerHTML = htmlStampa(gruppi, naz, statoAttivo());
+  const titolo = document.title;
+  const oggi = new Intl.DateTimeFormat('sv-SE', {timeZone:'Europe/Rome'}).format(new Date());
+  document.title = `Radio-telefoni-SO-VVF_${oggi}`;
+  document.body.classList.add('rt-stampa');
+  const fine = () => {
+    window.removeEventListener('afterprint', fine);
+    document.body.classList.remove('rt-stampa');
+    document.title = titolo;
+  };
+  window.addEventListener('afterprint', fine);
+  window.print();
+}
+
+/* copiaTesto si legge al momento del clic e non all'avvio: se il core
+   ricrea window.FireOps dopo questo file, un riferimento preso prima
+   punterebbe a un oggetto vuoto e la copia avverrebbe senza conferma. */
+function copia(ev, testo){
+  const F = window.FireOps;
+  if (F && typeof F.copiaTesto === 'function') F.copiaTesto(ev, testo);
+  else if (navigator.clipboard) navigator.clipboard.writeText(testo).catch(() => {});
+}
+
+function avvia(){
+  document.addEventListener('click', ev => {
+    const t = ev.target;
+    if (!t || !t.closest) return;
+    if (t.closest('#rt-bStampa')){ stampa(); return; }
+    const n = t.closest('#radio-telefoni .telefono-cliccabile');
+    if (n) copia(ev, n.dataset.copia);
+  });
+
+  document.addEventListener('input', ev => {
+    if (!ev.target || ev.target.id !== 'rt-cerca') return;
+    if (pronto()) filtra();
+    else avvisaDatiMancanti();
+  });
 
   /* script.js annuncia qui il Comando attivo, e lo fa dopo aver caricato
      comandi.json: lo stesso segnale porta i dati la prima volta e sposta
@@ -354,11 +376,11 @@ function avvia(){
   document.addEventListener('fireops:comando-attivo-cambiato', aggiorna);
   aggiorna();
 
-  NS.RadioTelefoni = {aggiorna, stampa};
+  (window.FireOps = window.FireOps || {}).RadioTelefoni = {aggiorna, stampa};
 }
 
 /* Esposte per le prove: nessun effetto sulla pagina. */
-NS.RadioTelefoniInterni = {raggruppa, impagina, stendi, righeDi, htmlStampa, nazionali};
+(window.FireOps = window.FireOps || {}).RadioTelefoniInterni = {raggruppa, impagina, stendi, righeDi, htmlStampa, nazionali};
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', avvia);
 else avvia();
