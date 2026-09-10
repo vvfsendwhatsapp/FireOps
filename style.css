@@ -6019,14 +6019,124 @@ select:focus {
   opacity:.45; cursor:not-allowed;
 }
 
-/* Ombra sulle aste degli assi: la fascia bianca su carta chiara non ha
-   contorno che la stacchi dal fondo, e il bordo rosso da solo si perde
-   sopra una strada o un campo giallo. Solo su questi elementi, non su
-   tutto il pannello: un filtro globale costa un livello di composizione
-   che durante l'animazione di zoom si riscala per conto suo. */
-/*#sitac-app .sitac-ombra {
-    filter: drop-shadow(0 0 2.5px rgba(255,0,0,1));
-}*/
+/* =========================================================================
+   RADIO E TELEFONI
+   A video: elenco da cercare, nel tema dell'app. Su carta: un A4 fronte e
+   retro in bianco e nero, pensato per stare appeso accanto alla consolle.
+   In entrambi il dato più grande della riga è il canale: è quello che si
+   cerca con gli occhi, il telefono si legge dopo.
+   ========================================================================= */
+
+/* ---- a video ---- */
+.rt-app{display:flex;flex-direction:column;gap:12px}
+.rt-barra{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.rt-barra input[type="search"]{flex:1 1 16em;min-width:12em}
+.rt-barra + .pagina-nota{margin:-4px 0 0}
+
+.rt-naz{display:flex;flex-wrap:wrap;gap:6px 28px;padding:10px 12px;
+  border:1px solid var(--border-color,#3a3a3a);
+  border-left:4px solid var(--primary-color,#c62828);border-radius:4px}
+.rt-naz-voce{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 14px}
+.rt-naz-nome{font-weight:700;font-size:1.1em}
+.rt-naz-desc{opacity:.7}
+.rt-naz-dato{white-space:nowrap}
+.rt-naz-et{font-size:.8em;opacity:.7;margin-right:5px}
+
+.rt-tab{width:100%;border-collapse:collapse;table-layout:fixed;
+  font-variant-numeric:tabular-nums lining-nums}
+.rt-c-nome{width:50%}
+.rt-c-ch{width:14%}
+.rt-c-tel{width:36%}
+.rt-tab th,.rt-tab td{padding:5px 8px;text-align:left;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;
+  border-bottom:1px solid var(--border-color,#333)}
+/* La testata resta in vista scorrendo: sotto ci sono cento righe. Lo
+   sfondo deve essere pieno, o le righe ci scorrono sotto a vista. */
+.rt-tab thead th{position:sticky;top:0;z-index:1;font-size:.8em;font-weight:600;
+  color:var(--text-muted,#9a9a9a);background:var(--card-bg,var(--bg-color,#1e1e1e));
+  border-bottom:2px solid var(--border-color,#3a3a3a)}
+.rt-tab .rt-ch{text-align:center}
+.rt-tab td.rt-ch{font-weight:700;font-size:1.25em;letter-spacing:.02em}
+.rt-tab .rt-dir th,.rt-tab .rt-dir td{padding-top:14px;font-weight:700;
+  border-bottom:2px solid var(--primary-color,#c62828)}
+.rt-tab .rt-manca{opacity:.45}
+
+.rt-copia{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:copy;
+  border-bottom:1px dotted currentColor}
+.rt-copia:hover{color:var(--primary-color,#e57373)}
+.rt-copia:focus-visible{outline:2px solid var(--primary-color,#e57373);outline-offset:2px}
+
+.rt-tab .rt-attivo td{background:rgba(198,40,40,.16)}
+.rt-tab .rt-attivo .rt-nome{font-weight:700}
+.rt-tab .rt-limitrofo .rt-nome{box-shadow:inset 3px 0 0 var(--primary-color,#c62828)}
+
+/* ---- su carta ---- */
+#rt-stampa-doc{display:none}
+
+/* Pagina con nome: se la SITAC o un'altra stampa dichiarano un @page
+   diverso (A3 orizzontale), questo foglio resta comunque un A4 verticale. */
+@page rt-foglio{size:A4 portrait;margin:8mm}
+
+@media print{
+  body.rt-stampa > *:not(#rt-stampa-doc){display:none !important}
+  body.rt-stampa #rt-stampa-doc{display:block !important}
+  body.rt-stampa{margin:0 !important;background:#fff !important;color:#000 !important}
+}
+
+/* 297 − 2×8 = 281 mm: se ne usano 280, o l'arrotondamento del motore di
+   stampa spinge l'ultima riga su un terzo foglio bianco. Le altezze di
+   testata (12,5), riquadro (17,5), piede (6) e intestazione (5) sono quelle
+   da cui radiotelefoni.js ricava FOGLIO.area e FOGLIO.naz. */
+.rt-foglio{page:rt-foglio;box-sizing:border-box;width:194mm;height:280mm;
+  display:flex;flex-direction:column;overflow:hidden;background:#fff;color:#000;
+  font-family:"Arial Narrow","Roboto Condensed","Helvetica Neue",Arial,sans-serif;
+  font-size:var(--rt-corpo,9pt);line-height:1.1;
+  -webkit-print-color-adjust:exact;print-color-adjust:exact}
+.rt-foglio + .rt-foglio{break-before:page}
+
+.rt-f-testa{box-sizing:border-box;height:10mm;margin-bottom:2.5mm;display:flex;
+  justify-content:space-between;align-items:flex-end;padding-bottom:1.2mm;
+  border-bottom:1.4pt solid #000}
+.rt-f-testa h1{margin:0;font-size:15pt;font-weight:700;letter-spacing:-.01em}
+.rt-f-testa p{margin:0;font-size:8.5pt}
+
+.rt-foglio .rt-naz{box-sizing:border-box;height:15mm;margin-bottom:2.5mm;padding:1.5mm 3mm;
+  display:flex;flex-direction:column;justify-content:center;gap:1mm;
+  border:.8pt solid #000;border-left:3pt solid #000;border-radius:0}
+.rt-foglio .rt-naz-voce{gap:0 5mm;flex-wrap:nowrap}
+.rt-foglio .rt-naz-nome{min-width:14mm;font-size:10.5pt}
+.rt-foglio .rt-naz-desc{min-width:42mm;opacity:1;font-size:8.5pt}
+.rt-foglio .rt-naz-dato{font-size:10pt}
+.rt-foglio .rt-naz-et{opacity:1;font-size:7.5pt}
+
+.rt-f-colonne{flex:1;display:grid;grid-template-columns:1fr 1fr;column-gap:6mm;
+  align-items:start;min-height:0}
+
+.rt-f-tab{width:100%;border-collapse:collapse;table-layout:fixed;
+  font-variant-numeric:tabular-nums lining-nums}
+.rt-f-tab th,.rt-f-tab td{box-sizing:border-box;height:var(--rt-riga,6mm);padding:0 1.2mm;
+  text-align:left;vertical-align:middle;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;border-bottom:.3pt solid #b5b5b5}
+.rt-f-tab td,.rt-f-tab th{padding:0 1mm}
+.rt-f-tab thead th{height:5mm;font-size:7pt;font-weight:700;border-bottom:.9pt solid #000}
+.rt-f-tab .rt-ch{text-align:center}
+/* "CH VHF" è più largo della sua colonna: l'intestazione può sbordare,
+   i valori (due o tre cifre) no. */
+.rt-f-tab thead th.rt-ch{overflow:visible;text-overflow:clip;padding:0}
+.rt-f-tab td.rt-ch{font-weight:700;font-size:1.3em}
+.rt-f-tab tr.rt-com:nth-child(even) td{background:#f1f1f1}
+.rt-f-tab .rt-dir th,.rt-f-tab .rt-dir td{background:#dcdcdc;font-weight:700;
+  border-top:.9pt solid #000;border-bottom:.9pt solid #000}
+.rt-f-tab .rt-segue-et{font-weight:400;font-style:italic;font-size:.85em}
+/* La propria SO non prende il grigio: sarebbe una Direzione. Prende due
+   filetti pieni e il grassetto, e si trova lo stesso al primo sguardo. */
+.rt-f-tab .rt-attivo td{font-weight:700;background:#fff;
+  border-top:1.2pt solid #000;border-bottom:1.2pt solid #000}
+.rt-f-tab .rt-limitrofo .rt-nome{border-left:1.8pt solid #000;padding-left:1mm}
+.rt-f-tab .rt-manca{color:#777}
+
+.rt-f-piede{box-sizing:border-box;height:6mm;display:flex;justify-content:space-between;
+  align-items:flex-end;gap:4mm;font-size:7pt;border-top:.5pt solid #000}
 
 /* ==========================================================
    ==========================================================

@@ -1,0 +1,351 @@
+/*!
+ * FireOps VVF — radiotelefoni.js — Radio e telefoni delle Sale Operative
+ *
+ * Elenco nazionale delle SO dei Comandi e delle Direzioni con canale VHF
+ * e telefono, raggruppato per Direzione, più CON e SOCAV. A video si
+ * cerca e si copia il numero con un clic; su carta esce su un solo foglio
+ * A4 fronte e retro, da tenere accanto alla consolle.
+ *
+ * DA DOVE VENGONO I DATI
+ * Da window.FireOpsComandi, che script.js pubblica dopo aver letto
+ * comandi.json: un secondo fetch prima o poi andrebbe fuori passo. Anche
+ * le Direzioni si leggono da lì, perché ogni riga di Comando porta canale
+ * e telefono della propria Direzione: direzioni.json non serve.
+ * Le selettive (CHS) per ora restano fuori. Per rimetterle: una colonna in
+ * COLONNE e TESTATA, una cella in rigaDir e rigaCom, e le larghezze nel CSS.
+ * Se due Comandi della stessa Direzione riportano valori diversi vince il
+ * più frequente: un refuso su una riga non deve finire sulla carta.
+ *
+ * IMPAGINAZIONE
+ * Quattro colonne, due per facciata. Una Direzione spezzata fra due colonne
+ * ripete la testata con "segue", e una testata non resta mai sola in fondo
+ * a una colonna. L'altezza delle righe si adatta al loro numero: il foglio
+ * si riempie invece di lasciare un terzo bianco, e il corpo del testo
+ * cresce con lei fino a 10 pt.
+ */
+(function () {
+'use strict';
+const NS = (window.FireOps = window.FireOps || {});
+
+/* I nomi delle colonne di comandi.json, scritti una volta sola. */
+const CAMPI = {
+  comCh: 'Canale Radio Comando', comTel: 'Telefono SO Comando',
+  dir: 'Direzione VVF',
+  dirCh: 'Canale Radio Direzione', dirTel: 'Telefono SO Direzione',
+  conCh: 'Canale Radio CON', conTel: 'Telefono SO CON',
+  socavTel: 'Telefono SOCAV',
+  confinanti: 'Concatena Comandi Confinanti'
+};
+
+/* Misure del foglio stampato, in millimetri. Devono restare allineate al
+   CSS (.rt-foglio): `area` è l'altezza utile per le righe, tolte testata,
+   piede e intestazione delle colonne, con un paio di millimetri di scorta;
+   `naz` è quanto occupa il riquadro CON/SOCAV sulla prima facciata. */
+const FOGLIO = {area: 250, naz: 17.5, rigaMax: 8};
+
+const val = v => (v == null ? '' : String(v).trim());
+const esc = s => val(s).replace(/[<>&"]/g,
+  c => ({'<':'&lt;', '>':'&gt;', '&':'&amp;', '"':'&quot;'}[c]));
+const norm = s => val(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const oTrattino = v => val(v) || '\u2014';
+
+function moda(valori){
+  const conta = new Map();
+  valori.map(val).filter(Boolean).forEach(v => conta.set(v, (conta.get(v) || 0) + 1));
+  let migliore = '', volte = 0;
+  conta.forEach((n, v) => { if (n > volte){ volte = n; migliore = v; } });
+  return migliore;
+}
+
+/* =====================================================================
+   DATI
+   ===================================================================== */
+function raggruppa(comandi){
+  const gruppi = new Map();
+  comandi.filter(c => c && val(c.Comando)).forEach(c => {
+    const d = val(c[CAMPI.dir]);
+    if (!gruppi.has(d)) gruppi.set(d, []);
+    gruppi.get(d).push(c);
+  });
+  return [...gruppi.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0], 'it'))
+    .map(([nome, lista]) => ({
+      nome,
+      ch:  moda(lista.map(c => c[CAMPI.dirCh])),
+      tel: moda(lista.map(c => c[CAMPI.dirTel])),
+      comandi: lista.slice().sort((a, b) =>
+        val(a.Comando).localeCompare(val(b.Comando), 'it'))
+    }));
+}
+
+function nazionali(comandi){
+  const di = k => moda(comandi.map(c => c && c[k]));
+  return {
+    con:   {ch: di(CAMPI.conCh), tel: di(CAMPI.conTel)},
+    socav: {tel: di(CAMPI.socavTel)}
+  };
+}
+
+/* La SO che sta usando la pagina e i suoi confinanti: in una sala il
+   primo numero che si cerca è quasi sempre di un vicino. */
+function statoAttivo(){
+  const a = window.FireOpsComandoAttivo;
+  return {
+    nome: val(a && a.Comando),
+    lim: new Set(val(a && a[CAMPI.confinanti]).split(';').map(s => s.trim()).filter(Boolean))
+  };
+}
+
+/* Il nome della Direzione si riduce alla regione, comunque sia scritto in
+   comandi.json ("Direzione Regionale Lazio", "DIR Lazio", "Lazio"). A video
+   ci sta la parola intera; su carta la colonna è stretta, e la fascia grigia
+   dice già che quella riga è una Direzione. */
+const regione = n => val(n).replace(/^(direzione(\s+regionale)?|dir\.?)(\s+vvf)?\s+/i, '');
+const nomeDirezione = (n, schermo) => {
+  const r = regione(n);
+  if (!r) return 'Senza Direzione indicata';
+  return schermo ? 'Direzione ' + r : r;
+};
+
+/* =====================================================================
+   RIGHE — le stesse per lo schermo e per la carta. A video il telefono
+   è un pulsante che copia, con lo zero davanti come nel resto dell'app;
+   su carta è testo.
+   ===================================================================== */
+function cellaNumero(v, schermo, comeTelefono){
+  const t = val(v);
+  if (!t) return '<td class="rt-num rt-manca">\u2014</td>';
+  if (!schermo) return `<td class="rt-num">${esc(t)}</td>`;
+  const copia = comeTelefono && typeof window.formattaTelefonoPerCopia === 'function'
+    ? window.formattaTelefonoPerCopia(t) : t.replace(/\s+/g, '');
+  return `<td class="rt-num"><button type="button" class="rt-copia"`
+    + ` data-copia="${esc(copia)}" title="Copia ${esc(copia)}">${esc(t)}</button></td>`;
+}
+
+function rigaDir(g, schermo, segue){
+  return `<tr class="rt-dir${segue ? ' rt-segue' : ''}">`
+    + `<th scope="rowgroup">${esc(nomeDirezione(g.nome, schermo))}`
+    + (segue ? ' <span class="rt-segue-et">segue</span>' : '') + `</th>`
+    + `<td class="rt-ch">${esc(oTrattino(g.ch))}</td>`
+    + cellaNumero(g.tel, schermo, true)
+    + `</tr>`;
+}
+
+function rigaCom(c, st, schermo){
+  const nome = val(c.Comando);
+  const classe = (nome === st.nome ? ' rt-attivo' : '') + (st.lim.has(nome) ? ' rt-limitrofo' : '');
+  const cerca = schermo ? ` data-cerca="${esc(norm([nome, c.Provincia, c[CAMPI.comCh],
+    c[CAMPI.comTel]].join(' ')))}"` : '';
+  return `<tr class="rt-com${classe}"${cerca}>`
+    + `<td class="rt-nome">${esc(nome)}</td>`
+    + `<td class="rt-ch">${esc(oTrattino(c[CAMPI.comCh]))}</td>`
+    + cellaNumero(c[CAMPI.comTel], schermo, true)
+    + `</tr>`;
+}
+
+const COLONNE = `<colgroup><col class="rt-c-nome"><col class="rt-c-ch">`
+  + `<col class="rt-c-tel"></colgroup>`;
+const TESTATA = `<thead><tr><th scope="col">Sala operativa</th>`
+  + `<th scope="col" class="rt-ch">CH VHF</th><th scope="col">TEL SO</th></tr></thead>`;
+
+function bloccoNaz(n, schermo){
+  const dato = (et, v, tel) => `<span class="rt-naz-dato"><span class="rt-naz-et">${et}</span>`
+    + (val(v) ? (schermo
+        ? `<button type="button" class="rt-copia" data-copia="${esc(tel && typeof window.formattaTelefonoPerCopia === 'function'
+            ? window.formattaTelefonoPerCopia(val(v)) : val(v).replace(/\s+/g, ''))}">${esc(v)}</button>`
+        : `<b>${esc(v)}</b>`)
+      : '\u2014') + `</span>`;
+  return `<div class="rt-naz">`
+    + `<div class="rt-naz-voce"><span class="rt-naz-nome">CON</span>`
+    + `<span class="rt-naz-desc">Centro Operativo Nazionale</span>`
+    + dato('CH VHF', n.con.ch) + dato('TEL SO', n.con.tel, true)
+    + `</div><div class="rt-naz-voce"><span class="rt-naz-nome">SOCAV</span>`
+    + `<span class="rt-naz-desc">Assistenza al volo</span>`
+    + dato('TEL', n.socav.tel, true)
+    + `</div></div>`;
+}
+
+/* =====================================================================
+   IMPAGINAZIONE DEL FOGLIO
+   ===================================================================== */
+function righeDi(gruppi){
+  const r = [];
+  gruppi.forEach(g => {
+    r.push({tipo:'dir', g});
+    g.comandi.forEach(c => r.push({tipo:'com', g, c}));
+  });
+  return r;
+}
+
+/* Stende le righe su colonne con i limiti dati; null se non ci stanno. */
+function stendi(righe, limiti){
+  const col = limiti.map(() => []);
+  let i = 0, k = 0;
+  while (i < righe.length){
+    if (k >= col.length) return null;
+    const c = col[k], lim = limiti[k], r = righe[i];
+    /* Colonna nuova a Direzione aperta: la testata si ripete, o chi legge
+       la seconda metà del gruppo non sa di che Direzione sono. */
+    if (!c.length && r.tipo === 'com') c.push({tipo:'dir', g:r.g, segue:true});
+    if (c.length >= lim){ k++; continue; }
+    /* Una testata nell'ultima riga libera resterebbe sola: va a capo. */
+    if (r.tipo === 'dir' && c.length + 1 >= lim){ k++; continue; }
+    c.push(r); i++;
+  }
+  return col;
+}
+
+/* Si cerca il numero di righe per colonna più basso con cui tutto entra:
+   è quello che dà le righe più alte e il testo più grande. La prima
+   facciata ne perde qualcuna al riquadro nazionale. */
+function impagina(gruppi){
+  const righe = righeDi(gruppi);
+  for (let b = Math.max(3, Math.ceil(righe.length / 4)); b <= righe.length + 8; b++){
+    const riga = Math.min(FOGLIO.rigaMax, FOGLIO.area / b);
+    const sottratte = Math.ceil(FOGLIO.naz / riga);
+    const col = stendi(righe, [b - sottratte, b - sottratte, b, b]);
+    if (col) return {col, riga, perColonna: b, totale: righe.length};
+  }
+  return null;
+}
+
+function htmlStampa(gruppi, naz, st){
+  const imp = impagina(gruppi);
+  if (!imp) return '';
+  /* Il corpo segue l'altezza della riga fino a 10 pt: oltre, i nomi lunghi
+     ("Monza e della Brianza") non entrano più nella loro colonna.
+     Le righe invece crescono fino a 8 mm, così il foglio si riempie e fra
+     una riga e l'altra resta l'aria che serve a seguirla con gli occhi. */
+  const stile = `--rt-riga:${imp.riga.toFixed(2)}mm;`
+    + `--rt-corpo:${Math.min(10, imp.riga * 1.35).toFixed(1)}pt`;
+  const tabella = col => col.length
+    ? `<table class="rt-f-tab">${COLONNE}${TESTATA}<tbody>`
+      + col.map(r => r.tipo === 'dir' ? rigaDir(r.g, false, r.segue) : rigaCom(r.c, st, false)).join('')
+      + `</tbody></table>`
+    : '<div></div>';
+
+  const quando = new Intl.DateTimeFormat('it-IT', {dateStyle:'short', timeStyle:'short',
+    timeZone:'Europe/Rome'}).format(new Date());
+  const v = window.FIREOPS_VERSIONE;
+  const versione = v ? `, FireOps v. ${esc(String(v).replace(/^(\d{4})(\d\d)(\d\d)(\d\d)(\d\d)$/, '$3$2$1$4$5'))}` : '';
+  const legenda = 'In grigio le Direzioni regionali.' + (st.nome
+    ? ` Fra due filetti la SO di ${esc(st.nome)}, con il filetto a sinistra i Comandi confinanti.`
+    : '');
+  const testa = n => `<header class="rt-f-testa"><h1>Radio e telefoni delle Sale Operative VVF</h1>`
+    + `<p>Facciata ${n} di 2</p></header>`;
+  const piede = `<footer class="rt-f-piede"><span>${legenda}</span>`
+    + `<span>Stampato il ${esc(quando)}${versione}</span></footer>`;
+
+  return `<section class="rt-foglio" style="${stile}">${testa(1)}${bloccoNaz(naz, false)}`
+    + `<div class="rt-f-colonne">${tabella(imp.col[0])}${tabella(imp.col[1])}</div>${piede}</section>`
+    + `<section class="rt-foglio" style="${stile}">${testa(2)}`
+    + `<div class="rt-f-colonne">${tabella(imp.col[2])}${tabella(imp.col[3])}</div>${piede}</section>`;
+}
+
+/* =====================================================================
+   PAGINA
+   ===================================================================== */
+function avvia(){
+  const sez = document.getElementById('radio-telefoni');
+  if (!sez) return;
+  const elenco = sez.querySelector('#rt-elenco');
+  const boxNaz = sez.querySelector('#rt-nazionali');
+  const cerca = sez.querySelector('#rt-cerca');
+  const bStampa = sez.querySelector('#rt-bStampa');
+  if (!elenco || !boxNaz || !cerca || !bStampa){
+    console.error('[Radio e telefoni] markup incompleto nella sezione #radio-telefoni.');
+    return;
+  }
+  let gruppi = null, naz = null;
+  bStampa.disabled = true;
+
+  function aggiorna(){
+    const comandi = Array.isArray(window.FireOpsComandi) ? window.FireOpsComandi : [];
+    if (!comandi.length) return;
+    gruppi = raggruppa(comandi);
+    naz = nazionali(comandi);
+    const st = statoAttivo();
+    boxNaz.innerHTML = bloccoNaz(naz, true);
+    elenco.innerHTML = `<table class="rt-tab">${COLONNE}${TESTATA}`
+      + gruppi.map(g => `<tbody class="rt-gruppo" data-cerca="${esc(norm([g.nome, g.ch, g.tel].join(' ')))}">`
+        + rigaDir(g, true, false)
+        + g.comandi.map(c => rigaCom(c, st, true)).join('')
+        + `</tbody>`).join('')
+      + `</table><p class="rt-vuoto pagina-nota" hidden></p>`;
+    bStampa.disabled = false;
+    filtra();
+  }
+
+  /* Cercando il nome di una Direzione si vede tutto il gruppo; cercando
+     un Comando, un canale o un numero si vede la riga con la sua testata. */
+  function filtra(){
+    const t = norm(cerca.value);
+    let visibili = 0;
+    elenco.querySelectorAll('tbody.rt-gruppo').forEach(tb => {
+      const tuttoIlGruppo = !t || tb.dataset.cerca.includes(t);
+      let qui = 0;
+      tb.querySelectorAll('tr.rt-com').forEach(tr => {
+        const ok = tuttoIlGruppo || tr.dataset.cerca.includes(t);
+        tr.hidden = !ok;
+        if (ok) qui++;
+      });
+      tb.hidden = !tuttoIlGruppo && !qui;
+      visibili += tb.hidden ? 0 : 1;
+    });
+    const vuoto = elenco.querySelector('.rt-vuoto');
+    if (vuoto){
+      vuoto.hidden = visibili > 0;
+      vuoto.textContent = `Nessuna sala corrisponde a \u00ab${cerca.value.trim()}\u00bb.`;
+    }
+  }
+
+  /* Il foglio è costruito a parte e appeso al body per il tempo della
+     stampa: la pagina a video vive dentro un pannello a mezza larghezza,
+     e da lì non uscirebbe mai un A4 pulito. Il titolo del documento è il
+     nome che la finestra di stampa propone per il PDF. */
+  function stampa(){
+    if (!gruppi) return;
+    let doc = document.getElementById('rt-stampa-doc');
+    if (!doc){
+      doc = document.createElement('div');
+      doc.id = 'rt-stampa-doc';
+      document.body.appendChild(doc);
+    }
+    doc.innerHTML = htmlStampa(gruppi, naz, statoAttivo());
+    const titolo = document.title;
+    const oggi = new Intl.DateTimeFormat('sv-SE', {timeZone:'Europe/Rome'}).format(new Date());
+    document.title = `Radio-telefoni-SO-VVF_${oggi}`;
+    document.body.classList.add('rt-stampa');
+    const fine = () => {
+      window.removeEventListener('afterprint', fine);
+      document.body.classList.remove('rt-stampa');
+      document.title = titolo;
+    };
+    window.addEventListener('afterprint', fine);
+    window.print();
+  }
+
+  sez.addEventListener('click', ev => {
+    const b = ev.target.closest('.rt-copia');
+    if (!b) return;
+    if (typeof NS.copiaTesto === 'function') NS.copiaTesto(ev, b.dataset.copia);
+    else if (navigator.clipboard) navigator.clipboard.writeText(b.dataset.copia).catch(() => {});
+  });
+  cerca.addEventListener('input', filtra);
+  bStampa.addEventListener('click', stampa);
+
+  /* script.js annuncia qui il Comando attivo, e lo fa dopo aver caricato
+     comandi.json: lo stesso segnale porta i dati la prima volta e sposta
+     l'evidenza della propria SO le volte successive. */
+  document.addEventListener('fireops:comando-attivo-cambiato', aggiorna);
+  aggiorna();
+
+  NS.RadioTelefoni = {aggiorna, stampa};
+}
+
+/* Esposte per le prove: nessun effetto sulla pagina. */
+NS.RadioTelefoniInterni = {raggruppa, impagina, stendi, righeDi, htmlStampa, nazionali};
+
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', avvia);
+else avvia();
+})();

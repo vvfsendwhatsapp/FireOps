@@ -939,15 +939,26 @@
                 </div> <!-- chiusura .pagina-box.pagina-box-larga -->
         </section>
 
-        <!-- RADIO E TELEFONI -->
-        <!--
-        <section id="radio-telefoni" class="page-section">
-            <div class="pagina-box">
-                <h3>Radio e Telefoni</h3>
-                <p class="pagina-nota">Sezione in costruzione.</p>
+        <!-- RADIO E TELEFONI — nel contenitore delle altre sezioni.
+     Se le altre pagine hanno una riga d'intestazione (titolo, pulsante
+     Espandi), copiala qui sopra .rt-app: questa sezione non ne dipende. -->
+        <section class="page-section" id="radio-telefoni">
+            <div class="rt-app">
+                <div class="rt-barra">
+                    <input type="search" id="rt-cerca" autocomplete="off"
+                        placeholder="Cerca un Comando, una Direzione, un canale o un numero"
+                        aria-label="Cerca nell'elenco">
+                    <button type="button" id="rt-bStampa">Stampa fronte e retro</button>
+                </div>
+                <p class="pagina-nota">Esce su un solo foglio A4: nella finestra di stampa scegli fronte e retro, lato
+                    lungo.</p>
+                <div id="rt-nazionali"></div>
+                <div id="rt-elenco">
+                    <p class="pagina-nota">L'elenco si compila appena è scelto il Comando attivo.</p>
+                </div>
             </div>
         </section>
--->
+
         <!-- QRCODE -->
         <section id="qrcode" class="page-section">
             <div class="pagina-box">
