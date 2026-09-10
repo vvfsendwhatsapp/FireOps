@@ -5966,6 +5966,21 @@ select:focus {
 .sitac-senza-scheda input{margin:0}
 #sitac-nIntervento:disabled{opacity:.45;cursor:not-allowed}
 
+/* Casella "senza scheda": sta nella riga del numero come il pulsante sta
+   in quella della posizione. Le regole dei campi del passo 1 prendono
+   anche questa label e questa casella: si azzerano qui invece di
+   indovinare quali siano. */
+.sitac-dati .sitac-dati-campo label.sitac-senza-scheda{
+  display:inline-flex; align-items:center; gap:.35em; flex:0 1 auto;
+  margin:0; padding:0; font-size:.8em; line-height:1.15;
+  text-transform:none; letter-spacing:normal; font-weight:normal;
+  white-space:normal; cursor:pointer; user-select:none;
+}
+.sitac-dati .sitac-senza-scheda input[type="checkbox"]{
+  all:revert; margin:0; flex:none; cursor:pointer;
+}
+#sitac-nIntervento:disabled{opacity:.45; cursor:not-allowed}
+
 /* Ombra sulle aste degli assi: la fascia bianca su carta chiara non ha
    contorno che la stacchi dal fondo, e il bordo rosso da solo si perde
    sopra una strada o un campo giallo. Solo su questi elementi, non su
