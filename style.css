@@ -1625,6 +1625,10 @@ html.comando-gia-scelto #modal-comando {
     flex-shrink: 0;
 }
 
+.pagina-box-header-con-nota #rt-bStampa {
+    flex-shrink: 0;
+}
+
 .pannello.pannello-fullscreen {
     position: fixed;
     top: calc(var(--header-height) + var(--subheader-height));
