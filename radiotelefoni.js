@@ -95,6 +95,25 @@ function statoAttivo(){
   };
 }
 
+function trovaComando(nome){
+  const n = norm(nome);
+  if (!n) return null;
+  const comandi = Array.isArray(window.FireOpsComandi) ? window.FireOpsComandi : [];
+  return comandi.find(c => c && norm(val(c.Comando)) === n) || null;
+}
+
+function limitrofiDi(comandoRecord){
+  return new Set(val(comandoRecord && comandoRecord[CAMPI.confinanti])
+    .split(';').map(s => s.trim()).filter(Boolean));
+}
+
+function aggiornaCheckboxVicini(selezionato){
+  const cb = $('rt-solo-vicini');
+  if (!cb) return;
+  cb.disabled = !selezionato;
+  if (!selezionato) cb.checked = false;
+}
+
 /* Il nome della Direzione si riduce alla regione, comunque sia scritto in
    comandi.json ("Direzione Regionale Lazio", "DIR Lazio", "Lazio"). A video
    ci sta la parola intera; su carta la colonna è stretta, e la fascia grigia
@@ -137,7 +156,7 @@ function rigaCom(c, st, schermo){
   const nome = val(c.Comando);
   const classe = (nome === st.nome ? ' rt-attivo' : '') + (st.lim.has(nome) ? ' rt-limitrofo' : '');
   const cerca = schermo ? ` data-cerca="${esc(norm([nome, c.Provincia, c[CAMPI.comCh],
-    c[CAMPI.comTel]].join(' ')))}"` : '';
+    c[CAMPI.comTel]].join(' ')))}" data-nome="${esc(nome)}"` : '';
   return `<tr class="rt-com${classe}"${cerca}>`
     + `<td class="rt-nome">${esc(nome)}</td>`
     + `<td class="rt-ch">${esc(oTrattino(c[CAMPI.comCh]))}</td>`
@@ -286,9 +305,17 @@ function aggiorna(){
       + g.comandi.map(c => rigaCom(c, st, true)).join('')
       + `</tbody>`).join('')
     + `</table><p class="rt-vuoto pagina-nota" hidden></p>`;
+  const datalist = $('rt-comandi-list');
+  if (datalist){
+    datalist.innerHTML = comandi.filter(c => c && val(c.Comando))
+      .map(c => `<option value="${esc(val(c.Comando))}">`).join('');
+  }
+  aggiornaCheckboxVicini(null);
   filtra();
   return true;
 }
+
+
 
 /* Se l'elenco non c'è ancora — dati arrivati prima che la sezione fosse
    nel DOM, o un avvio andato storto — il primo gesto lo costruisce. */
@@ -310,16 +337,22 @@ function soloVicini(){
 function filtra(){
   const cerca = $('rt-cerca'), elenco = $('rt-elenco');
   if (!cerca || !elenco) return;
-  const t = norm(cerca.value);
+  const testo = cerca.value;
+  const t = norm(testo);
+  const selezionato = trovaComando(testo);
+  aggiornaCheckboxVicini(selezionato);
   const vic = soloVicini();
+  const lim = selezionato ? limitrofiDi(selezionato) : new Set();
+  const nomeSel = selezionato ? val(selezionato.Comando) : '';
+
   let visibili = 0;
   elenco.querySelectorAll('tbody.rt-gruppo').forEach(tb => {
-    const tuttoIlGruppo = !t || (tb.dataset.cerca || '').includes(t);
     let qui = 0;
     tb.querySelectorAll('tr.rt-com').forEach(tr => {
-      const testoOk = tuttoIlGruppo || (tr.dataset.cerca || '').includes(t);
-      const vicinoOk = !vic || tr.classList.contains('rt-attivo') || tr.classList.contains('rt-limitrofo');
-      const ok = testoOk && vicinoOk;
+      const nomeRiga = tr.dataset.nome;
+      const ok = vic && selezionato
+        ? (nomeRiga === nomeSel || lim.has(nomeRiga))
+        : (!t || (tb.dataset.cerca || '').includes(t) || (tr.dataset.cerca || '').includes(t));
       tr.hidden = !ok;
       if (ok) qui++;
     });
@@ -329,8 +362,8 @@ function filtra(){
   const vuoto = elenco.querySelector('.rt-vuoto');
   if (vuoto){
     vuoto.hidden = visibili > 0;
-    vuoto.textContent = vic && !t
-      ? 'Nessun Comando confinante indicato per la SO attiva.'
+    vuoto.textContent = vic && selezionato
+      ? `Nessun Comando confinante indicato per ${esc(nomeSel)}.`
       : `Nessuna sala corrisponde a \u00ab${cerca.value.trim()}\u00bb.`;
   }
 }

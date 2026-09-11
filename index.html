@@ -954,7 +954,9 @@
                     <button type="button" id="rt-bStampa" class="btn-toggle-radar">🖨 Stampa fronte e retro</button>
                 </div>
                 <label for="rt-cerca">Cerca una sala operativa</label>
-                <input type="text" id="rt-cerca" autocomplete="off" placeholder="Comando, Direzione, canale o numero">
+                <input type="text" id="rt-cerca" list="rt-comandi-list" autocomplete="off"
+                    placeholder="Comando, Direzione, canale o numero">
+                <datalist id="rt-comandi-list"></datalist>
                 <label class="rt-check">
                     <input type="checkbox" id="rt-solo-vicini">
                     Mostra solo il Comando selezionato e i confinanti
