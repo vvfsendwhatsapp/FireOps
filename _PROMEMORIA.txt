@@ -22,3 +22,5 @@ INTERVENTI ALL'ESTERO
 manca kml!
 e qualifica "dos" quando spunta non num intervento 
 splittare su convertitore anche "x = 12,13391    y = 44,02339" o "12,13391    y = 44,02339" invertendo le coordinate oppure voce coordinate so115
+
+CANALE NAZIONALE		100	
