@@ -267,6 +267,11 @@ function aggiorna(){
   gruppi = raggruppa(comandi);
   naz = nazionali(comandi);
   const st = statoAttivo();
+  const cbVicini = $('rt-solo-vicini');
+  if (cbVicini){
+    cbVicini.disabled = !st.nome;
+    if (!st.nome) cbVicini.checked = false;
+  }
   boxNaz.innerHTML = bloccoNaz(naz, true);
   /* La legenda c'è solo se c'è qualcosa da spiegare: senza Comando
      attivo non ci sono evidenze in tabella. */
@@ -297,26 +302,36 @@ function avvisaDatiMancanti(){
 
 /* Cercando il nome di una Direzione si vede tutto il gruppo; cercando
    un Comando, un canale o un numero si vede la riga con la sua testata. */
+function soloVicini(){
+  const cb = $('rt-solo-vicini');
+  return !!(cb && !cb.disabled && cb.checked);
+}
+
 function filtra(){
   const cerca = $('rt-cerca'), elenco = $('rt-elenco');
   if (!cerca || !elenco) return;
   const t = norm(cerca.value);
+  const vic = soloVicini();
   let visibili = 0;
   elenco.querySelectorAll('tbody.rt-gruppo').forEach(tb => {
     const tuttoIlGruppo = !t || (tb.dataset.cerca || '').includes(t);
     let qui = 0;
     tb.querySelectorAll('tr.rt-com').forEach(tr => {
-      const ok = tuttoIlGruppo || (tr.dataset.cerca || '').includes(t);
+      const testoOk = tuttoIlGruppo || (tr.dataset.cerca || '').includes(t);
+      const vicinoOk = !vic || tr.classList.contains('rt-attivo') || tr.classList.contains('rt-limitrofo');
+      const ok = testoOk && vicinoOk;
       tr.hidden = !ok;
       if (ok) qui++;
     });
-    tb.hidden = !tuttoIlGruppo && !qui;
+    tb.hidden = qui === 0;
     if (!tb.hidden) visibili++;
   });
   const vuoto = elenco.querySelector('.rt-vuoto');
   if (vuoto){
     vuoto.hidden = visibili > 0;
-    vuoto.textContent = `Nessuna sala corrisponde a \u00ab${cerca.value.trim()}\u00bb.`;
+    vuoto.textContent = vic && !t
+      ? 'Nessun Comando confinante indicato per la SO attiva.'
+      : `Nessuna sala corrisponde a \u00ab${cerca.value.trim()}\u00bb.`;
   }
 }
 
@@ -369,6 +384,11 @@ function avvia(){
     if (pronto()) filtra();
     else avvisaDatiMancanti();
   });
+
+  document.addEventListener('change', ev => {
+  if (!ev.target || ev.target.id !== 'rt-solo-vicini') return;
+  if (pronto()) filtra();
+});
 
   /* script.js annuncia qui il Comando attivo, e lo fa dopo aver caricato
      comandi.json: lo stesso segnale porta i dati la prima volta e sposta
