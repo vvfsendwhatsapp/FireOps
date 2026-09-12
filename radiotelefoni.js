@@ -41,6 +41,7 @@ const CAMPI = {
    piede e intestazione delle colonne, con un paio di millimetri di scorta;
    `naz` è quanto occupa il riquadro CON/SOCAV sulla prima facciata. */
 const FOGLIO = {area: 250, naz: 17.5, rigaMax: 8};
+const CANALE_NAZIONALE = '100';
 
 const val = v => (v == null ? '' : String(v).trim());
 const esc = s => val(s).replace(/[<>&"]/g,
@@ -184,6 +185,9 @@ function bloccoNaz(n, schermo){
     + `</div><div class="rt-naz-voce"><span class="rt-naz-nome">SOCAV</span>`
     + `<span class="rt-naz-desc">Assistenza al volo</span>`
     + `<span></span>` + tel('TEL', n.socav.tel)
+    + `</div><div class="rt-naz-voce"><span class="rt-naz-nome">CANALE NAZIONALE</span>`
+    + `<span class="rt-naz-desc">Soccorso</span>`
+    + ch(CANALE_NAZIONALE) + `<span></span>`
     + `</div></div>`;
 }
 
