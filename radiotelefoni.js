@@ -40,7 +40,7 @@ const CAMPI = {
    CSS (.rt-foglio): `area` è l'altezza utile per le righe, tolte testata,
    piede e intestazione delle colonne, con un paio di millimetri di scorta;
    `naz` è quanto occupa il riquadro CON/SOCAV sulla prima facciata. */
-const FOGLIO = {area: 250, naz: 25.5, rigaMax: 8};
+const FOGLIO = {area: 250, naz: 24, rigaMax: 8};
 const CANALE_NAZIONALE = '100';
 
 const val = v => (v == null ? '' : String(v).trim());

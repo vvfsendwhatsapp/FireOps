@@ -6291,7 +6291,7 @@ select:focus {
 /* CON e SOCAV: un .sf-box della stampa SITAC */
 .rt-foglio .rt-naz {
     box-sizing: border-box;
-    height: 15mm;
+    height: 24mm;
     margin-bottom: 2.5mm;
     padding: 1.5mm 3mm;
     display: grid;
