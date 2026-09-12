@@ -182,12 +182,12 @@ function bloccoNaz(n, schermo){
     + `<div class="rt-naz-voce"><span class="rt-naz-nome">CON</span>`
     + `<span class="rt-naz-desc">Centro Operativo Nazionale</span>`
     + ch(n.con.ch) + tel('TEL SO', n.con.tel)
+    + `</div><div class="rt-naz-voce"><span class="rt-naz-nome">CANALE NAZIONALE</span>`
+    + `<span class="rt-naz-desc">CMR</span>`
+    + ch(CANALE_NAZIONALE) + `<span></span>`
     + `</div><div class="rt-naz-voce"><span class="rt-naz-nome">SOCAV</span>`
     + `<span class="rt-naz-desc">Assistenza al volo</span>`
     + `<span></span>` + tel('TEL', n.socav.tel)
-    + `</div><div class="rt-naz-voce"><span class="rt-naz-nome">CANALE NAZIONALE</span>`
-    + `<span class="rt-naz-desc">Soccorso</span>`
-    + ch(CANALE_NAZIONALE) + `<span></span>`
     + `</div></div>`;
 }
 
