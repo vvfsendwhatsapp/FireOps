@@ -423,11 +423,11 @@
                             <div id="msg-prefisso-dropdown" class="combo-dropdown"></div>
                         </div>
                     </div>
-                    <div class="msg-campo" style="flex:2 1 0;">
+                    <div class="msg-campo" style="flex:3 1 0;">
                         <label for="msg-numero">Numero di telefono</label>
                         <input type="tel" id="msg-numero" placeholder="Es. 3331234567" autocomplete="off">
                     </div>
-                    <div class="msg-campo combo-campo" style="flex:1 1 0;">
+                    <div class="msg-campo combo-campo" style="flex:2 1 0;">
                         <label for="msg-lingua-input">Lingua messaggio</label>
                         <div class="combo-wrapper">
                             <input type="text" id="msg-lingua-input" class="combo-input" placeholder="Cerca lingua..."
@@ -438,7 +438,7 @@
                         </div>
                     </div>
                     <div class="msg-campo" style="flex:1 1 0;">
-                        <label for="btn-msg-pulisci-campi">Pulizia campi</label>
+                        <label for="btn-msg-pulisci-campi" style="white-space:nowrap;">Pulisci</label>
                         <button type="button" id="btn-msg-pulisci-campi" class="btn-toggle-radar"
                             title="Pulizia Campi"
                             style="width:100%; padding:10px 0; text-align:center; font-weight:bold; font-size:17px;">*</button>
@@ -446,26 +446,25 @@
                 </div>
 
                 <div class="msg-riga-campi" id="msg-riga-link-coordinate" style="margin-top:16px;">
-                    <div class="msg-campo" style="flex:1 1 0;">
-                        <label>Link invio coordinate</label>
-                        <button type="button" id="msg-btn-link-con" class="btn-toggle-radar"
-                            title="Includi il link nel messaggio"
-                            style="width:100%; padding:9px 0; font-size:13px;">Con</button>
-                    </div>
-                    <div class="msg-campo" style="flex:1 1 0;">
-                        <label style="visibility:hidden;">Senza</label>
-                        <button type="button" id="msg-btn-link-senza" class="btn-toggle-radar attivo"
-                            title="Non includere il link"
-                            style="width:100%; padding:9px 0; font-size:13px;">Senza</button>
+                    <div class="msg-campo" style="flex:2 1 0;">
+                        <label>Link invio coordinate nel messaggio</label>
+                        <div style="display:flex; gap:8px;">
+                            <button type="button" id="msg-btn-link-con" class="btn-toggle-radar"
+                                title="Includi il link nel messaggio"
+                                style="flex:1 1 0; padding:9px 0; font-size:13px;">Con</button>
+                            <button type="button" id="msg-btn-link-senza" class="btn-toggle-radar attivo"
+                                title="Non includere il link"
+                                style="flex:1 1 0; padding:9px 0; font-size:13px;">Senza</button>
+                        </div>
                         <input type="checkbox" id="msg-chk-link-coordinate" style="display:none;">
                     </div>
 
-                    <div class="msg-campo" style="flex:2 1 0;">
+                    <div class="msg-campo" style="flex:3 1 0;">
                         <label for="msg-numero-intervento">Numero intervento</label>
                         <input type="text" id="msg-numero-intervento" maxlength="6" inputmode="numeric"
                             placeholder="es. 123 → 000123" autocomplete="off" disabled style="opacity:.45;">
                     </div>
-                    <div class="msg-campo" style="flex:2 1 0;">
+                    <div class="msg-campo" style="flex:3 1 0;">
                         <label for="msg-anno-intervento">Anno intervento</label>
                         <select id="msg-anno-intervento" disabled style="opacity:.45;"></select>
                     </div>
