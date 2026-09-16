@@ -437,26 +437,34 @@
                             <div id="msg-lingua-dropdown" class="combo-dropdown"></div>
                         </div>
                     </div>
+                    <div class="msg-campo" style="flex:0 0 auto;">
+                        <label style="visibility:hidden;">Pulizia</label>
+                        <button type="button" id="btn-msg-pulisci-campi" class="btn-toggle-radar"
+                            title="Pulizia Campi"
+                            style="width:44px; padding:10px 0; text-align:center; font-weight:bold; font-size:17px;">*</button>
+                    </div>
                 </div>
 
-                <div class="msg-riga-campi" style="margin-top:16px; align-items:center;">
-                    <label style="margin:0; flex:0 0 auto; display:flex; align-items:center; gap:10px;
-                        font-size:15px; text-transform:none; color:var(--text-main); cursor:pointer;">
-                        <input type="checkbox" id="msg-chk-link-coordinate"
-                            style="width:20px; height:20px; accent-color:var(--primary-color); cursor:pointer;">
-                        Messaggio con link invio coordinate
-                    </label>
+                <div class="msg-riga-campi" id="msg-riga-link-coordinate" style="margin-top:16px;">
+                    <div class="msg-campo" style="flex:0 0 auto;">
+                        <label>Link invio coordinate nel messaggio</label>
+                        <div style="display:flex; gap:8px;">
+                            <button type="button" id="msg-btn-link-con" class="btn-toggle-radar"
+                                title="Includi il link nel messaggio">Con</button>
+                            <button type="button" id="msg-btn-link-senza" class="btn-toggle-radar attivo"
+                                title="Non includere il link">Senza</button>
+                        </div>
+                        <input type="checkbox" id="msg-chk-link-coordinate" style="display:none;">
+                    </div>
 
-                    <div id="msg-riga-link-coordinate" style="display:flex; gap:15px; flex-wrap:wrap;">
-                        <div class="msg-campo">
-                            <label for="msg-numero-intervento">Numero intervento</label>
-                            <input type="text" id="msg-numero-intervento" maxlength="6" inputmode="numeric"
-                                placeholder="es. 123 → 000123" autocomplete="off" disabled style="opacity:.45;">
-                        </div>
-                        <div class="msg-campo" style="max-width:160px;">
-                            <label for="msg-anno-intervento">Anno intervento</label>
-                            <select id="msg-anno-intervento" disabled style="opacity:.45;"></select>
-                        </div>
+                    <div class="msg-campo">
+                        <label for="msg-numero-intervento">Numero intervento</label>
+                        <input type="text" id="msg-numero-intervento" maxlength="6" inputmode="numeric"
+                            placeholder="es. 123 → 000123" autocomplete="off" disabled style="opacity:.45;">
+                    </div>
+                    <div class="msg-campo" style="max-width:160px;">
+                        <label for="msg-anno-intervento">Anno intervento</label>
+                        <select id="msg-anno-intervento" disabled style="opacity:.45;"></select>
                     </div>
                 </div>
 

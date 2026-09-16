@@ -1892,6 +1892,13 @@ salvaPaginePannelli();
     const btnWhatsappWeb = document.getElementById("btn-whatsapp-web");
     const btnWhatsappApp = document.getElementById("btn-whatsapp-app");
     const btnInviaTelegram = document.getElementById("btn-invia-telegram");
+    const btnPulisciCampiMsg = document.getElementById("btn-msg-pulisci-campi");
+
+    // Riferimenti ai combo ricercabili di prefisso/lingua, valorizzati dentro
+    // popolaSelectPrefissoMsg/popolaSelectLinguaMsg: servono qui fuori per
+    // poterli riportare al valore predefinito dal pulsante "Pulizia Campi".
+    let comboPrefissoMsg = null;
+    let comboLinguaMsg = null;
 
     const PREFISSO_PREDEFINITO = "39";  // Italia
     const LINGUA_PREDEFINITA = "it";    // Italiano
@@ -1904,6 +1911,8 @@ salvaPaginePannelli();
     const rigaLinkCoordinateEl = document.getElementById("msg-riga-link-coordinate");
     const inputNumeroIntervento = document.getElementById("msg-numero-intervento");
     const selectAnnoIntervento = document.getElementById("msg-anno-intervento");
+    const btnLinkCon = document.getElementById("msg-btn-link-con");
+    const btnLinkSenza = document.getElementById("msg-btn-link-senza");
 
     // "Com" + Provincia (letta da comandi.json, non da una tabella a mano)
     function siglaComando(comandoObj) {
@@ -1952,7 +1961,8 @@ salvaPaginePannelli();
     }
 
     function initLinkCoordinateUI() {
-        if (!chkLinkCoordinate || !rigaLinkCoordinateEl || !inputNumeroIntervento || !selectAnnoIntervento) return;
+        if (!chkLinkCoordinate || !rigaLinkCoordinateEl || !inputNumeroIntervento || !selectAnnoIntervento
+            || !btnLinkCon || !btnLinkSenza) return;
 
         const annoCorrente = new Date().getFullYear();
         selectAnnoIntervento.innerHTML = "";
@@ -1964,9 +1974,9 @@ salvaPaginePannelli();
             selectAnnoIntervento.appendChild(opt);
         });
 
-        // Abilita/disabilita numero e anno intervento in base alla checkbox,
+        // Abilita/disabilita numero e anno intervento in base allo stato "Con/Senza",
         // invece di mostrarli/nasconderli: restano sempre visibili, ma grigi
-        // e non interagibili finché "link coordinate" non è spuntato.
+        // e non interagibili quando è selezionato "Senza".
         function aggiornaAbilitazioneCampi() {
             const attivo = chkLinkCoordinate.checked;
             inputNumeroIntervento.disabled = !attivo;
@@ -1975,11 +1985,25 @@ salvaPaginePannelli();
             selectAnnoIntervento.style.opacity = attivo ? "1" : ".45";
         }
 
-        chkLinkCoordinate.addEventListener("change", () => {
+        // Pulsanti "Con"/"Senza" che si alternano: solo uno attivo alla volta.
+        // Il checkbox nascosto resta come unica fonte di verità dello stato
+        // (lo leggono rigaLinkCoordinate() e validaCampiMessaggistica()),
+        // i pulsanti lo pilotano invece di essere pilotati da lui.
+        function impostaLinkCoordinate(attivo) {
+            chkLinkCoordinate.checked = attivo;
+            btnLinkCon.classList.toggle("attivo", attivo);
+            btnLinkSenza.classList.toggle("attivo", !attivo);
+            // Ad ogni aggiornamento (in entrambe le direzioni) il numero
+            // intervento si pulisce: non deve restare un valore vecchio
+            // riferito a un intervento diverso.
+            inputNumeroIntervento.value = "";
             aggiornaAbilitazioneCampi();
             validaCampiMessaggistica();
             generaMessaggioMessaggistica();
-        });
+        }
+
+        btnLinkCon.addEventListener("click", () => impostaLinkCoordinate(true));
+        btnLinkSenza.addEventListener("click", () => impostaLinkCoordinate(false));
 
         inputNumeroIntervento.addEventListener("input", () => {
             inputNumeroIntervento.value = inputNumeroIntervento.value.replace(/\D/g, "").slice(0, 6);
@@ -1989,9 +2013,23 @@ salvaPaginePannelli();
 
         selectAnnoIntervento.addEventListener("change", generaMessaggioMessaggistica);
 
-        aggiornaAbilitazioneCampi(); // stato iniziale coerente con l'HTML (checkbox spenta)
+        aggiornaAbilitazioneCampi(); // stato iniziale coerente con l'HTML ("Senza" attivo)
     }
     initLinkCoordinateUI();
+
+    // Pulsante "*" — Pulizia Campi: riporta prefisso, numero e lingua ai
+    // valori di partenza. Non tocca la sezione "link invio coordinate"
+    // (Con/Senza, numero e anno intervento), che si pulisce da sé a ogni
+    // cambio di stato.
+    if (btnPulisciCampiMsg) {
+        btnPulisciCampiMsg.addEventListener("click", () => {
+            if (comboPrefissoMsg) comboPrefissoMsg.impostaValore(PREFISSO_PREDEFINITO);
+            if (inputNumeroMsg) inputNumeroMsg.value = "";
+            if (comboLinguaMsg) comboLinguaMsg.impostaValore(LINGUA_PREDEFINITA);
+            validaCampiMessaggistica();
+            generaMessaggioMessaggistica();
+        });
+    }
 
     // ==========================================================
     // PAGINA MODULI CMR: ricerca modulo per Descrizione + riepilogo dati
@@ -2011,7 +2049,7 @@ salvaPaginePannelli();
     function popolaSelectPrefissoMsg(listaPrefissi) {
         if (!inputPrefissoMsg) return;
 
-        const comboPrefisso = creaComboRicercabile({
+        comboPrefissoMsg = creaComboRicercabile({
             input: inputPrefissoMsg,
             hidden: hiddenPrefissoMsg,
             dropdown: dropdownPrefissoMsg,
@@ -2022,7 +2060,7 @@ salvaPaginePannelli();
         });
 
         if (listaPrefissi.some(p => p.Valore === PREFISSO_PREDEFINITO)) {
-            comboPrefisso.impostaValore(PREFISSO_PREDEFINITO);
+            comboPrefissoMsg.impostaValore(PREFISSO_PREDEFINITO);
         }
 
         validaCampiMessaggistica();
@@ -2033,7 +2071,7 @@ salvaPaginePannelli();
     function popolaSelectLinguaMsg(listaLingue) {
         if (!inputLinguaMsg) return;
 
-        const comboLingua = creaComboRicercabile({
+        comboLinguaMsg = creaComboRicercabile({
             input: inputLinguaMsg,
             hidden: hiddenLinguaMsg,
             dropdown: dropdownLinguaMsg,
@@ -2044,7 +2082,7 @@ salvaPaginePannelli();
         });
 
         if (listaLingue.some(l => l.code === LINGUA_PREDEFINITA)) {
-            comboLingua.impostaValore(LINGUA_PREDEFINITA);
+            comboLinguaMsg.impostaValore(LINGUA_PREDEFINITA);
         }
 
         // Alla prima generazione disponibile, genera subito il messaggio
