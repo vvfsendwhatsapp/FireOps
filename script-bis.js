@@ -3323,7 +3323,7 @@ Koordináták küldéséhez:
         const display = document.getElementById("display-contatore-accessi");
         if (!display) return;
 
-        fetch("https://abacus.jasoncameron.dev/hit/fireops-vvf-pel/accessi-v2")
+        fetch("https://abacus.jasoncameron.dev/hit/fireops-vvf-pel/accessi")
             .then(r => r.json())
             .then(dati => {
                 const valore = Number(dati.value);
