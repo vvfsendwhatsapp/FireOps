@@ -447,15 +447,15 @@
                         Messaggio con link invio coordinate
                     </label>
 
-                    <div id="msg-riga-link-coordinate" style="display:none; gap:15px; flex-wrap:wrap;">
+                    <div id="msg-riga-link-coordinate" style="display:flex; gap:15px; flex-wrap:wrap;">
                         <div class="msg-campo">
                             <label for="msg-numero-intervento">Numero intervento</label>
                             <input type="text" id="msg-numero-intervento" maxlength="6" inputmode="numeric"
-                                placeholder="es. 123" autocomplete="off">
+                                placeholder="es. 123 → 000123" autocomplete="off" disabled style="opacity:.45;">
                         </div>
                         <div class="msg-campo" style="max-width:160px;">
                             <label for="msg-anno-intervento">Anno intervento</label>
-                            <select id="msg-anno-intervento"></select>
+                            <select id="msg-anno-intervento" disabled style="opacity:.45;"></select>
                         </div>
                     </div>
                 </div>

@@ -1964,11 +1964,19 @@ salvaPaginePannelli();
             selectAnnoIntervento.appendChild(opt);
         });
 
+        // Abilita/disabilita numero e anno intervento in base alla checkbox,
+        // invece di mostrarli/nasconderli: restano sempre visibili, ma grigi
+        // e non interagibili finché "link coordinate" non è spuntato.
+        function aggiornaAbilitazioneCampi() {
+            const attivo = chkLinkCoordinate.checked;
+            inputNumeroIntervento.disabled = !attivo;
+            selectAnnoIntervento.disabled = !attivo;
+            inputNumeroIntervento.style.opacity = attivo ? "1" : ".45";
+            selectAnnoIntervento.style.opacity = attivo ? "1" : ".45";
+        }
+
         chkLinkCoordinate.addEventListener("change", () => {
-            // "contents" e non "flex": così i due campi diventano figli diretti
-            // della riga flessibile esterna e si allineano accanto alla checkbox,
-            // invece di stare su un blocco a parte sotto di essa.
-            rigaLinkCoordinateEl.style.display = chkLinkCoordinate.checked ? "contents" : "none";
+            aggiornaAbilitazioneCampi();
             validaCampiMessaggistica();
             generaMessaggioMessaggistica();
         });
@@ -1980,6 +1988,8 @@ salvaPaginePannelli();
         });
 
         selectAnnoIntervento.addEventListener("change", generaMessaggioMessaggistica);
+
+        aggiornaAbilitazioneCampi(); // stato iniziale coerente con l'HTML (checkbox spenta)
     }
     initLinkCoordinateUI();
 
