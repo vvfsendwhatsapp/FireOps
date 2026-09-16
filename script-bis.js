@@ -1965,7 +1965,10 @@ salvaPaginePannelli();
         });
 
         chkLinkCoordinate.addEventListener("change", () => {
-            rigaLinkCoordinateEl.style.display = chkLinkCoordinate.checked ? "flex" : "none";
+            // "contents" e non "flex": così i due campi diventano figli diretti
+            // della riga flessibile esterna e si allineano accanto alla checkbox,
+            // invece di stare su un blocco a parte sotto di essa.
+            rigaLinkCoordinateEl.style.display = chkLinkCoordinate.checked ? "contents" : "none";
             validaCampiMessaggistica();
             generaMessaggioMessaggistica();
         });

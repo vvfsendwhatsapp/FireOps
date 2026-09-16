@@ -439,20 +439,24 @@
                     </div>
                 </div>
 
-                <label class="rt-check" style="margin-top:12px;">
-                    <input type="checkbox" id="msg-chk-link-coordinate">
-                    Messaggio con link invio coordinate
-                </label>
+                <div class="msg-riga-campi" style="margin-top:16px; align-items:center;">
+                    <label style="margin:0; flex:0 0 auto; display:flex; align-items:center; gap:10px;
+                        font-size:15px; text-transform:none; color:var(--text-main); cursor:pointer;">
+                        <input type="checkbox" id="msg-chk-link-coordinate"
+                            style="width:20px; height:20px; accent-color:var(--primary-color); cursor:pointer;">
+                        Messaggio con link invio coordinate
+                    </label>
 
-                <div class="msg-riga-campi" id="msg-riga-link-coordinate" style="display:none; margin-top:8px;">
-                    <div class="msg-campo">
-                        <label for="msg-numero-intervento">Numero intervento</label>
-                        <input type="text" id="msg-numero-intervento" maxlength="6" inputmode="numeric"
-                            placeholder="es. 123 → 000123" autocomplete="off">
-                    </div>
-                    <div class="msg-campo" style="max-width:160px;">
-                        <label for="msg-anno-intervento">Anno intervento</label>
-                        <select id="msg-anno-intervento"></select>
+                    <div id="msg-riga-link-coordinate" style="display:none; gap:15px; flex-wrap:wrap;">
+                        <div class="msg-campo">
+                            <label for="msg-numero-intervento">Numero intervento</label>
+                            <input type="text" id="msg-numero-intervento" maxlength="6" inputmode="numeric"
+                                placeholder="es. 123 → 000123" autocomplete="off">
+                        </div>
+                        <div class="msg-campo" style="max-width:160px;">
+                            <label for="msg-anno-intervento">Anno intervento</label>
+                            <select id="msg-anno-intervento"></select>
+                        </div>
                     </div>
                 </div>
 
