@@ -1897,6 +1897,90 @@ salvaPaginePannelli();
     const LINGUA_PREDEFINITA = "it";    // Italiano
 
     // ==========================================================
+    // LINK LOCATOR: sigla comando, ID ricerca, URL completo
+    // (per la checkbox "Messaggio con link invio coordinate")
+    // ==========================================================
+    const chkLinkCoordinate = document.getElementById("msg-chk-link-coordinate");
+    const rigaLinkCoordinateEl = document.getElementById("msg-riga-link-coordinate");
+    const inputNumeroIntervento = document.getElementById("msg-numero-intervento");
+    const selectAnnoIntervento = document.getElementById("msg-anno-intervento");
+
+    // "Com" + Provincia (letta da comandi.json, non da una tabella a mano)
+    function siglaComando(comandoObj) {
+        if (!comandoObj || !comandoObj.Provincia) return "";
+        return "Com" + String(comandoObj.Provincia).trim().toUpperCase();
+    }
+
+    // Prime 3 lettere della prima parola del nome regione + "DR"
+    // (Emilia-Romagna -> EMIDR, Veneto e TAA -> VENDR, Friuli Venezia Giulia -> FRIDR)
+    function siglaDirezione(nomeDirezione) {
+        if (!nomeDirezione) return "";
+        const primaParola = String(nomeDirezione).trim().split(/[\s'-]/)[0];
+        return primaParola.slice(0, 3).toUpperCase() + "DR";
+    }
+
+    function costruisciIdRicerca(numeroIntervento, annoIntervento, sigla) {
+        const numeroPad = String(numeroIntervento).replace(/\D/g, "").padStart(6, "0").slice(-6);
+        return `${numeroPad}_${annoIntervento}_${sigla}`;
+    }
+
+    // TODO: conferma il path reale di locator.html sul repo pubblicato.
+    const URL_BASE_LOCATOR = "/FireOps/html/locator.html";
+
+    function generaLinkLocator(comandoObj, numeroIntervento, annoIntervento, lingua) {
+        const sigla = siglaComando(comandoObj);
+        const id = costruisciIdRicerca(numeroIntervento, annoIntervento, sigla);
+        const parametri = new URLSearchParams({
+            id,
+            comando: comandoObj.Comando || "",
+            sede: comandoObj.Comune || comandoObj.Comando || "",
+            lingua: lingua || "it"
+        });
+        return `${URL_BASE_LOCATOR}?${parametri.toString()}`;
+    }
+
+    // Riga da accodare al corpo del messaggio. Stringa vuota se la checkbox
+    // non è spuntata o mancano dati.
+    function rigaLinkCoordinate(comandoObj, lingua) {
+        if (!chkLinkCoordinate || !chkLinkCoordinate.checked) return "";
+        if (!inputNumeroIntervento || !inputNumeroIntervento.value.trim()) return "";
+        if (!comandoObj) return "";
+
+        const anno = selectAnnoIntervento ? selectAnnoIntervento.value : new Date().getFullYear();
+        const link = generaLinkLocator(comandoObj, inputNumeroIntervento.value, anno, lingua);
+        return `\n\n📍 Invia la tua posizione: ${link}`;
+    }
+
+    function initLinkCoordinateUI() {
+        if (!chkLinkCoordinate || !rigaLinkCoordinateEl || !inputNumeroIntervento || !selectAnnoIntervento) return;
+
+        const annoCorrente = new Date().getFullYear();
+        selectAnnoIntervento.innerHTML = "";
+        [annoCorrente - 1, annoCorrente, annoCorrente + 1].forEach(anno => {
+            const opt = document.createElement("option");
+            opt.value = anno;
+            opt.textContent = anno;
+            if (anno === annoCorrente) opt.selected = true;
+            selectAnnoIntervento.appendChild(opt);
+        });
+
+        chkLinkCoordinate.addEventListener("change", () => {
+            rigaLinkCoordinateEl.style.display = chkLinkCoordinate.checked ? "flex" : "none";
+            validaCampiMessaggistica();
+            generaMessaggioMessaggistica();
+        });
+
+        inputNumeroIntervento.addEventListener("input", () => {
+            inputNumeroIntervento.value = inputNumeroIntervento.value.replace(/\D/g, "").slice(0, 6);
+            validaCampiMessaggistica();
+            generaMessaggioMessaggistica();
+        });
+
+        selectAnnoIntervento.addEventListener("change", generaMessaggioMessaggistica);
+    }
+    initLinkCoordinateUI();
+
+    // ==========================================================
     // PAGINA MODULI CMR: ricerca modulo per Descrizione + riepilogo dati
     // ==========================================================
     const inputModuloCMR = document.getElementById("cmr-modulo-input");
@@ -2205,23 +2289,29 @@ window.renderIcscSelezionata = renderIcscSelezionata;
 
     // ==========================================================
     // VALIDAZIONE CAMPI MESSAGGISTICA: evidenzia i campi mancanti
-    // (prefisso, numero, lingua) e abilita/disabilita i pulsanti di invio
+    // (prefisso, numero, lingua, e numero intervento se il link è richiesto)
+    // ed abilita/disabilita i pulsanti di invio
     // ==========================================================
     function validaCampiMessaggistica() {
         const prefissoOk = !!(hiddenPrefissoMsg && hiddenPrefissoMsg.value);
         const numeroOk = !!(inputNumeroMsg && inputNumeroMsg.value.trim());
         const linguaOk = !!(hiddenLinguaMsg && hiddenLinguaMsg.value);
 
+        // Numero intervento obbligatorio solo se "link coordinate" è spuntato
+        const linkRichiesto = !!(chkLinkCoordinate && chkLinkCoordinate.checked);
+        const numeroInterventoOk = !linkRichiesto || !!(inputNumeroIntervento && inputNumeroIntervento.value.trim());
+
         if (inputPrefissoMsg) inputPrefissoMsg.classList.toggle("campo-mancante", !prefissoOk);
         if (inputNumeroMsg) inputNumeroMsg.classList.toggle("campo-mancante", !numeroOk);
         if (inputLinguaMsg) inputLinguaMsg.classList.toggle("campo-mancante", !linguaOk);
+        if (inputNumeroIntervento) inputNumeroIntervento.classList.toggle("campo-mancante", linkRichiesto && !numeroInterventoOk);
 
-        const tuttiCompilati = prefissoOk && numeroOk && linguaOk;
+        const tuttiCompilati = prefissoOk && numeroOk && linguaOk && numeroInterventoOk;
         [btnWhatsappWeb, btnWhatsappApp, btnInviaTelegram].forEach(btn => {
             if (btn) btn.disabled = !tuttiCompilati;
         });
 
-        return { prefissoOk, numeroOk, linguaOk, tuttiCompilati };
+        return { prefissoOk, numeroOk, linguaOk, numeroInterventoOk, tuttiCompilati };
     }
     window.validaCampiMessaggistica = validaCampiMessaggistica;
 
@@ -2849,7 +2939,7 @@ För att skicka koordinater:
 4. Vänta några ögonblick för att öka noggrannheten ⏰
 5. Klicka på "Nuvarande plats" 🎯
 
-*Var säker på den plats du delade med oss ​​och håll din telefonlinje ledig.*`,
+*Var säker på den plats du delade med oss och håll din telefonlinje ledig.*`,
 
         de: `🚒 *Feuerwehr {{COMANDO}}* 🚒
 
@@ -2956,9 +3046,10 @@ Koordináták küldéséhez:
         const numeroEmergenzaFormattato = String(valoreEmergenza).split("").join(" ");
 
         const corpo = costruisciCorpoMessaggio(codiceLingua, comandoAttivo.Comando, numeroEmergenzaFormattato);
+        const linkCoordinate = rigaLinkCoordinate(comandoAttivo, codiceLingua);
         const pieDiPagina = costruisciPieDiPaginaMessaggio();
 
-        textareaMsg.value = `${corpo}\n${pieDiPagina}`;
+        textareaMsg.value = `${corpo}${linkCoordinate}\n${pieDiPagina}`;
     }
     window.generaMessaggioMessaggistica = generaMessaggioMessaggistica;
 

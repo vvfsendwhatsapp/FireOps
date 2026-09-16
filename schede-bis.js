@@ -1,3 +1,5 @@
+
+Schede bis · JS
 // ==========================================================
 // FireOps VVF — ELENCO, ORDINE E STATO DELLE SCHEDE
 //
@@ -15,7 +17,7 @@
 // Va caricato PRIMA di script.js: è solo dati, non tocca il DOM.
 // ==========================================================
 window.FireOpsSchede = {
-
+ 
     // ORDINE DELL'ELENCO A COMPARSA — spostare le righe per riordinare.
     // lavori: true  →  la voce compare come "🚧 Nome scheda", ma resta
     // selezionabile. Quando la sezione è pronta, si toglie la proprietà.
@@ -39,14 +41,14 @@ window.FireOpsSchede = {
         { id: "terremoti", label: "Terremoti INGV" },
         { id: "turnario", label: "Turnario" },
     ],
-
+ 
     // Schede aperte all'apertura di una sessione nuova. Dentro la stessa
     // sessione vince quello che ha scelto l'operatore (sessionStorage).
     predefinite: {
         sinistra: "homepage",
         destra: "messaggistica"
     },
-
+ 
     // Pagina di servizio con cui riempire un pannello rimasto senza
     // contenuto (uscita da SITAC/Convertitore, scambio impossibile).
     // Tenuta distinta dalle predefinite di proposito: chiudendo la SITAC
@@ -57,3 +59,4 @@ window.FireOpsSchede = {
         destra: "mappa-meteo"
     }
 };
+ 
