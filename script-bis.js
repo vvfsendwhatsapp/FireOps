@@ -1986,29 +1986,14 @@ salvaPaginePannelli();
             selectAnnoIntervento.style.opacity = attivo ? "1" : ".45";
         }
 
-        // Bordo rosso/verde sul pulsante attualmente attivo (Con o Senza):
-        // rosso finché mancano dati obbligatori per quello stato, verde
-        // quando è tutto a posto. "Senza" non richiede nulla, quindi risulta
-        // sempre verde appena selezionato. Il pulsante non attivo torna al
-        // bordo neutro di sempre.
-        function aggiornaColoreValidazioneLink() {
-            const attivo = chkLinkCoordinate.checked;
-            const completo = attivo ? !!(inputNumeroIntervento && inputNumeroIntervento.value.trim()) : true;
-            const colore = completo ? "#4cd94c" : "var(--danger-color)";
-
-            const bottoneAttivo = attivo ? btnLinkCon : btnLinkSenza;
-            const bottoneInattivo = attivo ? btnLinkSenza : btnLinkCon;
-
-            bottoneAttivo.style.borderColor = colore;
-            bottoneAttivo.style.boxShadow = "0 0 0 1px " + colore;
-            bottoneInattivo.style.borderColor = "";
-            bottoneInattivo.style.boxShadow = "";
-        }
-
         // Pulsanti "Con"/"Senza" che si alternano: solo uno attivo alla volta.
         // Il checkbox nascosto resta come unica fonte di verità dello stato
         // (lo leggono rigaLinkCoordinate() e validaCampiMessaggistica()),
         // i pulsanti lo pilotano invece di essere pilotati da lui.
+        // Il colore rosso/verde del pulsante attivo lo aggiorna
+        // validaCampiMessaggistica() (dipende anche da prefisso/numero/
+        // lingua, non solo dal numero intervento), quindi qui basta
+        // richiamarla: non serve più una funzione di colore separata.
         function impostaLinkCoordinate(attivo) {
             chkLinkCoordinate.checked = attivo;
             btnLinkCon.classList.toggle("attivo", attivo);
@@ -2018,7 +2003,6 @@ salvaPaginePannelli();
             // riferito a un intervento diverso.
             inputNumeroIntervento.value = "";
             aggiornaAbilitazioneCampi();
-            aggiornaColoreValidazioneLink();
             validaCampiMessaggistica();
             generaMessaggioMessaggistica();
         }
@@ -2028,7 +2012,6 @@ salvaPaginePannelli();
 
         inputNumeroIntervento.addEventListener("input", () => {
             inputNumeroIntervento.value = inputNumeroIntervento.value.replace(/\D/g, "").slice(0, 6);
-            aggiornaColoreValidazioneLink();
             validaCampiMessaggistica();
             generaMessaggioMessaggistica();
         });
@@ -2036,7 +2019,7 @@ salvaPaginePannelli();
         selectAnnoIntervento.addEventListener("change", generaMessaggioMessaggistica);
 
         aggiornaAbilitazioneCampi(); // stato iniziale coerente con l'HTML ("Senza" attivo)
-        aggiornaColoreValidazioneLink();
+        validaCampiMessaggistica(); // colora Con/Senza fin da subito, coerente con gli altri campi
     }
     initLinkCoordinateUI();
 
@@ -2366,6 +2349,40 @@ window.renderIcscSelezionata = renderIcscSelezionata;
     // (prefisso, numero, lingua, e numero intervento se il link è richiesto)
     // ed abilita/disabilita i pulsanti di invio
     // ==========================================================
+    // Bordo verde quando il campo è compilato, rosso (già gestito da
+    // .campo-mancante, con !important) quando manca. Stesso linguaggio
+    // visivo dei pulsanti Con/Senza.
+    function aggiornaColoreCampo(el, ok) {
+        if (!el) return;
+        if (ok) {
+            el.style.borderColor = "#4cd94c";
+            el.style.boxShadow = "0 0 0 1px #4cd94c";
+        } else {
+            el.style.borderColor = "";
+            el.style.boxShadow = "";
+        }
+    }
+
+    // Bordo rosso/verde sul pulsante Con/Senza attualmente attivo: verde
+    // solo se OGNI campo obbligatorio per quello stato è a posto — prefisso,
+    // numero, lingua sempre; numero intervento in più se "Con" è attivo.
+    // "tuttiCompilati" (calcolato da validaCampiMessaggistica) è già
+    // esattamente questa condizione: con "Senza" attivo numeroInterventoOk
+    // vale sempre true, quindi lì basta prefisso+numero+lingua.
+    function aggiornaColoreValidazioneLink(tuttiCompilati) {
+        if (!chkLinkCoordinate || !btnLinkCon || !btnLinkSenza) return;
+        const attivo = chkLinkCoordinate.checked;
+        const colore = tuttiCompilati ? "#4cd94c" : "var(--danger-color)";
+
+        const bottoneAttivo = attivo ? btnLinkCon : btnLinkSenza;
+        const bottoneInattivo = attivo ? btnLinkSenza : btnLinkCon;
+
+        bottoneAttivo.style.borderColor = colore;
+        bottoneAttivo.style.boxShadow = "0 0 0 1px " + colore;
+        bottoneInattivo.style.borderColor = "";
+        bottoneInattivo.style.boxShadow = "";
+    }
+
     function validaCampiMessaggistica() {
         const prefissoOk = !!(hiddenPrefissoMsg && hiddenPrefissoMsg.value);
         const numeroOk = !!(inputNumeroMsg && inputNumeroMsg.value.trim());
@@ -2379,6 +2396,10 @@ window.renderIcscSelezionata = renderIcscSelezionata;
         if (inputNumeroMsg) inputNumeroMsg.classList.toggle("campo-mancante", !numeroOk);
         if (inputLinguaMsg) inputLinguaMsg.classList.toggle("campo-mancante", !linguaOk);
         if (inputNumeroIntervento) inputNumeroIntervento.classList.toggle("campo-mancante", linkRichiesto && !numeroInterventoOk);
+
+        aggiornaColoreCampo(inputPrefissoMsg, prefissoOk);
+        aggiornaColoreCampo(inputNumeroMsg, numeroOk);
+        aggiornaColoreCampo(inputLinguaMsg, linguaOk);
 
         const tuttiCompilati = prefissoOk && numeroOk && linguaOk && numeroInterventoOk;
         [btnWhatsappWeb, btnWhatsappApp, btnInviaTelegram].forEach(btn => {
@@ -3202,7 +3223,7 @@ Koordináták küldéséhez:
     // distribuita per locator.html, il doPost() lato Apps Script deve
     // instradare in base al campo "foglio" del payload — vedi il codice di
     // esempio nella risposta.
-    const WEBAPP_URL_ID_SEARCH = "https://script.google.com/macros/s/AKfycbzWHjngC1SkegRMlWudngc9dXfFYyq8ynQfuTSJsuXiYiuZGTrgjx7kPhmnEIXT4EZH/exec";
+    const WEBAPP_URL_ID_SEARCH = "INCOLLA_QUI_URL_APPS_SCRIPT_ID_SEARCH";
 
     // Registra su Google Sheet ogni invio di messaggio, qualunque sia il
     // canale scelto. Non blocca né condiziona l'invio vero e proprio: se la
