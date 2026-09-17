@@ -3041,30 +3041,56 @@ Koordináták küldéséhez:
 *Maradjon biztonságban, a velünk megosztott helyen, és tartsa szabadon a telefonvonalát.*`
     };
 
-    // Blocco istruzioni "manuali" in italiano, quello che c'è già dentro
-    // TRADUZIONI_MESSAGGIO.it: quando il link è presente si sostituisce con
-    // la versione breve "clicca sul link". Tenuto qui come stringa a sé (non
-    // dentro un replace con caratteri speciali/regex) per un confronto
-    // esatto e sicuro.
-    const ISTRUZIONI_MANUALI_IT =
-        'Per l\'invio delle coordinate:\n' +
-        '1. Clicchi sulla "graffetta" (Android) 📎 o sul "più" (Apple) ➕\n' +
-        '2. Clicchi su "Posizione" ⛳\n' +
-        '3. Se necessario segua le indicazioni del dispositivo per consentire a WhatsApp di accedere alla posizione 🆗️\n' +
-        '4. Attenda qualche istante per aumentare la precisione ⏰\n' +
-        '5. Clicchi su "Posizione attuale" 🎯';
+    // Istruzioni brevi "clicca sul link" tradotte in tutte le lingue del
+    // dizionario messaggi. Non serve conoscere il testo manuale originale
+    // di ciascuna lingua per sostituirlo: costruisciCorpoMessaggio individua
+    // il blocco istruzioni per STRUTTURA (fra le bandiere UE/IT e la frase
+    // finale in grassetto), non per confronto testuale — quindi funziona
+    // identicamente per tutte le 27 lingue, comprese quelle con formattazione
+    // diversa (righe vuote extra in francese/arabo, virgolette diverse ecc.).
+    const ISTRUZIONI_LINK = {
+        it: 'Per l\'invio delle coordinate:\n1. Clicchi sul link 🔗\n2. Consenti l\'accesso alla posizione se richiesto ✅',
+        en: 'To send coordinates:\n1. Click on the link 🔗\n2. Allow location access if prompted ✅',
+        es: 'Para enviar coordenadas:\n1. Haga clic en el enlace 🔗\n2. Permita el acceso a la ubicación si se solicita ✅',
+        fr: 'Pour envoyer vos coordonnées :\n1. Cliquez sur le lien 🔗\n2. Autorisez l\'accès à la position si demandé ✅',
+        sq: 'Për të dërguar koordinatat:\n1. Klikoni mbi lidhjen 🔗\n2. Lejoni qasjen në vendndodhje nëse kërkohet ✅',
+        ar: 'لإرسال الإحداثيات:\n١. انقر على الرابط 🔗\n٢. اسمح بالوصول إلى الموقع إذا طُلب ذلك ✅',
+        bg: 'За да изпратите координати:\n1. Кликнете върху връзката 🔗\n2. Разрешете достъп до местоположението, ако бъдете попитани ✅',
+        cs: 'Odeslání souřadnic:\n1. Klikněte na odkaz 🔗\n2. Povolte přístup k poloze, pokud budete vyzváni ✅',
+        "zh-CN": '发 送 坐 标：\n1. 点 击 链 接 🔗\n2. 如 有 提 示，请 允 许 访 问 位 置 ✅',
+        hr: 'Za slanje koordinata:\n1. Kliknite na poveznicu 🔗\n2. Dopustite pristup lokaciji ako se to zatraži ✅',
+        da: 'Sådan sender du koordinater:\n1. Klik på linket 🔗\n2. Tillad adgang til placering, hvis du bliver bedt om det ✅',
+        et: 'Koordinaatide saatmiseks:\n1. Klõpsake lingil 🔗\n2. Lubage asukohale juurdepääs, kui seda küsitakse ✅',
+        fi: 'Lähetä koordinaatit seuraavasti:\n1. Napsauta linkkiä 🔗\n2. Salli sijainnin käyttö, jos sitä pyydetään ✅',
+        el: 'Για να στείλετε συντεταγμένες:\n1. Κάντε κλικ στον σύνδεσμο 🔗\n2. Επιτρέψτε την πρόσβαση στην τοποθεσία εάν σας ζητηθεί ✅',
+        ga: 'Chun comhordanáidí a sheoladh:\n1. Cliceáil ar an nasc 🔗\n2. Ceadaigh rochtain ar an suíomh má iarrtar é ✅',
+        lv: 'Lai nosūtītu koordinātas:\n1. Noklikšķiniet uz saites 🔗\n2. Atļaujiet piekļuvi atrašanās vietai, ja tas tiek pieprasīts ✅',
+        lt: 'Norėdami išsiųsti koordinates:\n1. Spustelėkite nuorodą 🔗\n2. Leiskite pasiekti buvimo vietą, jei bus paprašyta ✅',
+        mt: 'Biex tibgħat koordinati:\n1. Ikklikkja fuq il-link 🔗\n2. Ippermetti l-aċċess għal-lokazzjoni jekk mitlub ✅',
+        nl: 'Om coördinaten te verzenden:\n1. Klik op de link 🔗\n2. Sta toegang tot locatie toe indien gevraagd ✅',
+        pl: 'Aby wysłać współrzędne:\n1. Kliknij link 🔗\n2. Zezwól na dostęp do lokalizacji, jeśli zostaniesz o to poproszony ✅',
+        pt: 'Para enviar as coordenadas:\n1. Clique no link 🔗\n2. Permita o acesso à localização, se solicitado ✅',
+        ro: 'Pentru a trimite coordonate:\n1. Faceți clic pe link 🔗\n2. Permiteți accesul la locație dacă vi se solicită ✅',
+        ru: 'Чтобы отправить координаты:\n1. Нажмите на ссылку 🔗\n2. Разрешите доступ к местоположению, если будет предложено ✅',
+        sk: 'Ak chcete odoslať súradnice:\n1. Kliknite na odkaz 🔗\n2. Povoľte prístup k polohe, ak sa zobrazí výzva ✅',
+        sl: 'Za pošiljanje koordinat:\n1. Kliknite na povezavo 🔗\n2. Če boste pozvani, dovolite dostop do lokacije ✅',
+        sv: 'För att skicka koordinater:\n1. Klicka på länken 🔗\n2. Tillåt platsåtkomst om du blir tillfrågad ✅',
+        de: 'So senden Sie Ihre Koordinaten:\n1. Klicken Sie auf den Link 🔗\n2. Erlauben Sie den Zugriff auf den Standort, falls Sie dazu aufgefordert werden ✅',
+        hu: 'Koordináták küldéséhez:\n1. Kattintson a linkre 🔗\n2. Engedélyezze a helyhozzáférést, ha erre kéri a rendszer ✅'
+    };
 
-    const ISTRUZIONI_LINK_IT =
-        'Per l\'invio delle coordinate:\n' +
-        '1. Clicchi sul link 🔗\n' +
-        '2. Consenti l\'accesso alla posizione se richiesto ✅';
+    // Individua il blocco "bandiere → istruzioni manuali → frase di chiusura"
+    // per struttura: inizia subito dopo 🇪🇺🇮🇹, finisce appena prima della
+    // prima riga in grassetto (quella che apre con "*"). Funziona uguale in
+    // ogni lingua perché quella struttura a tre parti è identica ovunque,
+    // anche se il testo delle istruzioni cambia da lingua a lingua.
+    const BLOCCO_ISTRUZIONI_RE = /🇪🇺🇮🇹\n\n[\s\S]*?\n\n(?=\*)/;
 
     // Costruisce il corpo del messaggio sostituendo Comando e numero emergenza,
     // ricadendo sull'italiano se la lingua scelta non ha ancora una traduzione.
     // "link" è l'URL del locator (stringa vuota se non richiesto): quando
-    // presente viene inserito subito dopo le bandiere UE/IT — l'unica riga
-    // identica in ogni lingua (non tradotta), quindi un ancoraggio valido
-    // per qualsiasi modello senza dover toccare tutte le traduzioni.
+    // presente, sostituisce in un colpo solo bandiere+istruzioni manuali con
+    // bandiere+link+istruzioni brevi, nella stessa lingua del messaggio.
     function costruisciCorpoMessaggio(codiceLingua, nomeComando, numeroEmergenzaFormattato, link) {
         const modello = TRADUZIONI_MESSAGGIO[codiceLingua] || TRADUZIONI_MESSAGGIO.it;
         let testo = modello
@@ -3072,14 +3098,11 @@ Koordináták küldéséhez:
             .split("{{NUM}}").join(numeroEmergenzaFormattato);
 
         if (link) {
-            testo = testo.replace("🇪🇺🇮🇹", "🇪🇺🇮🇹\n\n" + link);
-
-            // Le istruzioni brevi "clicca sul link" esistono per ora solo in
-            // italiano: nelle altre lingue restano quelle manuali originali
-            // (il link compare comunque sopra, quindi resta comunque utile).
-            if (codiceLingua === "it" && testo.includes(ISTRUZIONI_MANUALI_IT)) {
-                testo = testo.replace(ISTRUZIONI_MANUALI_IT, ISTRUZIONI_LINK_IT);
-            }
+            const istruzioniLink = ISTRUZIONI_LINK[codiceLingua] || ISTRUZIONI_LINK.it;
+            testo = testo.replace(
+                BLOCCO_ISTRUZIONI_RE,
+                "🇪🇺🇮🇹\n\n" + link + "\n\n" + istruzioniLink + "\n\n"
+            );
         }
 
         return testo;
