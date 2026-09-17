@@ -3049,7 +3049,7 @@ Koordináták küldéséhez:
     // identicamente per tutte le 27 lingue, comprese quelle con formattazione
     // diversa (righe vuote extra in francese/arabo, virgolette diverse ecc.).
     const ISTRUZIONI_LINK = {
-        it: 'Per l\'invio delle coordinate:\n1. Clicchi sul link 🔗\n2. Consenti l\'accesso alla posizione se richiesto ✅',
+        it: 'Per l\'invio delle coordinate:\n1. Clicchi sul link 🔗\n2. Autorizzi l\'accesso alla posizione se richiesto ✅',
         en: 'To send coordinates:\n1. Click on the link 🔗\n2. Allow location access if prompted ✅',
         es: 'Para enviar coordenadas:\n1. Haga clic en el enlace 🔗\n2. Permita el acceso a la ubicación si se solicita ✅',
         fr: 'Pour envoyer vos coordonnées :\n1. Cliquez sur le lien 🔗\n2. Autorisez l\'accès à la position si demandé ✅',
