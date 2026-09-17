@@ -8,7 +8,7 @@
 
 
 
-const FIREOPS_VERSIONE = "202609161335";
+const FIREOPS_VERSIONE = "202609170925";
 window.FIREOPS_VERSIONE = FIREOPS_VERSIONE;
 
 /* Il foglio di stile passa da qui: un solo numero da aggiornare, e viene
