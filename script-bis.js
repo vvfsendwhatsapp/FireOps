@@ -1986,6 +1986,25 @@ salvaPaginePannelli();
             selectAnnoIntervento.style.opacity = attivo ? "1" : ".45";
         }
 
+        // Bordo rosso/verde sul pulsante attualmente attivo (Con o Senza):
+        // rosso finché mancano dati obbligatori per quello stato, verde
+        // quando è tutto a posto. "Senza" non richiede nulla, quindi risulta
+        // sempre verde appena selezionato. Il pulsante non attivo torna al
+        // bordo neutro di sempre.
+        function aggiornaColoreValidazioneLink() {
+            const attivo = chkLinkCoordinate.checked;
+            const completo = attivo ? !!(inputNumeroIntervento && inputNumeroIntervento.value.trim()) : true;
+            const colore = completo ? "#4cd94c" : "var(--danger-color)";
+
+            const bottoneAttivo = attivo ? btnLinkCon : btnLinkSenza;
+            const bottoneInattivo = attivo ? btnLinkSenza : btnLinkCon;
+
+            bottoneAttivo.style.borderColor = colore;
+            bottoneAttivo.style.boxShadow = "0 0 0 1px " + colore;
+            bottoneInattivo.style.borderColor = "";
+            bottoneInattivo.style.boxShadow = "";
+        }
+
         // Pulsanti "Con"/"Senza" che si alternano: solo uno attivo alla volta.
         // Il checkbox nascosto resta come unica fonte di verità dello stato
         // (lo leggono rigaLinkCoordinate() e validaCampiMessaggistica()),
@@ -1999,6 +2018,7 @@ salvaPaginePannelli();
             // riferito a un intervento diverso.
             inputNumeroIntervento.value = "";
             aggiornaAbilitazioneCampi();
+            aggiornaColoreValidazioneLink();
             validaCampiMessaggistica();
             generaMessaggioMessaggistica();
         }
@@ -2008,6 +2028,7 @@ salvaPaginePannelli();
 
         inputNumeroIntervento.addEventListener("input", () => {
             inputNumeroIntervento.value = inputNumeroIntervento.value.replace(/\D/g, "").slice(0, 6);
+            aggiornaColoreValidazioneLink();
             validaCampiMessaggistica();
             generaMessaggioMessaggistica();
         });
@@ -2015,6 +2036,7 @@ salvaPaginePannelli();
         selectAnnoIntervento.addEventListener("change", generaMessaggioMessaggistica);
 
         aggiornaAbilitazioneCampi(); // stato iniziale coerente con l'HTML ("Senza" attivo)
+        aggiornaColoreValidazioneLink();
     }
     initLinkCoordinateUI();
 
@@ -3049,7 +3071,7 @@ Koordináták küldéséhez:
     // identicamente per tutte le 27 lingue, comprese quelle con formattazione
     // diversa (righe vuote extra in francese/arabo, virgolette diverse ecc.).
     const ISTRUZIONI_LINK = {
-        it: 'Per l\'invio delle coordinate:\n1. Clicchi sul link 🔗\n2. Autorizzi l\'accesso alla posizione se richiesto ✅',
+        it: 'Per l\'invio delle coordinate:\n1. Clicca sul link 🔗\n2. Autorizzi l\'accesso alla posizione se richiesto ✅',
         en: 'To send coordinates:\n1. Click on the link 🔗\n2. Allow location access if prompted ✅',
         es: 'Para enviar coordenadas:\n1. Haga clic en el enlace 🔗\n2. Permita el acceso a la ubicación si se solicita ✅',
         fr: 'Pour envoyer vos coordonnées :\n1. Cliquez sur le lien 🔗\n2. Autorisez l\'accès à la position si demandé ✅',
@@ -3172,6 +3194,53 @@ Koordináták küldéséhez:
         return { prefisso, numero };
     }
 
+    // URL della Web App Apps Script che scrive sul foglio "DB_ID_Search"
+    // dello spreadsheet FIREOPS Locator (lo stesso usato da locator.html per
+    // "DB_Locator_People"). Stesso pattern lì visto: POST con mode:'no-cors',
+    // quindi non possiamo leggere l'esito reale della scrittura.
+    // TODO: incolla qui l'URL della Web App. Se riusi la STESSA Web App già
+    // distribuita per locator.html, il doPost() lato Apps Script deve
+    // instradare in base al campo "foglio" del payload — vedi il codice di
+    // esempio nella risposta.
+    const WEBAPP_URL_ID_SEARCH = "INCOLLA_QUI_URL_APPS_SCRIPT_ID_SEARCH";
+
+    // Registra su Google Sheet ogni invio di messaggio, qualunque sia il
+    // canale scelto. Non blocca né condiziona l'invio vero e proprio: se la
+    // scrittura fallisce o l'URL non è ancora configurato, l'utente continua
+    // comunque a poter inviare il messaggio.
+    function inviaRigaDbIdSearch(canale) {
+        if (!WEBAPP_URL_ID_SEARCH || WEBAPP_URL_ID_SEARCH.includes("INCOLLA_QUI")) return;
+
+        const nomeComandoAttivo = sessionStorage.getItem(CHIAVE_STORAGE);
+        const comandoAttivo = comandiData.find(c => c.Comando === nomeComandoAttivo);
+        const linkAttivo = !!(chkLinkCoordinate && chkLinkCoordinate.checked);
+        const sigla = comandoAttivo ? siglaComando(comandoAttivo) : "";
+        const numeroInt = inputNumeroIntervento ? inputNumeroIntervento.value.trim() : "";
+        const annoInt = selectAnnoIntervento ? selectAnnoIntervento.value : "";
+        const { prefisso, numero } = numeroCompletoPulito();
+
+        const payload = {
+            foglio: "DB_ID_Search",
+            canale: canale,
+            comando: comandoAttivo ? comandoAttivo.Comando : "",
+            prefisso: prefisso,
+            numeroTelefono: numero,
+            lingua: (hiddenLinguaMsg && hiddenLinguaMsg.value) || "",
+            linkCoordinateAttivo: linkAttivo,
+            idRicerca: (linkAttivo && numeroInt) ? costruisciIdRicerca(numeroInt, annoInt, sigla) : "",
+            numeroIntervento: numeroInt,
+            annoIntervento: annoInt,
+            timestamp: new Date().toISOString()
+        };
+
+        fetch(WEBAPP_URL_ID_SEARCH, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify(payload)
+        }).catch(() => {}); // fire-and-forget: un errore qui non deve mai bloccare l'invio del messaggio
+    }
+
     if (btnWhatsappWeb) {
         btnWhatsappWeb.addEventListener("click", () => {
             if (!validaCampiMessaggistica().tuttiCompilati) return;
@@ -3181,6 +3250,7 @@ Koordináták küldéséhez:
                 alert("Inserisci un numero di telefono valido.");
                 return;
             }
+            inviaRigaDbIdSearch("WhatsApp Web");
             const testoCodificato = encodeURIComponent(textareaMsg.value);
             // WhatsApp vuole il prefisso senza "+" (es. 39...)
             const url = `https://web.whatsapp.com/send?phone=${prefisso}${numero}&text=${testoCodificato}`;
@@ -3197,6 +3267,7 @@ Koordináták küldéséhez:
                 alert("Inserisci un numero di telefono valido.");
                 return;
             }
+            inviaRigaDbIdSearch("WhatsApp Desktop");
             const testoCodificato = encodeURIComponent(textareaMsg.value);
             // WhatsApp Desktop (app installata) tramite protocollo whatsapp://
             window.location.href = `whatsapp://send?phone=${prefisso}${numero}&text=${testoCodificato}`;
@@ -3212,6 +3283,8 @@ Koordináták küldéséhez:
                 alert("Il messaggio è vuoto.");
                 return;
             }
+
+            inviaRigaDbIdSearch("Telegram");
 
             // Copia sempre il testo negli appunti: Telegram non supporta
             // testo precompilato quando si apre una chat da numero di telefono
