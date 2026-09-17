@@ -1933,31 +1933,32 @@ salvaPaginePannelli();
         return `${numeroPad}_${annoIntervento}_${sigla}`;
     }
 
-    // TODO: conferma il path reale di locator.html sul repo pubblicato.
-    const URL_BASE_LOCATOR = "/FireOps/html/locator.html";
+    // URL reale confermato del locator pubblicato su GitHub Pages.
+    const URL_BASE_LOCATOR = "https://vvfsendwhatsapp.github.io/FireOps/locator.html";
 
     function generaLinkLocator(comandoObj, numeroIntervento, annoIntervento, lingua) {
         const sigla = siglaComando(comandoObj);
         const id = costruisciIdRicerca(numeroIntervento, annoIntervento, sigla);
+        // "sede" non serve più: il Comando è già nel parametro "comando",
+        // non ha senso ripeterlo.
         const parametri = new URLSearchParams({
             id,
             comando: comandoObj.Comando || "",
-            sede: comandoObj.Comune || comandoObj.Comando || "",
             lingua: lingua || "it"
         });
         return `${URL_BASE_LOCATOR}?${parametri.toString()}`;
     }
 
-    // Riga da accodare al corpo del messaggio. Stringa vuota se la checkbox
-    // non è spuntata o mancano dati.
+    // Ritorna il solo URL (stringa vuota se la checkbox non è spuntata o
+    // mancano dati): la posizione nel messaggio la decide adesso
+    // costruisciCorpoMessaggio, non più un semplice testo accodato in coda.
     function rigaLinkCoordinate(comandoObj, lingua) {
         if (!chkLinkCoordinate || !chkLinkCoordinate.checked) return "";
         if (!inputNumeroIntervento || !inputNumeroIntervento.value.trim()) return "";
         if (!comandoObj) return "";
 
         const anno = selectAnnoIntervento ? selectAnnoIntervento.value : new Date().getFullYear();
-        const link = generaLinkLocator(comandoObj, inputNumeroIntervento.value, anno, lingua);
-        return `\n\n📍 Invia la tua posizione: ${link}`;
+        return generaLinkLocator(comandoObj, inputNumeroIntervento.value, anno, lingua);
     }
 
     function initLinkCoordinateUI() {
@@ -3040,13 +3041,48 @@ Koordináták küldéséhez:
 *Maradjon biztonságban, a velünk megosztott helyen, és tartsa szabadon a telefonvonalát.*`
     };
 
+    // Blocco istruzioni "manuali" in italiano, quello che c'è già dentro
+    // TRADUZIONI_MESSAGGIO.it: quando il link è presente si sostituisce con
+    // la versione breve "clicca sul link". Tenuto qui come stringa a sé (non
+    // dentro un replace con caratteri speciali/regex) per un confronto
+    // esatto e sicuro.
+    const ISTRUZIONI_MANUALI_IT =
+        'Per l\'invio delle coordinate:\n' +
+        '1. Clicchi sulla "graffetta" (Android) 📎 o sul "più" (Apple) ➕\n' +
+        '2. Clicchi su "Posizione" ⛳\n' +
+        '3. Se necessario segua le indicazioni del dispositivo per consentire a WhatsApp di accedere alla posizione 🆗️\n' +
+        '4. Attenda qualche istante per aumentare la precisione ⏰\n' +
+        '5. Clicchi su "Posizione attuale" 🎯';
+
+    const ISTRUZIONI_LINK_IT =
+        'Per l\'invio delle coordinate:\n' +
+        '1. Clicchi sul link 🔗\n' +
+        '2. Consenti l\'accesso alla posizione se richiesto ✅';
+
     // Costruisce il corpo del messaggio sostituendo Comando e numero emergenza,
-    // ricadendo sull'italiano se la lingua scelta non ha ancora una traduzione
-    function costruisciCorpoMessaggio(codiceLingua, nomeComando, numeroEmergenzaFormattato) {
+    // ricadendo sull'italiano se la lingua scelta non ha ancora una traduzione.
+    // "link" è l'URL del locator (stringa vuota se non richiesto): quando
+    // presente viene inserito subito dopo le bandiere UE/IT — l'unica riga
+    // identica in ogni lingua (non tradotta), quindi un ancoraggio valido
+    // per qualsiasi modello senza dover toccare tutte le traduzioni.
+    function costruisciCorpoMessaggio(codiceLingua, nomeComando, numeroEmergenzaFormattato, link) {
         const modello = TRADUZIONI_MESSAGGIO[codiceLingua] || TRADUZIONI_MESSAGGIO.it;
-        return modello
+        let testo = modello
             .split("{{COMANDO}}").join(nomeComando.toUpperCase())
             .split("{{NUM}}").join(numeroEmergenzaFormattato);
+
+        if (link) {
+            testo = testo.replace("🇪🇺🇮🇹", "🇪🇺🇮🇹\n\n" + link);
+
+            // Le istruzioni brevi "clicca sul link" esistono per ora solo in
+            // italiano: nelle altre lingue restano quelle manuali originali
+            // (il link compare comunque sopra, quindi resta comunque utile).
+            if (codiceLingua === "it" && testo.includes(ISTRUZIONI_MANUALI_IT)) {
+                testo = testo.replace(ISTRUZIONI_MANUALI_IT, ISTRUZIONI_LINK_IT);
+            }
+        }
+
+        return testo;
     }
 
     // Calcola lo scarto orario attuale di Roma rispetto a UTC (1 = CET, 2 = CEST)
@@ -3096,11 +3132,13 @@ Koordináták küldéséhez:
         const valoreEmergenza = comandoAttivo["115/NUE OUT"] || "112";
         const numeroEmergenzaFormattato = String(valoreEmergenza).split("").join(" ");
 
-        const corpo = costruisciCorpoMessaggio(codiceLingua, comandoAttivo.Comando, numeroEmergenzaFormattato);
-        const linkCoordinate = rigaLinkCoordinate(comandoAttivo, codiceLingua);
+        // Calcolato PRIMA del corpo: il link va inserito dentro il testo
+        // (dopo le bandiere UE/IT), non più accodato in fondo al messaggio.
+        const link = rigaLinkCoordinate(comandoAttivo, codiceLingua);
+        const corpo = costruisciCorpoMessaggio(codiceLingua, comandoAttivo.Comando, numeroEmergenzaFormattato, link);
         const pieDiPagina = costruisciPieDiPaginaMessaggio();
 
-        textareaMsg.value = `${corpo}${linkCoordinate}\n${pieDiPagina}`;
+        textareaMsg.value = `${corpo}\n${pieDiPagina}`;
     }
     window.generaMessaggioMessaggistica = generaMessaggioMessaggistica;
 
@@ -3323,7 +3361,7 @@ Koordináták küldéséhez:
         const display = document.getElementById("display-contatore-accessi");
         if (!display) return;
 
-        fetch("https://abacus.jasoncameron.dev/hit/fireops-vvf-pel/accessi")
+        fetch("https://abacus.jasoncameron.dev/hit/fireops-vvf-pel/accessi-v2")
             .then(r => r.json())
             .then(dati => {
                 const valore = Number(dati.value);
