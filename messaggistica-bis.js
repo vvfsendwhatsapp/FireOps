@@ -1335,17 +1335,22 @@ Koordináták küldéséhez:
         });
         gruppo.addTo(mappa);
 
-        // BUG corretto: fitBounds veniva chiamato subito, con la mappa
-        // appena creata e il suo contenitore ancora a dimensione zero (non
-        // ancora "assestato" nel layout) — Leaflet calcolava lo zoom su un
-        // riquadro 0×0 e il centraggio sui punti falliva silenziosamente.
-        // invalidateSize() E fitBounds() vanno fatti INSIEME, dopo, quando
-        // il contenitore ha davvero la sua dimensione finale.
-        setTimeout(() => {
-            mappa.invalidateSize();
-            if (gruppo.getLayers().length) mappa.fitBounds(gruppo.getBounds().pad(0.3));
-            else mappa.setView([41.9, 12.5], 5);
-        }, 50);
+        // BUG: fitBounds veniva chiamato quando il contenitore poteva
+        // essere ancora a dimensione zero (l'accordion si è appena aperto,
+        // il layout del browser non si è ancora assestato) — Leaflet
+        // calcolava lo zoom su un riquadro 0×0 e il centraggio falliva
+        // silenziosamente. Un setTimeout a tempo fisso è solo una stima:
+        // se il layout ci mette di più (pannello grande, dispositivo
+        // lento), scatta comunque troppo presto. Con un doppio
+        // requestAnimationFrame si aspetta invece che il browser abbia
+        // DAVVERO finito il primo giro di layout/paint prima di misurare.
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                mappa.invalidateSize();
+                if (gruppo.getLayers().length) mappa.fitBounds(gruppo.getBounds().pad(0.3));
+                else mappa.setView([41.9, 12.5], 5);
+            });
+        });
     }
 
     // Punto più preciso (accuratezza minima, cioè il cerchio più piccolo) fra
