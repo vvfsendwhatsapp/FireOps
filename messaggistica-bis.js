@@ -1104,7 +1104,7 @@ Koordináták küldéséhez:
     // distribuita per locator.html, il doPost() lato Apps Script deve
     // instradare in base al campo "foglio" del payload — vedi il codice di
     // esempio nella risposta.
-    const WEBAPP_URL_ID_SEARCH = "https://script.google.com/macros/s/AKfycbzWHjngC1SkegRMlWudngc9dXfFYyq8ynQfuTSJsuXiYiuZGTrgjx7kPhmnEIXT4EZH/exec";
+    const WEBAPP_URL_ID_SEARCH = "https://script.google.com/macros/s/AKfycbwS8Vtq5MbfPG-lLdobd8IpFqh2Mi90mTciotejfh9L1E7cUkMjdQko-zcj0thYOZ44/exec";
 
     // Registra su Google Sheet ogni invio di messaggio, qualunque sia il
     // canale scelto. Non blocca né condiziona l'invio vero e proprio: se la
