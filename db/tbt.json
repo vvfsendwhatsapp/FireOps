@@ -1,0 +1,159 @@
+{
+  "Abruzzo": {
+    "intero territorio nazionale 1": "122.150 MHz",
+    "intero territorio nazionale 2": "122.350 MHz",
+    "regionale dedicata": "118.925 MHz",
+    "intero territorio nazionale (militare, secondaria) 1": "141.100 MHz",
+    "intero territorio nazionale (militare, secondaria) 2": "142.500 MHz",
+    "primo contatto con la CP (\"canale 16\" nautico)": "156.800 MHz in FM"
+  },
+  "Basilicata": {
+    "intero territorio nazionale 1": "122.150 MHz",
+    "intero territorio nazionale 2": "122.350 MHz",
+    "regionale dedicata": "118.525 MHz",
+    "intero territorio nazionale (militare, secondaria) 1": "141.100 MHz",
+    "intero territorio nazionale (militare, secondaria) 2": "142.500 MHz",
+    "primo contatto con la CP (\"canale 16\" nautico)": "156.800 MHz in FM"
+  },
+  "Calabria": {
+    "intero territorio nazionale 1": "122.150 MHz",
+    "intero territorio nazionale 2": "122.350 MHz",
+    "regionale dedicata": "118.525 MHz",
+    "intero territorio nazionale (militare, secondaria) 1": "141.100 MHz",
+    "intero territorio nazionale (militare, secondaria) 2": "142.500 MHz",
+    "primo contatto con la CP (\"canale 16\" nautico)": "156.800 MHz in FM"
+  },
+  "Campania": {
+    "intero territorio nazionale 1": "122.150 MHz",
+    "intero territorio nazionale 2": "122.350 MHz",
+    "regionale dedicata": "118.625 MHz",
+    "intero territorio nazionale (militare, secondaria) 1": "141.100 MHz",
+    "intero territorio nazionale (militare, secondaria) 2": "142.500 MHz",
+    "primo contatto con la CP (\"canale 16\" nautico)": "156.800 MHz in FM"
+  },
+  "Emilia-Romagna": {
+    "intero territorio nazionale 1": "122.150 MHz",
+    "intero territorio nazionale 2": "122.350 MHz",
+    "regionale dedicata": "134.550 MHz",
+    "intero territorio nazionale (militare, secondaria) 1": "141.100 MHz",
+    "intero territorio nazionale (militare, secondaria) 2": "142.500 MHz",
+    "primo contatto con la CP (\"canale 16\" nautico)": "156.800 MHz in FM"
+  },
+  "Friuli-Venezia Giulia": {
+    "intero territorio nazionale 1": "122.150 MHz",
+    "intero territorio nazionale 2": "122.350 MHz",
+    "intero territorio nazionale (militare, secondaria) 1": "141.100 MHz",
+    "intero territorio nazionale (militare, secondaria) 2": "142.500 MHz",
+    "primo contatto con la CP (\"canale 16\" nautico)": "156.800 MHz in FM"
+  },
+  "Lazio": {
+    "intero territorio nazionale 1": "122.150 MHz",
+    "intero territorio nazionale 2": "122.350 MHz",
+    "regionale dedicata": "119.025 MHz",
+    "intero territorio nazionale (militare, secondaria) 1": "141.100 MHz",
+    "intero territorio nazionale (militare, secondaria) 2": "142.500 MHz",
+    "primo contatto con la CP (\"canale 16\" nautico)": "156.800 MHz in FM"
+  },
+  "Liguria": {
+    "intero territorio nazionale 1": "122.150 MHz",
+    "intero territorio nazionale 2": "122.350 MHz",
+    "regionale dedicata": "128.500 MHz",
+    "intero territorio nazionale (militare, secondaria) 1": "141.100 MHz",
+    "intero territorio nazionale (militare, secondaria) 2": "142.500 MHz",
+    "primo contatto con la CP (\"canale 16\" nautico)": "156.800 MHz in FM"
+  },
+  "Lombardia": {
+    "intero territorio nazionale 1": "122.150 MHz",
+    "intero territorio nazionale 2": "122.350 MHz",
+    "regionale dedicata": "134.550 MHz",
+    "intero territorio nazionale (militare, secondaria) 1": "141.100 MHz",
+    "intero territorio nazionale (militare, secondaria) 2": "142.500 MHz",
+    "primo contatto con la CP (\"canale 16\" nautico)": "156.800 MHz in FM"
+  },
+  "Marche": {
+    "intero territorio nazionale 1": "122.150 MHz",
+    "intero territorio nazionale 2": "122.350 MHz",
+    "regionale dedicata": "118.925 MHz",
+    "intero territorio nazionale (militare, secondaria) 1": "141.100 MHz",
+    "intero territorio nazionale (militare, secondaria) 2": "142.500 MHz",
+    "primo contatto con la CP (\"canale 16\" nautico)": "156.800 MHz in FM"
+  },
+  "Molise": {
+    "intero territorio nazionale 1": "122.150 MHz",
+    "intero territorio nazionale 2": "122.350 MHz",
+    "regionale dedicata": "118.925 MHz",
+    "intero territorio nazionale (militare, secondaria) 1": "141.100 MHz",
+    "intero territorio nazionale (militare, secondaria) 2": "142.500 MHz",
+    "primo contatto con la CP (\"canale 16\" nautico)": "156.800 MHz in FM"
+  },
+  "Piemonte": {
+    "intero territorio nazionale 1": "122.150 MHz",
+    "intero territorio nazionale 2": "122.350 MHz",
+    "regionale dedicata": "128.500 MHz",
+    "intero territorio nazionale (militare, secondaria) 1": "141.100 MHz",
+    "intero territorio nazionale (militare, secondaria) 2": "142.500 MHz",
+    "primo contatto con la CP (\"canale 16\" nautico)": "156.800 MHz in FM"
+  },
+  "Puglia": {
+    "intero territorio nazionale 1": "122.150 MHz",
+    "intero territorio nazionale 2": "122.350 MHz",
+    "regionale dedicata": "118.525 MHz",
+    "intero territorio nazionale (militare, secondaria) 1": "141.100 MHz",
+    "intero territorio nazionale (militare, secondaria) 2": "142.500 MHz",
+    "primo contatto con la CP (\"canale 16\" nautico)": "156.800 MHz in FM"
+  },
+  "Sardegna": {
+    "intero territorio nazionale 1": "122.150 MHz",
+    "intero territorio nazionale 2": "122.350 MHz",
+    "regionale dedicata": "118.525 MHz",
+    "intero territorio nazionale (militare, secondaria) 1": "141.100 MHz",
+    "intero territorio nazionale (militare, secondaria) 2": "142.500 MHz",
+    "primo contatto con la CP (\"canale 16\" nautico)": "156.800 MHz in FM"
+  },
+  "Sicilia": {
+    "intero territorio nazionale 1": "122.150 MHz",
+    "intero territorio nazionale 2": "122.350 MHz",
+    "regionale dedicata": "128.500 MHz",
+    "intero territorio nazionale (militare, secondaria) 1": "141.100 MHz",
+    "intero territorio nazionale (militare, secondaria) 2": "142.500 MHz",
+    "primo contatto con la CP (\"canale 16\" nautico)": "156.800 MHz in FM"
+  },
+  "Toscana": {
+    "intero territorio nazionale 1": "122.150 MHz",
+    "intero territorio nazionale 2": "122.350 MHz",
+    "regionale dedicata": "118.775 MHz",
+    "intero territorio nazionale (militare, secondaria) 1": "141.100 MHz",
+    "intero territorio nazionale (militare, secondaria) 2": "142.500 MHz",
+    "primo contatto con la CP (\"canale 16\" nautico)": "156.800 MHz in FM"
+  },
+  "Trentino-Alto Adige": {
+    "intero territorio nazionale 1": "122.150 MHz",
+    "intero territorio nazionale 2": "122.350 MHz",
+    "intero territorio nazionale (militare, secondaria) 1": "141.100 MHz",
+    "intero territorio nazionale (militare, secondaria) 2": "142.500 MHz",
+    "primo contatto con la CP (\"canale 16\" nautico)": "156.800 MHz in FM"
+  },
+  "Umbria": {
+    "intero territorio nazionale 1": "122.150 MHz",
+    "intero territorio nazionale 2": "122.350 MHz",
+    "regionale dedicata": "118.775 MHz",
+    "intero territorio nazionale (militare, secondaria) 1": "141.100 MHz",
+    "intero territorio nazionale (militare, secondaria) 2": "142.500 MHz",
+    "primo contatto con la CP (\"canale 16\" nautico)": "156.800 MHz in FM"
+  },
+  "Valle d'Aosta": {
+    "intero territorio nazionale 1": "122.150 MHz",
+    "intero territorio nazionale 2": "122.350 MHz",
+    "regionale dedicata": "128.500 MHz",
+    "intero territorio nazionale (militare, secondaria) 1": "141.100 MHz",
+    "intero territorio nazionale (militare, secondaria) 2": "142.500 MHz",
+    "primo contatto con la CP (\"canale 16\" nautico)": "156.800 MHz in FM"
+  },
+  "Veneto": {
+    "intero territorio nazionale 1": "122.150 MHz",
+    "intero territorio nazionale 2": "122.350 MHz",
+    "intero territorio nazionale (militare, secondaria) 1": "141.100 MHz",
+    "intero territorio nazionale (militare, secondaria) 2": "142.500 MHz",
+    "primo contatto con la CP (\"canale 16\" nautico)": "156.800 MHz in FM"
+  }
+}
