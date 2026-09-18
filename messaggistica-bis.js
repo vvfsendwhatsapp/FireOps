@@ -1300,7 +1300,22 @@ Koordináták küldéséhez:
     // mostra tutti i dati disponibili per quella posizione — non solo lat/lon.
     function disegnaPuntiPosizione(mappaEl, righePosizione) {
         if (!window.L || !righePosizione.length) return;
-        const mappa = L.map(mappaEl, { attributionControl: false });
+
+        // Leaflet richiede una vista iniziale (centro+zoom) prima di poter
+        // calcolare i bounds di un cerchio: Circle.getBounds() legge la
+        // proiezione interna della mappa, che non esiste finché non è stata
+        // chiamata almeno una volta setView(). Senza, fitBounds() va in
+        // errore ("Cannot read properties of undefined (reading
+        // 'layerPointToLatLng')") appena il gruppo contiene un cerchio di
+        // precisione — e quell'errore blocca tutto il resto della funzione,
+        // compreso il centraggio finale.
+        const primoValido = righePosizione
+            .map(r => [numeroLocale(r.Lat), numeroLocale(r.Lng)])
+            .find(([lat, lng]) => isFinite(lat) && isFinite(lng));
+
+        const mappa = L.map(mappaEl, { attributionControl: false })
+            .setView(primoValido || [41.9, 12.5], primoValido ? 15 : 5);
+
         const layer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 });
         layer.addTo(mappa);
 
