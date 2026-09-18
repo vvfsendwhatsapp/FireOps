@@ -510,6 +510,20 @@
                         <p class="pagina-nota">Caricamento...</p>
                     </div>
                 </div>
+
+                <!-- POPUP MAPPA POSIZIONI: apertura da "Mostra posizioni" dentro
+                     una riga del riepilogo. Stessa meccanica di posizionamento
+                     dell'overlay sopra (lato opposto a Messaggistica), ma
+                     sopra di esso (z-index più alto) e più grande — la mappa
+                     è il contenuto, non un dettaglio dentro l'elenco. -->
+                <div id="riepilogo-msg-mappa-overlay" class="riepilogo-msg-overlay riepilogo-msg-mappa-overlay"
+                    hidden>
+                    <div class="riepilogo-msg-testata">
+                        <b id="riepilogo-msg-mappa-titolo">🗺️ Posizioni ricevute</b>
+                        <span class="popup-close" id="riepilogo-msg-mappa-chiudi" title="Chiudi">&times;</span>
+                    </div>
+                    <div id="riepilogo-msg-mappa-corpo" class="riepilogo-msg-mappa-corpo"></div>
+                </div>
             </div>
         </section>
 

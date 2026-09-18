@@ -1219,6 +1219,11 @@ Koordináták küldéséhez:
     const chkRiepilogoLimitrofi = document.getElementById("riepilogo-msg-limitrofi");
     const chiudiRiepilogoMsgBtn = document.getElementById("riepilogo-msg-chiudi");
 
+    const overlayPosizioniMsg = document.getElementById("riepilogo-msg-mappa-overlay");
+    const titoloPosizioniMsg = document.getElementById("riepilogo-msg-mappa-titolo");
+    const corpoPosizioniMsg = document.getElementById("riepilogo-msg-mappa-corpo");
+    const chiudiPosizioniMsgBtn = document.getElementById("riepilogo-msg-mappa-chiudi");
+
     // Ultime 3-4 cifre visibili, il resto mascherato con dei pallini — mai
     // il numero completo in un riepilogo che può restare a schermo in sala.
     function maschera(numero) {
@@ -1250,14 +1255,15 @@ Koordináták küldéséhez:
         return document.getElementById(idOpposto);
     }
 
-    function posizionaOverlayRiepilogo() {
+    function posizionaOverlayRiepilogo(overlay) {
+        overlay = overlay || overlayRiepilogoMsg;
         const pannelloAltro = pannelloOppostoAMessaggistica();
-        if (!pannelloAltro || !overlayRiepilogoMsg) return;
+        if (!pannelloAltro || !overlay) return;
         const rect = pannelloAltro.getBoundingClientRect();
-        overlayRiepilogoMsg.style.left = rect.left + "px";
-        overlayRiepilogoMsg.style.top = rect.top + "px";
-        overlayRiepilogoMsg.style.width = rect.width + "px";
-        overlayRiepilogoMsg.style.height = rect.height + "px";
+        overlay.style.left = rect.left + "px";
+        overlay.style.top = rect.top + "px";
+        overlay.style.width = rect.width + "px";
+        overlay.style.height = rect.height + "px";
     }
 
     // Un unico punto sulla mini-mappa (marker + cerchio di precisione),
@@ -1345,7 +1351,6 @@ Koordináták küldéséhez:
     // e, se ricevuto, l'accordion con la mini-mappa e il link al convertitore.
     function costruisciRigaRiepilogo(messaggio, righePosizione) {
         const ricevuto = righePosizione.length > 0;
-        const idMappa = "riepilogo-mappa-" + Math.random().toString(36).slice(2, 9);
 
         const div = document.createElement("div");
         div.className = "riepilogo-msg-voce";
@@ -1374,19 +1379,9 @@ Koordináták küldéséhez:
             `;
             div.appendChild(azioni);
 
-            const mappaWrap = document.createElement("div");
-            mappaWrap.className = "riepilogo-msg-mappa-wrap";
-            mappaWrap.hidden = true;
-            mappaWrap.innerHTML = `<div id="${idMappa}" class="riepilogo-msg-mappa"></div>`;
-            div.appendChild(mappaWrap);
-
-            let mappaCreata = false;
-            azioni.querySelector(".riepilogo-msg-toggle-mappa").addEventListener("click", () => {
-                mappaWrap.hidden = !mappaWrap.hidden;
-                if (!mappaWrap.hidden && !mappaCreata) {
-                    mappaCreata = true;
-                    disegnaPuntiPosizione(document.getElementById(idMappa), righePosizione);
-                }
+            azioni.querySelector(".riepilogo-msg-toggle-mappa").addEventListener("click", (ev) => {
+                ev.stopPropagation();
+                apriPosizioniMsg(messaggio.IdRicerca, righePosizione);
             });
 
             azioni.querySelector(".riepilogo-msg-apri-convertitore").addEventListener("click", () => {
@@ -1460,13 +1455,52 @@ Koordináták küldéséhez:
         if (!overlayRiepilogoMsg) return;
         overlayRiepilogoMsg.hidden = true;
         document.removeEventListener("click", chiudiRiepilogoMsgSeFuori);
+        // Chiudere l'elenco senza chiudere anche il dettaglio sopra di esso
+        // lascerebbe un popup posizioni orfano, scollegato dalla riga che
+        // l'ha aperto.
+        chiudiPosizioniMsg();
     }
 
     function chiudiRiepilogoMsgSeFuori(ev) {
         if (!overlayRiepilogoMsg || overlayRiepilogoMsg.hidden) return;
         if (overlayRiepilogoMsg.contains(ev.target) || ev.target === btnRiepilogoMsg) return;
+        // Il popup posizioni sta sopra ed esce dai bordi dell'elenco: un
+        // click al suo interno non deve chiudere l'elenco sottostante.
+        if (overlayPosizioniMsg && overlayPosizioniMsg.contains(ev.target)) return;
         chiudiRiepilogoMsg();
     }
+
+    // Popup mappa posizioni: stesso posizionamento dell'elenco (lato opposto
+    // a Messaggistica), ma sopra di esso e a sé stante — un dettaglio, non
+    // una riga in più della lista.
+    function apriPosizioniMsg(idRicerca, righePosizione) {
+        if (!overlayPosizioniMsg || !corpoPosizioniMsg) return;
+        if (titoloPosizioniMsg) titoloPosizioniMsg.textContent = `🗺️ Posizioni ricevute — ${idRicerca || "-"}`;
+
+        posizionaOverlayRiepilogo(overlayPosizioniMsg);
+        corpoPosizioniMsg.innerHTML = "";
+        const div = document.createElement("div");
+        div.id = "riepilogo-mappa-grande";
+        div.className = "riepilogo-msg-mappa-grande";
+        corpoPosizioniMsg.appendChild(div);
+
+        overlayPosizioniMsg.hidden = false;
+        disegnaPuntiPosizione(div, righePosizione);
+        setTimeout(() => document.addEventListener("click", chiudiPosizioniMsgSeFuori), 0);
+    }
+
+    function chiudiPosizioniMsg() {
+        if (!overlayPosizioniMsg) return;
+        overlayPosizioniMsg.hidden = true;
+        document.removeEventListener("click", chiudiPosizioniMsgSeFuori);
+    }
+
+    function chiudiPosizioniMsgSeFuori(ev) {
+        if (!overlayPosizioniMsg || overlayPosizioniMsg.hidden) return;
+        if (overlayPosizioniMsg.contains(ev.target)) return;
+        chiudiPosizioniMsg();
+    }
+    if (chiudiPosizioniMsgBtn) chiudiPosizioniMsgBtn.addEventListener("click", chiudiPosizioniMsg);
 
     if (btnRiepilogoMsg) {
         btnRiepilogoMsg.addEventListener("click", (ev) => {
@@ -1477,9 +1511,23 @@ Koordináták küldéséhez:
     }
     if (chiudiRiepilogoMsgBtn) chiudiRiepilogoMsgBtn.addEventListener("click", chiudiRiepilogoMsg);
     if (chkRiepilogoLimitrofi) chkRiepilogoLimitrofi.addEventListener("change", caricaRiepilogoMessaggi);
-    // Riposiziona l'overlay se la finestra cambia dimensione mentre è aperto
+    // Riposiziona entrambi gli overlay se la finestra cambia dimensione mentre sono aperti
     window.addEventListener("resize", () => {
-        if (overlayRiepilogoMsg && !overlayRiepilogoMsg.hidden) posizionaOverlayRiepilogo();
+        if (overlayRiepilogoMsg && !overlayRiepilogoMsg.hidden) posizionaOverlayRiepilogo(overlayRiepilogoMsg);
+        if (overlayPosizioniMsg && !overlayPosizioniMsg.hidden) posizionaOverlayRiepilogo(overlayPosizioniMsg);
+    });
+
+    // Cambiare la pagina mostrata in un pannello sposta/ricrea il DOM sotto
+    // agli overlay: restare aperti sopra un pannello che nel frattempo è
+    // diventato un'altra pagina (o su misure ormai sbagliate) è fuorviante,
+    // quindi si chiudono entrambi appena l'utente cambia selezione.
+    const selettorePannelloSx = document.getElementById("select-pannello-sinistra");
+    const selettorePannelloDx = document.getElementById("select-pannello-destra");
+    [selettorePannelloSx, selettorePannelloDx].forEach(sel => {
+        if (sel) sel.addEventListener("change", () => {
+            chiudiRiepilogoMsg();
+            chiudiPosizioniMsg();
+        });
     });
 
     // Il messaggio precompilato dipende dal Comando attivo: quando cambia

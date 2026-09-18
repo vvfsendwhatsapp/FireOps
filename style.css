@@ -6538,6 +6538,25 @@ select:focus {
     background: var(--dark-color);
 }
 
+/* Popup mappa posizioni: sopra l'elenco (z-index più alto), grande */
+.riepilogo-msg-mappa-overlay {
+    z-index: 1650; /* sopra riepilogo-msg-overlay (1600) */
+}
+
+.riepilogo-msg-mappa-corpo {
+    flex: 1 1 auto;
+    padding: 14px;
+}
+
+.riepilogo-msg-mappa-grande {
+    width: 100%;
+    height: 100%;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    background: var(--dark-color);
+}
+
 /* ==========================================================
    ==========================================================
    RESPONSIVE
