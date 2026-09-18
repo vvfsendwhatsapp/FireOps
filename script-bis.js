@@ -3224,7 +3224,7 @@ Koordináták küldéséhez:
     // distribuita per locator.html, il doPost() lato Apps Script deve
     // instradare in base al campo "foglio" del payload — vedi il codice di
     // esempio nella risposta.
-    const WEBAPP_URL_ID_SEARCH = "INCOLLA_QUI_URL_APPS_SCRIPT_ID_SEARCH";
+    const WEBAPP_URL_ID_SEARCH = "https://script.google.com/macros/s/AKfycbzWHjngC1SkegRMlWudngc9dXfFYyq8ynQfuTSJsuXiYiuZGTrgjx7kPhmnEIXT4EZH/exec";
 
     // Registra su Google Sheet ogni invio di messaggio, qualunque sia il
     // canale scelto. Non blocca né condiziona l'invio vero e proprio: se la
@@ -3322,6 +3322,285 @@ Koordináták küldéséhez:
             }
         });
     }
+
+    // ==========================================================
+    // RIEPILOGO MESSAGGI (24h) — pannello overlay
+    //
+    // Legge (GET) dalla stessa Web App Apps Script usata per scrivere
+    // (WEBAPP_URL_ID_SEARCH): un doGet(e) restituisce le righe recenti di
+    // DB_ID_Search (messaggi con link inviato) e di DB_Locator_People
+    // (posizioni ricevute), già filtrate lato server per comando e per le
+    // ultime 24h. Il codice Apps Script è nella risposta della chat.
+    // ==========================================================
+
+    const btnRiepilogoMsg = document.getElementById("btn-riepilogo-msg");
+    const overlayRiepilogoMsg = document.getElementById("riepilogo-msg-overlay");
+    const corpoRiepilogoMsg = document.getElementById("riepilogo-msg-corpo");
+    const chkRiepilogoLimitrofi = document.getElementById("riepilogo-msg-limitrofi");
+    const chiudiRiepilogoMsgBtn = document.getElementById("riepilogo-msg-chiudi");
+
+    // Ultime 3-4 cifre visibili, il resto mascherato con dei pallini — mai
+    // il numero completo in un riepilogo che può restare a schermo in sala.
+    function maschera(numero) {
+        const pulito = String(numero || "").replace(/\D/g, "");
+        if (pulito.length <= 4) return pulito;
+        const visibili = pulito.slice(-4);
+        return "•".repeat(pulito.length - 4) + visibili;
+    }
+
+    // Stessa logica di lettura dei comandi limitrofi già usata nel riepilogo
+    // Comando (campo "Concatena Comandi Confinanti", nomi separati da ";").
+    function nomiComandiLimitrofi(nomeComando) {
+        const comando = comandiData.find(c => c.Comando === nomeComando);
+        if (!comando) return [];
+        return (comando["Concatena Comandi Confinanti"] || "")
+            .split(";")
+            .map(n => n.trim())
+            .filter(n => n.length > 0);
+    }
+
+    // Individua su quale lato (sinistra/destra) sta attualmente la
+    // Messaggistica, per sapere quale pannello coprire con l'overlay: quello
+    // sull'altro lato, non il proprio.
+    function pannelloOppostoAMessaggistica() {
+        const sezioneMsg = document.getElementById("messaggistica");
+        const pannelloMsg = sezioneMsg && sezioneMsg.closest(".pannello");
+        if (!pannelloMsg) return null;
+        const idOpposto = pannelloMsg.id === "pannello-sinistra" ? "pannello-destra" : "pannello-sinistra";
+        return document.getElementById(idOpposto);
+    }
+
+    function posizionaOverlayRiepilogo() {
+        const pannelloAltro = pannelloOppostoAMessaggistica();
+        if (!pannelloAltro || !overlayRiepilogoMsg) return;
+        const rect = pannelloAltro.getBoundingClientRect();
+        overlayRiepilogoMsg.style.left = rect.left + "px";
+        overlayRiepilogoMsg.style.top = rect.top + "px";
+        overlayRiepilogoMsg.style.width = rect.width + "px";
+        overlayRiepilogoMsg.style.height = rect.height + "px";
+    }
+
+    // Un unico punto sulla mini-mappa (marker + cerchio di precisione),
+    // riusando lo stesso linguaggio visivo della mappa Comando: cerchio
+    // semitrasparente il cui raggio è l'accuratezza in metri.
+    function disegnaPuntiPosizione(mappaEl, righePosizione) {
+        if (!window.L || !righePosizione.length) return;
+        const mappa = L.map(mappaEl, { attributionControl: false });
+        const layer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 });
+        layer.addTo(mappa);
+
+        const gruppo = L.featureGroup();
+        righePosizione.forEach(riga => {
+            const lat = Number(riga.Lat), lng = Number(riga.Lng);
+            if (!isFinite(lat) || !isFinite(lng)) return;
+            L.marker([lat, lng]).addTo(gruppo);
+            const raggio = Number(riga.Accuratezza);
+            if (isFinite(raggio) && raggio > 0) {
+                L.circle([lat, lng], {
+                    radius: raggio, color: "#ffd700", fillColor: "#ffd700", fillOpacity: 0.15, weight: 1
+                }).addTo(gruppo);
+            }
+        });
+        gruppo.addTo(mappa);
+        if (gruppo.getLayers().length) mappa.fitBounds(gruppo.getBounds().pad(0.3));
+        else mappa.setView([41.9, 12.5], 5);
+
+        // Il div nasce con display:none (dentro un accordion chiuso): Leaflet
+        // misura zero finché non è visibile, va ridato la dimensione giusta
+        // subito dopo averlo mostrato.
+        setTimeout(() => mappa.invalidateSize(), 50);
+    }
+
+    // Punto più preciso (accuratezza minima, cioè il cerchio più piccolo) fra
+    // le righe di posizione di un ID ricerca: è quello da proporre nel
+    // convertitore coordinate.
+    function puntoMigliore(righePosizione) {
+        return righePosizione.reduce((migliore, riga) => {
+            const acc = Number(riga.Accuratezza);
+            if (!migliore) return riga;
+            const accMigliore = Number(migliore.Accuratezza);
+            return (isFinite(acc) && (!isFinite(accMigliore) || acc < accMigliore)) ? riga : migliore;
+        }, null);
+    }
+
+    // Porta al Convertitore Coordinate con lat/lon già impostate in formato
+    // DD e avvia la conversione. Cambia il pannello che ospita la
+    // Messaggistica (l'unico di cui siamo certi lato): l'altro resta come sta.
+    // NB: si affida a campi/pulsanti di convertitore.js con gli id visti nel
+    // markup — se in futuro quegli id cambiano, va aggiornata anche qui.
+    function apriInConvertitore(lat, lon) {
+        const sezioneMsg = document.getElementById("messaggistica");
+        const pannelloMsg = sezioneMsg && sezioneMsg.closest(".pannello");
+        const selettore = pannelloMsg && pannelloMsg.id === "pannello-sinistra"
+            ? document.getElementById("select-pannello-sinistra")
+            : document.getElementById("select-pannello-destra");
+        if (selettore) {
+            selettore.value = "convertitore";
+            selettore.dispatchEvent(new Event("change"));
+        }
+
+        chiudiRiepilogoMsg();
+
+        // I campi del convertitore esistono solo dopo che spostaSezione() lo
+        // ha inserito nel pannello: un piccolo ritardo basta ad aspettare
+        // quel passaggio sincrono innescato dal cambio di select qui sopra.
+        setTimeout(() => {
+            const campoLat = document.getElementById("coord-dd-lat");
+            const campoLon = document.getElementById("coord-dd-lon");
+            const segnoLat = document.getElementById("coord-dd-lat-segno");
+            const segnoLon = document.getElementById("coord-dd-lon-segno");
+            const btnConverti = document.getElementById("btn-coord-converti");
+            if (!campoLat || !campoLon) return;
+
+            if (segnoLat) segnoLat.value = lat < 0 ? "-" : "+";
+            if (segnoLon) segnoLon.value = lon < 0 ? "-" : "+";
+            campoLat.value = Math.abs(lat).toFixed(6);
+            campoLon.value = Math.abs(lon).toFixed(6);
+
+            if (btnConverti) btnConverti.click();
+        }, 50);
+    }
+
+    // Costruisce la riga di un singolo messaggio: stato (in attesa/ricevuto)
+    // e, se ricevuto, l'accordion con la mini-mappa e il link al convertitore.
+    function costruisciRigaRiepilogo(messaggio, righePosizione) {
+        const ricevuto = righePosizione.length > 0;
+        const idMappa = "riepilogo-mappa-" + Math.random().toString(36).slice(2, 9);
+
+        const div = document.createElement("div");
+        div.className = "riepilogo-msg-voce";
+
+        const badge = ricevuto
+            ? `<span class="riepilogo-msg-stato ricevuto">✅ Ricevuto</span>`
+            : `<span class="riepilogo-msg-stato in-attesa">⏳ In attesa</span>`;
+
+        div.innerHTML = `
+            <div class="riepilogo-msg-riga-testa">
+                <span class="riepilogo-msg-canale">${messaggio.Canale || "-"}</span>
+                <span class="riepilogo-msg-orario">${messaggio.Timestamp ? new Date(messaggio.Timestamp).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }) : "-"}</span>
+                <span class="riepilogo-msg-comando">${messaggio.Comando || "-"}</span>
+                <span class="riepilogo-msg-tel">${maschera(messaggio.NumeroTelefono)}</span>
+                ${badge}
+            </div>
+            <div class="riepilogo-msg-riga-id">ID ricerca: <b>${messaggio.IdRicerca || "-"}</b></div>
+        `;
+
+        if (ricevuto) {
+            const azioni = document.createElement("div");
+            azioni.className = "riepilogo-msg-azioni";
+            azioni.innerHTML = `
+                <button type="button" class="btn-toggle-radar riepilogo-msg-toggle-mappa">🗺️ Mostra posizioni (${righePosizione.length})</button>
+                <button type="button" class="btn-toggle-radar riepilogo-msg-apri-convertitore">📐 Apri nel convertitore</button>
+            `;
+            div.appendChild(azioni);
+
+            const mappaWrap = document.createElement("div");
+            mappaWrap.className = "riepilogo-msg-mappa-wrap";
+            mappaWrap.hidden = true;
+            mappaWrap.innerHTML = `<div id="${idMappa}" class="riepilogo-msg-mappa"></div>`;
+            div.appendChild(mappaWrap);
+
+            let mappaCreata = false;
+            azioni.querySelector(".riepilogo-msg-toggle-mappa").addEventListener("click", () => {
+                mappaWrap.hidden = !mappaWrap.hidden;
+                if (!mappaWrap.hidden && !mappaCreata) {
+                    mappaCreata = true;
+                    disegnaPuntiPosizione(document.getElementById(idMappa), righePosizione);
+                }
+            });
+
+            azioni.querySelector(".riepilogo-msg-apri-convertitore").addEventListener("click", () => {
+                const migliore = puntoMigliore(righePosizione);
+                if (migliore) apriInConvertitore(Number(migliore.Lat), Number(migliore.Lng));
+            });
+        }
+
+        return div;
+    }
+
+    function caricaRiepilogoMessaggi() {
+        if (!corpoRiepilogoMsg) return;
+        if (!WEBAPP_URL_ID_SEARCH || WEBAPP_URL_ID_SEARCH.includes("INCOLLA_QUI")) {
+            corpoRiepilogoMsg.innerHTML = `<p class="pagina-nota">Web App non ancora configurata (WEBAPP_URL_ID_SEARCH).</p>`;
+            return;
+        }
+
+        const nomeComandoAttivo = sessionStorage.getItem(CHIAVE_STORAGE);
+        if (!nomeComandoAttivo) {
+            corpoRiepilogoMsg.innerHTML = `<p class="pagina-nota">Seleziona prima un Comando.</p>`;
+            return;
+        }
+
+        const comandi = [nomeComandoAttivo];
+        if (chkRiepilogoLimitrofi && chkRiepilogoLimitrofi.checked) {
+            comandi.push(...nomiComandiLimitrofi(nomeComandoAttivo));
+        }
+
+        corpoRiepilogoMsg.innerHTML = `<p class="pagina-nota">Caricamento...</p>`;
+
+        const parametri = new URLSearchParams({ comandi: comandi.join(","), ore: "24" });
+        fetch(`${WEBAPP_URL_ID_SEARCH}?${parametri.toString()}`)
+            .then(r => r.json())
+            .then(dati => {
+                const messaggi = dati.messaggi || [];
+                const posizioni = dati.posizioni || [];
+
+                if (!messaggi.length) {
+                    corpoRiepilogoMsg.innerHTML = `<p class="pagina-nota">Nessun messaggio con link nelle ultime 24 ore.</p>`;
+                    return;
+                }
+
+                corpoRiepilogoMsg.innerHTML = "";
+                // Più recenti in cima
+                messaggi
+                    .slice()
+                    .sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp))
+                    .forEach(messaggio => {
+                        const righePosizione = posizioni.filter(p => p.IdRicerca === messaggio.IdRicerca);
+                        corpoRiepilogoMsg.appendChild(costruisciRigaRiepilogo(messaggio, righePosizione));
+                    });
+            })
+            .catch(() => {
+                corpoRiepilogoMsg.innerHTML = `<p class="pagina-nota">Errore nel caricamento del riepilogo.</p>`;
+            });
+    }
+
+    function apriRiepilogoMsg() {
+        if (!overlayRiepilogoMsg) return;
+        posizionaOverlayRiepilogo();
+        overlayRiepilogoMsg.hidden = false;
+        caricaRiepilogoMessaggi();
+        // Aggiunto al prossimo giro di eventi: altrimenti il click che ha
+        // aperto il pannello viene visto anche dal listener "fuori" e lo
+        // richiude nello stesso istante.
+        setTimeout(() => document.addEventListener("click", chiudiRiepilogoMsgSeFuori), 0);
+    }
+
+    function chiudiRiepilogoMsg() {
+        if (!overlayRiepilogoMsg) return;
+        overlayRiepilogoMsg.hidden = true;
+        document.removeEventListener("click", chiudiRiepilogoMsgSeFuori);
+    }
+
+    function chiudiRiepilogoMsgSeFuori(ev) {
+        if (!overlayRiepilogoMsg || overlayRiepilogoMsg.hidden) return;
+        if (overlayRiepilogoMsg.contains(ev.target) || ev.target === btnRiepilogoMsg) return;
+        chiudiRiepilogoMsg();
+    }
+
+    if (btnRiepilogoMsg) {
+        btnRiepilogoMsg.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            if (overlayRiepilogoMsg && overlayRiepilogoMsg.hidden) apriRiepilogoMsg();
+            else chiudiRiepilogoMsg();
+        });
+    }
+    if (chiudiRiepilogoMsgBtn) chiudiRiepilogoMsgBtn.addEventListener("click", chiudiRiepilogoMsg);
+    if (chkRiepilogoLimitrofi) chkRiepilogoLimitrofi.addEventListener("change", caricaRiepilogoMessaggi);
+    // Riposiziona l'overlay se la finestra cambia dimensione mentre è aperto
+    window.addEventListener("resize", () => {
+        if (overlayRiepilogoMsg && !overlayRiepilogoMsg.hidden) posizionaOverlayRiepilogo();
+    });
 
     // Orologio in tempo reale e Turno VVF
     function updateClockAndShift() {

@@ -405,12 +405,15 @@
         <!-- MESSAGGISTICA -->
         <section id="messaggistica" class="page-section">
             <div class="pagina-box">
-                <h3>Messaggistica</h3>
-                <p class="pagina-nota">
-                    Il messaggio viene generato automaticamente in base al Comando attivo e alla lingua selezionata.
-                    Tutti e tre i campi (prefisso, numero e
-                    lingua) sono obbligatori: quelli mancanti vengono evidenziati in rosso.
-                </p>
+                <div class="pagina-box-header pagina-box-header-con-nota">
+                    <p class="pagina-nota pagina-nota-inline">
+                        Il messaggio viene generato automaticamente in base al Comando attivo e alla lingua
+                        selezionata. Tutti e tre i campi (prefisso, numero e lingua) sono obbligatori: quelli
+                        mancanti vengono evidenziati in rosso.
+                    </p>
+                    <button type="button" id="btn-riepilogo-msg" class="btn-toggle-radar">📊 Riepilogo messaggi
+                        (24h)</button>
+                </div>
 
                 <div class="msg-riga-campi">
                     <div class="msg-campo combo-campo" style="flex:7 1 0;">
@@ -487,6 +490,26 @@
                     questo numero),
                     basterà incollarlo nella chat.
                 </p>
+
+                <!-- PANNELLO OVERLAY: Riepilogo messaggi (24h). Posizionato via
+                     JS esattamente sopra il pannello split-screen OPPOSTO a
+                     quello che ospita la Messaggistica (position:fixed, con
+                     left/top/width/height calcolati sul rettangolo reale
+                     dell'altro pannello al momento dell'apertura). Nascosto
+                     di default; si chiude anche cliccando fuori. -->
+                <div id="riepilogo-msg-overlay" class="riepilogo-msg-overlay" hidden>
+                    <div class="riepilogo-msg-testata">
+                        <b>📊 Riepilogo messaggi — ultime 24h</b>
+                        <label class="rt-check" style="margin:0;">
+                            <input type="checkbox" id="riepilogo-msg-limitrofi">
+                            Includi comandi limitrofi
+                        </label>
+                        <span class="popup-close" id="riepilogo-msg-chiudi" title="Chiudi">&times;</span>
+                    </div>
+                    <div id="riepilogo-msg-corpo" class="riepilogo-msg-corpo">
+                        <p class="pagina-nota">Caricamento...</p>
+                    </div>
+                </div>
             </div>
         </section>
 
