@@ -405,15 +405,11 @@
         <!-- MESSAGGISTICA -->
         <section id="messaggistica" class="page-section">
             <div class="pagina-box">
-                <div class="pagina-box-header pagina-box-header-con-nota">
-                    <p class="pagina-nota pagina-nota-inline">
-                        Il messaggio viene generato automaticamente in base al Comando attivo e alla lingua
-                        selezionata. Tutti e tre i campi (prefisso, numero e lingua) sono obbligatori: quelli
-                        mancanti vengono evidenziati in rosso.
-                    </p>
-                    <button type="button" id="btn-riepilogo-msg" class="btn-toggle-radar">📊 Riepilogo messaggi
-                        (24h)</button>
-                </div>
+                <p class="pagina-nota">
+                    Il messaggio viene generato automaticamente in base al Comando attivo e alla lingua
+                    selezionata. Tutti e tre i campi (prefisso, numero e lingua) sono obbligatori: quelli
+                    mancanti vengono evidenziati in rosso.
+                </p>
 
                 <div class="msg-riga-campi">
                     <div class="msg-campo combo-campo" style="flex:7 1 0;">
@@ -491,12 +487,22 @@
                     basterà incollarlo nella chat.
                 </p>
 
-                <!-- PANNELLO OVERLAY: Riepilogo messaggi (24h). Posizionato via
-                     JS esattamente sopra il pannello split-screen OPPOSTO a
-                     quello che ospita la Messaggistica (position:fixed, con
-                     left/top/width/height calcolati sul rettangolo reale
-                     dell'altro pannello al momento dell'apertura). Nascosto
-                     di default; si chiude anche cliccando fuori. -->
+                <!-- TAB A TUTTA ALTEZZA: incollata al bordo di Messaggistica
+                     rivolto verso l'altro pannello (sinistro o destro, lo
+                     decide aggiornaLatoTabRiepilogo() con una classe). Clic
+                     per aprire/chiudere il riepilogo. position:absolute
+                     rispetto a .pannello (serve position:relative lì, vedi
+                     CSS in risposta) — niente calcoli pixel via JS, si
+                     adatta da sé a resize e non si sfasa mai. -->
+                <button type="button" id="btn-riepilogo-msg" class="riepilogo-msg-tab" title="Riepilogo messaggi (24h)">
+                    <span class="riepilogo-msg-tab-testo">📊 Riepilogo messaggi (24h)</span>
+                </button>
+
+                <!-- PANNELLO RIEPILOGO: non più position:fixed con pixel
+                     calcolati — viene spostato (appendChild) DENTRO al
+                     pannello opposto al momento dell'apertura, con
+                     position:absolute; inset:0 lì. Eredita automaticamente
+                     dimensioni e resize del contenitore che lo ospita. -->
                 <div id="riepilogo-msg-overlay" class="riepilogo-msg-overlay" hidden>
                     <div class="riepilogo-msg-testata">
                         <b>📊 Riepilogo messaggi — ultime 24h</b>
@@ -511,11 +517,8 @@
                     </div>
                 </div>
 
-                <!-- POPUP MAPPA POSIZIONI: apertura da "Mostra posizioni" dentro
-                     una riga del riepilogo. Stessa meccanica di posizionamento
-                     dell'overlay sopra (lato opposto a Messaggistica), ma
-                     sopra di esso (z-index più alto) e più grande — la mappa
-                     è il contenuto, non un dettaglio dentro l'elenco. -->
+                <!-- POPUP MAPPA POSIZIONI: stessa logica, appendChild nello
+                     stesso pannello del riepilogo, sopra di esso (z-index). -->
                 <div id="riepilogo-msg-mappa-overlay" class="riepilogo-msg-overlay riepilogo-msg-mappa-overlay"
                     hidden>
                     <div class="riepilogo-msg-testata">

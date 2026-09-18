@@ -1255,15 +1255,29 @@ Koordináták küldéséhez:
         return document.getElementById(idOpposto);
     }
 
-    function posizionaOverlayRiepilogo(overlay) {
-        overlay = overlay || overlayRiepilogoMsg;
+    // Sposta l'overlay DENTRO il pannello opposto (appendChild), invece di
+    // calcolarne i pixel a mano: con position:absolute + inset:0 sul
+    // pannello (che ha position:relative, vedi CSS) l'overlay eredita
+    // automaticamente le dimensioni del contenitore ed è sempre corretto,
+    // anche dopo un resize della finestra — niente listener da mantenere.
+    function spostaOverlayNelPannelloOpposto(overlay) {
         const pannelloAltro = pannelloOppostoAMessaggistica();
-        if (!pannelloAltro || !overlay) return;
-        const rect = pannelloAltro.getBoundingClientRect();
-        overlay.style.left = rect.left + "px";
-        overlay.style.top = rect.top + "px";
-        overlay.style.width = rect.width + "px";
-        overlay.style.height = rect.height + "px";
+        if (!pannelloAltro || !overlay) return false;
+        pannelloAltro.appendChild(overlay);
+        return true;
+    }
+
+    // La tab si aggancia al bordo di Messaggistica rivolto verso l'altro
+    // pannello: bordo destro se è nel pannello sinistro, sinistro se è nel
+    // pannello destro. La classe la decide il CSS (vedi risposta).
+    function aggiornaLatoTabRiepilogo() {
+        if (!btnRiepilogoMsg) return;
+        const sezioneMsg = document.getElementById("messaggistica");
+        const pannelloMsg = sezioneMsg && sezioneMsg.closest(".pannello");
+        if (!pannelloMsg) return;
+        const aSinistra = pannelloMsg.id === "pannello-sinistra";
+        btnRiepilogoMsg.classList.toggle("lato-sinistra", aSinistra);
+        btnRiepilogoMsg.classList.toggle("lato-destra", !aSinistra);
     }
 
     // Un unico punto sulla mini-mappa (marker + cerchio di precisione),
@@ -1442,7 +1456,7 @@ Koordináták küldéséhez:
 
     function apriRiepilogoMsg() {
         if (!overlayRiepilogoMsg) return;
-        posizionaOverlayRiepilogo();
+        if (!spostaOverlayNelPannelloOpposto(overlayRiepilogoMsg)) return;
         overlayRiepilogoMsg.hidden = false;
         caricaRiepilogoMessaggi();
         // Aggiunto al prossimo giro di eventi: altrimenti il click che ha
@@ -1470,14 +1484,14 @@ Koordináták küldéséhez:
         chiudiRiepilogoMsg();
     }
 
-    // Popup mappa posizioni: stesso posizionamento dell'elenco (lato opposto
-    // a Messaggistica), ma sopra di esso e a sé stante — un dettaglio, non
-    // una riga in più della lista.
+    // Popup mappa posizioni: stesso pannello del riepilogo (appendChild), ma
+    // sopra di esso (z-index) e a sé stante — un dettaglio, non una riga in
+    // più della lista.
     function apriPosizioniMsg(idRicerca, righePosizione) {
         if (!overlayPosizioniMsg || !corpoPosizioniMsg) return;
         if (titoloPosizioniMsg) titoloPosizioniMsg.textContent = `🗺️ Posizioni ricevute — ${idRicerca || "-"}`;
 
-        posizionaOverlayRiepilogo(overlayPosizioniMsg);
+        if (!spostaOverlayNelPannelloOpposto(overlayPosizioniMsg)) return;
         corpoPosizioniMsg.innerHTML = "";
         const div = document.createElement("div");
         div.id = "riepilogo-mappa-grande";
@@ -1511,24 +1525,22 @@ Koordináták küldéséhez:
     }
     if (chiudiRiepilogoMsgBtn) chiudiRiepilogoMsgBtn.addEventListener("click", chiudiRiepilogoMsg);
     if (chkRiepilogoLimitrofi) chkRiepilogoLimitrofi.addEventListener("change", caricaRiepilogoMessaggi);
-    // Riposiziona entrambi gli overlay se la finestra cambia dimensione mentre sono aperti
-    window.addEventListener("resize", () => {
-        if (overlayRiepilogoMsg && !overlayRiepilogoMsg.hidden) posizionaOverlayRiepilogo(overlayRiepilogoMsg);
-        if (overlayPosizioniMsg && !overlayPosizioniMsg.hidden) posizionaOverlayRiepilogo(overlayPosizioniMsg);
-    });
 
     // Cambiare la pagina mostrata in un pannello sposta/ricrea il DOM sotto
     // agli overlay: restare aperti sopra un pannello che nel frattempo è
-    // diventato un'altra pagina (o su misure ormai sbagliate) è fuorviante,
-    // quindi si chiudono entrambi appena l'utente cambia selezione.
+    // diventato un'altra pagina è fuorviante, quindi si chiudono entrambi
+    // appena l'utente cambia selezione. Anche la tab deve sapere se il lato
+    // di Messaggistica stessa è cambiato (idem se sposto Messaggistica).
     const selettorePannelloSx = document.getElementById("select-pannello-sinistra");
     const selettorePannelloDx = document.getElementById("select-pannello-destra");
     [selettorePannelloSx, selettorePannelloDx].forEach(sel => {
         if (sel) sel.addEventListener("change", () => {
             chiudiRiepilogoMsg();
             chiudiPosizioniMsg();
+            aggiornaLatoTabRiepilogo();
         });
     });
+    aggiornaLatoTabRiepilogo(); // stato iniziale
 
     // Il messaggio precompilato dipende dal Comando attivo: quando cambia
     // (lo dice attivaComando() in script-bis.js con questo evento, la stessa
