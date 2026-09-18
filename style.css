@@ -6536,7 +6536,10 @@ select:focus {
     font-size: 12px;
 }
 
-/* TAB a tutta altezza, incollata al bordo di Messaggistica */
+/* TAB a tutta altezza, incollata al bordo di Messaggistica: scavalca i 16px
+   di gap fra i pannelli (.split-screen { gap:16px }) per toccare anche
+   l'altro pannello — arrotondata su entrambi i lati perché tocca due angoli
+   tondi, uno per pannello. Nascosta finché non ci sono dati (vedi JS). */
 .riepilogo-msg-tab {
     position: absolute;
     top: 0;
@@ -6545,13 +6548,18 @@ select:focus {
     z-index: 500;
     background: var(--dark-color);
     border: 1px solid var(--primary-color);
+    border-radius: 8px;
     color: var(--primary-color);
     cursor: pointer;
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
     padding: 10px 0;
     transition: background .2s, color .2s;
+}
+
+.riepilogo-msg-tab.visibile {
+    display: flex;
 }
 
 .riepilogo-msg-tab:hover {
@@ -6559,8 +6567,8 @@ select:focus {
     color: var(--dark-color);
 }
 
-.riepilogo-msg-tab.lato-sinistra { right: 0; border-radius: 0 8px 8px 0; }
-.riepilogo-msg-tab.lato-destra { left: 0; border-radius: 8px 0 0 8px; }
+.riepilogo-msg-tab.lato-sinistra { right: -16px; }
+.riepilogo-msg-tab.lato-destra { left: -16px; }
 
 .riepilogo-msg-tab-testo {
     writing-mode: vertical-rl;

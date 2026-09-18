@@ -1218,11 +1218,23 @@ Koordináták küldéséhez:
     const corpoRiepilogoMsg = document.getElementById("riepilogo-msg-corpo");
     const chkRiepilogoLimitrofi = document.getElementById("riepilogo-msg-limitrofi");
     const chiudiRiepilogoMsgBtn = document.getElementById("riepilogo-msg-chiudi");
+    const btnAggiornaRiepilogo = document.getElementById("riepilogo-msg-aggiorna");
 
     const overlayPosizioniMsg = document.getElementById("riepilogo-msg-mappa-overlay");
     const titoloPosizioniMsg = document.getElementById("riepilogo-msg-mappa-titolo");
     const corpoPosizioniMsg = document.getElementById("riepilogo-msg-mappa-corpo");
     const chiudiPosizioniMsgBtn = document.getElementById("riepilogo-msg-mappa-chiudi");
+
+    // Il foglio può restituire i numeri col separatore decimale italiano
+    // (virgola) se la colonna è testo anziché numero vero: Number() da solo
+    // non lo capisce ("41,12" → NaN). Prova prima il valore così com'è, poi
+    // con la virgola convertita in punto.
+    function numeroLocale(v) {
+        if (v === null || v === undefined || v === "") return NaN;
+        const diretto = Number(v);
+        if (isFinite(diretto)) return diretto;
+        return Number(String(v).replace(",", "."));
+    }
 
     // Ultime 3-4 cifre visibili, il resto mascherato con dei pallini — mai
     // il numero completo in un riepilogo che può restare a schermo in sala.
@@ -1283,6 +1295,8 @@ Koordináták küldéséhez:
     // Un unico punto sulla mini-mappa (marker + cerchio di precisione),
     // riusando lo stesso linguaggio visivo della mappa Comando: cerchio
     // semitrasparente il cui raggio è l'accuratezza in metri.
+    // Un punto per riga (marker + cerchio di precisione), col popup che
+    // mostra tutti i dati disponibili per quella posizione — non solo lat/lon.
     function disegnaPuntiPosizione(mappaEl, righePosizione) {
         if (!window.L || !righePosizione.length) return;
         const mappa = L.map(mappaEl, { attributionControl: false });
@@ -1291,10 +1305,27 @@ Koordináták küldéséhez:
 
         const gruppo = L.featureGroup();
         righePosizione.forEach(riga => {
-            const lat = Number(riga.Lat), lng = Number(riga.Lng);
+            const lat = numeroLocale(riga.Lat), lng = numeroLocale(riga.Lng);
             if (!isFinite(lat) || !isFinite(lng)) return;
-            L.marker([lat, lng]).addTo(gruppo);
-            const raggio = Number(riga.Accuratezza);
+
+            const raggio = numeroLocale(riga.Accuratezza);
+            const altitudine = numeroLocale(riga.Altitudine);
+            const accAltitudine = numeroLocale(riga.AccuratezzaAltitudine);
+            const direzione = numeroLocale(riga.Direzione);
+            const velocita = numeroLocale(riga.Velocita);
+            const orario = riga.Timestamp ? new Date(riga.Timestamp).toLocaleString("it-IT") : "-";
+
+            const marker = L.marker([lat, lng]).addTo(gruppo);
+            marker.bindPopup(`
+                <b>${riga.Fonte || "Posizione"}</b><br>
+                Orario: ${orario}<br>
+                Lat/Lon: ${lat.toFixed(6)}, ${lng.toFixed(6)}<br>
+                Precisione: ${isFinite(raggio) ? raggio + " m" : "-"}<br>
+                Altitudine: ${isFinite(altitudine) ? altitudine + " m" : "-"}${isFinite(accAltitudine) ? " (± " + accAltitudine + " m)" : ""}<br>
+                Direzione: ${isFinite(direzione) ? direzione + "°" : "-"}<br>
+                Velocità: ${isFinite(velocita) ? velocita + " km/h" : "-"}
+            `);
+
             if (isFinite(raggio) && raggio > 0) {
                 L.circle([lat, lng], {
                     radius: raggio, color: "#ffd700", fillColor: "#ffd700", fillOpacity: 0.15, weight: 1
@@ -1316,9 +1347,9 @@ Koordináták küldéséhez:
     // convertitore coordinate.
     function puntoMigliore(righePosizione) {
         return righePosizione.reduce((migliore, riga) => {
-            const acc = Number(riga.Accuratezza);
+            const acc = numeroLocale(riga.Accuratezza);
             if (!migliore) return riga;
-            const accMigliore = Number(migliore.Accuratezza);
+            const accMigliore = numeroLocale(migliore.Accuratezza);
             return (isFinite(acc) && (!isFinite(accMigliore) || acc < accMigliore)) ? riga : migliore;
         }, null);
     }
@@ -1388,7 +1419,7 @@ Koordináták küldéséhez:
             const azioni = document.createElement("div");
             azioni.className = "riepilogo-msg-azioni";
             azioni.innerHTML = `
-                <button type="button" class="btn-toggle-radar riepilogo-msg-toggle-mappa">🗺️ Mostra posizioni (${righePosizione.length})</button>
+                <button type="button" class="btn-toggle-radar riepilogo-msg-toggle-mappa">🗺️ Mostra su mappa (${righePosizione.length})</button>
                 <button type="button" class="btn-toggle-radar riepilogo-msg-apri-convertitore">📐 Apri nel convertitore</button>
             `;
             div.appendChild(azioni);
@@ -1400,11 +1431,37 @@ Koordináták küldéséhez:
 
             azioni.querySelector(".riepilogo-msg-apri-convertitore").addEventListener("click", () => {
                 const migliore = puntoMigliore(righePosizione);
-                if (migliore) apriInConvertitore(Number(migliore.Lat), Number(migliore.Lng));
+                if (migliore) apriInConvertitore(numeroLocale(migliore.Lat), numeroLocale(migliore.Lng));
             });
         }
 
         return div;
+    }
+
+    // Elenco comandi da interrogare: quello attivo, più i limitrofi se la
+    // checkbox è spuntata. Condiviso fra il caricamento della lista e il
+    // controllo "ci sono dati?" che decide se mostrare la tab.
+    function comandiDaInterrogare() {
+        const nomeComandoAttivo = sessionStorage.getItem(CHIAVE_STORAGE);
+        if (!nomeComandoAttivo) return null;
+        const comandi = [nomeComandoAttivo];
+        if (chkRiepilogoLimitrofi && chkRiepilogoLimitrofi.checked) {
+            comandi.push(...nomiComandiLimitrofi(nomeComandoAttivo));
+        }
+        return comandi;
+    }
+
+    // Un solo punto che parla con la Web App: sia il caricamento della lista
+    // sia il controllo di visibilità della tab passano da qui, stessa query.
+    function fetchDatiRiepilogo() {
+        if (!WEBAPP_URL_ID_SEARCH || !WEBAPP_URL_ID_SEARCH.startsWith("https://")) {
+            return Promise.reject(new Error("Web App non configurata"));
+        }
+        const comandi = comandiDaInterrogare();
+        if (!comandi) return Promise.reject(new Error("Nessun Comando attivo"));
+
+        const parametri = new URLSearchParams({ comandi: comandi.join(","), ore: "24" });
+        return fetch(`${WEBAPP_URL_ID_SEARCH}?${parametri.toString()}`).then(r => r.json());
     }
 
     function caricaRiepilogoMessaggi() {
@@ -1413,23 +1470,14 @@ Koordináták küldéséhez:
             corpoRiepilogoMsg.innerHTML = `<p class="pagina-nota">Web App non ancora configurata (WEBAPP_URL_ID_SEARCH).</p>`;
             return;
         }
-
-        const nomeComandoAttivo = sessionStorage.getItem(CHIAVE_STORAGE);
-        if (!nomeComandoAttivo) {
+        if (!comandiDaInterrogare()) {
             corpoRiepilogoMsg.innerHTML = `<p class="pagina-nota">Seleziona prima un Comando.</p>`;
             return;
         }
 
-        const comandi = [nomeComandoAttivo];
-        if (chkRiepilogoLimitrofi && chkRiepilogoLimitrofi.checked) {
-            comandi.push(...nomiComandiLimitrofi(nomeComandoAttivo));
-        }
-
         corpoRiepilogoMsg.innerHTML = `<p class="pagina-nota">Caricamento...</p>`;
 
-        const parametri = new URLSearchParams({ comandi: comandi.join(","), ore: "24" });
-        fetch(`${WEBAPP_URL_ID_SEARCH}?${parametri.toString()}`)
-            .then(r => r.json())
+        fetchDatiRiepilogo()
             .then(dati => {
                 const messaggi = dati.messaggi || [];
                 const posizioni = dati.posizioni || [];
@@ -1453,6 +1501,34 @@ Koordináták küldéséhez:
                 corpoRiepilogoMsg.innerHTML = `<p class="pagina-nota">Errore nel caricamento del riepilogo.</p>`;
             });
     }
+
+    // La tab compare solo se c'è almeno un messaggio con link nelle ultime
+    // 24h: niente ancoraggio permanente sul bordo se non c'è nulla da vedere.
+    function aggiornaVisibilitaTab() {
+        if (!btnRiepilogoMsg) return;
+        if (!WEBAPP_URL_ID_SEARCH || !WEBAPP_URL_ID_SEARCH.startsWith("https://") || !comandiDaInterrogare()) {
+            btnRiepilogoMsg.classList.remove("visibile");
+            return;
+        }
+        fetchDatiRiepilogo()
+            .then(dati => {
+                const haMessaggi = !!(dati.messaggi && dati.messaggi.length);
+                btnRiepilogoMsg.classList.toggle("visibile", haMessaggi);
+            })
+            .catch(() => btnRiepilogoMsg.classList.remove("visibile"));
+    }
+
+    if (btnAggiornaRiepilogo) btnAggiornaRiepilogo.addEventListener("click", caricaRiepilogoMessaggi);
+
+    // Aggiornamento automatico ogni 60 secondi: la lista solo se il
+    // pannello è aperto (non ha senso interrogare il foglio a vuoto se
+    // nessuno lo sta guardando), la visibilità della tab sempre — è così
+    // che ci si accorge che è arrivato un nuovo messaggio senza doverlo
+    // aprire per controllare.
+    setInterval(() => {
+        if (overlayRiepilogoMsg && !overlayRiepilogoMsg.hidden) caricaRiepilogoMessaggi();
+        aggiornaVisibilitaTab();
+    }, 60000);
 
     function apriRiepilogoMsg() {
         if (!overlayRiepilogoMsg) return;
@@ -1524,7 +1600,10 @@ Koordináták küldéséhez:
         });
     }
     if (chiudiRiepilogoMsgBtn) chiudiRiepilogoMsgBtn.addEventListener("click", chiudiRiepilogoMsg);
-    if (chkRiepilogoLimitrofi) chkRiepilogoLimitrofi.addEventListener("change", caricaRiepilogoMessaggi);
+    if (chkRiepilogoLimitrofi) chkRiepilogoLimitrofi.addEventListener("change", () => {
+        caricaRiepilogoMessaggi();
+        aggiornaVisibilitaTab();
+    });
 
     // Cambiare la pagina mostrata in un pannello sposta/ricrea il DOM sotto
     // agli overlay: restare aperti sopra un pannello che nel frattempo è
@@ -1541,11 +1620,13 @@ Koordináták küldéséhez:
         });
     });
     aggiornaLatoTabRiepilogo(); // stato iniziale
+    aggiornaVisibilitaTab(); // stato iniziale: mostra la tab solo se ci sono già dati
 
     // Il messaggio precompilato dipende dal Comando attivo: quando cambia
     // (lo dice attivaComando() in script-bis.js con questo evento, la stessa
     // via già usata da convertitore.js) lo rigeneriamo qui.
     document.addEventListener("fireops:comando-attivo-cambiato", () => {
         generaMessaggioMessaggistica();
+        aggiornaVisibilitaTab(); // Comando diverso = messaggi diversi, magari nessuno
     });
 });
