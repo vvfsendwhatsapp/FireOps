@@ -1104,7 +1104,7 @@ Koordináták küldéséhez:
     // distribuita per locator.html, il doPost() lato Apps Script deve
     // instradare in base al campo "foglio" del payload — vedi il codice di
     // esempio nella risposta.
-    const WEBAPP_URL_ID_SEARCH = "https://script.google.com/macros/s/AKfycbwS8Vtq5MbfPG-lLdobd8IpFqh2Mi90mTciotejfh9L1E7cUkMjdQko-zcj0thYOZ44/exec";
+    const WEBAPP_URL_ID_SEARCH = "https://script.google.com/macros/s/AKfycbzWHjngC1SkegRMlWudngc9dXfFYyq8ynQfuTSJsuXiYiuZGTrgjx7kPhmnEIXT4EZH/exec";
 
     // Registra su Google Sheet ogni invio di messaggio, qualunque sia il
     // canale scelto. Non blocca né condiziona l'invio vero e proprio: se la
@@ -1213,7 +1213,8 @@ Koordináták küldéséhez:
     // ultime 24h. Il codice Apps Script è nella risposta della chat.
     // ==========================================================
 
-    const btnRiepilogoMsg = document.getElementById("btn-riepilogo-msg");
+    const btnRiepilogoMsgSinistra = document.getElementById("btn-riepilogo-msg-sinistra");
+    const btnRiepilogoMsgDestra = document.getElementById("btn-riepilogo-msg-destra");
     const overlayRiepilogoMsg = document.getElementById("riepilogo-msg-overlay");
     const corpoRiepilogoMsg = document.getElementById("riepilogo-msg-corpo");
     const chkRiepilogoLimitrofi = document.getElementById("riepilogo-msg-limitrofi");
@@ -1279,17 +1280,30 @@ Koordináták küldéséhez:
         return true;
     }
 
-    // La tab si aggancia al bordo di Messaggistica rivolto verso l'altro
-    // pannello: bordo destro se è nel pannello sinistro, sinistro se è nel
-    // pannello destro. La classe la decide il CSS (vedi risposta).
-    function aggiornaLatoTabRiepilogo() {
-        if (!btnRiepilogoMsg) return;
+    // Le due tab sono fisse nell'HTML (una per pannello, mai spostate):
+    // questa dice quale corrisponde al pannello che ospita DAVVERO
+    // Messaggistica in questo momento — è l'unica che può comparire.
+    function tabRiepilogoAttiva() {
         const sezioneMsg = document.getElementById("messaggistica");
         const pannelloMsg = sezioneMsg && sezioneMsg.closest(".pannello");
-        if (!pannelloMsg) return;
-        const aSinistra = pannelloMsg.id === "pannello-sinistra";
-        btnRiepilogoMsg.classList.toggle("lato-sinistra", aSinistra);
-        btnRiepilogoMsg.classList.toggle("lato-destra", !aSinistra);
+        if (!pannelloMsg) return null;
+        return pannelloMsg.id === "pannello-sinistra" ? btnRiepilogoMsgSinistra : btnRiepilogoMsgDestra;
+    }
+
+    // Unica fonte di verità su "ci sono dati da mostrare?", aggiornata da
+    // aggiornaVisibilitaTab(). Tenuta a parte dal solo "hidden" delle due
+    // tab perché cambiare pannello (aggiornaVisualizzazioneTab) non deve
+    // rifare la chiamata al foglio solo per capire quale nascondere.
+    let haDatiRiepilogo = false;
+
+    // Nasconde sempre la tab che non è nel pannello giusto; mostra quella
+    // giusta solo se ci sono davvero dati (altrimenti resta nascosta anche
+    // lei — niente ancoraggio vuoto sul bordo).
+    function aggiornaVisualizzazioneTab() {
+        const attiva = tabRiepilogoAttiva();
+        [btnRiepilogoMsgSinistra, btnRiepilogoMsgDestra].forEach(btn => {
+            if (btn) btn.hidden = !(btn === attiva && haDatiRiepilogo);
+        });
     }
 
     // Un unico punto sulla mini-mappa (marker + cerchio di precisione),
@@ -1333,13 +1347,18 @@ Koordináták küldéséhez:
             }
         });
         gruppo.addTo(mappa);
-        if (gruppo.getLayers().length) mappa.fitBounds(gruppo.getBounds().pad(0.3));
-        else mappa.setView([41.9, 12.5], 5);
 
-        // Il div nasce con display:none (dentro un accordion chiuso): Leaflet
-        // misura zero finché non è visibile, va ridato la dimensione giusta
-        // subito dopo averlo mostrato.
-        setTimeout(() => mappa.invalidateSize(), 50);
+        // BUG corretto: fitBounds veniva chiamato subito, con la mappa
+        // appena creata e il suo contenitore ancora a dimensione zero (non
+        // ancora "assestato" nel layout) — Leaflet calcolava lo zoom su un
+        // riquadro 0×0 e il centraggio sui punti falliva silenziosamente.
+        // invalidateSize() E fitBounds() vanno fatti INSIEME, dopo, quando
+        // il contenitore ha davvero la sua dimensione finale.
+        setTimeout(() => {
+            mappa.invalidateSize();
+            if (gruppo.getLayers().length) mappa.fitBounds(gruppo.getBounds().pad(0.3));
+            else mappa.setView([41.9, 12.5], 5);
+        }, 50);
     }
 
     // Punto più preciso (accuratezza minima, cioè il cerchio più piccolo) fra
@@ -1505,17 +1524,20 @@ Koordináták küldéséhez:
     // La tab compare solo se c'è almeno un messaggio con link nelle ultime
     // 24h: niente ancoraggio permanente sul bordo se non c'è nulla da vedere.
     function aggiornaVisibilitaTab() {
-        if (!btnRiepilogoMsg) return;
         if (!WEBAPP_URL_ID_SEARCH || !WEBAPP_URL_ID_SEARCH.startsWith("https://") || !comandiDaInterrogare()) {
-            btnRiepilogoMsg.classList.remove("visibile");
+            haDatiRiepilogo = false;
+            aggiornaVisualizzazioneTab();
             return;
         }
         fetchDatiRiepilogo()
             .then(dati => {
-                const haMessaggi = !!(dati.messaggi && dati.messaggi.length);
-                btnRiepilogoMsg.classList.toggle("visibile", haMessaggi);
+                haDatiRiepilogo = !!(dati.messaggi && dati.messaggi.length);
+                aggiornaVisualizzazioneTab();
             })
-            .catch(() => btnRiepilogoMsg.classList.remove("visibile"));
+            .catch(() => {
+                haDatiRiepilogo = false;
+                aggiornaVisualizzazioneTab();
+            });
     }
 
     if (btnAggiornaRiepilogo) btnAggiornaRiepilogo.addEventListener("click", caricaRiepilogoMessaggi);
@@ -1553,7 +1575,9 @@ Koordináták küldéséhez:
 
     function chiudiRiepilogoMsgSeFuori(ev) {
         if (!overlayRiepilogoMsg || overlayRiepilogoMsg.hidden) return;
-        if (overlayRiepilogoMsg.contains(ev.target) || ev.target === btnRiepilogoMsg) return;
+        if (overlayRiepilogoMsg.contains(ev.target)) return;
+        if (btnRiepilogoMsgSinistra && btnRiepilogoMsgSinistra.contains(ev.target)) return;
+        if (btnRiepilogoMsgDestra && btnRiepilogoMsgDestra.contains(ev.target)) return;
         // Il popup posizioni sta sopra ed esce dai bordi dell'elenco: un
         // click al suo interno non deve chiudere l'elenco sottostante.
         if (overlayPosizioniMsg && overlayPosizioniMsg.contains(ev.target)) return;
@@ -1592,13 +1616,14 @@ Koordináták küldéséhez:
     }
     if (chiudiPosizioniMsgBtn) chiudiPosizioniMsgBtn.addEventListener("click", chiudiPosizioniMsg);
 
-    if (btnRiepilogoMsg) {
-        btnRiepilogoMsg.addEventListener("click", (ev) => {
+    [btnRiepilogoMsgSinistra, btnRiepilogoMsgDestra].forEach(btn => {
+        if (!btn) return;
+        btn.addEventListener("click", (ev) => {
             ev.stopPropagation();
             if (overlayRiepilogoMsg && overlayRiepilogoMsg.hidden) apriRiepilogoMsg();
             else chiudiRiepilogoMsg();
         });
-    }
+    });
     if (chiudiRiepilogoMsgBtn) chiudiRiepilogoMsgBtn.addEventListener("click", chiudiRiepilogoMsg);
     if (chkRiepilogoLimitrofi) chkRiepilogoLimitrofi.addEventListener("change", () => {
         caricaRiepilogoMessaggi();
@@ -1608,18 +1633,18 @@ Koordináták küldéséhez:
     // Cambiare la pagina mostrata in un pannello sposta/ricrea il DOM sotto
     // agli overlay: restare aperti sopra un pannello che nel frattempo è
     // diventato un'altra pagina è fuorviante, quindi si chiudono entrambi
-    // appena l'utente cambia selezione. Anche la tab deve sapere se il lato
-    // di Messaggistica stessa è cambiato (idem se sposto Messaggistica).
+    // appena l'utente cambia selezione. Anche la tab attiva va ricalcolata
+    // (le due tab sono fisse: cambia solo quale delle due va mostrata).
     const selettorePannelloSx = document.getElementById("select-pannello-sinistra");
     const selettorePannelloDx = document.getElementById("select-pannello-destra");
     [selettorePannelloSx, selettorePannelloDx].forEach(sel => {
         if (sel) sel.addEventListener("change", () => {
             chiudiRiepilogoMsg();
             chiudiPosizioniMsg();
-            aggiornaLatoTabRiepilogo();
+            aggiornaVisualizzazioneTab();
         });
     });
-    aggiornaLatoTabRiepilogo(); // stato iniziale
+    aggiornaVisualizzazioneTab(); // stato iniziale (entrambe nascoste finché non si sa se ci sono dati)
     aggiornaVisibilitaTab(); // stato iniziale: mostra la tab solo se ci sono già dati
 
     // Il messaggio precompilato dipende dal Comando attivo: quando cambia
