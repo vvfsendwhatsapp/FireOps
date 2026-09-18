@@ -1220,11 +1220,6 @@ Koordináták küldéséhez:
     const chiudiRiepilogoMsgBtn = document.getElementById("riepilogo-msg-chiudi");
     const btnAggiornaRiepilogo = document.getElementById("riepilogo-msg-aggiorna");
 
-    const overlayPosizioniMsg = document.getElementById("riepilogo-msg-mappa-overlay");
-    const titoloPosizioniMsg = document.getElementById("riepilogo-msg-mappa-titolo");
-    const corpoPosizioniMsg = document.getElementById("riepilogo-msg-mappa-corpo");
-    const chiudiPosizioniMsgBtn = document.getElementById("riepilogo-msg-mappa-chiudi");
-
     // Il foglio può restituire i numeri col separatore decimale italiano
     // (virgola) se la colonna è testo anziché numero vero: Number() da solo
     // non lo capisce ("41,12" → NaN). Prova prima il valore così com'è, poi
@@ -1407,6 +1402,7 @@ Koordináták küldéséhez:
     // e, se ricevuto, l'accordion con la mini-mappa e il link al convertitore.
     function costruisciRigaRiepilogo(messaggio, righePosizione) {
         const ricevuto = righePosizione.length > 0;
+        const idMappa = "riepilogo-mappa-" + Math.random().toString(36).slice(2, 9);
 
         const div = document.createElement("div");
         div.className = "riepilogo-msg-voce";
@@ -1435,9 +1431,23 @@ Koordináták küldéséhez:
             `;
             div.appendChild(azioni);
 
+            // Mappa piccola dentro la riga (accordion): si espande in basso
+            // sotto ai pulsanti, invece di aprire il popup grande sull'altro
+            // pannello. Creata una sola volta, alla prima apertura.
+            const mappaWrap = document.createElement("div");
+            mappaWrap.className = "riepilogo-msg-mappa-wrap";
+            mappaWrap.hidden = true;
+            mappaWrap.innerHTML = `<div id="${idMappa}" class="riepilogo-msg-mappa"></div>`;
+            div.appendChild(mappaWrap);
+
+            let mappaCreata = null;
             azioni.querySelector(".riepilogo-msg-toggle-mappa").addEventListener("click", (ev) => {
                 ev.stopPropagation();
-                apriPosizioniMsg(messaggio.IdRicerca, righePosizione);
+                mappaWrap.hidden = !mappaWrap.hidden;
+                if (!mappaWrap.hidden && !mappaCreata) {
+                    mappaCreata = true;
+                    disegnaPuntiPosizione(document.getElementById(idMappa), righePosizione);
+                }
             });
 
             azioni.querySelector(".riepilogo-msg-apri-convertitore").addEventListener("click", () => {
@@ -1559,53 +1569,14 @@ Koordináták küldéséhez:
         if (!overlayRiepilogoMsg) return;
         overlayRiepilogoMsg.hidden = true;
         document.removeEventListener("click", chiudiRiepilogoMsgSeFuori);
-        // Chiudere l'elenco senza chiudere anche il dettaglio sopra di esso
-        // lascerebbe un popup posizioni orfano, scollegato dalla riga che
-        // l'ha aperto.
-        chiudiPosizioniMsg();
     }
 
     function chiudiRiepilogoMsgSeFuori(ev) {
         if (!overlayRiepilogoMsg || overlayRiepilogoMsg.hidden) return;
         if (overlayRiepilogoMsg.contains(ev.target)) return;
         if (btnRiepilogoMsg && btnRiepilogoMsg.contains(ev.target)) return;
-        // Il popup posizioni sta sopra ed esce dai bordi dell'elenco: un
-        // click al suo interno non deve chiudere l'elenco sottostante.
-        if (overlayPosizioniMsg && overlayPosizioniMsg.contains(ev.target)) return;
         chiudiRiepilogoMsg();
     }
-
-    // Popup mappa posizioni: stesso pannello del riepilogo (appendChild), ma
-    // sopra di esso (z-index) e a sé stante — un dettaglio, non una riga in
-    // più della lista.
-    function apriPosizioniMsg(idRicerca, righePosizione) {
-        if (!overlayPosizioniMsg || !corpoPosizioniMsg) return;
-        if (titoloPosizioniMsg) titoloPosizioniMsg.textContent = `🗺️ Posizioni ricevute — ${idRicerca || "-"}`;
-
-        if (!spostaOverlayNelPannelloOpposto(overlayPosizioniMsg)) return;
-        corpoPosizioniMsg.innerHTML = "";
-        const div = document.createElement("div");
-        div.id = "riepilogo-mappa-grande";
-        div.className = "riepilogo-msg-mappa-grande";
-        corpoPosizioniMsg.appendChild(div);
-
-        overlayPosizioniMsg.hidden = false;
-        disegnaPuntiPosizione(div, righePosizione);
-        setTimeout(() => document.addEventListener("click", chiudiPosizioniMsgSeFuori), 0);
-    }
-
-    function chiudiPosizioniMsg() {
-        if (!overlayPosizioniMsg) return;
-        overlayPosizioniMsg.hidden = true;
-        document.removeEventListener("click", chiudiPosizioniMsgSeFuori);
-    }
-
-    function chiudiPosizioniMsgSeFuori(ev) {
-        if (!overlayPosizioniMsg || overlayPosizioniMsg.hidden) return;
-        if (overlayPosizioniMsg.contains(ev.target)) return;
-        chiudiPosizioniMsg();
-    }
-    if (chiudiPosizioniMsgBtn) chiudiPosizioniMsgBtn.addEventListener("click", chiudiPosizioniMsg);
 
     if (btnRiepilogoMsg) {
         btnRiepilogoMsg.addEventListener("click", (ev) => {
@@ -1621,16 +1592,15 @@ Koordináták küldéséhez:
     });
 
     // Cambiare la pagina mostrata in un pannello sposta/ricrea il DOM sotto
-    // agli overlay: restare aperti sopra un pannello che nel frattempo è
-    // diventato un'altra pagina è fuorviante, quindi si chiudono entrambi
-    // appena l'utente cambia selezione. Anche la tab attiva va ricalcolata
-    // (le due tab sono fisse: cambia solo quale delle due va mostrata).
+    // all'overlay: restare aperto sopra un pannello che nel frattempo è
+    // diventato un'altra pagina è fuorviante, quindi si chiude appena
+    // l'utente cambia selezione. La tab va ricontrollata (Messaggistica
+    // potrebbe non essere più attiva in nessuno dei due pannelli).
     const selettorePannelloSx = document.getElementById("select-pannello-sinistra");
     const selettorePannelloDx = document.getElementById("select-pannello-destra");
     [selettorePannelloSx, selettorePannelloDx].forEach(sel => {
         if (sel) sel.addEventListener("change", () => {
             chiudiRiepilogoMsg();
-            chiudiPosizioniMsg();
             aggiornaVisualizzazioneTab();
         });
     });
