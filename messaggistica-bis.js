@@ -594,7 +594,7 @@ Koordinaatide saatmiseks:
 
 *Jääge turvaliselt meiega jagatud asukohas ja hoidke oma telefoniliin vaba.*`,
 
-        fi: `🚒 *Palokunta KKKKKKK* 🚒
+        fi: `🚒 *Palokunta {{COMANDO}}* 🚒
 
 Automaattisesti luotu viesti.
 
@@ -709,7 +709,7 @@ Norėdami išsiųsti koordinates:
 
 *Būkite saugūs, toje vietoje, kurią su mumis pasidalinote, ir palaikykite telefono liniją laisvą.*`,
 
-        mt: `🚒 *Brigata tat-Tifi tan-Nar {{COMANDO}}C* 🚒
+        mt: `🚒 *Brigata tat-Tifi tan-Nar {{COMANDO}}* 🚒
 
 Messaġġ iġġenerat awtomatikament.
 
@@ -801,7 +801,7 @@ Para enviar as coordenadas:
 
 *Mantenha-se em segurança, no local que você compartilhou conosco, e mantenha sua linha telefônica livre.*`,
 
-        ro: `🚒 *Brigada de Pompieri {{COMANDO}}C* 🚒
+        ro: `🚒 *Brigada de Pompieri {{COMANDO}}* 🚒
 
 Mesaj generat automat.
 
@@ -1104,14 +1104,14 @@ Koordináták küldéséhez:
     // distribuita per locator.html, il doPost() lato Apps Script deve
     // instradare in base al campo "foglio" del payload — vedi il codice di
     // esempio nella risposta.
-    const WEBAPP_URL_ID_SEARCH = "INCOLLA_QUI_URL_APPS_SCRIPT_ID_SEARCH";
+    const WEBAPP_URL_ID_SEARCH = "https://script.google.com/macros/s/AKfycbzWHjngC1SkegRMlWudngc9dXfFYyq8ynQfuTSJsuXiYiuZGTrgjx7kPhmnEIXT4EZH/exec";
 
     // Registra su Google Sheet ogni invio di messaggio, qualunque sia il
     // canale scelto. Non blocca né condiziona l'invio vero e proprio: se la
     // scrittura fallisce o l'URL non è ancora configurato, l'utente continua
     // comunque a poter inviare il messaggio.
     function inviaRigaDbIdSearch(canale) {
-        if (!WEBAPP_URL_ID_SEARCH || WEBAPP_URL_ID_SEARCH.includes("INCOLLA_QUI")) return;
+        if (!WEBAPP_URL_ID_SEARCH || !WEBAPP_URL_ID_SEARCH.startsWith("https://")) return;
 
         const nomeComandoAttivo = sessionStorage.getItem(CHIAVE_STORAGE);
         const comandoAttivo = (window.FireOpsComandi || []).find(c => c.Comando === nomeComandoAttivo);
@@ -1400,7 +1400,7 @@ Koordináták küldéséhez:
 
     function caricaRiepilogoMessaggi() {
         if (!corpoRiepilogoMsg) return;
-        if (!WEBAPP_URL_ID_SEARCH || WEBAPP_URL_ID_SEARCH.includes("INCOLLA_QUI")) {
+        if (!WEBAPP_URL_ID_SEARCH || !WEBAPP_URL_ID_SEARCH.startsWith("https://")) {
             corpoRiepilogoMsg.innerHTML = `<p class="pagina-nota">Web App non ancora configurata (WEBAPP_URL_ID_SEARCH).</p>`;
             return;
         }
