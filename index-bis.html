@@ -121,27 +121,20 @@
 
         <div class="split-screen">
             <div class="pannello" id="pannello-sinistra">
-                <!-- Tab del riepilogo messaggi: figlia diretta del pannello,
-                     non di #messaggistica — vive qui sempre, indipendentemente
-                     da quale pagina occupa il pannello in questo momento. JS
-                     la mostra solo quando Messaggistica è ESATTAMENTE
-                     nell'ALTRO pannello (questo è quello che verrebbe coperto
-                     dall'overlay). Angoli quadrati apposta: è il
-                     overflow:hidden di .pannello a "tagliarla" secondo
-                     l'arrotondamento vero del contenitore, non un
-                     border-radius copiato a mano. -->
-                <button type="button" id="btn-riepilogo-msg-sinistra" class="riepilogo-msg-tab lato-destro-interno"
-                    title="Riepilogo messaggi (24h)" hidden>
-                    <span class="riepilogo-msg-tab-testo">📊 Riepilogo messaggi (24h)</span>
-                </button>
                 <div class="pannello-corpo" id="corpo-sinistra"></div>
             </div>
 
+            <!-- Tab del riepilogo messaggi: UNA sola, figlia di .split-screen
+                 (non di un pannello): sospesa esattamente al centro del
+                 varco fra i due pannelli (left:50%), quindi tocca entrambi
+                 senza essere mai ritagliata dall'overflow di nessuno dei
+                 due. Nascosta finché non ci sono davvero dati (JS). -->
+            <button type="button" id="btn-riepilogo-msg" class="riepilogo-msg-tab"
+                title="Riepilogo messaggi (24h)" hidden>
+                <span class="riepilogo-msg-tab-testo">📊 Riepilogo messaggi (24h)</span>
+            </button>
+
             <div class="pannello" id="pannello-destra">
-                <button type="button" id="btn-riepilogo-msg-destra" class="riepilogo-msg-tab lato-sinistro-interno"
-                    title="Riepilogo messaggi (24h)" hidden>
-                    <span class="riepilogo-msg-tab-testo">📊 Riepilogo messaggi (24h)</span>
-                </button>
                 <div class="pannello-corpo" id="corpo-destra"></div>
             </div>
         </div>

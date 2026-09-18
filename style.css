@@ -381,6 +381,7 @@ html.comando-gia-scelto #modal-comando {
     display: flex;
     gap: 16px;
     align-items: flex-start;
+    position: relative;
 }
 
 .pannello {
@@ -393,7 +394,6 @@ html.comando-gia-scelto #modal-comando {
     flex-direction: column;
     height: calc(100vh - var(--header-height) - var(--subheader-height) - 40px);
     position: relative;
-    overflow: hidden;
 }
 
 .pannello-etichetta {
@@ -6537,19 +6537,21 @@ select:focus {
     font-size: 12px;
 }
 
-/* Tab a tutta altezza: due elementi FISSI, uno per pannello (non più
-   figlie di #messaggistica, non si spostano mai). JS mostra solo quella nel
-   pannello che ospita davvero Messaggistica. Angoli quadrati voluti: è
-   .pannello (overflow:hidden) a tagliarla secondo l'arrotondamento vero
-   del contenitore, non un border-radius replicato a mano. */
+/* Tab unica, sospesa nel varco fra i due pannelli (centrata sul gap di
+   16px di .split-screen): "esterna" a entrambi, mai ritagliata dal loro
+   overflow. Arrotondata su tutti e quattro i lati perché tocca angoli
+   tondi su entrambi i pannelli, sopra e sotto. */
 .riepilogo-msg-tab {
     position: absolute;
     top: 0;
     bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
     width: 34px;
     z-index: 500;
     background: var(--dark-color);
     border: 1px solid var(--primary-color);
+    border-radius: 8px;
     color: var(--primary-color);
     cursor: pointer;
     display: none;
@@ -6566,6 +6568,14 @@ select:focus {
 .riepilogo-msg-tab:hover {
     background: var(--primary-color);
     color: var(--dark-color);
+}
+
+.riepilogo-msg-tab-testo {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-size: 13px;
+    font-weight: bold;
+    white-space: nowrap;
 }
 
 /* Nel pannello sinistro la tab sta sul bordo destro (verso l'altro pannello) */

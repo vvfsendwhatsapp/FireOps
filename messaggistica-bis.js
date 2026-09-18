@@ -1213,8 +1213,7 @@ Koordináták küldéséhez:
     // ultime 24h. Il codice Apps Script è nella risposta della chat.
     // ==========================================================
 
-    const btnRiepilogoMsgSinistra = document.getElementById("btn-riepilogo-msg-sinistra");
-    const btnRiepilogoMsgDestra = document.getElementById("btn-riepilogo-msg-destra");
+    const btnRiepilogoMsg = document.getElementById("btn-riepilogo-msg");
     const overlayRiepilogoMsg = document.getElementById("riepilogo-msg-overlay");
     const corpoRiepilogoMsg = document.getElementById("riepilogo-msg-corpo");
     const chkRiepilogoLimitrofi = document.getElementById("riepilogo-msg-limitrofi");
@@ -1280,30 +1279,23 @@ Koordináták küldéséhez:
         return true;
     }
 
-    // Le due tab sono fisse nell'HTML (una per pannello, mai spostate):
-    // questa dice quale corrisponde al pannello che ospita DAVVERO
-    // Messaggistica in questo momento — è l'unica che può comparire.
-    function tabRiepilogoAttiva() {
+    // Messaggistica deve essere attiva in uno dei due pannelli perché la
+    // tab abbia senso — se l'utente l'ha cambiata in entrambi, sparisce.
+    function messaggisticaAttivaInUnPannello() {
         const sezioneMsg = document.getElementById("messaggistica");
-        const pannelloMsg = sezioneMsg && sezioneMsg.closest(".pannello");
-        if (!pannelloMsg) return null;
-        return pannelloMsg.id === "pannello-sinistra" ? btnRiepilogoMsgSinistra : btnRiepilogoMsgDestra;
+        return !!(sezioneMsg && sezioneMsg.closest(".pannello"));
     }
 
     // Unica fonte di verità su "ci sono dati da mostrare?", aggiornata da
-    // aggiornaVisibilitaTab(). Tenuta a parte dal solo "hidden" delle due
-    // tab perché cambiare pannello (aggiornaVisualizzazioneTab) non deve
-    // rifare la chiamata al foglio solo per capire quale nascondere.
+    // aggiornaVisibilitaTab().
     let haDatiRiepilogo = false;
 
-    // Nasconde sempre la tab che non è nel pannello giusto; mostra quella
-    // giusta solo se ci sono davvero dati (altrimenti resta nascosta anche
-    // lei — niente ancoraggio vuoto sul bordo).
+    // La tab (unica: è centrata nel varco fra i pannelli, non serve più
+    // sapere il lato) compare solo se Messaggistica è attiva da qualche
+    // parte E ci sono davvero dati.
     function aggiornaVisualizzazioneTab() {
-        const attiva = tabRiepilogoAttiva();
-        [btnRiepilogoMsgSinistra, btnRiepilogoMsgDestra].forEach(btn => {
-            if (btn) btn.hidden = !(btn === attiva && haDatiRiepilogo);
-        });
+        if (!btnRiepilogoMsg) return;
+        btnRiepilogoMsg.hidden = !(haDatiRiepilogo && messaggisticaAttivaInUnPannello());
     }
 
     // Un unico punto sulla mini-mappa (marker + cerchio di precisione),
@@ -1576,8 +1568,7 @@ Koordináták küldéséhez:
     function chiudiRiepilogoMsgSeFuori(ev) {
         if (!overlayRiepilogoMsg || overlayRiepilogoMsg.hidden) return;
         if (overlayRiepilogoMsg.contains(ev.target)) return;
-        if (btnRiepilogoMsgSinistra && btnRiepilogoMsgSinistra.contains(ev.target)) return;
-        if (btnRiepilogoMsgDestra && btnRiepilogoMsgDestra.contains(ev.target)) return;
+        if (btnRiepilogoMsg && btnRiepilogoMsg.contains(ev.target)) return;
         // Il popup posizioni sta sopra ed esce dai bordi dell'elenco: un
         // click al suo interno non deve chiudere l'elenco sottostante.
         if (overlayPosizioniMsg && overlayPosizioniMsg.contains(ev.target)) return;
@@ -1616,14 +1607,13 @@ Koordináták küldéséhez:
     }
     if (chiudiPosizioniMsgBtn) chiudiPosizioniMsgBtn.addEventListener("click", chiudiPosizioniMsg);
 
-    [btnRiepilogoMsgSinistra, btnRiepilogoMsgDestra].forEach(btn => {
-        if (!btn) return;
-        btn.addEventListener("click", (ev) => {
+    if (btnRiepilogoMsg) {
+        btnRiepilogoMsg.addEventListener("click", (ev) => {
             ev.stopPropagation();
             if (overlayRiepilogoMsg && overlayRiepilogoMsg.hidden) apriRiepilogoMsg();
             else chiudiRiepilogoMsg();
         });
-    });
+    }
     if (chiudiRiepilogoMsgBtn) chiudiRiepilogoMsgBtn.addEventListener("click", chiudiRiepilogoMsg);
     if (chkRiepilogoLimitrofi) chkRiepilogoLimitrofi.addEventListener("change", () => {
         caricaRiepilogoMessaggi();
@@ -1644,7 +1634,7 @@ Koordináták küldéséhez:
             aggiornaVisualizzazioneTab();
         });
     });
-    aggiornaVisualizzazioneTab(); // stato iniziale (entrambe nascoste finché non si sa se ci sono dati)
+    aggiornaVisualizzazioneTab(); // stato iniziale (nascosta finché non si sa se ci sono dati)
     aggiornaVisibilitaTab(); // stato iniziale: mostra la tab solo se ci sono già dati
 
     // Il messaggio precompilato dipende dal Comando attivo: quando cambia
