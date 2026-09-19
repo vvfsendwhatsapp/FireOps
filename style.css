@@ -6615,7 +6615,7 @@ select:focus {
    del PANNELLO stesso (che di suo è "auto" = 0), non con l'overlay che sta
    dentro — ecco perché prima la tab ci passava sopra anche a overlay aperto. */
 .pannello.ha-overlay-attivo {
-    z-index: 1200; /* sopra la tab (500) 18001111111111111111111*/
+    z-index: 1800; /* sopra la tab (500) 18001111111111111111111*/
 }
 
 /* Freccia direzionale: JS aggiorna solo il testo (◂/▸), qui basta lo stile */

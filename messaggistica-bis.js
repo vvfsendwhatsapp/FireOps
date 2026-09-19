@@ -1632,12 +1632,14 @@ Koordináták küldéséhez:
         if (!spostaOverlayNelPannelloOpposto(overlayRiepilogoMsg)) return;
         overlayRiepilogoMsg.hidden = false;
         if (btnRiepilogoMsg) btnRiepilogoMsg.classList.add("aperta");
-        // Il pannello che ospita l'overlay sale sopra la tab (z-index): senza
-        // questo la tab, sorella dei pannelli, ci passava sopra anche a
-        // overlay aperto — lo z-index dell'overlay conta solo dentro al suo
-        // pannello, non si confronta direttamente con un elemento esterno.
-        const pannelloOspite = pannelloOppostoAMessaggistica();
-        if (pannelloOspite) pannelloOspite.classList.add("ha-overlay-attivo");
+        // Ordine voluto, dal davanti all'indietro: pannello di Messaggistica,
+        // poi la tab, poi il pannello che ospita il riepilogo. È il pannello
+        // di MESSAGGISTICA a salire sopra la tab (non quello ospitante) —
+        // la tab è sorella dei pannelli, il suo z-index si confronta con
+        // quello del pannello stesso, non con l'overlay che sta dentro.
+        const sezioneMsg = document.getElementById("messaggistica");
+        const pannelloMsg = sezioneMsg && sezioneMsg.closest(".pannello");
+        if (pannelloMsg) pannelloMsg.classList.add("sopra-overlay");
         aggiornaFrecciaTab();
         caricaRiepilogoMessaggi();
         // Aggiunto al prossimo giro di eventi: altrimenti il click che ha
@@ -1650,13 +1652,12 @@ Koordináták küldéséhez:
         if (!overlayRiepilogoMsg) return;
         overlayRiepilogoMsg.hidden = true;
         if (btnRiepilogoMsg) btnRiepilogoMsg.classList.remove("aperta");
-        // L'overlay può aver cambiato pannello ospite da un'apertura
-        // all'altra (Messaggistica spostata nel frattempo): tolgo la classe
-        // da ENTRAMBI i pannelli, non solo da quello attuale.
+        // Messaggistica può aver cambiato pannello da un'apertura all'altra:
+        // tolgo la classe da ENTRAMBI i pannelli, non solo da quello attuale.
         const psx = document.getElementById("pannello-sinistra");
         const pdx = document.getElementById("pannello-destra");
-        if (psx) psx.classList.remove("ha-overlay-attivo");
-        if (pdx) pdx.classList.remove("ha-overlay-attivo");
+        if (psx) psx.classList.remove("sopra-overlay");
+        if (pdx) pdx.classList.remove("sopra-overlay");
         aggiornaFrecciaTab();
         document.removeEventListener("click", chiudiRiepilogoMsgSeFuori);
     }
