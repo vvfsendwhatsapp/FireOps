@@ -6561,7 +6561,7 @@ select:focus {
     align-items: center;
     justify-content: center;
     padding: 10px 0;
-    transition: background .4s, color .4s, border-color .4s;
+    transition: background .2s, color .2s, border-color .2s;
 }
 
 .riepilogo-msg-tab:not([hidden]) {
