@@ -1285,7 +1285,13 @@ Koordináták küldéséhez:
     // Ora che la tab è figlia di #messaggistica (si sposta da sé con la
     // sezione), deve sapere su quale bordo del PROPRIO pannello agganciarsi:
     // destro se Messaggistica è nel pannello sinistro (rivolto verso l'altro
-    // pannello), sinistro se è nel pannello destro.
+    // pannello), sinistro se è nel pannello destro. Le stesse classi vanno
+    // anche sulla SEZIONE (non solo sulla tab): servono al CSS per dare al
+    // contenuto un padding extra su quel lato, altrimenti il testo di
+    // Messaggistica parte da dove parte sempre (16px, il padding di
+    // .pannello-corpo) e finisce SOTTO la tab, che è larga 34px e
+    // posizionata rispetto al pannello, non al contenuto — lo spazio non
+    // "manca", il contenuto è overlappato.
     function aggiornaLatoTab() {
         if (!btnRiepilogoMsg) return;
         const sezioneMsg = document.getElementById("messaggistica");
@@ -1294,6 +1300,10 @@ Koordináták küldéséhez:
         const aSinistra = pannelloMsg.id === "pannello-sinistra";
         btnRiepilogoMsg.classList.toggle("lato-destro-interno", aSinistra);
         btnRiepilogoMsg.classList.toggle("lato-sinistro-interno", !aSinistra);
+        if (sezioneMsg) {
+            sezioneMsg.classList.toggle("lato-destro-interno", aSinistra);
+            sezioneMsg.classList.toggle("lato-sinistro-interno", !aSinistra);
+        }
     }
 
     // Verso della freccia: punta verso dove si APRIRÀ l'overlay (il pannello

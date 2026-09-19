@@ -6587,10 +6587,27 @@ select:focus {
     color: var(--dark-color);
 }
 
-/* Messaggistica nel pannello sinistro: tab sul bordo destro (verso l'altro) */
-.riepilogo-msg-tab.lato-destro-interno { right: 0; }
-/* Messaggistica nel pannello destro: tab sul bordo sinistro (verso l'altro) */
-.riepilogo-msg-tab.lato-sinistro-interno { left: 0; }
+/* Messaggistica nel pannello sinistro: tab sul bordo destro. Il padding
+   extra sulla SEZIONE (non sul pannello, che ha già i suoi 16px validi per
+   il lato opposto) dà al contenuto lo spazio per non finire sotto la tab:
+   34px di larghezza tab + un piccolo distacco, meno i 16px che
+   .pannello-corpo mette già di suo su ogni lato. */
+.riepilogo-msg-tab.lato-destro-interno {
+    right: 0;
+    border-radius: 0 8px 8px 0;
+}
+#messaggistica.lato-destro-interno {
+    padding-right: 28px;
+}
+
+/* Messaggistica nel pannello destro: tab sul bordo sinistro */
+.riepilogo-msg-tab.lato-sinistro-interno {
+    left: 0;
+    border-radius: 8px 0 0 8px;
+}
+#messaggistica.lato-sinistro-interno {
+    padding-left: 28px;
+}
 
 .riepilogo-msg-tab-freccia {
     display: inline-block;
