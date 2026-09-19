@@ -6439,7 +6439,7 @@ select:focus {
     display: none;
     min-width: 0;
     background: var(--surface-color);
-    border: 1px solid var(--primary-color);
+    border: 1px solid var(--border-color);
     border-radius: 8px;
     overflow: hidden;
 }
