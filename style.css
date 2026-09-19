@@ -6457,6 +6457,7 @@ select:focus {
     border-bottom: 1px solid var(--border-color);
     flex-wrap: wrap;
     flex-shrink: 0;
+    font: "Courier New", monospace;
 }
 
 .riepilogo-msg-testata b {
