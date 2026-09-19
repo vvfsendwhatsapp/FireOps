@@ -6630,44 +6630,27 @@ select:focus {
 }
 
 /* ==========================================================
-   RIEPILOGO MESSAGGI (24h) — colonna dentro Messaggistica espansa
-   (.pannello-fullscreen), non più un overlay sovrapposto. La tab fa le
-   veci del pulsante Espandi/Riduci: al click, Messaggistica occupa tutto
-   lo schermo (stesso meccanismo di Convertitore/SITAC) e al suo interno
-   si apre una griglia a due colonne — il modulo messaggio a sinistra
-   (invariato), il riepilogo a riempire tutto lo spazio fino al bordo
-   destro del pannello.
+   RIEPILOGO MESSAGGI (24h) — overlay nel pannello OPPOSTO a
+   Messaggistica (non più fullscreen). La tab è sempre visibile (niente
+   comparire/sparire che sembra un bug di layout durante l'aggiornamento
+   periodico); si "accende" — classe .con-dati — solo quando ci sono
+   davvero messaggi con link nelle ultime 24h.
    ========================================================== */
 
-/* In modalità normale #messaggistica resta un blocco semplice; solo
-   quando il SUO pannello è .pannello-fullscreen diventa una griglia a
-   due colonne uguali. */
-.pannello-fullscreen #messaggistica {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    height: 100%;
-    min-height: 0;
-}
-
-.pannello-fullscreen #messaggistica > .pagina-box {
-    overflow-y: auto;
-    height: 100%;
-    min-width: 0;
-}
-
 .riepilogo-msg-overlay {
-    display: none;
-    min-width: 0;
+    position: absolute;
+    inset: 0;
+    z-index: 1600;
     background: var(--surface-color);
     border: 1px solid var(--primary-color);
     border-radius: 8px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, .7);
+    flex-direction: column;
     overflow: hidden;
 }
 
 .riepilogo-msg-overlay:not([hidden]) {
     display: flex;
-    flex-direction: column;
 }
 
 .riepilogo-msg-testata {
@@ -6767,9 +6750,9 @@ select:focus {
     font-size: 12px;
 }
 
-/* Tab: figlia di #messaggistica, agganciata al bordo del pannello sul
-   lato rivolto verso l'altro pannello (JS decide quale). Fa le veci del
-   pulsante Espandi/Riduci — non apre più nulla di sovrapposto. */
+/* Tab: sempre presente quando Messaggistica è attiva. Di default spenta
+   (bordo/testo smorzati); "con-dati" la accende (colori pieni) quando
+   c'è davvero qualcosa da vedere. */
 .riepilogo-msg-tab {
     position: absolute;
     top: 0;
@@ -6777,28 +6760,35 @@ select:focus {
     width: 34px;
     z-index: 1700;
     background: var(--dark-color);
-    border: 1px solid var(--primary-color);
-    color: var(--primary-color);
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
     cursor: pointer;
     display: none;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: 10px 0;
-    transition: background .2s, color .2s;
+    transition: background .2s, color .2s, border-color .2s;
 }
 
 .riepilogo-msg-tab:not([hidden]) {
     display: flex;
 }
 
+.riepilogo-msg-tab.con-dati {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
 .riepilogo-msg-tab:hover {
     background: var(--primary-color);
+    border-color: var(--primary-color);
     color: var(--dark-color);
 }
 
 .riepilogo-msg-tab.aperta {
     background: var(--primary-color);
+    border-color: var(--primary-color);
     color: var(--dark-color);
 }
 
@@ -6826,6 +6816,14 @@ select:focus {
     font-size: 13px;
     font-weight: bold;
     white-space: nowrap;
+}
+
+/* Il pannello di Messaggistica sale sopra la tab mentre l'overlay è
+   aperto (ordine: Messaggistica, poi tab, poi pannello che ospita il
+   riepilogo) — la tab è sorella dei pannelli, il suo z-index si confronta
+   con quello del PANNELLO, non con l'overlay che sta dentro. */
+.pannello.sopra-overlay {
+    z-index: 1800;
 }
 
 /* ==========================================================
