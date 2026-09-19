@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FireOps VVF - Localizzati</title>
   <link rel="icon" type="image/png" href="https://vvfsendwhatsapp.github.io/FireOps/images/logo.png">
   <link rel="shortcut icon" type="image/png" href="https://vvfsendwhatsapp.github.io/FireOps/images/logo.png">
@@ -944,11 +944,6 @@
       if (conLink) conLink.href = telHref(CON.tel);
       const socavLink = document.getElementById("socavLink");
       if (socavLink) socavLink.href = telHref(SOCAV.tel);
-
-      const conOpLink = document.querySelector("#rTelCon").previousElementSibling.previousElementSibling;
-      if (conOpLink) conOpLink.href = telHref(CON.tel);
-      const socavOpLink = document.querySelector("#rTelSocav").previousElementSibling.previousElementSibling;
-      if (socavOpLink) socavOpLink.href = telHref(SOCAV.tel);
 
       if (currentRecord) {
         const tscA = document.querySelector("#rTelComandoWrap a.value-link");
