@@ -713,7 +713,7 @@
       background: var(--cyan);
     }
 
-        .refresh-gps-btn {
+    .refresh-gps-btn {
       display: flex;
       align-items: center;
       justify-content: center;
@@ -729,10 +729,53 @@
       font-weight: 700;
       cursor: pointer;
     }
-    .refresh-gps-btn:active { background: var(--line); }
-    .refresh-gps-btn:disabled { opacity: .6; cursor: default; }
-    .refresh-gps-btn.spin svg { animation: spin 1s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .refresh-gps-btn:active {
+      background: var(--line);
+    }
+
+    .refresh-gps-btn:disabled {
+      opacity: .6;
+      cursor: default;
+    }
+
+    .refresh-gps-btn.spin svg {
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .copyable {
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .copyable::after {
+      content: "⧉";
+      margin-left: 8px;
+      color: var(--text-dim);
+      font-size: 14px;
+    }
+
+    .copyable:active {
+      color: var(--amber);
+    }
+
+    .copyable.copied,
+    .copyable.copied::after {
+      color: var(--green);
+    }
+
+    .copyable.copied::after {
+      content: "✓ copiato";
+      font-family: var(--sans);
+      font-size: 12px;
+      font-weight: 700;
+    }
   </style>
 </head>
 
@@ -842,7 +885,7 @@
         <div class="row-group-label target">Punto Target / Evento</div>
         <div class="data-row">
           <div class="label">Coordinate Target</div>
-          <div class="value" id="rTargetCoords">—</div>
+          <div class="value copyable" id="rTargetCoords" title="Tocca per copiare">—</div>
         </div>
         <div class="data-row" id="targetAltRow">
           <div class="label">Quota <span class="src-tag calc"
@@ -856,7 +899,7 @@
         <div class="row-group-label gps">Posizione GPS rilevata</div>
         <div class="data-row">
           <div class="label">Coordinate GPS</div>
-          <div class="value" id="rGpsCoords">—</div>
+          <div class="value copyable" id="rGpsCoords" title="Tocca per copiare">—</div>
         </div>
         <div class="data-row" id="gpsAccuracyRow">
           <div class="label">Precisione</div>
@@ -1094,14 +1137,14 @@
 
         // Ricorda l'ultima scelta (se lo storage non è disponibile, parte "Stradale")
         let saved = "Stradale";
-        try { saved = localStorage.getItem("fireops_basemap") || "Stradale"; } catch (e) {}
+        try {saved = localStorage.getItem("fireops_basemap") || "Stradale";} catch (e) { }
         if (!baseLayers[saved]) saved = "Stradale";
         baseLayers[saved].addTo(map);
 
         L.control.layers(baseLayers, null, {position: "topleft", collapsed: true}).addTo(map);
 
         map.on("baselayerchange", function (e) {
-          try { localStorage.setItem("fireops_basemap", e.name); } catch (err) {}
+          try {localStorage.setItem("fireops_basemap", e.name);} catch (err) { }
         });
       }
 
@@ -1555,7 +1598,7 @@
       }, 60000);
     }
 
-        async function refreshPosition() {
+    async function refreshPosition() {
       const btn = document.getElementById("refreshGpsBtn");
       const label = document.getElementById("refreshGpsLabel");
       if (!navigator.geolocation) {
@@ -1570,7 +1613,7 @@
         btn.disabled = false;
         btn.classList.remove("spin");
         label.textContent = msg || "Aggiorna posizione";
-        if (msg) setTimeout(function () { label.textContent = "Aggiorna posizione"; }, 3000);
+        if (msg) setTimeout(function () {label.textContent = "Aggiorna posizione";}, 3000);
       };
 
       navigator.geolocation.getCurrentPosition(async function (pos) {
@@ -1610,6 +1653,45 @@
     }
 
     document.getElementById("refreshGpsBtn").addEventListener("click", refreshPosition);
+
+    function copyText(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        return navigator.clipboard.writeText(text);
+      }
+      // Fallback per browser senza Clipboard API
+      return new Promise(function (resolve, reject) {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+          document.execCommand("copy") ? resolve() : reject();
+        } catch (e) {reject(e);}
+        document.body.removeChild(ta);
+      });
+    }
+
+    function bindCopyCoords(id, getPos) {
+      const el = document.getElementById(id);
+      let tmo = null;
+      el.addEventListener("click", function () {
+        const p = getPos();
+        if (!p) return;
+        const text = p.lat.toFixed(6) + ", " + p.lon.toFixed(6);
+        copyText(text).then(function () {
+          el.classList.add("copied");
+          clearTimeout(tmo);
+          tmo = setTimeout(function () {el.classList.remove("copied");}, 1500);
+        }).catch(function () {
+          window.prompt("Copia le coordinate:", text);
+        });
+      });
+    }
+
+    bindCopyCoords("rTargetCoords", function () {return targetPos;});
+    bindCopyCoords("rGpsCoords", function () {return userPos;});
 
     function resetApp() {
       if (watchId !== null) {navigator.geolocation.clearWatch(watchId); watchId = null;}
