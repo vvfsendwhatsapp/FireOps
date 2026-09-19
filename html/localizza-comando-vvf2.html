@@ -1,0 +1,2610 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#10141a">
+
+<title>Localizza Comando VVF</title>
+
+<!-- LEAFLET -->
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIINfQ3ApR0YlZfK7w2Q7KfM0n6w4X5b2kE="
+  crossorigin=""
+>
+
+<style>
+:root {
+  --bg: #10141a;
+  --panel: #171d25;
+  --panel-2: #1d242e;
+  --line: #2a323d;
+
+  --red: #c8202b;
+  --red-dim: #5c1216;
+
+  --amber: #e8a33d;
+  --green: #3fa66b;
+
+  --text: #eceff3;
+  --text-dim: #8b96a3;
+
+  --font: Arial, Helvetica, sans-serif;
+  --mono: "Courier New", monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+}
+
+body {
+  padding-bottom: 76px;
+}
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+header {
+  padding: 24px 20px 20px;
+  border-bottom: 1px solid var(--line);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(200, 32, 43, 0.08),
+      transparent
+    ),
+    var(--bg);
+}
+
+.header-inner {
+  max-width: 760px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.header-icon {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  color: var(--red);
+}
+
+.header-title {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.header-subtitle {
+  margin-top: 4px;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+/* =========================================================
+   MAIN
+   ========================================================= */
+
+main {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 18px 16px 30px;
+}
+
+/* =========================================================
+   PANEL
+   ========================================================= */
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+
+.panel-inner {
+  padding: 18px;
+}
+
+/* =========================================================
+   LOCATION
+   ========================================================= */
+
+.location-panel {
+  text-align: center;
+  padding: 26px 20px;
+}
+
+.location-icon {
+  width: 54px;
+  height: 54px;
+  margin: 0 auto 14px;
+  color: var(--red);
+}
+
+.location-title {
+  font-size: 19px;
+  font-weight: 700;
+  margin-bottom: 7px;
+}
+
+.location-description {
+  color: var(--text-dim);
+  font-size: 13px;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.btn-primary {
+  width: 100%;
+  border: 0;
+  border-radius: 9px;
+  background: var(--red);
+  color: #fff;
+  padding: 14px 18px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.15s ease;
+}
+
+.btn-primary:hover {
+  filter: brightness(1.08);
+}
+
+.btn-primary:active {
+  transform: translateY(1px);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+/* =========================================================
+   MANUAL SEARCH
+   ========================================================= */
+
+.manual-link {
+  display: block;
+  text-align: center;
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 8px 0 18px;
+}
+
+.manual-link:hover {
+  color: var(--text);
+}
+
+.search-section {
+  display: none;
+}
+
+.search-box {
+  display: flex;
+  gap: 8px;
+}
+
+.search-input {
+  min-width: 0;
+  flex: 1;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  padding: 12px 13px;
+  outline: none;
+  font-size: 14px;
+}
+
+.search-input:focus {
+  border-color: var(--red);
+}
+
+.search-button {
+  border: 0;
+  border-radius: 8px;
+  background: var(--red);
+  color: white;
+  padding: 0 17px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.search-results {
+  margin-top: 12px;
+}
+
+.search-result {
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--text);
+  border-radius: 9px;
+  padding: 13px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+
+.search-result:hover {
+  border-color: var(--red);
+}
+
+.search-result-name {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.search-result-detail {
+  margin-top: 4px;
+  color: var(--text-dim);
+  font-size: 12px;
+}
+
+/* =========================================================
+   RESULT
+   ========================================================= */
+
+.result-section {
+  display: none;
+}
+
+.result-top {
+  padding: 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.result-command {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.result-distance {
+  margin-top: 7px;
+  color: var(--amber);
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+.result-region {
+  margin-top: 5px;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+.method-badge {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 5px 8px;
+  border-radius: 5px;
+  background: var(--panel-2);
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+.method-badge.warning {
+  color: var(--amber);
+  border: 1px solid rgba(232, 163, 61, 0.3);
+}
+
+/* =========================================================
+   DATA GROUPS
+   ========================================================= */
+
+.data-panel {
+  padding: 17px 18px;
+}
+
+.row-group {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.row-group:first-child {
+  padding-top: 0;
+}
+
+.row-group:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.row-group-label {
+  color: var(--text-dim);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 9px;
+}
+
+.radio-row,
+.phone-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 0;
+}
+
+.row-title {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.row-value {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.copy-btn {
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--text-dim);
+  border-radius: 6px;
+  padding: 5px 8px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.copy-btn:hover {
+  color: var(--text);
+  border-color: var(--red);
+}
+
+.phone-link {
+  color: var(--text);
+  text-decoration: none;
+  font-family: var(--mono);
+  font-weight: 700;
+}
+
+.phone-link:hover {
+  color: var(--amber);
+}
+
+.address {
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* =========================================================
+   MAP
+   ========================================================= */
+
+.map-panel {
+  padding: 0;
+}
+
+.map-header {
+  padding: 15px 18px 11px;
+  border-bottom: 1px solid var(--line);
+}
+
+.map-title {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.map-subtitle {
+  margin-top: 4px;
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+#map {
+  width: 100%;
+  height: 360px;
+  background: #d9d9d9;
+}
+
+/* Leaflet popup */
+
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: #171d25;
+  color: #eceff3;
+}
+
+.leaflet-popup-content {
+  margin: 12px 14px;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.popup-title {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.popup-distance {
+  color: #e8a33d;
+  font-family: "Courier New", monospace;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.popup-address {
+  color: #8b96a3;
+  font-size: 11px;
+  margin-top: 5px;
+}
+
+/* Custom markers */
+
+.custom-marker {
+  width: 30px;
+  height: 30px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.45);
+}
+
+.custom-marker-inner {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  transform: rotate(45deg);
+}
+
+.command-marker {
+  background: var(--red);
+  border: 2px solid #fff;
+}
+
+.user-marker {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #2688ff;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+
+.neighbor-marker {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--amber);
+  border: 3px solid #fff;
+  box-shadow: 0 2px 7px rgba(0,0,0,0.4);
+}
+
+.map-actions {
+  padding: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.navigate-btn {
+  display: block;
+  text-align: center;
+  text-decoration: none;
+  background: var(--red);
+  color: #fff;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.navigate-btn:hover {
+  filter: brightness(1.08);
+}
+
+.map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 0 13px 12px;
+  color: var(--text-dim);
+  font-size: 10px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.legend-command {
+  background: var(--red);
+}
+
+.legend-user {
+  background: #2688ff;
+}
+
+.legend-neighbor {
+  background: var(--amber);
+}
+
+/* =========================================================
+   WARNING
+   ========================================================= */
+
+.warning-panel {
+  display: none;
+  padding: 14px 16px;
+  border: 1px solid rgba(232, 163, 61, 0.35);
+  background: rgba(232, 163, 61, 0.07);
+  border-radius: 10px;
+  color: var(--amber);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* =========================================================
+   CONFINANTI
+   ========================================================= */
+
+.neighbors-panel {
+  display: none;
+  padding: 15px 16px;
+}
+
+.neighbor-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.neighbor-chip {
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--text);
+  border-radius: 20px;
+  padding: 7px 10px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.neighbor-chip:hover {
+  border-color: var(--red);
+}
+
+/* =========================================================
+   BACK
+   ========================================================= */
+
+.back-button {
+  width: 100%;
+  margin-top: 13px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text-dim);
+  border-radius: 8px;
+  padding: 11px;
+  cursor: pointer;
+}
+
+.back-button:hover {
+  color: var(--text);
+  border-color: var(--text-dim);
+}
+
+/* =========================================================
+   FOOTER
+   ========================================================= */
+
+footer {
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(16, 20, 26, 0.97);
+  border-top: 1px solid var(--line);
+  backdrop-filter: blur(8px);
+}
+
+.footer-inner {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 9px 15px;
+  display: flex;
+  justify-content: center;
+  gap: 22px;
+}
+
+.footer-item {
+  text-decoration: none;
+  color: var(--text-dim);
+  font-size: 10px;
+  text-align: center;
+}
+
+.footer-item strong {
+  display: block;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  margin-bottom: 2px;
+}
+
+.footer-item:hover strong {
+  color: var(--amber);
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 500px) {
+
+  header {
+    padding: 20px 16px;
+  }
+
+  .header-title {
+    font-size: 21px;
+  }
+
+  main {
+    padding: 14px 12px 25px;
+  }
+
+  .result-command {
+    font-size: 21px;
+  }
+
+  #map {
+    height: 320px;
+  }
+
+  .footer-inner {
+    gap: 14px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<!-- =======================================================
+     HEADER
+======================================================= -->
+
+<header>
+  <div class="header-inner">
+
+    <svg
+      class="header-icon"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.8"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/>
+      <circle cx="12" cy="10" r="2.5"/>
+    </svg>
+
+    <div>
+      <div class="header-title">Localizza Comando</div>
+      <div class="header-subtitle">
+        Comando, canale radio e Sala Operativa per posizione
+      </div>
+    </div>
+
+  </div>
+</header>
+
+
+<!-- =======================================================
+     MAIN
+======================================================= -->
+
+<main>
+
+  <!-- POSIZIONE -->
+  <section id="locationSection">
+
+    <div class="panel location-panel">
+
+      <svg
+        class="location-icon"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.6"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M12 2v3"/>
+        <path d="M12 19v3"/>
+        <path d="M2 12h3"/>
+        <path d="M19 12h3"/>
+        <circle cx="12" cy="12" r="6"/>
+        <circle cx="12" cy="12" r="2"/>
+      </svg>
+
+      <div class="location-title">
+        Trova il Comando competente
+      </div>
+
+      <div class="location-description">
+        Usa la posizione del dispositivo per individuare
+        il Comando dei Vigili del Fuoco competente.
+      </div>
+
+      <button
+        id="locationBtn"
+        class="btn-primary"
+        type="button"
+      >
+        Trova la mia posizione
+      </button>
+
+    </div>
+
+    <a
+      href="#"
+      id="manualBtn"
+      class="manual-link"
+    >
+      Cerca manualmente un Comando
+    </a>
+
+  </section>
+
+
+  <!-- RICERCA -->
+  <section
+    id="searchSection"
+    class="search-section"
+  >
+
+    <div class="panel">
+
+      <div class="panel-inner">
+
+        <div class="row-group-label">
+          Ricerca manuale
+        </div>
+
+        <div class="search-box">
+
+          <input
+            id="searchInput"
+            class="search-input"
+            type="search"
+            placeholder="Cerca per comando o comune..."
+            autocomplete="off"
+          >
+
+          <button
+            id="searchButton"
+            class="search-button"
+            type="button"
+          >
+            Cerca
+          </button>
+
+        </div>
+
+        <div
+          id="searchResults"
+          class="search-results"
+        ></div>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- RISULTATO -->
+  <section
+    id="resultSection"
+    class="result-section"
+  >
+
+    <!-- TESTATA RISULTATO -->
+    <div class="panel">
+
+      <div class="result-top">
+
+        <div
+          id="resultCommand"
+          class="result-command"
+        ></div>
+
+        <div
+          id="resultDistance"
+          class="result-distance"
+        ></div>
+
+        <div
+          id="resultRegion"
+          class="result-region"
+        ></div>
+
+        <div
+          id="methodBadge"
+          class="method-badge"
+        ></div>
+
+      </div>
+
+
+      <!-- RADIO + TELEFONI + INDIRIZZO -->
+      <div class="data-panel">
+
+        <!-- RADIO -->
+        <div class="row-group">
+
+          <div class="row-group-label">
+            Canale radio
+          </div>
+
+          <div class="radio-row">
+
+            <div>
+              <div class="row-title">
+                Comando
+              </div>
+
+              <div
+                id="radioCommand"
+                class="row-value"
+              ></div>
+            </div>
+
+            <button
+              class="copy-btn"
+              data-copy-target="radioCommand"
+              type="button"
+            >
+              Copia
+            </button>
+
+          </div>
+
+
+          <div class="radio-row">
+
+            <div>
+              <div class="row-title">
+                Direzione Regionale
+              </div>
+
+              <div
+                id="radioDirection"
+                class="row-value"
+              ></div>
+            </div>
+
+            <button
+              class="copy-btn"
+              data-copy-target="radioDirection"
+              type="button"
+            >
+              Copia
+            </button>
+
+          </div>
+
+        </div>
+
+
+        <!-- TELEFONI -->
+        <div class="row-group">
+
+          <div class="row-group-label">
+            Sala operativa
+          </div>
+
+          <div class="phone-row">
+
+            <div>
+              <div class="row-title">
+                Comando
+              </div>
+
+              <a
+                id="phoneCommand"
+                class="phone-link"
+              ></a>
+            </div>
+
+            <button
+              class="copy-btn"
+              data-copy-target="phoneCommand"
+              type="button"
+            >
+              Copia
+            </button>
+
+          </div>
+
+
+          <div class="phone-row">
+
+            <div>
+              <div class="row-title">
+                Direzione Regionale
+              </div>
+
+              <a
+                id="phoneDirection"
+                class="phone-link"
+              ></a>
+            </div>
+
+            <button
+              class="copy-btn"
+              data-copy-target="phoneDirection"
+              type="button"
+            >
+              Copia
+            </button>
+
+          </div>
+
+        </div>
+
+
+        <!-- INDIRIZZO -->
+        <div class="row-group">
+
+          <div class="row-group-label">
+            Indirizzo
+          </div>
+
+          <div
+            id="resultAddress"
+            class="address"
+          ></div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- =================================================
+         MAPPA LEAFLET
+    ================================================== -->
+
+    <div class="panel map-panel">
+
+      <div class="map-header">
+
+        <div class="map-title">
+          Posizione del Comando
+        </div>
+
+        <div class="map-subtitle">
+          Comando VVF, posizione attuale e Comandi confinanti
+        </div>
+
+      </div>
+
+      <div id="map"></div>
+
+      <div class="map-legend">
+
+        <div class="legend-item">
+          <span class="legend-dot legend-command"></span>
+          Comando
+        </div>
+
+        <div class="legend-item">
+          <span class="legend-dot legend-user"></span>
+          Tua posizione
+        </div>
+
+        <div class="legend-item">
+          <span class="legend-dot legend-neighbor"></span>
+          Comando confinante
+        </div>
+
+      </div>
+
+      <div class="map-actions">
+
+        <a
+          id="navigateBtn"
+          class="navigate-btn"
+          href="#"
+          target="_blank"
+          rel="noopener"
+        >
+          Naviga verso il Comando
+        </a>
+
+      </div>
+
+    </div>
+
+
+    <!-- AVVISO -->
+    <div
+      id="warningPanel"
+      class="warning-panel"
+    ></div>
+
+
+    <!-- COMANDI CONFINANTI -->
+    <div
+      id="neighborsPanel"
+      class="panel neighbors-panel"
+    >
+
+      <div class="row-group-label">
+        Comandi confinanti
+      </div>
+
+      <div
+        id="neighborChips"
+        class="neighbor-chips"
+      ></div>
+
+    </div>
+
+
+    <!-- TORNA ALLA RICERCA -->
+    <button
+      id="backButton"
+      class="back-button"
+      type="button"
+    >
+      Cerca un altro Comando
+    </button>
+
+  </section>
+
+</main>
+
+
+<!-- =======================================================
+     FOOTER
+======================================================= -->
+
+<footer>
+
+  <div class="footer-inner">
+
+    <a
+      class="footer-item"
+      href="tel:06478321"
+    >
+      <strong>CON</strong>
+      026 · 06 478321
+    </a>
+
+    <a
+      class="footer-item"
+      href="tel:0679340903"
+    >
+      <strong>SOCAV</strong>
+      06 79340903
+    </a>
+
+  </div>
+
+</footer>
+
+
+<!-- =======================================================
+     LEAFLET JS
+======================================================= -->
+
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+  crossorigin=""
+></script>
+
+
+<script>
+/* =========================================================
+   DATI NAZIONALI
+========================================================= */
+
+const CON = {
+  radio: "026",
+  tel: "06 478321"
+};
+
+const SOCAV = {
+  tel: "06 79340903"
+};
+
+
+/* =========================================================
+   DATI COMANDI
+========================================================= */
+
+/*
+   MANTIENI QUI IL TUO ARRAY COMANDI ORIGINALE.
+
+   Esempio struttura:
+
+   {
+     c: "Forlì-Cesena",
+     pr: "FC",
+     rg: "Emilia-Romagna",
+     cm: "Forlì",
+     dz: "Direzione Regionale Emilia-Romagna",
+     lat: 44.2227,
+     lon: 12.0407,
+     ind: "Via ...",
+     rc: "...",
+     rd: "...",
+     tsc: "...",
+     tsd: "...",
+     tc: "...",
+     nue: "...",
+     esc: "...",
+     web: "...",
+     conf: [...]
+   }
+
+   ========================================================
+
+   INCOLLA QUI SOTTO IL TUO ARRAY COMANDI ORIGINALE.
+*/
+
+
+const COMANDI = [
+  /*
+    INSERISCI QUI I DATI ORIGINALI DEI TUOI COMANDI.
+
+    ESEMPIO:
+
+    {
+      c: "Forlì-Cesena",
+      pr: "FC",
+      rg: "Emilia-Romagna",
+      cm: "Forlì",
+      dz: "Direzione Regionale Emilia-Romagna",
+      lat: 44.2227,
+      lon: 12.0407,
+      ind: "Via...",
+      rc: "...",
+      rd: "...",
+      tsc: "...",
+      tsd: "...",
+      tc: "...",
+      nue: "...",
+      esc: "...",
+      web: "...",
+      conf: []
+    }
+  */
+];
+
+
+/* =========================================================
+   ELEMENTI DOM
+========================================================= */
+
+const locationSection = document.getElementById("locationSection");
+const searchSection = document.getElementById("searchSection");
+const resultSection = document.getElementById("resultSection");
+
+const locationBtn = document.getElementById("locationBtn");
+const manualBtn = document.getElementById("manualBtn");
+
+const searchInput = document.getElementById("searchInput");
+const searchButton = document.getElementById("searchButton");
+const searchResults = document.getElementById("searchResults");
+
+const resultCommand = document.getElementById("resultCommand");
+const resultDistance = document.getElementById("resultDistance");
+const resultRegion = document.getElementById("resultRegion");
+const methodBadge = document.getElementById("methodBadge");
+
+const radioCommand = document.getElementById("radioCommand");
+const radioDirection = document.getElementById("radioDirection");
+
+const phoneCommand = document.getElementById("phoneCommand");
+const phoneDirection = document.getElementById("phoneDirection");
+
+const resultAddress = document.getElementById("resultAddress");
+
+const warningPanel = document.getElementById("warningPanel");
+
+const neighborsPanel = document.getElementById("neighborsPanel");
+const neighborChips = document.getElementById("neighborChips");
+
+const backButton = document.getElementById("backButton");
+
+const navigateBtn = document.getElementById("navigateBtn");
+
+
+/* =========================================================
+   STATO
+========================================================= */
+
+let userPos = null;
+
+let map = null;
+
+let commandMarker = null;
+let userMarker = null;
+let userLine = null;
+
+let neighborMarkers = [];
+
+
+/* =========================================================
+   NORMALIZZAZIONE TESTO
+========================================================= */
+
+function norm(s) {
+
+  return String(s || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+
+}
+
+
+/* =========================================================
+   HAVERSINE
+========================================================= */
+
+function haversine(lat1, lon1, lat2, lon2) {
+
+  const R = 6371;
+
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) *
+    Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) ** 2;
+
+  const c =
+    2 * Math.atan2(
+      Math.sqrt(a),
+      Math.sqrt(1 - a)
+    );
+
+  return R * c;
+}
+
+
+/* =========================================================
+   TELEFONO
+========================================================= */
+
+function telHref(num) {
+
+  if (!num) {
+    return "#";
+  }
+
+  return "tel:" + String(num)
+    .replace(/[^\d+]/g, "");
+
+}
+
+
+/* =========================================================
+   INIZIALIZZA MAPPA
+========================================================= */
+
+function initMap() {
+
+  if (map) {
+    return;
+  }
+
+  map = L.map("map", {
+    zoomControl: true
+  });
+
+  L.tileLayer(
+    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    {
+      maxZoom: 19,
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
+    }
+  ).addTo(map);
+
+}
+
+
+/* =========================================================
+   ICONE
+========================================================= */
+
+function createCommandIcon() {
+
+  return L.divIcon({
+
+    className: "",
+
+    html:
+      '<div class="custom-marker command-marker">' +
+        '<div class="custom-marker-inner"></div>' +
+      '</div>',
+
+    iconSize: [30, 30],
+
+    iconAnchor: [15, 30],
+
+    popupAnchor: [0, -28]
+
+  });
+
+}
+
+
+function createUserIcon() {
+
+  return L.divIcon({
+
+    className: "",
+
+    html:
+      '<div class="user-marker"></div>',
+
+    iconSize: [20, 20],
+
+    iconAnchor: [10, 10]
+
+  });
+
+}
+
+
+function createNeighborIcon() {
+
+  return L.divIcon({
+
+    className: "",
+
+    html:
+      '<div class="neighbor-marker"></div>',
+
+    iconSize: [18, 18],
+
+    iconAnchor: [9, 9]
+
+  });
+
+}
+
+
+/* =========================================================
+   AGGIORNA MAPPA
+========================================================= */
+
+function updateMap(record, distanceKm) {
+
+  if (!record) {
+    return;
+  }
+
+  initMap();
+
+  /* Rimuove marker precedente */
+
+  if (commandMarker) {
+
+    map.removeLayer(commandMarker);
+
+    commandMarker = null;
+
+  }
+
+
+  if (userMarker) {
+
+    map.removeLayer(userMarker);
+
+    userMarker = null;
+
+  }
+
+
+  if (userLine) {
+
+    map.removeLayer(userLine);
+
+    userLine = null;
+
+  }
+
+
+  neighborMarkers.forEach(marker => {
+
+    map.removeLayer(marker);
+
+  });
+
+  neighborMarkers = [];
+
+
+  /* -------------------------------------------------------
+     MARKER COMANDO
+  ------------------------------------------------------- */
+
+  const commandLatLng = [
+    Number(record.lat),
+    Number(record.lon)
+  ];
+
+  commandMarker = L.marker(
+    commandLatLng,
+    {
+      icon: createCommandIcon()
+    }
+  ).addTo(map);
+
+
+  let popupHtml =
+    '<div class="popup-title">' +
+      escapeHtml(record.c) +
+    '</div>';
+
+
+  if (distanceKm !== null && distanceKm !== undefined) {
+
+    popupHtml +=
+      '<div class="popup-distance">' +
+        formatDistance(distanceKm) +
+      '</div>';
+
+  }
+
+
+  if (record.ind) {
+
+    popupHtml +=
+      '<div class="popup-address">' +
+        escapeHtml(record.ind) +
+      '</div>';
+
+  }
+
+
+  commandMarker.bindPopup(popupHtml);
+
+
+  /* -------------------------------------------------------
+     POSIZIONE UTENTE
+  ------------------------------------------------------- */
+
+  const points = [
+    commandLatLng
+  ];
+
+
+  if (
+    userPos &&
+    Number.isFinite(Number(userPos.lat)) &&
+    Number.isFinite(Number(userPos.lon))
+  ) {
+
+    const userLatLng = [
+      Number(userPos.lat),
+      Number(userPos.lon)
+    ];
+
+    userMarker = L.marker(
+      userLatLng,
+      {
+        icon: createUserIcon()
+      }
+    ).addTo(map);
+
+
+    userMarker.bindPopup(
+      '<div class="popup-title">La tua posizione</div>'
+    );
+
+
+    userLine = L.polyline(
+      [
+        userLatLng,
+        commandLatLng
+      ],
+      {
+        color: "#2688ff",
+        weight: 3,
+        opacity: 0.75,
+        dashArray: "7,7"
+      }
+    ).addTo(map);
+
+
+    points.push(userLatLng);
+
+  }
+
+
+  /* -------------------------------------------------------
+     COMANDI CONFINANTI
+  ------------------------------------------------------- */
+
+  if (Array.isArray(record.conf)) {
+
+    record.conf.forEach(confName => {
+
+      const neighbor = COMANDI.find(
+        c => norm(c.c) === norm(confName)
+      );
+
+      if (!neighbor) {
+        return;
+      }
+
+      if (
+        !Number.isFinite(Number(neighbor.lat)) ||
+        !Number.isFinite(Number(neighbor.lon))
+      ) {
+        return;
+      }
+
+      /* Evita il doppio marker del comando principale */
+
+      if (
+        norm(neighbor.c) === norm(record.c)
+      ) {
+        return;
+      }
+
+      const latLng = [
+        Number(neighbor.lat),
+        Number(neighbor.lon)
+      ];
+
+      const marker = L.marker(
+        latLng,
+        {
+          icon: createNeighborIcon()
+        }
+      ).addTo(map);
+
+
+      let neighborPopup =
+        '<div class="popup-title">' +
+          escapeHtml(neighbor.c) +
+        '</div>';
+
+
+      if (neighbor.cm) {
+
+        neighborPopup +=
+          '<div class="popup-address">' +
+            escapeHtml(neighbor.cm) +
+          '</div>';
+
+      }
+
+
+      marker.bindPopup(neighborPopup);
+
+      neighborMarkers.push(marker);
+
+    });
+
+  }
+
+
+  /* -------------------------------------------------------
+     VISTA MAPPA
+  ------------------------------------------------------- */
+
+  const bounds = L.latLngBounds(points);
+
+  neighborMarkers.forEach(marker => {
+
+    bounds.extend(marker.getLatLng());
+
+  });
+
+
+  if (bounds.isValid()) {
+
+    if (points.length > 1 || neighborMarkers.length > 0) {
+
+      map.fitBounds(
+        bounds,
+        {
+          padding: [35, 35],
+          maxZoom: 13
+        }
+      );
+
+    } else {
+
+      map.setView(
+        commandLatLng,
+        13
+      );
+
+    }
+
+  }
+
+
+  /* -------------------------------------------------------
+     NAVIGAZIONE
+  ------------------------------------------------------- */
+
+  navigateBtn.href =
+    "https://www.google.com/maps/dir/?api=1" +
+    "&destination=" +
+    encodeURIComponent(
+      Number(record.lat) + "," + Number(record.lon)
+    );
+
+
+  /* -------------------------------------------------------
+     FIX DIMENSIONI
+  ------------------------------------------------------- */
+
+  requestAnimationFrame(() => {
+
+    if (map) {
+
+      map.invalidateSize();
+
+    }
+
+  });
+
+}
+
+
+/* =========================================================
+   ESCAPE HTML
+========================================================= */
+
+function escapeHtml(value) {
+
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
+}
+
+
+/* =========================================================
+   DISTANZA
+========================================================= */
+
+function formatDistance(km) {
+
+  if (!Number.isFinite(km)) {
+    return "";
+  }
+
+  if (km < 1) {
+
+    return Math.round(km * 1000) + " m";
+
+  }
+
+  return km.toFixed(1) + " km";
+
+}
+
+
+/* =========================================================
+   REVERSE GEOCODING PROVINCIA
+========================================================= */
+
+async function reverseGeocodeProvincia(lat, lon) {
+
+  const url =
+    "https://nominatim.openstreetmap.org/reverse" +
+    "?format=jsonv2" +
+    "&lat=" + encodeURIComponent(lat) +
+    "&lon=" + encodeURIComponent(lon) +
+    "&addressdetails=1" +
+    "&accept-language=it" +
+    "&zoom=8";
+
+
+  try {
+
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error("Errore HTTP " + response.status);
+    }
+
+    const data = await response.json();
+
+    const address = data.address || {};
+
+
+    /* -----------------------------------------------------
+       CODICE PROVINCIA
+    ----------------------------------------------------- */
+
+    const iso =
+      address["ISO3166-2-lvl6"] ||
+      address["ISO3166-2-lvl4"] ||
+      "";
+
+
+    if (iso) {
+
+      const provinceCode =
+        String(iso)
+          .split("-")
+          .pop()
+          .toUpperCase();
+
+
+      const byCode = COMANDI.find(
+        c =>
+          String(c.pr || "")
+            .toUpperCase() === provinceCode
+      );
+
+
+      if (byCode) {
+
+        return byCode;
+
+      }
+
+    }
+
+
+    /* -----------------------------------------------------
+       NOME PROVINCIA
+    ----------------------------------------------------- */
+
+    const county = norm(address.county || "");
+
+    if (county) {
+
+      const byCounty = COMANDI.find(
+        c =>
+          norm(c.pr) === county ||
+          norm(c.c) === county
+      );
+
+
+      if (byCounty) {
+
+        return byCounty;
+
+      }
+
+    }
+
+
+    return null;
+
+  } catch (error) {
+
+    console.warn(
+      "Reverse geocoding non disponibile:",
+      error
+    );
+
+    return null;
+
+  }
+
+}
+
+
+/* =========================================================
+   MOSTRA RISULTATO
+========================================================= */
+
+function showResult(
+  record,
+  distanceKm,
+  nearbyList,
+  method
+) {
+
+  if (!record) {
+    return;
+  }
+
+
+  /* -------------------------------------------------------
+     SEZIONI
+  ------------------------------------------------------- */
+
+  locationSection.style.display = "none";
+  searchSection.style.display = "none";
+  resultSection.style.display = "block";
+
+
+  /* -------------------------------------------------------
+     TESTATA
+  ------------------------------------------------------- */
+
+  resultCommand.textContent =
+    "Comando VVF " + record.c;
+
+
+  if (distanceKm !== null && distanceKm !== undefined) {
+
+    resultDistance.textContent =
+      "Distanza: " + formatDistance(distanceKm);
+
+  } else {
+
+    resultDistance.textContent = "";
+
+  }
+
+
+  resultRegion.textContent =
+    [
+      record.rg,
+      record.dz
+    ]
+      .filter(Boolean)
+      .join(" · ");
+
+
+  /* -------------------------------------------------------
+     METODO
+  ------------------------------------------------------- */
+
+  methodBadge.className = "method-badge";
+
+
+  if (method === "geo") {
+
+    methodBadge.textContent =
+      "Determinato dalla provincia di competenza";
+
+  }
+
+  else if (method === "dist") {
+
+    methodBadge.textContent =
+      "Stima per vicinanza — provincia non determinabile via rete";
+
+    methodBadge.classList.add("warning");
+
+  }
+
+  else {
+
+    methodBadge.textContent = "";
+
+  }
+
+
+  /* -------------------------------------------------------
+     RADIO
+  ------------------------------------------------------- */
+
+  radioCommand.textContent =
+    record.rc || "—";
+
+
+  radioDirection.textContent =
+    record.rd || "—";
+
+
+  /* -------------------------------------------------------
+     TELEFONI
+  ------------------------------------------------------- */
+
+  phoneCommand.textContent =
+    record.tsc || record.tc || "—";
+
+  phoneCommand.href =
+    telHref(record.tsc || record.tc);
+
+
+  phoneDirection.textContent =
+    record.tsd || "—";
+
+  phoneDirection.href =
+    telHref(record.tsd);
+
+
+  /* -------------------------------------------------------
+     INDIRIZZO
+  ------------------------------------------------------- */
+
+  resultAddress.textContent =
+    record.ind || "Indirizzo non disponibile";
+
+
+  /* -------------------------------------------------------
+     WARNING
+  ------------------------------------------------------- */
+
+  if (method === "dist") {
+
+    warningPanel.style.display = "block";
+
+    warningPanel.innerHTML =
+      "<strong>Attenzione:</strong> " +
+      "la provincia non è stata determinata con certezza " +
+      "tramite la rete. Il Comando indicato è quello " +
+      "geograficamente più vicino alla posizione rilevata.";
+
+  }
+
+  else {
+
+    warningPanel.style.display = "none";
+    warningPanel.textContent = "";
+
+  }
+
+
+  /* -------------------------------------------------------
+     CONFINANTI
+  ------------------------------------------------------- */
+
+  neighborChips.innerHTML = "";
+
+
+  if (
+    Array.isArray(nearbyList) &&
+    nearbyList.length > 0
+  ) {
+
+    neighborsPanel.style.display = "block";
+
+
+    nearbyList.forEach(rec => {
+
+      const chip =
+        document.createElement("button");
+
+      chip.type = "button";
+
+      chip.className = "neighbor-chip";
+
+      chip.textContent =
+        rec.c;
+
+
+      chip.addEventListener(
+        "click",
+        () => {
+
+          const distance =
+            userPos
+              ? haversine(
+                  userPos.lat,
+                  userPos.lon,
+                  rec.lat,
+                  rec.lon
+                )
+              : null;
+
+
+          selectComando(
+            rec,
+            userPos
+          );
+
+        }
+      );
+
+
+      neighborChips.appendChild(chip);
+
+    });
+
+  }
+
+  else {
+
+    neighborsPanel.style.display = "none";
+
+  }
+
+
+  /* -------------------------------------------------------
+     MAPPA
+  ------------------------------------------------------- */
+
+  requestAnimationFrame(() => {
+
+    updateMap(
+      record,
+      distanceKm
+    );
+
+  });
+
+
+  /* -------------------------------------------------------
+     SCROLL
+  ------------------------------------------------------- */
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+
+}
+
+
+/* =========================================================
+   SELEZIONA COMANDO
+========================================================= */
+
+function selectComando(
+  record,
+  pos = null
+) {
+
+  let distanceKm = null;
+
+
+  if (pos) {
+
+    distanceKm =
+      haversine(
+        pos.lat,
+        pos.lon,
+        record.lat,
+        record.lon
+      );
+
+  }
+
+
+  /*
+     Se la selezione arriva manualmente,
+     non sostituiamo il metodo con "geo".
+  */
+
+  showResult(
+    record,
+    distanceKm,
+    getNearbyCommands(record),
+    "manual"
+  );
+
+}
+
+
+/* =========================================================
+   COMANDI CONFINANTI
+========================================================= */
+
+function getNearbyCommands(record) {
+
+  if (
+    !record ||
+    !Array.isArray(record.conf)
+  ) {
+    return [];
+  }
+
+
+  return record.conf
+    .map(name => {
+
+      return COMANDI.find(
+        c =>
+          norm(c.c) === norm(name)
+      );
+
+    })
+    .filter(Boolean);
+
+}
+
+
+/* =========================================================
+   POSIZIONE
+========================================================= */
+
+locationBtn.addEventListener(
+  "click",
+  () => {
+
+    if (!navigator.geolocation) {
+
+      alert(
+        "La geolocalizzazione non è supportata dal dispositivo."
+      );
+
+      return;
+
+    }
+
+
+    locationBtn.disabled = true;
+
+    locationBtn.textContent =
+      "Ricerca posizione…";
+
+
+    navigator.geolocation.getCurrentPosition(
+
+      async position => {
+
+        const lat =
+          position.coords.latitude;
+
+        const lon =
+          position.coords.longitude;
+
+
+        userPos = {
+          lat,
+          lon
+        };
+
+
+        let record =
+          await reverseGeocodeProvincia(
+            lat,
+            lon
+          );
+
+
+        /* -------------------------------------------------
+           PROVINCIA TROVATA
+        ------------------------------------------------- */
+
+        if (record) {
+
+          const distanceKm =
+            haversine(
+              lat,
+              lon,
+              record.lat,
+              record.lon
+            );
+
+
+          showResult(
+            record,
+            distanceKm,
+            getNearbyCommands(record),
+            "geo"
+          );
+
+        }
+
+        /* -------------------------------------------------
+           PROVINCIA NON TROVATA
+        ------------------------------------------------- */
+
+        else {
+
+          const sorted =
+            [...COMANDI]
+              .filter(
+                c =>
+                  Number.isFinite(
+                    Number(c.lat)
+                  ) &&
+                  Number.isFinite(
+                    Number(c.lon)
+                  )
+              )
+              .map(c => ({
+
+                record: c,
+
+                distance:
+                  haversine(
+                    lat,
+                    lon,
+                    c.lat,
+                    c.lon
+                  )
+
+              }))
+              .sort(
+                (a, b) =>
+                  a.distance - b.distance
+              );
+
+
+          if (sorted.length) {
+
+            const nearest =
+              sorted[0];
+
+
+            showResult(
+              nearest.record,
+              nearest.distance,
+              getNearbyCommands(
+                nearest.record
+              ),
+              "dist"
+            );
+
+          }
+
+          else {
+
+            alert(
+              "Non è stato possibile individuare un Comando VVF."
+            );
+
+          }
+
+        }
+
+
+        locationBtn.disabled = false;
+
+        locationBtn.textContent =
+          "Trova la mia posizione";
+
+      },
+
+      error => {
+
+        console.warn(
+          "Errore geolocalizzazione:",
+          error
+        );
+
+
+        let message =
+          "Non è stato possibile ottenere la posizione.";
+
+
+        if (error.code === 1) {
+
+          message =
+            "Permesso di localizzazione negato. " +
+            "Abilita la posizione nel browser e riprova.";
+
+        }
+
+        else if (error.code === 2) {
+
+          message =
+            "Posizione non disponibile.";
+
+        }
+
+        else if (error.code === 3) {
+
+          message =
+            "Tempo scaduto durante la ricerca della posizione.";
+
+        }
+
+
+        alert(message);
+
+
+        locationBtn.disabled = false;
+
+        locationBtn.textContent =
+          "Trova la mia posizione";
+
+      },
+
+      {
+        enableHighAccuracy: true,
+        timeout: 12000,
+        maximumAge: 60000
+      }
+
+    );
+
+  }
+);
+
+
+/* =========================================================
+   RICERCA MANUALE
+========================================================= */
+
+manualBtn.addEventListener(
+  "click",
+  event => {
+
+    event.preventDefault();
+
+    locationSection.style.display = "none";
+
+    searchSection.style.display = "block";
+
+    resultSection.style.display = "none";
+
+    searchInput.focus();
+
+  }
+);
+
+
+/* =========================================================
+   ESEGUI RICERCA
+========================================================= */
+
+function performSearch() {
+
+  const query =
+    norm(searchInput.value);
+
+
+  searchResults.innerHTML = "";
+
+
+  if (!query) {
+    return;
+  }
+
+
+  const matches =
+    COMANDI
+      .filter(record => {
+
+        const fields = [
+          record.c,
+          record.cm,
+          record.pr,
+          record.rg
+        ];
+
+
+        return fields.some(
+          value =>
+            norm(value).includes(query)
+        );
+
+      })
+      .slice(0, 8);
+
+
+  if (!matches.length) {
+
+    searchResults.innerHTML =
+      '<div style="color:var(--text-dim);font-size:13px;padding:8px 0;">' +
+        'Nessun Comando trovato.' +
+      '</div>';
+
+    return;
+
+  }
+
+
+  matches.forEach(record => {
+
+    const item =
+      document.createElement("button");
+
+
+    item.type = "button";
+
+    item.className =
+      "search-result";
+
+
+    item.innerHTML =
+      '<div class="search-result-name">' +
+        escapeHtml(
+          "Comando VVF " + record.c
+        ) +
+      '</div>' +
+
+      '<div class="search-result-detail">' +
+        escapeHtml(
+          [
+            record.pr,
+            record.cm,
+            record.rg
+          ]
+            .filter(Boolean)
+            .join(" · ")
+        ) +
+      '</div>';
+
+
+    item.addEventListener(
+      "click",
+      () => {
+
+        selectComando(
+          record,
+          userPos
+        );
+
+      }
+    );
+
+
+    searchResults.appendChild(item);
+
+  });
+
+}
+
+
+searchButton.addEventListener(
+  "click",
+  performSearch
+);
+
+
+searchInput.addEventListener(
+  "keydown",
+  event => {
+
+    if (event.key === "Enter") {
+
+      performSearch();
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   BACK
+========================================================= */
+
+backButton.addEventListener(
+  "click",
+  () => {
+
+    resultSection.style.display = "none";
+
+    searchSection.style.display = "none";
+
+    locationSection.style.display = "block";
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    });
+
+  }
+);
+
+
+/* =========================================================
+   COPIA
+========================================================= */
+
+document
+  .querySelectorAll("[data-copy-target]")
+  .forEach(button => {
+
+    button.addEventListener(
+      "click",
+      async () => {
+
+        const targetId =
+          button.dataset.copyTarget;
+
+        const target =
+          document.getElementById(
+            targetId
+          );
+
+
+        if (!target) {
+          return;
+        }
+
+
+        const value =
+          target.textContent.trim();
+
+
+        if (!value || value === "—") {
+          return;
+        }
+
+
+        try {
+
+          await navigator.clipboard.writeText(
+            value
+          );
+
+
+          const original =
+            button.textContent;
+
+
+          button.textContent =
+            "Copiato";
+
+
+          setTimeout(
+            () => {
+
+              button.textContent =
+                original;
+
+            },
+            1000
+          );
+
+        }
+
+        catch (error) {
+
+          console.warn(
+            "Clipboard non disponibile:",
+            error
+          );
+
+        }
+
+      }
+    );
+
+  });
+
+
+/* =========================================================
+   RESIZE MAPPA
+========================================================= */
+
+window.addEventListener(
+  "resize",
+  () => {
+
+    if (map) {
+
+      map.invalidateSize();
+
+    }
+
+  }
+);
+
+</script>
+
+</body>
+</html>
