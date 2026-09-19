@@ -6638,6 +6638,18 @@ select:focus {
     z-index: auto;
 }
 
+/* Dentro la griglia, l'ordine visivo segue lo stesso lato già calcolato
+   per la tab (aggiornaLatoTab): il modulo messaggio resta dove Messaggistica
+   era già visibile prima di espandersi, il riepilogo compare nello spazio
+   che si è appena liberato dall'altra parte — mai "sempre a destra" per
+   default, indipendentemente da dove si trovava Messaggistica. */
+.pannello-fullscreen #messaggistica.lato-sinistro-interno > .pagina-box {
+    order: 2;
+}
+.pannello-fullscreen #messaggistica.lato-sinistro-interno > .riepilogo-msg-overlay {
+    order: 1;
+}
+
 /* ==========================================================
    ==========================================================
    RESPONSIVE
