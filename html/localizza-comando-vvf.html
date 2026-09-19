@@ -691,6 +691,27 @@
     .dial-action:active {
       opacity: .8;
     }
+
+    .src-tag {
+      font-family: var(--sans);
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 10px;
+      margin-left: 6px;
+      text-transform: uppercase;
+      letter-spacing: .3px;
+      color: #000;
+      vertical-align: middle;
+    }
+
+    .src-tag.rx {
+      background: var(--green);
+    }
+
+    .src-tag.calc {
+      background: var(--cyan);
+    }
   </style>
 </head>
 
@@ -802,107 +823,113 @@
           <div class="label">Coordinate Target</div>
           <div class="value" id="rTargetCoords">—</div>
         </div>
+        <div class="label">Quota <span class="src-tag calc"
+            title="Stimata da modello digitale del terreno (Open-Meteo)">calcolata</span></div>
+        <div class="label">Quota <span class="src-tag rx" title="Misurata dal ricevitore GPS del dispositivo">ricevuta
+            GPS</span></div>
+        <div class="value" id="rGpsAltitude">—</div>
       </div>
+  </div>
 
-      <!-- Pannello coordinate GPS rilevate -->
-      <div class="panel hidden" id="gpsInfoPanel">
-        <div class="row-group-label gps">Posizione GPS rilevata</div>
-        <div class="data-row">
-          <div class="label">Coordinate GPS</div>
-          <div class="value" id="rGpsCoords">—</div>
-        </div>
-        <div class="data-row" id="gpsAccuracyRow">
-          <div class="label">Precisione</div>
-          <div class="value" id="rGpsAccuracy">—</div>
-        </div>
-        <div class="data-row hidden" id="gpsAltitudeRow">
-          <div class="label">Quota (Altitudine)</div>
-          <div class="value" id="rGpsAltitude">—</div>
-        </div>
-      </div>
+  <!-- Pannello coordinate GPS rilevate -->
+  <div class="panel hidden" id="gpsInfoPanel">
+    <div class="row-group-label gps">Posizione GPS rilevata</div>
+    <div class="data-row">
+      <div class="label">Coordinate GPS</div>
+      <div class="value" id="rGpsCoords">—</div>
+    </div>
+    <div class="data-row" id="gpsAccuracyRow">
+      <div class="label">Precisione</div>
+      <div class="value" id="rGpsAccuracy">—</div>
+    </div>
+    <div class="data-row hidden" id="gpsAltitudeRow">
+      <div class="label">Quota (Altitudine)</div>
+      <div class="value" id="rGpsAltitude">—</div>
+    </div>
+  </div>
 
-      <div class="panel">
-        <div class="result-top">
-          <div class="name" id="rComando">—</div>
-          <div class="dist" id="rDist"></div>
-        </div>
-        <div class="result-sub" id="rSub"></div>
-        <div class="method-badge" id="rMethod"></div>
-      </div>
+  <div class="panel">
+    <div class="result-top">
+      <div class="name" id="rComando">—</div>
+      <div class="dist" id="rDist"></div>
+    </div>
+    <div class="result-sub" id="rSub"></div>
+    <div class="method-badge" id="rMethod"></div>
+  </div>
 
-      <div class="panel">
-        <div class="map-wrap">
-          <div id="resultMap"></div>
-          <button type="button" id="mapCenterBtn" class="map-center-btn" title="Centra posizione"
-            aria-label="Centra posizione">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="3.5" stroke="currentColor" stroke-width="2" />
-              <path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-            </svg>
-          </button>
-          <button type="button" id="mapExpandBtn" class="map-expand-btn" title="Ingrandisci mappa"
-            aria-label="Ingrandisci mappa"></button>
-        </div>
-        <div class="map-legend" id="mapLegend">
-          <span><i class="dot-comando"></i>Comando</span>
-          <span id="legendUser" class="hidden"><i class="dot-user"></i>La tua posizione</span>
-          <span id="legendTarget" class="hidden"><i class="dot-target"></i>Target</span>
-        </div>
-      </div>
+  <div class="panel">
+    <div class="map-wrap">
+      <div id="resultMap"></div>
+      <button type="button" id="mapCenterBtn" class="map-center-btn" title="Centra posizione"
+        aria-label="Centra posizione">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="3.5" stroke="currentColor" stroke-width="2" />
+          <path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </svg>
+      </button>
+      <button type="button" id="mapExpandBtn" class="map-expand-btn" title="Ingrandisci mappa"
+        aria-label="Ingrandisci mappa"></button>
+    </div>
+    <div class="map-legend" id="mapLegend">
+      <span><i class="dot-comando"></i>Comando</span>
+      <span id="legendUser" class="hidden"><i class="dot-user"></i>La tua posizione</span>
+      <span id="legendTarget" class="hidden"><i class="dot-target"></i>Target</span>
+    </div>
+  </div>
 
-      <div class="panel">
-        <div class="row-group-label radio">Canale radio</div>
-        <div class="data-row">
-          <div class="label">Comando</div>
-          <div class="value"><span id="rRadioComando">—</span></div>
-        </div>
-        <div class="data-row">
-          <div class="label">Direzione regionale</div>
-          <div class="value"><span id="rRadioDirezione">—</span></div>
-        </div>
-      </div>
+  <div class="panel">
+    <div class="row-group-label radio">Canale radio</div>
+    <div class="data-row">
+      <div class="label">Comando</div>
+      <div class="value"><span id="rRadioComando">—</span></div>
+    </div>
+    <div class="data-row">
+      <div class="label">Direzione regionale</div>
+      <div class="value"><span id="rRadioDirezione">—</span></div>
+    </div>
+  </div>
 
-      <div class="panel">
-        <div class="row-group-label so">Sala operativa</div>
-        <div class="data-row">
-          <div class="label">Comando</div>
-          <div class="value" id="rTelComandoWrap">—</div>
-        </div>
-        <div class="data-row">
-          <div class="label">Direzione regionale</div>
-          <div class="value" id="rTelDirezioneWrap">—</div>
-        </div>
-        <div class="data-row">
-          <div class="label">CON nazionale</div>
-          <div class="value"><a class="value-link" id="conLink" href="tel:414606478321">06 478321 <svg width="14"
-                height="14" viewBox="0 0 24 24" fill="none">
-                <path d="M6 3h4l2 5-2.5 1.5a11 11 0 005 5L16 12l5 2v4a2 2 0 01-2 2C10.6 20 4 13.4 4 5a2 2 0 012-2z"
-                  stroke="currentColor" stroke-width="1.6" />
-              </svg></a><span id="rTelCon" class="hidden">06 478321</span></div>
-        </div>
-        <div class="data-row">
-          <div class="label">SOCAV</div>
-          <div class="value"><a class="value-link" id="socavLink" href="tel:41460679340903">06 79340903 <svg width="14"
-                height="14" viewBox="0 0 24 24" fill="none">
-                <path d="M6 3h4l2 5-2.5 1.5a11 11 0 005 5L16 12l5 2v4a2 2 0 01-2 2C10.6 20 4 13.4 4 5a2 2 0 012-2z"
-                  stroke="currentColor" stroke-width="1.6" />
-              </svg></a><span id="rTelSocav" class="hidden">06 79340903</span></div>
-        </div>
-      </div>
+  <div class="panel">
+    <div class="row-group-label so">Sala operativa</div>
+    <div class="data-row">
+      <div class="label">Comando</div>
+      <div class="value" id="rTelComandoWrap">—</div>
+    </div>
+    <div class="data-row">
+      <div class="label">Direzione regionale</div>
+      <div class="value" id="rTelDirezioneWrap">—</div>
+    </div>
+    <div class="data-row">
+      <div class="label">CON nazionale</div>
+      <div class="value"><a class="value-link" id="conLink" href="tel:414606478321">06 478321 <svg width="14"
+            height="14" viewBox="0 0 24 24" fill="none">
+            <path d="M6 3h4l2 5-2.5 1.5a11 11 0 005 5L16 12l5 2v4a2 2 0 01-2 2C10.6 20 4 13.4 4 5a2 2 0 012-2z"
+              stroke="currentColor" stroke-width="1.6" />
+          </svg></a><span id="rTelCon" class="hidden">06 478321</span></div>
+    </div>
+    <div class="data-row">
+      <div class="label">SOCAV</div>
+      <div class="value"><a class="value-link" id="socavLink" href="tel:41460679340903">06 79340903 <svg width="14"
+            height="14" viewBox="0 0 24 24" fill="none">
+            <path d="M6 3h4l2 5-2.5 1.5a11 11 0 005 5L16 12l5 2v4a2 2 0 01-2 2C10.6 20 4 13.4 4 5a2 2 0 012-2z"
+              stroke="currentColor" stroke-width="1.6" />
+          </svg></a><span id="rTelSocav" class="hidden">06 79340903</span></div>
+    </div>
+  </div>
 
-      <div class="panel">
-        <div class="addr-row" id="rAddr"></div>
-      </div>
+  <div class="panel">
+    <div class="addr-row" id="rAddr"></div>
+  </div>
 
-      <div class="border-note hidden" id="borderNote"></div>
+  <div class="border-note hidden" id="borderNote"></div>
 
-      <div class="panel hidden" id="confinantiPanel">
-        <div class="row-group-label">Comandi confinanti — verifica se sei vicino al limite di competenza</div>
-        <div class="chips" id="confinantiChips"></div>
-      </div>
+  <div class="panel hidden" id="confinantiPanel">
+    <div class="row-group-label">Comandi confinanti — verifica se sei vicino al limite di competenza</div>
+    <div class="chips" id="confinantiChips"></div>
+  </div>
 
-      <button class="link-btn" id="backToSearchBtn">cerca un altro comando</button>
-    </section>
+  <button class="link-btn" id="backToSearchBtn">cerca un altro comando</button>
+  </section>
 
   </div>
 
@@ -1501,6 +1528,23 @@
     document.getElementById("homeBtn").addEventListener("click", resetApp);
     document.getElementById("homeLogoBtn").addEventListener("click", resetApp);
 
+    async function fetchTargetElevation(lat, lon) {
+      const el = document.getElementById("rTargetAlt");
+      el.textContent = "…";
+      try {
+        const ctrl = new AbortController();
+        const tmo = setTimeout(() => ctrl.abort(), 7000);
+        const r = await fetch("https://api.open-meteo.com/v1/elevation?latitude=" + lat + "&longitude=" + lon, {signal: ctrl.signal});
+        clearTimeout(tmo);
+        if (!r.ok) throw new Error("http " + r.status);
+        const d = await r.json();
+        const h = d.elevation && d.elevation[0];
+        el.textContent = (h != null) ? Math.round(h) + " m s.l.m." : "Non disponibile";
+      } catch (e) {
+        el.textContent = "Non disponibile";
+      }
+    }
+
     async function processTargetInput(inputVal) {
       const statusEl = document.getElementById("statusMsg");
       statusEl.classList.remove("hidden", "error");
@@ -1513,6 +1557,7 @@
       }
 
       targetPos = coords;
+      fetchTargetElevation(targetPos.lat, targetPos.lon);
       statusEl.textContent = "Elaborazione coordinate e avvio tracking GPS (1 min)...";
 
       startGpsTracking();
