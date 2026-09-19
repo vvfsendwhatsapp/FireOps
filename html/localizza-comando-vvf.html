@@ -795,6 +795,35 @@
     }
     .maps-btn:active { background: var(--line); }
     .maps-btn.target { border-color: #e84747; }
+
+        .route-row {
+      display: flex;
+      gap: 8px;
+      padding: 10px 14px 0;
+    }
+    .route-btn {
+      flex: 1;
+      padding: 10px 6px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .route-btn:active { background: var(--line); }
+    .route-btn:disabled { opacity: .6; cursor: default; }
+    .route-btn.foot { border-color: var(--green); }
+    .route-btn.car { border-color: var(--cyan); }
+    .route-info {
+      margin: 8px 14px 0;
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--text-dim);
+    }
+    .route-info strong { color: var(--text); }
+    .route-info.error { color: #e8734a; }
   </style>
 </head>
 
@@ -911,6 +940,11 @@
               title="Stimata da modello digitale del terreno (Open-Meteo)">calcolata</span></div>
           <div class="value" id="rTargetAlt">—</div>
         </div>
+        <div class="route-row">
+          <button type="button" id="routeFoot" class="route-btn foot">🥾 Mostra a piedi</button>
+          <button type="button" id="routeCar" class="route-btn car">🚗 Mostra in auto</button>
+        </div>
+        <div class="route-info hidden" id="routeInfo"></div>
         <button type="button" id="openMapsTarget" class="maps-btn target">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">
@@ -1727,7 +1761,89 @@
       window.open(url, "_blank", "noopener");
     });
 
+        let routeLayer = null;
+
+    function clearRoute() {
+      if (routeLayer && map) map.removeLayer(routeLayer);
+      routeLayer = null;
+      const info = document.getElementById("routeInfo");
+      info.classList.add("hidden");
+      info.classList.remove("error");
+      info.textContent = "";
+    }
+
+    function fmtDuration(sec) {
+      const m = Math.round(sec / 60);
+      if (m < 60) return m + " min";
+      return Math.floor(m / 60) + " h " + String(m % 60).padStart(2, "0") + " min";
+    }
+
+    async function showRoute(profile, color, modeLabel) {
+      const info = document.getElementById("routeInfo");
+      const btns = [document.getElementById("routeFoot"), document.getElementById("routeCar")];
+      info.classList.remove("hidden", "error");
+
+      if (!targetPos) return;
+      if (!userPos) {
+        info.classList.add("error");
+        info.textContent = "Posizione GPS non ancora ricevuta: attendi la lettura o usa \"Aggiorna posizione\".";
+        return;
+      }
+
+      btns.forEach(b => b.disabled = true);
+      info.textContent = "Calcolo del percorso " + modeLabel + "…";
+
+      try {
+        const url = "https://brouter.de/brouter?lonlats=" +
+          userPos.lon.toFixed(6) + "," + userPos.lat.toFixed(6) + "|" +
+          targetPos.lon.toFixed(6) + "," + targetPos.lat.toFixed(6) +
+          "&profile=" + profile + "&alternativeidx=0&format=geojson";
+
+        const ctrl = new AbortController();
+        const tmo = setTimeout(() => ctrl.abort(), 20000);
+        const r = await fetch(url, {signal: ctrl.signal});
+        clearTimeout(tmo);
+        if (!r.ok) {
+          const msg = (await r.text()).trim().slice(0, 120);
+          throw new Error(msg || ("http " + r.status));
+        }
+        const data = await r.json();
+        const feat = data.features && data.features[0];
+        if (!feat) throw new Error("nessun percorso");
+
+        const p = feat.properties || {};
+        const coords = feat.geometry.coordinates.map(c => [c[1], c[0]]);
+
+        if (routeLayer && map) map.removeLayer(routeLayer);
+        routeLayer = L.polyline(coords, {color: color, weight: 5, opacity: 0.9}).addTo(map);
+        map.fitBounds(routeLayer.getBounds(), {padding: [40, 40]});
+        document.getElementById("resultMap").scrollIntoView({behavior: "smooth", block: "center"});
+
+        const km = (parseFloat(p["track-length"]) / 1000).toFixed(1);
+        const asc = p["filtered ascend"] != null ? Math.round(parseFloat(p["filtered ascend"])) : null;
+        info.innerHTML = "<strong>" + modeLabel + "</strong>: " + km + " km · " +
+          fmtDuration(parseFloat(p["total-time"])) +
+          (asc != null ? " · dislivello +" + asc + " m" : "") +
+          "<br>Calcolato da BRouter alle " +
+          new Date().toLocaleTimeString("it-IT", {hour: "2-digit", minute: "2-digit"}) +
+          ", senza traffico.";
+      } catch (e) {
+        info.classList.add("error");
+        info.textContent = "Percorso non disponibile (" + (e.name === "AbortError" ? "tempo scaduto" : e.message) + ").";
+      } finally {
+        btns.forEach(b => b.disabled = false);
+      }
+    }
+
+    document.getElementById("routeFoot").addEventListener("click", function () {
+      showRoute("hiking-mountain", "#3fa66b", "A piedi");
+    });
+    document.getElementById("routeCar").addEventListener("click", function () {
+      showRoute("car-fast", "#29a9eb", "In auto");
+    });
+
     function resetApp() {
+      clearRoute();
       if (watchId !== null) {navigator.geolocation.clearWatch(watchId); watchId = null;}
       if (trackingTimeoutId !== null) {clearTimeout(trackingTimeoutId); trackingTimeoutId = null;}
       currentRecord = null;
@@ -1783,6 +1899,7 @@
       }
 
       targetPos = coords;
+      clearRoute();
       fetchTargetElevation(targetPos.lat, targetPos.lon);
       statusEl.textContent = "Elaborazione coordinate e avvio tracking GPS (1 min)...";
 
@@ -1885,6 +2002,7 @@
     document.getElementById("backToSearchBtn").addEventListener("click", function () {
       if (watchId !== null) {navigator.geolocation.clearWatch(watchId); watchId = null;}
       if (trackingTimeoutId !== null) {clearTimeout(trackingTimeoutId); trackingTimeoutId = null;}
+      clearRoute();
       document.getElementById("result-section").classList.add("hidden");
       document.getElementById("locate-section").classList.remove("hidden");
       document.getElementById("search-section").classList.remove("hidden");
