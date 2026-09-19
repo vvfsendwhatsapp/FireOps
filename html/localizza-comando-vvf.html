@@ -776,6 +776,25 @@
       font-size: 12px;
       font-weight: 700;
     }
+
+        .maps-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: calc(100% - 28px);
+      margin: 10px 14px 14px;
+      padding: 10px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .maps-btn:active { background: var(--line); }
+    .maps-btn.target { border-color: #e84747; }
   </style>
 </head>
 
@@ -892,6 +911,13 @@
               title="Stimata da modello digitale del terreno (Open-Meteo)">calcolata</span></div>
           <div class="value" id="rTargetAlt">—</div>
         </div>
+        <button type="button" id="openMapsTarget" class="maps-btn target">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 11l19-9-9 19-2-8-8-2z" />
+          </svg>
+          Naviga al target
+        </button>
       </div>
 
       <!-- Pannello coordinate GPS rilevate -->
@@ -1692,6 +1718,14 @@
 
     bindCopyCoords("rTargetCoords", function () {return targetPos;});
     bindCopyCoords("rGpsCoords", function () {return userPos;});
+
+    document.getElementById("openMapsTarget").addEventListener("click", function () {
+      if (!targetPos) return;
+      const url = "https://www.google.com/maps/dir/?api=1&destination=" +
+        targetPos.lat.toFixed(6) + "," + targetPos.lon.toFixed(6) +
+        "&travelmode=driving&dir_action=navigate";
+      window.open(url, "_blank", "noopener");
+    });
 
     function resetApp() {
       if (watchId !== null) {navigator.geolocation.clearWatch(watchId); watchId = null;}
