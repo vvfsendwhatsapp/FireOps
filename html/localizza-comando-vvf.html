@@ -777,7 +777,7 @@
       font-weight: 700;
     }
 
-        .maps-btn {
+    .maps-btn {
       display: flex;
       align-items: center;
       justify-content: center;
@@ -793,14 +793,21 @@
       font-weight: 600;
       cursor: pointer;
     }
-    .maps-btn:active { background: var(--line); }
-    .maps-btn.target { border-color: #e84747; }
 
-        .route-row {
+    .maps-btn:active {
+      background: var(--line);
+    }
+
+    .maps-btn.target {
+      border-color: #e84747;
+    }
+
+    .route-row {
       display: flex;
       gap: 8px;
       padding: 10px 14px 0;
     }
+
     .route-btn {
       flex: 1;
       padding: 10px 6px;
@@ -812,26 +819,47 @@
       font-weight: 600;
       cursor: pointer;
     }
-    .route-btn:active { background: var(--line); }
-    .route-btn:disabled { opacity: .6; cursor: default; }
-    .route-btn.foot { border-color: var(--green); }
-    .route-btn.car { border-color: var(--cyan); }
+
+    .route-btn:active {
+      background: var(--line);
+    }
+
+    .route-btn:disabled {
+      opacity: .6;
+      cursor: default;
+    }
+
+    .route-btn.foot {
+      border-color: var(--green);
+    }
+
+    .route-btn.car {
+      border-color: var(--cyan);
+    }
+
     .route-info {
       margin: 8px 14px 0;
       font-size: 13px;
       line-height: 1.5;
       color: var(--text-dim);
     }
-    .route-info strong { color: var(--text); }
-    .route-info.error { color: #e8734a; }
 
-        .result-name-wrap {
+    .route-info strong {
+      color: var(--text);
+    }
+
+    .route-info.error {
+      color: #e8734a;
+    }
+
+    .result-name-wrap {
       display: flex;
       align-items: center;
       flex-wrap: wrap;
       gap: 6px 12px;
       min-width: 0;
     }
+
     .nav-cmd-btn {
       display: inline-flex;
       align-items: center;
@@ -846,7 +874,111 @@
       cursor: pointer;
       white-space: nowrap;
     }
-    .nav-cmd-btn:active { background: var(--red-dim); }
+
+    .nav-cmd-btn:active {
+      background: var(--red-dim);
+    }
+
+    .place-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      background: rgba(0, 0, 0, .7);
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 60px 16px 16px;
+    }
+
+    .place-box {
+      width: 100%;
+      max-width: 440px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 16px;
+    }
+
+    .place-box h3 {
+      margin: 0 0 4px;
+      font-size: 16px;
+    }
+
+    .place-box p {
+      margin: 0 0 12px;
+      font-size: 13px;
+      color: var(--text-dim);
+      line-height: 1.5;
+    }
+
+    .place-box input {
+      width: 100%;
+      padding: 13px 14px;
+      font-size: 16px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      color: var(--text);
+      font-family: var(--sans);
+    }
+
+    .place-box input:focus {
+      outline: none;
+      border-color: var(--red);
+    }
+
+    .place-list {
+      margin-top: 8px;
+      max-height: 260px;
+      overflow-y: auto;
+      border-radius: 4px;
+    }
+
+    .place-item {
+      padding: 12px 14px;
+      background: var(--panel-2);
+      border-top: 1px solid var(--line);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .place-item:first-child {
+      border-top: none;
+    }
+
+    .place-item:active {
+      background: var(--line);
+    }
+
+    .place-item .pn {
+      font-size: 15px;
+    }
+
+    .place-item .pp {
+      font-size: 12.5px;
+      color: var(--text-dim);
+      text-align: right;
+    }
+
+    .place-msg {
+      margin-top: 8px;
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+
+    .place-cancel {
+      margin-top: 12px;
+      width: 100%;
+      padding: 10px;
+      background: none;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      color: var(--text-dim);
+      font-size: 13px;
+      cursor: pointer;
+    }
   </style>
 </head>
 
@@ -1095,6 +1227,18 @@
       <button class="link-btn" id="backToSearchBtn">cerca un altro comando</button>
     </section>
 
+  </div>
+
+  <div class="place-modal hidden" id="placeModal">
+    <div class="place-box">
+      <h3>Inserire una località</h3>
+      <p>Il codice OLC corto (<span id="placeCode">—</span>) ha bisogno di un punto di riferimento vicino, entro circa
+        50 km. Scrivi il comune e scegli dall'elenco.</p>
+      <input type="text" id="placeInput" placeholder="Comune, es. Cesena" autocomplete="off">
+      <div class="place-list" id="placeList"></div>
+      <div class="place-msg hidden" id="placeMsg"></div>
+      <button type="button" class="place-cancel" id="placeCancel">Annulla</button>
+    </div>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -1808,7 +1952,7 @@
       window.open(url, "_blank", "noopener");
     });
 
-        let routeLayer = null;
+    let routeLayer = null;
 
     function clearRoute() {
       if (routeLayer && map) map.removeLayer(routeLayer);
@@ -1941,11 +2085,163 @@
       }
     }
 
+    // Apre il popup e restituisce {lat, lon} scelto, oppure null se annullato
+    function askPlace(code) {
+      return new Promise(function (resolve) {
+        const modal = document.getElementById("placeModal");
+        const input = document.getElementById("placeInput");
+        const list = document.getElementById("placeList");
+        const msg = document.getElementById("placeMsg");
+        let tmo = null, reqId = 0;
+
+        document.getElementById("placeCode").textContent = code;
+        input.value = "";
+        list.innerHTML = "";
+        msg.classList.add("hidden");
+        modal.classList.remove("hidden");
+        setTimeout(function () {input.focus();}, 50);
+
+        function close(result) {
+          modal.classList.add("hidden");
+          input.removeEventListener("input", onInput);
+          document.getElementById("placeCancel").removeEventListener("click", onCancel);
+          modal.removeEventListener("click", onBackdrop);
+          clearTimeout(tmo);
+          resolve(result);
+        }
+        function onCancel() {close(null);}
+        function onBackdrop(e) {if (e.target === modal) close(null);}
+
+        function showMsg(t) {msg.textContent = t; msg.classList.remove("hidden");}
+
+        async function search(q) {
+          const id = ++reqId;
+          msg.classList.add("hidden");
+          try {
+            const url = "https://photon.komoot.io/api/?limit=10&lang=it" +
+              "&bbox=6.6,35.4,18.8,47.2&q=" + encodeURIComponent(q);
+            const ctrl = new AbortController();
+            const t = setTimeout(() => ctrl.abort(), 6000);
+            const r = await fetch(url, {signal: ctrl.signal});
+            clearTimeout(t);
+            if (!r.ok) throw new Error("http " + r.status);
+            const data = await r.json();
+            if (id !== reqId) return;   // risposta vecchia, ignorata
+
+            const seen = {};
+            const items = (data.features || []).filter(function (f) {
+              const p = f.properties || {};
+              if (p.countrycode !== "IT" || !p.name) return false;
+              const key = p.name + "|" + (p.county || p.state || "");
+              if (seen[key]) return false;
+              seen[key] = true;
+              return true;
+            }).slice(0, 6);
+
+            list.innerHTML = "";
+            if (!items.length) {showMsg("Nessun risultato. Prova a scrivere il nome per intero."); return;}
+            items.forEach(function (f) {
+              const p = f.properties;
+              const row = document.createElement("div");
+              row.className = "place-item";
+              const n = document.createElement("span");
+              n.className = "pn";
+              n.textContent = p.name;
+              const pr = document.createElement("span");
+              pr.className = "pp";
+              pr.textContent = [p.county, p.state].filter(Boolean).join(" · ");
+              row.appendChild(n);
+              row.appendChild(pr);
+              row.addEventListener("click", function () {
+                close({lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0]});
+              });
+              list.appendChild(row);
+            });
+          } catch (e) {
+            if (id !== reqId) return;
+            list.innerHTML = "";
+            showMsg("Ricerca non disponibile (rete o servizio). Riprova, oppure scrivi la località dopo il codice.");
+          }
+        }
+
+        function onInput() {
+          clearTimeout(tmo);
+          const q = input.value.trim();
+          if (q.length < 3) {list.innerHTML = ""; msg.classList.add("hidden"); return;}
+          tmo = setTimeout(function () {search(q);}, 350);
+        }
+
+        input.addEventListener("input", onInput);
+        document.getElementById("placeCancel").addEventListener("click", onCancel);
+        modal.addEventListener("click", onBackdrop);
+      });
+    }
+
+    const OLC_SHORT_RE = /^([23456789CFGHJMPQRVWX]{4}\+[23456789CFGHJMPQRVWX]{0,7})\s*(.*)$/i;
+
+    // Ricostruisce un codice corto a partire da un punto di riferimento
+    function olcRecoverShort(shortCode, ref) {
+      const d = olcDecode("2222" + shortCode.toUpperCase());
+      if (!d) return null;
+      const offLat = d.lat + 90;    // posizione dentro il quadrato di 1°
+      const offLon = d.lon + 180;
+      let lat = Math.floor(ref.lat) + offLat;
+      let lon = Math.floor(ref.lon) + offLon;
+      if (lat - ref.lat > 0.5) lat -= 1; else if (lat - ref.lat < -0.5) lat += 1;
+      if (lon - ref.lon > 0.5) lon -= 1; else if (lon - ref.lon < -0.5) lon += 1;
+      return {lat: lat, lon: lon};
+    }
+
+    async function geocodeItalyPlace(name) {
+      try {
+        const ctrl = new AbortController();
+        const tmo = setTimeout(() => ctrl.abort(), 7000);
+        const r = await fetch("https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=it&q=" +
+          encodeURIComponent(name), {headers: {"Accept": "application/json"}, signal: ctrl.signal});
+        clearTimeout(tmo);
+        if (!r.ok) return null;
+        const a = await r.json();
+        return a && a[0] ? {lat: parseFloat(a[0].lat), lon: parseFloat(a[0].lon)} : null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    // Restituisce {coords} oppure {error}; null se non è un codice corto
+    async function resolveShortOlc(text) {
+      const m = (text || "").trim().match(OLC_SHORT_RE);
+      if (!m) return null;
+      const code = m[1], place = m[2].trim();
+      let ref = null;
+      if (place) {
+        ref = await geocodeItalyPlace(place);
+        if (!ref) return {error: "Località \"" + place + "\" non trovata (o rete non disponibile). Controlla il nome."};
+      } else if (userPos) {
+        ref = userPos;
+      } else {
+        ref = await askPlace(code);
+        if (!ref) return {error: "Annullato: per un codice OLC corto serve una località di riferimento."};
+      }
+      const coords = olcRecoverShort(code, ref);
+      return coords ? {coords: coords} : {error: "Codice OLC non valido."};
+    }
+
     async function processTargetInput(inputVal) {
       const statusEl = document.getElementById("statusMsg");
       statusEl.classList.remove("hidden", "error");
 
-      const coords = parseCoordinatesInput(inputVal);
+      let coords = null;
+      const shortRes = await resolveShortOlc(inputVal);
+      if (shortRes) {
+        if (shortRes.error) {
+          statusEl.classList.add("error");
+          statusEl.textContent = shortRes.error;
+          return;
+        }
+        coords = shortRes.coords;
+      } else {
+        coords = parseCoordinatesInput(inputVal);
+      }
       if (!coords || !inItaly(coords)) {
         statusEl.classList.add("error");
         statusEl.textContent = "Formato non riconosciuto o punto fuori dall'Italia. Verifica i dati inseriti.";
