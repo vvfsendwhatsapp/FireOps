@@ -2118,8 +2118,8 @@
           const id = ++reqId;
           msg.classList.add("hidden");
           try {
-            const url = "https://photon.komoot.io/api/?limit=10&lang=it" +
-              "&bbox=6.6,35.4,18.8,47.2&q=" + encodeURIComponent(q);
+            const url = "https://photon.komoot.io/api/?limit=10" +
+              "&bbox=6.6,35.4,18.8,47.2&osm_tag=place&q=" + encodeURIComponent(q);
             const ctrl = new AbortController();
             const t = setTimeout(() => ctrl.abort(), 6000);
             const r = await fetch(url, {signal: ctrl.signal});
@@ -2160,7 +2160,7 @@
           } catch (e) {
             if (id !== reqId) return;
             list.innerHTML = "";
-            showMsg("Ricerca non disponibile (rete o servizio). Riprova, oppure scrivi la località dopo il codice.");
+            showMsg("Ricerca non disponibile (" + (e.name === "AbortError" ? "tempo scaduto" : e.message) + ").");
           }
         }
 
