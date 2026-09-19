@@ -1073,11 +1073,36 @@
       if (!mapEl || typeof L === "undefined") return;
 
       if (!map) {
-        map = L.map("resultMap", {attributionControl: true, zoomControl: true});
-        L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          maxZoom: 19,
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
-        }).addTo(map);
+        map = L.map("resultMap", {attributionControl: true, zoomControl: true, maxZoom: 19});
+
+        const baseLayers = {
+          "Stradale": L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
+          }),
+          "Topografica": L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
+            maxZoom: 19,
+            maxNativeZoom: 17,
+            subdomains: "abc",
+            attribution: 'Dati &copy; OpenStreetMap contributors, SRTM | Stile &copy; <a href="https://opentopomap.org" target="_blank" rel="noopener">OpenTopoMap</a> (CC-BY-SA)'
+          }),
+          "Satellite": L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+            maxZoom: 19,
+            attribution: 'Immagini &copy; Esri, Maxar, Earthstar Geographics'
+          })
+        };
+
+        // Ricorda l'ultima scelta (se lo storage non è disponibile, parte "Stradale")
+        let saved = "Stradale";
+        try { saved = localStorage.getItem("fireops_basemap") || "Stradale"; } catch (e) {}
+        if (!baseLayers[saved]) saved = "Stradale";
+        baseLayers[saved].addTo(map);
+
+        L.control.layers(baseLayers, null, {position: "topleft", collapsed: true}).addTo(map);
+
+        map.on("baselayerchange", function (e) {
+          try { localStorage.setItem("fireops_basemap", e.name); } catch (err) {}
+        });
       }
 
       if (comandoMarker) {map.removeLayer(comandoMarker); comandoMarker = null;}
