@@ -267,6 +267,7 @@ footer .fitem + .fitem{border-left:1px solid var(--line);}
   top:0;left:0;right:0;bottom:0;
   width:100vw;
   height:100vh;
+  height:100dvh;
   z-index:9999;
   border-radius:0;
 }
@@ -301,8 +302,8 @@ body.map-open{overflow:hidden;}
 .map-expand-btn:active{background:var(--panel-2);}
 .map-expand-btn.fullscreen{
   position:fixed;
-  top:16px;
-  right:16px;
+  top:10px;
+  right:10px;
   z-index:10000;
   width:auto;
   height:auto;
@@ -534,7 +535,26 @@ function setMapFullscreen(on){
   btn.innerHTML = on ? (COLLAPSE_ICON + '<span>Chiudi</span>') : EXPAND_ICON;
   btn.title = on ? "Chiudi mappa a schermo intero" : "Ingrandisci mappa";
   btn.setAttribute("aria-label", btn.title);
+  if(on){
+    applyFullscreenMapHeight();
+  } else {
+    mapEl.style.height = "";
+  }
   setTimeout(function(){ if(map) map.invalidateSize(); }, 200);
+}
+
+function applyFullscreenMapHeight(){
+  if(!isMapFullscreen) return;
+  const mapEl = document.getElementById("resultMap");
+  const h = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
+  mapEl.style.height = h + "px";
+  if(map) map.invalidateSize();
+}
+
+window.addEventListener("resize", applyFullscreenMapHeight);
+window.addEventListener("orientationchange", applyFullscreenMapHeight);
+if(window.visualViewport){
+  window.visualViewport.addEventListener("resize", applyFullscreenMapHeight);
 }
 
 document.getElementById("mapExpandBtn").innerHTML = EXPAND_ICON;
