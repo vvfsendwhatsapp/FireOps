@@ -1214,6 +1214,7 @@ Koordináták küldéséhez:
     // ==========================================================
 
     const btnRiepilogoMsg = document.getElementById("btn-riepilogo-msg");
+    const frecciaRiepilogoMsg = document.getElementById("btn-riepilogo-msg")?.querySelector(".riepilogo-msg-tab-freccia");
     const overlayRiepilogoMsg = document.getElementById("riepilogo-msg-overlay");
     const corpoRiepilogoMsg = document.getElementById("riepilogo-msg-corpo");
     const chkRiepilogoLimitrofi = document.getElementById("riepilogo-msg-limitrofi");
@@ -1281,6 +1282,24 @@ Koordináták küldéséhez:
         return !!(sezioneMsg && sezioneMsg.closest(".pannello"));
     }
 
+    // Verso della freccia: punta verso dove si APRIRÀ l'overlay (il pannello
+    // opposto a Messaggistica) quando chiuso, e nel verso contrario (quello
+    // da cui richiuderla) quando è già aperto — coerente in entrambi i casi
+    // con "da che parte succede qualcosa cliccando".
+    function aggiornaFrecciaTab() {
+        if (!frecciaRiepilogoMsg) return;
+        const sezioneMsg = document.getElementById("messaggistica");
+        const pannelloMsg = sezioneMsg && sezioneMsg.closest(".pannello");
+        if (!pannelloMsg) return;
+
+        const apreVersoSinistra = pannelloMsg.id === "pannello-destra"; // opposto = sinistra
+        const aperta = !!(overlayRiepilogoMsg && !overlayRiepilogoMsg.hidden);
+
+        // Chiusa: freccia verso l'apertura. Aperta: freccia verso la chiusura (invertita).
+        const versoSinistra = aperta ? !apreVersoSinistra : apreVersoSinistra;
+        frecciaRiepilogoMsg.textContent = versoSinistra ? "◂" : "▸";
+    }
+
     // Unica fonte di verità su "ci sono dati da mostrare?", aggiornata da
     // aggiornaVisibilitaTab().
     let haDatiRiepilogo = false;
@@ -1291,6 +1310,7 @@ Koordináták küldéséhez:
     function aggiornaVisualizzazioneTab() {
         if (!btnRiepilogoMsg) return;
         btnRiepilogoMsg.hidden = !(haDatiRiepilogo && messaggisticaAttivaInUnPannello());
+        aggiornaFrecciaTab();
     }
 
     // Un unico punto sulla mini-mappa (marker + cerchio di precisione),
@@ -1301,6 +1321,15 @@ Koordináták küldéséhez:
     function disegnaPuntiPosizione(mappaEl, righePosizione) {
         if (!window.L || !righePosizione.length) return;
 
+        // Numerate in ordine cronologico (1 = più vecchia, N = più recente):
+        // stesso ordine con cui il locator le ha inviate, così il numero sul
+        // marker corrisponde a "quale tentativo era".
+        const righeOrdinate = righePosizione.slice().sort((a, b) => {
+            const ta = a.Timestamp ? new Date(a.Timestamp).getTime() : 0;
+            const tb = b.Timestamp ? new Date(b.Timestamp).getTime() : 0;
+            return ta - tb;
+        });
+
         // Leaflet richiede una vista iniziale (centro+zoom) prima di poter
         // calcolare i bounds di un cerchio: Circle.getBounds() legge la
         // proiezione interna della mappa, che non esiste finché non è stata
@@ -1309,7 +1338,7 @@ Koordináták küldéséhez:
         // 'layerPointToLatLng')") appena il gruppo contiene un cerchio di
         // precisione — e quell'errore blocca tutto il resto della funzione,
         // compreso il centraggio finale.
-        const primoValido = righePosizione
+        const primoValido = righeOrdinate
             .map(r => [numeroLocale(r.Lat), numeroLocale(r.Lng)])
             .find(([lat, lng]) => isFinite(lat) && isFinite(lng));
 
@@ -1319,8 +1348,21 @@ Koordináták küldéséhez:
         const layer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 });
         layer.addTo(mappa);
 
+        // Stesso linguaggio visivo dei rombi numerati dei Reparti Volo nel
+        // convertitore coordinate: cerchio pieno con il numero al centro.
+        function iconaPuntoNumerato(numero) {
+            return L.divIcon({
+                className: "",
+                html: `<div style="width:24px;height:24px;border-radius:50%;background:#ffd700;border:2px solid #121212;box-shadow:0 0 6px rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;">
+                           <span style="color:#121212;font:bold 12px Arial;">${numero}</span>
+                       </div>`,
+                iconSize: [24, 24],
+                iconAnchor: [12, 12],
+            });
+        }
+
         const gruppo = L.featureGroup();
-        righePosizione.forEach(riga => {
+        righeOrdinate.forEach((riga, indice) => {
             const lat = numeroLocale(riga.Lat), lng = numeroLocale(riga.Lng);
             if (!isFinite(lat) || !isFinite(lng)) return;
 
@@ -1330,10 +1372,11 @@ Koordináták küldéséhez:
             const direzione = numeroLocale(riga.Direzione);
             const velocita = numeroLocale(riga.Velocita);
             const orario = riga.Timestamp ? new Date(riga.Timestamp).toLocaleString("it-IT") : "-";
+            const numero = indice + 1;
 
-            const marker = L.marker([lat, lng]).addTo(gruppo);
+            const marker = L.marker([lat, lng], { icon: iconaPuntoNumerato(numero) }).addTo(gruppo);
             marker.bindPopup(`
-                <b>${riga.Fonte || "Posizione"}</b><br>
+                <b>Punto ${numero} — ${riga.Fonte || "Posizione"}</b><br>
                 Orario: ${orario}<br>
                 Lat/Lon: ${lat.toFixed(6)}, ${lng.toFixed(6)}<br>
                 Precisione: ${isFinite(raggio) ? raggio + " m" : "-"}<br>
@@ -1368,23 +1411,27 @@ Koordináták küldéséhez:
         });
     }
 
-    // Punto più preciso (accuratezza minima, cioè il cerchio più piccolo) fra
-    // le righe di posizione di un ID ricerca: è quello da proporre nel
-    // convertitore coordinate.
-    function puntoMigliore(righePosizione) {
-        return righePosizione.reduce((migliore, riga) => {
-            const acc = numeroLocale(riga.Accuratezza);
-            if (!migliore) return riga;
-            const accMigliore = numeroLocale(migliore.Accuratezza);
-            return (isFinite(acc) && (!isFinite(accMigliore) || acc < accMigliore)) ? riga : migliore;
+    // Ultima posizione ricevuta (timestamp più recente) fra le righe di un
+    // ID ricerca: è quella da proporre nel convertitore coordinate — non
+    // la più precisa, ma l'ultima nel tempo (il locator manda fino a 3
+    // tentativi solo se la precisione migliora, quindi in pratica coincidono
+    // quasi sempre, ma il criterio chiesto è "ultima", non "più precisa").
+    function puntoUltimo(righePosizione) {
+        return righePosizione.reduce((ultimo, riga) => {
+            if (!ultimo) return riga;
+            const tUltimo = ultimo.Timestamp ? new Date(ultimo.Timestamp).getTime() : 0;
+            const tRiga = riga.Timestamp ? new Date(riga.Timestamp).getTime() : 0;
+            return tRiga > tUltimo ? riga : ultimo;
         }, null);
     }
 
     // Porta al Convertitore Coordinate con lat/lon già impostate in formato
     // DD e avvia la conversione. Cambia il pannello che ospita la
     // Messaggistica (l'unico di cui siamo certi lato): l'altro resta come sta.
-    // NB: si affida a campi/pulsanti di convertitore.js con gli id visti nel
-    // markup — se in futuro quegli id cambiano, va aggiornata anche qui.
+    // Il formato viene forzato su "dd" PRIMA di riempire i campi: convertitore.js
+    // legge le coordinate in base a quale formato è selezionato nel menu (non
+    // in base a quali campi sono compilati) — se l'utente lo aveva lasciato su
+    // un altro formato (es. UTM), riempire i campi DD da soli non basterebbe.
     function apriInConvertitore(lat, lon) {
         const sezioneMsg = document.getElementById("messaggistica");
         const pannelloMsg = sezioneMsg && sezioneMsg.closest(".pannello");
@@ -1402,12 +1449,18 @@ Koordináták küldéséhez:
         // ha inserito nel pannello: un piccolo ritardo basta ad aspettare
         // quel passaggio sincrono innescato dal cambio di select qui sopra.
         setTimeout(() => {
+            const selectFormatoConv = document.getElementById("coord-formato-input");
             const campoLat = document.getElementById("coord-dd-lat");
             const campoLon = document.getElementById("coord-dd-lon");
             const segnoLat = document.getElementById("coord-dd-lat-segno");
             const segnoLon = document.getElementById("coord-dd-lon-segno");
             const btnConverti = document.getElementById("btn-coord-converti");
             if (!campoLat || !campoLon) return;
+
+            if (selectFormatoConv && selectFormatoConv.value !== "dd") {
+                selectFormatoConv.value = "dd";
+                selectFormatoConv.dispatchEvent(new Event("change"));
+            }
 
             if (segnoLat) segnoLat.value = lat < 0 ? "-" : "+";
             if (segnoLon) segnoLon.value = lon < 0 ? "-" : "+";
@@ -1471,8 +1524,8 @@ Koordináták küldéséhez:
             });
 
             azioni.querySelector(".riepilogo-msg-apri-convertitore").addEventListener("click", () => {
-                const migliore = puntoMigliore(righePosizione);
-                if (migliore) apriInConvertitore(numeroLocale(migliore.Lat), numeroLocale(migliore.Lng));
+                const ultima = puntoUltimo(righePosizione);
+                if (ultima) apriInConvertitore(numeroLocale(ultima.Lat), numeroLocale(ultima.Lng));
             });
         }
 
@@ -1578,6 +1631,14 @@ Koordináták küldéséhez:
         if (!overlayRiepilogoMsg) return;
         if (!spostaOverlayNelPannelloOpposto(overlayRiepilogoMsg)) return;
         overlayRiepilogoMsg.hidden = false;
+        if (btnRiepilogoMsg) btnRiepilogoMsg.classList.add("aperta");
+        // Il pannello che ospita l'overlay sale sopra la tab (z-index): senza
+        // questo la tab, sorella dei pannelli, ci passava sopra anche a
+        // overlay aperto — lo z-index dell'overlay conta solo dentro al suo
+        // pannello, non si confronta direttamente con un elemento esterno.
+        const pannelloOspite = pannelloOppostoAMessaggistica();
+        if (pannelloOspite) pannelloOspite.classList.add("ha-overlay-attivo");
+        aggiornaFrecciaTab();
         caricaRiepilogoMessaggi();
         // Aggiunto al prossimo giro di eventi: altrimenti il click che ha
         // aperto il pannello viene visto anche dal listener "fuori" e lo
@@ -1588,6 +1649,15 @@ Koordináták küldéséhez:
     function chiudiRiepilogoMsg() {
         if (!overlayRiepilogoMsg) return;
         overlayRiepilogoMsg.hidden = true;
+        if (btnRiepilogoMsg) btnRiepilogoMsg.classList.remove("aperta");
+        // L'overlay può aver cambiato pannello ospite da un'apertura
+        // all'altra (Messaggistica spostata nel frattempo): tolgo la classe
+        // da ENTRAMBI i pannelli, non solo da quello attuale.
+        const psx = document.getElementById("pannello-sinistra");
+        const pdx = document.getElementById("pannello-destra");
+        if (psx) psx.classList.remove("ha-overlay-attivo");
+        if (pdx) pdx.classList.remove("ha-overlay-attivo");
+        aggiornaFrecciaTab();
         document.removeEventListener("click", chiudiRiepilogoMsgSeFuori);
     }
 

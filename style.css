@@ -6615,6 +6615,21 @@ select:focus {
     white-space: nowrap;
 }
 
+/* Il pannello che ospita l'overlay sale sopra la tab mentre è aperto: la
+   tab è sorella dei pannelli, il suo z-index (500) si confronta con quello
+   del PANNELLO stesso (che di suo è "auto" = 0), non con l'overlay che sta
+   dentro — ecco perché prima la tab ci passava sopra anche a overlay aperto. */
+.pannello.ha-overlay-attivo {
+    z-index: 600; /* sopra la tab (500) */
+}
+
+/* Freccia direzionale: JS aggiorna solo il testo (◂/▸), qui basta lo stile */
+.riepilogo-msg-tab-freccia {
+    font-size: 11px;
+    line-height: 1;
+    margin-bottom: 4px;
+}
+
 /* ==========================================================
    ==========================================================
    RESPONSIVE
