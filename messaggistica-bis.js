@@ -1259,6 +1259,28 @@ Koordináták küldéséhez:
         return !!(sezioneMsg && sezioneMsg.closest(".pannello"));
     }
 
+    // La tab deve sapere su quale bordo del proprio pannello agganciarsi:
+    // destro se Messaggistica è nel pannello sinistro (rivolto verso
+    // l'altro), sinistro se è nel pannello destro. Le stesse classi vanno
+    // anche sulla SEZIONE (non solo sulla tab): servono al CSS per dare al
+    // contenuto un padding extra su quel lato — senza, il testo di
+    // Messaggistica parte da dove parte sempre (16px, il padding di
+    // .pannello-corpo) e finisce SOTTO la tab, che è larga 34px e
+    // posizionata rispetto al pannello, non al contenuto.
+    function aggiornaLatoTab() {
+        if (!btnRiepilogoMsg) return;
+        const sezioneMsg = document.getElementById("messaggistica");
+        const pannelloMsg = sezioneMsg && sezioneMsg.closest(".pannello");
+        if (!pannelloMsg) return;
+        const aSinistra = pannelloMsg.id === "pannello-sinistra";
+        btnRiepilogoMsg.classList.toggle("lato-destro-interno", aSinistra);
+        btnRiepilogoMsg.classList.toggle("lato-sinistro-interno", !aSinistra);
+        if (sezioneMsg) {
+            sezioneMsg.classList.toggle("lato-destro-interno", aSinistra);
+            sezioneMsg.classList.toggle("lato-sinistro-interno", !aSinistra);
+        }
+    }
+
     // Replica locale di toggleFullscreenPagina() (script-bis.js): questo
     // file è autonomo (vedi intestazione) e non condivide la closure di
     // script-bis.js, quindi non può chiamare quella funzione direttamente —
@@ -1301,6 +1323,7 @@ Koordináták küldéséhez:
     function aggiornaVisualizzazioneTab() {
         if (!btnRiepilogoMsg) return;
         btnRiepilogoMsg.hidden = !(haDatiRiepilogo && messaggisticaAttivaInUnPannello());
+        aggiornaLatoTab();
     }
 
     // Unica fonte di verità su "ci sono dati da mostrare?", aggiornata da
