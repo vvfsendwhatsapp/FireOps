@@ -16,7 +16,7 @@
   --panel-2:#1d242e;
   --line:#2a323d;
   --red:#ffd700;
-  --red-dim:#ffd700;
+  --red-dim:#e6c200;
   --amber:#e8a33d;
   --text:#eceff3;
   --text-dim:#8b96a3;
@@ -75,9 +75,9 @@ header{
 .prefix-toggle[aria-pressed="true"]{
   background:var(--red);
   border-color:var(--red);
-  color:#fff;
+  color:#000;
 }
-.prefix-toggle[aria-pressed="true"] .prefix-toggle-dot{background:#fff;}
+.prefix-toggle[aria-pressed="true"] .prefix-toggle-dot{background:#000;}
 .prefix-toggle:active{opacity:.85;}
 
 /* sections */
@@ -103,8 +103,8 @@ section{margin-top:18px;}
   width:100%;
   padding:16px;
   font-size:16px;
-  font-weight:600;
-  color:#fff;
+  font-weight:700;
+  color:#000;
   background:var(--red);
   border:none;
   border-radius:4px;
@@ -116,6 +116,7 @@ section{margin-top:18px;}
 }
 .locate-btn:active{background:var(--red-dim);}
 .locate-btn svg{flex:none;}
+.locate-btn svg circle, .locate-btn svg path{stroke:#000 !important;}
 .locate-btn.loading{opacity:.7;}
 
 .link-btn{
@@ -313,10 +314,9 @@ body.map-open{overflow:hidden;}
 .leaflet-control-attribution{
   font-size:10px !important;
 }
-.map-expand-btn{
+.map-expand-btn, .map-center-btn{
   position:absolute;
   top:10px;
-  right:10px;
   z-index:1200;
   width:34px;
   height:34px;
@@ -327,14 +327,12 @@ body.map-open{overflow:hidden;}
   display:flex;
   align-items:center;
   justify-content:center;
-  gap:6px;
   cursor:pointer;
   padding:0;
-  font-family:var(--sans);
-  font-size:13px;
-  font-weight:600;
 }
-.map-expand-btn:active{background:var(--panel-2);}
+.map-expand-btn{right:10px;}
+.map-center-btn{right:52px;}
+.map-expand-btn:active, .map-center-btn:active{background:var(--panel-2);}
 .map-expand-btn.fullscreen{
   width:auto;
   height:auto;
@@ -342,7 +340,8 @@ body.map-open{overflow:hidden;}
   border-radius:22px;
   background:var(--red);
   border-color:var(--red);
-  color:#fff;
+  color:#000;
+  font-weight:700;
   box-shadow:0 2px 10px rgba(0,0,0,.35);
 }
 .map-expand-btn.fullscreen:active{background:var(--red-dim);border-color:var(--red-dim);}
@@ -388,7 +387,8 @@ body.map-open{overflow:hidden;}
   color:#fff;
   transition:opacity .15s;
 }
-.dial-action.call{background:var(--red);}
+.dial-action.call{background:var(--red);color:#000;font-weight:700;}
+.dial-action.call svg path{stroke:#000;}
 .dial-action.wa{background:var(--wa);}
 .dial-action.tg{background:var(--tg);}
 .dial-action.disabled{opacity:.35;pointer-events:none;}
@@ -462,6 +462,9 @@ body.map-open{overflow:hidden;}
   <div class="panel">
     <div class="map-wrap">
       <div id="resultMap"></div>
+      <button type="button" id="mapCenterBtn" class="map-center-btn" title="Centra posizione" aria-label="Centra posizione">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3.5" stroke="currentColor" stroke-width="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
       <button type="button" id="mapExpandBtn" class="map-expand-btn" title="Ingrandisci mappa" aria-label="Ingrandisci mappa"></button>
     </div>
     <div class="map-legend" id="mapLegend">
@@ -677,6 +680,16 @@ function updateMap(record, pos){
 
   setTimeout(function(){ map.invalidateSize(); }, 60);
 }
+
+/* ---- centramento mappa sulla posizione utente o comando ---- */
+document.getElementById("mapCenterBtn").addEventListener("click", function(){
+  if(!map || !currentRecord) return;
+  if(userPos){
+    map.setView([userPos.lat, userPos.lon], 18);
+  } else {
+    map.setView([currentRecord.lat, currentRecord.lon], 14);
+  }
+});
 
 /* ---- espandi/riduci mappa a schermo intero ---- */
 const EXPAND_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 3H3v6M15 3h6v6M9 21H3v-6M15 21h6v-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
