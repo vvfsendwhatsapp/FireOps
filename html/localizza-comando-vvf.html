@@ -1696,12 +1696,27 @@
         // Con un target inserito la competenza dipende dal target: non si cambia.
         if (!targetPos) {
           const geoRec = await reverseGeocodeProvincia(userPos.lat, userPos.lon);
-          if (geoRec && (!currentRecord || geoRec.c !== currentRecord.c)) {
-            showResult(geoRec, haversine(userPos.lat, userPos.lon, geoRec.lat, geoRec.lon), null, "geo");
+          const borderNote = document.getElementById("borderNote");
+          if (geoRec) {
+            if (!currentRecord || geoRec.c !== currentRecord.c) {
+              const prev = currentRecord ? currentRecord.c : null;
+              showResult(geoRec, haversine(userPos.lat, userPos.lon, geoRec.lat, geoRec.lon), null, "geo");
+              if (prev) {
+                borderNote.classList.remove("hidden");
+                borderNote.innerHTML = "<strong>Comando aggiornato:</strong> da " + prev + " a " + geoRec.c + " (cambio di provincia).";
+              }
+            } else {
+              document.getElementById("rDist").textContent =
+                haversine(userPos.lat, userPos.lon, currentRecord.lat, currentRecord.lon).toFixed(1) + " km";
+              updateMap(currentRecord, userPos, targetPos);
+            }
           } else if (currentRecord) {
+            // Provincia non determinabile: si tiene il comando attuale ma si avvisa
             document.getElementById("rDist").textContent =
               haversine(userPos.lat, userPos.lon, currentRecord.lat, currentRecord.lon).toFixed(1) + " km";
             updateMap(currentRecord, userPos, targetPos);
+            borderNote.classList.remove("hidden");
+            borderNote.innerHTML = "Posizione aggiornata, ma non è stato possibile verificare la provincia via rete: il comando mostrato potrebbe non essere più quello competente.";
           }
         } else if (currentRecord) {
           updateMap(currentRecord, userPos, targetPos);
