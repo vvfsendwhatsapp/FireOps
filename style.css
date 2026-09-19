@@ -6550,7 +6550,7 @@ select:focus {
     position: absolute;
     top: 0;
     bottom: 0;
-    width: 34px;
+    width: 28px;
     z-index: 1700;
     background: var(--dark-color);
     border: 1px solid var(--border-color);
