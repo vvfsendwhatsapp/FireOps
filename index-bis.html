@@ -406,12 +406,13 @@
         <section id="messaggistica" class="page-section">
             <!-- Tab del riepilogo messaggi: figlia diretta di #messaggistica,
                  così si sposta da sé insieme alla sezione (spostaSezione)
-                 quando cambi pannello — non serve più che il JS vada a
-                 cercare in quale pannello sta Messaggistica ogni volta.
-                 Si aggancia al bordo del pannello che la ospita, sul lato
-                 rivolto verso l'altro pannello (JS decide quale, .pannello
-                 ha overflow:hidden che la ritaglia secondo l'arrotondamento
-                 vero del contenitore). Nascosta finché non ci sono dati. -->
+                 quando cambi pannello. Sempre presente (non solo con dati:
+                 senza, l'aggiornamento periodico la fa apparire/sparire e
+                 sembra uno spazio sbagliato nel layout); "con-dati" quando
+                 ci sono davvero messaggi con link. Fa le veci del pulsante
+                 Espandi/Riduci: il click allunga #messaggistica a coprire
+                 anche l'altro pannello (stesso meccanismo di Convertitore
+                 e SITAC), un contenitore unico, non due box separati. -->
             <button type="button" id="btn-riepilogo-msg" class="riepilogo-msg-tab"
                 title="Riepilogo messaggi (24h)" hidden>
                 <span class="riepilogo-msg-tab-freccia">▸</span>

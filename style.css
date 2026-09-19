@@ -6412,26 +6412,41 @@ select:focus {
 }
 
 /* ==========================================================
-   RIEPILOGO MESSAGGI (24h) — contenitore SEPARATO che riempie il
-   pannello OPPOSTO a Messaggistica. Nessuno dei due pannelli si allarga
-   o esce dal proprio bordo normale: Messaggistica resta esattamente
-   com'è, il riepilogo occupa per intero (ma solo) l'altro pannello.
+   RIEPILOGO MESSAGGI (24h) — CONTENITORE UNICO: #messaggistica si
+   allunga (.pannello-fullscreen, stesso meccanismo di Convertitore e
+   SITAC) fino a coprire anche l'altro pannello, che nel frattempo sparisce
+   — non due box separati con lo spazio del layout in mezzo, un solo
+   bordo continuo. La tab fa le veci del pulsante Espandi/Riduci.
    ========================================================== */
 
+/* Normale: #messaggistica resta un blocco semplice. Solo quando il SUO
+   pannello è .pannello-fullscreen diventa una griglia a due colonne. */
+.pannello-fullscreen #messaggistica {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    height: 100%;
+    min-height: 0;
+}
+
+.pannello-fullscreen #messaggistica > .pagina-box {
+    overflow-y: auto;
+    height: 100%;
+    min-width: 0;
+}
+
 .riepilogo-msg-overlay {
-    position: absolute;
-    inset: 0;
-    z-index: 1600;
+    display: none;
+    min-width: 0;
     background: var(--surface-color);
     border: 1px solid var(--primary-color);
     border-radius: 8px;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, .7);
-    flex-direction: column;
     overflow: hidden;
 }
 
 .riepilogo-msg-overlay:not([hidden]) {
     display: flex;
+    flex-direction: column;
 }
 
 .riepilogo-msg-testata {
@@ -6604,13 +6619,6 @@ select:focus {
     font-size: 13px;
     font-weight: bold;
     white-space: nowrap;
-}
-
-/* Il pannello di Messaggistica sale sopra la tab mentre l'overlay è
-   aperto — la tab è sorella dei pannelli, il suo z-index si confronta
-   con quello del PANNELLO, non con l'overlay che sta dentro. */
-.pannello.sopra-overlay {
-    z-index: 1800;
 }
 
 /* ==========================================================
