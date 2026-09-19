@@ -291,8 +291,12 @@ body.map-open{overflow:hidden;}
   display:flex;
   align-items:center;
   justify-content:center;
+  gap:6px;
   cursor:pointer;
   padding:0;
+  font-family:var(--sans);
+  font-size:13px;
+  font-weight:600;
 }
 .map-expand-btn:active{background:var(--panel-2);}
 .map-expand-btn.fullscreen{
@@ -300,6 +304,11 @@ body.map-open{overflow:hidden;}
   top:16px;
   right:16px;
   z-index:10000;
+  width:auto;
+  height:auto;
+  padding:10px 16px;
+  border-radius:22px;
+  box-shadow:0 2px 10px rgba(0,0,0,.35);
 }
 .map-legend{
   display:flex;
@@ -522,7 +531,7 @@ function setMapFullscreen(on){
   mapEl.classList.toggle("map-fullscreen", on);
   btn.classList.toggle("fullscreen", on);
   document.body.classList.toggle("map-open", on);
-  btn.innerHTML = on ? COLLAPSE_ICON : EXPAND_ICON;
+  btn.innerHTML = on ? (COLLAPSE_ICON + '<span>Chiudi</span>') : EXPAND_ICON;
   btn.title = on ? "Chiudi mappa a schermo intero" : "Ingrandisci mappa";
   btn.setAttribute("aria-label", btn.title);
   setTimeout(function(){ if(map) map.invalidateSize(); }, 200);
