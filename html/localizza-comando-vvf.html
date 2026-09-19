@@ -712,6 +712,27 @@
     .src-tag.calc {
       background: var(--cyan);
     }
+
+        .refresh-gps-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: calc(100% - 28px);
+      margin: 4px 14px 14px;
+      padding: 10px;
+      background: var(--panel-2);
+      border: 1px solid var(--red);
+      border-radius: 4px;
+      color: var(--red);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .refresh-gps-btn:active { background: var(--line); }
+    .refresh-gps-btn:disabled { opacity: .6; cursor: default; }
+    .refresh-gps-btn.spin svg { animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 
@@ -846,6 +867,14 @@
               GPS</span></div>
           <div class="value" id="rGpsAltitude">—</div>
         </div>
+        <button type="button" id="refreshGpsBtn" class="refresh-gps-btn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12a9 9 0 11-3-6.7L21 8" />
+            <path d="M21 3v5h-5" />
+          </svg>
+          <span id="refreshGpsLabel">Aggiorna posizione</span>
+        </button>
       </div>
 
       <div class="panel">
@@ -1500,6 +1529,62 @@
         }
       }, 60000);
     }
+
+        async function refreshPosition() {
+      const btn = document.getElementById("refreshGpsBtn");
+      const label = document.getElementById("refreshGpsLabel");
+      if (!navigator.geolocation) {
+        label.textContent = "GPS non supportato";
+        return;
+      }
+      btn.disabled = true;
+      btn.classList.add("spin");
+      label.textContent = "Aggiornamento…";
+
+      const done = function (msg) {
+        btn.disabled = false;
+        btn.classList.remove("spin");
+        label.textContent = msg || "Aggiorna posizione";
+        if (msg) setTimeout(function () { label.textContent = "Aggiorna posizione"; }, 3000);
+      };
+
+      navigator.geolocation.getCurrentPosition(async function (pos) {
+        userPos = {lat: pos.coords.latitude, lon: pos.coords.longitude};
+        userAccuracy = pos.coords.accuracy;
+        userAltitude = pos.coords.altitude;   // sostituisce anche la quota (può tornare null)
+
+        startGpsTracking();                   // riparte il tracking di 1 min dalla nuova precisione
+
+        document.getElementById("rGpsCoords").textContent = userPos.lat.toFixed(6) + "°, " + userPos.lon.toFixed(6) + "°";
+        document.getElementById("rGpsAccuracy").textContent = Math.round(userAccuracy) + " metri";
+        const altRow = document.getElementById("gpsAltitudeRow");
+        if (userAltitude != null) {
+          document.getElementById("rGpsAltitude").textContent = Math.round(userAltitude) + " m s.l.m.";
+          altRow.classList.remove("hidden");
+        } else {
+          altRow.classList.add("hidden");
+        }
+
+        // Con un target inserito la competenza dipende dal target: non si cambia.
+        if (!targetPos) {
+          const geoRec = await reverseGeocodeProvincia(userPos.lat, userPos.lon);
+          if (geoRec && (!currentRecord || geoRec.c !== currentRecord.c)) {
+            showResult(geoRec, haversine(userPos.lat, userPos.lon, geoRec.lat, geoRec.lon), null, "geo");
+          } else if (currentRecord) {
+            document.getElementById("rDist").textContent =
+              haversine(userPos.lat, userPos.lon, currentRecord.lat, currentRecord.lon).toFixed(1) + " km";
+            updateMap(currentRecord, userPos, targetPos);
+          }
+        } else if (currentRecord) {
+          updateMap(currentRecord, userPos, targetPos);
+        }
+        done();
+      }, function (err) {
+        done(err.code === 1 ? "Permesso negato" : "Posizione non disponibile");
+      }, {enableHighAccuracy: true, timeout: 12000, maximumAge: 0});
+    }
+
+    document.getElementById("refreshGpsBtn").addEventListener("click", refreshPosition);
 
     function resetApp() {
       if (watchId !== null) {navigator.geolocation.clearWatch(watchId); watchId = null;}
