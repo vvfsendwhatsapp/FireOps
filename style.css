@@ -6630,12 +6630,20 @@ select:focus {
    niente calcoli a mano. :has() sceglie SOLO il pannello che in quel
    momento ospita #messaggistica, senza toccare la regola condivisa
    .pannello.pannello-fullscreen usata dalle altre pagine. */
-.pannello-fullscreen:has(#messaggistica) {
-    position: static;
-    width: auto;
-    height: calc(100vh - var(--header-height) - var(--subheader-height) - 40px);
-    border-radius: 8px;
-    z-index: auto;
+.pannello-fullscreen #messaggistica {
+    display: grid;
+    grid-template-columns: calc(50% - 8px) 1fr;
+    gap: 16px;
+    height: 100%;
+    min-height: 0;
+}
+
+/* Quando Messaggistica era a sinistra, l'ordine visivo si inverte
+   (order, sopra) — quindi anche le larghezze delle due colonne vanno
+   scambiate: la colonna "a misura fissa" deve restare quella che ospita
+   il modulo messaggio, che ora è la SECONDA (destra), non la prima. */
+.pannello-fullscreen #messaggistica.lato-sinistro-interno {
+    grid-template-columns: 1fr calc(50% - 8px);
 }
 
 /* Dentro la griglia, l'ordine visivo segue lo stesso lato già calcolato
