@@ -1282,6 +1282,20 @@ Koordináták küldéséhez:
         return !!(sezioneMsg && sezioneMsg.closest(".pannello"));
     }
 
+    // Ora che la tab è figlia di #messaggistica (si sposta da sé con la
+    // sezione), deve sapere su quale bordo del PROPRIO pannello agganciarsi:
+    // destro se Messaggistica è nel pannello sinistro (rivolto verso l'altro
+    // pannello), sinistro se è nel pannello destro.
+    function aggiornaLatoTab() {
+        if (!btnRiepilogoMsg) return;
+        const sezioneMsg = document.getElementById("messaggistica");
+        const pannelloMsg = sezioneMsg && sezioneMsg.closest(".pannello");
+        if (!pannelloMsg) return;
+        const aSinistra = pannelloMsg.id === "pannello-sinistra";
+        btnRiepilogoMsg.classList.toggle("lato-destro-interno", aSinistra);
+        btnRiepilogoMsg.classList.toggle("lato-sinistro-interno", !aSinistra);
+    }
+
     // Verso della freccia: punta verso dove si APRIRÀ l'overlay (il pannello
     // opposto a Messaggistica) quando chiuso, e nel verso contrario (quello
     // da cui richiuderla) quando è già aperto — coerente in entrambi i casi
@@ -1304,12 +1318,12 @@ Koordináták küldéséhez:
     // aggiornaVisibilitaTab().
     let haDatiRiepilogo = false;
 
-    // La tab (unica: è centrata nel varco fra i pannelli, non serve più
-    // sapere il lato) compare solo se Messaggistica è attiva da qualche
-    // parte E ci sono davvero dati.
+    // La tab compare solo se Messaggistica è attiva da qualche parte E ci
+    // sono davvero dati.
     function aggiornaVisualizzazioneTab() {
         if (!btnRiepilogoMsg) return;
         btnRiepilogoMsg.hidden = !(haDatiRiepilogo && messaggisticaAttivaInUnPannello());
+        aggiornaLatoTab();
         aggiornaFrecciaTab();
     }
 

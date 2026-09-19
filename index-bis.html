@@ -124,16 +124,6 @@
                 <div class="pannello-corpo" id="corpo-sinistra"></div>
             </div>
 
-            <!-- Tab del riepilogo messaggi: UNA sola, figlia di .split-screen
-                 (non di un pannello): sospesa esattamente al centro del
-                 varco fra i due pannelli (left:50%), quindi tocca entrambi
-                 senza essere mai ritagliata dall'overflow di nessuno dei
-                 due. Nascosta finché non ci sono davvero dati (JS). -->
-            <button type="button" id="btn-riepilogo-msg" class="riepilogo-msg-tab"
-                title="Riepilogo messaggi (24h)" hidden>
-                <span class="riepilogo-msg-tab-testo">📊 Riepilogo messaggi (24h)</span>
-            </button>
-
             <div class="pannello" id="pannello-destra">
                 <div class="pannello-corpo" id="corpo-destra"></div>
             </div>
@@ -414,6 +404,19 @@
 
         <!-- MESSAGGISTICA -->
         <section id="messaggistica" class="page-section">
+            <!-- Tab del riepilogo messaggi: figlia diretta di #messaggistica,
+                 così si sposta da sé insieme alla sezione (spostaSezione)
+                 quando cambi pannello — non serve più che il JS vada a
+                 cercare in quale pannello sta Messaggistica ogni volta.
+                 Si aggancia al bordo del pannello che la ospita, sul lato
+                 rivolto verso l'altro pannello (JS decide quale, .pannello
+                 ha overflow:hidden che la ritaglia secondo l'arrotondamento
+                 vero del contenitore). Nascosta finché non ci sono dati. -->
+            <button type="button" id="btn-riepilogo-msg" class="riepilogo-msg-tab"
+                title="Riepilogo messaggi (24h)" hidden>
+                <span class="riepilogo-msg-tab-freccia">▸</span>
+                <span class="riepilogo-msg-tab-testo">📊 Riepilogo messaggi (24h)</span>
+            </button>
             <div class="pagina-box">
                 <p class="pagina-nota">
                     Il messaggio viene generato automaticamente in base al Comando attivo e alla lingua
