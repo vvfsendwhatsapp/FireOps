@@ -404,7 +404,7 @@ body.map-open{overflow:hidden;}
     <h1>Localizza Comando</h1>
     <p>Comando, canale radio e Sala Operativa per posizione</p>
   </div>
-  <button type="button" id="prefixToggle" class="prefix-toggle" title="Antepone 4146 solo in fase di composizione, senza modificare il numero mostrato" aria-pressed="false">
+  <button type="button" id="prefixToggle" class="prefix-toggle" title="Antepone 4146 solo in fase di composizione, senza modificare il numero mostrato" aria-pressed="true">
     4146 + 📞<!--<span /*class="prefix-toggle-dot"*/></span>4146 + 📞-->
   </button>
 </header>
@@ -534,7 +534,7 @@ function haversine(lat1,lon1,lat2,lon2){
   return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
 
-let dialPrefixEnabled = false;
+let dialPrefixEnabled = true;
 let currentRecord = null;
 
 function telHref(num){
