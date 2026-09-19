@@ -49,6 +49,35 @@ header{
 .htitle h1{margin:0;font-size:17px;font-weight:600;letter-spacing:.1px;}
 .htitle p{margin:2px 0 0;font-size:12.5px;color:var(--text-dim);}
 
+.prefix-toggle{
+  flex:none;
+  display:flex;
+  align-items:center;
+  gap:7px;
+  padding:7px 10px;
+  border-radius:20px;
+  background:var(--panel-2);
+  border:1px solid var(--line);
+  color:var(--text-dim);
+  font-family:var(--mono);
+  font-size:12.5px;
+  font-weight:600;
+  cursor:pointer;
+}
+.prefix-toggle-dot{
+  width:8px;height:8px;
+  border-radius:50%;
+  background:var(--text-dim);
+  flex:none;
+}
+.prefix-toggle[aria-pressed="true"]{
+  background:var(--red);
+  border-color:var(--red);
+  color:#fff;
+}
+.prefix-toggle[aria-pressed="true"] .prefix-toggle-dot{background:#fff;}
+.prefix-toggle:active{opacity:.85;}
+
 /* sections */
 section{margin-top:18px;}
 .panel{
@@ -338,6 +367,9 @@ body.map-open{overflow:hidden;}
     <h1>Localizza Comando</h1>
     <p>Comando, canale radio e Sala Operativa per posizione</p>
   </div>
+  <button type="button" id="prefixToggle" class="prefix-toggle" title="Antepone 4146 solo in fase di composizione, senza modificare il numero mostrato" aria-pressed="false">
+    <span class="prefix-toggle-dot"></span>4146
+  </button>
 </header>
 
 <div class="wrap">
@@ -420,8 +452,8 @@ body.map-open{overflow:hidden;}
 </div>
 
 <footer>
-  <a class="fitem" href="tel:06478321"><b>026 · 06 478321</b>CON nazionale</a>
-  <a class="fitem" href="tel:0679340903"><b>06 79340903</b>SOCAV</a>
+  <a class="fitem" id="footerConLink" href="tel:06478321"><b>026 · 06 478321</b>CON nazionale</a>
+  <a class="fitem" id="footerSocavLink" href="tel:0679340903"><b>06 79340903</b>SOCAV</a>
 </footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -442,9 +474,33 @@ function haversine(lat1,lon1,lat2,lon2){
   return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
 
+let dialPrefixEnabled = false;
+let currentRecord = null;
+
 function telHref(num){
-  return "tel:"+ (num||"").replace(/[^0-9+]/g,"");
+  const digits = (num||"").toString().replace(/[^0-9+]/g,"");
+  return "tel:" + (dialPrefixEnabled ? "4146" + digits : digits);
 }
+
+function refreshPhoneLinks(){
+  const conLink = document.getElementById("footerConLink");
+  if(conLink) conLink.href = telHref(CON.tel);
+  const socavLink = document.getElementById("footerSocavLink");
+  if(socavLink) socavLink.href = telHref(SOCAV.tel);
+
+  if(currentRecord){
+    const tscA = document.querySelector("#rTelComandoWrap a.value-link");
+    if(tscA && currentRecord.tsc) tscA.href = telHref(currentRecord.tsc);
+    const tsdA = document.querySelector("#rTelDirezioneWrap a.value-link");
+    if(tsdA && currentRecord.tsd) tsdA.href = telHref(currentRecord.tsd);
+  }
+}
+
+document.getElementById("prefixToggle").addEventListener("click", function(){
+  dialPrefixEnabled = !dialPrefixEnabled;
+  this.setAttribute("aria-pressed", dialPrefixEnabled ? "true" : "false");
+  refreshPhoneLinks();
+});
 
 /* ---- mappa Leaflet ---- */
 let map = null;
@@ -511,7 +567,7 @@ function updateMap(record, pos){
       color: "#8b96a3", weight: 2, dashArray: "5,7", opacity: .8
     }).addTo(map);
     legendUser.classList.remove("hidden");
-    map.fitBounds(linkLine.getBounds(), {padding:[28,28]});
+    map.setView([pos.lat, pos.lon], 18);
   } else {
     legendUser.classList.add("hidden");
     map.setView([record.lat, record.lon], 12);
@@ -590,6 +646,7 @@ async function reverseGeocodeProvincia(lat, lon){
 }
 
 function showResult(record, distanceKm, nearbyList, method){
+  currentRecord = record;
   document.getElementById("locate-section").classList.add("hidden");
   document.getElementById("search-section").classList.add("hidden");
   const rs = document.getElementById("result-section");
