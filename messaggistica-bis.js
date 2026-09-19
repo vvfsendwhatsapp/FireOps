@@ -1281,26 +1281,42 @@ Koordináták küldéséhez:
         }
     }
 
-    // Individua il pannello OPPOSTO a Messaggistica: quello da coprire col
-    // riepilogo quando si apre.
-    function pannelloOppostoAMessaggistica() {
-        const sezioneMsg = document.getElementById("messaggistica");
-        const pannelloMsg = sezioneMsg && sezioneMsg.closest(".pannello");
-        if (!pannelloMsg) return null;
-        const idOpposto = pannelloMsg.id === "pannello-sinistra" ? "pannello-destra" : "pannello-sinistra";
-        return document.getElementById(idOpposto);
+    // Replica locale di toggleFullscreenPagina() (script-bis.js): questo
+    // file è autonomo (vedi intestazione) e non condivide la closure di
+    // script-bis.js, quindi non può chiamare quella funzione direttamente —
+    // stesso principio già seguito per turno/data/ora, duplicate qui per lo
+    // stesso motivo. La tab fa le veci del pulsante Espandi/Riduci delle
+    // altre pagine: il div di Messaggistica si allarga a schermo intero,
+    // col riepilogo dentro come seconda colonna (CSS: griglia a due
+    // colonne su .pannello-fullscreen #messaggistica).
+    function toggleFullscreenMessaggistica() {
+        if (!btnRiepilogoMsg) return;
+        const pannello = btnRiepilogoMsg.closest(".pannello");
+        if (!pannello) return;
+
+        const splitScreenEl = document.querySelector(".split-screen");
+        const inFullscreen = pannello.classList.toggle("pannello-fullscreen");
+
+        if (splitScreenEl) splitScreenEl.classList.toggle("ha-pannello-fullscreen", inFullscreen);
+        document.body.classList.toggle("fullscreen-attivo", inFullscreen);
+
+        btnRiepilogoMsg.classList.toggle("aperta", inFullscreen);
+        if (overlayRiepilogoMsg) overlayRiepilogoMsg.hidden = !inFullscreen;
+        if (frecciaRiepilogoMsg) frecciaRiepilogoMsg.textContent = inFullscreen ? "◂" : "▸";
+
+        if (inFullscreen) caricaRiepilogoMessaggi();
+        setTimeout(() => window.dispatchEvent(new Event("resize")), 150);
     }
 
-    // Sposta l'overlay DENTRO il pannello opposto (appendChild), invece di
-    // calcolarne i pixel a mano: con position:absolute + inset:0 sul
-    // pannello (che ha position:relative) l'overlay eredita
-    // automaticamente le dimensioni del contenitore ed è sempre corretto,
-    // anche dopo un resize della finestra — niente listener da mantenere.
-    function spostaOverlayNelPannelloOpposto(overlay) {
-        const pannelloAltro = pannelloOppostoAMessaggistica();
-        if (!pannelloAltro || !overlay) return false;
-        pannelloAltro.appendChild(overlay);
-        return true;
+    // Richiude il fullscreen SOLO se è aperto — a differenza del toggle
+    // della tab, questi due punti (cambio pannello, apertura convertitore)
+    // devono spegnere il fullscreen se attivo, mai accenderlo per sbaglio.
+    function chiudiFullscreenMessaggisticaSeAperto() {
+        if (!btnRiepilogoMsg) return;
+        const pannello = btnRiepilogoMsg.closest(".pannello");
+        if (pannello && pannello.classList.contains("pannello-fullscreen")) {
+            toggleFullscreenMessaggistica();
+        }
     }
 
     // La tab compare (sempre, non solo con dati: senza, l'aggiornamento
@@ -1448,7 +1464,7 @@ Koordináták küldéséhez:
             selettore.dispatchEvent(new Event("change"));
         }
 
-        chiudiRiepilogoMsg();
+        chiudiFullscreenMessaggisticaSeAperto();
 
         // I campi del convertitore esistono solo dopo che spostaSezione() lo
         // ha inserito nel pannello: un piccolo ritardo basta ad aspettare
@@ -1633,54 +1649,16 @@ Koordináták küldéséhez:
         aggiornaVisibilitaTab();
     }, 60000);
 
-    function apriRiepilogoMsg() {
-        if (!overlayRiepilogoMsg) return;
-        if (!spostaOverlayNelPannelloOpposto(overlayRiepilogoMsg)) return;
-        overlayRiepilogoMsg.hidden = false;
-        if (btnRiepilogoMsg) btnRiepilogoMsg.classList.add("aperta");
-        // Ordine davanti→dietro voluto: pannello di Messaggistica, poi la
-        // tab, poi il pannello che ospita il riepilogo — è il pannello di
-        // MESSAGGISTICA a salire sopra la tab: la tab è sorella dei
-        // pannelli, il suo z-index si confronta con quello del pannello
-        // stesso, non con l'overlay che sta dentro.
-        const sezioneMsg = document.getElementById("messaggistica");
-        const pannelloMsg = sezioneMsg && sezioneMsg.closest(".pannello");
-        if (pannelloMsg) pannelloMsg.classList.add("sopra-overlay");
-        if (frecciaRiepilogoMsg) frecciaRiepilogoMsg.textContent = "◂";
-        caricaRiepilogoMessaggi();
-        // Aggiunto al prossimo giro di eventi: altrimenti il click che ha
-        // aperto il pannello viene visto anche dal listener "fuori" e lo
-        // richiude nello stesso istante.
-        setTimeout(() => document.addEventListener("click", chiudiRiepilogoMsgSeFuori), 0);
-    }
-
-    function chiudiRiepilogoMsg() {
-        if (!overlayRiepilogoMsg) return;
-        overlayRiepilogoMsg.hidden = true;
-        if (btnRiepilogoMsg) btnRiepilogoMsg.classList.remove("aperta");
-        const psx = document.getElementById("pannello-sinistra");
-        const pdx = document.getElementById("pannello-destra");
-        if (psx) psx.classList.remove("sopra-overlay");
-        if (pdx) pdx.classList.remove("sopra-overlay");
-        if (frecciaRiepilogoMsg) frecciaRiepilogoMsg.textContent = "▸";
-        document.removeEventListener("click", chiudiRiepilogoMsgSeFuori);
-    }
-
-    function chiudiRiepilogoMsgSeFuori(ev) {
-        if (!overlayRiepilogoMsg || overlayRiepilogoMsg.hidden) return;
-        if (overlayRiepilogoMsg.contains(ev.target)) return;
-        if (btnRiepilogoMsg && btnRiepilogoMsg.contains(ev.target)) return;
-        chiudiRiepilogoMsg();
-    }
-
     if (btnRiepilogoMsg) {
         btnRiepilogoMsg.addEventListener("click", (ev) => {
             ev.stopPropagation();
-            if (overlayRiepilogoMsg && overlayRiepilogoMsg.hidden) apriRiepilogoMsg();
-            else chiudiRiepilogoMsg();
+            toggleFullscreenMessaggistica();
         });
     }
-    if (chiudiRiepilogoMsgBtn) chiudiRiepilogoMsgBtn.addEventListener("click", chiudiRiepilogoMsg);
+    // "Chiudi" (X) sul riquadro riepilogo: stessa azione della tab, riduce
+    // di nuovo Messaggistica — non c'è più un "fuori" da cui richiudere,
+    // ora è una colonna dentro il pannello espanso, non un popup fluttuante.
+    if (chiudiRiepilogoMsgBtn) chiudiRiepilogoMsgBtn.addEventListener("click", toggleFullscreenMessaggistica);
     if (chkRiepilogoLimitrofi) chkRiepilogoLimitrofi.addEventListener("change", () => {
         caricaRiepilogoMessaggi();
         aggiornaVisibilitaTab();
@@ -1695,7 +1673,7 @@ Koordináták küldéséhez:
     const selettorePannelloDx = document.getElementById("select-pannello-destra");
     [selettorePannelloSx, selettorePannelloDx].forEach(sel => {
         if (sel) sel.addEventListener("change", () => {
-            chiudiRiepilogoMsg();
+            chiudiFullscreenMessaggisticaSeAperto();
             aggiornaVisualizzazioneTab();
         });
     });
