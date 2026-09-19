@@ -1274,6 +1274,22 @@ Koordináták küldéséhez:
         if (!pannello) return;
 
         const splitScreenEl = document.querySelector(".split-screen");
+        const sezioneMsg = document.getElementById("messaggistica");
+
+        // Larghezza vera del modulo messaggio misurata PRIMA di espandere:
+        // niente calc(50% - 8px) che assume "il contenitore raddoppia
+        // esattamente" (fragile — dipende da gap/padding che possono
+        // scostarsi). Fissata in pixel, la colonna del messaggio resta
+        // sempre esattamente quella di partenza, qualunque sia la
+        // larghezza reale del pannello prima e dopo.
+        const paginaBox = sezioneMsg && sezioneMsg.querySelector(".pagina-box");
+        if (paginaBox && !pannello.classList.contains("pannello-fullscreen")) {
+            const larghezza = paginaBox.getBoundingClientRect().width;
+            if (larghezza > 0 && sezioneMsg) {
+                sezioneMsg.style.setProperty("--larghezza-messaggio", larghezza + "px");
+            }
+        }
+
         const inFullscreen = pannello.classList.toggle("pannello-fullscreen");
 
         if (splitScreenEl) splitScreenEl.classList.toggle("ha-pannello-fullscreen", inFullscreen);
