@@ -824,6 +824,29 @@
     }
     .route-info strong { color: var(--text); }
     .route-info.error { color: #e8734a; }
+
+        .result-name-wrap {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px 12px;
+      min-width: 0;
+    }
+    .nav-cmd-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 12px;
+      background: var(--red);
+      border: none;
+      border-radius: 20px;
+      color: #000;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .nav-cmd-btn:active { background: var(--red-dim); }
   </style>
 </head>
 
@@ -982,7 +1005,16 @@
 
       <div class="panel">
         <div class="result-top">
-          <div class="name" id="rComando">—</div>
+          <div class="result-name-wrap">
+            <div class="name" id="rComando">—</div>
+            <button type="button" id="navToComando" class="nav-cmd-btn" title="Naviga alla sede del Comando">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 11l19-9-9 19-2-8-8-2z" />
+              </svg>
+              Naviga
+            </button>
+          </div>
           <div class="dist" id="rDist"></div>
         </div>
         <div class="result-sub" id="rSub"></div>
@@ -1855,6 +1887,13 @@
     });
     document.getElementById("routeCar").addEventListener("click", function () {
       showRoute("car-fast", "#29a9eb", "In auto");
+    });
+    document.getElementById("navToComando").addEventListener("click", function () {
+      if (!currentRecord) return;
+      const url = "https://www.google.com/maps/dir/?api=1&destination=" +
+        currentRecord.lat.toFixed(6) + "," + currentRecord.lon.toFixed(6) +
+        "&travelmode=driving&dir_action=navigate";
+      window.open(url, "_blank", "noopener");
     });
 
     function resetApp() {
