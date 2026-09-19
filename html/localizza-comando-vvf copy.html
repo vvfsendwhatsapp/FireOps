@@ -97,6 +97,7 @@ section{margin-top:18px;}
 }
 .row-group-label.radio{border-left-color:var(--amber);}
 .row-group-label.so{border-left-color:var(--red);}
+.row-group-label.gps{border-left-color:var(--green);}
 
 /* locate button */
 .locate-btn{
@@ -450,6 +451,19 @@ body.map-open{overflow:hidden;}
 </section>
 
 <section id="result-section" class="hidden">
+  <!-- Pannello coordinate GPS (mostrato solo se rilevate via GPS) -->
+  <div class="panel hidden" id="gpsInfoPanel">
+    <div class="row-group-label gps">Posizione GPS rilevata</div>
+    <div class="data-row">
+      <div class="label">Coordinate</div>
+      <div class="value" id="rGpsCoords">—</div>
+    </div>
+    <div class="data-row">
+      <div class="label">Precisione</div>
+      <div class="value" id="rGpsAccuracy">—</div>
+    </div>
+  </div>
+
   <div class="panel">
     <div class="result-top">
       <div class="name" id="rComando">—</div>
@@ -548,6 +562,8 @@ function haversine(lat1,lon1,lat2,lon2){
 
 let dialPrefixEnabled = true; // Attivo di default
 let currentRecord = null;
+let userPos = null;
+let userAccuracy = null;
 
 function telHref(num){
   const digits = (num||"").toString().replace(/[^0-9+]/g,"");
@@ -693,7 +709,7 @@ document.getElementById("mapCenterBtn").addEventListener("click", function(){
 
 /* ---- espandi/riduci mappa a schermo intero ---- */
 const EXPAND_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M9 3H3v6M15 3h6v6M9 21H3v-6M15 21h6v-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-const COLLAPSE_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 9V3h6M21 9V3h-6M3 15v6h6M21 15v6h-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const COLLAPSE_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M4 14h6m0 0v6m0-6L3 21m17-7h-6m0 0V8m0 6l7 7M4 10h6m0 0V4m0 6L3 3m17 4h-6m0 0V4m0 3l7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 let isMapFullscreen = false;
 
 function setMapFullscreen(on){
@@ -703,7 +719,7 @@ function setMapFullscreen(on){
   wrapEl.classList.toggle("map-fullscreen", on);
   btn.classList.toggle("fullscreen", on);
   document.body.classList.toggle("map-open", on);
-  btn.innerHTML = on ? (COLLAPSE_ICON + '<span>Chiudi</span>') : EXPAND_ICON;
+  btn.innerHTML = on ? (COLLAPSE_ICON + '<span></span>') : EXPAND_ICON;
   btn.title = on ? "Chiudi mappa a schermo intero" : "Ingrandisci mappa";
   btn.setAttribute("aria-label", btn.title);
   if(on){
@@ -767,6 +783,16 @@ function showResult(record, distanceKm, nearbyList, method){
   const rs = document.getElementById("result-section");
   rs.classList.remove("hidden");
 
+  // Gestione pannello coordinate GPS
+  const gpsPanel = document.getElementById("gpsInfoPanel");
+  if(userPos && method !== "manual"){
+    gpsPanel.classList.remove("hidden");
+    document.getElementById("rGpsCoords").textContent = userPos.lat.toFixed(6) + ", " + userPos.lon.toFixed(6);
+    document.getElementById("rGpsAccuracy").textContent = (userAccuracy != null) ? Math.round(userAccuracy) + " metri" : "Non disponibile";
+  } else {
+    gpsPanel.classList.add("hidden");
+  }
+
   document.getElementById("rComando").textContent = record.c;
   document.getElementById("rDist").textContent = (distanceKm!=null) ? distanceKm.toFixed(1)+" km" : "";
   document.getElementById("rSub").textContent = record.rg + " · Direzione regionale " + record.dz;
@@ -829,9 +855,9 @@ function showResult(record, distanceKm, nearbyList, method){
   window.scrollTo({top:0, behavior:"smooth"});
 }
 
-let userPos = null;
-
 function selectComando(record, pos){
+  userPos = null;
+  userAccuracy = null;
   let dist = null;
   if(pos){
     dist = haversine(pos.lat, pos.lon, record.lat, record.lon);
@@ -855,6 +881,7 @@ document.getElementById("locateBtn").addEventListener("click", function(){
 
   navigator.geolocation.getCurrentPosition(async function(pos){
     userPos = {lat: pos.coords.latitude, lon: pos.coords.longitude};
+    userAccuracy = pos.coords.accuracy;
     statusEl.textContent = "Determinazione provincia di competenza...";
 
     const geoRec = await reverseGeocodeProvincia(userPos.lat, userPos.lon);
