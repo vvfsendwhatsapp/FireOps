@@ -781,11 +781,6 @@
         </div>
       </div>
     </section>
-
-    <section id="free-dial-section">
-      
-    </section>
-
   </div>
 
   <footer>
@@ -811,35 +806,35 @@
       return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
 
-    let dialPrefixEnabled = true; // Attivo di default
-    let currentRecord = null;
+let dialPrefixEnabled = true; // Attivo di default
+let currentRecord = null;
 
-    function telHref(num) {
-      const digits = (num || "").toString().replace(/[^0-9+]/g, "");
-      return "tel:" + (dialPrefixEnabled ? "4146" + digits : digits);
-    }
+function telHref(num){
+  const digits = (num||"").toString().replace(/[^0-9+]/g,"");
+  return "tel:" + (dialPrefixEnabled ? "4146" + digits : digits);
+}
 
-    function refreshPhoneLinks() {
-      const conLink = document.getElementById("footerConLink");
-      if (conLink) conLink.href = telHref(CON.tel);
-      const socavLink = document.getElementById("footerSocavLink");
-      if (socavLink) socavLink.href = telHref(SOCAV.tel);
+function refreshPhoneLinks(){
+  const conLink = document.getElementById("footerConLink");
+  if(conLink) conLink.href = telHref(CON.tel);
+  const socavLink = document.getElementById("footerSocavLink");
+  if(socavLink) socavLink.href = telHref(SOCAV.tel);
 
-      // Aggiornamento link CON e SOCAV in Sala Operativa
-      const conOpLink = document.querySelector("#rTelCon").previousElementSibling.previousElementSibling;
-      if (conOpLink) conOpLink.href = telHref(CON.tel);
-      const socavOpLink = document.querySelector("#rTelSocav").previousElementSibling.previousElementSibling;
-      if (socavOpLink) socavOpLink.href = telHref(SOCAV.tel);
+  // Aggiornamento link CON e SOCAV in Sala Operativa
+  const conOpLink = document.querySelector("#rTelCon").previousElementSibling.previousElementSibling;
+  if(conOpLink) conOpLink.href = telHref(CON.tel);
+  const socavOpLink = document.querySelector("#rTelSocav").previousElementSibling.previousElementSibling;
+  if(socavOpLink) socavOpLink.href = telHref(SOCAV.tel);
 
-      if (currentRecord) {
-        const tscA = document.querySelector("#rTelComandoWrap a.value-link");
-        if (tscA && currentRecord.tsc) tscA.href = telHref(currentRecord.tsc);
-        const tsdA = document.querySelector("#rTelDirezioneWrap a.value-link");
-        if (tsdA && currentRecord.tsd) tsdA.href = telHref(currentRecord.tsd);
-      }
+  if(currentRecord){
+    const tscA = document.querySelector("#rTelComandoWrap a.value-link");
+    if(tscA && currentRecord.tsc) tscA.href = telHref(currentRecord.tsc);
+    const tsdA = document.querySelector("#rTelDirezioneWrap a.value-link");
+    if(tsdA && currentRecord.tsd) tsdA.href = telHref(currentRecord.tsd);
+  }
 
-      updateFreeDialLinks();
-    }
+  updateFreeDialLinks();
+}
 
     document.getElementById("prefixToggle").addEventListener("click", function () {
       dialPrefixEnabled = !dialPrefixEnabled;
