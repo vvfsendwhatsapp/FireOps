@@ -752,34 +752,36 @@
             <button class="link-btn" id="backToSearchBtn">cerca un altro comando</button>
 
             <div class="panel">
-        <div class="row-group-label so">Sala operativa</div>
-        <div class="data-row">
-          <div class="label">Comando</div>
-          <div class="value" id="rTelComandoWrap">—</div>
-        </div>
-        <div class="data-row">
-          <div class="label">Direzione regionale</div>
-          <div class="value" id="rTelDirezioneWrap">—</div>
-        </div>
-        <div class="data-row">
-          <div class="label">CON</div>
-          <div class="value"><a class="value-link" href="tel:414606478321">06 478321 <svg width="14" height="14"
-                viewBox="0 0 24 24" fill="none">
-                <path d="M6 3h4l2 5-2.5 1.5a11 11 0 005 5L16 12l5 2v4a2 2 0 01-2 2C10.6 20 4 13.4 4 5a2 2 0 012-2z"
-                  stroke="currentColor" stroke-width="1.6" />
-              </svg></a><button class="copy-btn" data-copy-target="rTelCon">copia</button><span id="rTelCon"
-              class="hidden">06 478321</span></div>
-        </div>
-        <div class="data-row">
-          <div class="label">SOCAV</div>
-          <div class="value"><a class="value-link" href="tel:41460679340903">06 79340903 <svg width="14" height="14"
-                viewBox="0 0 24 24" fill="none">
-                <path d="M6 3h4l2 5-2.5 1.5a11 11 0 005 5L16 12l5 2v4a2 2 0 01-2 2C10.6 20 4 13.4 4 5a2 2 0 012-2z"
-                  stroke="currentColor" stroke-width="1.6" />
-              </svg></a><button class="copy-btn" data-copy-target="rTelSocav">copia</button><span id="rTelSocav"
-              class="hidden">06 79340903</span></div>
-        </div>
-      </div>
+              <div class="row-group-label so">Sala operativa</div>
+              <div class="data-row">
+                <div class="label">Comando</div>
+                <div class="value" id="rTelComandoWrap">—</div>
+              </div>
+              <div class="data-row">
+                <div class="label">Direzione regionale</div>
+                <div class="value" id="rTelDirezioneWrap">—</div>
+              </div>
+              <div class="data-row">
+                <div class="label">CON</div>
+                <div class="value"><a class="value-link" href="tel:414606478321">06 478321 <svg width="14" height="14"
+                      viewBox="0 0 24 24" fill="none">
+                      <path
+                        d="M6 3h4l2 5-2.5 1.5a11 11 0 005 5L16 12l5 2v4a2 2 0 01-2 2C10.6 20 4 13.4 4 5a2 2 0 012-2z"
+                        stroke="currentColor" stroke-width="1.6" />
+                    </svg></a><button class="copy-btn" data-copy-target="rTelCon">copia</button><span id="rTelCon"
+                    class="hidden">06 478321</span></div>
+              </div>
+              <div class="data-row">
+                <div class="label">SOCAV</div>
+                <div class="value"><a class="value-link" href="tel:41460679340903">06 79340903 <svg width="14"
+                      height="14" viewBox="0 0 24 24" fill="none">
+                      <path
+                        d="M6 3h4l2 5-2.5 1.5a11 11 0 005 5L16 12l5 2v4a2 2 0 01-2 2C10.6 20 4 13.4 4 5a2 2 0 012-2z"
+                        stroke="currentColor" stroke-width="1.6" />
+                    </svg></a><button class="copy-btn" data-copy-target="rTelSocav">copia</button><span id="rTelSocav"
+                    class="hidden">06 79340903</span></div>
+              </div>
+            </div>
     </section>
   </div>
 
@@ -806,35 +808,35 @@
       return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
 
-let dialPrefixEnabled = true; // Attivo di default
-let currentRecord = null;
+    let dialPrefixEnabled = true; // Attivo di default
+    let currentRecord = null;
 
-function telHref(num){
-  const digits = (num||"").toString().replace(/[^0-9+]/g,"");
-  return "tel:" + (dialPrefixEnabled ? "4146" + digits : digits);
-}
+    function telHref(num) {
+      const digits = (num || "").toString().replace(/[^0-9+]/g, "");
+      return "tel:" + (dialPrefixEnabled ? "4146" + digits : digits);
+    }
 
-function refreshPhoneLinks(){
-  const conLink = document.getElementById("footerConLink");
-  if(conLink) conLink.href = telHref(CON.tel);
-  const socavLink = document.getElementById("footerSocavLink");
-  if(socavLink) socavLink.href = telHref(SOCAV.tel);
+    function refreshPhoneLinks() {
+      const conLink = document.getElementById("footerConLink");
+      if (conLink) conLink.href = telHref(CON.tel);
+      const socavLink = document.getElementById("footerSocavLink");
+      if (socavLink) socavLink.href = telHref(SOCAV.tel);
 
-  // Aggiornamento link CON e SOCAV in Sala Operativa
-  const conOpLink = document.querySelector("#rTelCon").previousElementSibling.previousElementSibling;
-  if(conOpLink) conOpLink.href = telHref(CON.tel);
-  const socavOpLink = document.querySelector("#rTelSocav").previousElementSibling.previousElementSibling;
-  if(socavOpLink) socavOpLink.href = telHref(SOCAV.tel);
+      // Aggiornamento link CON e SOCAV in Sala Operativa
+      const conOpLink = document.querySelector("#rTelCon").previousElementSibling.previousElementSibling;
+      if (conOpLink) conOpLink.href = telHref(CON.tel);
+      const socavOpLink = document.querySelector("#rTelSocav").previousElementSibling.previousElementSibling;
+      if (socavOpLink) socavOpLink.href = telHref(SOCAV.tel);
 
-  if(currentRecord){
-    const tscA = document.querySelector("#rTelComandoWrap a.value-link");
-    if(tscA && currentRecord.tsc) tscA.href = telHref(currentRecord.tsc);
-    const tsdA = document.querySelector("#rTelDirezioneWrap a.value-link");
-    if(tsdA && currentRecord.tsd) tsdA.href = telHref(currentRecord.tsd);
-  }
+      if (currentRecord) {
+        const tscA = document.querySelector("#rTelComandoWrap a.value-link");
+        if (tscA && currentRecord.tsc) tscA.href = telHref(currentRecord.tsc);
+        const tsdA = document.querySelector("#rTelDirezioneWrap a.value-link");
+        if (tsdA && currentRecord.tsd) tsdA.href = telHref(currentRecord.tsd);
+      }
 
-  updateFreeDialLinks();
-}
+      updateFreeDialLinks();
+    }
 
     document.getElementById("prefixToggle").addEventListener("click", function () {
       dialPrefixEnabled = !dialPrefixEnabled;
