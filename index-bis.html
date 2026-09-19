@@ -499,26 +499,28 @@
                     questo numero),
                     basterà incollarlo nella chat.
                 </p>
+            </div>
 
-                <!-- PANNELLO RIEPILOGO: non più position:fixed con pixel
-                     calcolati — viene spostato (appendChild) DENTRO al
-                     pannello opposto al momento dell'apertura, con
-                     position:absolute; inset:0 lì. Eredita automaticamente
-                     dimensioni e resize del contenitore che lo ospita. -->
-                <div id="riepilogo-msg-overlay" class="riepilogo-msg-overlay" hidden>
-                    <div class="riepilogo-msg-testata">
-                        <b>📊 Riepilogo messaggi — ultime 24h</b>
-                        <label class="rt-check" style="margin:0;">
-                            <input type="checkbox" id="riepilogo-msg-limitrofi">
-                            Includi comandi limitrofi
-                        </label>
-                        <button type="button" id="riepilogo-msg-aggiorna" class="btn-toggle-radar"
-                            title="Aggiorna adesso" style="padding:6px 10px; font-size:12px;">🔄 Aggiorna</button>
-                        <span class="popup-close" id="riepilogo-msg-chiudi" title="Chiudi">&times;</span>
-                    </div>
-                    <div id="riepilogo-msg-corpo" class="riepilogo-msg-corpo">
-                        <p class="pagina-nota">Caricamento...</p>
-                    </div>
+            <!-- RIEPILOGO 24h: non più un overlay sovrapposto — in modalità
+                 espansa (.pannello-fullscreen) diventa una seconda colonna
+                 accanto a .pagina-box, larga quanto lo spazio rimasto fino
+                 al bordo destro del pannello. Nascosto (hidden) finché non
+                 si è in fullscreen: JS lo toglie/rimette insieme al
+                 toggle della tab, che ora FA le veci del pulsante
+                 Espandi/Riduci delle altre pagine. -->
+            <div id="riepilogo-msg-overlay" class="riepilogo-msg-overlay" hidden>
+                <div class="riepilogo-msg-testata">
+                    <b>📊 Riepilogo messaggi — ultime 24h</b>
+                    <label class="rt-check" style="margin:0;">
+                        <input type="checkbox" id="riepilogo-msg-limitrofi">
+                        Includi comandi limitrofi
+                    </label>
+                    <button type="button" id="riepilogo-msg-aggiorna" class="btn-toggle-radar"
+                        title="Aggiorna adesso" style="padding:6px 10px; font-size:12px;">🔄 Aggiorna</button>
+                    <span class="popup-close" id="riepilogo-msg-chiudi" title="Chiudi">&times;</span>
+                </div>
+                <div id="riepilogo-msg-corpo" class="riepilogo-msg-corpo">
+                    <p class="pagina-nota">Caricamento...</p>
                 </div>
             </div>
         </section>
