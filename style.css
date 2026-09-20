@@ -6720,28 +6720,49 @@ select:focus {
     flex: 0 0 42px;
     width: 42px;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 6px;
+    padding: 10px 0;
     background: var(--surface-color);
-    border: none;
-    border-left: 1px solid var(--border-color);
+    border: 1px solid var(--primary-color);
+    border-radius: 0 6px 6px 0;
     cursor: pointer;
-    transition: background 0.15s, border-color 0.15s;
+    transition: border-width 0.15s, background 0.15s;
 }
 
+/* box-sizing:border-box (regola globale del sito) fa sì che un bordo più
+   spesso non allarghi il bottone: cresce verso l'interno, niente scatto
+   di layout al passaggio del mouse. */
 .riepilogo-msg-archivia-tab:hover {
-    border-left-color: var(--primary-color);
+    border-width: 4px;
 }
 
 .riepilogo-msg-archivia-icona {
-    font-size: 17px;
+    font-size: 16px;
+    line-height: 1;
 }
 
-/* Da archiviato: l'intera fascia diventa gialla piena, l'unico elemento
-   a colore sulla riga (che nel frattempo è grigia — vedi sotto) */
+.riepilogo-msg-archivia-testo {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    color: var(--primary-color);
+}
+
+/* Da archiviato: fascia gialla piena — la scritta e l'icona restano
+   leggibili passando a scuro, come sul resto dei pulsanti attivi */
 .riepilogo-msg-archivia-tab.archiviato {
     background: var(--primary-color);
-    border-left-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.riepilogo-msg-archivia-tab.archiviato .riepilogo-msg-archivia-testo {
+    color: var(--dark-color);
 }
 
 /* Riga archiviata: grigia — ma smorzando i singoli elementi interni, MAI

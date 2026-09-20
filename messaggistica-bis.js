@@ -1756,7 +1756,10 @@ Koordináták küldéséhez:
                 btnArchivia.className = "riepilogo-msg-archivia-tab" + (archiviato ? " archiviato" : "");
                 btnArchivia.title = archiviato ? "Clic per riattivare" : "Archivia messaggio";
                 btnArchivia.setAttribute("aria-label", btnArchivia.title);
-                btnArchivia.innerHTML = `<span class="riepilogo-msg-archivia-icona">🗄️</span>`;
+                // Icona + scritta verticale, stesso principio della tab
+                // "Riepilogo messaggi" (icona sopra, testo ruotato sotto):
+                // resta leggibile anche nella fascia stretta.
+                btnArchivia.innerHTML = `<span class="riepilogo-msg-archivia-icona">🗄️</span><span class="riepilogo-msg-archivia-testo">Archivia</span>`;
             }
             aggiornaAspettoBottoneArchivia();
 
