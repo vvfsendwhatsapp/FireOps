@@ -1703,7 +1703,9 @@ Koordináták küldéséhez:
         // telefono e canale dentro il discorso, non su una riga a parte.
         // Numero/anno intervento sono facoltativi: compaiono solo se il
         // messaggio li porta (il link "Con" li registra, "Senza" no — vedi
-        // msg-numero-intervento in initLinkCoordinateUI).
+        // msg-numero-intervento in initLinkCoordinateUI). Vanno a capo
+        // rispetto al resto della frase: sono il dato dell'intervento, non
+        // la continuazione del discorso su chi/come/quando è stato inviato.
         const dataInvio = messaggio.Timestamp
             ? new Date(messaggio.Timestamp).toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric" })
             : "-";
@@ -1711,7 +1713,7 @@ Koordináták küldéséhez:
             ? new Date(messaggio.Timestamp).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })
             : "-";
         const rigaIntervento = (messaggio.NumeroIntervento || messaggio.AnnoIntervento)
-            ? ` — Intervento N. <b>${messaggio.NumeroIntervento || "-"}</b> Anno <b>${messaggio.AnnoIntervento || "-"}</b>`
+            ? `<br>Intervento N. <b>${messaggio.NumeroIntervento || "-"}</b> Anno <b>${messaggio.AnnoIntervento || "-"}</b>`
             : "";
 
         // Tutto il contenuto normale vive dentro un involucro
@@ -1719,42 +1721,50 @@ Koordináták küldéséhez:
         // dentro, è un fratello a tutta altezza sul bordo destro (come la
         // tab verticale del riepilogo stesso) — .riepilogo-msg-voce
         // diventa un flex row con questi due soli figli diretti.
+        // Il badge "Posizione ricevuta/In attesa" sta sulla stessa riga
+        // di ID Messaggio, in alto a destra — non più sotto la frase.
         div.innerHTML = `
             <div class="riepilogo-msg-voce-corpo">
-                <div class="riepilogo-msg-riga-id">ID Messaggio: <b>${messaggio.IdRicerca || "-"}</b></div>
+                <div class="riepilogo-msg-riga-id">
+                    <span>ID Messaggio: <b>${messaggio.IdRicerca || "-"}</b></span>
+                    ${badge}
+                </div>
                 <div class="riepilogo-msg-riga-testa">
                     <p class="riepilogo-msg-frase">
                         Messaggio inviato al n° <b>${maschera(messaggio.NumeroTelefono)}</b> con <b>${messaggio.Canale || "-"}</b>
                         il <b>${dataInvio}</b> alle ore <b>${oraInvio}</b>
                         dal comando di <b>${messaggio.Comando || "-"}</b>${rigaIntervento}
                     </p>
-                    <div class="riepilogo-msg-riga-meta">${badge}</div>
                 </div>
             </div>
         `;
         const corpo = div.querySelector(".riepilogo-msg-voce-corpo");
 
-        // "Archivia": solo per il Comando TITOLARE (quello attivo in
-        // questa sessione) — un altro Comando che vede lo stesso messaggio
-        // (es. come limitrofo) non può archiviarlo, non è "suo". Presente
-        // anche a messaggio ancora "in attesa", non solo "ricevuto":
-        // archiviare vuol dire "questa conversazione è chiusa",
-        // indipendentemente dalla posizione. Resta cliccabile anche da
-        // archiviato: un secondo clic lo riporta attivo, non è un'azione
-        // a senso unico.
+        // "Archivia": sempre visibile, ma cliccabile SOLO per il Comando
+        // TITOLARE (quello attivo in questa sessione) — un altro Comando
+        // che vede lo stesso messaggio come limitrofo lo vede comunque (per
+        // sapere che esiste quella possibilità), ma disabilitato: non è
+        // "suo" da archiviare. Presente anche a messaggio ancora "in
+        // attesa", non solo "ricevuto": archiviare vuol dire "questa
+        // conversazione è chiusa", indipendentemente dalla posizione.
+        // Resta cliccabile anche da archiviato: un secondo clic lo riporta
+        // attivo, non è un'azione a senso unico.
         const comandoAttivoSessione = sessionStorage.getItem(CHIAVE_STORAGE);
         const titolare = !!(comandoAttivoSessione && messaggio.Comando === comandoAttivoSessione);
-        if (titolare) {
+        {
             let archiviato = String(messaggio.Archiviata).toUpperCase() === "TRUE";
             div.dataset.archiviato = archiviato ? "true" : "false";
             div.classList.toggle("archiviata", archiviato);
 
             const btnArchivia = document.createElement("button");
             btnArchivia.type = "button";
+            btnArchivia.disabled = !titolare;
 
             function aggiornaAspettoBottoneArchivia() {
                 btnArchivia.className = "riepilogo-msg-archivia-tab" + (archiviato ? " archiviato" : "");
-                btnArchivia.title = archiviato ? "Clic per riattivare" : "Archivia messaggio";
+                btnArchivia.title = !titolare
+                    ? "Puoi archiviare solo i messaggi del tuo Comando"
+                    : (archiviato ? "Clic per riattivare" : "Archivia messaggio");
                 btnArchivia.setAttribute("aria-label", btnArchivia.title);
                 // Icona + scritta verticale, stesso principio della tab
                 // "Riepilogo messaggi" (icona sopra, testo ruotato sotto):

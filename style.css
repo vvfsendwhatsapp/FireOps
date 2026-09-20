@@ -6485,13 +6485,6 @@ select:focus {
 .riepilogo-msg-stato.ricevuto { background: rgba(46, 160, 67, .18); color: #4cd94c; }
 .riepilogo-msg-stato.in-attesa { background: rgba(255, 215, 0, .12); color: var(--primary-color); }
 
-.riepilogo-msg-riga-id {
-    margin-top: 6px;
-    font-size: 11.5px;
-    color: var(--text-muted);
-    font-family: "Courier New", monospace;
-}
-
 .riepilogo-msg-azioni {
     display: flex;
     gap: 8px;
@@ -6848,6 +6841,28 @@ select:focus {
     position: static;
     flex-shrink: 0;
     font-size: 20px;
+}
+
+/* ID Messaggio + badge sulla stessa riga, badge a destra */
+.riepilogo-msg-riga-id {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 6px;
+    font-size: 11.5px;
+    color: var(--text-muted);
+    font-family: "Courier New", monospace;
+}
+
+/* Bottone archivia disabilitato (messaggio non titolare, es. limitrofo):
+   visibile ma chiaramente spento, coerente con lo stato disabled usato
+   ovunque nel resto dell'app (.btn-toggle-radar:disabled) */
+.riepilogo-msg-archivia-tab:disabled {
+    opacity: .35;
+    filter: grayscale(60%);
+    cursor: not-allowed;
+    pointer-events: none;
 }
 
 /* Messaggistica espansa resta un PANNELLO VERO — bordo, angoli
