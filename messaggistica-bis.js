@@ -1759,7 +1759,7 @@ Koordináták küldéséhez:
                 // Icona + scritta verticale, stesso principio della tab
                 // "Riepilogo messaggi" (icona sopra, testo ruotato sotto):
                 // resta leggibile anche nella fascia stretta.
-                btnArchivia.innerHTML = `<span class="riepilogo-msg-archivia-icona">🗄️</span><span class="riepilogo-msg-archivia-testo">Archivia</span>`;
+                btnArchivia.innerHTML = `<span class="riepilogo-msg-archivia-icona">🗄️</span><span class="riepilogo-msg-archivia-testo">${archiviato ? "Sblocca" : "Archivia"}</span>`;
             }
             aggiornaAspettoBottoneArchivia();
 
