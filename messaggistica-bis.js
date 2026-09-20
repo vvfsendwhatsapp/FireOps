@@ -1751,46 +1751,56 @@ Koordináták küldéséhez:
         // attivo, non è un'azione a senso unico.
         const comandoAttivoSessione = sessionStorage.getItem(CHIAVE_STORAGE);
         const titolare = !!(comandoAttivoSessione && messaggio.Comando === comandoAttivoSessione);
-        {
-            let archiviato = String(messaggio.Archiviata).toUpperCase() === "TRUE";
+
+        let archiviato = String(messaggio.Archiviata).toUpperCase() === "TRUE";
+        // "Mostra su mappa" e "Apri nel convertitore" (se il messaggio è
+        // ricevuto: esistono solo in quel caso) vengono registrati qui e
+        // bloccati/sbloccati insieme allo stato di archiviazione — un
+        // messaggio archiviato è una conversazione chiusa, non ha senso
+        // continuare a cercarne la posizione o passarla al convertitore.
+        const bottoniDaBloccareSeArchiviato = [];
+        function applicaBloccoSeArchiviato() {
+            bottoniDaBloccareSeArchiviato.forEach(btn => { btn.disabled = archiviato; });
+        }
+
+        div.dataset.archiviato = archiviato ? "true" : "false";
+        div.classList.toggle("archiviata", archiviato);
+
+        const btnArchivia = document.createElement("button");
+        btnArchivia.type = "button";
+        btnArchivia.disabled = !titolare;
+
+        function aggiornaAspettoBottoneArchivia() {
+            btnArchivia.className = "riepilogo-msg-archivia-tab" + (archiviato ? " archiviato" : "");
+            btnArchivia.title = !titolare
+                ? "Puoi archiviare solo i messaggi del tuo Comando"
+                : (archiviato ? "Clic per riattivare" : "Archivia messaggio");
+            btnArchivia.setAttribute("aria-label", btnArchivia.title);
+            // Icona + scritta verticale, stesso principio della tab
+            // "Riepilogo messaggi" (icona sopra, testo ruotato sotto):
+            // resta leggibile anche nella fascia stretta.
+            btnArchivia.innerHTML = `<span class="riepilogo-msg-archivia-icona">🗄️</span><span class="riepilogo-msg-archivia-testo">${archiviato ? "Sblocca" : "Archivia"}</span>`;
+        }
+        aggiornaAspettoBottoneArchivia();
+
+        btnArchivia.addEventListener("click", () => {
+            // Aggiornamento ottimistico: mode:'no-cors' non permette di
+            // leggere l'esito reale della scrittura (stesso limite di
+            // inviaRigaDbIdSearch), quindi l'interfaccia si aggiorna
+            // subito e non aspetta conferma dal foglio. Archiviare non
+            // fa sparire la riga: resta a video (in grigio, spinta in
+            // fondo alla lista) finché non esce da sé dalla finestra
+            // delle 24h — e resta sempre possibile tornare indietro.
+            archiviato = !archiviato;
             div.dataset.archiviato = archiviato ? "true" : "false";
             div.classList.toggle("archiviata", archiviato);
-
-            const btnArchivia = document.createElement("button");
-            btnArchivia.type = "button";
-            btnArchivia.disabled = !titolare;
-
-            function aggiornaAspettoBottoneArchivia() {
-                btnArchivia.className = "riepilogo-msg-archivia-tab" + (archiviato ? " archiviato" : "");
-                btnArchivia.title = !titolare
-                    ? "Puoi archiviare solo i messaggi del tuo Comando"
-                    : (archiviato ? "Clic per riattivare" : "Archivia messaggio");
-                btnArchivia.setAttribute("aria-label", btnArchivia.title);
-                // Icona + scritta verticale, stesso principio della tab
-                // "Riepilogo messaggi" (icona sopra, testo ruotato sotto):
-                // resta leggibile anche nella fascia stretta.
-                btnArchivia.innerHTML = `<span class="riepilogo-msg-archivia-icona">🗄️</span><span class="riepilogo-msg-archivia-testo">${archiviato ? "Sblocca" : "Archivia"}</span>`;
-            }
             aggiornaAspettoBottoneArchivia();
+            applicaBloccoSeArchiviato();
+            riordinaRigheRiepilogo();
+            impostaArchiviazioneMessaggio(messaggio, archiviato);
+        });
 
-            btnArchivia.addEventListener("click", () => {
-                // Aggiornamento ottimistico: mode:'no-cors' non permette di
-                // leggere l'esito reale della scrittura (stesso limite di
-                // inviaRigaDbIdSearch), quindi l'interfaccia si aggiorna
-                // subito e non aspetta conferma dal foglio. Archiviare non
-                // fa sparire la riga: resta a video (in grigio, spinta in
-                // fondo alla lista) finché non esce da sé dalla finestra
-                // delle 24h — e resta sempre possibile tornare indietro.
-                archiviato = !archiviato;
-                div.dataset.archiviato = archiviato ? "true" : "false";
-                div.classList.toggle("archiviata", archiviato);
-                aggiornaAspettoBottoneArchivia();
-                riordinaRigheRiepilogo();
-                impostaArchiviazioneMessaggio(messaggio, archiviato);
-            });
-
-            div.appendChild(btnArchivia); // fratello di .riepilogo-msg-voce-corpo, non dentro
-        }
+        div.appendChild(btnArchivia); // fratello di .riepilogo-msg-voce-corpo, non dentro
 
         if (ricevuto) {
             const azioni = document.createElement("div");
@@ -1931,13 +1941,22 @@ Koordináták küldéséhez:
                 ridisegnaMappaSeCreata();
             });
 
-            azioni.querySelector(".riepilogo-msg-apri-convertitore").addEventListener("click", () => {
+            const btnApriConvertitore = azioni.querySelector(".riepilogo-msg-apri-convertitore");
+            btnApriConvertitore.addEventListener("click", () => {
                 // Se l'operatore ha selezionato una riga in tabella, è
                 // quella a decidere — altrimenti si ricade sul criterio
                 // di sempre, l'ultima posizione ricevuta.
                 const scelta = posizioneSelezionata || puntoUltimo(righePosizione);
                 if (scelta) apriInConvertitore(numeroLocale(scelta.Lat), numeroLocale(scelta.Lng));
             });
+
+            // Un messaggio archiviato è una conversazione chiusa: niente
+            // senso a continuare a guardarne la mappa o a passarne la
+            // posizione al convertitore. Registrati qui (esistono solo
+            // se ricevuto=true) e applica subito lo stato iniziale, per
+            // il caso di un messaggio già archiviato al primo caricamento.
+            bottoniDaBloccareSeArchiviato.push(btnToggleMappa, btnApriConvertitore);
+            applicaBloccoSeArchiviato();
         }
 
         return div;
