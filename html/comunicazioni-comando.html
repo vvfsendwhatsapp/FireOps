@@ -1005,6 +1005,17 @@
     .cbx-chip:active {
       border-color: var(--amber);
     }
+
+    .cbx-off {
+      opacity: .45;
+      pointer-events: none;
+    }
+
+    .cbx-off input,
+    .cbx-off select,
+    .cbx-off button {
+      cursor: not-allowed;
+    }
   </style>
 </head>
 
@@ -1095,6 +1106,26 @@
           </div>
           <div class="field"><label>Sede</label><input type="text" id="sedeInput" placeholder="es. CENTRALE"
               value="CENTRALE"></div>
+
+          <div class="row-group-label">Comando di appartenenza</div>
+          <div id="homeBox">
+            <div class="field">
+              <div class="cbx-box">
+                <input type="text" id="homeInput" placeholder="Cerca: capoluogo, provincia o sigla (es. RM)"
+                  autocomplete="off" autocapitalize="off" spellcheck="false" role="combobox" aria-expanded="false"
+                  aria-controls="homeResults" aria-autocomplete="list">
+                <button type="button" class="cbx-clear hidden" id="homeClear" aria-label="Cancella">&#10005;</button>
+              </div>
+              <div class="cbx-results hidden" id="homeResults" role="listbox"></div>
+            </div>
+            <div class="cbx-tools">
+              <select id="homeRegione" aria-label="Filtra per regione">
+                <option value="">Tutte le regioni</option>
+              </select>
+            </div>
+          </div>
+          <div class="comando-current" id="homeCurrent">Nessun comando selezionato.</div>
+
           <div class="prof-actions">
             <button type="button" class="prof-save" id="profSave">Salva utente</button>
             <button type="button" class="prof-del" id="profDel">Elimina</button>
@@ -1104,24 +1135,30 @@
       </div>
 
       <div class="panel">
-        <div class="row-group-label">Comando o Direzione</div>
-        <div class="field" id="cbx">
-          <div class="cbx-box">
-            <input type="text" id="comandoInput" placeholder="Cerca: capoluogo, provincia o sigla (es. RM)"
-              autocomplete="off" autocapitalize="off" spellcheck="false" role="combobox" aria-expanded="false"
-              aria-controls="comandoResults" aria-autocomplete="list">
-            <button type="button" class="cbx-clear hidden" id="comandoClear" aria-label="Cancella">&#10005;</button>
+        <div class="row-group-label">Destinatario</div>
+        <div class="field-check">
+          <input type="checkbox" id="stessoComando" checked>
+          <label for="stessoComando">Spedire la mail allo stesso comando di appartenenza</label>
+        </div>
+        <div id="destBox">
+          <div class="field">
+            <div class="cbx-box">
+              <input type="text" id="destInput" placeholder="Cerca: capoluogo, provincia o sigla (es. RM)"
+                autocomplete="off" autocapitalize="off" spellcheck="false" role="combobox" aria-expanded="false"
+                aria-controls="destResults" aria-autocomplete="list">
+              <button type="button" class="cbx-clear hidden" id="destClear" aria-label="Cancella">&#10005;</button>
+            </div>
+            <div class="cbx-results hidden" id="destResults" role="listbox"></div>
           </div>
-          <div class="cbx-results hidden" id="comandoResults" role="listbox"></div>
+          <div class="cbx-tools">
+            <select id="destRegione" aria-label="Filtra per regione">
+              <option value="">Tutte le regioni</option>
+            </select>
+            <button type="button" class="cbx-geo" id="destGeo">Il piu vicino a me</button>
+          </div>
+          <div class="cbx-recents hidden" id="destRecents"></div>
         </div>
-        <div class="cbx-tools">
-          <select id="comandoRegione" aria-label="Filtra per regione">
-            <option value="">Tutte le regioni</option>
-          </select>
-          <button type="button" class="cbx-geo" id="comandoGeo">Il piu vicino a me</button>
-        </div>
-        <div class="cbx-recents hidden" id="comandoRecents"></div>
-        <div class="comando-current" id="comandoCurrent">Nessun comando selezionato.</div>
+        <div class="comando-current" id="destCurrent">Nessun comando selezionato.</div>
       </div>
 
       <div class="nav-row"><button type="button" class="nav-btn nav-next" data-next>Avanti</button></div>
@@ -1370,7 +1407,7 @@
 
   </div>
   <script>
-    const MITTENTE = {nome:"", cognome:"", cf:"", email:""};
+    const MITTENTE = {nome: "", cognome: "", cf: "", email: ""};
     //const MITTENTE = {nome: "Andrea", cognome: "Pelizza", cf: "PLZNDR86B12A001C", email: "andrea.pelizza@vigilfuoco.it"};
     const TEST_ADDRESS = "andrea.pelizza.vvf@gmail.com";
 
@@ -1437,7 +1474,6 @@
       };
     }
 
-    /* ---------- comando: ricerca ---------- */
     const normTxt = s => (s || "").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
       .replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
     TUTTI.forEach(r => {
@@ -1446,186 +1482,215 @@
       r._k = normTxt([r.c, r.cm, r.pr, r.rg, r.x].join(" "));
     });
 
-    const cbInput = document.getElementById("comandoInput");
-    const cbRes = document.getElementById("comandoResults");
-    const cbClear = document.getElementById("comandoClear");
-    const cbReg = document.getElementById("comandoRegione");
-    const cbGeo = document.getElementById("comandoGeo");
-    const cbRecents = document.getElementById("comandoRecents");
-    const cbCurrent = document.getElementById("comandoCurrent");
-    const CB_KEY = "fireops_comandi_recenti_v2";
-    let cbItems = [], cbActive = -1;
-
-    Array.from(new Set(TUTTI.map(r => r.rg))).sort((a, b) => a.localeCompare(b, "it")).forEach(rg => {
-      const o = document.createElement("option"); o.value = rg; o.textContent = rg; cbReg.appendChild(o);
-    });
-
-    function cbSearch() {
-      const q = normTxt(cbInput.value), reg = cbReg.value;
-      let list = TUTTI.filter(r => !reg || r.rg === reg);
-      if (q) {
-        list = list.map(r => {
-          let s = 99;
-          if (r._p && r._p === q) s = 0;
-          else if (r._n.startsWith(q)) s = 1;
-          else if (r._k.split(" ").some(w => w.startsWith(q))) s = 2;
-          else if (r._k.includes(q)) s = 3;
-          return {r, s};
-        }).filter(x => x.s < 99)
-          .sort((a, b) => a.s - b.s || a.r.c.localeCompare(b.r.c, "it"))
-          .map(x => x.r);
-      } else if (!reg) {
-        list = [];
-      } else {
-        list.sort((a, b) => (!!b.dir - !!a.dir) || a.c.localeCompare(b.c, "it"));
-      }
-      return list;
-    }
-
-    function cbMark() {
-      Array.from(cbRes.children).forEach((el, i) => {
-        el.classList.toggle("active", i === cbActive);
-        if (i === cbActive) el.scrollIntoView({block: "nearest"});
-      });
-    }
-
-    function cbRender() {
-      cbItems = cbSearch();
-      cbRes.innerHTML = "";
-      if (!cbInput.value.trim() && !cbReg.value) {
-        cbRes.classList.add("hidden");
-        cbInput.setAttribute("aria-expanded", "false");
-        return;
-      }
-      cbRes.classList.remove("hidden");
-      cbInput.setAttribute("aria-expanded", "true");
-      if (!cbItems.length) {
-        const d = document.createElement("div");
-        d.className = "cbx-empty";
-        d.textContent = "Nessun risultato. Prova con il capoluogo o la sigla (es. RM).";
-        cbRes.appendChild(d);
-        cbActive = -1;
-        return;
-      }
-      cbItems.forEach(r => {
-        const row = document.createElement("div");
-        row.className = "cbx-item";
-        row.setAttribute("role", "option");
-        const b = document.createElement("b"); b.textContent = r.c;
-        const s = document.createElement("span"); s.textContent = r.dir ? "Direzione" : (r.pr + " - " + r.rg);
-        row.appendChild(b); row.appendChild(s);
-        row.addEventListener("click", () => cbSelect(r));
-        cbRes.appendChild(row);
-      });
-      cbActive = cbInput.value.trim() ? 0 : -1;
-      cbMark();
-    }
-
-    function cbUpdateCurrent(note) {
-      if (!currentComando) {
-        cbCurrent.textContent = note || "Nessun comando selezionato.";
-        return;
-      }
-      const dir = !!currentComando.dir;
-      const addr = comandoAddresses(currentComando);
-      let html = (dir ? "Direzione: <b>" : "Comando: <b>") + currentComando.c + "</b> (" + currentComando.rg + ")";
-      if (addr.tep) html += "<br>" + (dir ? "Indirizzo: " : "TEP: ") + addr.tep;
-      if (dir) html += "<br>" + (addr.ok ? "Uso l'indirizzo generale della direzione, verificalo al riepilogo." : "Indirizzo non disponibile: inseriscilo al riepilogo.");
-      else if (!addr.ok) html += "<br>Indirizzo dedotto automaticamente, verificalo al riepilogo.";
-      if (note) html += "<br>" + note;
-      cbCurrent.innerHTML = html;
-    }
-
-    function cbLoadRecent() {
-      try {return JSON.parse(localStorage.getItem(CB_KEY) || "[]");} catch (e) {return [];}
-    }
-    function cbSaveRecent(rec) {
-      try {
-        const l = cbLoadRecent().filter(n => n !== rec.c);
-        l.unshift(rec.c);
-        localStorage.setItem(CB_KEY, JSON.stringify(l.slice(0, 5)));
-      } catch (e) { }
-    }
-    function cbRenderRecents() {
-      const recs = cbLoadRecent().map(n => TUTTI.find(r => r.c === n)).filter(Boolean);
-      cbRecents.innerHTML = "";
-      cbRecents.classList.toggle("hidden", !recs.length);
-      if (!recs.length) return;
-      const lab = document.createElement("span");
-      lab.className = "cbx-recents-label"; lab.textContent = "Recenti:";
-      cbRecents.appendChild(lab);
-      recs.forEach(r => {
-        const c = document.createElement("button");
-        c.type = "button"; c.className = "cbx-chip"; c.textContent = r.c;
-        c.addEventListener("click", () => cbSelect(r));
-        cbRecents.appendChild(c);
-      });
-    }
-
-    function cbSelect(rec, note, skipRecent) {
-      currentComando = rec;
-      cbInput.value = rec.c;
-      cbClear.classList.remove("hidden");
-      cbRes.classList.add("hidden");
-      cbInput.setAttribute("aria-expanded", "false");
-      cbReg.value = "";
-      cbUpdateCurrent(note);
-      if (!skipRecent) {cbSaveRecent(rec); cbRenderRecents();}
-    }
-    function cbClearSel() {
-      cbInput.value = ""; currentComando = null;
-      cbClear.classList.add("hidden");
-      cbUpdateCurrent(); cbRender();
-    }
-
-    cbInput.addEventListener("input", () => {
-      if (currentComando && cbInput.value !== currentComando.c) {
-        currentComando = null;
-        cbUpdateCurrent();
-      }
-      cbClear.classList.toggle("hidden", !cbInput.value);
-      cbRender();
-    });
-    cbInput.addEventListener("focus", () => {
-      if (currentComando && cbInput.value === currentComando.c) cbInput.select();
-      else cbRender();
-    });
-    cbInput.addEventListener("keydown", e => {
-      if (e.key === "ArrowDown") {e.preventDefault(); if (cbItems.length) {cbActive = Math.min(cbItems.length - 1, cbActive + 1); cbMark();} }
-      else if (e.key === "ArrowUp") {e.preventDefault(); if (cbItems.length) {cbActive = Math.max(0, cbActive - 1); cbMark();} }
-      else if (e.key === "Enter") {e.preventDefault(); if (cbItems[cbActive]) cbSelect(cbItems[cbActive]);}
-      else if (e.key === "Escape") {cbRes.classList.add("hidden");}
-    });
-    cbClear.addEventListener("click", () => {cbClearSel(); cbInput.focus();});
-    cbReg.addEventListener("change", cbRender);
-    document.addEventListener("click", e => {
-      if (!e.target.closest("#cbx") && !e.target.closest(".cbx-tools")) cbRes.classList.add("hidden");
-    });
-
     function cbKm(lat1, lon1, lat2, lon2) {
       const R = 6371, t = x => x * Math.PI / 180, dLat = t(lat2 - lat1), dLon = t(lon2 - lon1);
       const h = Math.sin(dLat / 2) ** 2 + Math.cos(t(lat1)) * Math.cos(t(lat2)) * Math.sin(dLon / 2) ** 2;
       return 2 * R * Math.asin(Math.sqrt(h));
     }
-    cbGeo.addEventListener("click", () => {
-      if (!navigator.geolocation) {cbUpdateCurrent("Geolocalizzazione non disponibile su questo dispositivo."); return;}
-      cbGeo.disabled = true; cbGeo.textContent = "Cerco...";
-      navigator.geolocation.getCurrentPosition(p => {
-        let best = null, bd = Infinity;
-        COMANDI.forEach(r => {
-          const d = cbKm(p.coords.latitude, p.coords.longitude, r.lat, r.lon);
-          if (d < bd) {bd = d; best = r;}
-        });
-        cbGeo.disabled = false; cbGeo.textContent = "Il piu vicino a me";
-        if (best) cbSelect(best, "Sede piu vicina alla tua posizione (circa " + Math.round(bd) + " km). Verifica che sia il comando competente.");
-      }, () => {
-        cbGeo.disabled = false; cbGeo.textContent = "Il piu vicino a me";
-        cbUpdateCurrent("Posizione non disponibile: controlla i permessi del browser.");
-      }, {enableHighAccuracy: false, timeout: 10000, maximumAge: 300000});
-    });
 
-    cbRenderRecents();
-    cbUpdateCurrent();
+    /* Crea un selettore con ricerca. Usa gli id <prefix>Input, Results, Clear, Regione, Current, Box
+       (e Geo, Recents se opt.geo / opt.recents). */
+    function makeComandoPicker(prefix, opt) {
+      opt = opt || {};
+      const $ = s => document.getElementById(prefix + s);
+      const inp = $("Input"), res = $("Results"), clr = $("Clear"), reg = $("Regione"), cur = $("Current"), box = $("Box");
+      const geo = opt.geo ? $("Geo") : null;
+      const rcn = opt.recents ? $("Recents") : null;
+      const RKEY = "fireops_comandi_recenti_v2";
+      const P = {rec: null, onChange: function () { }};
+      let items = [], active = -1;
+
+      Array.from(new Set(TUTTI.map(r => r.rg))).sort((a, b) => a.localeCompare(b, "it")).forEach(rg => {
+        const o = document.createElement("option"); o.value = rg; o.textContent = rg; reg.appendChild(o);
+      });
+
+      function search() {
+        const q = normTxt(inp.value), rg = reg.value;
+        let list = TUTTI.filter(r => !rg || r.rg === rg);
+        if (q) {
+          list = list.map(r => {
+            let s = 99;
+            if (r._p && r._p === q) s = 0;
+            else if (r._n.startsWith(q)) s = 1;
+            else if (r._k.split(" ").some(w => w.startsWith(q))) s = 2;
+            else if (r._k.includes(q)) s = 3;
+            return {r, s};
+          }).filter(x => x.s < 99)
+            .sort((a, b) => a.s - b.s || a.r.c.localeCompare(b.r.c, "it"))
+            .map(x => x.r);
+        } else if (!rg) {
+          list = [];
+        } else {
+          list.sort((a, b) => (!!b.dir - !!a.dir) || a.c.localeCompare(b.c, "it"));
+        }
+        return list;
+      }
+      function mark() {
+        Array.from(res.children).forEach((el, i) => {
+          el.classList.toggle("active", i === active);
+          if (i === active) el.scrollIntoView({block: "nearest"});
+        });
+      }
+      function render() {
+        items = search();
+        res.innerHTML = "";
+        if (!inp.value.trim() && !reg.value) {
+          res.classList.add("hidden");
+          inp.setAttribute("aria-expanded", "false");
+          return;
+        }
+        res.classList.remove("hidden");
+        inp.setAttribute("aria-expanded", "true");
+        if (!items.length) {
+          const d = document.createElement("div");
+          d.className = "cbx-empty";
+          d.textContent = "Nessun risultato. Prova con il capoluogo o la sigla (es. RM).";
+          res.appendChild(d);
+          active = -1;
+          return;
+        }
+        items.forEach(r => {
+          const row = document.createElement("div");
+          row.className = "cbx-item";
+          row.setAttribute("role", "option");
+          const b = document.createElement("b"); b.textContent = r.c;
+          const s = document.createElement("span"); s.textContent = r.dir ? "Direzione" : (r.pr + " - " + r.rg);
+          row.appendChild(b); row.appendChild(s);
+          row.addEventListener("click", () => P.select(r));
+          res.appendChild(row);
+        });
+        active = inp.value.trim() ? 0 : -1;
+        mark();
+      }
+
+      /* riga di stato sotto il selettore; rec opzionale = record da mostrare al posto di P.rec */
+      P.update = function (note, rec) {
+        rec = (rec === undefined) ? P.rec : rec;
+        if (!rec) {cur.textContent = note || "Nessun comando selezionato."; return;}
+        const dir = !!rec.dir;
+        const addr = comandoAddresses(rec);
+        let html = (dir ? "Direzione: <b>" : "Comando: <b>") + rec.c + "</b> (" + rec.rg + ")";
+        if (addr.tep) html += "<br>" + (dir ? "Indirizzo: " : "TEP: ") + addr.tep;
+        if (dir) html += "<br>" + (addr.ok ? "Uso l'indirizzo generale della direzione, verificalo al riepilogo." : "Indirizzo non disponibile: inseriscilo al riepilogo.");
+        else if (!addr.ok) html += "<br>Indirizzo dedotto automaticamente, verificalo al riepilogo.";
+        if (note) html += "<br>" + note;
+        cur.innerHTML = html;
+      };
+
+      function rLoad() {try {return JSON.parse(localStorage.getItem(RKEY) || "[]");} catch (e) {return [];} }
+      function rSave(rec) {
+        try {
+          const l = rLoad().filter(n => n !== rec.c);
+          l.unshift(rec.c);
+          localStorage.setItem(RKEY, JSON.stringify(l.slice(0, 5)));
+        } catch (e) { }
+      }
+      function rRender() {
+        if (!rcn) return;
+        const recs = rLoad().map(n => TUTTI.find(r => r.c === n)).filter(Boolean);
+        rcn.innerHTML = "";
+        rcn.classList.toggle("hidden", !recs.length);
+        if (!recs.length) return;
+        const lab = document.createElement("span");
+        lab.className = "cbx-recents-label"; lab.textContent = "Recenti:";
+        rcn.appendChild(lab);
+        recs.forEach(r => {
+          const c = document.createElement("button");
+          c.type = "button"; c.className = "cbx-chip"; c.textContent = r.c;
+          c.addEventListener("click", () => P.select(r));
+          rcn.appendChild(c);
+        });
+      }
+
+      P.select = function (rec, note, skipRecent) {
+        P.rec = rec;
+        inp.value = rec.c;
+        clr.classList.remove("hidden");
+        res.classList.add("hidden");
+        inp.setAttribute("aria-expanded", "false");
+        reg.value = "";
+        P.update(note);
+        if (rcn && !skipRecent) {rSave(rec); rRender();}
+        P.onChange(rec);
+      };
+      P.clear = function () {
+        inp.value = ""; P.rec = null;
+        clr.classList.add("hidden");
+        P.update(); render();
+        P.onChange(null);
+      };
+      P.setDisabled = function (d) {
+        inp.disabled = d; reg.disabled = d; clr.disabled = d;
+        if (geo) geo.disabled = d;
+        box.classList.toggle("cbx-off", d);
+        res.classList.add("hidden");
+      };
+
+      inp.addEventListener("input", () => {
+        if (P.rec && inp.value !== P.rec.c) {P.rec = null; P.update(); P.onChange(null);}
+        clr.classList.toggle("hidden", !inp.value);
+        render();
+      });
+      inp.addEventListener("focus", () => {
+        if (P.rec && inp.value === P.rec.c) inp.select(); else render();
+      });
+      inp.addEventListener("keydown", e => {
+        if (e.key === "ArrowDown") {e.preventDefault(); if (items.length) {active = Math.min(items.length - 1, active + 1); mark();} }
+        else if (e.key === "ArrowUp") {e.preventDefault(); if (items.length) {active = Math.max(0, active - 1); mark();} }
+        else if (e.key === "Enter") {e.preventDefault(); if (items[active]) P.select(items[active]);}
+        else if (e.key === "Escape") {res.classList.add("hidden");}
+      });
+      clr.addEventListener("click", () => {P.clear(); inp.focus();});
+      reg.addEventListener("change", render);
+      document.addEventListener("click", e => {
+        if (!e.target.closest("#" + prefix + "Box")) res.classList.add("hidden");
+      });
+
+      if (geo) {
+        geo.addEventListener("click", () => {
+          if (!navigator.geolocation) {P.update("Geolocalizzazione non disponibile su questo dispositivo."); return;}
+          geo.disabled = true; geo.textContent = "Cerco...";
+          navigator.geolocation.getCurrentPosition(p => {
+            let best = null, bd = Infinity;
+            COMANDI.forEach(r => {
+              const d = cbKm(p.coords.latitude, p.coords.longitude, r.lat, r.lon);
+              if (d < bd) {bd = d; best = r;}
+            });
+            geo.disabled = false; geo.textContent = "Il piu vicino a me";
+            if (best) P.select(best, "Sede piu vicina alla tua posizione (circa " + Math.round(bd) + " km). Verifica che sia il comando competente.");
+          }, () => {
+            geo.disabled = false; geo.textContent = "Il piu vicino a me";
+            P.update("Posizione non disponibile: controlla i permessi del browser.");
+          }, {enableHighAccuracy: false, timeout: 10000, maximumAge: 300000});
+        });
+      }
+
+      rRender();
+      P.update();
+      return P;
+    }
+
+    /* comando di appartenenza (nel profilo) e comando destinatario (per questa mail) */
+    const home = makeComandoPicker("home");
+    const dest = makeComandoPicker("dest", {geo: true, recents: true});
+    const stessoChk = document.getElementById("stessoComando");
+
+    /* currentComando = comando a cui va la mail: e quello usato da indirizzi e testo delle email */
+    function applyDestinazione() {
+      const same = stessoChk.checked;
+      dest.setDisabled(same);
+      if (same) {
+        currentComando = home.rec;
+        dest.update(home.rec ? "Invio allo stesso comando di appartenenza." : "Imposta il comando di appartenenza in Dati utente.", home.rec);
+      } else {
+        currentComando = dest.rec;
+        dest.update();
+      }
+    }
+    home.onChange = function () {if (stessoChk.checked) applyDestinazione();};
+    dest.onChange = function (r) {if (!stessoChk.checked) currentComando = r;};
+    stessoChk.addEventListener("change", applyDestinazione);
+    applyDestinazione();
 
     /* ---------- utenti registrati (salvati nel browser di questo dispositivo) ---------- */
     const PROF_KEY = "fireops_com_utenti";
@@ -1655,7 +1720,8 @@
         qualifica: document.getElementById("qualificaSelect").value,
         sede: val("sedeInput"),
         turnoL: val("turnoLettera"), turnoS: val("turnoSalto"),
-        comando: currentComando ? currentComando.c : ""
+        comando: home.rec ? home.rec.c : "",
+        stesso: stessoChk.checked
       };
     }
     function profFill(p) {
@@ -1668,7 +1734,9 @@
       document.getElementById("turnoLettera").value = p.turnoL || "";
       document.getElementById("turnoSalto").value = p.turnoS || "";
       const rec = TUTTI.find(r => r.c === p.comando);
-      if (rec) cbSelect(rec, null, true); else cbClearSel();
+      if (rec) home.select(rec, null, true); else home.clear();
+      stessoChk.checked = (p.stesso !== false);
+      applyDestinazione();
       syncMittente();
     }
     function profBlank() {profFill({qualifica: "VE", sede: "CENTRALE"});}
@@ -1712,6 +1780,7 @@
       }
       const p = profFromForm();
       if (!p.nome || !p.cognome) {profMsg("Inserisci almeno nome e cognome."); return;}
+      if (!p.comando) {profMsg("Scegli il comando di appartenenza."); return;}
       if (p.cf && !/^[A-Z0-9]{16}$/.test(p.cf)) {profMsg("Il codice fiscale deve avere 16 caratteri."); return;}
       const i = list.findIndex(x => x.id === p.id);
       if (i >= 0) list[i] = p; else list.push(p);
@@ -1802,8 +1871,20 @@
     function goNext() {
       if (currentStep === 1) {
         syncMittente();
-        if (!MITTENTE.nome || !MITTENTE.cognome) {alert("Scegli un utente o inserisci nome e cognome."); return;}
-        if (!currentComando) {alert("Seleziona un comando dall'elenco."); return;}
+        if (!MITTENTE.nome || !MITTENTE.cognome) {
+          profDet.open = true;
+          alert("Scegli un utente o inserisci nome e cognome.");
+          return;
+        }
+        if (!currentComando) {
+          if (stessoChk.checked) {
+            profDet.open = true;
+            alert("Imposta il comando di appartenenza in Dati utente, oppure togli la spunta e scegli un altro comando.");
+          } else {
+            alert("Seleziona il comando destinatario.");
+          }
+          return;
+        }
       }
       if (currentStep === 2 && !currentTipo) {alert("Seleziona il tipo di comunicazione."); return;}
       if (currentStep === 4 && currentTipo === "bancaore" && !regSel) {alert("Seleziona Pagamento o Recupero."); return;}
@@ -1938,6 +2019,7 @@
       const t = turnoStr(), s = val("sedeInput");
       if (t) h += " - turno " + t;
       if (s) h += " - sede " + s;
+      if (home.rec && currentComando && currentComando !== home.rec) h += " - in servizio presso " + home.rec.c;
       return h;
     }
 
