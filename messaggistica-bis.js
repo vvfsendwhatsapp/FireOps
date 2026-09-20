@@ -1412,9 +1412,13 @@ Koordináták küldéséhez:
     // mostraTutte=false (default): un solo marker, quello più preciso, con
     // il suo cerchio di precisione. mostraTutte=true: tutti i marker delle
     // posizioni ricevute, senza cerchi (troppi cerchi sovrapposti confondono
-    // più che aiutare).
-    function disegnaPuntiPosizione(mappaEl, righePosizioneComplete, statoMappa, mostraTutte) {
+    // più che aiutare). posizioneForzata: se l'operatore ha selezionato una
+    // riga in tabella, è LEI a decidere cosa disegnare — ha priorità su
+    // mostraTutte, che in quel caso viene ignorato.
+    function disegnaPuntiPosizione(mappaEl, righePosizioneComplete, statoMappa, opzioni) {
         if (!window.L || !righePosizioneComplete.length) return;
+        const mostraTutte = !!(opzioni && opzioni.mostraTutte);
+        const posizioneForzata = opzioni && opzioni.posizioneForzata;
 
         // Numerazione cronologica (1 = più vecchia) calcolata SEMPRE su
         // tutte le posizioni ricevute, indipendentemente da quante se ne
@@ -1429,9 +1433,9 @@ Koordináták küldéséhez:
         const numeroDiRiga = new Map();
         righeOrdinate.forEach((riga, indice) => numeroDiRiga.set(riga, indice + 1));
 
-        const daDisegnare = mostraTutte
-            ? righeOrdinate
-            : [posizionePiuPrecisa(righePosizioneComplete)].filter(Boolean);
+        const daDisegnare = posizioneForzata
+            ? [posizioneForzata]
+            : (mostraTutte ? righeOrdinate : [posizionePiuPrecisa(righePosizioneComplete)].filter(Boolean));
 
         // Leaflet richiede una vista iniziale (centro+zoom) prima di poter
         // calcolare i bounds di un cerchio: Circle.getBounds() legge la
@@ -1498,7 +1502,11 @@ Koordináták küldéséhez:
             // Il cerchio di precisione compare solo quando è mostrata UNA
             // sola posizione: con tutte le posizioni insieme i cerchi si
             // sovrappongono e confondono più di quanto aiutino.
-            if (!mostraTutte && isFinite(raggio) && raggio > 0) {
+            // Il cerchio di precisione compare quando è mostrata UNA sola
+            // posizione (di default, o perché selezionata a mano): con
+            // tutte le posizioni insieme i cerchi si sovrappongono e
+            // confondono più di quanto aiutino.
+            if (daDisegnare.length === 1 && isFinite(raggio) && raggio > 0) {
                 L.circle([lat, lng], {
                     radius: raggio, color: "#AF2B1E", fillColor: "#AF2B1E", fillOpacity: 0.15, weight: 1
                 }).addTo(gruppo);
@@ -1639,35 +1647,34 @@ Koordináták küldéséhez:
         div.className = "riepilogo-msg-voce";
 
         const badge = ricevuto
-            ? `<span class="riepilogo-msg-stato ricevuto">✅ Ricevuto</span>`
-            : `<span class="riepilogo-msg-stato in-attesa">⏳ In attesa</span>`;
+            ? `<span class="riepilogo-msg-stato ricevuto">✅ Posizione ricevuta</span>`
+            : `<span class="riepilogo-msg-stato in-attesa">⏳ In attesa della posizione</span>`;
 
-        // Intestazione a frase invece dei soli campi affiancati: più
-        // spazio per leggerla a colpo d'occhio, non tutto compresso su una
-        // riga sola. Numero/anno intervento sono facoltativi: compaiono
-        // solo se il messaggio li porta (il link "Con" li registra, "Senza"
-        // no — vedi msg-numero-intervento in initLinkCoordinateUI).
-        const dataOraInvio = messaggio.Timestamp
-            ? new Date(messaggio.Timestamp).toLocaleString("it-IT", {
-                day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit"
-            })
+        // Intestazione a frase invece dei campi affiancati e compressi:
+        // telefono e canale dentro il discorso, non su una riga a parte.
+        // Numero/anno intervento sono facoltativi: compaiono solo se il
+        // messaggio li porta (il link "Con" li registra, "Senza" no — vedi
+        // msg-numero-intervento in initLinkCoordinateUI).
+        const dataInvio = messaggio.Timestamp
+            ? new Date(messaggio.Timestamp).toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric" })
+            : "-";
+        const oraInvio = messaggio.Timestamp
+            ? new Date(messaggio.Timestamp).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })
             : "-";
         const rigaIntervento = (messaggio.NumeroIntervento || messaggio.AnnoIntervento)
             ? ` — Intervento N. <b>${messaggio.NumeroIntervento || "-"}</b> Anno <b>${messaggio.AnnoIntervento || "-"}</b>`
             : "";
 
         div.innerHTML = `
+            <div class="riepilogo-msg-riga-id">ID Messaggio: <b>${messaggio.IdRicerca || "-"}</b></div>
             <div class="riepilogo-msg-riga-testa">
                 <p class="riepilogo-msg-frase">
-                    Messaggio inviato con <b>${messaggio.Canale || "-"}</b> il <b>${dataOraInvio}</b>
+                    Messaggio inviato al n° <b>${maschera(messaggio.NumeroTelefono)}</b> con <b>${messaggio.Canale || "-"}</b>
+                    il <b>${dataInvio}</b> alle ore <b>${oraInvio}</b>
                     dal comando di <b>${messaggio.Comando || "-"}</b>${rigaIntervento}
                 </p>
-                <div class="riepilogo-msg-riga-meta">
-                    <span class="riepilogo-msg-tel">${maschera(messaggio.NumeroTelefono)}</span>
-                    ${badge}
-                </div>
+                <div class="riepilogo-msg-riga-meta">${badge}</div>
             </div>
-            <div class="riepilogo-msg-riga-id">ID ricerca: <b>${messaggio.IdRicerca || "-"}</b></div>
         `;
 
         if (ricevuto) {
@@ -1718,15 +1725,30 @@ Koordináták küldéséhez:
 
             let mappaCreata = false;
             let mostraTutteLePosizioni = false;
-            const statoMappa = {}; // {mappa, gruppo}: mantiene la stessa mappa Leaflet fra i due modi
+            let posizioneSelezionata = null;
+            const statoMappa = {}; // {mappa, gruppo}: mantiene la stessa mappa Leaflet fra i vari modi
+
+            // Un solo punto di ridisegno: selezione, "mostra tutte" e prima
+            // apertura passano tutti da qui, così la logica di priorità
+            // (selezionata > mostra-tutte > più precisa) vive in un posto
+            // solo. Non fa nulla se la mappa non è ancora stata aperta:
+            // la selezione resta comunque in memoria e verrà rispettata
+            // alla prima apertura vera.
+            function ridisegnaMappaSeCreata() {
+                if (!mappaCreata) return;
+                disegnaPuntiPosizione(document.getElementById(idMappa), righePosizione, statoMappa, {
+                    mostraTutte: mostraTutteLePosizioni,
+                    posizioneForzata: posizioneSelezionata,
+                });
+            }
+
             const btnMostraTutte = mappaWrap.querySelector(".riepilogo-msg-mostra-tutte");
 
             // Posizione scelta a mano dall'operatore cliccando una riga
-            // della tabella: se presente, è quella che "Apri nel
-            // convertitore" userà al posto della più recente. Un solo
-            // clic selettivo (come un radio): cliccare la stessa riga
-            // di nuovo la deseleziona e si torna al criterio "più recente".
-            let posizioneSelezionata = null;
+            // della tabella: appena selezionata deve vedersi SUBITO sulla
+            // mappa (non solo determinare cosa va al convertitore). Un
+            // solo clic selettivo (come un radio): cliccare la stessa riga
+            // di nuovo la deseleziona e si torna al criterio automatico.
             contenitoreTabella.addEventListener("click", (ev) => {
                 const riga = ev.target.closest(".riepilogo-msg-riga-posizione");
                 if (!riga) return;
@@ -1738,11 +1760,12 @@ Koordináták küldéséhez:
                     .forEach(r => r.classList.remove("selezionata"));
 
                 if (eraGiaSelezionata) {
-                    posizioneSelezionata = null; // deseleziona: torna al criterio "più recente"
+                    posizioneSelezionata = null; // deseleziona: torna al criterio automatico
                 } else {
                     riga.classList.add("selezionata");
                     posizioneSelezionata = posizioneDellaRiga;
                 }
+                ridisegnaMappaSeCreata();
             });
 
             azioni.querySelector(".riepilogo-msg-toggle-mappa").addEventListener("click", (ev) => {
@@ -1750,7 +1773,7 @@ Koordináták küldéséhez:
                 mappaWrap.hidden = !mappaWrap.hidden;
                 if (!mappaWrap.hidden && !mappaCreata) {
                     mappaCreata = true;
-                    disegnaPuntiPosizione(document.getElementById(idMappa), righePosizione, statoMappa, mostraTutteLePosizioni);
+                    ridisegnaMappaSeCreata();
                 }
             });
 
@@ -1759,9 +1782,7 @@ Koordináták küldéséhez:
                 mostraTutteLePosizioni = !mostraTutteLePosizioni;
                 btnMostraTutte.textContent = mostraTutteLePosizioni ? "📍 Solo la più precisa" : "📍 Mostra tutte le posizioni";
                 btnMostraTutte.classList.toggle("attivo", mostraTutteLePosizioni);
-                if (mappaCreata) {
-                    disegnaPuntiPosizione(document.getElementById(idMappa), righePosizione, statoMappa, mostraTutteLePosizioni);
-                }
+                ridisegnaMappaSeCreata();
             });
 
             azioni.querySelector(".riepilogo-msg-apri-convertitore").addEventListener("click", () => {
