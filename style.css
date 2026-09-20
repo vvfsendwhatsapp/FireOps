@@ -6738,32 +6738,56 @@ select:focus {
     font-weight: bold;
 }
 
-.riepilogo-msg-archivia {
-    display: block;
-    width: 100%;
-    margin-top: 10px;
-    padding: 8px 10px;
-    font-size: 13px;
-    font-weight: bold;
-    text-align: center;
+/* Bottone icona "Archivia", in alto a destra della riga accanto al badge */
+.riepilogo-msg-archivia-icona {
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
     background: var(--dark-color);
-    color: #ff8c00;
-    border: 1px solid #ff8c00;
+    border: 1px solid var(--border-color);
     border-radius: 6px;
     cursor: pointer;
-    transition: background 0.15s, color 0.15s;
+    transition: border-color 0.15s, background 0.15s;
 }
 
-.riepilogo-msg-archivia:hover:not(:disabled) {
-    background: #ff8c00;
-    color: var(--dark-color);
+.riepilogo-msg-archivia-icona:hover {
+    border-color: var(--primary-color);
 }
 
-.riepilogo-msg-archivia.archiviato {
-    background: #ff8c00;
-    color: var(--dark-color);
-    cursor: default;
-    opacity: 0.85;
+/* Da archiviato: pieno giallo, l'unico elemento a colore sulla riga grigia */
+.riepilogo-msg-archivia-icona.archiviato {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* Riga archiviata: grigia — ma NON via opacity/filter sull'intero
+   contenitore, altrimenti si smorzerebbe anche il bottone giallo che ci
+   vive dentro (l'opacità di un genitore si "somma" sempre a quella dei
+   figli, non è annullabile). Si smorzano invece i singoli elementi. */
+.riepilogo-msg-voce.archiviata {
+    background: #181818;
+    border-color: #242424;
+}
+
+.riepilogo-msg-voce.archiviata .riepilogo-msg-frase,
+.riepilogo-msg-voce.archiviata .riepilogo-msg-frase b,
+.riepilogo-msg-voce.archiviata .riepilogo-msg-riga-id,
+.riepilogo-msg-voce.archiviata .riepilogo-msg-riga-id b {
+    color: var(--text-muted);
+}
+
+.riepilogo-msg-voce.archiviata .riepilogo-msg-stato {
+    opacity: 0.5;
+}
+
+.riepilogo-msg-voce.archiviata .riepilogo-msg-azioni,
+.riepilogo-msg-voce.archiviata .riepilogo-msg-mappa-wrap {
+    opacity: 0.6;
 }
 
 /* Messaggistica espansa resta un PANNELLO VERO — bordo, angoli

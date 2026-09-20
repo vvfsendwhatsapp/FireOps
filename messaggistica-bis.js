@@ -1673,6 +1673,10 @@ Koordináták küldéséhez:
 
         const div = document.createElement("div");
         div.className = "riepilogo-msg-voce";
+        // Dataset invece di richiedere i dati originali: riordinaRigheRiepilogo()
+        // li legge direttamente dal DOM per il riordino immediato al click
+        // su "Archivia" (aggiornamento ottimistico).
+        div.dataset.timestamp = messaggio.Timestamp || "";
 
         const badge = ricevuto
             ? `<span class="riepilogo-msg-stato ricevuto">✅ Posizione ricevuta</span>`
@@ -1701,9 +1705,56 @@ Koordináták küldéséhez:
                     il <b>${dataInvio}</b> alle ore <b>${oraInvio}</b>
                     dal comando di <b>${messaggio.Comando || "-"}</b>${rigaIntervento}
                 </p>
-                <div class="riepilogo-msg-riga-meta">${badge}</div>
+                <div class="riepilogo-msg-riga-meta" data-meta>${badge}</div>
             </div>
         `;
+
+        // Il bottone "Archivia" va nell'intestazione, a destra del badge —
+        // non più in fondo alla riga — quindi si costruisce e si inserisce
+        // ORA, prima del resto (mappa/azioni), non dopo. Solo per il
+        // Comando TITOLARE (quello attivo in questa sessione): un altro
+        // Comando che vede lo stesso messaggio (es. come limitrofo) non
+        // può archiviarlo, non è "suo". Presente anche a messaggio ancora
+        // "in attesa", non solo "ricevuto": archiviare vuol dire "questa
+        // conversazione è chiusa", indipendentemente dalla posizione.
+        // Resta cliccabile anche da archiviato: un secondo clic lo riporta
+        // attivo, non è un'azione a senso unico.
+        const comandoAttivoSessione = sessionStorage.getItem(CHIAVE_STORAGE);
+        const titolare = !!(comandoAttivoSessione && messaggio.Comando === comandoAttivoSessione);
+        if (titolare) {
+            let archiviato = String(messaggio.Archiviata).toUpperCase() === "TRUE";
+            div.dataset.archiviato = archiviato ? "true" : "false";
+            div.classList.toggle("archiviata", archiviato);
+
+            const btnArchivia = document.createElement("button");
+            btnArchivia.type = "button";
+
+            function aggiornaAspettoBottoneArchivia() {
+                btnArchivia.className = "riepilogo-msg-archivia-icona" + (archiviato ? " archiviato" : "");
+                btnArchivia.title = archiviato ? "Clic per riattivare" : "Archivia messaggio";
+                btnArchivia.setAttribute("aria-label", btnArchivia.title);
+                btnArchivia.innerHTML = "🗄️";
+            }
+            aggiornaAspettoBottoneArchivia();
+
+            btnArchivia.addEventListener("click", () => {
+                // Aggiornamento ottimistico: mode:'no-cors' non permette di
+                // leggere l'esito reale della scrittura (stesso limite di
+                // inviaRigaDbIdSearch), quindi l'interfaccia si aggiorna
+                // subito e non aspetta conferma dal foglio. Archiviare non
+                // fa sparire la riga: resta a video (in grigio, spinta in
+                // fondo alla lista) finché non esce da sé dalla finestra
+                // delle 24h — e resta sempre possibile tornare indietro.
+                archiviato = !archiviato;
+                div.dataset.archiviato = archiviato ? "true" : "false";
+                div.classList.toggle("archiviata", archiviato);
+                aggiornaAspettoBottoneArchivia();
+                riordinaRigheRiepilogo();
+                impostaArchiviazioneMessaggio(messaggio, archiviato);
+            });
+
+            div.querySelector("[data-meta]").appendChild(btnArchivia);
+        }
 
         if (ricevuto) {
             const azioni = document.createElement("div");
@@ -1822,45 +1873,6 @@ Koordináták küldéséhez:
             });
         }
 
-        // "Archivia messaggio": solo per il Comando TITOLARE, cioè quello
-        // attivo in questa sessione — un altro Comando che vede lo stesso
-        // messaggio (es. come limitrofo) non può archiviarlo, non è "suo".
-        // In fondo alla riga, sempre presente (anche se il messaggio è
-        // ancora "in attesa", non solo quando è "ricevuto"): archiviare
-        // vuol dire "questa conversazione è chiusa", indipendentemente
-        // dal fatto che sia arrivata o meno una posizione. Resta cliccabile
-        // anche da archiviato: un secondo clic lo riporta attivo — non è
-        // un'azione a senso unico.
-        const comandoAttivoSessione = sessionStorage.getItem(CHIAVE_STORAGE);
-        const titolare = !!(comandoAttivoSessione && messaggio.Comando === comandoAttivoSessione);
-        if (titolare) {
-            let archiviato = String(messaggio.Archiviata).toUpperCase() === "TRUE";
-            const btnArchivia = document.createElement("button");
-            btnArchivia.type = "button";
-
-            function aggiornaAspettoBottoneArchivia() {
-                btnArchivia.className = "riepilogo-msg-archivia" + (archiviato ? " archiviato" : "");
-                btnArchivia.textContent = archiviato
-                    ? "✅ Messaggio archiviato · clic per riattivare"
-                    : "📥 Archivia messaggio";
-            }
-            aggiornaAspettoBottoneArchivia();
-
-            btnArchivia.addEventListener("click", () => {
-                // Aggiornamento ottimistico: mode:'no-cors' non permette di
-                // leggere l'esito reale della scrittura (stesso limite di
-                // inviaRigaDbIdSearch), quindi l'interfaccia si aggiorna
-                // subito e non aspetta conferma dal foglio. Archiviare non
-                // fa sparire la riga: resta a video, marcata come tale,
-                // finché non esce da sé dalla finestra delle 24h — e resta
-                // sempre possibile tornare indietro con un secondo clic.
-                archiviato = !archiviato;
-                aggiornaAspettoBottoneArchivia();
-                impostaArchiviazioneMessaggio(messaggio, archiviato);
-            });
-            div.appendChild(btnArchivia);
-        }
-
         return div;
     }
 
@@ -1898,6 +1910,23 @@ Koordináták küldéséhez:
     // forza qualunque mappa l'operatore avesse aperto dentro una riga.
     let righeRiepilogoAttuali = new Map();
 
+    // Riordina le righe già a schermo leggendo i dataset che ciascuna porta
+    // su di sé (archiviato/timestamp), senza bisogno dei dati originali:
+    // serve per il riordino IMMEDIATO al click su "Archivia" (aggiornamento
+    // ottimistico, prima ancora che arrivi il prossimo refresh dal foglio).
+    // Stessa regola di aggiornaRiepilogoIncrementale: non archiviati prima
+    // (più recenti in cima), archiviati in fondo.
+    function riordinaRigheRiepilogo() {
+        const righe = Array.from(corpoRiepilogoMsg.children).filter(el => el.classList.contains("riepilogo-msg-voce"));
+        righe.sort((a, b) => {
+            const archA = a.dataset.archiviato === "true" ? 1 : 0;
+            const archB = b.dataset.archiviato === "true" ? 1 : 0;
+            if (archA !== archB) return archA - archB;
+            return new Date(b.dataset.timestamp || 0) - new Date(a.dataset.timestamp || 0);
+        });
+        corpoRiepilogoMsg.replaceChildren(...righe);
+    }
+
     // "Ricevuto con 3 posizioni" e "ricevuto con 3 posizioni" sono la
     // stessa situazione: non serve confrontare lat/lon riga per riga,
     // basta il conteggio — se cambia, è arrivato qualcosa di nuovo.
@@ -1918,8 +1947,14 @@ Koordináták küldéséhez:
             return;
         }
 
-        // Più recenti in cima, come sempre
-        const ordinati = messaggi.slice().sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
+        // Non archiviati prima (più recenti in cima come sempre),
+        // archiviati in fondo (fra loro, sempre dal più recente).
+        const ordinati = messaggi.slice().sort((a, b) => {
+            const archA = String(a.Archiviata).toUpperCase() === "TRUE" ? 1 : 0;
+            const archB = String(b.Archiviata).toUpperCase() === "TRUE" ? 1 : 0;
+            if (archA !== archB) return archA - archB;
+            return new Date(b.Timestamp) - new Date(a.Timestamp);
+        });
         const mappaAggiornata = new Map();
         const elementiOrdinati = [];
 
