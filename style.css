@@ -6589,22 +6589,22 @@ select:focus {
     min-width: 0;
     display: flex;
     flex-direction: column;
-    max-height: 520px;
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    overflow: hidden;
 }
 
-.riepilogo-msg-tabella-posizioni-col .riepilogo-msg-mostra-tutte {
+.riepilogo-msg-mostra-tutte {
     flex-shrink: 0;
-    margin: 0;
-    border-radius: 6px 6px 0 0;
-    border-bottom: none;
+    width: 100%;
+    margin-bottom: 8px;
+    padding: 6px 10px;
+    font-size: 12px;
 }
 
 .riepilogo-msg-tabella-posizioni-contenuto {
     flex: 1 1 auto;
+    max-height: 480px;
     overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
 }
 
 .riepilogo-msg-tab-posizioni {
@@ -6731,15 +6731,12 @@ select:focus {
     gap: 6px;
     padding: 10px 0;
     background: var(--surface-color);
-    border: 1px solid var(--primary-color);
+    border: 1px solid #a855f7;
     border-radius: 0 6px 6px 0;
     cursor: pointer;
     transition: border-width 0.15s, background 0.15s;
 }
 
-/* box-sizing:border-box (regola globale del sito) fa sì che un bordo più
-   spesso non allarghi il bottone: cresce verso l'interno, niente scatto
-   di layout al passaggio del mouse. */
 .riepilogo-msg-archivia-tab:hover {
     border-width: 4px;
 }
@@ -6756,18 +6753,22 @@ select:focus {
     font-weight: bold;
     letter-spacing: 0.5px;
     white-space: nowrap;
-    color: var(--primary-color);
+    color: #a855f7;
 }
 
-/* Da archiviato: fascia gialla piena — la scritta e l'icona restano
-   leggibili passando a scuro, come sul resto dei pulsanti attivi */
+/* Da archiviato: fascia viola piena, testo bianco per contrasto */
 .riepilogo-msg-archivia-tab.archiviato {
-    background: var(--primary-color);
-    border-color: var(--primary-color);
+    background: #a855f7;
+    border-color: #a855f7;
 }
 
 .riepilogo-msg-archivia-tab.archiviato .riepilogo-msg-archivia-testo {
-    color: var(--dark-color);
+    color: #fff;
+}
+
+.riepilogo-msg-archivia-icona {
+    font-size: 16px;
+    line-height: 1;
 }
 
 /* Riga archiviata: grigia — ma smorzando i singoli elementi interni, MAI
