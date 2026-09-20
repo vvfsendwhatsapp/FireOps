@@ -6421,13 +6421,6 @@ select:focus {
 
 /* Normale: #messaggistica resta un blocco semplice. Solo quando il SUO
    pannello è .pannello-fullscreen diventa una griglia a due colonne. */
-.pannello-fullscreen #messaggistica {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    height: 100%;
-    min-height: 0;
-}
 
 .pannello-fullscreen #messaggistica > .pagina-box {
     overflow-y: auto;
@@ -6449,34 +6442,6 @@ select:focus {
     flex-direction: column;
 }
 
-.riepilogo-msg-testata {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 10px 14px;
-    border-bottom: 1px solid var(--border-color);
-    flex-wrap: wrap;
-    flex-shrink: 0;
-    font: "Courier New", monospace;
-}
-
-.riepilogo-msg-testata b {
-    color: var(--primary-color);
-    flex: 1 1 auto;
-    min-width: 0;
-}
-
-.riepilogo-msg-testata .rt-check {
-    font-size: 13px;
-    white-space: nowrap;
-    flex-shrink: 0;
-}
-
-.riepilogo-msg-testata .popup-close {
-    position: static;
-    flex-shrink: 0;
-}
-
 .riepilogo-msg-corpo {
     flex: 1 1 auto;
     overflow-y: auto;
@@ -6494,14 +6459,6 @@ select:focus {
     overflow: hidden;
     border: 1px solid var(--border-color);
     background: var(--dark-color);
-}
-
-.riepilogo-msg-voce {
-    background: var(--dark-color);
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    padding: 10px 12px;
-    margin-bottom: 10px;
 }
 
 .riepilogo-msg-riga-testa {
@@ -6738,26 +6695,6 @@ select:focus {
     font-weight: bold;
 }
 
-/* Riga archiviata: grigia — ma NON via opacity/filter sull'intero
-   contenitore, altrimenti si smorzerebbe anche il bottone giallo che ci
-   vive dentro (l'opacità di un genitore si "somma" sempre a quella dei
-   figli, non è annullabile). Si smorzano invece i singoli elementi. */
-.riepilogo-msg-voce.archiviata .riepilogo-msg-frase,
-.riepilogo-msg-voce.archiviata .riepilogo-msg-frase b,
-.riepilogo-msg-voce.archiviata .riepilogo-msg-riga-id,
-.riepilogo-msg-voce.archiviata .riepilogo-msg-riga-id b {
-    color: var(--text-muted);
-}
-
-.riepilogo-msg-voce.archiviata .riepilogo-msg-stato {
-    opacity: 0.5;
-}
-
-.riepilogo-msg-voce.archiviata .riepilogo-msg-azioni,
-.riepilogo-msg-voce.archiviata .riepilogo-msg-mappa-wrap {
-    opacity: 0.6;
-}
-
 /* .riepilogo-msg-voce ora è una riga flex: il corpo normale a sinistra,
    il bottone "Archivia" come fascia intera sul bordo destro (stesso
    principio della tab verticale del riepilogo: bordo/fascia a tutt'altezza,
@@ -6765,6 +6702,7 @@ select:focus {
 .riepilogo-msg-voce {
     display: flex;
     align-items: stretch;
+    min-width: 0;
     background: var(--dark-color);
     border: 1px solid var(--border-color);
     border-radius: 6px;
