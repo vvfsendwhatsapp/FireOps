@@ -6738,6 +6738,34 @@ select:focus {
     font-weight: bold;
 }
 
+.riepilogo-msg-archivia {
+    display: block;
+    width: 100%;
+    margin-top: 10px;
+    padding: 8px 10px;
+    font-size: 13px;
+    font-weight: bold;
+    text-align: center;
+    background: var(--dark-color);
+    color: #ff8c00;
+    border: 1px solid #ff8c00;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.riepilogo-msg-archivia:hover:not(:disabled) {
+    background: #ff8c00;
+    color: var(--dark-color);
+}
+
+.riepilogo-msg-archivia.archiviato {
+    background: #ff8c00;
+    color: var(--dark-color);
+    cursor: default;
+    opacity: 0.85;
+}
+
 /* Messaggistica espansa resta un PANNELLO VERO — bordo, angoli
    arrotondati, margini normali — solo più largo, non un riquadro a filo
    schermo come Convertitore/SITAC (quelli restano fixed/edge-to-edge:
