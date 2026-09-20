@@ -6931,6 +6931,18 @@ select:focus {
     order: 1;
 }
 
+/* Clessidra rotante: compare mentre una richiesta al foglio è in corso */
+.riepilogo-msg-clessidra {
+    display: inline-block;
+    font-size: 16px;
+    animation: riepilogo-msg-rotazione 1.2s linear infinite;
+}
+
+@keyframes riepilogo-msg-rotazione {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+
 /* ==========================================================
    ==========================================================
    RESPONSIVE

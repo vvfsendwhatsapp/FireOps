@@ -1248,6 +1248,7 @@ Koordináták küldéséhez:
     const chkRiepilogoLimitrofi = document.getElementById("riepilogo-msg-limitrofi");
     const chiudiRiepilogoMsgBtn = document.getElementById("riepilogo-msg-chiudi");
     const btnAggiornaRiepilogo = document.getElementById("riepilogo-msg-aggiorna");
+    const elCaricamentoRiepilogo = document.getElementById("riepilogo-msg-caricamento");
 
     // Il foglio può restituire i numeri col separatore decimale italiano
     // (virgola) se la colonna è testo anziché numero vero: Number() da solo
@@ -2074,11 +2075,13 @@ Koordináták küldéséhez:
         if (!WEBAPP_URL_ID_SEARCH || !WEBAPP_URL_ID_SEARCH.startsWith("https://")) {
             corpoRiepilogoMsg.innerHTML = `<p class="pagina-nota">Web App non ancora configurata (WEBAPP_URL_ID_SEARCH).</p>`;
             righeRiepilogoAttuali = new Map();
+            if (elCaricamentoRiepilogo) elCaricamentoRiepilogo.hidden = true;
             return;
         }
         if (!comandiDaInterrogare()) {
             corpoRiepilogoMsg.innerHTML = `<p class="pagina-nota">Seleziona prima un Comando.</p>`;
             righeRiepilogoAttuali = new Map();
+            if (elCaricamentoRiepilogo) elCaricamentoRiepilogo.hidden = true;
             return;
         }
 
@@ -2089,6 +2092,12 @@ Koordináták küldéséhez:
             corpoRiepilogoMsg.innerHTML = `<p class="pagina-nota">Caricamento...</p>`;
         }
 
+        // La clessidra invece compare SEMPRE mentre una richiesta è in
+        // volo, anche sui refresh in background: è lì apposta per far
+        // vedere che sta succedendo qualcosa quando la lista non cambia
+        // visibilmente da sola.
+        if (elCaricamentoRiepilogo) elCaricamentoRiepilogo.hidden = false;
+
         fetchDatiRiepilogo()
             .then(dati => aggiornaRiepilogoIncrementale(dati.messaggi || [], dati.posizioni || []))
             .catch(() => {
@@ -2097,6 +2106,11 @@ Koordináták küldéséhez:
                 if (righeRiepilogoAttuali.size === 0) {
                     corpoRiepilogoMsg.innerHTML = `<p class="pagina-nota">Errore nel caricamento del riepilogo.</p>`;
                 }
+            })
+            .finally(() => {
+                // Sia in caso di successo sia di errore: la richiesta non
+                // è più "in volo".
+                if (elCaricamentoRiepilogo) elCaricamentoRiepilogo.hidden = true;
             });
     }
 
@@ -2169,5 +2183,11 @@ Koordináták küldéséhez:
     document.addEventListener("fireops:comando-attivo-cambiato", () => {
         generaMessaggioMessaggistica();
         aggiornaVisibilitaTab(); // Comando diverso = messaggi diversi, magari nessuno
+        // aggiornaVisibilitaTab() da sola ricontrolla solo se la TAB deve
+        // accendersi o no — non tocca la lista già a video. Se il
+        // riepilogo è aperto in quel momento, senza questa riga restava
+        // fermo sui messaggi del Comando precedente fino al refresh
+        // automatico di sfondo (fino a 60 secondi dopo).
+        if (overlayRiepilogoMsg && !overlayRiepilogoMsg.hidden) caricaRiepilogoMessaggi();
     });
 });
