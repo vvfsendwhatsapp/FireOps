@@ -1437,6 +1437,22 @@ Koordináták küldéséhez:
     // ammette due L.map() sullo stesso contenitore senza distruggere la
     // prima esplicitamente, e ricrearla perderebbe anche lo zoom scelto
     // dall'operatore.
+
+    // Precisione arrotondata al metro (Math.round, non tronca a caso), e
+    // oltre 1000 m non si mostra il valore esatto — sopra quella soglia
+    // non è un dato utile su cui orientarsi, solo rumore. testoPrecisione
+    // resta testo semplice (usato anche nel popup del marker, che non ha
+    // bisogno di colore); soloSoglia dice al chiamante se colorarla di
+    // rosso (solo la tabella lo fa, il popup no).
+    function testoPrecisione(raggio) {
+        if (!isFinite(raggio) || raggio <= 0) return "-";
+        const arrotondato = Math.round(raggio);
+        return arrotondato > 1000 ? "> 1000 m" : ("± " + arrotondato + " m");
+    }
+    function precisioneOltreSoglia(raggio) {
+        return isFinite(raggio) && Math.round(raggio) > 1000;
+    }
+
     // mostraTutte=false (default): un solo marker, quello più preciso, con
     // il suo cerchio di precisione. mostraTutte=true: tutti i marker delle
     // posizioni ricevute, senza cerchi (troppi cerchi sovrapposti confondono
@@ -1521,7 +1537,7 @@ Koordináták küldéséhez:
                 <b>Punto ${numero} — ${riga.Fonte || "Posizione"}</b><br>
                 Orario: ${orario}<br>
                 Lat/Lon: ${lat.toFixed(6)}, ${lng.toFixed(6)}<br>
-                Precisione: ${isFinite(raggio) ? raggio + " m" : "-"}<br>
+                Precisione: ${testoPrecisione(raggio)}<br>
                 Altitudine: ${isFinite(altitudine) ? altitudine + " m" : "-"}${isFinite(accAltitudine) ? " (± " + accAltitudine + " m)" : ""}<br>
                 Direzione: ${isFinite(direzione) ? direzione + "°" : "-"}<br>
                 Velocità: ${isFinite(velocita) ? velocita + " km/h" : "-"}
@@ -1586,10 +1602,11 @@ Koordináták küldéséhez:
                 })
                 : "-";
             const numero = numeroDiRiga.get(riga) || "-";
+            const classePrecisione = precisioneOltreSoglia(raggio) ? " riepilogo-msg-precisione-alta" : "";
             return `<tr class="riepilogo-msg-riga-posizione" data-numero="${numero}" tabindex="0">
                 <td>${numero}</td>
                 <td>${ricevuta}</td>
-                <td>${isFinite(raggio) ? "± " + raggio + " m" : "-"}</td>
+                <td class="${classePrecisione}">${testoPrecisione(raggio)}</td>
             </tr>`;
         }).join("");
 
@@ -1697,28 +1714,34 @@ Koordináták küldéséhez:
             ? ` — Intervento N. <b>${messaggio.NumeroIntervento || "-"}</b> Anno <b>${messaggio.AnnoIntervento || "-"}</b>`
             : "";
 
+        // Tutto il contenuto normale vive dentro un involucro
+        // ".riepilogo-msg-voce-corpo": il bottone "Archivia" NON ci sta
+        // dentro, è un fratello a tutta altezza sul bordo destro (come la
+        // tab verticale del riepilogo stesso) — .riepilogo-msg-voce
+        // diventa un flex row con questi due soli figli diretti.
         div.innerHTML = `
-            <div class="riepilogo-msg-riga-id">ID Messaggio: <b>${messaggio.IdRicerca || "-"}</b></div>
-            <div class="riepilogo-msg-riga-testa">
-                <p class="riepilogo-msg-frase">
-                    Messaggio inviato al n° <b>${maschera(messaggio.NumeroTelefono)}</b> con <b>${messaggio.Canale || "-"}</b>
-                    il <b>${dataInvio}</b> alle ore <b>${oraInvio}</b>
-                    dal comando di <b>${messaggio.Comando || "-"}</b>${rigaIntervento}
-                </p>
-                <div class="riepilogo-msg-riga-meta" data-meta>${badge}</div>
+            <div class="riepilogo-msg-voce-corpo">
+                <div class="riepilogo-msg-riga-id">ID Messaggio: <b>${messaggio.IdRicerca || "-"}</b></div>
+                <div class="riepilogo-msg-riga-testa">
+                    <p class="riepilogo-msg-frase">
+                        Messaggio inviato al n° <b>${maschera(messaggio.NumeroTelefono)}</b> con <b>${messaggio.Canale || "-"}</b>
+                        il <b>${dataInvio}</b> alle ore <b>${oraInvio}</b>
+                        dal comando di <b>${messaggio.Comando || "-"}</b>${rigaIntervento}
+                    </p>
+                    <div class="riepilogo-msg-riga-meta">${badge}</div>
+                </div>
             </div>
         `;
+        const corpo = div.querySelector(".riepilogo-msg-voce-corpo");
 
-        // Il bottone "Archivia" va nell'intestazione, a destra del badge —
-        // non più in fondo alla riga — quindi si costruisce e si inserisce
-        // ORA, prima del resto (mappa/azioni), non dopo. Solo per il
-        // Comando TITOLARE (quello attivo in questa sessione): un altro
-        // Comando che vede lo stesso messaggio (es. come limitrofo) non
-        // può archiviarlo, non è "suo". Presente anche a messaggio ancora
-        // "in attesa", non solo "ricevuto": archiviare vuol dire "questa
-        // conversazione è chiusa", indipendentemente dalla posizione.
-        // Resta cliccabile anche da archiviato: un secondo clic lo riporta
-        // attivo, non è un'azione a senso unico.
+        // "Archivia": solo per il Comando TITOLARE (quello attivo in
+        // questa sessione) — un altro Comando che vede lo stesso messaggio
+        // (es. come limitrofo) non può archiviarlo, non è "suo". Presente
+        // anche a messaggio ancora "in attesa", non solo "ricevuto":
+        // archiviare vuol dire "questa conversazione è chiusa",
+        // indipendentemente dalla posizione. Resta cliccabile anche da
+        // archiviato: un secondo clic lo riporta attivo, non è un'azione
+        // a senso unico.
         const comandoAttivoSessione = sessionStorage.getItem(CHIAVE_STORAGE);
         const titolare = !!(comandoAttivoSessione && messaggio.Comando === comandoAttivoSessione);
         if (titolare) {
@@ -1730,10 +1753,10 @@ Koordináták küldéséhez:
             btnArchivia.type = "button";
 
             function aggiornaAspettoBottoneArchivia() {
-                btnArchivia.className = "riepilogo-msg-archivia-icona" + (archiviato ? " archiviato" : "");
+                btnArchivia.className = "riepilogo-msg-archivia-tab" + (archiviato ? " archiviato" : "");
                 btnArchivia.title = archiviato ? "Clic per riattivare" : "Archivia messaggio";
                 btnArchivia.setAttribute("aria-label", btnArchivia.title);
-                btnArchivia.innerHTML = "🗄️";
+                btnArchivia.innerHTML = `<span class="riepilogo-msg-archivia-icona">🗄️</span>`;
             }
             aggiornaAspettoBottoneArchivia();
 
@@ -1753,7 +1776,7 @@ Koordináták küldéséhez:
                 impostaArchiviazioneMessaggio(messaggio, archiviato);
             });
 
-            div.querySelector("[data-meta]").appendChild(btnArchivia);
+            div.appendChild(btnArchivia); // fratello di .riepilogo-msg-voce-corpo, non dentro
         }
 
         if (ricevuto) {
@@ -1763,7 +1786,7 @@ Koordináták küldéséhez:
                 <button type="button" class="btn-toggle-radar riepilogo-msg-toggle-mappa">🗺️ Mostra su mappa (${righePosizione.length})</button>
                 <button type="button" class="btn-toggle-radar riepilogo-msg-apri-convertitore">📐 Apri nel convertitore</button>
             `;
-            div.appendChild(azioni);
+            corpo.appendChild(azioni);
 
             // Mappa + tabella posizioni dentro la riga (accordion): si
             // espande sotto ai pulsanti, invece di aprire il popup grande
@@ -1781,7 +1804,7 @@ Koordináták küldéséhez:
                     <div class="riepilogo-msg-tabella-posizioni-col"></div>
                 </div>
             `;
-            div.appendChild(mappaWrap);
+            corpo.appendChild(mappaWrap);
 
             // Numerazione cronologica (1 = più vecchia) condivisa fra mappa
             // e tabella: calcolata una sola volta, qui, così i due usano
@@ -1847,9 +1870,16 @@ Koordináták küldéséhez:
                 ridisegnaMappaSeCreata();
             });
 
-            azioni.querySelector(".riepilogo-msg-toggle-mappa").addEventListener("click", (ev) => {
+            const btnToggleMappa = azioni.querySelector(".riepilogo-msg-toggle-mappa");
+            btnToggleMappa.addEventListener("click", (ev) => {
                 ev.stopPropagation();
                 mappaWrap.hidden = !mappaWrap.hidden;
+                // Il pulsante dice cosa succederebbe al PROSSIMO clic, non
+                // cosa è appena successo: aperta -> offre di nasconderla.
+                btnToggleMappa.textContent = mappaWrap.hidden
+                    ? `🗺️ Mostra su mappa (${righePosizione.length})`
+                    : "🙈 Nascondi mappa";
+                mappaWrap.classList.toggle("espansa", !mappaWrap.hidden);
                 if (!mappaWrap.hidden && !mappaCreata) {
                     mappaCreata = true;
                     ridisegnaMappaSeCreata();

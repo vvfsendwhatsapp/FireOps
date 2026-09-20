@@ -6738,40 +6738,84 @@ select:focus {
     font-weight: bold;
 }
 
-/* Bottone icona "Archivia", in alto a destra della riga accanto al badge */
-.riepilogo-msg-archivia-icona {
-    flex-shrink: 0;
-    width: 30px;
-    height: 30px;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 15px;
-    background: var(--dark-color);
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    cursor: pointer;
-    transition: border-color 0.15s, background 0.15s;
-}
-
-.riepilogo-msg-archivia-icona:hover {
-    border-color: var(--primary-color);
-}
-
-/* Da archiviato: pieno giallo, l'unico elemento a colore sulla riga grigia */
-.riepilogo-msg-archivia-icona.archiviato {
-    background: var(--primary-color);
-    border-color: var(--primary-color);
-}
-
 /* Riga archiviata: grigia — ma NON via opacity/filter sull'intero
    contenitore, altrimenti si smorzerebbe anche il bottone giallo che ci
    vive dentro (l'opacità di un genitore si "somma" sempre a quella dei
    figli, non è annullabile). Si smorzano invece i singoli elementi. */
+.riepilogo-msg-voce.archiviata .riepilogo-msg-frase,
+.riepilogo-msg-voce.archiviata .riepilogo-msg-frase b,
+.riepilogo-msg-voce.archiviata .riepilogo-msg-riga-id,
+.riepilogo-msg-voce.archiviata .riepilogo-msg-riga-id b {
+    color: var(--text-muted);
+}
+
+.riepilogo-msg-voce.archiviata .riepilogo-msg-stato {
+    opacity: 0.5;
+}
+
+.riepilogo-msg-voce.archiviata .riepilogo-msg-azioni,
+.riepilogo-msg-voce.archiviata .riepilogo-msg-mappa-wrap {
+    opacity: 0.6;
+}
+
+/* .riepilogo-msg-voce ora è una riga flex: il corpo normale a sinistra,
+   il bottone "Archivia" come fascia intera sul bordo destro (stesso
+   principio della tab verticale del riepilogo: bordo/fascia a tutt'altezza,
+   non un'icona in mezzo al testo). */
+.riepilogo-msg-voce {
+    display: flex;
+    align-items: stretch;
+    background: var(--dark-color);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    margin-bottom: 10px;
+    overflow: hidden; /* la fascia destra rispetta gli angoli arrotondati */
+}
+
+.riepilogo-msg-voce-corpo {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 10px 12px;
+}
+
+.riepilogo-msg-archivia-tab {
+    flex: 0 0 42px;
+    width: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface-color);
+    border: none;
+    border-left: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.riepilogo-msg-archivia-tab:hover {
+    border-left-color: var(--primary-color);
+}
+
+.riepilogo-msg-archivia-icona {
+    font-size: 17px;
+}
+
+/* Da archiviato: l'intera fascia diventa gialla piena, l'unico elemento
+   a colore sulla riga (che nel frattempo è grigia — vedi sotto) */
+.riepilogo-msg-archivia-tab.archiviato {
+    background: var(--primary-color);
+    border-left-color: var(--primary-color);
+}
+
+/* Riga archiviata: grigia — ma smorzando i singoli elementi interni, MAI
+   con opacity/filter su tutto il contenitore: altrimenti si smorzerebbe
+   anche la fascia gialla del bottone, che è un fratello nello stesso
+   contenitore flex e ne erediterebbe l'effetto visivo. */
 .riepilogo-msg-voce.archiviata {
     background: #181818;
-    border-color: #242424;
+}
+
+.riepilogo-msg-voce.archiviata .riepilogo-msg-voce-corpo {
+    background: #181818;
 }
 
 .riepilogo-msg-voce.archiviata .riepilogo-msg-frase,
@@ -6788,6 +6832,63 @@ select:focus {
 .riepilogo-msg-voce.archiviata .riepilogo-msg-azioni,
 .riepilogo-msg-voce.archiviata .riepilogo-msg-mappa-wrap {
     opacity: 0.6;
+}
+
+/* Precisione oltre 1000 m: in rosso, non è un dato su cui orientarsi */
+.riepilogo-msg-precisione-alta {
+    color: var(--danger-color);
+    font-weight: bold;
+}
+
+/* Mappa più grande all'apertura ("espande la mappa") */
+.riepilogo-msg-mappa {
+    height: 520px;
+}
+
+/* ==========================================================
+   Intestazione del riepilogo (📊 Riepilogo messaggi — ultime 24h):
+   font e allineamenti sistemati, "Aggiorna" più grande.
+   ========================================================== */
+.riepilogo-msg-testata {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 16px;
+    border-bottom: 3px solid var(--primary-color);
+    flex-wrap: wrap;
+}
+
+.riepilogo-msg-testata b {
+    color: var(--primary-color);
+    font-size: 16px;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.riepilogo-msg-testata .rt-check {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13.5px;
+    color: var(--text-main);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* L'inline style nell'HTML (padding/font-size piccoli) va tolto dal
+   pulsante #riepilogo-msg-aggiorna, altrimenti vince sempre sul CSS
+   esterno — questa regola da sola non basta se resta l'attributo style. */
+#riepilogo-msg-aggiorna {
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.riepilogo-msg-testata .popup-close {
+    position: static;
+    flex-shrink: 0;
+    font-size: 20px;
 }
 
 /* Messaggistica espansa resta un PANNELLO VERO — bordo, angoli
