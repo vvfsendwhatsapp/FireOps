@@ -1532,6 +1532,19 @@ Koordináták küldéséhez:
             campoLat.value = Math.abs(lat).toFixed(6);
             campoLon.value = Math.abs(lon).toFixed(6);
 
+            // Se il Convertitore ha già fatto una conversione in questa
+            // sessione, il pulsante non è più "Converti" ma "✏️ Modifica
+            // dati inseriti" (conversioneFatta=true dentro convertitore.js):
+            // un click in quello stato sblocca solo i campi per la modifica
+            // e NON converte. .value= non genera eventi "input"/"change" da
+            // solo, quindi senza questo il pulsante resterebbe bloccato in
+            // modalità "Modifica" e il click sotto non farebbe nulla.
+            // convertitore.js ascolta "input" in delega su tutto il
+            // contenitore: farlo partire da qui basta a resettare lo stato,
+            // che è esattamente ciò che serve prima del click vero.
+            campoLat.dispatchEvent(new Event("input", { bubbles: true }));
+            campoLon.dispatchEvent(new Event("input", { bubbles: true }));
+
             if (btnConverti) btnConverti.click();
         }, 50);
     }
