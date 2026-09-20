@@ -1593,6 +1593,12 @@ Koordináták küldéséhez:
                 return tb - ta; // più recenti in cima
             });
 
+        // Stessa posizione che la mappa mostra di default (posizionePiuPrecisa,
+        // usata anche in disegnaPuntiPosizione): evidenziata leggermente in
+        // tabella, così è chiaro a colpo d'occhio QUALE riga è già quella
+        // proposta sulla mappa, senza doverle confrontare tutte a mano.
+        const migliore = posizionePiuPrecisa(righePosizioneComplete);
+
         const righeHtml = righeVisibili.map(riga => {
             const raggio = numeroLocale(riga.Accuratezza);
             // Data oltre all'ora: le 24h di finestra possono attraversare
@@ -1604,7 +1610,8 @@ Koordináták küldéséhez:
                 : "-";
             const numero = numeroDiRiga.get(riga) || "-";
             const classePrecisione = precisioneOltreSoglia(raggio) ? " riepilogo-msg-precisione-alta" : "";
-            return `<tr class="riepilogo-msg-riga-posizione" data-numero="${numero}" tabindex="0">
+            const classeMigliore = riga === migliore ? " riepilogo-msg-riga-migliore" : "";
+            return `<tr class="riepilogo-msg-riga-posizione${classeMigliore}" data-numero="${numero}" tabindex="0">
                 <td>${numero}</td>
                 <td>${ricevuta}</td>
                 <td class="${classePrecisione}">${testoPrecisione(raggio)}</td>

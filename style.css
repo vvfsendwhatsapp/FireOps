@@ -6956,6 +6956,25 @@ select:focus {
     transform: rotate(180deg);
 }
 
+/* Leggermente evidenziata: è la posizione che la mappa mostra di default.
+   Volutamente più tenue di .selezionata (che vince comunque sulla stessa
+   riga, se l'operatore la sceglie a mano — vedi la regola sotto). */
+.riepilogo-msg-riga-migliore {
+    box-shadow: inset 3px 0 0 var(--primary-color);
+}
+
+.riepilogo-msg-riga-migliore td:first-child {
+    color: var(--primary-color);
+    font-weight: bold;
+}
+
+/* .selezionata ha sempre l'ultima parola quando le due classi coincidono
+   sulla stessa riga: la scelta manuale dell'operatore conta più del
+   criterio automatico. */
+.riepilogo-msg-riga-posizione.selezionata.riepilogo-msg-riga-migliore {
+    box-shadow: inset 3px 0 0 #AF2B1E;
+}
+
 /* ==========================================================
    ==========================================================
    RESPONSIVE
