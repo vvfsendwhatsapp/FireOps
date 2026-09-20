@@ -10,167 +10,84 @@
 <meta name="theme-color" content="#10141a">
 <style>
 :root{
-  --bg:#10141a;
-  --panel:#171d25;
-  --panel-2:#1d242e;
-  --line:#2a323d;
-  --red:#c8202b;
-  --red-dim:#5c1216;
-  --amber:#e8a33d;
-  --text:#eceff3;
-  --text-dim:#8b96a3;
-  --green:#3fa66b;
+  --bg:#10141a;--panel:#171d25;--panel-2:#1d242e;--line:#2a323d;
+  --red:#c8202b;--red-dim:#5c1216;--amber:#e8a33d;--text:#eceff3;--text-dim:#8b96a3;--green:#3fa66b;
+  --wa:#25d366;--tg:#29a9eb;
   --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", Consolas, "Liberation Mono", monospace;
 }
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;}
-body{
-  background:var(--bg);
-  color:var(--text);
-  font-family:var(--sans);
-  -webkit-font-smoothing:antialiased;
-  min-height:100vh;
-  padding-bottom:40px;
-}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased;min-height:100vh;padding-bottom:40px;}
 .wrap{max-width:640px;margin:0 auto;padding:0 16px;}
 
-header{
-  padding:20px 16px 14px;
-  display:flex;
-  align-items:center;
-  gap:12px;
-  border-bottom:1px solid var(--line);
-}
+header{padding:16px 16px 12px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--line);}
 .mark{flex:none;width:34px;height:34px;object-fit:contain;}
 .htitle{flex:1;min-width:0;}
-.htitle h1{margin:0;font-size:17px;font-weight:600;letter-spacing:.1px;}
+.htitle h1{margin:0;font-size:17px;font-weight:600;}
 .htitle p{margin:2px 0 0;font-size:12.5px;color:var(--text-dim);}
 
-section{margin-top:16px;}
-.panel{
-  background:var(--panel);
-  border:1px solid var(--line);
-  border-radius:4px;
-  overflow:hidden;
-}
+/* sticky bars */
+.test-banner{position:sticky;top:0;z-index:600;background:var(--amber);color:#1a1400;font-size:12.5px;font-weight:700;text-align:center;padding:8px 10px;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;}
+.test-banner.off{background:var(--panel-2);color:var(--text-dim);font-weight:600;}
+.test-toggle-btn{background:#1a1400;color:var(--amber);border:none;border-radius:14px;padding:5px 12px;font-size:11.5px;font-weight:700;cursor:pointer;}
+.test-banner.off .test-toggle-btn{background:var(--red);color:#fff;}
+
+.quick-actions{position:sticky;top:34px;z-index:590;background:var(--panel);border-bottom:1px solid var(--line);padding:8px 16px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+.quick-actions button{padding:9px 14px;border:none;border-radius:20px;font-size:12.5px;font-weight:700;cursor:pointer;}
+.qa-back{background:var(--panel-2);border:1px solid var(--line) !important;color:var(--text);}
+.qa-next{background:var(--red);color:#fff;}
+.qa-mailto{background:var(--green);color:#fff;}
+.qa-eml{background:var(--panel-2);border:1px solid var(--amber) !important;color:var(--amber);}
+.quick-actions .hidden{display:none !important;}
+
+.steps-bar{display:flex;gap:5px;padding:14px 0 0;}
+.step-dot{flex:1;height:4px;border-radius:2px;background:var(--line);}
+.step-dot.done{background:var(--green);}
+.step-dot.active{background:var(--amber);}
+.step-label{padding:8px 0 0;font-size:12.5px;color:var(--text-dim);text-align:center;}
+
+section.step{margin-top:14px;}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:4px;overflow:hidden;}
 .panel + .panel{margin-top:10px;}
-.row-group-label{
-  padding:10px 14px 6px;
-  font-size:12.5px;
-  color:var(--text-dim);
-  border-left:3px solid var(--line);
-}
+.row-group-label{padding:10px 14px 6px;font-size:12.5px;color:var(--text-dim);border-left:3px solid var(--line);}
 .row-group-label.tep{border-left-color:var(--amber);}
 .row-group-label.pers{border-left-color:var(--green);}
 
 .field{padding:10px 14px;}
-.field label{
-  display:block;
-  font-size:12.5px;
-  color:var(--text-dim);
-  margin-bottom:5px;
+.field label{display:block;font-size:12.5px;color:var(--text-dim);margin-bottom:5px;}
+.field input[type=text],.field input[type=date],.field input[type=time],.field input[type=datetime-local],.field select,.field textarea{
+  width:100%;padding:11px 12px;font-size:15px;background:var(--panel-2);border:1px solid var(--line);
+  border-radius:4px;color:var(--text);font-family:var(--sans);
 }
-.field input[type=text],
-.field input[type=datetime-local],
-.field input[type=email],
-.field select,
-.field textarea{
-  width:100%;
-  padding:11px 12px;
-  font-size:15px;
-  background:var(--panel-2);
-  border:1px solid var(--line);
-  border-radius:4px;
-  color:var(--text);
-  font-family:var(--sans);
-}
-.field select{font-family:var(--sans);}
 .field textarea{font-family:var(--mono);font-size:13px;resize:vertical;}
 .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--amber);}
 .field-row{display:flex;gap:8px;}
 .field-row .field{flex:1;padding-left:0;}
 .field-row .field:first-child{padding-left:14px;}
 .field-row .field:last-child{padding-right:14px;}
-.field-check{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  padding:12px 14px;
-  font-size:14px;
-}
+.field-check{display:flex;align-items:center;gap:8px;padding:12px 14px;font-size:14px;}
 .field-check input{width:18px;height:18px;flex:none;}
 .hint{font-size:11.5px;color:var(--text-dim);padding:0 14px 10px;margin-top:-4px;}
 
-/* mittente */
-.sender-row{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:12px 14px;
-  border-top:1px solid var(--line);
-  font-size:14px;
-}
-.sender-row:first-child{border-top:none;}
-.sender-row .k{color:var(--text-dim);font-size:12.5px;}
-.sender-row .v{font-family:var(--mono);}
-
-/* comando search */
-.comando-box{padding:12px 14px;}
-input.comando-input{
-  width:100%;
-  padding:13px 14px;
-  font-size:15px;
-  background:var(--panel-2);
-  border:1px solid var(--line);
-  border-radius:4px;
-  color:var(--text);
-}
-.comando-input:focus{outline:none;border-color:var(--amber);}
-.comando-current{
-  padding:8px 14px 14px;
-  font-size:12.5px;
-  color:var(--text-dim);
-}
+.comando-current{padding:8px 14px 14px;font-size:12.5px;color:var(--text-dim);}
 .comando-current b{color:var(--text);font-weight:600;}
 
-/* mode tabs */
-.mode-tabs{
-  display:flex;
-  flex-wrap:wrap;
-  gap:8px;
-  padding:2px 0 4px;
-}
-.mode-tab{
-  flex:1 1 calc(50% - 8px);
-  min-width:150px;
-  padding:12px 10px;
-  background:var(--panel);
-  border:1px solid var(--line);
-  border-radius:4px;
-  color:var(--text-dim);
-  font-size:12.5px;
-  font-weight:600;
-  text-align:center;
-  cursor:pointer;
-  line-height:1.3;
-}
-.mode-tab.active{
-  background:var(--red);
-  border-color:var(--red);
-  color:#fff;
-}
-.mode-tab:active{opacity:.85;}
+.tile-grid{display:flex;flex-wrap:wrap;gap:8px;padding:12px 14px 14px;}
+.tile{flex:1 1 calc(50% - 8px);min-width:150px;padding:13px 10px;background:var(--panel-2);border:1px solid var(--line);border-radius:4px;color:var(--text-dim);font-size:12.5px;font-weight:600;text-align:center;cursor:pointer;line-height:1.3;}
+.tile.selected{background:var(--red);border-color:var(--red);color:#fff;}
+.tile:active{opacity:.85;}
 
-/* dynamic rows */
+.choice-list{padding:6px 14px 14px;}
+.choice{display:flex;align-items:center;gap:10px;padding:13px 14px;margin-top:8px;background:var(--panel-2);border:1px solid var(--line);border-radius:4px;cursor:pointer;}
+.choice:first-child{margin-top:0;}
+.choice input{width:18px;height:18px;flex:none;}
+.choice span{font-size:14.5px;font-weight:600;}
+.choice.selected{border-color:var(--amber);background:#241d10;}
+
 .dyn-list{padding:4px 14px 6px;}
-.person-row,.timb-row,.leg-row{
-  display:flex;
-  gap:8px;
-  align-items:flex-start;
-  padding:6px 0;
-}
-.person-row input.person-input{flex:1;}
+.person-row,.timb-row,.leg-row{display:flex;gap:8px;align-items:flex-start;padding:6px 0;}
+.person-row input.person-input{flex:1;padding:11px 12px;font-size:15px;background:var(--panel-2);border:1px solid var(--line);border-radius:4px;color:var(--text);}
 .timb-row{flex-wrap:wrap;background:var(--panel-2);border:1px solid var(--line);border-radius:4px;padding:10px;margin-bottom:8px;}
 .timb-row .tfield{flex:1;min-width:150px;}
 .timb-row .tfield label{font-size:11px;color:var(--text-dim);margin-bottom:4px;display:block;}
@@ -179,100 +96,41 @@ input.comando-input{
 .leg-row .lfield{flex:1;min-width:130px;}
 .leg-row .lfield label{font-size:11px;color:var(--text-dim);margin-bottom:4px;display:block;}
 .leg-row .lfield input,.leg-row .lfield select{width:100%;padding:10px;font-size:14px;background:var(--panel);border:1px solid var(--line);border-radius:4px;color:var(--text);}
+.seg-row{background:var(--panel-2);border:1px solid var(--line);border-radius:4px;padding:10px;margin-bottom:8px;}
+.seg-row .field-row{padding:0;}
+.seg-row .field{padding:6px 4px;}
+.seg-row .field label{font-size:11px;}
+.seg-totals{padding:4px 4px 2px;font-size:12px;color:var(--text-dim);font-family:var(--mono);}
 
-.row-remove-btn{
-  flex:none;
-  width:34px;height:34px;
-  border-radius:4px;
-  background:var(--panel-2);
-  border:1px solid var(--line);
-  color:var(--text-dim);
-  cursor:pointer;
-  font-size:16px;
-  line-height:1;
-}
+.row-remove-btn,.seg-remove{flex:none;width:34px;height:34px;border-radius:4px;background:var(--panel-2);border:1px solid var(--line);color:var(--text-dim);cursor:pointer;font-size:16px;line-height:1;}
+.seg-remove{width:100%;margin-top:2px;padding:8px;font-size:12.5px;height:auto;}
 .timb-row .row-remove-btn,.leg-row .row-remove-btn{align-self:center;margin-top:14px;}
-.row-remove-btn:active{border-color:var(--red);color:var(--red);}
+.row-remove-btn:active,.seg-remove:active{border-color:var(--red);color:var(--red);}
 
-.add-row-btn{
-  width:100%;
-  padding:11px;
-  margin:4px 14px 12px;
-  width:calc(100% - 28px);
-  background:var(--panel-2);
-  border:1px dashed var(--line);
-  border-radius:4px;
-  color:var(--amber);
-  font-size:13.5px;
-  font-weight:600;
-  cursor:pointer;
-}
+.add-row-btn{width:calc(100% - 28px);margin:4px 14px 12px;padding:11px;background:var(--panel-2);border:1px dashed var(--line);border-radius:4px;color:var(--amber);font-size:13.5px;font-weight:600;cursor:pointer;}
 .add-row-btn:active{border-color:var(--amber);}
 
-/* test banner */
-.test-banner{
-  position:sticky;
-  top:0;
-  z-index:500;
-  background:var(--amber);
-  color:#1a1400;
-  font-size:12.5px;
-  font-weight:700;
-  text-align:center;
-  padding:8px 10px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
-}
-.test-banner.off{
-  background:var(--panel-2);
-  color:var(--text-dim);
-  font-weight:600;
-}
-.test-toggle-btn{
-  background:#1a1400;
-  color:var(--amber);
-  border:none;
-  border-radius:14px;
-  padding:5px 12px;
-  font-size:11.5px;
-  font-weight:700;
-  cursor:pointer;
-}
-.test-banner.off .test-toggle-btn{background:var(--red);color:#fff;}
+.totals-panel{display:flex;gap:8px;padding:12px 14px;}
+.totals-panel .tbox{flex:1;background:var(--panel-2);border:1px solid var(--line);border-radius:4px;padding:12px;text-align:center;}
+.totals-panel .tbox .tk{font-size:11.5px;color:var(--text-dim);}
+.totals-panel .tbox .tv{font-family:var(--mono);font-size:19px;font-weight:700;margin-top:4px;}
+.totals-panel .tbox.t1 .tv{color:var(--green);}
+.totals-panel .tbox.t2 .tv{color:var(--amber);}
+.totals-panel .tbox.t3 .tv{color:var(--red);}
+.totals-hint{padding:0 14px 12px;font-size:11.5px;color:var(--text-dim);line-height:1.5;}
 
-/* preview / invio */
-.preview-actions{
-  display:flex;
-  gap:8px;
-  padding:12px 14px 14px;
-}
-.preview-actions button{
-  flex:1;
-  padding:13px 10px;
-  border:none;
-  border-radius:4px;
-  font-size:13.5px;
-  font-weight:700;
-  cursor:pointer;
-}
-.btn-refresh{background:var(--panel-2);border:1px solid var(--line) !important;color:var(--text);}
+.nav-row{display:flex;gap:8px;padding:16px 0 4px;}
+.nav-btn{flex:1;padding:14px;border:none;border-radius:4px;font-size:14.5px;font-weight:700;cursor:pointer;}
+.nav-back{background:var(--panel-2);border:1px solid var(--line) !important;color:var(--text);}
+.nav-next{background:var(--red);color:#fff;}
+.nav-btn:active{opacity:.85;}
+
+.preview-actions{display:flex;gap:8px;padding:0 14px 14px;}
+.preview-actions button{flex:1;padding:13px 10px;border:none;border-radius:4px;font-size:13.5px;font-weight:700;cursor:pointer;}
 .btn-mailto{background:var(--green);color:#fff;}
 .btn-eml{background:var(--panel-2);border:1px solid var(--amber) !important;color:var(--amber);}
-.preview-actions button:active{opacity:.85;}
 
-.security-note{
-  margin-top:10px;
-  padding:12px 14px;
-  background:var(--panel-2);
-  border:1px solid var(--line);
-  border-left:3px solid var(--green);
-  border-radius:4px;
-  font-size:12.5px;
-  color:var(--text-dim);
-  line-height:1.55;
-}
+.security-note{margin-top:10px;padding:12px 14px;background:var(--panel-2);border:1px solid var(--line);border-left:3px solid var(--green);border-radius:4px;font-size:12.5px;color:var(--text-dim);line-height:1.55;}
 .security-note strong{color:var(--text);}
 
 .hidden{display:none !important;}
@@ -281,235 +139,284 @@ input.comando-input{
 <body>
 
 <div class="test-banner" id="testBanner">
-  <span id="testBannerLabel">MODALITÀ TEST ATTIVA — le email vengono reindirizzate a andrea.pelizza.vvf@gmail.com</span>
+  <span id="testBannerLabel">MODALITA TEST ATTIVA</span>
   <button type="button" id="testToggleBtn" class="test-toggle-btn">Disattiva TEST</button>
+</div>
+
+<div class="quick-actions" id="quickActions">
+  <button type="button" class="qa-back hidden" id="qaBack">Indietro</button>
+  <button type="button" class="qa-next hidden" id="qaNext">Avanti</button>
+  <button type="button" class="qa-mailto hidden" id="qaMailto">Apri email</button>
+  <button type="button" class="qa-eml hidden" id="qaEml">Scarica .eml</button>
 </div>
 
 <header>
   <img class="mark" src="https://vvfsendwhatsapp.github.io/FireOps/images/logo.png" alt="Logo VVF">
   <div class="htitle">
-    <h1>Comunicazioni VVF</h1>
-    <p>Missioni, straordinari e timbrature — email pre-compilata</p>
+    <h1>FireOps VVF - Comunicazioni</h1>
+    <p>Missioni, straordinari, timbrature e banca delle ore</p>
   </div>
 </header>
 
 <div class="wrap">
 
-<section>
+<div class="steps-bar" id="stepsBar"></div>
+<div class="step-label" id="stepLabel"></div>
+
+<!-- STEP 1 -->
+<section class="step" id="step-1">
   <div class="panel">
     <div class="row-group-label">Mittente</div>
-    <div class="sender-row"><span class="k">Nome e cognome</span><span class="v" id="senderName">Andrea Pelizza</span></div>
-    <div class="sender-row"><span class="k">Codice fiscale</span><span class="v">PLZNDR86B12A001C</span></div>
-    <div class="sender-row"><span class="k">Email</span><span class="v">andrea.pelizza@vigilfuoco.it</span></div>
-    <div class="field" style="border-top:1px solid var(--line);">
-      <label for="qualificaSelect">Qualifica attuale</label>
-      <select id="qualificaSelect">
-        <option value="VF">Vigile del Fuoco (VF)</option>
-        <option value="VC">Vigile del Fuoco Coordinatore (VC)</option>
-        <option value="VE" selected>Vigile Esperto (VE)</option>
-        <option value="CS">Capo Squadra (CS)</option>
-        <option value="CSE">Capo Squadra Esperto (CSE)</option>
-        <option value="CR">Capo Reparto (CR)</option>
-        <option value="VIA">Vice Ispettore Antincendi</option>
-        <option value="IA">Ispettore Antincendi</option>
-        <option value="IAE">Ispettore Antincendi Esperto</option>
-        <option value="Direttivo/Dirigente">Direttivo / Dirigente</option>
-      </select>
+    <div class="field-row">
+      <div class="field"><label>Qualifica</label>
+        <select id="qualificaSelect">
+          <option value="VVF">Vigile del Fuoco (VVF)</option>
+          <option value="VVFC">Vigile del Fuoco Coordinatore (VVFC)</option>
+          <option value="VE" selected>Vigile Esperto (VE)</option>
+          <option value="VEC">Vigile Esperto Coordinatore (VEC)</option>
+          <option value="VESC">VESC</option>
+          <option value="CS">Capo Squadra (CS)</option>
+          <option value="CSC">Capo Squadra Coordinatore (CSC)</option>
+          <option value="CR">Capo Reparto (CR)</option>
+          <option value="CRC">Capo Reparto Coordinatore (CRC)</option>
+          <option value="Funzionario">Funzionario</option>
+          <option value="Direttivo/Dirigente">Direttivo / Dirigente</option>
+        </select>
+      </div>
+      <div class="field"><label>Turno</label><input type="text" id="turnoInput" placeholder="es. B2"></div>
     </div>
+    <div class="field"><label>Sede</label><input type="text" id="sedeInput" placeholder="es. CENTRALE" value="CENTRALE"></div>
   </div>
-</section>
-
-<section>
   <div class="panel">
-    <div class="row-group-label">Comando di riferimento</div>
-    <div class="comando-box">
-      <input type="text" id="comandoInput" class="comando-input" list="comandoList" placeholder="Scrivi il nome del comando o del comune...">
+    <div class="row-group-label">Comando Provinciale</div>
+    <div class="field">
+      <input type="text" id="comandoInput" list="comandoList" placeholder="Scrivi il nome del comando o del comune...">
       <datalist id="comandoList"></datalist>
     </div>
     <div class="comando-current" id="comandoCurrent">Nessun comando selezionato.</div>
   </div>
+  <div class="nav-row"><button type="button" class="nav-btn nav-next" data-next>Avanti</button></div>
 </section>
 
-<section>
-  <div class="mode-tabs" id="modeTabs">
-    <div class="mode-tab active" data-mode="missione">Missione per soccorso</div>
-    <div class="mode-tab" data-mode="timbratura">Mancata timbratura</div>
-    <div class="mode-tab" data-mode="strasoccorso">Straordinario per soccorso</div>
-    <div class="mode-tab" data-mode="strarinforzo">Straord. rinforzo personale</div>
-    <div class="mode-tab" data-mode="straaltre">Straord. altre attività</div>
-    <div class="mode-tab" data-mode="straguida">Straord. guida / sostituzione</div>
-  </div>
-</section>
-
-<!-- ============ MISSIONE PER SOCCORSO ============ -->
-<section id="form-missione">
+<!-- STEP 2 -->
+<section class="step hidden" id="step-2">
   <div class="panel">
-    <div class="row-group-label tep">Dati intervento</div>
-    <div class="field-row">
-      <div class="field"><label>Data/ora inizio intervento</label><input type="datetime-local" id="msInizio"></div>
-      <div class="field"><label>Data/ora fine intervento</label><input type="datetime-local" id="msFine"></div>
-    </div>
-    <div class="field-row">
-      <div class="field"><label>Numero intervento</label><input type="text" id="msNumero" placeholder="es. 12345"></div>
-      <div class="field"><label>Progressivo intervento</label><input type="text" id="msProgressivo" placeholder="es. 1"></div>
-    </div>
-    <div class="field"><label>Località</label><input type="text" id="msLocalita" placeholder="Comune / via"></div>
-    <div class="field">
-      <label>Tipologia intervento</label>
-      <select id="msTipologia"></select>
+    <div class="row-group-label">Tipo di comunicazione</div>
+    <div class="tile-grid" id="tipoTiles">
+      <div class="tile" data-tipo="missione">Missione per soccorso</div>
+      <div class="tile" data-tipo="timbratura">Mancata timbratura</div>
+      <div class="tile" data-tipo="strasoccorso">Straordinario per soccorso</div>
+      <div class="tile" data-tipo="strarinforzo">Straord. rinforzo personale</div>
+      <div class="tile" data-tipo="straaltre">Straord. altre attivita</div>
+      <div class="tile" data-tipo="straguida">Straord. guida / sostituzione</div>
+      <div class="tile" data-tipo="bancaore">Banca delle ore (prestazioni)</div>
     </div>
   </div>
-  <div class="panel">
-    <div class="row-group-label pers">Personale intervenuto</div>
-    <div class="dyn-list" id="msPersonaleList"></div>
-    <button type="button" class="add-row-btn" data-add="person" data-target="msPersonaleList">+ Aggiungi personale</button>
+  <div class="nav-row">
+    <button type="button" class="nav-btn nav-back" data-back>Indietro</button>
+    <button type="button" class="nav-btn nav-next" data-next>Avanti</button>
   </div>
 </section>
 
-<!-- ============ MANCATA TIMBRATURA ============ -->
-<section id="form-timbratura" class="hidden">
-  <div class="panel">
-    <div class="row-group-label pers">Motivo</div>
-    <div class="field"><label>Motivo mancata timbratura</label>
-      <textarea id="tmMotivo" rows="3" placeholder="Descrivi brevemente il motivo..."></textarea>
-    </div>
-  </div>
-  <div class="panel">
-    <div class="row-group-label pers">Date interessate</div>
-    <div class="dyn-list" id="tmDateList"></div>
-    <button type="button" class="add-row-btn" data-add="timbratura" data-target="tmDateList">+ Aggiungi data</button>
-  </div>
-</section>
+<!-- STEP 3 - dettaglio dinamico -->
+<section class="step hidden" id="step-3">
 
-<!-- ============ STRAORDINARIO PER SOCCORSO ============ -->
-<section id="form-strasoccorso" class="hidden">
-  <div class="panel">
-    <div class="row-group-label tep">Dati intervento</div>
-    <div class="field-row">
-      <div class="field"><label>Data/ora inizio intervento</label><input type="datetime-local" id="ssInizio"></div>
-      <div class="field"><label>Data/ora fine intervento</label><input type="datetime-local" id="ssFine"></div>
-    </div>
-    <div class="field-row">
-      <div class="field"><label>Numero intervento</label><input type="text" id="ssNumero" placeholder="es. 12345"></div>
-      <div class="field"><label>Progressivo intervento</label><input type="text" id="ssProgressivo" placeholder="es. 1"></div>
-    </div>
-    <div class="field"><label>Località</label><input type="text" id="ssLocalita" placeholder="Comune / via"></div>
-    <div class="field">
-      <label>Tipologia intervento</label>
-      <select id="ssTipologia"></select>
-    </div>
-  </div>
-  <div class="panel">
-    <div class="row-group-label pers">Personale intervenuto</div>
-    <div class="dyn-list" id="ssPersonaleList"></div>
-    <button type="button" class="add-row-btn" data-add="person" data-target="ssPersonaleList">+ Aggiungi personale</button>
-  </div>
-  <div class="panel">
-    <div class="field-check"><input type="checkbox" id="ssBuonoPasto"><label for="ssBuonoPasto">Richiedo il secondo buono pasto</label></div>
-  </div>
-</section>
-
-<!-- ============ STRAORDINARIO RINFORZO PERSONALE ============ -->
-<section id="form-strarinforzo" class="hidden">
-  <div class="panel">
-    <div class="row-group-label tep">Dati rinforzo</div>
-    <div class="field-row">
-      <div class="field"><label>Data/ora inizio</label><input type="datetime-local" id="srInizio"></div>
-      <div class="field"><label>Data/ora fine</label><input type="datetime-local" id="srFine"></div>
-    </div>
-    <div class="field"><label>Sede / comando di rinforzo</label><input type="text" id="srSede" placeholder="es. Distaccamento di..."></div>
-    <div class="field"><label>Motivo del rinforzo</label><textarea id="srMotivo" rows="2" placeholder="es. carenza organico turno, evento programmato..."></textarea></div>
-  </div>
-  <div class="panel">
-    <div class="row-group-label pers">Personale coinvolto</div>
-    <div class="dyn-list" id="srPersonaleList"></div>
-    <button type="button" class="add-row-btn" data-add="person" data-target="srPersonaleList">+ Aggiungi personale</button>
-  </div>
-  <div class="panel">
-    <div class="field-check"><input type="checkbox" id="srBuonoPasto"><label for="srBuonoPasto">Richiedo il secondo buono pasto</label></div>
-  </div>
-</section>
-
-<!-- ============ STRAORDINARIO ALTRE ATTIVITÀ ============ -->
-<section id="form-straaltre" class="hidden">
-  <div class="panel">
-    <div class="row-group-label tep">Dati attività</div>
-    <div class="field-row">
-      <div class="field"><label>Data/ora inizio</label><input type="datetime-local" id="saInizio"></div>
-      <div class="field"><label>Data/ora fine</label><input type="datetime-local" id="saFine"></div>
-    </div>
-    <div class="field"><label>Descrizione attività</label><textarea id="saDescrizione" rows="3" placeholder="Descrivi l'attività svolta..."></textarea></div>
-  </div>
-  <div class="panel">
-    <div class="field-check"><input type="checkbox" id="saBuonoPasto"><label for="saBuonoPasto">Richiedo il secondo buono pasto</label></div>
-  </div>
-</section>
-
-<!-- ============ STRAORDINARIO GUIDA / SOSTITUZIONE PERSONALE ============ -->
-<section id="form-straguida" class="hidden">
-  <div class="panel">
-    <div class="row-group-label tep">Tratte guida</div>
-    <div class="dyn-list" id="gdLegList"></div>
-    <button type="button" class="add-row-btn" data-add="leg" data-target="gdLegList">+ Aggiungi tratta (andata/ritorno)</button>
-  </div>
-  <div class="panel">
-    <div class="field-check">
-      <input type="checkbox" id="gdIncludiMissione">
-      <label for="gdIncludiMissione">Includi anche i dati di una missione per soccorso (senza compilare il modulo separato)</label>
-    </div>
-    <div id="gdMissioneBox" class="hidden">
+  <div class="detail-block hidden" id="det-missione">
+    <div class="panel">
+      <div class="row-group-label tep">Dati intervento</div>
       <div class="field-row">
-        <div class="field"><label>Numero intervento</label><input type="text" id="gdNumero"></div>
-        <div class="field"><label>Progressivo intervento</label><input type="text" id="gdProgressivo"></div>
+        <div class="field"><label>Data/ora inizio intervento</label><input type="datetime-local" id="msInizio"></div>
+        <div class="field"><label>Data/ora fine intervento</label><input type="datetime-local" id="msFine"></div>
       </div>
-      <div class="field"><label>Località</label><input type="text" id="gdLocalita"></div>
-      <div class="field"><label>Tipologia intervento</label><select id="gdTipologia"></select></div>
+      <div class="field-row">
+        <div class="field"><label>Numero intervento</label><input type="text" id="msNumero"></div>
+        <div class="field"><label>Progressivo intervento</label><input type="text" id="msProgressivo"></div>
+      </div>
+      <div class="field"><label>Localita</label><input type="text" id="msLocalita"></div>
+      <div class="field"><label>Tipologia intervento</label><select id="msTipologia"></select></div>
+    </div>
+    <div class="panel">
+      <div class="row-group-label pers">Personale intervenuto</div>
+      <div class="dyn-list" id="msPersonaleList"></div>
+      <button type="button" class="add-row-btn" data-add="person" data-target="msPersonaleList">+ Aggiungi personale</button>
     </div>
   </div>
-  <div class="panel">
-    <div class="field-check"><input type="checkbox" id="gdBuonoPasto"><label for="gdBuonoPasto">Richiedo il secondo buono pasto</label></div>
+
+  <div class="detail-block hidden" id="det-timbratura">
+    <div class="panel">
+      <div class="row-group-label pers">Motivo</div>
+      <div class="field"><label>Motivo mancata timbratura</label><textarea id="tmMotivo" rows="3"></textarea></div>
+    </div>
+    <div class="panel">
+      <div class="row-group-label pers">Date interessate</div>
+      <div class="dyn-list" id="tmDateList"></div>
+      <button type="button" class="add-row-btn" data-add="timbratura" data-target="tmDateList">+ Aggiungi data</button>
+    </div>
+  </div>
+
+  <div class="detail-block hidden" id="det-strasoccorso">
+    <div class="panel">
+      <div class="row-group-label tep">Dati intervento</div>
+      <div class="field-row">
+        <div class="field"><label>Data/ora inizio intervento</label><input type="datetime-local" id="ssInizio"></div>
+        <div class="field"><label>Data/ora fine intervento</label><input type="datetime-local" id="ssFine"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Numero intervento</label><input type="text" id="ssNumero"></div>
+        <div class="field"><label>Progressivo intervento</label><input type="text" id="ssProgressivo"></div>
+      </div>
+      <div class="field"><label>Localita</label><input type="text" id="ssLocalita"></div>
+      <div class="field"><label>Tipologia intervento</label><select id="ssTipologia"></select></div>
+    </div>
+    <div class="panel">
+      <div class="row-group-label pers">Personale intervenuto</div>
+      <div class="dyn-list" id="ssPersonaleList"></div>
+      <button type="button" class="add-row-btn" data-add="person" data-target="ssPersonaleList">+ Aggiungi personale</button>
+    </div>
+  </div>
+
+  <div class="detail-block hidden" id="det-strarinforzo">
+    <div class="panel">
+      <div class="row-group-label tep">Dati rinforzo</div>
+      <div class="field-row">
+        <div class="field"><label>Data/ora inizio</label><input type="datetime-local" id="srInizio"></div>
+        <div class="field"><label>Data/ora fine</label><input type="datetime-local" id="srFine"></div>
+      </div>
+      <div class="field"><label>Sede / comando di rinforzo</label><input type="text" id="srSede"></div>
+      <div class="field"><label>Motivo del rinforzo</label><textarea id="srMotivo" rows="2"></textarea></div>
+    </div>
+    <div class="panel">
+      <div class="row-group-label pers">Personale coinvolto</div>
+      <div class="dyn-list" id="srPersonaleList"></div>
+      <button type="button" class="add-row-btn" data-add="person" data-target="srPersonaleList">+ Aggiungi personale</button>
+    </div>
+  </div>
+
+  <div class="detail-block hidden" id="det-straaltre">
+    <div class="panel">
+      <div class="row-group-label tep">Dati attivita</div>
+      <div class="field-row">
+        <div class="field"><label>Data/ora inizio</label><input type="datetime-local" id="saInizio"></div>
+        <div class="field"><label>Data/ora fine</label><input type="datetime-local" id="saFine"></div>
+      </div>
+      <div class="field"><label>Descrizione attivita</label><textarea id="saDescrizione" rows="3"></textarea></div>
+    </div>
+  </div>
+
+  <div class="detail-block hidden" id="det-straguida">
+    <div class="panel">
+      <div class="row-group-label tep">Tratte guida</div>
+      <div class="dyn-list" id="gdLegList"></div>
+      <button type="button" class="add-row-btn" data-add="leg" data-target="gdLegList">+ Aggiungi tratta (andata/ritorno)</button>
+    </div>
+    <div class="panel">
+      <div class="field-check">
+        <input type="checkbox" id="gdIncludiMissione">
+        <label for="gdIncludiMissione">Includi anche i dati di una missione per soccorso</label>
+      </div>
+      <div id="gdMissioneBox" class="hidden">
+        <div class="field-row">
+          <div class="field"><label>Numero intervento</label><input type="text" id="gdNumero"></div>
+          <div class="field"><label>Progressivo intervento</label><input type="text" id="gdProgressivo"></div>
+        </div>
+        <div class="field"><label>Localita</label><input type="text" id="gdLocalita"></div>
+        <div class="field"><label>Tipologia intervento</label><select id="gdTipologia"></select></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="detail-block hidden" id="det-bancaore">
+    <div class="panel">
+      <div class="row-group-label">Tipo prestazione</div>
+      <div class="choice-list" id="boTipoChoices">
+        <label class="choice" data-botipo="soccorso"><input type="radio" name="botipo"><span>Str. per soccorso</span></label>
+        <label class="choice" data-botipo="guida"><input type="radio" name="botipo"><span>Str. per guida</span></label>
+        <label class="choice" data-botipo="altro"><input type="radio" name="botipo"><span>Altro</span></label>
+      </div>
+      <div class="field hidden" id="boGuidaField"><label>Sede di rinforzo</label><input type="text" id="boSedeRinforzo"></div>
+      <div class="field hidden" id="boSoccorsoField"><label>Localita soccorso</label><input type="text" id="boLocalitaSoccorso"></div>
+      <div class="field hidden" id="boAltroField"><label>Descrizione della prestazione</label><textarea id="boDescrizioneAltro" rows="2"></textarea></div>
+    </div>
+    <div class="panel">
+      <div class="row-group-label pers">Fasce orarie</div>
+      <div id="segList"></div>
+      <button type="button" class="add-row-btn" id="addSegBtn">+ Aggiungi fascia oraria</button>
+    </div>
+    <div class="panel">
+      <div class="row-group-label">Totali calcolati</div>
+      <div class="totals-panel">
+        <div class="tbox t1"><div class="tk">T1</div><div class="tv" id="totT1">00.00</div></div>
+        <div class="tbox t2"><div class="tk">T2</div><div class="tv" id="totT2">00.00</div></div>
+        <div class="tbox t3"><div class="tk">T3</div><div class="tv" id="totT3">00.00</div></div>
+      </div>
+      <div class="totals-hint">T1 = feriale 06:00-22:00 &middot; T2 = feriale notturno o festivo diurno &middot; T3 = festivo notturno o superfestivo (1/1, Pasqua, 25/12). Calcolo automatico, correggibile manualmente al passo successivo se serve.</div>
+    </div>
+  </div>
+
+  <div class="nav-row">
+    <button type="button" class="nav-btn nav-back" data-back>Indietro</button>
+    <button type="button" class="nav-btn nav-next" data-next>Avanti</button>
   </div>
 </section>
 
-<!-- ============ ANTEPRIMA / INVIO ============ -->
-<section>
+<!-- STEP 4 - opzioni -->
+<section class="step hidden" id="step-4">
   <div class="panel">
-    <div class="row-group-label">Destinatario e anteprima</div>
-    <div class="field">
-      <label>A: (verifica sempre prima di inviare)</label>
-      <input type="email" id="previewTo">
+    <div class="row-group-label">Note</div>
+    <div class="field"><textarea id="noteInput" rows="2" placeholder="Note aggiuntive (facoltative)"></textarea></div>
+  </div>
+
+  <div class="panel hidden" id="buonoPastoBox">
+    <div class="field-check"><input type="checkbox" id="buonoPastoCheck"><label for="buonoPastoCheck">Richiedo il secondo buono pasto</label></div>
+  </div>
+
+  <div class="panel hidden" id="registrazioneBox">
+    <div class="row-group-label">Richiesta registrazione</div>
+    <div class="choice-list" id="regChoices">
+      <label class="choice" data-reg="pagamento"><input type="radio" name="reg"><span>Pagamento</span></label>
+      <label class="choice" data-reg="recupero"><input type="radio" name="reg"><span>Recupero</span></label>
     </div>
-    <div class="field">
-      <label>Oggetto</label>
-      <input type="text" id="previewSubject">
-    </div>
-    <div class="field">
-      <label>Corpo email</label>
-      <textarea id="previewBody" rows="14"></textarea>
-    </div>
+  </div>
+
+  <div class="panel hidden" id="dataDichBox">
+    <div class="row-group-label">Data dichiarazione</div>
+    <div class="field"><input type="date" id="dataDichiarazioneInput"></div>
+  </div>
+
+  <div class="nav-row">
+    <button type="button" class="nav-btn nav-back" data-back>Indietro</button>
+    <button type="button" class="nav-btn nav-next" id="goSummaryBtn">Vai al riepilogo</button>
+  </div>
+</section>
+
+<!-- STEP 5 - riepilogo -->
+<section class="step hidden" id="step-5">
+  <div class="panel">
+    <div class="row-group-label">Destinatario</div>
+    <div class="field"><label>A: (verifica prima di inviare)</label><input type="text" id="previewTo"></div>
+    <div class="field"><label>Oggetto</label><input type="text" id="previewSubject"></div>
+  </div>
+  <div class="panel">
+    <div class="row-group-label">Anteprima</div>
+    <div class="field"><textarea id="previewBody" rows="16"></textarea></div>
     <div class="preview-actions">
-      <button type="button" class="btn-refresh" id="btnRefresh">Aggiorna anteprima</button>
-    </div>
-    <div class="preview-actions" style="padding-top:0;">
       <button type="button" class="btn-mailto" id="btnMailto">Apri nel client di posta</button>
       <button type="button" class="btn-eml" id="btnEml">Scarica .eml</button>
     </div>
   </div>
-
   <div class="security-note">
-    <strong>Come funziona l'invio.</strong> Questo strumento non ha accesso alla tua password né può collegarsi al server SMTP di Zimbra: un browser non può farlo, e comunque una password non va mai scritta in una pagina web. "Apri nel client di posta" prepara l'email (destinatario, oggetto, corpo) e la apre nel tuo programma di posta già collegato al tuo account — l'invio lo fai tu, con un click, dal tuo client. "Scarica .eml" fa la stessa cosa ma come file, utile se il testo è lungo.
+    <strong>Come funziona l'invio.</strong> Nessuna password e presente in questo file. "Apri nel client di posta" prepara l'email e la apre nel tuo programma di posta gia collegato al tuo account: l'invio lo fai tu. "Scarica .eml" fa lo stesso come file, utile per testi lunghi.
+  </div>
+  <div class="nav-row">
+    <button type="button" class="nav-btn nav-back" data-back>Indietro</button>
+    <button type="button" class="nav-btn nav-back" id="restartBtn">Ricomincia</button>
   </div>
 </section>
 
 </div>
-
 <script>
-const MITTENTE = {
-  nome: "Andrea",
-  cognome: "Pelizza",
-  cf: "PLZNDR86B12A001C",
-  email: "andrea.pelizza@vigilfuoco.it"
-};
+
+const MITTENTE = {nome:"Andrea", cognome:"Pelizza", cf:"PLZNDR86B12A001C", email:"andrea.pelizza@vigilfuoco.it"};
 const TEST_ADDRESS = "andrea.pelizza.vvf@gmail.com";
 
 const TIPOLOGIE = [
@@ -523,17 +430,17 @@ const TIPOLOGIE = [
 
 const COMANDI = [{"c":"Agrigento","pr":"AG","rg":"Sicilia","cm":"Agrigento","dz":"Sicilia","lat":37.295379,"lon":13.566121,"ind":"Viale Caduti di Marzabotto, 1, 92100, Agrigento, AG","rc":"002","rd":"028","tsc":"0922 511900","tsd":"091 6057500","tc":"","nue":"1 1 2","esc":"so.agrigento@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-agrigento","conf":["Caltanissetta","Palermo","Trapani"]},{"c":"Alessandria","pr":"AL","rg":"Piemonte","cm":"Alessandria","dz":"Piemonte","lat":44.90146,"lon":8.627335,"ind":"Corso Giuseppe Romita, 91, 15121, Alessandria, AL","rc":"022","rd":"080","tsc":"0131 316710","tsd":"011 41465200","tc":"","nue":"1 1 2","esc":"so.alessandria@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-alessandria","conf":["Asti","Genova","Pavia","Piacenza","Savona","Torino","Vercelli"]},{"c":"Ancona","pr":"AN","rg":"Marche","cm":"Ancona","dz":"Marche","lat":43.609234,"lon":13.514938,"ind":"Via Valle Miano, 50, 60125, Ancona, AN","rc":"014","rd":"008","tsc":"071 28080203","tsd":"071 227511","tc":"","nue":"1 1 2","esc":"so.ancona@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-ancona","conf":["Macerata","Perugia","Pesaro e Urbino"]},{"c":"Aosta","pr":"AO","rg":"Valle d'Aosta","cm":"Aosta","dz":"Valle d'Aosta","lat":45.740728,"lon":7.347497,"ind":"Via Croix Noire, 2, 11100, Aosta, AO","rc":"050","rd":"080","tsc":"0165 528431","tsd":"011 41465200","tc":"","nue":"1 1 2","esc":"cus.115@centraleunicavda.it","web":"https://www.regione.vda.it/protezione_civile/centrale_unica_soccorso/cusvvf_i.aspx","conf":["Biella","Torino","Vercelli"]},{"c":"Arezzo","pr":"AR","rg":"Toscana","cm":"Arezzo","dz":"Toscana","lat":43.454989,"lon":11.88418,"ind":"Via degli Accolti, 35, 52100, Arezzo, AR","rc":"088","rd":"050","tsc":"0575 350777","tsd":"055 5525600","tc":"","nue":"1 1 2","esc":"so.arezzo@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-arezzo","conf":["Firenze","Forlì-Cesena","Perugia","Pesaro e Urbino","Rimini","Siena"]},{"c":"Ascoli Piceno","pr":"AP","rg":"Marche","cm":"Ascoli Piceno","dz":"Marche","lat":42.845111,"lon":13.620114,"ind":"Via dei Gorghi, 48, 63100, Ascoli Piceno, AP","rc":"026","rd":"008","tsc":"0736 353200","tsd":"071 227511","tc":"","nue":"1 1 2","esc":"so.ascolipiceno@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-ascoli-piceno","conf":["Fermo","Macerata","Perugia","Rieti","Teramo"]},{"c":"Asti","pr":"AT","rg":"Piemonte","cm":"Asti","dz":"Piemonte","lat":44.91217,"lon":8.20517,"ind":"Via Monsignor Marello, 7, 14100, Asti, AT","rc":"016","rd":"080","tsc":"0141 413705","tsd":"011 41465200","tc":"","nue":"1 1 2","esc":"so.asti@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-asti","conf":["Alessandria","Cuneo","Savona","Torino"]},{"c":"Avellino","pr":"AV","rg":"Campania","cm":"Avellino","dz":"Campania","lat":40.907,"lon":14.783922,"ind":"Località Quattrograne, 4, 83100, Avellino, AV","rc":"066","rd":"060","tsc":"0825 709201","tsd":"081 2476114","tc":"","nue":"1 1 5","esc":"so.avellino@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-avellino","conf":["Benevento","Foggia","Napoli","Potenza","Salerno"]},{"c":"Bari","pr":"BA","rg":"Puglia","cm":"Bari","dz":"Puglia","lat":41.091453,"lon":16.889838,"ind":"Via Ottavio Tupputi, 52, 70125, Bari, BA","rc":"072","rd":"054","tsc":"080 5483257","tsd":"080 5411220","tc":"","nue":"1 1 2","esc":"so.bari@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-bari","conf":["Barletta-Andria-Trani","Brindisi","Matera","Potenza","Taranto"]},{"c":"Barletta-Andria-Trani","pr":"BT","rg":"Puglia","cm":"Barletta","dz":"Puglia","lat":41.308632,"lon":16.311277,"ind":"Via Turi, 2, 76121, Barletta, BT","rc":110,"rd":"054","tsc":"0883 1848699","tsd":"080 5411220","tc":"","nue":"1 1 2","esc":"com.barlettaandriatrani@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-barletta-andria-trani","conf":["Bari","Foggia","Potenza"]},{"c":"Belluno","pr":"BL","rg":"Veneto","cm":"Belluno","dz":"Veneto e TAA","lat":46.130014,"lon":12.194446,"ind":"Via Col da Ren, 1, 32100, Belluno, BL","rc":102,"rd":"084","tsc":"0437 940941","tsd":"049 8229211","tc":"","nue":"1 1 5","esc":"so.belluno@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-belluno","conf":["Bolzano","Pordenone","Trento","Treviso","Udine","Vicenza"]},{"c":"Benevento","pr":"BN","rg":"Campania","cm":"Benevento","dz":"Campania","lat":41.139445,"lon":14.801765,"ind":"Contrada Capodimonte, 1, 82100, Benevento, BN","rc":"062","rd":"060","tsc":"0824 372577","tsd":"081 2476114","tc":"","nue":"1 1 5","esc":"so.benevento@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-benevento","conf":["Avellino","Campobasso","Caserta","Foggia","Napoli"]},{"c":"Bergamo","pr":"BG","rg":"Lombardia","cm":"Bergamo","dz":"Lombardia","lat":45.702083,"lon":9.684451,"ind":"Via Mauro Codussi, 9, 24124, Bergamo, BG","rc":"054","rd":"014","tsc":"035 2278255","tsd":"02 8546461","tc":"035 2278211","nue":"1 1 2","esc":"so.bergamo@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-bergamo","conf":["Brescia","Cremona","Lecco","Milano","Monza e della Brianza","Sondrio"]},{"c":"Biella","pr":"BI","rg":"Piemonte","cm":"Biella","dz":"Piemonte","lat":45.55035,"lon":8.077076,"ind":"Via S. Barbara, 3/a, 13900, Biella, BI","rc":"052","rd":"080","tsc":"015 8555699","tsd":"011 41465200","tc":"","nue":"1 1 2","esc":"so.biella@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-biella","conf":["Aosta","Torino","Vercelli"]},{"c":"Bologna","pr":"BO","rg":"Emilia-Romagna","cm":"Bologna","dz":"Emilia-Romagna","lat":44.535729,"lon":11.368313,"ind":"Via Ferrarese, 166/2, 40128, Bologna, BO","rc":"032","rd":"028","tsc":"051 6385115","tsd":"051 4199512","tc":"","nue":"1 1 2","esc":"so.bologna@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-bologna","conf":["Ferrara","Firenze","Modena","Pistoia","Prato","Ravenna"]},{"c":"Bolzano","pr":"BZ","rg":"Trentino-Alto Adige","cm":"Bolzano","dz":"Veneto e TAA","lat":46.494333,"lon":11.318592,"ind":"Viale Druso, 116, 39100, Bolzano, BZ","rc":"004","rd":"084","tsc":"0471 202222","tsd":"049 8229211","tc":"","nue":"1 1 2","esc":"cpvvf-bz@provincia.bz.it","web":"https://www.provincia.bz.it/sicurezza-protezione-civile/antincendio/corpo-permanente-vvf.asp","conf":["Belluno","Sondrio","Trento"]},{"c":"Brescia","pr":"BS","rg":"Lombardia","cm":"Brescia","dz":"Lombardia","lat":45.561196,"lon":10.214577,"ind":"Via delle Scuole, 6, 25128, Brescia, BS","rc":"012","rd":"014","tsc":"030 3719219","tsd":"02 8546461","tc":"","nue":"1 1 2","esc":"so.brescia@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-brescia","conf":["Bergamo","Cremona","Mantova","Sondrio","Trento","Verona"]},{"c":"Brindisi","pr":"BR","rg":"Puglia","cm":"Brindisi","dz":"Puglia","lat":40.64468,"lon":17.92693,"ind":"Via Nicola Brandi, , 72100, Brindisi, BR","rc":"082","rd":"054","tsc":"0831 554402","tsd":"080 5411220","tc":"","nue":"1 1 2","esc":"so.brindisi@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-brindisi","conf":["Bari","Lecce","Taranto"]},{"c":"Cagliari","pr":"CA","rg":"Sardegna","cm":"Cagliari","dz":"Sardegna","lat":39.2427,"lon":9.15188,"ind":"Viale Marconi, 300, 09131, Cagliari, CA","rc":"050","rd":"062","tsc":"070 4749374","tsd":"070 528061","tc":"","nue":"1 1 2","esc":"so.cagliari@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-cagliari","conf":["Nuoro","Oristano"]},{"c":"Caltanissetta","pr":"CL","rg":"Sicilia","cm":"Caltanissetta","dz":"Sicilia","lat":37.493099,"lon":14.043109,"ind":"Viale della Regione, 192, 93100, Caltanissetta, CL","rc":"010","rd":"028","tsc":"0934 510200","tsd":"091 6057500","tc":"","nue":"1 1 2","esc":"so.caltanissetta@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-caltanissetta","conf":["Agrigento","Catania","Enna","Palermo","Ragusa"]},{"c":"Campobasso","pr":"CB","rg":"Molise","cm":"Campobasso","dz":"Molise","lat":41.566684,"lon":14.665048,"ind":"Via Sant'Antonio dei Lazzari, 5, 86100, Campobasso, CB","rc":"036","rd":"006","tsc":"0874 604190","tsd":"0874 604180","tc":"","nue":"1 1 2","esc":"so.campobasso@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-campobasso","conf":["Benevento","Caserta","Chieti","Foggia","Isernia"]},{"c":"Caserta","pr":"CE","rg":"Campania","cm":"Caserta","dz":"Campania","lat":41.08044,"lon":14.35766,"ind":"Via Giovanni Falcone, , 81100, Caserta, CE","rc":"070","rd":"060","tsc":"0823 4905555","tsd":"081 2476114","tc":"","nue":"1 1 5","esc":"so.caserta@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-caserta","conf":["Benevento","Campobasso","Frosinone","Isernia","Latina","Napoli"]},{"c":"Catania","pr":"CT","rg":"Sicilia","cm":"Catania","dz":"Sicilia","lat":37.515386,"lon":15.07598,"ind":"Via Cesare Beccaria, 31, 95123, Catania, CT","rc":"006","rd":"028","tsc":"095 7248600","tsd":"091 6057500","tc":"","nue":"1 1 2","esc":"so.catania@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-catania","conf":["Caltanissetta","Enna","Messina","Ragusa","Siracusa"]},{"c":"Catanzaro","pr":"CZ","rg":"Calabria","cm":"Catanzaro","dz":"Calabria","lat":38.91765,"lon":16.58478,"ind":"Via Cortese Vinicio, 11, 88100, Catanzaro, CZ","rc":"004","rd":"042","tsc":"0961 531960","tsd":"0961 7175111","tc":"","nue":"1 1 2","esc":"so.catanzaro@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-catanzaro","conf":["Cosenza","Crotone","Reggio Calabria","Vibo Valentia"]},{"c":"Chieti","pr":"CH","rg":"Abruzzo","cm":"Chieti","dz":"Abruzzo","lat":42.360796,"lon":14.193533,"ind":"Via Filippo Masci, 115, 66100, Chieti, CH","rc":"052","rd":"004","tsc":"0871 3177214","tsd":"086 234931","tc":"","nue":"1 1 2","esc":"so.chieti@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-chieti","conf":["Campobasso","Isernia","L'Aquila","Pescara"]},{"c":"Como","pr":"CO","rg":"Lombardia","cm":"Como","dz":"Lombardia","lat":45.800936,"lon":9.095749,"ind":"Via Valleggio, 15, 22100, Como, CO","rc":"094","rd":"014","tsc":"031 3313322","tsd":"02 8546461","tc":"031 331331","nue":"1 1 2","esc":"so.como@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-como","conf":["Lecco","Monza e della Brianza","Sondrio","Varese"]},{"c":"Cosenza","pr":"CS","rg":"Calabria","cm":"Cosenza","dz":"Calabria","lat":39.300745,"lon":16.247562,"ind":"Viale della Repubblica, 56, 87100, Cosenza, CS","rc":"024","rd":"042","tsc":"0984 8952611","tsd":"0961 7175111","tc":"","nue":"1 1 2","esc":"so.cosenza@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-cosenza","conf":["Catanzaro","Crotone","Matera","Potenza"]},{"c":"Cremona","pr":"CR","rg":"Lombardia","cm":"Cremona","dz":"Lombardia","lat":45.150983,"lon":10.025946,"ind":"Via Nazario Sauro, 14, 26100, Cremona, CR","rc":"008","rd":"014","tsc":"0372 415790","tsd":"02 8546461","tc":"","nue":"1 1 2","esc":"so.cremona@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-cremona","conf":["Bergamo","Brescia","Lodi","Mantova","Milano","Parma","Piacenza"]},{"c":"Crotone","pr":"KR","rg":"Calabria","cm":"Crotone","dz":"Calabria","lat":39.072108,"lon":17.112836,"ind":"Via Gioacchino da Fiore, , 88900, Crotone, KR","rc":"012","rd":"042","tsc":"0962 9684610","tsd":"0961 7175111","tc":"","nue":"1 1 2","esc":"so.crotone@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-crotone","conf":["Catanzaro","Cosenza"]},{"c":"Cuneo","pr":"CN","rg":"Piemonte","cm":"Cuneo","dz":"Piemonte","lat":44.373638,"lon":7.524173,"ind":"Corso Alcide de Gasperi, 71, 12100, Cuneo, CN","rc":"086","rd":"080","tsc":"0171 3290","tsd":"011 41465200","tc":"","nue":"1 1 2","esc":"so.cuneo@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-cuneo","conf":["Asti","Imperia","Savona","Torino"]},{"c":"Enna","pr":"EN","rg":"Sicilia","cm":"Enna","dz":"Sicilia","lat":37.548773,"lon":14.302971,"ind":"SS561 Pergusina, , 94100, Enna, EN","rc":"020","rd":"028","tsc":"0935 530901","tsd":"091 6057500","tc":"","nue":"1 1 2","esc":"so.enna@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-enna","conf":["Caltanissetta","Catania","Messina","Palermo"]},{"c":"Fermo","pr":"FM","rg":"Marche","cm":"Fermo","dz":"Marche","lat":43.168099,"lon":13.741514,"ind":"Via Giuseppe Leti, 105, 63900, Fermo, FM","rc":118,"rd":"008","tsc":"0734 217038","tsd":"071 227511","tc":"","nue":"1 1 2","esc":"so.fermo@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-fermo","conf":["Ascoli Piceno","Macerata"]},{"c":"Ferrara","pr":"FE","rg":"Emilia-Romagna","cm":"Ferrara","dz":"Emilia-Romagna","lat":44.826428,"lon":11.594326,"ind":"Via Giovanni Verga, 125, 44124, Ferrara, FE","rc":"090","rd":"028","tsc":"0532 973100","tsd":"051 4199512","tc":"","nue":"1 1 2","esc":"so.ferrara@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-ferrara","conf":["Bologna","Mantova","Modena","Ravenna","Rovigo"]},{"c":"Firenze","pr":"FI","rg":"Toscana","cm":"Firenze","dz":"Toscana","lat":43.778416,"lon":11.272012,"ind":"Via Giuseppe la Farina, 18, 50132, Firenze, FI","rc":112,"rd":"050","tsc":"055 2490305","tsd":"055 5525600","tc":"","nue":"1 1 2","esc":"so.firenze@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-firenze","conf":["Arezzo","Bologna","Forlì-Cesena","Lucca","Pisa","Pistoia","Prato","Ravenna","Siena"]},{"c":"Foggia","pr":"FG","rg":"Puglia","cm":"Foggia","dz":"Puglia","lat":41.449231,"lon":15.560242,"ind":"Via Napoli, , 71122, Foggia, FG","rc":104,"rd":"054","tsc":"0881 309099","tsd":"080 5411220","tc":"","nue":"1 1 2","esc":"so.foggia@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-foggia","conf":["Avellino","Barletta-Andria-Trani","Benevento","Campobasso","Potenza"]},{"c":"Forlì-Cesena","pr":"FC","rg":"Emilia-Romagna","cm":"Forlì","dz":"Emilia-Romagna","lat":44.213465,"lon":12.061362,"ind":"Viale Roma, 97, 47122, Forlì, FC","rc":"038","rd":"028","tsc":"0543 410855","tsd":"051 4199512","tc":"0543 410803","nue":"1 1 2","esc":"so.forli@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-forli-cesena","conf":["Arezzo","Firenze","Ravenna","Rimini"]},{"c":"Frosinone","pr":"FR","rg":"Lazio","cm":"Frosinone","dz":"Lazio","lat":41.637815,"lon":13.33066,"ind":"Viale Volsci, 104, 03100, Frosinone, FR","rc":"038","rd":"020","tsc":"0775 884800","tsd":"06 66179600","tc":"","nue":"1 1 2","esc":"so.frosinone@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-frosinone","conf":["Caserta","Isernia","L'Aquila","Latina","Roma"]},{"c":"Genova","pr":"GE","rg":"Liguria","cm":"Genova","dz":"Liguria","lat":44.409213,"lon":8.905213,"ind":"Via Ariberto Albertazzi, 2, 16149, Genova, GE","rc":"076","rd":"046","tsc":"010 24411","tsd":"010 5455738","tc":"","nue":"1 1 2","esc":"so.genova@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-genova","conf":["Alessandria","La Spezia","Parma","Piacenza","Savona"]},{"c":"Gorizia","pr":"GO","rg":"Friuli Venezia Giulia","cm":"Gorizia","dz":"Friuli Venezia Giulia","lat":45.939569,"lon":13.609605,"ind":"Via dei Leoni, 33, 34170, Gorizia, GO","rc":"050","rd":"036","tsc":"0481 596399","tsd":"040 7707511","tc":"","nue":"1 1 2","esc":"so.gorizia@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-gorizia","conf":["Trieste","Udine"]},{"c":"Grosseto","pr":"GR","rg":"Toscana","cm":"Grosseto","dz":"Toscana","lat":42.77841,"lon":11.10975,"ind":"Via Paolo Carnicelli, 2, 58100, Grosseto, GR","rc":102,"rd":"050","tsc":"0564 444699","tsd":"055 5525600","tc":"","nue":"1 1 2","esc":"so.grosseto@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-grosseto","conf":["Livorno","Pisa","Siena","Viterbo"]},{"c":"Imperia","pr":"IM","rg":"Liguria","cm":"Imperia","dz":"Liguria","lat":43.88666,"lon":8.02639,"ind":"Via Giovanni Strato, 2, 18100, Imperia, IM","rc":"084","rd":"046","tsc":"0183 2839699","tsd":"010 5455738","tc":"","nue":"1 1 2","esc":"so.imperia@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-imperia","conf":["Cuneo","Savona"]},{"c":"Isernia","pr":"IS","rg":"Molise","cm":"Isernia","dz":"Molise","lat":41.58718,"lon":14.239528,"ind":"Piazzale Angelo Guglielmi 2, 12, 86170, Isernia, IS","rc":"028","rd":"006","tsc":"0865 415820","tsd":"0874 604180","tc":"","nue":"1 1 2","esc":"so.isernia@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-isernia","conf":["Campobasso","Caserta","Chieti","Frosinone","L'Aquila"]},{"c":"L'Aquila","pr":"AQ","rg":"Abruzzo","cm":"L'Aquila","dz":"Abruzzo","lat":42.353921,"lon":13.409381,"ind":"Via Pescara, 87, 67100, L'Aquila, AQ","rc":"064","rd":"004","tsc":"0862 6609300","tsd":"086 234931","tc":"","nue":"1 1 2","esc":"so.laquila@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-laquila","conf":["Chieti","Frosinone","Isernia","Pescara","Rieti","Roma","Teramo"]},{"c":"La Spezia","pr":"SP","rg":"Liguria","cm":"La Spezia","dz":"Liguria","lat":44.116546,"lon":9.829936,"ind":"Via Antoniana, 20, 19125, La Spezia, SP","rc":"068","rd":"046","tsc":"0187 523564","tsd":"010 5455738","tc":"","nue":"1 1 2","esc":"so.laspezia@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-la-spezia","conf":["Genova","Massa-Carrara","Parma"]},{"c":"Latina","pr":"LT","rg":"Lazio","cm":"Latina","dz":"Lazio","lat":41.474515,"lon":12.903124,"ind":"Piazzale G. Carturan, 1, 04100, Latina, LT","rc":"084","rd":"020","tsc":"0773 4086500","tsd":"06 66179600","tc":"","nue":"1 1 2","esc":"so.latina@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-latina","conf":["Caserta","Frosinone","Roma"]},{"c":"Lecce","pr":"LE","rg":"Puglia","cm":"Lecce","dz":"Puglia","lat":40.343462,"lon":18.158421,"ind":"Viale Giuseppe Grassi, 86, 73100, Lecce, LE","rc":"094","rd":"054","tsc":"0832 223300","tsd":"080 5411220","tc":"","nue":"1 1 2","esc":"so.lecce@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-lecce","conf":["Brindisi","Taranto"]},{"c":"Lecco","pr":"LC","rg":"Lombardia","cm":"Lecco","dz":"Lombardia","lat":45.842195,"lon":9.400329,"ind":"Piazza Bione, 12, 23900, Lecco, LC","rc":110,"rd":"014","tsc":"0341 364251","tsd":"02 8546461","tc":"","nue":"1 1 2","esc":"so.lecco@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-lecco","conf":["Bergamo","Como","Monza e della Brianza","Sondrio"]},{"c":"Livorno","pr":"LI","rg":"Toscana","cm":"Livorno","dz":"Toscana","lat":43.534227,"lon":10.324384,"ind":"Via Campania, 5, 57124, Livorno, LI","rc":"078","rd":"050","tsc":"0586 868142","tsd":"055 5525600","tc":"","nue":"1 1 2","esc":"so.livorno@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-livorno","conf":["Grosseto","Pisa"]},{"c":"Lodi","pr":"LO","rg":"Lombardia","cm":"Lodi","dz":"Lombardia","lat":45.295965,"lon":9.521598,"ind":"Viale Piacenza, 83, 26900, Lodi, LO","rc":"064","rd":"014","tsc":"0371 32520","tsd":"02 8546461","tc":"0371 428101","nue":"1 1 2","esc":"so.lodi@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-lodi","conf":["Cremona","Milano","Pavia","Piacenza"]},{"c":"Lucca","pr":"LU","rg":"Toscana","cm":"Lucca","dz":"Toscana","lat":43.852578,"lon":10.517598,"ind":"Via Barbantini, 896/B, 55100, Lucca, LU","rc":"058","rd":"050","tsc":"0583 430044","tsd":"055 5525600","tc":"","nue":"1 1 2","esc":"so.lucca@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-lucca","conf":["Firenze","Massa-Carrara","Modena","Pisa","Pistoia","Reggio Emilia"]},{"c":"Macerata","pr":"MC","rg":"Marche","cm":"Macerata","dz":"Marche","lat":43.293195,"lon":13.420793,"ind":"Viale dell'Indipendenza, 158, 62100, Macerata, MC","rc":"002","rd":"008","tsc":"0733 279496","tsd":"071 227511","tc":"","nue":"1 1 2","esc":"so.macerata@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-macerata","conf":["Ancona","Ascoli Piceno","Fermo","Perugia"]},{"c":"Mantova","pr":"MN","rg":"Lombardia","cm":"Mantova","dz":"Lombardia","lat":45.147746,"lon":10.794115,"ind":"Viale Risorgimento, 16, 46100, Mantova, MN","rc":"020","rd":"014","tsc":"0376 227777","tsd":"02 8546461","tc":"","nue":"1 1 2","esc":"so.mantova@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-mantova","conf":["Brescia","Cremona","Ferrara","Modena","Parma","Reggio Emilia","Rovigo","Verona"]},{"c":"Massa-Carrara","pr":"MS","rg":"Toscana","cm":"Massa","dz":"Toscana","lat":44.025649,"lon":10.098371,"ind":"Via Massa Avenza, 121/P, 54100, Massa, MS","rc":"096","rd":"050","tsc":"0585 2597100","tsd":"055 5525600","tc":"","nue":"1 1 2","esc":"so.massacarrara@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-massa-carrara","conf":["La Spezia","Lucca","Parma","Reggio Emilia"]},{"c":"Matera","pr":"MT","rg":"Basilicata","cm":"Matera","dz":"Basilicata","lat":40.663147,"lon":16.59616,"ind":"Via Giuseppe Giglio, 3, 75100, Matera, MT","rc":112,"rd":"078","tsc":"0835 338301","tsd":"0971 609511","tc":"","nue":"1 1 5","esc":"so.matera@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-matera","conf":["Bari","Cosenza","Potenza","Taranto"]},{"c":"Messina","pr":"ME","rg":"Sicilia","cm":"Messina","dz":"Sicilia","lat":38.176526,"lon":15.550093,"ind":"Via Antonio Salandra, 39, 98124, Messina, ME","rc":"032","rd":"028","tsc":"090 65074200","tsd":"091 6057500","tc":"","nue":"1 1 2","esc":"so.messina@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-messina","conf":["Catania","Enna","Palermo"]},{"c":"Milano","pr":"MI","rg":"Lombardia","cm":"Milano","dz":"Lombardia","lat":45.485159,"lon":9.174045,"ind":"Via Messina, 35/37, 20100, Milano, MI","rc":"026","rd":"014","tsc":"02 3190301","tsd":"02 8546461","tc":"","nue":"1 1 2","esc":"so.milano@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-milano","conf":["Bergamo","Cremona","Lodi","Monza e della Brianza","Novara","Pavia"]},{"c":"Modena","pr":"MO","rg":"Emilia-Romagna","cm":"Modena","dz":"Emilia-Romagna","lat":44.644948,"lon":10.900411,"ind":"Strada Formigina, 125, 41126, Modena, MO","rc":"018","rd":"028","tsc":"059 824701","tsd":"051 4199512","tc":"","nue":"1 1 2","esc":"so.modena@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-modena","conf":["Bologna","Ferrara","Lucca","Mantova","Pistoia","Reggio Emilia"]},{"c":"Monza e della Brianza","pr":"MB","rg":"Lombardia","cm":"Monza","dz":"Lombardia","lat":45.579596,"lon":9.261129,"ind":"Via Felice Cavallotti, 67, 20900, Monza, MB","rc":118,"rd":"014","tsc":"039 322222","tsd":"02 8546461","tc":"","nue":"1 1 2","esc":"so.monza@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-monza","conf":["Bergamo","Como","Lecco","Milano","Varese"]},{"c":"Napoli","pr":"NA","rg":"Campania","cm":"Napoli","dz":"Campania","lat":40.865595,"lon":14.292197,"ind":"Via Leopoldo Tarantini, 1, 80143, Napoli, NA","rc":"080","rd":"060","tsc":"081 2595185","tsd":"081 2476114","tc":"","nue":"1 1 5","esc":"so.napoli@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-napoli","conf":["Avellino","Benevento","Caserta","Salerno"]},{"c":"Novara","pr":"NO","rg":"Piemonte","cm":"Novara","dz":"Piemonte","lat":45.430554,"lon":8.605112,"ind":"Via Pietro Generali, 19, 28100, Novara, NO","rc":"088","rd":"080","tsc":"0321 4406201","tsd":"011 41465200","tc":"","nue":"1 1 2","esc":"so.novara@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-novara","conf":["Milano","Pavia","Varese","Verbano-Cusio-Ossola","Vercelli"]},{"c":"Nuoro","pr":"NU","rg":"Sardegna","cm":"Nuoro","dz":"Sardegna","lat":40.320536,"lon":9.303766,"ind":"Viale Sandro Pertini, , 08100, Nuoro, NU","rc":"052","rd":"062","tsc":"0784 226601","tsd":"070 528061","tc":"","nue":"1 1 2","esc":"so.nuoro@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-nuoro","conf":["Cagliari","Oristano","Sassari"]},{"c":"Oristano","pr":"OR","rg":"Sardegna","cm":"Oristano","dz":"Sardegna","lat":39.891775,"lon":8.597639,"ind":"Via del Porto, 8, 09170, Oristano, OR","rc":"054","rd":"062","tsc":"0783 375000","tsd":"070 528061","tc":"","nue":"1 1 2","esc":"so.oristano@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-oristano","conf":["Cagliari","Nuoro","Sassari"]},{"c":"Padova","pr":"PD","rg":"Veneto","cm":"Padova","dz":"Veneto e TAA","lat":45.408415,"lon":11.90819,"ind":"Via San Fidenzio, 3, 35129, Padova, PD","rc":"072","rd":"084","tsc":"049 7921786","tsd":"049 8229211","tc":"049 7921711","nue":"1 1 5","esc":"so.padova@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-padova","conf":["Rovigo","Treviso","Venezia","Verona","Vicenza"]},{"c":"Palermo","pr":"PA","rg":"Sicilia","cm":"Palermo","dz":"Sicilia","lat":38.127864,"lon":13.367714,"ind":"Via Alessandro Scarlatti, 16, 90134, Palermo, PA","rc":114,"rd":"028","tsc":"091 6059382","tsd":"091 6057500","tc":"","nue":"1 1 2","esc":"so.palermo@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-palermo","conf":["Agrigento","Caltanissetta","Enna","Messina","Trapani"]},{"c":"Parma","pr":"PR","rg":"Emilia-Romagna","cm":"Parma","dz":"Emilia-Romagna","lat":44.786328,"lon":10.303721,"ind":"Via Chiavari, 11, 43125, Parma, PR","rc":"006","rd":"028","tsc":"0521 953201","tsd":"051 4199512","tc":"","nue":"1 1 2","esc":"so.parma@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-parma","conf":["Cremona","Genova","La Spezia","Mantova","Massa-Carrara","Piacenza","Reggio Emilia"]},{"c":"Pavia","pr":"PV","rg":"Lombardia","cm":"Pavia","dz":"Lombardia","lat":45.188858,"lon":9.168954,"ind":"Via Camillo Campari, 34, 27100, Pavia, PV","rc":"030","rd":"014","tsc":"0382 439601","tsd":"02 8546461","tc":"","nue":"1 1 2","esc":"so.pavia@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-pavia","conf":["Alessandria","Lodi","Milano","Novara","Piacenza","Vercelli"]},{"c":"Perugia","pr":"PG","rg":"Umbria","cm":"Perugia","dz":"Umbria","lat":43.091218,"lon":12.363121,"ind":"Via Gianluca Pennetti Pennella, , 06129, Perugia, PG","rc":"034","rd":"040","tsc":"075 50639600","tsd":"075 54472","tc":"","nue":"1 1 2","esc":"so.perugia@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-perugia","conf":["Ancona","Arezzo","Ascoli Piceno","Macerata","Pesaro e Urbino","Rieti","Siena","Terni"]},{"c":"Pesaro e Urbino","pr":"PU","rg":"Marche","cm":"Pesaro","dz":"Marche","lat":43.910795,"lon":12.88982,"ind":"SS 16 Adriatica, 92, 61121, Pesaro, PU","rc":"062","rd":"008","tsc":"0721 4088201","tsd":"071 227511","tc":"","nue":"1 1 2","esc":"so.pesaro@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-pesaro-urbino","conf":["Ancona","Arezzo","Perugia","Rimini"]},{"c":"Pescara","pr":"PE","rg":"Abruzzo","cm":"Pescara","dz":"Abruzzo","lat":42.452913,"lon":14.221218,"ind":"Viale Pindaro, 2/8, 65127, Pescara, PE","rc":"018","rd":"004","tsc":"085 4554662","tsd":"086 234931","tc":"","nue":"1 1 2","esc":"so.pescara@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-pescara","conf":["Chieti","L'Aquila","Teramo"]},{"c":"Piacenza","pr":"PC","rg":"Emilia-Romagna","cm":"Piacenza","dz":"Emilia-Romagna","lat":45.025573,"lon":9.687293,"ind":"Strada Val Nure, 9A, 29122, Piacenza, PC","rc":"024","rd":"028","tsc":"0523 607851","tsd":"051 4199512","tc":"","nue":"1 1 2","esc":"so.piacenza@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-piacenza","conf":["Alessandria","Cremona","Genova","Lodi","Parma","Pavia"]},{"c":"Pisa","pr":"PI","rg":"Toscana","cm":"Pisa","dz":"Toscana","lat":43.709527,"lon":10.410812,"ind":"Via Giacomo Matteotti, 1, 56100, Pisa, PI","rc":"082","rd":"050","tsc":"050 941911","tsd":"055 5525600","tc":"","nue":"1 1 2","esc":"so.pisa@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-pisa","conf":["Firenze","Grosseto","Livorno","Lucca","Siena"]},{"c":"Pistoia","pr":"PT","rg":"Toscana","cm":"Pistoia","dz":"Toscana","lat":43.921804,"lon":10.922521,"ind":"Via Luigi Russo, 77, 51100, Pistoia, PT","rc":"080","rd":"050","tsc":"0573 984392","tsd":"055 5525600","tc":"","nue":"1 1 2","esc":"so.pistoia@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-pistoia","conf":["Bologna","Firenze","Lucca","Modena","Prato"]},{"c":"Pordenone","pr":"PN","rg":"Friuli Venezia Giulia","cm":"Pordenone","dz":"Friuli Venezia Giulia","lat":45.970836,"lon":12.661217,"ind":"Via Interna, 14, 33170, Pordenone, PN","rc":"076","rd":"036","tsc":"0434 391200","tsd":"040 7707511","tc":"0434 391111","nue":"1 1 2","esc":"so.pordenone@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-pordenone","conf":["Belluno","Treviso","Udine","Venezia"]},{"c":"Potenza","pr":"PZ","rg":"Basilicata","cm":"Potenza","dz":"Basilicata","lat":40.644781,"lon":15.833181,"ind":"Via Appia, 321/b, 85100, Potenza, PZ","rc":116,"rd":"078","tsc":"0971 658198","tsd":"0971 609511","tc":"","nue":"1 1 5","esc":"so.potenza@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-potenza","conf":["Avellino","Bari","Barletta-Andria-Trani","Cosenza","Foggia","Matera","Salerno"]},{"c":"Prato","pr":"PO","rg":"Toscana","cm":"Prato","dz":"Toscana","lat":43.85834,"lon":11.066279,"ind":"Via Paronese, 100, 59100, Prato, PO","rc":114,"rd":"050","tsc":"0574 6278200","tsd":"055 5525600","tc":"","nue":"1 1 2","esc":"so.prato@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-prato","conf":["Bologna","Firenze","Pistoia"]},{"c":"Ragusa","pr":"RG","rg":"Sicilia","cm":"Ragusa","dz":"Sicilia","lat":36.923915,"lon":14.719324,"ind":"Viale dei Platani, 2, 97100, Ragusa, RG","rc":"016","rd":"028","tsc":"0932 658288","tsd":"091 6057500","tc":"","nue":"1 1 2","esc":"so.ragusa@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-ragusa","conf":["Caltanissetta","Catania","Siracusa"]},{"c":"Ravenna","pr":"RA","rg":"Emilia-Romagna","cm":"Ravenna","dz":"Emilia-Romagna","lat":44.407593,"lon":12.189539,"ind":"Viale Vincenzo Randi, 25, 48121, Ravenna, RA","rc":"086","rd":"028","tsc":"0544 281515","tsd":"051 4199512","tc":"","nue":"1 1 2","esc":"so.ravenna@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-ravenna","conf":["Bologna","Ferrara","Firenze","Forlì-Cesena"]},{"c":"Reggio Calabria","pr":"RC","rg":"Calabria","cm":"Reggio Calabria","dz":"Calabria","lat":38.090289,"lon":15.64555,"ind":"Via Sbarre Superiori, 115, 89132, Reggio Calabria, RC","rc":"040","rd":"042","tsc":"0965 632601","tsd":"0961 7175111","tc":"","nue":"1 1 2","esc":"so.reggiocalabria@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-reggio-calabria","conf":["Catanzaro","Vibo Valentia"]},{"c":"Reggio Emilia","pr":"RE","rg":"Emilia-Romagna","cm":"Reggio Emilia","dz":"Emilia-Romagna","lat":44.687594,"lon":10.618521,"ind":"Via della Canalina, 8, 42123, Reggio Emilia, RE","rc":"010","rd":"028","tsc":"0522 325490","tsd":"051 4199512","tc":"","nue":"1 1 2","esc":"so.reggioemilia@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-reggio-emilia","conf":["Lucca","Mantova","Massa-Carrara","Modena","Parma"]},{"c":"Rieti","pr":"RI","rg":"Lazio","cm":"Rieti","dz":"Lazio","lat":42.396047,"lon":12.859292,"ind":"Via Sacchetti Sassetti, 1, 02100, Rieti, RI","rc":"068","rd":"020","tsc":"0746 2812200","tsd":"06 66179600","tc":"","nue":"1 1 2","esc":"so.rieti@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-rieti","conf":["Ascoli Piceno","L'Aquila","Perugia","Roma","Teramo","Terni","Viterbo"]},{"c":"Rimini","pr":"RN","rg":"Emilia-Romagna","cm":"Rimini","dz":"Emilia-Romagna","lat":44.037589,"lon":12.597118,"ind":"Via Bernardino Varisco, 1/a, 47924, Rimini, RN","rc":"060","rd":"028","tsc":"0541 478059","tsd":"051 4199512","tc":"","nue":"1 1 2","esc":"so.rimini@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-rimini","conf":["Arezzo","Forlì-Cesena","Pesaro e Urbino"]},{"c":"Roma","pr":"RM","rg":"Lazio","cm":"Roma","dz":"Lazio","lat":41.89996,"lon":12.491037,"ind":"Via Genova, 1, 00184, Roma, RM","rc":"044","rd":"020","tsc":"06 46722699","tsd":"06 66179600","tc":"","nue":"1 1 2","esc":"so.roma@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-roma","conf":["Frosinone","L'Aquila","Latina","Rieti","Viterbo"]},{"c":"Rovigo","pr":"RO","rg":"Veneto","cm":"Rovigo","dz":"Veneto e TAA","lat":45.077112,"lon":11.803715,"ind":"Via dell'Ippodromo, 4/6, 45100, Rovigo, RO","rc":106,"rd":"084","tsc":"0425 398911","tsd":"049 8229211","tc":"","nue":"1 1 5","esc":"so.rovigo@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-rovigo","conf":["Ferrara","Mantova","Padova","Venezia","Verona"]},{"c":"Salerno","pr":"SA","rg":"Campania","cm":"Salerno","dz":"Campania","lat":40.665646,"lon":14.810406,"ind":"Via Sant' Eustachio, 35, 84133, Salerno, SA","rc":"074","rd":"060","tsc":"089 3089400","tsd":"081 2476114","tc":"","nue":"1 1 5","esc":"so.salerno@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-salerno","conf":["Avellino","Napoli","Potenza"]},{"c":"Sassari","pr":"SS","rg":"Sardegna","cm":"Sassari","dz":"Sardegna","lat":40.718855,"lon":8.570639,"ind":"Piazza Conte di Moriana, 1, 07100, Sassari, SS","rc":"056","rd":"062","tsc":"079 2831201","tsd":"070 528061","tc":"","nue":"1 1 2","esc":"so.sassari@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-sassari","conf":["Nuoro","Oristano"]},{"c":"Savona","pr":"SV","rg":"Liguria","cm":"Savona","dz":"Liguria","lat":44.292153,"lon":8.455497,"ind":"Via Nizza, 35, 17100, Savona, SV","rc":"092","rd":"046","tsc":"019 264753","tsd":"010 5455738","tc":"","nue":"1 1 2","esc":"so.savona@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-savona","conf":["Alessandria","Asti","Cuneo","Genova","Imperia"]},{"c":"Siena","pr":"SI","rg":"Toscana","cm":"Siena","dz":"Toscana","lat":43.33205,"lon":11.31339,"ind":"Strada del Ruffolo, 2, 53100, Siena, SI","rc":"070","rd":"050","tsc":"0577 248947","tsd":"055 5525600","tc":"","nue":"1 1 2","esc":"so.siena@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-siena","conf":["Arezzo","Firenze","Grosseto","Perugia","Pisa","Terni","Viterbo"]},{"c":"Siracusa","pr":"SR","rg":"Sicilia","cm":"Siracusa","dz":"Sicilia","lat":37.07827,"lon":15.28745,"ind":"Via Augusto Von Platen, 35, 96100, Siracusa, SR","rc":"048","rd":"028","tsc":"0931 481901","tsd":"091 6057500","tc":"","nue":"1 1 2","esc":"so.siracusa@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-siracusa","conf":["Catania","Ragusa"]},{"c":"Sondrio","pr":"SO","rg":"Lombardia","cm":"Sondrio","dz":"Lombardia","lat":46.16267,"lon":9.8616,"ind":"Via Giuliani, 27/21, 23100, Sondrio, SO","rc":"046","rd":"014","tsc":"0342 533001","tsd":"02 8546461","tc":"","nue":"1 1 2","esc":"so.sondrio@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-sondrio","conf":["Bergamo","Bolzano","Brescia","Como","Lecco","Trento"]},{"c":"Taranto","pr":"TA","rg":"Puglia","cm":"Taranto","dz":"Puglia","lat":40.443644,"lon":17.263883,"ind":"Piazzale Nicola Resta, , 74121, Taranto, TA","rc":108,"rd":"054","tsc":"099 7766220","tsd":"080 5411220","tc":"","nue":"1 1 2","esc":"so.taranto@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-taranto","conf":["Bari","Brindisi","Lecce","Matera"]},{"c":"Teramo","pr":"TE","rg":"Abruzzo","cm":"Teramo","dz":"Abruzzo","lat":42.656955,"lon":13.69331,"ind":"Via Armando Diaz, 3, 64100, Teramo, TE","rc":"056","rd":"004","tsc":"0861 3234474","tsd":"086 234931","tc":"","nue":"1 1 2","esc":"so.teramo@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-teramo","conf":["Ascoli Piceno","L'Aquila","Pescara","Rieti"]},{"c":"Terni","pr":"TR","rg":"Umbria","cm":"Terni","dz":"Umbria","lat":42.56003,"lon":12.65298,"ind":"Viale E. Proietti Divi, 115, 05100, Terni, TR","rc":"012","rd":"040","tsc":"0744 54649","tsd":"075 54472","tc":"","nue":"1 1 2","esc":"so.terni@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-terni","conf":["Perugia","Rieti","Siena","Viterbo"]},{"c":"Torino","pr":"TO","rg":"Piemonte","cm":"Torino","dz":"Piemonte","lat":45.088278,"lon":7.649333,"ind":"Corso Regina Margherita, 330, 10143, Torino, TO","rc":"056","rd":"080","tsc":"011 7422777","tsd":"011 41465200","tc":"","nue":"1 1 2","esc":"so.torino@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-torino","conf":["Alessandria","Aosta","Asti","Biella","Cuneo","Vercelli"]},{"c":"Trapani","pr":"TP","rg":"Sicilia","cm":"Trapani","dz":"Sicilia","lat":38.01199,"lon":12.57833,"ind":"Strada Palermo-Milo, , 91100, Trapani, TP","rc":"036","rd":"028","tsc":"0923 550380","tsd":"091 6057500","tc":"","nue":"1 1 2","esc":"so.trapani@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-trapani","conf":["Agrigento","Palermo"]},{"c":"Trento","pr":"TN","rg":"Trentino-Alto Adige","cm":"Trento","dz":"Veneto e TAA","lat":46.076589,"lon":11.1229,"ind":"Via Secondo da Trento, 2, 38121, Trento, TN","rc":"042","rd":"084","tsc":"0461 492298","tsd":"049 8229211","tc":"","nue":"1 1 2","esc":"so115.trento@provincia.tn.it","web":"https://www.provincia.tn.it/Amministrazione/Strutture-organizzative/Servizio-antincendi-e-protezione-civile/(people)/78","conf":["Belluno","Bolzano","Brescia","Sondrio","Verona","Vicenza"]},{"c":"Treviso","pr":"TV","rg":"Veneto","cm":"Treviso","dz":"Veneto e TAA","lat":45.671993,"lon":12.216606,"ind":"Via Santa Barbara, 5, 31100, Treviso, TV","rc":"092","rd":"084","tsc":"0422 358100","tsd":"049 8229211","tc":"","nue":"1 1 5","esc":"so.treviso@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-treviso","conf":["Belluno","Padova","Pordenone","Venezia","Vicenza"]},{"c":"Trieste","pr":"TS","rg":"Friuli Venezia Giulia","cm":"Trieste","dz":"Friuli Venezia Giulia","lat":45.63651,"lon":13.77961,"ind":"Via Bartolomeo D'Alviano, 15/1, 34144, Trieste, TS","rc":"080","rd":"036","tsc":"040 3789924","tsd":"040 7707511","tc":"","nue":"1 1 2","esc":"so.trieste@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-trieste","conf":["Gorizia"]},{"c":"Udine","pr":"UD","rg":"Friuli Venezia Giulia","cm":"Udine","dz":"Friuli Venezia Giulia","lat":46.04706,"lon":13.21274,"ind":"Via Popone, 55, 33100, Udine, UD","rc":116,"rd":"036","tsc":"0432 538800","tsd":"040 7707511","tc":"","nue":"1 1 2","esc":"so.udine@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-udine","conf":["Belluno","Gorizia","Pordenone","Venezia"]},{"c":"Varese","pr":"VA","rg":"Lombardia","cm":"Varese","dz":"Lombardia","lat":45.835855,"lon":8.819546,"ind":"Via Legnani, 8, 21100, Varese, VA","rc":"036","rd":"014","tsc":"0332 232844","tsd":"02 8546461","tc":"","nue":"1 1 2","esc":"so.varese@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-varese","conf":["Como","Milano","Monza e della Brianza","Novara","Verbano-Cusio-Ossola"]},{"c":"Venezia","pr":"VE","rg":"Veneto","cm":"Venezia","dz":"Veneto e TAA","lat":45.51779,"lon":12.243812,"ind":"Strada della Motorizzazione Civile, 6, 30174, Venezia, VE","rc":"040","rd":"084","tsc":"041 2697150","tsd":"049 8229211","tc":"","nue":"1 1 5","esc":"so.venezia@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-venezia","conf":["Padova","Pordenone","Rovigo","Treviso","Udine"]},{"c":"Verbano-Cusio-Ossola","pr":"VB","rg":"Piemonte","cm":"Verbania","dz":"Piemonte","lat":45.92679,"lon":8.559999,"ind":"Corso Europa, 62/c, 28922, Verbania, VB","rc":"066","rd":"080","tsc":"0323 5556699","tsd":"011 41465200","tc":"","nue":"1 1 2","esc":"so.verbania@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-verbano-cusio-ossola","conf":["Novara","Varese","Vercelli"]},{"c":"Vercelli","pr":"VC","rg":"Piemonte","cm":"Vercelli","dz":"Piemonte","lat":45.313491,"lon":8.422973,"ind":"Viale dell'Aeronautica Francis Lombardi, 8/10, 13100, Vercelli, VC","rc":"038","rd":"080","tsc":"0161 261479","tsd":"011 41465200","tc":"","nue":"1 1 2","esc":"so.vercelli@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-vercelli","conf":["Alessandria","Aosta","Biella","Novara","Pavia","Torino","Verbano-Cusio-Ossola"]},{"c":"Verona","pr":"VR","rg":"Veneto","cm":"Verona","dz":"Veneto e TAA","lat":45.412414,"lon":10.99033,"ind":"Via Polveriera Vecchia, 12, 37134, Verona, VR","rc":"048","rd":"084","tsc":"045 8294202","tsd":"049 8229211","tc":"","nue":"1 1 5","esc":"so.verona@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-verona","conf":["Brescia","Mantova","Padova","Rovigo","Trento","Vicenza"]},{"c":"Vibo Valentia","pr":"VV","rg":"Calabria","cm":"Vibo Valentia","dz":"Calabria","lat":38.67606,"lon":16.08998,"ind":"Piazza Giovanni XXIII, , 89900, Vibo Valentia, VV","rc":"044","rd":"042","tsc":"0963 9969100","tsd":"0961 7175111","tc":"","nue":"1 1 2","esc":"so.vibovalentia@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-vibo-valentia","conf":["Catanzaro","Reggio Calabria"]},{"c":"Vicenza","pr":"VI","rg":"Veneto","cm":"Vicenza","dz":"Veneto e TAA","lat":45.54632,"lon":11.5202,"ind":"Via Carlo Farini, 16, 36100, Vicenza, VI","rc":"016","rd":"084","tsc":"0444 565022","tsd":"049 8229211","tc":"","nue":"1 1 5","esc":"so.vicenza@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-vicenza","conf":["Belluno","Padova","Trento","Treviso","Verona"]},{"c":"Viterbo","pr":"VT","rg":"Lazio","cm":"Viterbo","dz":"Lazio","lat":42.439397,"lon":12.090688,"ind":"Strada Cassia Nord, km 84/500, 01100, Viterbo, VT","rc":"072","rd":"020","tsc":"0761 2443","tsd":"06 66179600","tc":"","nue":"1 1 2","esc":"so.viterbo@vigilfuoco.it","web":"https://www.vigilfuoco.it/comando-vvf-viterbo","conf":["Grosseto","Rieti","Roma","Siena","Terni"]}];
 
+let currentStep = 1;
+let currentTipo = null;
 let currentComando = null;
+let boTipo = null;
+let regSel = null;
 let testMode = true;
-let currentMode = "missione";
+const STEP_LABELS = ["Mittente e comando","Tipo di comunicazione","Dettaglio","Opzioni e note","Riepilogo e invio"];
 
-/* ---------- comando lookup ---------- */
+/* ---------- comando ---------- */
 const comandoListEl = document.getElementById("comandoList");
-COMANDI.forEach(r=>{
-  const opt = document.createElement("option");
-  opt.value = r.c;
-  comandoListEl.appendChild(opt);
-});
+COMANDI.forEach(r=>{ const o=document.createElement("option"); o.value=r.c; comandoListEl.appendChild(o); });
 
 function comandoSlug(record){
   if(record && record.esc && /@vigilfuoco\.it$/i.test(record.esc)){
@@ -541,11 +448,10 @@ function comandoSlug(record){
     const parts = local.split(".");
     return {slug: parts[parts.length-1], ok:true};
   }
-  const fallback = (record ? record.cm||record.c : "")
-    .toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z]/g,"");
+  const fallback = (record ? record.cm||record.c : "").toString().toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z]/g,"");
   return {slug: fallback, ok:false};
 }
-
 function comandoAddresses(record){
   if(!record) return {tep:"", personale:"", ok:false};
   const s = comandoSlug(record);
@@ -555,41 +461,112 @@ function comandoAddresses(record){
     ok: s.ok
   };
 }
-
 document.getElementById("comandoInput").addEventListener("change", function(){
-  const rec = COMANDI.find(r=>r.c === this.value);
+  const rec = COMANDI.find(r=>r.c===this.value);
   currentComando = rec || null;
   const box = document.getElementById("comandoCurrent");
   if(rec){
     const addr = comandoAddresses(rec);
-    box.innerHTML = "Comando: <b>"+rec.c+"</b> (" + rec.rg + ")"
-      + (addr.ok ? "" : " — indirizzo dedotto automaticamente, verificalo prima di inviare");
+    box.innerHTML = "Comando: <b>"+rec.c+"</b> ("+rec.rg+")"+(addr.ok?"":" - indirizzo dedotto automaticamente, verificalo al riepilogo");
   } else {
     box.textContent = "Nessun comando selezionato.";
   }
-  generatePreview();
 });
 
-/* ---------- tipologia select (usata in più form) ---------- */
+/* ---------- tipologia select ---------- */
 ["msTipologia","ssTipologia","gdTipologia"].forEach(id=>{
   const sel = document.getElementById(id);
-  TIPOLOGIE.forEach(t=>{
-    const o = document.createElement("option");
-    o.value = t; o.textContent = t;
-    sel.appendChild(o);
+  TIPOLOGIE.forEach(t=>{ const o=document.createElement("option"); o.value=t; o.textContent=t; sel.appendChild(o); });
+});
+
+/* ---------- step navigation ---------- */
+const stepsBar = document.getElementById("stepsBar");
+for(let i=1;i<=5;i++){ const d=document.createElement("div"); d.className="step-dot"; d.dataset.step=i; stepsBar.appendChild(d); }
+
+function renderStepsBar(){
+  stepsBar.querySelectorAll(".step-dot").forEach(d=>{
+    const n = Number(d.dataset.step);
+    d.classList.toggle("done", n<currentStep);
+    d.classList.toggle("active", n===currentStep);
+  });
+  document.getElementById("stepLabel").textContent = "Passo "+currentStep+" di 5 - "+STEP_LABELS[currentStep-1];
+}
+
+function updateQuickActions(){
+  document.getElementById("qaBack").classList.toggle("hidden", currentStep<=1);
+  document.getElementById("qaNext").classList.toggle("hidden", currentStep>=5);
+  document.getElementById("qaMailto").classList.toggle("hidden", currentStep!==5);
+  document.getElementById("qaEml").classList.toggle("hidden", currentStep!==5);
+}
+
+function showDetailBlock(){
+  document.querySelectorAll(".detail-block").forEach(b=>b.classList.add("hidden"));
+  if(currentTipo){
+    const el = document.getElementById("det-"+currentTipo);
+    if(el) el.classList.remove("hidden");
+  }
+}
+function showOptionsBlocks(){
+  const withBuono = ["strasoccorso","strarinforzo","straaltre","straguida"];
+  document.getElementById("buonoPastoBox").classList.toggle("hidden", !withBuono.includes(currentTipo));
+  document.getElementById("registrazioneBox").classList.toggle("hidden", currentTipo!=="bancaore");
+  document.getElementById("dataDichBox").classList.toggle("hidden", currentTipo!=="bancaore");
+}
+
+function showStep(n){
+  currentStep = n;
+  document.querySelectorAll("section.step").forEach(s=>s.classList.toggle("hidden", s.id!=="step-"+n));
+  if(n===3) showDetailBlock();
+  if(n===4) showOptionsBlocks();
+  if(n===5) generatePreview();
+  renderStepsBar();
+  updateQuickActions();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function goNext(){
+  if(currentStep===2 && !currentTipo){ alert("Seleziona il tipo di comunicazione."); return; }
+  if(currentStep===4 && currentTipo==="bancaore" && !regSel){ alert("Seleziona Pagamento o Recupero."); return; }
+  showStep(Math.min(5,currentStep+1));
+}
+function goBack(){ showStep(Math.max(1,currentStep-1)); }
+
+document.querySelectorAll("[data-next]").forEach(b=>b.addEventListener("click", goNext));
+document.querySelectorAll("[data-back]").forEach(b=>b.addEventListener("click", goBack));
+document.getElementById("goSummaryBtn").addEventListener("click", goNext);
+document.getElementById("restartBtn").addEventListener("click", ()=>showStep(1));
+document.getElementById("qaBack").addEventListener("click", goBack);
+document.getElementById("qaNext").addEventListener("click", goNext);
+document.getElementById("qaMailto").addEventListener("click", ()=>document.getElementById("btnMailto").click());
+document.getElementById("qaEml").addEventListener("click", ()=>document.getElementById("btnEml").click());
+
+/* ---------- step 2: tipo tiles ---------- */
+document.querySelectorAll("#tipoTiles .tile").forEach(t=>{
+  t.addEventListener("click", function(){
+    currentTipo = this.dataset.tipo;
+    document.querySelectorAll("#tipoTiles .tile").forEach(x=>x.classList.toggle("selected", x===this));
   });
 });
 
-/* ---------- mode tabs ---------- */
-const MODE_IDS = ["missione","timbratura","strasoccorso","strarinforzo","straaltre","straguida"];
-document.querySelectorAll(".mode-tab").forEach(tab=>{
-  tab.addEventListener("click", function(){
-    currentMode = this.dataset.mode;
-    document.querySelectorAll(".mode-tab").forEach(t=>t.classList.toggle("active", t===this));
-    MODE_IDS.forEach(id=>{
-      document.getElementById("form-"+id).classList.toggle("hidden", id!==currentMode);
-    });
-    generatePreview();
+/* ---------- step 3: banca ore sotto-tipo ---------- */
+document.querySelectorAll("#boTipoChoices .choice").forEach(ch=>{
+  ch.addEventListener("click", function(){
+    boTipo = this.dataset.botipo;
+    document.querySelectorAll("#boTipoChoices .choice").forEach(c=>c.classList.toggle("selected", c===this));
+    this.querySelector("input").checked = true;
+    document.getElementById("boGuidaField").classList.toggle("hidden", boTipo!=="guida");
+    document.getElementById("boSoccorsoField").classList.toggle("hidden", boTipo!=="soccorso");
+    document.getElementById("boAltroField").classList.toggle("hidden", boTipo!=="altro");
+  });
+});
+document.getElementById("gdIncludiMissione").addEventListener("change", function(){
+  document.getElementById("gdMissioneBox").classList.toggle("hidden", !this.checked);
+});
+document.querySelectorAll("#regChoices .choice").forEach(ch=>{
+  ch.addEventListener("click", function(){
+    regSel = this.dataset.reg;
+    document.querySelectorAll("#regChoices .choice").forEach(c=>c.classList.toggle("selected", c===this));
+    this.querySelector("input").checked = true;
   });
 });
 
@@ -599,50 +576,42 @@ function addPersonRow(targetId){
   const row = document.createElement("div");
   row.className = "person-row";
   row.innerHTML = '<input type="text" class="person-input" placeholder="Nome Cognome (qualifica)">'
-    + '<button type="button" class="row-remove-btn" aria-label="Rimuovi">✕</button>';
+    + '<button type="button" class="row-remove-btn" aria-label="Rimuovi">\u2715</button>';
   row.querySelector(".row-remove-btn").addEventListener("click", ()=>row.remove());
   list.appendChild(row);
 }
-
 function addTimbraturaRow(targetId){
   const list = document.getElementById(targetId);
   const row = document.createElement("div");
   row.className = "timb-row";
-  row.innerHTML =
-    '<div class="tfield"><label>Data/ora ingresso</label><input type="datetime-local" class="timb-in"></div>'
+  row.innerHTML = '<div class="tfield"><label>Data/ora ingresso</label><input type="datetime-local" class="timb-in"></div>'
     + '<div class="tfield"><label>Data/ora uscita</label><input type="datetime-local" class="timb-out"></div>'
-    + '<button type="button" class="row-remove-btn" aria-label="Rimuovi">✕</button>';
+    + '<button type="button" class="row-remove-btn" aria-label="Rimuovi">\u2715</button>';
   row.querySelector(".row-remove-btn").addEventListener("click", ()=>row.remove());
   list.appendChild(row);
 }
-
 function addLegRow(targetId, tipo){
   const list = document.getElementById(targetId);
   const row = document.createElement("div");
   row.className = "leg-row";
-  row.innerHTML =
-    '<div class="lfield"><label>Tipo</label><select class="leg-tipo"><option value="Andata">Andata</option><option value="Ritorno">Ritorno</option></select></div>'
+  row.innerHTML = '<div class="lfield"><label>Tipo</label><select class="leg-tipo"><option value="Andata">Andata</option><option value="Ritorno">Ritorno</option></select></div>'
     + '<div class="lfield"><label>Sede partenza</label><input type="text" class="leg-partenza"></div>'
     + '<div class="lfield"><label>Sede arrivo</label><input type="text" class="leg-arrivo"></div>'
     + '<div class="lfield"><label>Data/ora inizio</label><input type="datetime-local" class="leg-inizio"></div>'
     + '<div class="lfield"><label>Data/ora fine</label><input type="datetime-local" class="leg-fine"></div>'
-    + '<button type="button" class="row-remove-btn" aria-label="Rimuovi">✕</button>';
+    + '<button type="button" class="row-remove-btn" aria-label="Rimuovi">\u2715</button>';
   if(tipo) row.querySelector(".leg-tipo").value = tipo;
   row.querySelector(".row-remove-btn").addEventListener("click", ()=>row.remove());
   list.appendChild(row);
 }
-
-document.querySelectorAll(".add-row-btn").forEach(btn=>{
+document.querySelectorAll(".add-row-btn[data-add]").forEach(btn=>{
   btn.addEventListener("click", function(){
-    const kind = this.dataset.add;
-    const target = this.dataset.target;
+    const kind = this.dataset.add, target = this.dataset.target;
     if(kind==="person") addPersonRow(target);
     else if(kind==="timbratura") addTimbraturaRow(target);
     else if(kind==="leg") addLegRow(target);
   });
 });
-
-// righe iniziali
 addPersonRow("msPersonaleList");
 addPersonRow("ssPersonaleList");
 addPersonRow("srPersonaleList");
@@ -650,262 +619,355 @@ addTimbraturaRow("tmDateList");
 addLegRow("gdLegList","Andata");
 addLegRow("gdLegList","Ritorno");
 
-document.getElementById("gdIncludiMissione").addEventListener("change", function(){
-  document.getElementById("gdMissioneBox").classList.toggle("hidden", !this.checked);
-});
+/* ---------- fasce orarie banca ore ---------- */
+function addSegRow(){
+  const list = document.getElementById("segList");
+  const row = document.createElement("div");
+  row.className = "seg-row";
+  row.innerHTML = '<div class="field-row">'
+    + '<div class="field"><label>Data</label><input type="date" class="seg-date"></div>'
+    + '<div class="field"><label>Ora inizio</label><input type="time" class="seg-start"></div>'
+    + '<div class="field"><label>Ora fine</label><input type="time" class="seg-end"></div>'
+    + '</div><div class="seg-totals">-</div>'
+    + '<button type="button" class="seg-remove">\u2715 Rimuovi fascia</button>';
+  row.querySelector(".seg-remove").addEventListener("click", ()=>{ row.remove(); updateTotals(); });
+  row.querySelectorAll("input").forEach(inp=>inp.addEventListener("change", updateTotals));
+  list.appendChild(row);
+}
+document.getElementById("addSegBtn").addEventListener("click", addSegRow);
+addSegRow();
 
-/* ---------- helper ---------- */
+/* ---------- helper generali ---------- */
 function val(id){ const el=document.getElementById(id); return el ? el.value.trim() : ""; }
 function checked(id){ const el=document.getElementById(id); return el ? el.checked : false; }
-function qualificaLabel(){
-  const sel = document.getElementById("qualificaSelect");
-  return sel.options[sel.selectedIndex].value;
-}
+function qualificaLabel(){ const sel=document.getElementById("qualificaSelect"); return sel.options[sel.selectedIndex].value; }
+function pad2(n){ return String(n).padStart(2,"0"); }
 function fmtDT(v){
-  if(!v) return "—";
+  if(!v) return "-";
   const d = new Date(v);
   if(isNaN(d)) return v;
-  const pad=n=>String(n).padStart(2,"0");
-  return pad(d.getDate())+"/"+pad(d.getMonth()+1)+"/"+d.getFullYear()+" "+pad(d.getHours())+":"+pad(d.getMinutes());
+  return pad2(d.getDate())+"/"+pad2(d.getMonth()+1)+"/"+d.getFullYear()+" "+pad2(d.getHours())+":"+pad2(d.getMinutes());
 }
 function getPersonList(listId){
-  return Array.from(document.querySelectorAll("#"+listId+" .person-input"))
-    .map(i=>i.value.trim()).filter(Boolean);
+  return Array.from(document.querySelectorAll("#"+listId+" .person-input")).map(i=>i.value.trim()).filter(Boolean);
 }
-function mittenteHeader(){
-  return MITTENTE.cognome+" "+MITTENTE.nome+" ("+qualificaLabel()+") — CF "+MITTENTE.cf;
+function mittenteHeader(){ return MITTENTE.cognome+" "+MITTENTE.nome+" ("+qualificaLabel()+") - CF "+MITTENTE.cf; }
+
+/* ---------- T1/T2/T3 (Banca delle Ore) ---------- */
+function sameDate(a,b){ return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
+function easterSunday(year){
+  const a=year%19,b=Math.floor(year/100),c=year%100,d=Math.floor(b/4),e=b%4,
+  f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,
+  i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),
+  month=Math.floor((h+l-7*m+114)/31), day=((h+l-7*m+114)%31)+1;
+  return new Date(year,month-1,day);
+}
+function isHoliday(dayStart){
+  if(dayStart.getDay()===0) return true;
+  const fixed=[[1,1],[1,6],[4,25],[5,1],[6,2],[8,15],[11,1],[12,8],[12,25],[12,26]];
+  for(const [m,d] of fixed){ if(dayStart.getMonth()+1===m && dayStart.getDate()===d) return true; }
+  const e = easterSunday(dayStart.getFullYear());
+  const em = new Date(e); em.setDate(e.getDate()+1);
+  return sameDate(dayStart,e) || sameDate(dayStart,em);
+}
+function isSuperHoliday(dayStart){
+  if(dayStart.getMonth()===0 && dayStart.getDate()===1) return true;
+  if(dayStart.getMonth()===11 && dayStart.getDate()===25) return true;
+  return sameDate(dayStart, easterSunday(dayStart.getFullYear()));
+}
+function classifyInstant(dt){
+  const dayStart = new Date(dt.getFullYear(),dt.getMonth(),dt.getDate());
+  const hh = dt.getHours()+dt.getMinutes()/60;
+  const dayBand = hh>=6 && hh<22;
+  if(isSuperHoliday(dayStart)) return "T3";
+  if(isHoliday(dayStart)) return dayBand ? "T2" : "T3";
+  return dayBand ? "T1" : "T2";
+}
+function splitAndClassify(start,end){
+  const totals={T1:0,T2:0,T3:0};
+  let boundaries=[start.getTime(), end.getTime()];
+  let cursor=new Date(start); cursor.setHours(0,0,0,0);
+  while(cursor.getTime()<end.getTime()){
+    const b6=new Date(cursor); b6.setHours(6,0,0,0);
+    const b22=new Date(cursor); b22.setHours(22,0,0,0);
+    const nd=new Date(cursor); nd.setDate(cursor.getDate()+1);
+    [b6,b22,nd].forEach(b=>{ if(b.getTime()>start.getTime() && b.getTime()<end.getTime()) boundaries.push(b.getTime()); });
+    cursor=nd;
+  }
+  boundaries=Array.from(new Set(boundaries)).sort((a,b)=>a-b);
+  for(let i=0;i<boundaries.length-1;i++){
+    const s=boundaries[i], e=boundaries[i+1];
+    if(e<=s) continue;
+    const band = classifyInstant(new Date((s+e)/2));
+    totals[band]+=(e-s)/3600000;
+  }
+  return totals;
+}
+function fmtDurationHM(hoursDecimal){
+  const totalMin = Math.round(hoursDecimal*60);
+  return pad2(Math.floor(totalMin/60))+":"+pad2(totalMin%60);
+}
+function fmtDecHours(h){
+  h = Math.max(0,h);
+  let ip=Math.floor(h), fp=Math.round((h-ip)*100);
+  if(fp>=100){ fp-=100; ip+=1; }
+  return pad2(ip)+"."+pad2(fp);
+}
+function getSegments(){
+  return Array.from(document.querySelectorAll(".seg-row")).map(row=>{
+    const dateStr=row.querySelector(".seg-date").value, startStr=row.querySelector(".seg-start").value, endStr=row.querySelector(".seg-end").value;
+    if(!dateStr||!startStr||!endStr) return null;
+    const [y,m,d]=dateStr.split("-").map(Number), [sh,sm]=startStr.split(":").map(Number), [eh,em]=endStr.split(":").map(Number);
+    let start=new Date(y,m-1,d,sh,sm), end=new Date(y,m-1,d,eh,em);
+    if(end<=start) end=new Date(end.getTime()+24*3600000);
+    return {start,end,row};
+  }).filter(Boolean);
+}
+function updateTotals(){
+  const segs = getSegments();
+  const totals={T1:0,T2:0,T3:0};
+  segs.forEach(s=>{
+    const t = splitAndClassify(s.start,s.end);
+    totals.T1+=t.T1; totals.T2+=t.T2; totals.T3+=t.T3;
+    const durH=(s.end-s.start)/3600000;
+    s.row.querySelector(".seg-totals").textContent = "Durata "+fmtDurationHM(durH)+"  T1="+fmtDecHours(t.T1)+" T2="+fmtDecHours(t.T2)+" T3="+fmtDecHours(t.T3);
+  });
+  document.getElementById("totT1").textContent = fmtDecHours(totals.T1);
+  document.getElementById("totT2").textContent = fmtDecHours(totals.T2);
+  document.getElementById("totT3").textContent = fmtDecHours(totals.T3);
+  return totals;
+}
+function segmentPhrase(seg){
+  const durH=(seg.end-seg.start)/3600000;
+  let suffix = sameDate(seg.start,seg.end) ? "" : " (del giorno successivo)";
+  return "in data "+fmtDT(null)+"";
+}
+function segPhraseFull(seg){
+  const durH=(seg.end-seg.start)/3600000;
+  const dataStr = pad2(seg.start.getDate())+"/"+pad2(seg.start.getMonth()+1)+"/"+seg.start.getFullYear();
+  const startStr = pad2(seg.start.getHours())+":"+pad2(seg.start.getMinutes());
+  const endStr = pad2(seg.end.getHours())+":"+pad2(seg.end.getMinutes());
+  const suffix = sameDate(seg.start,seg.end) ? "" : " (del giorno successivo)";
+  return "in data "+dataStr+" di ore "+fmtDurationHM(durH)+" dalle ore "+startStr+" alle ore "+endStr+suffix;
 }
 
-/* ---------- costruttori corpo email per modalità ---------- */
+(function(){
+  const el = document.getElementById("dataDichiarazioneInput");
+  const t = new Date();
+  el.value = t.getFullYear()+"-"+pad2(t.getMonth()+1)+"-"+pad2(t.getDate());
+})();
+
+/* ---------- costruttori corpo email ---------- */
 function buildIntervento(prefix, isStraordinario){
-  const inizio = fmtDT(val(prefix+"Inizio"));
-  const fine = fmtDT(val(prefix+"Fine"));
-  const numero = val(prefix+"Numero");
-  const progressivo = val(prefix+"Progressivo");
-  const localita = val(prefix+"Localita");
-  const tipologia = val(prefix+"Tipologia") || (document.getElementById(prefix+"Tipologia") ? document.getElementById(prefix+"Tipologia").value : "");
+  const inizio=fmtDT(val(prefix+"Inizio")), fine=fmtDT(val(prefix+"Fine"));
+  const numero=val(prefix+"Numero"), progressivo=val(prefix+"Progressivo"), localita=val(prefix+"Localita");
+  const tipologia = document.getElementById(prefix+"Tipologia") ? document.getElementById(prefix+"Tipologia").value : "";
   const personale = getPersonList(prefix+"PersonaleList");
-  const bp2 = isStraordinario ? checked(prefix+"BuonoPasto") : false;
-
-  const lines = [];
+  const bp2 = isStraordinario ? checked("buonoPastoCheck") : false;
+  const lines=[];
   lines.push(isStraordinario ? "Richiesta di straordinario per soccorso." : "Comunicazione di missione per soccorso.");
   lines.push("");
   lines.push("Richiedente: "+mittenteHeader());
-  lines.push("Comando: "+(currentComando ? currentComando.c+" ("+currentComando.rg+")" : "— non selezionato —"));
+  lines.push("Comando: "+(currentComando ? currentComando.c+" ("+currentComando.rg+")" : "- non selezionato -"));
   lines.push("");
   lines.push("Data/ora inizio intervento: "+inizio);
   lines.push("Data/ora fine intervento: "+fine);
-  lines.push("Numero intervento: "+(numero||"—"));
-  lines.push("Progressivo intervento: "+(progressivo||"—"));
-  lines.push("Località: "+(localita||"—"));
-  lines.push("Tipologia intervento: "+(tipologia||"—"));
+  lines.push("Numero intervento: "+(numero||"-"));
+  lines.push("Progressivo intervento: "+(progressivo||"-"));
+  lines.push("Localita: "+(localita||"-"));
+  lines.push("Tipologia intervento: "+(tipologia||"-"));
   lines.push("");
   lines.push("Personale intervenuto:");
-  if(personale.length){
-    personale.forEach((p,i)=>lines.push("  "+(i+1)+". "+p));
-  } else {
-    lines.push("  (nessun nominativo inserito)");
-  }
+  if(personale.length) personale.forEach((p,i)=>lines.push("  "+(i+1)+". "+p));
+  else lines.push("  (nessun nominativo inserito)");
   if(isStraordinario){
     lines.push("");
     lines.push(bp2 ? "Si richiede l'erogazione del secondo buono pasto." : "Non si richiede il secondo buono pasto.");
   }
+  const note = val("noteInput");
+  if(note){ lines.push(""); lines.push("Note: "+note); }
   lines.push("");
   lines.push("Distinti saluti.");
   lines.push(MITTENTE.cognome+" "+MITTENTE.nome);
-
   const dataBreve = val(prefix+"Inizio") ? inizio.split(" ")[0] : "";
-  const subject = (isStraordinario ? "Straordinario per soccorso" : "Missione per soccorso")
-    + " — " + MITTENTE.cognome + " " + MITTENTE.nome
-    + " — interv. n. " + (numero || "s.n.")
-    + (dataBreve ? " del " + dataBreve : "");
-
+  const subject = (isStraordinario?"Straordinario per soccorso":"Missione per soccorso")+" - "+MITTENTE.cognome+" "+MITTENTE.nome+" - interv. n. "+(numero||"s.n.")+(dataBreve?" del "+dataBreve:"");
   return {subject, body: lines.join("\n")};
 }
-
 function buildTimbratura(){
   const motivo = val("tmMotivo");
-  const rows = Array.from(document.querySelectorAll("#tmDateList .timb-row")).map(r=>({
-    in: r.querySelector(".timb-in").value,
-    out: r.querySelector(".timb-out").value
-  }));
-
-  const lines = [];
+  const rows = Array.from(document.querySelectorAll("#tmDateList .timb-row")).map(r=>({in:r.querySelector(".timb-in").value, out:r.querySelector(".timb-out").value}));
+  const lines=[];
   lines.push("Comunicazione di mancata timbratura.");
   lines.push("");
   lines.push("Richiedente: "+mittenteHeader());
-  lines.push("Comando: "+(currentComando ? currentComando.c+" ("+currentComando.rg+")" : "— non selezionato —"));
+  lines.push("Comando: "+(currentComando ? currentComando.c+" ("+currentComando.rg+")" : "- non selezionato -"));
   lines.push("");
-  lines.push("Motivo: "+(motivo||"—"));
+  lines.push("Motivo: "+(motivo||"-"));
   lines.push("");
   lines.push("Date interessate:");
-  if(rows.length){
-    rows.forEach((r,i)=>{
-      lines.push("  "+(i+1)+". Ingresso: "+fmtDT(r.in)+"  —  Uscita: "+fmtDT(r.out));
-    });
-  } else {
-    lines.push("  (nessuna data inserita)");
-  }
+  if(rows.length) rows.forEach((r,i)=>lines.push("  "+(i+1)+". Ingresso: "+fmtDT(r.in)+"  -  Uscita: "+fmtDT(r.out)));
+  else lines.push("  (nessuna data inserita)");
+  const note = val("noteInput");
+  if(note){ lines.push(""); lines.push("Note: "+note); }
   lines.push("");
   lines.push("Distinti saluti.");
   lines.push(MITTENTE.cognome+" "+MITTENTE.nome);
-
   const primaData = rows.length && rows[0].in ? fmtDT(rows[0].in).split(" ")[0] : "";
-  const subject = "Mancata timbratura — "+MITTENTE.cognome+" "+MITTENTE.nome+(primaData?" — "+primaData:"");
+  const subject = "Mancata timbratura - "+MITTENTE.cognome+" "+MITTENTE.nome+(primaData?" - "+primaData:"");
   return {subject, body: lines.join("\n")};
 }
-
 function buildRinforzo(){
-  const inizio = fmtDT(val("srInizio"));
-  const fine = fmtDT(val("srFine"));
-  const sede = val("srSede");
-  const motivo = val("srMotivo");
+  const inizio=fmtDT(val("srInizio")), fine=fmtDT(val("srFine")), sede=val("srSede"), motivo=val("srMotivo");
   const personale = getPersonList("srPersonaleList");
-  const bp2 = checked("srBuonoPasto");
-
-  const lines = [];
+  const bp2 = checked("buonoPastoCheck");
+  const lines=[];
   lines.push("Richiesta di straordinario per rinforzo personale.");
   lines.push("");
   lines.push("Richiedente: "+mittenteHeader());
-  lines.push("Comando: "+(currentComando ? currentComando.c+" ("+currentComando.rg+")" : "— non selezionato —"));
+  lines.push("Comando: "+(currentComando ? currentComando.c+" ("+currentComando.rg+")" : "- non selezionato -"));
   lines.push("");
   lines.push("Data/ora inizio: "+inizio);
   lines.push("Data/ora fine: "+fine);
-  lines.push("Sede / comando di rinforzo: "+(sede||"—"));
-  lines.push("Motivo: "+(motivo||"—"));
+  lines.push("Sede / comando di rinforzo: "+(sede||"-"));
+  lines.push("Motivo: "+(motivo||"-"));
   lines.push("");
   lines.push("Personale coinvolto:");
-  if(personale.length){
-    personale.forEach((p,i)=>lines.push("  "+(i+1)+". "+p));
-  } else {
-    lines.push("  (nessun nominativo inserito)");
-  }
+  if(personale.length) personale.forEach((p,i)=>lines.push("  "+(i+1)+". "+p));
+  else lines.push("  (nessun nominativo inserito)");
   lines.push("");
   lines.push(bp2 ? "Si richiede l'erogazione del secondo buono pasto." : "Non si richiede il secondo buono pasto.");
+  const note = val("noteInput");
+  if(note){ lines.push(""); lines.push("Note: "+note); }
   lines.push("");
   lines.push("Distinti saluti.");
   lines.push(MITTENTE.cognome+" "+MITTENTE.nome);
-
   const dataBreve = val("srInizio") ? inizio.split(" ")[0] : "";
-  const subject = "Straordinario rinforzo personale — "+MITTENTE.cognome+" "+MITTENTE.nome+(dataBreve?" — "+dataBreve:"");
+  const subject = "Straordinario rinforzo personale - "+MITTENTE.cognome+" "+MITTENTE.nome+(dataBreve?" - "+dataBreve:"");
   return {subject, body: lines.join("\n")};
 }
-
 function buildAltre(){
-  const inizio = fmtDT(val("saInizio"));
-  const fine = fmtDT(val("saFine"));
-  const descr = val("saDescrizione");
-  const bp2 = checked("saBuonoPasto");
-
-  const lines = [];
-  lines.push("Richiesta di straordinario per altre attività.");
+  const inizio=fmtDT(val("saInizio")), fine=fmtDT(val("saFine")), descr=val("saDescrizione");
+  const bp2 = checked("buonoPastoCheck");
+  const lines=[];
+  lines.push("Richiesta di straordinario per altre attivita.");
   lines.push("");
   lines.push("Richiedente: "+mittenteHeader());
-  lines.push("Comando: "+(currentComando ? currentComando.c+" ("+currentComando.rg+")" : "— non selezionato —"));
+  lines.push("Comando: "+(currentComando ? currentComando.c+" ("+currentComando.rg+")" : "- non selezionato -"));
   lines.push("");
   lines.push("Data/ora inizio: "+inizio);
   lines.push("Data/ora fine: "+fine);
-  lines.push("Descrizione attività: "+(descr||"—"));
+  lines.push("Descrizione attivita: "+(descr||"-"));
   lines.push("");
   lines.push(bp2 ? "Si richiede l'erogazione del secondo buono pasto." : "Non si richiede il secondo buono pasto.");
+  const note = val("noteInput");
+  if(note){ lines.push(""); lines.push("Note: "+note); }
   lines.push("");
   lines.push("Distinti saluti.");
   lines.push(MITTENTE.cognome+" "+MITTENTE.nome);
-
   const dataBreve = val("saInizio") ? inizio.split(" ")[0] : "";
-  const subject = "Straordinario altre attività — "+MITTENTE.cognome+" "+MITTENTE.nome+(dataBreve?" — "+dataBreve:"");
+  const subject = "Straordinario altre attivita - "+MITTENTE.cognome+" "+MITTENTE.nome+(dataBreve?" - "+dataBreve:"");
   return {subject, body: lines.join("\n")};
 }
-
 function buildGuida(){
   const legs = Array.from(document.querySelectorAll("#gdLegList .leg-row")).map(r=>({
-    tipo: r.querySelector(".leg-tipo").value,
-    partenza: r.querySelector(".leg-partenza").value.trim(),
-    arrivo: r.querySelector(".leg-arrivo").value.trim(),
-    inizio: r.querySelector(".leg-inizio").value,
-    fine: r.querySelector(".leg-fine").value
+    tipo:r.querySelector(".leg-tipo").value, partenza:r.querySelector(".leg-partenza").value.trim(),
+    arrivo:r.querySelector(".leg-arrivo").value.trim(), inizio:r.querySelector(".leg-inizio").value, fine:r.querySelector(".leg-fine").value
   }));
-  const bp2 = checked("gdBuonoPasto");
+  const bp2 = checked("buonoPastoCheck");
   const includiMissione = checked("gdIncludiMissione");
-
-  const lines = [];
+  const lines=[];
   lines.push("Richiesta di straordinario per guida / sostituzione personale.");
   lines.push("");
   lines.push("Richiedente: "+mittenteHeader());
-  lines.push("Comando: "+(currentComando ? currentComando.c+" ("+currentComando.rg+")" : "— non selezionato —"));
+  lines.push("Comando: "+(currentComando ? currentComando.c+" ("+currentComando.rg+")" : "- non selezionato -"));
   lines.push("");
   lines.push("Tratte:");
-  if(legs.length){
-    legs.forEach((l,i)=>{
-      lines.push("  "+(i+1)+". "+l.tipo+": "+(l.partenza||"—")+" → "+(l.arrivo||"—")
-        +"  |  "+fmtDT(l.inizio)+" — "+fmtDT(l.fine));
-    });
-  } else {
-    lines.push("  (nessuna tratta inserita)");
-  }
-
+  if(legs.length) legs.forEach((l,i)=>lines.push("  "+(i+1)+". "+l.tipo+": "+(l.partenza||"-")+" -> "+(l.arrivo||"-")+"  |  "+fmtDT(l.inizio)+" - "+fmtDT(l.fine)));
+  else lines.push("  (nessuna tratta inserita)");
   if(includiMissione){
     lines.push("");
     lines.push("Dati missione per soccorso collegata:");
-    lines.push("  Numero intervento: "+(val("gdNumero")||"—"));
-    lines.push("  Progressivo intervento: "+(val("gdProgressivo")||"—"));
-    lines.push("  Località: "+(val("gdLocalita")||"—"));
-    lines.push("  Tipologia intervento: "+(document.getElementById("gdTipologia").value||"—"));
+    lines.push("  Numero intervento: "+(val("gdNumero")||"-"));
+    lines.push("  Progressivo intervento: "+(val("gdProgressivo")||"-"));
+    lines.push("  Localita: "+(val("gdLocalita")||"-"));
+    lines.push("  Tipologia intervento: "+(document.getElementById("gdTipologia").value||"-"));
   }
-
   lines.push("");
   lines.push(bp2 ? "Si richiede l'erogazione del secondo buono pasto." : "Non si richiede il secondo buono pasto.");
+  const note = val("noteInput");
+  if(note){ lines.push(""); lines.push("Note: "+note); }
   lines.push("");
   lines.push("Distinti saluti.");
   lines.push(MITTENTE.cognome+" "+MITTENTE.nome);
-
   const dataBreve = legs.length && legs[0].inizio ? fmtDT(legs[0].inizio).split(" ")[0] : "";
-  const subject = "Straordinario guida/sostituzione — "+MITTENTE.cognome+" "+MITTENTE.nome+(dataBreve?" — "+dataBreve:"");
+  const subject = "Straordinario guida/sostituzione - "+MITTENTE.cognome+" "+MITTENTE.nome+(dataBreve?" - "+dataBreve:"");
+  return {subject, body: lines.join("\n")};
+}
+function buildBancaOre(){
+  const segs = getSegments();
+  const totals = updateTotals();
+  const phrases = segs.map(segPhraseFull).join(" e ");
+  let prefix = "";
+  if(boTipo==="guida") prefix = "Rinforzo a "+(val("boSedeRinforzo")||"-");
+  else if(boTipo==="soccorso") prefix = "Soccorso a "+(val("boLocalitaSoccorso")||"-");
+  else prefix = val("boDescrizioneAltro") || "Prestazione";
+  const detailLine = prefix + (phrases?" "+phrases:"") + "\n   di cui T1="+fmtDecHours(totals.T1)+"  T2="+fmtDecHours(totals.T2)+"  T3="+fmtDecHours(totals.T3);
+  const qualifica = qualificaLabel();
+  const turno = val("turnoInput")||"-", sede = val("sedeInput")||"-";
+  const comandoNome = currentComando ? currentComando.c : "- non selezionato -";
+  const note = val("noteInput");
+  const dataDich = val("dataDichiarazioneInput");
+  const dataDichFmt = dataDich ? (function(){ const p=dataDich.split("-"); return p[2]+"/"+p[1]+"/"+p[0]; })() : "";
+  const cittaFirma = currentComando ? currentComando.cm : "";
+  const lines=[];
+  lines.push("PRESTAZIONI CON MOVIMENTAZIONE DELLA BANCA DELLE ORE");
+  lines.push("");
+  lines.push("Il sottoscritto "+qualifica+" "+MITTENTE.cognome.toUpperCase()+" "+MITTENTE.nome.toUpperCase()+" in servizio presso il Comando Provinciale di "+comandoNome+", turno "+turno+" sede "+sede);
+  lines.push("");
+  lines.push("DICHIARA di aver effettuato le seguenti prestazioni:");
+  lines.push((boTipo==="soccorso"?"[X] ":"[ ] ")+"Str. per soccorso");
+  lines.push((boTipo==="guida"?"[X] ":"[ ] ")+"Str. per guida");
+  if(boTipo==="soccorso" || boTipo==="guida") lines.push("   "+detailLine);
+  lines.push((boTipo==="altro"?"[X] ":"[ ] ")+"Altro");
+  if(boTipo==="altro") lines.push("   "+detailLine);
+  lines.push("Note: "+(note||"-"));
+  lines.push("");
+  lines.push("CHIEDE che le stesse vengano registrate per il successivo:");
+  lines.push((regSel==="pagamento"?"[X] ":"[ ] ")+"Pagamento");
+  lines.push((regSel==="recupero"?"[X] ":"[ ] ")+"Recupero");
+  lines.push("");
+  lines.push((cittaFirma?cittaFirma+", ":"")+dataDichFmt);
+  lines.push("Il Dichiarante: "+MITTENTE.cognome+" "+MITTENTE.nome);
+  const subject = "Banca delle ore - "+(boTipo==="guida"?"Str. per guida":boTipo==="soccorso"?"Str. per soccorso":"Altro")+" - "+MITTENTE.cognome+" "+MITTENTE.nome+(dataDichFmt?" - "+dataDichFmt:"");
   return {subject, body: lines.join("\n")};
 }
 
-/* ---------- destinatario per modalità ---------- */
-function recipientFor(mode){
+/* ---------- destinatario e anteprima ---------- */
+function recipientFor(tipo){
   const addr = comandoAddresses(currentComando);
-  switch(mode){
-    case "timbratura": return addr.personale;
-    case "missione":
-    case "strasoccorso":
-    case "strarinforzo":
-    case "straaltre":
-    case "straguida":
-    default:
-      return addr.tep;
-  }
+  return tipo==="timbratura" ? addr.personale : addr.tep;
 }
-
-/* ---------- generazione anteprima ---------- */
 function generatePreview(){
   let built;
-  switch(currentMode){
+  switch(currentTipo){
     case "missione": built = buildIntervento("ms", false); break;
     case "timbratura": built = buildTimbratura(); break;
     case "strasoccorso": built = buildIntervento("ss", true); break;
     case "strarinforzo": built = buildRinforzo(); break;
     case "straaltre": built = buildAltre(); break;
     case "straguida": built = buildGuida(); break;
+    case "bancaore": built = buildBancaOre(); break;
     default: built = {subject:"", body:""};
   }
-
-  const realTo = recipientFor(currentMode);
+  const realTo = recipientFor(currentTipo);
   const to = testMode ? TEST_ADDRESS : realTo;
   const subject = testMode ? "[TEST] "+built.subject : built.subject;
   let body = built.body;
-  if(testMode){
-    body = "*** MODALITÀ TEST — destinatario reale sarebbe: "+(realTo||"— non determinato —")+" ***\n\n"+body;
-  }
-
+  if(testMode) body = "*** MODALITA TEST - destinatario reale sarebbe: "+(realTo||"- non determinato -")+" ***\n\n"+body;
   document.getElementById("previewTo").value = to || "";
   document.getElementById("previewSubject").value = subject || "";
   document.getElementById("previewBody").value = body || "";
 }
-
-document.getElementById("btnRefresh").addEventListener("click", generatePreview);
 
 /* ---------- test toggle ---------- */
 const testBanner = document.getElementById("testBanner");
@@ -914,63 +976,35 @@ const testBannerLabel = document.getElementById("testBannerLabel");
 function applyTestUi(){
   testBanner.classList.toggle("off", !testMode);
   testToggleBtn.textContent = testMode ? "Disattiva TEST" : "Attiva TEST";
-  testBannerLabel.textContent = testMode
-    ? "MODALITÀ TEST ATTIVA — le email vengono reindirizzate a "+TEST_ADDRESS
-    : "Modalità reale — le email vanno ai destinatari effettivi";
+  testBannerLabel.textContent = testMode ? "MODALITA TEST ATTIVA - le email vanno a "+TEST_ADDRESS : "Modalita reale - le email vanno ai destinatari effettivi";
 }
-testToggleBtn.addEventListener("click", function(){
-  testMode = !testMode;
-  applyTestUi();
-  generatePreview();
-});
+testToggleBtn.addEventListener("click", function(){ testMode=!testMode; applyTestUi(); if(currentStep===5) generatePreview(); });
 applyTestUi();
 
 /* ---------- invio ---------- */
 document.getElementById("btnMailto").addEventListener("click", function(){
   generatePreview();
-  const to = document.getElementById("previewTo").value;
-  const subject = document.getElementById("previewSubject").value;
-  const body = document.getElementById("previewBody").value;
-  if(!to){
-    alert("Seleziona prima un comando (o verifica il campo \"A:\").");
-    return;
-  }
-  const url = "mailto:"+encodeURIComponent(to)
-    +"?subject="+encodeURIComponent(subject)
-    +"&body="+encodeURIComponent(body);
-  window.location.href = url;
+  const to=document.getElementById("previewTo").value, subject=document.getElementById("previewSubject").value, body=document.getElementById("previewBody").value;
+  if(!to){ alert('Seleziona prima un comando (passo 1) o verifica il campo "A:".'); return; }
+  window.location.href = "mailto:"+encodeURIComponent(to)+"?subject="+encodeURIComponent(subject)+"&body="+encodeURIComponent(body);
 });
-
 document.getElementById("btnEml").addEventListener("click", function(){
   generatePreview();
-  const to = document.getElementById("previewTo").value;
-  const subject = document.getElementById("previewSubject").value;
-  const body = document.getElementById("previewBody").value;
-  const now = new Date().toUTCString();
-  const eml = "From: "+MITTENTE.cognome+" "+MITTENTE.nome+" <"+MITTENTE.email+">\r\n"
-    + "To: "+to+"\r\n"
-    + "Subject: "+subject+"\r\n"
-    + "Date: "+now+"\r\n"
-    + "MIME-Version: 1.0\r\n"
-    + "Content-Type: text/plain; charset=UTF-8\r\n\r\n"
-    + body;
+  const to=document.getElementById("previewTo").value, subject=document.getElementById("previewSubject").value, body=document.getElementById("previewBody").value;
+  const eml = "From: "+MITTENTE.cognome+" "+MITTENTE.nome+" <"+MITTENTE.email+">\r\nTo: "+to+"\r\nSubject: "+subject+"\r\nDate: "+new Date().toUTCString()+"\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n"+body;
   const blob = new Blob([eml], {type:"message/rfc822"});
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = (subject||"email").replace(/[^a-z0-9 _-]/gi,"").slice(0,60).trim()+".eml";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
   setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
 });
 
-/* aggiorna anteprima quando si cambiano campi nei form (delegazione) */
-document.querySelectorAll("section").forEach(sec=>{
-  sec.addEventListener("change", generatePreview);
-});
-document.getElementById("qualificaSelect").addEventListener("change", generatePreview);
+document.querySelectorAll("section.step").forEach(sec=>{ sec.addEventListener("change", ()=>{ if(currentStep===5) generatePreview(); }); });
 
-generatePreview();
+renderStepsBar();
+updateQuickActions();
+
 </script>
 </body>
 </html>
