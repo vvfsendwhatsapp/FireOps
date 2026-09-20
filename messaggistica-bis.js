@@ -1636,41 +1636,88 @@ Koordináták küldéséhez:
         return fetch(`${WEBAPP_URL_ID_SEARCH}?${parametri.toString()}`).then(r => r.json());
     }
 
+    // Nodi DOM già costruiti per ciascun messaggio (chiave: IdRicerca), con
+    // la loro "firma" (stato ricevuto/in-attesa + quante posizioni). Serve
+    // per il refresh in background: confrontando la firma nuova con quella
+    // salvata si sa SUBITO se una riga va ricostruita o lasciata stare —
+    // senza, ogni giro da 60s buttava via e rifaceva tutto, chiudendo per
+    // forza qualunque mappa l'operatore avesse aperto dentro una riga.
+    let righeRiepilogoAttuali = new Map();
+
+    // "Ricevuto con 3 posizioni" e "ricevuto con 3 posizioni" sono la
+    // stessa situazione: non serve confrontare lat/lon riga per riga,
+    // basta il conteggio — se cambia, è arrivato qualcosa di nuovo.
+    function firmaRighePosizione(righePosizione) {
+        return righePosizione.length > 0 ? ("ricevuto:" + righePosizione.length) : "in-attesa";
+    }
+
+    // Confronta i dati appena scaricati con le righe già a schermo e
+    // aggiorna SOLO quelle cambiate. corpoRiepilogoMsg.replaceChildren
+    // riordina i nodi esistenti senza distruggerli (stesso riferimento =
+    // stesso accordion aperto, stessa mappa già disegnata dentro); un nodo
+    // nuovo lo crea da zero, uno sparito dai dati semplicemente non viene
+    // più incluso nell'elenco passato a replaceChildren.
+    function aggiornaRiepilogoIncrementale(messaggi, posizioni) {
+        if (!messaggi.length) {
+            corpoRiepilogoMsg.innerHTML = `<p class="pagina-nota">Nessun messaggio con link nelle ultime 24 ore.</p>`;
+            righeRiepilogoAttuali = new Map();
+            return;
+        }
+
+        // Più recenti in cima, come sempre
+        const ordinati = messaggi.slice().sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
+        const mappaAggiornata = new Map();
+        const elementiOrdinati = [];
+
+        ordinati.forEach((messaggio, indice) => {
+            // Fallback se un messaggio arrivasse senza IdRicerca: non
+            // dovrebbe succedere (il link lo richiede), ma non deve
+            // rompere il confronto per gli altri se capita.
+            const chiave = messaggio.IdRicerca || ("_senza-id-" + indice);
+            const righePosizione = posizioni.filter(p => p.IdRicerca === messaggio.IdRicerca);
+            const firma = firmaRighePosizione(righePosizione);
+            const esistente = righeRiepilogoAttuali.get(chiave);
+
+            const elemento = (esistente && esistente.firma === firma)
+                ? esistente.elemento // invariato: si riusa lo stesso nodo
+                : costruisciRigaRiepilogo(messaggio, righePosizione); // nuovo o cambiato
+
+            mappaAggiornata.set(chiave, { elemento, firma });
+            elementiOrdinati.push(elemento);
+        });
+
+        righeRiepilogoAttuali = mappaAggiornata;
+        corpoRiepilogoMsg.replaceChildren(...elementiOrdinati);
+    }
+
     function caricaRiepilogoMessaggi() {
         if (!corpoRiepilogoMsg) return;
         if (!WEBAPP_URL_ID_SEARCH || !WEBAPP_URL_ID_SEARCH.startsWith("https://")) {
             corpoRiepilogoMsg.innerHTML = `<p class="pagina-nota">Web App non ancora configurata (WEBAPP_URL_ID_SEARCH).</p>`;
+            righeRiepilogoAttuali = new Map();
             return;
         }
         if (!comandiDaInterrogare()) {
             corpoRiepilogoMsg.innerHTML = `<p class="pagina-nota">Seleziona prima un Comando.</p>`;
+            righeRiepilogoAttuali = new Map();
             return;
         }
 
-        corpoRiepilogoMsg.innerHTML = `<p class="pagina-nota">Caricamento...</p>`;
+        // "Caricamento..." solo al primo giro (corpo ancora vuoto): un
+        // refresh in background su una lista già a schermo non deve farla
+        // sparire nemmeno per un istante, altrimenti è uguale a prima.
+        if (righeRiepilogoAttuali.size === 0) {
+            corpoRiepilogoMsg.innerHTML = `<p class="pagina-nota">Caricamento...</p>`;
+        }
 
         fetchDatiRiepilogo()
-            .then(dati => {
-                const messaggi = dati.messaggi || [];
-                const posizioni = dati.posizioni || [];
-
-                if (!messaggi.length) {
-                    corpoRiepilogoMsg.innerHTML = `<p class="pagina-nota">Nessun messaggio con link nelle ultime 24 ore.</p>`;
-                    return;
-                }
-
-                corpoRiepilogoMsg.innerHTML = "";
-                // Più recenti in cima
-                messaggi
-                    .slice()
-                    .sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp))
-                    .forEach(messaggio => {
-                        const righePosizione = posizioni.filter(p => p.IdRicerca === messaggio.IdRicerca);
-                        corpoRiepilogoMsg.appendChild(costruisciRigaRiepilogo(messaggio, righePosizione));
-                    });
-            })
+            .then(dati => aggiornaRiepilogoIncrementale(dati.messaggi || [], dati.posizioni || []))
             .catch(() => {
-                corpoRiepilogoMsg.innerHTML = `<p class="pagina-nota">Errore nel caricamento del riepilogo.</p>`;
+                // Con righe già a schermo un errore di rete passeggero non
+                // le tocca: restano com'erano, si riprova al giro dopo.
+                if (righeRiepilogoAttuali.size === 0) {
+                    corpoRiepilogoMsg.innerHTML = `<p class="pagina-nota">Errore nel caricamento del riepilogo.</p>`;
+                }
             });
     }
 
