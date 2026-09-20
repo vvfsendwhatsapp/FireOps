@@ -1811,10 +1811,12 @@ Koordináták küldéséhez:
             mappaWrap.innerHTML = `
                 <div class="riepilogo-msg-mappa-tabella-layout">
                     <div class="riepilogo-msg-mappa-col">
-                        <button type="button" class="btn-toggle-radar riepilogo-msg-mostra-tutte">📍 Mostra tutte le posizioni</button>
                         <div id="${idMappa}" class="riepilogo-msg-mappa"></div>
                     </div>
-                    <div class="riepilogo-msg-tabella-posizioni-col"></div>
+                    <div class="riepilogo-msg-tabella-posizioni-col">
+                        <button type="button" class="btn-toggle-radar riepilogo-msg-mostra-tutte">📍 Mostra tutte le posizioni</button>
+                        <div class="riepilogo-msg-tabella-posizioni-contenuto"></div>
+                    </div>
                 </div>
             `;
             corpo.appendChild(mappaWrap);
@@ -1835,7 +1837,10 @@ Koordináták küldéséhez:
             const rigaPerNumero = new Map();
             numeroDiRiga.forEach((numero, riga) => rigaPerNumero.set(numero, riga));
 
-            const contenitoreTabella = mappaWrap.querySelector(".riepilogo-msg-tabella-posizioni-col");
+            // Il pulsante "Mostra tutte le posizioni" sta FUORI da questo
+            // contenitore (è sopra di lui, non dentro): .innerHTML qui
+            // sostituisce solo il contenuto della tabella, non lo tocca.
+            const contenitoreTabella = mappaWrap.querySelector(".riepilogo-msg-tabella-posizioni-contenuto");
             contenitoreTabella.innerHTML = costruisciTabellaPosizioni(righePosizione, numeroDiRiga);
 
             let mappaCreata = false;
@@ -1855,6 +1860,17 @@ Koordináták küldéséhez:
                     mostraTutte: mostraTutteLePosizioni,
                     posizioneForzata: posizioneSelezionata,
                 });
+            }
+
+            // Toglie la selezione manuale (se c'è) e ne pulisce il segno
+            // visivo in tabella: serve quando un altro comando prende il
+            // sopravvento (es. "Mostra tutte le posizioni"), perché una
+            // posizione selezionata avrebbe sempre la priorità e quel
+            // pulsante sembrerebbe non fare nulla.
+            function toglieSelezione() {
+                posizioneSelezionata = null;
+                contenitoreTabella.querySelectorAll(".riepilogo-msg-riga-posizione.selezionata")
+                    .forEach(r => r.classList.remove("selezionata"));
             }
 
             const btnMostraTutte = mappaWrap.querySelector(".riepilogo-msg-mostra-tutte");
@@ -1889,9 +1905,12 @@ Koordináták küldéséhez:
                 mappaWrap.hidden = !mappaWrap.hidden;
                 // Il pulsante dice cosa succederebbe al PROSSIMO clic, non
                 // cosa è appena successo: aperta -> offre di nasconderla.
+                // La classe "attivo" (stessa usata ovunque nell'app per un
+                // pulsante "acceso") lo colora diversamente da chiuso.
                 btnToggleMappa.textContent = mappaWrap.hidden
                     ? `🗺️ Mostra su mappa (${righePosizione.length})`
                     : "🙈 Nascondi mappa";
+                btnToggleMappa.classList.toggle("attivo", !mappaWrap.hidden);
                 mappaWrap.classList.toggle("espansa", !mappaWrap.hidden);
                 if (!mappaWrap.hidden && !mappaCreata) {
                     mappaCreata = true;
@@ -1904,6 +1923,11 @@ Koordináták küldéséhez:
                 mostraTutteLePosizioni = !mostraTutteLePosizioni;
                 btnMostraTutte.textContent = mostraTutteLePosizioni ? "📍 Solo la più precisa" : "📍 Mostra tutte le posizioni";
                 btnMostraTutte.classList.toggle("attivo", mostraTutteLePosizioni);
+                // Una posizione selezionata a mano avrebbe sempre la
+                // priorità su questo pulsante (vedi ridisegnaMappaSeCreata):
+                // senza toglierla, "Mostra tutte" sembrerebbe non fare
+                // nulla se prima era stata scelta una riga in tabella.
+                toglieSelezione();
                 ridisegnaMappaSeCreata();
             });
 

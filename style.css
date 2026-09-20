@@ -6587,10 +6587,24 @@ select:focus {
 .riepilogo-msg-tabella-posizioni-col {
     flex: 1 1 0;
     min-width: 0;
-    max-height: 380px;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    max-height: 520px;
     border: 1px solid var(--border-color);
     border-radius: 6px;
+    overflow: hidden;
+}
+
+.riepilogo-msg-tabella-posizioni-col .riepilogo-msg-mostra-tutte {
+    flex-shrink: 0;
+    margin: 0;
+    border-radius: 6px 6px 0 0;
+    border-bottom: none;
+}
+
+.riepilogo-msg-tabella-posizioni-contenuto {
+    flex: 1 1 auto;
+    overflow-y: auto;
 }
 
 .riepilogo-msg-tab-posizioni {
@@ -6625,8 +6639,6 @@ select:focus {
    colonna, non in fila con "Mostra su mappa"/"Apri nel convertitore" —
    quei due riguardano la riga intera, questo solo cosa disegna la mappa. */
 .riepilogo-msg-mostra-tutte {
-    width: 100%;
-    margin-bottom: 8px;
     padding: 6px 10px;
     font-size: 12px;
 }
