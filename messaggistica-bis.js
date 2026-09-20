@@ -1143,6 +1143,32 @@ Koordináták küldéséhez:
         }).catch(() => {}); // fire-and-forget: un errore qui non deve mai bloccare l'invio del messaggio
     }
 
+    // Segna un messaggio come archiviato sul foglio (colonna "Archiviata").
+    // Stesso pattern fire-and-forget di inviaRigaDbIdSearch: mode:'no-cors'
+    // non permette di leggere l'esito reale, ma l'interfaccia si aggiorna
+    // comunque subito (ottimisticamente) al click — vedi costruisciRigaRiepilogo.
+    // IdRicerca da solo non basta a identificare la riga: lo stesso
+    // intervento può generare più righe (un invio per canale — WhatsApp
+    // Web, Desktop, Telegram — se l'operatore ne usa più di uno), quindi
+    // si abbina anche il Timestamp esatto di QUESTA riga.
+    function archiviaMessaggio(messaggio) {
+        if (!WEBAPP_URL_ID_SEARCH || !WEBAPP_URL_ID_SEARCH.startsWith("https://")) return;
+
+        const payload = {
+            foglio: "DB_ID_Search",
+            azione: "archivia",
+            idRicerca: messaggio.IdRicerca || "",
+            timestamp: messaggio.Timestamp || "",
+        };
+
+        fetch(WEBAPP_URL_ID_SEARCH, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify(payload)
+        }).catch(() => {});
+    }
+
     if (btnWhatsappWeb) {
         btnWhatsappWeb.addEventListener("click", () => {
             if (!validaCampiMessaggistica().tuttiCompilati) return;
@@ -1794,6 +1820,37 @@ Koordináták küldéséhez:
             });
         }
 
+        // "Archivia messaggio": solo per il Comando TITOLARE, cioè quello
+        // attivo in questa sessione — un altro Comando che vede lo stesso
+        // messaggio (es. come limitrofo) non può archiviarlo, non è "suo".
+        // In fondo alla riga, sempre presente (anche se il messaggio è
+        // ancora "in attesa", non solo quando è "ricevuto"): archiviare
+        // vuol dire "questa conversazione è chiusa", indipendentemente
+        // dal fatto che sia arrivata o meno una posizione.
+        const comandoAttivoSessione = sessionStorage.getItem(CHIAVE_STORAGE);
+        const titolare = !!(comandoAttivoSessione && messaggio.Comando === comandoAttivoSessione);
+        if (titolare) {
+            const giaArchiviato = String(messaggio.Archiviata).toUpperCase() === "TRUE";
+            const btnArchivia = document.createElement("button");
+            btnArchivia.type = "button";
+            btnArchivia.className = "riepilogo-msg-archivia" + (giaArchiviato ? " archiviato" : "");
+            btnArchivia.textContent = giaArchiviato ? "✅ Messaggio archiviato" : "📥 Archivia messaggio";
+            btnArchivia.disabled = giaArchiviato;
+            btnArchivia.addEventListener("click", () => {
+                // Aggiornamento ottimistico: mode:'no-cors' non permette di
+                // leggere l'esito reale della scrittura (stesso limite di
+                // inviaRigaDbIdSearch), quindi l'interfaccia si aggiorna
+                // subito e non aspetta conferma dal foglio. La riga NON
+                // sparisce: resta a video, marcata come archiviata, finché
+                // non esce da sé dalla finestra delle 24h.
+                btnArchivia.disabled = true;
+                btnArchivia.textContent = "✅ Messaggio archiviato";
+                btnArchivia.classList.add("archiviato");
+                archiviaMessaggio(messaggio);
+            });
+            div.appendChild(btnArchivia);
+        }
+
         return div;
     }
 
@@ -1862,7 +1919,11 @@ Koordináták küldéséhez:
             // rompere il confronto per gli altri se capita.
             const chiave = messaggio.IdRicerca || ("_senza-id-" + indice);
             const righePosizione = posizioni.filter(p => p.IdRicerca === messaggio.IdRicerca);
-            const firma = firmaRighePosizione(righePosizione);
+            // Include lo stato "archiviata": se cambia da un'altra sessione
+            // (un'altra postazione dello stesso Comando), il pulsante deve
+            // aggiornarsi da solo al giro di refresh successivo, non solo
+            // quando l'archiviazione parte da questa stessa riga.
+            const firma = firmaRighePosizione(righePosizione) + "|arch:" + String(messaggio.Archiviata).toUpperCase();
             const esistente = righeRiepilogoAttuali.get(chiave);
 
             const elemento = (esistente && esistente.firma === firma)
