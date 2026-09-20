@@ -1463,8 +1463,8 @@ Koordináták küldéséhez:
         function iconaPuntoNumerato(numero) {
             return L.divIcon({
                 className: "",
-                html: `<div style="width:24px;height:24px;border-radius:50%;background:#ffd700;border:2px solid #121212;box-shadow:0 0 6px rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;">
-                           <span style="color:#121212;font:bold 12px Arial;">${numero}</span>
+                html: `<div style="width:24px;height:24px;border-radius:50%;background:#AF2B1E;border:2px solid #121212;box-shadow:0 0 6px rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;">
+                           <span style="color:#fff;font:bold 12px Arial;">${numero}</span>
                        </div>`,
                 iconSize: [24, 24],
                 iconAnchor: [12, 12],
@@ -1500,7 +1500,7 @@ Koordináták küldéséhez:
             // sovrappongono e confondono più di quanto aiutino.
             if (!mostraTutte && isFinite(raggio) && raggio > 0) {
                 L.circle([lat, lng], {
-                    radius: raggio, color: "#ffd700", fillColor: "#ffd700", fillOpacity: 0.15, weight: 1
+                    radius: raggio, color: "#AF2B1E", fillColor: "#AF2B1E", fillOpacity: 0.15, weight: 1
                 }).addTo(gruppo);
             }
         });
@@ -1542,16 +1542,23 @@ Koordináták küldéséhez:
 
         const righeHtml = righeVisibili.map(riga => {
             const raggio = numeroLocale(riga.Accuratezza);
-            const orario = riga.Timestamp ? new Date(riga.Timestamp).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "-";
-            return `<tr>
-                <td>${numeroDiRiga.get(riga) || "-"}</td>
-                <td>${orario}</td>
+            // Data oltre all'ora: le 24h di finestra possono attraversare
+            // la mezzanotte, e "14:39" da solo non direbbe più di che giorno.
+            const ricevuta = riga.Timestamp
+                ? new Date(riga.Timestamp).toLocaleString("it-IT", {
+                    day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit"
+                })
+                : "-";
+            const numero = numeroDiRiga.get(riga) || "-";
+            return `<tr class="riepilogo-msg-riga-posizione" data-numero="${numero}" tabindex="0">
+                <td>${numero}</td>
+                <td>${ricevuta}</td>
                 <td>${isFinite(raggio) ? "± " + raggio + " m" : "-"}</td>
             </tr>`;
         }).join("");
 
         return `<table class="riepilogo-tabella riepilogo-msg-tab-posizioni">
-            <thead><tr><th>#</th><th>Orario</th><th>Precisione</th></tr></thead>
+            <thead><tr><th>ID_POS</th><th>Ricevuta</th><th>Precisione</th></tr></thead>
             <tbody>${righeHtml}</tbody>
         </table>`;
     }
@@ -1635,13 +1642,30 @@ Koordináták küldéséhez:
             ? `<span class="riepilogo-msg-stato ricevuto">✅ Ricevuto</span>`
             : `<span class="riepilogo-msg-stato in-attesa">⏳ In attesa</span>`;
 
+        // Intestazione a frase invece dei soli campi affiancati: più
+        // spazio per leggerla a colpo d'occhio, non tutto compresso su una
+        // riga sola. Numero/anno intervento sono facoltativi: compaiono
+        // solo se il messaggio li porta (il link "Con" li registra, "Senza"
+        // no — vedi msg-numero-intervento in initLinkCoordinateUI).
+        const dataOraInvio = messaggio.Timestamp
+            ? new Date(messaggio.Timestamp).toLocaleString("it-IT", {
+                day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit"
+            })
+            : "-";
+        const rigaIntervento = (messaggio.NumeroIntervento || messaggio.AnnoIntervento)
+            ? ` — Intervento N. <b>${messaggio.NumeroIntervento || "-"}</b> Anno <b>${messaggio.AnnoIntervento || "-"}</b>`
+            : "";
+
         div.innerHTML = `
             <div class="riepilogo-msg-riga-testa">
-                <span class="riepilogo-msg-canale">${messaggio.Canale || "-"}</span>
-                <span class="riepilogo-msg-orario">${messaggio.Timestamp ? new Date(messaggio.Timestamp).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }) : "-"}</span>
-                <span class="riepilogo-msg-comando">${messaggio.Comando || "-"}</span>
-                <span class="riepilogo-msg-tel">${maschera(messaggio.NumeroTelefono)}</span>
-                ${badge}
+                <p class="riepilogo-msg-frase">
+                    Messaggio inviato con <b>${messaggio.Canale || "-"}</b> il <b>${dataOraInvio}</b>
+                    dal comando di <b>${messaggio.Comando || "-"}</b>${rigaIntervento}
+                </p>
+                <div class="riepilogo-msg-riga-meta">
+                    <span class="riepilogo-msg-tel">${maschera(messaggio.NumeroTelefono)}</span>
+                    ${badge}
+                </div>
             </div>
             <div class="riepilogo-msg-riga-id">ID ricerca: <b>${messaggio.IdRicerca || "-"}</b></div>
         `;
@@ -1683,6 +1707,11 @@ Koordináták küldéséhez:
             });
             const numeroDiRiga = new Map();
             righeOrdinateCronologia.forEach((riga, indice) => numeroDiRiga.set(riga, indice + 1));
+            // Direzione inversa, per risalire dalla riga di tabella cliccata
+            // (che conosce solo il numero, messo in data-numero) alla
+            // posizione vera.
+            const rigaPerNumero = new Map();
+            numeroDiRiga.forEach((numero, riga) => rigaPerNumero.set(numero, riga));
 
             const contenitoreTabella = mappaWrap.querySelector(".riepilogo-msg-tabella-posizioni-col");
             contenitoreTabella.innerHTML = costruisciTabellaPosizioni(righePosizione, numeroDiRiga);
@@ -1691,6 +1720,30 @@ Koordináták küldéséhez:
             let mostraTutteLePosizioni = false;
             const statoMappa = {}; // {mappa, gruppo}: mantiene la stessa mappa Leaflet fra i due modi
             const btnMostraTutte = mappaWrap.querySelector(".riepilogo-msg-mostra-tutte");
+
+            // Posizione scelta a mano dall'operatore cliccando una riga
+            // della tabella: se presente, è quella che "Apri nel
+            // convertitore" userà al posto della più recente. Un solo
+            // clic selettivo (come un radio): cliccare la stessa riga
+            // di nuovo la deseleziona e si torna al criterio "più recente".
+            let posizioneSelezionata = null;
+            contenitoreTabella.addEventListener("click", (ev) => {
+                const riga = ev.target.closest(".riepilogo-msg-riga-posizione");
+                if (!riga) return;
+                const numero = parseInt(riga.dataset.numero, 10);
+                const posizioneDellaRiga = rigaPerNumero.get(numero) || null;
+
+                const eraGiaSelezionata = riga.classList.contains("selezionata");
+                contenitoreTabella.querySelectorAll(".riepilogo-msg-riga-posizione.selezionata")
+                    .forEach(r => r.classList.remove("selezionata"));
+
+                if (eraGiaSelezionata) {
+                    posizioneSelezionata = null; // deseleziona: torna al criterio "più recente"
+                } else {
+                    riga.classList.add("selezionata");
+                    posizioneSelezionata = posizioneDellaRiga;
+                }
+            });
 
             azioni.querySelector(".riepilogo-msg-toggle-mappa").addEventListener("click", (ev) => {
                 ev.stopPropagation();
@@ -1712,8 +1765,11 @@ Koordináták küldéséhez:
             });
 
             azioni.querySelector(".riepilogo-msg-apri-convertitore").addEventListener("click", () => {
-                const ultima = puntoUltimo(righePosizione);
-                if (ultima) apriInConvertitore(numeroLocale(ultima.Lat), numeroLocale(ultima.Lng));
+                // Se l'operatore ha selezionato una riga in tabella, è
+                // quella a decidere — altrimenti si ricade sul criterio
+                // di sempre, l'ultima posizione ricevuta.
+                const scelta = posizioneSelezionata || puntoUltimo(righePosizione);
+                if (scelta) apriInConvertitore(numeroLocale(scelta.Lat), numeroLocale(scelta.Lng));
             });
         }
 

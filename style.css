@@ -6699,6 +6699,45 @@ select:focus {
     }
 }
 
+/* Intestazione a frase invece dei campi affiancati e compressi */
+.riepilogo-msg-frase {
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--text-main);
+    margin: 0;
+}
+
+.riepilogo-msg-frase b {
+    color: var(--primary-color);
+}
+
+.riepilogo-msg-riga-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 6px;
+}
+
+/* Righe della tabella posizioni: cliccabili e selezionabili */
+.riepilogo-msg-riga-posizione {
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.riepilogo-msg-riga-posizione:hover {
+    background: rgba(255, 215, 0, 0.08);
+}
+
+.riepilogo-msg-riga-posizione.selezionata {
+    background: rgba(175, 43, 30, 0.22);
+    box-shadow: inset 3px 0 0 #AF2B1E;
+}
+
+.riepilogo-msg-riga-posizione.selezionata td {
+    color: var(--text-main);
+    font-weight: bold;
+}
+
 /* Messaggistica espansa resta un PANNELLO VERO — bordo, angoli
    arrotondati, margini normali — solo più largo, non un riquadro a filo
    schermo come Convertitore/SITAC (quelli restano fixed/edge-to-edge:
