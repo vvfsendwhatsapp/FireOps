@@ -1143,22 +1143,24 @@ Koordináták küldéséhez:
         }).catch(() => {}); // fire-and-forget: un errore qui non deve mai bloccare l'invio del messaggio
     }
 
-    // Segna un messaggio come archiviato sul foglio (colonna "Archiviata").
-    // Stesso pattern fire-and-forget di inviaRigaDbIdSearch: mode:'no-cors'
-    // non permette di leggere l'esito reale, ma l'interfaccia si aggiorna
-    // comunque subito (ottimisticamente) al click — vedi costruisciRigaRiepilogo.
+    // Imposta lo stato "archiviata" di un messaggio (in entrambi i sensi:
+    // archivia E disarchivia, stesso payload con "valore" diverso). Stesso
+    // pattern fire-and-forget di inviaRigaDbIdSearch: mode:'no-cors' non
+    // permette di leggere l'esito reale, l'interfaccia si aggiorna subito
+    // (ottimisticamente) al click — vedi costruisciRigaRiepilogo.
     // IdRicerca da solo non basta a identificare la riga: lo stesso
     // intervento può generare più righe (un invio per canale — WhatsApp
     // Web, Desktop, Telegram — se l'operatore ne usa più di uno), quindi
     // si abbina anche il Timestamp esatto di QUESTA riga.
-    function archiviaMessaggio(messaggio) {
+    function impostaArchiviazioneMessaggio(messaggio, valore) {
         if (!WEBAPP_URL_ID_SEARCH || !WEBAPP_URL_ID_SEARCH.startsWith("https://")) return;
 
         const payload = {
             foglio: "DB_ID_Search",
-            azione: "archivia",
+            azione: "imposta-archiviata",
             idRicerca: messaggio.IdRicerca || "",
             timestamp: messaggio.Timestamp || "",
+            valore: !!valore,
         };
 
         fetch(WEBAPP_URL_ID_SEARCH, {
@@ -1826,27 +1828,35 @@ Koordináták küldéséhez:
         // In fondo alla riga, sempre presente (anche se il messaggio è
         // ancora "in attesa", non solo quando è "ricevuto"): archiviare
         // vuol dire "questa conversazione è chiusa", indipendentemente
-        // dal fatto che sia arrivata o meno una posizione.
+        // dal fatto che sia arrivata o meno una posizione. Resta cliccabile
+        // anche da archiviato: un secondo clic lo riporta attivo — non è
+        // un'azione a senso unico.
         const comandoAttivoSessione = sessionStorage.getItem(CHIAVE_STORAGE);
         const titolare = !!(comandoAttivoSessione && messaggio.Comando === comandoAttivoSessione);
         if (titolare) {
-            const giaArchiviato = String(messaggio.Archiviata).toUpperCase() === "TRUE";
+            let archiviato = String(messaggio.Archiviata).toUpperCase() === "TRUE";
             const btnArchivia = document.createElement("button");
             btnArchivia.type = "button";
-            btnArchivia.className = "riepilogo-msg-archivia" + (giaArchiviato ? " archiviato" : "");
-            btnArchivia.textContent = giaArchiviato ? "✅ Messaggio archiviato" : "📥 Archivia messaggio";
-            btnArchivia.disabled = giaArchiviato;
+
+            function aggiornaAspettoBottoneArchivia() {
+                btnArchivia.className = "riepilogo-msg-archivia" + (archiviato ? " archiviato" : "");
+                btnArchivia.textContent = archiviato
+                    ? "✅ Messaggio archiviato · clic per riattivare"
+                    : "📥 Archivia messaggio";
+            }
+            aggiornaAspettoBottoneArchivia();
+
             btnArchivia.addEventListener("click", () => {
                 // Aggiornamento ottimistico: mode:'no-cors' non permette di
                 // leggere l'esito reale della scrittura (stesso limite di
                 // inviaRigaDbIdSearch), quindi l'interfaccia si aggiorna
-                // subito e non aspetta conferma dal foglio. La riga NON
-                // sparisce: resta a video, marcata come archiviata, finché
-                // non esce da sé dalla finestra delle 24h.
-                btnArchivia.disabled = true;
-                btnArchivia.textContent = "✅ Messaggio archiviato";
-                btnArchivia.classList.add("archiviato");
-                archiviaMessaggio(messaggio);
+                // subito e non aspetta conferma dal foglio. Archiviare non
+                // fa sparire la riga: resta a video, marcata come tale,
+                // finché non esce da sé dalla finestra delle 24h — e resta
+                // sempre possibile tornare indietro con un secondo clic.
+                archiviato = !archiviato;
+                aggiornaAspettoBottoneArchivia();
+                impostaArchiviazioneMessaggio(messaggio, archiviato);
             });
             div.appendChild(btnArchivia);
         }
