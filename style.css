@@ -6622,6 +6622,83 @@ select:focus {
     white-space: nowrap;
 }
 
+/* Mappa (2/3) + tabella posizioni (1/3), affiancate dentro l'accordion */
+.riepilogo-msg-mappa-tabella-layout {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.riepilogo-msg-mappa-col {
+    flex: 2 1 0;
+    min-width: 0;
+}
+
+.riepilogo-msg-tabella-posizioni-col {
+    flex: 1 1 0;
+    min-width: 0;
+    max-height: 380px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+}
+
+.riepilogo-msg-tab-posizioni {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+}
+
+.riepilogo-msg-tab-posizioni th {
+    position: sticky;
+    top: 0;
+    background: var(--dark-color);
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-size: 10.5px;
+    text-align: left;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.riepilogo-msg-tab-posizioni td {
+    padding: 5px 8px;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-main);
+}
+
+.riepilogo-msg-tab-posizioni tr:last-child td {
+    border-bottom: none;
+}
+
+/* Pulsante "Mostra tutte le posizioni": sta sopra la mappa, dentro la
+   colonna, non in fila con "Mostra su mappa"/"Apri nel convertitore" —
+   quei due riguardano la riga intera, questo solo cosa disegna la mappa. */
+.riepilogo-msg-mostra-tutte {
+    width: 100%;
+    margin-bottom: 8px;
+    padding: 6px 10px;
+    font-size: 12px;
+}
+
+.riepilogo-msg-mostra-tutte.attivo {
+    background: var(--primary-color);
+    color: var(--dark-color);
+    border-color: var(--primary-color);
+    font-weight: bold;
+}
+
+/* Sotto i 620px la coppia mappa/tabella si impila: 1/3 di una colonna
+   stretta sarebbe illeggibile */
+@media (max-width: 620px) {
+    .riepilogo-msg-mappa-tabella-layout {
+        flex-direction: column;
+    }
+    .riepilogo-msg-tabella-posizioni-col {
+        max-height: 200px;
+    }
+}
+
 /* Messaggistica espansa resta un PANNELLO VERO — bordo, angoli
    arrotondati, margini normali — solo più largo, non un riquadro a filo
    schermo come Convertitore/SITAC (quelli restano fixed/edge-to-edge:

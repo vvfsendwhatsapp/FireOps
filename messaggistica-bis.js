@@ -1376,17 +1376,62 @@ Koordináták küldéséhez:
     // semitrasparente il cui raggio è l'accuratezza in metri.
     // Un punto per riga (marker + cerchio di precisione), col popup che
     // mostra tutti i dati disponibili per quella posizione — non solo lat/lon.
-    function disegnaPuntiPosizione(mappaEl, righePosizione) {
-        if (!window.L || !righePosizione.length) return;
+    // Ultima posizione ricevuta (timestamp più recente) fra le righe di un
+    // ID ricerca: è quella da proporre nel convertitore coordinate — non
+    // la più precisa, ma l'ultima nel tempo (il locator manda fino a 3
+    // tentativi solo se la precisione migliora, quindi in pratica coincidono
+    // quasi sempre, ma il criterio chiesto è "ultima", non "più precisa").
+    function puntoUltimo(righePosizione) {
+        return righePosizione.reduce((ultimo, riga) => {
+            if (!ultimo) return riga;
+            const tUltimo = ultimo.Timestamp ? new Date(ultimo.Timestamp).getTime() : 0;
+            const tRiga = riga.Timestamp ? new Date(riga.Timestamp).getTime() : 0;
+            return tRiga > tUltimo ? riga : ultimo;
+        }, null);
+    }
 
-        // Numerate in ordine cronologico (1 = più vecchia, N = più recente):
-        // stesso ordine con cui il locator le ha inviate, così il numero sul
-        // marker corrisponde a "quale tentativo era".
-        const righeOrdinate = righePosizione.slice().sort((a, b) => {
+    // La posizione con il raggio di precisione più piccolo, cioè quella
+    // "migliore" da mostrare sola sulla mappa di default. Se nessuna riga
+    // ha un'Accuratezza leggibile, ricade sull'ultima per timestamp: la
+    // mappa non deve mai restare vuota solo perché manca quel dato.
+    function posizionePiuPrecisa(righePosizione) {
+        const conRaggio = righePosizione
+            .map(riga => ({ riga, raggio: numeroLocale(riga.Accuratezza) }))
+            .filter(v => isFinite(v.raggio) && v.raggio > 0);
+        if (!conRaggio.length) return puntoUltimo(righePosizione);
+        return conRaggio.reduce((migliore, v) => v.raggio < migliore.raggio ? v : migliore).riga;
+    }
+
+    // "statoMappa" è un oggetto {mappa, gruppo} tenuto dal chiamante (una
+    // per ogni riga di messaggio): permette di ridisegnare i punti sulla
+    // STESSA mappa Leaflet già creata invece di ricrearla da zero ogni
+    // volta che si passa da "solo la più precisa" a "tutte" — Leaflet non
+    // ammette due L.map() sullo stesso contenitore senza distruggere la
+    // prima esplicitamente, e ricrearla perderebbe anche lo zoom scelto
+    // dall'operatore.
+    // mostraTutte=false (default): un solo marker, quello più preciso, con
+    // il suo cerchio di precisione. mostraTutte=true: tutti i marker delle
+    // posizioni ricevute, senza cerchi (troppi cerchi sovrapposti confondono
+    // più che aiutare).
+    function disegnaPuntiPosizione(mappaEl, righePosizioneComplete, statoMappa, mostraTutte) {
+        if (!window.L || !righePosizioneComplete.length) return;
+
+        // Numerazione cronologica (1 = più vecchia) calcolata SEMPRE su
+        // tutte le posizioni ricevute, indipendentemente da quante se ne
+        // disegnano: il numero di una riga deve restare lo stesso sia in
+        // modalità "solo la più precisa" sia in modalità "tutte", o non
+        // corrisponderebbe più al numero nella tabella a fianco.
+        const righeOrdinate = righePosizioneComplete.slice().sort((a, b) => {
             const ta = a.Timestamp ? new Date(a.Timestamp).getTime() : 0;
             const tb = b.Timestamp ? new Date(b.Timestamp).getTime() : 0;
             return ta - tb;
         });
+        const numeroDiRiga = new Map();
+        righeOrdinate.forEach((riga, indice) => numeroDiRiga.set(riga, indice + 1));
+
+        const daDisegnare = mostraTutte
+            ? righeOrdinate
+            : [posizionePiuPrecisa(righePosizioneComplete)].filter(Boolean);
 
         // Leaflet richiede una vista iniziale (centro+zoom) prima di poter
         // calcolare i bounds di un cerchio: Circle.getBounds() legge la
@@ -1395,16 +1440,23 @@ Koordináták küldéséhez:
         // errore ("Cannot read properties of undefined (reading
         // 'layerPointToLatLng')") appena il gruppo contiene un cerchio di
         // precisione — e quell'errore blocca tutto il resto della funzione,
-        // compreso il centraggio finale.
-        const primoValido = righeOrdinate
-            .map(r => [numeroLocale(r.Lat), numeroLocale(r.Lng)])
-            .find(([lat, lng]) => isFinite(lat) && isFinite(lng));
+        // compreso il centraggio finale. Creata una sola volta: le chiamate
+        // successive (cambio modalità) riusano statoMappa.mappa.
+        if (!statoMappa.mappa) {
+            const primoValido = righeOrdinate
+                .map(r => [numeroLocale(r.Lat), numeroLocale(r.Lng)])
+                .find(([lat, lng]) => isFinite(lat) && isFinite(lng));
 
-        const mappa = L.map(mappaEl, { attributionControl: false })
-            .setView(primoValido || [41.9, 12.5], primoValido ? 15 : 5);
+            statoMappa.mappa = L.map(mappaEl, { attributionControl: false })
+                .setView(primoValido || [41.9, 12.5], primoValido ? 15 : 5);
 
-        const layer = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 });
-        layer.addTo(mappa);
+            L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 })
+                .addTo(statoMappa.mappa);
+        }
+        const mappa = statoMappa.mappa;
+
+        // Cambio modalità: via i marker/cerchi di prima, si ridisegna da capo
+        if (statoMappa.gruppo) mappa.removeLayer(statoMappa.gruppo);
 
         // Stesso linguaggio visivo dei rombi numerati dei Reparti Volo nel
         // convertitore coordinate: cerchio pieno con il numero al centro.
@@ -1420,7 +1472,7 @@ Koordináták küldéséhez:
         }
 
         const gruppo = L.featureGroup();
-        righeOrdinate.forEach((riga, indice) => {
+        daDisegnare.forEach(riga => {
             const lat = numeroLocale(riga.Lat), lng = numeroLocale(riga.Lng);
             if (!isFinite(lat) || !isFinite(lng)) return;
 
@@ -1430,7 +1482,7 @@ Koordináták küldéséhez:
             const direzione = numeroLocale(riga.Direzione);
             const velocita = numeroLocale(riga.Velocita);
             const orario = riga.Timestamp ? new Date(riga.Timestamp).toLocaleString("it-IT") : "-";
-            const numero = indice + 1;
+            const numero = numeroDiRiga.get(riga);
 
             const marker = L.marker([lat, lng], { icon: iconaPuntoNumerato(numero) }).addTo(gruppo);
             marker.bindPopup(`
@@ -1443,13 +1495,17 @@ Koordináták küldéséhez:
                 Velocità: ${isFinite(velocita) ? velocita + " km/h" : "-"}
             `);
 
-            if (isFinite(raggio) && raggio > 0) {
+            // Il cerchio di precisione compare solo quando è mostrata UNA
+            // sola posizione: con tutte le posizioni insieme i cerchi si
+            // sovrappongono e confondono più di quanto aiutino.
+            if (!mostraTutte && isFinite(raggio) && raggio > 0) {
                 L.circle([lat, lng], {
                     radius: raggio, color: "#ffd700", fillColor: "#ffd700", fillOpacity: 0.15, weight: 1
                 }).addTo(gruppo);
             }
         });
         gruppo.addTo(mappa);
+        statoMappa.gruppo = gruppo;
 
         // BUG: fitBounds veniva chiamato quando il contenitore poteva
         // essere ancora a dimensione zero (l'accordion si è appena aperto,
@@ -1469,18 +1525,35 @@ Koordináták küldéséhez:
         });
     }
 
-    // Ultima posizione ricevuta (timestamp più recente) fra le righe di un
-    // ID ricerca: è quella da proporre nel convertitore coordinate — non
-    // la più precisa, ma l'ultima nel tempo (il locator manda fino a 3
-    // tentativi solo se la precisione migliora, quindi in pratica coincidono
-    // quasi sempre, ma il criterio chiesto è "ultima", non "più precisa").
-    function puntoUltimo(righePosizione) {
-        return righePosizione.reduce((ultimo, riga) => {
-            if (!ultimo) return riga;
-            const tUltimo = ultimo.Timestamp ? new Date(ultimo.Timestamp).getTime() : 0;
-            const tRiga = riga.Timestamp ? new Date(riga.Timestamp).getTime() : 0;
-            return tRiga > tUltimo ? riga : ultimo;
-        }, null);
+    // Elenco di TUTTE le posizioni ricevute, più recenti in cima, con la
+    // precisione indicata riga per riga (non è un criterio di
+    // ordinamento: serve solo a leggerla a colpo d'occhio). Il numero in
+    // prima colonna è lo stesso che compare sul marker corrispondente
+    // sulla mappa, in modalità "tutte" — così una riga si ritrova subito.
+    function costruisciTabellaPosizioni(righePosizioneComplete, numeroDiRiga) {
+        const righeVisibili = righePosizioneComplete
+            .filter(riga => isFinite(numeroLocale(riga.Lat)) && isFinite(numeroLocale(riga.Lng)))
+            .slice()
+            .sort((a, b) => {
+                const ta = a.Timestamp ? new Date(a.Timestamp).getTime() : 0;
+                const tb = b.Timestamp ? new Date(b.Timestamp).getTime() : 0;
+                return tb - ta; // più recenti in cima
+            });
+
+        const righeHtml = righeVisibili.map(riga => {
+            const raggio = numeroLocale(riga.Accuratezza);
+            const orario = riga.Timestamp ? new Date(riga.Timestamp).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "-";
+            return `<tr>
+                <td>${numeroDiRiga.get(riga) || "-"}</td>
+                <td>${orario}</td>
+                <td>${isFinite(raggio) ? "± " + raggio + " m" : "-"}</td>
+            </tr>`;
+        }).join("");
+
+        return `<table class="riepilogo-tabella riepilogo-msg-tab-posizioni">
+            <thead><tr><th>#</th><th>Orario</th><th>Precisione</th></tr></thead>
+            <tbody>${righeHtml}</tbody>
+        </table>`;
     }
 
     // Porta al Convertitore Coordinate con lat/lon già impostate in formato
@@ -1582,22 +1655,59 @@ Koordináták küldéséhez:
             `;
             div.appendChild(azioni);
 
-            // Mappa piccola dentro la riga (accordion): si espande in basso
-            // sotto ai pulsanti, invece di aprire il popup grande sull'altro
-            // pannello. Creata una sola volta, alla prima apertura.
+            // Mappa + tabella posizioni dentro la riga (accordion): si
+            // espande sotto ai pulsanti, invece di aprire il popup grande
+            // sull'altro pannello. Mappa 2/3, tabella 1/3 — creata una sola
+            // volta, alla prima apertura.
             const mappaWrap = document.createElement("div");
             mappaWrap.className = "riepilogo-msg-mappa-wrap";
             mappaWrap.hidden = true;
-            mappaWrap.innerHTML = `<div id="${idMappa}" class="riepilogo-msg-mappa"></div>`;
+            mappaWrap.innerHTML = `
+                <div class="riepilogo-msg-mappa-tabella-layout">
+                    <div class="riepilogo-msg-mappa-col">
+                        <button type="button" class="btn-toggle-radar riepilogo-msg-mostra-tutte">📍 Mostra tutte le posizioni</button>
+                        <div id="${idMappa}" class="riepilogo-msg-mappa"></div>
+                    </div>
+                    <div class="riepilogo-msg-tabella-posizioni-col"></div>
+                </div>
+            `;
             div.appendChild(mappaWrap);
 
-            let mappaCreata = null;
+            // Numerazione cronologica (1 = più vecchia) condivisa fra mappa
+            // e tabella: calcolata una sola volta, qui, così i due usano
+            // sempre lo stesso numero per la stessa posizione.
+            const righeOrdinateCronologia = righePosizione.slice().sort((a, b) => {
+                const ta = a.Timestamp ? new Date(a.Timestamp).getTime() : 0;
+                const tb = b.Timestamp ? new Date(b.Timestamp).getTime() : 0;
+                return ta - tb;
+            });
+            const numeroDiRiga = new Map();
+            righeOrdinateCronologia.forEach((riga, indice) => numeroDiRiga.set(riga, indice + 1));
+
+            const contenitoreTabella = mappaWrap.querySelector(".riepilogo-msg-tabella-posizioni-col");
+            contenitoreTabella.innerHTML = costruisciTabellaPosizioni(righePosizione, numeroDiRiga);
+
+            let mappaCreata = false;
+            let mostraTutteLePosizioni = false;
+            const statoMappa = {}; // {mappa, gruppo}: mantiene la stessa mappa Leaflet fra i due modi
+            const btnMostraTutte = mappaWrap.querySelector(".riepilogo-msg-mostra-tutte");
+
             azioni.querySelector(".riepilogo-msg-toggle-mappa").addEventListener("click", (ev) => {
                 ev.stopPropagation();
                 mappaWrap.hidden = !mappaWrap.hidden;
                 if (!mappaWrap.hidden && !mappaCreata) {
                     mappaCreata = true;
-                    disegnaPuntiPosizione(document.getElementById(idMappa), righePosizione);
+                    disegnaPuntiPosizione(document.getElementById(idMappa), righePosizione, statoMappa, mostraTutteLePosizioni);
+                }
+            });
+
+            btnMostraTutte.addEventListener("click", (ev) => {
+                ev.stopPropagation();
+                mostraTutteLePosizioni = !mostraTutteLePosizioni;
+                btnMostraTutte.textContent = mostraTutteLePosizioni ? "📍 Solo la più precisa" : "📍 Mostra tutte le posizioni";
+                btnMostraTutte.classList.toggle("attivo", mostraTutteLePosizioni);
+                if (mappaCreata) {
+                    disegnaPuntiPosizione(document.getElementById(idMappa), righePosizione, statoMappa, mostraTutteLePosizioni);
                 }
             });
 
