@@ -1104,7 +1104,7 @@ Koordináták küldéséhez:
     // distribuita per locator.html, il doPost() lato Apps Script deve
     // instradare in base al campo "foglio" del payload — vedi il codice di
     // esempio nella risposta.
-    const WEBAPP_URL_ID_SEARCH = "https://script.google.com/macros/s/AKfycbyp6jQ331Yk5q7_hkM74ZyhUh1c3zQUJG7SpuoE18HslBO36YKSTYIQf-z7gSwXR4Yv/exec";
+    const WEBAPP_URL_ID_SEARCH = "https://script.google.com/macros/s/AKfycbwS8Vtq5MbfPG-lLdobd8IpFqh2Mi90mTciotejfh9L1E7cUkMjdQko-zcj0thYOZ44/exec";
 
     // Registra su Google Sheet ogni invio di messaggio, qualunque sia il
     // canale scelto. Non blocca né condiziona l'invio vero e proprio: se la
@@ -1242,7 +1242,6 @@ Koordináták küldéséhez:
     // ==========================================================
 
     const btnRiepilogoMsg = document.getElementById("btn-riepilogo-msg");
-    const frecciaRiepilogoMsg = document.getElementById("btn-riepilogo-msg")?.querySelector(".riepilogo-msg-tab-freccia");
     const overlayRiepilogoMsg = document.getElementById("riepilogo-msg-overlay");
     const corpoRiepilogoMsg = document.getElementById("riepilogo-msg-corpo");
     const chkRiepilogoLimitrofi = document.getElementById("riepilogo-msg-limitrofi");
@@ -1326,7 +1325,9 @@ Koordináták küldéséhez:
 
         btnRiepilogoMsg.classList.toggle("aperta", inFullscreen);
         if (overlayRiepilogoMsg) overlayRiepilogoMsg.hidden = !inFullscreen;
-        if (frecciaRiepilogoMsg) frecciaRiepilogoMsg.textContent = inFullscreen ? "◂" : "▸";
+        // La freccia non cambia più carattere (▸/◂): ruota con una
+        // transizione CSS sulla classe "aperta" già impostata qui sopra
+        // (vedi .riepilogo-msg-tab.aperta .riepilogo-msg-tab-freccia).
 
         if (inFullscreen) caricaRiepilogoMessaggi();
         setTimeout(() => window.dispatchEvent(new Event("resize")), 150);
@@ -1356,8 +1357,7 @@ Koordináták küldéséhez:
         // Pannello non più raggiungibile: resetta lo stato a mano, dato
         // che toggleFullscreenMessaggistica() da sola richiede di trovarlo.
         overlayRiepilogoMsg.hidden = true;
-        btnRiepilogoMsg.classList.remove("aperta");
-        if (frecciaRiepilogoMsg) frecciaRiepilogoMsg.textContent = "▸";
+        btnRiepilogoMsg.classList.remove("aperta"); // via anche la classe: la freccia CSS torna alla rotazione di riposo
         document.body.classList.remove("fullscreen-attivo");
         const splitScreenEl = document.querySelector(".split-screen");
         if (splitScreenEl) splitScreenEl.classList.remove("ha-pannello-fullscreen");

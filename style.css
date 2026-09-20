@@ -6947,6 +6947,15 @@ select:focus {
     to   { transform: rotate(360deg); }
 }
 
+.riepilogo-msg-tab-freccia {
+    display: inline-block;
+    transition: transform 0.2s ease;
+}
+
+.riepilogo-msg-tab.aperta .riepilogo-msg-tab-freccia {
+    transform: rotate(180deg);
+}
+
 /* ==========================================================
    ==========================================================
    RESPONSIVE
