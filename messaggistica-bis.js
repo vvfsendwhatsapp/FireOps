@@ -1307,11 +1307,31 @@ Koordináták küldéséhez:
     // due punti (cambio pannello, apertura convertitore) devono spegnere
     // l'espansione se attiva, mai accenderla per sbaglio.
     function chiudiFullscreenMessaggisticaSeAperto() {
-        if (!btnRiepilogoMsg) return;
+        if (!btnRiepilogoMsg || !overlayRiepilogoMsg) return;
+        // Lo stato vero è "è aperto?" (overlay non hidden), non "il
+        // pannello si trova ancora con closest()?": se questa funzione
+        // viene chiamata DOPO che #messaggistica è già stata spostata
+        // altrove (spostaSezione fa appendChild in un altro contenitore),
+        // closest(".pannello") non la trova più e prima usciva in
+        // silenzio senza pulire nulla — la tab restava "aperta" e
+        // l'overlay "hidden=false" per sempre, anche quando Messaggistica
+        // ricompariva altrove in un pannello normale.
+        if (overlayRiepilogoMsg.hidden) return;
+
         const pannello = btnRiepilogoMsg.closest(".pannello");
         if (pannello && pannello.classList.contains("pannello-fullscreen")) {
             toggleFullscreenMessaggistica();
+            return;
         }
+
+        // Pannello non più raggiungibile: resetta lo stato a mano, dato
+        // che toggleFullscreenMessaggistica() da sola richiede di trovarlo.
+        overlayRiepilogoMsg.hidden = true;
+        btnRiepilogoMsg.classList.remove("aperta");
+        if (frecciaRiepilogoMsg) frecciaRiepilogoMsg.textContent = "▸";
+        document.body.classList.remove("fullscreen-attivo");
+        const splitScreenEl = document.querySelector(".split-screen");
+        if (splitScreenEl) splitScreenEl.classList.remove("ha-pannello-fullscreen");
     }
 
     // La tab deve sapere su quale bordo del proprio pannello agganciarsi:
@@ -1476,12 +1496,19 @@ Koordináták küldéséhez:
         const selettore = pannelloMsg && pannelloMsg.id === "pannello-sinistra"
             ? document.getElementById("select-pannello-sinistra")
             : document.getElementById("select-pannello-destra");
+
+        // Chiude PRIMA di cambiare pagina: appena scatta il cambio,
+        // spostaSezione() sposta #messaggistica fuori dal pannello
+        // (appendChild altrove) — chiuderla DOPO significherebbe cercarla
+        // quando non c'è già più lì, il caso limite che la funzione qui
+        // sopra ora gestisce comunque, ma è più semplice e diretto non
+        // doverci contare.
+        chiudiFullscreenMessaggisticaSeAperto();
+
         if (selettore) {
             selettore.value = "convertitore";
             selettore.dispatchEvent(new Event("change"));
         }
-
-        chiudiFullscreenMessaggisticaSeAperto();
 
         // I campi del convertitore esistono solo dopo che spostaSezione() lo
         // ha inserito nel pannello: un piccolo ritardo basta ad aspettare
