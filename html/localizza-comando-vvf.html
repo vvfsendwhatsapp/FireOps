@@ -642,7 +642,8 @@
     }
 
     .map-expand-btn,
-    .map-center-btn {
+    .map-center-btn,
+    .map-target-btn {
       position: absolute;
       top: 10px;
       z-index: 1200;
@@ -667,8 +668,13 @@
       right: 52px;
     }
 
+    .map-target-btn {
+      right: 94px;
+    }
+
     .map-expand-btn:active,
-    .map-center-btn:active {
+    .map-center-btn:active,
+    .map-target-btn:active {
       background: var(--panel-2);
     }
 
@@ -1317,8 +1323,16 @@
       <div class="panel">
         <div class="map-wrap">
           <div id="resultMap"></div>
-          <button type="button" id="mapCenterBtn" class="map-center-btn" title="Centra posizione"
-            aria-label="Centra posizione">
+          <button type="button" id="mapTargetBtn" class="map-target-btn hidden" title="Centra sul target"
+            aria-label="Centra sul target">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e84747" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s7-6.2 7-12a7 7 0 10-14 0c0 5.8 7 12 7 12z" />
+              <circle cx="12" cy="10" r="2.5" fill="#e84747" />
+            </svg>
+          </button>
+          <button type="button" id="mapCenterBtn" class="map-center-btn" title="Centra sulla mia posizione"
+            aria-label="Centra sulla mia posizione">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
               <circle cx="12" cy="12" r="3.5" stroke="currentColor" stroke-width="2" />
               <path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
@@ -1857,15 +1871,20 @@
       setTimeout(function () {map.invalidateSize();}, 60);
     }
 
+    // Mirino: centra sulla mia posizione (senza GPS, sul Comando)
     document.getElementById("mapCenterBtn").addEventListener("click", function () {
       if (!map || !currentRecord) return;
-      if (targetPos) {
-        map.setView([targetPos.lat, targetPos.lon], 16);
-      } else if (userPos) {
-        map.setView([userPos.lat, userPos.lon], 16);
+      if (userPos) {
+        map.setView([userPos.lat, userPos.lon], Math.max(map.getZoom(), 16));
       } else {
         map.setView([currentRecord.lat, currentRecord.lon], 13);
       }
+    });
+
+    // Segnaposto rosso: centra sul target
+    document.getElementById("mapTargetBtn").addEventListener("click", function () {
+      if (!map || !targetPos) return;
+      map.setView([targetPos.lat, targetPos.lon], Math.max(map.getZoom(), 16));
     });
 
     const EXPAND_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9V3h6M3 3l6 6M21 9V3h-6M21 3l-6 6M3 15v6h6M3 21l6-6M21 15v6h-6M21 21l-6-6"/></svg>';
