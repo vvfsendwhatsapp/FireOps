@@ -1094,7 +1094,7 @@
       border-left: 0;
     }
 
-        .leaflet-tooltip.line-lbl {
+    .leaflet-tooltip.line-lbl {
       background: rgba(16, 20, 26, .88);
       border: 1px solid;
       border-radius: 3px;
@@ -1105,12 +1105,27 @@
       font-weight: 700;
       white-space: nowrap;
     }
-    .leaflet-tooltip.line-lbl::before { display: none; }
-    .line-lbl.cmd-me  { color: #ffd700; border-color: #ffd700; }
-    .line-lbl.cmd-tgt { color: #e84747; border-color: #e84747; }
-    .line-lbl.me-tgt  { color: #e8a33d; border-color: #e8a33d; }
 
-        .map-radio {
+    .leaflet-tooltip.line-lbl::before {
+      display: none;
+    }
+
+    .line-lbl.cmd-me {
+      color: #ffd700;
+      border-color: #ffd700;
+    }
+
+    .line-lbl.cmd-tgt {
+      color: #e84747;
+      border-color: #e84747;
+    }
+
+    .line-lbl.me-tgt {
+      color: #e8a33d;
+      border-color: #e8a33d;
+    }
+
+    .map-radio {
       background: rgba(16, 20, 26, .88);
       color: var(--text);
       border: 1px solid var(--line);
@@ -1120,11 +1135,47 @@
       font-size: 12px;
       line-height: 1.45;
     }
+
     .map-radio .ch {
       font-family: var(--mono);
       font-weight: 700;
       color: var(--amber);
     }
+
+    /* etichetta a cavallo della linea: sopra distanza, sotto azimut */
+    .ll-wrap {
+      position: absolute;
+      left: 0;
+      top: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 9px;
+      /* spazio in cui passa la linea */
+      font-family: var(--mono);
+      font-size: 11.5px;
+      font-weight: 700;
+      white-space: nowrap;
+      pointer-events: none;
+      text-shadow: 0 0 3px #10141a, 0 0 3px #10141a, 0 0 2px #10141a;
+    }
+
+    .ll-wrap.cmd-me {
+      color: #ffd700;
+    }
+
+    .ll-wrap.cmd-tgt {
+      color: #e84747;
+    }
+
+    .ll-wrap.me-tgt {
+      color: #e8a33d;
+    }
+
+    .u-ico { position: relative; width: 44px; height: 44px; }
+    .u-hdg { position: absolute; inset: 0; display: none; transform-origin: 50% 50%; }
+    .u-ico.has-hdg .u-hdg { display: block; }
+    .u-dot { position: absolute; left: 13px; top: 13px; }
   </style>
 </head>
 
@@ -1550,6 +1601,60 @@
     let targetMarker = null;
     let linkLines = [];
     let radioCtrl = null;
+    let heading = null;        // gradi dal nord, null = bussola non disponibile
+    let compassAsked = false;
+
+    function userIcon() {
+      const html = '<div class="u-ico">' +
+        '<svg class="u-hdg" width="44" height="44" viewBox="0 0 44 44">' +
+        // semiasse: bordo scuro sotto + linea gialla sopra, dal centro verso l'alto (nord = 0°)
+        '<line x1="22" y1="22" x2="22" y2="1" stroke="#10141a" stroke-width="5" stroke-linecap="round"/>' +
+        '<line x1="22" y1="22" x2="22" y2="1" stroke="#ffd700" stroke-width="2.5" stroke-linecap="round"/>' +
+        '</svg>' +
+        '<svg class="u-dot" width="18" height="18" viewBox="0 0 18 18">' +
+        '<circle cx="9" cy="9" r="7" fill="#ffd700" stroke="#10141a" stroke-width="2.5"/></svg>' +
+        '</div>';
+      return L.divIcon({className: "", html: html, iconSize: [44, 44], iconAnchor: [22, 22], popupAnchor: [0, -12]});
+    }
+
+    function applyHeading() {
+      if (!userMarker) return;
+      const el = userMarker.getElement();
+      if (!el) return;
+      const ico = el.querySelector(".u-ico");
+      if (heading == null) {ico.classList.remove("has-hdg"); return;}
+      ico.classList.add("has-hdg");
+      el.querySelector(".u-hdg").style.transform = "rotate(" + heading + "deg)";
+    }
+
+    function screenAngle() {
+      return (screen.orientation && screen.orientation.angle) || window.orientation || 0;
+    }
+
+    function onOrient(e) {
+      let h = null;
+      if (typeof e.webkitCompassHeading === "number") h = e.webkitCompassHeading;   // iOS
+      else if (e.absolute && e.alpha != null) h = 360 - e.alpha;                    // Android
+      if (h == null) return;
+      heading = (h + screenAngle() + 360) % 360;
+      applyHeading();
+    }
+
+    // iOS chiede il permesso e va chiamato dentro un tocco dell'utente
+    function startCompass() {
+      if (compassAsked) return;
+      compassAsked = true;
+      const go = function () {
+        if ("ondeviceorientationabsolute" in window) window.addEventListener("deviceorientationabsolute", onOrient);
+        else window.addEventListener("deviceorientation", onOrient);
+      };
+      if (typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission === "function") {
+        DeviceOrientationEvent.requestPermission().then(function (s) {if (s === "granted") go();}).catch(function () { });
+      } else {
+        go();
+      }
+    }
+    document.addEventListener("click", startCompass, true);
 
     function comandoIcon() {
       const svg = '<svg width="26" height="26" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">'
@@ -1565,11 +1670,27 @@
       return L.divIcon({className: "", html: svg, iconSize: [18, 18], iconAnchor: [9, 9]});
     }
 
-    // Etichetta fissa a metà linea: distanza · azimut (da "from" verso "to")
+    // Etichetta ruotata come la linea, al centro: sopra distanza, sotto azimut (da "from" verso "to")
     function lineLabel(line, from, to, cls) {
-      const txt = fmtDist(haversine(from.lat, from.lon, to.lat, to.lon)) + " · " +
-        fmtAz(bearingDeg(from.lat, from.lon, to.lat, to.lon));
-      line.bindTooltip(txt, {permanent: true, direction: "center", className: "line-lbl " + cls, opacity: 1});
+      const dist = fmtDist(haversine(from.lat, from.lon, to.lat, to.lon));
+      const az = fmtAz(bearingDeg(from.lat, from.lon, to.lat, to.lon));
+
+      // angolo a schermo: in Mercatore non dipende dallo zoom
+      const a = map.project([from.lat, from.lon], 12);
+      const b = map.project([to.lat, to.lon], 12);
+      let ang = Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI;
+      if (ang > 90) ang -= 180;          // testo mai capovolto
+      if (ang < -90) ang += 180;
+
+      const mid = map.unproject(a.add(b).divideBy(2), 12);
+      const html = '<div class="ll-wrap ' + cls + '" style="transform:translate(-50%,-50%) rotate(' + ang + 'deg)">' +
+        '<span>' + dist + '</span><span>' + az + '</span></div>';
+
+      const m = L.marker(mid, {
+        icon: L.divIcon({className: "", html: html, iconSize: [0, 0]}),
+        interactive: false, keyboard: false, zIndexOffset: -1000
+      }).addTo(map);
+      linkLines.push(m);   // così viene rimossa insieme alle linee
     }
 
     function updateMap(record, pos, target, fit) {
@@ -1638,9 +1759,10 @@
       const boundsArray = [[record.lat, record.lon]];
 
       if (pos) {
-        userMarker = L.marker([pos.lat, pos.lon], {icon: dotIcon("#ffd700")})
+        userMarker = L.marker([pos.lat, pos.lon], {icon: userIcon()})
           .addTo(map)
           .bindPopup("La tua posizione GPS");
+        applyHeading();
         legendUser.classList.remove("hidden");
         boundsArray.push([pos.lat, pos.lon]);
 
