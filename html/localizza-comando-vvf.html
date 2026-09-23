@@ -1606,25 +1606,67 @@
 
     function userIcon() {
       const html = '<div class="u-ico">' +
-        '<svg class="u-hdg" width="44" height="44" viewBox="0 0 44 44">' +
-        // semiasse: bordo scuro sotto + linea gialla sopra, dal centro verso l'alto (nord = 0°)
-        '<line x1="22" y1="22" x2="22" y2="1" stroke="#10141a" stroke-width="5" stroke-linecap="round"/>' +
-        '<line x1="22" y1="22" x2="22" y2="1" stroke="#ffd700" stroke-width="2.5" stroke-linecap="round"/>' +
-        '</svg>' +
         '<svg class="u-dot" width="18" height="18" viewBox="0 0 18 18">' +
         '<circle cx="9" cy="9" r="7" fill="#ffd700" stroke="#10141a" stroke-width="2.5"/></svg>' +
         '</div>';
       return L.divIcon({className: "", html: html, iconSize: [44, 44], iconAnchor: [22, 22], popupAnchor: [0, -12]});
     }
 
+    let hdgMarks = null;
+
+    // chevron che punta verso l'alto (nord) e viene ruotato come il semiasse
+    function chevronIcon(deg) {
+      const d = "M3 9 L7 4 L11 9";
+      return L.divIcon({
+        className: "", iconSize: [14, 14], iconAnchor: [7, 7],
+        html: '<svg width="14" height="14" viewBox="0 0 14 14" style="transform:rotate(' + deg + 'deg)">' +
+          '<path d="' + d + '" fill="none" stroke="#10141a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>' +
+          '<path d="' + d + '" fill="none" stroke="#ffd700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
+          '</svg>'
+      });
+    }    
+
+    let hdgCasing = null, hdgLine = null, hdgRaf = null;
+
+    // Semiasse dalla mia posizione fino oltre il bordo della mappa, nella direzione del telefono
+    function drawHeadingRay() {
+      if (!map || !userPos || heading == null) {
+        if (hdgLine) {map.removeLayer(hdgCasing); map.removeLayer(hdgLine); hdgCasing = hdgLine = null;}
+        if (hdgMarks) hdgMarks.clearLayers();
+        return;
+      }
+      const z = map.getZoom();
+      const p0 = map.project([userPos.lat, userPos.lon], z);
+      const size = map.getSize();
+      const c = map.project(map.getCenter(), z);
+      // abbastanza lungo da uscire dallo schermo anche se sono fuori vista
+      const len = Math.hypot(size.x, size.y) + p0.distanceTo(c) + 50;
+      const r = heading * Math.PI / 180;
+      const p1 = p0.add(L.point(Math.sin(r) * len, -Math.cos(r) * len));
+      const ll = [map.unproject(p0, z), map.unproject(p1, z)];
+
+      if (!hdgLine) {
+        hdgCasing = L.polyline(ll, {color: "#10141a", weight: 5, opacity: 0.6, interactive: false}).addTo(map);
+        hdgLine = L.polyline(ll, {color: "#ffd700", weight: 2.5, opacity: 0.95, interactive: false}).addTo(map);
+      } else {
+        hdgCasing.setLatLngs(ll);
+        hdgLine.setLatLngs(ll);
+      }
+
+      // chevron di verso lungo il semiasse, a partire da 60 px dal pallino
+      if (!hdgMarks) hdgMarks = L.layerGroup().addTo(map);
+      hdgMarks.clearLayers();
+      const ux = Math.sin(r), uy = -Math.cos(r);
+      for (let d = 60; d < len; d += 90) {
+        const pt = map.unproject(p0.add(L.point(ux * d, uy * d)), z);
+        L.marker(pt, {icon: chevronIcon(heading), interactive: false, keyboard: false}).addTo(hdgMarks);
+      }
+    }
+
+    // la bussola manda decine di eventi al secondo: si ridisegna al massimo una volta per frame
     function applyHeading() {
-      if (!userMarker) return;
-      const el = userMarker.getElement();
-      if (!el) return;
-      const ico = el.querySelector(".u-ico");
-      if (heading == null) {ico.classList.remove("has-hdg"); return;}
-      ico.classList.add("has-hdg");
-      el.querySelector(".u-hdg").style.transform = "rotate(" + heading + "deg)";
+      if (hdgRaf) return;
+      hdgRaf = requestAnimationFrame(function () {hdgRaf = null; drawHeadingRay();});
     }
 
     function screenAngle() {
@@ -1734,6 +1776,8 @@
         };
         radioCtrl.addTo(map);
 
+        map.on("zoomend moveend", drawHeadingRay);
+
         map.on("baselayerchange", function (e) {
           try {localStorage.setItem("fireops_basemap", e.name);} catch (err) { }
         });
@@ -1798,6 +1842,8 @@
       } else {
         legendTarget.classList.add("hidden");
       }
+
+      drawHeadingRay();   // segue la nuova posizione (o sparisce se non c'è GPS)
 
       if (!fit) return;   // aggiornamento da tracking: non toccare zoom/pan dell'utente
 
