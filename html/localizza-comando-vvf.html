@@ -1066,6 +1066,19 @@
       font-size: 13px;
       cursor: pointer;
     }
+
+        /* colore legato al riferimento: rosso = target, giallo = mia posizione */
+    .result-top .dist .az {
+      color: inherit;
+    }
+
+    .result-top .dist.is-target {
+      color: #e84747;
+    }
+
+    .method-badge.tgt {
+      color: #e84747;
+    }
   </style>
 </head>
 
@@ -1394,6 +1407,7 @@
         az.textContent = "Az " + fmtAz(brg);
 
         rDist.append(leg, val, az);
+        rDist.classList.toggle("is-target", !!targetPos);
       } else {
         rDist.textContent = "";
       }
@@ -1921,6 +1935,8 @@
         methodEl.textContent = "";
         borderNote.classList.add("hidden");
       }
+
+      methodEl.classList.toggle("tgt", !!targetPos);
 
       const confPanel = document.getElementById("confinantiPanel");
       const chips = document.getElementById("confinantiChips");
