@@ -1320,9 +1320,13 @@
     let watchId = null;
     let trackingTimeoutId = null;
 
+    const DIAL_PREFIX = "41460039";
+
     function telHref(num) {
-      const digits = (num || "").toString().replace(/[^0-9+]/g, "");
-      return "tel:" + (dialPrefixEnabled ? "4146" + digits : digits);
+      const raw = (num || "").toString();
+      if (!dialPrefixEnabled) return "tel:" + raw.replace(/[^0-9+]/g, "");
+      // toglie +39 / 0039 se già presenti, poi antepone 41460039
+      return "tel:" + DIAL_PREFIX + normalizeIT(digitsOnly(raw));
     }
 
     function refreshPhoneLinks() {
