@@ -1265,18 +1265,6 @@
       </div>
 
       <div class="panel">
-        <div class="row-group-label radio">Canale radio</div>
-        <div class="data-row">
-          <div class="label">Comando</div>
-          <div class="value"><span id="rRadioComando">—</span></div>
-        </div>
-        <div class="data-row">
-          <div class="label">Direzione regionale</div>
-          <div class="value"><span id="rRadioDirezione">—</span></div>
-        </div>
-      </div>
-
-      <div class="panel">
         <div class="row-group-label so">Sala operativa</div>
         <div class="data-row">
           <div class="label">Comando</div>
@@ -1402,8 +1390,6 @@
       if (p.length && /^\d{5}$/.test(p[p.length - 1])) cap = p.pop();
       const street = p.filter(Boolean).join(", ");
       const loc = [cap, city].filter(Boolean).join(" ") + (pr ? " (" + pr + ")" : "");
-      return {street: street, loc: loc, full: [street, loc].filter(Boolean).join(", ")};
-    }
 
     // "Via X, , 72100, Brindisi, BR" -> {street: "Via X", loc: "72100 Brindisi (BR)"}
     function fmtAddr(ind) {
@@ -1907,8 +1893,7 @@
         s.textContent = a.loc;
         addrEl.appendChild(s);
       }
-      addrEl.dataset.full = a.full;
-      addrEl.classList.toggle("hidden", !a.full);
+      addrEl.classList.toggle("hidden", !a.street && !a.loc);
 
       const methodEl = document.getElementById("rMethod");
       const borderNote = document.getElementById("borderNote");
@@ -2119,22 +2104,6 @@
 
     bindCopyCoords("rTargetCoords", function () {return targetPos;});
     bindCopyCoords("rGpsCoords", function () {return userPos;});
-
-    (function () {
-      const el = document.getElementById("rCmdAddr");
-      let tmo = null;
-      el.addEventListener("click", function () {
-        const text = el.dataset.full;
-        if (!text) return;
-        copyText(text).then(function () {
-          el.classList.add("copied");
-          clearTimeout(tmo);
-          tmo = setTimeout(function () {el.classList.remove("copied");}, 1500);
-        }).catch(function () {
-          window.prompt("Copia l'indirizzo:", text);
-        });
-      });
-    })();
 
     document.getElementById("openMapsTarget").addEventListener("click", function () {
       if (!targetPos) return;
