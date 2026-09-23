@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Carica CSV su Google Sheets</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  :root {
+    --bg: #EDF0F3;
+    --panel: #FFFFFF;
+    --ink: #1C2430;
+    --muted: #5B6675;
+    --line: #D3D9E0;
+    --red: #B81D24;
+    --red-dark: #8E141A;
+    --ok: #2E7D4F;
+    --warn: #A36A00;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  *, *::before, *::after { box-sizing: inherit; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.5 "Barlow", "Segoe UI", system-ui, sans-serif;
+  }
+  main { max-width: 760px; margin: 0 auto; padding: 28px 18px 48px; }
+  h1 {
+    font-family: "Barlow Semi Condensed", "Arial Narrow", sans-serif;
+    font-weight: 700; font-size: 2rem; line-height: 1.1; margin: 0 0 4px;
+  }
+  .lead { color: var(--muted); margin: 0 0 24px; }
+
+  /* Zona di caricamento: l'elemento principale della pagina */
+  .drop {
+    position: relative;
+    display: block;
+    border: 3px dashed var(--red);
+    background:
+      repeating-linear-gradient(135deg, transparent 0 14px, rgba(184,29,36,.05) 14px 28px),
+      var(--panel);
+    padding: 36px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: background-color .15s, border-color .15s;
+  }
+  .drop:hover, .drop.over { background-color: #FBEDEE; border-style: solid; }
+  .drop:focus-within { outline: 3px solid var(--ink); outline-offset: 3px; }
+  .drop input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .drop strong {
+    display: block;
+    font-family: "Barlow Semi Condensed", sans-serif;
+    font-size: 1.5rem; color: var(--red);
+  }
+  .drop span { color: var(--muted); }
+  .file-name { margin-top: 10px; font-weight: 600; color: var(--ink); }
+
+  fieldset { border: 1px solid var(--line); background: var(--panel); margin: 20px 0 0; padding: 16px 18px 18px; }
+  legend { font-weight: 600; padding: 0 6px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .full { grid-column: 1 / -1; }
+  label.f { display: flex; flex-direction: column; gap: 4px; font-size: .92rem; font-weight: 500; }
+  input[type=text], input[type=url], input[type=password], select {
+    font: inherit; padding: 9px 10px; border: 1px solid #AEB8C4; background: #fff; color: var(--ink);
+  }
+  input:focus-visible, select:focus-visible, button:focus-visible { outline: 3px solid var(--red); outline-offset: 1px; }
+  .radios { display: flex; gap: 18px; flex-wrap: wrap; }
+  .radios label { display: flex; align-items: center; gap: 6px; }
+  .hint { font-size: .85rem; color: var(--muted); }
+
+  .preview { margin-top: 20px; background: var(--panel); border: 1px solid var(--line); }
+  .preview header { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+  .tbl { overflow-x: auto; max-height: 320px; }
+  table { border-collapse: collapse; font-size: .88rem; min-width: 100%; }
+  th, td { padding: 6px 10px; border-bottom: 1px solid #E7EBEF; text-align: left; white-space: nowrap; }
+  th { background: #F5F7F9; position: sticky; top: 0; }
+
+  .actions { margin-top: 22px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  button {
+    font: 600 1.05rem "Barlow", sans-serif;
+    padding: 12px 22px; border: 0; cursor: pointer;
+    background: var(--red); color: #fff;
+  }
+  button:hover { background: var(--red-dark); }
+  button:disabled { background: #9AA4B0; cursor: not-allowed; }
+  button.secondary { background: transparent; color: var(--ink); border: 1px solid #AEB8C4; }
+
+  .bar { height: 8px; background: #DCE1E7; margin-top: 16px; display: none; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--red); transition: width .2s; }
+  .msg { margin-top: 14px; padding: 12px 14px; border-left: 4px solid; background: var(--panel); display: none; }
+  .msg.ok { border-color: var(--ok); color: var(--ok); display: block; }
+  .msg.err { border-color: var(--red); color: var(--red-dark); display: block; }
+  .msg.info { border-color: var(--warn); color: var(--warn); display: block; }
+
+  @media (max-width: 560px) { .grid { grid-template-columns: 1fr; } h1 { font-size: 1.7rem; } }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Carica CSV su Google Sheets</h1>
+  <p class="lead">Scegli un file CSV, controlla l'anteprima e invialo al foglio. Il contenuto attuale del foglio viene sostituito.</p>
+
+  <label class="drop" id="drop">
+    <input type="file" id="file" accept=".csv,text/csv">
+    <strong>Trascina qui il file CSV</strong>
+    <span>oppure tocca per sceglierlo</span>
+    <div class="file-name" id="fileName"></div>
+  </label>
+
+
+  <section class="preview" id="preview" hidden>
+    <header><strong>Anteprima</strong><span class="hint" id="stats"></span></header>
+    <div class="tbl"><table id="table"></table></div>
+  </section>
+
+  <div class="actions">
+    <button id="send" disabled>Invia al foglio</button>
+    <button id="reset" class="secondary" type="button">Svuota</button>
+  </div>
+  <div class="bar" id="bar"><i></i></div>
+  <div class="msg" id="msg" role="status" aria-live="polite"></div>
+</main>
+
+<script>
+(() => {
+  const CHUNK = 2000;            // righe per invio
+  const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwE4fYlAuP3EuVaVkbc-66uexoE0t9Ak_cigzUupsPv4bb1WxWWXzbePcg_or149HCjyQ/exec';
+  const TOKEN = 'cambia-questa-chiave';    // deve coincidere con TOKEN in Code.gs
+  const $ = id => document.getElementById(id);
+  const els = {
+    file: $('file'), drop: $('drop'), fileName: $('fileName'),  preview: $('preview'), table: $('table'), stats: $('stats'),
+    send: $('send'), reset: $('reset'), bar: $('bar'), msg: $('msg')
+  };
+  let rows = [];
+
+  // Ricorda URL e nome foglio su questo dispositivo
+  const store = {
+    get(k) { try { return localStorage.getItem(k) || ''; } catch { return ''; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch {} }
+  };
+
+  function show(type, text) { els.msg.className = 'msg ' + type; els.msg.textContent = text; }
+  function clearMsg() { els.msg.className = 'msg'; els.msg.textContent = ''; }
+  function progress(p) { els.bar.style.display = p == null ? 'none' : 'block'; els.bar.firstElementChild.style.width = (p || 0) + '%'; }
+
+  // Drag & drop
+  ['dragenter', 'dragover'].forEach(e => els.drop.addEventListener(e, ev => { ev.preventDefault(); els.drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(e => els.drop.addEventListener(e, () => els.drop.classList.remove('over')));
+  els.drop.addEventListener('drop', ev => {
+    ev.preventDefault();
+    const f = ev.dataTransfer.files[0];
+    if (f) handleFile(f);
+  });
+  els.file.addEventListener('change', () => { if (els.file.files[0]) handleFile(els.file.files[0]); });
+
+  function handleFile(file) {
+    clearMsg(); progress(null);
+    if (!/\.csv$/i.test(file.name) && file.type !== 'text/csv') {
+      show('err', 'Il file scelto non è un CSV. Scegli un file con estensione .csv.');
+      return;
+    }
+    els.fileName.textContent = file.name;
+    Papa.parse(file, {
+      skipEmptyLines: 'greedy',
+      delimiter: '',             // rilevamento automatico: virgola, punto e virgola, tab
+      encoding: 'UTF-8',
+      complete: res => {
+        rows = res.data;
+        if (!rows.length) { show('err', 'Il file è vuoto.'); els.send.disabled = true; return; }
+        renderPreview(res.meta.delimiter);
+        els.send.disabled = false;
+        if (res.errors.length) show('info', `Letto con ${res.errors.length} avvisi di formato: controlla l'anteprima.`);
+      },
+      error: err => show('err', 'Impossibile leggere il file: ' + err.message)
+    });
+  }
+
+  function renderPreview(delim) {
+    const cols = Math.max(...rows.map(r => r.length));
+    const shown = rows.slice(0, 50);
+    const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    let html = '<thead><tr>' + shown[0].map(c => `<th>${esc(c)}</th>`).join('') + '</tr></thead><tbody>';
+    shown.slice(1).forEach(r => { html += '<tr>' + r.map(c => `<td>${esc(c)}</td>`).join('') + '</tr>'; });
+    els.table.innerHTML = html + '</tbody>';
+    const sep = { ',': 'virgola', ';': 'punto e virgola', '\t': 'tab' }[delim] || delim;
+    els.stats.textContent = `${rows.length} righe, ${cols} colonne, separatore: ${sep}` + (rows.length > 50 ? ' (prime 50 mostrate)' : '');
+    els.preview.hidden = false;
+  }
+
+  els.send.addEventListener('click', async () => {
+    const url = WEBAPP_URL;
+
+    els.send.disabled = true; els.reset.disabled = true;
+    show('info', 'Invio in corso…'); progress(0);
+
+    try {
+      const total = Math.ceil(rows.length / CHUNK);
+      let written = 0, sheet = '';
+      for (let i = 0; i < total; i++) {
+        const part = rows.slice(i * CHUNK, (i + 1) * CHUNK);
+        const payload = {
+          token: TOKEN,
+          // solo il primo blocco può svuotare il foglio; i successivi accodano sempre
+          mode: i === 0 ? 'replace' : 'append',
+          hasHeader: i === 0,
+          rows: part
+        };
+        // text/plain evita la richiesta preflight CORS verso Apps Script
+        const res = await fetch(url, { method: 'POST', body: JSON.stringify(payload) });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error || 'Errore sconosciuto');
+        written += data.written; sheet = data.sheet || sheet;
+        progress(Math.round(((i + 1) / total) * 100));
+      }
+      show('ok', `Inviate ${written} righe al foglio "${sheet}".`);
+    } catch (e) {
+      show('err', 'Invio non riuscito: ' + e.message + '. Controlla la connessione e che la Web App sia distribuita con accesso "Chiunque".');
+    } finally {
+      els.send.disabled = false; els.reset.disabled = false;
+    }
+  });
+
+  els.reset.addEventListener('click', () => {
+    rows = []; els.file.value = ''; els.fileName.textContent = '';
+    els.preview.hidden = true; els.table.innerHTML = '';
+    els.send.disabled = true; clearMsg(); progress(null);
+  });
+})();
+</script>
+</body>
+</html>
