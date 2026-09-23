@@ -317,9 +317,22 @@
     }
 
     /* result header */
+    .cmd-panel {
+      border-left: 3px solid var(--text-dim);
+    }
+
+    .cmd-conf {
+      border-top: 1px solid var(--line);
+    }
+
+    .cmd-conf-label {
+      padding: 10px 14px 0;
+      font-size: 12.5px;
+      color: var(--text-dim);
+    }
+
     .result-top {
       padding: 16px 14px;
-      border-left: 3px solid var(--red);
       display: flex;
       justify-content: space-between;
       align-items: baseline;
@@ -344,6 +357,24 @@
       font-size: 13px;
       color: var(--text-dim);
       margin-top: -8px;
+    }
+
+    .result-addr {
+      padding: 0 14px 12px;
+      margin-top: -6px;
+      font-size: 13.5px;
+      line-height: 1.45;
+      color: var(--text);
+    }
+
+    .result-addr .loc {
+      display: block;
+      color: var(--text-dim);
+    }
+
+    /* la mappa ha l'avviso in mezzo: .panel+.panel non scatta */
+    .border-note + .panel {
+      margin-top: 10px;
     }
 
     /* data rows */
@@ -1147,7 +1178,7 @@
         </button>
       </div>
 
-      <div class="panel">
+      <div class="panel cmd-panel">
         <div class="result-top">
           <div class="result-name-wrap">
             <div class="name" id="rComando">—</div>
@@ -1161,9 +1192,16 @@
           </div>
           <div class="dist" id="rDist"></div>
         </div>
+        <div class="result-addr copyable" id="rCmdAddr" title="Tocca per copiare l'indirizzo"></div>
         <div class="result-sub" id="rSub"></div>
         <div class="method-badge" id="rMethod"></div>
+        <div class="cmd-conf hidden" id="confinantiPanel">
+          <div class="cmd-conf-label">Comandi confinanti</div>
+          <div class="chips" id="confinantiChips"></div>
+        </div>
       </div>
+
+      <div class="border-note hidden" id="borderNote"></div>
 
       <div class="panel">
         <div class="map-wrap">
@@ -1223,17 +1261,6 @@
                   stroke="currentColor" stroke-width="1.6" />
               </svg></a><span id="rTelSocav" class="hidden">06 79340903</span></div>
         </div>
-      </div>
-
-      <div class="panel">
-        <div class="addr-row" id="rAddr"></div>
-      </div>
-
-      <div class="border-note hidden" id="borderNote"></div>
-
-      <div class="panel hidden" id="confinantiPanel">
-        <div class="row-group-label">Comandi confinanti — verifica se sei vicino al limite di competenza</div>
-        <div class="chips" id="confinantiChips"></div>
       </div>
 
       <button class="link-btn" id="backToSearchBtn">cerca un altro comando</button>
@@ -1309,6 +1336,18 @@
       } else {
         cAz.textContent = "—";
       }
+    }
+
+    // "Via X, , 72100, Brindisi, BR" -> {street: "Via X", loc: "72100 Brindisi (BR)"}
+    function fmtAddr(ind) {
+      const p = (ind || "").split(",").map(s => s.trim());
+      let pr = "", city = "", cap = "";
+      if (p.length && /^[A-Z]{2}$/.test(p[p.length - 1])) pr = p.pop();
+      if (p.length) city = p.pop();
+      if (p.length && /^\d{5}$/.test(p[p.length - 1])) cap = p.pop();
+      const street = p.filter(Boolean).join(", ");
+      const loc = [cap, city].filter(Boolean).join(" ") + (pr ? " (" + pr + ")" : "");
+      return {street: street, loc: loc, full: [street, loc].filter(Boolean).join(", ")};
     }
 
     let dialPrefixEnabled = true;
@@ -1792,10 +1831,18 @@
         ? '<a class="value-link" href="' + telHref(record.tsd) + '">' + record.tsd + ' <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 3h4l2 5-2.5 1.5a11 11 0 005 5L16 12l5 2v4a2 2 0 01-2 2C10.6 20 4 13.4 4 5a2 2 0 012-2z" stroke="currentColor" stroke-width="1.6"/></svg></a>'
         : "—";
 
-      let addr = record.ind || "";
-      let extra = [];
-      if (record.nue) extra.push("NUE " + record.nue);
-      document.getElementById("rAddr").innerHTML = addr + (extra.length ? "<br>" + extra.join(" · ") : "");
+      const a = fmtAddr(record.ind);
+      const addrEl = document.getElementById("rCmdAddr");
+      addrEl.innerHTML = "";
+      if (a.street) addrEl.appendChild(document.createTextNode(a.street));
+      if (a.loc) {
+        const s = document.createElement("span");
+        s.className = "loc";
+        s.textContent = a.loc;
+        addrEl.appendChild(s);
+      }
+      addrEl.dataset.full = a.full;
+      addrEl.classList.toggle("hidden", !a.full);
 
       const methodEl = document.getElementById("rMethod");
       const borderNote = document.getElementById("borderNote");
@@ -2006,6 +2053,22 @@
 
     bindCopyCoords("rTargetCoords", function () {return targetPos;});
     bindCopyCoords("rGpsCoords", function () {return userPos;});
+
+    (function () {
+      const el = document.getElementById("rCmdAddr");
+      let tmo = null;
+      el.addEventListener("click", function () {
+        const text = el.dataset.full;
+        if (!text) return;
+        copyText(text).then(function () {
+          el.classList.add("copied");
+          clearTimeout(tmo);
+          tmo = setTimeout(function () {el.classList.remove("copied");}, 1500);
+        }).catch(function () {
+          window.prompt("Copia l'indirizzo:", text);
+        });
+      });
+    })();
 
     document.getElementById("openMapsTarget").addEventListener("click", function () {
       if (!targetPos) return;
