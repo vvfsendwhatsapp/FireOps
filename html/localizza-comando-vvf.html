@@ -1795,7 +1795,6 @@
       let addr = record.ind || "";
       let extra = [];
       if (record.nue) extra.push("NUE " + record.nue);
-      if (record.tc) extra.push("Centralino " + record.tc);
       document.getElementById("rAddr").innerHTML = addr + (extra.length ? "<br>" + extra.join(" · ") : "");
 
       const methodEl = document.getElementById("rMethod");
