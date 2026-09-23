@@ -1090,6 +1090,14 @@
           <div class="label">Coordinate Target</div>
           <div class="value copyable" id="rTargetCoords" title="Tocca per copiare">—</div>
         </div>
+        <div class="data-row">
+          <div class="label">Distanza mia pos. → target</div>
+          <div class="value" id="rTargetDist">—</div>
+        </div>
+        <div class="data-row">
+          <div class="label">Azimut mia pos. → target</div>
+          <div class="value" id="rTargetAz">—</div>
+        </div>
         <div class="data-row" id="targetAltRow">
           <div class="label">Quota <span class="src-tag calc"
               title="Stimata da modello digitale del terreno (Open-Meteo)">calcolata</span></div>
@@ -1124,6 +1132,10 @@
           <div class="label">Quota <span class="src-tag rx" title="Misurata dal ricevitore GPS del dispositivo">ricevuta
               GPS</span></div>
           <div class="value" id="rGpsAltitude">—</div>
+        </div>
+        <div class="data-row">
+          <div class="label">Azimut Comando → mia pos.</div>
+          <div class="value" id="rCmdAz">—</div>
         </div>
         <button type="button" id="refreshGpsBtn" class="refresh-gps-btn">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -1259,6 +1271,46 @@
       return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     }
 
+    function fmtDist(km) {
+      if (km == null || isNaN(km)) return "—";
+      return km < 1 ? Math.round(km * 1000) + " m" : km.toFixed(1) + " km";
+    }
+
+    function bearingDeg(lat1, lon1, lat2, lon2) {
+      const r = Math.PI / 180;
+      const p1 = lat1 * r, p2 = lat2 * r, dl = (lon2 - lon1) * r;
+      const y = Math.sin(dl) * Math.cos(p2);
+      const x = Math.cos(p1) * Math.sin(p2) - Math.sin(p1) * Math.cos(p2) * Math.cos(dl);
+      return (Math.atan2(y, x) / r + 360) % 360;
+    }
+
+    const ROSA = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSO", "SO", "OSO", "O", "ONO", "NO", "NNO"];
+    function fmtAz(deg) {
+      const d = Math.round(deg) % 360;
+      return String(d).padStart(3, "0") + "° " + ROSA[Math.round(deg / 22.5) % 16];
+    }
+
+    function updateNavInfo() {
+      const tDist = document.getElementById("rTargetDist");
+      const tAz = document.getElementById("rTargetAz");
+      if (targetPos) {
+        if (userPos) {
+          tDist.textContent = fmtDist(haversine(userPos.lat, userPos.lon, targetPos.lat, targetPos.lon));
+          tAz.textContent = fmtAz(bearingDeg(userPos.lat, userPos.lon, targetPos.lat, targetPos.lon));
+        } else {
+          tDist.textContent = "In attesa GPS…";
+          tAz.textContent = "In attesa GPS…";
+        }
+      }
+      const cAz = document.getElementById("rCmdAz");
+      if (userPos && currentRecord) {
+        cAz.textContent = fmtAz(bearingDeg(currentRecord.lat, currentRecord.lon, userPos.lat, userPos.lon)) +
+          " · " + fmtDist(haversine(currentRecord.lat, currentRecord.lon, userPos.lat, userPos.lon));
+      } else {
+        cAz.textContent = "—";
+      }
+    }
+
     let dialPrefixEnabled = true;
     let currentRecord = null;
     let userPos = null;
@@ -1347,7 +1399,8 @@
       return L.divIcon({className: "", html: svg, iconSize: [18, 18], iconAnchor: [9, 9]});
     }
 
-    function updateMap(record, pos, target) {
+    function updateMap(record, pos, target, fit) {
+      if (fit === undefined) fit = true;
       const mapEl = document.getElementById("resultMap");
       if (!mapEl || typeof L === "undefined") return;
 
@@ -1435,6 +1488,8 @@
       } else {
         legendTarget.classList.add("hidden");
       }
+
+      if (!fit) return;   // aggiornamento da tracking: non toccare zoom/pan dell'utente
 
       if (boundsArray.length > 1) {
         map.fitBounds(L.latLngBounds(boundsArray), {padding: [40, 40], maxZoom: 16});
@@ -1718,7 +1773,7 @@
         gpsPanel.classList.add("hidden");
       }
       document.getElementById("rComando").textContent = record.c;
-      document.getElementById("rDist").textContent = (distanceKm != null) ? distanceKm.toFixed(1) + " km" : "";
+      document.getElementById("rDist").textContent = (distanceKm != null) ? fmtDist(distanceKm) : "";
       document.getElementById("rSub").textContent = record.rg + " · Direzione regionale " + record.dz;
 
       document.getElementById("rRadioComando").textContent = record.rc || "—";
@@ -1774,6 +1829,7 @@
         confPanel.classList.add("hidden");
       }
 
+      updateNavInfo();
       updateMap(record, userPos, targetPos);
       window.scrollTo({top: 0, behavior: "smooth"});
     }
@@ -1818,9 +1874,10 @@
             if (currentRecord) {
               if (!targetPos) {
                 document.getElementById("rDist").textContent =
-                  haversine(userPos.lat, userPos.lon, currentRecord.lat, currentRecord.lon).toFixed(1) + " km";
+                  fmtDist(haversine(userPos.lat, userPos.lon, currentRecord.lat, currentRecord.lon));
               }
-              if (map) updateMap(currentRecord, userPos, targetPos);
+              if (map) updateMap(currentRecord, userPos, targetPos, false);
+              updateNavInfo();
             }
           }
         }
@@ -1883,19 +1940,22 @@
               }
             } else {
               document.getElementById("rDist").textContent =
-                haversine(userPos.lat, userPos.lon, currentRecord.lat, currentRecord.lon).toFixed(1) + " km";
+                fmtDist(haversine(userPos.lat, userPos.lon, currentRecord.lat, currentRecord.lon));
               updateMap(currentRecord, userPos, targetPos);
+              updateNavInfo();
             }
           } else if (currentRecord) {
             // Provincia non determinabile: si tiene il comando attuale ma si avvisa
             document.getElementById("rDist").textContent =
-              haversine(userPos.lat, userPos.lon, currentRecord.lat, currentRecord.lon).toFixed(1) + " km";
+              fmtDist(haversine(userPos.lat, userPos.lon, currentRecord.lat, currentRecord.lon));
             updateMap(currentRecord, userPos, targetPos);
+            updateNavInfo();
             borderNote.classList.remove("hidden");
             borderNote.innerHTML = "Posizione aggiornata, ma non è stato possibile verificare la provincia via rete: il comando mostrato potrebbe non essere più quello competente.";
           }
         } else if (currentRecord) {
           updateMap(currentRecord, userPos, targetPos);
+          updateNavInfo();
         }
         done();
       }, function (err) {
