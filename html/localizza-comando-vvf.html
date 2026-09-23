@@ -398,7 +398,7 @@
       text-align: right;
     }
 
-    .border-note + .panel {
+    .border-note+.panel {
       margin-top: 10px;
     }
 
@@ -1264,34 +1264,6 @@
         </div>
       </div>
 
-      <div class="panel">
-        <div class="row-group-label so">Sala operativa</div>
-        <div class="data-row">
-          <div class="label">Comando</div>
-          <div class="value" id="rTelComandoWrap">—</div>
-        </div>
-        <div class="data-row">
-          <div class="label">Direzione regionale</div>
-          <div class="value" id="rTelDirezioneWrap">—</div>
-        </div>
-        <div class="data-row">
-          <div class="label">CON</div>
-          <div class="value"><a class="value-link" id="conLink" href="tel:414606478321">06 478321 <svg width="14"
-                height="14" viewBox="0 0 24 24" fill="none">
-                <path d="M6 3h4l2 5-2.5 1.5a11 11 0 005 5L16 12l5 2v4a2 2 0 01-2 2C10.6 20 4 13.4 4 5a2 2 0 012-2z"
-                  stroke="currentColor" stroke-width="1.6" />
-              </svg></a><span id="rTelCon" class="hidden">06 478321</span></div>
-        </div>
-        <div class="data-row">
-          <div class="label">SOCAV</div>
-          <div class="value"><a class="value-link" id="socavLink" href="tel:41460679340903">06 79340903 <svg width="14"
-                height="14" viewBox="0 0 24 24" fill="none">
-                <path d="M6 3h4l2 5-2.5 1.5a11 11 0 005 5L16 12l5 2v4a2 2 0 01-2 2C10.6 20 4 13.4 4 5a2 2 0 012-2z"
-                  stroke="currentColor" stroke-width="1.6" />
-              </svg></a><span id="rTelSocav" class="hidden">06 79340903</span></div>
-        </div>
-      </div>
-
       <button class="link-btn" id="backToSearchBtn">cerca un altro comando</button>
     </section>
 
@@ -1388,18 +1360,10 @@
       if (p.length && /^[A-Z]{2}$/.test(p[p.length - 1])) pr = p.pop();
       if (p.length) city = p.pop();
       if (p.length && /^\d{5}$/.test(p[p.length - 1])) cap = p.pop();
-      const street = p.filter(Boolean).join(", ");
-      const loc = [cap, city].filter(Boolean).join(" ") + (pr ? " (" + pr + ")" : "");
-
-    // "Via X, , 72100, Brindisi, BR" -> {street: "Via X", loc: "72100 Brindisi (BR)"}
-    function fmtAddr(ind) {
-      const p = (ind || "").split(",").map(s => s.trim());
-      let pr = "", city = "", cap = "";
-      if (p.length && /^[A-Z]{2}$/.test(p[p.length - 1])) pr = p.pop();
-      if (p.length) city = p.pop();
-      if (p.length && /^\d{5}$/.test(p[p.length - 1])) cap = p.pop();
-      return {street: p.filter(Boolean).join(", "),
-              loc: [cap, city].filter(Boolean).join(" ") + (pr ? " (" + pr + ")" : "")};
+      return {
+        street: p.filter(Boolean).join(", "),
+        loc: [cap, city].filter(Boolean).join(" ") + (pr ? " (" + pr + ")" : "")
+      };
     }
 
     let dialPrefixEnabled = true;
