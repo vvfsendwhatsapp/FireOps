@@ -373,6 +373,31 @@
     }
 
     /* la mappa ha l'avviso in mezzo: .panel+.panel non scatta */
+    .border-note+.panel {
+      margin-top: 10px;
+    }
+
+    .result-addr {
+      padding: 0 14px 12px;
+      margin-top: -6px;
+      font-size: 13.5px;
+      line-height: 1.45;
+      color: var(--text);
+    }
+
+    .result-addr .loc {
+      display: block;
+      color: var(--text-dim);
+    }
+
+    .result-top .dist .az {
+      display: block;
+      margin-top: 3px;
+      font-size: 13px;
+      color: var(--text-dim);
+      text-align: right;
+    }
+
     .border-note + .panel {
       margin-top: 10px;
     }
@@ -1192,9 +1217,25 @@
           </div>
           <div class="dist" id="rDist"></div>
         </div>
-        <div class="result-addr copyable" id="rCmdAddr" title="Tocca per copiare l'indirizzo"></div>
+        <div class="result-addr" id="rCmdAddr"></div>
         <div class="result-sub" id="rSub"></div>
         <div class="method-badge" id="rMethod"></div>
+        <div class="data-row">
+          <div class="label">Canale radio Comando</div>
+          <div class="value"><span id="rRadioComando">—</span></div>
+        </div>
+        <div class="data-row">
+          <div class="label">Canale radio Direzione reg.</div>
+          <div class="value"><span id="rRadioDirezione">—</span></div>
+        </div>
+        <div class="data-row">
+          <div class="label">SO Comando</div>
+          <div class="value" id="rTelComandoWrap">—</div>
+        </div>
+        <div class="data-row">
+          <div class="label">SO Direzione reg.</div>
+          <div class="value" id="rTelDirezioneWrap">—</div>
+        </div>
         <div class="cmd-conf hidden" id="confinantiPanel">
           <div class="cmd-conf-label">Comandi confinanti</div>
           <div class="chips" id="confinantiChips"></div>
@@ -1336,6 +1377,20 @@
       } else {
         cAz.textContent = "—";
       }
+
+      // In alto a destra: Comando -> target (o -> mia posizione se non c'è target)
+      const rDist = document.getElementById("rDist");
+      const ref = targetPos || userPos;
+      if (ref && currentRecord) {
+        rDist.textContent = fmtDist(haversine(currentRecord.lat, currentRecord.lon, ref.lat, ref.lon));
+        const az = document.createElement("span");
+        az.className = "az";
+        az.textContent = "Az " + fmtAz(bearingDeg(currentRecord.lat, currentRecord.lon, ref.lat, ref.lon));
+        az.title = targetPos ? "Azimut Comando → target" : "Azimut Comando → mia posizione";
+        rDist.appendChild(az);
+      } else {
+        rDist.textContent = "";
+      }
     }
 
     // "Via X, , 72100, Brindisi, BR" -> {street: "Via X", loc: "72100 Brindisi (BR)"}
@@ -1348,6 +1403,17 @@
       const street = p.filter(Boolean).join(", ");
       const loc = [cap, city].filter(Boolean).join(" ") + (pr ? " (" + pr + ")" : "");
       return {street: street, loc: loc, full: [street, loc].filter(Boolean).join(", ")};
+    }
+
+    // "Via X, , 72100, Brindisi, BR" -> {street: "Via X", loc: "72100 Brindisi (BR)"}
+    function fmtAddr(ind) {
+      const p = (ind || "").split(",").map(s => s.trim());
+      let pr = "", city = "", cap = "";
+      if (p.length && /^[A-Z]{2}$/.test(p[p.length - 1])) pr = p.pop();
+      if (p.length) city = p.pop();
+      if (p.length && /^\d{5}$/.test(p[p.length - 1])) cap = p.pop();
+      return {street: p.filter(Boolean).join(", "),
+              loc: [cap, city].filter(Boolean).join(" ") + (pr ? " (" + pr + ")" : "")};
     }
 
     let dialPrefixEnabled = true;
