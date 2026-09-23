@@ -1630,7 +1630,8 @@
 
     // Semiasse dalla mia posizione fino oltre il bordo della mappa, nella direzione del telefono
     function drawHeadingRay() {
-      if (!map || !userPos || heading == null) {
+      // la mappa deve avere già centro e zoom, altrimenti Leaflet lancia un errore
+      if (!map || !map._loaded || !userPos || heading == null) {
         if (hdgLine) {map.removeLayer(hdgCasing); map.removeLayer(hdgLine); hdgCasing = hdgLine = null;}
         if (hdgMarks) hdgMarks.clearLayers();
         return;
@@ -1776,7 +1777,7 @@
         };
         radioCtrl.addTo(map);
 
-        map.on("zoomend moveend", drawHeadingRay);
+        map.on("zoomend moveend resize", drawHeadingRay);
 
         map.on("baselayerchange", function (e) {
           try {localStorage.setItem("fireops_basemap", e.name);} catch (err) { }
