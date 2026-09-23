@@ -1190,7 +1190,7 @@
           <div class="value" id="rGpsAltitude">—</div>
         </div>
         <div class="data-row">
-          <div class="label">Azimut Comando → mia pos.</div>
+          <div class="label">Azimut mia pos. → Comando</div>
           <div class="value" id="rCmdAz">—</div>
         </div>
         <button type="button" id="refreshGpsBtn" class="refresh-gps-btn">
@@ -1332,7 +1332,7 @@
       }
       const cAz = document.getElementById("rCmdAz");
       if (userPos && currentRecord) {
-        cAz.textContent = fmtAz(bearingDeg(currentRecord.lat, currentRecord.lon, userPos.lat, userPos.lon)) +
+        cAz.textContent = fmtAz(bearingDeg(userPos.lat, userPos.lon, currentRecord.lat, currentRecord.lon)) +
           " · " + fmtDist(haversine(currentRecord.lat, currentRecord.lon, userPos.lat, userPos.lon));
       } else {
         cAz.textContent = "—";
@@ -1345,8 +1345,12 @@
         rDist.textContent = fmtDist(haversine(currentRecord.lat, currentRecord.lon, ref.lat, ref.lon));
         const az = document.createElement("span");
         az.className = "az";
-        az.textContent = "Az " + fmtAz(bearingDeg(currentRecord.lat, currentRecord.lon, ref.lat, ref.lon));
-        az.title = targetPos ? "Azimut Comando → target" : "Azimut Comando → mia posizione";
+        // con target: Comando -> target (partenza squadra); senza: mia pos. -> Comando
+        const brg = targetPos
+          ? bearingDeg(currentRecord.lat, currentRecord.lon, ref.lat, ref.lon)
+          : bearingDeg(ref.lat, ref.lon, currentRecord.lat, currentRecord.lon);
+        az.textContent = "Az " + fmtAz(brg);
+        az.title = targetPos ? "Azimut Comando → target" : "Azimut mia posizione → Comando";
         rDist.appendChild(az);
       } else {
         rDist.textContent = "";
