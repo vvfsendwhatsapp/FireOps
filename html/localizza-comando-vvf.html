@@ -1067,7 +1067,7 @@
       cursor: pointer;
     }
 
-        /* colore legato al riferimento: rosso = target, giallo = mia posizione */
+    /* colore legato al riferimento: rosso = target, giallo = mia posizione */
     .result-top .dist .az {
       color: inherit;
     }
@@ -1078,6 +1078,52 @@
 
     .method-badge.tgt {
       color: #e84747;
+    }
+
+    /* barra laterale a tutta altezza, come il riquadro Comando */
+    .panel.side-tgt {
+      border-left: 3px solid #e84747;
+    }
+
+    .panel.side-gps {
+      border-left: 3px solid var(--red);
+    }
+
+    .side-tgt .row-group-label,
+    .side-gps .row-group-label {
+      border-left: 0;
+    }
+
+        .leaflet-tooltip.line-lbl {
+      background: rgba(16, 20, 26, .88);
+      border: 1px solid;
+      border-radius: 3px;
+      box-shadow: none;
+      padding: 2px 6px;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .leaflet-tooltip.line-lbl::before { display: none; }
+    .line-lbl.cmd-me  { color: #ffd700; border-color: #ffd700; }
+    .line-lbl.cmd-tgt { color: #e84747; border-color: #e84747; }
+    .line-lbl.me-tgt  { color: #e8a33d; border-color: #e8a33d; }
+
+        .map-radio {
+      background: rgba(16, 20, 26, .88);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-left: 3px solid var(--amber);
+      border-radius: 4px;
+      padding: 6px 9px;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .map-radio .ch {
+      font-family: var(--mono);
+      font-weight: 700;
+      color: var(--amber);
     }
   </style>
 </head>
@@ -1184,7 +1230,7 @@
 
     <section id="result-section" class="hidden">
       <!-- Pannello coordinate Target (se inserito) -->
-      <div class="panel hidden" id="targetInfoPanel">
+      <div class="panel side-tgt hidden" id="targetInfoPanel">
         <div class="row-group-label target">Punto Target / Evento</div>
         <div class="data-row">
           <div class="label">Coordinate Target</div>
@@ -1217,8 +1263,28 @@
         </button>
       </div>
 
+      <div class="panel">
+        <div class="map-wrap">
+          <div id="resultMap"></div>
+          <button type="button" id="mapCenterBtn" class="map-center-btn" title="Centra posizione"
+            aria-label="Centra posizione">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="3.5" stroke="currentColor" stroke-width="2" />
+              <path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </button>
+          <button type="button" id="mapExpandBtn" class="map-expand-btn" title="Ingrandisci mappa"
+            aria-label="Ingrandisci mappa"></button>
+        </div>
+        <div class="map-legend" id="mapLegend">
+          <span><i class="dot-comando"></i>Comando</span>
+          <span id="legendUser" class="hidden"><i class="dot-user"></i>La tua posizione</span>
+          <span id="legendTarget" class="hidden"><i class="dot-target"></i>Target</span>
+        </div>
+      </div>
+
       <!-- Pannello coordinate GPS rilevate -->
-      <div class="panel hidden" id="gpsInfoPanel">
+      <div class="panel side-gps hidden" id="gpsInfoPanel">
         <div class="row-group-label gps">Posizione GPS rilevata</div>
         <div class="data-row">
           <div class="label">Coordinate GPS</div>
@@ -1287,26 +1353,6 @@
       </div>
 
       <div class="border-note hidden" id="borderNote"></div>
-
-      <div class="panel">
-        <div class="map-wrap">
-          <div id="resultMap"></div>
-          <button type="button" id="mapCenterBtn" class="map-center-btn" title="Centra posizione"
-            aria-label="Centra posizione">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="3.5" stroke="currentColor" stroke-width="2" />
-              <path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-            </svg>
-          </button>
-          <button type="button" id="mapExpandBtn" class="map-expand-btn" title="Ingrandisci mappa"
-            aria-label="Ingrandisci mappa"></button>
-        </div>
-        <div class="map-legend" id="mapLegend">
-          <span><i class="dot-comando"></i>Comando</span>
-          <span id="legendUser" class="hidden"><i class="dot-user"></i>La tua posizione</span>
-          <span id="legendTarget" class="hidden"><i class="dot-target"></i>Target</span>
-        </div>
-      </div>
 
       <button class="link-btn" id="backToSearchBtn">cerca un altro comando</button>
     </section>
@@ -1503,6 +1549,7 @@
     let userMarker = null;
     let targetMarker = null;
     let linkLines = [];
+    let radioCtrl = null;
 
     function comandoIcon() {
       const svg = '<svg width="26" height="26" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">'
@@ -1516,6 +1563,13 @@
         + '<circle cx="9" cy="9" r="7" fill="' + color + '" stroke="#10141a" stroke-width="2.5"/>'
         + '</svg>';
       return L.divIcon({className: "", html: svg, iconSize: [18, 18], iconAnchor: [9, 9]});
+    }
+
+    // Etichetta fissa a metà linea: distanza · azimut (da "from" verso "to")
+    function lineLabel(line, from, to, cls) {
+      const txt = fmtDist(haversine(from.lat, from.lon, to.lat, to.lon)) + " · " +
+        fmtAz(bearingDeg(from.lat, from.lon, to.lat, to.lon));
+      line.bindTooltip(txt, {permanent: true, direction: "center", className: "line-lbl " + cls, opacity: 1});
     }
 
     function updateMap(record, pos, target, fit) {
@@ -1551,6 +1605,14 @@
 
         L.control.layers(baseLayers, null, {position: "topleft", collapsed: true}).addTo(map);
 
+        radioCtrl = L.control({position: "bottomleft"});
+        radioCtrl.onAdd = function () {
+          const d = L.DomUtil.create("div", "map-radio");
+          L.DomEvent.disableClickPropagation(d);
+          return d;
+        };
+        radioCtrl.addTo(map);
+
         map.on("baselayerchange", function (e) {
           try {localStorage.setItem("fireops_basemap", e.name);} catch (err) { }
         });
@@ -1561,6 +1623,10 @@
       if (targetMarker) {map.removeLayer(targetMarker); targetMarker = null;}
       linkLines.forEach(l => map.removeLayer(l));
       linkLines = [];
+
+      radioCtrl.getContainer().innerHTML =
+        "<b>" + record.c + "</b><br>📻 Comando <span class='ch'>" + (record.rc || "—") +
+        "</span> · DR <span class='ch'>" + (record.rd || "—") + "</span>";
 
       comandoMarker = L.marker([record.lat, record.lon], {icon: comandoIcon()})
         .addTo(map)
@@ -1581,6 +1647,7 @@
         const l1 = L.polyline([[pos.lat, pos.lon], [record.lat, record.lon]], {
           color: "#ffd700", weight: 2.5, dashArray: "4,6", opacity: 0.85
         }).addTo(map);
+        lineLabel(l1, pos, record, "cmd-me");          // mia pos. -> Comando
         linkLines.push(l1);
       } else {
         legendUser.classList.add("hidden");
@@ -1596,12 +1663,14 @@
         const l2 = L.polyline([[target.lat, target.lon], [record.lat, record.lon]], {
           color: "#e84747", weight: 2.5, dashArray: "6,4", opacity: 0.9
         }).addTo(map);
+        lineLabel(l2, record, target, "cmd-tgt");      // Comando -> target
         linkLines.push(l2);
 
         if (pos) {
           const l3 = L.polyline([[pos.lat, pos.lon], [target.lat, target.lon]], {
             color: "#e8a33d", weight: 2, opacity: 0.7
           }).addTo(map);
+          lineLabel(l3, pos, target, "me-tgt");        // mia pos. -> target
           linkLines.push(l3);
         }
       } else {
