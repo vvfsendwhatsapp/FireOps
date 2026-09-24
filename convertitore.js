@@ -1192,7 +1192,8 @@ if (contenitoreFormCoord) {
     function apriMenuSposta(evento, etichetta, tipo) {
         if (evento.originalEvent) L.DomEvent.preventDefault(evento.originalEvent);
         const box = document.createElement("div");
-        box.className = "coord-menu-sposta";
+        // Il colore del menu è quello del punto: rosso il target, giallo la squadra
+        box.className = `coord-menu-sposta coord-menu-${tipo}`;
         box.innerHTML = `<div class="coord-menu-tit">${etichetta}</div><button type="button">✥ Sposta</button>`;
         box.querySelector("button").addEventListener("click", () => armaPosa(tipo));
         L.popup({ closeButton: false, offset: [0, -6] })
@@ -1250,6 +1251,18 @@ if (contenitoreFormCoord) {
                    </div>`,
             iconSize: [20, 20],
             iconAnchor: [10, 10],
+        });
+    }
+
+        // Comando competente: rombo nero bordato di giallo. Rombo come i Reparti
+    // Volo (sono sedi, non punti d'intervento), ma senza numero e coi colori
+    // del Corpo, così i due non si confondono.
+    function iconaComandoCompetente() {
+        return L.divIcon({
+            className: "",
+            html: `<div style="width:18px;height:18px;transform:rotate(45deg);background:#121212;border:2px solid ${COLORE_SQUADRA};box-shadow:0 0 6px rgba(0,0,0,.6);"></div>`,
+            iconSize: [18, 18],
+            iconAnchor: [9, 9],
         });
     }
 
@@ -2856,7 +2869,7 @@ function disegnaGraficoAltimetria(geojson) {
         }
 
         coordMarkerComando = L.marker([coord.lat, coord.lon], {
-            icon: iconaMarkerGenerica(COLORE_COMANDO),
+            icon: iconaComandoCompetente(),
             title: `Comando competente: ${comando.Comando}`,
         }).addTo(coordMappaLeaflet);
 

@@ -7113,6 +7113,20 @@ select:focus {
     color: #fff;
 }
 
+/* Squadra VF: menu giallo come la sua freccia. Fondo pieno e testo scuro,
+   perché giallo su bianco (il fondo dei popup Leaflet) non si legge. */
+.coord-menu-sposta.coord-menu-partenza button {
+    background: #ffd700;
+    border-color: #c9a800;
+    color: #121212;
+}
+
+.coord-menu-sposta.coord-menu-partenza button:hover {
+    background: #e6c200;
+    border-color: #a88c00;
+    color: #121212;
+}
+
 /* ==========================================================
    ==========================================================
    RESPONSIVE
