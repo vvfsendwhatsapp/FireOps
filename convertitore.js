@@ -1170,6 +1170,67 @@ if (contenitoreFormCoord) {
     let repartiMostrati = [];
     let layerRepartiVolo = null;
 
+        // Quale punto si sta per posare col prossimo clic: null, "target"
+    // (mirino rosso) o "partenza" (mirino giallo). Un clic posa, poi si
+    // disarma: per spostare un punto già posato serve il clic destro → Sposta.
+    let puntoInAttesa = null;
+
+    function aggiornaCursoreMappa() {
+        const c = document.getElementById("coord-mappa");
+        if (!c) return;
+        c.classList.toggle("coord-cur-partenza", puntoInAttesa === "partenza");
+        c.classList.toggle("coord-cur-target", puntoInAttesa === "target");
+    }
+
+    function armaPosa(tipo) {
+        puntoInAttesa = tipo;
+        aggiornaCursoreMappa();
+        if (coordMappaLeaflet) coordMappaLeaflet.closePopup();
+    }
+
+    // Menu del tasto destro sui punti posati: una voce sola, Sposta
+    function apriMenuSposta(evento, etichetta, tipo) {
+        if (evento.originalEvent) L.DomEvent.preventDefault(evento.originalEvent);
+        const box = document.createElement("div");
+        box.className = "coord-menu-sposta";
+        box.innerHTML = `<div class="coord-menu-tit">${etichetta}</div><button type="button">✥ Sposta</button>`;
+        box.querySelector("button").addEventListener("click", () => armaPosa(tipo));
+        L.popup({ closeButton: false, offset: [0, -6] })
+            .setLatLng(evento.latlng).setContent(box).openOn(coordMappaLeaflet);
+    }
+
+    // Target posato dalla carta. Se è uno spostamento e c'era già una
+    // squadra, il percorso si rifà verso il nuovo target con la stessa
+    // squadra e la stessa tipologia.
+    async function posaTarget(lat, lon, { spostamento = false } = {}) {
+        const partenza = spostamento && modalitaPercorsoAttiva ? ultimoPuntoPartenza : null;
+        const profilo = profiloPercorsoAttivo;
+        puntoInAttesa = null;
+        aggiornaCursoreMappa();
+
+        // Il target non viene più dalle coordinate digitate: il formato lo
+        // dice, o i campi di Input mostrerebbero un punto che non è quello
+        if (spostamento && selectFormato && selectFormato.value !== "mappa") {
+            selectFormato.value = "mappa";
+            Object.entries(gruppiInput).forEach(([k, el]) => {
+                if (el) el.style.display = k === "mappa" ? "block" : "none";
+            });
+            salvaStatoFormCoord();
+        }
+
+        // elaboraCoordinateConvertite azzera il percorso PRIMA della sua
+        // prima attesa di rete: lo si ripristina subito dopo, senza
+        // aspettare toponimo e quota
+        const conversione = elaboraCoordinateConvertite(lat, lon, { restaSuMappa: spostamento });
+        if (partenza) {
+            profiloPercorsoAttivo = profilo;
+            modalitaPercorsoAttiva = true;
+            evidenziaProfiloPercorso();
+            calcolaEDisegnaPercorso(partenza.lat, partenza.lon);
+        }
+        await conversione;
+    }
+
     function iconaMarkerGenerica(colore) {
         return L.divIcon({
             className: "",
@@ -1409,20 +1470,18 @@ function iconaFrecciaDirezione(colore, azimutGradi) {
         impostaCartaBase(chiaveBaseAttiva);
 
         coordMappaLeaflet.on("click", (e) => {
-    // Secondo punto di "Crea percorso": funziona sempre, indipendentemente
-    // dal formato selezionato nel menù a tendina
-    if (modalitaPercorsoAttiva && coordinateTargetCorrenti) {
-        popupPuntoPartenza = null;
-        calcolaEDisegnaPercorso(e.latlng.lat, e.latlng.lng);
-        return;
-    }
-    // Altrimenti il click genera coordinate SOLO se è selezionato
-    // esplicitamente il formato "Scelta su mappa": con qualsiasi altro
-    // formato (DD, UTM, indirizzo...) il click sulla mappa non fa nulla
-    const formatoAttuale = selectFormato ? selectFormato.value : "dd";
-    if (formatoAttuale !== "mappa") return;
-    elaboraCoordinateConvertite(e.latlng.lat, e.latlng.lng);
-});
+            if (puntoInAttesa === "partenza" && coordinateTargetCorrenti) {
+                popupPuntoPartenza = null;
+                puntoInAttesa = null;
+                aggiornaCursoreMappa();
+                calcolaEDisegnaPercorso(e.latlng.lat, e.latlng.lng);
+                return;
+            }
+            if (puntoInAttesa === "target") {
+                posaTarget(e.latlng.lat, e.latlng.lng, { spostamento: !!coordinateTargetCorrenti });
+            }
+            // Nessun punto in attesa: il clic sulla carta non fa nulla
+        });
 
         if (typeof ResizeObserver !== "undefined") {
             const osservatoreDimensione = new ResizeObserver(() => {
@@ -1516,6 +1575,9 @@ document.addEventListener("fireops:comando-attivo-cambiato", (e) => {
         nascondiErrore();
         aggiornaAnteprimaMessaggioCoordinate();
         aggiornaStatoBottonePercorso();
+        // Formato "Scelta su mappa": si riparte col mirino rosso pronto
+        puntoInAttesa = (selectFormato && selectFormato.value === "mappa") ? "target" : null;
+        aggiornaCursoreMappa();
     }
 
     function centraMappaSulTarget(lat, lon) {
@@ -1529,7 +1591,7 @@ document.addEventListener("fireops:comando-attivo-cambiato", (e) => {
         coordMarkerTarget = L.marker([lat, lon], { icon: iconaMarkerGenerica(COLORE_TARGET) })
             .addTo(coordMappaLeaflet)
             .bindPopup("Target intervento");
-
+        coordMarkerTarget.on("contextmenu", e => apriMenuSposta(e, "Target intervento", "target"));
         setTimeout(() => coordMappaLeaflet.invalidateSize(), 100);
     }
 
@@ -1658,7 +1720,7 @@ async function disegnaLineaDiretta(latPartenza, lonPartenza, latArrivo, lonArriv
     abilitaEsportazioni(true);
 
     nascondiGraficoAltimetria("Linea diretta: nessun profilo altimetrico (è una distanza in linea d'aria, non un percorso reale).");
-    if (elInfoPercorso) elInfoPercorso.textContent = `Linea diretta — ${distanzaAriaKm.toFixed(2)} km — Azimut ${Math.round(azimut)}°. Trascina la freccia gialla per spostare la squadra e ricalcolare.`;
+    if (elInfoPercorso) elInfoPercorso.textContent = `Linea diretta — ${distanzaAriaKm.toFixed(2)} km — Azimut ${Math.round(azimut)}°. Clic destro sulla freccia gialla → Sposta per cambiare la partenza.`;
 
     const quotaPartenza = quote ? quote.partenza : null;
     const quotaArrivo = quote ? quote.arrivo : null;
@@ -1672,26 +1734,17 @@ async function disegnaLineaDiretta(latPartenza, lonPartenza, latArrivo, lonArriv
     });
 }
 
-// Marker della squadra VF: trascinabile. Al rilascio ricalcola tutto
-// (percorso, quote, azimut) dal nuovo punto, senza dover ricliccare.
+// Marker della squadra VF: fermo. Si sposta col clic destro → Sposta,
+// non trascinandolo: un gesto distratto non deve cambiare la partenza.
 function disegnaMarkerPartenza(lat, lon, azimut) {
     if (coordMarkerPartenza) coordMappaLeaflet.removeLayer(coordMarkerPartenza);
     coordMarkerPartenza = L.marker([lat, lon], {
         icon: iconaFrecciaDirezione(COLORE_SQUADRA, azimut),
-        draggable: true,
-        autoPan: true,
         zIndexOffset: -100,
-        title: "Squadra VF — trascina per spostare il punto di partenza",
-    }).addTo(coordMappaLeaflet).bindPopup(popupPuntoPartenza || "Squadra VF (trascinabile)");
+        title: "Squadra VF — clic destro per spostare",
+    }).addTo(coordMappaLeaflet).bindPopup(popupPuntoPartenza || "Squadra VF");
 
-    coordMarkerPartenza.on("dragstart", () => {
-        if (elInfoPercorso) elInfoPercorso.textContent = "Spostamento del punto di partenza…";
-    });
-    coordMarkerPartenza.on("dragend", (e) => {
-        popupPuntoPartenza = null;
-        const posizione = e.target.getLatLng();
-        calcolaEDisegnaPercorso(posizione.lat, posizione.lng);
-    });
+    coordMarkerPartenza.on("contextmenu", e => apriMenuSposta(e, "Squadra VF", "partenza"));
 }
 
     async function calcolaEDisegnaPercorso(latPartenza, lonPartenza) {
@@ -1764,7 +1817,7 @@ function disegnaMarkerPartenza(lat, lon, azimut) {
             let testoInfo = "Percorso calcolato";
             if (distanzaKm !== null) testoInfo += ` — ${distanzaKm.toFixed(2)} km`;
             if (tempoMin !== null) testoInfo += ` — circa ${testoDurata(tempoMin)}`;
-            testoInfo += ". Trascina la freccia gialla per spostare la squadra e ricalcolare.";
+            testoInfo += ". Clic destro sulla freccia gialla → Sposta per cambiare la partenza.";
             if (elInfoPercorso) elInfoPercorso.textContent = testoInfo;
             abilitaEsportazioni(true);
         } catch (err) {
@@ -1821,8 +1874,7 @@ function evidenziaProfiloPercorso() {
     const btnAnnulla = document.getElementById("btn-coord-annulla-percorso");
     if (btnAnnulla) btnAnnulla.disabled = !modalitaPercorsoAttiva;
     // Mirino sulla carta finché si sta scegliendo (o spostando) la partenza
-    const contenitoreMappa = document.getElementById("coord-mappa");
-    if (contenitoreMappa) contenitoreMappa.classList.toggle("coord-cur-partenza", modalitaPercorsoAttiva);    
+    aggiornaCursoreMappa();
 }
 
 function attivaProfiloPercorso(profilo) {
@@ -1832,6 +1884,9 @@ function attivaProfiloPercorso(profilo) {
     }
     profiloPercorsoAttivo = profilo;
     modalitaPercorsoAttiva = true;
+    // Senza squadra sulla carta il prossimo clic la posa
+    puntoInAttesa = ultimoPuntoPartenza ? null : "partenza";
+    if (puntoInAttesa === "partenza") puntoInAttesa = null;
     evidenziaProfiloPercorso();
     if (contenitoreControlliPercorsoAttivo) contenitoreControlliPercorsoAttivo.classList.add("visibile");
 
@@ -2426,7 +2481,9 @@ function disegnaGraficoAltimetria(geojson) {
             // "automezzo" sta ragionando su una partenza via strada dalla base,
             // e sovrascriverlo cancellerebbe la sua scelta.
             m.on("click", () => {
-                if (!modalitaPercorsoAttiva || !coordinateTargetCorrenti) return;
+                if (puntoInAttesa !== "partenza" || !coordinateTargetCorrenti) return;
+                puntoInAttesa = null;
+                aggiornaCursoreMappa();
                 popupPuntoPartenza = html;
                 calcolaEDisegnaPercorso(voce.coord.lat, voce.coord.lon);
             });
@@ -2446,6 +2503,7 @@ function disegnaGraficoAltimetria(geojson) {
         if (!coordinateTargetCorrenti || Number.isNaN(lat) || Number.isNaN(lon)) return;
         profiloPercorsoAttivo = "linea-diretta";
         modalitaPercorsoAttiva = true;
+        puntoInAttesa = null;   // la partenza è il reparto: niente da posare
         evidenziaProfiloPercorso();
         if (contenitoreControlliPercorsoAttivo) contenitoreControlliPercorsoAttivo.classList.add("visibile");
         popupPuntoPartenza = popupHtml || null;
@@ -2811,7 +2869,9 @@ function disegnaGraficoAltimetria(geojson) {
         // far partire la squadra proprio dal Comando. Fuori da quella
         // modalità torna consultabile col popup.
         coordMarkerComando.on("click", (e) => {
-            if (!modalitaPercorsoAttiva || !coordinateTargetCorrenti) return;
+            if (puntoInAttesa !== "partenza" || !coordinateTargetCorrenti) return;
+            puntoInAttesa = null;
+            aggiornaCursoreMappa();
             coordMarkerComando.closePopup();
             calcolaEDisegnaPercorso(e.latlng.lat, e.latlng.lng);
         });
@@ -2858,8 +2918,10 @@ function disegnaGraficoAltimetria(geojson) {
 
     // Logica di rendering condivisa: usata sia dal pulsante "Converti" sia
     // dal click diretto sulla mappa (che passa già una coppia lat/lon)
-    async function elaboraCoordinateConvertite(lat, lon) {
+    async function elaboraCoordinateConvertite(lat, lon, { restaSuMappa = false } = {}) {
         nascondiErrore();
+        puntoInAttesa = null;
+        aggiornaCursoreMappa();
 
         if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
             mostraErrore("Coordinate fuori range (latitudine -90/90, longitudine -180/180).");
@@ -2904,7 +2966,9 @@ function disegnaGraficoAltimetria(geojson) {
 
         // Convertito: si passa da sé alla scheda dei risultati, che è il
         // motivo per cui si è premuto Converti
-        impostaSchedaColonnaAttiva("output");
+        // Uno spostamento dalla carta resta sulla carta; una conversione
+        // mostra i risultati
+        impostaSchedaColonnaAttiva(restaSuMappa ? "mappa" : "output");
         conversioneFatta = true;
         aggiornaBottoneConverti();
 
@@ -2980,7 +3044,17 @@ function disegnaGraficoAltimetria(geojson) {
         const tabSalvata = sessionStorage.getItem(CHIAVE_STORAGE_TAB_COORD);
         if (tabSalvata && contenutiScheda[tabSalvata]) tabInizialeCoord = tabSalvata;
     } catch (err) { }
-    impostaSchedaColonnaAttiva(tabInizialeCoord, false); // false: non ri-salvare quello che abbiamo appena letto
+    // Riapertura con "Scelta su mappa" già selezionato: mirino rosso pronto
+    if (selectFormato && selectFormato.value === "mappa" && !coordinateTargetCorrenti) armaPosa("target");
+
+    // Esc annulla uno spostamento. Il primo target non si annulla: senza
+    // mirino, in "Scelta su mappa" non ci sarebbe modo di posarlo.
+    document.addEventListener("keydown", (e) => {
+        if (e.key !== "Escape" || !puntoInAttesa) return;
+        if (puntoInAttesa === "target" && !coordinateTargetCorrenti) return;
+        puntoInAttesa = null;
+        aggiornaCursoreMappa();
+    });
     
     // ==========================================================
     // FORMATO "GRADI DECIMALI DA APPUNTI"
