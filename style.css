@@ -7030,6 +7030,15 @@ select:focus {
     text-overflow: ellipsis;
 }
 
+/* La carta prende sempre la riga intera, anche se per un errore di
+   markup finisce dentro il flex dei controlli: lì, senza larghezza
+   esplicita, collasserebbe a zero (i pane Leaflet sono tutti assoluti) */
+.coord-mappa-wrapper {
+    flex: 1 1 100%;
+    width: 100%;
+    min-width: 0;
+}
+
 /* ==========================================================
    ==========================================================
    RESPONSIVE
