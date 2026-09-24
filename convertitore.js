@@ -1886,7 +1886,7 @@ function attivaProfiloPercorso(profilo) {
     profiloPercorsoAttivo = profilo;
     modalitaPercorsoAttiva = true;
     // Senza squadra sulla carta il prossimo clic la posa
-    if (puntoInAttesa === "partenza") puntoInAttesa = null;
+    puntoInAttesa = ultimoPuntoPartenza ? null : "partenza";
     evidenziaProfiloPercorso();
     if (contenitoreControlliPercorsoAttivo) contenitoreControlliPercorsoAttivo.classList.add("visibile");
 
