@@ -1,17 +1,17 @@
 // ==========================================================================
-// FireOps VVF — MESSAGGISTICA (messaggistica-bis.js)
+// FireOps VVF — MESSAGGISTICA (messaggistica.js)
 //
-// Estratto da script-bis.js: messaggio precompilato multilingua (28 lingue),
+// Estratto da script.js: messaggio precompilato multilingua (28 lingue),
 // link invio coordinate (Con/Senza + locator.html), invio via WhatsApp
 // Web/Desktop/Telegram, e il pannello di riepilogo messaggi (24h) con
 // mappe Leaflet e incrocio con le posizioni ricevute.
 //
-// Autonomo rispetto a script-bis.js: non usa variabili della sua closure.
+// Autonomo rispetto a script.js: non usa variabili della sua closure.
 // Ciò che serve da fuori arriva solo da due canali, entrambi già esposti
 // prima che questo file venga eseguito (fireops-core.js e la parte iniziale
-// di script-bis.js sono sempre caricati prima, nell'ordine di MODULI):
+// di script.js sono sempre caricati prima, nell'ordine di MODULI):
 //   - window.FireOps.*        — utilità condivise (combo, orario, turno...)
-//   - window.FireOpsComandi   — l'elenco Comandi, popolato da script-bis.js
+//   - window.FireOpsComandi   — l'elenco Comandi, popolato da script.js
 //   - l'evento "fireops:comando-attivo-cambiato" — per rigenerare il
 //     messaggio quando cambia il Comando attivo, invece di essere chiamati
 //     direttamente da attivaComando() in un altro file
@@ -1287,9 +1287,9 @@ Koordináták küldéséhez:
         return !!(sezioneMsg && sezioneMsg.closest(".pannello"));
     }
 
-    // Replica locale di toggleFullscreenPagina() (script-bis.js): questo
+    // Replica locale di toggleFullscreenPagina() (script.js): questo
     // file è autonomo (vedi intestazione) e non condivide la closure di
-    // script-bis.js, quindi non può chiamare quella funzione direttamente —
+    // script.js, quindi non può chiamare quella funzione direttamente —
     // stesso principio già seguito per turno/data/ora, duplicate qui per lo
     // stesso motivo. La tab fa le veci del pulsante Espandi/Riduci: il div
     // di Messaggistica (un CONTENITORE UNICO, non due box separati con lo
@@ -1771,6 +1771,11 @@ Koordináták küldéséhez:
             bottoniDaBloccareSeArchiviato.forEach(btn => { btn.disabled = archiviato; });
         }
 
+        // No-op finché il messaggio non è "ricevuto" (mappaWrap non esiste
+        // ancora a quel punto): ridefinita più sotto, dentro il blocco
+        // `if (ricevuto)`, con l'accordion vero da compattare.
+        let compattaMappaSeAperta = () => {};
+
         div.dataset.archiviato = archiviato ? "true" : "false";
         div.classList.toggle("archiviata", archiviato);
 
@@ -1804,7 +1809,19 @@ Koordináták küldéséhez:
             div.classList.toggle("archiviata", archiviato);
             aggiornaAspettoBottoneArchivia();
             applicaBloccoSeArchiviato();
+            // Solo archiviando (non sbloccando): una conversazione chiusa
+            // non ha motivo di restare con la mappa aperta a occupare
+            // spazio — chi archivia sta dicendo "ho finito con questo".
+            if (archiviato) compattaMappaSeAperta();
             riordinaRigheRiepilogo();
+            // riordinaRigheRiepilogo sposta le righe nel DOM (rimuove e
+            // reinserisce): se un'ALTRA riga (non questa) ha una mappa
+            // Leaflet già aperta, quello spostamento può farla apparire
+            // compressa — Leaflet non si accorge da solo che il proprio
+            // contenitore potrebbe aver cambiato dimensione. Un "resize"
+            // sintetico la fa ridisegnare alla misura giusta (Leaflet
+            // ascolta il resize della finestra di suo, di default).
+            window.dispatchEvent(new Event("resize"));
             impostaArchiviazioneMessaggio(messaggio, archiviato);
         });
 
@@ -1918,19 +1935,39 @@ Koordináták küldéséhez:
             });
 
             const btnToggleMappa = azioni.querySelector(".riepilogo-msg-toggle-mappa");
+
+            // Estratta a parte (non solo dentro il click) perché serve
+            // anche da fuori: quando si archivia il messaggio, la mappa se
+            // aperta va compattata da sola — vedi compattaMappaSeAperta
+            // più sotto. Non fa nulla se è già chiusa.
+            function nascondiMappa() {
+                if (mappaWrap.hidden) return;
+                mappaWrap.hidden = true;
+                btnToggleMappa.textContent = `🗺️ Mostra su mappa (${righePosizione.length})`;
+                btnToggleMappa.classList.remove("attivo");
+                mappaWrap.classList.remove("espansa");
+            }
+            // La variabile esterna (dichiarata come no-op prima di sapere
+            // se il messaggio è "ricevuto") viene qui agganciata alla vera
+            // implementazione: solo un messaggio ricevuto ha una mappa da
+            // poter chiudere.
+            compattaMappaSeAperta = nascondiMappa;
+
             btnToggleMappa.addEventListener("click", (ev) => {
                 ev.stopPropagation();
-                mappaWrap.hidden = !mappaWrap.hidden;
+                if (!mappaWrap.hidden) {
+                    nascondiMappa();
+                    return;
+                }
                 // Il pulsante dice cosa succederebbe al PROSSIMO clic, non
                 // cosa è appena successo: aperta -> offre di nasconderla.
                 // La classe "attivo" (stessa usata ovunque nell'app per un
                 // pulsante "acceso") lo colora diversamente da chiuso.
-                btnToggleMappa.textContent = mappaWrap.hidden
-                    ? `🗺️ Mostra su mappa (${righePosizione.length})`
-                    : "🙈 Nascondi mappa";
-                btnToggleMappa.classList.toggle("attivo", !mappaWrap.hidden);
-                mappaWrap.classList.toggle("espansa", !mappaWrap.hidden);
-                if (!mappaWrap.hidden && !mappaCreata) {
+                mappaWrap.hidden = false;
+                btnToggleMappa.textContent = "🙈 Nascondi mappa";
+                btnToggleMappa.classList.add("attivo");
+                mappaWrap.classList.add("espansa");
+                if (!mappaCreata) {
                     mappaCreata = true;
                     ridisegnaMappaSeCreata();
                 }
@@ -2181,11 +2218,24 @@ Koordináták küldéséhez:
             aggiornaVisualizzazioneTab();
         });
     });
+    // Nessuno degli eventi ascoltati qui sopra scatta quando un ALTRO
+    // modulo (es. il Convertitore) apre/chiude il proprio schermo intero:
+    // quel toggle nasconde per CSS l'intero pannello opposto (quello che
+    // in quel momento potrebbe ospitare Messaggistica), e senza questo
+    // aggancio la tab restava invisibile anche dopo la richiusura, perché
+    // nulla ricalcolava più aggiornaVisualizzazioneTab(). Ogni toggle
+    // fullscreen dell'app dispatcha un "resize" (stesso pattern usato qui
+    // sopra in toggleFullscreenMessaggistica): è un segnale generico
+    // "il layout è cambiato", e questa è una funzione economica (solo
+    // classi/attributi, nessuna richiesta di rete) — sicura da rieseguire
+    // ad ogni resize, incluso un vero ridimensionamento della finestra.
+    window.addEventListener("resize", aggiornaVisualizzazioneTab);
+
     aggiornaVisualizzazioneTab(); // stato iniziale (nascosta finché non si sa se ci sono dati)
     aggiornaVisibilitaTab(); // stato iniziale: mostra la tab solo se ci sono già dati
 
     // Il messaggio precompilato dipende dal Comando attivo: quando cambia
-    // (lo dice attivaComando() in script-bis.js con questo evento, la stessa
+    // (lo dice attivaComando() in script.js con questo evento, la stessa
     // via già usata da convertitore.js) lo rigeneriamo qui.
     document.addEventListener("fireops:comando-attivo-cambiato", () => {
         generaMessaggioMessaggistica();
