@@ -28,7 +28,7 @@
     <!-- colore barra su Android/Chrome -->
     <link rel="apple-touch-icon" href="images/logo.png"> <!-- icona se salvata su home iOS -->
 
-    <title>FireOps VVF</title>
+    <title>FireOps VVF (BIS - Test)</title>
     <link rel="icon" type="image/png" href="images/logo.png">
     <script src="versione.js?v=0"></script>
 
@@ -68,7 +68,7 @@
         <div class="header-left">
             <img src="images/logo.png" alt="Logo VVF" class="site-logo">
             <div class="site-titles">
-                <h1>FireOps VVF</h1>
+                <h1>FireOps VVF <span style="opacity:.6; font-size:.6em;">(BIS)</span></h1>
                 <span class="subtitle">Smart Emergency Management</span>
                 <div id="display-versione" class="site-versione"></div>
             </div>
@@ -132,7 +132,233 @@
         <!-- MAGAZZINO PAGINE: contiene le sezioni non assegnate a nessun pannello.
              Ogni pagina esiste una sola volta nel DOM e viene spostata (non duplicata)
              dentro il pannello che la mostra, così ID e listener restano unici. -->
-        <div id="magazzino-pagine" class="magazzino-pagine"></div>
+        <div id="magazzino-pagine" class="magazzino-pagine">
+
+            <!-- SITAC AIB: nascosta di proposito per ora, non in CATALOGO_PAGINE.
+             Spostata qui (dentro il magazzino permanente, display:none fisso)
+             perché altrimenti resta visibile in fondo alla pagina: le pagine
+             non catalogate in schede-bis.js non vengono mai spostate nel
+             magazzino dal JS, che cicla solo su CATALOGO_PAGINE. -->
+            <!-- SITAC AIB -->
+            <section id="sitac-aib" class="page-section">
+                <div class="pagina-box-header pagina-box-header-con-nota">
+                    <p class="pagina-nota pagina-nota-inline" data-t="sub"></p>
+                    <div id="sitac-lingue"></div>
+                    <button id="sitac-bSfondo" class="btn-toggle-radar" type="button"></button>
+                    <button class="btn-toggle-radar btn-fullscreen-pagina" type="button"
+                        title="Espandi a schermo intero">⛶
+                        Espandi</button>
+                </div>
+
+                <!-- Due schede: intestazione e carta. La barra sta FUORI da
+                 #sitac-app perché stampa() sposta app nel body, e queste
+                 linguette sulla carta stampata non servono. -->
+                <div class="sitac-schede">
+                    <button class="sitac-scheda-btn attivo" type="button" data-scheda="dati">
+                        <span data-t="sch1"></span>
+                        <span class="sitac-passo-stato" id="sitac-st1"></span>
+                    </button>
+                    <button class="sitac-scheda-btn sitac-scheda-bloccata" type="button" data-scheda="carta">
+                        <span data-t="sch2"></span>
+                    </button>
+                </div>
+
+                <div id="sitac-app">
+
+                    <!-- SCHEDA 1: intestazione della SITAC -->
+                    <div class="sitac-pannello attivo" data-scheda="dati">
+                        <div class="sitac-dati">
+                            <div class="sitac-dati-campo" data-c="ora">
+                                <label data-t="dataOra"></label>
+                                <div id="sitac-dataOra" class="sitac-derivato">—</div>
+                            </div>
+                            <div class="sitac-dati-campo" data-c="int">
+                                <label for="sitac-nIntervento" data-t="nIntervento"></label>
+                                <div class="sitac-int-riga">
+                                    <input type="text" id="sitac-nIntervento" inputmode="numeric" maxlength="10"
+                                        autocomplete="off">
+                                    <label class="sitac-senza-scheda" for="sitac-senzaScheda">
+                                        <input type="checkbox" id="sitac-senzaScheda">
+                                        <span data-t="senzaScheda"></span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="sitac-dati-campo" data-c="qual">
+                                <label for="sitac-qualifica" data-t="nQualifica"></label>
+                                <select id="sitac-qualifica">
+                                    <option value="" selected disabled data-t="qualificaVuota"></option>
+                                    <option value="IA">IA</option>
+                                    <option value="CR">CR</option>
+                                    <option value="CSE">CSE</option>
+                                    <option value="CS">CS</option>
+                                    <option value="VC">VC</option>
+                                    <option value="VE">VE</option>
+                                    <option value="VF">VF</option>
+                                    <option value="CSV">CSV</option>
+                                    <option value="VV">VV</option>
+                                </select>
+                            </div>
+                            <div class="sitac-dati-campo" data-c="nom">
+                                <label for="sitac-nominativo" data-t="nNominativo"></label>
+                                <input type="text" id="sitac-nominativo" maxlength="60" autocomplete="off">
+                            </div>
+                            <div class="sitac-dati-campo" data-c="dos">
+                                <label for="sitac-nDos" data-t="nDos"></label>
+                                <div class="sitac-dos-riga">
+                                    <span class="sitac-dos-vf">VF</span>
+                                    <!-- maxlength 6: normalizzaDos taglia a 6, non a 4 -->
+                                    <input type="text" id="sitac-nDos" maxlength="6" placeholder="00A"
+                                        autocomplete="off">
+                                </div>
+                            </div>
+                            <div class="sitac-dati-campo" data-c="tel">
+                                <label for="sitac-telefono" data-t="nTelefono"></label>
+                                <input type="tel" id="sitac-telefono" maxlength="20" inputmode="tel" autocomplete="off">
+                            </div>
+                            <div class="sitac-dati-campo" data-c="pos">
+                                <label for="sitac-posizione" data-t="posDos"></label>
+                                <div class="sitac-dati-riga">
+                                    <input type="text" id="sitac-posizione" readonly>
+                                    <button id="sitac-bPosizione" type="button"></button>
+                                </div>
+                            </div>
+                            <div class="sitac-dati-campo" data-c="prov">
+                                <label data-t="provincia"></label>
+                                <div id="sitac-provincia" class="sitac-derivato">—</div>
+                            </div>
+                            <div class="sitac-dati-campo" data-c="cmd">
+                                <label data-t="comando"></label>
+                                <div id="sitac-comando" class="sitac-derivato">—</div>
+                            </div>
+                            <div class="sitac-dati-azioni" data-c="az">
+                                <button id="sitac-bConvalida" type="button" data-t="bConvalida"></button>
+                                <button id="sitac-bPulisciDati" type="button" data-t="bPulisciDati"></button>
+                            </div>
+                        </div>
+                        <p class="sitac-avviso" data-t="datiNota"></p>
+                    </div>
+
+                    <!-- SCHEDA 2: la carta. #sitac-carta porta la griglia a due
+                     colonne che prima stava su #sitac-app. -->
+                    <div class="sitac-pannello" data-scheda="carta">
+                        <div id="sitac-carta">
+
+                            <div id="sitac-barra">
+
+                                <div class="sitac-fisa">
+                                    <button class="sitac-fisa-testa" type="button" aria-expanded="false">
+                                        <span class="freccia">▶</span><span class="sitac-passo-n">1</span>
+                                        <span class="sitac-passo-tit" data-t="p2"></span>
+                                        <span class="sitac-passo-stato" id="sitac-st2"></span>
+                                    </button>
+                                    <div class="sitac-fisa-corpo">
+                                        <div class="sitac-azioni">
+                                            <button id="sitac-bVentoDir" type="button" class="largo"
+                                                data-t="bVentoDir"></button>
+                                            <button id="sitac-bVentoWeb" type="button" class="largo"
+                                                data-t="bVentoWeb"></button>
+                                        </div>
+                                        <div class="sitac-vento-scala">
+                                            <input type="range" id="sitac-ventoScala" min="0" max="110" step="5"
+                                                value="0">
+                                            <span class="sitac-vento-valore" id="sitac-ventoValore">0 km/h</span>
+                                        </div>
+                                        <p class="sitac-avviso" data-t="ventoNota"></p>
+                                    </div>
+                                </div>
+
+                                <div id="sitac-tavola"></div>
+
+                                <div class="sitac-fisa">
+                                    <button class="sitac-fisa-testa" type="button" aria-expanded="false">
+                                        <span class="freccia">▶</span><span class="sitac-passo-n">9</span>
+                                        <span class="sitac-passo-tit" data-t="p9"></span>
+                                        <span class="sitac-passo-stato" id="sitac-st9"></span>
+                                    </button>
+                                    <div class="sitac-fisa-corpo">
+                                        <div class="sitac-azioni">
+                                            <button id="sitac-bModifica" type="button" data-t="bSposta"></button>
+                                            <button id="sitac-bElimina" type="button" data-t="bElimina"></button>
+                                            <button id="sitac-bAnnulla" type="button" class="largo"
+                                                data-t="bAnnulla"></button>
+                                            <button id="sitac-bPulisci" type="button" class="largo"
+                                                data-t="bPulisci"></button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="sitac-fisa">
+                                    <button class="sitac-fisa-testa" type="button" aria-expanded="false">
+                                        <span class="freccia">▶</span><span class="sitac-passo-n">10</span>
+                                        <span class="sitac-passo-tit" data-t="p10"></span>
+                                        <span class="sitac-passo-stato" id="sitac-st10"></span>
+                                    </button>
+                                    <div class="sitac-fisa-corpo">
+                                        <div class="sitac-azioni">
+                                            <button id="sitac-bImporta" type="button" data-t="bImporta"></button>
+                                            <button id="sitac-bStampa" type="button" data-t="bStampa"></button>
+                                            <button id="sitac-bGeojson" type="button" data-t="bExpGeoJSON"></button>
+                                            <button id="sitac-bKml" type="button" ata-t="bExpKML"></button>
+                                        </div>
+                                        <input type="file" id="sitac-file" accept=".geojson,.json,application/geo+json"
+                                            hidden>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <div class="sitac-mapwrap">
+                                <div id="sitac-mappa"></div>
+                                <div id="sitac-vento" class="sitac-vento" hidden></div>
+                                <div id="sitac-legenda">
+                                    <button id="sitac-legTesta" type="button">
+                                        <b data-t="legenda"></b>
+                                        <span id="sitac-legQuanti" class="sitac-quanti"></span>
+                                        <span class="freccia">▾</span>
+                                    </button>
+                                    <div id="sitac-legVoci"></div>
+                                </div>
+                                <button id="sitac-bCentra" class="sitac-centra" type="button">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                                        <circle cx="12" cy="12" r="6" fill="none" stroke="currentColor"
+                                            stroke-width="2" />
+                                        <circle cx="12" cy="12" r="1.6" fill="currentColor" />
+                                        <path d="M12 1v4M12 19v4M1 12h4M19 12h4" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                        </div>
+                        <!-- Il riquadro di stato esce dalla fisarmonica: con la barra
+                         spenta era irraggiungibile, ed è lì che si legge cosa
+                         viene chiesto. -->
+                        <div id="sitac-stato"></div>
+                    </div>
+
+                    <!-- Fuori dai pannelli: la testata serve alla stampa, il modale
+                     serve da entrambe le schede -->
+                    <div id="sitac-testata-stampa">
+                        <div class="t"></div>
+                        <div class="i"></div>
+                        <div class="d"></div>
+                        <div class="n"></div>
+                    </div>
+
+                    <div id="sitac-modale" class="sitac-modale" hidden>
+                        <div class="sitac-modale-box">
+                            <div class="sitac-modale-titolo"></div>
+                            <div class="sitac-modale-testo"></div>
+                            <input type="text" id="sitac-modale-input" autocomplete="off">
+                            <div class="sitac-modale-azioni">
+                                <button id="sitac-modale-no" type="button"></button>
+                                <button id="sitac-modale-ok" type="button"></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
 
         <!-- HOME -->
         <section id="homepage" class="page-section">
@@ -182,16 +408,29 @@
 
         <!-- MESSAGGISTICA -->
         <section id="messaggistica" class="page-section">
+            <!-- Tab del riepilogo messaggi: figlia diretta di #messaggistica,
+                 così si sposta da sé insieme alla sezione (spostaSezione)
+                 quando cambi pannello. Sempre presente (non solo con dati:
+                 senza, l'aggiornamento periodico la fa apparire/sparire e
+                 sembra uno spazio sbagliato nel layout); "con-dati" quando
+                 ci sono davvero messaggi con link. Fa le veci del pulsante
+                 Espandi/Riduci: il click allunga #messaggistica a coprire
+                 anche l'altro pannello (stesso meccanismo di Convertitore
+                 e SITAC), un contenitore unico, non due box separati. -->
+            <button type="button" id="btn-riepilogo-msg" class="riepilogo-msg-tab" title="Riepilogo messaggi (24h)"
+                hidden>
+                <span class="riepilogo-msg-tab-freccia">▸</span>
+                <span class="riepilogo-msg-tab-testo">📊 Riepilogo messaggi (24h)</span>
+            </button>
             <div class="pagina-box">
-                <h3>Messaggistica</h3>
                 <p class="pagina-nota">
-                    Il messaggio viene generato automaticamente in base al Comando attivo e alla lingua selezionata.
-                    Tutti e tre i campi (prefisso, numero e
-                    lingua) sono obbligatori: quelli mancanti vengono evidenziati in rosso.
+                    Il messaggio viene generato automaticamente in base al Comando attivo e alla lingua
+                    selezionata. Tutti e tre i campi (prefisso, numero e lingua) sono obbligatori: quelli
+                    mancanti vengono evidenziati in rosso.
                 </p>
 
                 <div class="msg-riga-campi">
-                    <div class="msg-campo combo-campo">
+                    <div class="msg-campo combo-campo" style="flex:7 1 0;">
                         <label for="msg-prefisso-input">Prefisso internazionale</label>
                         <div class="combo-wrapper">
                             <input type="text" id="msg-prefisso-input" class="combo-input"
@@ -201,11 +440,11 @@
                             <div id="msg-prefisso-dropdown" class="combo-dropdown"></div>
                         </div>
                     </div>
-                    <div class="msg-campo">
+                    <div class="msg-campo" style="flex:7 1 0;">
                         <label for="msg-numero">Numero di telefono</label>
                         <input type="tel" id="msg-numero" placeholder="Es. 3331234567" autocomplete="off">
                     </div>
-                    <div class="msg-campo combo-campo">
+                    <div class="msg-campo combo-campo" style="flex:7 1 0;">
                         <label for="msg-lingua-input">Lingua messaggio</label>
                         <div class="combo-wrapper">
                             <input type="text" id="msg-lingua-input" class="combo-input" placeholder="Cerca lingua..."
@@ -214,6 +453,37 @@
                             <span class="combo-arrow" aria-hidden="true"></span>
                             <div id="msg-lingua-dropdown" class="combo-dropdown"></div>
                         </div>
+                    </div>
+                    <div class="msg-campo" style="flex:2 1 0; min-width:40px;">
+                        <label for="btn-msg-pulisci-campi" style="white-space:nowrap;">Pulisci</label>
+                        <button type="button" id="btn-msg-pulisci-campi" class="btn-toggle-radar" title="Pulizia Campi"
+                            style="width:100%; padding:10px; text-align:center; font-weight:bold; font-size:14px;
+                                background-color:#AF2B1E; border-color:#AF2B1E; color:#f5e6ea;">*</button>
+                    </div>
+                </div>
+
+                <div class="msg-riga-campi" id="msg-riga-link-coordinate" style="margin-top:16px;">
+                    <div class="msg-campo" style="flex:6 1 0;">
+                        <label>Link invio coordinate nel messaggio</label>
+                        <div style="display:flex; gap:8px;">
+                            <button type="button" id="msg-btn-link-con" class="btn-toggle-radar"
+                                title="Includi il link nel messaggio"
+                                style="flex:1 1 0; padding:9px 0; font-size:13px;">Con</button>
+                            <button type="button" id="msg-btn-link-senza" class="btn-toggle-radar attivo"
+                                title="Non includere il link"
+                                style="flex:1 1 0; padding:9px 0; font-size:13px;">Senza</button>
+                        </div>
+                        <input type="checkbox" id="msg-chk-link-coordinate" style="display:none;">
+                    </div>
+
+                    <div class="msg-campo" style="flex:5 1 0;">
+                        <label for="msg-numero-intervento">Numero intervento</label>
+                        <input type="text" id="msg-numero-intervento" maxlength="6" inputmode="numeric"
+                            placeholder="es. 1234" autocomplete="off" disabled style="opacity:.45;">
+                    </div>
+                    <div class="msg-campo" style="flex:5 1 0;">
+                        <label for="msg-anno-intervento">Anno intervento</label>
+                        <select id="msg-anno-intervento" disabled style="opacity:.45;"></select>
                     </div>
                 </div>
 
@@ -233,6 +503,31 @@
                     questo numero),
                     basterà incollarlo nella chat.
                 </p>
+            </div>
+
+            <!-- RIEPILOGO 24h: non più un overlay sovrapposto — in modalità
+                 espansa (.pannello-fullscreen) diventa una seconda colonna
+                 accanto a .pagina-box, larga quanto lo spazio rimasto fino
+                 al bordo destro del pannello. Nascosto (hidden) finché non
+                 si è in fullscreen: JS lo toglie/rimette insieme al
+                 toggle della tab, che ora FA le veci del pulsante
+                 Espandi/Riduci delle altre pagine. -->
+            <div id="riepilogo-msg-overlay" class="riepilogo-msg-overlay" hidden>
+                <div class="riepilogo-msg-testata">
+                    <b>📊 Riepilogo messaggi — ultime 24h</b>
+                    <span id="riepilogo-msg-caricamento" class="riepilogo-msg-clessidra" title="Caricamento in corso…"
+                        hidden>⏳</span>
+                    <label class="rt-check" style="margin:0;">
+                        <input type="checkbox" id="riepilogo-msg-limitrofi">
+                        Includi comandi limitrofi
+                    </label>
+                    <button type="button" id="riepilogo-msg-aggiorna" class="btn-toggle-radar"
+                        title="Aggiorna adesso">🔄 Aggiorna</button>
+                    <span class="popup-close" id="riepilogo-msg-chiudi" title="Chiudi">&times;</span>
+                </div>
+                <div id="riepilogo-msg-corpo" class="riepilogo-msg-corpo">
+                    <p class="pagina-nota">Caricamento...</p>
+                </div>
             </div>
         </section>
 
@@ -271,221 +566,6 @@
             </div>
         </section>
 
-        <!-- SITAC AIB -->
-        <section id="sitac-aib" class="page-section">
-            <div class="pagina-box-header pagina-box-header-con-nota">
-                <p class="pagina-nota pagina-nota-inline" data-t="sub"></p>
-                <div id="sitac-lingue"></div>
-                <button id="sitac-bSfondo" class="btn-toggle-radar" type="button"></button>
-                <button class="btn-toggle-radar btn-fullscreen-pagina" type="button" title="Espandi a schermo intero">⛶
-                    Espandi</button>
-            </div>
-
-            <!-- Due schede: intestazione e carta. La barra sta FUORI da
-                 #sitac-app perché stampa() sposta app nel body, e queste
-                 linguette sulla carta stampata non servono. -->
-            <div class="sitac-schede">
-                <button class="sitac-scheda-btn attivo" type="button" data-scheda="dati">
-                    <span data-t="sch1"></span>
-                    <span class="sitac-passo-stato" id="sitac-st1"></span>
-                </button>
-                <button class="sitac-scheda-btn sitac-scheda-bloccata" type="button" data-scheda="carta">
-                    <span data-t="sch2"></span>
-                </button>
-            </div>
-
-            <div id="sitac-app">
-
-                <!-- SCHEDA 1: intestazione della SITAC -->
-                <div class="sitac-pannello attivo" data-scheda="dati">
-                    <div class="sitac-dati">
-                        <div class="sitac-dati-campo" data-c="ora">
-                            <label data-t="dataOra"></label>
-                            <div id="sitac-dataOra" class="sitac-derivato">—</div>
-                        </div>
-                        <div class="sitac-dati-campo" data-c="int">
-                            <label for="sitac-nIntervento" data-t="nIntervento"></label>
-                            <div class="sitac-int-riga">
-                                <input type="text" id="sitac-nIntervento" inputmode="numeric" maxlength="10"
-                                    autocomplete="off">
-                                <label class="sitac-senza-scheda" for="sitac-senzaScheda">
-                                    <input type="checkbox" id="sitac-senzaScheda">
-                                    <span data-t="senzaScheda"></span>
-                                </label>
-                            </div>
-                        </div>
-                        <div class="sitac-dati-campo" data-c="qual">
-                            <label for="sitac-qualifica" data-t="nQualifica"></label>
-                            <select id="sitac-qualifica">
-                                <option value="" selected disabled data-t="qualificaVuota"></option>
-                                <option value="IA">IA</option>
-                                <option value="CR">CR</option>
-                                <option value="CSE">CSE</option>
-                                <option value="CS">CS</option>
-                                <option value="VC">VC</option>
-                                <option value="VE">VE</option>
-                                <option value="VF">VF</option>
-                                <option value="CSV">CSV</option>
-                                <option value="VV">VV</option>
-                            </select>
-                        </div>
-                        <div class="sitac-dati-campo" data-c="nom">
-                            <label for="sitac-nominativo" data-t="nNominativo"></label>
-                            <input type="text" id="sitac-nominativo" maxlength="60" autocomplete="off">
-                        </div>
-                        <div class="sitac-dati-campo" data-c="dos">
-                            <label for="sitac-nDos" data-t="nDos"></label>
-                            <div class="sitac-dos-riga">
-                                <span class="sitac-dos-vf">VF</span>
-                                <!-- maxlength 6: normalizzaDos taglia a 6, non a 4 -->
-                                <input type="text" id="sitac-nDos" maxlength="6" placeholder="00A" autocomplete="off">
-                            </div>
-                        </div>
-                        <div class="sitac-dati-campo" data-c="tel">
-                            <label for="sitac-telefono" data-t="nTelefono"></label>
-                            <input type="tel" id="sitac-telefono" maxlength="20" inputmode="tel" autocomplete="off">
-                        </div>
-                        <div class="sitac-dati-campo" data-c="pos">
-                            <label for="sitac-posizione" data-t="posDos"></label>
-                            <div class="sitac-dati-riga">
-                                <input type="text" id="sitac-posizione" readonly>
-                                <button id="sitac-bPosizione" type="button"></button>
-                            </div>
-                        </div>
-                        <div class="sitac-dati-campo" data-c="prov">
-                            <label data-t="provincia"></label>
-                            <div id="sitac-provincia" class="sitac-derivato">—</div>
-                        </div>
-                        <div class="sitac-dati-campo" data-c="cmd">
-                            <label data-t="comando"></label>
-                            <div id="sitac-comando" class="sitac-derivato">—</div>
-                        </div>
-                        <div class="sitac-dati-azioni" data-c="az">
-                            <button id="sitac-bConvalida" type="button" data-t="bConvalida"></button>
-                            <button id="sitac-bPulisciDati" type="button" data-t="bPulisciDati"></button>
-                        </div>
-                    </div>
-                    <p class="sitac-avviso" data-t="datiNota"></p>
-                </div>
-
-                <!-- SCHEDA 2: la carta. #sitac-carta porta la griglia a due
-                     colonne che prima stava su #sitac-app. -->
-                <div class="sitac-pannello" data-scheda="carta">
-                    <div id="sitac-carta">
-
-                        <div id="sitac-barra">
-
-                            <div class="sitac-fisa">
-                                <button class="sitac-fisa-testa" type="button" aria-expanded="false">
-                                    <span class="freccia">▶</span><span class="sitac-passo-n">1</span>
-                                    <span class="sitac-passo-tit" data-t="p2"></span>
-                                    <span class="sitac-passo-stato" id="sitac-st2"></span>
-                                </button>
-                                <div class="sitac-fisa-corpo">
-                                    <div class="sitac-azioni">
-                                        <button id="sitac-bVentoDir" type="button" class="largo"
-                                            data-t="bVentoDir"></button>
-                                        <button id="sitac-bVentoWeb" type="button" class="largo"
-                                            data-t="bVentoWeb"></button>
-                                    </div>
-                                    <div class="sitac-vento-scala">
-                                        <input type="range" id="sitac-ventoScala" min="0" max="110" step="5" value="0">
-                                        <span class="sitac-vento-valore" id="sitac-ventoValore">0 km/h</span>
-                                    </div>
-                                    <p class="sitac-avviso" data-t="ventoNota"></p>
-                                </div>
-                            </div>
-
-                            <div id="sitac-tavola"></div>
-
-                            <div class="sitac-fisa">
-                                <button class="sitac-fisa-testa" type="button" aria-expanded="false">
-                                    <span class="freccia">▶</span><span class="sitac-passo-n">9</span>
-                                    <span class="sitac-passo-tit" data-t="p9"></span>
-                                    <span class="sitac-passo-stato" id="sitac-st9"></span>
-                                </button>
-                                <div class="sitac-fisa-corpo">
-                                    <div class="sitac-azioni">
-                                        <button id="sitac-bModifica" type="button" data-t="bSposta"></button>
-                                        <button id="sitac-bElimina" type="button" data-t="bElimina"></button>
-                                        <button id="sitac-bAnnulla" type="button" class="largo"
-                                            data-t="bAnnulla"></button>
-                                        <button id="sitac-bPulisci" type="button" class="largo"
-                                            data-t="bPulisci"></button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="sitac-fisa">
-                                <button class="sitac-fisa-testa" type="button" aria-expanded="false">
-                                    <span class="freccia">▶</span><span class="sitac-passo-n">10</span>
-                                    <span class="sitac-passo-tit" data-t="p10"></span>
-                                    <span class="sitac-passo-stato" id="sitac-st10"></span>
-                                </button>
-                                <div class="sitac-fisa-corpo">
-                                    <div class="sitac-azioni">
-                                        <button id="sitac-bImporta" type="button" data-t="bImporta"></button>
-                                        <button id="sitac-bStampa" type="button" data-t="bStampa"></button>
-                                        <button id="sitac-bGeojson" type="button" data-t="bExpGeoJSON"></button>
-                                        <button id="sitac-bKml" type="button" ata-t="bExpKML"></button>
-                                    </div>
-                                    <input type="file" id="sitac-file" accept=".geojson,.json,application/geo+json"
-                                        hidden>
-                                </div>
-                            </div>
-
-                        </div>
-
-                        <div class="sitac-mapwrap">
-                            <div id="sitac-mappa"></div>
-                            <div id="sitac-vento" class="sitac-vento" hidden></div>
-                            <div id="sitac-legenda">
-                                <button id="sitac-legTesta" type="button">
-                                    <b data-t="legenda"></b>
-                                    <span id="sitac-legQuanti" class="sitac-quanti"></span>
-                                    <span class="freccia">▾</span>
-                                </button>
-                                <div id="sitac-legVoci"></div>
-                            </div>
-                            <button id="sitac-bCentra" class="sitac-centra" type="button">
-                                <svg viewBox="0 0 24 24" aria-hidden="true">
-                                    <circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" stroke-width="2" />
-                                    <circle cx="12" cy="12" r="1.6" fill="currentColor" />
-                                    <path d="M12 1v4M12 19v4M1 12h4M19 12h4" stroke="currentColor" stroke-width="2"
-                                        stroke-linecap="round" />
-                                </svg>
-                            </button>
-                        </div>
-
-                    </div>
-                    <!-- Il riquadro di stato esce dalla fisarmonica: con la barra
-                         spenta era irraggiungibile, ed è lì che si legge cosa
-                         viene chiesto. -->
-                    <div id="sitac-stato"></div>
-                </div>
-
-                <!-- Fuori dai pannelli: la testata serve alla stampa, il modale
-                     serve da entrambe le schede -->
-                <div id="sitac-testata-stampa">
-                    <div class="t"></div>
-                    <div class="i"></div>
-                    <div class="d"></div>
-                    <div class="n"></div>
-                </div>
-
-                <div id="sitac-modale" class="sitac-modale" hidden>
-                    <div class="sitac-modale-box">
-                        <div class="sitac-modale-titolo"></div>
-                        <div class="sitac-modale-testo"></div>
-                        <input type="text" id="sitac-modale-input" autocomplete="off">
-                        <div class="sitac-modale-azioni">
-                            <button id="sitac-modale-no" type="button"></button>
-                            <button id="sitac-modale-ok" type="button"></button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
 
         <!-- SCHEDE DI SOCCORSO -->
         <!--
@@ -830,7 +910,7 @@
                                     <button type="button" class="btn-toggle-radar btn-coord-profilo-percorso"
                                         data-profilo="car-fast" title="Mostra percorso in auto" disabled>🚗 In
                                         auto</button>
-                                    <button type="button" class="btn-togFgle-radar btn-coord-profilo-percorso"
+                                    <button type="button" class="btn-toggle-radar btn-coord-profilo-percorso"
                                         data-profilo="linea-diretta" title="Mostra linea diretta" disabled>📏 Linea
                                         diretta</button>
                                     <button id="btn-coord-reparti-volo" class="btn-toggle-radar" type="button"
@@ -843,7 +923,7 @@
                                     <button id="btn-coord-scarica-gpx" class="btn-toggle-radar" type="button"
                                         title="Esporta percorso GPX" disabled>🛰️ Esporta GPX</button>
                                     <button id="btn-coord-tema" class="btn-toggle-radar" type="button">☀️
-                                        Tema Chiaro</button>
+                                        Chiara</button>
                                 </div>
                             </div>
 
@@ -878,7 +958,8 @@
                     <!-- SCHEDA/COLONNA: MESSAGGIO -->
                     <div class="coord-colonna" data-colonna="messaggio">
                         <div id="coord-tab-content-messaggio" style="display:none;">
-                            <p class="pagina-nota">Invia le coordinate convertite a una squadra VVF via WhatsApp o
+                            <p class="pagina-nota">Invia le coordinate convertite a una squadra VVF via WhatsApp
+                                o
                                 Telegram, con lo stesso formato usato in Sala Operativa.</p>
                             <div class="msg-riga-campi">
                                 <div class="msg-campo combo-campo">
@@ -1214,7 +1295,7 @@
     <script src="https://unpkg.com/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.js"></script>
 
     <!-- ==========================================================
-         MODULI LOCALI
+         MODULI LOCALI (VERSIONE BIS DI TEST)
 
          La versione si cambia SOLO nella costante qui sotto e vale per
          tutti: serve a far scaricare al browser i file aggiornati invece
@@ -1225,6 +1306,10 @@
 
          L'ordine dell'elenco è l'ordine di caricamento: fireops-core.js
          prima di tutti, qrcode.js prima di qrcoder.js.
+
+         BIS: schede.js e script.js sono sostituiti con le versioni -bis,
+         che contengono il link invio coordinate nella Messaggistica.
+         Tutti gli altri moduli restano quelli di produzione, invariati.
          ========================================================== -->
     <script>
         (function () {
@@ -1232,8 +1317,10 @@
 
             const MODULI = [
                 "fireops-core.js",   // nucleo condiviso: deve precedere gli altri
-                "schede.js",
-                "script.js",
+                "schede.js",     // BIS: elenco pagine (invariato rispetto a schede.js)
+                "script.js",     // BIS: con link invio coordinate in Messaggistica
+                "messaggistica.js", // BIS: Messaggistica estratta in modulo a sé, dopo script-bis.js
+                // (che espone window.FireOpsComandi/window.FireOps prima che serva qui)
                 "turnario.js",
                 "convertitore.js",
                 "radiotelefoni.js",
