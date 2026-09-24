@@ -1538,6 +1538,7 @@ document.addEventListener("fireops:comando-attivo-cambiato", (e) => {
             if (coordLineaPercorso) { coordMappaLeaflet.removeLayer(coordLineaPercorso); coordLineaPercorso = null; }
             if (coordMarkerPartenza) { coordMappaLeaflet.removeLayer(coordMarkerPartenza); coordMarkerPartenza = null; }
         }
+        if (puntoInAttesa === "partenza") puntoInAttesa = null;
         evidenziaProfiloPercorso();
         if (contenitoreControlliPercorsoAttivo) contenitoreControlliPercorsoAttivo.classList.remove("visibile");
         if (elInfoPercorso) elInfoPercorso.textContent = "";
@@ -1885,7 +1886,6 @@ function attivaProfiloPercorso(profilo) {
     profiloPercorsoAttivo = profilo;
     modalitaPercorsoAttiva = true;
     // Senza squadra sulla carta il prossimo clic la posa
-    puntoInAttesa = ultimoPuntoPartenza ? null : "partenza";
     if (puntoInAttesa === "partenza") puntoInAttesa = null;
     evidenziaProfiloPercorso();
     if (contenitoreControlliPercorsoAttivo) contenitoreControlliPercorsoAttivo.classList.add("visibile");
@@ -3044,6 +3044,8 @@ function disegnaGraficoAltimetria(geojson) {
         const tabSalvata = sessionStorage.getItem(CHIAVE_STORAGE_TAB_COORD);
         if (tabSalvata && contenutiScheda[tabSalvata]) tabInizialeCoord = tabSalvata;
     } catch (err) { }
+    impostaSchedaColonnaAttiva(tabInizialeCoord, false); // false: non ri-salvare quello che abbiamo appena letto
+
     // Riapertura con "Scelta su mappa" già selezionato: mirino rosso pronto
     if (selectFormato && selectFormato.value === "mappa" && !coordinateTargetCorrenti) armaPosa("target");
 
