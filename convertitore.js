@@ -1738,20 +1738,32 @@ function disegnaMarkerPartenza(lat, lon, azimut) {
             const tempoS = parseFloat(proprieta["total-time"]);
             const risultatoAltimetria = disegnaGraficoAltimetria(geojson);
             const quote = await promessaQuote;
+            const distanzaKm = !Number.isNaN(lunghezzaM) ? lunghezzaM / 1000 : null;
+
+            // Stima propria prima, total-time di BRouter solo come ripiego
+            let tempoMin = null;
+            if (profilo === "trekking") {
+                tempoMin = tempoPiediMin(distanzaKm,
+                    risultatoAltimetria ? risultatoAltimetria.dislivelloPositivo : 0,
+                    risultatoAltimetria ? risultatoAltimetria.dislivelloNegativo : 0);
+            } else if (profilo === "car-fast") {
+                tempoMin = tempoAutoMin(proprieta);
+            }
+            if (tempoMin === null && !Number.isNaN(tempoS)) tempoMin = Math.round(tempoS / 60);
 
             aggiornaOverlayPercorso(null, {
                 azimut, distanzaAriaKm,
                 quotaPartenza: quote.partenza,
                 quotaArrivo: quote.arrivo,
-                distanzaKm: !Number.isNaN(lunghezzaM) ? lunghezzaM / 1000 : null,
-                tempoMin: !Number.isNaN(tempoS) ? Math.round(tempoS / 60) : null,
+                distanzaKm,
+                righe.push(`<div class="coord-mappa-overlay-riga">Tempo: circa ${testoDurata(dati.tempoMin)}</div>`);
                 dislivelloPositivo: risultatoAltimetria ? risultatoAltimetria.dislivelloPositivo : null,
                 dislivelloNegativo: risultatoAltimetria ? risultatoAltimetria.dislivelloNegativo : null,
             });
 
             let testoInfo = "Percorso calcolato";
-            if (!Number.isNaN(lunghezzaM)) testoInfo += ` — ${(lunghezzaM / 1000).toFixed(2)} km`;
-            if (!Number.isNaN(tempoS)) testoInfo += ` — circa ${Math.round(tempoS / 60)} min`;
+            if (distanzaKm !== null) testoInfo += ` — ${distanzaKm.toFixed(2)} km`;
+            if (tempoMin !== null) testoInfo += ` — circa ${testoDurata(tempoMin)}`;
             testoInfo += ". Trascina la freccia gialla per spostare la squadra e ricalcolare.";
             if (elInfoPercorso) elInfoPercorso.textContent = testoInfo;
             abilitaEsportazioni(true);
@@ -1808,6 +1820,9 @@ function evidenziaProfiloPercorso() {
     });
     const btnAnnulla = document.getElementById("btn-coord-annulla-percorso");
     if (btnAnnulla) btnAnnulla.disabled = !modalitaPercorsoAttiva;
+    // Mirino sulla carta finché si sta scegliendo (o spostando) la partenza
+    const contenitoreMappa = document.getElementById("coord-mappa");
+    if (contenitoreMappa) contenitoreMappa.classList.toggle("coord-cur-partenza", modalitaPercorsoAttiva);    
 }
 
 function attivaProfiloPercorso(profilo) {
@@ -1950,6 +1965,103 @@ ${puntiTraccia}
 
     abilitaEsportazioni(false);
 
+    // ==========================================================
+    // STIMA DEI TEMPI DI PERCORRENZA
+    //
+    // Il total-time di BRouter nasce da un modello fisico pensato per la
+    // bici: sui profili a piedi dà tempi poco credibili. Qui:
+    //  - a piedi: DIN 33466 (club alpini DAV/SAC)
+    //  - in auto: tratto per tratto dal tipo di strada di OSM
+    // I fattori sono moltiplicatori da tarare sull'esperienza della Sala:
+    // 1.0 = escursionista allenato senza carico / auto civile senza traffico.
+    // ==========================================================
+    const FATTORE_TEMPO_PIEDI = 1.0;
+    const FATTORE_TEMPO_AUTO = 1.0;
+    const SOGLIA_ISTERESI_QUOTA_M = 5;
+
+    // Le quote SRTM oscillano di qualche metro anche in piano: sommate
+    // punto per punto diventano centinaia di metri di "salita" che non
+    // esistono. Si conta un dislivello solo quando supera la soglia
+    // rispetto all'ultima quota registrata.
+    function dislivelliFiltrati(quote, soglia = SOGLIA_ISTERESI_QUOTA_M) {
+        let salita = 0, discesa = 0;
+        let riferimento = null;
+        quote.forEach(q => {
+            if (typeof q !== "number" || Number.isNaN(q)) return;
+            if (riferimento === null) { riferimento = q; return; }
+            const diff = q - riferimento;
+            if (diff >= soglia) { salita += diff; riferimento = q; }
+            else if (diff <= -soglia) { discesa -= diff; riferimento = q; }
+        });
+        return { salita, discesa };
+    }
+
+    // DIN 33466: 4 km/h in piano, 300 m/h in salita, 500 m/h in discesa.
+    // Il tempo è il maggiore fra orizzontale e verticale più metà del minore.
+    function tempoPiediMin(distanzaKm, salitaM, discesaM) {
+        if (!(distanzaKm > 0)) return null;
+        const oreOrizzontali = distanzaKm / 4;
+        const oreVerticali = (salitaM || 0) / 300 + (discesaM || 0) / 500;
+        const ore = Math.max(oreOrizzontali, oreVerticali) + Math.min(oreOrizzontali, oreVerticali) / 2;
+        return Math.round(ore * 60 * FATTORE_TEMPO_PIEDI);
+    }
+
+    // Velocità MEDIE, non limiti: incroci, curve e centri abitati
+    // compresi. Sulle sterrate conta il grado del fondo (tracktype).
+    const VELOCITA_STRADA_KMH = {
+        motorway: 100, motorway_link: 60,
+        trunk: 80, trunk_link: 50,
+        primary: 60, primary_link: 40,
+        secondary: 50, secondary_link: 35,
+        tertiary: 40, tertiary_link: 30,
+        unclassified: 35, road: 30,
+        residential: 25, living_street: 10, service: 15,
+        track: 15,
+    };
+    const VELOCITA_STERRATO_KMH = { grade1: 25, grade2: 20, grade3: 15, grade4: 10, grade5: 8 };
+
+    function velocitaTratto(tagTesto) {
+        const tag = {};
+        tagTesto.split(/\s+/).forEach(coppia => {
+            const i = coppia.indexOf("=");
+            if (i > 0) tag[coppia.slice(0, i)] = coppia.slice(i + 1);
+        });
+        let v = VELOCITA_STRADA_KMH[tag.highway] || 30;
+        if (tag.highway === "track" && VELOCITA_STERRATO_KMH[tag.tracktype]) {
+            v = VELOCITA_STERRATO_KMH[tag.tracktype];
+        }
+        // Il limite segnato vale solo se numerico ("IT:urban" si ignora);
+        // si viaggia in media sotto il limite, non al limite
+        const limite = parseFloat(tag.maxspeed);
+        if (!Number.isNaN(limite) && limite > 0) v = Math.min(v, limite * 0.85);
+        return Math.max(v, 5);
+    }
+
+    // BRouter mette nella risposta una tabella "messages": prima riga
+    // l'intestazione, poi un tratto per riga con distanza e tag della via.
+    // Le colonne si cercano per nome, non per posizione.
+    function tempoAutoMin(proprieta) {
+        const m = proprieta && proprieta.messages;
+        if (!Array.isArray(m) || m.length < 2) return null;
+        const testa = m[0];
+        const iDist = testa.indexOf("Distance");
+        const iTag = testa.indexOf("WayTags");
+        if (iDist < 0 || iTag < 0) return null;
+
+        let secondi = 0;
+        m.slice(1).forEach(riga => {
+            const metri = parseFloat(riga[iDist]);
+            if (!(metri > 0)) return;
+            secondi += metri / (velocitaTratto(String(riga[iTag] || "")) / 3.6);
+        });
+        return secondi > 0 ? Math.round((secondi / 60) * FATTORE_TEMPO_AUTO) : null;
+    }
+
+    function testoDurata(minuti) {
+        if (minuti === null || minuti === undefined) return "";
+        return minuti >= 60 ? `${Math.floor(minuti / 60)} h ${String(minuti % 60).padStart(2, "0")} min` : `${minuti} min`;
+    }
+
     // Grafico altimetria (canvas, nessuna libreria esterna). Dipende dal
     // fatto che BRouter includa la quota (terzo valore delle coordinate)
     // nella risposta: non verificabile dall'ambiente di sviluppo
@@ -2049,7 +2161,10 @@ function disegnaGraficoAltimetria(geojson) {
     ctx.fillText(`${Math.round(eleMin)} m`, 4, margine + h);
     ctx.fillText("km", canvas.width - 22, margine + h + 30);
 
-    return { dislivelloPositivo: Math.round(dislivelloPositivo), dislivelloNegativo: Math.round(dislivelloNegativo) };
+    // I dislivelli si contano col filtro: la somma punto per punto
+    // qui sopra serve solo al disegno, non alla stima
+    const filtrati = dislivelliFiltrati(punti.map(p => p.ele));
+    return { dislivelloPositivo: Math.round(filtrati.salita), dislivelloNegativo: Math.round(filtrati.discesa) };
 }
 
     // ==========================================================
