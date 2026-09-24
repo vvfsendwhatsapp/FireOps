@@ -822,38 +822,29 @@
                     <!-- SCHEDA/COLONNA: MAPPA -->
                     <div class="coord-colonna" data-colonna="mappa">
                         <div id="coord-tab-content-mappa" style="display:none;">
-                            <div class="coord-mappa-controlli">
-                                <div class="msg-campo coord-campo-percorso">
-                                    <label>Percorso squadra VF → target</label>
-                                    <div class="coord-profili-percorso">
-                                        <button type="button" class="btn-toggle-radar btn-coord-profilo-percorso"
-                                            data-profilo="trekking" disabled>🚶 Mostra percorso a piedi</button>
-                                        <button type="button" class="btn-toggle-radar btn-coord-profilo-percorso"
-                                            data-profilo="car-fast" disabled>🚗 Mostra percorso in auto</button>
-                                        <button type="button" class="btn-toggle-radar btn-coord-profilo-percorso"
-                                            data-profilo="linea-diretta" disabled>📏 Mostra linea diretta</button>
-                                    </div>
-                                </div>
-                                <div class="msg-campo coord-mappa-azione-campo">
-                                    <label for="btn-coord-reparti-volo">Supporto aereo</label>
+                            <div class="coord-mappa-pulsantiera">
+                                <div class="coord-mappa-griglia">
+                                    <button type="button" class="btn-toggle-radar btn-coord-profilo-percorso"
+                                        data-profilo="trekking" title="Mostra percorso a piedi" disabled>🚶 A
+                                        piedi</button>
+                                    <button type="button" class="btn-toggle-radar btn-coord-profilo-percorso"
+                                        data-profilo="car-fast" title="Mostra percorso in auto" disabled>🚗 In
+                                        auto</button>
+                                    <button type="button" class="btn-toggle-radar btn-coord-profilo-percorso"
+                                        data-profilo="linea-diretta" title="Mostra linea diretta" disabled>📏 Linea
+                                        diretta</button>
                                     <button id="btn-coord-reparti-volo" class="btn-toggle-radar" type="button"
-                                        disabled>🚁 Reparti Volo più vicini</button>
-                                </div>
-                                <div class="msg-campo coord-mappa-azione-campo">
-                                    <label for="btn-coord-tema">Tema della mappa</label>
+                                        disabled>🚁 Reparti Volo</button>
+
+                                    <button id="btn-coord-annulla-percorso" class="btn-toggle-radar" type="button"
+                                        title="Annulla percorso" disabled>❌ Annulla</button>
+                                    <button id="btn-coord-scarica-kml" class="btn-toggle-radar" type="button"
+                                        title="Esporta percorso KML" disabled>💾 KML</button>
+                                    <button id="btn-coord-scarica-gpx" class="btn-toggle-radar" type="button"
+                                        title="Esporta percorso GPX" disabled>🛰️ GPX</button>
                                     <button id="btn-coord-tema" class="btn-toggle-radar" type="button">☀️
                                         Chiara</button>
                                 </div>
-                            </div>
-
-                            <div class="coord-mappa-controlli-percorso-attivo"
-                                id="coord-mappa-controlli-percorso-attivo">
-                                <button id="btn-coord-annulla-percorso" class="btn-toggle-radar" type="button">❌ Annulla
-                                    percorso</button>
-                                <button id="btn-coord-scarica-kml" class="btn-toggle-radar" type="button" disabled>💾
-                                    Esporta Percorso KML</button>
-                                <button id="btn-coord-scarica-gpx" class="btn-toggle-radar" type="button" disabled>🛰️
-                                    Esporta Percorso GPX</button>
                             </div>
 
                             <div class="coord-mappa-wrapper">

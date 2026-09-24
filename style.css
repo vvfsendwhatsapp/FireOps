@@ -7010,26 +7010,6 @@ select:focus {
     box-shadow: inset 3px 0 0 #AF2B1E;
 }
 
-/* Percorso: riga intera sopra Supporto aereo e Tema. Le tre tipologie
-   si dividono la riga e vanno in colonna da sole se il pannello è stretto. */
-.coord-mappa-controlli .coord-campo-percorso {
-    flex: 1 1 100%;
-}
-
-.coord-profili-percorso {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-    gap: 8px;
-}
-
-.coord-profili-percorso .btn-toggle-radar {
-    padding: 10px 12px;
-    font-size: 14px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
 /* La carta prende sempre la riga intera, anche se per un errore di
    markup finisce dentro il flex dei controlli: lì, senza larghezza
    esplicita, collasserebbe a zero (i pane Leaflet sono tutti assoluti) */
@@ -7037,6 +7017,37 @@ select:focus {
     flex: 1 1 100%;
     width: 100%;
     min-width: 0;
+}
+
+/* Due righe da quattro: percorso + Reparti Volo sopra, Annulla /
+   esportazioni / tema sotto. container-type misura il PANNELLO, non la
+   finestra: in split-screen il convertitore è metà schermo. */
+.coord-mappa-pulsantiera {
+    container-type: inline-size;
+    margin-bottom: 12px;
+}
+
+.coord-mappa-griglia {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.coord-mappa-griglia .btn-toggle-radar {
+    min-width: 0;
+    padding: 9px 8px;
+    font-size: 13px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Pannello stretto: quattro righe da due invece di due da quattro */
+@container (max-width: 480px) {
+    .coord-mappa-griglia {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 
 /* ==========================================================

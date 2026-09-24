@@ -1800,11 +1800,14 @@ function aggiornaStatoBottonePercorso() {
 }
 
 // Dichiarata come function: viene chiamata da azzeraPercorso(), che sta
-// più in alto nel file
+// più in alto nel file. Annulla segue la modalità: c'è qualcosa da
+// annullare solo quando una tipologia è attiva.
 function evidenziaProfiloPercorso() {
     document.querySelectorAll(".btn-coord-profilo-percorso").forEach(b => {
         b.classList.toggle("attivo", modalitaPercorsoAttiva && b.dataset.profilo === profiloPercorsoAttivo);
     });
+    const btnAnnulla = document.getElementById("btn-coord-annulla-percorso");
+    if (btnAnnulla) btnAnnulla.disabled = !modalitaPercorsoAttiva;
 }
 
 function attivaProfiloPercorso(profilo) {
