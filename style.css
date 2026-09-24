@@ -7010,6 +7010,26 @@ select:focus {
     box-shadow: inset 3px 0 0 #AF2B1E;
 }
 
+/* Percorso: riga intera sopra Supporto aereo e Tema. Le tre tipologie
+   si dividono la riga e vanno in colonna da sole se il pannello è stretto. */
+.coord-mappa-controlli .coord-campo-percorso {
+    flex: 1 1 100%;
+}
+
+.coord-profili-percorso {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 8px;
+}
+
+.coord-profili-percorso .btn-toggle-radar {
+    padding: 10px 12px;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 /* ==========================================================
    ==========================================================
    RESPONSIVE
