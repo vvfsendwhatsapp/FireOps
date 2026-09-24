@@ -1275,7 +1275,7 @@ function iconaFrecciaDirezione(colore, azimutGradi) {
 
         const btn = document.getElementById("btn-coord-tema");
         if (!btn) return;
-        btn.textContent = temaCoordScelto === "chiara" ? "☀️ Chiara" : "🌙 Scura";
+        btn.textContent = temaCoordScelto === "chiara" ? "☀️ Tema Chiaro" : "🌙 Tema Scuro";
         btn.disabled = !carta.invertibile;
         btn.title = carta.invertibile
             ? `Clicca per passare alla carta ${temaCoordScelto === "chiara" ? "scura" : "chiara"}`
