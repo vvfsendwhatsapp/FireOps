@@ -1629,7 +1629,7 @@ function calcolaAzimut(lat1, lon1, lat2, lon2) {
         righe.push(`<div class="coord-mappa-overlay-riga">Distanza percorso: ${dati.distanzaKm.toFixed(2)} km</div>`);
     }
     if (dati.tempoMin !== null && dati.tempoMin !== undefined) {
-        righe.push(`<div class="coord-mappa-overlay-riga">Tempo: circa ${dati.tempoMin} min</div>`);
+        righe.push(`<div class="coord-mappa-overlay-riga">Tempo: circa ${testoDurata(dati.tempoMin)}</div>`);
     }
     if (dati.dislivelloPositivo !== null && dati.dislivelloPositivo !== undefined) {
         righe.push(`<div class="coord-mappa-overlay-riga">D+ ${dati.dislivelloPositivo} m &nbsp; D− ${dati.dislivelloNegativo} m</div>`);
@@ -1756,7 +1756,7 @@ function disegnaMarkerPartenza(lat, lon, azimut) {
                 quotaPartenza: quote.partenza,
                 quotaArrivo: quote.arrivo,
                 distanzaKm,
-                righe.push(`<div class="coord-mappa-overlay-riga">Tempo: circa ${testoDurata(dati.tempoMin)}</div>`);
+                tempoMin,
                 dislivelloPositivo: risultatoAltimetria ? risultatoAltimetria.dislivelloPositivo : null,
                 dislivelloNegativo: risultatoAltimetria ? risultatoAltimetria.dislivelloNegativo : null,
             });
