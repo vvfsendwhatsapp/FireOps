@@ -3021,22 +3021,32 @@ function disegnaGraficoAltimetria(geojson) {
     const CHIAVE_STORAGE_TAB_COORD = "fireops_coord_tab_attiva";
 
     function impostaSchedaColonnaAttiva(chiave, salva = true) {
-        pulsantiScheda.forEach(p => p.classList.toggle("attivo", p.dataset.tab === chiave));
         const corpoSchede = document.querySelector(".coord-tab-corpo");
+        const espanso = !!(corpoSchede && corpoSchede.closest(".pannello-fullscreen"));
+
+        // Scheda della colonna di sinistra: coincide con quella chiesta,
+        // tranne quando si chiede la mappa, che sta a destra e non la cambia
+        let schedaSinistra = chiave;
         if (corpoSchede) {
             corpoSchede.classList.remove("corpo-tab-primo-attivo", "corpo-tab-centro-attivo", "corpo-tab-ultimo-attivo");
-            // In fullscreen la colonna di sinistra alterna Input, Output e
-            // Messaggio; la mappa sta a destra e non entra in questa scelta,
-            // quindi cliccandola la scheda di sinistra resta quella che era.
             if (chiave !== "mappa") {
                 ["input", "output", "messaggio"].forEach(k => {
                     corpoSchede.classList.toggle("sx-" + k, k === chiave);
                 });
-            } else if (!["sx-input", "sx-output", "sx-messaggio"]
-                        .some(c => corpoSchede.classList.contains(c))) {
-                corpoSchede.classList.add("sx-input");
+            } else {
+                schedaSinistra = ["input", "output", "messaggio"]
+                    .find(k => corpoSchede.classList.contains("sx-" + k)) || "input";
+                corpoSchede.classList.add("sx-" + schedaSinistra);
             }
         }
+
+        // Le linguette sono tre, la mappa non ne ha una. Espanso: resta accesa
+        // quella del riquadro bordato di giallo a sinistra, altrimenti il bordo
+        // resta senza etichetta. Ridotto: la mappa copre tutto e nessuna
+        // linguetta è accesa, perché nessuna corrisponde a ciò che si vede.
+        const linguettaAccesa = (chiave === "mappa" && !espanso) ? null : schedaSinistra;
+        pulsantiScheda.forEach(p => p.classList.toggle("attivo", p.dataset.tab === linguettaAccesa));
+
         Object.entries(contenutiScheda).forEach(([k, el]) => {
             if (!el) return;
             el.style.display = k === chiave ? "block" : "none";
