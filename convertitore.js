@@ -1216,54 +1216,114 @@ function iconaFrecciaDirezione(colore, azimutGradi) {
     // Le tile sono sempre le stesse (OSM): la versione scura è la stessa
     // carta rovesciata via CSS, quindi il tema non ricarica nulla.
     // ==========================================================
+    // ==========================================================
+    // CARTA DI BASE (OSM / OpenTopoMap / Satellitare) + TEMA CHIARO/SCURO
+    //
+    // Il tema scuro è la stessa carta rovesciata via CSS: nessuna tile in
+    // più da scaricare. Vale per OSM e OpenTopoMap; sul satellitare no,
+    // perché una foto aerea invertita diventa illeggibile.
+    // ==========================================================
     const CHIAVE_TEMA_COORD = "fireops_tema_coord";
+    const CHIAVE_BASE_COORD = "fireops_base_coord";
     const ZOOM_INIZIALE_COMANDO = 12;
     let comandoAttivoCache = window.FireOpsComandoAttivo || null;
     let coordLayerBase = null;
-    let temaCoordScelto = "auto";
-    let temaCoordApplicato = null;
+    let chiaveBaseAttiva = "osm";
+    let temaCoordScelto = "chiara";
     let effemeridiTarget = null;
 
-    try { temaCoordScelto = sessionStorage.getItem(CHIAVE_TEMA_COORD) || "auto"; } catch (err) {}
+    const CARTE_BASE = {
+        osm: {
+            etichetta: "OpenStreetMap", icona: "🗺️", invertibile: true,
+            crea: () => L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                maxZoom: 19,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            }),
+        },
+        topo: {
+            etichetta: "OpenTopoMap", icona: "⛰️", invertibile: true,
+            // Le tile native arrivano a z17: oltre si ingrandiscono, invece
+            // di lasciare la mappa grigia quando si zooma sul target
+            crea: () => L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
+                maxZoom: 19, maxNativeZoom: 17,
+                attribution: 'Dati &copy; OpenStreetMap contributors, SRTM — Stile &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (CC-BY-SA)',
+            }),
+        },
+        satellite: {
+            etichetta: "Satellitare", icona: "🛰️", invertibile: false,
+            crea: () => L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+                maxZoom: 19, maxNativeZoom: 18,
+                attribution: 'Tiles &copy; Esri — Maxar, Earthstar Geographics, GIS User Community',
+            }),
+        },
+    };
 
-    function puntoDiRiferimentoTema() {
-        if (coordinateTargetCorrenti) return coordinateTargetCorrenti;
-        return estraiCoordinateComando(comandoAttivoCache);
-    }
-
-    function stileEffettivoCoord() {
-        if (temaCoordScelto !== "auto") return temaCoordScelto;
-        const p = puntoDiRiferimentoTema();
-        if (!p) return "chiara";
-        return FireOps.eGiorno(p.lat, p.lon) ? "chiara" : "scura";
-    }
+    try {
+        // Un vecchio "auto" salvato in sessione ricade su "chiara"
+        if (sessionStorage.getItem(CHIAVE_TEMA_COORD) === "scura") temaCoordScelto = "scura";
+        const baseSalvata = sessionStorage.getItem(CHIAVE_BASE_COORD);
+        if (CARTE_BASE[baseSalvata]) chiaveBaseAttiva = baseSalvata;
+    } catch (err) {}
 
     function applicaTemaCoord() {
-        const eff = stileEffettivoCoord();
-        if (coordLayerBase && eff !== temaCoordApplicato) {
+        const carta = CARTE_BASE[chiaveBaseAttiva];
+        const scura = temaCoordScelto === "scura" && carta.invertibile;
+        if (coordLayerBase) {
             const contenitore = coordLayerBase.getContainer();
-            if (contenitore) contenitore.classList.toggle("tile-scure", eff === "scura");
-            temaCoordApplicato = eff;
+            if (contenitore) contenitore.classList.toggle("tile-scure", scura);
         }
 
         const btn = document.getElementById("btn-coord-tema");
         if (!btn) return;
-        btn.textContent = temaCoordScelto === "auto"
-            ? (eff === "chiara" ? "🌗 Auto · chiara" : "🌗 Auto · scura")
-            : (temaCoordScelto === "chiara" ? "☀️ Chiara" : "🌙 Scura");
-        btn.title = temaCoordScelto === "auto"
-            ? "Segue alba e tramonto del punto convertito — clicca per fissare la carta"
-            : "Clicca per cambiare (torna in automatico al terzo clic)";
+        btn.textContent = temaCoordScelto === "chiara" ? "☀️ Chiara" : "🌙 Scura";
+        btn.disabled = !carta.invertibile;
+        btn.title = carta.invertibile
+            ? `Clicca per passare alla carta ${temaCoordScelto === "chiara" ? "scura" : "chiara"}`
+            : "La vista satellitare non ha una versione scura";
     }
 
     const btnTemaCoord = document.getElementById("btn-coord-tema");
     if (btnTemaCoord) {
         btnTemaCoord.addEventListener("click", () => {
-            temaCoordScelto = temaCoordScelto === "auto" ? "chiara"
-                            : temaCoordScelto === "chiara" ? "scura" : "auto";
+            temaCoordScelto = temaCoordScelto === "chiara" ? "scura" : "chiara";
             try { sessionStorage.setItem(CHIAVE_TEMA_COORD, temaCoordScelto); } catch (err) {}
             applicaTemaCoord();
         });
+    }
+
+    function impostaCartaBase(chiave) {
+        if (!CARTE_BASE[chiave] || !coordMappaLeaflet) return;
+        if (coordLayerBase) coordMappaLeaflet.removeLayer(coordLayerBase);
+        chiaveBaseAttiva = chiave;
+        coordLayerBase = CARTE_BASE[chiave].crea().addTo(coordMappaLeaflet);
+        coordLayerBase.bringToBack();   // target, percorso e marker restano sopra
+        try { sessionStorage.setItem(CHIAVE_BASE_COORD, chiave); } catch (err) {}
+        document.querySelectorAll("#coord-selettore-carta button").forEach(b => {
+            b.classList.toggle("attivo", b.dataset.carta === chiave);
+        });
+        applicaTemaCoord();
+    }
+
+    // Selettore a metà del bordo destro della mappa. Creato dal JS dentro
+    // il contenitore Leaflet: nessuna modifica all'HTML per questo pezzo.
+    function creaSelettoreCarta(contenitoreMappa) {
+        if (document.getElementById("coord-selettore-carta")) return;
+        const pannello = document.createElement("div");
+        pannello.id = "coord-selettore-carta";
+        pannello.className = "coord-selettore-carta";
+        pannello.innerHTML = Object.entries(CARTE_BASE).map(([chiave, c]) =>
+            `<button type="button" data-carta="${chiave}" title="${c.etichetta}">
+                <span class="icona">${c.icona}</span><span class="etichetta">${c.etichetta}</span>
+             </button>`).join("");
+        // Senza questi due, un clic sul selettore in modalità percorso
+        // piazzerebbe la squadra VF sotto il pulsante
+        L.DomEvent.disableClickPropagation(pannello);
+        L.DomEvent.disableScrollPropagation(pannello);
+        pannello.addEventListener("click", e => {
+            const b = e.target.closest("button[data-carta]");
+            if (b) impostaCartaBase(b.dataset.carta);
+        });
+        contenitoreMappa.appendChild(pannello);
     }
 
     // Quanta luce resta: è la domanda operativa, più delle ore in sé
@@ -1337,7 +1397,7 @@ function iconaFrecciaDirezione(colore, azimutGradi) {
     }
 
     // Il tramonto arriva anche se nessuno tocca nulla
-    setInterval(() => { aggiornaRigheEffemeridi(); applicaTemaCoord(); }, 60000);
+    setInterval(aggiornaRigheEffemeridi, 60000);
 
     function assicuraMappaCoordInizializzata() {
         if (coordMappaLeaflet) return;
@@ -1345,11 +1405,8 @@ function iconaFrecciaDirezione(colore, azimutGradi) {
         if (!contenitore || typeof L === "undefined") return;
 
         coordMappaLeaflet = L.map("coord-mappa").setView([41.9, 12.5], 6);
-        coordLayerBase = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-            maxZoom: 19,
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        }).addTo(coordMappaLeaflet);
-        applicaTemaCoord();
+        creaSelettoreCarta(contenitore);
+        impostaCartaBase(chiaveBaseAttiva);
 
         coordMappaLeaflet.on("click", (e) => {
     // Secondo punto di "Crea percorso": funziona sempre, indipendentemente
@@ -1422,10 +1479,7 @@ document.addEventListener("fireops:comando-attivo-cambiato", (e) => {
             if (coordLineaPercorso) { coordMappaLeaflet.removeLayer(coordLineaPercorso); coordLineaPercorso = null; }
             if (coordMarkerPartenza) { coordMappaLeaflet.removeLayer(coordMarkerPartenza); coordMarkerPartenza = null; }
         }
-        if (btnPercorso) {
-            btnPercorso.classList.remove("attivo");
-            btnPercorso.textContent = TESTO_PERCORSO_DA_ATTIVARE;
-        }
+        evidenziaProfiloPercorso();
         if (contenitoreControlliPercorsoAttivo) contenitoreControlliPercorsoAttivo.classList.remove("visibile");
         if (elInfoPercorso) elInfoPercorso.textContent = "";
         abilitaEsportazioni(false);
@@ -1433,7 +1487,7 @@ document.addEventListener("fireops:comando-attivo-cambiato", (e) => {
         nascondiGraficoAltimetria("");
         aggiornaOverlayPercorso(null, null);
 
-        if (!mantieniTipologia && selectProfiloPercorso) selectProfiloPercorso.value = PROFILO_PERCORSO_PREDEFINITO;
+        if (!mantieniTipologia) profiloPercorsoAttivo = PROFILO_PERCORSO_PREDEFINITO;
         aggiornaStatoBottonePercorso();
     }
 
@@ -1483,13 +1537,15 @@ document.addEventListener("fireops:comando-attivo-cambiato", (e) => {
     // ROUTING BRouter + KML + grafico altimetria
     // ==========================================================
     const elInfoPercorso = document.getElementById("coord-percorso-info");
-    const selectProfiloPercorso = document.getElementById("coord-profilo-percorso");
+    // Tre pulsanti, uno per tipologia: il clic sceglie il profilo E attiva
+    // la modalità percorso. Con la squadra già piazzata ricalcola subito.
+    const ETICHETTE_PROFILO_PERCORSO = {
+        "trekking": "Percorso a piedi",
+        "car-fast": "Percorso in auto",
+        "linea-diretta": "Linea diretta",
+    };
     const PROFILO_PERCORSO_PREDEFINITO = "trekking";
-
-    // Il pulsante ha due stati: prima dice cosa fa, dopo il clic dice cosa
-    // deve fare l'operatore
-    const TESTO_PERCORSO_DA_ATTIVARE = "🧭 Attiva crea percorso";
-    const TESTO_PERCORSO_ATTIVO = "🧭 Clicca sulla mappa";
+    let profiloPercorsoAttivo = PROFILO_PERCORSO_PREDEFINITO;
     const btnScaricaKml = document.getElementById("btn-coord-scarica-kml");
     const btnScaricaGpx = document.getElementById("btn-coord-scarica-gpx");
 
@@ -1641,7 +1697,7 @@ function disegnaMarkerPartenza(lat, lon, azimut) {
     async function calcolaEDisegnaPercorso(latPartenza, lonPartenza) {
     if (!coordinateTargetCorrenti || !coordMappaLeaflet) return;
     const { lat: latArrivo, lon: lonArrivo } = coordinateTargetCorrenti;
-    const profilo = (selectProfiloPercorso && selectProfiloPercorso.value) || PROFILO_PERCORSO_PREDEFINITO;
+    const profilo = profiloPercorsoAttivo;
 
     // Il punto di partenza resta in memoria: serve per ricalcolare quando
     // cambia la tipologia o quando la freccia viene trascinata altrove
@@ -1709,7 +1765,6 @@ function disegnaMarkerPartenza(lat, lon, azimut) {
         }
     }
 
-    const btnPercorso = document.getElementById("btn-coord-percorso");
     const btnAnnullaPercorso = document.getElementById("btn-coord-annulla-percorso");
 
     const contenitoreControlliPercorsoAttivo = document.getElementById("coord-mappa-controlli-percorso-attivo");
@@ -1735,41 +1790,47 @@ function aggiornaStatoBottonePercorso() {
             : "Apri prima \"Reparti Volo più vicini\"";
     }
 
-    if (!btnPercorso) return;
-    // La tipologia ha sempre un valore (predefinito "a piedi"), quindi
-    // l'unica condizione rimasta è avere un target verso cui andare
-    btnPercorso.disabled = !coordinateTargetCorrenti;
-    btnPercorso.title = coordinateTargetCorrenti
-        ? "Clicca un punto sulla mappa: sarà la posizione della squadra VF"
-        : "Converti prima delle coordinate: serve un punto di arrivo";
+        // Lookup diretto anche qui: la funzione può girare prima delle costanti
+    document.querySelectorAll(".btn-coord-profilo-percorso").forEach(b => {
+        b.disabled = !coordinateTargetCorrenti;
+        b.title = coordinateTargetCorrenti
+            ? "Poi clicca sulla mappa la posizione della squadra VF"
+            : "Converti prima delle coordinate: serve un punto di arrivo";
+    });
 }
 
-if (selectProfiloPercorso) {
-    selectProfiloPercorso.addEventListener("change", () => {
-        aggiornaStatoBottonePercorso();
-        // Cambio di tipologia con un percorso già tracciato: si ricalcola
-        // subito, senza chiedere di ricliccare il punto di partenza
-        if (ultimoPuntoPartenza && coordinateTargetCorrenti) {
-            calcolaEDisegnaPercorso(ultimoPuntoPartenza.lat, ultimoPuntoPartenza.lon);
-        }
+// Dichiarata come function: viene chiamata da azzeraPercorso(), che sta
+// più in alto nel file
+function evidenziaProfiloPercorso() {
+    document.querySelectorAll(".btn-coord-profilo-percorso").forEach(b => {
+        b.classList.toggle("attivo", modalitaPercorsoAttiva && b.dataset.profilo === profiloPercorsoAttivo);
     });
+}
+
+function attivaProfiloPercorso(profilo) {
+    if (!coordinateTargetCorrenti) {
+        mostraErrore("Converti prima delle coordinate: serve un punto di arrivo per calcolare il percorso.");
+        return;
+    }
+    profiloPercorsoAttivo = profilo;
+    modalitaPercorsoAttiva = true;
+    evidenziaProfiloPercorso();
+    if (contenitoreControlliPercorsoAttivo) contenitoreControlliPercorsoAttivo.classList.add("visibile");
+
+    // Squadra già sulla mappa: si cambia solo tipologia, stesso punto
+    if (ultimoPuntoPartenza) {
+        calcolaEDisegnaPercorso(ultimoPuntoPartenza.lat, ultimoPuntoPartenza.lon);
+        return;
+    }
+    if (elInfoPercorso) elInfoPercorso.textContent =
+        `${ETICHETTE_PROFILO_PERCORSO[profilo]}: clicca sulla mappa la posizione della squadra VF.`;
 }
 
 aggiornaStatoBottonePercorso();
 
-if (btnPercorso) {
-    btnPercorso.addEventListener("click", () => {
-        if (!coordinateTargetCorrenti) {
-            mostraErrore("Converti prima delle coordinate: serve un punto di arrivo per calcolare il percorso.");
-            return;
-        }
-        modalitaPercorsoAttiva = true;
-        btnPercorso.classList.add("attivo");
-        btnPercorso.textContent = TESTO_PERCORSO_ATTIVO;
-        if (contenitoreControlliPercorsoAttivo) contenitoreControlliPercorsoAttivo.classList.add("visibile");
-        if (elInfoPercorso) elInfoPercorso.textContent = "Clicca un punto sulla mappa: verrà calcolato il percorso fino al punto convertito.";
-    });
-}
+document.querySelectorAll(".btn-coord-profilo-percorso").forEach(b => {
+    b.addEventListener("click", () => attivaProfiloPercorso(b.dataset.profilo));
+});
 
     if (btnAnnullaPercorso) {
         btnAnnullaPercorso.addEventListener("click", () => azzeraPercorso({ mantieniTipologia: true }));
@@ -2265,7 +2326,10 @@ function disegnaGraficoAltimetria(geojson) {
     // un secondo calcolo identico sullo stesso punto.
     function tracciaRottaVersoReparto(lat, lon, popupHtml) {
         if (!coordinateTargetCorrenti || Number.isNaN(lat) || Number.isNaN(lon)) return;
-        if (selectProfiloPercorso) selectProfiloPercorso.value = "linea-diretta";
+        profiloPercorsoAttivo = "linea-diretta";
+        modalitaPercorsoAttiva = true;
+        evidenziaProfiloPercorso();
+        if (contenitoreControlliPercorsoAttivo) contenitoreControlliPercorsoAttivo.classList.add("visibile");
         popupPuntoPartenza = popupHtml || null;
         chiudiModaleRepartiVolo();
         impostaSchedaColonnaAttiva("mappa");

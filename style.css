@@ -1603,6 +1603,41 @@ html.comando-gia-scelto #modal-comando {
     font-size: 14px;
 }
 
+.coord-selettore-carta {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1000;              /* sopra i pane Leaflet (max 700) */
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background: rgba(18, 18, 18, 0.85);
+    border: 1px solid #333;
+    border-radius: 6px;
+    padding: 4px;
+}
+.coord-selettore-carta button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    color: #ddd;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    padding: 5px 8px;
+    font: 12px Arial, sans-serif;
+    cursor: pointer;
+    text-align: left;
+}
+.coord-selettore-carta button:hover { background: rgba(255, 255, 255, 0.08); }
+.coord-selettore-carta button.attivo { border-color: #ffd700; color: #ffd700; }
+
+/* Mappa stretta (mobile): restano solo le icone */
+@media (max-width: 600px) {
+    .coord-selettore-carta .etichetta { display: none; }
+}
+
 /* HEADER DI PAGINA E FULLSCREEN */
 .pagina-box-header {
     display: flex;
