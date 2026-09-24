@@ -1721,12 +1721,13 @@ html.comando-gia-scelto #modal-comando {
     text-align: left;
 }
 
-/* Le tre linguette si dividono in parti uguali la colonna di sinistra,
-   che è 1fr di una griglia `1fr 2fr` con 16px di gap: un nono della
-   larghezza a testa. La misura è legata a quella del corpo sotto — se
-   cambia la griglia lì, va cambiata anche qui. */
+/* Le tre linguette coprono esattamente la colonna di sinistra, che è
+   (100% − 16px) / 3. Seconda e terza si sovrappongono di 1px
+   (margin-left:-1px) per non raddoppiare il bordo: quei 2px vanno
+   restituiti alla larghezza, altrimenti la terza linguetta finisce 2px
+   prima del riquadro e sull'angolo destro resta uno scalino. */
 .pannello-fullscreen .coord-tab-btn {
-    flex: 0 0 calc((100% - 16px) / 9);
+    flex: 0 0 calc(((100% - 16px) / 3 + 2px) / 3);
     min-width: 0;
 }
 
