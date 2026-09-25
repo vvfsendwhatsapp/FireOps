@@ -69,13 +69,36 @@ const RIFRESCO_MS = 120000;         // la DR segue le emergenze in corso
    domande che si fanno guardando la carta, e con un colore solo si
    perderebbe una delle due. COD_TRIAGE è troncato a quattro lettere,
    quindi si legge la descrizione. */
-const CATEGORIE = [
-  {k:'alberi', re:/alber|tralic/i,          c:'#2e7d32', n:'Alberi / tralicci'},
-  {k:'crolli', re:/croll|disses|ceden/i,    c:'#8d5a3c', n:'Crolli / dissesti'},
-  {k:'acqua',  re:/allag|esond/i,           c:'#1e88e5', n:'Allagamenti / esondazioni'},
-  {k:'persona',re:/soccorso a persona/i,    c:'#d81b60', n:'Soccorso a persona'}
-];
-const ALTRO = {k:'altro', c:'#9e9e9e', n:'Non classificato'};
+/* Una voce per ogni tipologia. DESCRIZIONE_TRIAGE porta insieme tipologia
+   e codice ("Alberi/tralicci caduti o pericolanti - SOLO SK"): si separano
+   sull'ultimo " - " e si mostrano come "SOLO SK - Alberi/tralicci…".
+   COD_TRIAGE dell'export non serve: sono solo le prime quattro lettere
+   della descrizione. Il colore è fisso per tipologia (dipende dal testo, non
+   dall'ordine di arrivo), così lo stesso tipo ha lo stesso colore in ogni
+   emergenza e a ogni rifresco. Le famiglie più frequenti hanno il loro. */
+const COLORI_NOTI = [
+  {re:/alber|tralic/i, c:'#2e7d32'}, {re:/croll|disses|ceden/i, c:'#8d5a3c'},
+  {re:/allag|esond/i, c:'#1e88e5'}, {re:/soccorso a persona/i, c:'#d81b60'}];
+const COLORI_TIPO = ['#f4511e', '#8e24aa', '#00acc1', '#c0ca33', '#5e35b1', '#fb8c00',
+  '#43a047', '#e91e63', '#3949ab', '#6d4c41', '#00897b', '#fdd835'];
+const cacheTipi = new Map();
+function categoria(s){
+  const tutto = String(s.DESCRIZIONE_TRIAGE || '').trim();
+  const i = tutto.lastIndexOf(' - ');
+  const m = /^-\s*(.+)$/.exec(tutto);              // "- SOLO SK": codice senza tipologia
+  const cod = m ? m[1].trim() : i >= 0 ? tutto.slice(i + 3).trim() : '';
+  const desc = m ? '' : i >= 0 ? tutto.slice(0, i).trim() : tutto;
+  const k = tutto || '—';
+  if (cacheTipi.has(k)) return cacheTipi.get(k);
+  let h = 0;
+  for (const ch of k) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  const noto = COLORI_NOTI.find(x => x.re.test(desc));
+  const c = !cod && !desc ? '#9e9e9e' : noto ? noto.c : COLORI_TIPO[h % COLORI_TIPO.length];
+  const n = cod && desc ? `${cod} - ${desc}` : cod ? `${cod} - tipologia non indicata` : (desc || 'Tipologia non indicata');
+  const t = {k, c, n};
+  cacheTipi.set(k, t);
+  return t;
+}
 /* Gruppi = settori e sottosettori. Il settore ha il nome dell'alfabeto
    fonetico NATO e un colore; il sottosettore è un numero, ed è quello che
    si dice per radio: "Bravo 2". Nel foglio resta un solo campo NOME
@@ -95,7 +118,6 @@ function settoreDi(g){
   return m ? {settore: m[1], n: +m[2]} : {settore: String(g.NOME || '—'), n: 0};
 }
 
-const categoria = s => CATEGORIE.find(c => c.re.test(s.DESCRIZIONE_TRIAGE || '')) || ALTRO;
 
 /* ============================== UTILITÀ =============================== */
 
@@ -694,7 +716,7 @@ function avvia(sezione){
       ? schede.filter(x => x.ALTROENTE_IDSCHEDA === s.ALTROENTE_IDSCHEDA).length : 1;
     const la = num(s.LAT).toFixed(6), lo = num(s.LON).toFixed(6);
     return `<div class="diff-pop">
-      <b style="color:${categoria(s).c}">${esc(s.DESCRIZIONE_TRIAGE || 'Triage non indicato')}</b>
+      <b style="color:${categoria(s).c}">${esc(categoria(s).n)}</b>
       ${s.DIFFERIBILE && s.DIFFERIBILE !== 'S' ? '<span class="diff-badge">non differibile</span>' : ''}
       <div>${esc(indirizzo(s))}</div>
       <div>${esc(s.CITTA)}${s.DISTRETTO ? ' — ' + esc(s.DISTRETTO) : ''}</div>
@@ -855,13 +877,13 @@ function avvia(sezione){
   }
 
   function riepilogo(v){
-    const conteggi = new Map();
-    schede.forEach(s => { const c = categoria(s); conteggi.set(c.k, (conteggi.get(c.k) || 0) + 1); });
+    const conteggi = new Map(), tipi = new Map();
+    schede.forEach(s => { const c = categoria(s); tipi.set(c.k, c); conteggi.set(c.k, (conteggi.get(c.k) || 0) + 1); });
     const senza = v.filter(s => !conPosizione(s)).length;
     const inGruppo = v.filter(s => s.GRUPPO).length;
     const nue = new Set(v.map(s => s.ALTROENTE_IDSCHEDA).filter(Boolean)).size;
-    const voci = CATEGORIE.concat([ALTRO]).filter(c => conteggi.get(c.k)).map(c =>
-      `<label class="diff-leg"><input type="checkbox" data-cat="${c.k}"${nascoste.has(c.k) ? '' : ' checked'}>
+    const voci = [...tipi.values()].sort((a, b) => conteggi.get(b.k) - conteggi.get(a.k)).map(c =>
+      `<label class="diff-leg"><input type="checkbox" data-cat="${esc(c.k)}"${nascoste.has(c.k) ? '' : ' checked'}>
         <i style="background:${c.c}"></i><span>${esc(c.n)}</span><b>${conteggi.get(c.k)}</b></label>`).join('');
     $('riepilogo').innerHTML = `
       <div class="diff-numeri">
@@ -1268,12 +1290,25 @@ function avvia(sezione){
     if (!em) return;
     occupato = true;
     map.closePopup();
-    guida('Disegna il perimetro: un clic per ogni vertice, clic sul primo per chiudere. I vertici si agganciano ai settori vicini. Esc annulla.');
+    guida('Disegna il perimetro: un clic per ogni vertice, doppio clic o tasto destro per chiudere. I vertici si agganciano ai settori vicini. Esc annulla.');
+    /* Il poligono si chiude da sé: doppio clic sull'ultimo vertice, oppure
+       tasto destro, senza dover tornare a centrare il primo punto. */
     map.pm.enableDraw('Polygon', {pathOptions: {color: '#e53935', weight: 2.5, fillOpacity: .08},
-      continueDrawing: false});
+      continueDrawing: false, finishOn: 'dblclick'});
     stato('Disegna il poligono: clic sui vertici, clic sul primo per chiudere. Esc annulla.');
   };
   map.on('pm:drawend', () => { occupato = false; guida(''); });
+  /* Tasto destro durante il disegno: chiude il poligono con i vertici già
+     posati (almeno tre), come il doppio clic. _finishShape è interno a
+     Geoman ma è l'unico modo di chiudere da codice. */
+  map.getContainer().addEventListener('contextmenu', ev => {
+    if (!(map.pm.globalDrawModeEnabled && map.pm.globalDrawModeEnabled())) return;
+    ev.preventDefault(); ev.stopPropagation();
+    const h = map.pm.Draw && map.pm.Draw.Polygon;
+    const v = h && h._layer && h._layer.getLatLngs ? h._layer.getLatLngs() : [];
+    if (v.length >= 3 && typeof h._finishShape === 'function') h._finishShape();
+    else { map.pm.disableDraw(); stato('Perimetro annullato: servono almeno tre vertici.'); }
+  }, true);
 
   map.on('pm:create', async e => {
     const poli = e.layer;
@@ -1364,7 +1399,7 @@ function avvia(sezione){
     const quando = new Date().toLocaleString('it-IT', {timeZone: 'Europe/Rome'});
     const righe = ord.map((s, i) => `<tr>
       <td class="dp-n"><span style="background:${categoria(s).c}">${i + 1}</span></td>
-      <td>${esc(s.DESCRIZIONE_TRIAGE)}</td>
+      <td>${esc(categoria(s).n)}</td>
       <td>${esc(indirizzo(s))}</td>
       <td>${esc(s.CITTA)}${s.DISTRETTO ? '<br><small>' + esc(s.DISTRETTO) + '</small>' : ''}</td>
       <td>${esc(s.ADD_INFO)}</td>
