@@ -39,6 +39,15 @@ if (NS.Differibili) return;
 
 const URL_BACKEND = 'https://script.google.com/macros/s/AKfycby7ZTvBPlzlKOXqAi8RJEyFIzOGEaNecpDxdNtAvgTLfpaYU-g3afKswzt2g9wZaPr0xg/exec';
 
+/* LETTURE DAL FOGLIO — scelta del Comando: il foglio del backend è
+   condiviso "chiunque abbia il link: visualizzatore" e la pagina lo legge
+   direttamente con l'endpoint gviz, filtrando nella richiesta. Apps Script
+   resta solo per le scritture (carica, gruppi, archivia).
+   Nota: così chiunque conosca questo ID legge tutte le schede, compresi
+   nomi e telefoni dei chiamanti. È una scelta consapevole.
+   ID vuoto = letture tramite Apps Script, come prima. */
+const ID_FOGLIO = '1rx0dZ6N-TLbqdr-aj-YVQbQKRfBznfeyGrq-kUHNekk';          // ← ID del Google Sheet del backend (dall'URL /d/<ID>/edit)
+
 /* Ripiego se script.js non espone window.FireOpsComandi: da verificare
    sul percorso vero del repo. */
 const PERCORSO_COMANDI = 'db/comandi.json';
@@ -393,6 +402,51 @@ function api(id, azione, dati){
   const p = codaApi.then(esegui, esegui);
   codaApi = p.catch(() => {});
   return p;
+}
+
+/* Lettura di un foglio con una query gviz. Risponde righe come oggetti con
+   le intestazioni della prima riga. Il foglio Schede è formattato come
+   testo da setup(), quindi gviz non tipizza le colonne e non svuota valori. */
+async function gviz(foglio, query){
+  const u = `https://docs.google.com/spreadsheets/d/${ID_FOGLIO}/gviz/tq?tqx=out:csv&headers=1`
+    + `&sheet=${encodeURIComponent(foglio)}&tq=${encodeURIComponent(query)}&_=${Date.now()}`;
+  const r = await fetch(u, {cache: 'no-store'});
+  if (!r.ok) throw new Error(`foglio ${foglio}: HTTP ${r.status}`);
+  const t = (await r.text()).replace(/^\uFEFF/, '');
+  if (/^\s*</.test(t)) throw new Error(`foglio ${foglio} non leggibile: va condiviso "chiunque abbia il link"`);
+  const righe = parseCsv(t, ',');
+  if (!righe.length) return [];
+  const intest = righe[0].map(h => String(h).trim());
+  return righe.slice(1).map(v => {
+    const o = {};
+    intest.forEach((h, i) => { if (h) o[h] = v[i] == null ? '' : String(v[i]); });
+    return o;
+  });
+}
+const alternanza = valori => valori.map(v => String(v).replace(/[^A-Z0-9]/gi, '')).join('|');
+
+/* Le tre letture, dal foglio se c'è l'ID, altrimenti da Apps Script.
+   Colonne: Emergenze A=CODEM B=SIGLA D=STATO · Schede A=CODEM · Gruppi B=CODEM. */
+async function leggiEmergenze(id, arch){
+  if (!ID_FOGLIO) return api(id, 'emergenze', {includiArchiviate: arch});
+  return gviz('Emergenze', `select * where B matches '${alternanza(id.sigle)}'`
+    + (arch ? '' : ` and D = 'ATTIVA'`));
+}
+async function leggiPerCodem(id, azione, foglio, colonna, codem, emergenze, arch){
+  if (!ID_FOGLIO) return api(id, azione, {codem, includiArchiviate: arch});
+  const elenco = codem ? [codem] : emergenze.map(e => e.CODEM);
+  if (!elenco.length) return [];
+  return gviz(foglio, `select * where ${colonna} matches '${alternanza(elenco)}'`);
+}
+async function leggiSchede(id, codem, emergenze, arch){
+  const r = await leggiPerCodem(id, 'schede', 'Schede', 'A', codem, emergenze, arch);
+  r.forEach(s => { delete s.HASH; });
+  return r;
+}
+async function leggiGruppi(id, codem, emergenze, arch){
+  const r = await leggiPerCodem(id, 'gruppi', 'Gruppi', 'B', codem, emergenze, arch);
+  r.forEach(g => { if (typeof g.GEOJSON === 'string'){ try { g.GEOJSON = JSON.parse(g.GEOJSON); } catch(e){ g.GEOJSON = null; } } });
+  return r;
 }
 
 /* =============================== MODULO =============================== */
@@ -927,7 +981,7 @@ function avvia(sezione){
     bA.textContent = '⏳'; bA.disabled = true;
     try {
       const arch = $('archiviate').checked;
-      emergenze = await api(id, 'emergenze', {includiArchiviate: arch});
+      emergenze = await leggiEmergenze(id, arch);
       emergenze.sort((a, b) => String(b.CODEM).slice(-4) + String(b.CODEM).slice(-6, -4) + String(b.CODEM).slice(-8, -6)
         > String(a.CODEM).slice(-4) + String(a.CODEM).slice(-6, -4) + String(a.CODEM).slice(-8, -6) ? 1 : -1);
       const sel = $('selEmergenza'), prima = sel.value;
@@ -937,9 +991,8 @@ function avvia(sezione){
       sel.value = emergenze.some(e => e.CODEM === prima) ? prima : '';
       const codem = sel.value || undefined;
       const vista = [id.ente, codem || '', arch].join('|');
-      const [lette, gr] = await Promise.all([
-        api(id, 'schede', {codem, includiArchiviate: arch}),
-        api(id, 'gruppi', {codem, includiArchiviate: arch})]);
+      const lette = await leggiSchede(id, codem, emergenze, arch);
+      const gr = await leggiGruppi(id, codem, emergenze, arch);
       gruppi = gr;
       /* Stessa vista di prima: solo le differenze, la carta resta dov'è.
          Vista nuova: ridisegno e inquadratura sulle schede. */
