@@ -18,6 +18,10 @@
  * Lo dice il Comando attivo di FireOps, niente token. È tutto in
  * identita(): se un domani servisse un controllo vincolante si cambia lì
  * e in identifica_ del backend, il resto non se ne accorge.
+ * Le Direzioni non stanno in comandi.json e non si scelgono dal menu ☰:
+ * la sala della DR sceglie un qualsiasi Comando della sua regione e
+ * spunta "Vista Direzione". Vede così tutti i Comandi con la stessa
+ * "Direzione VVF", in sola lettura, e non quelli delle altre regioni.
  *
  * IL CSV
  * L'export arriva con due vizi noti:
@@ -33,7 +37,7 @@ if (NS.Differibili) return;
 
 /* ============================== COSTANTI ============================== */
 
-const URL_BACKEND = 'https://script.google.com/macros/s/AKfycby-t3c_nYmyEqWX8EDQuSnyEFPWoQBSeDFb5vPZgDTWH4APe8t0GVI7AfWFal0NXGzSqA/exec';
+const URL_BACKEND = 'https://script.google.com/macros/s/AKfycby7ZTvBPlzlKOXqAi8RJEyFIzOGEaNecpDxdNtAvgTLfpaYU-g3afKswzt2g9wZaPr0xg/exec';
 
 /* Ripiego se script.js non espone window.FireOpsComandi: da verificare
    sul percorso vero del repo. */
@@ -260,23 +264,17 @@ async function daGoogleSheet(link){
 
 /* ============================= IDENTITÀ =============================== */
 
-/* comandi.json ha l'iniziale maiuscola e nomi di colonna non uniformi: la
-   sigla si cerca per forma (due lettere) fra le colonne che la possono
-   contenere, come centroComando in sitac.js cerca le coordinate. */
-function siglaDi(c){
-  if (!c) return '';
-  for (const k of ['Sigla', 'Sigla Provincia', 'Provincia', 'Targa']){
-    const v = String(c[k] || '').trim().toUpperCase();
-    if (/^[A-Z]{2}$/.test(v)) return v;
-  }
-  const k = Object.keys(c).find(x => /sigla|targa|prov/i.test(x)
-    && /^[A-Z]{2}$/.test(String(c[x] || '').trim().toUpperCase()));
-  return k ? String(c[k]).trim().toUpperCase() : '';
-}
-const normNome = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-  .toUpperCase().replace(/DIREZIONE( REGIONALE)?|VVF|VIGILI DEL FUOCO|[^A-Z]/g, '');
-const eDirezione = c => !!c && (/direzione/i.test(String(c.Comando || c.Tipo || ''))
-  || /^D(R|IR)$/i.test(String(c.Tipo || '')));
+/* In comandi.json la sigla sta in "Provincia" (FC, BO…). */
+const siglaDi = c => {
+  const v = String((c && c.Provincia) || '').trim().toUpperCase();
+  return /^[A-Z]{2}$/.test(v) ? v : '';
+};
+/* Le righe senza "CHS Comando" non sono Comandi provinciali (es. il COR AIB
+   di Curno, che ha Provincia BG come Bergamo): non caricano, e non vanno
+   contate due volte fra i Comandi di una Direzione. */
+const eComandoProvinciale = c => !!siglaDi(c) && String(c['CHS Comando'] || '').trim() !== '';
+const CHIAVE_VISTA_DR = 'fireops_differibili_vista_dr';
+const vistaDR = () => { try { return sessionStorage.getItem(CHIAVE_VISTA_DR) === '1'; } catch(e){ return false; } };
 
 async function elencoComandi(){
   const g = window.FireOpsComandi;
@@ -292,24 +290,28 @@ async function elencoComandi(){
 }
 
 /* Unico punto che decide chi è l'utente. Un Comando ha una sigla sola;
-   una Direzione ha le sigle dei Comandi che le afferiscono. */
+   la vista Direzione ha le sigle dei Comandi con la stessa "Direzione VVF"
+   del Comando attivo ("Veneto e TAA" comprende quindi Trento e Bolzano). */
 async function identita(){
   const c = window.FireOpsComandoAttivo;
   if (!c) return {errore: 'Nessun Comando attivo: sceglilo dal menu ☰.'};
   const comandi = await elencoComandi();
-  if (eDirezione(c)){
-    const chiave = normNome(c.Comando || c['Direzione VVF']);
-    const sigle = comandi.filter(x => !eDirezione(x)
-        && normNome(x['Direzione VVF']) === chiave)
-      .map(siglaDi).filter(Boolean);
-    if (!sigle.length) return {errore: 'Nessun Comando trovato per ' + (c.Comando || 'questa Direzione') + '.'};
-    return {ruolo: 'DR', ente: c.Comando, sigle, comandi,
-      utente: {ruolo: 'DR', ente: c.Comando, sigle}};
+  const dir = String(c['Direzione VVF'] || '').trim();
+  if (vistaDR()){
+    if (!dir) return {errore: 'Direzione non indicata per ' + c.Comando + '.'};
+    const sigle = [...new Set(comandi.filter(x => eComandoProvinciale(x)
+      && String(x['Direzione VVF'] || '').trim() === dir).map(siglaDi))].sort();
+    if (!sigle.length) return {errore: 'Nessun Comando trovato per la Direzione ' + dir + '.'};
+    const ente = 'Direzione VVF ' + dir;
+    return {ruolo: 'DR', ente, direzione: dir, sigle, comandi,
+      utente: {ruolo: 'DR', ente, sigle}};
   }
+  if (!eComandoProvinciale(c))
+    return {errore: `${c.Comando} non è un Comando provinciale: può solo usare la vista Direzione.`};
   const sigla = siglaDi(c);
-  if (!sigla) return {errore: 'Sigla provincia non trovata per ' + (c.Comando || 'il Comando attivo') + '.'};
-  return {ruolo: 'COMANDO', ente: c.Comando, sigle: [sigla], sigla, comandi,
-    utente: {ruolo: 'COMANDO', ente: c.Comando, sigle: [sigla]}};
+  const ente = 'Comando VVF ' + c.Comando;
+  return {ruolo: 'COMANDO', ente, direzione: dir, sigle: [sigla], sigla, comandi,
+    utente: {ruolo: 'COMANDO', ente, sigle: [sigla]}};
 }
 
 function validaCodem(v, id){
@@ -353,6 +355,8 @@ function avvia(sezione){
       <label class="diff-campo diff-solo-dr">Comando
         <select id="diff-selComando"></select></label>
       <label class="rt-check diff-check"><input type="checkbox" id="diff-archiviate"> Archiviate</label>
+      <label class="rt-check diff-check" title="Tutti i Comandi della Direzione del Comando attivo, in sola lettura">
+        <input type="checkbox" id="diff-vistaDR"> Vista Direzione</label>
       <div class="diff-azioni">
         <button type="button" id="diff-bAggiorna" class="btn-toggle-radar">🔄 Aggiorna</button>
         <button type="button" id="diff-bImporta" class="btn-toggle-radar diff-solo-comando">📥 Importa</button>
@@ -654,7 +658,7 @@ function avvia(sezione){
     const sel = $('selComando');
     sel.innerHTML = '<option value="">Tutti i Comandi</option>';
     if (dr) id.sigle.forEach(sg => {
-      const c = id.comandi.find(x => siglaDi(x) === sg);
+      const c = id.comandi.find(x => eComandoProvinciale(x) && siglaDi(x) === sg);
       sel.insertAdjacentHTML('beforeend',
         `<option value="${sg}">${esc(c ? c.Comando : sg)} (${sg})</option>`);
     });
@@ -991,6 +995,12 @@ function avvia(sezione){
     ricarica();
   }
   document.addEventListener('fireops:comando-attivo-cambiato', identifica);
+  $('vistaDR').checked = vistaDR();
+  $('vistaDR').onchange = () => {
+    try { sessionStorage.setItem(CHIAVE_VISTA_DR, $('vistaDR').checked ? '1' : '0'); } catch(e){}
+    $('selEmergenza').value = ''; $('selComando').value = '';
+    identifica();
+  };
 
   /* La DR segue le emergenze mentre i Comandi caricano: si rilegge ogni due
      minuti, ma solo con la sezione a schermo e nessun lavoro in corso. */
