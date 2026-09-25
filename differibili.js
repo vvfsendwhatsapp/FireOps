@@ -350,7 +350,8 @@ function avvia(sezione){
   app.innerHTML = `
     <div class="diff-barra">
       <div class="diff-barra-sx">
-        <select id="diff-selEmergenza" class="diff-sel-emergenza" title="Emergenza da mostrare sulla carta"></select>
+        <select id="diff-selEmergenza" class="diff-sel-emergenza" title="Emergenza da mostrare sulla carta">
+          <option value="">⏳ Lettura delle emergenze…</option></select>
         <select id="diff-selComando" class="diff-solo-dr" title="Filtra per Comando"></select>
         <span id="diff-ente" class="diff-ruolo" hidden></span>
       </div>
@@ -448,7 +449,9 @@ function avvia(sezione){
   let emergenze = [], schede = [], gruppi = [];
   let lettura = null;           // risultato del parser in attesa di caricamento
   const nascoste = new Set();   // categorie spente dalla legenda
-  let occupato = false;         // disegno o stampa in corso: niente rifresco
+  let occupato = false;
+  let caricato = false;         // prima lettura dal backend conclusa
+  let erroreLettura = '';         // disegno o stampa in corso: niente rifresco
 
   const stato = t => { $('stato').textContent = t || ''; };
 
@@ -821,6 +824,18 @@ function avvia(sezione){
   /* Carta vuota: si dice cosa fare, non solo che non c'è niente. */
   function aggiornaVuoto(){
     const box = $('vuoto');
+    /* Finché la prima lettura non torna non si sa ancora se ci sono
+       emergenze: si dice che si sta guardando, non che non c'è niente. */
+    if (id && !id.errore && (!caricato || erroreLettura) && $('import').hidden){
+      box.hidden = false;
+      box.innerHTML = !caricato
+        ? '<b>⏳ Lettura delle emergenze in corso…</b>'
+        : `<b>Lettura non riuscita</b><p>${esc(erroreLettura)}</p>
+           <button type="button" class="btn-toggle-radar">🔄 Riprova</button>`;
+      const b = box.querySelector('button');
+      if (b) b.onclick = () => ricarica();
+      return;
+    }
     const niente = !!id && !id.errore && !schede.length && $('import').hidden;
     box.hidden = !niente;
     if (!niente) return;
@@ -856,6 +871,8 @@ function avvia(sezione){
   async function ricarica(silenzioso){
     if (!id || id.errore) return;
     if (!silenzioso) stato('Aggiornamento…');
+    const bA = $('bAggiorna');
+    bA.textContent = '⏳'; bA.disabled = true;
     try {
       const arch = $('archiviate').checked;
       emergenze = await api(id, 'emergenze', {includiArchiviate: arch});
@@ -879,9 +896,15 @@ function avvia(sezione){
       else { schede = lette; disegna(); vistaDisegnata = vista; }
       aggiornaPulsanti();
       if (nuovaVista) inquadra();
+      caricato = true; erroreLettura = '';
+      aggiornaVuoto();
       stato(`${schede.length} schede · aggiornato alle ${NS.oraBreve ? NS.oraBreve(new Date()) : ''}`);
     } catch(e){
+      caricato = true; erroreLettura = e.message;
+      aggiornaVuoto();
       stato('Lettura non riuscita: ' + e.message);
+    } finally {
+      bA.textContent = '🔄'; bA.disabled = false;
     }
   }
 
@@ -1165,6 +1188,8 @@ function avvia(sezione){
     wrap.parentNode.insertBefore(segno, wrap);
     doc.querySelector('.dp-mappa').appendChild(wrap);
     document.body.classList.add('diff-stampa');
+    const altezzaPrima = wrap.style.height;
+    wrap.style.height = '';
 
     [livSchede, livAree, livScelta, livGruppi].forEach(l => map.removeLayer(l));
     const tmp = L.featureGroup().addTo(map);
@@ -1210,6 +1235,7 @@ function avvia(sezione){
       document.title = titoloPrima;
       document.body.classList.remove('diff-stampa');
       segno.parentNode.insertBefore(wrap, segno);
+      wrap.style.height = altezzaPrima;
       segno.remove();
       doc.remove();
       map.removeLayer(tmp);
@@ -1235,6 +1261,7 @@ function avvia(sezione){
     if (id.errore){ schede = []; gruppi = []; emergenze = []; disegna(); stato(id.errore); return; }
     const c = centroComando();
     if (c && !schede.length) map.setView(c, 11);
+    aggiornaVuoto();
     ricarica();
   }
   document.addEventListener('fireops:comando-attivo-cambiato', identifica);
@@ -1254,8 +1281,22 @@ function avvia(sezione){
 
   identifica();
 
+  /* La carta arriva fino in fondo alla finestra, meno la riga di stato:
+     l'altezza si misura sul posto invece di indovinarla in CSS, perché
+     testata, sottotestata e barra cambiano con la larghezza. */
+  function adattaAltezza(){
+    const w = app.querySelector('.diff-mapwrap');
+    if (!w || app.offsetParent === null || document.body.classList.contains('diff-stampa')) return;
+    const h = Math.max(320, Math.floor(window.innerHeight - w.getBoundingClientRect().top - 44));
+    w.style.height = h + 'px';
+    app.querySelector('.diff-lato').style.maxHeight = h + 'px';
+    map.invalidateSize();
+  }
+  window.addEventListener('resize', adattaAltezza);
+  setTimeout(adattaAltezza, 150);
+
   return {
-    ridisegna(){ if (app.offsetParent !== null) map.invalidateSize(); },
+    ridisegna(){ if (app.offsetParent !== null){ adattaAltezza(); map.invalidateSize(); } },
     ricarica,
     map
   };

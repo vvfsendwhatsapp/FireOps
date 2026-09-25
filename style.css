@@ -2355,9 +2355,11 @@ html.comando-gia-scelto #modal-comando {
 .diff-sfondo { position: absolute; z-index: 500; top: 10px; right: 10px; }
 
 /* La carta prende tutta l'altezza che resta sotto la barra. */
+/* L'altezza la imposta differibili.js (adattaAltezza) sullo spazio
+   rimasto fino al fondo della finestra: qui resta solo un minimo. */
 .diff-corpo { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 10px;
-  flex: 1 1 auto; min-height: max(460px, calc(100vh - 210px)); }
-.diff-mapwrap { position: relative; min-height: max(460px, calc(100vh - 210px)); border-radius: 8px;
+  align-items: start; }
+.diff-mapwrap { position: relative; height: 480px; min-height: 320px; border-radius: 8px;
   overflow: hidden; border: 1px solid var(--border-color, #555); }
 #diff-mappa { position: absolute; inset: 0; }
 
