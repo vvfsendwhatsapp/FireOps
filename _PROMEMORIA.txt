@@ -27,3 +27,6 @@ splittare su convertitore anche "x = 12,13391    y = 44,02339" o "12,13391    y 
 CANALE NAZIONALE		100	
 
 https://docs.google.com/spreadsheets/d/e/2PACX-1vSffRrwfm9foynjHEZEd8nRE4yj38axJPaT1TLw6AMquSTcUA5uYNU0wsLGLKlgIKon38S87VY2AVVP/pubhtml
+
+documentazione USAR, Autostrade
+Canali radio aeronautici
