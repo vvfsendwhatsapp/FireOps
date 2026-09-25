@@ -1097,7 +1097,7 @@ Koordináták küldéséhez:
     }
 
     // URL della Web App Apps Script che scrive sul foglio "DB_ID_Search"
-    // dello spreadsheet FIREOPS Locator (lo stesso usato da locator.html per
+    // dello spreadsheet FIREOPS (lo stesso usato da locator.html per
     // "DB_Locator_People"). Stesso pattern lì visto: POST con mode:'no-cors',
     // quindi non possiamo leggere l'esito reale della scrittura.
     // TODO: incolla qui l'URL della Web App. Se riusi la STESSA Web App già
