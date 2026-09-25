@@ -2311,35 +2311,55 @@ html.comando-gia-scelto #modal-comando {
 #diff-app.diff-ruolo-dr .diff-solo-comando,
 #diff-app:not(.diff-ruolo-comando) .diff-solo-comando { display: none; }
 
-.diff-barra { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 12px; }
-.diff-ente { font-weight: bold; align-self: center; margin-right: auto; }
-.diff-campo { display: flex; flex-direction: column; gap: 3px; font-size: 12px; }
-.diff-campo select { min-width: 220px; }
-.diff-check { align-self: center; margin: 0; }
-.diff-azioni { display: flex; flex-wrap: wrap; gap: 6px; }
+/* Barra: a sinistra cosa si guarda, a destra cosa si fa. Va a capo da
+   sola quando il pannello è stretto, senza tagliare i pulsanti. */
+.diff-barra { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 8px 16px; }
+.diff-barra-sx { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
+.diff-sel-emergenza { min-width: 260px; font-weight: bold; }
+.diff-ruolo { font-size: 13px; padding: 4px 8px; border-radius: 6px;
+  border: 1px solid var(--border-color, #555); }
+.diff-check { margin: 4px 0; font-size: 13px; }
+.diff-azioni { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.diff-azioni button { white-space: nowrap; }
 .diff-azioni button:disabled { opacity: .45; cursor: not-allowed; }
+.diff-sep { width: 1px; align-self: stretch; background: var(--border-color, #555); margin: 0 4px; }
 .diff-rosso { border-color: var(--danger-color, #AF2B1E) !important; color: var(--danger-color, #e57368) !important; }
 .btn-whatsapp.diff-rosso { background: var(--danger-color, #AF2B1E) !important; color: #fff !important; }
 .diff-errore { color: var(--danger-color, #e57368); font-size: 13px; margin: 4px 0; }
-.diff-derivato { padding: 9px 10px; border: 1px dashed var(--border-color, #555); border-radius: 6px; }
 .diff-riga { display: flex; gap: 6px; }
 .diff-riga input { flex: 1 1 auto; min-width: 0; }
 
-.diff-import { border: 1px solid var(--border-color, #555); border-radius: 8px; padding: 10px 12px; }
-.diff-anteprima { font-size: 13px; margin: 6px 0; }
+/* Riquadri sopra la carta: l'import e la carta vuota non spostano il layout. */
+.diff-card { position: absolute; z-index: 700; top: 12px; left: 56px; width: min(440px, calc(100% - 80px));
+  max-height: calc(100% - 24px); overflow-y: auto; padding: 12px 14px; border-radius: 10px;
+  background: var(--dark-color, #1e1e1e); border: 1px solid var(--border-color, #555);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, .5); }
+.diff-card[hidden] { display: none; }
+.diff-card-testa { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.diff-x { background: none; border: 0; color: inherit; font-size: 20px; cursor: pointer; line-height: 1; }
+.diff-passo { display: flex; gap: 10px; margin: 10px 0; }
+.diff-passo-n { flex: 0 0 22px; height: 22px; border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; font-size: 12px; font-weight: bold; background: #fdd835; color: #000; }
+.diff-passo-corpo { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.diff-passo-corpo label { font-size: 13px; }
+.diff-oppure { opacity: .8; margin-top: 4px; }
+.diff-anteprima { font-size: 13px; margin: 6px 0 6px 32px; }
 .diff-anteprima ul { margin: 4px 0 0 18px; padding: 0; }
+.diff-vuoto { text-align: center; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(360px, 90%); }
+.diff-vuoto p { margin: 6px 0 12px; font-size: 13px; opacity: .85; }
+.diff-guida { position: absolute; z-index: 650; left: 50%; bottom: 28px; transform: translateX(-50%);
+  padding: 7px 12px; border-radius: 8px; font-size: 13px; background: rgba(0, 0, 0, .78); color: #fff;
+  max-width: calc(100% - 40px); text-align: center; }
+.diff-guida[hidden] { display: none; }
+.diff-sfondo { position: absolute; z-index: 500; top: 10px; right: 10px; }
 
-/* La carta prende tutta l'altezza che resta sotto barra e intestazioni:
-   è lo strumento di lavoro, il resto le sta intorno. */
+/* La carta prende tutta l'altezza che resta sotto la barra. */
 .diff-corpo { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 10px;
-  flex: 1 1 auto; min-height: max(460px, calc(100vh - 250px)); }
-.diff-mapwrap { position: relative; min-height: max(460px, calc(100vh - 250px)); border-radius: 8px;
+  flex: 1 1 auto; min-height: max(460px, calc(100vh - 210px)); }
+.diff-mapwrap { position: relative; min-height: max(460px, calc(100vh - 210px)); border-radius: 8px;
   overflow: hidden; border: 1px solid var(--border-color, #555); }
 #diff-mappa { position: absolute; inset: 0; }
-.diff-comandi-mappa { position: absolute; top: 10px; right: 10px; z-index: 500; display: flex;
-  flex-direction: column; align-items: flex-end; gap: 6px; }
-.diff-comandi-mappa .diff-check { background: var(--dark-color, #1e1e1e); padding: 4px 8px;
-  border-radius: 6px; font-size: 12px; }
 
 .diff-lato { overflow-y: auto; font-size: 13px; }
 .diff-lato h4 { margin: 12px 0 6px; }
@@ -2405,7 +2425,7 @@ html.comando-gia-scelto #modal-comando {
   #diff-stampa-doc .dp-mappa { height: 165mm; position: relative; }
   #diff-stampa-doc .diff-mapwrap { position: absolute; inset: 0; border: .3mm solid #000; min-height: 0; }
   #diff-stampa-doc .diff-avviso { display: none !important; }
-  #diff-stampa-doc .diff-comandi-mappa,
+  #diff-stampa-doc .diff-sfondo, #diff-stampa-doc .diff-card, #diff-stampa-doc .diff-guida,
   #diff-stampa-doc .leaflet-control-zoom { display: none; }
   #diff-stampa-doc .dp-tab { width: 100%; border-collapse: collapse; font-size: 8pt; }
   #diff-stampa-doc .dp-tab th, #diff-stampa-doc .dp-tab td { border: .2mm solid #888;
@@ -2419,8 +2439,7 @@ html.comando-gia-scelto #modal-comando {
 }
 
 /* --- aggiunte: scelta emergenza nell'import e pulsanti del modale --- */
-.diff-emergenza-scelta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
-  margin: 10px 0 4px; }
+.diff-emergenza-scelta b { font-size: 14px; }
 .diff-derivato-breve { opacity: .8; font-size: 13px; }
 .diff-modale-scelte { display: flex; flex-direction: column; gap: 6px; }
 .diff-modale-scelte:empty { display: none; }
@@ -2446,6 +2465,9 @@ html.comando-gia-scelto #modal-comando {
 .diff-avviso[hidden] { display: none; }
 .diff-avviso button { padding: 3px 8px; }
 .diff-avviso-x { background: none; border: 0; color: inherit; font-size: 18px; cursor: pointer; }
+
+/* Nota e intestazione della sezione non servono a schermo intero. */
+#differibili .pagina-box-header { display: none; }
 
 /* ==========================================================
    ==========================================================

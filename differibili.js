@@ -349,66 +349,81 @@ function avvia(sezione){
   const app = sezione.querySelector('#diff-app');
   app.innerHTML = `
     <div class="diff-barra">
-      <span class="diff-ente" id="diff-ente">—</span>
-      <label class="diff-campo">Emergenza
-        <select id="diff-selEmergenza"></select></label>
-      <label class="diff-campo diff-solo-dr">Comando
-        <select id="diff-selComando"></select></label>
-      <label class="rt-check diff-check"><input type="checkbox" id="diff-archiviate"> Archiviate</label>
-      <label class="rt-check diff-check" title="Tutti i Comandi della Direzione del Comando attivo, in sola lettura">
-        <input type="checkbox" id="diff-vistaDR"> Vista Direzione</label>
+      <div class="diff-barra-sx">
+        <select id="diff-selEmergenza" class="diff-sel-emergenza" title="Emergenza da mostrare sulla carta"></select>
+        <select id="diff-selComando" class="diff-solo-dr" title="Filtra per Comando"></select>
+        <span id="diff-ente" class="diff-ruolo" hidden></span>
+      </div>
       <div class="diff-azioni">
-        <button type="button" id="diff-bAggiorna" class="btn-toggle-radar">🔄 Aggiorna</button>
+        <button type="button" id="diff-bImporta" class="btn-whatsapp diff-solo-comando"
+          title="Carica un CSV, un JSON o un Google Sheet di schede differibili">📥 Carica schede</button>
+        <button type="button" id="diff-bGruppo" class="btn-toggle-radar diff-solo-comando"
+          title="Disegna un poligono sulla carta: le schede dentro formano un gruppo">✏️ Crea gruppo</button>
+        <button type="button" id="diff-bStampa" class="btn-toggle-radar diff-solo-comando"
+          title="PDF con carta e tabella delle schede visibili">🖨 PDF</button>
+        <button type="button" id="diff-bArchivia" class="btn-toggle-radar diff-solo-comando diff-rosso"
+          title="Chiude l'emergenza: sparisce da quelle in corso">🗄 Archivia</button>
+        <span class="diff-sep diff-solo-comando"></span>
+        <button type="button" id="diff-bAggiorna" class="btn-toggle-radar"
+          title="Aggiorna adesso (si aggiorna anche da solo ogni 2 minuti)">🔄</button>
         <button type="button" id="diff-bChiudi" class="btn-toggle-radar diff-rosso"
           title="Chiudi le schede differibili e torna alla vista a due colonne">✖ Chiudi</button>
-        <button type="button" id="diff-bImporta" class="btn-toggle-radar diff-solo-comando">📥 Importa</button>
-        <button type="button" id="diff-bGruppo" class="btn-toggle-radar diff-solo-comando">✏️ Nuovo gruppo</button>
-        <button type="button" id="diff-bStampa" class="btn-toggle-radar diff-solo-comando">🖨 PDF vista</button>
-        <button type="button" id="diff-bArchivia" class="btn-toggle-radar diff-solo-comando diff-rosso">🗄 Archivia</button>
-      </div>
-    </div>
-
-    <div id="diff-import" class="diff-import" hidden>
-      <div class="msg-riga-campi">
-        <div class="msg-campo">
-          <label for="diff-file">1 · File CSV o JSON</label>
-          <input type="file" id="diff-file" accept=".csv,.txt,.tsv,.json,text/csv,application/json">
-        </div>
-        <div class="msg-campo">
-          <label for="diff-link">oppure link Google Sheet</label>
-          <div class="diff-riga">
-            <input type="text" id="diff-link" placeholder="https://docs.google.com/spreadsheets/d/…" autocomplete="off">
-            <button type="button" id="diff-bLink" class="btn-toggle-radar">Leggi</button>
-          </div>
-        </div>
-      </div>
-      <div class="diff-emergenza-scelta">
-        <span>2 · Emergenza</span>
-        <b id="diff-codemScelto">— scegli prima il file</b>
-        <span id="diff-dataInizio" class="diff-derivato-breve"></span>
-        <button type="button" id="diff-bCambiaCodem" class="btn-toggle-radar" disabled>Cambia</button>
-        <input type="hidden" id="diff-codem">
-      </div>
-      <p id="diff-codemErrore" class="diff-errore" hidden></p>
-      <div id="diff-anteprima"></div>
-      <div class="msg-azioni">
-        <button type="button" id="diff-bCarica" class="btn-whatsapp" disabled>⬆️ Carica su FireOps</button>
-        <button type="button" id="diff-bChiudiImport" class="btn-toggle-radar">Chiudi</button>
       </div>
     </div>
 
     <div class="diff-corpo">
       <div class="diff-mapwrap">
         <div id="diff-mappa"></div>
-        <div class="diff-comandi-mappa">
-          <button type="button" id="diff-bSfondo" class="btn-toggle-radar">🛰 Satellite</button>
-          <label class="rt-check diff-check"><input type="checkbox" id="diff-aree"> Aree di localizzazione</label>
+
+        <div id="diff-import" class="diff-card diff-import" hidden>
+          <div class="diff-card-testa"><b>Carica schede differibili</b>
+            <button type="button" id="diff-bChiudiImport" class="diff-x" title="Chiudi">×</button></div>
+          <div class="diff-passo">
+            <span class="diff-passo-n">1</span>
+            <div class="diff-passo-corpo">
+              <label for="diff-file">Scegli il file esportato (CSV o JSON)</label>
+              <input type="file" id="diff-file" accept=".csv,.txt,.tsv,.json,text/csv,application/json">
+              <label for="diff-link" class="diff-oppure">oppure incolla il link di un Google Sheet</label>
+              <div class="diff-riga">
+                <input type="text" id="diff-link" placeholder="https://docs.google.com/spreadsheets/d/…" autocomplete="off">
+                <button type="button" id="diff-bLink" class="btn-toggle-radar">Leggi</button>
+              </div>
+            </div>
+          </div>
+          <div class="diff-passo">
+            <span class="diff-passo-n">2</span>
+            <div class="diff-passo-corpo diff-emergenza-scelta">
+              <label>Emergenza</label>
+              <b id="diff-codemScelto">— scegli prima il file</b>
+              <span id="diff-dataInizio" class="diff-derivato-breve"></span>
+              <button type="button" id="diff-bCambiaCodem" class="btn-toggle-radar" disabled>Cambia</button>
+              <input type="hidden" id="diff-codem">
+            </div>
+          </div>
+          <p id="diff-codemErrore" class="diff-errore" hidden></p>
+          <div id="diff-anteprima"></div>
+          <div class="diff-passo">
+            <span class="diff-passo-n">3</span>
+            <div class="diff-passo-corpo">
+              <button type="button" id="diff-bCarica" class="btn-whatsapp" disabled>⬆️ Carica su FireOps</button>
+            </div>
+          </div>
         </div>
+
+        <div id="diff-vuoto" class="diff-card diff-vuoto" hidden></div>
+        <div id="diff-guida" class="diff-guida" hidden></div>
+        <button type="button" id="diff-bSfondo" class="btn-toggle-radar diff-sfondo">🛰 Satellite</button>
       </div>
+
       <aside class="diff-lato">
         <div id="diff-riepilogo"></div>
         <h4>Gruppi</h4>
         <div id="diff-gruppi"><p class="pagina-nota">Nessun gruppo.</p></div>
+        <h4>Visualizzazione</h4>
+        <label class="rt-check diff-check"><input type="checkbox" id="diff-aree"> Aree di localizzazione</label>
+        <label class="rt-check diff-check"><input type="checkbox" id="diff-archiviate"> Mostra le emergenze archiviate</label>
+        <label class="rt-check diff-check" title="Tutti i Comandi della Direzione del Comando attivo, in sola lettura">
+          <input type="checkbox" id="diff-vistaDR"> Vista Direzione</label>
       </aside>
     </div>
     <p id="diff-stato" class="pagina-nota diff-stato"></p>
@@ -688,20 +703,16 @@ function avvia(sezione){
   /* Avviso sulla carta: resta finché non lo si chiude o per un minuto, e
      porta con sé le schede nuove per inquadrarle con un clic. */
   function avvisa(d){
-    const n = d.nuove.length, c = d.cambiate.length;
-    if (!n && !c && !d.tolte) return;
+    const n = d.nuove.length;
+    if (!n) return;          // modifiche e rimozioni si applicano in silenzio
     let box = app.querySelector('.diff-avviso');
     if (!box){
       box = document.createElement('div');
       box.className = 'diff-avviso';
       app.querySelector('.diff-mapwrap').appendChild(box);
     }
-    const parti = [];
-    if (n) parti.push(`<b>${n}</b> ${n === 1 ? 'scheda nuova' : 'schede nuove'}`);
-    if (c) parti.push(`<b>${c}</b> ${c === 1 ? 'aggiornata' : 'aggiornate'}`);
-    if (d.tolte) parti.push(`<b>${d.tolte}</b> ${d.tolte === 1 ? 'rimossa' : 'rimosse'}`);
-    box.innerHTML = `<span>🔔 ${parti.join(' · ')}</span>`
-      + (n ? '<button type="button" class="btn-toggle-radar" data-a="vedi">Inquadra le nuove</button>' : '')
+    box.innerHTML = `<span>🔔 <b>${n}</b> ${n === 1 ? 'scheda nuova' : 'schede nuove'}</span>`
+      + '<button type="button" class="btn-toggle-radar" data-a="vedi">Mostrale</button>' 
       + '<button type="button" class="diff-avviso-x" data-a="x" title="Chiudi">×</button>';
     box.hidden = false;
     box.querySelector('[data-a="x"]').onclick = () => { box.hidden = true; };
@@ -777,8 +788,12 @@ function avvia(sezione){
     const cmd = id && id.ruolo === 'COMANDO';
     app.classList.toggle('diff-ruolo-dr', !!dr);
     app.classList.toggle('diff-ruolo-comando', !!cmd);
-    $('ente').textContent = !id ? '—' : id.errore ? id.errore
-      : `${id.ente} — ${dr ? 'sola lettura' : 'carica e gestisce'}`;
+    /* Il Comando sa chi è: il cartellino compare solo in vista Direzione,
+       per ricordare che si guarda tutta la regione in sola lettura, o se
+       qualcosa impedisce di lavorare. */
+    const cartellino = id && (id.errore || (dr ? `👁 ${id.ente} · sola lettura` : ''));
+    $('ente').hidden = !cartellino;
+    $('ente').textContent = cartellino || '';
     $('ente').classList.toggle('diff-errore', !!(id && id.errore));
     if (!cmd) $('import').hidden = true;
     const sel = $('selComando');
@@ -791,25 +806,63 @@ function avvia(sezione){
     aggiornaPulsanti();
   }
 
+  const emergenzeAttive = () => emergenze.filter(e => e.STATO === 'ATTIVA'
+    && (!id || !id.sigla || e.SIGLA === id.sigla));
+
   function aggiornaPulsanti(){
     const em = emergenzaScelta();
-    const attiva = !!em && em.STATO === 'ATTIVA';
-    $('bGruppo').disabled = !attiva;
-    $('bArchivia').disabled = !attiva;
+    const possibili = em ? em.STATO === 'ATTIVA' : emergenzeAttive().length > 0;
+    $('bGruppo').disabled = !possibili;
+    $('bArchivia').disabled = !possibili;
     $('bStampa').disabled = !visibili().length;
+    aggiornaVuoto();
+  }
+
+  /* Carta vuota: si dice cosa fare, non solo che non c'è niente. */
+  function aggiornaVuoto(){
+    const box = $('vuoto');
+    const niente = !!id && !id.errore && !schede.length && $('import').hidden;
+    box.hidden = !niente;
+    if (!niente) return;
+    const em = emergenzaScelta();
+    if (id.ruolo === 'COMANDO'){
+      box.innerHTML = `<b>${em ? 'Nessuna scheda in ' + esc(em.CODEM) : 'Nessuna emergenza in corso'}</b>
+        <p>Carica l'export delle schede differibili: le vedrai qui sulla carta.</p>
+        <button type="button" class="btn-whatsapp">📥 Carica schede</button>`;
+      box.querySelector('button').onclick = () => $('bImporta').click();
+    } else {
+      box.innerHTML = `<b>Nessuna emergenza in corso</b>
+        <p>Qui compaiono le schede differibili caricate dai Comandi della Direzione.</p>`;
+    }
+  }
+
+  /* Gruppo e archiviazione valgono per UNA emergenza: se è selezionato
+     "Tutte", si chiede quale invece di tenere il pulsante spento. */
+  async function emergenzaDaUsare(azione){
+    const em = emergenzaScelta();
+    if (em) return em.STATO === 'ATTIVA' ? em : null;
+    const attive = emergenzeAttive();
+    if (!attive.length) return null;
+    const k = attive.length === 1 ? attive[0].CODEM : await chiedi({
+      testo: `Su quale emergenza vuoi ${azione}?`,
+      voci: attive.map(e => ({k: e.CODEM, et: e.CODEM, nota: 'in corso dal ' + e.DATA_INIZIO}))});
+    if (!k) return null;
+    $('selEmergenza').value = k;
+    await ricarica(true);
+    return emergenzaScelta();
   }
 
   let vistaDisegnata = null;   // emergenza + ente + archiviate già sulla carta
   async function ricarica(silenzioso){
     if (!id || id.errore) return;
-    if (!silenzioso) stato('Lettura delle emergenze…');
+    if (!silenzioso) stato('Aggiornamento…');
     try {
       const arch = $('archiviate').checked;
       emergenze = await api(id, 'emergenze', {includiArchiviate: arch});
       emergenze.sort((a, b) => String(b.CODEM).slice(-4) + String(b.CODEM).slice(-6, -4) + String(b.CODEM).slice(-8, -6)
         > String(a.CODEM).slice(-4) + String(a.CODEM).slice(-6, -4) + String(a.CODEM).slice(-8, -6) ? 1 : -1);
       const sel = $('selEmergenza'), prima = sel.value;
-      sel.innerHTML = `<option value="">${arch ? 'Tutte' : 'Tutte le emergenze in corso'}</option>`
+      sel.innerHTML = `<option value="">${!emergenze.length ? 'Nessuna emergenza in corso' : arch ? 'Tutte le emergenze' : 'Tutte le emergenze in corso'}</option>`
         + emergenze.map(e => `<option value="${esc(e.CODEM)}">${esc(e.CODEM)} · dal ${esc(e.DATA_INIZIO)}`
           + `${e.STATO === 'ARCHIVIATA' ? ' (archiviata)' : ''}</option>`).join('');
       sel.value = emergenze.some(e => e.CODEM === prima) ? prima : '';
@@ -819,19 +872,14 @@ function avvia(sezione){
         api(id, 'schede', {codem, includiArchiviate: arch}),
         api(id, 'gruppi', {codem, includiArchiviate: arch})]);
       gruppi = gr;
-      if (vista === vistaDisegnata){
-        avvisa(aggiornaDifferenze(lette));
-      } else {
-        schede = lette;
-        disegna();
-        vistaDisegnata = vista;
-      }
+      /* Stessa vista di prima: solo le differenze, la carta resta dov'è.
+         Vista nuova: ridisegno e inquadratura sulle schede. */
+      const nuovaVista = vista !== vistaDisegnata;
+      if (!nuovaVista) avvisa(aggiornaDifferenze(lette));
+      else { schede = lette; disegna(); vistaDisegnata = vista; }
       aggiornaPulsanti();
-      if (!silenzioso){
-        stato(`${schede.length} schede caricate · ${emergenze.length} emergenze`
-          + ` · aggiornato alle ${NS.oraBreve ? NS.oraBreve(new Date()) : ''}`);
-        inquadra();
-      }
+      if (nuovaVista) inquadra();
+      stato(`${schede.length} schede · aggiornato alle ${NS.oraBreve ? NS.oraBreve(new Date()) : ''}`);
     } catch(e){
       stato('Lettura non riuscita: ' + e.message);
     }
@@ -856,8 +904,9 @@ function avvia(sezione){
     if (!id || id.ruolo !== 'COMANDO') return;
     $('import').hidden = !$('import').hidden;
     controllaCodem();
+    aggiornaVuoto();
   };
-  $('bChiudiImport').onclick = () => { $('import').hidden = true; };
+  $('bChiudiImport').onclick = () => { $('import').hidden = true; aggiornaVuoto(); };
 
   function controllaCodem(){
     const v = validaCodem($('codem').value, id);
@@ -993,16 +1042,18 @@ function avvia(sezione){
 
   /* ----------------------------- gruppi ----------------------------- */
   map.pm.setGlobalOptions({snappable: false});
-  $('bGruppo').onclick = () => {
-    const em = emergenzaScelta();
-    if (!em || em.STATO !== 'ATTIVA') return stato('Scegli un\u2019emergenza in corso.');
+  const guida = t => { $('guida').hidden = !t; $('guida').textContent = t || ''; };
+  $('bGruppo').onclick = async () => {
+    const em = await emergenzaDaUsare('creare il gruppo');
+    if (!em) return;
     occupato = true;
     map.closePopup();
+    guida('Disegna il perimetro del gruppo: un clic per ogni vertice, clic sul primo per chiudere. Esc annulla.');
     map.pm.enableDraw('Polygon', {pathOptions: {color: '#e53935', weight: 2.5, fillOpacity: .08},
       continueDrawing: false});
     stato('Disegna il poligono: clic sui vertici, clic sul primo per chiudere. Esc annulla.');
   };
-  map.on('pm:drawend', () => { occupato = false; });
+  map.on('pm:drawend', () => { occupato = false; guida(''); });
 
   map.on('pm:create', async e => {
     const poli = e.layer;
@@ -1042,7 +1093,7 @@ function avvia(sezione){
 
   /* --------------------------- archiviazione --------------------------- */
   $('bArchivia').onclick = async () => {
-    const em = emergenzaScelta();
+    const em = await emergenzaDaUsare('archiviare');
     if (!em) return;
     if (!await chiedi({ok: 'Archivia', rosso: 1, testo: `Archiviare ${em.CODEM}?\n`
       + 'Sparisce dalle emergenze in corso, anche per la Direzione. Le schede restano '
@@ -1174,7 +1225,7 @@ function avvia(sezione){
   document.addEventListener('keydown', e => {
     if (e.key !== 'Escape' || app.offsetParent === null || !$('modale').hidden) return;
     if (map.pm.globalDrawModeEnabled && map.pm.globalDrawModeEnabled()){
-      map.pm.disableDraw(); occupato = false; stato('Disegno annullato.');
+      map.pm.disableDraw(); occupato = false; guida(''); stato('Disegno annullato.');
     }
   });
 
