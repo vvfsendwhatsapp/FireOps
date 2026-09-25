@@ -43,7 +43,7 @@
       font-family: var(--sans);
       -webkit-font-smoothing: antialiased;
       min-height: 100vh;
-      padding-bottom: 40px;
+      padding-bottom: 80px; /* Spazio per la barra di navigazione sticky in basso */
     }
 
     .wrap {
@@ -82,94 +82,6 @@
       margin: 2px 0 0;
       font-size: 12.5px;
       color: var(--text-dim);
-    }
-
-    /* sticky bars */
-    .test-banner {
-      position: sticky;
-      top: 0;
-      z-index: 600;
-      background: var(--amber);
-      color: #1a1400;
-      font-size: 12.5px;
-      font-weight: 700;
-      text-align: center;
-      padding: 8px 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .test-banner.off {
-      background: var(--panel-2);
-      color: var(--text-dim);
-      font-weight: 600;
-    }
-
-    .test-toggle-btn {
-      background: #1a1400;
-      color: var(--amber);
-      border: none;
-      border-radius: 14px;
-      padding: 5px 12px;
-      font-size: 11.5px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    .test-banner.off .test-toggle-btn {
-      background: var(--red);
-      color: #fff;
-    }
-
-    .quick-actions {
-      position: sticky;
-      top: 34px;
-      z-index: 590;
-      background: var(--panel);
-      border-bottom: 1px solid var(--line);
-      padding: 8px 16px;
-      display: flex;
-      gap: 8px;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-
-    .quick-actions button {
-      padding: 9px 14px;
-      border: none;
-      border-radius: 20px;
-      font-size: 12.5px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    .qa-back {
-      background: var(--panel-2);
-      border: 1px solid var(--line) !important;
-      color: var(--text);
-    }
-
-    .qa-next {
-      background: var(--red);
-      color: #fff;
-    }
-
-    .qa-mailto {
-      background: var(--green);
-      color: #fff;
-    }
-
-    .qa-eml {
-      background: var(--panel-2);
-      border: 1px solid var(--amber) !important;
-      color: var(--amber);
-    }
-
-    .quick-actions .hidden {
-      display: none !important;
     }
 
     .steps-bar {
@@ -248,7 +160,7 @@
     .field textarea {
       width: 100%;
       padding: 12px;
-      font-size: 16px; /* Ottimizzato per mobile per evitare zoom automatico su iOS */
+      font-size: 16px;
       background: var(--panel-2);
       border: 1px solid var(--line);
       border-radius: 6px;
@@ -342,7 +254,6 @@
       padding: 6px 14px;
     }
 
-    /* Stili migliorati per righe dinamiche (Personale e Timbrature) */
     .person-row, .timb-row {
       display: flex;
       gap: 8px;
@@ -385,7 +296,7 @@
       display: block;
     }
 
-    .timb-row input {
+    .timb-row input, .timb-row select {
       width: 100%;
       padding: 10px;
       font-size: 14px;
@@ -428,10 +339,19 @@
       cursor: pointer;
     }
 
+    /* Barra di navigazione fissa in basso */
     .nav-row {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--panel);
+      border-top: 1px solid var(--line);
       display: flex;
       gap: 10px;
-      padding: 16px 0;
+      padding: 12px 16px;
+      z-index: 500;
+      box-shadow: 0 -4px 12px rgba(0,0,0,0.3);
     }
 
     .nav-btn {
@@ -484,6 +404,7 @@
 
     .security-note {
       margin-top: 10px;
+      margin-bottom: 20px;
       padding: 14px;
       background: var(--panel-2);
       border: 1px solid var(--line);
@@ -502,7 +423,6 @@
       display: none !important;
     }
 
-    /* Dropdown personalizzati per i nominativi */
     .suggestions-list {
       position: absolute;
       top: 100%;
@@ -529,7 +449,6 @@
       color: var(--text);
     }
 
-    /* Stili ricerca comando */
     .cbx-box {
       position: relative;
     }
@@ -662,13 +581,6 @@
     <button type="button" id="testToggleBtn" class="test-toggle-btn">Disattiva TEST</button>
   </div>
 
-  <div class="quick-actions" id="quickActions">
-    <button type="button" class="qa-back hidden" id="qaBack">Indietro</button>
-    <button type="button" class="qa-next hidden" id="qaNext">Avanti</button>
-    <button type="button" class="qa-mailto hidden" id="qaMailto">Apri email</button>
-    <button type="button" class="qa-eml hidden" id="qaEml">Scarica .eml</button>
-  </div>
-
   <header>
     <img class="mark" src="https://vvfsendwhatsapp.github.io/FireOps/images/logo.png" alt="Logo VVF">
     <div class="htitle">
@@ -781,8 +693,6 @@
         </div>
         <div class="comando-current" id="destCurrent">Comando Forlì-Cesena</div>
       </div>
-
-      <div class="nav-row"><button type="button" class="nav-btn nav-next" data-next>Avanti</button></div>
     </section>
 
     <!-- STEP 2 -->
@@ -793,10 +703,6 @@
           <div class="tile" data-tipo="timbratura">Mancata timbratura</div>
           <div class="tile" data-tipo="missione">Missione per soccorso</div>
         </div>
-      </div>
-      <div class="nav-row">
-        <button type="button" class="nav-btn nav-back" data-back>Indietro</button>
-        <button type="button" class="nav-btn nav-next" data-next>Avanti</button>
       </div>
     </section>
 
@@ -827,18 +733,24 @@
       <div class="detail-block hidden" id="det-timbratura">
         <div class="panel">
           <div class="row-group-label pers">Motivo</div>
-          <div class="field"><label>Motivo mancata timbratura</label><textarea id="tmMotivo" rows="3"></textarea></div>
+          <div class="field">
+            <label>Motivo mancata timbratura</label>
+            <select id="tmMotivoSelect">
+              <option value="Dimenticanza" selected>Dimenticanza</option>
+              <option value="Mancanza badge">Mancanza badge</option>
+              <option value="Altro">Altro (specificare)</option>
+            </select>
+          </div>
+          <div class="field hidden" id="tmMotivoAltroField">
+            <label>Specifica motivo</label>
+            <textarea id="tmMotivoAltro" rows="2" placeholder="Inserisci il motivo a mano..."></textarea>
+          </div>
         </div>
         <div class="panel">
           <div class="row-group-label pers">Date e fasce orarie interessate</div>
           <div class="dyn-list" id="tmDateList"></div>
           <button type="button" class="add-row-btn" data-add="timbratura" data-target="tmDateList">+ Aggiungi data / fascia</button>
         </div>
-      </div>
-
-      <div class="nav-row">
-        <button type="button" class="nav-btn nav-back" data-back>Indietro</button>
-        <button type="button" class="nav-btn nav-next" data-next>Avanti</button>
       </div>
     </section>
 
@@ -847,11 +759,6 @@
       <div class="panel">
         <div class="row-group-label">Note</div>
         <div class="field"><textarea id="noteInput" rows="3" placeholder="Note aggiuntive (facoltative)"></textarea></div>
-      </div>
-
-      <div class="nav-row">
-        <button type="button" class="nav-btn nav-back" data-back>Indietro</button>
-        <button type="button" class="nav-btn nav-next" id="goSummaryBtn">Vai al riepilogo</button>
       </div>
     </section>
 
@@ -873,12 +780,14 @@
       <div class="security-note">
         <strong>Invio protetto.</strong> "Apri nel client di posta" compila direttamente il tuo programma mail predefinito.
       </div>
-      <div class="nav-row">
-        <button type="button" class="nav-btn nav-back" data-back>Indietro</button>
-        <button type="button" class="nav-btn nav-back" id="restartBtn">Ricomincia</button>
-      </div>
     </section>
 
+  </div>
+
+  <!-- Barra di navigazione fissa in basso -->
+  <div class="nav-row" id="navRow">
+    <button type="button" class="nav-btn nav-back hidden" id="navBack" data-back>Indietro</button>
+    <button type="button" class="nav-btn nav-next" id="navNext" data-next>Avanti</button>
   </div>
 
   <script>
@@ -894,26 +803,26 @@
       "Esercitazione / servizio di vigilanza", "Altro (specificare in località)"
     ];
 
-    // Array dei nominativi caricati da Google Sheets (Colonna B e A)
-    let externalPersonnelList = [];
+    let externalPersonnelList = ["Pelizza Andrea"];
 
     async function loadPersonnelFromSheet() {
       try {
         const res = await fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vSKeUUJhapaXP-YfechgFLRfgTVaJUtuK7oiBJF8NoiyBIn8iwLL2s_L4tDL1DVmBH5tCjVbCwrOuKo/pub?gid=0&single=true&output=csv");
         const text = await res.text();
         const lines = text.split("\n");
-        externalPersonnelList = lines.map(line => {
-          // Parsing CSV semplice
+        const sheetList = lines.map(line => {
           const cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, "").trim());
           if (cols.length >= 2) {
-            return (cols[1] + " " + cols[0]).trim(); // Colonna B + Colonna A
+            return (cols[1] + " " + cols[0]).trim();
           } else if (cols.length === 1) {
             return cols[0];
           }
           return "";
         }).filter(Boolean);
+
+        const set = new Set(["Pelizza Andrea", ...sheetList]);
+        externalPersonnelList = Array.from(set);
       } catch(e) {
-        // Fallback in caso di errore di rete
         externalPersonnelList = ["Pelizza Andrea", "Rossi Mario", "Bianchi Giovanni"];
       }
     }
@@ -940,11 +849,22 @@
       document.getElementById("stepLabel").textContent = "Passo " + currentStep + " di 5 - " + STEP_LABELS[currentStep - 1];
     }
 
-    function updateQuickActions() {
-      document.getElementById("qaBack").classList.toggle("hidden", currentStep <= 1);
-      document.getElementById("qaNext").classList.toggle("hidden", currentStep >= 5);
-      document.getElementById("qaMailto").classList.toggle("hidden", currentStep !== 5);
-      document.getElementById("qaEml").classList.toggle("hidden", currentStep !== 5);
+    function updateNavButtons() {
+      const btnBack = document.getElementById("navBack");
+      const btnNext = document.getElementById("navNext");
+      
+      btnBack.classList.toggle("hidden", currentStep <= 1);
+      
+      if (currentStep === 5) {
+        btnNext.textContent = "Ricomincia";
+        btnNext.onclick = () => showStep(1);
+      } else if (currentStep === 4) {
+        btnNext.textContent = "Vai al riepilogo";
+        btnNext.onclick = goNext;
+      } else {
+        btnNext.textContent = "Avanti";
+        btnNext.onclick = goNext;
+      }
     }
 
     function showDetailBlock() {
@@ -961,7 +881,7 @@
       if (n === 3) showDetailBlock();
       if (n === 5) generatePreview();
       renderStepsBar();
-      updateQuickActions();
+      updateNavButtons();
       window.scrollTo({top: 0, behavior: "smooth"});
     }
 
@@ -973,12 +893,6 @@
 
     document.querySelectorAll("[data-next]").forEach(b => b.addEventListener("click", goNext));
     document.querySelectorAll("[data-back]").forEach(b => b.addEventListener("click", goBack));
-    document.getElementById("goSummaryBtn").addEventListener("click", goNext);
-    document.getElementById("restartBtn").addEventListener("click", () => showStep(1));
-    document.getElementById("qaBack").addEventListener("click", goBack);
-    document.getElementById("qaNext").addEventListener("click", goNext);
-    document.getElementById("qaMailto").addEventListener("click", () => document.getElementById("btnMailto").click());
-    document.getElementById("qaEml").addEventListener("click", () => document.getElementById("btnEml").click());
 
     document.querySelectorAll("#tipoTiles .tile").forEach(t => {
       t.addEventListener("click", function () {
@@ -987,7 +901,12 @@
       });
     });
 
-    // Righe dinamiche con supporto selezione iniziale / dropdown ed inserimento manuale
+    const tmMotivoSelect = document.getElementById("tmMotivoSelect");
+    const tmMotivoAltroField = document.getElementById("tmMotivoAltroField");
+    tmMotivoSelect.addEventListener("change", function() {
+      tmMotivoAltroField.classList.toggle("hidden", this.value !== "Altro");
+    });
+
     function addPersonRow(targetId) {
       const list = document.getElementById(targetId);
       const row = document.createElement("div");
@@ -999,7 +918,7 @@
       const inp = document.createElement("input");
       inp.type = "text";
       inp.className = "person-input";
-      inp.placeholder = "Digita iniziali o seleziona...";
+      inp.placeholder = "Pelizza Andrea o cerca...";
       
       const sug = document.createElement("div");
       sug.className = "suggestions-list";
@@ -1045,18 +964,15 @@
       list.appendChild(row);
     }
 
-    // Gestione intelligente orari Mancata Timbratura
     function getDefaultTimbraturaTimes() {
       const now = new Date();
       const hour = now.getHours();
       let dIn = new Date(now), dOut = new Date(now);
       
       if (hour >= 8 && hour < 20) {
-        // Se ore attuali dopo 08:00 e prima di 20:00 -> Uscita 20:00, Ingresso 08:00
         dIn.setHours(8, 0, 0, 0);
         dOut.setHours(20, 0, 0, 0);
       } else {
-        // Altrimenti -> Uscita 20:00 (o 08:00 del giorno)
         dIn.setHours(20, 0, 0, 0);
         dOut.setHours(8, 0, 0, 0);
         if (hour < 8) dIn.setDate(dIn.getDate() - 1);
@@ -1089,11 +1005,9 @@
       });
     });
 
-    // Inizializzazione righe default
     addPersonRow("msPersonaleList");
     addTimbraturaRow("tmDateList");
 
-    // Tipologie intervento select
     const msTip = document.getElementById("msTipologia");
     if (msTip) {
       TIPOLOGIE.forEach(t => {const o = document.createElement("option"); o.value = t; o.textContent = t; msTip.appendChild(o);});
@@ -1144,7 +1058,8 @@
     }
 
     function buildTimbratura() {
-      const motivo = document.getElementById("tmMotivo").value.trim();
+      const selMotivo = document.getElementById("tmMotivoSelect").value;
+      const motivo = selMotivo === "Altro" ? document.getElementById("tmMotivoAltro").value.trim() : selMotivo;
       const rows = Array.from(document.querySelectorAll("#tmDateList .timb-row")).map(r => ({
         in: r.querySelector(".timb-in").value, 
         out: r.querySelector(".timb-out").value
@@ -1224,7 +1139,7 @@
     });
 
     renderStepsBar();
-    updateQuickActions();
+    updateNavButtons();
   </script>
 </body>
 </html>
