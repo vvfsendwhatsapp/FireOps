@@ -359,6 +359,8 @@ function avvia(sezione){
         <input type="checkbox" id="diff-vistaDR"> Vista Direzione</label>
       <div class="diff-azioni">
         <button type="button" id="diff-bAggiorna" class="btn-toggle-radar">🔄 Aggiorna</button>
+        <button type="button" id="diff-bChiudi" class="btn-toggle-radar diff-rosso"
+          title="Chiudi le schede differibili e torna alla vista a due colonne">✖ Chiudi</button>
         <button type="button" id="diff-bImporta" class="btn-toggle-radar diff-solo-comando">📥 Importa</button>
         <button type="button" id="diff-bGruppo" class="btn-toggle-radar diff-solo-comando">✏️ Nuovo gruppo</button>
         <button type="button" id="diff-bStampa" class="btn-toggle-radar diff-solo-comando">🖨 PDF vista</button>
@@ -369,24 +371,23 @@ function avvia(sezione){
     <div id="diff-import" class="diff-import" hidden>
       <div class="msg-riga-campi">
         <div class="msg-campo">
-          <label for="diff-codem">CODEM</label>
-          <input type="text" id="diff-codem" maxlength="30" placeholder="I1EMIFC20092026" autocomplete="off">
-        </div>
-        <div class="msg-campo" style="max-width:170px;">
-          <label>Inizio emergenza</label>
-          <div id="diff-dataInizio" class="diff-derivato">—</div>
-        </div>
-        <div class="msg-campo">
-          <label for="diff-file">File CSV o JSON</label>
+          <label for="diff-file">1 · File CSV o JSON</label>
           <input type="file" id="diff-file" accept=".csv,.txt,.tsv,.json,text/csv,application/json">
         </div>
         <div class="msg-campo">
-          <label for="diff-link">Oppure link Google Sheet</label>
+          <label for="diff-link">oppure link Google Sheet</label>
           <div class="diff-riga">
             <input type="text" id="diff-link" placeholder="https://docs.google.com/spreadsheets/d/…" autocomplete="off">
             <button type="button" id="diff-bLink" class="btn-toggle-radar">Leggi</button>
           </div>
         </div>
+      </div>
+      <div class="diff-emergenza-scelta">
+        <span>2 · Emergenza</span>
+        <b id="diff-codemScelto">— scegli prima il file</b>
+        <span id="diff-dataInizio" class="diff-derivato-breve"></span>
+        <button type="button" id="diff-bCambiaCodem" class="btn-toggle-radar" disabled>Cambia</button>
+        <input type="hidden" id="diff-codem">
       </div>
       <p id="diff-codemErrore" class="diff-errore" hidden></p>
       <div id="diff-anteprima"></div>
@@ -416,6 +417,7 @@ function avvia(sezione){
       <div class="diff-modale-box">
         <div class="diff-modale-titolo">FireOps VVF — Schede differibili</div>
         <div class="diff-modale-testo"></div>
+        <div class="diff-modale-scelte"></div>
         <input type="text" id="diff-modale-input" autocomplete="off">
         <div class="diff-modale-azioni">
           <button type="button" id="diff-modale-no" class="btn-toggle-radar">Annulla</button>
@@ -437,24 +439,37 @@ function avvia(sezione){
 
   /* ---------------------------- modale ---------------------------- */
   /* Niente prompt/confirm: intestano la finestra col dominio del sito. */
+  /* o.voci = [{k, et, nota}] → scelta a pulsanti, restituisce k.
+     o.campo → campo di testo, restituisce il testo. Altrimenti conferma. */
   function chiedi(o){
     return new Promise(ok => {
       const m = $('modale'), inp = $('modale-input');
+      const scelte = m.querySelector('.diff-modale-scelte');
       m.querySelector('.diff-modale-testo').textContent = o.testo || '';
       inp.hidden = !o.campo;
       inp.value = o.valore || '';
+      inp.placeholder = o.segnaposto || '';
+      $('modale-ok').hidden = !!o.voci;
       $('modale-ok').textContent = o.ok || 'Conferma';
       $('modale-ok').classList.toggle('diff-rosso', !!o.rosso);
+      scelte.innerHTML = '';
       m.hidden = false;
       const fine = v => { m.hidden = true; document.removeEventListener('keydown', tasti); ok(v); };
       const tasti = e => {
         if (e.key === 'Escape') fine(null);
-        if (e.key === 'Enter'){ e.preventDefault(); fine(o.campo ? inp.value.trim() : true); }
+        if (e.key === 'Enter' && !o.voci){ e.preventDefault(); fine(o.campo ? inp.value.trim() : true); }
       };
+      (o.voci || []).forEach(v => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'diff-scelta';
+        b.innerHTML = `<b>${esc(v.et)}</b>${v.nota ? `<span>${esc(v.nota)}</span>` : ''}`;
+        b.onclick = () => fine(v.k);
+        scelte.appendChild(b);
+      });
       document.addEventListener('keydown', tasti);
       $('modale-ok').onclick = () => fine(o.campo ? inp.value.trim() : true);
       $('modale-no').onclick = () => fine(null);
-      setTimeout(() => (o.campo ? inp : $('modale-ok')).focus(), 30);
+      setTimeout(() => (o.campo ? inp : (scelte.querySelector('button') || $('modale-no'))).focus(), 30);
     });
   }
 
@@ -555,28 +570,81 @@ function avvia(sezione){
     </div>`;
   }
 
-  function disegna(){
-    livSchede.clearLayers(); livAree.clearLayers(); livScelta.clearLayers(); livGruppi.clearLayers();
-    const v = visibili();
-    const aree = $('aree').checked;
-    v.forEach(s => {
-      if (!conPosizione(s)) return;
-      const g = gruppoDi(s), cat = categoria(s);
-      const m = L.circleMarker([num(s.LAT), num(s.LON)], {renderer: tela, radius: 6.5,
-        fillColor: cat.c, fillOpacity: .95, color: g ? g.COLORE : '#ffffff',
-        weight: g ? 3 : 1.5, dashArray: s.DIFFERIBILE && s.DIFFERIBILE !== 'S' ? '2,2' : null});
-      m.bindPopup(() => popup(s), {maxWidth: 320});
-      m.on('popupopen', ev => {
-        livScelta.clearLayers();
-        const f = formaLocalizzazione(s);
-        if (f) livScelta.addLayer(f);
-        const a = ev.popup.getElement().querySelector('.diff-cli');
-        if (a) a.onclick = e => { e.preventDefault(); NS.copiaTesto(e, s.CLI); };
-      });
-      m.on('popupclose', () => livScelta.clearLayers());
-      livSchede.addLayer(m);
-      if (aree){ const f = formaLocalizzazione(s); if (f) livAree.addLayer(f); }
+  /* ------------------------- marcatori e pile -------------------------
+     Un marcatore per scheda, tenuto per chiave: al rifresco si aggiunge,
+     si aggiorna o si toglie solo quello che è cambiato, senza svuotare la
+     carta sotto gli occhi di chi la sta guardando.
+     Più chiamate dallo stesso punto (stessa scheda NUE, stesso telefono)
+     hanno coordinate identiche e si coprirebbero: si dispongono a corona
+     attorno al punto vero, a distanza fissa sullo schermo. */
+  const marcatori = new Map();          // chiave -> {s, m, area, firma}
+  const chiave = s => s.CODEM + '|' + s.ID_CONTATTO;
+  const firma = s => CAMPI.map(k => s[k]).join('\u241F') + '\u241F' + (s.GRUPPO || '');
+  const chiavePunto = s => num(s.LAT).toFixed(5) + ',' + num(s.LON).toFixed(5);
+
+  function passaFiltri(s){
+    const sig = $('selComando').value;
+    return !nascoste.has(categoria(s).k) && (!sig || String(s.CODEM).slice(-10, -8) === sig);
+  }
+
+  /* Posizione a schermo dell'i-esimo di n punti sovrapposti. */
+  function offsetPila(lat, lon, i, n){
+    if (n < 2) return L.latLng(lat, lon);
+    const r = 9 + Math.max(0, n - 6) * 1.6;
+    const a = 2 * Math.PI * i / n - Math.PI / 2;
+    const p = map.latLngToLayerPoint([lat, lon]);
+    return map.layerPointToLatLng(L.point(p.x + r * Math.cos(a), p.y + r * Math.sin(a)));
+  }
+  function posizionaPile(){
+    const pile = new Map();
+    marcatori.forEach(x => {
+      if (!x.m || !livSchede.hasLayer(x.m)) return;
+      const k = chiavePunto(x.s);
+      if (!pile.has(k)) pile.set(k, []);
+      pile.get(k).push(x);
     });
+    pile.forEach(el => el.forEach((x, i) =>
+      x.m.setLatLng(offsetPila(num(x.s.LAT), num(x.s.LON), i, el.length))));
+  }
+  map.on('zoomend', posizionaPile);
+
+  function creaMarcatore(s){
+    const g = gruppoDi(s), cat = categoria(s);
+    const m = L.circleMarker([num(s.LAT), num(s.LON)], {renderer: tela, radius: 6.5,
+      fillColor: cat.c, fillOpacity: .95, color: g ? g.COLORE : '#ffffff',
+      weight: g ? 3 : 1.5, dashArray: s.DIFFERIBILE && s.DIFFERIBILE !== 'S' ? '2,2' : null});
+    m.bindPopup(() => popup(s), {maxWidth: 320});
+    m.on('popupopen', ev => {
+      livScelta.clearLayers();
+      const f = formaLocalizzazione(s);
+      if (f) livScelta.addLayer(f);
+      const a = ev.popup.getElement().querySelector('.diff-cli');
+      if (a) a.onclick = e => { e.preventDefault(); NS.copiaTesto(e, s.CLI); };
+    });
+    m.on('popupclose', () => livScelta.clearLayers());
+    return m;
+  }
+
+  function togliMarcatore(k){
+    const x = marcatori.get(k);
+    if (!x) return;
+    if (x.m) livSchede.removeLayer(x.m);
+    if (x.area) livAree.removeLayer(x.area);
+    marcatori.delete(k);
+  }
+
+  function metti(s){
+    const x = {s, firma: firma(s), m: null, area: null};
+    if (conPosizione(s) && passaFiltri(s)){
+      x.m = creaMarcatore(s);
+      livSchede.addLayer(x.m);
+      if ($('aree').checked){ x.area = formaLocalizzazione(s); if (x.area) livAree.addLayer(x.area); }
+    }
+    marcatori.set(chiave(s), x);
+  }
+
+  function disegnaGruppi(){
+    livGruppi.clearLayers();
     gruppi.forEach(g => {
       if (!g.GEOJSON) return;
       L.geoJSON(g.GEOJSON, {interactive: true, style: {color: g.COLORE, weight: 2.5,
@@ -584,8 +652,66 @@ function avvia(sezione){
         .bindTooltip(`${g.NOME} — ${g.N_SCHEDE} schede`, {sticky: true})
         .addTo(livGruppi);
     });
-    riepilogo(v);
+  }
+
+  /* Ridisegno completo: al primo caricamento, al cambio di emergenza o di
+     filtri, quando cambia quello che si vuole vedere e non i dati. */
+  function disegna(){
+    livSchede.clearLayers(); livAree.clearLayers(); livScelta.clearLayers();
+    marcatori.clear();
+    schede.forEach(metti);
+    posizionaPile();
+    disegnaGruppi();
+    riepilogo(visibili());
     elencoGruppi();
+  }
+
+  /* Rifresco: solo le differenze. Restituisce le schede nuove, per l'avviso. */
+  function aggiornaDifferenze(nuoveSchede){
+    const dopo = new Map(nuoveSchede.map(s => [chiave(s), s]));
+    const nuove = [], cambiate = [];
+    let tolte = 0;
+    marcatori.forEach((x, k) => { if (!dopo.has(k)){ togliMarcatore(k); tolte++; } });
+    dopo.forEach((s, k) => {
+      const x = marcatori.get(k);
+      if (!x){ metti(s); nuove.push(s); }
+      else if (x.firma !== firma(s)){ togliMarcatore(k); metti(s); cambiate.push(s); }
+    });
+    schede = nuoveSchede;
+    if (nuove.length || cambiate.length || tolte) posizionaPile();
+    disegnaGruppi();
+    riepilogo(visibili());
+    elencoGruppi();
+    return {nuove, cambiate, tolte};
+  }
+
+  /* Avviso sulla carta: resta finché non lo si chiude o per un minuto, e
+     porta con sé le schede nuove per inquadrarle con un clic. */
+  function avvisa(d){
+    const n = d.nuove.length, c = d.cambiate.length;
+    if (!n && !c && !d.tolte) return;
+    let box = app.querySelector('.diff-avviso');
+    if (!box){
+      box = document.createElement('div');
+      box.className = 'diff-avviso';
+      app.querySelector('.diff-mapwrap').appendChild(box);
+    }
+    const parti = [];
+    if (n) parti.push(`<b>${n}</b> ${n === 1 ? 'scheda nuova' : 'schede nuove'}`);
+    if (c) parti.push(`<b>${c}</b> ${c === 1 ? 'aggiornata' : 'aggiornate'}`);
+    if (d.tolte) parti.push(`<b>${d.tolte}</b> ${d.tolte === 1 ? 'rimossa' : 'rimosse'}`);
+    box.innerHTML = `<span>🔔 ${parti.join(' · ')}</span>`
+      + (n ? '<button type="button" class="btn-toggle-radar" data-a="vedi">Inquadra le nuove</button>' : '')
+      + '<button type="button" class="diff-avviso-x" data-a="x" title="Chiudi">×</button>';
+    box.hidden = false;
+    box.querySelector('[data-a="x"]').onclick = () => { box.hidden = true; };
+    const vedi = box.querySelector('[data-a="vedi"]');
+    if (vedi) vedi.onclick = () => {
+      const p = d.nuove.filter(conPosizione).map(s => [num(s.LAT), num(s.LON)]);
+      if (p.length) map.fitBounds(L.latLngBounds(p), {padding: [40, 40], maxZoom: 16});
+    };
+    clearTimeout(box._t);
+    box._t = setTimeout(() => { box.hidden = true; }, 60000);
   }
 
   function riepilogo(v){
@@ -673,6 +799,7 @@ function avvia(sezione){
     $('bStampa').disabled = !visibili().length;
   }
 
+  let vistaDisegnata = null;   // emergenza + ente + archiviate già sulla carta
   async function ricarica(silenzioso){
     if (!id || id.errore) return;
     if (!silenzioso) stato('Lettura delle emergenze…');
@@ -687,10 +814,18 @@ function avvia(sezione){
           + `${e.STATO === 'ARCHIVIATA' ? ' (archiviata)' : ''}</option>`).join('');
       sel.value = emergenze.some(e => e.CODEM === prima) ? prima : '';
       const codem = sel.value || undefined;
-      [schede, gruppi] = await Promise.all([
+      const vista = [id.ente, codem || '', arch].join('|');
+      const [lette, gr] = await Promise.all([
         api(id, 'schede', {codem, includiArchiviate: arch}),
         api(id, 'gruppi', {codem, includiArchiviate: arch})]);
-      disegna();
+      gruppi = gr;
+      if (vista === vistaDisegnata){
+        avvisa(aggiornaDifferenze(lette));
+      } else {
+        schede = lette;
+        disegna();
+        vistaDisegnata = vista;
+      }
       aggiornaPulsanti();
       if (!silenzioso){
         stato(`${schede.length} schede caricate · ${emergenze.length} emergenze`
@@ -708,10 +843,10 @@ function avvia(sezione){
   }
 
   $('bAggiorna').onclick = () => ricarica();
+  $('bChiudi').onclick = () => NS.Differibili.chiudi();
   $('archiviate').onchange = () => { $('selEmergenza').value = ''; ricarica(); };
   $('selEmergenza').onchange = () => {
     const e = emergenzaScelta();
-    if (e && !$('import').hidden) { $('codem').value = e.CODEM; controllaCodem(); }
     ricarica();
   };
   $('selComando').onchange = () => { disegna(); aggiornaPulsanti(); inquadra(); };
@@ -720,9 +855,6 @@ function avvia(sezione){
   $('bImporta').onclick = () => {
     if (!id || id.ruolo !== 'COMANDO') return;
     $('import').hidden = !$('import').hidden;
-    const e = emergenzaScelta();
-    if (!$('import').hidden && e && e.STATO === 'ATTIVA' && !$('codem').value)
-      $('codem').value = e.CODEM;
     controllaCodem();
   };
   $('bChiudiImport').onclick = () => { $('import').hidden = true; };
@@ -730,9 +862,13 @@ function avvia(sezione){
   function controllaCodem(){
     const v = validaCodem($('codem').value, id);
     $('codem').value = String($('codem').value).toUpperCase().replace(/\s+/g, '');
-    $('dataInizio').textContent = v.data || '—';
+    $('dataInizio').textContent = v.data ? 'inizio ' + v.data : '';
+    const esiste = emergenze.some(e => e.CODEM === v.codem);
+    $('codemScelto').textContent = !$('codem').value ? (lettura ? '— da scegliere' : '— scegli prima il file')
+      : $('codem').value + (v.codem ? (esiste ? ' (esistente: accodo)' : ' (nuova)') : '');
+    $('bCambiaCodem').disabled = !lettura;
     const err = $('codemErrore');
-    const mostra = $('codem').value.length >= 11 || (lettura && v.errore);
+    const mostra = !!$('codem').value;
     err.hidden = !(v.errore && mostra);
     err.textContent = v.errore || '';
     $('codem').classList.toggle('campo-mancante', !!v.errore && mostra);
@@ -741,7 +877,40 @@ function avvia(sezione){
     $('bCarica').disabled = !!v.errore || !!archiviata || !lettura || !lettura.schede.length;
     return v;
   }
-  $('codem').oninput = controllaCodem;
+  /* Dopo la lettura del file si sceglie l'emergenza: una di quelle in corso
+     del Comando, oppure una nuova col suo CODEM. Se il CODEM digitato
+     esiste già si associa a quella, senza crearne un doppione. */
+  async function scegliEmergenza(){
+    const attive = emergenze.filter(e => e.STATO === 'ATTIVA' && e.SIGLA === id.sigla);
+    let codem = null;
+    if (attive.length){
+      const k = await chiedi({testo: `${lettura ? lettura.schede.length + ' schede lette. ' : ''}`
+          + 'A quale emergenza le associo?',
+        voci: attive.map(e => ({k: e.CODEM, et: e.CODEM,
+          nota: `in corso dal ${e.DATA_INIZIO} · le schede nuove si accodano`}))
+          .concat([{k: '+', et: '➕ Nuova emergenza', nota: 'inserisci un CODEM nuovo'}])});
+      if (!k) return false;
+      if (k !== '+') codem = k;
+    }
+    let errore = '';
+    while (!codem){
+      const v = await chiedi({campo: 1, ok: 'Usa questo CODEM', segnaposto: 'I1EMI' + id.sigla + 'ggmmaaaa',
+        testo: (errore ? errore + '\n\n' : '') + 'CODEM della nuova emergenza (tipologia + '
+          + id.sigla + ' + data di inizio ggmmaaaa):'});
+      if (v === null) return false;
+      const x = validaCodem(v, id);
+      if (x.errore){ errore = x.errore; continue; }
+      if (emergenze.some(e => e.CODEM === x.codem && e.STATO === 'ARCHIVIATA')){
+        errore = x.codem + ' è archiviata: non si possono aggiungere schede.'; continue;
+      }
+      codem = x.codem;
+    }
+    $('codem').value = codem;
+    controllaCodem();
+    mostraAnteprima();
+    return true;
+  }
+  $('bCambiaCodem').onclick = scegliEmergenza;
 
   function mostraAnteprima(){
     const box = $('anteprima');
@@ -777,6 +946,7 @@ function avvia(sezione){
     }
     mostraAnteprima();
     controllaCodem();
+    if (lettura) await scegliEmergenza();
   }
 
   $('file').onchange = ev => {
@@ -804,7 +974,7 @@ function avvia(sezione){
         tot.scartate = tot.scartate.concat(r.scartate.map(x => Object.assign(x, {riga: x.riga + i})));
       }
       lettura = null;
-      $('file').value = ''; $('link').value = '';
+      $('file').value = ''; $('link').value = ''; $('codem').value = '';
       mostraAnteprima();
       $('import').hidden = true;
       await ricarica(true);
@@ -949,15 +1119,37 @@ function avvia(sezione){
     const tmp = L.featureGroup().addTo(map);
     if (gruppo && gruppo.GEOJSON)
       L.geoJSON(gruppo.GEOJSON, {style: {color: gruppo.COLORE, weight: 3, fillOpacity: .05}}).addTo(tmp);
-    ord.forEach((s, i) => {
-      if (!conPosizione(s)) return;
-      L.marker([num(s.LAT), num(s.LON)], {interactive: false, icon: L.divIcon({className: 'diff-num',
-        html: `<span style="background:${categoria(s).c}">${i + 1}</span>`,
-        iconSize: [22, 22], iconAnchor: [11, 11]})}).addTo(tmp);
-    });
     const vista = {c: map.getCenter(), z: map.getZoom()};
     map.invalidateSize();
-    if (tmp.getBounds().isValid()) map.fitBounds(tmp.getBounds(), {padding: [30, 30], maxZoom: 17});
+    const punti = ord.filter(conPosizione).map(s => [num(s.LAT), num(s.LON)]);
+    let b = punti.length ? L.latLngBounds(punti) : null;
+    if (gruppo && gruppo.GEOJSON){
+      const gb = L.geoJSON(gruppo.GEOJSON).getBounds();
+      if (gb.isValid()) b = b ? b.extend(gb) : gb;
+    }
+    if (b && b.isValid()) map.fitBounds(b, {padding: [40, 40], maxZoom: 17, animate: false});
+    /* I numeri si posano DOPO l'inquadratura: la corona dei punti
+       sovrapposti è in pixel, e va calcolata allo zoom della stampa. Nella
+       corona i numeri sono più larghi dei pallini, quindi il raggio cresce. */
+    const pile = new Map();
+    ord.forEach((s, i) => {
+      if (!conPosizione(s)) return;
+      const k = chiavePunto(s);
+      if (!pile.has(k)) pile.set(k, []);
+      pile.get(k).push([s, i]);
+    });
+    pile.forEach(el => el.forEach(([s, i], j) => {
+      const n = el.length;
+      let pos = L.latLng(num(s.LAT), num(s.LON));
+      if (n > 1){
+        const p = map.latLngToLayerPoint(pos), r = 14 + Math.max(0, n - 5) * 3;
+        const a = 2 * Math.PI * j / n - Math.PI / 2;
+        pos = map.layerPointToLatLng(L.point(p.x + r * Math.cos(a), p.y + r * Math.sin(a)));
+      }
+      L.marker(pos, {interactive: false, icon: L.divIcon({className: 'diff-num',
+        html: `<span style="background:${categoria(s).c}">${i + 1}</span>`,
+        iconSize: [22, 22], iconAnchor: [11, 11]})}).addTo(tmp);
+    }));
     await attendiTile(2500);
 
     const titoloPrima = document.title;
@@ -1042,8 +1234,35 @@ NS.Differibili = {
 function agganciaPannelli(){
   const sezione = document.getElementById('differibili');
   if (!sezione) return;
+  /* Come la SITAC, la sezione vive solo a schermo intero: non si riduce,
+     si chiude. Il pulsante Espandi della sezione resta nascosto (CSS) e lo
+     si preme da qui ogni volta che la sezione è a schermo senza esserlo.
+     "Chiudi" riduce e rimette nel pannello la pagina di ripiego di
+     schede-bis.js; durante la chiusura la riespansione è sospesa. */
+  let chiudendo = false;
+  const espansa = () => !!sezione.closest('.pannello-fullscreen')
+    || sezione.classList.contains('pannello-fullscreen');
+  const pulsante = () => sezione.querySelector('.btn-fullscreen-pagina');
+  const espandi = () => setTimeout(() => {
+    const b = pulsante();
+    if (!chiudendo && b && sezione.offsetParent !== null && !espansa()) b.click();
+  }, 60);
+  NS.Differibili.chiudi = () => {
+    const pan = sezione.closest('.pannello');
+    const lato = pan ? pan.id.replace('pannello-', '') : null;
+    chiudendo = true;
+    const b = pulsante();
+    if (b && espansa()) b.click();
+    setTimeout(() => {
+      const sel = lato && document.getElementById('select-pannello-' + lato);
+      const rip = ((window.FireOpsSchede || {}).ripiego || {})[lato];
+      if (sel && rip){ sel.value = rip; sel.dispatchEvent(new Event('change', {bubbles: true})); }
+      setTimeout(() => { chiudendo = false; }, 200);
+    }, 80);
+  };
   const risveglia = () => {
     if (sezione.offsetParent === null) return;
+    espandi();
     const i = NS.Differibili.init();
     if (i) i.ridisegna();
   };
