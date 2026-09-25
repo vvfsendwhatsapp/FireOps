@@ -1179,20 +1179,66 @@ function avvia(sezione){
     if (l) dopoLettura(daGoogleSheet(l), 'Google Sheet');
   };
 
+  /* CARICAMENTO IN UN COLPO SOLO
+     Il POST arriva allo script e viene eseguito: è solo la RISPOSTA che si
+     perde nel reindirizzamento di Google. Quindi si spedisce tutto il file
+     in un unico POST "no-cors" — la risposta non la si legge nemmeno — e
+     l'esito si ricava rileggendo le schede dell'emergenza: prima e dopo.
+     Il fetch si chiude quando lo script ha finito, perché il
+     reindirizzamento arriva solo a esecuzione conclusa.
+     Gli scarti (ID mancante, doppio nel file, altra provincia) si
+     calcolano qui con le stesse regole del backend, così il riepilogo resta
+     completo anche senza la risposta del server. */
+  async function inviaTutto(codem, valide){
+    await fetch(URL_BACKEND, {method: 'POST', mode: 'no-cors',
+      headers: {'Content-Type': 'text/plain;charset=utf-8'},
+      body: JSON.stringify({azione: 'carica', utente: id.utente, codem, campi: CAMPI,
+        righe: valide.map(sc => CAMPI.map(k => sc[k] == null ? '' : String(sc[k])))})});
+  }
+  async function inviaAPacchetti(codem, valide){
+    const pac = pacchetti(id, codem, valide);
+    for (const [n, p] of pac.entries()){
+      stato(`Caricamento ${p.inizio + p.righe.length} di ${valide.length} (invio ${n + 1} di ${pac.length})…`);
+      await api(id, 'carica', {codem, campi: CAMPI, righe: p.righe});
+    }
+  }
+
   $('bCarica').onclick = async () => {
     const v = controllaCodem();
     if (v.errore || !lettura) return;
     const tutte = lettura.schede;
     $('bCarica').disabled = true;
-    const tot = {nuove: 0, presenti: 0, modificate: 0, scartate: []};
+
+    const scartate = [], viste = new Set(), valide = [];
+    tutte.forEach((sc, n) => {
+      const motivo = !sc.ID_CONTATTO ? 'ID_CONTATTO mancante'
+        : viste.has(sc.ID_CONTATTO) ? 'ID_CONTATTO doppio nel file'
+        : (sc.PROVINCIA && sc.PROVINCIA !== id.sigla) ? `provincia ${sc.PROVINCIA}` : '';
+      if (motivo) scartate.push({riga: n + 1, motivo});
+      else { viste.add(sc.ID_CONTATTO); valide.push(sc); }
+    });
+    if (!valide.length){ stato('Nessuna scheda valida da caricare.'); controllaCodem(); return; }
+
     try {
-      const pac = pacchetti(id, v.codem, tutte);
-      for (const [n, p] of pac.entries()){
-        stato(`Caricamento ${p.inizio + p.righe.length} di ${tutte.length} (invio ${n + 1} di ${pac.length})…`);
-        const r = await api(id, 'carica', {codem: v.codem, campi: CAMPI, righe: p.righe});
-        tot.nuove += r.nuove; tot.presenti += r.presenti; tot.modificate += r.modificate;
-        tot.scartate = tot.scartate.concat(r.scartate.map(x => Object.assign(x, {riga: x.riga + p.inizio})));
-      }
+      stato(`Controllo delle schede già presenti in ${v.codem}…`);
+      /* Emergenza nuova: il backend non la conosce ancora e la lettura fallisce. */
+      const prima = new Set((await leggiSchede(id, v.codem, [], true).catch(() => []))
+        .map(x => String(x.ID_CONTATTO)));
+      const attese = valide.filter(x => !prima.has(String(x.ID_CONTATTO))).length;
+
+      stato(`Invio di ${valide.length} schede…`);
+      try { await inviaTutto(v.codem, valide); }
+      catch(e){ await inviaAPacchetti(v.codem, valide); }   // rete che blocca il POST: si ripiega
+
+      /* Il foglio può mostrare le righe nuove con un attimo di ritardo. */
+      let dopo = prima, giri = 0;
+      do {
+        if (giri) await new Promise(ok => setTimeout(ok, 1500));
+        stato(`Verifica del caricamento${giri ? ' (' + (giri + 1) + ')' : ''}…`);
+        dopo = new Set((await leggiSchede(id, v.codem, [], true)).map(x => String(x.ID_CONTATTO)));
+      } while (++giri < 6 && [...dopo].filter(x => !prima.has(x)).length < attese);
+      const nuove = [...dopo].filter(x => !prima.has(x)).length;
+
       lettura = null;
       $('file').value = ''; $('link').value = ''; $('codem').value = '';
       mostraAnteprima();
@@ -1201,12 +1247,12 @@ function avvia(sezione){
       $('selEmergenza').value = v.codem;
       await ricarica(true);
       inquadra();
-      stato(`${v.codem}: ${tot.nuove} nuove, ${tot.presenti} già presenti, ${tot.modificate} aggiornate`
-        + (tot.scartate.length ? `, ${tot.scartate.length} scartate (${tot.scartate.slice(0, 3)
-          .map(x => 'riga ' + x.riga + ': ' + x.motivo).join('; ')}${tot.scartate.length > 3 ? '…' : ''})` : '') + '.');
+      stato(`${v.codem}: ${nuove} nuove, ${valide.length - attese} già presenti`
+        + (nuove < attese ? ` — ${attese - nuove} non ancora visibili: premi Aggiorna tra poco` : '')
+        + (scartate.length ? `, ${scartate.length} scartate (${scartate.slice(0, 3)
+          .map(x => 'riga ' + x.riga + ': ' + x.motivo).join('; ')}${scartate.length > 3 ? '…' : ''})` : '') + '.');
     } catch(e){
-      stato('Caricamento interrotto: ' + e.message
-        + (tot.nuove ? ` (${tot.nuove} schede già salvate: ricaricando il file si accodano le mancanti)` : ''));
+      stato('Caricamento interrotto: ' + e.message + ' — ricaricando il file si accodano le mancanti.');
     }
     controllaCodem();
   };
