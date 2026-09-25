@@ -69,13 +69,18 @@ const RIFRESCO_MS = 120000;         // la DR segue le emergenze in corso
    domande che si fanno guardando la carta, e con un colore solo si
    perderebbe una delle due. COD_TRIAGE è troncato a quattro lettere,
    quindi si legge la descrizione. */
-/* Una voce per ogni tipologia. DESCRIZIONE_TRIAGE porta insieme tipologia
-   e codice ("Alberi/tralicci caduti o pericolanti - SOLO SK"): si separano
-   sull'ultimo " - " e si mostrano come "SOLO SK - Alberi/tralicci…".
-   COD_TRIAGE dell'export non serve: sono solo le prime quattro lettere
-   della descrizione. Il colore è fisso per tipologia (dipende dal testo, non
-   dall'ordine di arrivo), così lo stesso tipo ha lo stesso colore in ogni
-   emergenza e a ogni rifresco. Le famiglie più frequenti hanno il loro. */
+/* Una voce per ogni tipologia. DESCRIZIONE_TRIAGE arriva come
+   "Alberi/tralicci caduti o pericolanti - SOLO SK": il suffisso " - SOLO SK"
+   è uguale per tutte le differibili e non dice niente, quindi si toglie.
+   Il codice davanti ("0001 - Soccorso a persona…") viene da CODICI_TIPOLOGIA:
+   l'export non ne porta uno (COD_TRIAGE sono solo le prime quattro lettere
+   della descrizione). Una tipologia che non è in tabella resta senza codice. */
+const CODICI_TIPOLOGIA = {
+  'Soccorso a persona (per soccorso tecnico)': '0001'
+  // 'Alberi/tralicci caduti o pericolanti': '00xx',
+  // 'Crolli/dissesti/cedimenti': '00xx',
+  // 'Allagamenti/esondazioni': '00xx',
+};
 const COLORI_NOTI = [
   {re:/alber|tralic/i, c:'#2e7d32'}, {re:/croll|disses|ceden/i, c:'#8d5a3c'},
   {re:/allag|esond/i, c:'#1e88e5'}, {re:/soccorso a persona/i, c:'#d81b60'}];
@@ -84,19 +89,16 @@ const COLORI_TIPO = ['#f4511e', '#8e24aa', '#00acc1', '#c0ca33', '#5e35b1', '#fb
 const cacheTipi = new Map();
 function categoria(s){
   const tutto = String(s.DESCRIZIONE_TRIAGE || '').trim();
-  const i = tutto.lastIndexOf(' - ');
-  const m = /^-\s*(.+)$/.exec(tutto);              // "- SOLO SK": codice senza tipologia
-  const cod = m ? m[1].trim() : i >= 0 ? tutto.slice(i + 3).trim() : '';
-  const desc = m ? '' : i >= 0 ? tutto.slice(0, i).trim() : tutto;
-  const k = tutto || '—';
-  if (cacheTipi.has(k)) return cacheTipi.get(k);
+  if (cacheTipi.has(tutto)) return cacheTipi.get(tutto);
+  const desc = tutto.replace(/\s*-?\s*SOLO\s+SK\s*$/i, '').replace(/^-\s*/, '').trim();
+  const cod = CODICI_TIPOLOGIA[desc] || '';
   let h = 0;
-  for (const ch of k) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  for (const ch of desc) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
   const noto = COLORI_NOTI.find(x => x.re.test(desc));
-  const c = !cod && !desc ? '#9e9e9e' : noto ? noto.c : COLORI_TIPO[h % COLORI_TIPO.length];
-  const n = cod && desc ? `${cod} - ${desc}` : cod ? `${cod} - tipologia non indicata` : (desc || 'Tipologia non indicata');
-  const t = {k, c, n};
-  cacheTipi.set(k, t);
+  const c = !desc ? '#9e9e9e' : noto ? noto.c : COLORI_TIPO[h % COLORI_TIPO.length];
+  const n = !desc ? 'Tipologia non indicata' : cod ? `${cod} - ${desc}` : desc;
+  const t = {k: tutto || '—', c, n};
+  cacheTipi.set(tutto, t);
   return t;
 }
 /* Gruppi = settori e sottosettori. Il settore ha il nome dell'alfabeto
@@ -1337,13 +1339,25 @@ function avvia(sezione){
     const settore = k[0] === '+' ? k.slice(1) : k;
     const nome = `${settore} ${(esistenti.get(settore) || 0) + 1}`;
     const colore = coloreSettore(settore);
-    stato('Salvataggio del gruppo…');
+    stato(`Salvataggio di ${nome}…`);
     try {
-      await api(id, 'salvaGruppo', {codem: em.CODEM, nome, colore, geojson: geo,
-        idContatti: presi.map(s => s.ID_CONTATTO)});
-      await ricarica(true);
-      stato(`${nome} creato con ${presi.length} schede.`);
-    } catch(err){ stato('Sottosettore non salvato: ' + err.message); }
+      /* Come il caricamento: in GET un settore grande (centinaia di ID più
+         il perimetro) supera la lunghezza massima dell'indirizzo e viene
+         rifiutato. Si spedisce in POST senza leggere la risposta, poi si
+         controlla che il settore ci sia. */
+      await fetch(URL_BACKEND, {method: 'POST', mode: 'no-cors',
+        headers: {'Content-Type': 'text/plain;charset=utf-8'},
+        body: JSON.stringify({azione: 'salvaGruppo', utente: id.utente, codem: em.CODEM, nome, colore,
+          geojson: geo, idContatti: presi.map(s => s.ID_CONTATTO)})});
+      let ok = false;
+      for (let g = 0; g < 5 && !ok; g++){
+        if (g) await new Promise(r => setTimeout(r, 1500));
+        await ricarica(true);
+        ok = gruppi.some(x => x.CODEM === em.CODEM && x.NOME === nome);
+      }
+      stato(ok ? `${nome} creato con ${presi.length} schede.`
+        : `${nome} inviato ma non ancora visibile: premi Aggiorna tra qualche secondo.`);
+    } catch(err){ stato(`${nome} non salvato: ` + err.message); }
   });
 
   async function eliminaGruppo(g){
@@ -1444,14 +1458,23 @@ function avvia(sezione){
           html: `<span style="border-color:${esc(g.COLORE)}">${esc(g.NOME)}</span>`})}).addTo(tmp);
     });
     const vista = {c: map.getCenter(), z: map.getZoom()};
-    map.invalidateSize();
+    /* Il foglio di stampa a schermo è nascosto, e una carta nascosta misura
+       zero: l'inquadratura veniva calcolata su un riquadro vuoto e in stampa
+       la carta usciva spostata in alto. Durante la preparazione il foglio
+       esiste fuori schermo con le misure dell'A4 (classe diff-prep), così
+       fitBounds lavora sulle dimensioni vere della carta stampata. */
+    document.body.classList.add('diff-prep');
+    map.invalidateSize({animate: false});
     const punti = ord.filter(conPosizione).map(s => [num(s.LAT), num(s.LON)]);
-    let b = punti.length ? L.latLngBounds(punti) : null;
+    let b = null;
     gg.forEach(g => {
       const gb = L.geoJSON(g.GEOJSON).getBounds();
-      if (gb.isValid()) b = b ? b.extend(gb) : gb;
+      if (gb.isValid()) b = b ? b.extend(gb) : L.latLngBounds(gb.getSouthWest(), gb.getNorthEast());
     });
-    if (b && b.isValid()) map.fitBounds(b, {padding: [40, 40], maxZoom: 17, animate: false});
+    if (!b && punti.length) b = L.latLngBounds(punti);
+    /* Settore: si centra sul suo perimetro. Stampa generale: sull'estensione
+       di tutte le schede stampate. */
+    if (b && b.isValid()) map.fitBounds(b, {padding: [30, 30], maxZoom: 17, animate: false});
     /* I numeri si posano DOPO l'inquadratura: la corona dei punti
        sovrapposti è in pixel, e va calcolata allo zoom della stampa. Nella
        corona i numeri sono più larghi dei pallini, quindi il raggio cresce. */
@@ -1481,7 +1504,7 @@ function avvia(sezione){
     const ripristina = () => {
       window.removeEventListener('afterprint', ripristina);
       document.title = titoloPrima;
-      document.body.classList.remove('diff-stampa');
+      document.body.classList.remove('diff-stampa', 'diff-prep');
       segno.parentNode.insertBefore(wrap, segno);
       wrap.style.height = altezzaPrima;
       segno.remove();

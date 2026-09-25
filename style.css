@@ -2413,31 +2413,38 @@ html.comando-gia-scelto #modal-comando {
 }
 
 /* ---------------------------- STAMPA ----------------------------
-   A4 orizzontale: prima pagina la carta, poi la tabella. Si stampa solo
-   il foglio costruito da stampa(), come per la SITAC. */
-#diff-stampa-doc { display: none; }
+   A4 orizzontale, margini 10 mm: area utile 277 × 190 mm. La prima pagina
+   è testata + carta a riempire il resto; la seconda la tabella.
+   Le misure valgono anche a schermo: durante la preparazione (diff-prep)
+   il foglio esiste fuori vista con queste stesse dimensioni, e la carta
+   si inquadra sulle misure vere della pagina. */
+#diff-stampa-doc { display: none; color: #000; background: #fff; }
+body.diff-prep #diff-stampa-doc { display: block; position: fixed; left: -30000px; top: 0; width: 277mm; }
+#diff-stampa-doc .dp-pagina-carta { height: 190mm; display: flex; flex-direction: column; }
+#diff-stampa-doc .dp-testata { flex: 0 0 auto; height: 16mm; overflow: hidden; }
+#diff-stampa-doc .dp-testata h1 { font-size: 15pt; margin: 0 0 1.5mm; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; }
+#diff-stampa-doc .dp-testata p { font-size: 9pt; margin: 0; }
+#diff-stampa-doc .dp-mappa { flex: 1 1 auto; position: relative; min-height: 0; }
+#diff-stampa-doc .diff-mapwrap { position: absolute; inset: 0; border: .3mm solid #000;
+  min-height: 0; height: auto !important; }
+#diff-stampa-doc .diff-sfondo, #diff-stampa-doc .diff-card, #diff-stampa-doc .diff-guida,
+#diff-stampa-doc .diff-avviso, #diff-stampa-doc .leaflet-control-zoom { display: none !important; }
+#diff-stampa-doc .dp-tab { width: 100%; border-collapse: collapse; font-size: 8pt; }
+#diff-stampa-doc .dp-tab th, #diff-stampa-doc .dp-tab td { border: .2mm solid #888;
+  padding: 1mm 1.5mm; vertical-align: top; text-align: left; }
+#diff-stampa-doc .dp-tab thead { display: table-header-group; }
+#diff-stampa-doc .dp-tab tr { break-inside: avoid; }
+#diff-stampa-doc .dp-n span { display: inline-block; min-width: 5mm; text-align: center;
+  color: #fff; border-radius: 3mm; font-weight: bold; }
 @page differibili { size: A4 landscape; margin: 10mm; }
 @media print {
   body.diff-stampa > *:not(#diff-stampa-doc) { display: none !important; }
-  body.diff-stampa #diff-stampa-doc { display: block; color: #000; background: #fff; }
+  body.diff-stampa #diff-stampa-doc { display: block; position: static; left: auto; width: auto; }
   #diff-stampa-doc .dp-pagina { page: differibili; break-after: page; }
   #diff-stampa-doc .dp-pagina:last-child { break-after: auto; }
-  #diff-stampa-doc .dp-testata h1 { font-size: 16pt; margin: 0 0 2mm; }
-  #diff-stampa-doc .dp-testata p { font-size: 9pt; margin: 0 0 4mm; }
-  #diff-stampa-doc .dp-mappa { height: 165mm; position: relative; }
-  #diff-stampa-doc .diff-mapwrap { position: absolute; inset: 0; border: .3mm solid #000; min-height: 0; }
-  #diff-stampa-doc .diff-avviso { display: none !important; }
-  #diff-stampa-doc .diff-sfondo, #diff-stampa-doc .diff-card, #diff-stampa-doc .diff-guida,
-  #diff-stampa-doc .leaflet-control-zoom { display: none; }
-  #diff-stampa-doc .dp-tab { width: 100%; border-collapse: collapse; font-size: 8pt; }
-  #diff-stampa-doc .dp-tab th, #diff-stampa-doc .dp-tab td { border: .2mm solid #888;
-    padding: 1mm 1.5mm; vertical-align: top; text-align: left; }
-  #diff-stampa-doc .dp-tab thead { display: table-header-group; }
-  #diff-stampa-doc .dp-tab tr { break-inside: avoid; }
-  #diff-stampa-doc .dp-n span { display: inline-block; min-width: 5mm; text-align: center;
-    color: #fff; border-radius: 3mm; font-weight: bold;
+  #diff-stampa-doc .dp-n span, #diff-stampa-doc .diff-num span, .diff-etichetta-gruppo span {
     -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  #diff-stampa-doc .diff-num span { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
 
 /* --- aggiunte: scelta emergenza nell'import e pulsanti del modale --- */
