@@ -2311,22 +2311,20 @@ window.renderIcscSelezionata = renderIcscSelezionata;
        Sta in due posti perché servono a due letture diverse: in testata è
        sempre sott'occhio, nel modale "?" sta accanto ai contatti — che è
        dove si guarda quando si sta per scrivere una segnalazione. */
-    (function mostraVersione(){
-        const v = window.FIREOPS_VERSIONE;
-        const leggibile = v
-            ? String(v).replace(/^(\d{4})(\d\d)(\d\d)(\d\d)(\d\d)$/, "$3$2$1$4$5")
-            : "n/d";
-        const testata = document.getElementById("display-versione");
-        if (testata){
-            testata.textContent = "v. " + leggibile;
-            if (v) testata.title = v;
-        }
-        const modale = document.getElementById("display-versione-modale");
-        if (modale){
-            modale.textContent = leggibile;
-            if (v) modale.title = v;
-        }
-    })();
+(function mostraVersione(){
+    const v = window.FIREOPS_VERSIONE;
+    const leggibile = v ? String(v) : "n/d";
+    const testata = document.getElementById("display-versione");
+    if (testata){
+        testata.textContent = "v. " + leggibile;
+        if (v) testata.title = v;
+    }
+    const modale = document.getElementById("display-versione-modale");
+    if (modale){
+        modale.textContent = leggibile;
+        if (v) modale.title = v;
+    }
+})();
 });
 
 // Pulisce e formatta il numero di telefono per la copia:
