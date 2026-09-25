@@ -43,7 +43,7 @@
       font-family: var(--sans);
       -webkit-font-smoothing: antialiased;
       min-height: 100vh;
-      padding-bottom: 80px; /* Spazio per la barra di navigazione sticky in basso */
+      padding-bottom: 80px;
     }
 
     .wrap {
@@ -281,12 +281,15 @@
     }
 
     .timb-row {
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 8px;
+      align-items: end;
+      flex-wrap: nowrap;
     }
 
     .timb-row .tfield {
-      flex: 1;
-      min-width: 130px;
+      min-width: 0;
     }
 
     .timb-row .tfield label {
@@ -304,6 +307,81 @@
       border: 1px solid var(--line);
       border-radius: 4px;
       color: var(--text);
+      color-scheme: dark;
+    }
+
+    .timb-row .tdate {
+      grid-column: 1 / -1;
+    }
+
+    .timb-row .tdate input {
+      font-size: 15px;
+    }
+
+    .timb-row .tshift {
+      min-width: 0;
+    }
+
+    .timb-row .tshift select {
+      font-size: 14px;
+    }
+
+    .timb-row .row-remove-btn {
+      margin-bottom: 1px;
+    }
+
+    .time-presets {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+      margin-top: 7px;
+    }
+
+    .time-preset {
+      padding: 7px 10px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      color: var(--text-dim);
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .time-preset:hover {
+      border-color: var(--amber);
+      color: var(--amber);
+    }
+
+    .date-nav {
+      display: flex;
+      gap: 7px;
+      margin-top: 7px;
+    }
+
+    .date-nav button {
+      padding: 7px 10px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      color: var(--text-dim);
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .date-nav button:hover {
+      border-color: var(--amber);
+      color: var(--amber);
+    }
+
+    @media (max-width: 480px) {
+      .timb-row {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .timb-row .row-remove-btn {
+        grid-column: 2;
+        justify-self: end;
+      }
     }
 
     .row-remove-btn {
@@ -339,7 +417,6 @@
       cursor: pointer;
     }
 
-    /* Barra di navigazione fissa in basso */
     .nav-row {
       position: fixed;
       bottom: 0;
@@ -576,15 +653,10 @@
 
 <body>
 
-  <div class="test-banner" id="testBanner">
-    <span id="testBannerLabel">MODALITA TEST ATTIVA</span>
-    <button type="button" id="testToggleBtn" class="test-toggle-btn">Disattiva TEST</button>
-  </div>
-
   <header>
     <img class="mark" src="https://vvfsendwhatsapp.github.io/FireOps/images/logo.png" alt="Logo VVF">
     <div class="htitle">
-      <h1>FireOps VVF - Comunicazioni</h1>
+      <h1>FireOps VVF - Comunicazioni <span style="color:var(--amber);font-size:11px;font-weight:700;">V2</span></h1>
       <p>Missioni per soccorso e mancate timbrature</p>
     </div>
   </header>
@@ -603,7 +675,7 @@
           <select id="profiloSelect"></select>
         </div>
         <details id="profDetails" class="prof-details">
-          <summary>Modifica dati utente</summary>
+          <summary>Modifica dati dell’unico utente registrato</summary>
           <div class="field-row">
             <div class="field"><label>Cognome</label><input type="text" id="uCognome" autocomplete="off" value="Pelizza"></div>
             <div class="field"><label>Nome</label><input type="text" id="uNome" autocomplete="off" value="Andrea"></div>
@@ -750,6 +822,7 @@
           <div class="row-group-label pers">Date e fasce orarie interessate</div>
           <div class="dyn-list" id="tmDateList"></div>
           <button type="button" class="add-row-btn" data-add="timbratura" data-target="tmDateList">+ Aggiungi data / fascia</button>
+          <div class="hint">Puoi inserire più giornate e più fasce. Usa i pulsanti rapidi per impostare 08:00–20:00, 20:00–08:00 o una fascia personalizzata.</div>
         </div>
       </div>
     </section>
@@ -792,7 +865,6 @@
 
   <script>
     const MITTENTE = {nome: "Andrea", cognome: "Pelizza", cf: "PLZNDR86B12A001C", email: "andrea.pelizza@vigilfuoco.it", tel: "3666382828"};
-    const TEST_ADDRESS = "andrea.pelizza.vvf@gmail.com";
 
     const TIPOLOGIE = [
       "Incendio fabbricato", "Incendio boschivo / vegetazione", "Incendio veicolo",
@@ -831,10 +903,27 @@
     const COMANDI = [{"c": "Forlì-Cesena", "pr": "FC", "rg": "Emilia-Romagna", "cm": "Forlì", "lat": 44.213465, "lon": 12.061362, "esc": "so.forli@vigilfuoco.it"}];
     let TUTTI = COMANDI;
 
+    // Utente registrato: al momento è presente un solo profilo.
+    const PROFILO_UNICO = {
+      id: "pelizza-andrea",
+      nome: "Andrea",
+      cognome: "Pelizza",
+      cf: "PLZNDR86B12A001C",
+      email: "andrea.pelizza@vigilfuoco.it",
+      tel: "3666382828"
+    };
+
+    const profiloSelect = document.getElementById("profiloSelect");
+    profiloSelect.innerHTML = "";
+    const profiloOption = document.createElement("option");
+    profiloOption.value = PROFILO_UNICO.id;
+    profiloOption.textContent = PROFILO_UNICO.cognome + " " + PROFILO_UNICO.nome;
+    profiloOption.selected = true;
+    profiloSelect.appendChild(profiloOption);
+
     let currentStep = 1;
     let currentTipo = null;
     let currentComando = COMANDI[0];
-    let testMode = true;
     const STEP_LABELS = ["Mittente e comando", "Tipo di comunicazione", "Dettaglio", "Opzioni e note", "Riepilogo e invio"];
 
     const stepsBar = document.getElementById("stepsBar");
@@ -869,6 +958,9 @@
 
     function showDetailBlock() {
       document.querySelectorAll(".detail-block").forEach(b => b.classList.add("hidden"));
+      document.querySelectorAll("#tipoTiles .tile").forEach(x => {
+        x.classList.toggle("selected", x.dataset.tipo === currentTipo);
+      });
       if (currentTipo) {
         const el = document.getElementById("det-" + currentTipo);
         if (el) el.classList.remove("hidden");
@@ -964,37 +1056,180 @@
       list.appendChild(row);
     }
 
+    function localDateTimeValue(d) {
+      const y = d.getFullYear();
+      const m = pad2(d.getMonth() + 1);
+      const day = pad2(d.getDate());
+      const h = pad2(d.getHours());
+      const min = pad2(d.getMinutes());
+      return `${y}-${m}-${day}T${h}:${min}`;
+    }
+
+    function dateOnlyValue(d) {
+      return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+    }
+
+    function setDateAndTimes(row, date, inHour, outHour, outNextDay = false) {
+      const inEl = row.querySelector(".timb-in");
+      const outEl = row.querySelector(".timb-out");
+
+      const dIn = new Date(date);
+      dIn.setHours(inHour, 0, 0, 0);
+
+      const dOut = new Date(date);
+      if (outNextDay) dOut.setDate(dOut.getDate() + 1);
+      dOut.setHours(outHour, 0, 0, 0);
+
+      inEl.value = localDateTimeValue(dIn);
+      outEl.value = localDateTimeValue(dOut);
+
+      const dateEl = row.querySelector(".timb-date");
+      if (dateEl) dateEl.value = dateOnlyValue(dIn);
+
+      const shift = row.querySelector(".timb-shift");
+      if (shift) shift.value = outNextDay ? "notte" : "giorno";
+    }
+
     function getDefaultTimbraturaTimes() {
       const now = new Date();
       const hour = now.getHours();
-      let dIn = new Date(now), dOut = new Date(now);
-      
+      const base = new Date(now);
+      base.setHours(0, 0, 0, 0);
+
       if (hour >= 8 && hour < 20) {
-        dIn.setHours(8, 0, 0, 0);
-        dOut.setHours(20, 0, 0, 0);
-      } else {
-        dIn.setHours(20, 0, 0, 0);
-        dOut.setHours(8, 0, 0, 0);
-        if (hour < 8) dIn.setDate(dIn.getDate() - 1);
+        return {date: base, inHour: 8, outHour: 20, outNextDay: false};
       }
-      
-      const fmt = d => d.toISOString().slice(0, 16);
-      return {in: fmt(dIn), out: fmt(dOut)};
+
+      if (hour < 8) {
+        base.setDate(base.getDate() - 1);
+      }
+
+      return {date: base, inHour: 20, outHour: 8, outNextDay: true};
     }
 
-    function addTimbraturaRow(targetId) {
+    function addTimbraturaRow(targetId, preset = null) {
       const list = document.getElementById(targetId);
       const row = document.createElement("div");
       row.className = "timb-row";
-      
-      const defs = getDefaultTimbraturaTimes();
-      
-      row.innerHTML = '<div class="tfield"><label>Data/ora ingresso</label><input type="datetime-local" class="timb-in" value="'+defs.in+'"></div>'
-        + '<div class="tfield"><label>Data/ora uscita</label><input type="datetime-local" class="timb-out" value="'+defs.out+'"></div>'
-        + '<button type="button" class="row-remove-btn" aria-label="Rimuovi">&#10005;</button>';
-      
-      row.querySelector(".row-remove-btn").addEventListener("click", () => row.remove());
+
+      const defs = preset || getDefaultTimbraturaTimes();
+
+      row.innerHTML =
+        '<div class="tfield tdate">' +
+          '<label>Data interessata</label>' +
+          '<input type="date" class="timb-date">' +
+          '<div class="date-nav">' +
+            '<button type="button" class="date-minus">− Giorno precedente</button>' +
+            '<button type="button" class="date-plus">+ Giorno successivo</button>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="tfield">' +
+          '<label>Data/ora ingresso</label>' +
+          '<input type="datetime-local" class="timb-in">' +
+          '<div class="time-presets">' +
+            '<button type="button" class="time-preset preset-day">08:00 → 20:00</button>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="tfield">' +
+          '<label>Data/ora uscita</label>' +
+          '<input type="datetime-local" class="timb-out">' +
+          '<div class="time-presets">' +
+            '<button type="button" class="time-preset preset-night">20:00 → 08:00</button>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="tfield tshift">' +
+          '<label>Fascia</label>' +
+          '<select class="timb-shift">' +
+            '<option value="giorno">Diurna</option>' +
+            '<option value="notte">Notturna</option>' +
+            '<option value="personalizzata">Personalizzata</option>' +
+          '</select>' +
+        '</div>' +
+
+        '<button type="button" class="row-remove-btn" aria-label="Rimuovi" title="Rimuovi fascia">&#10005;</button>';
+
       list.appendChild(row);
+
+      const dateEl = row.querySelector(".timb-date");
+      const inEl = row.querySelector(".timb-in");
+      const outEl = row.querySelector(".timb-out");
+      const shiftEl = row.querySelector(".timb-shift");
+
+      function syncFromDate() {
+        if (!dateEl.value) return;
+        const [y, m, d] = dateEl.value.split("-").map(Number);
+        const base = new Date(y, m - 1, d);
+
+        if (shiftEl.value === "giorno") {
+          setDateAndTimes(row, base, 8, 20, false);
+        } else if (shiftEl.value === "notte") {
+          setDateAndTimes(row, base, 20, 8, true);
+        } else {
+          const currentIn = inEl.value;
+          const currentOut = outEl.value;
+          if (!currentIn || !currentOut) setDateAndTimes(row, base, 8, 20, false);
+        }
+      }
+
+      function syncDateFromInput(input) {
+        if (!input.value) return;
+        const d = new Date(input.value);
+        if (isNaN(d)) return;
+        dateEl.value = dateOnlyValue(d);
+      }
+
+      dateEl.addEventListener("change", syncFromDate);
+
+      inEl.addEventListener("change", () => {
+        syncDateFromInput(inEl);
+        if (shiftEl.value !== "personalizzata") shiftEl.value = "personalizzata";
+      });
+
+      outEl.addEventListener("change", () => {
+        syncDateFromInput(inEl);
+        if (shiftEl.value !== "personalizzata") shiftEl.value = "personalizzata";
+      });
+
+      shiftEl.addEventListener("change", syncFromDate);
+
+      row.querySelector(".preset-day").addEventListener("click", () => {
+        const d = dateEl.value ? new Date(dateEl.value + "T00:00") : new Date();
+        setDateAndTimes(row, d, 8, 20, false);
+      });
+
+      row.querySelector(".preset-night").addEventListener("click", () => {
+        const d = dateEl.value ? new Date(dateEl.value + "T00:00") : new Date();
+        setDateAndTimes(row, d, 20, 8, true);
+      });
+
+      row.querySelector(".date-minus").addEventListener("click", () => {
+        const d = dateEl.value ? new Date(dateEl.value + "T00:00") : new Date();
+        d.setDate(d.getDate() - 1);
+        dateEl.value = dateOnlyValue(d);
+        syncFromDate();
+      });
+
+      row.querySelector(".date-plus").addEventListener("click", () => {
+        const d = dateEl.value ? new Date(dateEl.value + "T00:00") : new Date();
+        d.setDate(d.getDate() + 1);
+        dateEl.value = dateOnlyValue(d);
+        syncFromDate();
+      });
+
+      row.querySelector(".row-remove-btn").addEventListener("click", () => {
+        const rows = list.querySelectorAll(".timb-row");
+        if (rows.length === 1) {
+          alert("Deve rimanere almeno una data/fascia oraria.");
+          return;
+        }
+        row.remove();
+      });
+
+      setDateAndTimes(row, defs.date, defs.inHour, defs.outHour, defs.outNextDay);
+      return row;
     }
 
     document.querySelectorAll(".add-row-btn[data-add]").forEach(btn => {
@@ -1006,7 +1241,7 @@
     });
 
     addPersonRow("msPersonaleList");
-    addTimbraturaRow("tmDateList");
+    addTimbraturaRow("tmDateList", getDefaultTimbraturaTimes());
 
     const msTip = document.getElementById("msTipologia");
     if (msTip) {
@@ -1034,7 +1269,7 @@
       lines.push("Comunicazione di missione per soccorso.");
       lines.push("");
       lines.push("Richiedente: " + MITTENTE.cognome + " " + MITTENTE.nome + " (" + document.getElementById("qualificaSelect").value + ") - CF " + MITTENTE.cf + " - turno " + document.getElementById("turnoLettera").value + document.getElementById("turnoSalto").value + " - sede " + document.getElementById("sedeInput").value);
-      lines.push("Comando: Forlì-Cesena");
+      lines.push("Comando: " + currentComando.c);
       lines.push("");
       lines.push("Data/ora inizio intervento: " + inizio);
       lines.push("Data/ora fine intervento: " + fine);
@@ -1069,7 +1304,7 @@
       lines.push("Comunicazione di mancata timbratura.");
       lines.push("");
       lines.push("Richiedente: " + MITTENTE.cognome + " " + MITTENTE.nome + " (" + document.getElementById("qualificaSelect").value + ") - CF " + MITTENTE.cf + " - turno " + document.getElementById("turnoLettera").value + document.getElementById("turnoSalto").value + " - sede " + document.getElementById("sedeInput").value);
-      lines.push("Comando: Forlì-Cesena");
+      lines.push("Comando: " + currentComando.c);
       lines.push("");
       lines.push("Motivo: " + (motivo || "-"));
       lines.push("");
@@ -1089,32 +1324,11 @@
 
     function generatePreview() {
       let built = currentTipo === "missione" ? buildIntervento() : buildTimbratura();
-      const realTo = "so.forli@vigilfuoco.it";
-      const to = testMode ? TEST_ADDRESS : realTo;
-      const subject = testMode ? "[TEST] " + built.subject : built.subject;
-      let body = built.body;
-      if (testMode) body = "*** MODALITA TEST - destinatario reale sarebbe: " + realTo + " ***\n\n" + body;
-      document.getElementById("previewTo").value = to;
-      document.getElementById("previewSubject").value = subject;
-      document.getElementById("previewBody").value = body;
+      const realTo = currentComando.esc || "so.forli@vigilfuoco.it";
+      document.getElementById("previewTo").value = realTo;
+      document.getElementById("previewSubject").value = built.subject;
+      document.getElementById("previewBody").value = built.body;
     }
-
-    const testBanner = document.getElementById("testBanner");
-    const testToggleBtn = document.getElementById("testToggleBtn");
-    const testBannerLabel = document.getElementById("testBannerLabel");
-    
-    function applyTestUi() {
-      testBanner.classList.toggle("off", !testMode);
-      testToggleBtn.textContent = testMode ? "Disattiva TEST" : "Attiva TEST";
-      testBannerLabel.textContent = testMode ? "MODALITA TEST ATTIVA - le email vanno a " + TEST_ADDRESS : "Modalita reale - le email vanno ai destinatari effettivi";
-    }
-    
-    testToggleBtn.addEventListener("click", function () {
-      testMode = !testMode; 
-      applyTestUi(); 
-      if (currentStep === 5) generatePreview();
-    });
-    applyTestUi();
 
     document.getElementById("btnMailto").addEventListener("click", function () {
       generatePreview();
