@@ -659,11 +659,15 @@ function avvia(sezione){
   L.control.scale({imperial: false, position: 'bottomright'}).addTo(map);
   /* Canvas: centinaia di marcatori in SVG rallentano lo spostamento della
      carta, e un'emergenza meteo ne porta facilmente più di mille. */
-  const tela = L.canvas({padding: .5});
+  /* Ordine dei livelli: perimetri dei settori sotto, schede sopra. */
+  map.createPane('diffGruppi').style.zIndex = 390;
+  map.createPane('diffSchede').style.zIndex = 450;
+  const tela = L.canvas({padding: .5, pane: 'diffSchede'});
   const livGruppi = L.featureGroup().addTo(map);
   const livAree = L.layerGroup().addTo(map);
   const livSchede = L.layerGroup().addTo(map);
   const livScelta = L.layerGroup().addTo(map);
+  const livCluster = L.layerGroup().addTo(map);   // badge dei punti aggregati
 
   $('bSfondo').onclick = () => {
     map.removeLayer(sfondi[iSfondo].l);
@@ -770,7 +774,58 @@ function avvia(sezione){
     pile.forEach(el => el.forEach((x, i) =>
       x.m.setLatLng(offsetPila(num(x.s.LAT), num(x.s.LON), i, el.length))));
   }
-  map.on('zoomend', posizionaPile);
+  /* ---------------------------- aggregazione ----------------------------
+     Sotto lo zoom SOGLIA_CLUSTER i punti vicini sullo schermo si fondono in
+     un badge col numero di schede. Griglia in pixel sulla proiezione allo
+     zoom corrente: non dipende dallo spostamento della carta, solo dallo
+     zoom, quindi si ricalcola a fine zoom e quando cambiano i dati.
+     Colore e misura del badge crescono col numero; il bordo prende il
+     colore del settore se tutte le schede del badge ne fanno parte.
+     Clic sul badge: si ingrandisce sulle sue schede. */
+  const SOGLIA_CLUSTER = 16, CELLA = 70;
+  const classeBadge = n => n < 10 ? 'd1' : n < 50 ? 'd2' : n < 100 ? 'd3' : n < 250 ? 'd4' : 'd5';
+  function raggruppa(){
+    livCluster.clearLayers();
+    const z = map.getZoom();
+    const vivi = [];
+    marcatori.forEach(x => { if (x.m){ if (!livSchede.hasLayer(x.m)) livSchede.addLayer(x.m); vivi.push(x); } });
+    if (z >= SOGLIA_CLUSTER) return;
+    const celle = new Map();
+    vivi.forEach(x => {
+      const p = map.project([num(x.s.LAT), num(x.s.LON)], z);
+      const k = Math.floor(p.x / CELLA) + ':' + Math.floor(p.y / CELLA);
+      if (!celle.has(k)) celle.set(k, []);
+      celle.get(k).push(x);
+    });
+    celle.forEach(el => {
+      if (el.length < 2) return;
+      el.forEach(x => livSchede.removeLayer(x.m));
+      let la = 0, lo = 0;
+      const tipi = new Map(), settori = new Set();
+      el.forEach(x => {
+        la += num(x.s.LAT); lo += num(x.s.LON);
+        const n = categoria(x.s).n; tipi.set(n, (tipi.get(n) || 0) + 1);
+        settori.add(x.s.GRUPPO || '');
+      });
+      const g = settori.size === 1 ? gruppoDi(el[0].s) : null;
+      const n = el.length;
+      const lato = n < 10 ? 30 : n < 50 ? 36 : n < 100 ? 42 : n < 250 ? 48 : 56;
+      const b = L.marker([la / n, lo / n], {pmIgnore: true, snapIgnore: true, icon: L.divIcon({
+        className: 'diff-cluster ' + classeBadge(n), iconSize: [lato, lato], iconAnchor: [lato / 2, lato / 2],
+        html: `<span${g ? ` style="box-shadow:0 0 0 3px ${esc(g.COLORE)}"` : ''}>${n}</span>`})});
+      b.bindTooltip([...tipi].sort((a, c) => c[1] - a[1]).map(([t, c]) => `${c} · ${esc(t)}`).join('<br>')
+        + (g ? `<br><b>${esc(g.NOME)}</b>` : ''), {direction: 'top'});
+      b.on('click', () => {
+        const bb = L.latLngBounds(el.map(x => [num(x.s.LAT), num(x.s.LON)]));
+        const piatto = bb.getNorthEast().distanceTo(bb.getSouthWest()) < 5;
+        if (piatto) map.setView(bb.getCenter(), SOGLIA_CLUSTER);
+        else map.fitBounds(bb, {padding: [50, 50], maxZoom: SOGLIA_CLUSTER});
+      });
+      livCluster.addLayer(b);
+    });
+  }
+  const aggiornaVista = () => { raggruppa(); posizionaPile(); };
+  map.on('zoomend', aggiornaVista);
 
   function creaMarcatore(s){
     const g = gruppoDi(s), cat = categoria(s);
@@ -786,6 +841,11 @@ function avvia(sezione){
       if (a) a.onclick = e => { e.preventDefault(); NS.copiaTesto(e, s.CLI); };
     });
     m.on('popupclose', () => livScelta.clearLayers());
+    m.on('contextmenu', ev => {
+      if (ev.originalEvent) L.DomEvent.preventDefault(ev.originalEvent);
+      if (map.pm.globalDrawModeEnabled && map.pm.globalDrawModeEnabled()) return;
+      menuScheda(s, ev.containerPoint);
+    });
     return m;
   }
 
@@ -811,9 +871,11 @@ function avvia(sezione){
     livGruppi.clearLayers();
     gruppi.forEach(g => {
       if (!g.GEOJSON) return;
-      const l = L.geoJSON(g.GEOJSON, {interactive: true, style: {color: g.COLORE, weight: 2.5,
-        fillColor: g.COLORE, fillOpacity: .07}})
-        .bindTooltip(`${g.NOME} — ${g.N_SCHEDE} schede`, {sticky: true});
+      /* Il perimetro non intercetta il puntatore: stava sopra la tela dei
+         punti e rubava clic e tasto destro. Il nome lo dice l'etichetta al
+         centro. Lo snap funziona lo stesso, perché guarda la geometria. */
+      const l = L.geoJSON(g.GEOJSON, {interactive: false, pane: 'diffGruppi',
+        style: {color: g.COLORE, weight: 2.5, fillColor: g.COLORE, fillOpacity: .07}});
       livGruppi.addLayer(l);
       const b = l.getBounds();
       if (b.isValid()) livGruppi.addLayer(L.marker(b.getCenter(), {interactive: false, pmIgnore: true,
@@ -828,7 +890,7 @@ function avvia(sezione){
     livSchede.clearLayers(); livAree.clearLayers(); livScelta.clearLayers();
     marcatori.clear();
     schede.forEach(metti);
-    posizionaPile();
+    aggiornaVista();
     disegnaGruppi();
     riepilogo(visibili());
     elencoGruppi();
@@ -846,7 +908,7 @@ function avvia(sezione){
       else if (x.firma !== firma(s)){ togliMarcatore(k); metti(s); cambiate.push(s); }
     });
     schede = nuoveSchede;
-    if (nuove.length || cambiate.length || tolte) posizionaPile();
+    if (nuove.length || cambiate.length || tolte) aggiornaVista();
     disegnaGruppi();
     riepilogo(visibili());
     elencoGruppi();
@@ -1360,6 +1422,85 @@ function avvia(sezione){
     } catch(err){ stato(`${nome} non salvato: ` + err.message); }
   });
 
+  /* ------------------------ menu del tasto destro ------------------------
+     Sulla scheda: aprirla, copiare il telefono, aprire la navigazione e —
+     per il Comando, su emergenza in corso — spostarla in un sottosettore o
+     toglierla dal suo, senza ridisegnare il perimetro. */
+  let menuBox = null;
+  const chiudiMenu = () => { if (menuBox) menuBox.hidden = true; };
+  map.on('click movestart zoomstart', chiudiMenu);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') chiudiMenu(); });
+
+  function menuScheda(s, pt){
+    if (!menuBox){
+      menuBox = document.createElement('div');
+      menuBox.className = 'diff-menu';
+      app.querySelector('.diff-mapwrap').appendChild(menuBox);
+    }
+    const g = gruppoDi(s);
+    const em = emergenze.find(e => e.CODEM === s.CODEM);
+    const scrivibile = id && id.ruolo === 'COMANDO' && em && em.STATO === 'ATTIVA';
+    const altri = gruppi.filter(x => x.CODEM === s.CODEM && x !== g)
+      .sort((a, b) => a.NOME.localeCompare(b.NOME, 'it', {numeric: true}));
+    const voci = [
+      {t: 'titolo', et: indirizzo(s) || s.CITTA || s.ID_CONTATTO},
+      {et: '📄 Apri la scheda', f: () => {
+        const x = marcatori.get(chiave(s)); if (x && x.m) x.m.openPopup(); }},
+      s.CLI ? {et: '📋 Copia il telefono', f: ev => NS.copiaTesto(ev, s.CLI)} : null,
+      {et: '🧭 Apri in Google Maps', f: () => window.open(
+        `https://www.google.com/maps?q=${num(s.LAT)},${num(s.LON)}`, '_blank', 'noopener')}
+    ];
+    if (scrivibile){
+      voci.push({t: 'titolo', et: g ? 'In ' + g.NOME : 'Senza settore'});
+      altri.forEach(x => voci.push({et: `➜ Sposta in ${x.NOME}`, f: () => spostaScheda(s, x)}));
+      if (g) voci.push({et: '✖ Togli da ' + g.NOME, rosso: 1, f: () => spostaScheda(s, null)});
+      if (!altri.length && !g) voci.push({t: 'nota', et: 'Nessun settore: disegnane uno con "Crea settore".'});
+    }
+    menuBox.innerHTML = '';
+    voci.filter(Boolean).forEach(v => {
+      if (v.t){
+        const p = document.createElement('p');
+        p.className = v.t === 'titolo' ? 'diff-menu-tit' : 'diff-menu-nota';
+        p.textContent = v.et;
+        menuBox.appendChild(p);
+        return;
+      }
+      const b = document.createElement('button');
+      b.type = 'button'; b.textContent = v.et;
+      if (v.rosso) b.className = 'diff-rosso';
+      b.onclick = ev => { chiudiMenu(); v.f(ev); };
+      menuBox.appendChild(b);
+    });
+    menuBox.hidden = false;
+    const sz = map.getSize(), w = menuBox.offsetWidth, h = menuBox.offsetHeight;
+    menuBox.style.left = Math.max(4, Math.min(sz.x - w - 4, pt.x + 4)) + 'px';
+    menuBox.style.top = Math.max(4, Math.min(sz.y - h - 4, pt.y + 4)) + 'px';
+  }
+
+  /* Cambiare settore a una scheda è salvare di nuovo il sottosettore con
+     l'elenco aggiornato: il backend assegna gli ID elencati e libera quelli
+     tolti. Si passa in POST senza risposta, come la creazione. */
+  async function salvaMembri(g, ids){
+    await fetch(URL_BACKEND, {method: 'POST', mode: 'no-cors',
+      headers: {'Content-Type': 'text/plain;charset=utf-8'},
+      body: JSON.stringify({azione: 'salvaGruppo', utente: id.utente, codem: g.CODEM, idGruppo: g.ID_GRUPPO,
+        nome: g.NOME, colore: g.COLORE, geojson: g.GEOJSON, idContatti: ids})});
+  }
+  async function spostaScheda(s, verso){
+    const da = gruppoDi(s);
+    const idS = String(s.ID_CONTATTO);
+    const membri = g => schede.filter(x => x.GRUPPO === g.ID_GRUPPO).map(x => String(x.ID_CONTATTO));
+    if (da && !verso && membri(da).length <= 1)
+      return stato(`${da.NOME} ha solo questa scheda: per toglierla elimina il sottosettore.`);
+    stato('Aggiornamento del settore…');
+    try {
+      if (verso) await salvaMembri(verso, [...new Set(membri(verso).concat(idS))]);
+      else await salvaMembri(da, membri(da).filter(x => x !== idS));
+      await ricarica(true);
+      stato(verso ? `Scheda spostata in ${verso.NOME}.` : `Scheda tolta da ${da.NOME}.`);
+    } catch(e){ stato('Spostamento non riuscito: ' + e.message); }
+  }
+
   async function eliminaGruppo(g){
     if (!await chiedi({testo: `Eliminare il sottosettore ${g.NOME}?\nLe ${g.N_SCHEDE} schede restano e tornano senza settore.`,
       ok: 'Elimina', rosso: 1})) return;
@@ -1447,7 +1588,7 @@ function avvia(sezione){
     const altezzaPrima = wrap.style.height;
     wrap.style.height = '';
 
-    [livSchede, livAree, livScelta, livGruppi].forEach(l => map.removeLayer(l));
+    [livSchede, livAree, livScelta, livGruppi, livCluster].forEach(l => map.removeLayer(l));
     const tmp = L.featureGroup().addTo(map);
     const gg = [].concat(gruppo || []).filter(g => g && g.GEOJSON);
     gg.forEach(g => {
@@ -1510,7 +1651,7 @@ function avvia(sezione){
       segno.remove();
       doc.remove();
       map.removeLayer(tmp);
-      [livGruppi, livAree, livSchede, livScelta].forEach(l => map.addLayer(l));
+      [livGruppi, livAree, livSchede, livScelta, livCluster].forEach(l => map.addLayer(l));
       occupato = false;
       setTimeout(() => { map.invalidateSize(); map.setView(vista.c, vista.z); }, 60);
     };

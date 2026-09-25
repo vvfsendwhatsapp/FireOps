@@ -2501,6 +2501,31 @@ body.diff-prep #diff-stampa-doc { display: block; position: fixed; left: -30000p
 @media (max-width: 760px) { .diff-sel-emergenza { width: 100%; min-width: 0; } }
 @media print { .diff-etichetta-gruppo span { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 
+/* --- Menu del tasto destro sulle schede --- */
+.diff-menu { position: absolute; z-index: 800; min-width: 210px; max-width: 280px; padding: 4px 0;
+  border-radius: 8px; background: var(--dark-color, #1e1e1e); border: 1px solid var(--border-color, #555);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .5); font-size: 13px; }
+.diff-menu[hidden] { display: none; }
+.diff-menu button { display: block; width: 100%; text-align: left; padding: 6px 12px; border: 0;
+  background: none; color: inherit; cursor: pointer; font-size: 13px; }
+.diff-menu button:hover { background: rgba(255, 255, 255, .08); }
+.diff-menu-tit { margin: 4px 0 2px; padding: 4px 12px 2px; font-weight: bold; opacity: .85;
+  border-top: 1px solid var(--border-color, #444); }
+.diff-menu-tit:first-child { border-top: 0; }
+.diff-menu-nota { margin: 2px 12px 6px; opacity: .7; font-size: 12px; }
+
+/* --- Punti aggregati: badge col numero di schede, più grande e più caldo
+   man mano che crescono (d1 < 10, d2 < 50, d3 < 100, d4 < 250, d5 oltre) --- */
+.diff-cluster span { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;
+  border-radius: 50%; color: #fff; font: bold 12px/1 sans-serif; border: 2px solid rgba(255, 255, 255, .9);
+  cursor: pointer; text-shadow: 0 1px 2px rgba(0, 0, 0, .5); }
+.diff-cluster.d1 span { background: rgba(46, 125, 50, .9); }
+.diff-cluster.d2 span { background: rgba(249, 168, 37, .92); font-size: 13px; }
+.diff-cluster.d3 span { background: rgba(245, 124, 0, .92); font-size: 14px; }
+.diff-cluster.d4 span { background: rgba(229, 57, 53, .92); font-size: 15px; }
+.diff-cluster.d5 span { background: rgba(142, 36, 170, .92); font-size: 16px; }
+.diff-cluster:hover span { filter: brightness(1.12); }
+
 /* ==========================================================
    ==========================================================
    MODULI AGGIUNTIVI
