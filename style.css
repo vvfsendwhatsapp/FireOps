@@ -2420,7 +2420,13 @@ html.comando-gia-scelto #modal-comando {
    si inquadra sulle misure vere della pagina. */
 #diff-stampa-doc { display: none; color: #000; background: #fff; }
 body.diff-prep #diff-stampa-doc { display: block; position: fixed; left: -30000px; top: 0; width: 277mm; }
-#diff-stampa-doc .dp-pagina-carta { height: 190mm; display: flex; flex-direction: column; }
+/* Prima pagina: solo la carta, a pagina piena. Titolo e dati stanno in un
+   cartiglio dentro la carta, in basso a sinistra, che non occupa spazio. */
+#diff-stampa-doc .dp-pagina-carta { height: 190mm; position: relative; }
+#diff-stampa-doc .dp-pagina-carta .dp-mappa { position: absolute; inset: 0; }
+#diff-stampa-doc .dp-cartiglio { position: absolute; left: 3mm; bottom: 3mm; z-index: 1000;
+  padding: 1.2mm 2.5mm; background: rgba(255, 255, 255, .92); border: .3mm solid #000;
+  font: 8.5pt/1.3 sans-serif; color: #000; max-width: 70%; }
 #diff-stampa-doc .dp-testata { flex: 0 0 auto; height: 16mm; overflow: hidden; }
 #diff-stampa-doc .dp-testata h1 { font-size: 15pt; margin: 0 0 1.5mm; white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis; }
@@ -2440,6 +2446,10 @@ body.diff-prep #diff-stampa-doc { display: block; position: fixed; left: -30000p
 @page differibili { size: A4 landscape; margin: 10mm; }
 @media print {
   body.diff-stampa > *:not(#diff-stampa-doc) { display: none !important; }
+  /* La testata fissa di FireOps lascia al body un margine in alto: in
+     stampa va azzerato, o la carta parte a metà pagina. */
+  html, body.diff-stampa { margin: 0 !important; padding: 0 !important; height: auto !important;
+    min-height: 0 !important; overflow: visible !important; background: #fff !important; }
   body.diff-stampa #diff-stampa-doc { display: block; position: static; left: auto; width: auto; }
   #diff-stampa-doc .dp-pagina { page: differibili; break-after: page; }
   #diff-stampa-doc .dp-pagina:last-child { break-after: auto; }

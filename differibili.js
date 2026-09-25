@@ -1547,6 +1547,25 @@ function avvia(sezione){
     if (!lista.length) return stato('Nessuna scheda da stampare.');
     occupato = true;
     map.closePopup();
+
+    /* Prima di tutto la carta a schermo va sul settore da stampare (o
+       sull'estensione delle schede, nella stampa generale): chi preme 🖨
+       vede subito che cosa finirà sul foglio, e ci resta anche dopo. */
+    const limiti = () => {
+      let x = null;
+      [].concat(gruppo || []).filter(g => g && g.GEOJSON).forEach(g => {
+        const gb = L.geoJSON(g.GEOJSON).getBounds();
+        if (gb.isValid()) x = x ? x.extend(gb) : L.latLngBounds(gb.getSouthWest(), gb.getNorthEast());
+      });
+      const p = lista.filter(conPosizione).map(s => [num(s.LAT), num(s.LON)]);
+      return x || (p.length ? L.latLngBounds(p) : null);
+    };
+    const inquadraSettore = () => {
+      const x = limiti();
+      if (x && x.isValid()) map.fitBounds(x, {padding: [40, 40], maxZoom: 17, animate: false});
+    };
+    inquadraSettore();
+    await new Promise(r => setTimeout(r, 350));
     const ord = lista.slice().sort((a, b) =>
       (a.CITTA || '').localeCompare(b.CITTA || '', 'it')
       || (a.INDIRIZZO || '').localeCompare(b.INDIRIZZO || '', 'it')
@@ -1567,9 +1586,8 @@ function avvia(sezione){
     doc.id = 'diff-stampa-doc';
     doc.innerHTML = `
       <section class="dp-pagina dp-pagina-carta">
-        <header class="dp-testata"><h1>Schede differibili — ${esc(titolo)}</h1>
-          <p>${esc(id.ente)} · ${esc(ord[0].CODEM)} · ${ord.length} schede · stampato il ${esc(quando)}</p></header>
         <div class="dp-mappa"></div>
+        <div class="dp-cartiglio"><b>${esc(titolo)}</b> · ${esc(ord[0].CODEM)} · ${ord.length} schede · ${esc(quando)}</div>
       </section>
       <section class="dp-pagina dp-pagina-tab">
         <header class="dp-testata"><h1>Elenco schede — ${esc(titolo)}</h1>
@@ -1598,7 +1616,6 @@ function avvia(sezione){
         icon: L.divIcon({className: 'diff-etichetta-gruppo', iconSize: null,
           html: `<span style="border-color:${esc(g.COLORE)}">${esc(g.NOME)}</span>`})}).addTo(tmp);
     });
-    const vista = {c: map.getCenter(), z: map.getZoom()};
     /* Il foglio di stampa a schermo è nascosto, e una carta nascosta misura
        zero: l'inquadratura veniva calcolata su un riquadro vuoto e in stampa
        la carta usciva spostata in alto. Durante la preparazione il foglio
@@ -1653,9 +1670,16 @@ function avvia(sezione){
       map.removeLayer(tmp);
       [livGruppi, livAree, livSchede, livScelta, livCluster].forEach(l => map.addLayer(l));
       occupato = false;
-      setTimeout(() => { map.invalidateSize(); map.setView(vista.c, vista.z); }, 60);
+      setTimeout(() => { map.invalidateSize(); inquadraSettore(); }, 60);
     };
     window.addEventListener('afterprint', ripristina);
+    /* Nella finestra di stampa il browser rifà l'impaginazione: si rimisura
+       la carta e si ripete l'inquadratura, così resta centrata sul settore. */
+    const rifit = () => {
+      map.invalidateSize({animate: false});
+      if (b && b.isValid()) map.fitBounds(b, {padding: [30, 30], maxZoom: 17, animate: false});
+    };
+    window.addEventListener('beforeprint', rifit, {once: true});
     window.print();
   }
 
