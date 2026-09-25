@@ -54,7 +54,6 @@ const CAMPI = [
 ];
 
 const RE_CODEM = /^[A-Z0-9]+?([A-Z]{2})(\d{2})(\d{2})(\d{4})$/;
-const BLOCCO_INVIO = 400;           // schede per chiamata al backend
 const RIFRESCO_MS = 120000;         // la DR segue le emergenze in corso
 
 /* Il colore dice la categoria di triage, il bordo il gruppo: sono le due
@@ -192,6 +191,7 @@ function riallinea(intest, r){
 function schedaDa(o, vertici){
   const s = {};
   CAMPI.forEach(k => { s[k] = o[k] == null ? '' : String(o[k]).trim(); });
+  ['NOTE_AREU', 'ADD_INFO'].forEach(k => { if (s[k].length > 900) s[k] = s[k].slice(0, 900) + '…'; });
   let la = num(s.LAT), lo = num(s.LON);
   if (!inItalia(la, lo)){
     const m = /AML@\(\s*([0-9.]+)\s*,\s*([0-9.]+)/.exec(s.NOTE_AREU);
@@ -342,6 +342,33 @@ function validaCodem(v, id){
    stata eseguita, e l'accodamento per ID_CONTATTO la renderebbe innocua,
    ma un gruppo creato due volte no. */
 const LETTURE = new Set(['emergenze', 'schede', 'gruppi']);
+
+/* Tutto passa in GET, con la richiesta JSON nel parametro q: dalla pagina i
+   POST ad Apps Script arrivano allo script ma la risposta si perde nel
+   reindirizzamento di Google (404 su .../macros/echo), le GET no.
+   Il prezzo è la lunghezza dell'indirizzo: le schede si spediscono
+   compatte e a pacchetti che stanno sotto MAX_URL caratteri. */
+const MAX_URL = 7500;
+const urlRichiesta = (id, azione, dati) => URL_BACKEND + '?q='
+  + encodeURIComponent(JSON.stringify(Object.assign({azione, utente: id.utente}, dati || {})))
+  + '&t=' + Date.now();
+
+/* Divide le schede in pacchetti che, compattati in righe, stanno in una GET. */
+function pacchetti(id, codem, schede){
+  const base = urlRichiesta(id, 'carica', {codem, campi: CAMPI, righe: []}).length + 20;
+  const out = [];
+  let righe = [], lung = base, inizio = 0;
+  schede.forEach((sc, i) => {
+    const r = CAMPI.map(k => sc[k] == null ? '' : String(sc[k]));
+    const l = encodeURIComponent(JSON.stringify(r)).length + 3;
+    if (righe.length && lung + l > MAX_URL){
+      out.push({inizio, righe}); righe = []; lung = base; inizio = i;
+    }
+    righe.push(r); lung += l;
+  });
+  if (righe.length) out.push({inizio, righe});
+  return out;
+}
 let codaApi = Promise.resolve();
 
 function api(id, azione, dati){
@@ -351,9 +378,7 @@ function api(id, azione, dati){
     for (let t = 0; t < tentativi; t++){
       if (t) await new Promise(ok => setTimeout(ok, 1200));
       try {
-        const r = await fetch(URL_BACKEND, {method: 'POST',
-          headers: {'Content-Type': 'text/plain;charset=utf-8'},
-          body: JSON.stringify(Object.assign({azione, utente: id.utente}, dati || {}))});
+        const r = await fetch(urlRichiesta(id, azione, dati), {cache: 'no-store'});
         if (!r.ok) throw new Error(`il server ha risposto ${r.status} (${azione})`);
         const j = await r.json();
         if (!j.ok) return Promise.reject(Object.assign(new Error(j.errore || 'errore del server'), {definitivo: 1}));
@@ -1066,11 +1091,12 @@ function avvia(sezione){
     $('bCarica').disabled = true;
     const tot = {nuove: 0, presenti: 0, modificate: 0, scartate: []};
     try {
-      for (let i = 0; i < tutte.length; i += BLOCCO_INVIO){
-        stato(`Caricamento ${Math.min(i + BLOCCO_INVIO, tutte.length)} di ${tutte.length}…`);
-        const r = await api(id, 'carica', {codem: v.codem, schede: tutte.slice(i, i + BLOCCO_INVIO)});
+      const pac = pacchetti(id, v.codem, tutte);
+      for (const [n, p] of pac.entries()){
+        stato(`Caricamento ${p.inizio + p.righe.length} di ${tutte.length} (invio ${n + 1} di ${pac.length})…`);
+        const r = await api(id, 'carica', {codem: v.codem, campi: CAMPI, righe: p.righe});
         tot.nuove += r.nuove; tot.presenti += r.presenti; tot.modificate += r.modificate;
-        tot.scartate = tot.scartate.concat(r.scartate.map(x => Object.assign(x, {riga: x.riga + i})));
+        tot.scartate = tot.scartate.concat(r.scartate.map(x => Object.assign(x, {riga: x.riga + p.inizio})));
       }
       lettura = null;
       $('file').value = ''; $('link').value = ''; $('codem').value = '';
