@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>FireOps VVF - Comunicazioni</title>
+  <title>FireOps VVF - Comunicazioni V2</title>
   <link rel="icon" type="image/png" href="https://vvfsendwhatsapp.github.io/FireOps/images/logo.png">
   <link rel="shortcut icon" type="image/png" href="https://vvfsendwhatsapp.github.io/FireOps/images/logo.png">
   <link rel="apple-touch-icon" href="https://vvfsendwhatsapp.github.io/FireOps/images/logo.png">
@@ -656,7 +656,7 @@
   <header>
     <img class="mark" src="https://vvfsendwhatsapp.github.io/FireOps/images/logo.png" alt="Logo VVF">
     <div class="htitle">
-      <h1>FireOps VVF - Comunicazioni</h1>
+      <h1>FireOps VVF - Comunicazioni <span style="color:var(--amber);font-size:11px;font-weight:700;">V2</span></h1>
       <p>Missioni per soccorso e mancate timbrature</p>
     </div>
   </header>
@@ -756,11 +756,10 @@
         </div>
         <div id="destBox" class="hidden">
           <div class="field">
-            <div class="cbx-box">
-              <input type="text" id="destInput" placeholder="Cerca comando destinatario" autocomplete="off">
-              <button type="button" class="cbx-clear hidden" id="destClear">&#10005;</button>
-            </div>
-            <div class="cbx-results hidden" id="destResults"></div>
+            <label for="destSelect">Comando destinatario</label>
+            <select id="destSelect">
+              <option value="">Caricamento comandi...</option>
+            </select>
           </div>
         </div>
         <div class="comando-current" id="destCurrent">Comando Forlì-Cesena</div>
@@ -900,8 +899,15 @@
     }
     loadPersonnelFromSheet();
 
-    const COMANDI = [{"c": "Forlì-Cesena", "pr": "FC", "rg": "Emilia-Romagna", "cm": "Forlì", "lat": 44.213465, "lon": 12.061362, "esc": "so.forli@vigilfuoco.it"}];
+    // Elenco comandi: viene caricato dal database ufficiale di FireOps.
+    const COMANDI_URL = "https://vvfsendwhatsapp.github.io/FireOps/db/comandi.json";
+    const COMANDO_FALLBACK = {
+      c: "Forlì-Cesena", pr: "FC", rg: "Emilia-Romagna", cm: "Forlì",
+      lat: 44.213465, lon: 12.061362, esc: "so.forli@vigilfuoco.it"
+    };
+    let COMANDI = [COMANDO_FALLBACK];
     let TUTTI = COMANDI;
+    let comandoDestinatario = COMANDO_FALLBACK;
 
     // Utente registrato: al momento è presente un solo profilo.
     const PROFILO_UNICO = {
@@ -923,11 +929,81 @@
 
     let currentStep = 1;
     let currentTipo = null;
-    let currentComando = COMANDI[0];
+    let currentComando = COMANDO_FALLBACK;
     const STEP_LABELS = ["Mittente e comando", "Tipo di comunicazione", "Dettaglio", "Opzioni e note", "Riepilogo e invio"];
 
     const stepsBar = document.getElementById("stepsBar");
     for (let i = 1; i <= 5; i++) {const d = document.createElement("div"); d.className = "step-dot"; d.dataset.step = i; stepsBar.appendChild(d);}
+
+    const mesmoComando = document.getElementById("stessoComando");
+    const destBox = document.getElementById("destBox");
+    const destSelect = document.getElementById("destSelect");
+    const destCurrent = document.getElementById("destCurrent");
+
+    function aggiornaDestinatarioUI() {
+      const stesso = stessoComando.checked;
+      destBox.classList.toggle("hidden", stesso);
+
+      if (stesso) {
+        comandoDestinatario = currentComando;
+        destCurrent.innerHTML = "Comando <b>" + (currentComando?.c || "-") + "</b>";
+      } else {
+        aggiornaElencoDestinatari();
+      }
+    }
+
+    function aggiornaElencoDestinatari() {
+      const precedente = comandoDestinatario?.c || "";
+      destSelect.innerHTML = "";
+
+      const lista = [...TUTTI].sort((a, b) => String(a.c || "").localeCompare(String(b.c || ""), "it"));
+      lista.forEach(cmd => {
+        const opt = document.createElement("option");
+        opt.value = cmd.c || "";
+        opt.textContent = cmd.c + (cmd.pr ? " (" + cmd.pr + ")" : "");
+        destSelect.appendChild(opt);
+      });
+
+      if (!lista.length) {
+        destSelect.innerHTML = '<option value="">Nessun comando disponibile</option>';
+        comandoDestinatario = null;
+        return;
+      }
+
+      const idx = lista.findIndex(c => c.c === precedente);
+      destSelect.selectedIndex = idx >= 0 ? idx : 0;
+      comandoDestinatario = lista[destSelect.selectedIndex];
+    }
+
+    stessoComando.addEventListener("change", aggiornaDestinatarioUI);
+    destSelect.addEventListener("change", function() {
+      comandoDestinatario = TUTTI.find(c => c.c === this.value) || null;
+      if (comandoDestinatario) {
+        destCurrent.innerHTML = "Destinatario: <b>" + comandoDestinatario.c + "</b>";
+      }
+    });
+
+    async function caricaComandi() {
+      try {
+        const res = await fetch(COMANDI_URL, {cache: "no-store"});
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+        if (!Array.isArray(data) || !data.length) throw new Error("Elenco comandi vuoto");
+
+        COMANDI = data;
+        TUTTI = data;
+
+        // Mantiene il comando di appartenenza dell'utente, se presente nel JSON.
+        const trovato = TUTTI.find(c => c.c === currentComando.c || c.pr === currentComando.pr);
+        if (trovato) currentComando = trovato;
+
+        aggiornaDestinatarioUI();
+        destCurrent.innerHTML = "Comando <b>" + currentComando.c + "</b>";
+      } catch (err) {
+        console.warn("Impossibile caricare comandi.json, uso il comando predefinito.", err);
+        aggiornaDestinatarioUI();
+      }
+    }
 
     function renderStepsBar() {
       stepsBar.querySelectorAll(".step-dot").forEach(d => {
@@ -1324,7 +1400,8 @@
 
     function generatePreview() {
       let built = currentTipo === "missione" ? buildIntervento() : buildTimbratura();
-      const realTo = currentComando.esc || "so.forli@vigilfuoco.it";
+      const destinatario = stessoComando.checked ? currentComando : comandoDestinatario;
+      const realTo = destinatario?.esc || "";
       document.getElementById("previewTo").value = realTo;
       document.getElementById("previewSubject").value = built.subject;
       document.getElementById("previewBody").value = built.body;
@@ -1352,6 +1429,8 @@
       setTimeout(() => URL.revokeObjectURL(a.href), 2000);
     });
 
+    aggiornaDestinatarioUI();
+    caricaComandi();
     renderStepsBar();
     updateNavButtons();
   </script>
