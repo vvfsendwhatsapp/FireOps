@@ -333,14 +333,41 @@ function validaCodem(v, id){
 
 /* ============================== BACKEND =============================== */
 
-async function api(id, azione, dati){
-  const r = await fetch(URL_BACKEND, {method: 'POST',
-    headers: {'Content-Type': 'text/plain;charset=utf-8'},
-    body: JSON.stringify(Object.assign({azione, utente: id.utente}, dati || {}))});
-  if (!r.ok) throw new Error('server HTTP ' + r.status);
-  const j = await r.json();
-  if (!j.ok) throw new Error(j.errore || 'errore del server');
-  return j.dati;
+/* Le chiamate al backend passano una alla volta: Apps Script risponde con
+   un reindirizzamento a un indirizzo "echo" usa-e-getta, e con più
+   esecuzioni sovrapposte dallo stesso browser quell'indirizzo a volte
+   risponde 404 anche se lo script è andato a buon fine. In coda e con un
+   secondo tentativo il problema, se è quello, sparisce.
+   Le sole letture si ripetono: una scrittura ripetuta potrebbe essere già
+   stata eseguita, e l'accodamento per ID_CONTATTO la renderebbe innocua,
+   ma un gruppo creato due volte no. */
+const LETTURE = new Set(['emergenze', 'schede', 'gruppi']);
+let codaApi = Promise.resolve();
+
+function api(id, azione, dati){
+  const esegui = async () => {
+    const tentativi = LETTURE.has(azione) ? 2 : 1;
+    let ultimo;
+    for (let t = 0; t < tentativi; t++){
+      if (t) await new Promise(ok => setTimeout(ok, 1200));
+      try {
+        const r = await fetch(URL_BACKEND, {method: 'POST',
+          headers: {'Content-Type': 'text/plain;charset=utf-8'},
+          body: JSON.stringify(Object.assign({azione, utente: id.utente}, dati || {}))});
+        if (!r.ok) throw new Error(`il server ha risposto ${r.status} (${azione})`);
+        const j = await r.json();
+        if (!j.ok) return Promise.reject(Object.assign(new Error(j.errore || 'errore del server'), {definitivo: 1}));
+        return j.dati;
+      } catch(e){
+        if (e.definitivo) throw e;
+        ultimo = e;
+      }
+    }
+    throw ultimo;
+  };
+  const p = codaApi.then(esegui, esegui);
+  codaApi = p.catch(() => {});
+  return p;
 }
 
 /* =============================== MODULO =============================== */
