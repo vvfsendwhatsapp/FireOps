@@ -2471,6 +2471,29 @@ html.comando-gia-scelto #modal-comando {
 /* Nota e intestazione della sezione non servono a schermo intero. */
 #differibili .pagina-box-header { display: none; }
 
+/* --- Settori e sottosettori --- */
+.diff-settore { display: flex; align-items: center; gap: 6px; padding: 7px 0 4px; margin-top: 4px;
+  border-top: 1px solid var(--border-color, #444); }
+.diff-settore > i { width: 12px; height: 12px; border-radius: 3px; flex: 0 0 auto; border: 1.5px solid #fff; }
+.diff-settore span { flex: 1 1 auto; min-width: 0; }
+.diff-settore small, .diff-gruppo small { display: block; opacity: .75; }
+.diff-lato .diff-gruppo { padding: 3px 0 3px 18px; border-bottom: 0; }
+.diff-etichetta-gruppo span { display: inline-block; transform: translate(-50%, -50%); white-space: nowrap;
+  padding: 2px 7px; border-radius: 5px; border: 2px solid; background: rgba(255, 255, 255, .9);
+  color: #111; font: bold 12px/1.2 sans-serif; box-shadow: 0 1px 4px rgba(0, 0, 0, .35); }
+
+/* --- Pulsanti tutti uguali, come "Chiudi": stessa altezza, stesso corpo --- */
+.diff-azioni .btn-toggle-radar { height: 34px; padding: 0 12px; font-size: 13px; line-height: 1;
+  display: inline-flex; align-items: center; gap: 6px; }
+.diff-mini { height: 26px; min-width: 30px; padding: 0 6px !important; font-size: 13px;
+  display: inline-flex; align-items: center; justify-content: center; }
+
+/* --- Selettore dell'emergenza a larghezza fissa: il CODEM si legge intero --- */
+.diff-sel-emergenza { width: 380px; min-width: 380px; max-width: 100%;
+  font-family: ui-monospace, Consolas, monospace; letter-spacing: .02em; }
+@media (max-width: 760px) { .diff-sel-emergenza { width: 100%; min-width: 0; } }
+@media print { .diff-etichetta-gruppo span { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+
 /* ==========================================================
    ==========================================================
    MODULI AGGIUNTIVI

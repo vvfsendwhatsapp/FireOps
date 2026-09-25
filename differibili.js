@@ -46,7 +46,7 @@ const URL_BACKEND = 'https://script.google.com/macros/s/AKfycby7ZTvBPlzlKOXqAi8R
    Nota: così chiunque conosca questo ID legge tutte le schede, compresi
    nomi e telefoni dei chiamanti. È una scelta consapevole.
    ID vuoto = letture tramite Apps Script, come prima. */
-const ID_FOGLIO = '1rx0dZ6N-TLbqdr-aj-YVQbQKRfBznfeyGrq-kUHNekk';          // ← ID del Google Sheet del backend (dall'URL /d/<ID>/edit)
+const ID_FOGLIO = '';          // ← ID del Google Sheet del backend (dall'URL /d/<ID>/edit)
 
 /* Ripiego se script.js non espone window.FireOpsComandi: da verificare
    sul percorso vero del repo. */
@@ -76,8 +76,24 @@ const CATEGORIE = [
   {k:'persona',re:/soccorso a persona/i,    c:'#d81b60', n:'Soccorso a persona'}
 ];
 const ALTRO = {k:'altro', c:'#9e9e9e', n:'Non classificato'};
-const PALETTE_GRUPPI = ['#e53935', '#fb8c00', '#fdd835', '#8e24aa', '#00acc1',
-                        '#3949ab', '#6d4c41', '#c0ca33', '#d81b60', '#546e7a'];
+/* Gruppi = settori e sottosettori. Il settore ha il nome dell'alfabeto
+   fonetico NATO e un colore; il sottosettore è un numero, ed è quello che
+   si dice per radio: "Bravo 2". Nel foglio resta un solo campo NOME
+   ("Bravo 2"), così il backend non cambia: settore e numero si ricavano. */
+const SETTORI = ['Alfa', 'Bravo', 'Charlie', 'Delta', 'Echo', 'Foxtrot', 'Golf', 'Hotel',
+  'India', 'Juliett', 'Kilo', 'Lima', 'Mike', 'November', 'Oscar', 'Papa', 'Quebec',
+  'Romeo', 'Sierra', 'Tango', 'Uniform', 'Victor', 'Whiskey', 'X-ray', 'Yankee', 'Zulu'];
+const COLORI_SETTORE = ['#e53935', '#1e88e5', '#fb8c00', '#8e24aa', '#00897b', '#fdd835',
+  '#6d4c41', '#d81b60', '#3949ab', '#7cb342'];
+const coloreSettore = nome => {
+  const i = SETTORI.indexOf(nome);
+  return COLORI_SETTORE[(i < 0 ? SETTORI.length : i) % COLORI_SETTORE.length];
+};
+/* "Bravo 2" → {settore:'Bravo', n:2}; un nome libero resta settore senza numero. */
+function settoreDi(g){
+  const m = /^(.+?)\s+(\d+)$/.exec(String(g.NOME || '').trim());
+  return m ? {settore: m[1], n: +m[2]} : {settore: String(g.NOME || '—'), n: 0};
+}
 
 const categoria = s => CATEGORIE.find(c => c.re.test(s.DESCRIZIONE_TRIAGE || '')) || ALTRO;
 
@@ -462,17 +478,17 @@ function avvia(sezione){
         <span id="diff-ente" class="diff-ruolo" hidden></span>
       </div>
       <div class="diff-azioni">
-        <button type="button" id="diff-bImporta" class="btn-whatsapp diff-solo-comando"
+        <button type="button" id="diff-bImporta" class="btn-toggle-radar diff-solo-comando"
           title="Carica un CSV, un JSON o un Google Sheet di schede differibili">📥 Carica schede</button>
         <button type="button" id="diff-bGruppo" class="btn-toggle-radar diff-solo-comando"
-          title="Disegna un poligono sulla carta: le schede dentro formano un gruppo">✏️ Crea gruppo</button>
+          title="Disegna un perimetro sulla carta: le schede dentro formano un sottosettore">✏️ Crea settore</button>
         <button type="button" id="diff-bStampa" class="btn-toggle-radar diff-solo-comando"
           title="PDF con carta e tabella delle schede visibili">🖨 PDF</button>
         <button type="button" id="diff-bArchivia" class="btn-toggle-radar diff-solo-comando diff-rosso"
           title="Chiude l'emergenza: sparisce da quelle in corso">🗄 Archivia</button>
         <span class="diff-sep diff-solo-comando"></span>
         <button type="button" id="diff-bAggiorna" class="btn-toggle-radar"
-          title="Aggiorna adesso (si aggiorna anche da solo ogni 2 minuti)">🔄</button>
+          title="Aggiorna adesso (si aggiorna anche da solo ogni 2 minuti)">🔄 Aggiorna</button>
         <button type="button" id="diff-bChiudi" class="btn-toggle-radar diff-rosso"
           title="Chiudi le schede differibili e torna alla vista a due colonne">✖ Chiudi</button>
       </div>
@@ -524,7 +540,7 @@ function avvia(sezione){
 
       <aside class="diff-lato">
         <div id="diff-riepilogo"></div>
-        <h4>Gruppi</h4>
+        <h4>Settori</h4>
         <div id="diff-gruppi"><p class="pagina-nota">Nessun gruppo.</p></div>
         <h4>Visualizzazione</h4>
         <label class="rt-check diff-check"><input type="checkbox" id="diff-aree"> Aree di localizzazione</label>
@@ -639,7 +655,7 @@ function avvia(sezione){
      l'orientamento del semiasse maggiore, in gradi da nord in senso orario. */
   function formaLocalizzazione(s){
     const la = num(s.LAT), lo = num(s.LON);
-    const stile = {renderer: tela, color: categoria(s).c, weight: 1.2, dashArray: '4,4',
+    const stile = {renderer: tela, snapIgnore: true, pmIgnore: true, color: categoria(s).c, weight: 1.2, dashArray: '4,4',
       fillOpacity: .06, interactive: false};
     let v = null;
     try { v = s.POLYLINE ? JSON.parse(s.POLYLINE) : null; } catch(e){}
@@ -688,7 +704,7 @@ function avvia(sezione){
         ${s.RMAX ? `<span>precisione ±${esc(Math.round(num(s.RMAX)))} m</span>` : ''}
         <span>${esc(chiamante(s))}${s.CLI ? ' · <a href="#" class="diff-cli">' + esc(s.CLI) + '</a>' : ''}</span>
         <span>Contatto ${esc(s.ID_CONTATTO)} · scheda NUE ${esc(s.ALTROENTE_IDSCHEDA)}${stessa > 1 ? ` (${stessa} chiamate)` : ''}</span>
-        <span>${esc(s.CODEM)}${g ? ' · gruppo <b>' + esc(g.NOME) + '</b>' : ''}</span>
+        <span>${esc(s.CODEM)}${g ? ' · <b>' + esc(g.NOME) + '</b>' : ''}</span>
       </div>
       <a href="https://www.google.com/maps?q=${la},${lo}" target="_blank" rel="noopener">Apri in Google Maps</a>
     </div>`;
@@ -734,7 +750,7 @@ function avvia(sezione){
 
   function creaMarcatore(s){
     const g = gruppoDi(s), cat = categoria(s);
-    const m = L.circleMarker([num(s.LAT), num(s.LON)], {renderer: tela, radius: 6.5,
+    const m = L.circleMarker([num(s.LAT), num(s.LON)], {renderer: tela, radius: 6.5, snapIgnore: true, pmIgnore: true,
       fillColor: cat.c, fillOpacity: .95, color: g ? g.COLORE : '#ffffff',
       weight: g ? 3 : 1.5, dashArray: s.DIFFERIBILE && s.DIFFERIBILE !== 'S' ? '2,2' : null});
     m.bindPopup(() => popup(s), {maxWidth: 320});
@@ -771,10 +787,14 @@ function avvia(sezione){
     livGruppi.clearLayers();
     gruppi.forEach(g => {
       if (!g.GEOJSON) return;
-      L.geoJSON(g.GEOJSON, {interactive: true, style: {color: g.COLORE, weight: 2.5,
+      const l = L.geoJSON(g.GEOJSON, {interactive: true, style: {color: g.COLORE, weight: 2.5,
         fillColor: g.COLORE, fillOpacity: .07}})
-        .bindTooltip(`${g.NOME} — ${g.N_SCHEDE} schede`, {sticky: true})
-        .addTo(livGruppi);
+        .bindTooltip(`${g.NOME} — ${g.N_SCHEDE} schede`, {sticky: true});
+      livGruppi.addLayer(l);
+      const b = l.getBounds();
+      if (b.isValid()) livGruppi.addLayer(L.marker(b.getCenter(), {interactive: false, pmIgnore: true,
+        snapIgnore: true, icon: L.divIcon({className: 'diff-etichetta-gruppo', iconSize: null,
+          html: `<span style="border-color:${esc(g.COLORE)}">${esc(g.NOME)}</span>`})}));
     });
   }
 
@@ -847,7 +867,7 @@ function avvia(sezione){
       <div class="diff-numeri">
         <div><b>${v.length}</b><span>schede</span></div>
         <div><b>${nue}</b><span>schede NUE</span></div>
-        <div><b>${inGruppo}</b><span>nei gruppi</span></div>
+        <div><b>${inGruppo}</b><span>nei settori</span></div>
       </div>
       ${senza ? `<p class="diff-errore">${senza} senza coordinate: non compaiono sulla carta.</p>` : ''}
       <div class="diff-legenda">${voci || '<p class="pagina-nota">Nessuna scheda per la selezione.</p>'}</div>`;
@@ -862,32 +882,54 @@ function avvia(sezione){
     const modificabile = id && id.ruolo === 'COMANDO' && em && em.STATO === 'ATTIVA';
     if (!gruppi.length){
       box.innerHTML = `<p class="pagina-nota">${id && id.ruolo === 'COMANDO'
-        ? (em ? 'Nessun gruppo: premi "Nuovo gruppo" e disegna un poligono sulla carta.'
-              : 'Scegli un\u2019emergenza per creare i gruppi.')
-        : 'Nessun gruppo.'}</p>`;
+        ? (em ? 'Nessun settore: premi "Crea settore" e disegna il perimetro sulla carta.'
+              : 'Scegli un\u2019emergenza per creare i settori.')
+        : 'Nessun settore.'}</p>`;
       return;
     }
     box.innerHTML = '';
-    gruppi.forEach(g => {
-      const r = document.createElement('div');
-      r.className = 'diff-gruppo';
-      r.innerHTML = `<i style="background:${esc(g.COLORE)}"></i>
-        <span><b>${esc(g.NOME)}</b><small>${esc(g.N_SCHEDE)} schede · ${esc(g.CODEM)}</small></span>`;
-      const bottone = (t, tit, f, cls) => {
-        const b = document.createElement('button');
-        b.type = 'button'; b.className = 'btn-toggle-radar' + (cls ? ' ' + cls : '');
-        b.textContent = t; b.title = tit; b.onclick = f; r.appendChild(b);
-      };
-      bottone('🔍', 'Inquadra il gruppo', () => {
-        const l = L.geoJSON(g.GEOJSON);
-        if (l.getBounds().isValid()) map.fitBounds(l.getBounds(), {padding: [30, 30]});
-      });
+    const bottone = (dove, t, tit, f, cls) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'btn-toggle-radar diff-mini' + (cls ? ' ' + cls : '');
+      b.textContent = t; b.title = tit; b.onclick = f; dove.appendChild(b);
+    };
+    const inquadra = gg => {
+      let b = null;
+      gg.forEach(g => { const x = L.geoJSON(g.GEOJSON).getBounds(); if (x.isValid()) b = b ? b.extend(x) : x; });
+      if (b) map.fitBounds(b, {padding: [30, 30]});
+    };
+    const perSettore = new Map();
+    gruppi.slice().sort((a, b) => {
+      const x = settoreDi(a), y = settoreDi(b);
+      return (SETTORI.indexOf(x.settore) - SETTORI.indexOf(y.settore)) || x.settore.localeCompare(y.settore) || x.n - y.n;
+    }).forEach(g => {
+      const k = settoreDi(g).settore;
+      if (!perSettore.has(k)) perSettore.set(k, []);
+      perSettore.get(k).push(g);
+    });
+    perSettore.forEach((gg, nome) => {
+      const tot = gg.reduce((a, g) => a + (+g.N_SCHEDE || 0), 0);
+      const t = document.createElement('div');
+      t.className = 'diff-settore';
+      t.innerHTML = `<i style="background:${esc(gg[0].COLORE)}"></i>
+        <span><b>Settore ${esc(nome)}</b><small>${gg.length} sottosettori · ${tot} schede</small></span>`;
+      bottone(t, '🔍', 'Inquadra il settore', () => inquadra(gg));
       if (id && id.ruolo === 'COMANDO')
-        bottone('🖨', 'PDF del gruppo', () => stampa(
-          schede.filter(s => s.GRUPPO === g.ID_GRUPPO), 'Gruppo ' + g.NOME, g));
-      if (modificabile)
-        bottone('🗑', 'Elimina il gruppo', () => eliminaGruppo(g), 'diff-rosso');
-      box.appendChild(r);
+        bottone(t, '🖨', 'PDF del settore intero', () => stampa(
+          schede.filter(s => gg.some(g => g.ID_GRUPPO === s.GRUPPO)), 'Settore ' + nome, gg));
+      box.appendChild(t);
+      gg.forEach(g => {
+        const r = document.createElement('div');
+        r.className = 'diff-gruppo';
+        r.innerHTML = `<span><b>${esc(g.NOME)}</b><small>${esc(g.N_SCHEDE)} schede</small></span>`;
+        bottone(r, '🔍', 'Inquadra il sottosettore', () => inquadra([g]));
+        if (id && id.ruolo === 'COMANDO')
+          bottone(r, '🖨', 'PDF del sottosettore', () => stampa(
+            schede.filter(s => s.GRUPPO === g.ID_GRUPPO), g.NOME, [g]));
+        if (modificabile)
+          bottone(r, '🗑', 'Elimina il sottosettore', () => eliminaGruppo(g), 'diff-rosso');
+        box.appendChild(r);
+      });
     });
   }
 
@@ -978,7 +1020,7 @@ function avvia(sezione){
     if (!id || id.errore) return;
     if (!silenzioso) stato('Aggiornamento…');
     const bA = $('bAggiorna');
-    bA.textContent = '⏳'; bA.disabled = true;
+    bA.textContent = '⏳ Aggiorna'; bA.disabled = true;
     try {
       const arch = $('archiviate').checked;
       emergenze = await leggiEmergenze(id, arch);
@@ -1009,7 +1051,7 @@ function avvia(sezione){
       aggiornaVuoto();
       stato('Lettura non riuscita: ' + e.message);
     } finally {
-      bA.textContent = '🔄'; bA.disabled = false;
+      bA.textContent = '🔄 Aggiorna'; bA.disabled = false;
     }
   }
 
@@ -1170,14 +1212,17 @@ function avvia(sezione){
   };
 
   /* ----------------------------- gruppi ----------------------------- */
-  map.pm.setGlobalOptions({snappable: false});
+  /* Lo snap aggancia i vertici ai perimetri dei gruppi già disegnati: due
+     sottosettori confinanti condividono il bordo invece di lasciare una
+     striscia di schede che non appartiene a nessuno o a entrambi. */
+  map.pm.setGlobalOptions({snappable: true, snapDistance: 22});
   const guida = t => { $('guida').hidden = !t; $('guida').textContent = t || ''; };
   $('bGruppo').onclick = async () => {
-    const em = await emergenzaDaUsare('creare il gruppo');
+    const em = await emergenzaDaUsare('creare il settore');
     if (!em) return;
     occupato = true;
     map.closePopup();
-    guida('Disegna il perimetro del gruppo: un clic per ogni vertice, clic sul primo per chiudere. Esc annulla.');
+    guida('Disegna il perimetro: un clic per ogni vertice, clic sul primo per chiudere. I vertici si agganciano ai settori vicini. Esc annulla.');
     map.pm.enableDraw('Polygon', {pathOptions: {color: '#e53935', weight: 2.5, fillOpacity: .08},
       continueDrawing: false});
     stato('Disegna il poligono: clic sui vertici, clic sul primo per chiudere. Esc annulla.');
@@ -1194,24 +1239,34 @@ function avvia(sezione){
       && dentro(num(s.LAT), num(s.LON), anello));
     if (!presi.length) return stato('Nessuna scheda dentro il poligono.');
     const altrove = presi.filter(s => s.GRUPPO).length;
-    const nome = await chiedi({campo: 1, valore: 'Gruppo ' + (gruppi.length + 1), ok: 'Crea gruppo',
-      testo: `${presi.length} schede nel poligono`
-        + (altrove ? `, di cui ${altrove} già in un altro gruppo: passano a questo.` : '.')
-        + '\nNome del gruppo:'});
-    if (!nome) return stato('Gruppo annullato.');
-    const usati = new Set(gruppi.map(g => g.COLORE));
-    const colore = PALETTE_GRUPPI.find(c => !usati.has(c)) || PALETTE_GRUPPI[gruppi.length % PALETTE_GRUPPI.length];
+    /* Settori esistenti di questa emergenza, col prossimo numero libero. */
+    const esistenti = new Map();
+    gruppi.filter(g => g.CODEM === em.CODEM).forEach(g => {
+      const x = settoreDi(g);
+      esistenti.set(x.settore, Math.max(esistenti.get(x.settore) || 0, x.n));
+    });
+    const nuovo = SETTORI.find(n => !esistenti.has(n)) || 'Settore ' + (esistenti.size + 1);
+    const voci = [...esistenti].map(([n, max]) => ({k: n, et: `${n} ${max + 1}`,
+      nota: `nuovo sottosettore del settore ${n}`}))
+      .concat([{k: '+' + nuovo, et: `${nuovo} 1`, nota: 'nuovo settore'}]);
+    const k = await chiedi({voci, testo: `${presi.length} schede nel perimetro`
+      + (altrove ? `, di cui ${altrove} già in un altro sottosettore: passano a questo.` : '.')
+      + '\nIn quale settore?'});
+    if (!k) return stato('Settore annullato.');
+    const settore = k[0] === '+' ? k.slice(1) : k;
+    const nome = `${settore} ${(esistenti.get(settore) || 0) + 1}`;
+    const colore = coloreSettore(settore);
     stato('Salvataggio del gruppo…');
     try {
       await api(id, 'salvaGruppo', {codem: em.CODEM, nome, colore, geojson: geo,
         idContatti: presi.map(s => s.ID_CONTATTO)});
       await ricarica(true);
-      stato(`Gruppo "${nome}" creato con ${presi.length} schede.`);
-    } catch(err){ stato('Gruppo non salvato: ' + err.message); }
+      stato(`${nome} creato con ${presi.length} schede.`);
+    } catch(err){ stato('Sottosettore non salvato: ' + err.message); }
   });
 
   async function eliminaGruppo(g){
-    if (!await chiedi({testo: `Eliminare il gruppo "${g.NOME}"?\nLe ${g.N_SCHEDE} schede restano e tornano senza gruppo.`,
+    if (!await chiedi({testo: `Eliminare il sottosettore ${g.NOME}?\nLe ${g.N_SCHEDE} schede restano e tornano senza settore.`,
       ok: 'Elimina', rosso: 1})) return;
     try {
       await api(id, 'eliminaGruppo', {codem: g.CODEM, idGruppo: g.ID_GRUPPO});
@@ -1299,16 +1354,22 @@ function avvia(sezione){
 
     [livSchede, livAree, livScelta, livGruppi].forEach(l => map.removeLayer(l));
     const tmp = L.featureGroup().addTo(map);
-    if (gruppo && gruppo.GEOJSON)
-      L.geoJSON(gruppo.GEOJSON, {style: {color: gruppo.COLORE, weight: 3, fillOpacity: .05}}).addTo(tmp);
+    const gg = [].concat(gruppo || []).filter(g => g && g.GEOJSON);
+    gg.forEach(g => {
+      const l = L.geoJSON(g.GEOJSON, {style: {color: g.COLORE, weight: 3, fillOpacity: .05}}).addTo(tmp);
+      const c = l.getBounds();
+      if (gg.length > 1 && c.isValid()) L.marker(c.getCenter(), {interactive: false,
+        icon: L.divIcon({className: 'diff-etichetta-gruppo', iconSize: null,
+          html: `<span style="border-color:${esc(g.COLORE)}">${esc(g.NOME)}</span>`})}).addTo(tmp);
+    });
     const vista = {c: map.getCenter(), z: map.getZoom()};
     map.invalidateSize();
     const punti = ord.filter(conPosizione).map(s => [num(s.LAT), num(s.LON)]);
     let b = punti.length ? L.latLngBounds(punti) : null;
-    if (gruppo && gruppo.GEOJSON){
-      const gb = L.geoJSON(gruppo.GEOJSON).getBounds();
+    gg.forEach(g => {
+      const gb = L.geoJSON(g.GEOJSON).getBounds();
       if (gb.isValid()) b = b ? b.extend(gb) : gb;
-    }
+    });
     if (b && b.isValid()) map.fitBounds(b, {padding: [40, 40], maxZoom: 17, animate: false});
     /* I numeri si posano DOPO l'inquadratura: la corona dei punti
        sovrapposti è in pixel, e va calcolata allo zoom della stampa. Nella
