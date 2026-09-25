@@ -2297,6 +2297,125 @@ html.comando-gia-scelto #modal-comando {
 }
 
 /* ==========================================================
+   TRIAGE SCHEDE DIFFERIBILI — differibili.js
+   Da incollare in fondo a style.css, sezione MODULI AGGIUNTIVI.
+   ========================================================== */
+
+#differibili .pagina-box { display: flex; flex-direction: column; gap: 10px; }
+#diff-app { display: flex; flex-direction: column; gap: 10px; min-height: 0; flex: 1 1 auto; }
+
+/* Ruoli: la DR non vede i comandi di scrittura, il Comando non vede il
+   filtro per Comando. Il backend rifiuta comunque, questo è solo ordine. */
+#diff-app .diff-solo-dr { display: none; }
+#diff-app.diff-ruolo-dr .diff-solo-dr { display: flex; }
+#diff-app.diff-ruolo-dr .diff-solo-comando,
+#diff-app:not(.diff-ruolo-comando) .diff-solo-comando { display: none; }
+
+.diff-barra { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 12px; }
+.diff-ente { font-weight: bold; align-self: center; margin-right: auto; }
+.diff-campo { display: flex; flex-direction: column; gap: 3px; font-size: 12px; }
+.diff-campo select { min-width: 220px; }
+.diff-check { align-self: center; margin: 0; }
+.diff-azioni { display: flex; flex-wrap: wrap; gap: 6px; }
+.diff-azioni button:disabled { opacity: .45; cursor: not-allowed; }
+.diff-rosso { border-color: var(--danger-color, #AF2B1E) !important; color: var(--danger-color, #e57368) !important; }
+.btn-whatsapp.diff-rosso { background: var(--danger-color, #AF2B1E) !important; color: #fff !important; }
+.diff-errore { color: var(--danger-color, #e57368); font-size: 13px; margin: 4px 0; }
+.diff-derivato { padding: 9px 10px; border: 1px dashed var(--border-color, #555); border-radius: 6px; }
+.diff-riga { display: flex; gap: 6px; }
+.diff-riga input { flex: 1 1 auto; min-width: 0; }
+
+.diff-import { border: 1px solid var(--border-color, #555); border-radius: 8px; padding: 10px 12px; }
+.diff-anteprima { font-size: 13px; margin: 6px 0; }
+.diff-anteprima ul { margin: 4px 0 0 18px; padding: 0; }
+
+.diff-corpo { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 10px;
+  min-height: 420px; flex: 1 1 auto; }
+.diff-mapwrap { position: relative; min-height: 420px; border-radius: 8px; overflow: hidden;
+  border: 1px solid var(--border-color, #555); }
+#diff-mappa { position: absolute; inset: 0; }
+.diff-comandi-mappa { position: absolute; top: 10px; right: 10px; z-index: 500; display: flex;
+  flex-direction: column; align-items: flex-end; gap: 6px; }
+.diff-comandi-mappa .diff-check { background: var(--dark-color, #1e1e1e); padding: 4px 8px;
+  border-radius: 6px; font-size: 12px; }
+
+.diff-lato { overflow-y: auto; font-size: 13px; }
+.diff-lato h4 { margin: 12px 0 6px; }
+.diff-numeri { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px; }
+.diff-numeri div { border: 1px solid var(--border-color, #555); border-radius: 6px; padding: 6px;
+  text-align: center; }
+.diff-numeri b { display: block; font-size: 20px; }
+.diff-numeri span { font-size: 11px; opacity: .8; }
+.diff-leg { display: grid; grid-template-columns: auto 12px 1fr auto; align-items: center;
+  gap: 6px; padding: 3px 0; cursor: pointer; }
+.diff-leg i, .diff-gruppo > i { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid #fff; }
+.diff-gruppo { display: flex; align-items: center; gap: 6px; padding: 5px 0;
+  border-bottom: 1px solid var(--border-color, #444); }
+.diff-gruppo > i { border-radius: 3px; flex: 0 0 auto; }
+.diff-gruppo span { flex: 1 1 auto; min-width: 0; }
+.diff-gruppo small { display: block; opacity: .75; }
+.diff-gruppo button { padding: 3px 6px; }
+.diff-stato { white-space: pre-line; min-height: 1.2em; margin: 0; }
+
+/* Il popup Leaflet è chiaro: il testo resta scuro anche col tema scuro. */
+.diff-pop { color: #222; font-size: 12.5px; line-height: 1.45; }
+.diff-pop b { font-size: 13px; }
+.diff-pop-note { font-style: italic; margin: 3px 0; }
+.diff-pop-dati { display: flex; flex-direction: column; margin: 5px 0; color: #555; }
+.diff-badge { background: #AF2B1E; color: #fff; font-size: 10.5px; padding: 1px 5px;
+  border-radius: 3px; margin-left: 4px; }
+
+.diff-num span { display: flex; align-items: center; justify-content: center; width: 22px;
+  height: 22px; border-radius: 50%; color: #fff; font: bold 11px/1 sans-serif;
+  border: 1.5px solid #fff; box-shadow: 0 0 0 1px #000; }
+
+.diff-modale { position: fixed; inset: 0; z-index: 3000; background: rgba(0, 0, 0, .55);
+  display: flex; align-items: center; justify-content: center; }
+.diff-modale[hidden] { display: none; }
+.diff-modale-box { background: var(--dark-color, #1e1e1e); border: 1px solid var(--border-color, #555);
+  border-radius: 10px; padding: 16px; width: min(420px, 92vw); display: flex;
+  flex-direction: column; gap: 10px; }
+.diff-modale-titolo { font-weight: bold; }
+.diff-modale-testo { white-space: pre-line; }
+.diff-modale-azioni { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* In fullscreen la carta prende tutta l'altezza disponibile. */
+.pannello-fullscreen #differibili .pagina-box { height: 100%; }
+.pannello-fullscreen .diff-corpo { min-height: 0; }
+
+@media (max-width: 760px) {
+  .diff-corpo { grid-template-columns: 1fr; }
+  .diff-campo select { min-width: 0; width: 100%; }
+}
+
+/* ---------------------------- STAMPA ----------------------------
+   A4 orizzontale: prima pagina la carta, poi la tabella. Si stampa solo
+   il foglio costruito da stampa(), come per la SITAC. */
+#diff-stampa-doc { display: none; }
+@page differibili { size: A4 landscape; margin: 10mm; }
+@media print {
+  body.diff-stampa > *:not(#diff-stampa-doc) { display: none !important; }
+  body.diff-stampa #diff-stampa-doc { display: block; color: #000; background: #fff; }
+  #diff-stampa-doc .dp-pagina { page: differibili; break-after: page; }
+  #diff-stampa-doc .dp-pagina:last-child { break-after: auto; }
+  #diff-stampa-doc .dp-testata h1 { font-size: 16pt; margin: 0 0 2mm; }
+  #diff-stampa-doc .dp-testata p { font-size: 9pt; margin: 0 0 4mm; }
+  #diff-stampa-doc .dp-mappa { height: 165mm; position: relative; }
+  #diff-stampa-doc .diff-mapwrap { position: absolute; inset: 0; border: .3mm solid #000; }
+  #diff-stampa-doc .diff-comandi-mappa,
+  #diff-stampa-doc .leaflet-control-zoom { display: none; }
+  #diff-stampa-doc .dp-tab { width: 100%; border-collapse: collapse; font-size: 8pt; }
+  #diff-stampa-doc .dp-tab th, #diff-stampa-doc .dp-tab td { border: .2mm solid #888;
+    padding: 1mm 1.5mm; vertical-align: top; text-align: left; }
+  #diff-stampa-doc .dp-tab thead { display: table-header-group; }
+  #diff-stampa-doc .dp-tab tr { break-inside: avoid; }
+  #diff-stampa-doc .dp-n span { display: inline-block; min-width: 5mm; text-align: center;
+    color: #fff; border-radius: 3mm; font-weight: bold;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  #diff-stampa-doc .diff-num span { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
+/* ==========================================================
    ==========================================================
    MODULI AGGIUNTIVI
 

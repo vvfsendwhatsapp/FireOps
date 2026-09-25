@@ -28,7 +28,7 @@
     <!-- colore barra su Android/Chrome -->
     <link rel="apple-touch-icon" href="images/logo.png"> <!-- icona se salvata su home iOS -->
 
-    <title>FireOps VVF (BIS - Test)</title>
+    <title>FireOps VVF</title>
     <link rel="icon" type="image/png" href="images/logo.png">
     <script src="versione.js?v=0"></script>
 
@@ -68,7 +68,7 @@
         <div class="header-left">
             <img src="images/logo.png" alt="Logo VVF" class="site-logo">
             <div class="site-titles">
-                <h1>FireOps VVF <span style="opacity:.6; font-size:.6em;">(BIS)</span></h1>
+                <h1>FireOps VVF</h1>
                 <span class="subtitle">Smart Emergency Management</span>
                 <div id="display-versione" class="site-versione"></div>
             </div>
@@ -1254,6 +1254,19 @@
         </div>
     </div>
 
+    <!-- TRIAGE SCHEDE DIFFERIBILI -->
+    <section id="differibili" class="page-section">
+        <div class="pagina-box pagina-box-larga">
+            <div class="pagina-box-header pagina-box-header-con-nota">
+                <p class="pagina-nota pagina-nota-inline">Carica le schede differibili sotto un CODEM, raggruppale
+                    disegnando un poligono sulla carta e stampa ogni gruppo con carta e tabella.</p>
+                <button class="btn-toggle-radar btn-fullscreen-pagina" type="button" title="Espandi a schermo intero">⛶
+                    Espandi</button>
+            </div>
+            <div id="diff-app"></div>
+        </div>
+    </section>
+
     <!-- MODALE GLI 8 PASSI -->
     <div id="modal-otto-passi" class="modal-overlay" style="display:none;">
         <div class="modal-content chiudibile modal-content-largo">
@@ -1316,11 +1329,11 @@
             const VERSIONE = window.FIREOPS_VERSIONE || "0";
 
             const MODULI = [
-                "fireops-core.js",   // nucleo condiviso: deve precedere gli altri
-                "schede-bis.js",     // BIS: elenco pagine (invariato rispetto a schede.js)
-                "script-bis.js",     // BIS: con link invio coordinate in Messaggistica
-                "messaggistica-bis.js", // BIS: Messaggistica estratta in modulo a sé, dopo script-bis.js
-                // (che espone window.FireOpsComandi/window.FireOps prima che serva qui)
+                "fireops-core.js",
+                "schede.js",
+                "script.js",
+                "messaggistica.js",
+                "differibili.js",
                 "turnario.js",
                 "convertitore.js",
                 "radiotelefoni.js",
