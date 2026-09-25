@@ -35,7 +35,7 @@ window.FireOpsSchede = {
         { id: "radio-telefoni", label: "Radio e telefoni"},
         //{ id: "schede-soccorso", label: "Schede di soccorso", lavori: true },
         { id: "sostanze-pericolose", label: "Schede Sostanze Pericolose" },
-        //{ id: "sitac-aib", label: "SITAC AIB" },
+        { id: "sitac-aib", label: "SITAC AIB" },
         { id: "qrcode", label: "QrCode" },
         { id: "terremoti", label: "Terremoti INGV" },
         { id: "turnario", label: "Turnario" },
