@@ -25,8 +25,7 @@ window.FireOpsSchede = {
         { id: "contatti", label: "Link utili" },
         { id: "convertitore", label: "Convertitore coordinate e calcolo percorso" },
         { id: "convertitoreunita", label: "Convertitore unità" },
-        { id: "differibili", label: "Visualizzazione e Triage Schede differibili" },
-        
+        { id: "differibili", label: "Visualizzazione e Triage Schede differibili", lavori: true  },
         //{ id: "gestione-fpds", label: "Gestione interventi FPDS", lavori: true },
         //{ id: "ICS", label: "Incident Command Sistem" },
         { id: "info-comando", label: "Info altro Comando" },
