@@ -181,6 +181,10 @@ FireOps.registra({
       height: 20px;
       flex: none;
 }
+.pg-comunicazioni .hint.hint-to {
+      padding: 6px 0 0;
+      color: #e8734a;
+}
 .pg-comunicazioni .hint {
       font-size: 11.5px;
       color: var(--text-dim);
@@ -747,7 +751,8 @@ FireOps.registra({
     <section class="step hidden" id="step-5">
       <div class="panel">
         <div class="row-group-label">Destinatario</div>
-        <div class="field"><label>A:</label><input type="text" id="previewTo"></div>
+        <div class="field"><label>A:</label><input type="text" id="previewTo">
+          <div class="hint hint-to hidden" id="previewToHint"></div></div>
         <div class="field"><label>Oggetto</label><input type="text" id="previewSubject"></div>
       </div>
       <div class="panel">
@@ -1374,26 +1379,52 @@ FireOps.registra({
       return {subject, body: lines.join("\n")};
     }
 
+    // Casella dell'ufficio competente del comando:
+    //   missione per soccorso  -> tep.<comando>@vigilfuoco.it
+    //   mancata timbratura     -> personale.<comando>@vigilfuoco.it
+    // <comando> si ricava dalla mail della SO (so.forli@...) o del comando (com.forli@...).
+    function sigla(c) {
+      for (const m of [c && c.esc, c && c.ecom]) {
+        const r = /^(?:so|com)\.([a-z0-9-]+)@vigilfuoco\.it$/i.exec(String(m || "").trim());
+        if (r) return r[1].toLowerCase();
+      }
+      return null;
+    }
+
+    function emailUfficio(c, tipo) {
+      const s = sigla(c);
+      if (!s) return "";
+      return (tipo === "missione" ? "tep." : "personale.") + s + "@vigilfuoco.it";
+    }
+
     function generatePreview() {
       let built = currentTipo === "missione" ? buildIntervento() : buildTimbratura();
       const destinatario = stessoComando.checked ? currentComando : comandoDestinatario;
-      const realTo = destinatario?.esc || "";
+      const realTo = emailUfficio(destinatario, currentTipo);
+      const hint = document.getElementById("previewToHint");
+      if (realTo) {
+        hint.classList.add("hidden");
+      } else {
+        hint.classList.remove("hidden");
+        hint.textContent = "Per " + (destinatario?.c || "questo comando") +
+          " l'indirizzo dell'ufficio non si ricava in automatico: scrivilo qui sopra prima di inviare.";
+      }
       document.getElementById("previewTo").value = realTo;
       document.getElementById("previewSubject").value = built.subject;
       document.getElementById("previewBody").value = built.body;
     }
 
     document.getElementById("btnMailto").addEventListener("click", function () {
-      generatePreview();
-      const to = document.getElementById("previewTo").value;
+      const to = document.getElementById("previewTo").value.trim();
+      if (!to) {alert("Inserisci l'indirizzo del destinatario."); document.getElementById("previewTo").focus(); return;}
       const subject = document.getElementById("previewSubject").value;
       const body = document.getElementById("previewBody").value;
       window.location.href = "mailto:" + encodeURIComponent(to) + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
     });
 
     document.getElementById("btnEml").addEventListener("click", function () {
-      generatePreview();
-      const to = document.getElementById("previewTo").value;
+      const to = document.getElementById("previewTo").value.trim();
+      if (!to) {alert("Inserisci l'indirizzo del destinatario."); document.getElementById("previewTo").focus(); return;}
       const subject = document.getElementById("previewSubject").value;
       const body = document.getElementById("previewBody").value;
       const eml = "To: " + to + "\r\nSubject: " + subject + "\r\nDate: " + new Date().toUTCString() + "\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n" + body;

@@ -144,6 +144,7 @@
       tc: x["Telefono Centralino"] || "",
       nue: x["115/NUE base"] || "",
       esc: x["email SO Comando"] || "",
+      ecom: x["email Comando"] || "",
       web: x["sito web Comando"] || "",
       olc: x["OLC"] || "",
       conf
