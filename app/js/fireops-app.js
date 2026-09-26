@@ -21,7 +21,11 @@
     {id: "comando", nome: "Comando", sigla: "C", colore: "var(--ics-comando)", testo: "#10141a",
       sub: "Direzione e coordinamento", moduli: []},
     {id: "operazioni", nome: "Operazioni", sigla: "O", colore: "var(--ics-operazioni)", testo: "#fff",
-      sub: "Gestione dell'intervento", moduli: []},
+      sub: "Gestione dell'intervento",
+      moduli: [
+        {id: "ricerche", nome: "Ricerche", sotto: "Ricerche in corso da Messaggistica",
+          desc: "Link di posizione inviati e posizioni ricevute: tuo comando e limitrofi entro 50 km", ico: "🔎"}
+      ]},
     {id: "pianificazione", nome: "Pianificazione", sigla: "P", colore: "var(--ics-pianificazione)", testo: "#fff",
       sub: "Situazione, posizione e risorse",
       moduli: [
@@ -193,13 +197,36 @@
     return caricati[url];
   }
 
+  // Leaflet condiviso: più fonti in ordine, restituisce true se disponibile
+  const LEAFLET_FONTI = [
+    ["https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css", "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"],
+    ["https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css", "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"],
+    ["https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css", "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"]
+  ];
+  let leafletPromessa = null;
+  function leaflet() {
+    if (typeof window.L !== "undefined") return Promise.resolve(true);
+    if (!leafletPromessa) {
+      leafletPromessa = (async () => {
+        for (const [css, js] of LEAFLET_FONTI) {
+          try {
+            await Promise.all([carica(css), carica(js)]);
+            if (typeof window.L !== "undefined") return true;
+          } catch (e) { console.warn("Leaflet non disponibile da", js); }
+        }
+        return false;
+      })().finally(() => { leafletPromessa = null; });
+    }
+    return leafletPromessa;
+  }
+
   // =====================================================================
   // Moduli
   // =====================================================================
   const registrati = {};     // id -> definizione
   const attesa = {};         // id -> resolve della registrazione
   const montati = {};        // id -> <section>
-  const hookShow = {}, hookLogo = {};
+  const hookShow = {}, hookLogo = {}, hookHide = {};
   let attivo = null;
 
   function registra(def) {
@@ -261,6 +288,9 @@
 
   async function mostra(id) {
     const m = id && MODULI[id];
+    if (attivo && attivo !== id) {
+      (hookHide[attivo] || []).forEach(fn => { try { fn(); } catch (e) { console.error(e); } });
+    }
     if (!m) {
       attivo = null;
       $("view-mod").hidden = true;
@@ -579,10 +609,13 @@
   window.FireOps = Object.assign(window.FireOps || {}, {
     registra,
     carica,
+    leaflet,
     json,
     comandi,
     onShow: (id, fn) => { (hookShow[id] = hookShow[id] || []).push(fn); },
     onLogo: (id, fn) => { (hookLogo[id] = hookLogo[id] || []).push(fn); },
+    onHide: (id, fn) => { (hookHide[id] = hookHide[id] || []).push(fn); },
+    attivo: () => attivo,
     posizione: () => posUltima,
     localizza,
     // true una sola volta dopo un tocco sul comando in alto
