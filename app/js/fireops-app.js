@@ -24,7 +24,7 @@
       sub: "Gestione dell'intervento",
       moduli: [
         {id: "ricerche", nome: "Ricerche", sotto: "Ricerche in corso da Messaggistica",
-          desc: "Link di posizione inviati e posizioni ricevute: tuo comando e limitrofi entro 50 km", ico: "🔎"}
+          desc: "Ricerche per intervento con la posizione migliore: tuo comando e limitrofi entro 50 km", ico: "🔎"}
       ]},
     {id: "pianificazione", nome: "Pianificazione", sigla: "P", colore: "var(--ics-pianificazione)", testo: "#fff",
       sub: "Situazione, posizione e risorse",
