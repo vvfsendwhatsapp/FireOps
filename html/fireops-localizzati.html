@@ -996,23 +996,12 @@
 
 <body>
 
-  <header>
-    <img class="mark" id="homeLogoBtn" src="https://vvfsendwhatsapp.github.io/FireOps/images/logo.png" alt="Logo VVF"
-      title="Reset pagina">
-    <div class="htitle">
-      <h1>FireOps VVF - Localizzati</h1>
-      <p>Trova automaticamente il Comando e relativi Canali radio e numeri di telefono</p>
-    </div>
-    <a href="fireops-app.html" id="homeBtn" class="home-btn" title="Torna alla home FireOps" aria-label="Home">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round" />
-        <path d="M9 22V12h6v10" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-          stroke-linejoin="round" />
-      </svg>
-    </a>
+  <header data-home="fireops-app.html">
+    <img id="homeLogoBtn" src="https://vvfsendwhatsapp.github.io/FireOps/images/logo.png" alt="Logo VVF">
+    <h1>Localizzati</h1>
+    <p>Comando competente, canali radio e numeri SO</p>
   </header>
-  <script src="fireops-dial.js"></script>
+  <script src="fireops-header.js"></script>
 
   <div class="wrap">
 
@@ -1341,7 +1330,7 @@
     let watchId = null;
     let trackingTimeoutId = null;
 
-    // Il prefisso 4146 lo gestisce la barra "Componi" condivisa (fireops-dial.js)
+    // Il prefisso 4146 lo gestisce l'intestazione comune (fireops-header.js)
     function telHref(num) {
       return window.FireOpsDial ? FireOpsDial.telHref(num) : "tel:" + (num || "").toString().replace(/[^0-9+]/g, "");
     }
