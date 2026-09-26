@@ -40,7 +40,30 @@ FireOps.registra({
 .pg-ricerche .map-box {
   margin-top: 10px; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--panel);
 }
-.pg-ricerche #ricMap { height: 240px; background: #1d242e; }
+.pg-ricerche #ricMap { height: 260px; background: #1d242e; }
+.pg-ricerche .map-box { position: relative; }
+.pg-ricerche .map-btns { position: absolute; top: 10px; right: 10px; z-index: 1000; display: flex; gap: 6px; }
+.pg-ricerche .map-btn {
+  width: 36px; height: 36px; padding: 0; border-radius: 6px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--panel); border: 1px solid var(--line); color: var(--text);
+  box-shadow: 0 2px 6px rgba(0,0,0,.35);
+}
+.pg-ricerche .map-btn:active { background: var(--panel-2); }
+.pg-ricerche .map-btn.busy svg { animation: ric-spin 1s linear infinite; }
+.pg-ricerche .map-info {
+  position: absolute; left: 10px; bottom: 22px; z-index: 1000; max-width: calc(100% - 20px);
+  padding: 6px 10px; border-radius: 6px; font-size: 12.5px; line-height: 1.4;
+  background: rgba(16,20,26,.9); border: 1px solid var(--line); border-left: 4px solid var(--gc, #ffd700); color: var(--text);
+}
+.pg-ricerche .map-info button { margin-left: 8px; background: none; border: none; color: var(--text-dim); font-size: 14px; cursor: pointer; }
+/* mappa a schermo intero: copre anche l'intestazione */
+.pg-ricerche .map-box.full {
+  position: fixed; inset: 0; z-index: 9999; margin: 0; border: none; border-radius: 0;
+  padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); background: var(--bg);
+}
+.pg-ricerche .map-box.full #ricMap { height: 100%; }
+.pg-ricerche .map-box.full .map-btns { top: calc(10px + env(safe-area-inset-top, 0px)); }
 .pg-ricerche .map-msg { padding: 12px 14px; font-size: 12.5px; color: var(--text-dim); }
 
 .pg-ricerche .stato {
@@ -115,6 +138,17 @@ FireOps.registra({
   flex: 1; padding: 10px 6px; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer;
   background: var(--panel-2); border: 1px solid var(--line); color: var(--text);
 }
+.pg-ricerche .ric-route { display: flex; gap: 8px; padding: 0 14px 10px; }
+.pg-ricerche .ric-route button {
+  flex: 1; padding: 9px 6px; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer;
+  background: var(--panel-2); border: 1px solid var(--line); color: var(--text);
+}
+.pg-ricerche .ric-route .piedi { border-color: #3fa66b; }
+.pg-ricerche .ric-route .auto { border-color: #29a9eb; }
+.pg-ricerche .ric-route button:disabled { opacity: .6; cursor: default; }
+.pg-ricerche .route-info { margin: -2px 14px 12px; font-size: 12.5px; line-height: 1.5; color: var(--text-dim); }
+.pg-ricerche .route-info b { color: var(--text); }
+.pg-ricerche .route-info.err { color: #e8734a; }
 .pg-ricerche .ric-act .nav { background: var(--gc); border-color: var(--gc); color: #fff; text-shadow: 0 0 2px rgba(0,0,0,.4); }
 
 .pg-ricerche .nota { margin-top: 10px; font-size: 12px; color: var(--text-dim); line-height: 1.5; }
@@ -141,6 +175,18 @@ FireOps.registra({
 
   <div class="map-box" id="ricMapBox" hidden>
     <div id="ricMap"></div>
+    <div class="map-btns">
+      <button type="button" class="map-btn" id="ricMe" title="Centra sulla mia posizione" aria-label="Centra sulla mia posizione">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <circle cx="12" cy="12" r="3.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+      </button>
+      <button type="button" class="map-btn" id="ricTutti" title="Mostra tutte le ricerche" aria-label="Mostra tutte le ricerche">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><circle cx="15.5" cy="15" r="1.5"/></svg>
+      </button>
+      <button type="button" class="map-btn" id="ricEspandi" title="Espandi mappa" aria-label="Espandi mappa"></button>
+    </div>
+    <div class="map-info" id="ricMapInfo" hidden></div>
   </div>
 
   <div class="stato" id="ricStato">Caricamento…</div>
@@ -235,7 +281,9 @@ FireOps.registra({
     let timer = null;
     let inCorso = false;
     let ultimoDato = null;       // {messaggi, posizioni, comandi}
-    let mappa = null, strato = null;
+    let mappa = null, strato = null, stratoRotta = null, stratoMe = null;
+    let meLive = null, watchId = null;
+    let ultimoFit = null, puntiRicerche = [];
     const schede = new Map();    // IdRicerca -> elemento
 
     function contesto() {
@@ -503,6 +551,11 @@ FireOps.registra({
             '<div class="pos-row"><span>Ricevuta</span><span>' + ora(b._t) + (b._t ? ' (' + fa(b._t) + ')' : '') + '</span></div>' +
             (ctx.me ? '<div class="pos-row"><span>Da me</span><span>' + fmtKm(g.dist) + ' · ' + az(ctx.me.lat, ctx.me.lon, b._lat, b._lon) + '</span></div>' : '') +
           '</div>' +
+          '<div class="ric-route">' +
+            '<button type="button" class="piedi">🥾 A piedi</button>' +
+            '<button type="button" class="auto">🚗 In auto</button>' +
+          '</div>' +
+          '<div class="route-info" hidden></div>' +
           '<div class="ric-act">' +
             '<button type="button" class="nav">Naviga</button>' +
             '<button type="button" class="vedi">Sulla mappa</button>' +
@@ -525,6 +578,9 @@ FireOps.registra({
         $("ricMapBox").scrollIntoView({behavior: "smooth", block: "center"});
         mappa.setView([g.best._lat, g.best._lon], Math.max(mappa.getZoom(), 15));
       });
+      const piedi = el.querySelector(".piedi"), auto = el.querySelector(".auto");
+      if (piedi) piedi.addEventListener("click", () => percorso(g, "piedi", el));
+      if (auto) auto.addEventListener("click", () => percorso(g, "auto", el));
       return el;
     }
 
@@ -551,18 +607,16 @@ FireOps.registra({
           maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
         }).addTo(mappa);
         strato = L.layerGroup().addTo(mappa);
+        stratoRotta = L.layerGroup().addTo(mappa);
+        stratoMe = L.layerGroup().addTo(mappa);
       }
       strato.clearLayers();
       const punti = [];
 
-      if (ctx.me) {
-        if ($("ricLimitrofi").checked) {
-          L.circle([ctx.me.lat, ctx.me.lon], {radius: RAGGIO_KM * 1000, color: "#ffd700", weight: 1, opacity: .5, fillOpacity: .03, dashArray: "4,6", interactive: false}).addTo(strato);
-        }
-        L.circleMarker([ctx.me.lat, ctx.me.lon], {radius: 8, color: "#10141a", weight: 2.5, fillColor: "#ffd700", fillOpacity: 1})
-          .bindPopup("La mia posizione").addTo(strato);
-        punti.push([ctx.me.lat, ctx.me.lon]);
+      if (ctx.me && $("ricLimitrofi").checked) {
+        L.circle([ctx.me.lat, ctx.me.lon], {radius: RAGGIO_KM * 1000, color: "#ffd700", weight: 1, opacity: .5, fillOpacity: .03, dashArray: "4,6", interactive: false}).addTo(strato);
       }
+      disegnaMe();
 
       lista.forEach((g, i) => {
         if (!g.best) return;
@@ -591,15 +645,175 @@ FireOps.registra({
         punti.push([b._lat, b._lon]);
       });
 
+      // Inquadra solo al primo disegno o quando compaiono ricerche nuove:
+      // l'aggiornamento automatico non deve spostare la mappa che stai guardando
+      puntiRicerche = punti.slice();
+      const chiaveFit = punti.map(p => p.join(",")).sort().join(";");
+      const rifai = chiaveFit !== ultimoFit;
+      ultimoFit = chiaveFit;
       setTimeout(() => {
         mappa.invalidateSize();
-        if (punti.length === 1) mappa.setView(punti[0], 14);
-        else mappa.fitBounds(L.latLngBounds(punti), {padding: [30, 30], maxZoom: 15});
+        if (rifai) inquadraTutto();
       }, 50);
+    }
+
+    function inquadraTutto() {
+      if (!mappa) return;
+      const pt = puntiRicerche.slice();
+      const me = mioPunto();
+      if (me) pt.push([me.lat, me.lon]);
+      if (!pt.length) return;
+      if (pt.length === 1) mappa.setView(pt[0], 14);
+      else mappa.fitBounds(L.latLngBounds(pt), {padding: [40, 40], maxZoom: 15});
+    }
+
+    // ---------- mia posizione (GPS seguito mentre il modulo è aperto) ----------
+    function mioPunto() {
+      if (meLive) return meLive;
+      const c = contesto();
+      return c && c.me ? c.me : null;
+    }
+
+    function disegnaMe() {
+      if (!mappa || !stratoMe) return;
+      stratoMe.clearLayers();
+      const me = mioPunto();
+      if (!me) return;
+      if (isFinite(me.acc) && me.acc > 0 && me.acc < 2000) {
+        L.circle([me.lat, me.lon], {radius: me.acc, color: "#ffd700", weight: 1, fillColor: "#ffd700", fillOpacity: .12, interactive: false}).addTo(stratoMe);
+      }
+      L.circleMarker([me.lat, me.lon], {radius: 8, color: "#10141a", weight: 2.5, fillColor: "#ffd700", fillOpacity: 1})
+        .bindPopup("La mia posizione" + (isFinite(me.acc) ? "<br>±" + Math.round(me.acc) + " m" : "")).addTo(stratoMe);
+    }
+
+    function avviaGps() {
+      if (watchId !== null || !navigator.geolocation) return;
+      watchId = navigator.geolocation.watchPosition(p => {
+        meLive = {lat: p.coords.latitude, lon: p.coords.longitude, acc: p.coords.accuracy};
+        disegnaMe();
+      }, () => { }, {enableHighAccuracy: true, maximumAge: 10000, timeout: 20000});
+    }
+    function fermaGps() {
+      if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+    }
+
+    // Aspetta una posizione per al massimo "ms" (serve ai percorsi quando il GPS è appena partito)
+    function attendiMe(ms) {
+      const subito = mioPunto();
+      if (subito) return Promise.resolve(subito);
+      avviaGps();
+      return new Promise(res => {
+        const t0 = Date.now();
+        const iv = setInterval(() => {
+          const me = mioPunto();
+          if (me || Date.now() - t0 > ms) { clearInterval(iv); res(me); }
+        }, 300);
+      });
+    }
+
+    // ---------- percorsi a piedi / in auto (BRouter, come Localizzati) ----------
+    function durata(sec) {
+      const m = Math.round(sec / 60);
+      return m < 60 ? m + " min" : Math.floor(m / 60) + " h " + String(m % 60).padStart(2, "0") + " min";
+    }
+
+    function infoMappa(html, colore) {
+      const box = $("ricMapInfo");
+      if (!html) { box.hidden = true; return; }
+      box.style.setProperty("--gc", colore || "#ffd700");
+      box.innerHTML = html + '<button type="button" aria-label="Togli percorso" title="Togli percorso">✕</button>';
+      box.hidden = false;
+      box.querySelector("button").addEventListener("click", () => {
+        if (stratoRotta) stratoRotta.clearLayers();
+        box.hidden = true;
+      });
+    }
+
+    async function percorso(g, modo, el) {
+      const info = el.querySelector(".route-info");
+      const btns = el.querySelectorAll(".ric-route button");
+      const etichetta = modo === "piedi" ? "A piedi" : "In auto";
+      info.hidden = false;
+      info.classList.remove("err");
+      info.textContent = "Cerco la mia posizione…";
+      btns.forEach(b => b.disabled = true);
+
+      try {
+        const me = await attendiMe(12000);
+        if (!me) throw new Error("posizione GPS non disponibile");
+        info.textContent = "Calcolo del percorso " + etichetta.toLowerCase() + "…";
+
+        const url = "https://brouter.de/brouter?lonlats=" +
+          me.lon.toFixed(6) + "," + me.lat.toFixed(6) + "|" + g.best._lon.toFixed(6) + "," + g.best._lat.toFixed(6) +
+          "&profile=" + (modo === "piedi" ? "hiking-mountain" : "car-fast") + "&alternativeidx=0&format=geojson";
+        const ctrl = new AbortController();
+        const tmo = setTimeout(() => ctrl.abort(), 20000);
+        const r = await fetch(url, {signal: ctrl.signal});
+        clearTimeout(tmo);
+        if (!r.ok) throw new Error(((await r.text()).trim().slice(0, 100)) || "HTTP " + r.status);
+        const f = (await r.json()).features;
+        if (!f || !f[0]) throw new Error("nessun percorso trovato");
+
+        const pr = f[0].properties || {};
+        const coords = f[0].geometry.coordinates.map(c => [c[1], c[0]]);
+        const kmTot = (parseFloat(pr["track-length"]) / 1000).toFixed(1);
+        const sal = pr["filtered ascend"] != null ? Math.round(parseFloat(pr["filtered ascend"])) : null;
+        const testo = "<b>" + etichetta + "</b>: " + kmTot + " km · " + durata(parseFloat(pr["total-time"])) +
+          (sal != null ? " · dislivello +" + sal + " m" : "");
+        info.innerHTML = testo + "<br>Calcolato da BRouter alle " +
+          new Date().toLocaleTimeString("it-IT", {hour: "2-digit", minute: "2-digit"}) + ", senza traffico.";
+
+        if (mappa && stratoRotta) {
+          stratoRotta.clearLayers();
+          L.polyline(coords, {color: "#10141a", weight: 8, opacity: .55, interactive: false}).addTo(stratoRotta);
+          const linea = L.polyline(coords, {color: g.colore, weight: 5, opacity: .95,
+            dashArray: modo === "piedi" ? "2,9" : null, lineCap: "round", interactive: false}).addTo(stratoRotta);
+          infoMappa((g.numero ? "Int. " + esc(g.numero) + " · " : "") + testo, g.colore);
+          $("ricMapBox").scrollIntoView({behavior: "smooth", block: "center"});
+          setTimeout(() => mappa.fitBounds(linea.getBounds(), {padding: [40, 40]}), 250);
+        }
+      } catch (e) {
+        info.classList.add("err");
+        info.textContent = "Percorso non disponibile (" + (e.name === "AbortError" ? "tempo scaduto" : e.message) + ").";
+      } finally {
+        btns.forEach(b => b.disabled = false);
+      }
+    }
+
+    // ---------- schermo intero ----------
+    const ICO_ESPANDI = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9V3h6M3 3l6 6M21 9V3h-6M21 3l-6 6M3 15v6h6M3 21l6-6M21 15v6h-6M21 21l-6-6"/></svg>';
+    const ICO_RIDUCI = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3v6H3M9 9L3 3M15 3v6h6M15 9l6-6M9 21v-6H3M9 15l-6 6M15 21v-6h6M15 15l6 6"/></svg>';
+    let intero = false;
+
+    function schermoIntero(on) {
+      intero = on;
+      $("ricMapBox").classList.toggle("full", on);
+      document.body.style.overflow = on ? "hidden" : "";
+      const b = $("ricEspandi");
+      b.innerHTML = on ? ICO_RIDUCI : ICO_ESPANDI;
+      b.title = on ? "Riduci mappa" : "Espandi mappa";
+      b.setAttribute("aria-label", b.title);
+      setTimeout(() => { if (mappa) mappa.invalidateSize(); }, 120);
     }
 
     // ---------- eventi ----------
     $("ricAggiorna").addEventListener("click", carica);
+    $("ricEspandi").innerHTML = ICO_ESPANDI;
+    $("ricEspandi").addEventListener("click", () => schermoIntero(!intero));
+    $("ricTutti").addEventListener("click", inquadraTutto);
+    $("ricMe").addEventListener("click", async () => {
+      const b = $("ricMe");
+      b.classList.add("busy");
+      const me = await attendiMe(12000);
+      b.classList.remove("busy");
+      if (me && mappa) {
+        disegnaMe();
+        mappa.setView([me.lat, me.lon], Math.max(mappa.getZoom(), 15));
+      } else if (!me) {
+        infoMappa("Posizione GPS non disponibile: controlla il permesso di localizzazione.", "#e8734a");
+      }
+    });
+    document.addEventListener("keydown", e => { if (e.key === "Escape" && intero) schermoIntero(false); });
     $("ricLimitrofi").addEventListener("change", () => { schede.clear(); carica(); });
     $("ricArchiviate").addEventListener("change", () => { schede.clear(); disegna(); });
 
@@ -619,9 +833,14 @@ FireOps.registra({
     FireOps.onShow("ricerche", () => {
       carica();
       avviaTimer();
+      avviaGps();
       if (mappa) setTimeout(() => mappa.invalidateSize(), 60);
     });
-    FireOps.onHide("ricerche", fermaTimer);
+    FireOps.onHide("ricerche", () => {
+      fermaTimer();
+      fermaGps();
+      if (intero) schermoIntero(false);
+    });
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible" && FireOps.attivo() === "ricerche") carica();
     });
