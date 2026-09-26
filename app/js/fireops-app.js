@@ -12,7 +12,7 @@
 (function () {
   "use strict";
 
-  const VERSIONE = "2026.09.26";                // cambiarla forza il ricaricamento dei moduli
+  const VERSIONE = "2026.09.26c";                // cambiarla forza il ricaricamento dei moduli
   const DB = "../db/";                          // cartella dati del repo FireOps
   const DB_FALLBACK = "https://vvfsendwhatsapp.github.io/FireOps/db/";
 
@@ -149,9 +149,18 @@
 
   function scaricaModulo(id) {
     if (registrati[id]) return Promise.resolve(registrati[id]);
+    const url = "js/moduli/" + id + ".js?v=" + VERSIONE;
     return new Promise((ok, ko) => {
       attesa[id] = ok;
-      carica("js/moduli/" + id + ".js?v=" + VERSIONE).catch(ko);
+      carica(url).then(() => {
+        // file scaricato ma il modulo non si è registrato: di solito un errore di sintassi
+        setTimeout(() => {
+          if (!registrati[id]) {
+            delete caricati[url];
+            ko(new Error("il file " + url + " è stato scaricato ma non contiene il modulo \"" + id + "\""));
+          }
+        }, 0);
+      }).catch(() => ko(new Error("file non trovato o non scaricabile: " + new URL(url, location.href).href)));
     });
   }
 
@@ -173,7 +182,9 @@
       if (def.init) await def.init(sec);
     } catch (err) {
       sec.remove();                           // al prossimo tentativo si riparte da zero
-      throw err;
+      const e = new Error("errore all'avvio del modulo: " + (err && err.message ? err.message : err));
+      e.dettaglio = err;
+      throw e;
     }
     montati[id] = sec;
     return sec;
@@ -220,10 +231,21 @@
       window.scrollTo(0, 0);
       (hookShow[id] || []).forEach(fn => { try { fn(); } catch (e) { console.error(e); } });
     } catch (err) {
-      console.error(err);
+      console.error(err, err && err.dettaglio);
       if (loading) {
         loading.classList.add("error");
-        loading.textContent = "Impossibile caricare " + m.nome + ": controlla la connessione e riprova.";
+        loading.innerHTML = "";
+        const t = document.createElement("div");
+        t.textContent = "Impossibile aprire " + m.nome + ".";
+        const d = document.createElement("div");
+        d.className = "mod-err-det";
+        d.textContent = err && err.message ? err.message : String(err);
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "mod-retry";
+        b.textContent = "Riprova";
+        b.addEventListener("click", () => { loading.remove(); mostra(id); });
+        loading.append(t, d, b);
       }
     }
   }
@@ -314,6 +336,114 @@
   } catch (e) { }
 
   // =====================================================================
+  // Autoposizionamento: all'apertura rileva la posizione e mostra il comando competente
+  // =====================================================================
+  const posEl = $("fohPos");
+  let posUltima = null;          // {lat, lon, acc, comando, metodo, ora}
+  let posInCorso = null;
+  let autoLocalizzati = false;
+
+  function statoPos(stato, testoHtml) {
+    posEl.classList.remove("ok", "busy", "err");
+    if (stato) posEl.classList.add(stato);
+    $("fohPosCmd").innerHTML = testoHtml;
+  }
+
+  function normTxt(t) {
+    return String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  }
+
+  function distKm(a, b, c, d) {
+    const R = 6371, r = Math.PI / 180;
+    const x = Math.sin((c - a) * r / 2) ** 2 + Math.cos(a * r) * Math.cos(c * r) * Math.sin((d - b) * r / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+  }
+
+  // Provincia via Nominatim (stessa logica di Localizzati); se la rete non risponde, comando più vicino
+  async function comandoDa(lat, lon, elenco) {
+    try {
+      const ctrl = new AbortController();
+      const tmo = setTimeout(() => ctrl.abort(), 7000);
+      const r = await fetch("https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=" + lat + "&lon=" + lon +
+        "&addressdetails=1&accept-language=it&zoom=8", {headers: {"Accept": "application/json"}, signal: ctrl.signal});
+      clearTimeout(tmo);
+      if (r.ok) {
+        const a = (await r.json()).address || {};
+        const pr = a["ISO3166-2-lvl6"] ? a["ISO3166-2-lvl6"].split("-").pop().toUpperCase() : null;
+        let rec = pr ? elenco.find(c => c.pr === pr) : null;
+        if (!rec && a.county) {
+          const n = normTxt(a.county.replace(/^(provincia di|libera consortile di|libero consorzio( comunale)? di|citt[aà] metropolitana di)\s*/i, ""));
+          rec = elenco.find(c => normTxt(c.cm) === n || normTxt(c.c) === n);
+        }
+        if (rec) return {comando: rec, metodo: "provincia"};
+      }
+    } catch (e) { }
+    const vicino = elenco.slice().sort((x, y) => distKm(lat, lon, x.lat, x.lon) - distKm(lat, lon, y.lat, y.lon))[0];
+    return vicino ? {comando: vicino, metodo: "vicinanza"} : null;
+  }
+
+  function mostraPos() {
+    const p = posUltima;
+    if (!p || !p.comando) return;
+    const c = p.comando;
+    statoPos("ok", "Comando <b>" + esc(c.c) + "</b>" + (p.metodo === "vicinanza" ? " (stima)" : ""));
+    $("fohPosCmd").title = p.metodo === "vicinanza"
+      ? "Provincia non verificata via rete: comando con sede più vicina. Tocca per i dettagli."
+      : "Comando competente per la tua posizione. Tocca per i dettagli.";
+    const ch = $("fohPosCh");
+    ch.hidden = !c.rc;
+    ch.textContent = c.rc ? "📻 " + c.rc : "";
+    ch.title = "Canale radio Comando" + (c.rd ? " · DR " + c.rd : "");
+    const so = $("fohPosSo");
+    so.hidden = !c.tsc;
+    if (c.tsc) {
+      so.href = telHref(c.tsc);
+      so.title = "Chiama la SO di " + c.c + " (" + c.tsc + ")";
+    }
+  }
+
+  function localizza() {
+    if (posInCorso) return posInCorso;
+    if (!navigator.geolocation) {
+      statoPos("err", "Posizione non supportata dal dispositivo");
+      return Promise.resolve(null);
+    }
+    statoPos("busy", posUltima ? "Aggiornamento posizione…" : "Localizzazione in corso…");
+    posInCorso = new Promise(resolve => {
+      navigator.geolocation.getCurrentPosition(async pos => {
+        try {
+          const lat = pos.coords.latitude, lon = pos.coords.longitude;
+          let elenco = [];
+          try { elenco = await FireOps.comandi(); } catch (e) { }
+          const ris = elenco.length ? await comandoDa(lat, lon, elenco) : null;
+          if (!ris) {
+            statoPos("err", "Posizione rilevata, elenco comandi non disponibile");
+            resolve(null);
+            return;
+          }
+          posUltima = {lat, lon, acc: pos.coords.accuracy, comando: ris.comando, metodo: ris.metodo, ora: Date.now()};
+          mostraPos();
+          document.dispatchEvent(new CustomEvent("fireops:posizione", {detail: posUltima}));
+          resolve(posUltima);
+        } finally {
+          posInCorso = null;
+        }
+      }, err => {
+        posInCorso = null;
+        statoPos("err", err.code === 1 ? "Posizione non autorizzata: tocca ⟳ dopo averla consentita" : "Posizione non disponibile");
+        resolve(null);
+      }, {enableHighAccuracy: true, timeout: 12000, maximumAge: 120000});
+    });
+    return posInCorso;
+  }
+
+  $("fohPosRef").addEventListener("click", localizza);
+  document.addEventListener("fireops:prefisso", mostraPos);
+
+  // Il nome del comando apre Localizzati e lo avvia già localizzato
+  $("fohPosCmd").addEventListener("click", () => { autoLocalizzati = true; });
+
+  // =====================================================================
   // API per i moduli
   // =====================================================================
   window.FireOps = Object.assign(window.FireOps || {}, {
@@ -326,8 +456,13 @@
     }),
     onShow: (id, fn) => { (hookShow[id] = hookShow[id] || []).push(fn); },
     onLogo: (id, fn) => { (hookLogo[id] = hookLogo[id] || []).push(fn); },
+    posizione: () => posUltima,
+    localizza,
+    // true una sola volta dopo un tocco sul comando in alto
+    consumaAutoLocalizzati: () => { const v = autoLocalizzati; autoLocalizzati = false; return v; },
     vai: id => { location.hash = id ? "#/" + id : "#/"; }
   });
 
   daHash();
+  localizza();                  // autoposizionamento all'apertura
 })();

@@ -150,6 +150,91 @@ body {
   outline-offset: 2px;
 }
 
+/* Riga autoposizionamento */
+.foh-pos {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  min-height: 30px;
+  font-size: 13px;
+}
+
+.foh-pos-dot {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--text-dim);
+}
+
+.foh-pos.ok .foh-pos-dot { background: #3fa66b; }
+.foh-pos.busy .foh-pos-dot { background: var(--yellow); animation: foh-blink 1s ease-in-out infinite; }
+.foh-pos.err .foh-pos-dot { background: #e8734a; }
+
+@keyframes foh-blink { 50% { opacity: .25; } }
+
+.foh-pos-cmd {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-dim);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.foh-pos.ok .foh-pos-cmd { color: var(--text); }
+.foh-pos-cmd b { font-weight: 700; }
+
+.foh-pos-ch {
+  flex: none;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #e6c200;
+}
+
+.foh-pos-so {
+  flex: none;
+  padding: 4px 10px;
+  border-radius: 12px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.foh-pos-so:active { background: var(--line); }
+
+.foh-pos-ref {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: none;
+  border: 1px solid var(--line);
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.foh-pos.busy .foh-pos-ref svg { animation: foh-spin 1s linear infinite; }
+@keyframes foh-spin { to { transform: rotate(360deg); } }
+
+.foh-pos-cmd:focus-visible,
+.foh-pos-so:focus-visible,
+.foh-pos-ref:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .foh-pos.busy .foh-pos-dot,
+  .foh-pos.busy .foh-pos-ref svg { animation: none; }
+}
+
 @media (max-width: 370px) {
   .foh-t p { display: none; }
   .foh-btn { width: 42px; }
@@ -274,6 +359,26 @@ body {
 }
 
 .mod-loading.error { color: #e8734a; }
+
+.mod-err-det {
+  margin-top: 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  word-break: break-all;
+}
+
+.mod-retry {
+  margin-top: 14px;
+  padding: 10px 18px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .ics-chev { transition: none; }

@@ -8,7 +8,7 @@
   <link rel="icon" type="image/png" href="https://vvfsendwhatsapp.github.io/FireOps/images/logo.png">
   <link rel="apple-touch-icon" href="https://vvfsendwhatsapp.github.io/FireOps/images/logo.png">
   <meta name="theme-color" content="#10141a">
-  <link rel="stylesheet" href="css/fireops-app.css?v=2026.09.26">
+  <link rel="stylesheet" href="css/fireops-app.css?v=2026.09.26c">
 </head>
 
 <body>
@@ -58,6 +58,17 @@
           </svg>
         </a>
       </div>
+      <!-- Autoposizionamento: comando competente rilevato all'apertura -->
+      <div class="foh-pos" id="fohPos" aria-live="polite">
+        <span class="foh-pos-dot" id="fohPosDot" aria-hidden="true"></span>
+        <a class="foh-pos-cmd" id="fohPosCmd" href="#/localizzati" title="Apri Localizzati">Localizzazione in corso…</a>
+        <span class="foh-pos-ch" id="fohPosCh" hidden></span>
+        <a class="foh-pos-so" id="fohPosSo" href="javascript:void(0)" hidden title="Chiama la SO del comando">SO</a>
+        <button type="button" class="foh-pos-ref" id="fohPosRef" aria-label="Aggiorna posizione" title="Aggiorna posizione">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-3-6.7L21 8" /><path d="M21 3v5h-5" /></svg>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -67,7 +78,7 @@
   <!-- Moduli: ognuno viene caricato da js/moduli/<id>.js alla prima apertura e poi resta in memoria -->
   <div id="view-mod" hidden></div>
 
-  <script src="js/fireops-app.js?v=2026.09.26"></script>
+  <script src="js/fireops-app.js?v=2026.09.26c"></script>
 </body>
 
 </html>

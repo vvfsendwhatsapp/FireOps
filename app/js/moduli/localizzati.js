@@ -2069,7 +2069,14 @@ body.map-open {
     }
 
     FireOps.onLogo("localizzati", resetApp);
-    FireOps.onShow("localizzati", function () {if (map) setTimeout(function () {map.invalidateSize();}, 60);});
+    FireOps.onShow("localizzati", function () {
+      if (map) setTimeout(function () {map.invalidateSize();}, 60);
+      // arrivo dal comando nell'intestazione: localizza subito se non c'è già un risultato
+      if (FireOps.consumaAutoLocalizzati() &&
+          document.getElementById("result-section").classList.contains("hidden")) {
+        document.getElementById("locateBtn").click();
+      }
+    });
 
     async function fetchTargetElevation(lat, lon) {
       const el = document.getElementById("rTargetAlt");
