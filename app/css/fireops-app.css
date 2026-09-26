@@ -1,0 +1,280 @@
+/* FireOps VVF - app: stile comune (intestazione, home ICS, caricamento moduli) */
+:root {
+  --bg: #10141a;
+  --panel: #171d25;
+  --panel-2: #1d242e;
+  --line: #2a323d;
+  --text: #eceff3;
+  --text-dim: #8b96a3;
+  --yellow: #ffd700;
+  --wa: #25d366;
+  --tg: #29a9eb;
+
+  /* Colori funzioni ICS */
+  --ics-comando: #8d96a1;
+  --ics-operazioni: #d8262f;
+  --ics-pianificazione: #2f9e5b;
+  --ics-logistica: #f2c200;
+  --ics-amministrazione: #2b73d6;
+
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", Consolas, "Liberation Mono", monospace;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+[hidden], .hidden { display: none !important; }
+
+/* ---------- Intestazione comune ---------- */
+.foh {
+  position: sticky;
+  top: 0;
+  z-index: 1500;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, .35);
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.foh-in { max-width: 640px; margin: 0 auto; padding: 10px 16px; }
+.foh-top { display: flex; align-items: center; gap: 10px; }
+.foh-logo { width: 32px; height: 32px; object-fit: contain; flex: none; cursor: pointer; }
+.foh-t { flex: 1; min-width: 0; }
+
+.foh-t h1 {
+  margin: 0;
+  font-size: 16.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.foh-t p {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.foh-home {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.foh-home:active { background: var(--line); }
+
+.foh-pfx {
+  flex: none;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 11px;
+  border-radius: 19px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.foh-pfx i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.foh-pfx[aria-pressed="true"] { background: var(--yellow); border-color: var(--yellow); color: #000; }
+
+.foh-dial { display: flex; gap: 6px; margin-top: 10px; }
+
+.foh-dial input {
+  flex: 1;
+  min-width: 0;
+  padding: 11px 12px;
+  font-size: 16px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: var(--mono);
+}
+
+.foh-dial input::placeholder { font-family: var(--sans); color: var(--text-dim); }
+.foh-dial input:focus { outline: none; border-color: var(--yellow); }
+
+.foh-btn {
+  flex: none;
+  width: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  text-decoration: none;
+  color: #fff;
+}
+
+.foh-call { background: var(--yellow); color: #000; }
+.foh-wa { background: var(--wa); }
+.foh-tg { background: var(--tg); }
+.foh-btn.off { opacity: .3; pointer-events: none; }
+.foh-btn:active { opacity: .8; }
+
+.foh-btn:focus-visible,
+.foh-pfx:focus-visible,
+.foh-home:focus-visible,
+.foh-logo:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+@media (max-width: 370px) {
+  .foh-t p { display: none; }
+  .foh-btn { width: 42px; }
+  .foh-pfx { padding: 0 8px; }
+}
+
+/* ---------- Home: le 5 funzioni ICS occupano tutto lo spazio ---------- */
+#view-home {
+  flex: 1;
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ics {
+  flex: 1 1 0;
+  min-height: 64px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+
+.ics-head {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+#view-home.has-open .ics { flex: 0 0 auto; }
+#view-home.has-open .ics .ics-head { flex: none; }
+#view-home.has-open .ics.open { flex: 1 1 auto; }
+
+.ics-swatch {
+  flex: none;
+  width: 64px;
+  align-self: stretch;
+  min-height: 56px;
+  background: var(--c);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--on-c, #fff);
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.ics-text { flex: 1; min-width: 0; padding: 12px 0; }
+.ics-name { display: block; font-size: 18px; font-weight: 700; }
+.ics-sub { display: block; margin-top: 2px; font-size: 12.5px; color: var(--text-dim); }
+
+.ics-chev {
+  flex: none;
+  margin-right: 16px;
+  color: var(--text-dim);
+  transition: transform .18s ease;
+}
+
+.ics.open .ics-chev { transform: rotate(90deg); }
+.ics.open { border-color: var(--c); }
+.ics-head:focus-visible { outline: 2px solid var(--c); outline-offset: -2px; }
+
+.ics-body { display: none; border-top: 1px solid var(--line); padding: 8px; }
+.ics.open .ics-body { display: block; flex: 1; overflow-y: auto; }
+
+.mod {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 12px;
+  border-radius: 6px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.mod + .mod { border-top: 1px solid var(--line); border-radius: 0; }
+.mod:active, .mod:hover { background: var(--panel-2); }
+.mod:focus-visible { outline: 2px solid var(--c); outline-offset: -2px; }
+
+.mod-ico {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 2px solid var(--c);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.mod-text { flex: 1; min-width: 0; }
+.mod-name { display: block; font-size: 15.5px; font-weight: 600; }
+.mod-desc { display: block; margin-top: 2px; font-size: 12.5px; color: var(--text-dim); line-height: 1.4; }
+.empty { padding: 14px 12px; font-size: 13px; color: var(--text-dim); }
+
+/* ---------- Moduli ---------- */
+#view-mod { flex: 1; }
+
+.mod-loading {
+  max-width: 640px;
+  margin: 40px auto;
+  padding: 0 16px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+.mod-loading.error { color: #e8734a; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ics-chev { transition: none; }
+}

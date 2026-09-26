@@ -1,0 +1,1414 @@
+/* FireOps VVF - modulo "comunicazioni"
+ * Caricato da fireops-app.js alla prima apertura (#/comunicazioni).
+ * CSS e HTML sono qui dentro; lo stile è limitato a .pg-comunicazioni per non toccare gli altri moduli.
+ */
+FireOps.registra({
+  id: "comunicazioni",
+
+  css: `
+.pg-comunicazioni {
+      --bg: #10141a;
+      --panel: #171d25;
+      --panel-2: #1d242e;
+      --line: #2a323d;
+      --red: #c8202b;
+      --red-dim: #5c1216;
+      --amber: #e8a33d;
+      --text: #eceff3;
+      --text-dim: #8b96a3;
+      --green: #3fa66b;
+      --wa: #25d366;
+      --tg: #29a9eb;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", Consolas, "Liberation Mono", monospace;
+}
+.pg-comunicazioni, .pg-comunicazioni * {
+      box-sizing: border-box;
+}
+.pg-comunicazioni {
+      margin: 0;
+      padding: 0;
+}
+.pg-comunicazioni {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      padding-bottom: 80px;
+}
+.pg-comunicazioni .wrap {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 0 16px;
+}
+.pg-comunicazioni header {
+      padding: 16px 16px 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--line);
+}
+.pg-comunicazioni .mark {
+      flex: none;
+      width: 34px;
+      height: 34px;
+      object-fit: contain;
+}
+.pg-comunicazioni .htitle {
+      flex: 1;
+      min-width: 0;
+}
+.pg-comunicazioni .home-btn {
+      flex: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-2);
+      color: var(--text-dim);
+      text-decoration: none;
+}
+.pg-comunicazioni .home-btn:hover, .pg-comunicazioni .home-btn:focus-visible {
+      border-color: var(--amber);
+      color: var(--amber);
+}
+.pg-comunicazioni .htitle h1 {
+      margin: 0;
+      font-size: 17px;
+      font-weight: 600;
+}
+.pg-comunicazioni .htitle p {
+      margin: 2px 0 0;
+      font-size: 12.5px;
+      color: var(--text-dim);
+}
+.pg-comunicazioni .steps-bar {
+      display: flex;
+      gap: 5px;
+      padding: 14px 0 0;
+}
+.pg-comunicazioni .step-dot {
+      flex: 1;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--line);
+}
+.pg-comunicazioni .step-dot.done {
+      background: var(--green);
+}
+.pg-comunicazioni .step-dot.active {
+      background: var(--amber);
+}
+.pg-comunicazioni .step-label {
+      padding: 8px 0 0;
+      font-size: 12.5px;
+      color: var(--text-dim);
+      text-align: center;
+}
+.pg-comunicazioni section.step {
+      margin-top: 14px;
+}
+.pg-comunicazioni .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 12px;
+}
+.pg-comunicazioni .row-group-label {
+      padding: 12px 14px 8px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      border-left: 3px solid var(--line);
+      background: rgba(255,255,255,0.02);
+}
+.pg-comunicazioni .row-group-label.tep {
+      border-left-color: var(--amber);
+}
+.pg-comunicazioni .row-group-label.pers {
+      border-left-color: var(--green);
+}
+.pg-comunicazioni .field {
+      padding: 10px 14px;
+}
+.pg-comunicazioni .field label {
+      display: block;
+      font-size: 12.5px;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+}
+.pg-comunicazioni .field input[type=text], .pg-comunicazioni .field input[type=date], .pg-comunicazioni .field input[type=time], .pg-comunicazioni .field input[type=datetime-local], .pg-comunicazioni .field select, .pg-comunicazioni .field textarea {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: var(--sans);
+}
+.pg-comunicazioni .field textarea {
+      font-family: var(--sans);
+      resize: vertical;
+}
+.pg-comunicazioni .field input:focus, .pg-comunicazioni .field select:focus, .pg-comunicazioni .field textarea:focus {
+      outline: none;
+      border-color: var(--amber);
+}
+.pg-comunicazioni .field-row {
+      display: flex;
+      gap: 10px;
+      padding: 0 14px;
+}
+.pg-comunicazioni .field-row .field {
+      flex: 1;
+      padding: 10px 0;
+}
+.pg-comunicazioni .field-check {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      font-size: 14px;
+}
+.pg-comunicazioni .field-check input {
+      width: 20px;
+      height: 20px;
+      flex: none;
+}
+.pg-comunicazioni .hint {
+      font-size: 11.5px;
+      color: var(--text-dim);
+      padding: 0 14px 10px;
+}
+.pg-comunicazioni .comando-current {
+      padding: 8px 14px 14px;
+      font-size: 12.5px;
+      color: var(--text-dim);
+}
+.pg-comunicazioni .comando-current b {
+      color: var(--text);
+      font-weight: 600;
+}
+.pg-comunicazioni .tile-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 12px 14px 14px;
+}
+.pg-comunicazioni .tile {
+      flex: 1 1 calc(50% - 10px);
+      min-width: 140px;
+      padding: 16px 12px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      color: var(--text-dim);
+      font-size: 13.5px;
+      font-weight: 600;
+      text-align: center;
+      cursor: pointer;
+      line-height: 1.4;
+}
+.pg-comunicazioni .tile.selected {
+      background: var(--red);
+      border-color: var(--red);
+      color: #fff;
+}
+.pg-comunicazioni .dyn-list {
+      padding: 6px 14px;
+}
+.pg-comunicazioni .person-row, .pg-comunicazioni .timb-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 10px;
+}
+.pg-comunicazioni .person-select-wrapper {
+      flex: 1;
+      position: relative;
+}
+.pg-comunicazioni .person-row input.person-input {
+      width: 100%;
+      padding: 10px;
+      font-size: 15px;
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      color: var(--text);
+}
+.pg-comunicazioni .timb-row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      align-items: end;
+      flex-wrap: nowrap;
+}
+.pg-comunicazioni .timb-row .tfield {
+      min-width: 0;
+}
+.pg-comunicazioni .timb-row .tfield label {
+      font-size: 11.5px;
+      color: var(--text-dim);
+      margin-bottom: 4px;
+      display: block;
+}
+.pg-comunicazioni .timb-row input, .pg-comunicazioni .timb-row select {
+      width: 100%;
+      padding: 10px;
+      font-size: 14px;
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      color: var(--text);
+      color-scheme: dark;
+}
+.pg-comunicazioni .timb-row .tdate {
+      grid-column: 1 / -1;
+}
+.pg-comunicazioni .timb-row .tdate input {
+      font-size: 15px;
+}
+.pg-comunicazioni .timb-row .tshift {
+      min-width: 0;
+}
+.pg-comunicazioni .timb-row .tshift select {
+      font-size: 14px;
+}
+.pg-comunicazioni .timb-row .row-remove-btn {
+      margin-bottom: 1px;
+}
+.pg-comunicazioni .time-presets {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+      margin-top: 7px;
+}
+.pg-comunicazioni .time-preset {
+      padding: 7px 10px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      color: var(--text-dim);
+      font-size: 12px;
+      cursor: pointer;
+}
+.pg-comunicazioni .time-preset:hover {
+      border-color: var(--amber);
+      color: var(--amber);
+}
+.pg-comunicazioni .date-nav {
+      display: flex;
+      gap: 7px;
+      margin-top: 7px;
+}
+.pg-comunicazioni .date-nav button {
+      padding: 7px 10px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      color: var(--text-dim);
+      font-size: 12px;
+      cursor: pointer;
+}
+.pg-comunicazioni .date-nav button:hover {
+      border-color: var(--amber);
+      color: var(--amber);
+}
+.pg-comunicazioni .timb-row .row-remove-btn {
+      justify-self: end;
+}
+.pg-comunicazioni .field-row.stack {
+      flex-direction: column;
+      gap: 0;
+}
+.pg-comunicazioni .field-row.stack .field {
+      padding: 10px 0;
+}
+.pg-comunicazioni .row-remove-btn {
+      flex: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 6px;
+      background: var(--bg);
+      border: 1px solid var(--line);
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+}
+.pg-comunicazioni .row-remove-btn:active {
+      border-color: var(--red);
+      color: var(--red);
+}
+.pg-comunicazioni .add-row-btn {
+      width: calc(100% - 28px);
+      margin: 6px 14px 14px;
+      padding: 12px;
+      background: var(--panel-2);
+      border: 1px dashed var(--line);
+      border-radius: 6px;
+      color: var(--amber);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+}
+.pg-comunicazioni .nav-row {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--panel);
+      border-top: 1px solid var(--line);
+      display: flex;
+      gap: 10px;
+      padding: 12px 16px;
+      z-index: 500;
+      box-shadow: 0 -4px 12px rgba(0,0,0,0.3);
+}
+.pg-comunicazioni .nav-btn {
+      flex: 1;
+      padding: 14px;
+      border: none;
+      border-radius: 6px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+}
+.pg-comunicazioni .nav-back {
+      background: var(--panel-2);
+      border: 1px solid var(--line) !important;
+      color: var(--text);
+}
+.pg-comunicazioni .nav-next {
+      background: var(--red);
+      color: #fff;
+}
+.pg-comunicazioni .preview-actions {
+      display: flex;
+      gap: 10px;
+      padding: 0 14px 14px;
+}
+.pg-comunicazioni .preview-actions button {
+      flex: 1;
+      padding: 14px 10px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+}
+.pg-comunicazioni .btn-mailto {
+      background: var(--green);
+      color: #fff;
+}
+.pg-comunicazioni .btn-eml {
+      background: var(--panel-2);
+      border: 1px solid var(--amber) !important;
+      color: var(--amber);
+}
+.pg-comunicazioni .security-note {
+      margin-top: 10px;
+      margin-bottom: 20px;
+      padding: 14px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-left: 3px solid var(--green);
+      border-radius: 6px;
+      font-size: 13px;
+      color: var(--text-dim);
+      line-height: 1.55;
+}
+.pg-comunicazioni .security-note strong {
+      color: var(--text);
+}
+.pg-comunicazioni .hidden {
+      display: none !important;
+}
+.pg-comunicazioni .suggestions-list {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      max-height: 180px;
+      overflow-y: auto;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      z-index: 1000;
+      display: none;
+}
+.pg-comunicazioni .suggestion-item {
+      padding: 10px 12px;
+      font-size: 14px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--line);
+}
+.pg-comunicazioni .suggestion-item:hover, .pg-comunicazioni .suggestion-item:active {
+      background: var(--line);
+      color: var(--text);
+}
+.pg-comunicazioni .cbx-box {
+      position: relative;
+}
+.pg-comunicazioni .field .cbx-box input[type=text] {
+      padding-right: 42px;
+}
+.pg-comunicazioni .cbx-clear {
+      position: absolute;
+      right: 2px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 38px;
+      height: 38px;
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      font-size: 16px;
+      cursor: pointer;
+}
+.pg-comunicazioni .cbx-results {
+      margin-top: 8px;
+      max-height: 264px;
+      overflow-y: auto;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--panel-2);
+}
+.pg-comunicazioni .cbx-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      cursor: pointer;
+}
+.pg-comunicazioni .cbx-item:last-child {
+      border-bottom: none;
+}
+.pg-comunicazioni .cbx-item b {
+      font-size: 14.5px;
+      font-weight: 600;
+}
+.pg-comunicazioni .cbx-item span {
+      font-size: 12px;
+      color: var(--text-dim);
+      white-space: nowrap;
+}
+.pg-comunicazioni .cbx-tools {
+      display: flex;
+      gap: 8px;
+      padding: 0 14px 8px;
+}
+.pg-comunicazioni .cbx-tools select {
+      flex: 1;
+      padding: 10px 12px;
+      font-size: 14px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      color: var(--text);
+}
+.pg-comunicazioni .cbx-geo {
+      flex: none;
+      padding: 10px 14px;
+      background: var(--panel-2);
+      border: 1px solid var(--amber);
+      border-radius: 6px;
+      color: var(--amber);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+}
+.pg-comunicazioni .prof-details summary {
+      padding: 12px 14px;
+      font-size: 13.5px;
+      color: var(--amber);
+      font-weight: 700;
+      cursor: pointer;
+      border-top: 1px solid var(--line);
+}
+.pg-comunicazioni .prof-actions {
+      display: flex;
+      gap: 8px;
+      padding: 10px 14px;
+}
+.pg-comunicazioni .prof-save {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      background: var(--green);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+}
+.pg-comunicazioni .prof-del {
+      flex: none;
+      padding: 12px 16px;
+      border-radius: 6px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      color: var(--text-dim);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+}
+`,
+
+  html: `
+  <div class="wrap">
+
+    <div class="steps-bar" id="stepsBar"></div>
+    <div class="step-label" id="stepLabel"></div>
+
+    <!-- STEP 1 -->
+    <section class="step" id="step-1">
+      <div class="panel">
+        <div class="row-group-label">Utente</div>
+        <div class="field">
+          <label>Utente registrato</label>
+          <select id="profiloSelect"></select>
+        </div>
+        <details id="profDetails" class="prof-details">
+          <summary>Modifica dati dell’unico utente registrato</summary>
+          <div class="field-row">
+            <div class="field"><label>Cognome</label><input type="text" id="uCognome" autocomplete="off" value="Pelizza"></div>
+            <div class="field"><label>Nome</label><input type="text" id="uNome" autocomplete="off" value="Andrea"></div>
+          </div>
+          <div class="field"><label>Codice fiscale</label><input type="text" id="uCf" maxlength="16" autocomplete="off" autocapitalize="characters" value="PLZNDR86B12A001C"></div>
+          <div class="field"><label>Email istituzionale</label><input type="text" id="uEmail" placeholder="nome.cognome@vigilfuoco.it" autocomplete="off" value="andrea.pelizza@vigilfuoco.it"></div>
+          <div class="field"><label>Qualifica</label>
+            <select id="qualificaSelect">
+              <option value="VVF">Vigile del Fuoco (VVF)</option>
+              <option value="VVFC">Vigile del Fuoco Coordinatore (VVFC)</option>
+              <option value="VE" selected>Vigile Esperto (VE)</option>
+              <option value="VEC">Vigile Esperto Coordinatore (VEC)</option>
+              <option value="VESC">VESC</option>
+              <option value="CS">Capo Squadra (CS)</option>
+              <option value="CSC">Capo Squadra Coordinatore (CSC)</option>
+              <option value="CR">Capo Reparto (CR)</option>
+              <option value="CRC">Capo Reparto Coordinatore (CRC)</option>
+              <option value="Funzionario">Funzionario</option>
+              <option value="Direttivo/Dirigente">Direttivo / Dirigente</option>
+            </select>
+          </div>
+          <div class="field-row">
+            <div class="field"><label>Turno</label>
+              <select id="turnoLettera">
+                <option value="">-</option>
+                <option>A</option>
+                <option>B</option>
+                <option>C</option>
+                <option>D</option>
+                <option>G</option>
+              </select>
+            </div>
+            <div class="field"><label>Salto turno</label>
+              <select id="turnoSalto">
+                <option value="">-</option>
+                <option selected>2</option>
+                <option>1</option>
+                <option>3</option>
+                <option>4</option>
+                <option>5</option>
+                <option>6</option>
+                <option>7</option>
+                <option>8</option>
+              </select>
+            </div>
+          </div>
+          <div class="field"><label>Sede</label><input type="text" id="sedeInput" placeholder="es. CENTRALE" value="CENTRALE"></div>
+          <div class="field"><label>Telefono</label><input type="text" id="uTel" value="3666382828"></div>
+
+          <div class="row-group-label">Comando di appartenenza</div>
+          <div id="homeBox">
+            <div class="field">
+              <div class="cbx-box">
+                <input type="text" id="homeInput" placeholder="Cerca: capoluogo, provincia o sigla" autocomplete="off">
+                <button type="button" class="cbx-clear hidden" id="homeClear">&#10005;</button>
+              </div>
+              <div class="cbx-results hidden" id="homeResults"></div>
+            </div>
+            <div class="cbx-tools">
+              <select id="homeRegione"><option value="">Tutte le regioni</option></select>
+            </div>
+          </div>
+          <div class="comando-current" id="homeCurrent">Forlì-Cesena</div>
+
+          <div class="prof-actions">
+            <button type="button" class="prof-save" id="profSave">Salva utente</button>
+            <button type="button" class="prof-del" id="profDel">Elimina</button>
+          </div>
+          <div class="hint" id="profMsg"></div>
+        </details>
+      </div>
+
+      <div class="panel">
+        <div class="row-group-label">Destinatario</div>
+        <div class="field-check">
+          <input type="checkbox" id="stessoComando" checked>
+          <label for="stessoComando">Spedire la mail allo stesso comando di appartenenza</label>
+        </div>
+        <div id="destBox" class="hidden">
+          <div class="field">
+            <label for="destSelect">Comando destinatario</label>
+            <select id="destSelect">
+              <option value="">Caricamento comandi...</option>
+            </select>
+          </div>
+        </div>
+        <div class="comando-current" id="destCurrent">Comando Forlì-Cesena</div>
+      </div>
+    </section>
+
+    <!-- STEP 2 -->
+    <section class="step hidden" id="step-2">
+      <div class="panel">
+        <div class="row-group-label">Tipo di comunicazione</div>
+        <div class="tile-grid" id="tipoTiles">
+          <div class="tile" data-tipo="timbratura">Mancata timbratura</div>
+          <div class="tile" data-tipo="missione">Missione per soccorso</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 3 - dettaglio dinamico -->
+    <section class="step hidden" id="step-3">
+
+      <div class="detail-block hidden" id="det-missione">
+        <div class="panel">
+          <div class="row-group-label tep">Dati intervento</div>
+          <div class="field-row stack">
+            <div class="field"><label>Data/ora inizio intervento</label><input type="datetime-local" id="msInizio"></div>
+            <div class="field"><label>Data/ora fine intervento</label><input type="datetime-local" id="msFine"></div>
+          </div>
+          <div class="field-row">
+            <div class="field"><label>Numero intervento</label><input type="text" id="msNumero"></div>
+            <div class="field"><label>Progressivo intervento</label><input type="text" id="msProgressivo"></div>
+          </div>
+          <div class="field"><label>Località</label><input type="text" id="msLocalita"></div>
+          <div class="field"><label>Tipologia intervento</label><select id="msTipologia"></select></div>
+        </div>
+        <div class="panel">
+          <div class="row-group-label pers">Personale intervenuto (Seleziona o scrivi in basso)</div>
+          <div class="dyn-list" id="msPersonaleList"></div>
+          <button type="button" class="add-row-btn" data-add="person" data-target="msPersonaleList">+ Aggiungi personale</button>
+        </div>
+      </div>
+
+      <div class="detail-block hidden" id="det-timbratura">
+        <div class="panel">
+          <div class="row-group-label pers">Motivo</div>
+          <div class="field">
+            <label>Motivo mancata timbratura</label>
+            <select id="tmMotivoSelect">
+              <option value="Dimenticanza" selected>Dimenticanza</option>
+              <option value="Mancanza badge">Mancanza badge</option>
+              <option value="Altro">Altro (specificare)</option>
+            </select>
+          </div>
+          <div class="field hidden" id="tmMotivoAltroField">
+            <label>Specifica motivo</label>
+            <textarea id="tmMotivoAltro" rows="2" placeholder="Inserisci il motivo a mano..."></textarea>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="row-group-label pers">Date e fasce orarie interessate</div>
+          <div class="dyn-list" id="tmDateList"></div>
+          <button type="button" class="add-row-btn" data-add="timbratura" data-target="tmDateList">+ Aggiungi data / fascia</button>
+          <div class="hint">Puoi inserire più giornate e più fasce. Usa i pulsanti rapidi per impostare 08:00–20:00, 20:00–08:00 o una fascia personalizzata.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 4 - opzioni -->
+    <section class="step hidden" id="step-4">
+      <div class="panel">
+        <div class="row-group-label">Note</div>
+        <div class="field"><textarea id="noteInput" rows="3" placeholder="Note aggiuntive (facoltative)"></textarea></div>
+      </div>
+    </section>
+
+    <!-- STEP 5 - riepilogo -->
+    <section class="step hidden" id="step-5">
+      <div class="panel">
+        <div class="row-group-label">Destinatario</div>
+        <div class="field"><label>A:</label><input type="text" id="previewTo"></div>
+        <div class="field"><label>Oggetto</label><input type="text" id="previewSubject"></div>
+      </div>
+      <div class="panel">
+        <div class="row-group-label">Anteprima Testo</div>
+        <div class="field"><textarea id="previewBody" rows="12"></textarea></div>
+        <div class="preview-actions">
+          <button type="button" class="btn-mailto" id="btnMailto">Apri nel client di posta</button>
+          <button type="button" class="btn-eml" id="btnEml">Scarica .eml</button>
+        </div>
+      </div>
+      <div class="security-note">
+        <strong>Invio protetto.</strong> "Apri nel client di posta" compila direttamente il tuo programma mail predefinito.
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Barra di navigazione fissa in basso -->
+  <div class="nav-row" id="navRow">
+    <button type="button" class="nav-btn nav-back hidden" id="navBack" data-back>Indietro</button>
+    <button type="button" class="nav-btn nav-next" id="navNext" data-next>Avanti</button>
+  </div>
+
+  
+`,
+
+  async init(root) {
+
+    const MITTENTE = {nome: "Andrea", cognome: "Pelizza", cf: "PLZNDR86B12A001C", email: "andrea.pelizza@vigilfuoco.it", tel: "3666382828"};
+
+    const TIPOLOGIE = [
+      "Incendio fabbricato", "Incendio boschivo / vegetazione", "Incendio veicolo",
+      "Incidente stradale", "Dissesto statico", "Soccorso a persona",
+      "Ascensore bloccato con persona", "Apertura porta", "Recupero animale",
+      "Perdita gas", "Dispersione liquidi pericolosi", "Allagamento", "Danni d'acqua",
+      "Rimozione neve / ghiaccio", "Bonifica ordigno bellico",
+      "Esercitazione / servizio di vigilanza", "Altro (specificare in località)"
+    ];
+
+    let externalPersonnelList = ["Pelizza Andrea"];
+
+    async function loadPersonnelFromSheet() {
+      try {
+        const res = await fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vSKeUUJhapaXP-YfechgFLRfgTVaJUtuK7oiBJF8NoiyBIn8iwLL2s_L4tDL1DVmBH5tCjVbCwrOuKo/pub?gid=0&single=true&output=csv");
+        const text = await res.text();
+        const lines = text.split("\n");
+        const sheetList = lines.map(line => {
+          const cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, "").trim());
+          if (cols.length >= 2) {
+            return (cols[1] + " " + cols[0]).trim();
+          } else if (cols.length === 1) {
+            return cols[0];
+          }
+          return "";
+        }).filter(Boolean);
+
+        const set = new Set(["Pelizza Andrea", ...sheetList]);
+        externalPersonnelList = Array.from(set);
+      } catch(e) {
+        externalPersonnelList = ["Pelizza Andrea", "Rossi Mario", "Bianchi Giovanni"];
+      }
+    }
+    loadPersonnelFromSheet();
+
+    // Elenco comandi: condiviso dall'app (db/comandi.json, caricato una volta sola)
+    const COMANDO_FALLBACK = {
+      c: "Forlì-Cesena", pr: "FC", rg: "Emilia-Romagna", cm: "Forlì",
+      lat: 44.213465, lon: 12.061362, esc: "so.forli@vigilfuoco.it"
+    };
+    let COMANDI = [COMANDO_FALLBACK];
+    let TUTTI = COMANDI;
+    let comandoDestinatario = COMANDO_FALLBACK;
+
+    // Utente registrato: al momento è presente un solo profilo.
+    const PROFILO_UNICO = {
+      id: "pelizza-andrea",
+      nome: "Andrea",
+      cognome: "Pelizza",
+      cf: "PLZNDR86B12A001C",
+      email: "andrea.pelizza@vigilfuoco.it",
+      tel: "3666382828"
+    };
+
+    const profiloSelect = document.getElementById("profiloSelect");
+    profiloSelect.innerHTML = "";
+    const profiloOption = document.createElement("option");
+    profiloOption.value = PROFILO_UNICO.id;
+    profiloOption.textContent = PROFILO_UNICO.cognome + " " + PROFILO_UNICO.nome;
+    profiloOption.selected = true;
+    profiloSelect.appendChild(profiloOption);
+
+    let currentStep = 1;
+    let currentTipo = null;
+    let currentComando = COMANDO_FALLBACK;
+    const STEP_LABELS = ["Mittente e comando", "Tipo di comunicazione", "Dettaglio", "Opzioni e note", "Riepilogo e invio"];
+
+    const stepsBar = document.getElementById("stepsBar");
+    for (let i = 1; i <= 5; i++) {const d = document.createElement("div"); d.className = "step-dot"; d.dataset.step = i; stepsBar.appendChild(d);}
+
+    const stessoComando = document.getElementById("stessoComando");
+    const destBox = document.getElementById("destBox");
+    const destSelect = document.getElementById("destSelect");
+    const destCurrent = document.getElementById("destCurrent");
+
+    function aggiornaDestinatarioUI() {
+      const stesso = stessoComando.checked;
+      destBox.classList.toggle("hidden", stesso);
+
+      if (stesso) {
+        comandoDestinatario = currentComando;
+        destCurrent.innerHTML = "Comando <b>" + (currentComando?.c || "-") + "</b>";
+      } else {
+        aggiornaElencoDestinatari();
+      }
+    }
+
+    function aggiornaElencoDestinatari() {
+      const precedente = comandoDestinatario?.c || "";
+      destSelect.innerHTML = "";
+
+      const lista = [...TUTTI].sort((a, b) => String(a.c || "").localeCompare(String(b.c || ""), "it"));
+      lista.forEach(cmd => {
+        const opt = document.createElement("option");
+        opt.value = cmd.c || "";
+        opt.textContent = cmd.c + (cmd.pr ? " (" + cmd.pr + ")" : "");
+        destSelect.appendChild(opt);
+      });
+
+      if (!lista.length) {
+        destSelect.innerHTML = '<option value="">Nessun comando disponibile</option>';
+        comandoDestinatario = null;
+        return;
+      }
+
+      const idx = lista.findIndex(c => c.c === precedente);
+      destSelect.selectedIndex = idx >= 0 ? idx : 0;
+      comandoDestinatario = lista[destSelect.selectedIndex];
+    }
+
+    stessoComando.addEventListener("change", aggiornaDestinatarioUI);
+    destSelect.addEventListener("change", function() {
+      comandoDestinatario = TUTTI.find(c => c.c === this.value) || null;
+      if (comandoDestinatario) {
+        destCurrent.innerHTML = "Destinatario: <b>" + comandoDestinatario.c + "</b>";
+      }
+    });
+
+    function fetchComandi() {
+      return FireOps.comandi();
+    }
+
+    async function caricaComandi() {
+      try {
+        const data = await fetchComandi();
+        COMANDI = data;
+        TUTTI = data;
+
+        // Mantiene il comando di appartenenza dell'utente, se presente nel JSON.
+        const trovato = TUTTI.find(c => c.c === currentComando.c || c.pr === currentComando.pr);
+        if (trovato) currentComando = trovato;
+
+        popolaRegioni();
+        setComandoAppartenenza(currentComando);
+      } catch (err) {
+        console.warn("Impossibile caricare comandi.json, uso il comando predefinito.", err);
+        aggiornaDestinatarioUI();
+      }
+    }
+
+    // ---- Comando di appartenenza: ricerca per capoluogo, provincia o sigla ----
+    const homeInput = document.getElementById("homeInput");
+    const homeClear = document.getElementById("homeClear");
+    const homeResults = document.getElementById("homeResults");
+    const homeRegione = document.getElementById("homeRegione");
+    const homeCurrent = document.getElementById("homeCurrent");
+
+    function normalizza(t) {
+      return String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+
+    function popolaRegioni() {
+      const regioni = [...new Set(TUTTI.map(c => c.rg).filter(Boolean))].sort((a, b) => a.localeCompare(b, "it"));
+      homeRegione.innerHTML = '<option value="">Tutte le regioni</option>';
+      regioni.forEach(r => {
+        const o = document.createElement("option");
+        o.value = r; o.textContent = r;
+        homeRegione.appendChild(o);
+      });
+    }
+
+    function setComandoAppartenenza(cmd) {
+      currentComando = cmd;
+      homeCurrent.innerHTML = "Comando <b>" + cmd.c + "</b>" + (cmd.pr ? " (" + cmd.pr + ")" : "");
+      aggiornaDestinatarioUI();
+    }
+
+    function renderHomeResults() {
+      const q = normalizza(homeInput.value.trim());
+      const rg = homeRegione.value;
+      homeClear.classList.toggle("hidden", !homeInput.value);
+
+      if (!q && !rg) {homeResults.classList.add("hidden"); return;}
+
+      const lista = TUTTI
+        .filter(c => !rg || c.rg === rg)
+        .filter(c => !q || normalizza(c.c).includes(q) || normalizza(c.cm).includes(q) || normalizza(c.pr) === q)
+        .sort((a, b) => String(a.c).localeCompare(String(b.c), "it"));
+
+      homeResults.innerHTML = "";
+      if (!lista.length) {
+        homeResults.innerHTML = '<div class="cbx-item"><span>Nessun comando trovato</span></div>';
+      } else {
+        lista.forEach(c => {
+          const item = document.createElement("div");
+          item.className = "cbx-item";
+          item.innerHTML = "<b>" + c.c + "</b> <span>" + [c.pr, c.rg].filter(Boolean).join(" · ") + "</span>";
+          item.addEventListener("click", () => {
+            setComandoAppartenenza(c);
+            homeInput.value = "";
+            homeClear.classList.add("hidden");
+            homeResults.classList.add("hidden");
+          });
+          homeResults.appendChild(item);
+        });
+      }
+      homeResults.classList.remove("hidden");
+    }
+
+    homeInput.addEventListener("input", renderHomeResults);
+    homeInput.addEventListener("focus", renderHomeResults);
+    homeRegione.addEventListener("change", renderHomeResults);
+    homeClear.addEventListener("click", () => {
+      homeInput.value = "";
+      renderHomeResults();
+      homeInput.focus();
+    });
+    document.addEventListener("click", e => {
+      if (!document.getElementById("homeBox").contains(e.target)) homeResults.classList.add("hidden");
+    });
+
+    function renderStepsBar() {
+      stepsBar.querySelectorAll(".step-dot").forEach(d => {
+        const n = Number(d.dataset.step);
+        d.classList.toggle("done", n < currentStep);
+        d.classList.toggle("active", n === currentStep);
+      });
+      document.getElementById("stepLabel").textContent = "Passo " + currentStep + " di 5 - " + STEP_LABELS[currentStep - 1];
+    }
+
+    function updateNavButtons() {
+      const btnBack = document.getElementById("navBack");
+      const btnNext = document.getElementById("navNext");
+      btnBack.classList.toggle("hidden", currentStep <= 1);
+      btnNext.textContent =
+        currentStep === 5 ? "Ricomincia" :
+        currentStep === 4 ? "Vai al riepilogo" : "Avanti";
+    }
+
+    function showDetailBlock() {
+      document.querySelectorAll(".detail-block").forEach(b => b.classList.add("hidden"));
+      document.querySelectorAll("#tipoTiles .tile").forEach(x => {
+        x.classList.toggle("selected", x.dataset.tipo === currentTipo);
+      });
+      if (currentTipo) {
+        const el = document.getElementById("det-" + currentTipo);
+        if (el) el.classList.remove("hidden");
+      }
+    }
+
+    function showStep(n) {
+      currentStep = n;
+      document.querySelectorAll("section.step").forEach(s => s.classList.toggle("hidden", s.id !== "step-" + n));
+      if (n === 3) showDetailBlock();
+      if (n === 5) generatePreview();
+      renderStepsBar();
+      updateNavButtons();
+      window.scrollTo({top: 0, behavior: "smooth"});
+    }
+
+    function goNext() {
+      if (currentStep === 5) {showStep(1); return;}
+      if (currentStep === 2 && !currentTipo) {alert("Seleziona il tipo di comunicazione."); return;}
+      showStep(currentStep + 1);
+    }
+    function goBack() {showStep(Math.max(1, currentStep - 1));}
+
+    document.querySelectorAll("[data-next]").forEach(b => b.addEventListener("click", goNext));
+    document.querySelectorAll("[data-back]").forEach(b => b.addEventListener("click", goBack));
+
+    document.querySelectorAll("#tipoTiles .tile").forEach(t => {
+      t.addEventListener("click", function () {
+        currentTipo = this.dataset.tipo;
+        document.querySelectorAll("#tipoTiles .tile").forEach(x => x.classList.toggle("selected", x === this));
+        showStep(3);
+      });
+    });
+
+    const tmMotivoSelect = document.getElementById("tmMotivoSelect");
+    const tmMotivoAltroField = document.getElementById("tmMotivoAltroField");
+    tmMotivoSelect.addEventListener("change", function() {
+      tmMotivoAltroField.classList.toggle("hidden", this.value !== "Altro");
+    });
+
+    function addPersonRow(targetId) {
+      const list = document.getElementById(targetId);
+      const row = document.createElement("div");
+      row.className = "person-row";
+      
+      const wrapper = document.createElement("div");
+      wrapper.className = "person-select-wrapper";
+      
+      const inp = document.createElement("input");
+      inp.type = "text";
+      inp.className = "person-input";
+      inp.placeholder = "Pelizza Andrea o cerca...";
+      
+      const sug = document.createElement("div");
+      sug.className = "suggestions-list";
+      
+      wrapper.appendChild(inp);
+      wrapper.appendChild(sug);
+      
+      const removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.className = "row-remove-btn";
+      removeBtn.innerHTML = "&#10005;";
+      removeBtn.addEventListener("click", () => row.remove());
+      
+      row.appendChild(wrapper);
+      row.appendChild(removeBtn);
+      
+      function renderSuggestions(filter) {
+        sug.innerHTML = "";
+        const matches = externalPersonnelList.filter(p => p.toLowerCase().includes(filter.toLowerCase()));
+        if (!matches.length) {
+          sug.style.display = "none";
+          return;
+        }
+        matches.forEach(m => {
+          const item = document.createElement("div");
+          item.className = "suggestion-item";
+          item.textContent = m;
+          item.addEventListener("click", () => {
+            inp.value = m;
+            sug.style.display = "none";
+          });
+          sug.appendChild(item);
+        });
+        sug.style.display = "block";
+      }
+
+      inp.addEventListener("input", () => renderSuggestions(inp.value));
+      inp.addEventListener("focus", () => renderSuggestions(inp.value));
+      document.addEventListener("click", (e) => {
+        if (!wrapper.contains(e.target)) sug.style.display = "none";
+      });
+
+      list.appendChild(row);
+    }
+
+    function localDateTimeValue(d) {
+      const y = d.getFullYear();
+      const m = pad2(d.getMonth() + 1);
+      const day = pad2(d.getDate());
+      const h = pad2(d.getHours());
+      const min = pad2(d.getMinutes());
+      return `${y}-${m}-${day}T${h}:${min}`;
+    }
+
+    function dateOnlyValue(d) {
+      return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+    }
+
+    function setDateAndTimes(row, date, inHour, outHour, outNextDay = false) {
+      const inEl = row.querySelector(".timb-in");
+      const outEl = row.querySelector(".timb-out");
+
+      const dIn = new Date(date);
+      dIn.setHours(inHour, 0, 0, 0);
+
+      const dOut = new Date(date);
+      if (outNextDay) dOut.setDate(dOut.getDate() + 1);
+      dOut.setHours(outHour, 0, 0, 0);
+
+      inEl.value = localDateTimeValue(dIn);
+      outEl.value = localDateTimeValue(dOut);
+
+      const dateEl = row.querySelector(".timb-date");
+      if (dateEl) dateEl.value = dateOnlyValue(dIn);
+
+      const shift = row.querySelector(".timb-shift");
+      if (shift) shift.value = outNextDay ? "notte" : "giorno";
+    }
+
+    function getDefaultTimbraturaTimes() {
+      const now = new Date();
+      const hour = now.getHours();
+      const base = new Date(now);
+      base.setHours(0, 0, 0, 0);
+
+      if (hour >= 8 && hour < 20) {
+        return {date: base, inHour: 8, outHour: 20, outNextDay: false};
+      }
+
+      if (hour < 8) {
+        base.setDate(base.getDate() - 1);
+      }
+
+      return {date: base, inHour: 20, outHour: 8, outNextDay: true};
+    }
+
+    function addTimbraturaRow(targetId, preset = null) {
+      const list = document.getElementById(targetId);
+      const row = document.createElement("div");
+      row.className = "timb-row";
+
+      const defs = preset || getDefaultTimbraturaTimes();
+
+      row.innerHTML =
+        '<div class="tfield tdate">' +
+          '<label>Data interessata</label>' +
+          '<input type="date" class="timb-date">' +
+          '<div class="date-nav">' +
+            '<button type="button" class="date-minus">− Giorno precedente</button>' +
+            '<button type="button" class="date-plus">+ Giorno successivo</button>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="tfield">' +
+          '<label>Data/ora ingresso</label>' +
+          '<input type="datetime-local" class="timb-in">' +
+          '<div class="time-presets">' +
+            '<button type="button" class="time-preset preset-day">08:00 → 20:00</button>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="tfield">' +
+          '<label>Data/ora uscita</label>' +
+          '<input type="datetime-local" class="timb-out">' +
+          '<div class="time-presets">' +
+            '<button type="button" class="time-preset preset-night">20:00 → 08:00</button>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="tfield tshift">' +
+          '<label>Fascia</label>' +
+          '<select class="timb-shift">' +
+            '<option value="giorno">Diurna</option>' +
+            '<option value="notte">Notturna</option>' +
+            '<option value="personalizzata">Personalizzata</option>' +
+          '</select>' +
+        '</div>' +
+
+        '<button type="button" class="row-remove-btn" aria-label="Rimuovi" title="Rimuovi fascia">&#10005;</button>';
+
+      list.appendChild(row);
+
+      const dateEl = row.querySelector(".timb-date");
+      const inEl = row.querySelector(".timb-in");
+      const outEl = row.querySelector(".timb-out");
+      const shiftEl = row.querySelector(".timb-shift");
+
+      function syncFromDate() {
+        if (!dateEl.value) return;
+        const [y, m, d] = dateEl.value.split("-").map(Number);
+        const base = new Date(y, m - 1, d);
+
+        if (shiftEl.value === "giorno") {
+          setDateAndTimes(row, base, 8, 20, false);
+        } else if (shiftEl.value === "notte") {
+          setDateAndTimes(row, base, 20, 8, true);
+        } else {
+          const currentIn = inEl.value;
+          const currentOut = outEl.value;
+          if (!currentIn || !currentOut) setDateAndTimes(row, base, 8, 20, false);
+        }
+      }
+
+      function syncDateFromInput(input) {
+        if (!input.value) return;
+        const d = new Date(input.value);
+        if (isNaN(d)) return;
+        dateEl.value = dateOnlyValue(d);
+      }
+
+      dateEl.addEventListener("change", syncFromDate);
+
+      inEl.addEventListener("change", () => {
+        syncDateFromInput(inEl);
+        if (shiftEl.value !== "personalizzata") shiftEl.value = "personalizzata";
+      });
+
+      outEl.addEventListener("change", () => {
+        syncDateFromInput(inEl);
+        if (shiftEl.value !== "personalizzata") shiftEl.value = "personalizzata";
+      });
+
+      shiftEl.addEventListener("change", syncFromDate);
+
+      row.querySelector(".preset-day").addEventListener("click", () => {
+        const d = dateEl.value ? new Date(dateEl.value + "T00:00") : new Date();
+        setDateAndTimes(row, d, 8, 20, false);
+      });
+
+      row.querySelector(".preset-night").addEventListener("click", () => {
+        const d = dateEl.value ? new Date(dateEl.value + "T00:00") : new Date();
+        setDateAndTimes(row, d, 20, 8, true);
+      });
+
+      row.querySelector(".date-minus").addEventListener("click", () => {
+        const d = dateEl.value ? new Date(dateEl.value + "T00:00") : new Date();
+        d.setDate(d.getDate() - 1);
+        dateEl.value = dateOnlyValue(d);
+        syncFromDate();
+      });
+
+      row.querySelector(".date-plus").addEventListener("click", () => {
+        const d = dateEl.value ? new Date(dateEl.value + "T00:00") : new Date();
+        d.setDate(d.getDate() + 1);
+        dateEl.value = dateOnlyValue(d);
+        syncFromDate();
+      });
+
+      row.querySelector(".row-remove-btn").addEventListener("click", () => {
+        const rows = list.querySelectorAll(".timb-row");
+        if (rows.length === 1) {
+          alert("Deve rimanere almeno una data/fascia oraria.");
+          return;
+        }
+        row.remove();
+      });
+
+      setDateAndTimes(row, defs.date, defs.inHour, defs.outHour, defs.outNextDay);
+      return row;
+    }
+
+    document.querySelectorAll(".add-row-btn[data-add]").forEach(btn => {
+      btn.addEventListener("click", function () {
+        const kind = this.dataset.add, target = this.dataset.target;
+        if (kind === "person") addPersonRow(target);
+        else if (kind === "timbratura") addTimbraturaRow(target);
+      });
+    });
+
+    addPersonRow("msPersonaleList");
+    addTimbraturaRow("tmDateList", getDefaultTimbraturaTimes());
+
+    const msTip = document.getElementById("msTipologia");
+    if (msTip) {
+      TIPOLOGIE.forEach(t => {const o = document.createElement("option"); o.value = t; o.textContent = t; msTip.appendChild(o);});
+    }
+
+    function pad2(n) {return String(n).padStart(2, "0");}
+    function fmtDT(v) {
+      if (!v) return "-";
+      const d = new Date(v);
+      if (isNaN(d)) return v;
+      return pad2(d.getDate()) + "/" + pad2(d.getMonth() + 1) + "/" + d.getFullYear() + " " + pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+    }
+
+    function buildIntervento() {
+      const inizio = fmtDT(document.getElementById("msInizio").value);
+      const fine = fmtDT(document.getElementById("msFine").value);
+      const numero = document.getElementById("msNumero").value.trim();
+      const progressivo = document.getElementById("msProgressivo").value.trim();
+      const localita = document.getElementById("msLocalita").value.trim();
+      const tipologia = document.getElementById("msTipologia").value;
+      const personale = Array.from(document.querySelectorAll("#msPersonaleList .person-input")).map(i => i.value.trim()).filter(Boolean);
+      
+      const lines = [];
+      lines.push("Comunicazione di missione per soccorso.");
+      lines.push("");
+      lines.push("Richiedente: " + MITTENTE.cognome + " " + MITTENTE.nome + " (" + document.getElementById("qualificaSelect").value + ") - CF " + MITTENTE.cf + " - turno " + document.getElementById("turnoLettera").value + document.getElementById("turnoSalto").value + " - sede " + document.getElementById("sedeInput").value);
+      lines.push("Comando: " + currentComando.c);
+      lines.push("");
+      lines.push("Data/ora inizio intervento: " + inizio);
+      lines.push("Data/ora fine intervento: " + fine);
+      lines.push("Numero intervento: " + (numero || "-"));
+      lines.push("Progressivo intervento: " + (progressivo || "-"));
+      lines.push("Località: " + (localita || "-"));
+      lines.push("Tipologia intervento: " + tipologia);
+      lines.push("");
+      lines.push("Personale intervenuto:");
+      if (personale.length) personale.forEach((p, i) => lines.push("  " + (i + 1) + ". " + p));
+      else lines.push("  (nessun nominativo inserito)");
+      
+      const note = document.getElementById("noteInput").value.trim();
+      if (note) {lines.push(""); lines.push("Note: " + note);}
+      lines.push("");
+      lines.push("Distinti saluti.");
+      lines.push(MITTENTE.cognome + " " + MITTENTE.nome);
+      
+      const subject = "Missione per soccorso - " + MITTENTE.cognome + " " + MITTENTE.nome + " - interv. n. " + (numero || "s.n.");
+      return {subject, body: lines.join("\n")};
+    }
+
+    function buildTimbratura() {
+      const selMotivo = document.getElementById("tmMotivoSelect").value;
+      const motivo = selMotivo === "Altro" ? document.getElementById("tmMotivoAltro").value.trim() : selMotivo;
+      const rows = Array.from(document.querySelectorAll("#tmDateList .timb-row")).map(r => ({
+        in: r.querySelector(".timb-in").value, 
+        out: r.querySelector(".timb-out").value
+      }));
+      
+      const lines = [];
+      lines.push("Comunicazione di mancata timbratura.");
+      lines.push("");
+      lines.push("Richiedente: " + MITTENTE.cognome + " " + MITTENTE.nome + " (" + document.getElementById("qualificaSelect").value + ") - CF " + MITTENTE.cf + " - turno " + document.getElementById("turnoLettera").value + document.getElementById("turnoSalto").value + " - sede " + document.getElementById("sedeInput").value);
+      lines.push("Comando: " + currentComando.c);
+      lines.push("");
+      lines.push("Motivo: " + (motivo || "-"));
+      lines.push("");
+      lines.push("Date e fasce orarie interessate:");
+      if (rows.length) rows.forEach((r, i) => lines.push("  " + (i + 1) + ". Ingresso: " + fmtDT(r.in) + "  -  Uscita: " + fmtDT(r.out)));
+      else lines.push("  (nessuna data inserita)");
+      
+      const note = document.getElementById("noteInput").value.trim();
+      if (note) {lines.push(""); lines.push("Note: " + note);}
+      lines.push("");
+      lines.push("Distinti saluti.");
+      lines.push(MITTENTE.cognome + " " + MITTENTE.nome);
+      
+      const subject = "Mancata timbratura - " + MITTENTE.cognome + " " + MITTENTE.nome;
+      return {subject, body: lines.join("\n")};
+    }
+
+    function generatePreview() {
+      let built = currentTipo === "missione" ? buildIntervento() : buildTimbratura();
+      const destinatario = stessoComando.checked ? currentComando : comandoDestinatario;
+      const realTo = destinatario?.esc || "";
+      document.getElementById("previewTo").value = realTo;
+      document.getElementById("previewSubject").value = built.subject;
+      document.getElementById("previewBody").value = built.body;
+    }
+
+    document.getElementById("btnMailto").addEventListener("click", function () {
+      generatePreview();
+      const to = document.getElementById("previewTo").value;
+      const subject = document.getElementById("previewSubject").value;
+      const body = document.getElementById("previewBody").value;
+      window.location.href = "mailto:" + encodeURIComponent(to) + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
+    });
+
+    document.getElementById("btnEml").addEventListener("click", function () {
+      generatePreview();
+      const to = document.getElementById("previewTo").value;
+      const subject = document.getElementById("previewSubject").value;
+      const body = document.getElementById("previewBody").value;
+      const eml = "To: " + to + "\r\nSubject: " + subject + "\r\nDate: " + new Date().toUTCString() + "\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n" + body;
+      const blob = new Blob([eml], {type: "message/rfc822"});
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = (subject || "email").replace(/[^a-z0-9 _-]/gi, "").slice(0, 60).trim() + ".eml";
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    });
+
+    aggiornaDestinatarioUI();
+    caricaComandi();
+    renderStepsBar();
+    updateNavButtons();
+  
+  }
+});
