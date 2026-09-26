@@ -402,10 +402,68 @@
   let posInCorso = null;
   let autoLocalizzati = false;
 
+  const CHIAVE_MANUALE = "fireops_comando_manuale";
+
   function statoPos(stato, testoHtml) {
-    posEl.classList.remove("ok", "busy", "err");
+    posEl.classList.remove("ok", "busy", "err", "man");
     if (stato) posEl.classList.add(stato);
     $("fohPosCmd").innerHTML = testoHtml;
+    $("fohPosCmd").hidden = false;
+    $("fohPosSel").hidden = true;
+    if (stato !== "ok" && stato !== "man") {
+      $("fohPosCh").hidden = true;
+      $("fohPosSo").hidden = true;
+    }
+  }
+
+  // ---- Scelta manuale: menu con tutti i comandi, al posto del nome ----
+  async function mostraScelta(messaggio) {
+    const sel = $("fohPosSel");
+    let elenco = [];
+    try { elenco = await comandi(); } catch (e) { }
+    if (!elenco.length) return false;               // senza elenco resta il messaggio d'errore
+
+    if (sel.options.length <= 1) {
+      elenco.slice().sort((a, b) => a.c.localeCompare(b.c, "it")).forEach(c => {
+        const o = document.createElement("option");
+        o.value = c.c;
+        o.textContent = c.c + (c.pr ? " (" + c.pr + ")" : "");
+        sel.appendChild(o);
+      });
+    }
+    sel.options[0].textContent = messaggio || "Scegli il comando…";
+    sel.value = posUltima && posUltima.metodo === "manuale" ? posUltima.comando.c : "";
+    $("fohPosCmd").hidden = true;
+    sel.hidden = false;
+    return true;
+  }
+
+  $("fohPosSel").addEventListener("change", async function () {
+    if (!this.value) return;
+    const elenco = await comandi();
+    const c = elenco.find(x => x.c === this.value);
+    if (!c) return;
+    try { localStorage.setItem(CHIAVE_MANUALE, c.c); } catch (e) { }
+    posUltima = {lat: null, lon: null, acc: null, comando: c, metodo: "manuale", ora: Date.now()};
+    mostraPos();
+    document.dispatchEvent(new CustomEvent("fireops:posizione", {detail: posUltima}));
+  });
+
+  // Posizione non arrivata: ripropone l'ultimo comando scelto a mano, altrimenti apre il menu
+  async function fallbackManuale(messaggio) {
+    let salvato = null;
+    try { salvato = localStorage.getItem(CHIAVE_MANUALE); } catch (e) { }
+    if (salvato) {
+      try {
+        const c = (await comandi()).find(x => x.c === salvato);
+        if (c) {
+          posUltima = {lat: null, lon: null, acc: null, comando: c, metodo: "manuale", ora: Date.now()};
+          mostraPos();
+          return;
+        }
+      } catch (e) { }
+    }
+    await mostraScelta(messaggio);
   }
 
   function normTxt(t) {
@@ -446,10 +504,16 @@
     if (!p || !p.comando) return;
     const c = p.comando;
     if (!c.c) { statoPos("err", "Comando non riconosciuto nei dati"); return; }
-    statoPos("ok", "Comando <b>" + esc(c.c) + "</b>" + (p.metodo === "vicinanza" ? " (stima)" : ""));
-    $("fohPosCmd").title = p.metodo === "vicinanza"
-      ? "Provincia non verificata via rete: comando con sede più vicina. Tocca per i dettagli."
-      : "Comando competente per la tua posizione. Tocca per i dettagli.";
+    if (p.metodo === "manuale") {
+      statoPos("man", "");
+      mostraScelta("Scegli il comando…");
+      $("fohPosSel").title = "Comando scelto a mano. Tocca ⟳ per riprovare con la posizione.";
+    } else {
+      statoPos("ok", "Comando <b>" + esc(c.c) + "</b>" + (p.metodo === "vicinanza" ? " (stima)" : ""));
+      $("fohPosCmd").title = p.metodo === "vicinanza"
+        ? "Provincia non verificata via rete: comando con sede più vicina. Tocca per i dettagli."
+        : "Comando competente per la tua posizione. Tocca per i dettagli.";
+    }
     const ch = $("fohPosCh");
     ch.hidden = !c.rc;
     ch.textContent = c.rc ? "📻 " + c.rc : "";
@@ -466,9 +530,10 @@
     if (posInCorso) return posInCorso;
     if (!navigator.geolocation) {
       statoPos("err", "Posizione non supportata dal dispositivo");
+      fallbackManuale("Posizione non supportata: scegli il comando…");
       return Promise.resolve(null);
     }
-    statoPos("busy", posUltima ? "Aggiornamento posizione…" : "Localizzazione in corso…");
+    statoPos("busy", posUltima && posUltima.metodo !== "manuale" ? "Aggiornamento posizione…" : "Localizzazione in corso…");
     posInCorso = new Promise(resolve => {
       navigator.geolocation.getCurrentPosition(async pos => {
         try {
@@ -490,8 +555,9 @@
         }
       }, err => {
         posInCorso = null;
-        statoPos("err", err.code === 1 ? "Posizione non autorizzata: tocca ⟳ dopo averla consentita" : "Posizione non disponibile");
-        resolve(null);
+        const msg = err.code === 1 ? "Posizione non autorizzata: scegli il comando…" : "Posizione non disponibile: scegli il comando…";
+        statoPos("err", err.code === 1 ? "Posizione non autorizzata" : "Posizione non disponibile");
+        fallbackManuale(msg).then(() => resolve(posUltima));
       }, {enableHighAccuracy: true, timeout: 12000, maximumAge: 120000});
     });
     return posInCorso;

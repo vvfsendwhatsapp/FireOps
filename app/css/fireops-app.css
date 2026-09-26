@@ -187,6 +187,25 @@ body {
 .foh-pos.ok .foh-pos-cmd { color: var(--text); }
 .foh-pos-cmd b { font-weight: 700; }
 
+.foh-pos.man .foh-pos-dot { background: #29a9eb; }
+
+/* scelta manuale del comando quando la posizione non arriva */
+.foh-pos-sel {
+  flex: 1;
+  min-width: 0;
+  height: 30px;
+  padding: 0 8px;
+  font-size: 13px;
+  font-family: var(--sans);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--text);
+}
+
+.foh-pos-sel:focus { outline: none; border-color: var(--yellow); }
+.foh-pos.err .foh-pos-sel { border-color: #e8734a; }
+
 .foh-pos-ch {
   flex: none;
   font-family: var(--mono);
