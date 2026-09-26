@@ -12,7 +12,7 @@
 (function () {
   "use strict";
 
-  const VERSIONE = "2026.09.26d";                // cambiarla forza il ricaricamento dei moduli
+  const VERSIONE = window.FIREOPS_VERSIONE || String(Date.now());   // da js/versione.js
   const DB = "../db/";                          // cartella dati del repo FireOps
   const DB_FALLBACK = "https://vvfsendwhatsapp.github.io/FireOps/db/";
 
@@ -445,6 +445,7 @@
     const p = posUltima;
     if (!p || !p.comando) return;
     const c = p.comando;
+    if (!c.c) { statoPos("err", "Comando non riconosciuto nei dati"); return; }
     statoPos("ok", "Comando <b>" + esc(c.c) + "</b>" + (p.metodo === "vicinanza" ? " (stima)" : ""));
     $("fohPosCmd").title = p.metodo === "vicinanza"
       ? "Provincia non verificata via rete: comando con sede più vicina. Tocca per i dettagli."
@@ -518,6 +519,9 @@
     consumaAutoLocalizzati: () => { const v = autoLocalizzati; autoLocalizzati = false; return v; },
     vai: id => { location.hash = id ? "#/" + id : "#/"; }
   });
+
+  console.info("FireOps app versione", VERSIONE);
+  $("fohLogo").title = "FireOps · versione " + VERSIONE;
 
   daHash();
   localizza();                  // autoposizionamento all'apertura

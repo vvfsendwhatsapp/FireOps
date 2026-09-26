@@ -8,7 +8,9 @@
   <link rel="icon" type="image/png" href="https://vvfsendwhatsapp.github.io/FireOps/images/logo.png">
   <link rel="apple-touch-icon" href="https://vvfsendwhatsapp.github.io/FireOps/images/logo.png">
   <meta name="theme-color" content="#10141a">
-  <link rel="stylesheet" href="css/fireops-app.css?v=2026.09.26d">
+  <!-- versione.js si scarica sempre fresco e decide la versione di tutti gli altri file -->
+  <script>document.write('<script src="js/versione.js?t=' + Date.now() + '"><\/script>');</script>
+  <script>document.write('<link rel="stylesheet" href="css/fireops-app.css?v=' + (window.FIREOPS_VERSIONE || Date.now()) + '">');</script>
 </head>
 
 <body>
@@ -78,7 +80,7 @@
   <!-- Moduli: ognuno viene caricato da js/moduli/<id>.js alla prima apertura e poi resta in memoria -->
   <div id="view-mod" hidden></div>
 
-  <script src="js/fireops-app.js?v=2026.09.26d"></script>
+  <script>document.write('<script src="js/fireops-app.js?v=' + (window.FIREOPS_VERSIONE || Date.now()) + '"><\/script>');</script>
 </body>
 
 </html>
