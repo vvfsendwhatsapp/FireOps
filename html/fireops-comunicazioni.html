@@ -680,7 +680,7 @@
       <h1>FireOps VVF - Comunicazioni</h1>
       <p>Missioni per soccorso e mancate timbrature</p>
     </div>
-    <a class="home-btn" href="home.html" title="Torna alla home FireOps" aria-label="Home">
+    <a class="home-btn" href="fireops-app.html" title="Torna alla home FireOps" aria-label="Home">
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h5v-6h4v6h5V9.5"/>
       </svg>
@@ -927,7 +927,7 @@
 
     // Elenco comandi: viene caricato dal database ufficiale di FireOps.
     const COMANDI_URLS = [
-      "db/comandi.json",                                              // percorso relativo nel repo FireOps
+      "../db/comandi.json",                                           // percorso relativo: la pagina sta in /html
       "https://vvfsendwhatsapp.github.io/FireOps/db/comandi.json"     // fallback se la pagina è aperta fuori dal repo
     ];
     const COMANDO_FALLBACK = {
