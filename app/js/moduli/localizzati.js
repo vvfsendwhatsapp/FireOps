@@ -1020,16 +1020,57 @@ body.map-open {
 `,
 
   async init(root) {
-    // Leaflet serve solo qui: si carica alla prima apertura del modulo.
-    // Se la rete non lo fornisce il modulo funziona lo stesso, senza mappa.
-    try {
-      await Promise.all([
-        FireOps.carica("https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"),
-        FireOps.carica("https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js")
-      ]);
-    } catch (e) {
-      console.warn("Leaflet non disponibile: mappa disattivata.", e);
+    // ---- Leaflet: serve solo qui, si carica alla prima apertura del modulo ----
+    // Più fonti in ordine: se una CDN non risponde si prova la successiva.
+    // Se nessuna risponde il modulo funziona senza mappa e riprova alla ricerca successiva.
+    const LEAFLET = [
+      {css: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css",
+       js: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"},
+      {css: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css",
+       js: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"},
+      {css: "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css",
+       js: "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"}
+    ];
+    let leafletInCorso = null;
+    let leafletErrore = "";
+
+    function assicuraLeaflet() {
+      if (typeof L !== "undefined") return Promise.resolve(true);
+      if (leafletInCorso) return leafletInCorso;
+      leafletInCorso = (async () => {
+        for (const f of LEAFLET) {
+          try {
+            await Promise.all([FireOps.carica(f.css), FireOps.carica(f.js)]);
+            if (typeof L !== "undefined") return true;
+          } catch (e) {
+            leafletErrore = e && e.message ? e.message : String(e);
+            console.warn("Leaflet: fonte non disponibile", f.js, e);
+          }
+        }
+        return false;
+      })().finally(() => { leafletInCorso = null; });
+      return leafletInCorso;
     }
+
+    // Messaggio dentro il riquadro mappa quando Leaflet manca
+    function mappaNonDisponibile(msg) {
+      const el = document.getElementById("resultMap");
+      if (!el || map) return;
+      el.innerHTML = '<div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;' +
+        'gap:10px;padding:16px;text-align:center;background:#1d242e;color:#8b96a3;font-size:13px;line-height:1.45">' +
+        '<div>' + msg + '</div>' +
+        '<button type="button" id="mapRetryBtn" style="padding:8px 14px;border-radius:6px;border:1px solid #2a323d;' +
+        'background:#171d25;color:#eceff3;font-weight:700;cursor:pointer">Riprova mappa</button></div>';
+      document.getElementById("mapRetryBtn").addEventListener("click", function () {
+        el.innerHTML = '<div style="height:100%;display:flex;align-items:center;justify-content:center;color:#8b96a3;font-size:13px">Caricamento mappa…</div>';
+        assicuraLeaflet().then(function (ok) {
+          if (ok && currentRecord) {el.innerHTML = ""; updateMap(currentRecord, userPos, targetPos);}
+          else mappaNonDisponibile("Mappa ancora non disponibile: la libreria delle mappe non si scarica su questa rete.");
+        });
+      });
+    }
+
+    await assicuraLeaflet();
 
     // ---- Elenco comandi: condiviso dall'app (db/comandi.json, caricato una volta sola) ----
     let COMANDI = [];
@@ -1306,7 +1347,16 @@ body.map-open {
     function updateMap(record, pos, target, fit) {
       if (fit === undefined) fit = true;
       const mapEl = document.getElementById("resultMap");
-      if (!mapEl || typeof L === "undefined") return;
+      if (!mapEl) return;
+      if (typeof L === "undefined") {
+        mappaNonDisponibile("Mappa non disponibile: la libreria delle mappe non si è scaricata" +
+          (leafletErrore ? " (" + leafletErrore + ")" : "") + ".");
+        // riprova in silenzio: se arriva, disegna la mappa
+        assicuraLeaflet().then(function (ok) {
+          if (ok && currentRecord === record) {mapEl.innerHTML = ""; updateMap(record, pos, target, fit);}
+        });
+        return;
+      }
 
       if (!map) {
         map = L.map("resultMap", {attributionControl: true, zoomControl: true, maxZoom: 19});
