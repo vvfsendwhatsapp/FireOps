@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>FireOps VVF - Comunicazioni V2</title>
+  <title>FireOps VVF - Comunicazioni</title>
   <link rel="icon" type="image/png" href="https://vvfsendwhatsapp.github.io/FireOps/images/logo.png">
   <link rel="shortcut icon" type="image/png" href="https://vvfsendwhatsapp.github.io/FireOps/images/logo.png">
   <link rel="apple-touch-icon" href="https://vvfsendwhatsapp.github.io/FireOps/images/logo.png">
@@ -70,6 +70,25 @@
     .htitle {
       flex: 1;
       min-width: 0;
+    }
+
+    .home-btn {
+      flex: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-2);
+      color: var(--text-dim);
+      text-decoration: none;
+    }
+
+    .home-btn:hover, .home-btn:focus-visible {
+      border-color: var(--amber);
+      color: var(--amber);
     }
 
     .htitle h1 {
@@ -658,9 +677,14 @@
   <header>
     <img class="mark" src="https://vvfsendwhatsapp.github.io/FireOps/images/logo.png" alt="Logo VVF">
     <div class="htitle">
-      <h1>FireOps VVF - Comunicazioni <span style="color:var(--amber);font-size:11px;font-weight:700;">V2</span></h1>
+      <h1>FireOps VVF - Comunicazioni</h1>
       <p>Missioni per soccorso e mancate timbrature</p>
     </div>
+    <a class="home-btn" href="home.html" title="Torna alla home FireOps" aria-label="Home">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h5v-6h4v6h5V9.5"/>
+      </svg>
+    </a>
   </header>
 
   <div class="wrap">

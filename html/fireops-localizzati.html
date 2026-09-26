@@ -1,0 +1,2830 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FireOps VVF - Localizzati</title>
+  <link rel="icon" type="image/png" href="https://vvfsendwhatsapp.github.io/FireOps/images/logo.png">
+  <link rel="shortcut icon" type="image/png" href="https://vvfsendwhatsapp.github.io/FireOps/images/logo.png">
+  <link rel="apple-touch-icon" href="https://vvfsendwhatsapp.github.io/FireOps/images/logo.png">
+  <meta name="theme-color" content="#10141a">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+  <style>
+    :root {
+      --bg: #10141a;
+      --panel: #171d25;
+      --panel-2: #1d242e;
+      --line: #2a323d;
+      --red: #ffd700;
+      --red-dim: #e6c200;
+      --amber: #e6c200;
+      --text: #eceff3;
+      --text-dim: #8b96a3;
+      --green: #3fa66b;
+      --cyan: #29a9eb;
+      --wa: #25d366;
+      --tg: #29a9eb;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", Consolas, "Liberation Mono", monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      padding-bottom: 64px;
+    }
+
+    .wrap {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
+
+    /* header */
+    header {
+      padding: 20px 16px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .mark {
+      flex: none;
+      width: 34px;
+      height: 34px;
+      object-fit: contain;
+      cursor: pointer;
+    }
+
+    .htitle {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .htitle h1 {
+      margin: 0;
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: .1px;
+    }
+
+    .htitle p {
+      margin: 2px 0 0;
+      font-size: 12.5px;
+      color: var(--text-dim);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: none;
+    }
+
+    .home-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .home-btn:active {
+      background: var(--line);
+    }
+
+    .prefix-toggle {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 10px;
+      border-radius: 20px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .prefix-toggle-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-dim);
+      flex: none;
+    }
+
+    .prefix-toggle[aria-pressed="true"] {
+      background: var(--red);
+      border-color: var(--red);
+      color: #000;
+    }
+
+    .prefix-toggle[aria-pressed="true"] .prefix-toggle-dot {
+      background: #000;
+    }
+
+    .prefix-toggle:active {
+      opacity: .85;
+    }
+
+    /* sections */
+    section {
+      margin-top: 18px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .panel+.panel {
+      margin-top: 10px;
+    }
+
+    .row-group-label {
+      padding: 10px 14px 6px;
+      font-size: 12.5px;
+      color: var(--text-dim);
+      border-left: 3px solid var(--line);
+    }
+
+    .row-group-label.radio {
+      border-left-color: var(--amber);
+    }
+
+    .row-group-label.so {
+      border-left-color: var(--red);
+    }
+
+    .row-group-label.gps {
+      border-left-color: var(--red);
+    }
+
+    .row-group-label.target {
+      border-left-color: #e84747;
+    }
+
+    /* locate button */
+    .locate-btn {
+      width: 100%;
+      padding: 16px;
+      font-size: 16px;
+      font-weight: 700;
+      color: #000;
+      background: var(--red);
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .locate-btn:active {
+      background: var(--red-dim);
+    }
+
+    .locate-btn svg {
+      flex: none;
+    }
+
+    .locate-btn svg circle,
+    .locate-btn svg path {
+      stroke: #000 !important;
+    }
+
+    .locate-btn.loading {
+      opacity: .7;
+    }
+
+    .link-btn {
+      display: block;
+      width: 100%;
+      text-align: center;
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      font-size: 13.5px;
+      padding: 12px 8px 2px;
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    .link-btn:active {
+      color: var(--text);
+    }
+
+    .status-msg {
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--amber);
+      padding: 0 2px;
+      line-height: 1.5;
+    }
+
+    .status-msg.error {
+      color: #e8734a;
+    }
+
+    /* target input row */
+    .target-input-box {
+      padding: 12px 14px;
+    }
+
+    .target-input-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .target-input-row input {
+      flex: 1;
+      padding: 12px 14px;
+      font-size: 14px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      color: var(--text);
+      font-family: var(--mono);
+    }
+
+    .target-input-row input:focus {
+      outline: none;
+      border-color: #e84747;
+    }
+
+    .target-go-btn {
+      padding: 0 16px;
+      background: #e84747;
+      color: #fff;
+      font-weight: 700;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    .target-go-btn:active {
+      opacity: .85;
+    }
+
+    .paste-clip-btn {
+      width: 100%;
+      margin-top: 8px;
+      padding: 10px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .paste-clip-btn:active {
+      background: var(--line);
+    }
+
+    /* result header */
+    .cmd-panel {
+      border-left: 3px solid var(--text-dim);
+    }
+
+    .cmd-conf {
+      border-top: 1px solid var(--line);
+    }
+
+    .cmd-conf-label {
+      padding: 10px 14px 0;
+      font-size: 12.5px;
+      color: var(--text-dim);
+    }
+
+    .result-top {
+      padding: 16px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .result-top .dist {
+      text-align: right;
+    }
+
+    .result-top .dist .leg {
+      display: block;
+      margin-bottom: 3px;
+      font-family: var(--sans);
+      font-size: 11.5px;
+      color: var(--text-dim);
+    }
+
+    .result-top .dist .val {
+      display: block;
+    }
+
+    .leg .c-cmd {
+      color: #b8c0ca;
+      font-weight: 700;
+    }
+
+    .leg .c-tgt {
+      color: #e84747;
+      font-weight: 700;
+    }
+
+    .leg .c-me {
+      color: var(--red);
+      font-weight: 700;
+    }
+
+    .result-top .name {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: .2px;
+    }
+
+    .result-top .dist {
+      font-family: var(--mono);
+      font-size: 15px;
+      color: var(--red);
+      white-space: nowrap;
+    }
+
+    .result-sub {
+      padding: 0 14px 14px;
+      font-size: 13px;
+      color: var(--text-dim);
+      margin-top: -8px;
+    }
+
+    .result-addr {
+      padding: 0 14px 12px;
+      margin-top: -6px;
+      font-size: 13.5px;
+      line-height: 1.45;
+      color: var(--text);
+    }
+
+    .result-addr .loc {
+      display: block;
+      color: var(--text-dim);
+    }
+
+    /* la mappa ha l'avviso in mezzo: .panel+.panel non scatta */
+    .border-note+.panel {
+      margin-top: 10px;
+    }
+
+    .result-addr {
+      padding: 0 14px 12px;
+      margin-top: -6px;
+      font-size: 13.5px;
+      line-height: 1.45;
+      color: var(--text);
+    }
+
+    .result-addr .loc {
+      display: block;
+      color: var(--text-dim);
+    }
+
+    .result-top .dist .az {
+      display: block;
+      margin-top: 3px;
+      font-size: 13px;
+      color: var(--text-dim);
+      text-align: right;
+    }
+
+    .border-note+.panel {
+      margin-top: 10px;
+    }
+
+    /* data rows */
+    .data-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 14px;
+      border-top: 1px solid var(--line);
+      min-height: 26px;
+    }
+
+    .data-row .label {
+      font-size: 14px;
+      color: var(--text-dim);
+    }
+
+    .data-row .value {
+      font-family: var(--mono);
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    a.value-link {
+      color: var(--text);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    a.value-link:active {
+      color: var(--amber);
+    }
+
+    .addr-row {
+      padding: 12px 14px;
+      border-top: 1px solid var(--line);
+      font-size: 13px;
+      color: var(--text-dim);
+      line-height: 1.6;
+    }
+
+    .addr-row a {
+      color: var(--text-dim);
+    }
+
+    /* border warning */
+    .border-note {
+      margin-top: 10px;
+      padding: 12px 14px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-left: 3px solid var(--amber);
+      border-radius: 4px;
+      font-size: 13px;
+      color: var(--text-dim);
+      line-height: 1.55;
+    }
+
+    .border-note strong {
+      color: var(--text);
+    }
+
+    .method-badge {
+      padding: 0 14px 14px;
+      margin-top: -6px;
+      font-size: 12px;
+    }
+
+    .method-badge.geo {
+      color: var(--red);
+    }
+
+    .method-badge.dist {
+      color: var(--amber);
+    }
+
+    .method-badge.manual {
+      color: var(--text-dim);
+    }
+
+    /* confinanti chips */
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 12px 14px 14px;
+    }
+
+    .chip {
+      font-size: 13px;
+      padding: 7px 12px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .chip:active {
+      border-color: var(--amber);
+    }
+
+    /* search */
+    .search-wrap {
+      position: relative;
+    }
+
+    input.search-input {
+      width: 100%;
+      padding: 14px 14px;
+      font-size: 16px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      color: var(--text);
+      font-family: var(--sans);
+    }
+
+    input.search-input:focus {
+      outline: none;
+      border-color: var(--amber);
+    }
+
+    .search-results {
+      margin-top: 6px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      overflow: hidden;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+
+    .search-item {
+      padding: 12px 14px;
+      border-top: 1px solid var(--line);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .search-item:first-child {
+      border-top: none;
+    }
+
+    .search-item:active {
+      background: var(--panel-2);
+    }
+
+    .search-item .sname {
+      font-size: 15px;
+    }
+
+    .search-item .sprov {
+      font-family: var(--mono);
+      font-size: 12.5px;
+      color: var(--text-dim);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* map */
+    .map-wrap {
+      position: relative;
+    }
+
+    #resultMap {
+      width: 100%;
+      height: 220px;
+      background: #e5e3df;
+    }
+
+    .map-wrap.map-fullscreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      z-index: 9999;
+      background: var(--bg);
+    }
+
+    .map-wrap.map-fullscreen #resultMap {
+      width: 100%;
+      height: 100%;
+      border-radius: 0;
+    }
+
+    body.map-open {
+      overflow: hidden;
+    }
+
+    .leaflet-container {
+      font-family: var(--sans);
+    }
+
+    .leaflet-control-attribution {
+      font-size: 10px !important;
+    }
+
+    .map-expand-btn,
+    .map-center-btn,
+    .map-target-btn {
+      position: absolute;
+      top: 10px;
+      z-index: 1200;
+      width: 34px;
+      height: 34px;
+      border-radius: 4px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .map-expand-btn {
+      right: 10px;
+    }
+
+    .map-center-btn {
+      right: 52px;
+    }
+
+    .map-target-btn {
+      right: 94px;
+    }
+
+    .map-expand-btn:active,
+    .map-center-btn:active,
+    .map-target-btn:active {
+      background: var(--panel-2);
+    }
+
+    .map-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 10px 14px;
+      border-top: 1px solid var(--line);
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .map-legend span {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .map-legend i {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+      flex: none;
+    }
+
+    .map-legend i.dot-comando {
+      background: #000;
+      border: 1px solid var(--red);
+    }
+
+    .map-legend i.dot-user {
+      background: var(--red);
+    }
+
+    .map-legend i.dot-target {
+      background: #e84747;
+    }
+
+    /* free dial */
+    .free-dial-input-row {
+      padding: 12px 14px 4px;
+    }
+
+    .free-dial-input-row input {
+      width: 100%;
+      padding: 14px 14px;
+      font-size: 16px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      color: var(--text);
+      font-family: var(--mono);
+    }
+
+    .free-dial-input-row input:focus {
+      outline: none;
+      border-color: #e84747;
+    }
+
+    .free-dial-actions {
+      display: flex;
+      gap: 8px;
+      padding: 10px 14px 14px;
+    }
+
+    .dial-action {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 11px 6px;
+      border-radius: 4px;
+      text-decoration: none;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #fff;
+      transition: opacity .15s;
+    }
+
+    .dial-action.call {
+      background: var(--red);
+      color: #000;
+      font-weight: 700;
+    }
+
+    .dial-action.call svg path {
+      stroke: #000;
+    }
+
+    .dial-action.wa {
+      background: var(--wa);
+    }
+
+    .dial-action.tg {
+      background: var(--tg);
+    }
+
+    .dial-action.disabled {
+      opacity: .35;
+      pointer-events: none;
+    }
+
+    .dial-action:active {
+      opacity: .8;
+    }
+
+    .src-tag {
+      font-family: var(--sans);
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 10px;
+      margin-left: 6px;
+      text-transform: uppercase;
+      letter-spacing: .3px;
+      color: #000;
+      vertical-align: middle;
+    }
+
+    .src-tag.rx {
+      background: var(--green);
+    }
+
+    .src-tag.calc {
+      background: var(--cyan);
+    }
+
+    .refresh-gps-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: calc(100% - 28px);
+      margin: 4px 14px 14px;
+      padding: 10px;
+      background: var(--panel-2);
+      border: 1px solid var(--red);
+      border-radius: 4px;
+      color: var(--red);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .refresh-gps-btn:active {
+      background: var(--line);
+    }
+
+    .refresh-gps-btn:disabled {
+      opacity: .6;
+      cursor: default;
+    }
+
+    .refresh-gps-btn.spin svg {
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .copyable {
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .copyable::after {
+      content: "⧉";
+      margin-left: 8px;
+      color: var(--text-dim);
+      font-size: 14px;
+    }
+
+    .copyable:active {
+      color: var(--amber);
+    }
+
+    .copyable.copied,
+    .copyable.copied::after {
+      color: var(--green);
+    }
+
+    .copyable.copied::after {
+      content: "✓ copiato";
+      font-family: var(--sans);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .maps-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: calc(100% - 28px);
+      margin: 10px 14px 14px;
+      padding: 10px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .maps-btn:active {
+      background: var(--line);
+    }
+
+    .maps-btn.target {
+      border-color: #e84747;
+    }
+
+    .route-row {
+      display: flex;
+      gap: 8px;
+      padding: 10px 14px 0;
+    }
+
+    .route-btn {
+      flex: 1;
+      padding: 10px 6px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .route-btn:active {
+      background: var(--line);
+    }
+
+    .route-btn:disabled {
+      opacity: .6;
+      cursor: default;
+    }
+
+    .route-btn.foot {
+      border-color: var(--green);
+    }
+
+    .route-btn.car {
+      border-color: var(--cyan);
+    }
+
+    .route-info {
+      margin: 8px 14px 0;
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--text-dim);
+    }
+
+    .route-info strong {
+      color: var(--text);
+    }
+
+    .route-info.error {
+      color: #e8734a;
+    }
+
+    .result-name-wrap {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px 12px;
+      min-width: 0;
+    }
+
+    .nav-cmd-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 12px;
+      background: var(--red);
+      border: none;
+      border-radius: 20px;
+      color: #000;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .nav-cmd-btn:active {
+      background: var(--red-dim);
+    }
+
+    .place-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      background: rgba(0, 0, 0, .7);
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 60px 16px 16px;
+    }
+
+    .place-box {
+      width: 100%;
+      max-width: 440px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 16px;
+    }
+
+    .place-box h3 {
+      margin: 0 0 4px;
+      font-size: 16px;
+    }
+
+    .place-box p {
+      margin: 0 0 12px;
+      font-size: 13px;
+      color: var(--text-dim);
+      line-height: 1.5;
+    }
+
+    .place-box input {
+      width: 100%;
+      padding: 13px 14px;
+      font-size: 16px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      color: var(--text);
+      font-family: var(--sans);
+    }
+
+    .place-box input:focus {
+      outline: none;
+      border-color: var(--red);
+    }
+
+    .place-list {
+      margin-top: 8px;
+      max-height: 260px;
+      overflow-y: auto;
+      border-radius: 4px;
+    }
+
+    .place-item {
+      padding: 12px 14px;
+      background: var(--panel-2);
+      border-top: 1px solid var(--line);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .place-item:first-child {
+      border-top: none;
+    }
+
+    .place-item:active {
+      background: var(--line);
+    }
+
+    .place-item .pn {
+      font-size: 15px;
+    }
+
+    .place-item .pp {
+      font-size: 12.5px;
+      color: var(--text-dim);
+      text-align: right;
+    }
+
+    .place-msg {
+      margin-top: 8px;
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+
+    .place-cancel {
+      margin-top: 12px;
+      width: 100%;
+      padding: 10px;
+      background: none;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      color: var(--text-dim);
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    /* colore legato al riferimento: rosso = target, giallo = mia posizione */
+    .result-top .dist .az {
+      color: inherit;
+    }
+
+    .result-top .dist.is-target {
+      color: #e84747;
+    }
+
+    .method-badge.tgt {
+      color: #e84747;
+    }
+
+    /* barra laterale a tutta altezza, come il riquadro Comando */
+    .panel.side-tgt {
+      border-left: 3px solid #e84747;
+    }
+
+    .panel.side-gps {
+      border-left: 3px solid var(--red);
+    }
+
+    .side-tgt .row-group-label,
+    .side-gps .row-group-label {
+      border-left: 0;
+    }
+
+    .leaflet-tooltip.line-lbl {
+      background: rgba(16, 20, 26, .88);
+      border: 1px solid;
+      border-radius: 3px;
+      box-shadow: none;
+      padding: 2px 6px;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .leaflet-tooltip.line-lbl::before {
+      display: none;
+    }
+
+    .line-lbl.cmd-me {
+      color: #ffd700;
+      border-color: #ffd700;
+    }
+
+    .line-lbl.cmd-tgt {
+      color: #e84747;
+      border-color: #e84747;
+    }
+
+    .line-lbl.me-tgt {
+      color: #e8a33d;
+      border-color: #e8a33d;
+    }
+
+    .map-radio {
+      background: rgba(16, 20, 26, .88);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-left: 3px solid var(--amber);
+      border-radius: 4px;
+      padding: 6px 9px;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .map-radio .ch {
+      font-family: var(--mono);
+      font-weight: 700;
+      color: var(--amber);
+    }
+
+    /* etichetta a cavallo della linea: sopra distanza, sotto azimut */
+    .ll-wrap {
+      position: absolute;
+      left: 0;
+      top: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 9px;
+      /* spazio in cui passa la linea */
+      font-family: var(--mono);
+      font-size: 11.5px;
+      font-weight: 700;
+      white-space: nowrap;
+      pointer-events: none;
+      text-shadow: 0 0 3px #10141a, 0 0 3px #10141a, 0 0 2px #10141a;
+    }
+
+    .ll-wrap.cmd-me {
+      color: #ffd700;
+    }
+
+    .ll-wrap.cmd-tgt {
+      color: #e84747;
+    }
+
+    .ll-wrap.me-tgt {
+      color: #e8a33d;
+    }
+
+    .u-ico { position: relative; width: 44px; height: 44px; }
+    .u-hdg { position: absolute; inset: 0; display: none; transform-origin: 50% 50%; }
+    .u-ico.has-hdg .u-hdg { display: block; }
+    .u-dot { position: absolute; left: 13px; top: 13px; }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <img class="mark" id="homeLogoBtn" src="https://vvfsendwhatsapp.github.io/FireOps/images/logo.png" alt="Logo VVF"
+      title="Home / Reset">
+    <div class="htitle">
+      <h1>FireOps VVF - Localizzati</h1>
+      <p>Trova automaticamente il Comando e relativi Canali radio e numeri di telefono </p>
+    </div>
+    <div class="header-actions">
+      <button type="button" id="homeBtn" class="home-btn" title="Torna alla Home / Reset pagina" aria-label="Home">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round" />
+          <path d="M9 22V12h6v10" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" />
+        </svg>
+      </button>
+      <button type="button" id="prefixToggle" class="prefix-toggle"
+        title="Antepone 4146 solo in fase di composizione, senza modificare il numero mostrato" aria-pressed="true">
+        <span class="prefix-toggle-dot"></span>4146 + 📞
+      </button>
+    </div>
+  </header>
+
+  <div class="wrap">
+
+    <section id="free-dial-section">
+      <div class="panel">
+        <div class="row-group-label">Componi un numero libero</div>
+        <div class="free-dial-input-row">
+          <input type="tel" id="freeDialInput" placeholder="Numero di telefono" inputmode="tel" autocomplete="tel">
+        </div>
+        <div class="free-dial-actions">
+          <a id="freeDialCall" class="dial-action call disabled" href="javascript:void(0)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M6 3h4l2 5-2.5 1.5a11 11 0 005 5L16 12l5 2v4a2 2 0 01-2 2C10.6 20 4 13.4 4 5a2 2 0 012-2z"
+                stroke="currentColor" stroke-width="1.8" />
+            </svg>
+            <span>Componi</span>
+          </a>
+          <a id="freeDialWhatsapp" class="dial-action wa disabled" href="javascript:void(0)" target="_blank"
+            rel="noopener">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M12 3C7 3 3 6.6 3 11c0 2.1 1 4 2.6 5.4L5 21l4.8-1.8c.7.2 1.4.3 2.2.3 5 0 9-3.6 9-8S17 3 12 3z"
+                fill="currentColor" />
+            </svg>
+            <span>WhatsApp</span>
+          </a>
+          <a id="freeDialTelegram" class="dial-action tg disabled" href="javascript:void(0)" target="_blank"
+            rel="noopener">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M22 2L11 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+              <path d="M22 2l-7 20-4-9-9-4z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"
+                stroke-linecap="round" fill="none" />
+            </svg>
+            <span>Telegram</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section id="locate-section">
+      <button class="locate-btn" id="locateBtn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="3.2" stroke="white" stroke-width="2" />
+          <path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="white" stroke-width="2" stroke-linecap="round" />
+        </svg>
+        Trova la mia posizione
+      </button>
+
+      <div class="panel" style="margin-top: 10px;">
+        <div class="row-group-label target">Inserisci coordinate, OLC o link Maps</div>
+        <div class="target-input-box">
+          <div class="target-input-row">
+            <input type="text" id="targetInput" placeholder="es. 44.48, 11.35, UTM, DMS o OLC...">
+            <button type="button" class="target-go-btn" id="targetGoBtn">Vai</button>
+          </div>
+          <button type="button" id="pasteClipBtn" class="paste-clip-btn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+              <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" />
+              <rect x="8" y="2" width="8" height="4" rx="1" stroke="currentColor" stroke-width="2" />
+            </svg>
+            Incolla coordinate dagli appunti, anche link!
+          </button>
+        </div>
+      </div>
+
+      <button class="link-btn" id="toggleSearchBtn">oppure cerca un comando manualmente</button>
+      <div class="status-msg hidden" id="statusMsg"></div>
+    </section>
+
+    <section id="search-section" class="hidden">
+      <div class="search-wrap">
+        <input type="text" class="search-input" id="searchInput" placeholder="Cerca per comando o comune...">
+        <div class="search-results hidden" id="searchResults"></div>
+      </div>
+    </section>
+
+    <section id="result-section" class="hidden">
+      <!-- Pannello coordinate Target (se inserito) -->
+      <div class="panel side-tgt hidden" id="targetInfoPanel">
+        <div class="row-group-label target">Punto Target / Evento</div>
+        <div class="data-row">
+          <div class="label">Coordinate Target</div>
+          <div class="value copyable" id="rTargetCoords" title="Tocca per copiare">—</div>
+        </div>
+        <div class="data-row">
+          <div class="label">Distanza mia pos. → target</div>
+          <div class="value" id="rTargetDist">—</div>
+        </div>
+        <div class="data-row">
+          <div class="label">Azimut mia pos. → target</div>
+          <div class="value" id="rTargetAz">—</div>
+        </div>
+        <div class="data-row" id="targetAltRow">
+          <div class="label">Quota <span class="src-tag calc"
+              title="Stimata da modello digitale del terreno (Open-Meteo)">calcolata</span></div>
+          <div class="value" id="rTargetAlt">—</div>
+        </div>
+        <div class="route-row">
+          <button type="button" id="routeFoot" class="route-btn foot">🥾 Mostra a piedi</button>
+          <button type="button" id="routeCar" class="route-btn car">🚗 Mostra in auto</button>
+        </div>
+        <div class="route-info hidden" id="routeInfo"></div>
+        <button type="button" id="openMapsTarget" class="maps-btn target">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 11l19-9-9 19-2-8-8-2z" />
+          </svg>
+          Naviga al target con Google Maps
+        </button>
+      </div>
+
+      <div class="panel">
+        <div class="map-wrap">
+          <div id="resultMap"></div>
+          <button type="button" id="mapTargetBtn" class="map-target-btn hidden" title="Centra sul target"
+            aria-label="Centra sul target">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e84747" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s7-6.2 7-12a7 7 0 10-14 0c0 5.8 7 12 7 12z" />
+              <circle cx="12" cy="10" r="2.5" fill="#e84747" />
+            </svg>
+          </button>
+          <button type="button" id="mapCenterBtn" class="map-center-btn" title="Centra sulla mia posizione"
+            aria-label="Centra sulla mia posizione">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="3.5" stroke="currentColor" stroke-width="2" />
+              <path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </button>
+          <button type="button" id="mapExpandBtn" class="map-expand-btn" title="Ingrandisci mappa"
+            aria-label="Ingrandisci mappa"></button>
+        </div>
+        <div class="map-legend" id="mapLegend">
+          <span><i class="dot-comando"></i>Comando</span>
+          <span id="legendUser" class="hidden"><i class="dot-user"></i>La tua posizione</span>
+          <span id="legendTarget" class="hidden"><i class="dot-target"></i>Target</span>
+        </div>
+      </div>
+
+      <!-- Pannello coordinate GPS rilevate -->
+      <div class="panel side-gps hidden" id="gpsInfoPanel">
+        <div class="row-group-label gps">Posizione GPS rilevata</div>
+        <div class="data-row">
+          <div class="label">Coordinate GPS</div>
+          <div class="value copyable" id="rGpsCoords" title="Tocca per copiare">—</div>
+        </div>
+        <div class="data-row" id="gpsAccuracyRow">
+          <div class="label">Precisione</div>
+          <div class="value" id="rGpsAccuracy">—</div>
+        </div>
+        <div class="data-row hidden" id="gpsAltitudeRow">
+          <div class="label">Quota <span class="src-tag rx" title="Misurata dal ricevitore GPS del dispositivo">ricevuta
+              GPS</span></div>
+          <div class="value" id="rGpsAltitude">—</div>
+        </div>
+        <div class="data-row">
+          <div class="label">Azimut mia pos. → Comando</div>
+          <div class="value" id="rCmdAz">—</div>
+        </div>
+        <button type="button" id="refreshGpsBtn" class="refresh-gps-btn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12a9 9 0 11-3-6.7L21 8" />
+            <path d="M21 3v5h-5" />
+          </svg>
+          <span id="refreshGpsLabel">Aggiorna posizione</span>
+        </button>
+      </div>
+
+      <div class="panel cmd-panel">
+        <div class="result-top">
+          <div class="result-name-wrap">
+            <div class="name" id="rComando">—</div>
+            <button type="button" id="navToComando" class="nav-cmd-btn" title="Naviga alla sede del Comando">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 11l19-9-9 19-2-8-8-2z" />
+              </svg>
+              Naviga al Comando
+            </button>
+          </div>
+          <div class="dist" id="rDist"></div>
+        </div>
+        <div class="result-addr" id="rCmdAddr"></div>
+        <div class="result-sub" id="rSub"></div>
+        <div class="method-badge" id="rMethod"></div>
+        <div class="data-row">
+          <div class="label">Canale radio Comando</div>
+          <div class="value"><span id="rRadioComando">—</span></div>
+        </div>
+        <div class="data-row">
+          <div class="label">Canale radio Direzione reg.</div>
+          <div class="value"><span id="rRadioDirezione">—</span></div>
+        </div>
+        <div class="data-row">
+          <div class="label">SO Comando</div>
+          <div class="value" id="rTelComandoWrap">—</div>
+        </div>
+        <div class="data-row">
+          <div class="label">SO Direzione reg.</div>
+          <div class="value" id="rTelDirezioneWrap">—</div>
+        </div>
+        <div class="cmd-conf hidden" id="confinantiPanel">
+          <div class="cmd-conf-label">Comandi confinanti</div>
+          <div class="chips" id="confinantiChips"></div>
+        </div>
+      </div>
+
+      <div class="border-note hidden" id="borderNote"></div>
+
+      <button class="link-btn" id="backToSearchBtn">cerca un altro comando</button>
+    </section>
+
+  </div>
+
+  <div class="place-modal hidden" id="placeModal">
+    <div class="place-box">
+      <h3>Inserire una località</h3>
+      <p>Il codice OLC corto (<span id="placeCode">—</span>) ha bisogno di un punto di riferimento vicino, entro circa
+        50 km. Scrivi il comune e scegli dall'elenco.</p>
+      <input type="text" id="placeInput" placeholder="Comune, es. Cesena" autocomplete="off">
+      <div class="place-list" id="placeList"></div>
+      <div class="place-msg hidden" id="placeMsg"></div>
+      <button type="button" class="place-cancel" id="placeCancel">Annulla</button>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script>
+    const COMANDI = [{"c": "Agrigento", "pr": "AG", "rg": "Sicilia", "cm": "Agrigento", "dz": "Sicilia", "lat": 37.295379, "lon": 13.566121, "ind": "Viale Caduti di Marzabotto, 1, 92100, Agrigento, AG", "rc": "002", "rd": "028", "tsc": "0922 511900", "tsd": "091 6057500", "tc": "", "nue": "1 1 2", "esc": "so.agrigento@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-agrigento", "conf": ["Caltanissetta", "Palermo", "Trapani"]}, {"c": "Alessandria", "pr": "AL", "rg": "Piemonte", "cm": "Alessandria", "dz": "Piemonte", "lat": 44.90146, "lon": 8.627335, "ind": "Corso Giuseppe Romita, 91, 15121, Alessandria, AL", "rc": "022", "rd": "080", "tsc": "0131 316710", "tsd": "011 41465200", "tc": "", "nue": "1 1 2", "esc": "so.alessandria@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-alessandria", "conf": ["Asti", "Genova", "Pavia", "Piacenza", "Savona", "Torino", "Vercelli"]}, {"c": "Ancona", "pr": "AN", "rg": "Marche", "cm": "Ancona", "dz": "Marche", "lat": 43.609234, "lon": 13.514938, "ind": "Via Valle Miano, 50, 60125, Ancona, AN", "rc": "014", "rd": "008", "tsc": "071 28080203", "tsd": "071 227511", "tc": "", "nue": "1 1 2", "esc": "so.ancona@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-ancona", "conf": ["Macerata", "Perugia", "Pesaro e Urbino"]}, {"c": "Aosta", "pr": "AO", "rg": "Valle d'Aosta", "cm": "Aosta", "dz": "Valle d'Aosta", "lat": 45.740728, "lon": 7.347497, "ind": "Via Croix Noire, 2, 11100, Aosta, AO", "rc": "050", "rd": "080", "tsc": "0165 528431", "tsd": "011 41465200", "tc": "", "nue": "1 1 2", "esc": "cus.115@centraleunicavda.it", "web": "https://www.regione.vda.it/protezione_civile/centrale_unica_soccorso/cusvvf_i.aspx", "conf": ["Biella", "Torino", "Vercelli"]}, {"c": "Arezzo", "pr": "AR", "rg": "Toscana", "cm": "Arezzo", "dz": "Toscana", "lat": 43.454989, "lon": 11.88418, "ind": "Via degli Accolti, 35, 52100, Arezzo, AR", "rc": "088", "rd": "050", "tsc": "0575 350777", "tsd": "055 5525600", "tc": "", "nue": "1 1 2", "esc": "so.arezzo@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-arezzo", "conf": ["Firenze", "Forlì-Cesena", "Perugia", "Pesaro e Urbino", "Rimini", "Siena"]}, {"c": "Ascoli Piceno", "pr": "AP", "rg": "Marche", "cm": "Ascoli Piceno", "dz": "Marche", "lat": 42.845111, "lon": 13.620114, "ind": "Via dei Gorghi, 48, 63100, Ascoli Piceno, AP", "rc": "026", "rd": "008", "tsc": "0736 353200", "tsd": "071 227511", "tc": "", "nue": "1 1 2", "esc": "so.ascolipiceno@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-ascoli-piceno", "conf": ["Fermo", "Macerata", "Perugia", "Rieti", "Teramo"]}, {"c": "Asti", "pr": "AT", "rg": "Piemonte", "cm": "Asti", "dz": "Piemonte", "lat": 44.91217, "lon": 8.20517, "ind": "Via Monsignor Marello, 7, 14100, Asti, AT", "rc": "016", "rd": "080", "tsc": "0141 413705", "tsd": "011 41465200", "tc": "", "nue": "1 1 2", "esc": "so.asti@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-asti", "conf": ["Alessandria", "Cuneo", "Savona", "Torino"]}, {"c": "Avellino", "pr": "AV", "rg": "Campania", "cm": "Avellino", "dz": "Campania", "lat": 40.907, "lon": 14.783922, "ind": "Località Quattrograne, 4, 83100, Avellino, AV", "rc": "066", "rd": "060", "tsc": "0825 709201", "tsd": "081 2476114", "tc": "", "nue": "1 1 5", "esc": "so.avellino@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-avellino", "conf": ["Benevento", "Foggia", "Napoli", "Potenza", "Salerno"]}, {"c": "Bari", "pr": "BA", "rg": "Puglia", "cm": "Bari", "dz": "Puglia", "lat": 41.091453, "lon": 16.889838, "ind": "Via Ottavio Tupputi, 52, 70125, Bari, BA", "rc": "072", "rd": "054", "tsc": "080 5483257", "tsd": "080 5411220", "tc": "", "nue": "1 1 2", "esc": "so.bari@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-bari", "conf": ["Barletta-Andria-Trani", "Brindisi", "Matera", "Potenza", "Taranto"]}, {"c": "Barletta-Andria-Trani", "pr": "BT", "rg": "Puglia", "cm": "Barletta", "dz": "Puglia", "lat": 41.308632, "lon": 16.311277, "ind": "Via Turi, 2, 76121, Barletta, BT", "rc": 110, "rd": "054", "tsc": "0883 1848699", "tsd": "080 5411220", "tc": "", "nue": "1 1 2", "esc": "com.barlettaandriatrani@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-barletta-andria-trani", "conf": ["Bari", "Foggia", "Potenza"]}, {"c": "Belluno", "pr": "BL", "rg": "Veneto", "cm": "Belluno", "dz": "Veneto e TAA", "lat": 46.130014, "lon": 12.194446, "ind": "Via Col da Ren, 1, 32100, Belluno, BL", "rc": 102, "rd": "084", "tsc": "0437 940941", "tsd": "049 8229211", "tc": "", "nue": "1 1 5", "esc": "so.belluno@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-belluno", "conf": ["Bolzano", "Pordenone", "Trento", "Treviso", "Udine", "Vicenza"]}, {"c": "Benevento", "pr": "BN", "rg": "Campania", "cm": "Benevento", "dz": "Campania", "lat": 41.139445, "lon": 14.801765, "ind": "Contrada Capodimonte, 1, 82100, Benevento, BN", "rc": "062", "rd": "060", "tsc": "0824 372577", "tsd": "081 2476114", "tc": "", "nue": "1 1 5", "esc": "so.benevento@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-benevento", "conf": ["Avellino", "Campobasso", "Caserta", "Foggia", "Napoli"]}, {"c": "Bergamo", "pr": "BG", "rg": "Lombardia", "cm": "Bergamo", "dz": "Lombardia", "lat": 45.702083, "lon": 9.684451, "ind": "Via Mauro Codussi, 9, 24124, Bergamo, BG", "rc": "054", "rd": "014", "tsc": "035 2278255", "tsd": "02 8546461", "tc": "035 2278211", "nue": "1 1 2", "esc": "so.bergamo@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-bergamo", "conf": ["Brescia", "Cremona", "Lecco", "Milano", "Monza e della Brianza", "Sondrio"]}, {"c": "Biella", "pr": "BI", "rg": "Piemonte", "cm": "Biella", "dz": "Piemonte", "lat": 45.55035, "lon": 8.077076, "ind": "Via S. Barbara, 3/a, 13900, Biella, BI", "rc": "052", "rd": "080", "tsc": "015 8555699", "tsd": "011 41465200", "tc": "", "nue": "1 1 2", "esc": "so.biella@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-biella", "conf": ["Aosta", "Torino", "Vercelli"]}, {"c": "Bologna", "pr": "BO", "rg": "Emilia-Romagna", "cm": "Bologna", "dz": "Emilia-Romagna", "lat": 44.535729, "lon": 11.368313, "ind": "Via Ferrarese, 166/2, 40128, Bologna, BO", "rc": "032", "rd": "028", "tsc": "051 6385115", "tsd": "051 4199512", "tc": "", "nue": "1 1 2", "esc": "so.bologna@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-bologna", "conf": ["Ferrara", "Firenze", "Modena", "Pistoia", "Prato", "Ravenna"]}, {"c": "Bolzano", "pr": "BZ", "rg": "Trentino-Alto Adige", "cm": "Bolzano", "dz": "Veneto e TAA", "lat": 46.494333, "lon": 11.318592, "ind": "Viale Druso, 116, 39100, Bolzano, BZ", "rc": "004", "rd": "084", "tsc": "0471 202222", "tsd": "049 8229211", "tc": "", "nue": "1 1 2", "esc": "cpvvf-bz@provincia.bz.it", "web": "https://www.provincia.bz.it/sicurezza-protezione-civile/antincendio/corpo-permanente-vvf.asp", "conf": ["Belluno", "Sondrio", "Trento"]}, {"c": "Brescia", "pr": "BS", "rg": "Lombardia", "cm": "Brescia", "dz": "Lombardia", "lat": 45.561196, "lon": 10.214577, "ind": "Via delle Scuole, 6, 25128, Brescia, BS", "rc": "012", "rd": "014", "tsc": "030 3719219", "tsd": "02 8546461", "tc": "", "nue": "1 1 2", "esc": "so.brescia@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-brescia", "conf": ["Bergamo", "Cremona", "Mantova", "Sondrio", "Trento", "Verona"]}, {"c": "Brindisi", "pr": "BR", "rg": "Puglia", "cm": "Brindisi", "dz": "Puglia", "lat": 40.64468, "lon": 17.92693, "ind": "Via Nicola Brandi, , 72100, Brindisi, BR", "rc": "082", "rd": "054", "tsc": "0831 554402", "tsd": "080 5411220", "tc": "", "nue": "1 1 2", "esc": "so.brindisi@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-brindisi", "conf": ["Bari", "Lecce", "Taranto"]}, {"c": "Cagliari", "pr": "CA", "rg": "Sardegna", "cm": "Cagliari", "dz": "Sardegna", "lat": 39.2427, "lon": 9.15188, "ind": "Viale Marconi, 300, 09131, Cagliari, CA", "rc": "050", "rd": "062", "tsc": "070 4749374", "tsd": "070 528061", "tc": "", "nue": "1 1 2", "esc": "so.cagliari@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-cagliari", "conf": ["Nuoro", "Oristano"]}, {"c": "Caltanissetta", "pr": "CL", "rg": "Sicilia", "cm": "Caltanissetta", "dz": "Sicilia", "lat": 37.493099, "lon": 14.043109, "ind": "Viale della Regione, 192, 93100, Caltanissetta, CL", "rc": "010", "rd": "028", "tsc": "0934 510200", "tsd": "091 6057500", "tc": "", "nue": "1 1 2", "esc": "so.caltanissetta@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-caltanissetta", "conf": ["Agrigento", "Catania", "Enna", "Palermo", "Ragusa"]}, {"c": "Campobasso", "pr": "CB", "rg": "Molise", "cm": "Campobasso", "dz": "Molise", "lat": 41.566684, "lon": 14.665048, "ind": "Via Sant'Antonio dei Lazzari, 5, 86100, Campobasso, CB", "rc": "036", "rd": "006", "tsc": "0874 604190", "tsd": "0874 604180", "tc": "", "nue": "1 1 2", "esc": "so.campobasso@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-campobasso", "conf": ["Benevento", "Caserta", "Chieti", "Foggia", "Isernia"]}, {"c": "Caserta", "pr": "CE", "rg": "Campania", "cm": "Caserta", "dz": "Campania", "lat": 41.08044, "lon": 14.35766, "ind": "Via Giovanni Falcone, , 81100, Caserta, CE", "rc": "070", "rd": "060", "tsc": "0823 4905555", "tsd": "081 2476114", "tc": "", "nue": "1 1 5", "esc": "so.caserta@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-caserta", "conf": ["Benevento", "Campobasso", "Frosinone", "Isernia", "Latina", "Napoli"]}, {"c": "Catania", "pr": "CT", "rg": "Sicilia", "cm": "Catania", "dz": "Sicilia", "lat": 37.515386, "lon": 15.07598, "ind": "Via Cesare Beccaria, 31, 95123, Catania, CT", "rc": "006", "rd": "028", "tsc": "095 7248600", "tsd": "091 6057500", "tc": "", "nue": "1 1 2", "esc": "so.catania@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-catania", "conf": ["Caltanissetta", "Enna", "Messina", "Ragusa", "Siracusa"]}, {"c": "Catanzaro", "pr": "CZ", "rg": "Calabria", "cm": "Catanzaro", "dz": "Calabria", "lat": 38.91765, "lon": 16.58478, "ind": "Via Cortese Vinicio, 11, 88100, Catanzaro, CZ", "rc": "004", "rd": "042", "tsc": "0961 531960", "tsd": "0961 7175111", "tc": "", "nue": "1 1 2", "esc": "so.catanzaro@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-catanzaro", "conf": ["Cosenza", "Crotone", "Reggio Calabria", "Vibo Valentia"]}, {"c": "Chieti", "pr": "CH", "rg": "Abruzzo", "cm": "Chieti", "dz": "Abruzzo", "lat": 42.360796, "lon": 14.193533, "ind": "Via Filippo Masci, 115, 66100, Chieti, CH", "rc": "052", "rd": "004", "tsc": "0871 3177214", "tsd": "086 234931", "tc": "", "nue": "1 1 2", "esc": "so.chieti@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-chieti", "conf": ["Campobasso", "Isernia", "L'Aquila", "Pescara"]}, {"c": "Como", "pr": "CO", "rg": "Lombardia", "cm": "Como", "dz": "Lombardia", "lat": 45.800936, "lon": 9.095749, "ind": "Via Valleggio, 15, 22100, Como, CO", "rc": "094", "rd": "014", "tsc": "031 3313322", "tsd": "02 8546461", "tc": "031 331331", "nue": "1 1 2", "esc": "so.como@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-como", "conf": ["Lecco", "Monza e della Brianza", "Sondrio", "Varese"]}, {"c": "Cosenza", "pr": "CS", "rg": "Calabria", "cm": "Cosenza", "dz": "Calabria", "lat": 39.300745, "lon": 16.247562, "ind": "Viale della Repubblica, 56, 87100, Cosenza, CS", "rc": "024", "rd": "042", "tsc": "0984 8952611", "tsd": "0961 7175111", "tc": "", "nue": "1 1 2", "esc": "so.cosenza@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-cosenza", "conf": ["Catanzaro", "Crotone", "Matera", "Potenza"]}, {"c": "Cremona", "pr": "CR", "rg": "Lombardia", "cm": "Cremona", "dz": "Lombardia", "lat": 45.150983, "lon": 10.025946, "ind": "Via Nazario Sauro, 14, 26100, Cremona, CR", "rc": "008", "rd": "014", "tsc": "0372 415790", "tsd": "02 8546461", "tc": "", "nue": "1 1 2", "esc": "so.cremona@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-cremona", "conf": ["Bergamo", "Brescia", "Lodi", "Mantova", "Milano", "Parma", "Piacenza"]}, {"c": "Crotone", "pr": "KR", "rg": "Calabria", "cm": "Crotone", "dz": "Calabria", "lat": 39.072108, "lon": 17.112836, "ind": "Via Gioacchino da Fiore, , 88900, Crotone, KR", "rc": "012", "rd": "042", "tsc": "0962 9684610", "tsd": "0961 7175111", "tc": "", "nue": "1 1 2", "esc": "so.crotone@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-crotone", "conf": ["Catanzaro", "Cosenza"]}, {"c": "Cuneo", "pr": "CN", "rg": "Piemonte", "cm": "Cuneo", "dz": "Piemonte", "lat": 44.373638, "lon": 7.524173, "ind": "Corso Alcide de Gasperi, 71, 12100, Cuneo, CN", "rc": "086", "rd": "080", "tsc": "0171 3290", "tsd": "011 41465200", "tc": "", "nue": "1 1 2", "esc": "so.cuneo@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-cuneo", "conf": ["Asti", "Imperia", "Savona", "Torino"]}, {"c": "Enna", "pr": "EN", "rg": "Sicilia", "cm": "Enna", "dz": "Sicilia", "lat": 37.548773, "lon": 14.302971, "ind": "SS561 Pergusina, , 94100, Enna, EN", "rc": "020", "rd": "028", "tsc": "0935 530901", "tsd": "091 6057500", "tc": "", "nue": "1 1 2", "esc": "so.enna@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-enna", "conf": ["Caltanissetta", "Catania", "Messina", "Palermo"]}, {"c": "Fermo", "pr": "FM", "rg": "Marche", "cm": "Fermo", "dz": "Marche", "lat": 43.168099, "lon": 13.741514, "ind": "Via Giuseppe Leti, 105, 63900, Fermo, FM", "rc": 118, "rd": "008", "tsc": "0734 217038", "tsd": "071 227511", "tc": "", "nue": "1 1 2", "esc": "so.fermo@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-fermo", "conf": ["Ascoli Piceno", "Macerata"]}, {"c": "Ferrara", "pr": "FE", "rg": "Emilia-Romagna", "cm": "Ferrara", "dz": "Emilia-Romagna", "lat": 44.826428, "lon": 11.594326, "ind": "Via Giovanni Verga, 125, 44124, Ferrara, FE", "rc": "090", "rd": "028", "tsc": "0532 973100", "tsd": "051 4199512", "tc": "", "nue": "1 1 2", "esc": "so.ferrara@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-ferrara", "conf": ["Bologna", "Mantova", "Modena", "Ravenna", "Rovigo"]}, {"c": "Firenze", "pr": "FI", "rg": "Toscana", "cm": "Firenze", "dz": "Toscana", "lat": 43.778416, "lon": 11.272012, "ind": "Via Giuseppe la Farina, 18, 50132, Firenze, FI", "rc": 112, "rd": "050", "tsc": "055 2490305", "tsd": "055 5525600", "tc": "", "nue": "1 1 2", "esc": "so.firenze@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-firenze", "conf": ["Arezzo", "Bologna", "Forlì-Cesena", "Lucca", "Pisa", "Pistoia", "Prato", "Ravenna", "Siena"]}, {"c": "Foggia", "pr": "FG", "rg": "Puglia", "cm": "Foggia", "dz": "Puglia", "lat": 41.449231, "lon": 15.560242, "ind": "Via Napoli, , 71122, Foggia, FG", "rc": 104, "rd": "054", "tsc": "0881 309099", "tsd": "080 5411220", "tc": "", "nue": "1 1 2", "esc": "so.foggia@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-foggia", "conf": ["Avellino", "Barletta-Andria-Trani", "Benevento", "Campobasso", "Potenza"]}, {"c": "Forlì-Cesena", "pr": "FC", "rg": "Emilia-Romagna", "cm": "Forlì", "dz": "Emilia-Romagna", "lat": 44.213465, "lon": 12.061362, "ind": "Viale Roma, 97, 47122, Forlì, FC", "rc": "038", "rd": "028", "tsc": "0543 410855", "tsd": "051 4199512", "tc": "0543 410803", "nue": "1 1 2", "esc": "so.forli@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-forli-cesena", "conf": ["Arezzo", "Firenze", "Ravenna", "Rimini"]}, {"c": "Frosinone", "pr": "FR", "rg": "Lazio", "cm": "Frosinone", "dz": "Lazio", "lat": 41.637815, "lon": 13.33066, "ind": "Viale Volsci, 104, 03100, Frosinone, FR", "rc": "038", "rd": "020", "tsc": "0775 884800", "tsd": "06 66179600", "tc": "", "nue": "1 1 2", "esc": "so.frosinone@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-frosinone", "conf": ["Caserta", "Isernia", "L'Aquila", "Latina", "Roma"]}, {"c": "Genova", "pr": "GE", "rg": "Liguria", "cm": "Genova", "dz": "Liguria", "lat": 44.409213, "lon": 8.905213, "ind": "Via Ariberto Albertazzi, 2, 16149, Genova, GE", "rc": "076", "rd": "046", "tsc": "010 24411", "tsd": "010 5455738", "tc": "", "nue": "1 1 2", "esc": "so.genova@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-genova", "conf": ["Alessandria", "La Spezia", "Parma", "Piacenza", "Savona"]}, {"c": "Gorizia", "pr": "GO", "rg": "Friuli Venezia Giulia", "cm": "Gorizia", "dz": "Friuli Venezia Giulia", "lat": 45.939569, "lon": 13.609605, "ind": "Via dei Leoni, 33, 34170, Gorizia, GO", "rc": "050", "rd": "036", "tsc": "0481 596399", "tsd": "040 7707511", "tc": "", "nue": "1 1 2", "esc": "so.gorizia@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-gorizia", "conf": ["Trieste", "Udine"]}, {"c": "Grosseto", "pr": "GR", "rg": "Toscana", "cm": "Grosseto", "dz": "Toscana", "lat": 42.77841, "lon": 11.10975, "ind": "Via Paolo Carnicelli, 2, 58100, Grosseto, GR", "rc": 102, "rd": "050", "tsc": "0564 444699", "tsd": "055 5525600", "tc": "", "nue": "1 1 2", "esc": "so.grosseto@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-grosseto", "conf": ["Livorno", "Pisa", "Siena", "Viterbo"]}, {"c": "Imperia", "pr": "IM", "rg": "Liguria", "cm": "Imperia", "dz": "Liguria", "lat": 43.88666, "lon": 8.02639, "ind": "Via Giovanni Strato, 2, 18100, Imperia, IM", "rc": "084", "rd": "046", "tsc": "0183 2839699", "tsd": "010 5455738", "tc": "", "nue": "1 1 2", "esc": "so.imperia@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-imperia", "conf": ["Cuneo", "Savona"]}, {"c": "Isernia", "pr": "IS", "rg": "Molise", "cm": "Isernia", "dz": "Molise", "lat": 41.58718, "lon": 14.239528, "ind": "Piazzale Angelo Guglielmi 2, 12, 86170, Isernia, IS", "rc": "028", "rd": "006", "tsc": "0865 415820", "tsd": "0874 604180", "tc": "", "nue": "1 1 2", "esc": "so.isernia@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-isernia", "conf": ["Campobasso", "Caserta", "Chieti", "Frosinone", "L'Aquila"]}, {"c": "L'Aquila", "pr": "AQ", "rg": "Abruzzo", "cm": "L'Aquila", "dz": "Abruzzo", "lat": 42.353921, "lon": 13.409381, "ind": "Via Pescara, 87, 67100, L'Aquila, AQ", "rc": "064", "rd": "004", "tsc": "0862 6609300", "tsd": "086 234931", "tc": "", "nue": "1 1 2", "esc": "so.laquila@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-laquila", "conf": ["Chieti", "Frosinone", "Isernia", "Pescara", "Rieti", "Roma", "Teramo"]}, {"c": "La Spezia", "pr": "SP", "rg": "Liguria", "cm": "La Spezia", "dz": "Liguria", "lat": 44.116546, "lon": 9.829936, "ind": "Via Antoniana, 20, 19125, La Spezia, SP", "rc": "068", "rd": "046", "tsc": "0187 523564", "tsd": "010 5455738", "tc": "", "nue": "1 1 2", "esc": "so.laspezia@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-la-spezia", "conf": ["Genova", "Massa-Carrara", "Parma"]}, {"c": "Latina", "pr": "LT", "rg": "Lazio", "cm": "Latina", "dz": "Lazio", "lat": 41.474515, "lon": 12.903124, "ind": "Piazzale G. Carturan, 1, 04100, Latina, LT", "rc": "084", "rd": "020", "tsc": "0773 4086500", "tsd": "06 66179600", "tc": "", "nue": "1 1 2", "esc": "so.latina@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-latina", "conf": ["Caserta", "Frosinone", "Roma"]}, {"c": "Lecce", "pr": "LE", "rg": "Puglia", "cm": "Lecce", "dz": "Puglia", "lat": 40.343462, "lon": 18.158421, "ind": "Viale Giuseppe Grassi, 86, 73100, Lecce, LE", "rc": "094", "rd": "054", "tsc": "0832 223300", "tsd": "080 5411220", "tc": "", "nue": "1 1 2", "esc": "so.lecce@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-lecce", "conf": ["Brindisi", "Taranto"]}, {"c": "Lecco", "pr": "LC", "rg": "Lombardia", "cm": "Lecco", "dz": "Lombardia", "lat": 45.842195, "lon": 9.400329, "ind": "Piazza Bione, 12, 23900, Lecco, LC", "rc": 110, "rd": "014", "tsc": "0341 364251", "tsd": "02 8546461", "tc": "", "nue": "1 1 2", "esc": "so.lecco@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-lecco", "conf": ["Bergamo", "Como", "Monza e della Brianza", "Sondrio"]}, {"c": "Livorno", "pr": "LI", "rg": "Toscana", "cm": "Livorno", "dz": "Toscana", "lat": 43.534227, "lon": 10.324384, "ind": "Via Campania, 5, 57124, Livorno, LI", "rc": "078", "rd": "050", "tsc": "0586 868142", "tsd": "055 5525600", "tc": "", "nue": "1 1 2", "esc": "so.livorno@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-livorno", "conf": ["Grosseto", "Pisa"]}, {"c": "Lodi", "pr": "LO", "rg": "Lombardia", "cm": "Lodi", "dz": "Lombardia", "lat": 45.295965, "lon": 9.521598, "ind": "Viale Piacenza, 83, 26900, Lodi, LO", "rc": "064", "rd": "014", "tsc": "0371 32520", "tsd": "02 8546461", "tc": "0371 428101", "nue": "1 1 2", "esc": "so.lodi@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-lodi", "conf": ["Cremona", "Milano", "Pavia", "Piacenza"]}, {"c": "Lucca", "pr": "LU", "rg": "Toscana", "cm": "Lucca", "dz": "Toscana", "lat": 43.852578, "lon": 10.517598, "ind": "Via Barbantini, 896/B, 55100, Lucca, LU", "rc": "058", "rd": "050", "tsc": "0583 430044", "tsd": "055 5525600", "tc": "", "nue": "1 1 2", "esc": "so.lucca@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-lucca", "conf": ["Firenze", "Massa-Carrara", "Modena", "Pisa", "Pistoia", "Reggio Emilia"]}, {"c": "Macerata", "pr": "MC", "rg": "Marche", "cm": "Macerata", "dz": "Marche", "lat": 43.293195, "lon": 13.420793, "ind": "Viale dell'Indipendenza, 158, 62100, Macerata, MC", "rc": "002", "rd": "008", "tsc": "0733 279496", "tsd": "071 227511", "tc": "", "nue": "1 1 2", "esc": "so.macerata@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-macerata", "conf": ["Ancona", "Ascoli Piceno", "Fermo", "Perugia"]}, {"c": "Mantova", "pr": "MN", "rg": "Lombardia", "cm": "Mantova", "dz": "Lombardia", "lat": 45.147746, "lon": 10.794115, "ind": "Viale Risorgimento, 16, 46100, Mantova, MN", "rc": "020", "rd": "014", "tsc": "0376 227777", "tsd": "02 8546461", "tc": "", "nue": "1 1 2", "esc": "so.mantova@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-mantova", "conf": ["Brescia", "Cremona", "Ferrara", "Modena", "Parma", "Reggio Emilia", "Rovigo", "Verona"]}, {"c": "Massa-Carrara", "pr": "MS", "rg": "Toscana", "cm": "Massa", "dz": "Toscana", "lat": 44.025649, "lon": 10.098371, "ind": "Via Massa Avenza, 121/P, 54100, Massa, MS", "rc": "096", "rd": "050", "tsc": "0585 2597100", "tsd": "055 5525600", "tc": "", "nue": "1 1 2", "esc": "so.massacarrara@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-massa-carrara", "conf": ["La Spezia", "Lucca", "Parma", "Reggio Emilia"]}, {"c": "Matera", "pr": "MT", "rg": "Basilicata", "cm": "Matera", "dz": "Basilicata", "lat": 40.663147, "lon": 16.59616, "ind": "Via Giuseppe Giglio, 3, 75100, Matera, MT", "rc": 112, "rd": "078", "tsc": "0835 338301", "tsd": "0971 609511", "tc": "", "nue": "1 1 5", "esc": "so.matera@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-matera", "conf": ["Bari", "Cosenza", "Potenza", "Taranto"]}, {"c": "Messina", "pr": "ME", "rg": "Sicilia", "cm": "Messina", "dz": "Sicilia", "lat": 38.176526, "lon": 15.550093, "ind": "Via Antonio Salandra, 39, 98124, Messina, ME", "rc": "032", "rd": "028", "tsc": "090 65074200", "tsd": "091 6057500", "tc": "", "nue": "1 1 2", "esc": "so.messina@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-messina", "conf": ["Catania", "Enna", "Palermo"]}, {"c": "Milano", "pr": "MI", "rg": "Lombardia", "cm": "Milano", "dz": "Lombardia", "lat": 45.485159, "lon": 9.174045, "ind": "Via Messina, 35/37, 20100, Milano, MI", "rc": "026", "rd": "014", "tsc": "02 3190301", "tsd": "02 8546461", "tc": "", "nue": "1 1 2", "esc": "so.milano@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-milano", "conf": ["Bergamo", "Cremona", "Lodi", "Monza e della Brianza", "Novara", "Pavia"]}, {"c": "Modena", "pr": "MO", "rg": "Emilia-Romagna", "cm": "Modena", "dz": "Emilia-Romagna", "lat": 44.644948, "lon": 10.900411, "ind": "Strada Formigina, 125, 41126, Modena, MO", "rc": "018", "rd": "028", "tsc": "059 824701", "tsd": "051 4199512", "tc": "", "nue": "1 1 2", "esc": "so.modena@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-modena", "conf": ["Bologna", "Ferrara", "Lucca", "Mantova", "Pistoia", "Reggio Emilia"]}, {"c": "Monza e della Brianza", "pr": "MB", "rg": "Lombardia", "cm": "Monza", "dz": "Lombardia", "lat": 45.579596, "lon": 9.261129, "ind": "Via Felice Cavallotti, 67, 20900, Monza, MB", "rc": 118, "rd": "014", "tsc": "039 322222", "tsd": "02 8546461", "tc": "", "nue": "1 1 2", "esc": "so.monza@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-monza", "conf": ["Bergamo", "Como", "Lecco", "Milano", "Varese"]}, {"c": "Napoli", "pr": "NA", "rg": "Campania", "cm": "Napoli", "dz": "Campania", "lat": 40.865595, "lon": 14.292197, "ind": "Via Leopoldo Tarantini, 1, 80143, Napoli, NA", "rc": "080", "rd": "060", "tsc": "081 2595185", "tsd": "081 2476114", "tc": "", "nue": "1 1 5", "esc": "so.napoli@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-napoli", "conf": ["Avellino", "Benevento", "Caserta", "Salerno"]}, {"c": "Novara", "pr": "NO", "rg": "Piemonte", "cm": "Novara", "dz": "Piemonte", "lat": 45.430554, "lon": 8.605112, "ind": "Via Pietro Generali, 19, 28100, Novara, NO", "rc": "088", "rd": "080", "tsc": "0321 4406201", "tsd": "011 41465200", "tc": "", "nue": "1 1 2", "esc": "so.novara@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-novara", "conf": ["Milano", "Pavia", "Varese", "Verbano-Cusio-Ossola", "Vercelli"]}, {"c": "Nuoro", "pr": "NU", "rg": "Sardegna", "cm": "Nuoro", "dz": "Sardegna", "lat": 40.320536, "lon": 9.303766, "ind": "Viale Sandro Pertini, , 08100, Nuoro, NU", "rc": "052", "rd": "062", "tsc": "0784 226601", "tsd": "070 528061", "tc": "", "nue": "1 1 2", "esc": "so.nuoro@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-nuoro", "conf": ["Cagliari", "Oristano", "Sassari"]}, {"c": "Oristano", "pr": "OR", "rg": "Sardegna", "cm": "Oristano", "dz": "Sardegna", "lat": 39.891775, "lon": 8.597639, "ind": "Via del Porto, 8, 09170, Oristano, OR", "rc": "054", "rd": "062", "tsc": "0783 375000", "tsd": "070 528061", "tc": "", "nue": "1 1 2", "esc": "so.oristano@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-oristano", "conf": ["Cagliari", "Nuoro", "Sassari"]}, {"c": "Padova", "pr": "PD", "rg": "Veneto", "cm": "Padova", "dz": "Veneto e TAA", "lat": 45.408415, "lon": 11.90819, "ind": "Via San Fidenzio, 3, 35129, Padova, PD", "rc": "072", "rd": "084", "tsc": "049 7921786", "tsd": "049 8229211", "tc": "049 7921711", "nue": "1 1 5", "esc": "so.padova@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-padova", "conf": ["Rovigo", "Treviso", "Venezia", "Verona", "Vicenza"]}, {"c": "Palermo", "pr": "PA", "rg": "Sicilia", "cm": "Palermo", "dz": "Sicilia", "lat": 38.127864, "lon": 13.367714, "ind": "Via Alessandro Scarlatti, 16, 90134, Palermo, PA", "rc": 114, "rd": "028", "tsc": "091 6059382", "tsd": "091 6057500", "tc": "", "nue": "1 1 2", "esc": "so.palermo@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-palermo", "conf": ["Agrigento", "Caltanissetta", "Enna", "Messina", "Trapani"]}, {"c": "Parma", "pr": "PR", "rg": "Emilia-Romagna", "cm": "Parma", "dz": "Emilia-Romagna", "lat": 44.786328, "lon": 10.303721, "ind": "Via Chiavari, 11, 43125, Parma, PR", "rc": "006", "rd": "028", "tsc": "0521 953201", "tsd": "051 4199512", "tc": "", "nue": "1 1 2", "esc": "so.parma@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-parma", "conf": ["Cremona", "Genova", "La Spezia", "Mantova", "Massa-Carrara", "Piacenza", "Reggio Emilia"]}, {"c": "Pavia", "pr": "PV", "rg": "Lombardia", "cm": "Pavia", "dz": "Lombardia", "lat": 45.188858, "lon": 9.168954, "ind": "Via Camillo Campari, 34, 27100, Pavia, PV", "rc": "030", "rd": "014", "tsc": "0382 439601", "tsd": "02 8546461", "tc": "", "nue": "1 1 2", "esc": "so.pavia@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-pavia", "conf": ["Alessandria", "Lodi", "Milano", "Novara", "Piacenza", "Vercelli"]}, {"c": "Perugia", "pr": "PG", "rg": "Umbria", "cm": "Perugia", "dz": "Umbria", "lat": 43.091218, "lon": 12.363121, "ind": "Via Gianluca Pennetti Pennella, , 06129, Perugia, PG", "rc": "034", "rd": "040", "tsc": "075 50639600", "tsd": "075 54472", "tc": "", "nue": "1 1 2", "esc": "so.perugia@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-perugia", "conf": ["Ancona", "Arezzo", "Ascoli Piceno", "Macerata", "Pesaro e Urbino", "Rieti", "Siena", "Terni"]}, {"c": "Pesaro e Urbino", "pr": "PU", "rg": "Marche", "cm": "Pesaro", "dz": "Marche", "lat": 43.910795, "lon": 12.88982, "ind": "SS 16 Adriatica, 92, 61121, Pesaro, PU", "rc": "062", "rd": "008", "tsc": "0721 4088201", "tsd": "071 227511", "tc": "", "nue": "1 1 2", "esc": "so.pesaro@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-pesaro-urbino", "conf": ["Ancona", "Arezzo", "Perugia", "Rimini"]}, {"c": "Pescara", "pr": "PE", "rg": "Abruzzo", "cm": "Pescara", "dz": "Abruzzo", "lat": 42.452913, "lon": 14.221218, "ind": "Viale Pindaro, 2/8, 65127, Pescara, PE", "rc": "018", "rd": "004", "tsc": "085 4554662", "tsd": "086 234931", "tc": "", "nue": "1 1 2", "esc": "so.pescara@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-pescara", "conf": ["Chieti", "L'Aquila", "Teramo"]}, {"c": "Piacenza", "pr": "PC", "rg": "Emilia-Romagna", "cm": "Piacenza", "dz": "Emilia-Romagna", "lat": 45.025573, "lon": 9.687293, "ind": "Strada Val Nure, 9A, 29122, Piacenza, PC", "rc": "024", "rd": "028", "tsc": "0523 607851", "tsd": "051 4199512", "tc": "", "nue": "1 1 2", "esc": "so.piacenza@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-piacenza", "conf": ["Alessandria", "Cremona", "Genova", "Lodi", "Parma", "Pavia"]}, {"c": "Pisa", "pr": "PI", "rg": "Toscana", "cm": "Pisa", "dz": "Toscana", "lat": 43.709527, "lon": 10.410812, "ind": "Via Giacomo Matteotti, 1, 56100, Pisa, PI", "rc": "082", "rd": "050", "tsc": "050 941911", "tsd": "055 5525600", "tc": "", "nue": "1 1 2", "esc": "so.pisa@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-pisa", "conf": ["Firenze", "Grosseto", "Livorno", "Lucca", "Siena"]}, {"c": "Pistoia", "pr": "PT", "rg": "Toscana", "cm": "Pistoia", "dz": "Toscana", "lat": 43.921804, "lon": 10.922521, "ind": "Via Luigi Russo, 77, 51100, Pistoia, PT", "rc": "080", "rd": "050", "tsc": "0573 984392", "tsd": "055 5525600", "tc": "", "nue": "1 1 2", "esc": "so.pistoia@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-pistoia", "conf": ["Bologna", "Firenze", "Lucca", "Modena", "Prato"]}, {"c": "Pordenone", "pr": "PN", "rg": "Friuli Venezia Giulia", "cm": "Pordenone", "dz": "Friuli Venezia Giulia", "lat": 45.970836, "lon": 12.661217, "ind": "Via Interna, 14, 33170, Pordenone, PN", "rc": "076", "rd": "036", "tsc": "0434 391200", "tsd": "040 7707511", "tc": "0434 391111", "nue": "1 1 2", "esc": "so.pordenone@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-pordenone", "conf": ["Belluno", "Treviso", "Udine", "Venezia"]}, {"c": "Potenza", "pr": "PZ", "rg": "Basilicata", "cm": "Potenza", "dz": "Basilicata", "lat": 40.644781, "lon": 15.833181, "ind": "Via Appia, 321/b, 85100, Potenza, PZ", "rc": 116, "rd": "078", "tsc": "0971 658198", "tsd": "0971 609511", "tc": "", "nue": "1 1 5", "esc": "so.potenza@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-potenza", "conf": ["Avellino", "Bari", "Barletta-Andria-Trani", "Cosenza", "Foggia", "Matera", "Salerno"]}, {"c": "Prato", "pr": "PO", "rg": "Toscana", "cm": "Prato", "dz": "Toscana", "lat": 43.85834, "lon": 11.066279, "ind": "Via Paronese, 100, 59100, Prato, PO", "rc": 114, "rd": "050", "tsc": "0574 6278200", "tsd": "055 5525600", "tc": "", "nue": "1 1 2", "esc": "so.prato@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-prato", "conf": ["Bologna", "Firenze", "Pistoia"]}, {"c": "Ragusa", "pr": "RG", "rg": "Sicilia", "cm": "Ragusa", "dz": "Sicilia", "lat": 36.923915, "lon": 14.719324, "ind": "Viale dei Platani, 2, 97100, Ragusa, RG", "rc": "016", "rd": "028", "tsc": "0932 658288", "tsd": "091 6057500", "tc": "", "nue": "1 1 2", "esc": "so.ragusa@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-ragusa", "conf": ["Caltanissetta", "Catania", "Siracusa"]}, {"c": "Ravenna", "pr": "RA", "rg": "Emilia-Romagna", "cm": "Ravenna", "dz": "Emilia-Romagna", "lat": 44.407593, "lon": 12.189539, "ind": "Viale Vincenzo Randi, 25, 48121, Ravenna, RA", "rc": "086", "rd": "028", "tsc": "0544 281515", "tsd": "051 4199512", "tc": "", "nue": "1 1 2", "esc": "so.ravenna@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-ravenna", "conf": ["Bologna", "Ferrara", "Firenze", "Forlì-Cesena"]}, {"c": "Reggio Calabria", "pr": "RC", "rg": "Calabria", "cm": "Reggio Calabria", "dz": "Calabria", "lat": 38.090289, "lon": 15.64555, "ind": "Via Sbarre Superiori, 115, 89132, Reggio Calabria, RC", "rc": "040", "rd": "042", "tsc": "0965 632601", "tsd": "0961 7175111", "tc": "", "nue": "1 1 2", "esc": "so.reggiocalabria@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-reggio-calabria", "conf": ["Catanzaro", "Vibo Valentia"]}, {"c": "Reggio Emilia", "pr": "RE", "rg": "Emilia-Romagna", "cm": "Reggio Emilia", "dz": "Emilia-Romagna", "lat": 44.687594, "lon": 10.618521, "ind": "Via della Canalina, 8, 42123, Reggio Emilia, RE", "rc": "010", "rd": "028", "tsc": "0522 325490", "tsd": "051 4199512", "tc": "", "nue": "1 1 2", "esc": "so.reggioemilia@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-reggio-emilia", "conf": ["Lucca", "Mantova", "Massa-Carrara", "Modena", "Parma"]}, {"c": "Rieti", "pr": "RI", "rg": "Lazio", "cm": "Rieti", "dz": "Lazio", "lat": 42.396047, "lon": 12.859292, "ind": "Via Sacchetti Sassetti, 1, 02100, Rieti, RI", "rc": "068", "rd": "020", "tsc": "0746 2812200", "tsd": "06 66179600", "tc": "", "nue": "1 1 2", "esc": "so.rieti@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-rieti", "conf": ["Ascoli Piceno", "L'Aquila", "Perugia", "Roma", "Teramo", "Terni", "Viterbo"]}, {"c": "Rimini", "pr": "RN", "rg": "Emilia-Romagna", "cm": "Rimini", "dz": "Emilia-Romagna", "lat": 44.037589, "lon": 12.597118, "ind": "Via Bernardino Varisco, 1/a, 47924, Rimini, RN", "rc": "060", "rd": "028", "tsc": "0541 478059", "tsd": "051 4199512", "tc": "", "nue": "1 1 2", "esc": "so.rimini@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-rimini", "conf": ["Arezzo", "Forlì-Cesena", "Pesaro e Urbino"]}, {"c": "Roma", "pr": "RM", "rg": "Lazio", "cm": "Roma", "dz": "Lazio", "lat": 41.89996, "lon": 12.491037, "ind": "Via Genova, 1, 00184, Roma, RM", "rc": "044", "rd": "020", "tsc": "06 46722699", "tsd": "06 66179600", "tc": "", "nue": "1 1 2", "esc": "so.roma@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-roma", "conf": ["Frosinone", "L'Aquila", "Latina", "Rieti", "Viterbo"]}, {"c": "Rovigo", "pr": "RO", "rg": "Veneto", "cm": "Rovigo", "dz": "Veneto e TAA", "lat": 45.077112, "lon": 11.803715, "ind": "Via dell'Ippodromo, 4/6, 45100, Rovigo, RO", "rc": 106, "rd": "084", "tsc": "0425 398911", "tsd": "049 8229211", "tc": "", "nue": "1 1 5", "esc": "so.rovigo@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-rovigo", "conf": ["Ferrara", "Mantova", "Padova", "Venezia", "Verona"]}, {"c": "Salerno", "pr": "SA", "rg": "Campania", "cm": "Salerno", "dz": "Campania", "lat": 40.665646, "lon": 14.810406, "ind": "Via Sant' Eustachio, 35, 84133, Salerno, SA", "rc": "074", "rd": "060", "tsc": "089 3089400", "tsd": "081 2476114", "tc": "", "nue": "1 1 5", "esc": "so.salerno@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-salerno", "conf": ["Avellino", "Napoli", "Potenza"]}, {"c": "Sassari", "pr": "SS", "rg": "Sardegna", "cm": "Sassari", "dz": "Sardegna", "lat": 40.718855, "lon": 8.570639, "ind": "Piazza Conte di Moriana, 1, 07100, Sassari, SS", "rc": "056", "rd": "062", "tsc": "079 2831201", "tsd": "070 528061", "tc": "", "nue": "1 1 2", "esc": "so.sassari@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-sassari", "conf": ["Nuoro", "Oristano"]}, {"c": "Savona", "pr": "SV", "rg": "Liguria", "cm": "Savona", "dz": "Liguria", "lat": 44.292153, "lon": 8.455497, "ind": "Via Nizza, 35, 17100, Savona, SV", "rc": "092", "rd": "046", "tsc": "019 264753", "tsd": "010 5455738", "tc": "", "nue": "1 1 2", "esc": "so.savona@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-savona", "conf": ["Alessandria", "Asti", "Cuneo", "Genova", "Imperia"]}, {"c": "Siena", "pr": "SI", "rg": "Toscana", "cm": "Siena", "dz": "Toscana", "lat": 43.33205, "lon": 11.31339, "ind": "Strada del Ruffolo, 2, 53100, Siena, SI", "rc": "070", "rd": "050", "tsc": "0577 248947", "tsd": "055 5525600", "tc": "", "nue": "1 1 2", "esc": "so.siena@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-siena", "conf": ["Arezzo", "Firenze", "Grosseto", "Perugia", "Pisa", "Terni", "Viterbo"]}, {"c": "Siracusa", "pr": "SR", "rg": "Sicilia", "cm": "Siracusa", "dz": "Sicilia", "lat": 37.07827, "lon": 15.28745, "ind": "Via Augusto Von Platen, 35, 96100, Siracusa, SR", "rc": "048", "rd": "028", "tsc": "0931 481901", "tsd": "091 6057500", "tc": "", "nue": "1 1 2", "esc": "so.siracusa@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-siracusa", "conf": ["Catania", "Ragusa"]}, {"c": "Sondrio", "pr": "SO", "rg": "Lombardia", "cm": "Sondrio", "dz": "Lombardia", "lat": 46.16267, "lon": 9.8616, "ind": "Via Giuliani, 27/21, 23100, Sondrio, SO", "rc": "046", "rd": "014", "tsc": "0342 533001", "tsd": "02 8546461", "tc": "", "nue": "1 1 2", "esc": "so.sondrio@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-sondrio", "conf": ["Bergamo", "Bolzano", "Brescia", "Como", "Lecco", "Trento"]}, {"c": "Taranto", "pr": "TA", "rg": "Puglia", "cm": "Taranto", "dz": "Puglia", "lat": 40.443644, "lon": 17.263883, "ind": "Piazzale Nicola Resta, , 74121, Taranto, TA", "rc": 108, "rd": "054", "tsc": "099 7766220", "tsd": "080 5411220", "tc": "", "nue": "1 1 2", "esc": "so.taranto@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-taranto", "conf": ["Bari", "Brindisi", "Lecce", "Matera"]}, {"c": "Teramo", "pr": "TE", "rg": "Abruzzo", "cm": "Teramo", "dz": "Abruzzo", "lat": 42.656955, "lon": 13.69331, "ind": "Via Armando Diaz, 3, 64100, Teramo, TE", "rc": "056", "rd": "004", "tsc": "0861 3234474", "tsd": "086 234931", "tc": "", "nue": "1 1 2", "esc": "so.teramo@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-teramo", "conf": ["Ascoli Piceno", "L'Aquila", "Pescara", "Rieti"]}, {"c": "Terni", "pr": "TR", "rg": "Umbria", "cm": "Terni", "dz": "Umbria", "lat": 42.56003, "lon": 12.65298, "ind": "Viale E. Proietti Divi, 115, 05100, Terni, TR", "rc": "012", "rd": "040", "tsc": "0744 54649", "tsd": "075 54472", "tc": "", "nue": "1 1 2", "esc": "so.terni@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-terni", "conf": ["Perugia", "Rieti", "Siena", "Viterbo"]}, {"c": "Torino", "pr": "TO", "rg": "Piemonte", "cm": "Torino", "dz": "Piemonte", "lat": 45.088278, "lon": 7.649333, "ind": "Corso Regina Margherita, 330, 10143, Torino, TO", "rc": "056", "rd": "080", "tsc": "011 7422777", "tsd": "011 41465200", "tc": "", "nue": "1 1 2", "esc": "so.torino@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-torino", "conf": ["Alessandria", "Aosta", "Asti", "Biella", "Cuneo", "Vercelli"]}, {"c": "Trapani", "pr": "TP", "rg": "Sicilia", "cm": "Trapani", "dz": "Sicilia", "lat": 38.01199, "lon": 12.57833, "ind": "Strada Palermo-Milo, , 91100, Trapani, TP", "rc": "036", "rd": "028", "tsc": "0923 550380", "tsd": "091 6057500", "tc": "", "nue": "1 1 2", "esc": "so.trapani@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-trapani", "conf": ["Agrigento", "Palermo"]}, {"c": "Trento", "pr": "TN", "rg": "Trentino-Alto Adige", "cm": "Trento", "dz": "Veneto e TAA", "lat": 46.076589, "lon": 11.1229, "ind": "Via Secondo da Trento, 2, 38121, Trento, TN", "rc": "042", "rd": "084", "tsc": "0461 492298", "tsd": "049 8229211", "tc": "", "nue": "1 1 2", "esc": "so115.trento@provincia.tn.it", "web": "https://www.provincia.tn.it/Amministrazione/Strutture-organizzative/Servizio-antincendi-e-protezione-civile/(people)/78", "conf": ["Belluno", "Bolzano", "Brescia", "Sondrio", "Verona", "Vicenza"]}, {"c": "Treviso", "pr": "TV", "rg": "Veneto", "cm": "Treviso", "dz": "Veneto e TAA", "lat": 45.671993, "lon": 12.216606, "ind": "Via Santa Barbara, 5, 31100, Treviso, TV", "rc": "092", "rd": "084", "tsc": "0422 358100", "tsd": "049 8229211", "tc": "", "nue": "1 1 5", "esc": "so.treviso@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-treviso", "conf": ["Belluno", "Padova", "Pordenone", "Venezia", "Vicenza"]}, {"c": "Trieste", "pr": "TS", "rg": "Friuli Venezia Giulia", "cm": "Trieste", "dz": "Friuli Venezia Giulia", "lat": 45.63651, "lon": 13.77961, "ind": "Via Bartolomeo D'Alviano, 15/1, 34144, Trieste, TS", "rc": "080", "rd": "036", "tsc": "040 3789924", "tsd": "040 7707511", "tc": "", "nue": "1 1 2", "esc": "so.trieste@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-trieste", "conf": ["Gorizia"]}, {"c": "Udine", "pr": "UD", "rg": "Friuli Venezia Giulia", "cm": "Udine", "dz": "Friuli Venezia Giulia", "lat": 46.04706, "lon": 13.21274, "ind": "Via Popone, 55, 33100, Udine, UD", "rc": 116, "rd": "036", "tsc": "0432 538800", "tsd": "040 7707511", "tc": "", "nue": "1 1 2", "esc": "so.udine@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-udine", "conf": ["Belluno", "Gorizia", "Pordenone", "Venezia"]}, {"c": "Varese", "pr": "VA", "rg": "Lombardia", "cm": "Varese", "dz": "Lombardia", "lat": 45.835855, "lon": 8.819546, "ind": "Via Legnani, 8, 21100, Varese, VA", "rc": "036", "rd": "014", "tsc": "0332 232844", "tsd": "02 8546461", "tc": "", "nue": "1 1 2", "esc": "so.varese@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-varese", "conf": ["Como", "Milano", "Monza e della Brianza", "Novara", "Verbano-Cusio-Ossola"]}, {"c": "Venezia", "pr": "VE", "rg": "Veneto", "cm": "Venezia", "dz": "Veneto e TAA", "lat": 45.51779, "lon": 12.243812, "ind": "Strada della Motorizzazione Civile, 6, 30174, Venezia, VE", "rc": "040", "rd": "084", "tsc": "041 2697150", "tsd": "049 8229211", "tc": "", "nue": "1 1 5", "esc": "so.venezia@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-venezia", "conf": ["Padova", "Pordenone", "Rovigo", "Treviso", "Udine"]}, {"c": "Verbano-Cusio-Ossola", "pr": "VB", "rg": "Piemonte", "cm": "Verbania", "dz": "Piemonte", "lat": 45.92679, "lon": 8.559999, "ind": "Corso Europa, 62/c, 28922, Verbania, VB", "rc": "066", "rd": "080", "tsc": "0323 5556699", "tsd": "011 41465200", "tc": "", "nue": "1 1 2", "esc": "so.verbania@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-verbano-cusio-ossola", "conf": ["Novara", "Varese", "Vercelli"]}, {"c": "Vercelli", "pr": "VC", "rg": "Piemonte", "cm": "Vercelli", "dz": "Piemonte", "lat": 45.313491, "lon": 8.422973, "ind": "Viale dell'Aeronautica Francis Lombardi, 8/10, 13100, Vercelli, VC", "rc": "038", "rd": "080", "tsc": "0161 261479", "tsd": "011 41465200", "tc": "", "nue": "1 1 2", "esc": "so.vercelli@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-vercelli", "conf": ["Alessandria", "Aosta", "Biella", "Novara", "Pavia", "Torino", "Verbano-Cusio-Ossola"]}, {"c": "Verona", "pr": "VR", "rg": "Veneto", "cm": "Verona", "dz": "Veneto e TAA", "lat": 45.412414, "lon": 10.99033, "ind": "Via Polveriera Vecchia, 12, 37134, Verona, VR", "rc": "048", "rd": "084", "tsc": "045 8294202", "tsd": "049 8229211", "tc": "", "nue": "1 1 5", "esc": "so.verona@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-verona", "conf": ["Brescia", "Mantova", "Padova", "Rovigo", "Trento", "Vicenza"]}, {"c": "Vibo Valentia", "pr": "VV", "rg": "Calabria", "cm": "Vibo Valentia", "dz": "Calabria", "lat": 38.67606, "lon": 16.08998, "ind": "Piazza Giovanni XXIII, , 89900, Vibo Valentia, VV", "rc": "044", "rd": "042", "tsc": "0963 9969100", "tsd": "0961 7175111", "tc": "", "nue": "1 1 2", "esc": "so.vibovalentia@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-vibo-valentia", "conf": ["Catanzaro", "Reggio Calabria"]}, {"c": "Vicenza", "pr": "VI", "rg": "Veneto", "cm": "Vicenza", "dz": "Veneto e TAA", "lat": 45.54632, "lon": 11.5202, "ind": "Via Carlo Farini, 16, 36100, Vicenza, VI", "rc": "016", "rd": "084", "tsc": "0444 565022", "tsd": "049 8229211", "tc": "", "nue": "1 1 5", "esc": "so.vicenza@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-vicenza", "conf": ["Belluno", "Padova", "Trento", "Treviso", "Verona"]}, {"c": "Viterbo", "pr": "VT", "rg": "Lazio", "cm": "Viterbo", "dz": "Lazio", "lat": 42.439397, "lon": 12.090688, "ind": "Strada Cassia Nord, km 84/500, 01100, Viterbo, VT", "rc": "072", "rd": "020", "tsc": "0761 2443", "tsd": "06 66179600", "tc": "", "nue": "1 1 2", "esc": "so.viterbo@vigilfuoco.it", "web": "https://www.vigilfuoco.it/comando-vvf-viterbo", "conf": ["Grosseto", "Rieti", "Roma", "Siena", "Terni"]}];
+    const CON = {radio: "026", tel: "06 478321"};
+    const SOCAV = {tel: "06 79340903"};
+
+    function norm(s) {
+      return (s || "").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+
+    function haversine(lat1, lon1, lat2, lon2) {
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function fmtDist(km) {
+      if (km == null || isNaN(km)) return "—";
+      return km < 1 ? Math.round(km * 1000) + " m" : km.toFixed(1) + " km";
+    }
+
+    function bearingDeg(lat1, lon1, lat2, lon2) {
+      const r = Math.PI / 180;
+      const p1 = lat1 * r, p2 = lat2 * r, dl = (lon2 - lon1) * r;
+      const y = Math.sin(dl) * Math.cos(p2);
+      const x = Math.cos(p1) * Math.sin(p2) - Math.sin(p1) * Math.cos(p2) * Math.cos(dl);
+      return (Math.atan2(y, x) / r + 360) % 360;
+    }
+
+    const ROSA = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSO", "SO", "OSO", "O", "ONO", "NO", "NNO"];
+    function fmtAz(deg) {
+      const d = Math.round(deg) % 360;
+      return String(d).padStart(3, "0") + "° " + ROSA[Math.round(deg / 22.5) % 16];
+    }
+
+    function updateNavInfo() {
+      const tDist = document.getElementById("rTargetDist");
+      const tAz = document.getElementById("rTargetAz");
+      if (targetPos) {
+        if (userPos) {
+          tDist.textContent = fmtDist(haversine(userPos.lat, userPos.lon, targetPos.lat, targetPos.lon));
+          tAz.textContent = fmtAz(bearingDeg(userPos.lat, userPos.lon, targetPos.lat, targetPos.lon));
+        } else {
+          tDist.textContent = "In attesa GPS…";
+          tAz.textContent = "In attesa GPS…";
+        }
+      }
+      const cAz = document.getElementById("rCmdAz");
+      if (userPos && currentRecord) {
+        cAz.textContent = fmtAz(bearingDeg(userPos.lat, userPos.lon, currentRecord.lat, currentRecord.lon)) +
+          " · " + fmtDist(haversine(currentRecord.lat, currentRecord.lon, userPos.lat, userPos.lon));
+      } else {
+        cAz.textContent = "—";
+      }
+
+      // In alto a destra: Comando -> target (o -> mia posizione se non c'è target)
+      const rDist = document.getElementById("rDist");
+      const ref = targetPos || userPos;
+      if (ref && currentRecord) {
+        rDist.innerHTML = "";
+
+        const leg = document.createElement("span");
+        leg.className = "leg";
+        leg.innerHTML = targetPos
+          ? '<span class="c-cmd">Comando</span> → <span class="c-tgt">Target</span>'
+          : '<span class="c-me">Mia pos.</span> → <span class="c-cmd">Comando</span>';
+
+        const val = document.createElement("span");
+        val.className = "val";
+        val.textContent = fmtDist(haversine(currentRecord.lat, currentRecord.lon, ref.lat, ref.lon));
+
+        // con target: Comando -> target (partenza squadra); senza: mia pos. -> Comando
+        const brg = targetPos
+          ? bearingDeg(currentRecord.lat, currentRecord.lon, ref.lat, ref.lon)
+          : bearingDeg(ref.lat, ref.lon, currentRecord.lat, currentRecord.lon);
+        const az = document.createElement("span");
+        az.className = "az";
+        az.textContent = "Az " + fmtAz(brg);
+
+        rDist.append(leg, val, az);
+        rDist.classList.toggle("is-target", !!targetPos);
+      } else {
+        rDist.textContent = "";
+      }
+    }
+
+    // "Via X, , 72100, Brindisi, BR" -> {street: "Via X", loc: "72100 Brindisi (BR)"}
+    function fmtAddr(ind) {
+      const p = (ind || "").split(",").map(s => s.trim());
+      let pr = "", city = "", cap = "";
+      if (p.length && /^[A-Z]{2}$/.test(p[p.length - 1])) pr = p.pop();
+      if (p.length) city = p.pop();
+      if (p.length && /^\d{5}$/.test(p[p.length - 1])) cap = p.pop();
+      return {
+        street: p.filter(Boolean).join(", "),
+        loc: [cap, city].filter(Boolean).join(" ") + (pr ? " (" + pr + ")" : "")
+      };
+    }
+
+    let dialPrefixEnabled = true;
+    let currentRecord = null;
+    let userPos = null;
+    let userAccuracy = null;
+    let userAltitude = null;
+    let targetPos = null;
+    let watchId = null;
+    let trackingTimeoutId = null;
+
+    const DIAL_PREFIX = "41460039";
+
+    function telHref(num) {
+      const raw = (num || "").toString();
+      if (!dialPrefixEnabled) return "tel:" + raw.replace(/[^0-9+]/g, "");
+      // toglie +39 / 0039 se già presenti, poi antepone 41460039
+      return "tel:" + DIAL_PREFIX + normalizeIT(digitsOnly(raw));
+    }
+
+    function refreshPhoneLinks() {
+      const conLink = document.getElementById("conLink");
+      if (conLink) conLink.href = telHref(CON.tel);
+      const socavLink = document.getElementById("socavLink");
+      if (socavLink) socavLink.href = telHref(SOCAV.tel);
+
+      if (currentRecord) {
+        const tscA = document.querySelector("#rTelComandoWrap a.value-link");
+        if (tscA && currentRecord.tsc) tscA.href = telHref(currentRecord.tsc);
+        const tsdA = document.querySelector("#rTelDirezioneWrap a.value-link");
+        if (tsdA && currentRecord.tsd) tsdA.href = telHref(currentRecord.tsd);
+      }
+
+      updateFreeDialLinks();
+    }
+
+    document.getElementById("prefixToggle").addEventListener("click", function () {
+      dialPrefixEnabled = !dialPrefixEnabled;
+      this.setAttribute("aria-pressed", dialPrefixEnabled ? "true" : "false");
+      refreshPhoneLinks();
+    });
+
+    function digitsOnly(v) {
+      return (v || "").toString().replace(/[^0-9]/g, "");
+    }
+
+    function normalizeIT(d) {
+      if (d.startsWith("0039")) return d.slice(4);
+      if (d.startsWith("39") && d.length >= 11) return d.slice(2);
+      return d;
+    }
+
+    function updateFreeDialLinks() {
+      const input = document.getElementById("freeDialInput");
+      const digits = digitsOnly(input.value);
+      const has = digits.length > 0;
+
+      const callLink = document.getElementById("freeDialCall");
+      callLink.href = has ? telHref(digits) : "javascript:void(0)";
+      callLink.classList.toggle("disabled", !has);
+
+      const waLink = document.getElementById("freeDialWhatsapp");
+      waLink.href = has ? ("https://wa.me/39" + normalizeIT(digits)) : "javascript:void(0)";
+      waLink.classList.toggle("disabled", !has);
+
+      const tgLink = document.getElementById("freeDialTelegram");
+      tgLink.href = has ? ("https://t.me/+39" + normalizeIT(digits)) : "javascript:void(0)";
+      tgLink.classList.toggle("disabled", !has);
+    }
+
+    document.getElementById("freeDialInput").addEventListener("input", updateFreeDialLinks);
+    updateFreeDialLinks();
+
+    /* ---- Mappa Leaflet ---- */
+    let map = null;
+    let comandoMarker = null;
+    let userMarker = null;
+    let targetMarker = null;
+    let linkLines = [];
+    let radioCtrl = null;
+    let heading = null;        // gradi dal nord, null = bussola non disponibile
+    let compassAsked = false;
+
+    function userIcon() {
+      const html = '<div class="u-ico">' +
+        '<svg class="u-dot" width="18" height="18" viewBox="0 0 18 18">' +
+        '<circle cx="9" cy="9" r="7" fill="#ffd700" stroke="#10141a" stroke-width="2.5"/></svg>' +
+        '</div>';
+      return L.divIcon({className: "", html: html, iconSize: [44, 44], iconAnchor: [22, 22], popupAnchor: [0, -12]});
+    }
+
+    let hdgMarks = null;
+
+    // chevron che punta verso l'alto (nord) e viene ruotato come il semiasse
+    function chevronIcon(deg) {
+      const d = "M3 9 L7 4 L11 9";
+      return L.divIcon({
+        className: "", iconSize: [14, 14], iconAnchor: [7, 7],
+        html: '<svg width="14" height="14" viewBox="0 0 14 14" style="transform:rotate(' + deg + 'deg)">' +
+          '<path d="' + d + '" fill="none" stroke="#10141a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>' +
+          '<path d="' + d + '" fill="none" stroke="#ffd700" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
+          '</svg>'
+      });
+    }    
+
+    let hdgCasing = null, hdgLine = null, hdgRaf = null;
+
+    // Semiasse dalla mia posizione fino oltre il bordo della mappa, nella direzione del telefono
+    function drawHeadingRay() {
+      // la mappa deve avere già centro e zoom, altrimenti Leaflet lancia un errore
+      if (!map || !map._loaded || !userPos || heading == null) {
+        if (hdgLine) {map.removeLayer(hdgCasing); map.removeLayer(hdgLine); hdgCasing = hdgLine = null;}
+        if (hdgMarks) hdgMarks.clearLayers();
+        return;
+      }
+      const z = map.getZoom();
+      const p0 = map.project([userPos.lat, userPos.lon], z);
+      const size = map.getSize();
+      const c = map.project(map.getCenter(), z);
+      // abbastanza lungo da uscire dallo schermo anche se sono fuori vista
+      const len = Math.hypot(size.x, size.y) + p0.distanceTo(c) + 50;
+      const r = heading * Math.PI / 180;
+      const p1 = p0.add(L.point(Math.sin(r) * len, -Math.cos(r) * len));
+      const ll = [map.unproject(p0, z), map.unproject(p1, z)];
+
+      if (!hdgLine) {
+        hdgCasing = L.polyline(ll, {color: "#10141a", weight: 5, opacity: 0.6, interactive: false}).addTo(map);
+        hdgLine = L.polyline(ll, {color: "#ffd700", weight: 2.5, opacity: 0.95, interactive: false}).addTo(map);
+      } else {
+        hdgCasing.setLatLngs(ll);
+        hdgLine.setLatLngs(ll);
+      }
+
+      // chevron di verso lungo il semiasse, a partire da 60 px dal pallino
+      if (!hdgMarks) hdgMarks = L.layerGroup().addTo(map);
+      hdgMarks.clearLayers();
+      const ux = Math.sin(r), uy = -Math.cos(r);
+      for (let d = 60; d < len; d += 90) {
+        const pt = map.unproject(p0.add(L.point(ux * d, uy * d)), z);
+        L.marker(pt, {icon: chevronIcon(heading), interactive: false, keyboard: false}).addTo(hdgMarks);
+      }
+    }
+
+    // la bussola manda decine di eventi al secondo: si ridisegna al massimo una volta per frame
+    function applyHeading() {
+      if (hdgRaf) return;
+      hdgRaf = requestAnimationFrame(function () {hdgRaf = null; drawHeadingRay();});
+    }
+
+    function screenAngle() {
+      return (screen.orientation && screen.orientation.angle) || window.orientation || 0;
+    }
+
+    function onOrient(e) {
+      let h = null;
+      if (typeof e.webkitCompassHeading === "number") h = e.webkitCompassHeading;   // iOS
+      else if (e.absolute && e.alpha != null) h = 360 - e.alpha;                    // Android
+      if (h == null) return;
+      heading = (h + screenAngle() + 360) % 360;
+      applyHeading();
+    }
+
+    // iOS chiede il permesso e va chiamato dentro un tocco dell'utente
+    function startCompass() {
+      if (compassAsked) return;
+      compassAsked = true;
+      const go = function () {
+        if ("ondeviceorientationabsolute" in window) window.addEventListener("deviceorientationabsolute", onOrient);
+        else window.addEventListener("deviceorientation", onOrient);
+      };
+      if (typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission === "function") {
+        DeviceOrientationEvent.requestPermission().then(function (s) {if (s === "granted") go();}).catch(function () { });
+      } else {
+        go();
+      }
+    }
+    document.addEventListener("click", startCompass, true);
+
+    function comandoIcon() {
+      const svg = '<svg width="26" height="26" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">'
+        + '<rect x="3" y="3" width="18" height="18" transform="rotate(45 12 12)" fill="#000000" stroke="#ffd700" stroke-width="2.5"/>'
+        + '</svg>';
+      return L.divIcon({className: "", html: svg, iconSize: [26, 26], iconAnchor: [13, 13], popupAnchor: [0, -10]});
+    }
+
+    function dotIcon(color) {
+      const svg = '<svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">'
+        + '<circle cx="9" cy="9" r="7" fill="' + color + '" stroke="#10141a" stroke-width="2.5"/>'
+        + '</svg>';
+      return L.divIcon({className: "", html: svg, iconSize: [18, 18], iconAnchor: [9, 9]});
+    }
+
+    // Etichetta ruotata come la linea, al centro: sopra distanza, sotto azimut (da "from" verso "to")
+    function lineLabel(line, from, to, cls) {
+      const dist = fmtDist(haversine(from.lat, from.lon, to.lat, to.lon));
+      const az = fmtAz(bearingDeg(from.lat, from.lon, to.lat, to.lon));
+
+      // angolo a schermo: in Mercatore non dipende dallo zoom
+      const a = map.project([from.lat, from.lon], 12);
+      const b = map.project([to.lat, to.lon], 12);
+      let ang = Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI;
+      if (ang > 90) ang -= 180;          // testo mai capovolto
+      if (ang < -90) ang += 180;
+
+      const mid = map.unproject(a.add(b).divideBy(2), 12);
+      const html = '<div class="ll-wrap ' + cls + '" style="transform:translate(-50%,-50%) rotate(' + ang + 'deg)">' +
+        '<span>' + dist + '</span><span>' + az + '</span></div>';
+
+      const m = L.marker(mid, {
+        icon: L.divIcon({className: "", html: html, iconSize: [0, 0]}),
+        interactive: false, keyboard: false, zIndexOffset: -1000
+      }).addTo(map);
+      linkLines.push(m);   // così viene rimossa insieme alle linee
+    }
+
+    function updateMap(record, pos, target, fit) {
+      if (fit === undefined) fit = true;
+      const mapEl = document.getElementById("resultMap");
+      if (!mapEl || typeof L === "undefined") return;
+
+      if (!map) {
+        map = L.map("resultMap", {attributionControl: true, zoomControl: true, maxZoom: 19});
+
+        const baseLayers = {
+          "Stradale": L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors'
+          }),
+          "Topografica": L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
+            maxZoom: 19,
+            maxNativeZoom: 17,
+            subdomains: "abc",
+            attribution: 'Dati &copy; OpenStreetMap contributors, SRTM | Stile &copy; <a href="https://opentopomap.org" target="_blank" rel="noopener">OpenTopoMap</a> (CC-BY-SA)'
+          }),
+          "Satellite": L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+            maxZoom: 19,
+            attribution: 'Immagini &copy; Esri, Maxar, Earthstar Geographics'
+          })
+        };
+
+        // Ricorda l'ultima scelta (se lo storage non è disponibile, parte "Stradale")
+        let saved = "Stradale";
+        try {saved = localStorage.getItem("fireops_basemap") || "Stradale";} catch (e) { }
+        if (!baseLayers[saved]) saved = "Stradale";
+        baseLayers[saved].addTo(map);
+
+        L.control.layers(baseLayers, null, {position: "topleft", collapsed: true}).addTo(map);
+
+        radioCtrl = L.control({position: "bottomleft"});
+        radioCtrl.onAdd = function () {
+          const d = L.DomUtil.create("div", "map-radio");
+          L.DomEvent.disableClickPropagation(d);
+          return d;
+        };
+        radioCtrl.addTo(map);
+
+        map.on("zoomend moveend resize", drawHeadingRay);
+
+        map.on("baselayerchange", function (e) {
+          try {localStorage.setItem("fireops_basemap", e.name);} catch (err) { }
+        });
+      }
+
+      if (comandoMarker) {map.removeLayer(comandoMarker); comandoMarker = null;}
+      if (userMarker) {map.removeLayer(userMarker); userMarker = null;}
+      if (targetMarker) {map.removeLayer(targetMarker); targetMarker = null;}
+      linkLines.forEach(l => map.removeLayer(l));
+      linkLines = [];
+
+      radioCtrl.getContainer().innerHTML =
+        "<b>" + record.c + "</b><br>📻 Comando <span class='ch'>" + (record.rc || "—") +
+        "</span> · DR <span class='ch'>" + (record.rd || "—") + "</span>";
+
+      comandoMarker = L.marker([record.lat, record.lon], {icon: comandoIcon()})
+        .addTo(map)
+        .bindPopup("Comando " + record.c);
+
+      const legendUser = document.getElementById("legendUser");
+      const legendTarget = document.getElementById("legendTarget");
+
+      const boundsArray = [[record.lat, record.lon]];
+
+      if (pos) {
+        userMarker = L.marker([pos.lat, pos.lon], {icon: userIcon()})
+          .addTo(map)
+          .bindPopup("La tua posizione GPS");
+        applyHeading();
+        legendUser.classList.remove("hidden");
+        boundsArray.push([pos.lat, pos.lon]);
+
+        const l1 = L.polyline([[pos.lat, pos.lon], [record.lat, record.lon]], {
+          color: "#ffd700", weight: 2.5, dashArray: "4,6", opacity: 0.85
+        }).addTo(map);
+        lineLabel(l1, pos, record, "cmd-me");          // mia pos. -> Comando
+        linkLines.push(l1);
+      } else {
+        legendUser.classList.add("hidden");
+      }
+
+      if (target) {
+        targetMarker = L.marker([target.lat, target.lon], {icon: dotIcon("#e84747")})
+          .addTo(map)
+          .bindPopup("Punto Target / Evento");
+        legendTarget.classList.remove("hidden");
+        boundsArray.push([target.lat, target.lon]);
+
+        const l2 = L.polyline([[target.lat, target.lon], [record.lat, record.lon]], {
+          color: "#e84747", weight: 2.5, dashArray: "6,4", opacity: 0.9
+        }).addTo(map);
+        lineLabel(l2, record, target, "cmd-tgt");      // Comando -> target
+        linkLines.push(l2);
+
+        if (pos) {
+          const l3 = L.polyline([[pos.lat, pos.lon], [target.lat, target.lon]], {
+            color: "#e8a33d", weight: 2, opacity: 0.7
+          }).addTo(map);
+          lineLabel(l3, pos, target, "me-tgt");        // mia pos. -> target
+          linkLines.push(l3);
+        }
+      } else {
+        legendTarget.classList.add("hidden");
+      }
+
+      document.getElementById("mapTargetBtn").classList.toggle("hidden", !target);
+
+      drawHeadingRay();   // segue la nuova posizione (o sparisce se non c'è GPS)
+
+      if (!fit) return;   // aggiornamento da tracking: non toccare zoom/pan dell'utente
+
+      if (boundsArray.length > 1) {
+        map.fitBounds(L.latLngBounds(boundsArray), {padding: [40, 40], maxZoom: 16});
+      } else {
+        map.setView([record.lat, record.lon], 13);
+      }
+
+      setTimeout(function () {map.invalidateSize();}, 60);
+    }
+
+    // Mirino: centra sulla mia posizione (senza GPS, sul Comando)
+    document.getElementById("mapCenterBtn").addEventListener("click", function () {
+      if (!map || !currentRecord) return;
+      if (userPos) {
+        map.setView([userPos.lat, userPos.lon], Math.max(map.getZoom(), 16));
+      } else {
+        map.setView([currentRecord.lat, currentRecord.lon], 13);
+      }
+    });
+
+    // Segnaposto rosso: centra sul target
+    document.getElementById("mapTargetBtn").addEventListener("click", function () {
+      if (!map || !targetPos) return;
+      map.setView([targetPos.lat, targetPos.lon], Math.max(map.getZoom(), 16));
+    });
+
+    const EXPAND_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9V3h6M3 3l6 6M21 9V3h-6M21 3l-6 6M3 15v6h6M3 21l6-6M21 15v6h-6M21 21l-6-6"/></svg>';
+    const COLLAPSE_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3v6H3M9 9L3 3M15 3v6h6M15 9l6-6M9 21v-6H3M9 15l-6 6M15 21v-6h6M15 15l6 6"/></svg>';
+    let isMapFullscreen = false;
+
+    function setMapFullscreen(on) {
+      isMapFullscreen = on;
+      const wrapEl = document.querySelector(".map-wrap");
+      const btn = document.getElementById("mapExpandBtn");
+      wrapEl.classList.toggle("map-fullscreen", on);
+      btn.classList.toggle("fullscreen", on);
+      document.body.classList.toggle("map-open", on);
+      btn.innerHTML = on ? COLLAPSE_ICON : EXPAND_ICON;
+      btn.title = on ? "Chiudi mappa a schermo intero" : "Ingrandisci mappa";
+      btn.setAttribute("aria-label", btn.title);
+      if (on) {
+        applyFullscreenMapHeight();
+      } else {
+        wrapEl.style.height = "";
+      }
+      setTimeout(function () {if (map) map.invalidateSize();}, 200);
+    }
+
+    function applyFullscreenMapHeight() {
+      if (!isMapFullscreen) return;
+      const wrapEl = document.querySelector(".map-wrap");
+      const h = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
+      wrapEl.style.height = h + "px";
+      if (map) map.invalidateSize();
+    }
+
+    window.addEventListener("resize", applyFullscreenMapHeight);
+    window.addEventListener("orientationchange", applyFullscreenMapHeight);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", applyFullscreenMapHeight);
+    }
+
+    document.getElementById("mapExpandBtn").innerHTML = EXPAND_ICON;
+    document.getElementById("mapExpandBtn").addEventListener("click", function () {
+      setMapFullscreen(!isMapFullscreen);
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && isMapFullscreen) setMapFullscreen(false);
+    });
+
+    async function reverseGeocodeProvincia(lat, lon) {
+      try {
+        const url = "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=" + lat + "&lon=" + lon + "&addressdetails=1&accept-language=it&zoom=8";
+        const ctrl = new AbortController();
+        const tmo = setTimeout(() => ctrl.abort(), 7000);
+        const resp = await fetch(url, {headers: {"Accept": "application/json"}, signal: ctrl.signal});
+        clearTimeout(tmo);
+        if (!resp.ok) throw new Error("http " + resp.status);
+        const data = await resp.json();
+        const addr = data.address || {};
+
+        let provCode = null;
+        if (addr["ISO3166-2-lvl6"]) {
+          provCode = addr["ISO3166-2-lvl6"].split("-").pop().toUpperCase();
+        }
+        let rec = provCode ? COMANDI.find(r => r.pr === provCode) : null;
+
+        if (!rec && addr.county) {
+          const countyName = norm(addr.county.replace(/^(provincia di|libera consortile di|libero consorzio( comunale)? di|citt[aà] metropolitana di)\s*/i, ""));
+          rec = COMANDI.find(r => norm(r.cm) === countyName || norm(r.c) === countyName);
+        }
+        return rec || null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function olcDecode(code) {
+      const A = "23456789CFGHJMPQRVWX";
+      code = code.toUpperCase().replace("+", "");
+      const pairVals = [20, 1, 0.05, 0.0025, 0.000125];
+      const pairLen = Math.min(code.length, 10);
+      if (pairLen < 2 || pairLen % 2 !== 0) return null;
+      let lat = -90, lon = -180, latRes = 0, lonRes = 0;
+      for (let i = 0; i < pairLen; i += 2) {
+        const a = A.indexOf(code[i]), b = A.indexOf(code[i + 1]);
+        if (a < 0 || b < 0) return null;
+        const r = pairVals[i / 2];
+        lat += a * r; lon += b * r;
+        latRes = r; lonRes = r;
+      }
+      for (let i = 10; i < code.length; i++) {
+        const idx = A.indexOf(code[i]);
+        if (idx < 0) return null;
+        latRes /= 5; lonRes /= 4;
+        lat += Math.floor(idx / 4) * latRes;
+        lon += (idx % 4) * lonRes;
+      }
+      return {lat: lat + latRes / 2, lon: lon + lonRes / 2};
+    }
+
+    /* --- Motore di Parsing Avanzato (OLC, UTM, DMS, DMM, Decimali, Link Maps) con pulizia caratteri --- */
+    function inItaly(p) {return p && p.lat >= 35 && p.lat <= 48 && p.lon >= 6 && p.lon <= 19;}
+
+    function parseCoordinatesInput(text) {
+      if (!text) return null;
+      text = text.trim();
+
+      // 1. Controllo Open Location Code (Plus Codes) base (es. 8FVG+XX o 8FVGXX+XX)
+      const olcRegex = /^[23456789CFGHJMPQRVWX]{8}\+[23456789CFGHJMPQRVWX]{0,7}$/i;
+      if (olcRegex.test(text)) return olcDecode(text);
+
+      // 2. Link Google Maps o stringhe con @lat,lon oppure q=lat,lon oppure ll=lat,lon
+      let match = text.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+      if (match) return {lat: parseFloat(match[1]), lon: parseFloat(match[2])};
+      match = text.match(/[?&](?:q|ll)=(-?\d+\.\d+),(-?\d+\.\d+)/);
+      if (match) return {lat: parseFloat(match[1]), lon: parseFloat(match[2])};
+      match = text.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+      if (match) return {lat: parseFloat(match[1]), lon: parseFloat(match[2])};
+
+      // 3. UTM (formato es: 32T 500000 5000000 oppure 32N 500000 5000000)
+      const utmRegex = /^(\d{1,2})\s*([C-X])\s*([0-9.,]+)\s*([0-9.,]+)$/i;
+      let utmMatch = text.match(utmRegex);
+      if (utmMatch) {
+        let zone = parseInt(utmMatch[1]);
+        let hem = utmMatch[2].toUpperCase();
+        let easting = parseFloat(utmMatch[3].replace(/\./g, '').replace(',', '.'));
+        let northing = parseFloat(utmMatch[4].replace(/\./g, '').replace(',', '.'));
+        let isNorth = (hem >= 'N');
+        let latLon = utmToLatLon(easting, northing, zone, isNorth);
+        if (latLon) return latLon;
+      }
+      if (!text.includes(".") && /^\s*-?\d+,\d+\s*[;\s]\s*-?\d+,\d+\s*$/.test(text)) {
+        text = text.replace(/,/g, ".").replace(/\s*[;\s]\s*/, " ");
+      }
+
+      // 4. Rimozione caratteri speciali superflui per coordinate decimali o sessagesimali grezze (, ° ' " N S E W)
+      let cleaned = text.toUpperCase()
+        .replace(/[°º]/g, ' ')
+        .replace(/['’′]/g, ' ')
+        .replace(/["”″]/g, ' ')
+        .replace(/[,]/g, ' ');
+
+      // Estrazione di tutti i numeri presenti nella stringa pulita
+      let nums = cleaned.match(/-?\d+(?:\.\d+)?/g);
+      if (!nums || nums.length < 2) return null;
+
+      let fNums = nums.map(Number);
+
+      if (![2, 4, 6].includes(fNums.length)) return null;
+
+      // Controllo orientamento cardinale esplicito (N/S ed E/W)
+      let hasSouth = /\d\s*S\b|\bS\s*\d/.test(cleaned);
+      let hasWest = /\d\s*W\b|\bW\s*\d/.test(cleaned);
+
+      // A. Controllo DMS (Gradi, Minuti, Secondi) -> es. 44 28 30 N 11 21 00 E (6 numeri totali)
+      if (fNums.length === 6) {
+        let latDeg = fNums[0], latMin = fNums[1], latSec = fNums[2];
+        let lonDeg = fNums[3], lonMin = fNums[4], lonSec = fNums[5];
+        let lat = latDeg + latMin / 60 + latSec / 3600;
+        let lon = lonDeg + lonMin / 60 + lonSec / 3600;
+        if (hasSouth) lat = -lat;
+        if (hasWest) lon = -lon;
+        if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
+          return {lat: lat, lon: lon};
+        }
+      }
+
+      // B. Controllo DMM (Gradi, Minuti decimali) -> es. 44 28.5 N 11 21.2 E (4 numeri totali)
+      if (fNums.length === 4) {
+        let latDeg = fNums[0], latMin = fNums[1];
+        let lonDeg = fNums[2], lonMin = fNums[3];
+        let lat = latDeg + latMin / 60;
+        let lon = lonDeg + lonMin / 60;
+        if (hasSouth) lat = -lat;
+        if (hasWest) lon = -lon;
+        if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
+          return {lat: lat, lon: lon};
+        }
+      }
+
+      // C. Coordinate Decimali standard (2 numeri)
+      if (fNums.length === 2) {
+        let lat = fNums[0];
+        let lon = fNums[1];
+        if (hasSouth) lat = -Math.abs(lat);
+        if (hasWest) lon = -Math.abs(lon);
+        if (lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
+          return {lat: lat, lon: lon};
+        }
+      }
+
+      return null;
+    }
+
+    // Funzione di conversione UTM -> Lat/Lon approssimata WGS84 per uso operativo
+    function utmToLatLon(easting, northing, zone, isNorth) {
+      try {
+        let k0 = 0.9996;
+        let a = 6378137.0;
+        let eccSquared = 0.00669438;
+        let e1 = (1 - Math.sqrt(1 - eccSquared)) / (1 + Math.sqrt(1 - eccSquared));
+
+        let x = easting - 500000.0;
+        let y = northing;
+        if (!isNorth) y -= 10000000.0;
+
+        let longOrigin = (zone - 1) * 6 - 180 + 3.0;
+        let m = y / k0;
+        let mu = m / (a * (1 - eccSquared / 4 - 3 * eccSquared * eccSquared / 64 - 5 * eccSquared * eccSquared * eccSquared / 256));
+
+        let phi1 = mu + (3 * e1 / 2 - 27 * e1 * e1 * e1 / 32) * Math.sin(2 * mu)
+          + (21 * e1 * e1 / 16 - 55 * e1 * e1 * e1 * e1 / 32) * Math.sin(4 * mu)
+          + (151 * e1 * e1 * e1 / 96) * Math.sin(6 * mu);
+
+        let N1 = a / Math.sqrt(1 - eccSquared * Math.sin(phi1) * Math.sin(phi1));
+        let T1 = Math.tan(phi1) * Math.tan(phi1);
+        let C1 = eccSquared / (1 - eccSquared) * Math.cos(phi1) * Math.cos(phi1);
+        let R1 = a * (1 - eccSquared) / Math.pow(1 - eccSquared * Math.sin(phi1) * Math.sin(phi1), 1.5);
+        let D = x / (N1 * k0);
+
+        let lat = phi1 - (N1 * Math.tan(phi1) / R1) * (D * D / 2 - (5 + 3 * T1 + 10 * C1 - 4 * C1 * C1 - 9 * eccSquared) * D * D * D * D / 24
+          + (61 + 90 * T1 + 298 * C1 + 45 * T1 * T1 - 252 * eccSquared - 3 * C1 * C1) * D * D * D * D * D * D / 720);
+        lat = lat * 180 / Math.PI;
+
+        let lon = (D - (1 + 2 * T1 + C1) * D * D * D / 6 + (5 - 2 * C1 + 28 * T1 - 3 * C1 * C1 + 8 * eccSquared + 24 * T1 * T1) * D * D * D * D * D / 120) / Math.cos(phi1);
+        lon = longOrigin + lon * 180 / Math.PI;
+
+        return {lat: lat, lon: lon};
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function showResult(record, distanceKm, nearbyList, method) {
+      currentRecord = record;
+      document.getElementById("locate-section").classList.add("hidden");
+      document.getElementById("search-section").classList.add("hidden");
+      const rs = document.getElementById("result-section");
+      rs.classList.remove("hidden");
+
+      const targetPanel = document.getElementById("targetInfoPanel");
+      const gpsPanel = document.getElementById("gpsInfoPanel");
+      const gpsAccuracyRow = document.getElementById("gpsAccuracyRow");
+      const gpsAltitudeRow = document.getElementById("gpsAltitudeRow");
+
+      if (targetPos) {
+        targetPanel.classList.remove("hidden");
+        document.getElementById("rTargetCoords").textContent = targetPos.lat.toFixed(6) + "°, " + targetPos.lon.toFixed(6) + "°";
+      } else {
+        targetPanel.classList.add("hidden");
+      }
+
+      if (userPos) {
+        gpsPanel.classList.remove("hidden");
+        document.getElementById("rGpsCoords").textContent = userPos.lat.toFixed(6) + "°, " + userPos.lon.toFixed(6) + "°";
+        document.getElementById("rGpsAccuracy").textContent = (userAccuracy != null) ? Math.round(userAccuracy) + " metri" : "Non disponibile";
+        gpsAccuracyRow.classList.remove("hidden");
+        if (userAltitude != null) {
+          document.getElementById("rGpsAltitude").textContent = Math.round(userAltitude) + " m s.l.m.";
+          gpsAltitudeRow.classList.remove("hidden");
+        } else {
+          gpsAltitudeRow.classList.add("hidden");
+        }
+      } else {
+        gpsPanel.classList.add("hidden");
+      }
+      document.getElementById("rComando").textContent = record.c;
+      document.getElementById("rDist").textContent = (distanceKm != null) ? fmtDist(distanceKm) : "";
+      document.getElementById("rSub").textContent = record.rg + " · Direzione regionale " + record.dz;
+
+      document.getElementById("rRadioComando").textContent = record.rc || "—";
+      document.getElementById("rRadioDirezione").textContent = record.rd || "—";
+
+      const tsc = document.getElementById("rTelComandoWrap");
+      tsc.innerHTML = record.tsc
+        ? '<a class="value-link" href="' + telHref(record.tsc) + '">' + record.tsc + ' <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 3h4l2 5-2.5 1.5a11 11 0 005 5L16 12l5 2v4a2 2 0 01-2 2C10.6 20 4 13.4 4 5a2 2 0 012-2z" stroke="currentColor" stroke-width="1.6"/></svg></a>'
+        : "—";
+      const tsd = document.getElementById("rTelDirezioneWrap");
+      tsd.innerHTML = record.tsd
+        ? '<a class="value-link" href="' + telHref(record.tsd) + '">' + record.tsd + ' <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 3h4l2 5-2.5 1.5a11 11 0 005 5L16 12l5 2v4a2 2 0 01-2 2C10.6 20 4 13.4 4 5a2 2 0 012-2z" stroke="currentColor" stroke-width="1.6"/></svg></a>'
+        : "—";
+
+      const a = fmtAddr(record.ind);
+      const addrEl = document.getElementById("rCmdAddr");
+      addrEl.innerHTML = "";
+      if (a.street) addrEl.appendChild(document.createTextNode(a.street));
+      if (a.loc) {
+        const s = document.createElement("span");
+        s.className = "loc";
+        s.textContent = a.loc;
+        addrEl.appendChild(s);
+      }
+      addrEl.classList.toggle("hidden", !a.street && !a.loc);
+
+      const methodEl = document.getElementById("rMethod");
+      const borderNote = document.getElementById("borderNote");
+      if (method === "geo") {
+        methodEl.className = "method-badge geo";
+        methodEl.textContent = targetPos ? "Competenza determinata dal punto target inserito" : "Determinato dalla provincia di competenza";
+        borderNote.classList.add("hidden");
+      } else if (method === "dist") {
+        methodEl.className = "method-badge dist";
+        methodEl.textContent = "Stima per vicinanza — provincia non determinabile via rete";
+        borderNote.classList.remove("hidden");
+        borderNote.innerHTML = "Non è stato possibile determinare la provincia via rete: mostrato il comando con sede più vicina. Verifica la competenza effettiva, specie vicino a un confine provinciale.";
+      } else {
+        methodEl.className = "method-badge manual";
+        methodEl.textContent = "";
+        borderNote.classList.add("hidden");
+      }
+
+      methodEl.classList.toggle("tgt", !!targetPos);
+
+      const confPanel = document.getElementById("confinantiPanel");
+      const chips = document.getElementById("confinantiChips");
+      chips.innerHTML = "";
+      if (record.conf && record.conf.length) {
+        confPanel.classList.remove("hidden");
+        record.conf.forEach(name => {
+          const rec = COMANDI.find(x => x.c === name);
+          if (!rec) return;
+          const chip = document.createElement("div");
+          chip.className = "chip";
+          chip.textContent = name;
+          chip.onclick = () => selectComando(rec, userPos, targetPos);
+          chips.appendChild(chip);
+        });
+      } else {
+        confPanel.classList.add("hidden");
+      }
+
+      updateNavInfo();
+      updateMap(record, userPos, targetPos);
+      window.scrollTo({top: 0, behavior: "smooth"});
+    }
+
+    function selectComando(record, pos, target) {
+      let refPt = target || pos;
+      let dist = null;
+      if (refPt) {
+        dist = haversine(refPt.lat, refPt.lon, record.lat, record.lon);
+      }
+      showResult(record, dist, null, "manual");
+    }
+
+    function startGpsTracking() {
+      if (!navigator.geolocation) return;
+      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+      if (trackingTimeoutId !== null) clearTimeout(trackingTimeoutId);
+
+      let bestAccuracy = userAccuracy !== null ? userAccuracy : Infinity;
+
+      watchId = navigator.geolocation.watchPosition(function (pos) {
+        const newAcc = pos.coords.accuracy;
+        const newLat = pos.coords.latitude;
+        const newLon = pos.coords.longitude;
+        const newAlt = pos.coords.altitude;
+
+        if (newAcc <= bestAccuracy) {
+          bestAccuracy = newAcc;
+          userPos = {lat: newLat, lon: newLon};
+          userAccuracy = newAcc;
+          if (newAlt !== null) userAltitude = newAlt;
+
+          const rs = document.getElementById("result-section");
+          if (!rs.classList.contains("hidden")) {
+            document.getElementById("gpsInfoPanel").classList.remove("hidden");
+            document.getElementById("rGpsCoords").textContent = userPos.lat.toFixed(6) + "°, " + userPos.lon.toFixed(6) + "°";
+            document.getElementById("rGpsAccuracy").textContent = Math.round(userAccuracy) + " metri";
+            if (userAltitude !== null) {
+              document.getElementById("rGpsAltitude").textContent = Math.round(userAltitude) + " m s.l.m.";
+              document.getElementById("gpsAltitudeRow").classList.remove("hidden");
+            }
+            if (currentRecord) {
+              if (!targetPos) {
+                document.getElementById("rDist").textContent =
+                  fmtDist(haversine(userPos.lat, userPos.lon, currentRecord.lat, currentRecord.lon));
+              }
+              if (map) updateMap(currentRecord, userPos, targetPos, false);
+              updateNavInfo();
+            }
+          }
+        }
+      }, function (err) { }, {enableHighAccuracy: true, timeout: 5000, maximumAge: 0});
+
+      trackingTimeoutId = setTimeout(function () {
+        if (watchId !== null) {
+          navigator.geolocation.clearWatch(watchId);
+          watchId = null;
+        }
+      }, 60000);
+    }
+
+    async function refreshPosition() {
+      const btn = document.getElementById("refreshGpsBtn");
+      const label = document.getElementById("refreshGpsLabel");
+      if (!navigator.geolocation) {
+        label.textContent = "GPS non supportato";
+        return;
+      }
+      btn.disabled = true;
+      btn.classList.add("spin");
+      label.textContent = "Aggiornamento…";
+
+      const done = function (msg) {
+        btn.disabled = false;
+        btn.classList.remove("spin");
+        label.textContent = msg || "Aggiorna posizione";
+        if (msg) setTimeout(function () {label.textContent = "Aggiorna posizione";}, 3000);
+      };
+
+      navigator.geolocation.getCurrentPosition(async function (pos) {
+        userPos = {lat: pos.coords.latitude, lon: pos.coords.longitude};
+        userAccuracy = pos.coords.accuracy;
+        userAltitude = pos.coords.altitude;   // sostituisce anche la quota (può tornare null)
+
+        startGpsTracking();                   // riparte il tracking di 1 min dalla nuova precisione
+
+        document.getElementById("rGpsCoords").textContent = userPos.lat.toFixed(6) + "°, " + userPos.lon.toFixed(6) + "°";
+        document.getElementById("rGpsAccuracy").textContent = Math.round(userAccuracy) + " metri";
+        const altRow = document.getElementById("gpsAltitudeRow");
+        if (userAltitude != null) {
+          document.getElementById("rGpsAltitude").textContent = Math.round(userAltitude) + " m s.l.m.";
+          altRow.classList.remove("hidden");
+        } else {
+          altRow.classList.add("hidden");
+        }
+
+        // Con un target inserito la competenza dipende dal target: non si cambia.
+        if (!targetPos) {
+          const geoRec = await reverseGeocodeProvincia(userPos.lat, userPos.lon);
+          const borderNote = document.getElementById("borderNote");
+          if (geoRec) {
+            if (!currentRecord || geoRec.c !== currentRecord.c) {
+              const prev = currentRecord ? currentRecord.c : null;
+              showResult(geoRec, haversine(userPos.lat, userPos.lon, geoRec.lat, geoRec.lon), null, "geo");
+              if (prev) {
+                borderNote.classList.remove("hidden");
+                borderNote.innerHTML = "<strong>Comando aggiornato:</strong> da " + prev + " a " + geoRec.c + " (cambio di provincia).";
+              }
+            } else {
+              document.getElementById("rDist").textContent =
+                fmtDist(haversine(userPos.lat, userPos.lon, currentRecord.lat, currentRecord.lon));
+              updateMap(currentRecord, userPos, targetPos);
+              updateNavInfo();
+            }
+          } else if (currentRecord) {
+            // Provincia non determinabile: si tiene il comando attuale ma si avvisa
+            document.getElementById("rDist").textContent =
+              fmtDist(haversine(userPos.lat, userPos.lon, currentRecord.lat, currentRecord.lon));
+            updateMap(currentRecord, userPos, targetPos);
+            updateNavInfo();
+            borderNote.classList.remove("hidden");
+            borderNote.innerHTML = "Posizione aggiornata, ma non è stato possibile verificare la provincia via rete: il comando mostrato potrebbe non essere più quello competente.";
+          }
+        } else if (currentRecord) {
+          updateMap(currentRecord, userPos, targetPos);
+          updateNavInfo();
+        }
+        done();
+      }, function (err) {
+        done(err.code === 1 ? "Permesso negato" : "Posizione non disponibile");
+      }, {enableHighAccuracy: true, timeout: 12000, maximumAge: 0});
+    }
+
+    document.getElementById("refreshGpsBtn").addEventListener("click", refreshPosition);
+
+    function copyText(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        return navigator.clipboard.writeText(text);
+      }
+      // Fallback per browser senza Clipboard API
+      return new Promise(function (resolve, reject) {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+          document.execCommand("copy") ? resolve() : reject();
+        } catch (e) {reject(e);}
+        document.body.removeChild(ta);
+      });
+    }
+
+    function bindCopyCoords(id, getPos) {
+      const el = document.getElementById(id);
+      let tmo = null;
+      el.addEventListener("click", function () {
+        const p = getPos();
+        if (!p) return;
+        const text = p.lat.toFixed(6) + ", " + p.lon.toFixed(6);
+        copyText(text).then(function () {
+          el.classList.add("copied");
+          clearTimeout(tmo);
+          tmo = setTimeout(function () {el.classList.remove("copied");}, 1500);
+        }).catch(function () {
+          window.prompt("Copia le coordinate:", text);
+        });
+      });
+    }
+
+    bindCopyCoords("rTargetCoords", function () {return targetPos;});
+    bindCopyCoords("rGpsCoords", function () {return userPos;});
+
+    document.getElementById("openMapsTarget").addEventListener("click", function () {
+      if (!targetPos) return;
+      const url = "https://www.google.com/maps/dir/?api=1&destination=" +
+        targetPos.lat.toFixed(6) + "," + targetPos.lon.toFixed(6) +
+        "&travelmode=driving&dir_action=navigate";
+      window.open(url, "_blank", "noopener");
+    });
+
+    let routeLayer = null;
+
+    function clearRoute() {
+      if (routeLayer && map) map.removeLayer(routeLayer);
+      routeLayer = null;
+      const info = document.getElementById("routeInfo");
+      info.classList.add("hidden");
+      info.classList.remove("error");
+      info.textContent = "";
+    }
+
+    function fmtDuration(sec) {
+      const m = Math.round(sec / 60);
+      if (m < 60) return m + " min";
+      return Math.floor(m / 60) + " h " + String(m % 60).padStart(2, "0") + " min";
+    }
+
+    async function showRoute(profile, color, modeLabel) {
+      const info = document.getElementById("routeInfo");
+      const btns = [document.getElementById("routeFoot"), document.getElementById("routeCar")];
+      info.classList.remove("hidden", "error");
+
+      if (!targetPos) return;
+      if (!userPos) {
+        info.classList.add("error");
+        info.textContent = "Posizione GPS non ancora ricevuta: attendi la lettura o usa \"Aggiorna posizione\".";
+        return;
+      }
+
+      btns.forEach(b => b.disabled = true);
+      info.textContent = "Calcolo del percorso " + modeLabel + "…";
+
+      try {
+        const url = "https://brouter.de/brouter?lonlats=" +
+          userPos.lon.toFixed(6) + "," + userPos.lat.toFixed(6) + "|" +
+          targetPos.lon.toFixed(6) + "," + targetPos.lat.toFixed(6) +
+          "&profile=" + profile + "&alternativeidx=0&format=geojson";
+
+        const ctrl = new AbortController();
+        const tmo = setTimeout(() => ctrl.abort(), 20000);
+        const r = await fetch(url, {signal: ctrl.signal});
+        clearTimeout(tmo);
+        if (!r.ok) {
+          const msg = (await r.text()).trim().slice(0, 120);
+          throw new Error(msg || ("http " + r.status));
+        }
+        const data = await r.json();
+        const feat = data.features && data.features[0];
+        if (!feat) throw new Error("nessun percorso");
+
+        const p = feat.properties || {};
+        const coords = feat.geometry.coordinates.map(c => [c[1], c[0]]);
+
+        if (routeLayer && map) map.removeLayer(routeLayer);
+        routeLayer = L.polyline(coords, {color: color, weight: 5, opacity: 0.9}).addTo(map);
+        map.fitBounds(routeLayer.getBounds(), {padding: [40, 40]});
+        document.getElementById("resultMap").scrollIntoView({behavior: "smooth", block: "center"});
+
+        const km = (parseFloat(p["track-length"]) / 1000).toFixed(1);
+        const asc = p["filtered ascend"] != null ? Math.round(parseFloat(p["filtered ascend"])) : null;
+        info.innerHTML = "<strong>" + modeLabel + "</strong>: " + km + " km · " +
+          fmtDuration(parseFloat(p["total-time"])) +
+          (asc != null ? " · dislivello +" + asc + " m" : "") +
+          "<br>Calcolato da BRouter alle " +
+          new Date().toLocaleTimeString("it-IT", {hour: "2-digit", minute: "2-digit"}) +
+          ", senza traffico.";
+      } catch (e) {
+        info.classList.add("error");
+        info.textContent = "Percorso non disponibile (" + (e.name === "AbortError" ? "tempo scaduto" : e.message) + ").";
+      } finally {
+        btns.forEach(b => b.disabled = false);
+      }
+    }
+
+    document.getElementById("routeFoot").addEventListener("click", function () {
+      showRoute("hiking-mountain", "#3fa66b", "A piedi");
+    });
+    document.getElementById("routeCar").addEventListener("click", function () {
+      showRoute("car-fast", "#29a9eb", "In auto");
+    });
+    document.getElementById("navToComando").addEventListener("click", function () {
+      if (!currentRecord) return;
+      const url = "https://www.google.com/maps/dir/?api=1&destination=" +
+        currentRecord.lat.toFixed(6) + "," + currentRecord.lon.toFixed(6) +
+        "&travelmode=driving&dir_action=navigate";
+      window.open(url, "_blank", "noopener");
+    });
+
+    function resetApp() {
+      clearRoute();
+      if (watchId !== null) {navigator.geolocation.clearWatch(watchId); watchId = null;}
+      if (trackingTimeoutId !== null) {clearTimeout(trackingTimeoutId); trackingTimeoutId = null;}
+      currentRecord = null;
+      userPos = null;
+      userAccuracy = null;
+      userAltitude = null;
+      targetPos = null;
+      document.getElementById("targetInput").value = "";
+
+      if (isMapFullscreen) setMapFullscreen(false);
+
+      document.getElementById("targetInput").value = "";
+      document.getElementById("searchInput").value = "";
+      document.getElementById("searchResults").classList.add("hidden");
+      document.getElementById("statusMsg").classList.add("hidden");
+      document.getElementById("statusMsg").textContent = "";
+
+      document.getElementById("result-section").classList.add("hidden");
+      document.getElementById("search-section").classList.add("hidden");
+      document.getElementById("locate-section").classList.remove("hidden");
+      window.scrollTo({top: 0, behavior: "smooth"});
+    }
+
+    document.getElementById("homeBtn").addEventListener("click", resetApp);
+    document.getElementById("homeLogoBtn").addEventListener("click", resetApp);
+
+    async function fetchTargetElevation(lat, lon) {
+      const el = document.getElementById("rTargetAlt");
+      el.textContent = "…";
+      try {
+        const ctrl = new AbortController();
+        const tmo = setTimeout(() => ctrl.abort(), 7000);
+        const r = await fetch("https://api.open-meteo.com/v1/elevation?latitude=" + lat + "&longitude=" + lon, {signal: ctrl.signal});
+        clearTimeout(tmo);
+        if (!r.ok) throw new Error("http " + r.status);
+        const d = await r.json();
+        const h = d.elevation && d.elevation[0];
+        el.textContent = (h != null) ? Math.round(h) + " m s.l.m." : "Non disponibile";
+      } catch (e) {
+        el.textContent = "Non disponibile";
+      }
+    }
+
+    // Apre il popup e restituisce {lat, lon} scelto, oppure null se annullato
+    function askPlace(code) {
+      return new Promise(function (resolve) {
+        const modal = document.getElementById("placeModal");
+        const input = document.getElementById("placeInput");
+        const list = document.getElementById("placeList");
+        const msg = document.getElementById("placeMsg");
+        let tmo = null, reqId = 0;
+
+        document.getElementById("placeCode").textContent = code;
+        input.value = "";
+        list.innerHTML = "";
+        msg.classList.add("hidden");
+        modal.classList.remove("hidden");
+        setTimeout(function () {input.focus();}, 50);
+
+        function close(result) {
+          modal.classList.add("hidden");
+          input.removeEventListener("input", onInput);
+          document.getElementById("placeCancel").removeEventListener("click", onCancel);
+          modal.removeEventListener("click", onBackdrop);
+          clearTimeout(tmo);
+          resolve(result);
+        }
+        function onCancel() {close(null);}
+        function onBackdrop(e) {if (e.target === modal) close(null);}
+
+        function showMsg(t) {msg.textContent = t; msg.classList.remove("hidden");}
+
+        async function search(q) {
+          const id = ++reqId;
+          msg.classList.add("hidden");
+          try {
+            const url = "https://photon.komoot.io/api/?limit=10" +
+              "&bbox=6.6,35.4,18.8,47.2&osm_tag=place&q=" + encodeURIComponent(q);
+            const ctrl = new AbortController();
+            const t = setTimeout(() => ctrl.abort(), 6000);
+            const r = await fetch(url, {signal: ctrl.signal});
+            clearTimeout(t);
+            if (!r.ok) throw new Error("http " + r.status);
+            const data = await r.json();
+            if (id !== reqId) return;   // risposta vecchia, ignorata
+
+            const seen = {};
+            const items = (data.features || []).filter(function (f) {
+              const p = f.properties || {};
+              if (p.countrycode !== "IT" || !p.name) return false;
+              const key = p.name + "|" + (p.county || p.state || "");
+              if (seen[key]) return false;
+              seen[key] = true;
+              return true;
+            }).slice(0, 6);
+
+            list.innerHTML = "";
+            if (!items.length) {showMsg("Nessun risultato. Prova a scrivere il nome per intero."); return;}
+            items.forEach(function (f) {
+              const p = f.properties;
+              const row = document.createElement("div");
+              row.className = "place-item";
+              const n = document.createElement("span");
+              n.className = "pn";
+              n.textContent = p.name;
+              const pr = document.createElement("span");
+              pr.className = "pp";
+              pr.textContent = [p.county, p.state].filter(Boolean).join(" · ");
+              row.appendChild(n);
+              row.appendChild(pr);
+              row.addEventListener("click", function () {
+                close({lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0]});
+              });
+              list.appendChild(row);
+            });
+          } catch (e) {
+            if (id !== reqId) return;
+            list.innerHTML = "";
+            showMsg("Ricerca non disponibile (" + (e.name === "AbortError" ? "tempo scaduto" : e.message) + ").");
+          }
+        }
+
+        function onInput() {
+          clearTimeout(tmo);
+          const q = input.value.trim();
+          if (q.length < 3) {list.innerHTML = ""; msg.classList.add("hidden"); return;}
+          tmo = setTimeout(function () {search(q);}, 350);
+        }
+
+        input.addEventListener("input", onInput);
+        document.getElementById("placeCancel").addEventListener("click", onCancel);
+        modal.addEventListener("click", onBackdrop);
+      });
+    }
+
+    const OLC_SHORT_RE = /^([23456789CFGHJMPQRVWX]{4}\+[23456789CFGHJMPQRVWX]{0,7})\s*(.*)$/i;
+
+    // Ricostruisce un codice corto a partire da un punto di riferimento
+    function olcRecoverShort(shortCode, ref) {
+      const d = olcDecode("2222" + shortCode.toUpperCase());
+      if (!d) return null;
+      const offLat = d.lat + 90;    // posizione dentro il quadrato di 1°
+      const offLon = d.lon + 180;
+      let lat = Math.floor(ref.lat) + offLat;
+      let lon = Math.floor(ref.lon) + offLon;
+      if (lat - ref.lat > 0.5) lat -= 1; else if (lat - ref.lat < -0.5) lat += 1;
+      if (lon - ref.lon > 0.5) lon -= 1; else if (lon - ref.lon < -0.5) lon += 1;
+      return {lat: lat, lon: lon};
+    }
+
+    async function geocodeItalyPlace(name) {
+      try {
+        const ctrl = new AbortController();
+        const tmo = setTimeout(() => ctrl.abort(), 7000);
+        const r = await fetch("https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=it&q=" +
+          encodeURIComponent(name), {headers: {"Accept": "application/json"}, signal: ctrl.signal});
+        clearTimeout(tmo);
+        if (!r.ok) return null;
+        const a = await r.json();
+        return a && a[0] ? {lat: parseFloat(a[0].lat), lon: parseFloat(a[0].lon)} : null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    // Restituisce {coords} oppure {error}; null se non è un codice corto
+    async function resolveShortOlc(text) {
+      const m = (text || "").trim().match(OLC_SHORT_RE);
+      if (!m) return null;
+      const code = m[1], place = m[2].trim();
+      let ref = null;
+      if (place) {
+        ref = await geocodeItalyPlace(place);
+        if (!ref) return {error: "Località \"" + place + "\" non trovata (o rete non disponibile). Controlla il nome."};
+      } else if (userPos) {
+        ref = userPos;
+      } else {
+        ref = await askPlace(code);
+        if (!ref) return {error: "Annullato: per un codice OLC corto serve una località di riferimento."};
+      }
+      const coords = olcRecoverShort(code, ref);
+      return coords ? {coords: coords} : {error: "Codice OLC non valido."};
+    }
+
+    async function processTargetInput(inputVal) {
+      const statusEl = document.getElementById("statusMsg");
+      statusEl.classList.remove("hidden", "error");
+
+      let coords = null;
+      const shortRes = await resolveShortOlc(inputVal);
+      if (shortRes) {
+        if (shortRes.error) {
+          statusEl.classList.add("error");
+          statusEl.textContent = shortRes.error;
+          return;
+        }
+        coords = shortRes.coords;
+      } else {
+        coords = parseCoordinatesInput(inputVal);
+      }
+      if (!coords || !inItaly(coords)) {
+        statusEl.classList.add("error");
+        statusEl.textContent = "Formato non riconosciuto o punto fuori dall'Italia. Verifica i dati inseriti.";
+        return;
+      }
+
+      targetPos = coords;
+      clearRoute();
+      fetchTargetElevation(targetPos.lat, targetPos.lon);
+      statusEl.textContent = "Elaborazione coordinate e avvio tracking GPS (1 min)...";
+
+      startGpsTracking();
+
+      const geoRec = await reverseGeocodeProvincia(targetPos.lat, targetPos.lon);
+      statusEl.classList.add("hidden");
+
+      if (geoRec) {
+        const dist = haversine(targetPos.lat, targetPos.lon, geoRec.lat, geoRec.lon);
+        showResult(geoRec, dist, null, "geo");
+      } else {
+        const withDist = COMANDI.map(r => ({rec: r, dist: haversine(targetPos.lat, targetPos.lon, r.lat, r.lon)}))
+          .sort((a, b) => a.dist - b.dist);
+        showResult(withDist[0].rec, withDist[0].dist, withDist.slice(1), "dist");
+      }
+    }
+
+    document.getElementById("targetGoBtn").addEventListener("click", async function () {
+      const inputVal = document.getElementById("targetInput").value;
+      await processTargetInput(inputVal);
+    });
+
+    // Gestione pulsante Incolla dagli appunti
+    document.getElementById("pasteClipBtn").addEventListener("click", async function () {
+      const statusEl = document.getElementById("statusMsg");
+      try {
+        if (!navigator.clipboard || !navigator.clipboard.readText) {
+          statusEl.classList.remove("hidden");
+          statusEl.classList.add("error");
+          statusEl.textContent = "La lettura degli appunti non è supportata da questo browser.";
+          return;
+        }
+        const text = await navigator.clipboard.readText();
+        if (!text || !text.trim()) {
+          statusEl.classList.remove("hidden");
+          statusEl.classList.add("error");
+          statusEl.textContent = "Gli appunti sono vuoti.";
+          return;
+        }
+        document.getElementById("targetInput").value = text.trim();
+        await processTargetInput(text);
+      } catch (err) {
+        statusEl.classList.remove("hidden");
+        statusEl.classList.add("error");
+        statusEl.textContent = "Impossibile accedere agli appunti. Concedi i permessi al browser.";
+      }
+    });
+
+    document.getElementById("locateBtn").addEventListener("click", function () {
+      const btn = this;
+      const statusEl = document.getElementById("statusMsg");
+      statusEl.classList.remove("hidden", "error");
+      statusEl.textContent = "Localizzazione in corso e tracking attivo per 1 min...";
+      btn.classList.add("loading");
+      targetPos = null;
+
+      if (!navigator.geolocation) {
+        statusEl.classList.add("error");
+        statusEl.textContent = " Il dispositivo non supporta la geolocalizzazione. Cerca il comando manualmente.";
+        btn.classList.remove("loading");
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(async function (pos) {
+        userPos = {lat: pos.coords.latitude, lon: pos.coords.longitude};
+        userAccuracy = pos.coords.accuracy;
+        if (pos.coords.altitude !== null) userAltitude = pos.coords.altitude;
+
+        startGpsTracking();
+
+        statusEl.textContent = "Determinazione provincia di competenza...";
+
+        const geoRec = await reverseGeocodeProvincia(userPos.lat, userPos.lon);
+        btn.classList.remove("loading");
+        statusEl.classList.add("hidden");
+
+        if (geoRec) {
+          const dist = haversine(userPos.lat, userPos.lon, geoRec.lat, geoRec.lon);
+          showResult(geoRec, dist, null, "geo");
+        } else {
+          const withDist = COMANDI.map(r => ({rec: r, dist: haversine(userPos.lat, userPos.lon, r.lat, r.lon)}))
+            .sort((a, b) => a.dist - b.dist);
+          showResult(withDist[0].rec, withDist[0].dist, withDist.slice(1), "dist");
+        }
+      }, function (err) {
+        btn.classList.remove("loading");
+        statusEl.classList.add("error");
+        if (err.code === 1) statusEl.textContent = "Permesso posizione negato. Cerca il comando manualmente.";
+        else if (err.code === 2) statusEl.textContent = "Posizione non disponibile. Cerca il comando manualmente.";
+        else statusEl.textContent = "Localizzazione non riuscita. Cerca il comando manualmente.";
+      }, {enableHighAccuracy: true, timeout: 12000, maximumAge: 60000});
+    });
+
+    document.getElementById("toggleSearchBtn").addEventListener("click", function () {
+      document.getElementById("search-section").classList.remove("hidden");
+      document.getElementById("searchInput").focus();
+    });
+
+    document.getElementById("backToSearchBtn").addEventListener("click", function () {
+      if (watchId !== null) {navigator.geolocation.clearWatch(watchId); watchId = null;}
+      if (trackingTimeoutId !== null) {clearTimeout(trackingTimeoutId); trackingTimeoutId = null;}
+      clearRoute();
+      document.getElementById("result-section").classList.add("hidden");
+      document.getElementById("locate-section").classList.remove("hidden");
+      document.getElementById("search-section").classList.remove("hidden");
+      document.getElementById("searchInput").focus();
+    });
+
+    const searchInput = document.getElementById("searchInput");
+    const searchResults = document.getElementById("searchResults");
+    searchInput.addEventListener("input", function () {
+      const q = norm(this.value);
+      if (q.length < 2) {searchResults.classList.add("hidden"); searchResults.innerHTML = ""; return;}
+      const matches = COMANDI.filter(r => norm(r.c).includes(q) || norm(r.cm).includes(q) || norm(r.pr).includes(q)).slice(0, 8);
+      searchResults.innerHTML = "";
+      if (!matches.length) {searchResults.classList.add("hidden"); return;}
+      searchResults.classList.remove("hidden");
+      matches.forEach(rec => {
+        const item = document.createElement("div");
+        item.className = "search-item";
+        item.innerHTML = '<span class="sname">' + rec.c + '</span><span class="sprov">' + rec.pr + ' · ' + rec.rg + '</span>';
+        item.onclick = () => {selectComando(rec, userPos, targetPos); searchResults.classList.add("hidden"); searchInput.value = "";};
+        searchResults.appendChild(item);
+      });
+    });
+
+    refreshPhoneLinks();
+  </script>
+</body>
+
+</html>
