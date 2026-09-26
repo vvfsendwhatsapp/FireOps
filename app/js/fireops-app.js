@@ -250,10 +250,13 @@
     return sec;
   }
 
+  // Titolo sempre nella forma "FireOps VVF - <sezione>" (home: "App")
   function impostaTitolo(titolo, sotto) {
-    $("fohTitolo").textContent = titolo;
+    const t = "FireOps VVF - " + titolo;
+    $("fohTitolo").textContent = t;
+    $("fohTitolo").title = t;
     $("fohSotto").textContent = sotto || "";
-    document.title = titolo === "FireOps VVF" ? titolo : "FireOps VVF - " + titolo;
+    document.title = t;
   }
 
   async function mostra(id) {
@@ -263,7 +266,7 @@
       $("view-mod").hidden = true;
       $("view-home").hidden = false;
       $("fohHome").hidden = true;
-      impostaTitolo("FireOps VVF", "Sala operativa · funzioni ICS");
+      impostaTitolo("App", "Sala operativa · funzioni ICS");
       window.scrollTo(0, 0);
       return;
     }
