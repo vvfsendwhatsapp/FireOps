@@ -12,7 +12,7 @@
 (function () {
   "use strict";
 
-  const VERSIONE = "2026.09.26c";                // cambiarla forza il ricaricamento dei moduli
+  const VERSIONE = "2026.09.26d";                // cambiarla forza il ricaricamento dei moduli
   const DB = "../db/";                          // cartella dati del repo FireOps
   const DB_FALLBACK = "https://vvfsendwhatsapp.github.io/FireOps/db/";
 
@@ -109,6 +109,65 @@
       })();
     }
     return cacheJson[nome];
+  }
+
+  // ---- Comandi: db/comandi.json ha i nomi di colonna del foglio ("Comando", "Provincia", ...).
+  // Qui vengono convertiti una volta sola nel formato corto usato dai moduli (c, pr, rg, ...).
+  function radio(v) {
+    const t = String(v == null ? "" : v).trim();
+    return /^\d+$/.test(t) ? t.padStart(3, "0") : t;
+  }
+
+  function daFoglio(x) {
+    if (x.c) return x;                                  // già nel formato corto
+    const conf = [];
+    for (let i = 1; i <= 9; i++) {
+      const n = String(x["Comando confinante " + i] || "").trim();
+      if (n) conf.push(n);
+    }
+    if (!conf.length && x["Concatena Comandi Confinanti"]) {
+      String(x["Concatena Comandi Confinanti"]).split(";").map(t => t.trim()).filter(Boolean).forEach(n => conf.push(n));
+    }
+    return {
+      c: String(x["Comando"] || "").trim(),
+      pr: String(x["Provincia"] || "").trim().toUpperCase(),
+      rg: x["Regione"] || "",
+      cm: x["Comune"] || "",
+      dz: x["Direzione VVF"] || "",
+      lat: parseFloat(x["Latitudine"]),
+      lon: parseFloat(x["Longitudine"]),                // nel file è testo con zero iniziale ("012.061362")
+      ind: x["Indirizzo Completo"] || "",
+      rc: radio(x["Canale Radio Comando"]),
+      rd: radio(x["Canale Radio Direzione"]),
+      tsc: x["Telefono SO Comando"] || "",
+      tsd: x["Telefono SO Direzione"] || "",
+      tc: x["Telefono Centralino"] || "",
+      nue: x["115/NUE base"] || "",
+      esc: x["email SO Comando"] || "",
+      web: x["sito web Comando"] || "",
+      olc: x["OLC"] || "",
+      conf
+    };
+  }
+
+  // Sale non provinciali (es. "Lombardia COR AIB CURNO") restano fuori da ricerca provincia e destinatari
+  const NON_COMANDO = /\b(COR|AIB)\b/i;
+
+  let cacheComandi = null;
+  function comandi() {
+    if (!cacheComandi) {
+      cacheComandi = json("comandi.json").then(d => {
+        const righe = Array.isArray(d) ? d : (d && Array.isArray(d.comandi) ? d.comandi : []);
+        const out = righe.map(daFoglio)
+          .filter(c => c.c && !NON_COMANDO.test(c.c) && isFinite(c.lat) && isFinite(c.lon));
+        if (!out.length) throw new Error("comandi.json: nessun comando riconosciuto");
+        return out;
+      }).catch(err => {
+        cacheComandi = null;                            // riprova alla prossima richiesta
+        throw err;
+      });
+    }
+    return cacheComandi;
   }
 
   // Carica una sola volta script e fogli di stile esterni (es. Leaflet)
@@ -414,7 +473,7 @@
         try {
           const lat = pos.coords.latitude, lon = pos.coords.longitude;
           let elenco = [];
-          try { elenco = await FireOps.comandi(); } catch (e) { }
+          try { elenco = await comandi(); } catch (e) { console.warn(e); }
           const ris = elenco.length ? await comandoDa(lat, lon, elenco) : null;
           if (!ris) {
             statoPos("err", "Posizione rilevata, elenco comandi non disponibile");
@@ -450,10 +509,7 @@
     registra,
     carica,
     json,
-    comandi: () => json("comandi.json").then(d => {
-      if (!Array.isArray(d) || !d.length) throw new Error("comandi.json vuoto");
-      return d;
-    }),
+    comandi,
     onShow: (id, fn) => { (hookShow[id] = hookShow[id] || []).push(fn); },
     onLogo: (id, fn) => { (hookLogo[id] = hookLogo[id] || []).push(fn); },
     posizione: () => posUltima,
