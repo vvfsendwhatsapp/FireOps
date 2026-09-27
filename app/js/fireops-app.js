@@ -24,7 +24,9 @@
       sub: "Gestione dell'intervento",
       moduli: [
         {id: "ricerche", nome: "Ricerche", sotto: "Ricerche in corso da Messaggistica",
-          desc: "Ricerche per intervento con la posizione migliore: tuo comando e limitrofi entro 50 km", ico: "🔎"}
+          desc: "Ricerche per intervento con la posizione migliore: tuo comando e limitrofi entro 50 km", ico: "🔎"},
+        {id: "taglio", nome: "Taglio alberi", sotto: "Fibre compresse e tese, scarico e sequenza di taglio",
+          desc: "Dove fare lo scarico e quanto profondo, in che ordine tagliare tronchi e rami", ico: "🪚"}
       ]},
     {id: "pianificazione", nome: "Pianificazione", sigla: "P", colore: "var(--ics-pianificazione)", testo: "#fff",
       sub: "Situazione, posizione e risorse",
