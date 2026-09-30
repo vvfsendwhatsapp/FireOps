@@ -57,6 +57,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const selectAnnoIntervento = document.getElementById("msg-anno-intervento");
     const btnLinkCon = document.getElementById("msg-btn-link-con");
     const btnLinkSenza = document.getElementById("msg-btn-link-senza");
+    // Spunta "Test": segna un invio come prova, non un intervento reale —
+    // letta al momento dell'invio (inviaRigaDbIdSearch), non condiziona
+    // validazione né generazione del messaggio.
+    const chkMsgTest = document.getElementById("msg-chk-test");
 
     // "Com" + Provincia (letta da comandi.json, non da una tabella a mano)
     function siglaComando(comandoObj) {
@@ -1097,7 +1101,7 @@ Koordináták küldéséhez:
     }
 
     // URL della Web App Apps Script che scrive sul foglio "DB_ID_Search"
-    // dello spreadsheet FIREOPS (lo stesso usato da locator.html per
+    // dello spreadsheet FIREOPS Locator (lo stesso usato da locator.html per
     // "DB_Locator_People"). Stesso pattern lì visto: POST con mode:'no-cors',
     // quindi non possiamo leggere l'esito reale della scrittura.
     // TODO: incolla qui l'URL della Web App. Se riusi la STESSA Web App già
@@ -1132,7 +1136,8 @@ Koordináták küldéséhez:
             idRicerca: (linkAttivo && numeroInt) ? costruisciIdRicerca(numeroInt, annoInt, sigla) : "",
             numeroIntervento: numeroInt,
             annoIntervento: annoInt,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            test: !!(chkMsgTest && chkMsgTest.checked)
         };
 
         fetch(WEBAPP_URL_ID_SEARCH, {
@@ -1709,44 +1714,58 @@ Koordináták küldéséhez:
 
         // Intestazione a frase invece dei campi affiancati e compressi:
         // telefono e canale dentro il discorso, non su una riga a parte.
-        // Numero/anno intervento sono facoltativi: compaiono solo se il
-        // messaggio li porta (il link "Con" li registra, "Senza" no — vedi
-        // msg-numero-intervento in initLinkCoordinateUI). Vanno a capo
-        // rispetto al resto della frase: sono il dato dell'intervento, non
-        // la continuazione del discorso su chi/come/quando è stato inviato.
         const dataInvio = messaggio.Timestamp
             ? new Date(messaggio.Timestamp).toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric" })
             : "-";
         const oraInvio = messaggio.Timestamp
             ? new Date(messaggio.Timestamp).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })
             : "-";
-        const rigaIntervento = (messaggio.NumeroIntervento || messaggio.AnnoIntervento)
-            ? `<br>Intervento N. <b>${messaggio.NumeroIntervento || "-"}</b> Anno <b>${messaggio.AnnoIntervento || "-"}</b>`
-            : "";
+
+        // Messaggio inviato come prova (spunta "Test" in fase di invio):
+        // un badge accanto a ID Messaggio, stesso posto del badge di stato,
+        // per essere visibile a colpo d'occhio quanto "in attesa/ricevuto".
+        const eTest = String(messaggio.Test).toUpperCase() === "TRUE";
+        const badgeTest = eTest ? `<span class="riepilogo-msg-stato test">🧪 TEST</span>` : "";
 
         // Tutto il contenuto normale vive dentro un involucro
         // ".riepilogo-msg-voce-corpo": il bottone "Archivia" NON ci sta
         // dentro, è un fratello a tutta altezza sul bordo destro (come la
         // tab verticale del riepilogo stesso) — .riepilogo-msg-voce
-        // diventa un flex row con questi due soli figli diretti.
+        // diventa un flex row con questi tre figli diretti (tab intervento
+        // a sinistra, corpo al centro, archivia a destra).
         // Il badge "Posizione ricevuta/In attesa" sta sulla stessa riga
         // di ID Messaggio, in alto a destra — non più sotto la frase.
         div.innerHTML = `
             <div class="riepilogo-msg-voce-corpo">
                 <div class="riepilogo-msg-riga-id">
                     <span>ID Messaggio: <b>${messaggio.IdRicerca || "-"}</b></span>
+                    ${badgeTest}
                     ${badge}
                 </div>
                 <div class="riepilogo-msg-riga-testa">
                     <p class="riepilogo-msg-frase">
                         Messaggio inviato al n° <b>${maschera(messaggio.NumeroTelefono)}</b> con <b>${messaggio.Canale || "-"}</b>
                         il <b>${dataInvio}</b> alle ore <b>${oraInvio}</b>
-                        dal comando di <b>${messaggio.Comando || "-"}</b>${rigaIntervento}
+                        dal comando di <b>${messaggio.Comando || "-"}</b>
                     </p>
                 </div>
             </div>
         `;
         const corpo = div.querySelector(".riepilogo-msg-voce-corpo");
+
+        // Tab con Numero Intervento/Anno, a tutta altezza sul bordo
+        // SINISTRO della riga (stesso principio della fascia "Archivia",
+        // ma sul lato opposto): visibile solo se il messaggio porta questi
+        // dati (il link "Con" li registra, "Senza" no — vedi
+        // msg-numero-intervento in initLinkCoordinateUI). insertBefore(corpo)
+        // la mette per prima, a inizio riga.
+        if (messaggio.NumeroIntervento || messaggio.AnnoIntervento) {
+            const tabIntervento = document.createElement("div");
+            tabIntervento.className = "riepilogo-msg-intervento-tab";
+            tabIntervento.title = `Intervento N. ${messaggio.NumeroIntervento || "-"} Anno ${messaggio.AnnoIntervento || "-"}`;
+            tabIntervento.innerHTML = `<span class="riepilogo-msg-intervento-testo">${messaggio.NumeroIntervento || "-"} / ${messaggio.AnnoIntervento || "-"}</span>`;
+            div.insertBefore(tabIntervento, corpo);
+        }
 
         // "Archivia": sempre visibile, ma cliccabile SOLO per il Comando
         // TITOLARE (quello attivo in questa sessione) — un altro Comando

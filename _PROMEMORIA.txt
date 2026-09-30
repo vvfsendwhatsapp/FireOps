@@ -32,3 +32,6 @@ documentazione USAR, Autostrade
 Canali radio aeronautici
 
 Trasmissione sitac tramite bluetooth, sitac 3d, mappa topografica e satellitare sitac e convertitore
+
+
+https://script.google.com/macros/s/AKfycbyp6jQ331Yk5q7_hkM74ZyhUh1c3zQUJG7SpuoE18HslBO36YKSTYIQf-z7gSwXR4Yv/exec

@@ -1088,6 +1088,48 @@ html.comando-gia-scelto #modal-comando {
     background: transparent;
 }
 
+/* Tab Numero Intervento/Anno: fascia a tutta altezza sul bordo SINISTRO
+   della riga — stesso principio della fascia "Archivia" sul bordo destro,
+   ma qui è un'informazione, non un'azione, quindi niente cursor:pointer. */
+.riepilogo-msg-intervento-tab {
+    flex: 0 0 34px;
+    width: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface-color);
+    border-right: 1px solid #4fc3f7;
+}
+
+.riepilogo-msg-intervento-testo {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    color: #4fc3f7;
+    font-family: "Courier New", monospace;
+}
+
+/* Badge "TEST": stesso trattamento di .ricevuto/.in-attesa, colore neutro
+   (non verde/giallo, che qui significherebbero "posizione arrivata/attesa") */
+.riepilogo-msg-stato.test {
+    background: rgba(79, 195, 247, 0.15);
+    color: #4fc3f7;
+}
+
+/* Checkbox "Test" nel form di invio, sopra i pulsanti WhatsApp/Telegram */
+.riepilogo-msg-test-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 10px 0 4px;
+    font-size: 13px;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
 /* PAGINA LINK UTILI: intestazioni di tema/sottotema e griglia di pulsanti */
 .link-utili-categoria {
     color: var(--dark-color);
