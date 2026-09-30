@@ -1090,7 +1090,9 @@ html.comando-gia-scelto #modal-comando {
 
 /* Tab Numero Intervento/Anno: fascia a tutta altezza sul bordo SINISTRO
    della riga — stesso principio della fascia "Archivia" sul bordo destro,
-   ma qui è un'informazione, non un'azione, quindi niente cursor:pointer. */
+   ma qui è un'informazione, non un'azione, quindi niente cursor:pointer.
+   Colore secondo lo stato: rosso = intervento reale, verde = solo una
+   prova (stesso linguaggio "rosso opera, verde è innocuo" della SITAC). */
 .riepilogo-msg-intervento-tab {
     flex: 0 0 34px;
     width: 34px;
@@ -1098,7 +1100,14 @@ html.comando-gia-scelto #modal-comando {
     align-items: center;
     justify-content: center;
     background: var(--surface-color);
-    border-right: 1px solid #4fc3f7;
+}
+
+.riepilogo-msg-intervento-tab.reale {
+    border-right: 1px solid var(--danger-color);
+}
+
+.riepilogo-msg-intervento-tab.test {
+    border-right: 1px solid #4cd94c;
 }
 
 .riepilogo-msg-intervento-testo {
@@ -1108,8 +1117,39 @@ html.comando-gia-scelto #modal-comando {
     font-weight: bold;
     letter-spacing: 0.5px;
     white-space: nowrap;
-    color: #4fc3f7;
     font-family: "Courier New", monospace;
+}
+
+.riepilogo-msg-intervento-tab.reale .riepilogo-msg-intervento-testo {
+    color: var(--danger-color);
+}
+
+.riepilogo-msg-intervento-tab.test .riepilogo-msg-intervento-testo {
+    color: #4cd94c;
+}
+
+/* Checkbox "Test" nel form di invio, sopra i pulsanti WhatsApp/Telegram.
+   Evidenziata in verde quando spuntata: deve saltare all'occhio PRIMA di
+   premere Invia, non essere un dettaglio che si nota solo dopo. */
+.riepilogo-msg-test-check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 10px 0 4px;
+    padding: 8px 10px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    font-size: 13px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.riepilogo-msg-test-check:has(input:checked) {
+    background: rgba(76, 217, 74, 0.12);
+    border-color: #4cd94c;
+    color: #4cd94c;
+    font-weight: bold;
 }
 
 /* Badge "TEST": stesso trattamento di .ricevuto/.in-attesa, colore neutro

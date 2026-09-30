@@ -1759,10 +1759,14 @@ Koordináták küldéséhez:
         // dati (il link "Con" li registra, "Senza" no — vedi
         // msg-numero-intervento in initLinkCoordinateUI). insertBefore(corpo)
         // la mette per prima, a inizio riga.
+        // Colore secondo eTest (già calcolato sopra, per il badge "TEST"):
+        // rosso = intervento reale, verde = solo una prova — lo stesso
+        // linguaggio "rosso opera, verde è innocuo" usato altrove in FireOps
+        // (es. il pulsante Convalida della SITAC).
         if (messaggio.NumeroIntervento || messaggio.AnnoIntervento) {
             const tabIntervento = document.createElement("div");
-            tabIntervento.className = "riepilogo-msg-intervento-tab";
-            tabIntervento.title = `Intervento N. ${messaggio.NumeroIntervento || "-"} Anno ${messaggio.AnnoIntervento || "-"}`;
+            tabIntervento.className = "riepilogo-msg-intervento-tab" + (eTest ? " test" : " reale");
+            tabIntervento.title = `Intervento N. ${messaggio.NumeroIntervento || "-"} Anno ${messaggio.AnnoIntervento || "-"}` + (eTest ? " (TEST)" : "");
             tabIntervento.innerHTML = `<span class="riepilogo-msg-intervento-testo">${messaggio.NumeroIntervento || "-"} / ${messaggio.AnnoIntervento || "-"}</span>`;
             div.insertBefore(tabIntervento, corpo);
         }
