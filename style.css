@@ -1094,26 +1094,27 @@ html.comando-gia-scelto #modal-comando {
    Colore secondo lo stato: rosso = intervento reale, verde = solo una
    prova (stesso linguaggio "rosso opera, verde è innocuo" della SITAC). */
 .riepilogo-msg-intervento-tab {
-    flex: 0 0 34px;
-    width: 34px;
+    flex: 0 0 44px;
+    width: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--surface-color);
 }
 
 .riepilogo-msg-intervento-tab.reale {
-    border-right: 1px solid var(--danger-color);
+    background: rgba(175, 43, 30, 0.22);
+    border-right: 2px solid var(--danger-color);
 }
 
 .riepilogo-msg-intervento-tab.test {
-    border-right: 1px solid #4cd94c;
+    background: rgba(76, 217, 74, 0.22);
+    border-right: 2px solid #4cd94c;
 }
 
 .riepilogo-msg-intervento-testo {
     writing-mode: vertical-rl;
     transform: rotate(180deg);
-    font-size: 12px;
+    font-size: 14px;
     font-weight: bold;
     letter-spacing: 0.5px;
     white-space: nowrap;
@@ -7331,18 +7332,6 @@ select:focus {
    criterio automatico. */
 .riepilogo-msg-riga-posizione.selezionata.riepilogo-msg-riga-migliore {
     box-shadow: inset 3px 0 0 #AF2B1E;
-}
-
-/* Tab Numero Intervento/Anno: resa più larga ed evidente ora che una riga
-   può raggruppare più invii — è il segno principale di QUALE intervento
-   si sta guardando. Sostituisce le misure precedenti (34px/12px). */
-.riepilogo-msg-intervento-tab {
-    flex: 0 0 44px;
-    width: 44px;
-}
-
-.riepilogo-msg-intervento-testo {
-    font-size: 14px;
 }
 
 /* "(N invii)" accanto a ID Ricerca, quando un gruppo ne contiene più di uno */
