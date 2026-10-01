@@ -7130,6 +7130,19 @@ select:focus {
     line-height: 1;
 }
 
+/* Riga Test: sfondo verde diffuso su TUTTA la riga (non solo sul tab o sul
+   badge), riconoscibile anche da lontano in sala. Il corpo e la fascia
+   "Archivia" sono fratelli nello stesso flex container (.riepilogo-msg-voce):
+   il colore va dato a entrambi, o la fascia destra resterebbe stonata. */
+.riepilogo-msg-voce.test {
+    background: rgba(76, 217, 74, 0.10);
+    border-color: rgba(76, 217, 74, 0.4);
+}
+
+.riepilogo-msg-voce.test .riepilogo-msg-voce-corpo {
+    background: transparent;
+}
+
 /* Riga archiviata: grigia — ma smorzando i singoli elementi interni, MAI
    con opacity/filter su tutto il contenitore: altrimenti si smorzerebbe
    anche la fascia gialla del bottone, che è un fratello nello stesso

@@ -82,7 +82,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function costruisciIdRicerca(numeroIntervento, annoIntervento, sigla) {
-        const numeroPad = String(numeroIntervento).replace(/\D/g, "").padStart(6, "0").slice(-6);
+        // 8 cifre (non più 6): stessa convenzione del tab a sinistra nel
+        // riepilogo (vedi formattaNumeroIntervento) — un intervento mostrato
+        // come "00000456" nel tab deve corrispondere a "00000456" nell'ID
+        // dentro il link, non a un numero diverso di cifre.
+        const numeroPad = String(numeroIntervento).replace(/\D/g, "").padStart(8, "0").slice(-8);
         return `${numeroPad}_${annoIntervento}_${sigla}`;
     }
 
@@ -1325,6 +1329,18 @@ Koordináták küldéséhez:
         return "•".repeat(pulito.length - 4) + visibili;
     }
 
+    // Numero intervento a 8 cifre con zeri davanti, stessa convenzione
+    // dell'ID Ricerca (vedi costruisciIdRicerca): "456" diventa "00000456".
+    // Il valore di comodo per i Test (TEST+MMDDhhmm) non è un numero puro
+    // — contiene lettere — e resta com'è: la sigla "TEST" è già il segnale
+    // che serve, non ha senso ridurlo a sole cifre.
+    function formattaNumeroIntervento(numero) {
+        if (!numero) return "-";
+        const testo = String(numero);
+        if (!/^\d+$/.test(testo)) return testo;
+        return testo.padStart(8, "0");
+    }
+
     // Stessa logica di lettura dei comandi limitrofi già usata nel riepilogo
     // Comando (campo "Concatena Comandi Confinanti", nomi separati da ";").
     function nomiComandiLimitrofi(nomeComando) {
@@ -1778,8 +1794,11 @@ Koordináták küldéséhez:
 
         // Test se ALMENO UN membro del gruppo è un invio di prova: meglio
         // segnalare un possibile mix reale/test che nasconderlo — un
-        // operatore che vede il badge sa di dover controllare.
+        // operatore che vede il badge sa di dover controllare. La classe
+        // va sulla riga INTERA (non solo sul tab/badge): sfondo verde
+        // diffuso, riconoscibile anche da lontano in sala.
         const eTest = messaggiGruppo.some(m => String(m.Test).toUpperCase() === "TRUE");
+        div.classList.toggle("test", eTest);
         const badgeTest = eTest ? `<span class="riepilogo-msg-stato test">🧪 TEST</span>` : "";
 
         // Un rigo per ciascun messaggio del gruppo: canale, telefono,
@@ -1844,8 +1863,8 @@ Koordináták küldéséhez:
         if (primario.NumeroIntervento || primario.AnnoIntervento) {
             const tabIntervento = document.createElement("div");
             tabIntervento.className = "riepilogo-msg-intervento-tab" + (eTest ? " test" : " reale");
-            tabIntervento.title = `Intervento N. ${primario.NumeroIntervento || "-"} Anno ${primario.AnnoIntervento || "-"}` + (eTest ? " (TEST)" : "");
-            tabIntervento.innerHTML = `<span class="riepilogo-msg-intervento-testo">${primario.NumeroIntervento || "-"} / ${primario.AnnoIntervento || "-"}</span>`;
+            tabIntervento.title = `Intervento N. ${formattaNumeroIntervento(primario.NumeroIntervento)} Anno ${primario.AnnoIntervento || "-"}` + (eTest ? " (TEST)" : "");
+            tabIntervento.innerHTML = `<span class="riepilogo-msg-intervento-testo">${formattaNumeroIntervento(primario.NumeroIntervento)} / ${primario.AnnoIntervento || "-"}</span>`;
             div.insertBefore(tabIntervento, corpo);
         }
 
