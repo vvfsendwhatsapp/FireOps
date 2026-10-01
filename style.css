@@ -7333,6 +7333,26 @@ select:focus {
     box-shadow: inset 3px 0 0 #AF2B1E;
 }
 
+/* Tab Numero Intervento/Anno: resa più larga ed evidente ora che una riga
+   può raggruppare più invii — è il segno principale di QUALE intervento
+   si sta guardando. Sostituisce le misure precedenti (34px/12px). */
+.riepilogo-msg-intervento-tab {
+    flex: 0 0 44px;
+    width: 44px;
+}
+
+.riepilogo-msg-intervento-testo {
+    font-size: 14px;
+}
+
+/* "(N invii)" accanto a ID Ricerca, quando un gruppo ne contiene più di uno */
+.riepilogo-msg-conteggio-invii {
+    font-weight: normal;
+    font-style: italic;
+    color: var(--text-muted);
+    font-size: 11px;
+}
+
 /* La carta prende sempre la riga intera, anche se per un errore di
    markup finisce dentro il flex dei controlli: lì, senza larghezza
    esplicita, collasserebbe a zero (i pane Leaflet sono tutti assoluti) */

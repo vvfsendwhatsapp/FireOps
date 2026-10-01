@@ -61,6 +61,11 @@ document.addEventListener("DOMContentLoaded", () => {
     // letta al momento dell'invio (inviaRigaDbIdSearch), non condiziona
     // validazione né generazione del messaggio.
     const chkMsgTest = document.getElementById("msg-chk-test");
+    // Punta alla funzione privata di initLinkCoordinateUI (sotto): serve
+    // per tenere sincronizzato lo stato abilitato/disabilitato dei campi
+    // Numero/Anno intervento anche da fuori quella funzione, quando cambia
+    // la spunta Test.
+    let aggiornaAbilitazioneCampiRef = () => {};
 
     // "Com" + Provincia (letta da comandi.json, non da una tabella a mano)
     function siglaComando(comandoObj) {
@@ -123,16 +128,21 @@ document.addEventListener("DOMContentLoaded", () => {
             selectAnnoIntervento.appendChild(opt);
         });
 
-        // Abilita/disabilita numero e anno intervento in base allo stato "Con/Senza",
-        // invece di mostrarli/nasconderli: restano sempre visibili, ma grigi
-        // e non interagibili quando è selezionato "Senza".
+        // Abilita/disabilita numero e anno intervento in base allo stato
+        // "Con/Senza" E alla spunta "Test": con Test attivo i due campi
+        // restano SEMPRE bloccati, qualunque sia Con/Senza — il numero è
+        // quello generato in automatico (vedi valoreTestPredefinito) e non
+        // va toccato a mano finché la spunta resta attiva.
         function aggiornaAbilitazioneCampi() {
-            const attivo = chkLinkCoordinate.checked;
-            inputNumeroIntervento.disabled = !attivo;
-            selectAnnoIntervento.disabled = !attivo;
-            inputNumeroIntervento.style.opacity = attivo ? "1" : ".45";
-            selectAnnoIntervento.style.opacity = attivo ? "1" : ".45";
+            const linkAttivo = chkLinkCoordinate.checked;
+            const test = !!(chkMsgTest && chkMsgTest.checked);
+            const abilitato = linkAttivo && !test;
+            inputNumeroIntervento.disabled = !abilitato;
+            selectAnnoIntervento.disabled = !abilitato;
+            inputNumeroIntervento.style.opacity = abilitato ? "1" : ".45";
+            selectAnnoIntervento.style.opacity = abilitato ? "1" : ".45";
         }
+        aggiornaAbilitazioneCampiRef = aggiornaAbilitazioneCampi;
 
         // Pulsanti "Con"/"Senza" che si alternano: solo uno attivo alla volta.
         // Il checkbox nascosto resta come unica fonte di verità dello stato
@@ -148,8 +158,10 @@ document.addEventListener("DOMContentLoaded", () => {
             btnLinkSenza.classList.toggle("attivo", !attivo);
             // Ad ogni aggiornamento (in entrambe le direzioni) il numero
             // intervento si pulisce: non deve restare un valore vecchio
-            // riferito a un intervento diverso.
-            inputNumeroIntervento.value = "";
+            // riferito a un intervento diverso. Se Test è attivo, invece di
+            // svuotarlo lo si rigenera subito — il campo resta bloccato e
+            // non deve mai apparire vuoto mentre Test è spuntato.
+            inputNumeroIntervento.value = (chkMsgTest && chkMsgTest.checked) ? valoreTestPredefinito() : "";
             aggiornaAbilitazioneCampi();
             validaCampiMessaggistica();
             generaMessaggioMessaggistica();
@@ -1114,14 +1126,53 @@ Koordináták küldéséhez:
     // canale scelto. Non blocca né condiziona l'invio vero e proprio: se la
     // scrittura fallisce o l'URL non è ancora configurato, l'utente continua
     // comunque a poter inviare il messaggio.
+    // Numero intervento di comodo per un invio "Test": non un vero numero
+    // d'intervento, serve a dare a più test ravvicinati un numero diverso
+    // (non si raggruppano a vuoto in un'unica riga enorme) ma leggibile
+    // come "non è un intervento reale". MMDDhhmm — mese, giorno, ora,
+    // minuto — cambia ogni minuto: due test nello stesso minuto condividono
+    // comunque il numero e finiscono raggruppati, come i veri interventi.
+    // L'anno (nel campo a parte, già preselezionato sull'anno corrente)
+    // non serve ricalcolarlo qui.
+    function valoreTestPredefinito() {
+        const componenti = FireOps.componentiRoma(new Date());
+        const pad = n => String(n).padStart(2, "0");
+        return "TEST+" + pad(componenti.month) + pad(componenti.day) + pad(componenti.hour) + pad(componenti.minute);
+    }
+
+    // Campi bloccati finché Test resta spuntato (stesso trattamento grigio
+    // di "Senza" — vedi aggiornaAbilitazioneCampi): il numero è generato in
+    // automatico e non va corretto a mano, altrimenti il raggruppamento
+    // per intervento smette di funzionare come previsto.
+    // Da spuntato: valore rigenerato SEMPRE (non solo se vuoto), con
+    // l'orario del momento in cui si spunta. Da deselezionato: il campo si
+    // svuota e torna modificabile — a quel punto l'operatore può scrivere
+    // il numero vero, se l'invio non era più solo una prova.
+    if (chkMsgTest) {
+        chkMsgTest.addEventListener("change", () => {
+            if (inputNumeroIntervento) {
+                inputNumeroIntervento.value = chkMsgTest.checked ? valoreTestPredefinito() : "";
+            }
+            aggiornaAbilitazioneCampiRef();
+            validaCampiMessaggistica();
+            generaMessaggioMessaggistica();
+        });
+    }
+
     function inviaRigaDbIdSearch(canale) {
         if (!WEBAPP_URL_ID_SEARCH || !WEBAPP_URL_ID_SEARCH.startsWith("https://")) return;
 
         const nomeComandoAttivo = sessionStorage.getItem(CHIAVE_STORAGE);
         const comandoAttivo = (window.FireOpsComandi || []).find(c => c.Comando === nomeComandoAttivo);
         const linkAttivo = !!(chkLinkCoordinate && chkLinkCoordinate.checked);
+        const eTest = !!(chkMsgTest && chkMsgTest.checked);
         const sigla = comandoAttivo ? siglaComando(comandoAttivo) : "";
-        const numeroInt = inputNumeroIntervento ? inputNumeroIntervento.value.trim() : "";
+        // Fallback finale anche qui (non solo sul change della checkbox):
+        // se l'operatore spunta Test e scrive il numero DOPO aver tolto e
+        // rimesso la spunta, o il campo viene svuotato in altro modo, al
+        // momento dell'invio il numero di comodo c'è comunque.
+        let numeroInt = inputNumeroIntervento ? inputNumeroIntervento.value.trim() : "";
+        if (eTest && !numeroInt) numeroInt = valoreTestPredefinito();
         const annoInt = selectAnnoIntervento ? selectAnnoIntervento.value : "";
         const { prefisso, numero } = numeroCompletoPulito();
 
@@ -1137,7 +1188,7 @@ Koordináták küldéséhez:
             numeroIntervento: numeroInt,
             annoIntervento: annoInt,
             timestamp: new Date().toISOString(),
-            test: !!(chkMsgTest && chkMsgTest.checked)
+            test: eTest
         };
 
         fetch(WEBAPP_URL_ID_SEARCH, {
@@ -1697,35 +1748,64 @@ Koordináták küldéséhez:
 
     // Costruisce la riga di un singolo messaggio: stato (in attesa/ricevuto)
     // e, se ricevuto, l'accordion con la mini-mappa e il link al convertitore.
-    function costruisciRigaRiepilogo(messaggio, righePosizione) {
-        const ricevuto = righePosizione.length > 0;
+    // "messaggiGruppo" e "posizioniGruppo": una riga ora rappresenta un
+    // INTERVENTO (Numero+Anno), non più un singolo invio — più invii dello
+    // stesso intervento (canali diversi, o più tentativi) finiscono nella
+    // stessa riga, con tutti i loro messaggi e tutte le loro posizioni
+    // uniti insieme. Un messaggio senza numero d'intervento (link "Senza")
+    // resta comunque un "gruppo" a sé — vedi raggruppaPerIntervento, che fa
+    // questa suddivisione prima di chiamare questa funzione.
+    function costruisciRigaRiepilogo(messaggiGruppo, posizioniGruppo) {
+        const primario = messaggiGruppo[0]; // Comando/Intervento/Anno: uguali per TUTTI i membri del gruppo
+        const ricevuto = posizioniGruppo.length > 0;
         const idMappa = "riepilogo-mappa-" + Math.random().toString(36).slice(2, 9);
 
         const div = document.createElement("div");
         div.className = "riepilogo-msg-voce";
         // Dataset invece di richiedere i dati originali: riordinaRigheRiepilogo()
         // li legge direttamente dal DOM per il riordino immediato al click
-        // su "Archivia" (aggiornamento ottimistico).
-        div.dataset.timestamp = messaggio.Timestamp || "";
+        // su "Archivia" (aggiornamento ottimistico). Il timestamp del
+        // GRUPPO è il più recente fra tutti i membri, non quello del primo.
+        const timestampMax = messaggiGruppo.reduce((max, m) => {
+            const t = m.Timestamp ? new Date(m.Timestamp).getTime() : 0;
+            return t > max ? t : max;
+        }, 0);
+        div.dataset.timestamp = timestampMax ? new Date(timestampMax).toISOString() : "";
 
         const badge = ricevuto
             ? `<span class="riepilogo-msg-stato ricevuto">✅ Posizione ricevuta</span>`
             : `<span class="riepilogo-msg-stato in-attesa">⏳ In attesa della posizione</span>`;
 
-        // Intestazione a frase invece dei campi affiancati e compressi:
-        // telefono e canale dentro il discorso, non su una riga a parte.
-        const dataInvio = messaggio.Timestamp
-            ? new Date(messaggio.Timestamp).toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric" })
-            : "-";
-        const oraInvio = messaggio.Timestamp
-            ? new Date(messaggio.Timestamp).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })
-            : "-";
-
-        // Messaggio inviato come prova (spunta "Test" in fase di invio):
-        // un badge accanto a ID Messaggio, stesso posto del badge di stato,
-        // per essere visibile a colpo d'occhio quanto "in attesa/ricevuto".
-        const eTest = String(messaggio.Test).toUpperCase() === "TRUE";
+        // Test se ALMENO UN membro del gruppo è un invio di prova: meglio
+        // segnalare un possibile mix reale/test che nasconderlo — un
+        // operatore che vede il badge sa di dover controllare.
+        const eTest = messaggiGruppo.some(m => String(m.Test).toUpperCase() === "TRUE");
         const badgeTest = eTest ? `<span class="riepilogo-msg-stato test">🧪 TEST</span>` : "";
+
+        // Un rigo per ciascun messaggio del gruppo: canale, telefono,
+        // orario, Comando. Con un solo membro è identica a prima (una
+        // frase sola); con più membri si vedono tutti gli invii fatti per
+        // questo stesso intervento, uno sotto l'altro.
+        const righeMessaggiHtml = messaggiGruppo
+            .slice()
+            .sort((a, b) => {
+                const ta = a.Timestamp ? new Date(a.Timestamp).getTime() : 0;
+                const tb = b.Timestamp ? new Date(b.Timestamp).getTime() : 0;
+                return tb - ta; // più recente in cima, come il resto dell'elenco
+            })
+            .map(m => {
+                const dataInvio = m.Timestamp
+                    ? new Date(m.Timestamp).toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric" })
+                    : "-";
+                const oraInvio = m.Timestamp
+                    ? new Date(m.Timestamp).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })
+                    : "-";
+                return `<p class="riepilogo-msg-frase">
+                        <b>${m.Canale || "-"}</b> al n° <b>${maschera(m.NumeroTelefono)}</b>
+                        il <b>${dataInvio}</b> alle ore <b>${oraInvio}</b>
+                        dal comando di <b>${m.Comando || "-"}</b>
+                    </p>`;
+            }).join("");
 
         // Tutto il contenuto normale vive dentro un involucro
         // ".riepilogo-msg-voce-corpo": il bottone "Archivia" NON ci sta
@@ -1738,16 +1818,12 @@ Koordináták küldéséhez:
         div.innerHTML = `
             <div class="riepilogo-msg-voce-corpo">
                 <div class="riepilogo-msg-riga-id">
-                    <span>ID Messaggio: <b>${messaggio.IdRicerca || "-"}</b></span>
+                    <span>ID Ricerca: <b>${primario.IdRicerca || "-"}</b>${messaggiGruppo.length > 1 ? ` <span class="riepilogo-msg-conteggio-invii">(${messaggiGruppo.length} invii)</span>` : ""}</span>
                     ${badgeTest}
                     ${badge}
                 </div>
                 <div class="riepilogo-msg-riga-testa">
-                    <p class="riepilogo-msg-frase">
-                        Messaggio inviato al n° <b>${maschera(messaggio.NumeroTelefono)}</b> con <b>${messaggio.Canale || "-"}</b>
-                        il <b>${dataInvio}</b> alle ore <b>${oraInvio}</b>
-                        dal comando di <b>${messaggio.Comando || "-"}</b>
-                    </p>
+                    ${righeMessaggiHtml}
                 </div>
             </div>
         `;
@@ -1755,19 +1831,21 @@ Koordináták küldéséhez:
 
         // Tab con Numero Intervento/Anno, a tutta altezza sul bordo
         // SINISTRO della riga (stesso principio della fascia "Archivia",
-        // ma sul lato opposto): visibile solo se il messaggio porta questi
+        // ma sul lato opposto): visibile solo se il gruppo porta questi
         // dati (il link "Con" li registra, "Senza" no — vedi
         // msg-numero-intervento in initLinkCoordinateUI). insertBefore(corpo)
-        // la mette per prima, a inizio riga.
+        // la mette per prima, a inizio riga. È anche il segno più evidente
+        // di QUALE intervento si sta guardando, ora che una riga può
+        // raggruppare più invii: più larga e più leggibile di prima.
         // Colore secondo eTest (già calcolato sopra, per il badge "TEST"):
         // rosso = intervento reale, verde = solo una prova — lo stesso
         // linguaggio "rosso opera, verde è innocuo" usato altrove in FireOps
         // (es. il pulsante Convalida della SITAC).
-        if (messaggio.NumeroIntervento || messaggio.AnnoIntervento) {
+        if (primario.NumeroIntervento || primario.AnnoIntervento) {
             const tabIntervento = document.createElement("div");
             tabIntervento.className = "riepilogo-msg-intervento-tab" + (eTest ? " test" : " reale");
-            tabIntervento.title = `Intervento N. ${messaggio.NumeroIntervento || "-"} Anno ${messaggio.AnnoIntervento || "-"}` + (eTest ? " (TEST)" : "");
-            tabIntervento.innerHTML = `<span class="riepilogo-msg-intervento-testo">${messaggio.NumeroIntervento || "-"} / ${messaggio.AnnoIntervento || "-"}</span>`;
+            tabIntervento.title = `Intervento N. ${primario.NumeroIntervento || "-"} Anno ${primario.AnnoIntervento || "-"}` + (eTest ? " (TEST)" : "");
+            tabIntervento.innerHTML = `<span class="riepilogo-msg-intervento-testo">${primario.NumeroIntervento || "-"} / ${primario.AnnoIntervento || "-"}</span>`;
             div.insertBefore(tabIntervento, corpo);
         }
 
@@ -1779,11 +1857,18 @@ Koordináták küldéséhez:
         // attesa", non solo "ricevuto": archiviare vuol dire "questa
         // conversazione è chiusa", indipendentemente dalla posizione.
         // Resta cliccabile anche da archiviato: un secondo clic lo riporta
-        // attivo, non è un'azione a senso unico.
+        // attivo, non è un'azione a senso unico. Agisce su TUTTI i membri
+        // del gruppo insieme: un intervento si archivia o si riattiva per
+        // intero, non invio per invio.
         const comandoAttivoSessione = sessionStorage.getItem(CHIAVE_STORAGE);
-        const titolare = !!(comandoAttivoSessione && messaggio.Comando === comandoAttivoSessione);
+        const titolare = !!(comandoAttivoSessione && primario.Comando === comandoAttivoSessione);
 
-        let archiviato = String(messaggio.Archiviata).toUpperCase() === "TRUE";
+        // "Tutto il gruppo è archiviato" — se i membri sono in stati misti
+        // (non dovrebbe succedere, dato che si archiviano sempre insieme,
+        // ma un refresh a metà operazione potrebbe mostrarlo per un attimo)
+        // conta come "non archiviato": un clic archivia tutto quello che
+        // ancora non lo è, piuttosto che disarchiviare per errore.
+        let archiviato = messaggiGruppo.every(m => String(m.Archiviata).toUpperCase() === "TRUE");
         // "Mostra su mappa" e "Apri nel convertitore" (se il messaggio è
         // ricevuto: esistono solo in quel caso) vengono registrati qui e
         // bloccati/sbloccati insieme allo stato di archiviazione — un
@@ -1845,7 +1930,10 @@ Koordináták küldéséhez:
             // sintetico la fa ridisegnare alla misura giusta (Leaflet
             // ascolta il resize della finestra di suo, di default).
             window.dispatchEvent(new Event("resize"));
-            impostaArchiviazioneMessaggio(messaggio, archiviato);
+            // Un messaggio alla volta, ma TUTTI i membri del gruppo —
+            // archiviare un intervento vuol dire archiviare ogni invio
+            // che gli appartiene, qualunque canale sia stato usato.
+            messaggiGruppo.forEach(m => impostaArchiviazioneMessaggio(m, archiviato));
         });
 
         div.appendChild(btnArchivia); // fratello di .riepilogo-msg-voce-corpo, non dentro
@@ -1854,7 +1942,7 @@ Koordináták küldéséhez:
             const azioni = document.createElement("div");
             azioni.className = "riepilogo-msg-azioni";
             azioni.innerHTML = `
-                <button type="button" class="btn-toggle-radar riepilogo-msg-toggle-mappa">🗺️ Mostra su mappa (${righePosizione.length})</button>
+                <button type="button" class="btn-toggle-radar riepilogo-msg-toggle-mappa">🗺️ Mostra su mappa (${posizioniGruppo.length})</button>
                 <button type="button" class="btn-toggle-radar riepilogo-msg-apri-convertitore">📐 Apri nel convertitore</button>
             `;
             corpo.appendChild(azioni);
@@ -1882,7 +1970,7 @@ Koordináták küldéséhez:
             // Numerazione cronologica (1 = più vecchia) condivisa fra mappa
             // e tabella: calcolata una sola volta, qui, così i due usano
             // sempre lo stesso numero per la stessa posizione.
-            const righeOrdinateCronologia = righePosizione.slice().sort((a, b) => {
+            const righeOrdinateCronologia = posizioniGruppo.slice().sort((a, b) => {
                 const ta = a.Timestamp ? new Date(a.Timestamp).getTime() : 0;
                 const tb = b.Timestamp ? new Date(b.Timestamp).getTime() : 0;
                 return ta - tb;
@@ -1899,7 +1987,7 @@ Koordináták küldéséhez:
             // contenitore (è sopra di lui, non dentro): .innerHTML qui
             // sostituisce solo il contenuto della tabella, non lo tocca.
             const contenitoreTabella = mappaWrap.querySelector(".riepilogo-msg-tabella-posizioni-contenuto");
-            contenitoreTabella.innerHTML = costruisciTabellaPosizioni(righePosizione, numeroDiRiga);
+            contenitoreTabella.innerHTML = costruisciTabellaPosizioni(posizioniGruppo, numeroDiRiga);
 
             let mappaCreata = false;
             let mostraTutteLePosizioni = false;
@@ -1914,7 +2002,7 @@ Koordináták küldéséhez:
             // alla prima apertura vera.
             function ridisegnaMappaSeCreata() {
                 if (!mappaCreata) return;
-                disegnaPuntiPosizione(document.getElementById(idMappa), righePosizione, statoMappa, {
+                disegnaPuntiPosizione(document.getElementById(idMappa), posizioniGruppo, statoMappa, {
                     mostraTutte: mostraTutteLePosizioni,
                     posizioneForzata: posizioneSelezionata,
                 });
@@ -1966,7 +2054,7 @@ Koordináták küldéséhez:
             function nascondiMappa() {
                 if (mappaWrap.hidden) return;
                 mappaWrap.hidden = true;
-                btnToggleMappa.textContent = `🗺️ Mostra su mappa (${righePosizione.length})`;
+                btnToggleMappa.textContent = `🗺️ Mostra su mappa (${posizioniGruppo.length})`;
                 btnToggleMappa.classList.remove("attivo");
                 mappaWrap.classList.remove("espansa");
             }
@@ -2014,7 +2102,7 @@ Koordináták küldéséhez:
                 // Se l'operatore ha selezionato una riga in tabella, è
                 // quella a decidere — altrimenti si ricade sul criterio
                 // di sempre, l'ultima posizione ricevuta.
-                const scelta = posizioneSelezionata || puntoUltimo(righePosizione);
+                const scelta = posizioneSelezionata || puntoUltimo(posizioniGruppo);
                 if (scelta) apriInConvertitore(numeroLocale(scelta.Lat), numeroLocale(scelta.Lng));
             });
 
@@ -2081,6 +2169,31 @@ Koordináták küldéséhez:
         corpoRiepilogoMsg.replaceChildren(...righe);
     }
 
+    // Raggruppa i messaggi per intervento (Numero+Anno): più invii dello
+    // stesso intervento — canali diversi, o più tentativi — finiscono
+    // nella STESSA riga del riepilogo, invece di comparire come voci
+    // separate. Un messaggio SENZA numero d'intervento (link "Senza")
+    // resta un gruppo a sé, usando il proprio IdRicerca (o, in mancanza,
+    // la propria posizione nell'elenco) come chiave — non ha nulla con
+    // cui raggrupparsi, e non deve finire mischiato con altri messaggi
+    // altrettanto senza numero.
+    function raggruppaPerIntervento(messaggi) {
+        const gruppiMap = new Map();
+        const ordineChiavi = [];
+        messaggi.forEach((messaggio, indice) => {
+            const haIntervento = !!(messaggio.NumeroIntervento && messaggio.AnnoIntervento);
+            const chiave = haIntervento
+                ? `int:${messaggio.NumeroIntervento}_${messaggio.AnnoIntervento}`
+                : `solo:${messaggio.IdRicerca || ("_senza-id-" + indice)}`;
+            if (!gruppiMap.has(chiave)) {
+                gruppiMap.set(chiave, []);
+                ordineChiavi.push(chiave);
+            }
+            gruppiMap.get(chiave).push(messaggio);
+        });
+        return ordineChiavi.map(chiave => ({ chiave, messaggi: gruppiMap.get(chiave) }));
+    }
+
     // "Ricevuto con 3 posizioni" e "ricevuto con 3 posizioni" sono la
     // stessa situazione: non serve confrontare lat/lon riga per riga,
     // basta il conteggio — se cambia, è arrivato qualcosa di nuovo.
@@ -2094,6 +2207,13 @@ Koordináták küldéséhez:
     // stesso accordion aperto, stessa mappa già disegnata dentro); un nodo
     // nuovo lo crea da zero, uno sparito dai dati semplicemente non viene
     // più incluso nell'elenco passato a replaceChildren.
+    //
+    // Lavora per GRUPPI (un intervento, non un singolo invio): la chiave
+    // usata per riconoscere "è la stessa riga di prima?" è quella
+    // dell'intervento, e la firma include ORA anche lo stato "Test" di
+    // ciascun membro — prima non c'era, quindi un cambio di quel campo da
+    // un'altra sessione non faceva ricostruire la riga fino al giro
+    // successivo "per caso" (se qualcos'altro era comunque cambiato).
     function aggiornaRiepilogoIncrementale(messaggi, posizioni) {
         if (!messaggi.length) {
             corpoRiepilogoMsg.innerHTML = `<p class="pagina-nota">Nessun messaggio con link nelle ultime 24 ore.</p>`;
@@ -2101,35 +2221,53 @@ Koordináták küldéséhez:
             return;
         }
 
+        const gruppi = raggruppaPerIntervento(messaggi).map(g => {
+            const archiviato = g.messaggi.every(m => String(m.Archiviata).toUpperCase() === "TRUE");
+            const timestampMax = g.messaggi.reduce((max, m) => {
+                const t = m.Timestamp ? new Date(m.Timestamp).getTime() : 0;
+                return t > max ? t : max;
+            }, 0);
+            return { ...g, archiviato, timestampMax };
+        });
+
         // Non archiviati prima (più recenti in cima come sempre),
         // archiviati in fondo (fra loro, sempre dal più recente).
-        const ordinati = messaggi.slice().sort((a, b) => {
-            const archA = String(a.Archiviata).toUpperCase() === "TRUE" ? 1 : 0;
-            const archB = String(b.Archiviata).toUpperCase() === "TRUE" ? 1 : 0;
+        gruppi.sort((a, b) => {
+            const archA = a.archiviato ? 1 : 0;
+            const archB = b.archiviato ? 1 : 0;
             if (archA !== archB) return archA - archB;
-            return new Date(b.Timestamp) - new Date(a.Timestamp);
+            return b.timestampMax - a.timestampMax;
         });
+
         const mappaAggiornata = new Map();
         const elementiOrdinati = [];
 
-        ordinati.forEach((messaggio, indice) => {
-            // Fallback se un messaggio arrivasse senza IdRicerca: non
-            // dovrebbe succedere (il link lo richiede), ma non deve
-            // rompere il confronto per gli altri se capita.
-            const chiave = messaggio.IdRicerca || ("_senza-id-" + indice);
-            const righePosizione = posizioni.filter(p => p.IdRicerca === messaggio.IdRicerca);
-            // Include lo stato "archiviata": se cambia da un'altra sessione
-            // (un'altra postazione dello stesso Comando), il pulsante deve
-            // aggiornarsi da solo al giro di refresh successivo, non solo
-            // quando l'archiviazione parte da questa stessa riga.
-            const firma = firmaRighePosizione(righePosizione) + "|arch:" + String(messaggio.Archiviata).toUpperCase();
-            const esistente = righeRiepilogoAttuali.get(chiave);
+        gruppi.forEach(gruppo => {
+            // Unione delle posizioni di TUTTI i membri del gruppo: un
+            // intervento con due invii (es. WhatsApp + Telegram) mostra le
+            // posizioni arrivate da entrambi i link, non solo da uno.
+            const idRicercaDelGruppo = new Set(gruppo.messaggi.map(m => m.IdRicerca));
+            const posizioniGruppo = posizioni.filter(p => idRicercaDelGruppo.has(p.IdRicerca));
 
+            // La firma cambia se cambia QUALSIASI cosa rilevante in
+            // QUALUNQUE membro del gruppo: Archiviata, Test, o il numero
+            // di posizioni ricevute per quel singolo invio.
+            const firma = gruppo.messaggi
+                .map(m => {
+                    const posizioniDelMembro = posizioni.filter(p => p.IdRicerca === m.IdRicerca);
+                    return (m.IdRicerca || "") + ":" + firmaRighePosizione(posizioniDelMembro)
+                        + ":arch:" + String(m.Archiviata).toUpperCase()
+                        + ":test:" + String(m.Test).toUpperCase();
+                })
+                .sort()
+                .join("|");
+
+            const esistente = righeRiepilogoAttuali.get(gruppo.chiave);
             const elemento = (esistente && esistente.firma === firma)
                 ? esistente.elemento // invariato: si riusa lo stesso nodo
-                : costruisciRigaRiepilogo(messaggio, righePosizione); // nuovo o cambiato
+                : costruisciRigaRiepilogo(gruppo.messaggi, posizioniGruppo); // nuovo o cambiato
 
-            mappaAggiornata.set(chiave, { elemento, firma });
+            mappaAggiornata.set(gruppo.chiave, { elemento, firma });
             elementiOrdinati.push(elemento);
         });
 
