@@ -1088,19 +1088,29 @@ html.comando-gia-scelto #modal-comando {
     background: transparent;
 }
 
-/* Tab Numero Intervento/Anno: ora è anche l'interruttore apri/chiudi
-   dell'intera riga — di default il corpo è nascosto, un clic lo apre.
+/* Riga con tab: diventa una colonna (tab sopra, corpo sotto), non più
+   fianco a fianco — così quando il corpo si apre compare DAVVERO sotto
+   il tab, non di lato. Le righe senza intervento (niente tab, fascia
+   Archivia fissa) restano come prima: :has() seleziona solo quelle che
+   hanno il tab come primo figlio. */
+.riepilogo-msg-voce:has(> .riepilogo-msg-intervento-tab) {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+/* Tab Numero Intervento/Anno: ora una fascia ORIZZONTALE a tutta
+   larghezza, non più una striscia stretta con testo verticale — lo spazio
+   vuoto a destra del tab, quando il corpo è chiuso, va riempito invece di
+   restare vuoto. È anche l'interruttore apri/chiudi dell'intera riga.
    Colore secondo lo stato: rosso finché la posizione non è ricevuta,
    verde appena arriva — tranne i Test, sempre viola a prescindere dalla
    posizione (per un test la posizione non è un dato operativo). */
 .riepilogo-msg-intervento-tab {
-    flex: 0 0 44px;
-    width: 44px;
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    flex-direction: row;
     align-items: center;
-    justify-content: center;
+    gap: 8px;
+    padding: 8px 14px;
     cursor: pointer;
     user-select: none;
 }
@@ -1112,23 +1122,24 @@ html.comando-gia-scelto #modal-comando {
 
 .riepilogo-msg-intervento-tab.in-attesa {
     background: rgba(175, 43, 30, 0.22);
-    border-right: 2px solid var(--danger-color);
+    border-bottom: 2px solid var(--danger-color);
 }
 
 .riepilogo-msg-intervento-tab.ricevuto {
     background: rgba(76, 217, 74, 0.22);
-    border-right: 2px solid #4cd94c;
+    border-bottom: 2px solid #4cd94c;
 }
 
 .riepilogo-msg-intervento-tab.test {
     background: rgba(168, 85, 247, 0.22);
-    border-right: 2px solid #a855f7;
+    border-bottom: 2px solid #a855f7;
 }
 
+/* Testo orizzontale, su una riga sola: numero e anno affiancati, con uno
+   slash a separarli (il valore di comodo dei Test, "TEST+MMDDhhmm", resta
+   leggibile uguale in orizzontale). */
 .riepilogo-msg-intervento-testo,
 .riepilogo-msg-intervento-anno {
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
     font-weight: bold;
     letter-spacing: 0.5px;
     white-space: nowrap;
@@ -1136,7 +1147,8 @@ html.comando-gia-scelto #modal-comando {
 }
 
 .riepilogo-msg-intervento-testo { font-size: 14px; }
-.riepilogo-msg-intervento-anno { font-size: 11px; opacity: .85; }
+.riepilogo-msg-intervento-anno { font-size: 12px; opacity: .85; }
+.riepilogo-msg-intervento-anno::before { content: "/ "; opacity: .7; }
 
 .riepilogo-msg-intervento-tab.in-attesa .riepilogo-msg-intervento-testo,
 .riepilogo-msg-intervento-tab.in-attesa .riepilogo-msg-intervento-anno {
