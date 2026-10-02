@@ -1141,7 +1141,7 @@ Koordináták küldéséhez:
     function valoreTestPredefinito() {
         const componenti = FireOps.componentiRoma(new Date());
         const pad = n => String(n).padStart(2, "0");
-        return "TEST+" + pad(componenti.month) + pad(componenti.day) + pad(componenti.hour) + pad(componenti.minute);
+        return "TEST" + pad(componenti.month) + pad(componenti.day) + pad(componenti.hour) + pad(componenti.minute);
     }
 
     // Campi bloccati finché Test resta spuntato (stesso trattamento grigio
