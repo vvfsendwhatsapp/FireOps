@@ -796,6 +796,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         document.body.appendChild(popup);
 
+        popup.addEventListener("click", (e) => e.stopPropagation());
+
         /* Il listener si aggancia qui e non con onclick nel markup: la
            funzione vive dentro questa closure e da un attributo HTML, che
            risolve solo su window, non è raggiungibile. */
@@ -1044,11 +1046,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 const c = trovaComandoPerNome(nome, tuttiComandi);
                 if (c) popupDatiDirezione(e, c, tutteDirezioni);
             });
-        });
-
-        // Gestisce la copia sia per i telefoni che per le email
-        container.querySelectorAll(".telefono-cliccabile, .email-cliccabile").forEach(el => {
-            el.addEventListener("click", (e) => copiaTesto(e, el.dataset.copia));
         });
 
         // Sezioni comprimibili

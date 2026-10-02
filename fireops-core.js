@@ -293,21 +293,57 @@ window.FireOps = (function () {
     // ==========================================================
     // COPIA NEGLI APPUNTI
     // ==========================================================
-    function copiaTesto(event, testo) {
-        event.stopPropagation();
-        if (!testo || testo === '-') return;
-
-        navigator.clipboard.writeText(testo)
-            .then(() => mostraFeedbackCopia(event, '✓ Copiato'))
-            .catch(() => mostraFeedbackCopia(event, '✗ Errore copia'));
+// Copia con fallback per contesti non sicuri (http, vecchi browser).
+// Restituisce sempre una Promise.
+function copiaNegliAppunti(testo) {
+    if (navigator.clipboard && window.isSecureContext) {
+        return navigator.clipboard.writeText(testo);
     }
+    return new Promise((ok, ko) => {
+        const ta = document.createElement("textarea");
+        ta.value = testo;
+        ta.style.cssText = "position:fixed;opacity:0;";
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand("copy") ? ok() : ko(new Error("copy fallita")); }
+        catch (err) { ko(err); }
+        finally { ta.remove(); }
+    });
+}
+
+function copiaTesto(event, testo) {
+    if (event && event.stopPropagation) event.stopPropagation();
+    if (!testo || testo === '-') return;
+
+    copiaNegliAppunti(testo)
+        .then(() => mostraFeedbackCopia(event, '✓ Copiato'))
+        .catch(() => mostraFeedbackCopia(event, '✗ Errore copia'));
+}
+
+// Un solo listener per TUTTI i campi copiabili (pagine, popup, riepiloghi).
+// In fase di cattura: i popup fermano la propagazione e un listener in
+// bolla non vedrebbe mai quei click.
+document.addEventListener("click", (e) => {
+    const el = e.target.closest(".telefono-cliccabile, .email-cliccabile");
+    if (!el || !el.dataset.copia) return;
+
+    copiaNegliAppunti(el.dataset.copia)
+        .then(() => {
+            el.classList.add("copiato");
+            clearTimeout(el._timerCopiato);
+            el._timerCopiato = setTimeout(() => el.classList.remove("copiato"), 1500);
+        })
+        .catch(err => console.error("Copia non riuscita:", err));
+}, true);
 
     function mostraFeedbackCopia(event, testo) {
         const badge = document.createElement('div');
         badge.className = 'copia-feedback';
         badge.textContent = testo;
 
-        const rect = event.target.getBoundingClientRect();
+        const rect = (event && event.target && event.target.getBoundingClientRect)
+            ? event.target.getBoundingClientRect()
+            : { top: 40, left: 40 };
         badge.style.top = `${rect.top - 30}px`;
         badge.style.left = `${rect.left}px`;
 

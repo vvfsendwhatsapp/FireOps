@@ -7655,6 +7655,33 @@ select:focus {
     cursor: pointer;
 }
 
+/* Icona "copia" + feedback "Copiato" su telefoni e email copiabili */
+.telefono-cliccabile,
+.email-cliccabile {
+    cursor: pointer;
+    white-space: nowrap;
+}
+.telefono-cliccabile::after,
+.email-cliccabile::after {
+    content: "⧉";
+    margin-left: 6px;
+    font-size: 0.85em;
+    opacity: 0.6;
+}
+.telefono-cliccabile:hover::after,
+.email-cliccabile:hover::after {
+    opacity: 1;
+}
+/* Feedback "Copiato" dopo il clic: sostituisce il 📋 per 1,5 s */
+.telefono-cliccabile.copiato::after,
+.email-cliccabile.copiato::after {
+    content: "✓ Copiato";
+    opacity: 1;
+    font-size: .85em;
+    font-weight: 600;
+    color: #4cd94c;
+}
+
 /* ==========================================================
    ==========================================================
    RESPONSIVE
