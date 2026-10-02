@@ -796,6 +796,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         document.body.appendChild(popup);
 
+        popup.addEventListener("click", (e) => e.stopPropagation());
+
         /* Il listener si aggancia qui e non con onclick nel markup: la
            funzione vive dentro questa closure e da un attributo HTML, che
            risolve solo su window, non è raggiungibile. */
@@ -1044,11 +1046,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 const c = trovaComandoPerNome(nome, tuttiComandi);
                 if (c) popupDatiDirezione(e, c, tutteDirezioni);
             });
-        });
-
-        // Gestisce la copia sia per i telefoni che per le email
-        container.querySelectorAll(".telefono-cliccabile, .email-cliccabile").forEach(el => {
-            el.addEventListener("click", (e) => copiaTesto(e, el.dataset.copia));
         });
 
         // Sezioni comprimibili
@@ -2311,22 +2308,20 @@ window.renderIcscSelezionata = renderIcscSelezionata;
        Sta in due posti perché servono a due letture diverse: in testata è
        sempre sott'occhio, nel modale "?" sta accanto ai contatti — che è
        dove si guarda quando si sta per scrivere una segnalazione. */
-    (function mostraVersione(){
-        const v = window.FIREOPS_VERSIONE;
-        const leggibile = v
-            ? String(v).replace(/^(\d{4})(\d\d)(\d\d)(\d\d)(\d\d)$/, "$3$2$1$4$5")
-            : "n/d";
-        const testata = document.getElementById("display-versione");
-        if (testata){
-            testata.textContent = "v. " + leggibile;
-            if (v) testata.title = v;
-        }
-        const modale = document.getElementById("display-versione-modale");
-        if (modale){
-            modale.textContent = leggibile;
-            if (v) modale.title = v;
-        }
-    })();
+(function mostraVersione(){
+    const v = window.FIREOPS_VERSIONE;
+    const leggibile = v ? String(v) : "n/d";
+    const testata = document.getElementById("display-versione");
+    if (testata){
+        testata.textContent = "v. " + leggibile;
+        if (v) testata.title = v;
+    }
+    const modale = document.getElementById("display-versione-modale");
+    if (modale){
+        modale.textContent = leggibile;
+        if (v) modale.title = v;
+    }
+})();
 });
 
 // Pulisce e formatta il numero di telefono per la copia:
