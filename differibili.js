@@ -114,11 +114,23 @@ const coloreSettore = nome => {
   const i = SETTORI.indexOf(nome);
   return COLORI_SETTORE[(i < 0 ? SETTORI.length : i) % COLORI_SETTORE.length];
 };
-/* "Bravo 2" → {settore:'Bravo', n:2}; un nome libero resta settore senza numero. */
-function settoreDi(g){
-  const m = /^(.+?)\s+(\d+)$/.exec(String(g.NOME || '').trim());
-  return m ? {settore: m[1], n: +m[2]} : {settore: String(g.NOME || '—'), n: 0};
+/* TRE LIVELLI
+   Settore geografico generale (Alfa, Bravo…) → Worksite specifico (1, 2…)
+   → Sotto-settore (1, 2…). Si disegna solo il sotto-settore; worksite e
+   settore sono l'insieme dei loro figli. Nel foglio il NOME è "Alfa 2.3"
+   (settore Alfa, worksite 2, sotto-settore 3), che è anche come si dice
+   per radio. I nomi del formato precedente ("Bravo 2") si leggono come
+   worksite 1, sotto-settore 2. */
+function livelli(g){
+  const n = String(g.NOME || '').trim();
+  let m = /^(.+?)\s+(\d+)\.(\d+)$/.exec(n);
+  if (m) return {settore: m[1], ws: +m[2], ss: +m[3]};
+  m = /^(.+?)\s+(\d+)$/.exec(n);
+  if (m) return {settore: m[1], ws: 1, ss: +m[2]};
+  return {settore: n || '—', ws: 1, ss: 1};
 }
+const nomeSS = (settore, ws, ss) => `${settore} ${ws}.${ss}`;
+const ordineSettore = x => { const i = SETTORI.indexOf(x); return i < 0 ? 99 : i; };
 
 
 /* ============================== UTILITÀ =============================== */
@@ -478,10 +490,47 @@ async function leggiPerCodem(id, azione, foglio, colonna, codem, emergenze, arch
   if (!elenco.length) return [];
   return gviz(foglio, `select * where ${colonna} matches '${alternanza(elenco)}'`);
 }
+/* LETTURA A DUE LIVELLI
+   Per la carta bastano posizione, tipologia, settore e poco altro: sono
+   CAMPI_PUNTI, un quinto del peso della scheda intera (le note AREU e i
+   poligoni di localizzazione sono la parte grossa). Il resto — chiamante,
+   telefono, indirizzo, note, poligono — si chiede per la singola scheda
+   quando la si apre o col tasto destro, e resta in memoria. Per la stampa
+   si leggono intere le sole schede da stampare. */
+const CAMPI_PUNTI = ['CODEM', 'ID_CONTATTO', 'ALTROENTE_IDSCHEDA', 'CITTA', 'LAT', 'LON',
+  'SHAPE', 'RMAX', 'RMIN', 'ANGOLO', 'DATA_INS', 'DESCRIZIONE_TRIAGE', 'DIFFERIBILE', 'GRUPPO'];
+/* Lettere delle stesse colonne nel foglio Schede (A=CODEM, poi CAMPI, poi servizio). */
+const COLONNE_PUNTI = 'A, B, C, L, O, P, Q, R, S, T, V, W, X, Z';
+const daRighe = r => (r && r.righe) ? r.righe.map(v => {
+  const o = {}; r.campi.forEach((k, i) => { o[k] = v[i] == null ? '' : String(v[i]); }); return o;
+}) : (r || []);
+
 async function leggiSchede(id, codem, emergenze, arch){
-  const r = await leggiPerCodem(id, 'schede', 'Schede', 'A', codem, emergenze, arch);
+  if (!ID_FOGLIO) return daRighe(await api(id, 'punti', {codem, includiArchiviate: arch}));
+  const elenco = codem ? [codem] : emergenze.map(e => e.CODEM);
+  if (!elenco.length) return [];
+  return gviz('Schede', `select ${COLONNE_PUNTI} where A matches '${alternanza(elenco)}'`);
+}
+async function leggiSchedeComplete(id, codem){
+  const r = ID_FOGLIO ? await gviz('Schede', `select * where A = '${alternanza([codem])}'`)
+    : await api(id, 'schede', {codem, includiArchiviate: true});
   r.forEach(s => { delete s.HASH; });
   return r;
+}
+const dettagli = new Map();          // CODEM|ID -> scheda intera
+async function leggiDettaglio(id, s){
+  const k = s.CODEM + '|' + s.ID_CONTATTO;
+  if (dettagli.has(k)) return dettagli.get(k);
+  let d;
+  if (ID_FOGLIO){
+    const r = await gviz('Schede', `select * where A = '${alternanza([s.CODEM])}' and B = '${alternanza([s.ID_CONTATTO])}'`);
+    d = r[0];
+  } else d = await api(id, 'dettaglio', {codem: s.CODEM, idContatto: s.ID_CONTATTO});
+  if (!d) throw new Error('scheda non trovata');
+  delete d.HASH;
+  d = Object.assign({}, s, d);
+  dettagli.set(k, d);
+  return d;
 }
 async function leggiGruppi(id, codem, emergenze, arch){
   const r = await leggiPerCodem(id, 'gruppi', 'Gruppi', 'B', codem, emergenze, arch);
@@ -662,6 +711,7 @@ function avvia(sezione){
   /* Ordine dei livelli: perimetri dei settori sotto, schede sopra. */
   map.createPane('diffGruppi').style.zIndex = 390;
   map.createPane('diffSchede').style.zIndex = 450;
+  map.createPane('diffEtichette').style.zIndex = 620;
   const tela = L.canvas({padding: .5, pane: 'diffSchede'});
   const livGruppi = L.featureGroup().addTo(map);
   const livAree = L.layerGroup().addTo(map);
@@ -830,15 +880,29 @@ function avvia(sezione){
   function creaMarcatore(s){
     const g = gruppoDi(s), cat = categoria(s);
     const m = L.circleMarker([num(s.LAT), num(s.LON)], {renderer: tela, radius: 6.5, snapIgnore: true, pmIgnore: true,
+      bubblingMouseEvents: false,
       fillColor: cat.c, fillOpacity: .95, color: g ? g.COLORE : '#ffffff',
       weight: g ? 3 : 1.5, dashArray: s.DIFFERIBILE && s.DIFFERIBILE !== 'S' ? '2,2' : null});
-    m.bindPopup(() => popup(s), {maxWidth: 320});
-    m.on('popupopen', ev => {
+    m.bindPopup(() => `<div class="diff-pop"><b style="color:${categoria(s).c}">${esc(categoria(s).n)}</b>
+      <div>${esc(s.CITTA)}</div><div class="diff-pop-dati"><span>⏳ caricamento della scheda…</span></div></div>`,
+      {maxWidth: 320});
+    m.on('popupopen', async ev => {
       livScelta.clearLayers();
-      const f = formaLocalizzazione(s);
-      if (f) livScelta.addLayer(f);
-      const a = ev.popup.getElement().querySelector('.diff-cli');
-      if (a) a.onclick = e => { e.preventDefault(); NS.copiaTesto(e, s.CLI); };
+      const f0 = formaLocalizzazione(s);
+      if (f0) livScelta.addLayer(f0);
+      try {
+        const d = await leggiDettaglio(id, s);
+        if (!ev.popup.isOpen()) return;
+        ev.popup.setContent(popup(d));
+        const f = formaLocalizzazione(d);
+        livScelta.clearLayers();
+        if (f) livScelta.addLayer(f);
+        const a = ev.popup.getElement().querySelector('.diff-cli');
+        if (a) a.onclick = e => { e.preventDefault(); NS.copiaTesto(e, d.CLI); };
+      } catch(e){
+        if (ev.popup.isOpen()) ev.popup.setContent(`<div class="diff-pop"><b>${esc(categoria(s).n)}</b>
+          <div class="diff-errore">Dettaglio non disponibile: ${esc(e.message)}</div></div>`);
+      }
     });
     m.on('popupclose', () => livScelta.clearLayers());
     m.on('contextmenu', ev => {
@@ -878,10 +942,65 @@ function avvia(sezione){
         style: {color: g.COLORE, weight: 2.5, fillColor: g.COLORE, fillOpacity: .07}});
       livGruppi.addLayer(l);
       const b = l.getBounds();
-      if (b.isValid()) livGruppi.addLayer(L.marker(b.getCenter(), {interactive: false, pmIgnore: true,
-        snapIgnore: true, icon: L.divIcon({className: 'diff-etichetta-gruppo', iconSize: null,
-          html: `<span style="border-color:${esc(g.COLORE)}">${esc(g.NOME)}</span>`})}));
+      const sel = inSelezione(g);
+      if (sel || selezione) l.setStyle(sel ? {weight: 4.5, fillOpacity: .2} : {weight: 1.5, fillOpacity: .03, opacity: .5});
+      if (b.isValid()){
+        const et = L.marker(b.getCenter(), {pane: 'diffEtichette', pmIgnore: true, snapIgnore: true,
+          icon: L.divIcon({className: 'diff-etichetta-gruppo' + (sel ? ' sel' : ''), iconSize: null,
+            html: `<span style="border-color:${esc(g.COLORE)}">${esc(g.NOME)}</span>`})});
+        et.on('click', () => seleziona({tipo: 'ss', id: g.ID_GRUPPO}));
+        livGruppi.addLayer(et);
+      }
     });
+  }
+
+  /* ------------------------------ selezione ------------------------------
+     Si seleziona un nodo dell'albero (settore, worksite o sotto-settore)
+     dalla tabella o cliccando l'etichetta sulla carta: il suo perimetro si
+     evidenzia, gli altri si attenuano, la carta ci si porta sopra. Un
+     secondo clic sullo stesso nodo toglie la selezione. */
+  let selezione = null;   // {tipo:'settore'|'ws'|'ss', settore, ws, id}
+  function membriDi(sel){
+    if (!sel) return [];
+    return gruppi.filter(g => {
+      const x = livelli(g);
+      if (sel.tipo === 'ss') return g.ID_GRUPPO === sel.id;
+      if (sel.tipo === 'ws') return x.settore === sel.settore && x.ws === sel.ws;
+      return x.settore === sel.settore;
+    });
+  }
+  const inSelezione = g => !!selezione && membriDi(selezione).includes(g);
+  const stessaSelezione = (a, b) => !!a && !!b && a.tipo === b.tipo && a.settore === b.settore
+    && a.ws === b.ws && a.id === b.id;
+  function limitiDi(gg){
+    let b = null;
+    gg.forEach(g => { const x = L.geoJSON(g.GEOJSON).getBounds();
+      if (x.isValid()) b = b ? b.extend(x) : L.latLngBounds(x.getSouthWest(), x.getNorthEast()); });
+    return b;
+  }
+  /* Clic sulla carta, fuori dai punti: se cade dentro un sotto-settore lo
+     seleziona (il più piccolo, se più perimetri si sovrappongono); fuori da
+     tutti, toglie la selezione. Durante il disegno non fa niente. */
+  map.on('click', e => {
+    if (map.pm.globalDrawModeEnabled && map.pm.globalDrawModeEnabled()) return;
+    const dentroA = gruppi.filter(g => {
+      const geo = g.GEOJSON && (g.GEOJSON.geometry || g.GEOJSON);
+      const c = geo && geo.coordinates && geo.coordinates[0];
+      return c && dentro(e.latlng.lat, e.latlng.lng, c.map(p => ({lat: p[1], lng: p[0]})));
+    });
+    if (!dentroA.length){ if (selezione){ selezione = null; disegnaGruppi(); elencoGruppi(); } return; }
+    const area = g => { const b = limitiDi([g]); return b ? (b.getNorth() - b.getSouth()) * (b.getEast() - b.getWest()) : 0; };
+    const g = dentroA.sort((a, b) => area(a) - area(b))[0];
+    selezione = {tipo: 'ss', id: g.ID_GRUPPO};
+    disegnaGruppi(); elencoGruppi();
+  });
+
+  function seleziona(sel){
+    selezione = stessaSelezione(selezione, sel) ? null : sel;
+    disegnaGruppi();
+    elencoGruppi();
+    const b = selezione && limitiDi(membriDi(selezione));
+    if (b) map.fitBounds(b, {padding: [40, 40], maxZoom: 17});
   }
 
   /* Ridisegno completo: al primo caricamento, al cambio di emergenza o di
@@ -905,7 +1024,7 @@ function avvia(sezione){
     dopo.forEach((s, k) => {
       const x = marcatori.get(k);
       if (!x){ metti(s); nuove.push(s); }
-      else if (x.firma !== firma(s)){ togliMarcatore(k); metti(s); cambiate.push(s); }
+      else if (x.firma !== firma(s)){ dettagli.delete(k); togliMarcatore(k); metti(s); cambiate.push(s); }
     });
     schede = nuoveSchede;
     if (nuove.length || cambiate.length || tolte) aggiornaVista();
@@ -962,61 +1081,77 @@ function avvia(sezione){
     });
   }
 
+  /* Tabella dei settori: una riga per livello, con i totali. Il nome si
+     clicca per selezionare; a destra inquadra, PDF ed elimina. Eliminare un
+     settore o un worksite elimina tutti i suoi sotto-settori, dopo conferma. */
   function elencoGruppi(){
     const box = $('gruppi');
-    const em = emergenzaScelta();
-    const modificabile = id && id.ruolo === 'COMANDO' && em && em.STATO === 'ATTIVA';
+    const cmd = id && id.ruolo === 'COMANDO';
+    const scrivibile = g => cmd && (emergenze.find(e => e.CODEM === g.CODEM) || {}).STATO === 'ATTIVA';
     if (!gruppi.length){
-      box.innerHTML = `<p class="pagina-nota">${id && id.ruolo === 'COMANDO'
-        ? (em ? 'Nessun settore: premi "Crea settore" e disegna il perimetro sulla carta.'
-              : 'Scegli un\u2019emergenza per creare i settori.')
+      box.innerHTML = `<p class="pagina-nota">${cmd
+        ? 'Nessun settore: premi "Crea settore" e disegna il perimetro del primo sotto-settore.'
         : 'Nessun settore.'}</p>`;
       return;
     }
-    box.innerHTML = '';
-    const bottone = (dove, t, tit, f, cls) => {
-      const b = document.createElement('button');
-      b.type = 'button'; b.className = 'btn-toggle-radar diff-mini' + (cls ? ' ' + cls : '');
-      b.textContent = t; b.title = tit; b.onclick = f; dove.appendChild(b);
-    };
-    const inquadra = gg => {
-      let b = null;
-      gg.forEach(g => { const x = L.geoJSON(g.GEOJSON).getBounds(); if (x.isValid()) b = b ? b.extend(x) : x; });
-      if (b) map.fitBounds(b, {padding: [30, 30]});
-    };
-    const perSettore = new Map();
-    gruppi.slice().sort((a, b) => {
-      const x = settoreDi(a), y = settoreDi(b);
-      return (SETTORI.indexOf(x.settore) - SETTORI.indexOf(y.settore)) || x.settore.localeCompare(y.settore) || x.n - y.n;
-    }).forEach(g => {
-      const k = settoreDi(g).settore;
-      if (!perSettore.has(k)) perSettore.set(k, []);
-      perSettore.get(k).push(g);
+    const albero = new Map();
+    gruppi.forEach(g => {
+      const x = livelli(g);
+      if (!albero.has(x.settore)) albero.set(x.settore, new Map());
+      const w = albero.get(x.settore);
+      if (!w.has(x.ws)) w.set(x.ws, []);
+      w.get(x.ws).push(g);
     });
-    perSettore.forEach((gg, nome) => {
-      const tot = gg.reduce((a, g) => a + (+g.N_SCHEDE || 0), 0);
-      const t = document.createElement('div');
-      t.className = 'diff-settore';
-      t.innerHTML = `<i style="background:${esc(gg[0].COLORE)}"></i>
-        <span><b>Settore ${esc(nome)}</b><small>${gg.length} sottosettori · ${tot} schede</small></span>`;
-      bottone(t, '🔍', 'Inquadra il settore', () => inquadra(gg));
-      if (id && id.ruolo === 'COMANDO')
-        bottone(t, '🖨', 'PDF del settore intero', () => stampa(
-          schede.filter(s => gg.some(g => g.ID_GRUPPO === s.GRUPPO)), 'Settore ' + nome, gg));
-      box.appendChild(t);
-      gg.forEach(g => {
-        const r = document.createElement('div');
-        r.className = 'diff-gruppo';
-        r.innerHTML = `<span><b>${esc(g.NOME)}</b><small>${esc(g.N_SCHEDE)} schede</small></span>`;
-        bottone(r, '🔍', 'Inquadra il sottosettore', () => inquadra([g]));
-        if (id && id.ruolo === 'COMANDO')
-          bottone(r, '🖨', 'PDF del sottosettore', () => stampa(
-            schede.filter(s => s.GRUPPO === g.ID_GRUPPO), g.NOME, [g]));
-        if (modificabile)
-          bottone(r, '🗑', 'Elimina il sottosettore', () => eliminaGruppo(g), 'diff-rosso');
-        box.appendChild(r);
+    const conta = gg => gg.reduce((a, g) => a + (+g.N_SCHEDE || 0), 0);
+    const schedeDi = gg => schede.filter(s => gg.some(g => g.ID_GRUPPO === s.GRUPPO));
+
+    const tab = document.createElement('table');
+    tab.className = 'diff-tab-settori';
+    tab.innerHTML = '<thead><tr><th>Settore · Worksite · Sotto-settore</th><th>Schede</th><th></th></tr></thead>';
+    const corpo = document.createElement('tbody');
+    tab.appendChild(corpo);
+
+    const riga = (livello, sel, etichetta, gg, colore) => {
+      const tr = document.createElement('tr');
+      tr.className = 'diff-liv-' + livello + (stessaSelezione(selezione, sel) ? ' sel' : '');
+      const n = document.createElement('td');
+      n.className = 'diff-tab-nome';
+      n.innerHTML = (colore ? `<i style="background:${esc(colore)}"></i>` : '') + etichetta;
+      n.title = 'Seleziona';
+      n.onclick = () => seleziona(sel);
+      const c = document.createElement('td');
+      c.className = 'diff-tab-num';
+      c.textContent = conta(gg);
+      const a = document.createElement('td');
+      a.className = 'diff-tab-azioni';
+      const btn = (t, tit, f, cls) => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'btn-toggle-radar diff-mini' + (cls ? ' ' + cls : '');
+        b.textContent = t; b.title = tit;
+        b.onclick = ev => { ev.stopPropagation(); f(); };
+        a.appendChild(b);
+      };
+      btn('🔍', 'Inquadra', () => { const b = limitiDi(gg); if (b) map.fitBounds(b, {padding: [40, 40], maxZoom: 17}); });
+      if (cmd) btn('🖨', 'PDF', () => stampa(schedeDi(gg), sel.tipo === 'ss' ? gg[0].NOME
+        : sel.tipo === 'ws' ? `${sel.settore} worksite ${sel.ws}` : 'Settore ' + sel.settore, gg));
+      if (gg.every(scrivibile)) btn('🗑', 'Elimina', () => eliminaGruppi(gg, etichetta.replace(/<[^>]+>/g, '')), 'diff-rosso');
+      tr.append(n, c, a);
+      corpo.appendChild(tr);
+    };
+
+    [...albero.keys()].sort((a, b) => ordineSettore(a) - ordineSettore(b) || a.localeCompare(b)).forEach(st => {
+      const w = albero.get(st);
+      const tutti = [...w.values()].flat();
+      riga('settore', {tipo: 'settore', settore: st}, `<b>${esc(st)}</b>`, tutti, tutti[0].COLORE);
+      [...w.keys()].sort((a, b) => a - b).forEach(ws => {
+        const gg = w.get(ws).sort((a, b) => livelli(a).ss - livelli(b).ss);
+        riga('ws', {tipo: 'ws', settore: st, ws}, `Worksite ${ws}`, gg);
+        gg.forEach(g => riga('ss', {tipo: 'ss', id: g.ID_GRUPPO},
+          `${esc(st)} ${ws}.<b>${livelli(g).ss}</b>`, [g]));
       });
     });
+    box.innerHTML = '';
+    box.appendChild(tab);
   }
 
   /* --------------------------- caricamento --------------------------- */
@@ -1384,22 +1519,43 @@ function avvia(sezione){
       && dentro(num(s.LAT), num(s.LON), anello));
     if (!presi.length) return stato('Nessuna scheda dentro il poligono.');
     const altrove = presi.filter(s => s.GRUPPO).length;
-    /* Settori esistenti di questa emergenza, col prossimo numero libero. */
-    const esistenti = new Map();
+    /* Albero esistente di questa emergenza: settore → worksite → ultimo sotto-settore. */
+    const albero = new Map();
     gruppi.filter(g => g.CODEM === em.CODEM).forEach(g => {
-      const x = settoreDi(g);
-      esistenti.set(x.settore, Math.max(esistenti.get(x.settore) || 0, x.n));
+      const x = livelli(g);
+      if (!albero.has(x.settore)) albero.set(x.settore, new Map());
+      const w = albero.get(x.settore);
+      w.set(x.ws, Math.max(w.get(x.ws) || 0, x.ss));
     });
-    const nuovo = SETTORI.find(n => !esistenti.has(n)) || 'Settore ' + (esistenti.size + 1);
-    const voci = [...esistenti].map(([n, max]) => ({k: n, et: `${n} ${max + 1}`,
-      nota: `nuovo sottosettore del settore ${n}`}))
-      .concat([{k: '+' + nuovo, et: `${nuovo} 1`, nota: 'nuovo settore'}]);
-    const k = await chiedi({voci, testo: `${presi.length} schede nel perimetro`
-      + (altrove ? `, di cui ${altrove} già in un altro sottosettore: passano a questo.` : '.')
-      + '\nIn quale settore?'});
-    if (!k) return stato('Settore annullato.');
-    const settore = k[0] === '+' ? k.slice(1) : k;
-    const nome = `${settore} ${(esistenti.get(settore) || 0) + 1}`;
+    /* Se c'è una selezione la si propone per prima: chi ha selezionato
+       "Alfa worksite 2" vuole aggiungere lì il prossimo sotto-settore. */
+    const pre = selezione && selezione.tipo !== 'ss' ? selezione
+      : selezione ? Object.assign({tipo: 'ws'}, livelli(membriDi(selezione)[0] || {})) : null;
+    const testa = `${presi.length} schede nel perimetro`
+      + (altrove ? `, di cui ${altrove} già in un altro sotto-settore: passano a questo.` : '.');
+
+    const nuovoSett = SETTORI.find(n => !albero.has(n)) || 'Settore ' + (albero.size + 1);
+    const vociSett = [...albero.keys()].sort((a, b) => ordineSettore(a) - ordineSettore(b)).map(n => ({
+      k: n, et: `Settore ${n}`, nota: `${albero.get(n).size} worksite`}))
+      .concat([{k: '+', et: `➕ Nuovo settore ${nuovoSett}`, nota: 'settore geografico generale'}]);
+    let settore = pre && albero.has(pre.settore) ? pre.settore : null;
+    if (!settore){
+      const k = await chiedi({voci: vociSett, testo: testa + '\n1/2 · Settore geografico generale:'});
+      if (!k) return stato('Settore annullato.');
+      settore = k === '+' ? nuovoSett : k;
+    }
+    const wsEsistenti = albero.get(settore) || new Map();
+    let ws = pre && pre.tipo === 'ws' && pre.settore === settore && wsEsistenti.has(pre.ws) ? pre.ws : null;
+    if (ws == null){
+      const nuovoWs = Math.max(0, ...wsEsistenti.keys()) + 1;
+      const vociWs = [...wsEsistenti.keys()].sort((a, b) => a - b).map(w => ({k: String(w),
+        et: `${settore} worksite ${w}`, nota: `aggiunge il sotto-settore ${settore} ${w}.${wsEsistenti.get(w) + 1}`}))
+        .concat([{k: '+', et: `➕ Nuovo worksite ${settore} ${nuovoWs}`, nota: `crea ${settore} ${nuovoWs}.1`}]);
+      const k = await chiedi({voci: vociWs, testo: testa + `\n2/2 · Worksite nel settore ${settore}:`});
+      if (!k) return stato('Settore annullato.');
+      ws = k === '+' ? nuovoWs : +k;
+    }
+    const nome = nomeSS(settore, ws, (wsEsistenti.get(ws) || 0) + 1);
     const colore = coloreSettore(settore);
     stato(`Salvataggio di ${nome}…`);
     try {
@@ -1431,7 +1587,18 @@ function avvia(sezione){
   map.on('click movestart zoomstart', chiudiMenu);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') chiudiMenu(); });
 
+  /* Il menu compare subito con quello che c'è; i dati della scheda
+     (indirizzo, telefono) arrivano col dettaglio e lo completano. */
   function menuScheda(s, pt){
+    const k = s.CODEM + '|' + s.ID_CONTATTO;
+    const d = dettagli.get(k);
+    disegnaMenu(d || s, pt, !d);
+    if (menuBox) menuBox._k = k;
+    if (!d) leggiDettaglio(id, s).then(dd => {
+      if (menuBox && !menuBox.hidden && menuBox._k === k) disegnaMenu(dd, pt, false);
+    }).catch(() => {});
+  }
+  function disegnaMenu(s, pt, carico){
     if (!menuBox){
       menuBox = document.createElement('div');
       menuBox.className = 'diff-menu';
@@ -1446,7 +1613,8 @@ function avvia(sezione){
       {t: 'titolo', et: indirizzo(s) || s.CITTA || s.ID_CONTATTO},
       {et: '📄 Apri la scheda', f: () => {
         const x = marcatori.get(chiave(s)); if (x && x.m) x.m.openPopup(); }},
-      s.CLI ? {et: '📋 Copia il telefono', f: ev => NS.copiaTesto(ev, s.CLI)} : null,
+      carico ? {t: 'nota', et: '⏳ carico i dati della scheda…'}
+        : s.CLI ? {et: '📋 Copia il telefono', f: ev => NS.copiaTesto(ev, s.CLI)} : null,
       {et: '🧭 Apri in Google Maps', f: () => window.open(
         `https://www.google.com/maps?q=${num(s.LAT)},${num(s.LON)}`, '_blank', 'noopener')}
     ];
@@ -1501,15 +1669,42 @@ function avvia(sezione){
     } catch(e){ stato('Spostamento non riuscito: ' + e.message); }
   }
 
-  async function eliminaGruppo(g){
-    if (!await chiedi({testo: `Eliminare il sottosettore ${g.NOME}?\nLe ${g.N_SCHEDE} schede restano e tornano senza settore.`,
-      ok: 'Elimina', rosso: 1})) return;
-    try {
-      await api(id, 'eliminaGruppo', {codem: g.CODEM, idGruppo: g.ID_GRUPPO});
+  /* Eliminazione come la creazione: POST senza leggere la risposta (in GET
+     a volte la risposta si perde anche quando lo script ha eseguito), poi si
+     rilegge finché i sotto-settori non sono spariti. */
+  async function eliminaSuServer(gg){
+    for (const [i, g] of gg.entries()){
+      stato(gg.length > 1 ? `Eliminazione ${i + 1} di ${gg.length}…` : `Eliminazione di ${g.NOME}…`);
+      await fetch(URL_BACKEND, {method: 'POST', mode: 'no-cors',
+        headers: {'Content-Type': 'text/plain;charset=utf-8'},
+        body: JSON.stringify({azione: 'eliminaGruppo', utente: id.utente, codem: g.CODEM, idGruppo: g.ID_GRUPPO})});
+    }
+    const via = new Set(gg.map(g => g.ID_GRUPPO));
+    for (let t = 0; t < 5; t++){
+      if (t) await new Promise(r => setTimeout(r, 1500));
       await ricarica(true);
-      stato(`Gruppo "${g.NOME}" eliminato.`);
-    } catch(e){ stato('Eliminazione non riuscita: ' + e.message); }
+      if (!gruppi.some(g => via.has(g.ID_GRUPPO))) return true;
+    }
+    return false;
   }
+
+  async function eliminaGruppi(gg, etichetta){
+    const n = gg.reduce((a, g) => a + (+g.N_SCHEDE || 0), 0);
+    const testo = gg.length === 1
+      ? `Eliminare il sotto-settore ${gg[0].NOME}?\nLe ${n} schede restano e tornano senza settore.`
+      : `Eliminare ${etichetta}?\nSono ${gg.length} sotto-settori (${gg.map(g => g.NOME).join(', ')}).\n`
+        + `Le ${n} schede restano e tornano senza settore.`;
+    if (!await chiedi({ok: gg.length === 1 ? 'Elimina' : 'Elimina tutto', rosso: 1, testo})) return;
+    try {
+      const ok = await eliminaSuServer(gg);
+      selezione = null;
+      disegnaGruppi(); elencoGruppi();
+      stato(ok ? `${gg.length === 1 ? gg[0].NOME : etichetta} eliminato.`
+        : 'Eliminazione inviata ma non ancora visibile: premi Aggiorna tra qualche secondo.');
+    } catch(e){ await ricarica(true); stato('Eliminazione non riuscita: ' + e.message); }
+  }
+  const eliminaGruppo = g => eliminaGruppi([g], g.NOME);
+
 
   /* --------------------------- archiviazione --------------------------- */
   $('bArchivia').onclick = async () => {
@@ -1566,6 +1761,23 @@ function avvia(sezione){
     };
     inquadraSettore();
     await new Promise(r => setTimeout(r, 350));
+
+    /* La carta ha solo i dati leggeri: per la tabella servono le schede
+       intere, che si leggono ora, una lettura per emergenza. */
+    try {
+      stato('Preparazione della stampa…');
+      const intere = new Map();
+      for (const c of new Set(lista.map(x => x.CODEM)))
+        (await leggiSchedeComplete(id, c)).forEach(x => {
+          const k = x.CODEM + '|' + x.ID_CONTATTO;
+          intere.set(k, x); dettagli.set(k, Object.assign({}, x));
+        });
+      lista = lista.map(x => Object.assign({}, x, intere.get(x.CODEM + '|' + x.ID_CONTATTO) || {}));
+      stato('');
+    } catch(e){
+      occupato = false;
+      return stato('Stampa non preparata: ' + e.message);
+    }
     const ord = lista.slice().sort((a, b) =>
       (a.CITTA || '').localeCompare(b.CITTA || '', 'it')
       || (a.INDIRIZZO || '').localeCompare(b.INDIRIZZO || '', 'it')
