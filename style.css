@@ -1166,13 +1166,30 @@ html.comando-gia-scelto #modal-comando {
 }
 
 /* Archivia come bottone normale (gruppi con intervento, dentro le azioni),
-   non più fascia: stesso guscio di Mostra su mappa/Apri nel convertitore,
-   "attivo" (viola) quando il gruppo è archiviato. */
+   non più fascia: stesso guscio di Mostra su mappa/Apri nel convertitore.
+   Grigio chiaro di base, grigio scuro da archiviato — non più viola, che
+   qui si confonderebbe con il colore dei messaggi Test. */
+.riepilogo-msg-archivia-btn {
+    background: #cccccc;
+    border-color: #cccccc;
+    color: #1a1a1a;
+}
+
+.riepilogo-msg-archivia-btn:hover {
+    background: #bbbbbb;
+    border-color: #bbbbbb;
+}
+
 .riepilogo-msg-archivia-btn.attivo {
-    background: #a855f7;
-    border-color: #a855f7;
+    background: #4a4a4a;
+    border-color: #4a4a4a;
     color: #fff;
     font-weight: bold;
+}
+
+.riepilogo-msg-archivia-btn.attivo:hover {
+    background: #5a5a5a;
+    border-color: #5a5a5a;
 }
 
 /* Freccia direzionale: ▼ chiuso (un clic apre verso il basso),
