@@ -1088,45 +1088,79 @@ html.comando-gia-scelto #modal-comando {
     background: transparent;
 }
 
-/* Tab Numero Intervento/Anno: fascia a tutta altezza sul bordo SINISTRO
-   della riga — stesso principio della fascia "Archivia" sul bordo destro,
-   ma qui è un'informazione, non un'azione, quindi niente cursor:pointer.
-   Colore secondo lo stato: rosso = intervento reale, verde = solo una
-   prova (stesso linguaggio "rosso opera, verde è innocuo" della SITAC). */
+/* Tab Numero Intervento/Anno: ora è anche l'interruttore apri/chiudi
+   dell'intera riga — di default il corpo è nascosto, un clic lo apre.
+   Colore secondo lo stato: rosso finché la posizione non è ricevuta,
+   verde appena arriva — tranne i Test, sempre viola a prescindere dalla
+   posizione (per un test la posizione non è un dato operativo). */
 .riepilogo-msg-intervento-tab {
     flex: 0 0 44px;
     width: 44px;
     display: flex;
+    flex-direction: column;
+    gap: 4px;
     align-items: center;
     justify-content: center;
+    cursor: pointer;
+    user-select: none;
 }
 
-.riepilogo-msg-intervento-tab.reale {
+.riepilogo-msg-intervento-tab:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: -2px;
+}
+
+.riepilogo-msg-intervento-tab.in-attesa {
     background: rgba(175, 43, 30, 0.22);
     border-right: 2px solid var(--danger-color);
 }
 
-.riepilogo-msg-intervento-tab.test {
+.riepilogo-msg-intervento-tab.ricevuto {
     background: rgba(76, 217, 74, 0.22);
     border-right: 2px solid #4cd94c;
 }
 
-.riepilogo-msg-intervento-testo {
+.riepilogo-msg-intervento-tab.test {
+    background: rgba(168, 85, 247, 0.22);
+    border-right: 2px solid #a855f7;
+}
+
+.riepilogo-msg-intervento-testo,
+.riepilogo-msg-intervento-anno {
     writing-mode: vertical-rl;
     transform: rotate(180deg);
-    font-size: 14px;
     font-weight: bold;
     letter-spacing: 0.5px;
     white-space: nowrap;
     font-family: "Courier New", monospace;
 }
 
-.riepilogo-msg-intervento-tab.reale .riepilogo-msg-intervento-testo {
+.riepilogo-msg-intervento-testo { font-size: 14px; }
+.riepilogo-msg-intervento-anno { font-size: 11px; opacity: .85; }
+
+.riepilogo-msg-intervento-tab.in-attesa .riepilogo-msg-intervento-testo,
+.riepilogo-msg-intervento-tab.in-attesa .riepilogo-msg-intervento-anno {
     color: var(--danger-color);
 }
 
-.riepilogo-msg-intervento-tab.test .riepilogo-msg-intervento-testo {
+.riepilogo-msg-intervento-tab.ricevuto .riepilogo-msg-intervento-testo,
+.riepilogo-msg-intervento-tab.ricevuto .riepilogo-msg-intervento-anno {
     color: #4cd94c;
+}
+
+.riepilogo-msg-intervento-tab.test .riepilogo-msg-intervento-testo,
+.riepilogo-msg-intervento-tab.test .riepilogo-msg-intervento-anno {
+    color: #a855f7;
+}
+
+/* Archivia come bottone normale (gruppi con intervento, dentro le azioni),
+   non più fascia: stesso guscio di Mostra su mappa/Apri nel convertitore,
+   "attivo" (viola) quando il gruppo è archiviato. */
+.riepilogo-msg-archivia-btn.attivo {
+    background: #a855f7;
+    border-color: #a855f7;
+    color: #fff;
+    font-weight: bold;
 }
 
 /* Checkbox "Test" nel form di invio, sopra i pulsanti WhatsApp/Telegram.
@@ -7135,8 +7169,8 @@ select:focus {
    "Archivia" sono fratelli nello stesso flex container (.riepilogo-msg-voce):
    il colore va dato a entrambi, o la fascia destra resterebbe stonata. */
 .riepilogo-msg-voce.test {
-    background: rgba(76, 217, 74, 0.10);
-    border-color: rgba(76, 217, 74, 0.4);
+    background: rgba(168, 85, 247, 0.10);
+    border-color: rgba(168, 85, 247, 0.4);
 }
 
 .riepilogo-msg-voce.test .riepilogo-msg-voce-corpo {

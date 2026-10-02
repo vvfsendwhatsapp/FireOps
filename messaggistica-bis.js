@@ -1124,7 +1124,7 @@ Koordináták küldéséhez:
     // distribuita per locator.html, il doPost() lato Apps Script deve
     // instradare in base al campo "foglio" del payload — vedi il codice di
     // esempio nella risposta.
-    const WEBAPP_URL_ID_SEARCH = "https://script.google.com/macros/s/AKfycbyp6jQ331Yk5q7_hkM74ZyhUh1c3zQUJG7SpuoE18HslBO36YKSTYIQf-z7gSwXR4Yv/exec";
+    const WEBAPP_URL_ID_SEARCH = "https://script.google.com/macros/s/AKfycbwS8Vtq5MbfPG-lLdobd8IpFqh2Mi90mTciotejfh9L1E7cUkMjdQko-zcj0thYOZ44/exec";
 
     // Registra su Google Sheet ogni invio di messaggio, qualunque sia il
     // canale scelto. Non blocca né condiziona l'invio vero e proprio: se la
@@ -1775,6 +1775,11 @@ Koordináták küldéséhez:
         const primario = messaggiGruppo[0]; // Comando/Intervento/Anno: uguali per TUTTI i membri del gruppo
         const ricevuto = posizioniGruppo.length > 0;
         const idMappa = "riepilogo-mappa-" + Math.random().toString(36).slice(2, 9);
+        // Solo i gruppi CON un numero d'intervento prendono il tab
+        // espandibile: un gruppo "Senza" link non ha nulla su cui
+        // cliccare per aprirsi, e resta nella forma precedente (corpo
+        // sempre visibile, Archivia come fascia a destra).
+        const haIntervento = !!(primario.NumeroIntervento || primario.AnnoIntervento);
 
         const div = document.createElement("div");
         div.className = "riepilogo-msg-voce";
@@ -1848,26 +1853,6 @@ Koordináták küldéséhez:
         `;
         const corpo = div.querySelector(".riepilogo-msg-voce-corpo");
 
-        // Tab con Numero Intervento/Anno, a tutta altezza sul bordo
-        // SINISTRO della riga (stesso principio della fascia "Archivia",
-        // ma sul lato opposto): visibile solo se il gruppo porta questi
-        // dati (il link "Con" li registra, "Senza" no — vedi
-        // msg-numero-intervento in initLinkCoordinateUI). insertBefore(corpo)
-        // la mette per prima, a inizio riga. È anche il segno più evidente
-        // di QUALE intervento si sta guardando, ora che una riga può
-        // raggruppare più invii: più larga e più leggibile di prima.
-        // Colore secondo eTest (già calcolato sopra, per il badge "TEST"):
-        // rosso = intervento reale, verde = solo una prova — lo stesso
-        // linguaggio "rosso opera, verde è innocuo" usato altrove in FireOps
-        // (es. il pulsante Convalida della SITAC).
-        if (primario.NumeroIntervento || primario.AnnoIntervento) {
-            const tabIntervento = document.createElement("div");
-            tabIntervento.className = "riepilogo-msg-intervento-tab" + (eTest ? " test" : " reale");
-            tabIntervento.title = `Intervento N. ${formattaNumeroIntervento(primario.NumeroIntervento)} Anno ${primario.AnnoIntervento || "-"}` + (eTest ? " (TEST)" : "");
-            tabIntervento.innerHTML = `<span class="riepilogo-msg-intervento-testo">${formattaNumeroIntervento(primario.NumeroIntervento)} / ${primario.AnnoIntervento || "-"}</span>`;
-            div.insertBefore(tabIntervento, corpo);
-        }
-
         // "Archivia": sempre visibile, ma cliccabile SOLO per il Comando
         // TITOLARE (quello attivo in questa sessione) — un altro Comando
         // che vede lo stesso messaggio come limitrofo lo vede comunque (per
@@ -1906,24 +1891,41 @@ Koordináták küldéséhez:
         div.dataset.archiviato = archiviato ? "true" : "false";
         div.classList.toggle("archiviata", archiviato);
 
+        // Il bottone Archivia ha due vesti diverse secondo il gruppo:
+        // - CON intervento: un bottone normale dentro le azioni (insieme a
+        //   Mostra su mappa/Apri nel convertitore), perché tutto il corpo
+        //   ora vive dietro il tab espandibile e non ha più senso una
+        //   fascia fissa sempre visibile a fianco di un corpo nascosto.
+        // - SENZA intervento (nessun tab su cui aprire/chiudere): resta la
+        //   fascia a tutta altezza sul bordo destro, invariata.
         const btnArchivia = document.createElement("button");
         btnArchivia.type = "button";
         btnArchivia.disabled = !titolare;
 
         function aggiornaAspettoBottoneArchivia() {
-            btnArchivia.className = "riepilogo-msg-archivia-tab" + (archiviato ? " archiviato" : "");
             btnArchivia.title = !titolare
                 ? "Puoi archiviare solo i messaggi del tuo Comando"
                 : (archiviato ? "Clic per riattivare" : "Archivia messaggio");
             btnArchivia.setAttribute("aria-label", btnArchivia.title);
-            // Icona + scritta verticale, stesso principio della tab
-            // "Riepilogo messaggi" (icona sopra, testo ruotato sotto):
-            // resta leggibile anche nella fascia stretta.
-            btnArchivia.innerHTML = `<span class="riepilogo-msg-archivia-icona">🗄️</span><span class="riepilogo-msg-archivia-testo">${archiviato ? "Sblocca" : "Archivia"}</span>`;
+            if (haIntervento) {
+                btnArchivia.className = "btn-toggle-radar riepilogo-msg-archivia-btn" + (archiviato ? " attivo" : "");
+                btnArchivia.textContent = archiviato ? "🗄️ Sblocca" : "🗄️ Archivia";
+            } else {
+                btnArchivia.className = "riepilogo-msg-archivia-tab" + (archiviato ? " archiviato" : "");
+                // Icona + scritta verticale, stesso principio della tab
+                // "Riepilogo messaggi" (icona sopra, testo ruotato sotto):
+                // resta leggibile anche nella fascia stretta.
+                btnArchivia.innerHTML = `<span class="riepilogo-msg-archivia-icona">🗄️</span><span class="riepilogo-msg-archivia-testo">${archiviato ? "Sblocca" : "Archivia"}</span>`;
+            }
         }
         aggiornaAspettoBottoneArchivia();
 
-        btnArchivia.addEventListener("click", () => {
+        btnArchivia.addEventListener("click", (ev) => {
+            // Dentro le azioni (gruppo con intervento) il clic non deve
+            // anche far scattare un eventuale click-handler del tab: i due
+            // non sono annidati, ma stopPropagation costa nulla ed evita
+            // sorprese se la struttura cambia in futuro.
+            ev.stopPropagation();
             // Aggiornamento ottimistico: mode:'no-cors' non permette di
             // leggere l'esito reale della scrittura (stesso limite di
             // inviaRigaDbIdSearch), quindi l'interfaccia si aggiorna
@@ -1955,7 +1957,59 @@ Koordináták küldéséhez:
             messaggiGruppo.forEach(m => impostaArchiviazioneMessaggio(m, archiviato));
         });
 
-        div.appendChild(btnArchivia); // fratello di .riepilogo-msg-voce-corpo, non dentro
+        // Tab con Numero Intervento/Anno: se il gruppo lo porta, diventa
+        // un vero e proprio interruttore apri/chiudi, a tutta altezza sul
+        // bordo SINISTRO della riga — di default il corpo resta nascosto e
+        // si vede solo questo tab; un clic lo apre, spingendo in basso le
+        // righe successive dell'elenco (la riga cresce in altezza).
+        // Colore: non più legato a reale/prova ma allo stato della
+        // posizione — rosso finché non è ricevuta, verde appena arriva —
+        // tranne i messaggi di prova, che restano sempre viola a
+        // prescindere dalla posizione: per un test la posizione non è
+        // un'informazione operativa su cui regolarsi.
+        if (haIntervento) {
+            const tabIntervento = document.createElement("div");
+            const classeStato = eTest ? "test" : (ricevuto ? "ricevuto" : "in-attesa");
+            tabIntervento.className = "riepilogo-msg-intervento-tab " + classeStato;
+            tabIntervento.tabIndex = 0;
+            tabIntervento.setAttribute("role", "button");
+            tabIntervento.title = `Intervento N. ${formattaNumeroIntervento(primario.NumeroIntervento)} Anno ${primario.AnnoIntervento || "-"}`
+                + (eTest ? " (TEST)" : (ricevuto ? " — posizione ricevuta" : " — posizione non ricevuta"))
+                + " — clic per aprire/chiudere";
+            // Due blocchi verticali separati (numero sopra, anno sotto),
+            // non un'unica striscia lunga "numero / anno": con un numero
+            // a 8 cifre la striscia unica diventava troppo lunga per
+            // leggersi a colpo d'occhio nella fascia stretta.
+            tabIntervento.innerHTML = `
+                <span class="riepilogo-msg-intervento-testo">${formattaNumeroIntervento(primario.NumeroIntervento)}</span>
+                <span class="riepilogo-msg-intervento-anno">${primario.AnnoIntervento || "-"}</span>
+            `;
+            div.insertBefore(tabIntervento, corpo);
+
+            // Chiuso di default: la riga si riduce al solo tab finché non
+            // la si apre. L'intera .riepilogo-msg-voce-corpo (frase,
+            // badge, azioni, mappa) sta dietro questo interruttore.
+            corpo.hidden = true;
+            function apriChiudiCorpo() {
+                const staAprendo = corpo.hidden;
+                corpo.hidden = !staAprendo;
+                div.classList.toggle("espansa", staAprendo);
+                // La mappa (se già creata) può ritrovarsi con una misura
+                // sbagliata dopo che il layout è cambiato: stesso rimedio
+                // già usato altrove in questo file, un resize sintetico.
+                window.dispatchEvent(new Event("resize"));
+            }
+            tabIntervento.addEventListener("click", apriChiudiCorpo);
+            tabIntervento.addEventListener("keydown", (ev) => {
+                if (ev.key === "Enter" || ev.key === " ") {
+                    ev.preventDefault();
+                    apriChiudiCorpo();
+                }
+            });
+        } else {
+            // Nessun tab: stesso trattamento di sempre, fascia fissa.
+            div.appendChild(btnArchivia);
+        }
 
         if (ricevuto) {
             const azioni = document.createElement("div");
@@ -1964,6 +2018,10 @@ Koordináták küldéséhez:
                 <button type="button" class="btn-toggle-radar riepilogo-msg-toggle-mappa">🗺️ Mostra su mappa (${posizioniGruppo.length})</button>
                 <button type="button" class="btn-toggle-radar riepilogo-msg-apri-convertitore">📐 Apri nel convertitore</button>
             `;
+            // Con intervento, Archivia è il terzo bottone della stessa
+            // fila — "mappa, convertitore e archivia" — non più una fascia
+            // separata.
+            if (haIntervento) azioni.appendChild(btnArchivia);
             corpo.appendChild(azioni);
 
             // Mappa + tabella posizioni dentro la riga (accordion): si
@@ -2132,6 +2190,14 @@ Koordináták küldéséhez:
             // il caso di un messaggio già archiviato al primo caricamento.
             bottoniDaBloccareSeArchiviato.push(btnToggleMappa, btnApriConvertitore);
             applicaBloccoSeArchiviato();
+        } else if (haIntervento) {
+            // In attesa della posizione: niente mappa/convertitore (non
+            // c'è ancora nulla da mostrare), ma Archivia deve comunque
+            // comparire — è il solo bottone della fila in questo caso.
+            const azioni = document.createElement("div");
+            azioni.className = "riepilogo-msg-azioni";
+            azioni.appendChild(btnArchivia);
+            corpo.appendChild(azioni);
         }
 
         return div;
@@ -2240,14 +2306,31 @@ Koordináták küldéséhez:
             return;
         }
 
-        const gruppi = raggruppaPerIntervento(messaggi).map(g => {
-            const archiviato = g.messaggi.every(m => String(m.Archiviata).toUpperCase() === "TRUE");
-            const timestampMax = g.messaggi.reduce((max, m) => {
-                const t = m.Timestamp ? new Date(m.Timestamp).getTime() : 0;
-                return t > max ? t : max;
-            }, 0);
-            return { ...g, archiviato, timestampMax };
-        });
+        // Un gruppo interamente di prova (tutti i membri Test) sparisce da
+        // solo un'ora dopo l'ultimo invio: un test serve a controllare che
+        // il canale funzioni, non deve restare a ingombrare il riepilogo
+        // per l'intera finestra delle 24h come un intervento vero. Un
+        // gruppo MISTO (reale + test insieme) non viene mai nascosto così:
+        // contiene comunque un invio vero.
+        const UN_ORA_MS = 60 * 60 * 1000;
+
+        const gruppi = raggruppaPerIntervento(messaggi)
+            .map(g => {
+                const archiviato = g.messaggi.every(m => String(m.Archiviata).toUpperCase() === "TRUE");
+                const timestampMax = g.messaggi.reduce((max, m) => {
+                    const t = m.Timestamp ? new Date(m.Timestamp).getTime() : 0;
+                    return t > max ? t : max;
+                }, 0);
+                const soloTest = g.messaggi.every(m => String(m.Test).toUpperCase() === "TRUE");
+                return { ...g, archiviato, timestampMax, soloTest };
+            })
+            .filter(g => !(g.soloTest && (Date.now() - g.timestampMax > UN_ORA_MS)));
+
+        if (!gruppi.length) {
+            corpoRiepilogoMsg.innerHTML = `<p class="pagina-nota">Nessun messaggio con link nelle ultime 24 ore.</p>`;
+            righeRiepilogoAttuali = new Map();
+            return;
+        }
 
         // Non archiviati prima (più recenti in cima come sempre),
         // archiviati in fondo (fra loro, sempre dal più recente).
