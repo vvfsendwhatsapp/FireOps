@@ -1175,6 +1175,65 @@ html.comando-gia-scelto #modal-comando {
     font-weight: bold;
 }
 
+/* Freccia direzionale: ▼ chiuso (un clic apre verso il basso),
+   ▲ aperto (un clic richiude verso l'alto) — ruota invece di cambiare
+   glifo, stesso principio della freccia della tab "Riepilogo messaggi". */
+.riepilogo-msg-intervento-freccia {
+    margin-left: auto;
+    font-size: 11px;
+    transition: transform 0.2s ease;
+}
+
+.riepilogo-msg-voce.espansa .riepilogo-msg-intervento-freccia {
+    transform: rotate(180deg);
+}
+
+/* REALE (non test): lo sfondo intero cambia, rosso finché la posizione
+   non è ricevuta, verde appena arriva. */
+.riepilogo-msg-intervento-tab.in-attesa:not(.test) {
+    background: rgba(175, 43, 30, 0.22);
+    border-bottom: 2px solid var(--danger-color);
+}
+
+.riepilogo-msg-intervento-tab.ricevuto:not(.test) {
+    background: rgba(76, 217, 74, 0.22);
+    border-bottom: 2px solid #4cd94c;
+}
+
+.riepilogo-msg-intervento-tab.in-attesa:not(.test) .riepilogo-msg-intervento-testo,
+.riepilogo-msg-intervento-tab.in-attesa:not(.test) .riepilogo-msg-intervento-anno {
+    color: var(--danger-color);
+}
+
+.riepilogo-msg-intervento-tab.ricevuto:not(.test) .riepilogo-msg-intervento-testo,
+.riepilogo-msg-intervento-tab.ricevuto:not(.test) .riepilogo-msg-intervento-anno {
+    color: #4cd94c;
+}
+
+/* TEST: lo sfondo resta SEMPRE viola (non cambia con la posizione) — è
+   solo il TESTO a dire se la posizione è arrivata: giallo in attesa,
+   verde quando ricevuta. Da archiviato lo sfondo diventa viola scuro,
+   indipendentemente dalla posizione — una conversazione di prova chiusa. */
+.riepilogo-msg-intervento-tab.test {
+    background: rgba(168, 85, 247, 0.22);
+    border-bottom: 2px solid #a855f7;
+}
+
+.riepilogo-msg-intervento-tab.test.in-attesa .riepilogo-msg-intervento-testo,
+.riepilogo-msg-intervento-tab.test.in-attesa .riepilogo-msg-intervento-anno {
+    color: var(--primary-color);
+}
+
+.riepilogo-msg-intervento-tab.test.ricevuto .riepilogo-msg-intervento-testo,
+.riepilogo-msg-intervento-tab.test.ricevuto .riepilogo-msg-intervento-anno {
+    color: #4cd94c;
+}
+
+.riepilogo-msg-voce.archiviata .riepilogo-msg-intervento-tab.test {
+    background: #3c1361;
+    border-bottom-color: #3c1361;
+}
+
 /* Checkbox "Test" nel form di invio, sopra i pulsanti WhatsApp/Telegram.
    Evidenziata in verde quando spuntata: deve saltare all'occhio PRIMA di
    premere Invia, non essere un dettaglio che si nota solo dopo. */

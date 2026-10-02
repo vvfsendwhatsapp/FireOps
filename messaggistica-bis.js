@@ -81,7 +81,16 @@ document.addEventListener("DOMContentLoaded", () => {
         return primaParola.slice(0, 3).toUpperCase() + "DR";
     }
 
-    function costruisciIdRicerca(numeroIntervento, annoIntervento, sigla) {
+    function costruisciIdRicerca(numeroIntervento, annoIntervento, sigla, eTest) {
+        // Un invio di prova porta "TEST" scritto nell'ID stesso, non solo
+        // nel tab del riepilogo: altrimenti l'ID Ricerca di un test è
+        // indistinguibile da quello di un intervento vero (sono entrambi
+        // solo cifre). Le cifre di data/ora restano (tolto il prefisso
+        // "TEST"), così l'ID resta comunque unico fra più test ravvicinati.
+        if (eTest) {
+            const soloCifre = String(numeroIntervento).replace(/\D/g, "");
+            return `TEST${soloCifre}_${annoIntervento}_${sigla}`;
+        }
         // 8 cifre (non più 6): stessa convenzione del tab a sinistra nel
         // riepilogo (vedi formattaNumeroIntervento) — un intervento mostrato
         // come "00000456" nel tab deve corrispondere a "00000456" nell'ID
@@ -93,9 +102,9 @@ document.addEventListener("DOMContentLoaded", () => {
     // URL reale confermato del locator pubblicato su GitHub Pages.
     const URL_BASE_LOCATOR = "https://vvfsendwhatsapp.github.io/FireOps/locator.html";
 
-    function generaLinkLocator(comandoObj, numeroIntervento, annoIntervento, lingua) {
+    function generaLinkLocator(comandoObj, numeroIntervento, annoIntervento, lingua, eTest) {
         const sigla = siglaComando(comandoObj);
-        const id = costruisciIdRicerca(numeroIntervento, annoIntervento, sigla);
+        const id = costruisciIdRicerca(numeroIntervento, annoIntervento, sigla, eTest);
         // "sede" non serve più: il Comando è già nel parametro "comando",
         // non ha senso ripeterlo.
         const parametri = new URLSearchParams({
@@ -115,7 +124,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!comandoObj) return "";
 
         const anno = selectAnnoIntervento ? selectAnnoIntervento.value : new Date().getFullYear();
-        return generaLinkLocator(comandoObj, inputNumeroIntervento.value, anno, lingua);
+        const eTest = !!(chkMsgTest && chkMsgTest.checked);
+        return generaLinkLocator(comandoObj, inputNumeroIntervento.value, anno, lingua, eTest);
     }
 
     function initLinkCoordinateUI() {
@@ -1188,7 +1198,7 @@ Koordináták küldéséhez:
             numeroTelefono: numero,
             lingua: (hiddenLinguaMsg && hiddenLinguaMsg.value) || "",
             linkCoordinateAttivo: linkAttivo,
-            idRicerca: (linkAttivo && numeroInt) ? costruisciIdRicerca(numeroInt, annoInt, sigla) : "",
+            idRicerca: (linkAttivo && numeroInt) ? costruisciIdRicerca(numeroInt, annoInt, sigla, eTest) : "",
             numeroIntervento: numeroInt,
             annoIntervento: annoInt,
             timestamp: new Date().toISOString(),
@@ -1969,20 +1979,29 @@ Koordináták küldéséhez:
         // un'informazione operativa su cui regolarsi.
         if (haIntervento) {
             const tabIntervento = document.createElement("div");
-            const classeStato = eTest ? "test" : (ricevuto ? "ricevuto" : "in-attesa");
+            // Entrambe le classi insieme (non più l'una esclusiva
+            // dell'altra): un Test porta SEMPRE "test" come colore di
+            // sfondo, ma "ricevuto"/"in-attesa" resta accanto per colorare
+            // il solo TESTO in giallo o verde secondo la posizione — per i
+            // messaggi reali invece è l'intero sfondo a cambiare fra rosso
+            // e verde, senza "test".
+            const classeStato = (eTest ? "test " : "") + (ricevuto ? "ricevuto" : "in-attesa");
             tabIntervento.className = "riepilogo-msg-intervento-tab " + classeStato;
             tabIntervento.tabIndex = 0;
             tabIntervento.setAttribute("role", "button");
             tabIntervento.title = `Intervento N. ${formattaNumeroIntervento(primario.NumeroIntervento)} Anno ${primario.AnnoIntervento || "-"}`
-                + (eTest ? " (TEST)" : (ricevuto ? " — posizione ricevuta" : " — posizione non ricevuta"))
+                + (eTest ? " (TEST)" : "")
+                + (ricevuto ? " — posizione ricevuta" : " — posizione non ricevuta")
                 + " — clic per aprire/chiudere";
-            // Due blocchi verticali separati (numero sopra, anno sotto),
-            // non un'unica striscia lunga "numero / anno": con un numero
-            // a 8 cifre la striscia unica diventava troppo lunga per
-            // leggersi a colpo d'occhio nella fascia stretta.
+            // Due blocchi di testo (numero e anno) in orizzontale, più la
+            // freccia a destra che indica la direzione dell'azione: ▼
+            // quando è chiuso (un clic apre verso il basso), ▲ quando è
+            // aperto (un clic richiude verso l'alto) — la rotazione la fa
+            // il CSS sulla classe "espansa" della riga, qui basta il glifo.
             tabIntervento.innerHTML = `
                 <span class="riepilogo-msg-intervento-testo">${formattaNumeroIntervento(primario.NumeroIntervento)}</span>
                 <span class="riepilogo-msg-intervento-anno">${primario.AnnoIntervento || "-"}</span>
+                <span class="riepilogo-msg-intervento-freccia">▼</span>
             `;
             div.insertBefore(tabIntervento, corpo);
 
@@ -1992,6 +2011,16 @@ Koordináták küldéséhez:
             corpo.hidden = true;
             function apriChiudiCorpo() {
                 const staAprendo = corpo.hidden;
+                // Un solo gruppo espanso alla volta: aprendo questo, tutti
+                // gli altri già aperti nell'elenco si richiudono da soli.
+                if (staAprendo) {
+                    corpoRiepilogoMsg.querySelectorAll(".riepilogo-msg-voce.espansa").forEach(altraRiga => {
+                        if (altraRiga === div) return;
+                        altraRiga.classList.remove("espansa");
+                        const corpoAltraRiga = altraRiga.querySelector(".riepilogo-msg-voce-corpo");
+                        if (corpoAltraRiga) corpoAltraRiga.hidden = true;
+                    });
+                }
                 corpo.hidden = !staAprendo;
                 div.classList.toggle("espansa", staAprendo);
                 // La mappa (se già creata) può ritrovarsi con una misura
