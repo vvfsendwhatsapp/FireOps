@@ -361,6 +361,19 @@
             </section>
         </div>
 
+        <!-- TRIAGE SCHEDE DIFFERIBILI (solo BIS) -->
+        <section id="differibili" class="page-section">
+            <div class="pagina-box pagina-box-larga">
+                <div class="pagina-box-header pagina-box-header-con-nota">
+                    <p class="pagina-nota pagina-nota-inline">Carica le schede differibili sotto un CODEM,
+                        raggruppale in settori e stampa carta e tabella.</p>
+                    <button class="btn-toggle-radar btn-fullscreen-pagina" type="button"
+                        title="Espandi a schermo intero">⛶ Espandi</button>
+                </div>
+                <div id="diff-app"></div>
+            </div>
+        </section>
+
         <!-- HOME -->
         <section id="homepage" class="page-section">
             <p class="pagina-nota">
@@ -1327,7 +1340,7 @@
             const MODULI = [
                 "fireops-core.js",   // nucleo condiviso: deve precedere gli altri
                 "schede-bis.js",     // BIS: elenco pagine
-                "script-bis.js",     // BIS: con link invio coordinate in Messaggistica
+                "script.js",     //con link invio coordinate in Messaggistica
                 "messaggistica-bis.js", // BIS: Messaggistica estratta in modulo a sé, dopo script-bis.js
                 // (che espone window.FireOpsComandi/window.FireOps prima che serva qui)
                 "turnario.js",
