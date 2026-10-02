@@ -2353,20 +2353,36 @@ function disegnaGraficoAltimetria(geojson) {
 
     // Rende cliccabili telefoni, email e link senza sapere in quale campo
     // del JSON si trovano
+    // Telefoni ed email diventano testi copiabili, come nel resto dell'app.
+    // Il popup è una stringa HTML e non un elemento già nel DOM: il valore
+    // da copiare viaggia in data-copia, il clic lo gestisce il listener sotto.
+    // Restano link solo gli indirizzi web, che vanno davvero aperti.
     function valoreFormattato(valore) {
         const testo = String(valore === null || valore === undefined ? "" : valore).trim();
         if (!testo) return "—";
+        const attributo = s => testoSicuro(s).replace(/"/g, "&quot;");
+
         if (/^https?:\/\//i.test(testo)) {
-            return `<a href="${testoSicuro(testo)}" target="_blank" rel="noopener" class="indirizzo-link">${testoSicuro(testo)}</a>`;
+            return `<a href="${attributo(testo)}" target="_blank" rel="noopener" class="indirizzo-link">${testoSicuro(testo)}</a>`;
         }
         if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(testo)) {
-            return `<a href="mailto:${testoSicuro(testo)}" class="indirizzo-link">${testoSicuro(testo)}</a>`;
+            return `<span class="email-cliccabile" data-copia="${attributo(testo)}" title="Clicca per copiare">${testoSicuro(testo)}</span>`;
         }
         if (/^\+?[\d\s./-]{6,}$/.test(testo) && /\d{5,}/.test(testo.replace(/\D/g, ""))) {
-            return `<a href="tel:${testoSicuro(testo.replace(/[^\d+]/g, ""))}" class="indirizzo-link">${testoSicuro(testo)}</a>`;
+            // Si mostra com'è scritto, si copia senza spazi: pronto da incollare
+            return `<span class="telefono-cliccabile" data-copia="${attributo(testo.replace(/\s+/g, ""))}" title="Clicca per copiare">${testoSicuro(testo)}</span>`;
         }
         return testoSicuro(testo);
     }
+
+    // Un solo listener per tutti i popup della carta (Reparti Volo e futuri):
+    // basta che il testo abbia data-copia
+    document.addEventListener("click", (e) => {
+        const voce = e.target.closest("#coord-mappa [data-copia]");
+        if (!voce) return;
+        e.preventDefault();
+        copiaTestoConFeedback(e, voce.dataset.copia);
+    });
 
     function apriModaleRepartiVolo(html) {
         if (!modaleRepartiVolo || !contenutoRepartiVolo) return;

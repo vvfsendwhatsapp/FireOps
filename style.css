@@ -7682,6 +7682,18 @@ select:focus {
     color: #4cd94c;
 }
 
+/* Nei popup Leaflet il fondo è bianco: l'azzurro chiaro dei testi
+   copiabili e il giallo dell'hover lì non si leggono */
+.leaflet-popup-content .telefono-cliccabile,
+.leaflet-popup-content .email-cliccabile {
+    color: #0a6ea8;
+}
+
+.leaflet-popup-content .telefono-cliccabile:hover,
+.leaflet-popup-content .email-cliccabile:hover {
+    color: #AF2B1E;
+}
+
 /* ==========================================================
    ==========================================================
    RESPONSIVE
