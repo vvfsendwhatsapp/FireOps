@@ -1330,6 +1330,12 @@ Koordináták küldéséhez:
         return Number(String(v).replace(",", "."));
     }
 
+    // Confronto tollerante fra ID: nome colonna diverso, spazi, maiuscole.
+    function idDi(riga) {
+        const v = riga && (riga.IdRicerca ?? riga.idRicerca ?? riga.ID_Ricerca ?? riga.id ?? "");
+        return String(v).trim().toUpperCase();
+    }
+
     // Ultime 3-4 cifre visibili, il resto mascherato con dei pallini — mai
     // il numero completo in un riepilogo che può restare a schermo in sala.
     function maschera(numero) {
@@ -2377,16 +2383,16 @@ Koordináták küldéséhez:
             // Unione delle posizioni di TUTTI i membri del gruppo: un
             // intervento con due invii (es. WhatsApp + Telegram) mostra le
             // posizioni arrivate da entrambi i link, non solo da uno.
-            const idRicercaDelGruppo = new Set(gruppo.messaggi.map(m => m.IdRicerca));
-            const posizioniGruppo = posizioni.filter(p => idRicercaDelGruppo.has(p.IdRicerca));
+            const idRicercaDelGruppo = new Set(gruppo.messaggi.map(idDi));
+            const posizioniGruppo = posizioni.filter(p => idRicercaDelGruppo.has(idDi(p)));
 
             // La firma cambia se cambia QUALSIASI cosa rilevante in
             // QUALUNQUE membro del gruppo: Archiviata, Test, o il numero
             // di posizioni ricevute per quel singolo invio.
             const firma = gruppo.messaggi
                 .map(m => {
-                    const posizioniDelMembro = posizioni.filter(p => p.IdRicerca === m.IdRicerca);
-                    return (m.IdRicerca || "") + ":" + firmaRighePosizione(posizioniDelMembro)
+                const posizioniDelMembro = posizioni.filter(p => idDi(p) === idDi(m));
+                return idDi(m) + ":" + firmaRighePosizione(posizioniDelMembro)
                         + ":arch:" + String(m.Archiviata).toUpperCase()
                         + ":test:" + String(m.Test).toUpperCase();
                 })
