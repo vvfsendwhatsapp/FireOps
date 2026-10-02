@@ -1252,9 +1252,9 @@ html.comando-gia-scelto #modal-comando {
 }
 
 .riepilogo-msg-test-check:has(input:checked) {
-    background: rgba(76, 217, 74, 0.12);
-    border-color: #4cd94c;
-    color: #4cd94c;
+    background: rgba(168, 85, 247, 0.12);
+    border-color: #a855f7;
+    color: #a855f7;
     font-weight: bold;
 }
 
