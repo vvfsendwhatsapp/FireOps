@@ -7606,6 +7606,51 @@ select:focus {
     color: #121212;
 }
 
+/* Spunta "Test" nel form Messaggistica: stesso guscio dei pulsanti vicini
+   (Con/Senza, Pulisci). Il selettore parte da .pagina-box per battere
+   ".pagina-box label", che altrimenti la rende un blocco senza bordo. */
+.pagina-box label.riepilogo-msg-test-check {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    height: 35px;
+    margin: 0;
+    padding: 0 8px;
+    box-sizing: border-box;
+    background: var(--dark-color);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 13px;
+    line-height: 1;
+    text-transform: none;
+    color: var(--text-main);
+    cursor: pointer;
+    transition: background .2s, border-color .2s, color .2s;
+}
+
+.pagina-box label.riepilogo-msg-test-check:hover {
+    border-color: var(--primary-color);
+}
+
+/* Spuntata: bordo e fondo viola, lo stesso colore dei messaggi Test nel riepilogo */
+.pagina-box label.riepilogo-msg-test-check:has(input:checked) {
+    background: rgba(168, 85, 247, .15);
+    border-color: #a855f7;
+    color: #a855f7;
+    font-weight: bold;
+}
+
+.pagina-box label.riepilogo-msg-test-check input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    padding: 0;
+    accent-color: #a855f7;
+    cursor: pointer;
+}
+
 /* ==========================================================
    ==========================================================
    RESPONSIVE
