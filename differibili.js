@@ -71,16 +71,13 @@ const RIFRESCO_MS = 120000;         // la DR segue le emergenze in corso
    quindi si legge la descrizione. */
 /* Una voce per ogni tipologia. DESCRIZIONE_TRIAGE arriva come
    "Alberi/tralicci caduti o pericolanti - SOLO SK": il suffisso " - SOLO SK"
-   è uguale per tutte le differibili e non dice niente, quindi si toglie.
-   Il codice davanti ("0001 - Soccorso a persona…") viene da CODICI_TIPOLOGIA:
-   l'export non ne porta uno (COD_TRIAGE sono solo le prime quattro lettere
-   della descrizione). Una tipologia che non è in tabella resta senza codice. */
-const CODICI_TIPOLOGIA = {
-  'Soccorso a persona (per soccorso tecnico)': '0001'
-  // 'Alberi/tralicci caduti o pericolanti': '00xx',
-  // 'Crolli/dissesti/cedimenti': '00xx',
-  // 'Allagamenti/esondazioni': '00xx',
-};
+   è uguale per tutte le differibili e non dice niente, quindi si toglie. */
+/* PRIORITÀ: una differibile che parla di persone o di soccorso non è una
+   differibile come le altre. Si guarda la tipologia e le note brevi
+   (ADD_INFO); il controllo è sulla parola intera. */
+const RE_PRIORITA = /\b(persona|persone|soccorso)\b/i;
+const prioritaria = s => RE_PRIORITA.test([s.DESCRIZIONE_TRIAGE, s.ADD_INFO].filter(Boolean).join(' '));
+
 const COLORI_NOTI = [
   {re:/alber|tralic/i, c:'#2e7d32'}, {re:/croll|disses|ceden/i, c:'#8d5a3c'},
   {re:/allag|esond/i, c:'#1e88e5'}, {re:/soccorso a persona/i, c:'#d81b60'}];
@@ -91,12 +88,11 @@ function categoria(s){
   const tutto = String(s.DESCRIZIONE_TRIAGE || '').trim();
   if (cacheTipi.has(tutto)) return cacheTipi.get(tutto);
   const desc = tutto.replace(/\s*-?\s*SOLO\s+SK\s*$/i, '').replace(/^-\s*/, '').trim();
-  const cod = CODICI_TIPOLOGIA[desc] || '';
   let h = 0;
   for (const ch of desc) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
   const noto = COLORI_NOTI.find(x => x.re.test(desc));
   const c = !desc ? '#9e9e9e' : noto ? noto.c : COLORI_TIPO[h % COLORI_TIPO.length];
-  const n = !desc ? 'Tipologia non indicata' : cod ? `${cod} - ${desc}` : desc;
+  const n = desc || 'Tipologia non indicata';
   const t = {k: tutto || '—', c, n};
   cacheTipi.set(tutto, t);
   return t;
@@ -530,9 +526,9 @@ async function leggiPerCodem(id, azione, foglio, colonna, codem, emergenze, arch
    quando la si apre o col tasto destro, e resta in memoria. Per la stampa
    si leggono intere le sole schede da stampare. */
 const CAMPI_PUNTI = ['CODEM', 'ID_CONTATTO', 'ALTROENTE_IDSCHEDA', 'CITTA', 'LAT', 'LON',
-  'SHAPE', 'RMAX', 'RMIN', 'ANGOLO', 'DATA_INS', 'DESCRIZIONE_TRIAGE', 'DIFFERIBILE', 'GRUPPO'];
+  'SHAPE', 'RMAX', 'RMIN', 'ANGOLO', 'DATA_INS', 'DESCRIZIONE_TRIAGE', 'DIFFERIBILE', 'GRUPPO', 'ADD_INFO'];
 /* Lettere delle stesse colonne nel foglio Schede (A=CODEM, poi CAMPI, poi servizio). */
-const COLONNE_PUNTI = 'A, B, C, L, O, P, Q, R, S, T, V, W, X, Z';
+const COLONNE_PUNTI = 'A, B, C, K, L, O, P, Q, R, S, T, V, W, X, Z';
 const daRighe = r => (r && r.righe) ? r.righe.map(v => {
   const o = {}; r.campi.forEach((k, i) => { o[k] = v[i] == null ? '' : String(v[i]); }); return o;
 }) : (r || []);
@@ -762,6 +758,7 @@ function avvia(sezione){
   const livSchede = L.layerGroup().addTo(map);
   const livScelta = L.layerGroup().addTo(map);
   const livCluster = L.layerGroup().addTo(map);   // badge dei punti aggregati
+  const livPriorita = L.layerGroup().addTo(map);  // aloni rossi delle schede con persone
 
   $('bSfondo').onclick = () => {
     map.removeLayer(sfondi[iSfondo].l);
@@ -817,6 +814,7 @@ function avvia(sezione){
     const la = num(s.LAT).toFixed(6), lo = num(s.LON).toFixed(6);
     return `<div class="diff-pop">
       <b style="color:${categoria(s).c}">${esc(categoria(s).n)}</b>
+      ${prioritaria(s) ? '<span class="diff-badge">⚠ PERSONE / SOCCORSO</span>' : ''}
       ${s.DIFFERIBILE && s.DIFFERIBILE !== 'S' ? '<span class="diff-badge">non differibile</span>' : ''}
       <div>${esc(indirizzo(s))}</div>
       <div>${esc(s.CITTA)}${s.DISTRETTO ? ' — ' + esc(s.DISTRETTO) : ''}</div>
@@ -865,8 +863,11 @@ function avvia(sezione){
       if (!pile.has(k)) pile.set(k, []);
       pile.get(k).push(x);
     });
-    pile.forEach(el => el.forEach((x, i) =>
-      x.m.setLatLng(offsetPila(num(x.s.LAT), num(x.s.LON), i, el.length))));
+    pile.forEach(el => el.forEach((x, i) => {
+      const p = offsetPila(num(x.s.LAT), num(x.s.LON), i, el.length);
+      x.m.setLatLng(p);
+      if (x.alone) x.alone.setLatLng(p);
+    }));
   }
   /* ---------------------------- aggregazione ----------------------------
      Sotto lo zoom SOGLIA_CLUSTER i punti vicini sullo schermo si fondono in
@@ -882,7 +883,10 @@ function avvia(sezione){
     livCluster.clearLayers();
     const z = map.getZoom();
     const vivi = [];
-    marcatori.forEach(x => { if (x.m){ if (!livSchede.hasLayer(x.m)) livSchede.addLayer(x.m); vivi.push(x); } });
+    /* Le schede con persone non finiscono mai dentro un badge: restano
+       sempre visibili una per una, con il loro alone. */
+    marcatori.forEach(x => { if (x.m){ if (!livSchede.hasLayer(x.m)) livSchede.addLayer(x.m);
+      if (!x.alone) vivi.push(x); } });
     if (z >= SOGLIA_CLUSTER) return;
     const celle = new Map();
     vivi.forEach(x => {
@@ -962,6 +966,7 @@ function avvia(sezione){
     if (!x) return;
     if (x.m) livSchede.removeLayer(x.m);
     if (x.area) livAree.removeLayer(x.area);
+    if (x.alone) livPriorita.removeLayer(x.alone);
     marcatori.delete(k);
   }
 
@@ -970,6 +975,12 @@ function avvia(sezione){
     if (conPosizione(s) && passaFiltri(s)){
       x.m = creaMarcatore(s);
       livSchede.addLayer(x.m);
+      if (prioritaria(s)){
+        x.alone = L.marker([num(s.LAT), num(s.LON)], {pane: 'diffEtichette', interactive: false,
+          pmIgnore: true, snapIgnore: true, icon: L.divIcon({className: 'diff-alone', iconSize: [34, 34],
+            iconAnchor: [17, 17], html: '<span></span>'})});
+        livPriorita.addLayer(x.alone);
+      }
       if ($('aree').checked){ x.area = formaLocalizzazione(s); if (x.area) livAree.addLayer(x.area); }
     }
     marcatori.set(chiave(s), x);
@@ -1078,13 +1089,14 @@ function avvia(sezione){
   /* Ridisegno completo: al primo caricamento, al cambio di emergenza o di
      filtri, quando cambia quello che si vuole vedere e non i dati. */
   function disegna(){
-    livSchede.clearLayers(); livAree.clearLayers(); livScelta.clearLayers();
+    livSchede.clearLayers(); livAree.clearLayers(); livScelta.clearLayers(); livPriorita.clearLayers();
     marcatori.clear();
     schede.forEach(metti);
     aggiornaVista();
     disegnaGruppi();
     riepilogo(visibili());
     elencoGruppi();
+    allarme();
   }
 
   /* Rifresco: solo le differenze. Restituisce le schede nuove, per l'avviso. */
@@ -1103,6 +1115,7 @@ function avvia(sezione){
     disegnaGruppi();
     riepilogo(visibili());
     elencoGruppi();
+    allarme(nuove.some(prioritaria));
     return {nuove, cambiate, tolte};
   }
 
@@ -1131,6 +1144,35 @@ function avvia(sezione){
     box._t = setTimeout(() => { box.hidden = true; }, 60000);
   }
 
+  /* ALLARME PERSONE
+     Riquadro rosso fisso sulla carta finché ci sono schede con persone o
+     soccorso nella vista. Si chiude, ma si riapre — lampeggiando — se ne
+     arriva una nuova. "Mostra" porta la carta su di loro. */
+  let allarmeChiuso = new Set();
+  function allarme(nuovaArrivata){
+    const pr = visibili().filter(prioritaria);
+    let box = app.querySelector('.diff-allarme');
+    if (!box){
+      box = document.createElement('div');
+      box.className = 'diff-allarme';
+      app.querySelector('.diff-mapwrap').appendChild(box);
+    }
+    const chiavi = pr.map(chiave);
+    const nonViste = chiavi.filter(k => !allarmeChiuso.has(k));
+    if (!pr.length || !nonViste.length){ box.hidden = true; return; }
+    box.innerHTML = `<b>⚠ ${pr.length} ${pr.length === 1 ? 'scheda' : 'schede'} con PERSONE / SOCCORSO</b>
+      <span>${esc([...new Set(pr.map(s => categoria(s).n))].join(' · '))}</span>
+      <button type="button" class="btn-toggle-radar" data-a="vedi">Mostra</button>
+      <button type="button" class="diff-avviso-x" data-a="x" title="Chiudi">×</button>`;
+    box.hidden = false;
+    box.classList.toggle('lampeggia', !!nuovaArrivata);
+    box.querySelector('[data-a="x"]').onclick = () => { chiavi.forEach(k => allarmeChiuso.add(k)); box.hidden = true; };
+    box.querySelector('[data-a="vedi"]').onclick = () => {
+      const p = pr.filter(conPosizione).map(s => [num(s.LAT), num(s.LON)]);
+      if (p.length) map.fitBounds(L.latLngBounds(p), {padding: [60, 60], maxZoom: 16});
+    };
+  }
+
   function riepilogo(v){
     const conteggi = new Map(), tipi = new Map();
     schede.forEach(s => { const c = categoria(s); tipi.set(c.k, c); conteggi.set(c.k, (conteggi.get(c.k) || 0) + 1); });
@@ -1138,14 +1180,15 @@ function avvia(sezione){
     const inGruppo = v.filter(s => s.GRUPPO).length;
     const nue = new Set(v.map(s => s.ALTROENTE_IDSCHEDA).filter(Boolean)).size;
     const voci = [...tipi.values()].sort((a, b) => conteggi.get(b.k) - conteggi.get(a.k)).map(c =>
-      `<label class="diff-leg"><input type="checkbox" data-cat="${esc(c.k)}"${nascoste.has(c.k) ? '' : ' checked'}>
-        <i style="background:${c.c}"></i><span>${esc(c.n)}</span><b>${conteggi.get(c.k)}</b></label>`).join('');
+      `<label class="diff-leg${RE_PRIORITA.test(c.n) ? ' diff-leg-pr' : ''}"><input type="checkbox" data-cat="${esc(c.k)}"${nascoste.has(c.k) ? '' : ' checked'}>
+        <i style="background:${c.c}"></i><span>${esc(c.n)}</span><b title="schede">${conteggi.get(c.k)}</b></label>`).join('');
     $('riepilogo').innerHTML = `
       <div class="diff-numeri">
         <div><b>${v.length}</b><span>schede</span></div>
         <div><b>${nue}</b><span>schede NUE</span></div>
         <div><b>${inGruppo}</b><span>nei settori</span></div>
       </div>
+      ${v.some(prioritaria) ? `<p class="diff-pr-riga">⚠ ${v.filter(prioritaria).length} con persone / soccorso</p>` : ''}
       ${senza ? `<p class="diff-errore">${senza} senza coordinate: non compaiono sulla carta.</p>` : ''}
       <div class="diff-legenda">${voci || '<p class="pagina-nota">Nessuna scheda per la selezione.</p>'}</div>`;
     $('riepilogo').querySelectorAll('input[data-cat]').forEach(i => {
@@ -1188,7 +1231,9 @@ function avvia(sezione){
       tr.className = 'diff-liv-' + livello + (stessaSelezione(selezione, sel) ? ' sel' : '');
       const n = document.createElement('td');
       n.className = 'diff-tab-nome';
-      n.innerHTML = (colore ? `<i style="background:${esc(colore)}"></i>` : '') + etichetta;
+      const pr = schedeDi(gg).filter(prioritaria).length;
+      n.innerHTML = (colore ? `<i style="background:${esc(colore)}"></i>` : '') + etichetta
+        + (pr ? ` <span class="diff-pr" title="schede con persone / soccorso">⚠ ${pr}</span>` : '');
       n.title = 'Seleziona';
       n.onclick = () => seleziona(sel);
       const c = document.createElement('td');
@@ -2049,8 +2094,8 @@ function avvia(sezione){
       || (a.INDIRIZZO || '').localeCompare(b.INDIRIZZO || '', 'it')
       || (parseInt(a.CIVICO, 10) || 0) - (parseInt(b.CIVICO, 10) || 0));
     const quando = new Date().toLocaleString('it-IT', {timeZone: 'Europe/Rome'});
-    const righe = ord.map((s, i) => `<tr>
-      <td class="dp-n"><span style="background:${categoria(s).c}">${i + 1}</span></td>
+    const righe = ord.map((s, i) => `<tr${prioritaria(s) ? ' class="dp-pr"' : ''}>
+      <td class="dp-n"><span style="background:${categoria(s).c}">${i + 1}</span>${prioritaria(s) ? ' ⚠' : ''}</td>
       <td>${esc(categoria(s).n)}</td>
       <td>${esc(indirizzo(s))}</td>
       <td>${esc(s.CITTA)}${s.DISTRETTO ? '<br><small>' + esc(s.DISTRETTO) + '</small>' : ''}</td>
@@ -2084,7 +2129,7 @@ function avvia(sezione){
     const altezzaPrima = wrap.style.height;
     wrap.style.height = '';
 
-    [livSchede, livAree, livScelta, livGruppi, livCluster].forEach(l => map.removeLayer(l));
+    [livSchede, livAree, livScelta, livGruppi, livCluster, livPriorita].forEach(l => map.removeLayer(l));
     const tmp = L.featureGroup().addTo(map);
     const gg = [].concat(gruppo || []).filter(g => g && g.GEOJSON);
     gg.forEach(g => {
@@ -2129,7 +2174,7 @@ function avvia(sezione){
         const a = 2 * Math.PI * j / n - Math.PI / 2;
         pos = map.layerPointToLatLng(L.point(p.x + r * Math.cos(a), p.y + r * Math.sin(a)));
       }
-      L.marker(pos, {interactive: false, icon: L.divIcon({className: 'diff-num',
+      L.marker(pos, {interactive: false, icon: L.divIcon({className: 'diff-num' + (prioritaria(s) ? ' diff-num-pr' : ''),
         html: `<span style="background:${categoria(s).c}">${i + 1}</span>`,
         iconSize: [22, 22], iconAnchor: [11, 11]})}).addTo(tmp);
     }));
@@ -2146,7 +2191,7 @@ function avvia(sezione){
       segno.remove();
       doc.remove();
       map.removeLayer(tmp);
-      [livGruppi, livAree, livSchede, livScelta, livCluster].forEach(l => map.addLayer(l));
+      [livGruppi, livAree, livSchede, livScelta, livCluster, livPriorita].forEach(l => map.addLayer(l));
       occupato = false;
       setTimeout(() => { map.invalidateSize(); inquadraSettore(); }, 60);
     };

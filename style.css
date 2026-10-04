@@ -2612,7 +2612,7 @@ html.comando-gia-scelto #modal-comando {
   height: 22px; border-radius: 50%; color: #fff; font: bold 11px/1 sans-serif;
   border: 1.5px solid #fff; box-shadow: 0 0 0 1px #000; }
 
-.diff-modale { position: fixed; inset: 0; z-index: 3000; background: rgba(0, 0, 0, .25);
+.diff-modale { position: fixed; inset: 0; z-index: 3000; background: rgba(0, 0, 0, .55);
   display: flex; align-items: center; justify-content: center; }
 .diff-modale[hidden] { display: none; }
 .diff-modale-box { background: var(--dark-color, #1e1e1e); border: 1px solid var(--border-color, #555);
@@ -2775,21 +2775,63 @@ body.diff-prep #diff-stampa-doc { display: block; position: fixed; left: -30000p
 .diff-etichetta-gruppo { cursor: pointer; }
 .diff-etichetta-gruppo.sel span { background: #fdd835; box-shadow: 0 0 0 2px #000, 0 2px 6px rgba(0, 0, 0, .5); }
 
-/* Le regole generali di .pagina-box (etichette maiuscole a blocco, select
-   al 100%) pesano più delle classi del modulo: qui si riportano a misura. */
-#diff-app label { text-transform: none; margin: 0; font-size: 13px; color: var(--text-main); }
-#diff-app .rt-check, #diff-app .diff-check { display: flex; align-items: center; gap: 6px; margin: 4px 0; }
-#diff-app .diff-passo-corpo label { display: block; color: var(--text-muted); }
-#diff-app select.diff-sel-emergenza { width: 380px; min-width: 380px; max-width: 100%; }
-#diff-app select#diff-selComando { width: auto; min-width: 200px; }
-@media (max-width: 760px) { #diff-app select.diff-sel-emergenza { width: 100%; min-width: 0; } }
-
 /* --- Modifica del perimetro: barra Salva/Annulla in alto al centro --- */
 .diff-barra-modifica { position: absolute; z-index: 760; top: 10px; left: 50%; transform: translateX(-50%);
   display: flex; gap: 8px; padding: 6px; border-radius: 8px; background: var(--dark-color, #1e1e1e);
   border: 1.5px solid #fdd835; box-shadow: 0 2px 10px rgba(0, 0, 0, .5); }
 .diff-barra-modifica[hidden] { display: none; }
 .diff-barra-modifica .btn-toggle-radar { height: 32px; padding: 0 12px; }
+
+/* --- Legenda delle tipologie: .pagina-box label (display:block) pesava più
+   di .diff-leg e schiacciava la riga — pallino sparito, numero attaccato. --- */
+#diff-app label.diff-leg { display: grid; grid-template-columns: auto 12px 1fr auto; align-items: center;
+  gap: 8px; padding: 3px 0; margin: 0; cursor: pointer; }
+#diff-app .diff-leg i { display: inline-block; width: 12px; height: 12px; border-radius: 50%;
+  border: 1.5px solid #fff; }
+#diff-app .diff-leg span { min-width: 0; font-variant-numeric: tabular-nums; }
+#diff-app .diff-leg b { text-align: right; min-width: 2.5em; font-variant-numeric: tabular-nums; }
+
+/* Il conteggio è un dato diverso dal nome: pillola grigia a destra, così
+   non può sembrare parte della tipologia. */
+#diff-app .diff-leg b { display: inline-block; padding: 1px 7px; border-radius: 999px;
+  background: rgba(255, 255, 255, .1); border: 1px solid var(--border-color, #555);
+  font-size: 12px; font-weight: bold; text-align: center; }
+
+/* --- PRIORITÀ: schede con persone o soccorso --- */
+/* Alone rosso pulsante attorno al punto sulla carta: non intercetta i clic,
+   che passano al punto sotto. */
+.diff-alone { pointer-events: none !important; }
+.diff-alone span { display: block; width: 100%; height: 100%; border-radius: 50%;
+  border: 3px solid #ff1744; box-shadow: 0 0 8px #ff1744; animation: diffPulsa 1.3s ease-out infinite; }
+@keyframes diffPulsa { 0% { transform: scale(.55); opacity: 1; } 100% { transform: scale(1.35); opacity: 0; } }
+
+/* Allarme fisso sulla carta, in alto a sinistra */
+.diff-allarme { position: absolute; z-index: 720; top: 10px; left: 56px; max-width: min(460px, calc(100% - 120px));
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding: 8px 10px 8px 12px;
+  border-radius: 8px; background: #b71c1c; color: #fff; border: 2px solid #ff5252;
+  box-shadow: 0 3px 14px rgba(0, 0, 0, .55); font-size: 13px; }
+.diff-allarme[hidden] { display: none; }
+.diff-allarme b { flex: 1 1 100%; font-size: 14px; letter-spacing: .3px; }
+.diff-allarme span { flex: 1 1 auto; opacity: .9; font-size: 12px; }
+.diff-allarme .btn-toggle-radar { background: #fff; color: #b71c1c; border-color: #fff; font-weight: bold;
+  padding: 3px 10px; }
+.diff-allarme .diff-avviso-x { color: #fff; }
+.diff-allarme.lampeggia { animation: diffLampo .6s ease-in-out 6; }
+@keyframes diffLampo { 50% { background: #ff1744; box-shadow: 0 0 22px #ff1744; } }
+
+/* Legenda, riepilogo e tabella settori */
+#diff-app .diff-leg-pr span { color: #ff6e6e; font-weight: bold; }
+.diff-pr-riga { margin: 0 0 8px; padding: 5px 8px; border-radius: 6px; background: rgba(183, 28, 28, .25);
+  border: 1px solid #ff5252; color: #ff8a80; font-weight: bold; font-size: 13px; }
+.diff-pr { display: inline-block; margin-left: 4px; padding: 0 6px; border-radius: 999px; background: #b71c1c;
+  color: #fff; font-size: 11px; font-weight: bold; }
+
+/* Stampa: righe evidenziate e numero con anello rosso */
+#diff-stampa-doc .dp-tab tr.dp-pr td { background: #ffe5e5; font-weight: bold; }
+.diff-num-pr span { box-shadow: 0 0 0 2.5px #d50000, 0 0 0 4px #fff !important; }
+@media print {
+  #diff-stampa-doc .dp-tab tr.dp-pr td, .diff-num-pr span { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
 
 /* ==========================================================
    ==========================================================
