@@ -2669,7 +2669,7 @@ body.diff-prep #diff-stampa-doc { display: block; position: fixed; left: -30000p
      stampa va azzerato, o la carta parte a metà pagina. */
   html, body.diff-stampa { margin: 0 !important; padding: 0 !important; height: auto !important;
     min-height: 0 !important; overflow: visible !important; background: #fff !important; }
-  body.diff-stampa #diff-stampa-doc { display: block; position: static; left: auto; width: auto; }
+  body.diff-stampa #diff-stampa-doc { display: block; position: static; left: auto; width: 277mm; }
   #diff-stampa-doc .dp-pagina { page: differibili; break-after: page; }
   #diff-stampa-doc .dp-pagina:last-child { break-after: auto; }
   #diff-stampa-doc .dp-n span, #diff-stampa-doc .diff-num span, .diff-etichetta-gruppo span {

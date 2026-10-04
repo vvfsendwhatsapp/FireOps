@@ -449,7 +449,18 @@ async function fetchConTempo(url, opz){
   const ac = new AbortController();
   const t = setTimeout(() => ac.abort(), ATTESA_MAX);
   try { return await fetch(url, Object.assign({}, opz, {signal: ac.signal})); }
-  catch(e){ throw e.name === 'AbortError' ? new Error('nessuna risposta in ' + ATTESA_MAX / 1000 + ' s') : e; }
+  catch(e){
+    /* "Failed to fetch" da solo non dice niente: si aggiunge DA DOVE.
+       Foglio → di solito non è condiviso "chiunque abbia il link" (Google
+       risponde con la pagina di accesso, senza permessi CORS).
+       Apps Script → di solito una versione pubblicata che va in errore o
+       chiede un'autorizzazione: anche lì la risposta è una pagina HTML. */
+    if (e.name === 'AbortError') throw new Error('nessuna risposta in ' + ATTESA_MAX / 1000 + ' s');
+    const da = /docs\.google\.com/.test(url) ? 'foglio Google: controlla che sia condiviso "chiunque abbia il link"'
+      : /script\.google/.test(url) ? 'Apps Script: controlla le Esecuzioni e che il deployment sia pubblicato'
+      : new URL(url).host;
+    throw new Error(`${e.message} — ${da}`);
+  }
   finally { clearTimeout(t); }
 }
 
@@ -1979,11 +1990,17 @@ function avvia(sezione){
     stampa(visibili(), em ? em.CODEM : 'Vista corrente', null);
   };
 
+  /* Si stampa solo quando le tile della vista di stampa sono arrivate:
+     si controlla lo stato del livello, non un evento che potrebbe essere
+     già passato. Massimo ms, poi si stampa comunque. */
   const attendiTile = ms => new Promise(ok => {
-    let fatto = false;
-    const fine = () => { if (!fatto){ fatto = true; ok(); } };
-    sfondi[iSfondo].l.once('load', fine);
-    setTimeout(fine, ms);
+    const l = sfondi[iSfondo].l, t0 = Date.now();
+    const giro = () => {
+      const carica = typeof l.isLoading === 'function' ? l.isLoading() : !!l._loading;
+      if (!carica || Date.now() - t0 > ms) return setTimeout(ok, 250);
+      setTimeout(giro, 150);
+    };
+    setTimeout(giro, 200);
   });
 
   async function stampa(lista, titolo, gruppo){
@@ -2116,7 +2133,7 @@ function avvia(sezione){
         html: `<span style="background:${categoria(s).c}">${i + 1}</span>`,
         iconSize: [22, 22], iconAnchor: [11, 11]})}).addTo(tmp);
     }));
-    await attendiTile(2500);
+    await attendiTile(6000);
 
     const titoloPrima = document.title;
     document.title = ['Differibili', ord[0].CODEM, titolo.replace(/[^A-Za-z0-9]+/g, '-')].join('_');
@@ -2134,13 +2151,11 @@ function avvia(sezione){
       setTimeout(() => { map.invalidateSize(); inquadraSettore(); }, 60);
     };
     window.addEventListener('afterprint', ripristina);
-    /* Nella finestra di stampa il browser rifà l'impaginazione: si rimisura
-       la carta e si ripete l'inquadratura, così resta centrata sul settore. */
-    const rifit = () => {
-      map.invalidateSize({animate: false});
-      if (b && b.isValid()) map.fitBounds(b, {padding: [30, 30], maxZoom: 17, animate: false});
-    };
-    window.addEventListener('beforeprint', rifit, {once: true});
+    /* Niente nuova inquadratura all'apertura della stampa: la finestra di
+       stampa fotografa la pagina subito, e le tile di una vista nuova non
+       farebbero in tempo ad arrivare — la carta usciva bianca. Il foglio è
+       già preparato alla misura esatta della pagina (277 mm, vedi CSS),
+       quindi la vista calcolata prima è quella giusta. */
     window.print();
   }
 
