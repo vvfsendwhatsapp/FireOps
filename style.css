@@ -2784,6 +2784,13 @@ body.diff-prep #diff-stampa-doc { display: block; position: fixed; left: -30000p
 #diff-app select#diff-selComando { width: auto; min-width: 200px; }
 @media (max-width: 760px) { #diff-app select.diff-sel-emergenza { width: 100%; min-width: 0; } }
 
+/* --- Modifica del perimetro: barra Salva/Annulla in alto al centro --- */
+.diff-barra-modifica { position: absolute; z-index: 760; top: 10px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 8px; padding: 6px; border-radius: 8px; background: var(--dark-color, #1e1e1e);
+  border: 1.5px solid #fdd835; box-shadow: 0 2px 10px rgba(0, 0, 0, .5); }
+.diff-barra-modifica[hidden] { display: none; }
+.diff-barra-modifica .btn-toggle-radar { height: 32px; padding: 0 12px; }
+
 /* ==========================================================
    ==========================================================
    MODULI AGGIUNTIVI
