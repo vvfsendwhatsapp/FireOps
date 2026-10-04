@@ -37,7 +37,7 @@ if (NS.Differibili) return;
 
 /* ============================== COSTANTI ============================== */
 
-const URL_BACKEND = 'https://script.google.com/macros/s/AKfycby7ZTvBPlzlKOXqAi8RJEyFIzOGEaNecpDxdNtAvgTLfpaYU-g3afKswzt2g9wZaPr0xg/exec';
+const URL_BACKEND = 'https://script.google.com/macros/s/AKfycbwA2AkQyC8eQGn6ykJbmIvcuyumt_TcU9Ek15CgKIk1A1C7z6vJqYwbXOaaTEHyBe78KA/exec';
 
 /* LETTURE DAL FOGLIO — scelta del Comando: il foglio del backend è
    condiviso "chiunque abbia il link: visualizzatore" e la pagina lo legge
@@ -442,6 +442,17 @@ function pacchetti(id, codem, schede){
 }
 let codaApi = Promise.resolve();
 
+/* Nessuna richiesta può restare appesa: la coda è una sola, e una chiamata
+   che non torna mai fermava tutte quelle dopo — è il "si blocca". */
+const ATTESA_MAX = 25000;
+async function fetchConTempo(url, opz){
+  const ac = new AbortController();
+  const t = setTimeout(() => ac.abort(), ATTESA_MAX);
+  try { return await fetch(url, Object.assign({}, opz, {signal: ac.signal})); }
+  catch(e){ throw e.name === 'AbortError' ? new Error('nessuna risposta in ' + ATTESA_MAX / 1000 + ' s') : e; }
+  finally { clearTimeout(t); }
+}
+
 function api(id, azione, dati){
   const esegui = async () => {
     const tentativi = LETTURE.has(azione) ? 2 : 1;
@@ -449,7 +460,7 @@ function api(id, azione, dati){
     for (let t = 0; t < tentativi; t++){
       if (t) await new Promise(ok => setTimeout(ok, 1200));
       try {
-        const r = await fetch(urlRichiesta(id, azione, dati), {cache: 'no-store'});
+        const r = await fetchConTempo(urlRichiesta(id, azione, dati), {cache: 'no-store'});
         if (!r.ok) throw new Error(`il server ha risposto ${r.status} (${azione})`);
         const j = await r.json();
         if (!j.ok) return Promise.reject(Object.assign(new Error(j.errore || 'errore del server'), {definitivo: 1}));
@@ -472,7 +483,7 @@ function api(id, azione, dati){
 async function gviz(foglio, query){
   const u = `https://docs.google.com/spreadsheets/d/${ID_FOGLIO}/gviz/tq?tqx=out:csv&headers=1`
     + `&sheet=${encodeURIComponent(foglio)}&tq=${encodeURIComponent(query)}&_=${Date.now()}`;
-  const r = await fetch(u, {cache: 'no-store'});
+  const r = await fetchConTempo(u, {cache: 'no-store'});
   if (!r.ok) throw new Error(`foglio ${foglio}: HTTP ${r.status}`);
   const t = (await r.text()).replace(/^\uFEFF/, '');
   if (/^\s*</.test(t)) throw new Error(`foglio ${foglio} non leggibile: va condiviso "chiunque abbia il link"`);
@@ -515,8 +526,19 @@ const daRighe = r => (r && r.righe) ? r.righe.map(v => {
   const o = {}; r.campi.forEach((k, i) => { o[k] = v[i] == null ? '' : String(v[i]); }); return o;
 }) : (r || []);
 
+/* Backend pubblicato più vecchio, senza "punti": si legge la scheda intera
+   come prima. Più lento, ma funziona finché non si pubblica il .gs nuovo. */
+let backendSenzaPunti = false;
 async function leggiSchede(id, codem, emergenze, arch){
-  if (!ID_FOGLIO) return daRighe(await api(id, 'punti', {codem, includiArchiviate: arch}));
+  if (!ID_FOGLIO){
+    if (!backendSenzaPunti){
+      try { return daRighe(await api(id, 'punti', {codem, includiArchiviate: arch})); }
+      catch(e){ if (!/Azione non valida/.test(e.message)) throw e; backendSenzaPunti = true; }
+    }
+    const r = await api(id, 'schede', {codem, includiArchiviate: arch});
+    r.forEach(x => { delete x.HASH; });
+    return r;
+  }
   const elenco = codem ? [codem] : emergenze.map(e => e.CODEM);
   if (!elenco.length) return [];
   return gviz('Schede', `select ${COLONNE_PUNTI} where A matches '${alternanza(elenco)}'`);
@@ -531,6 +553,7 @@ const dettagli = new Map();          // CODEM|ID -> scheda intera
 async function leggiDettaglio(id, s){
   const k = s.CODEM + '|' + s.ID_CONTATTO;
   if (dettagli.has(k)) return dettagli.get(k);
+  if ('NOME' in s) return s;        // già intera (backend senza "punti")
   let d;
   if (ID_FOGLIO){
     const r = await gviz('Schede', `select * where A = '${alternanza([s.CODEM])}' and B = '${alternanza([s.ID_CONTATTO])}'`);
@@ -1247,7 +1270,22 @@ function avvia(sezione){
   }
 
   let vistaDisegnata = null;   // emergenza + ente + archiviate già sulla carta
-  async function ricarica(silenzioso){
+  /* Un solo aggiornamento alla volta: il rifresco automatico che parte
+     mentre il precedente è ancora in volo raddoppiava le chiamate. Chi
+     chiede mentre uno è in corso aspetta quello, poi ne parte uno nuovo. */
+  let ricaricaInCorso = null, ricaricaDiNuovo = false;
+  function ricarica(silenzioso){
+    if (ricaricaInCorso){
+      if (!silenzioso) ricaricaDiNuovo = true;
+      return ricaricaInCorso;
+    }
+    ricaricaInCorso = ricaricaVera(silenzioso).finally(() => {
+      ricaricaInCorso = null;
+      if (ricaricaDiNuovo){ ricaricaDiNuovo = false; ricarica(true); }
+    });
+    return ricaricaInCorso;
+  }
+  async function ricaricaVera(silenzioso){
     if (!id || id.errore) return;
     if (!silenzioso) stato('Aggiornamento…');
     const bA = $('bAggiorna');

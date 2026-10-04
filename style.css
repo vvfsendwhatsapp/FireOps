@@ -2775,6 +2775,15 @@ body.diff-prep #diff-stampa-doc { display: block; position: fixed; left: -30000p
 .diff-etichetta-gruppo { cursor: pointer; }
 .diff-etichetta-gruppo.sel span { background: #fdd835; box-shadow: 0 0 0 2px #000, 0 2px 6px rgba(0, 0, 0, .5); }
 
+/* Le regole generali di .pagina-box (etichette maiuscole a blocco, select
+   al 100%) pesano più delle classi del modulo: qui si riportano a misura. */
+#diff-app label { text-transform: none; margin: 0; font-size: 13px; color: var(--text-main); }
+#diff-app .rt-check, #diff-app .diff-check { display: flex; align-items: center; gap: 6px; margin: 4px 0; }
+#diff-app .diff-passo-corpo label { display: block; color: var(--text-muted); }
+#diff-app select.diff-sel-emergenza { width: 380px; min-width: 380px; max-width: 100%; }
+#diff-app select#diff-selComando { width: auto; min-width: 200px; }
+@media (max-width: 760px) { #diff-app select.diff-sel-emergenza { width: 100%; min-width: 0; } }
+
 /* ==========================================================
    ==========================================================
    MODULI AGGIUNTIVI
