@@ -37,7 +37,7 @@ if (NS.Differibili) return;
 
 /* ============================== COSTANTI ============================== */
 
-const URL_BACKEND = 'https://script.google.com/macros/s/AKfycby7ZTvBPlzlKOXqAi8RJEyFIzOGEaNecpDxdNtAvgTLfpaYU-g3afKswzt2g9wZaPr0xg/exec';
+const URL_BACKEND = 'https://script.google.com/macros/s/AKfycbwA2AkQyC8eQGn6ykJbmIvcuyumt_TcU9Ek15CgKIk1A1C7z6vJqYwbXOaaTEHyBe78KA/exec';
 
 /* LETTURE DAL FOGLIO — scelta del Comando: il foglio del backend è
    condiviso "chiunque abbia il link: visualizzatore" e la pagina lo legge
