@@ -75,7 +75,10 @@ const RIFRESCO_MS = 120000;         // la DR segue le emergenze in corso
 /* PRIORITÀ: una differibile che parla di persone o di soccorso non è una
    differibile come le altre. Si guarda la tipologia e le note brevi
    (ADD_INFO); il controllo è sulla parola intera. */
-const RE_PRIORITA = /\b(persona|persone|soccorso)\b/i;
+/* Parole che rendono una differibile prioritaria: persone coinvolte,
+   soccorso, fuoco, gas. Si cercano come parole intere nella tipologia e
+   nelle note brevi. Stessa lista in differibili.js e differibili-campo.html. */
+const RE_PRIORITA = /\b(persona|persone|soccorso|ferit[oaie]|intrappolat[oaie]|incendi[oa]?|fuoco|fiamme|fumo|esplosion[ei]|fuga\s+(di\s+)?gas|odore\s+(di\s+)?gas|gas)\b/i;
 const prioritaria = s => RE_PRIORITA.test([s.DESCRIZIONE_TRIAGE, s.ADD_INFO].filter(Boolean).join(' '));
 
 const COLORI_NOTI = [
@@ -872,6 +875,7 @@ function avvia(sezione){
         <span>${esc(s.CODEM)}${g ? ' · <b>' + esc(codiceDi(g)) + '</b>' : ''}</span>
       </div>
       ${valutazioneHtml(s)}
+      ${valutabileDaSala(s) ? '<a href="#" class="diff-valuta-sala">📝 Valuta dalla Sala</a><br>' : ''}
       <a href="https://www.google.com/maps?q=${la},${lo}" target="_blank" rel="noopener">Apri in Google Maps</a>
     </div>`;
   }
@@ -890,6 +894,100 @@ function avvia(sezione){
       ${v.FOTO_ID ? `<div class="diff-foto" data-codem="${esc(v.CODEM)}" data-ass="${esc(v.ID_ASS)}">📷 caricamento della foto…</div>` : ''}
       ${sbloccabile(s) ? '<a href="#" class="diff-sblocca">🔓 Sblocca: il campo potrà rivalutarla</a>' : ''}</div>`;
   }
+  /* VALUTAZIONE DIRETTA DALLA SALA
+     Per le schede prioritarie (persone, soccorso, fuoco, gas) la Sala può
+     compilare la valutazione senza aspettare il campo: stesso modulo e
+     stesse regole (tipo, campi, enti, priorità, esito), firmata col
+     nominativo dell'operatore. Vale una volta sola, come dal campo. */
+  const valutabileDaSala = s => !!(FA() && !s.VAL && prioritaria(s) && id && id.ruolo === 'COMANDO'
+    && (emergenze.find(e => e.CODEM === s.CODEM) || {}).STATO === 'ATTIVA');
+  let boxVal = null;
+  function valutaDaSala(s){
+    const A = FA();
+    if (!A) return;
+    if (!boxVal){
+      boxVal = document.createElement('div');
+      boxVal.className = 'diff-modale';
+      boxVal.innerHTML = `<div class="diff-modale-box diff-vsala">
+        <div class="diff-modale-titolo">📝 Valutazione dalla Sala</div>
+        <div class="diff-vsala-scheda"></div>
+        <label>Esito<select data-f="esito"></select></label>
+        <div data-blocco="tipo"><span class="diff-vsala-lab">Tipo</span><div class="diff-vsala-scelte" data-f="tipi"></div></div>
+        <div data-f="campi"></div>
+        <div data-blocco="prio"><span class="diff-vsala-lab">Priorità (0 nessun intervento · 5 urgentissima)</span>
+          <div class="diff-vsala-scelte" data-f="prio"></div><small data-f="prioNome"></small></div>
+        <label>Note<textarea data-f="note" maxlength="1000" rows="3"></textarea></label>
+        <label>Nominativo dell'operatore *<input type="text" data-f="nominativo" maxlength="80"></label>
+        <p class="diff-errore" data-f="err"></p>
+        <div class="diff-modale-azioni">
+          <button type="button" class="btn-toggle-radar" data-a="no">Annulla</button>
+          <button type="button" class="btn-whatsapp" data-a="ok">💾 Salva valutazione</button></div>
+      </div>`;
+      app.appendChild(boxVal);
+    }
+    const q = k => boxVal.querySelector(`[data-f="${k}"]`);
+    const st = {tipo: A.suggerisci(s.DESCRIZIONE_TRIAGE), prio: 4, det: {}};
+    boxVal.querySelector('.diff-vsala-scheda').textContent =
+      `${categoria(s).n} · ${indirizzo(s) || ''} ${s.CITTA || ''}${s.ADD_INFO ? ' · ' + s.ADD_INFO : ''}`;
+    q('esito').innerHTML = A.ESITI.map(e => `<option value="${e.k}">${esc(e.n)}</option>`).join('');
+    q('note').value = '';
+    try { q('nominativo').value = localStorage.getItem('fireops_sala_nominativo') || ''; } catch(e){}
+    q('err').textContent = '';
+    const disegnaV = () => {
+      const dup = q('esito').value === 'duplicato';
+      boxVal.querySelector('[data-blocco="tipo"]').hidden = dup;
+      boxVal.querySelector('[data-blocco="prio"]').hidden = dup;
+      q('campi').hidden = dup;
+      q('tipi').innerHTML = A.TIPI.map(t => `<button type="button" data-t="${t.k}" class="${t.k === st.tipo ? 'attivo' : ''}">${t.ic} ${esc(t.n)}</button>`).join('');
+      q('tipi').querySelectorAll('button').forEach(b => b.onclick = () => { st.tipo = b.dataset.t; st.det = {}; disegnaV(); });
+      q('prio').innerHTML = [0, 1, 2, 3, 4, 5].map(p => `<button type="button" data-p="${p}"
+        style="${p === st.prio ? `background:${A.COLORI[p]};color:#fff;border-color:${A.COLORI[p]}` : ''}">${p ? '★'.repeat(p) : '0'}</button>`).join('');
+      q('prio').querySelectorAll('button').forEach(b => b.onclick = () => { st.prio = +b.dataset.p; disegnaV(); });
+      q('prioNome').textContent = A.PRIORITA[st.prio];
+      q('campi').innerHTML = A.campi(st.tipo).map(c => {
+        const v = st.det[c.k];
+        const h = c.t === 'scelta' ? `<select data-c="${c.k}"><option value="">—</option>${c.v.map(o => `<option${v === o ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select>`
+          : c.t === 'multi' ? `<div class="diff-vsala-scelte">${c.v.map(o => `<button type="button" data-m="${c.k}" data-v="${esc(o)}" class="${(v || []).includes(o) ? 'attivo' : ''}">${esc(o)}</button>`).join('')}</div>`
+          : c.t === 'si_no' ? `<div class="diff-vsala-scelte">${['si', 'no'].map(o => `<button type="button" data-sn="${c.k}" data-v="${o}" class="${v === o ? 'attivo' : ''}">${o === 'si' ? 'Sì' : 'No'}</button>`).join('')}</div>`
+          : c.t === 'numero' ? `<input type="number" min="0" step="any" data-c="${c.k}" value="${esc(v == null ? '' : v)}">`
+          : `<textarea data-c="${c.k}" rows="2">${esc(v || '')}</textarea>`;
+        return `<div class="diff-vsala-campo"><span class="diff-vsala-lab">${esc(c.n)}${c.obbligatorio ? ' *' : ''}</span>${h}</div>`;
+      }).join('');
+      q('campi').querySelectorAll('[data-c]').forEach(el => el.oninput = el.onchange = () => {
+        st.det[el.dataset.c] = el.type === 'number' ? (el.value === '' ? '' : +el.value) : el.value; });
+      q('campi').querySelectorAll('[data-m]').forEach(b => b.onclick = () => {
+        const a = new Set(st.det[b.dataset.m] || []); a.has(b.dataset.v) ? a.delete(b.dataset.v) : a.add(b.dataset.v);
+        st.det[b.dataset.m] = [...a]; b.classList.toggle('attivo'); });
+      q('campi').querySelectorAll('[data-sn]').forEach(b => b.onclick = () => {
+        st.det[b.dataset.sn] = b.dataset.v;
+        q('campi').querySelectorAll(`[data-sn="${b.dataset.sn}"]`).forEach(x => x.classList.toggle('attivo', x === b)); });
+    };
+    q('esito').onchange = disegnaV;
+    disegnaV();
+    const chiudi = () => { boxVal.hidden = true; };
+    boxVal.querySelector('[data-a="no"]').onclick = chiudi;
+    boxVal.querySelector('[data-a="ok"]').onclick = async () => {
+      const dup = q('esito').value === 'duplicato';
+      const nom = q('nominativo').value.trim();
+      if (!nom) return q('err').textContent = 'Indica il nominativo dell\u2019operatore.';
+      const manca = !dup && A.campi(st.tipo).find(c => c.obbligatorio && !String(st.det[c.k] || '').trim());
+      if (manca) return q('err').textContent = `Compila "${manca.n}".`;
+      try { localStorage.setItem('fireops_sala_nominativo', nom); } catch(e){}
+      const b = boxVal.querySelector('[data-a="ok"]');
+      b.disabled = true; b.textContent = '⏳ Salvataggio…';
+      try {
+        await api(id, 'valutaSala', {codem: s.CODEM, idContatto: s.ID_CONTATTO, esito: q('esito').value,
+          tipo: dup ? 'altro' : st.tipo, priorita: dup ? 0 : st.prio, dettagli: dup ? {} : st.det,
+          note: q('note').value.trim(), nominativo: nom});
+        chiudi();
+        await ricarica(true);
+        stato('Valutazione dalla Sala salvata.');
+      } catch(e){ q('err').textContent = 'Non salvata: ' + e.message; }
+      finally { b.disabled = false; b.textContent = '💾 Salva valutazione'; }
+    };
+    boxVal.hidden = false;
+  }
+
   /* Foto della valutazione: privata nel Drive del backend, arriva solo
      attraverso il backend e solo alla Sala. Si tiene in memoria. */
   const fotoCache = new Map();
@@ -1066,6 +1164,8 @@ function avvia(sezione){
         if (a) a.onclick = e => { e.preventDefault(); NS.copiaTesto(e, d.CLI); };
         const sb = ev.popup.getElement().querySelector('.diff-sblocca');
         if (sb) sb.onclick = e => { e.preventDefault(); sbloccaScheda(s); };
+        const vs = ev.popup.getElement().querySelector('.diff-valuta-sala');
+        if (vs) vs.onclick = e => { e.preventDefault(); map.closePopup(); valutaDaSala(d); };
         const ft = ev.popup.getElement().querySelector('.diff-foto');
         if (ft) mostraFoto(ft, ev.popup);
       } catch(e){
@@ -2159,6 +2259,7 @@ function avvia(sezione){
         `https://www.google.com/maps?q=${num(s.LAT)},${num(s.LON)}`, '_blank', 'noopener')}
     ];
     if (sbloccabile(s)) voci.push({et: '🔓 Sblocca la valutazione', f: () => sbloccaScheda(s)});
+    if (valutabileDaSala(s)) voci.push({et: '📝 Valuta dalla Sala', f: () => valutaDaSala(s)});
     if (scrivibile){
       voci.push({t: 'titolo', et: g ? 'In ' + codiceDi(g) : 'Senza settore'});
       altri.forEach(x => voci.push({et: `➜ Sposta in ${codiceDi(x)}`, f: () => spostaScheda(s, x)}));

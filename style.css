@@ -2893,6 +2893,20 @@ body.diff-prep #diff-stampa-doc { display: block; position: fixed; left: -30000p
 .diff-foto-grande img { max-width: 94vw; max-height: 92vh; border-radius: 6px; box-shadow: 0 4px 30px #000; }
 .diff-foto-grande .diff-avviso-x { position: absolute; top: 14px; right: 20px; font-size: 34px; color: #fff; }
 
+/* --- Valutazione diretta dalla Sala (schede prioritarie) --- */
+.diff-vsala { width: min(560px, 94vw); max-height: 90vh; overflow-y: auto; }
+.diff-vsala-scheda { font-size: 12px; color: var(--text-muted); }
+#diff-app .diff-vsala label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-muted); }
+#diff-app .diff-vsala select, #diff-app .diff-vsala input, #diff-app .diff-vsala textarea { width: 100%; padding: 8px;
+  background: var(--dark-color); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px; }
+.diff-vsala-lab { display: block; font-size: 11px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+.diff-vsala-scelte { display: flex; flex-wrap: wrap; gap: 5px; }
+.diff-vsala-scelte button { padding: 6px 9px; border-radius: 5px; border: 1px solid var(--border-color);
+  background: var(--dark-color); color: var(--text-main); cursor: pointer; font-size: 12.5px; }
+.diff-vsala-scelte button.attivo { background: #ffd700; color: #121212; border-color: #ffd700; font-weight: bold; }
+.diff-vsala-campo { margin-bottom: 8px; }
+.diff-vsala [hidden] { display: none !important; }
+
 /* ==========================================================
    ==========================================================
    MODULI AGGIUNTIVI

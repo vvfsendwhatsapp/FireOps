@@ -220,7 +220,10 @@ const conPos = s => isFinite(num(s.LAT)) && isFinite(num(s.LON)) && s.LAT !== ''
 
 /* Stesse regole della Sala: tipologia senza " - SOLO SK", priorità se
    compaiono persone o soccorso, colori fissi per famiglia. */
-const RE_PRIORITA = /\b(persona|persone|soccorso)\b/i;
+/* Parole che rendono una differibile prioritaria: persone coinvolte,
+   soccorso, fuoco, gas. Si cercano come parole intere nella tipologia e
+   nelle note brevi. Stessa lista in differibili.js e differibili-campo.html. */
+const RE_PRIORITA = /\b(persona|persone|soccorso|ferit[oaie]|intrappolat[oaie]|incendi[oa]?|fuoco|fiamme|fumo|esplosion[ei]|fuga\s+(di\s+)?gas|odore\s+(di\s+)?gas|gas)\b/i;
 const prioritaria = s => RE_PRIORITA.test([s.DESCRIZIONE_TRIAGE, s.ADD_INFO].filter(Boolean).join(' '));
 const tipologia = s => String(s.DESCRIZIONE_TRIAGE || '').replace(/\s*-?\s*SOLO\s+SK\s*$/i, '')
   .replace(/^-\s*/, '').trim() || 'Tipologia non indicata';
