@@ -1129,7 +1129,7 @@ function avvia(sezione){
   const marcatori = new Map();          // chiave -> {s, m, area, firma}
   const chiave = s => s.CODEM + '|' + s.ID_CONTATTO;
   const firma = s => CAMPI.map(k => s[k]).join('\u241F') + '\u241F' + (s.GRUPPO || '')
-    + '\u241F' + (s.VAL ? s.VAL.ID_ASS : '') + '\u241F' + (s.GEST ? s.GEST.TS : '');
+    + '\u241F' + (s.VAL ? s.VAL.ID_ASS + '/' + (s.VAL.FOTO_ID || '') : '') + '\u241F' + (s.GEST ? s.GEST.TS : '');
   const chiavePunto = s => num(s.LAT).toFixed(5) + ',' + num(s.LON).toFixed(5);
 
   function passaFiltri(s){
