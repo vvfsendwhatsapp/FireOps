@@ -575,15 +575,39 @@ async function leggiDettaglio(id, s){
 /* Valutazioni dal campo (differibili-assessment.js). Foglio non ancora
    creato o backend vecchio: nessuna valutazione, senza errore. */
 const FA = () => (window.FireOps && window.FireOps.Assessment) || null;
+/* differibili-assessment.js serve anche qui: senza, le valutazioni non si
+   leggono e la Sala non le mostra. Se index-bis.html non lo carica (manca in
+   MODULI) lo si carica da qui, dalla stessa cartella e con la stessa
+   versione di questo file. */
+const assessmentPronto = new Promise(ok => {
+  if (FA()) return ok(true);
+  const io = [...document.scripts].find(x => /differibili\.js(\?|$)/.test(x.src));
+  const v = io && /\?v=([^&]+)/.exec(io.src);
+  const sc = document.createElement('script');
+  sc.src = 'differibili-assessment.js' + (v ? '?v=' + v[1] : '');
+  sc.onload = () => ok(!!FA());
+  sc.onerror = () => { console.warn('[Differibili] differibili-assessment.js non trovato'); ok(false); };
+  document.head.appendChild(sc);
+});
+let avvisoValutazioni = '';
 async function leggiValutazioni(id, codem, emergenze, arch){
+  await assessmentPronto;
   try {
     if (!ID_FOGLIO) return await api(id, 'valutazioni', {codem, includiArchiviate: arch});
     const elenco = codem ? [codem] : emergenze.map(e => e.CODEM);
     if (!elenco.length) return [];
     const r = await gviz('Assessment', `select * where B matches '${alternanza(elenco)}'`);
     r.forEach(v => { try { v.DETTAGLI = JSON.parse(v.DETTAGLI || '{}'); } catch(e){ v.DETTAGLI = {}; } });
+    avvisoValutazioni = '';
     return r;
-  } catch(e){ return []; }
+  } catch(e){
+    /* Foglio Assessment non ancora creato: normale, nessun avviso.
+       Qualsiasi altro errore si dice, invece di sparire in silenzio. */
+    avvisoValutazioni = /Assessment|non leggibile|Nessuna valutazione/i.test(e.message) && ID_FOGLIO ? ''
+      : 'Valutazioni non lette: ' + e.message;
+    if (avvisoValutazioni) console.warn('[Differibili]', avvisoValutazioni);
+    return [];
+  }
 }
 async function leggiGruppi(id, codem, emergenze, arch){
   const r = await leggiPerCodem(id, 'gruppi', 'Gruppi', 'B', codem, emergenze, arch);
@@ -1476,7 +1500,8 @@ function avvia(sezione){
       const vista = [id.ente, codem || '', arch].join('|');
       const lette = await leggiSchede(id, codem, emergenze, arch);
       const gr = await leggiGruppi(id, codem, emergenze, arch);
-      const ult = FA() ? FA().ultime(await leggiValutazioni(id, codem, emergenze, arch)) : new Map();
+      const vals = await leggiValutazioni(id, codem, emergenze, arch);
+      const ult = FA() ? FA().ultime(vals) : new Map();
       lette.forEach(s => { s.VAL = ult.get(s.CODEM + '|' + s.ID_CONTATTO) || null; });
       controllaPriorita5([...ult.values()], lette);
       /* I sotto-settori appena creati si vedono subito, prima che il foglio
@@ -1495,7 +1520,9 @@ function avvia(sezione){
       if (inquadraProssimo){ inquadraProssimo = false; inquadra(); }
       caricato = true; erroreLettura = '';
       aggiornaVuoto();
-      stato(`${schede.length} schede · aggiornato alle ${NS.oraBreve ? NS.oraBreve(new Date()) : ''}`);
+      stato(`${schede.length} schede · aggiornato alle ${NS.oraBreve ? NS.oraBreve(new Date()) : ''}`
+        + (avvisoValutazioni ? ' · ⚠ ' + avvisoValutazioni : '')
+        + (FA() ? '' : ' · ⚠ differibili-assessment.js non caricato: valutazioni non visibili'));
     } catch(e){
       caricato = true; erroreLettura = e.message;
       aggiornaVuoto();
