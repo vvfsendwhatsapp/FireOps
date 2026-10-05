@@ -463,7 +463,7 @@ async function fetchConTempo(url, opz){
   finally { clearTimeout(t); }
 }
 
-function api(id, azione, dati){
+function api(id, azione, dati, fuoriCoda){
   const esegui = async () => {
     const tentativi = LETTURE.has(azione) ? 2 : 1;
     let ultimo;
@@ -482,6 +482,8 @@ function api(id, azione, dati){
     }
     throw ultimo;
   };
+  /* Le foto non aspettano in fila dietro un aggiornamento della carta. */
+  if (fuoriCoda) return esegui();
   const p = codaApi.then(esegui, esegui);
   codaApi = p.catch(() => {});
   return p;
@@ -1076,18 +1078,43 @@ function avvia(sezione){
   /* Foto della valutazione: privata nel Drive del backend, arriva solo
      attraverso il backend e solo alla Sala. Si tiene in memoria. */
   const fotoCache = new Map();
-  async function mostraFoto(box, popup){
-    const k = box.dataset.ass;
+  async function mostraFoto(box0, popup){
+    const k = box0.dataset.ass, codem = box0.dataset.codem;
+    /* il popup può essere ridisegnato mentre si aspetta: si cerca il riquadro
+       di nuovo al momento di scriverci */
+    const box = () => { const el = popup.getElement && popup.getElement();
+      return (el && el.querySelector(`.diff-foto[data-ass="${k}"]`)) || box0; };
+    const t0 = Date.now();
+    const orologio = setInterval(() => {
+      const b = box(); if (b && !b.querySelector('img'))
+        b.textContent = `📷 caricamento della foto… ${Math.round((Date.now() - t0) / 1000)} s`;
+    }, 1000);
     try {
       if (!fotoCache.has(k)){
-        const r = await api(id, 'leggiFoto', {codem: box.dataset.codem, idAss: k});
+        const r = await api(id, 'leggiFoto', {codem, idAss: k, formato: 'mini'}, true);
         fotoCache.set(k, `data:${r.mime};base64,${r.dati}`);
       }
-      if (!popup.isOpen()) return;
-      box.innerHTML = `<img src="${fotoCache.get(k)}" alt="Foto dal campo" title="Clic per ingrandire">`;
-      box.querySelector('img').onload = () => popup.update();
-      box.querySelector('img').onclick = () => fotoGrande(fotoCache.get(k));
-    } catch(e){ box.textContent = '📷 foto non disponibile: ' + e.message; }
+      const b = box();
+      if (!b) return;
+      b.innerHTML = `<img src="${fotoCache.get(k)}" alt="Foto dal campo" title="Clic per vederla grande">`;
+      b.querySelector('img').onload = () => popup.update && popup.update();
+      b.querySelector('img').onclick = () => fotoIntera(codem, k);
+    } catch(e){
+      const b = box(); if (b) b.textContent = '📷 foto non disponibile: ' + e.message;
+    } finally { clearInterval(orologio); }
+  }
+  /* A schermo pieno si chiede la foto intera (la miniatura sarebbe sgranata). */
+  const fotoIntere = new Map();
+  async function fotoIntera(codem, k){
+    if (!fotoIntere.has(k)){
+      stato('Caricamento della foto intera…');
+      try {
+        const r = await api(id, 'leggiFoto', {codem, idAss: k}, true);
+        fotoIntere.set(k, `data:${r.mime};base64,${r.dati}`);
+        stato('');
+      } catch(e){ return stato('Foto non disponibile: ' + e.message); }
+    }
+    fotoGrande(fotoIntere.get(k));
   }
   function fotoGrande(src){
     const d = document.createElement('div');
