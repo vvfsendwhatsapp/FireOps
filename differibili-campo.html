@@ -636,18 +636,26 @@ $('mOk').onclick = async () => {
     }
     $('modulo').hidden = true;
     await carica(false);
-    /* La risposta del POST della foto non si può leggere: si controlla
-       rileggendo. Se la valutazione non risulta con la foto, lo si dice
-       invece di lasciar credere che sia arrivata. */
+    /* La risposta del POST della foto non si può leggere: si chiede al
+       server com'è andata (statoFoto), con qualche tentativo perché il
+       salvataggio in Drive può richiedere qualche secondo. Se non è
+       arrivata, si mostra il motivo vero. */
     if (mod.foto && !dup && j.dati && j.dati.id){
-      const v = valutazioni.find(x => x.ID_ASS === j.dati.id);
-      if (v && !v.HA_FOTO){
-        await new Promise(r => setTimeout(r, 2500));
-        await carica(false);
-        const v2 = valutazioni.find(x => x.ID_ASS === j.dati.id);
-        if (v2 && !v2.HA_FOTO) alert('La valutazione è salvata, ma la foto NON è arrivata alla Sala.\n'
-          + 'Avvisa la Sala Operativa: il server non riesce a salvare le foto (autorizzazione Google Drive).');
+      let st = null;
+      for (let t = 0; t < 4; t++){
+        await new Promise(r => setTimeout(r, t ? 2500 : 1000));
+        try {
+          const q2 = encodeURIComponent(JSON.stringify({azione: 'statoFoto', codem: CODEM, idAss: j.dati.id}));
+          const r2 = await fetch(`${URL_BACKEND}?q=${q2}&t=${Date.now()}`, {cache: 'no-store'});
+          const j2 = await r2.json();
+          st = j2.ok ? j2.dati : {errore: j2.errore};
+        } catch(e){ st = {errore: 'stato non leggibile: ' + e.message}; }
+        if (st.foto || st.errore) break;
       }
+      if (!st || !st.foto) alert('La valutazione è salvata, ma la foto NON è arrivata.\n\nMotivo: '
+        + ((st && st.errore) || 'nessuna risposta dal server (la richiesta non è arrivata o è stata scartata)')
+        + '\n\nRiferisci questo messaggio alla Sala Operativa.');
+      await carica(false);
     }
   } catch(e){
     $('mErr').textContent = 'Non salvata: ' + e.message + '. Riprova.';
