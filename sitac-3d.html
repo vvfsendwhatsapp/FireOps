@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SITAC — vista 3D</title>
+
+<!-- MapLibre e non Leaflet: Leaflet è 2D per costruzione, non ha una camera
+     da inclinare. Qui serve proprio quella — guardare il versante da dietro
+     e capire dove il fuoco sale. -->
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+
+<!-- La simbologia è la stessa della carta: questa pagina NON ridisegna i
+     simboli, li chiede a sitac-simboli.js come fa la SITAC. Un simbolo che
+     qui apparisse diverso da lì sarebbe un simbolo sbagliato. -->
+<script src="sitac-simboli.js"></script>
+
+<style>
+  :root {
+    --fondo:   #16181c;
+    --riquadro:#1f2228;
+    --bordo:   #343941;
+    --testo:   #e8eaed;
+    --spento:  #9aa0a8;
+    --rosso:   #cc0000;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; overflow:hidden;
+    background: var(--fondo); color: var(--testo);
+    font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif; }
+
+  #mappa { position:absolute; inset:0; }
+
+  /* La fascia dei velivoli sta SOPRA la carta e non si muove con lei: un
+     mezzo aereo non ha una posizione sul terreno — sta in volo, e dove di
+     preciso non lo sa nessuno. Appeso sopra la sua coordinata finirebbe
+     fuori inquadratura appena si inclina la camera, o sovrapposto agli
+     altri. Qui invece si contano a colpo d'occhio, con le matricole. */
+  #aerei {
+    position:absolute; top:0; left:0; right:0; z-index:5;
+    display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap;
+    padding:8px 12px;
+    background: linear-gradient(to bottom, rgba(10,11,13,.86), rgba(10,11,13,0));
+    pointer-events:none;
+  }
+  #aerei .mezzo { width:54px; text-align:center; }
+  #aerei .mezzo svg { width:54px; height:54px; display:block;
+    filter: drop-shadow(0 1px 3px rgba(0,0,0,.8)); }
+  #aerei .et { font-size:10px; line-height:1.2; color:var(--testo);
+    text-shadow:0 1px 3px #000; margin-top:-4px; }
+  #aerei .vuoto { font-size:12px; color:var(--spento); padding:6px 2px; }
+
+  /* Pannello comandi: sta in basso a sinistra perché in alto c'è la fascia
+     dei velivoli e a destra i controlli di MapLibre. */
+  #comandi {
+    position:absolute; left:12px; bottom:12px; z-index:5;
+    background: rgba(31,34,40,.94); border:1px solid var(--bordo);
+    border-radius:8px; padding:10px 12px; min-width:188px;
+    box-shadow:0 4px 16px rgba(0,0,0,.5);
+  }
+  #comandi h1 { margin:0 0 2px; font-size:13px; font-weight:600; }
+  #comandi .sotto { font-size:11px; color:var(--spento); margin-bottom:9px; }
+  #comandi button {
+    display:block; width:100%; margin-top:5px; padding:6px 9px;
+    background:#2a2e36; color:var(--testo);
+    border:1px solid var(--bordo); border-radius:5px;
+    font-size:12px; font-family:inherit; text-align:left; cursor:pointer;
+  }
+  #comandi button:hover { background:#343941; }
+  #comandi button:focus-visible { outline:2px solid var(--rosso); outline-offset:1px; }
+  #comandi .nota { font-size:10px; color:var(--spento); line-height:1.4;
+    margin:9px 0 0; }
+
+  /* Il simbolo è un cartello piantato nel terreno: resta perpendicolare
+     allo schermo a qualunque inclinazione, così si legge sempre. Coricarlo
+     sul suolo lo renderebbe illeggibile proprio a vista radente, che è la
+     vista per cui questa pagina esiste. Il piede tocca il punto. */
+  .sim3d { width:46px; height:46px; cursor:default;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,.75)); }
+  .sim3d svg { width:46px; height:46px; display:block; }
+  .sim3d .et { position:absolute; top:46px; left:50%; transform:translateX(-50%);
+    font-size:10px; white-space:nowrap; color:#fff; text-shadow:0 1px 3px #000; }
+  /* L'asticella sotto il simbolo dice QUALE punto del terreno è il suo:
+     senza, un cartello sospeso a mezz'aria si attribuisce al pendio
+     sbagliato appena la camera si inclina. */
+  .sim3d::after { content:''; position:absolute; left:50%; top:44px;
+    width:1px; height:12px; background:rgba(255,255,255,.7);
+    box-shadow:0 0 2px #000; }
+
+  #avviso { position:absolute; inset:0; z-index:9;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--fondo); font-size:14px; color:var(--spento);
+    text-align:center; padding:24px; }
+  #avviso[hidden] { display:none; }
+</style>
+</head>
+<body>
+
+<div id="mappa"></div>
+<div id="aerei"></div>
+
+<div id="comandi">
+  <h1>Vista 3D</h1>
+  <div class="sotto" id="conta">—</div>
+  <button type="button" id="bNord">Rimetti il nord in alto</button>
+  <button type="button" id="bPiatto">Torna alla vista dall'alto</button>
+  <button type="button" id="bInquadra">Inquadra il disegno</button>
+  <p class="nota">Rilievo esagerato 1,6×: i versanti si leggono meglio, le
+    quote no. Trascina col tasto destro per inclinare e ruotare.</p>
+</div>
+
+<div id="avviso">Attendo i dati dalla SITAC…</div>
+
+<script>
+(function () {
+'use strict';
+
+const NS = window.FireOps || {};
+const SIM = NS.SITAC_SIMBOLI || {};
+const LIN = NS.SITAC_LINEE   || {};
+
+/* Il fattore è dichiarato qui e non sparso: cambiarlo cambia quanto i
+   versanti sembrano ripidi, ed è una scelta di lettura, non un dettaglio. */
+const ESAGERA = 1.6;
+
+/* Le aree non stanno nella tavola dei simboli ma in sitac.js, quindi i
+   colori vanno ridichiarati. Sono gli stessi, e se là cambiano vanno
+   cambiati anche qui: è l'unico pezzo duplicato di questa pagina. */
+const AREE = {
+  percorsa:   {bordo:'#6b6b6b', pieno:'#3a3a3a', opac:.55, n:'Superficie percorsa'},
+  attiva:     {bordo:'#cc0000', pieno:'#cc0000', opac:.40, n:'Area a fuoco attivo'},
+  minacciata: {bordo:'#e8a000', pieno:'#e8a000', opac:.28, n:'Zona minacciata'},
+  evacuata:   {bordo:'#009900', pieno:'#009900', opac:.28, n:'Zona evacuata'},
+  bonificata: {bordo:'#0070c0', pieno:'#0070c0', opac:.28, n:'Zona bonificata'}
+};
+
+const $ = id => document.getElementById(id);
+
+/* -------------------------------------------------------------------
+   MAPPA
+   Lo sfondo è lo stesso satellite della SITAC: chi passa dalla carta a
+   qui deve riconoscere il terreno, non ritrovarsi davanti a un'altra
+   fotografia dello stesso posto.
+   Il DEM è Terrarium di AWS, aperto e senza chiave. Risoluzione SRTM —
+   una trentina di metri — che basta a leggere un versante e non basta a
+   vedere un impluvio stretto: va saputo prima di fidarsi di un dettaglio.
+   ------------------------------------------------------------------- */
+const map = new maplibregl.Map({
+  container: 'mappa',
+  center: [12.5, 42.5],
+  zoom: 5,
+  pitch: 60,
+  bearing: 0,
+  maxPitch: 80,
+  attributionControl: {compact: true},
+  style: {
+    version: 8,
+    sources: {
+      sat: {
+        type: 'raster', tileSize: 256, maxzoom: 19,
+        tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/'
+              + 'World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+        attribution: 'Esri'
+      },
+      dem: {
+        type: 'raster-dem', tileSize: 256, maxzoom: 15,
+        encoding: 'terrarium',
+        tiles: ['https://elevation-tiles-prod.s3.amazonaws.com/'
+              + 'terrarium/{z}/{x}/{y}.png'],
+        attribution: 'AWS Terrain Tiles'
+      }
+    },
+    layers: [{id: 'sat', type: 'raster', source: 'sat'}]
+  }
+});
+
+map.addControl(new maplibregl.NavigationControl({visualizePitch: true}), 'top-right');
+map.addControl(new maplibregl.ScaleControl({maxWidth: 160, unit: 'metric'}), 'bottom-right');
+
+map.on('load', () => {
+  map.setTerrain({source: 'dem', exaggeration: ESAGERA});
+  /* Il cielo serve a capire dove finisce il terreno: senza, a vista
+     radente l'orizzonte è un taglio netto sul vuoto e non si legge più
+     quanto è lontano il crinale. */
+  map.setSky({
+    'sky-color': '#5c7fa8', 'horizon-color': '#c9d6e3',
+    'fog-color': '#b8c4cf', 'fog-ground-blend': 0.6,
+    'sky-horizon-blend': 0.5, 'horizon-fog-blend': 0.5
+  });
+  if (datiInAttesa){ disegna(datiInAttesa); datiInAttesa = null; }
+});
+
+/* -------------------------------------------------------------------
+   DATI
+   Arrivano dalla SITAC via postMessage: questa pagina non legge niente
+   da sé e non salva niente. È una vista, non una seconda carta — quello
+   che si disegna sta di là, e di là si corregge.
+   ------------------------------------------------------------------- */
+let datiInAttesa = null;
+let pronti = false;
+
+window.addEventListener('message', ev => {
+  const d = ev.data;
+  if (!d || d.fireops !== 'sitac3d' || !d.geojson) return;
+  if (map.isStyleLoaded() && map.getTerrain()) disegna(d.geojson);
+  else datiInAttesa = d.geojson;
+});
+
+/* Handshake: la finestra figlia dice "ci sono" e la madre risponde coi
+   dati. Senza, chi apre deve indovinare quando il documento è pronto, e
+   su rete lenta il messaggio arriva prima della pagina. */
+function chiediDati(){
+  if (window.opener) window.opener.postMessage({fireops: 'sitac3d-pronto'}, '*');
+}
+chiediDati();
+setTimeout(chiediDati, 400);
+setTimeout(() => {
+  if (!pronti) $('avviso').textContent =
+    'Nessun dato ricevuto. Riapri la vista 3D dal passo "Importa ed Esporta" della SITAC.';
+}, 4000);
+
+/* -------------------------------------------------------------------
+   DISEGNO
+   ------------------------------------------------------------------- */
+const marcatori = [];
+
+function disegna(fc){
+  pronti = true;
+  $('avviso').hidden = true;
+  marcatori.forEach(m => m.remove());
+  marcatori.length = 0;
+
+  const feat = (fc && fc.features) || [];
+  const linee = [], aree = [], aerei = [];
+  let punti = 0;
+  const estremi = new maplibregl.LngLatBounds();
+  const allarga = c => { if (Array.isArray(c[0])) c.forEach(allarga); else estremi.extend(c); };
+
+  feat.forEach(f => {
+    const g = f.geometry || {}, pr = f.properties || {};
+    if (!g.type || !g.coordinates) return;
+    allarga(g.coordinates);
+
+    /* I mezzi aerei non si posano sul terreno: vanno nella fascia in alto.
+       `genere` li distingue dai LANCI, che sono mezzi aerei anche loro ma
+       lasciano un'impronta vera sul terreno — e quella va a terra. */
+    const d = SIM[pr.tipo];
+    if (g.type === 'Point' && d && d.sg === 'sgAereo' && pr.genere !== 'lancio'){
+      aerei.push(f);
+      return;
+    }
+    if (g.type === 'Point'){ posaSimbolo(f); punti++; return; }
+    if (g.type === 'LineString'){ linee.push(f); return; }
+    if (g.type === 'Polygon' || g.type === 'MultiPolygon') aree.push(f);
+  });
+
+  disegnaAree(aree);
+  disegnaLinee(linee);
+  fasciaAerei(aerei);
+
+  $('conta').textContent = `${punti} simboli · ${linee.length} tracciati · `
+    + `${aree.length} aree · ${aerei.length} in volo`;
+
+  if (!estremi.isEmpty()){
+    inquadratura = estremi;
+    inquadra();
+  }
+}
+
+/* Il glifo lo fa sitac-simboli.js: qui si incolla e basta. */
+const glifo = (k, pr) => {
+  const d = SIM[k];
+  if (!d || !d.svg) return '';
+  return d.svg({stato: pr.stato || 'previsto', testo: pr.testo || null,
+                paese: pr.paese || null});
+};
+
+function posaSimbolo(f){
+  const pr = f.properties || {};
+  const el = document.createElement('div');
+  el.className = 'sim3d';
+  el.style.position = 'relative';
+  el.innerHTML = glifo(pr.tipo, pr);
+  if (pr.testo && !el.querySelector('text')){
+    const et = document.createElement('div');
+    et.className = 'et';
+    et.textContent = pr.testo;
+    el.appendChild(et);
+  }
+  /* `anchor: bottom` più l'asticella del CSS: il piede del cartello sta
+     sul punto, il simbolo gli sta sopra. MapLibre interroga da sé la quota
+     del terreno sotto la coordinata, quindi il cartello sale e scende col
+     versante senza che qui si legga nessuna quota. */
+  const m = new maplibregl.Marker({element: el, anchor: 'bottom', offset: [0, -12]})
+    .setLngLat(f.geometry.coordinates)
+    .addTo(map);
+  marcatori.push(m);
+}
+
+/* I tracciati si drappeggiano sul terreno ma PERDONO i motivi: niente
+   punte, niente codine, niente guaina — MapLibre disegna una linea e
+   basta. Restano riconoscibili per colore e calibro, e per il resto c'è
+   la carta. Qui non si decide: si guarda com'è fatto il versante. */
+function disegnaLinee(lista){
+  const fc = {type: 'FeatureCollection', features: lista.map(f => {
+    const pr = f.properties || {};
+    const d = LIN[pr.tipo] || {};
+    return Object.assign({}, f, {properties: Object.assign({}, pr, {
+      _col: d.bordo || d.color || '#cc0000',
+      _peso: Math.max(2, Math.min(d.weight || 3, 10)),
+      _tratto: (d.stati && pr.stato === 'previsto') ? 1 : 0
+    })});
+  })};
+  sorgente('linee', fc);
+  if (map.getLayer('linee-l')) return;
+  map.addLayer({id: 'linee-l', type: 'line', source: 'linee',
+    layout: {'line-cap': 'round', 'line-join': 'round'},
+    paint: {'line-color': ['get', '_col'], 'line-width': ['get', '_peso'],
+            'line-opacity': 0.95}});
+  map.addLayer({id: 'linee-t', type: 'line', source: 'linee',
+    filter: ['==', ['get', '_tratto'], 1],
+    layout: {'line-cap': 'butt'},
+    paint: {'line-color': '#ffffff', 'line-width': ['get', '_peso'],
+            'line-dasharray': [1.6, 1.6], 'line-opacity': 0.9}});
+}
+
+function disegnaAree(lista){
+  const fc = {type: 'FeatureCollection', features: lista.map(f => {
+    const pr = f.properties || {};
+    const a = AREE[pr.tipo] || AREE.percorsa;
+    return Object.assign({}, f, {properties: Object.assign({}, pr,
+      {_pieno: a.pieno, _bordo: a.bordo, _opac: a.opac})});
+  })};
+  sorgente('aree', fc);
+  if (map.getLayer('aree-f')) return;
+  map.addLayer({id: 'aree-f', type: 'fill', source: 'aree',
+    paint: {'fill-color': ['get', '_pieno'], 'fill-opacity': ['get', '_opac']}});
+  map.addLayer({id: 'aree-b', type: 'line', source: 'aree',
+    paint: {'line-color': ['get', '_bordo'], 'line-width': 2.4}});
+}
+
+function sorgente(id, fc){
+  const s = map.getSource(id);
+  if (s) s.setData(fc); else map.addSource(id, {type: 'geojson', data: fc});
+}
+
+function fasciaAerei(lista){
+  const box = $('aerei');
+  box.innerHTML = '';
+  if (!lista.length) return;
+  lista.forEach(f => {
+    const pr = f.properties || {};
+    const el = document.createElement('div');
+    el.className = 'mezzo';
+    el.innerHTML = glifo(pr.tipo, pr);
+    const d = SIM[pr.tipo];
+    const nome = d ? (d.n.it || '') : pr.tipo;
+    el.title = nome + (pr.testo ? ' ' + pr.testo : '');
+    if (pr.testo){
+      const et = document.createElement('div');
+      et.className = 'et';
+      et.textContent = pr.testo;
+      el.appendChild(et);
+    }
+    box.appendChild(el);
+  });
+}
+
+/* -------------------------------------------------------------------
+   INQUADRATURA
+   ------------------------------------------------------------------- */
+let inquadratura = null;
+
+function inquadra(){
+  if (!inquadratura || inquadratura.isEmpty()) return;
+  /* Il padding in basso è più largo: a camera inclinata il primo piano
+     occupa molto più schermo del fondo, e senza quel margine il disegno
+     finisce sotto il pannello dei comandi. */
+  map.fitBounds(inquadratura, {
+    padding: {top: 90, bottom: 150, left: 230, right: 70},
+    pitch: 60, bearing: map.getBearing(), duration: 900
+  });
+}
+
+$('bInquadra').onclick = inquadra;
+$('bNord').onclick = () => map.easeTo({bearing: 0, duration: 600});
+$('bPiatto').onclick = () => {
+  const giu = map.getPitch() > 5;
+  map.easeTo({pitch: giu ? 0 : 60, duration: 600});
+  $('bPiatto').textContent = giu ? 'Torna alla vista inclinata'
+                                 : "Torna alla vista dall'alto";
+};
+
+})();
+</script>
+</body>
+</html>
