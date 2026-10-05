@@ -2884,6 +2884,15 @@ body.diff-prep #diff-stampa-doc { display: block; position: fixed; left: -30000p
 .diff-allarme5 .diff-avviso-x { color: #fff; }
 @keyframes diffLampo5 { 50% { background: #aa00ff; box-shadow: 0 0 40px #e040fb; } }
 
+/* --- Foto della valutazione: miniatura nel popup, grande a schermo pieno --- */
+.diff-foto { margin: 4px 0; font-size: 12px; color: #555; }
+.diff-foto img { display: block; max-width: 260px; max-height: 180px; border-radius: 4px; cursor: zoom-in;
+  border: 1px solid #ccc; }
+.diff-foto-grande { position: fixed; inset: 0; z-index: 5000; background: rgba(0, 0, 0, .9); display: flex;
+  align-items: center; justify-content: center; cursor: zoom-out; }
+.diff-foto-grande img { max-width: 94vw; max-height: 92vh; border-radius: 6px; box-shadow: 0 4px 30px #000; }
+.diff-foto-grande .diff-avviso-x { position: absolute; top: 14px; right: 20px; font-size: 34px; color: #fff; }
+
 /* ==========================================================
    ==========================================================
    MODULI AGGIUNTIVI

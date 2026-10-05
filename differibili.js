@@ -408,7 +408,7 @@ function validaCodem(v, id){
    Le sole letture si ripetono: una scrittura ripetuta potrebbe essere già
    stata eseguita, e l'accodamento per ID_CONTATTO la renderebbe innocua,
    ma un gruppo creato due volte no. */
-const LETTURE = new Set(['emergenze', 'schede', 'gruppi', 'punti', 'valutazioni', 'dettaglio']);
+const LETTURE = new Set(['emergenze', 'schede', 'gruppi', 'punti', 'valutazioni', 'dettaglio', 'leggiFoto']);
 
 /* Tutto passa in GET, con la richiesta JSON nel parametro q: dalla pagina i
    POST ad Apps Script arrivano allo script ma la risposta si perde nel
@@ -569,6 +569,9 @@ async function leggiDettaglio(id, s){
   if (!d) throw new Error('scheda non trovata');
   delete d.HASH;
   d = Object.assign({}, s, d);
+  /* la scheda intera ha le coordinate del NUE: se il campo le ha corrette,
+     valgono quelle corrette */
+  if (s.LAT_NUE) Object.assign(d, {LAT: s.LAT, LON: s.LON, LAT_NUE: s.LAT_NUE, LON_NUE: s.LON_NUE});
   dettagli.set(k, d);
   return d;
 }
@@ -862,7 +865,8 @@ function avvia(sezione){
       ${s.ADD_INFO ? `<div class="diff-pop-note">${esc(s.ADD_INFO)}</div>` : ''}
       <div class="diff-pop-dati">
         <span>Inserita ${esc(s.DATA_INS)}</span>
-        ${s.RMAX ? `<span>precisione ±${esc(Math.round(num(s.RMAX)))} m</span>` : ''}
+        ${s.LAT_NUE ? '<span>📍 posizione corretta dal campo</span>'
+          : s.RMAX ? `<span>precisione ±${esc(Math.round(num(s.RMAX)))} m</span>` : ''}
         <span>${esc(chiamante(s))}${s.CLI ? ' · <a href="#" class="diff-cli">' + esc(s.CLI) + '</a>' : ''}</span>
         <span>Contatto ${esc(s.ID_CONTATTO)} · scheda NUE ${esc(s.ALTROENTE_IDSCHEDA)}${stessa > 1 ? ` (${stessa} chiamate)` : ''}</span>
         <span>${esc(s.CODEM)}${g ? ' · <b>' + esc(codiceDi(g)) + '</b>' : ''}</span>
@@ -883,8 +887,36 @@ function avvia(sezione){
       <span>👤 <b>${esc(v.NOMINATIVO || '—')}</b>${v.SQUADRA ? ' · ' + esc(v.SQUADRA) : ''}</span>
       ${A.dettagli(v).map(([k, x]) => `<span>${esc(k)}: <b>${esc(x)}</b></span>`).join('')}
       ${v.NOTE ? `<i>${esc(v.NOTE)}</i>` : ''}
+      ${v.FOTO_ID ? `<div class="diff-foto" data-codem="${esc(v.CODEM)}" data-ass="${esc(v.ID_ASS)}">📷 caricamento della foto…</div>` : ''}
       ${sbloccabile(s) ? '<a href="#" class="diff-sblocca">🔓 Sblocca: il campo potrà rivalutarla</a>' : ''}</div>`;
   }
+  /* Foto della valutazione: privata nel Drive del backend, arriva solo
+     attraverso il backend e solo alla Sala. Si tiene in memoria. */
+  const fotoCache = new Map();
+  async function mostraFoto(box, popup){
+    const k = box.dataset.ass;
+    try {
+      if (!fotoCache.has(k)){
+        const r = await api(id, 'leggiFoto', {codem: box.dataset.codem, idAss: k});
+        fotoCache.set(k, `data:${r.mime};base64,${r.dati}`);
+      }
+      if (!popup.isOpen()) return;
+      box.innerHTML = `<img src="${fotoCache.get(k)}" alt="Foto dal campo" title="Clic per ingrandire">`;
+      box.querySelector('img').onload = () => popup.update();
+      box.querySelector('img').onclick = () => fotoGrande(fotoCache.get(k));
+    } catch(e){ box.textContent = '📷 foto non disponibile: ' + e.message; }
+  }
+  function fotoGrande(src){
+    const d = document.createElement('div');
+    d.className = 'diff-foto-grande';
+    d.innerHTML = `<img src="${src}" alt=""><button type="button" class="diff-avviso-x" title="Chiudi">×</button>`;
+    const chiudi = () => { d.remove(); document.removeEventListener('keydown', esc_); };
+    const esc_ = e => { if (e.key === 'Escape') chiudi(); };
+    d.onclick = chiudi;
+    document.addEventListener('keydown', esc_);
+    document.body.appendChild(d);
+  }
+
   const sbloccabile = s => !!(s.VAL && id && id.ruolo === 'COMANDO'
     && (emergenze.find(e => e.CODEM === s.CODEM) || {}).STATO === 'ATTIVA');
 
@@ -1034,6 +1066,8 @@ function avvia(sezione){
         if (a) a.onclick = e => { e.preventDefault(); NS.copiaTesto(e, d.CLI); };
         const sb = ev.popup.getElement().querySelector('.diff-sblocca');
         if (sb) sb.onclick = e => { e.preventDefault(); sbloccaScheda(s); };
+        const ft = ev.popup.getElement().querySelector('.diff-foto');
+        if (ft) mostraFoto(ft, ev.popup);
       } catch(e){
         if (ev.popup.isOpen()) ev.popup.setContent(`<div class="diff-pop"><b>${esc(categoria(s).n)}</b>
           <div class="diff-errore">Dettaglio non disponibile: ${esc(e.message)}</div></div>`);
@@ -1071,14 +1105,14 @@ function avvia(sezione){
       }
       if (s.VAL && FA()){
         const p = +s.VAL.PRIORITA || 0;
-        /* Anello del colore "valutata" attorno al pallino, e in alto a destra
-           il numero della priorità (✓ se l'intervento è eseguito). */
+        /* Dopo la valutazione il punto cambia forma (differibili-assessment.js):
+           stella nera per la priorità 5, rombo del colore del settore con le
+           stelle sopra per le altre. Il pallino sotto resta, invisibile, per
+           clic e tasto destro. */
+        const g = gruppoDi(s);
         x.badge = L.marker([num(s.LAT), num(s.LON)], {pane: 'diffEtichette', interactive: false,
-          pmIgnore: true, snapIgnore: true, icon: L.divIcon({className: 'diff-val' + (p === 5 ? ' p5' : '')
-            + (s.VAL.ESITO === 'eseguito' || s.VAL.ESITO === 'non_necessario' ? ' chiusa' : ''),
-            iconSize: [24, 24], iconAnchor: [12, 12],
-            html: `<em style="border-color:${FA().COLORE_VALUTATA}"></em>`
-              + `<span style="background:${FA().COLORI[p]}">${s.VAL.ESITO === 'eseguito' ? '✓' : p}</span>`})});
+          pmIgnore: true, snapIgnore: true, icon: L.divIcon(FA().simbolo(s.VAL, g ? g.COLORE : null, ''))});
+        x.m.setStyle({opacity: 0, fillOpacity: 0});
         livValutate.addLayer(x.badge);
       }
       if ($('aree').checked){ x.area = formaLocalizzazione(s); if (x.area) livAree.addLayer(x.area); }
@@ -1502,7 +1536,14 @@ function avvia(sezione){
       const gr = await leggiGruppi(id, codem, emergenze, arch);
       const vals = await leggiValutazioni(id, codem, emergenze, arch);
       const ult = FA() ? FA().ultime(vals) : new Map();
-      lette.forEach(s => { s.VAL = ult.get(s.CODEM + '|' + s.ID_CONTATTO) || null; });
+      lette.forEach(s => {
+        s.VAL = ult.get(s.CODEM + '|' + s.ID_CONTATTO) || null;
+        /* Posizione corretta dal campo: vale al posto di quella del NUE. */
+        if (s.VAL && s.VAL.LAT_CORRETTA && s.VAL.LON_CORRETTA){
+          s.LAT_NUE = s.LAT; s.LON_NUE = s.LON;
+          s.LAT = String(s.VAL.LAT_CORRETTA); s.LON = String(s.VAL.LON_CORRETTA);
+        }
+      });
       controllaPriorita5([...ult.values()], lette);
       /* I sotto-settori appena creati si vedono subito, prima che il foglio
          li restituisca: restano "provvisori" finché la lettura non li trova. */
@@ -2287,7 +2328,11 @@ function avvia(sezione){
           const k = x.CODEM + '|' + x.ID_CONTATTO;
           intere.set(k, x); dettagli.set(k, Object.assign({}, x));
         });
-      lista = lista.map(x => Object.assign({}, x, intere.get(x.CODEM + '|' + x.ID_CONTATTO) || {}));
+      lista = lista.map(x => {
+        const y = Object.assign({}, x, intere.get(x.CODEM + '|' + x.ID_CONTATTO) || {});
+        if (x.LAT_NUE) Object.assign(y, {LAT: x.LAT, LON: x.LON});
+        return y;
+      });
       stato('');
     } catch(e){
       occupato = false;

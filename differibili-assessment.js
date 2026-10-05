@@ -51,6 +51,13 @@ const TIPI = [
     {k: 'descrizione', n: 'Descrizione', t: 'testo', obbligatorio: true}]}
 ];
 
+/* Campi comuni a tutti i tipi (tranne il duplicato): le reti e gli enti
+   da avvisare si annotano qualunque sia il danno. */
+const COMUNI = [
+  {k: 'enti', n: 'Reti / enti da avvisare', t: 'multi', v: ['ENEL', 'Telecom', 'Fibra', 'Pubblica Illuminazione', 'GAS']}
+];
+const campi = k => tipo(k).campi.concat(COMUNI);
+
 const ESITI = [
   {k: 'da_intervenire', n: 'Da intervenire'},
   {k: 'eseguito', n: 'Intervento eseguito'},
@@ -101,7 +108,7 @@ const valore = (c, x) => x == null || x === '' ? '' : c.t === 'si_no' ? (x === t
 function dettagli(v){
   const d = typeof v.DETTAGLI === 'string' ? (() => { try { return JSON.parse(v.DETTAGLI); } catch(e){ return {}; } })()
     : (v.DETTAGLI || {});
-  return tipo(v.TIPO).campi.map(c => [c.n, valore(c, d[c.k])]).filter(r => r[1] !== '');
+  return campi(v.TIPO).map(c => [c.n, valore(c, d[c.k])]).filter(r => r[1] !== '');
 }
 
 function riassunto(v){
@@ -110,10 +117,59 @@ function riassunto(v){
   return `${t.ic} ${t.n} · ${stelle(p)} ${PRIORITA[p]} · ${esito(v.ESITO)}`;
 }
 
+/* SIMBOLO DELLA SCHEDA VALUTATA — uguale in Sala e sul campo.
+   Priorità 5: stella nera, pulsante, visibile da lontano.
+   Altrimenti: rombo del colore del settore, con le stelle della priorità
+   (1-4) sopra la punta. Eseguito o non necessario: rombo sbiadito.
+   Duplicato: grigio e trasparente. testo = numero della scheda (campo) o
+   niente (Sala). Restituisce le opzioni per L.divIcon. */
+const STELLA = 'M12 1.5l3.1 6.6 7.2.9-5.3 5 1.4 7.1L12 17.6 5.6 21.1 7 14l-5.3-5 7.2-.9z';
+function simbolo(v, colore, testo, classe){
+  const p = +v.PRIORITA || 0, dup = v.ESITO === 'duplicato';
+  const chiusa = v.ESITO === 'eseguito' || v.ESITO === 'non_necessario';
+  const t = testo == null ? '' : String(testo);
+  if (p === 5 && !dup && !chiusa) return {className: 'fa-icona ' + (classe || ''), iconSize: [36, 36], iconAnchor: [18, 18],
+    html: `<div class="fa-sim fa-stella"><svg viewBox="0 0 24 24"><path d="${STELLA}"/></svg><b>${t}</b></div>`};
+  return {className: 'fa-icona ' + (classe || ''), iconSize: [36, 40], iconAnchor: [18, 25],
+    html: `<div class="fa-sim fa-rombo${chiusa ? ' chiusa' : ''}${dup ? ' dup' : ''}">`
+      + `<i>${dup ? '' : '★'.repeat(Math.min(p, 4))}</i>`
+      + `<span style="background:${colore || '#9e9e9e'}"><b>${chiusa ? '✓' : t}</b></span></div>`};
+}
+
+/* Lo stile dei simboli viaggia con il modulo: serve identico in due
+   pagine che non condividono il foglio di stile. */
+(function stile(){
+  if (document.getElementById('fa-stile')) return;
+  const st = document.createElement('style');
+  st.id = 'fa-stile';
+  st.textContent = `
+  .fa-icona { background: none; border: 0; }
+  .fa-sim { position: absolute; inset: 0; }
+  .fa-stella svg { width: 100%; height: 100%; display: block; overflow: visible;
+    filter: drop-shadow(0 0 2px #fff) drop-shadow(0 0 4px #fff); animation: faPulsa 1.1s ease-in-out infinite; }
+  .fa-stella path { fill: #000; stroke: #fff; stroke-width: 1.4; }
+  .fa-stella b { position: absolute; inset: 0; padding-top: 4px; display: flex; align-items: center;
+    justify-content: center; color: #fff; font: bold 10px/1 Arial, sans-serif; }
+  @keyframes faPulsa { 50% { transform: scale(1.18); } }
+  .fa-rombo i { position: absolute; left: -10px; right: -10px; top: 0; text-align: center; font: bold 12px/12px Arial,
+    sans-serif; font-style: normal; color: #ffd700; letter-spacing: -1px; white-space: nowrap;
+    text-shadow: 0 0 2px #000, 0 0 2px #000, 0 0 3px #000; }
+  .fa-rombo span { position: absolute; left: 7px; top: 14px; width: 22px; height: 22px; transform: rotate(45deg);
+    border: 2px solid #fff; box-shadow: 0 0 0 1px #000, 0 1px 4px rgba(0, 0, 0, .6);
+    display: flex; align-items: center; justify-content: center; }
+  .fa-rombo span b { transform: rotate(-45deg); color: #fff; font: bold 10px/1 Arial, sans-serif;
+    text-shadow: 0 0 2px #000, 0 0 2px #000; }
+  .fa-rombo.chiusa { opacity: .6; }
+  .fa-rombo.dup { opacity: .35; filter: grayscale(1); }
+  .fa-icona.sel .fa-rombo span { box-shadow: 0 0 0 3px #ffd700, 0 0 12px #ffd700; }
+  .fa-icona.sel .fa-stella svg { filter: drop-shadow(0 0 4px #ffd700) drop-shadow(0 0 8px #ffd700); }`;
+  document.head.appendChild(st);
+})();
+
 const ora = ts => { const d = new Date(ts); return isNaN(d) ? '' :
   d.toLocaleString('it-IT', {day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome'}); };
 
 (window.FireOps = window.FireOps || {}).Assessment = {
-  TIPI, ESITI, PRIORITA, COLORI, COLORE_VALUTATA, tipo, esito, stelle, suggerisci, ultime, dettagli, riassunto, ora
+  TIPI, ESITI, PRIORITA, COLORI, COLORE_VALUTATA, COMUNI, campi, simbolo, tipo, esito, stelle, suggerisci, ultime, dettagli, riassunto, ora
 };
 })();

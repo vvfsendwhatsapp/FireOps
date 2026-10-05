@@ -121,6 +121,13 @@
   .azioni-mod { display: flex; gap: 8px; justify-content: flex-end; }
   .azioni-mod .salva { background: #1a7f37; border-color: #1a7f37; color: #fff; }
   .err { color: #ff8a80; font-weight: bold; font-size: 13px; }
+  #sceltaPos { position: fixed; z-index: 2500; left: 50%; top: 70px; transform: translateX(-50%);
+    background: var(--giallo); color: var(--scuro); font-weight: bold; padding: 8px 12px; border-radius: 8px;
+    display: flex; gap: 10px; align-items: center; box-shadow: 0 2px 12px rgba(0, 0, 0, .6); }
+  #sceltaPos[hidden] { display: none; }
+  #sceltaPos button { padding: 4px 10px; }
+  #mFotoAnt { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+  #mFotoAnt img { max-width: 140px; max-height: 110px; border-radius: 6px; border: 1px solid var(--bordo); }
   .storia { font-size: 12px; color: var(--muto); border-top: 1px solid var(--bordo); padding-top: 8px; }
   @media (max-width: 700px) {
     #mappa { height: 42vh; }
@@ -156,14 +163,26 @@
   </table>
 </div>
 
+<div id="sceltaPos" hidden>📍 Tocca sulla carta il punto esatto
+  <button type="button" id="sceltaPosNo">Annulla</button></div>
 <div id="modulo" hidden><div class="box">
   <h2 id="mTitolo">Valutazione</h2>
   <div class="sch" id="mScheda"></div>
   <div class="campo"><span class="lab">Esito</span><select id="mEsito"></select></div>
   <div id="mBloccoTipo"><span class="lab">Tipo</span><div class="scelte" id="mTipi"></div></div>
   <div id="mCampi"></div>
+  <div id="mBloccoPos"><span class="lab">Posizione della scheda</span>
+    <div class="sch" id="mPos"></div>
+    <div class="scelte">
+      <button type="button" id="mPosGps">📍 Qui dove sono</button>
+      <button type="button" id="mPosCarta">🗺 Scegli sulla carta</button>
+      <button type="button" id="mPosNo">↺ Originale</button>
+    </div></div>
   <div id="mBloccoPrio"><span class="lab">Priorità (0 = nessun intervento · 5 = urgentissimo)</span>
     <div class="scelte stelle" id="mPrio"></div><div class="sch" id="mPrioNome"></div></div>
+  <div class="campo" id="mBloccoFoto"><span class="lab">Foto (una, facoltativa — la vede solo la Sala)</span>
+    <input type="file" id="mFoto" accept="image/*">
+    <div id="mFotoAnt"></div></div>
   <div class="campo" id="mBloccoNote"><span class="lab">Note</span><textarea id="mNote" maxlength="1000"></textarea></div>
   <div class="riga2">
     <div class="campo"><span class="lab">Nominativo *</span>
@@ -293,13 +312,13 @@ function tabella(){
     return `<tr class="riga${chiusa ? ' chiusa' : ''}${prioritaria(s) ? ' pr' : ''}${dup ? ' dup' : ''}${i === selezionata ? ' sel' : ''}" data-i="${i}">
       <td><span class="n" style="background:${colore(s)}">${i + 1}</span></td>
       <td><span class="tip">${prioritaria(s) ? '⚠ ' : ''}${esc(tipologia(s))}</span><br>
-        ${esc(indirizzo(s))}<br><span class="muto">${esc(s.CITTA)}${s.RMAX ? ' · ±' + Math.round(num(s.RMAX)) + ' m' : ''}</span></td>
+        ${esc(indirizzo(s))}<br><span class="muto">${esc(s.CITTA)}${s.CORRETTA ? ' · 📍 posizione corretta' : s.RMAX ? ' · ±' + Math.round(num(s.RMAX)) + ' m' : ''}</span></td>
       <td class="col-larga">${esc(s.ADD_INFO)}</td>
       <td>${esc(chiamante(s))}${s.CLI ? `<br><a class="muto" href="tel:${esc(s.CLI)}">${esc(s.CLI)}</a>` : ''}</td>
       <td>${(v => v && v.ESITO === 'duplicato' ? '<span class="val">⧉ Duplicato<span class="muto">' + esc(FA.ora(v.TS)) + '</span></span>'
         : v ? `<span class="val"><b style="background:${FA.COLORI[+v.PRIORITA || 0]}">${FA.stelle(+v.PRIORITA || 0)}</b>
           ${FA.tipo(v.TIPO).ic} ${esc(FA.tipo(v.TIPO).n)}<span class="muto">${esc(FA.esito(v.ESITO))} · ${esc(FA.ora(v.TS))}`
-          + `${v.NOMINATIVO ? ' · ' + esc(v.NOMINATIVO) : ''}</span></span>`
+          + `${v.NOMINATIVO ? ' · ' + esc(v.NOMINATIVO) : ''}${v.HA_FOTO ? ' · 📷' : ''}</span></span>`
           : '<span class="muto">da valutare</span>')(valDi(s))}</td>
       <td class="dist" data-dist="${i}">${testoDist(d)}</td>
       <td><div class="azioni">
@@ -337,8 +356,15 @@ function scegli(i, vai){
   }
 }
 
+const coloreGruppo = s => (gruppiDati.find(g => g.ID_GRUPPO === s.GRUPPO) || {}).COLORE;
+let gruppiDati = [];
 function icona(s, i){
-  const v = valDi(s), p = v ? +v.PRIORITA || 0 : -1;
+  const v = valDi(s);
+  /* Dopo la valutazione cambia forma: stella nera se priorità 5, rombo del
+     colore del settore con le stelle sopra negli altri casi. Così non si
+     confonde con i pallini numerati delle schede ancora da valutare. */
+  if (v) return L.divIcon(FA.simbolo(v, coloreGruppo(s), i + 1, i === selezionata ? 'sel' : ''));
+  const p = -1;
   return L.divIcon({className: 'num-icona' + (prioritaria(s) ? ' pr' : '') + (i === selezionata ? ' sel' : '')
       + (p === 5 ? ' p5' : '') + (v ? ' valutata' : '') + (v && v.ESITO === 'duplicato' ? ' dup' : ''),
     html: `<span style="background:${colore(s)}">${i + 1}</span>`
@@ -363,6 +389,13 @@ async function carica(primaVolta){
     const d = j.dati;
     valutazioni = d.valutazioni || [];
     ultima = FA.ultime(valutazioni);
+    /* Posizione corretta sul campo: vale al posto di quella del NUE. */
+    d.schede.forEach(s => {
+      const v = ultima.get(s.CODEM + '|' + s.ID_CONTATTO);
+      if (v && v.LAT_CORRETTA && v.LON_CORRETTA){
+        s.LAT_NUE = s.LAT; s.LON_NUE = s.LON; s.LAT = v.LAT_CORRETTA; s.LON = v.LON_CORRETTA; s.CORRETTA = true;
+      }
+    });
 
     /* Stesso ordine della stampa della Sala: comune, indirizzo, civico.
        Così il numero sulla carta coincide con quello del PDF. */
@@ -371,6 +404,7 @@ async function carica(primaVolta){
       || (a.INDIRIZZO || '').localeCompare(b.INDIRIZZO || '', 'it')
       || (parseInt(a.CIVICO, 10) || 0) - (parseInt(b.CIVICO, 10) || 0));
 
+    gruppiDati = d.gruppi;
     livZona.clearLayers();
     d.gruppi.forEach(g => {
       if (!g.GEOJSON) return;
@@ -432,7 +466,8 @@ function apriModulo(i){
   const s = schede[i];
   const v = valDi(s);
   if (v) return;
-  mod = {i, s, tipo: v ? v.TIPO : FA.suggerisci(s.DESCRIZIONE_TRIAGE),
+  $('mFoto').value = ''; $('mFotoAnt').innerHTML = '';
+  mod = {i, s, pos: null, foto: null, tipo: v ? v.TIPO : FA.suggerisci(s.DESCRIZIONE_TRIAGE),
     priorita: v ? +v.PRIORITA || 0 : (prioritaria(s) ? 4 : 2),
     dettagli: v ? (typeof v.DETTAGLI === 'object' ? Object.assign({}, v.DETTAGLI) : {}) : {}};
   $('mTitolo').textContent = `Valutazione — scheda ${i + 1}`;
@@ -462,7 +497,12 @@ function apriModulo(i){
 function disegnaModulo(){
   /* Duplicato: nessun altro campo, si salva e basta. */
   const dup = $('mEsito').value === 'duplicato';
-  ['mBloccoTipo', 'mCampi', 'mBloccoPrio'].forEach(x => { $(x).hidden = dup; });
+  ['mBloccoTipo', 'mCampi', 'mBloccoPrio', 'mBloccoPos', 'mBloccoFoto'].forEach(x => { $(x).hidden = dup; });
+  $('mPos').textContent = mod.pos
+    ? `Corretta: ${mod.pos.lat.toFixed(6)}, ${mod.pos.lon.toFixed(6)} · `
+      + `${testoDist(map.distance([mod.pos.lat, mod.pos.lon], [num(mod.s.LAT_NUE || mod.s.LAT), num(mod.s.LON_NUE || mod.s.LON)]))} dalla posizione NUE`
+    : `Quella della scheda (NUE)${mod.s.RMAX ? ', precisione ±' + Math.round(num(mod.s.RMAX)) + ' m' : ''}`;
+  $('mPosNo').disabled = !mod.pos;
   $('mTipi').querySelectorAll('button').forEach(b => b.classList.toggle('attivo', b.dataset.t === mod.tipo));
   $('mPrio').querySelectorAll('button').forEach(b => {
     const p = +b.dataset.p, on = p === mod.priorita;
@@ -471,7 +511,7 @@ function disegnaModulo(){
   });
   $('mPrioNome').textContent = FA.PRIORITA[mod.priorita];
   const t = FA.tipo(mod.tipo);
-  $('mCampi').innerHTML = t.campi.map(c => {
+  $('mCampi').innerHTML = FA.campi(mod.tipo).map(c => {
     const val = mod.dettagli[c.k];
     let h = '';
     if (c.t === 'scelta') h = `<select data-c="${c.k}"><option value="">—</option>${c.v.map(o =>
@@ -497,6 +537,58 @@ function disegnaModulo(){
     $('mCampi').querySelectorAll(`[data-sn="${b.dataset.sn}"]`).forEach(x => x.classList.toggle('attivo', x === b));
   });
 }
+/* Correzione della posizione: dal GPS del telefono, oppure toccando la
+   carta (il modulo si chiude un momento e si riapre col punto scelto). */
+let segnoPos = null;
+$('mPosGps').onclick = () => {
+  if (!io) return $('mErr').textContent = 'Posizione GPS non ancora disponibile.';
+  mod.pos = {lat: io.lat, lon: io.lon}; disegnaModulo();
+};
+$('mPosNo').onclick = () => { mod.pos = null; disegnaModulo(); };
+$('mPosCarta').onclick = () => {
+  $('modulo').hidden = true;
+  $('sceltaPos').hidden = false;
+  const c = mod.pos || {lat: num(mod.s.LAT), lon: num(mod.s.LON)};
+  if (isFinite(c.lat)) map.setView([c.lat, c.lon], Math.max(map.getZoom(), 18));
+  const fine = () => { $('sceltaPos').hidden = true; $('modulo').hidden = false; map.off('click', presa); disegnaModulo(); };
+  const presa = e => {
+    mod.pos = {lat: e.latlng.lat, lon: e.latlng.lng};
+    if (segnoPos) map.removeLayer(segnoPos);
+    segnoPos = L.circleMarker(e.latlng, {radius: 9, color: '#ffd700', weight: 3, fillOpacity: .3}).addTo(map);
+    setTimeout(() => { if (segnoPos){ map.removeLayer(segnoPos); segnoPos = null; } }, 4000);
+    fine();
+  };
+  map.on('click', presa);
+  $('sceltaPosNo').onclick = fine;
+};
+
+/* Foto: si riduce sul telefono a 1600 px sul lato lungo, JPEG, prima di
+   inviarla — con la rete del campo una foto da 6 MB non arriverebbe. */
+async function riduci(file){
+  let img;
+  try { img = await createImageBitmap(file, {imageOrientation: 'from-image'}); }
+  catch(e){
+    img = await new Promise((ok, ko) => { const i = new Image(); i.onload = () => ok(i); i.onerror = ko;
+      i.src = URL.createObjectURL(file); });
+  }
+  const lato = 1600, k = Math.min(1, lato / Math.max(img.width, img.height));
+  const c = document.createElement('canvas');
+  c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+  c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+  return c.toDataURL('image/jpeg', .78);
+}
+$('mFoto').onchange = async () => {
+  const f = $('mFoto').files[0];
+  if (!f){ mod.foto = null; $('mFotoAnt').innerHTML = ''; return; }
+  $('mFotoAnt').textContent = '⏳ preparazione della foto…';
+  try {
+    mod.foto = await riduci(f);
+    $('mFotoAnt').innerHTML = `<img src="${mod.foto}" alt=""><span class="muto">${Math.round(mod.foto.length * .75 / 1024)} kB</span>
+      <button type="button" id="mFotoNo">✖ Togli</button>`;
+    $('mFotoNo').onclick = () => { mod.foto = null; $('mFoto').value = ''; $('mFotoAnt').innerHTML = ''; };
+  } catch(e){ mod.foto = null; $('mFotoAnt').textContent = 'Foto non leggibile.'; }
+};
+
 $('mNo').onclick = () => { $('modulo').hidden = true; };
 $('mOk').onclick = async () => {
   const t = FA.tipo(mod.tipo);
@@ -512,6 +604,7 @@ $('mOk').onclick = async () => {
     const q = encodeURIComponent(JSON.stringify({azione: 'valuta', codem: CODEM, gruppi: GRUPPI,
       idContatto: mod.s.ID_CONTATTO, tipo: dup ? 'altro' : mod.tipo, priorita: dup ? 0 : mod.priorita,
       esito: $('mEsito').value, dettagli: dup ? {} : mod.dettagli, note: $('mNote').value.trim(), squadra, nominativo,
+      latCorretta: !dup && mod.pos ? mod.pos.lat : '', lonCorretta: !dup && mod.pos ? mod.pos.lon : '',
       lat: io ? io.lat : '', lon: io ? io.lon : ''}));
     const r = await fetch(`${URL_BACKEND}?q=${q}&t=${Date.now()}`, {cache: 'no-store'});
     if (!r.ok) throw new Error('il server ha risposto ' + r.status);
@@ -519,6 +612,16 @@ $('mOk').onclick = async () => {
     if (!j.ok){
       if (/già valutata/i.test(j.errore || '')){ $('modulo').hidden = true; alert(j.errore); await carica(false); return; }
       throw new Error(j.errore || 'errore del server');
+    }
+    /* La foto parte dopo la valutazione, che ne fornisce l'ID. È un POST
+       "no-cors": la risposta non si legge, ma il salvataggio avviene. */
+    if (mod.foto && !dup && j.dati && j.dati.id){
+      $('mOk').textContent = '⏳ Invio della foto…';
+      try {
+        await fetch(URL_BACKEND, {method: 'POST', mode: 'no-cors', headers: {'Content-Type': 'text/plain;charset=utf-8'},
+          body: JSON.stringify({azione: 'foto', codem: CODEM, gruppi: GRUPPI, idContatto: mod.s.ID_CONTATTO,
+            idAss: j.dati.id, dati: mod.foto})});
+      } catch(e){ alert('Valutazione salvata, ma la foto non è partita: ' + e.message); }
     }
     $('modulo').hidden = true;
     await carica(false);
