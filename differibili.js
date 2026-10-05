@@ -1097,7 +1097,14 @@ function avvia(sezione){
       const b = box();
       if (!b) return;
       b.innerHTML = `<img src="${fotoCache.get(k)}" alt="Foto dal campo" title="Clic per vederla grande">`;
-      b.querySelector('img').onload = () => popup.update && popup.update();
+      /* NON popup.update(): rimetterebbe il contenuto originale del popup
+         (con "caricamento…") cancellando la foto appena inserita. Basta
+         ricalcolare misura e posizione. */
+      b.querySelector('img').onload = () => {
+        if (popup._updateLayout) popup._updateLayout();
+        if (popup._updatePosition) popup._updatePosition();
+        if (popup._adjustPan) popup._adjustPan();
+      };
       b.querySelector('img').onclick = () => fotoIntera(codem, k);
     } catch(e){
       const b = box(); if (b) b.textContent = '📷 foto non disponibile: ' + e.message;
