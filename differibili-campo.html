@@ -80,6 +80,7 @@
   .num-icona.dup { opacity: .35; }
   tr.dup td { opacity: .45; }
   tr.chiusa { cursor: default; }
+  .num-icona.gestita { opacity: .55; }
   tr.chiusa:hover td { background: none; }
   .lucchetto { font-size: 12px; color: var(--muto); white-space: nowrap; }
   tr.dup .tip { text-decoration: line-through; }
@@ -311,14 +312,16 @@ function tabella(){
   tb.innerHTML = ord.map(({s, i, d}) => {
     const la = num(s.LAT), lo = num(s.LON);
     const dup = valDi(s) && valDi(s).ESITO === 'duplicato';
-    const chiusa = !!valDi(s);
+    const chiusa = !!valDi(s) || !!s.GEST;
     return `<tr class="riga${chiusa ? ' chiusa' : ''}${prioritaria(s) ? ' pr' : ''}${dup ? ' dup' : ''}${i === selezionata ? ' sel' : ''}" data-i="${i}">
       <td><span class="n" style="background:${colore(s)}">${i + 1}</span></td>
       <td><span class="tip">${prioritaria(s) ? '⚠ ' : ''}${esc(tipologia(s))}</span><br>
         ${esc(indirizzo(s))}<br><span class="muto">${esc(s.CITTA)}${s.CORRETTA ? ' · 📍 posizione corretta' : s.RMAX ? ' · ±' + Math.round(num(s.RMAX)) + ' m' : ''}</span></td>
       <td class="col-larga">${esc(s.ADD_INFO)}</td>
       <td>${esc(chiamante(s))}${s.CLI ? `<br><a class="muto" href="tel:${esc(s.CLI)}">${esc(s.CLI)}</a>` : ''}</td>
-      <td>${(v => v && v.ESITO === 'duplicato' ? '<span class="val">⧉ Duplicato<span class="muto">' + esc(FA.ora(v.TS)) + '</span></span>'
+      <td>${s.GEST ? `<span class="val"><b style="background:#2e7d32">✅ Gestita dalla SO</b>`
+          + `<span class="muto">int. ${esc(s.GEST.INTERVENTO)}/${esc(s.GEST.ANNO)} · ${esc(FA.ora(s.GEST.TS))}</span></span>`
+        : (v => v && v.ESITO === 'duplicato' ? '<span class="val">⧉ Duplicato<span class="muto">' + esc(FA.ora(v.TS)) + '</span></span>'
         : v ? `<span class="val"><b style="background:${FA.COLORI[+v.PRIORITA || 0]}">${FA.stelle(+v.PRIORITA || 0)}</b>
           ${FA.tipo(v.TIPO).ic} ${esc(FA.tipo(v.TIPO).n)}<span class="muto">${esc(FA.esito(v.ESITO))} · ${esc(FA.ora(v.TS))}`
           + `${v.NOMINATIVO ? ' · ' + esc(v.NOMINATIVO) : ''}${v.HA_FOTO ? ' · 📷' : ''}</span></span>`
@@ -363,6 +366,8 @@ const coloreGruppo = s => (gruppiDati.find(g => g.ID_GRUPPO === s.GRUPPO) || {})
 let gruppiDati = [];
 function icona(s, i){
   const v = valDi(s);
+  if (s.GEST) return L.divIcon({className: 'num-icona gestita', iconSize: [24, 24], iconAnchor: [12, 12],
+    html: `<span style="background:#616161">✓</span>`});
   /* Dopo la valutazione cambia forma: stella nera se priorità 5, rombo del
      colore del settore con le stelle sopra negli altri casi. Così non si
      confonde con i pallini numerati delle schede ancora da valutare. */
@@ -392,6 +397,9 @@ async function carica(primaVolta){
     const d = j.dati;
     valutazioni = d.valutazioni || [];
     ultima = FA.ultime(valutazioni);
+    /* Gestite dalla Sala Operativa con un intervento: chiuse anche qui. */
+    const gest = new Map((d.gestite || []).map(g => [g.CODEM + '|' + g.ID_CONTATTO, g]));
+    d.schede.forEach(s => { s.GEST = gest.get(s.CODEM + '|' + s.ID_CONTATTO) || null; });
     /* Posizione corretta sul campo: vale al posto di quella del NUE. */
     d.schede.forEach(s => {
       const v = ultima.get(s.CODEM + '|' + s.ID_CONTATTO);
@@ -421,7 +429,7 @@ async function carica(primaVolta){
     livPunti.clearLayers();
     marcatori = schede.map((s, i) => {
       if (!conPos(s)) return null;
-      const m = L.marker([num(s.LAT), num(s.LON)], {icon: icona(s, i), interactive: !valDi(s)});
+      const m = L.marker([num(s.LAT), num(s.LON)], {icon: icona(s, i), interactive: !valDi(s) && !s.GEST});
       m.bindPopup(`<b>${i + 1}. ${prioritaria(s) ? '⚠ ' : ''}${esc(tipologia(s))}</b><br>
         ${esc(indirizzo(s))}<br>${esc(s.CITTA)}
         ${s.ADD_INFO ? `<br><i>${esc(s.ADD_INFO)}</i>` : ''}
@@ -468,7 +476,7 @@ const CHIAVE_NOMINATIVO = 'fireops_campo_nominativo';
 function apriModulo(i){
   const s = schede[i];
   const v = valDi(s);
-  if (v) return;
+  if (v || s.GEST) return;
   $('mFoto').value = ''; $('mFotoAnt').innerHTML = '';
   mod = {i, s, pos: null, foto: null, tipo: v ? v.TIPO : FA.suggerisci(s.DESCRIZIONE_TRIAGE),
     priorita: v ? +v.PRIORITA || 0 : (prioritaria(s) ? 4 : 2),
@@ -628,6 +636,19 @@ $('mOk').onclick = async () => {
     }
     $('modulo').hidden = true;
     await carica(false);
+    /* La risposta del POST della foto non si può leggere: si controlla
+       rileggendo. Se la valutazione non risulta con la foto, lo si dice
+       invece di lasciar credere che sia arrivata. */
+    if (mod.foto && !dup && j.dati && j.dati.id){
+      const v = valutazioni.find(x => x.ID_ASS === j.dati.id);
+      if (v && !v.HA_FOTO){
+        await new Promise(r => setTimeout(r, 2500));
+        await carica(false);
+        const v2 = valutazioni.find(x => x.ID_ASS === j.dati.id);
+        if (v2 && !v2.HA_FOTO) alert('La valutazione è salvata, ma la foto NON è arrivata alla Sala.\n'
+          + 'Avvisa la Sala Operativa: il server non riesce a salvare le foto (autorizzazione Google Drive).');
+      }
+    }
   } catch(e){
     $('mErr').textContent = 'Non salvata: ' + e.message + '. Riprova.';
   } finally {

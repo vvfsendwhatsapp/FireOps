@@ -411,7 +411,7 @@ function validaCodem(v, id){
    Le sole letture si ripetono: una scrittura ripetuta potrebbe essere già
    stata eseguita, e l'accodamento per ID_CONTATTO la renderebbe innocua,
    ma un gruppo creato due volte no. */
-const LETTURE = new Set(['emergenze', 'schede', 'gruppi', 'punti', 'valutazioni', 'dettaglio', 'leggiFoto']);
+const LETTURE = new Set(['emergenze', 'schede', 'gruppi', 'punti', 'valutazioni', 'dettaglio', 'leggiFoto', 'gestite']);
 
 /* Tutto passa in GET, con la richiesta JSON nel parametro q: dalla pagina i
    POST ad Apps Script arrivano allo script ma la risposta si perde nel
@@ -615,6 +615,15 @@ async function leggiValutazioni(id, codem, emergenze, arch){
     return [];
   }
 }
+/* Schede gestite dalla Sala (intervento aperto): foglio "Gestite". */
+async function leggiGestite(id, codem, emergenze, arch){
+  try {
+    if (!ID_FOGLIO) return await api(id, 'gestite', {codem, includiArchiviate: arch});
+    const elenco = codem ? [codem] : emergenze.map(e => e.CODEM);
+    if (!elenco.length) return [];
+    return (await gviz('Gestite', `select * where A matches '${alternanza(elenco)}'`)).filter(g => !g.ANNULLATA_TS);
+  } catch(e){ return []; }
+}
 async function leggiGruppi(id, codem, emergenze, arch){
   const r = await leggiPerCodem(id, 'gruppi', 'Gruppi', 'B', codem, emergenze, arch);
   r.forEach(g => { if (typeof g.GEOJSON === 'string'){ try { g.GEOJSON = JSON.parse(g.GEOJSON); } catch(e){ g.GEOJSON = null; } } });
@@ -700,6 +709,7 @@ function avvia(sezione){
         <div id="diff-gruppi"><p class="pagina-nota">Nessun gruppo.</p></div>
         <h4>Visualizzazione</h4>
         <label class="rt-check diff-check"><input type="checkbox" id="diff-aree"> Aree di localizzazione</label>
+        <label class="rt-check diff-check"><input type="checkbox" id="diff-mostraGestite"> Mostra le schede gestite</label>
         <label class="rt-check diff-check"><input type="checkbox" id="diff-archiviate"> Mostra le emergenze archiviate</label>
         <label class="rt-check diff-check" title="Tutti i Comandi della Direzione del Comando attivo, in sola lettura">
           <input type="checkbox" id="diff-vistaDR"> Vista Direzione</label>
@@ -812,6 +822,7 @@ function avvia(sezione){
     $('bSfondo').textContent = sfondi[(iSfondo + 1) % sfondi.length].n;
   };
   $('aree').onchange = disegna;
+  $('mostraGestite').onchange = () => { disegna(); aggiornaPulsanti(); };
 
   /* Area di localizzazione: è l'incertezza del telefono. Un cerchio di un
      chilometro dice che il civico va cercato, non raggiunto. ANGOLO è
@@ -843,9 +854,13 @@ function avvia(sezione){
   /* Una scheda valutata "duplicato" dal campo sparisce dalla carta e dai
      conteggi della Sala: la situazione è già in un'altra scheda. */
   const duplicata = s => !!(s.VAL && s.VAL.ESITO === 'duplicato');
+  /* Gestita dalla Sala con un intervento: archiviata, fuori dalla carta
+     salvo "Mostra le schede gestite". */
+  const gestita = s => !!s.GEST;
+  const nascostaGestita = s => gestita(s) && !$('mostraGestite').checked;
   function visibili(){
     const sig = $('selComando').value;
-    return schede.filter(s => !duplicata(s) && !nascoste.has(categoria(s).k)
+    return schede.filter(s => !duplicata(s) && !nascostaGestita(s) && !nascoste.has(categoria(s).k)
       && (!sig || String(s.CODEM).slice(-10, -8) === sig));
   }
 
@@ -875,7 +890,12 @@ function avvia(sezione){
         <span>${esc(s.CODEM)}${g ? ' · <b>' + esc(codiceDi(g)) + '</b>' : ''}</span>
       </div>
       ${valutazioneHtml(s)}
-      ${valutabileDaSala(s) ? '<a href="#" class="diff-valuta-sala">📝 Valuta dalla Sala</a><br>' : ''}
+      ${s.GEST ? `<div class="diff-pop-gest">✅ <b>Gestita — int. ${esc(s.GEST.INTERVENTO)}/${esc(s.GEST.ANNO)}</b>
+          <span>${esc(s.GEST.OPERATORE || '')} · ${esc(FA() ? FA().ora(s.GEST.TS) : '')}</span>
+          ${s.GEST.NOTE ? `<i>${esc(s.GEST.NOTE)}</i>` : ''}
+          ${gestibile(s) ? '<a href="#" class="diff-annulla-gest">↺ Annulla gestione (torna sulla carta)</a>' : ''}</div>`
+        : gestibile(s) ? '<a href="#" class="diff-gestisci">✅ Gestita con intervento…</a><br>' : ''}
+      ${!s.GEST && valutabileDaSala(s) ? '<a href="#" class="diff-valuta-sala">📝 Valuta dalla Sala</a><br>' : ''}
       <a href="https://www.google.com/maps?q=${la},${lo}" target="_blank" rel="noopener">Apri in Google Maps</a>
     </div>`;
   }
@@ -894,6 +914,71 @@ function avvia(sezione){
       ${v.FOTO_ID ? `<div class="diff-foto" data-codem="${esc(v.CODEM)}" data-ass="${esc(v.ID_ASS)}">📷 caricamento della foto…</div>` : ''}
       ${sbloccabile(s) ? '<a href="#" class="diff-sblocca">🔓 Sblocca: il campo potrà rivalutarla</a>' : ''}</div>`;
   }
+  /* GESTITA CON INTERVENTO — solo Sala
+     La Sala ha preso in carico la scheda aprendo un intervento: si segna col
+     numero d'intervento e anno, e la scheda esce dalla carta (archiviata).
+     Si può annullare: la scheda torna com'era. Sul campo risulta chiusa. */
+  const gestibile = s => !!(id && id.ruolo === 'COMANDO'
+    && (emergenze.find(e => e.CODEM === s.CODEM) || {}).STATO === 'ATTIVA');
+  let boxGest = null;
+  function segnaGestita(s){
+    if (!boxGest){
+      boxGest = document.createElement('div');
+      boxGest.className = 'diff-modale';
+      boxGest.innerHTML = `<div class="diff-modale-box diff-vsala">
+        <div class="diff-modale-titolo">✅ Gestita con intervento</div>
+        <div class="diff-vsala-scheda"></div>
+        <div class="diff-gest-riga2">
+          <label>Numero intervento *<input type="text" data-f="int" inputmode="numeric" maxlength="8" placeholder="es. 1234"></label>
+          <label>Anno<select data-f="anno"></select></label>
+        </div>
+        <label>Note<textarea data-f="note" rows="2" maxlength="500"></textarea></label>
+        <label>Nominativo dell'operatore *<input type="text" data-f="op" maxlength="80"></label>
+        <p class="diff-errore" data-f="err"></p>
+        <div class="diff-modale-azioni">
+          <button type="button" class="btn-toggle-radar" data-a="no">Annulla</button>
+          <button type="button" class="btn-whatsapp" data-a="ok">✅ Gestita e archivia</button></div></div>`;
+      app.appendChild(boxGest);
+    }
+    const q = k => boxGest.querySelector(`[data-f="${k}"]`);
+    const a = new Date().getFullYear();
+    boxGest.querySelector('.diff-vsala-scheda').textContent =
+      `${categoria(s).n} · ${indirizzo(s) || ''} ${s.CITTA || ''} · contatto ${s.ID_CONTATTO}`;
+    q('anno').innerHTML = [a, a - 1].map(x => `<option>${x}</option>`).join('');
+    q('int').value = ''; q('note').value = ''; q('err').textContent = '';
+    try { q('op').value = localStorage.getItem('fireops_sala_nominativo') || ''; } catch(e){}
+    q('int').oninput = () => { q('int').value = q('int').value.replace(/\D/g, ''); };
+    const chiudi = () => { boxGest.hidden = true; };
+    boxGest.querySelector('[data-a="no"]').onclick = chiudi;
+    boxGest.querySelector('[data-a="ok"]').onclick = async () => {
+      if (!q('int').value) return q('err').textContent = 'Inserisci il numero dell\u2019intervento.';
+      if (!q('op').value.trim()) return q('err').textContent = 'Indica il nominativo dell\u2019operatore.';
+      try { localStorage.setItem('fireops_sala_nominativo', q('op').value.trim()); } catch(e){}
+      const b = boxGest.querySelector('[data-a="ok"]');
+      b.disabled = true; b.textContent = '⏳ Salvataggio…';
+      try {
+        await api(id, 'gestita', {codem: s.CODEM, idContatto: s.ID_CONTATTO, intervento: q('int').value,
+          anno: q('anno').value, note: q('note').value.trim(), operatore: q('op').value.trim()});
+        chiudi();
+        await ricarica(true);
+        stato(`Scheda gestita con l'intervento ${q('int').value}/${q('anno').value}: archiviata dalla carta.`);
+      } catch(e){ q('err').textContent = 'Non salvata: ' + e.message; }
+      finally { b.disabled = false; b.textContent = '✅ Gestita e archivia'; }
+    };
+    boxGest.hidden = false;
+    setTimeout(() => q('int').focus(), 30);
+  }
+  async function annullaGestita(s){
+    if (!await chiedi({ok: '↺ Annulla gestione', testo: `Annullare la gestione con l'intervento `
+      + `${s.GEST.INTERVENTO}/${s.GEST.ANNO}?\nLa scheda torna sulla carta e sul campo.`})) return;
+    map.closePopup();
+    try {
+      await api(id, 'annullaGestita', {codem: s.CODEM, idContatto: s.ID_CONTATTO});
+      await ricarica(true);
+      stato('Gestione annullata: la scheda è di nuovo sulla carta.');
+    } catch(e){ stato('Annullamento non riuscito: ' + e.message); }
+  }
+
   /* VALUTAZIONE DIRETTA DALLA SALA
      Per le schede prioritarie (persone, soccorso, fuoco, gas) la Sala può
      compilare la valutazione senza aspettare il campo: stesso modulo e
@@ -1044,12 +1129,12 @@ function avvia(sezione){
   const marcatori = new Map();          // chiave -> {s, m, area, firma}
   const chiave = s => s.CODEM + '|' + s.ID_CONTATTO;
   const firma = s => CAMPI.map(k => s[k]).join('\u241F') + '\u241F' + (s.GRUPPO || '')
-    + '\u241F' + (s.VAL ? s.VAL.ID_ASS : '');
+    + '\u241F' + (s.VAL ? s.VAL.ID_ASS : '') + '\u241F' + (s.GEST ? s.GEST.TS : '');
   const chiavePunto = s => num(s.LAT).toFixed(5) + ',' + num(s.LON).toFixed(5);
 
   function passaFiltri(s){
     const sig = $('selComando').value;
-    return !duplicata(s) && !nascoste.has(categoria(s).k) && (!sig || String(s.CODEM).slice(-10, -8) === sig);
+    return !duplicata(s) && !nascostaGestita(s) && !nascoste.has(categoria(s).k) && (!sig || String(s.CODEM).slice(-10, -8) === sig);
   }
 
   /* Posizione a schermo dell'i-esimo di n punti sovrapposti. */
@@ -1144,7 +1229,7 @@ function avvia(sezione){
     const g = gruppoDi(s), cat = categoria(s);
     const m = L.circleMarker([num(s.LAT), num(s.LON)], {renderer: tela, radius: 6.5, snapIgnore: true, pmIgnore: true,
       bubblingMouseEvents: false,
-      fillColor: cat.c, fillOpacity: .95, color: g ? g.COLORE : '#ffffff',
+      fillColor: s.GEST ? '#616161' : cat.c, fillOpacity: s.GEST ? .6 : .95, color: g ? g.COLORE : '#ffffff',
       weight: g ? 3 : 1.5, dashArray: s.DIFFERIBILE && s.DIFFERIBILE !== 'S' ? '2,2' : null});
     m.bindPopup(() => `<div class="diff-pop"><b style="color:${categoria(s).c}">${esc(categoria(s).n)}</b>
       <div>${esc(s.CITTA)}</div><div class="diff-pop-dati"><span>⏳ caricamento della scheda…</span></div></div>`,
@@ -1164,6 +1249,10 @@ function avvia(sezione){
         if (a) a.onclick = e => { e.preventDefault(); NS.copiaTesto(e, d.CLI); };
         const sb = ev.popup.getElement().querySelector('.diff-sblocca');
         if (sb) sb.onclick = e => { e.preventDefault(); sbloccaScheda(s); };
+        const gs = ev.popup.getElement().querySelector('.diff-gestisci');
+        if (gs) gs.onclick = e => { e.preventDefault(); map.closePopup(); segnaGestita(d); };
+        const ag = ev.popup.getElement().querySelector('.diff-annulla-gest');
+        if (ag) ag.onclick = e => { e.preventDefault(); annullaGestita(d); };
         const vs = ev.popup.getElement().querySelector('.diff-valuta-sala');
         if (vs) vs.onclick = e => { e.preventDefault(); map.closePopup(); valutaDaSala(d); };
         const ft = ev.popup.getElement().querySelector('.diff-foto');
@@ -1203,7 +1292,7 @@ function avvia(sezione){
             iconAnchor: [17, 17], html: '<span></span>'})});
         livPriorita.addLayer(x.alone);
       }
-      if (s.VAL && FA()){
+      if (s.VAL && FA() && !s.GEST){
         const p = +s.VAL.PRIORITA || 0;
         /* Dopo la valutazione il punto cambia forma (differibili-assessment.js):
            stella nera per la priorità 5, rombo del colore del settore con le
@@ -1411,6 +1500,7 @@ function avvia(sezione){
     const conteggi = new Map(), tipi = new Map();
     schede.filter(s => !duplicata(s)).forEach(s => { const c = categoria(s); tipi.set(c.k, c); conteggi.set(c.k, (conteggi.get(c.k) || 0) + 1); });
     const dup = schede.filter(duplicata).length;
+    const nGest = schede.filter(gestita).length;
     const senza = v.filter(s => !conPosizione(s)).length;
     const inGruppo = v.filter(s => s.GRUPPO).length;
     const nue = new Set(v.map(s => s.ALTROENTE_IDSCHEDA).filter(Boolean)).size;
@@ -1423,6 +1513,8 @@ function avvia(sezione){
         <div><b>${nue}</b><span>schede NUE</span></div>
         <div><b>${inGruppo}</b><span>nei settori</span></div>
       </div>
+      ${nGest ? `<p class="diff-gest-riga">✅ ${nGest} ${nGest === 1 ? 'gestita' : 'gestite'} con intervento`
+        + `${$('mostraGestite').checked ? ' (visibili in grigio)' : ' — archiviate dalla carta'}</p>` : ''}
       ${dup ? `<p class="pagina-nota" style="margin:0 0 6px">⧉ ${dup} ${dup === 1 ? 'duplicato nascosto' : 'duplicati nascosti'} dalla carta</p>` : ''}
       ${v.some(prioritaria) ? `<p class="diff-pr-riga">⚠ ${v.filter(prioritaria).length} con persone / soccorso</p>` : ''}
       ${(() => { const val = v.filter(s => s.VAL); if (!val.length) return '';
@@ -1635,6 +1727,8 @@ function avvia(sezione){
       const lette = await leggiSchede(id, codem, emergenze, arch);
       const gr = await leggiGruppi(id, codem, emergenze, arch);
       const vals = await leggiValutazioni(id, codem, emergenze, arch);
+      const gest = new Map((await leggiGestite(id, codem, emergenze, arch)).map(g => [g.CODEM + '|' + g.ID_CONTATTO, g]));
+      lette.forEach(s => { s.GEST = gest.get(s.CODEM + '|' + s.ID_CONTATTO) || null; });
       const ult = FA() ? FA().ultime(vals) : new Map();
       lette.forEach(s => {
         s.VAL = ult.get(s.CODEM + '|' + s.ID_CONTATTO) || null;
@@ -2259,7 +2353,10 @@ function avvia(sezione){
         `https://www.google.com/maps?q=${num(s.LAT)},${num(s.LON)}`, '_blank', 'noopener')}
     ];
     if (sbloccabile(s)) voci.push({et: '🔓 Sblocca la valutazione', f: () => sbloccaScheda(s)});
-    if (valutabileDaSala(s)) voci.push({et: '📝 Valuta dalla Sala', f: () => valutaDaSala(s)});
+    if (gestibile(s)) voci.push(s.GEST
+      ? {et: `↺ Annulla gestione (int. ${s.GEST.INTERVENTO}/${s.GEST.ANNO})`, f: () => annullaGestita(s)}
+      : {et: '✅ Gestita con intervento…', f: () => segnaGestita(s)});
+    if (!s.GEST && valutabileDaSala(s)) voci.push({et: '📝 Valuta dalla Sala', f: () => valutaDaSala(s)});
     if (scrivibile){
       voci.push({t: 'titolo', et: g ? 'In ' + codiceDi(g) : 'Senza settore'});
       altri.forEach(x => voci.push({et: `➜ Sposta in ${codiceDi(x)}`, f: () => spostaScheda(s, x)}));
