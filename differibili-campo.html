@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#121212">
+<meta name="robots" content="noindex, nofollow">
+<title>FireOps — Worksite</title>
+<link rel="icon" type="image/png" href="images/logo.png">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<!--
+  FireOps VVF — pagina da campo delle schede differibili
+  Si apre dal link che la Sala genera per un settore, un worksite o un
+  sotto-settore (🔗 nella tabella dei settori). Mostra la carta della zona
+  con le schede numerate e la posizione di chi guarda, e sotto la tabella
+  delle schede con telefono e navigazione.
+  Parametri: c = CODEM · g = ID dei sotto-settori, separati da virgola ·
+  n = nome da mostrare (A2, A2b, Settore Alfa).
+  Pagina autonoma: non dipende da style.css né dagli altri moduli.
+-->
+<style>
+  :root { --giallo: #ffd700; --scuro: #121212; --sup: #1e1e1e; --bordo: #333; --testo: #e0e0e0;
+    --muto: #aaa; --rosso: #d50000; color-scheme: dark; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font: 14px/1.4 Arial, sans-serif; background: var(--scuro); color: var(--testo);
+    padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
+  header { position: sticky; top: 0; z-index: 1000; display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px; background: var(--sup); border-bottom: 3px solid var(--giallo); }
+  header img { height: 34px; }
+  header h1 { font-size: 17px; color: var(--giallo); line-height: 1.2; }
+  header p { font-size: 12px; color: var(--muto); }
+  header .sx { flex: 1 1 auto; min-width: 0; }
+  button, .bt { font: bold 13px Arial, sans-serif; background: var(--scuro); color: var(--testo);
+    border: 1px solid var(--bordo); border-radius: 6px; padding: 8px 12px; cursor: pointer;
+    text-decoration: none; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  button:hover, .bt:hover { border-color: var(--giallo); }
+  button.attivo { background: var(--giallo); color: var(--scuro); border-color: var(--giallo); }
+  #mappa { height: 58vh; min-height: 300px; border-bottom: 1px solid var(--bordo); }
+  .barra { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 12px; align-items: center; }
+  .barra .info { flex: 1 1 auto; font-size: 12px; color: var(--muto); }
+  #allarme { margin: 8px 12px 0; padding: 8px 12px; border-radius: 8px; background: #b71c1c;
+    border: 2px solid #ff5252; color: #fff; font-weight: bold; }
+  #allarme[hidden] { display: none; }
+  .tab-wrap { padding: 0 12px 24px; overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { position: sticky; top: 58px; background: var(--scuro); color: var(--giallo); text-align: left;
+    font-size: 11px; text-transform: uppercase; padding: 6px; border-bottom: 2px solid var(--bordo); }
+  td { padding: 7px 6px; border-bottom: 1px solid var(--bordo); vertical-align: top; }
+  tr.riga { cursor: pointer; }
+  tr.riga:hover td { background: rgba(255, 215, 0, .06); }
+  tr.sel td { background: rgba(255, 215, 0, .16); }
+  tr.pr td { background: rgba(183, 28, 28, .28); }
+  tr.pr td:first-child { box-shadow: inset 4px 0 0 #ff1744; }
+  .n { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 24px;
+    padding: 0 4px; border-radius: 12px; color: #fff; font-weight: bold; font-size: 12px;
+    border: 1.5px solid #fff; }
+  .tip { font-weight: bold; }
+  .pr .tip { color: #ff8a80; }
+  .muto { color: var(--muto); font-size: 12px; }
+  .azioni { display: flex; flex-wrap: wrap; gap: 4px; }
+  .azioni .bt { padding: 5px 8px; font-size: 12px; }
+  .dist { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  #stato { padding: 30px 16px; text-align: center; color: var(--muto); }
+  #stato.errore { color: #ff8a80; font-weight: bold; }
+  .num-icona span { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px;
+    border-radius: 50%; color: #fff; font: bold 11px/1 Arial, sans-serif; border: 2px solid #fff;
+    box-shadow: 0 0 0 1px #000; }
+  .num-icona.pr span { box-shadow: 0 0 0 3px #ff1744, 0 0 10px #ff1744; }
+  .num-icona.sel span { box-shadow: 0 0 0 3px var(--giallo), 0 0 12px var(--giallo); }
+  .num-icona.valutata span { outline: 3px solid #00e5ff; outline-offset: 2px; }
+  .num-icona.dup { opacity: .35; }
+  tr.dup td { opacity: .45; }
+  tr.chiusa { cursor: default; }
+  tr.chiusa:hover td { background: none; }
+  .lucchetto { font-size: 12px; color: var(--muto); white-space: nowrap; }
+  tr.dup .tip { text-decoration: line-through; }
+  .io span { display: block; width: 18px; height: 18px; border-radius: 50%; background: #1e88e5;
+    border: 3px solid #fff; box-shadow: 0 0 0 2px #1e88e5, 0 0 12px #1e88e5; }
+  .etichetta span { display: inline-block; transform: translate(-50%, -50%); white-space: nowrap;
+    padding: 2px 7px; border-radius: 5px; border: 2px solid; background: rgba(255, 255, 255, .92);
+    color: #111; font: bold 13px/1.2 Arial, sans-serif; }
+  .leaflet-popup-content { color: #222; font-size: 13px; }
+  .leaflet-popup-content a { color: #0a6ea8; }
+  /* valutazione */
+  .val { display: inline-flex; flex-direction: column; gap: 2px; font-size: 12px; }
+  .val b { display: inline-block; padding: 1px 6px; border-radius: 4px; color: #fff; font-size: 12px; width: max-content; }
+  .bt-val { background: var(--giallo); color: var(--scuro); border-color: var(--giallo); }
+  .num-icona i { position: absolute; right: -9px; top: -9px; min-width: 16px; height: 16px; padding: 0 3px;
+    border-radius: 8px; color: #fff; font: bold 10px/16px Arial, sans-serif; font-style: normal;
+    text-align: center; border: 1.5px solid #fff; }
+  .num-icona { position: relative; }
+  .num-icona.p5 i { animation: lampo 1s infinite; }
+  @keyframes lampo { 50% { transform: scale(1.35); } }
+  #modulo { position: fixed; inset: 0; z-index: 3000; background: rgba(0, 0, 0, .7); display: flex;
+    align-items: flex-start; justify-content: center; overflow-y: auto; padding: 12px; }
+  #modulo[hidden] { display: none; }
+  .box { width: min(560px, 100%); background: var(--sup); border: 1px solid var(--giallo); border-radius: 10px;
+    padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+  .box h2 { font-size: 16px; color: var(--giallo); }
+  .box .sch { font-size: 12px; color: var(--muto); }
+  .lab { font-size: 11px; text-transform: uppercase; color: var(--muto); margin-bottom: 4px; display: block; }
+  .scelte { display: flex; flex-wrap: wrap; gap: 6px; }
+  .scelte button { padding: 8px 10px; }
+  .scelte button.attivo { background: var(--giallo); color: var(--scuro); }
+  .stelle button { min-width: 44px; justify-content: center; }
+  .campo input[type=number], .campo input[type=text], .campo select, .campo textarea {
+    width: 100%; padding: 10px; background: var(--scuro); color: var(--testo); border: 1px solid var(--bordo);
+    border-radius: 6px; font-size: 15px; }
+  .campo textarea { min-height: 70px; resize: vertical; }
+  .riga2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .azioni-mod { display: flex; gap: 8px; justify-content: flex-end; }
+  .azioni-mod .salva { background: #1a7f37; border-color: #1a7f37; color: #fff; }
+  .err { color: #ff8a80; font-weight: bold; font-size: 13px; }
+  .storia { font-size: 12px; color: var(--muto); border-top: 1px solid var(--bordo); padding-top: 8px; }
+  @media (max-width: 700px) {
+    #mappa { height: 50vh; }
+    .col-larga { display: none; }
+    th { top: 50px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <img src="images/logo.png" alt="">
+  <div class="sx">
+    <h1 id="titolo">Worksite</h1>
+    <p id="sottotitolo">Caricamento…</p>
+  </div>
+  <button type="button" id="bAggiorna" title="Ricarica le schede">🔄</button>
+</header>
+
+<div id="mappa"></div>
+<div class="barra">
+  <button type="button" id="bZona">🗺 Zona</button>
+  <button type="button" id="bIo">📍 Dove sono</button>
+  <button type="button" id="bSegui" title="La carta segue la tua posizione">🧭 Segui</button>
+  <button type="button" id="bOrdina" title="Ordina la tabella">↕ Per distanza</button>
+  <span class="info" id="infoGps">Posizione: in attesa del GPS…</span>
+</div>
+<div id="allarme" hidden></div>
+<div id="stato">Caricamento delle schede…</div>
+<div class="tab-wrap">
+  <table id="tabella" hidden>
+    <thead><tr><th>N.</th><th>Tipologia · indirizzo</th><th class="col-larga">Note</th>
+      <th>Chiamante</th><th>Valutazione</th><th>Dist.</th><th></th></tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<div id="modulo" hidden><div class="box">
+  <h2 id="mTitolo">Valutazione</h2>
+  <div class="sch" id="mScheda"></div>
+  <div class="campo"><span class="lab">Esito</span><select id="mEsito"></select></div>
+  <div id="mBloccoTipo"><span class="lab">Tipo</span><div class="scelte" id="mTipi"></div></div>
+  <div id="mCampi"></div>
+  <div id="mBloccoPrio"><span class="lab">Priorità (0 = nessun intervento · 5 = urgentissimo)</span>
+    <div class="scelte stelle" id="mPrio"></div><div class="sch" id="mPrioNome"></div></div>
+  <div class="campo" id="mBloccoNote"><span class="lab">Note</span><textarea id="mNote" maxlength="1000"></textarea></div>
+  <div class="riga2">
+    <div class="campo"><span class="lab">Nominativo *</span>
+      <input type="text" id="mNominativo" maxlength="80" placeholder="Es. CS Mario Rossi" autocomplete="name"></div>
+    <div class="campo"><span class="lab">Squadra</span>
+      <input type="text" id="mSquadra" maxlength="80" placeholder="Es. APS 1 Forlì"></div>
+  </div>
+  <div class="err" id="mErr"></div>
+  <div class="azioni-mod"><button type="button" id="mNo">Annulla</button>
+    <button type="button" class="salva" id="mOk">💾 Salva valutazione</button></div>
+  <div class="storia" id="mStoria"></div>
+</div></div>
+
+<script src="differibili-assessment.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+(function () {
+'use strict';
+
+/* Stesso backend di differibili.js: se cambia l'URL lì, va cambiato qui. */
+const URL_BACKEND = 'https://script.google.com/macros/s/AKfycbwA2AkQyC8eQGn6ykJbmIvcuyumt_TcU9Ek15CgKIk1A1C7z6vJqYwbXOaaTEHyBe78KA/exec';
+const RIFRESCO_MS = 120000;
+
+const par = new URLSearchParams(location.search);
+const CODEM = (par.get('c') || '').toUpperCase();
+const GRUPPI = (par.get('g') || '').split(',').map(x => x.trim()).filter(Boolean);
+const NOME = par.get('n') || 'Worksite';
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[<>&"]/g,
+  c => ({'<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;'}[c]));
+const num = v => parseFloat(String(v == null ? '' : v).replace(',', '.'));
+const conPos = s => isFinite(num(s.LAT)) && isFinite(num(s.LON)) && s.LAT !== '' && s.LON !== '';
+
+/* Stesse regole della Sala: tipologia senza " - SOLO SK", priorità se
+   compaiono persone o soccorso, colori fissi per famiglia. */
+const RE_PRIORITA = /\b(persona|persone|soccorso)\b/i;
+const prioritaria = s => RE_PRIORITA.test([s.DESCRIZIONE_TRIAGE, s.ADD_INFO].filter(Boolean).join(' '));
+const tipologia = s => String(s.DESCRIZIONE_TRIAGE || '').replace(/\s*-?\s*SOLO\s+SK\s*$/i, '')
+  .replace(/^-\s*/, '').trim() || 'Tipologia non indicata';
+const colore = s => {
+  const d = tipologia(s);
+  return /alber|tralic/i.test(d) ? '#2e7d32' : /croll|disses|ceden/i.test(d) ? '#8d5a3c'
+    : /allag|esond/i.test(d) ? '#1e88e5' : /soccorso a persona/i.test(d) ? '#d81b60' : '#f4511e';
+};
+const indirizzo = s => [s.TOPONIMO, s.INDIRIZZO, s.CIVICO].filter(Boolean).join(' ');
+const chiamante = s => s.RAG_SOCIALE || [s.NOME, s.COGNOME].filter(Boolean).join(' ');
+
+$('titolo').textContent = NOME;
+document.title = 'FireOps — ' + NOME;
+
+/* ------------------------------ carta ------------------------------ */
+const sfondi = {
+  strade: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19, attribution: 'OpenStreetMap'}),
+  satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    {maxZoom: 19, attribution: 'Esri'})
+};
+const map = L.map('mappa', {layers: [sfondi.strade], zoomControl: true}).setView([42.7, 12.7], 6);
+L.control.layers({'Stradale': sfondi.strade, 'Satellite': sfondi.satellite}, null, {position: 'topright'}).addTo(map);
+L.control.scale({imperial: false}).addTo(map);
+const livZona = L.featureGroup().addTo(map);
+const livPunti = L.featureGroup().addTo(map);
+let schede = [], marcatori = [], selezionata = -1;
+const FA = window.FireOps.Assessment;
+let valutazioni = [], ultima = new Map();
+const valDi = s => ultima.get(s.CODEM + '|' + s.ID_CONTATTO) || null;
+
+function zona(){
+  const b = livZona.getBounds().isValid() ? livZona.getBounds() : livPunti.getBounds();
+  if (b.isValid()) map.fitBounds(b, {padding: [30, 30], maxZoom: 17});
+}
+
+/* --------------------------- la mia posizione --------------------------- */
+let io = null, ioMarker = null, ioCerchio = null, segui = false;
+function distanza(s){
+  if (!io || !conPos(s)) return null;
+  return map.distance([io.lat, io.lon], [num(s.LAT), num(s.LON)]);
+}
+const testoDist = m => m == null ? '—' : m < 1000 ? Math.round(m) + ' m' : (m / 1000).toFixed(1) + ' km';
+
+if ('geolocation' in navigator){
+  navigator.geolocation.watchPosition(p => {
+    io = {lat: p.coords.latitude, lon: p.coords.longitude, acc: p.coords.accuracy};
+    const ll = [io.lat, io.lon];
+    if (!ioMarker){
+      ioMarker = L.marker(ll, {interactive: false, zIndexOffset: 1000,
+        icon: L.divIcon({className: 'io', html: '<span></span>', iconSize: [18, 18]})}).addTo(map);
+      ioCerchio = L.circle(ll, {radius: io.acc, color: '#1e88e5', weight: 1, fillOpacity: .1,
+        interactive: false}).addTo(map);
+    } else { ioMarker.setLatLng(ll); ioCerchio.setLatLng(ll).setRadius(io.acc); }
+    if (segui) map.panTo(ll);
+    $('infoGps').textContent = `Posizione: ±${Math.round(io.acc)} m · aggiornata alle `
+      + new Date().toLocaleTimeString('it-IT', {hour: '2-digit', minute: '2-digit'});
+    aggiornaDistanze();
+  }, e => {
+    $('infoGps').textContent = 'Posizione non disponibile: ' + (e.code === 1
+      ? 'consenti la localizzazione al browser.' : e.message);
+  }, {enableHighAccuracy: true, maximumAge: 10000, timeout: 30000});
+} else $('infoGps').textContent = 'Questo dispositivo non fornisce la posizione.';
+
+$('bZona').onclick = () => { segui = false; $('bSegui').classList.remove('attivo'); zona(); };
+$('bIo').onclick = () => { if (io) map.setView([io.lat, io.lon], Math.max(map.getZoom(), 16)); };
+$('bSegui').onclick = () => {
+  segui = !segui;
+  $('bSegui').classList.toggle('attivo', segui);
+  if (segui && io) map.setView([io.lat, io.lon], Math.max(map.getZoom(), 16));
+};
+map.on('dragstart', () => { if (segui){ segui = false; $('bSegui').classList.remove('attivo'); } });
+
+/* ---------------------------- tabella ---------------------------- */
+let perDistanza = false;
+$('bOrdina').onclick = () => {
+  perDistanza = !perDistanza;
+  $('bOrdina').classList.toggle('attivo', perDistanza);
+  tabella();
+};
+
+function tabella(){
+  const tb = $('tabella').querySelector('tbody');
+  const ord = schede.map((s, i) => ({s, i, d: distanza(s)}));
+  if (perDistanza) ord.sort((a, b) => (a.d == null) - (b.d == null) || a.d - b.d);
+  tb.innerHTML = ord.map(({s, i, d}) => {
+    const la = num(s.LAT), lo = num(s.LON);
+    const dup = valDi(s) && valDi(s).ESITO === 'duplicato';
+    const chiusa = !!valDi(s);
+    return `<tr class="riga${chiusa ? ' chiusa' : ''}${prioritaria(s) ? ' pr' : ''}${dup ? ' dup' : ''}${i === selezionata ? ' sel' : ''}" data-i="${i}">
+      <td><span class="n" style="background:${colore(s)}">${i + 1}</span></td>
+      <td><span class="tip">${prioritaria(s) ? '⚠ ' : ''}${esc(tipologia(s))}</span><br>
+        ${esc(indirizzo(s))}<br><span class="muto">${esc(s.CITTA)}${s.RMAX ? ' · ±' + Math.round(num(s.RMAX)) + ' m' : ''}</span></td>
+      <td class="col-larga">${esc(s.ADD_INFO)}</td>
+      <td>${esc(chiamante(s))}${s.CLI ? `<br><a class="muto" href="tel:${esc(s.CLI)}">${esc(s.CLI)}</a>` : ''}</td>
+      <td>${(v => v && v.ESITO === 'duplicato' ? '<span class="val">⧉ Duplicato<span class="muto">' + esc(FA.ora(v.TS)) + '</span></span>'
+        : v ? `<span class="val"><b style="background:${FA.COLORI[+v.PRIORITA || 0]}">${FA.stelle(+v.PRIORITA || 0)}</b>
+          ${FA.tipo(v.TIPO).ic} ${esc(FA.tipo(v.TIPO).n)}<span class="muto">${esc(FA.esito(v.ESITO))} · ${esc(FA.ora(v.TS))}`
+          + `${v.NOMINATIVO ? ' · ' + esc(v.NOMINATIVO) : ''}</span></span>`
+          : '<span class="muto">da valutare</span>')(valDi(s))}</td>
+      <td class="dist" data-dist="${i}">${testoDist(d)}</td>
+      <td><div class="azioni">
+        ${chiusa ? '<span class="lucchetto" title="Già valutata">🔒</span>'
+          : `<button type="button" class="bt bt-val" data-val="${i}" title="Valuta">📝</button>`}
+        ${s.CLI ? `<a class="bt" href="tel:${esc(s.CLI)}" title="Chiama">📞</a>` : ''}
+        ${conPos(s) ? `<a class="bt" target="_blank" rel="noopener" title="Navigatore"
+          href="https://www.google.com/maps/dir/?api=1&destination=${la},${lo}">🧭</a>` : ''}
+      </div></td></tr>`;
+  }).join('');
+  /* Una scheda già valutata non si seleziona più: niente clic sulla riga,
+     niente popup sulla carta, niente nuova valutazione. Restano chiamata e
+     navigatore. */
+  tb.querySelectorAll('tr.riga:not(.chiusa)').forEach(tr => {
+    tr.onclick = e => { if (!e.target.closest('a,button')) scegli(+tr.dataset.i, true); };
+  });
+  tb.querySelectorAll('[data-val]').forEach(b => { b.onclick = () => apriModulo(+b.dataset.val); });
+}
+function aggiornaDistanze(){
+  if (perDistanza) return tabella();
+  document.querySelectorAll('[data-dist]').forEach(td => {
+    td.textContent = testoDist(distanza(schede[+td.dataset.dist]));
+  });
+}
+
+function scegli(i, vai){
+  selezionata = i;
+  marcatori.forEach((m, j) => { if (m) m.setIcon(icona(schede[j], j)); });
+  document.querySelectorAll('tr.riga').forEach(tr => tr.classList.toggle('sel', +tr.dataset.i === i));
+  const m = marcatori[i];
+  if (m && vai){
+    map.setView(m.getLatLng(), Math.max(map.getZoom(), 17));
+    m.openPopup();
+    window.scrollTo({top: 0, behavior: 'smooth'});
+  }
+}
+
+function icona(s, i){
+  const v = valDi(s), p = v ? +v.PRIORITA || 0 : -1;
+  return L.divIcon({className: 'num-icona' + (prioritaria(s) ? ' pr' : '') + (i === selezionata ? ' sel' : '')
+      + (p === 5 ? ' p5' : '') + (v ? ' valutata' : '') + (v && v.ESITO === 'duplicato' ? ' dup' : ''),
+    html: `<span style="background:${colore(s)}">${i + 1}</span>`
+      + (v && v.ESITO !== 'duplicato' ? `<i style="background:${FA.COLORI[p]}">${p}</i>` : ''),
+    iconSize: [24, 24], iconAnchor: [12, 12]});
+}
+
+/* ---------------------------- dati ---------------------------- */
+async function carica(primaVolta){
+  if (!CODEM || !GRUPPI.length){
+    $('stato').className = 'errore';
+    $('stato').textContent = 'Link incompleto: chiedi alla Sala Operativa di inviarlo di nuovo.';
+    return;
+  }
+  $('bAggiorna').textContent = '⏳';
+  try {
+    const q = encodeURIComponent(JSON.stringify({azione: 'campo', codem: CODEM, gruppi: GRUPPI}));
+    const r = await fetch(`${URL_BACKEND}?q=${q}&t=${Date.now()}`, {cache: 'no-store'});
+    if (!r.ok) throw new Error('il server ha risposto ' + r.status);
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.errore || 'errore del server');
+    const d = j.dati;
+    valutazioni = d.valutazioni || [];
+    ultima = FA.ultime(valutazioni);
+
+    /* Stesso ordine della stampa della Sala: comune, indirizzo, civico.
+       Così il numero sulla carta coincide con quello del PDF. */
+    schede = d.schede.slice().sort((a, b) =>
+      (a.CITTA || '').localeCompare(b.CITTA || '', 'it')
+      || (a.INDIRIZZO || '').localeCompare(b.INDIRIZZO || '', 'it')
+      || (parseInt(a.CIVICO, 10) || 0) - (parseInt(b.CIVICO, 10) || 0));
+
+    livZona.clearLayers();
+    d.gruppi.forEach(g => {
+      if (!g.GEOJSON) return;
+      const l = L.geoJSON(g.GEOJSON, {interactive: false,
+        style: {color: g.COLORE, weight: 3, fillColor: g.COLORE, fillOpacity: .08}}).addTo(livZona);
+      const b = l.getBounds();
+      if (b.isValid()) L.marker(b.getCenter(), {interactive: false, icon: L.divIcon({className: 'etichetta',
+        iconSize: null, html: `<span style="border-color:${esc(g.COLORE)}">${esc(g.NOME)}</span>`})}).addTo(livZona);
+    });
+
+    livPunti.clearLayers();
+    marcatori = schede.map((s, i) => {
+      if (!conPos(s)) return null;
+      const m = L.marker([num(s.LAT), num(s.LON)], {icon: icona(s, i), interactive: !valDi(s)});
+      m.bindPopup(`<b>${i + 1}. ${prioritaria(s) ? '⚠ ' : ''}${esc(tipologia(s))}</b><br>
+        ${esc(indirizzo(s))}<br>${esc(s.CITTA)}
+        ${s.ADD_INFO ? `<br><i>${esc(s.ADD_INFO)}</i>` : ''}
+        <br>${esc(chiamante(s))}${s.CLI ? ` · <a href="tel:${esc(s.CLI)}">${esc(s.CLI)}</a>` : ''}
+        ${valDi(s) ? `<br><b>${esc(FA.riassunto(valDi(s)))}</b>` : ''}
+        <br><a target="_blank" rel="noopener"
+          href="https://www.google.com/maps/dir/?api=1&destination=${num(s.LAT)},${num(s.LON)}">🧭 Navigatore</a>
+        · <a href="#" class="apri-val" data-i="${i}">📝 Valuta</a>`);
+      m.on('popupopen', ev => {
+        const a = ev.popup.getElement().querySelector('.apri-val');
+        if (a) a.onclick = e => { e.preventDefault(); map.closePopup(); apriModulo(i); };
+      });
+      m.on('click', () => scegli(i, false));
+      return m.addTo(livPunti);
+    });
+
+    const fatte = schede.filter(valDi).length;
+    const pr = schede.filter(prioritaria).length;
+    $('allarme').hidden = !pr;
+    $('allarme').textContent = `⚠ ${pr} ${pr === 1 ? 'scheda' : 'schede'} con PERSONE / SOCCORSO: evidenziate in rosso.`;
+
+    const nomi = [...new Set(d.gruppi.map(g => g.NOME))].sort().join(', ');
+    $('sottotitolo').textContent = `${d.emergenza.CODEM} · ${schede.length} schede, ${fatte} valutate · ${nomi}`;
+    $('stato').hidden = true;
+    $('tabella').hidden = false;
+    tabella();
+    if (primaVolta) zona();
+  } catch(e){
+    $('stato').hidden = false;
+    $('stato').className = 'errore';
+    $('stato').textContent = 'Lettura non riuscita: ' + e.message;
+  } finally {
+    $('bAggiorna').textContent = '🔄';
+  }
+}
+
+/* --------------------------- modulo di valutazione ---------------------------
+   Tipo (proposto dalla tipologia), campi specifici del tipo, priorità 0-5,
+   esito, note e squadra. La squadra si ricorda su questo telefono. Si
+   salva con la posizione GPS del momento, se c'è. */
+let mod = null;
+const CHIAVE_SQUADRA = 'fireops_campo_squadra';
+const CHIAVE_NOMINATIVO = 'fireops_campo_nominativo';
+function apriModulo(i){
+  const s = schede[i];
+  const v = valDi(s);
+  if (v) return;
+  mod = {i, s, tipo: v ? v.TIPO : FA.suggerisci(s.DESCRIZIONE_TRIAGE),
+    priorita: v ? +v.PRIORITA || 0 : (prioritaria(s) ? 4 : 2),
+    dettagli: v ? (typeof v.DETTAGLI === 'object' ? Object.assign({}, v.DETTAGLI) : {}) : {}};
+  $('mTitolo').textContent = `Valutazione — scheda ${i + 1}`;
+  $('mScheda').textContent = `${tipologia(s)} · ${indirizzo(s)} ${s.CITTA || ''}`;
+  $('mTipi').innerHTML = FA.TIPI.map(t => `<button type="button" data-t="${t.k}">${t.ic} ${t.n}</button>`).join('');
+  $('mTipi').querySelectorAll('button').forEach(b => b.onclick = () => { mod.tipo = b.dataset.t; mod.dettagli = {}; disegnaModulo(); });
+  $('mPrio').innerHTML = [0, 1, 2, 3, 4, 5].map(p =>
+    `<button type="button" data-p="${p}">${p === 0 ? '0' : '★'.repeat(p)}</button>`).join('');
+  $('mPrio').querySelectorAll('button').forEach(b => b.onclick = () => { mod.priorita = +b.dataset.p; disegnaModulo(); });
+  $('mEsito').innerHTML = FA.ESITI.map(e => `<option value="${e.k}">${e.n}</option>`).join('');
+  $('mEsito').value = v ? v.ESITO : 'da_intervenire';
+  $('mEsito').onchange = disegnaModulo;
+  $('mNote').value = v ? v.NOTE || '' : '';
+  try {
+    $('mSquadra').value = localStorage.getItem(CHIAVE_SQUADRA) || '';
+    $('mNominativo').value = localStorage.getItem(CHIAVE_NOMINATIVO) || '';
+  } catch(e){}
+  const storia = valutazioni.filter(x => x.CODEM === s.CODEM && String(x.ID_CONTATTO) === String(s.ID_CONTATTO))
+    .sort((a, b) => String(b.TS).localeCompare(String(a.TS)));
+  $('mStoria').innerHTML = storia.length ? '<b>Valutazioni precedenti</b><br>' + storia.map(x =>
+    `${esc(FA.ora(x.TS))} · ${esc([x.NOMINATIVO, x.SQUADRA].filter(Boolean).join(' — ') || '—')} · `
+    + `${esc(FA.riassunto(x))}${x.SBLOCCATA_TS ? ' <i>(riaperta dalla Sala)</i>' : ''}`).join('<br>') : '';
+  $('mErr').textContent = '';
+  disegnaModulo();
+  $('modulo').hidden = false;
+}
+function disegnaModulo(){
+  /* Duplicato: nessun altro campo, si salva e basta. */
+  const dup = $('mEsito').value === 'duplicato';
+  ['mBloccoTipo', 'mCampi', 'mBloccoPrio'].forEach(x => { $(x).hidden = dup; });
+  $('mTipi').querySelectorAll('button').forEach(b => b.classList.toggle('attivo', b.dataset.t === mod.tipo));
+  $('mPrio').querySelectorAll('button').forEach(b => {
+    const p = +b.dataset.p, on = p === mod.priorita;
+    b.classList.toggle('attivo', on);
+    b.style.background = on ? FA.COLORI[p] : ''; b.style.color = on ? '#fff' : '';
+  });
+  $('mPrioNome').textContent = FA.PRIORITA[mod.priorita];
+  const t = FA.tipo(mod.tipo);
+  $('mCampi').innerHTML = t.campi.map(c => {
+    const val = mod.dettagli[c.k];
+    let h = '';
+    if (c.t === 'scelta') h = `<select data-c="${c.k}"><option value="">—</option>${c.v.map(o =>
+      `<option${val === o ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
+    else if (c.t === 'multi') h = `<div class="scelte">${c.v.map(o =>
+      `<button type="button" data-m="${c.k}" data-v="${esc(o)}" class="${(val || []).includes(o) ? 'attivo' : ''}">${esc(o)}</button>`).join('')}</div>`;
+    else if (c.t === 'si_no') h = `<div class="scelte">${['si', 'no'].map(o =>
+      `<button type="button" data-sn="${c.k}" data-v="${o}" class="${val === o ? 'attivo' : ''}">${o === 'si' ? 'Sì' : 'No'}</button>`).join('')}</div>`;
+    else if (c.t === 'numero') h = `<input type="number" inputmode="decimal" min="0" step="any" data-c="${c.k}" value="${esc(val == null ? '' : val)}">`;
+    else h = `<textarea data-c="${c.k}">${esc(val || '')}</textarea>`;
+    return `<div class="campo" style="margin-bottom:10px"><span class="lab">${esc(c.n)}${c.obbligatorio ? ' *' : ''}</span>${h}</div>`;
+  }).join('');
+  $('mCampi').querySelectorAll('[data-c]').forEach(el => el.oninput = el.onchange = () => {
+    mod.dettagli[el.dataset.c] = el.type === 'number' ? (el.value === '' ? '' : +el.value) : el.value;
+  });
+  $('mCampi').querySelectorAll('[data-m]').forEach(b => b.onclick = () => {
+    const a = new Set(mod.dettagli[b.dataset.m] || []);
+    a.has(b.dataset.v) ? a.delete(b.dataset.v) : a.add(b.dataset.v);
+    mod.dettagli[b.dataset.m] = [...a]; b.classList.toggle('attivo');
+  });
+  $('mCampi').querySelectorAll('[data-sn]').forEach(b => b.onclick = () => {
+    mod.dettagli[b.dataset.sn] = b.dataset.v;
+    $('mCampi').querySelectorAll(`[data-sn="${b.dataset.sn}"]`).forEach(x => x.classList.toggle('attivo', x === b));
+  });
+}
+$('mNo').onclick = () => { $('modulo').hidden = true; };
+$('mOk').onclick = async () => {
+  const t = FA.tipo(mod.tipo);
+  const dup = $('mEsito').value === 'duplicato';
+  const manca = !dup && t.campi.find(c => c.obbligatorio && !String(mod.dettagli[c.k] || '').trim());
+  if (manca) return $('mErr').textContent = `Compila "${manca.n}".`;
+  const squadra = $('mSquadra').value.trim();
+  const nominativo = $('mNominativo').value.trim();
+  if (!nominativo){ $('mNominativo').focus(); return $('mErr').textContent = 'Indica il nominativo di chi compila.'; }
+  try { localStorage.setItem(CHIAVE_SQUADRA, squadra); localStorage.setItem(CHIAVE_NOMINATIVO, nominativo); } catch(e){}
+  $('mOk').disabled = true; $('mOk').textContent = '⏳ Salvataggio…'; $('mErr').textContent = '';
+  try {
+    const q = encodeURIComponent(JSON.stringify({azione: 'valuta', codem: CODEM, gruppi: GRUPPI,
+      idContatto: mod.s.ID_CONTATTO, tipo: dup ? 'altro' : mod.tipo, priorita: dup ? 0 : mod.priorita,
+      esito: $('mEsito').value, dettagli: dup ? {} : mod.dettagli, note: $('mNote').value.trim(), squadra, nominativo,
+      lat: io ? io.lat : '', lon: io ? io.lon : ''}));
+    const r = await fetch(`${URL_BACKEND}?q=${q}&t=${Date.now()}`, {cache: 'no-store'});
+    if (!r.ok) throw new Error('il server ha risposto ' + r.status);
+    const j = await r.json();
+    if (!j.ok){
+      if (/già valutata/i.test(j.errore || '')){ $('modulo').hidden = true; alert(j.errore); await carica(false); return; }
+      throw new Error(j.errore || 'errore del server');
+    }
+    $('modulo').hidden = true;
+    await carica(false);
+  } catch(e){
+    $('mErr').textContent = 'Non salvata: ' + e.message + '. Riprova.';
+  } finally {
+    $('mOk').disabled = false; $('mOk').textContent = '💾 Salva valutazione';
+  }
+};
+
+$('bAggiorna').onclick = () => carica(false);
+carica(true);
+setInterval(() => { if (!document.hidden && $('modulo').hidden) carica(false); }, RIFRESCO_MS);
+})();
+</script>
+</body>
+</html>

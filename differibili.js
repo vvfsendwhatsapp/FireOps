@@ -408,7 +408,7 @@ function validaCodem(v, id){
    Le sole letture si ripetono: una scrittura ripetuta potrebbe essere già
    stata eseguita, e l'accodamento per ID_CONTATTO la renderebbe innocua,
    ma un gruppo creato due volte no. */
-const LETTURE = new Set(['emergenze', 'schede', 'gruppi']);
+const LETTURE = new Set(['emergenze', 'schede', 'gruppi', 'punti', 'valutazioni', 'dettaglio']);
 
 /* Tutto passa in GET, con la richiesta JSON nel parametro q: dalla pagina i
    POST ad Apps Script arrivano allo script ma la risposta si perde nel
@@ -571,6 +571,19 @@ async function leggiDettaglio(id, s){
   d = Object.assign({}, s, d);
   dettagli.set(k, d);
   return d;
+}
+/* Valutazioni dal campo (differibili-assessment.js). Foglio non ancora
+   creato o backend vecchio: nessuna valutazione, senza errore. */
+const FA = () => (window.FireOps && window.FireOps.Assessment) || null;
+async function leggiValutazioni(id, codem, emergenze, arch){
+  try {
+    if (!ID_FOGLIO) return await api(id, 'valutazioni', {codem, includiArchiviate: arch});
+    const elenco = codem ? [codem] : emergenze.map(e => e.CODEM);
+    if (!elenco.length) return [];
+    const r = await gviz('Assessment', `select * where B matches '${alternanza(elenco)}'`);
+    r.forEach(v => { try { v.DETTAGLI = JSON.parse(v.DETTAGLI || '{}'); } catch(e){ v.DETTAGLI = {}; } });
+    return r;
+  } catch(e){ return []; }
 }
 async function leggiGruppi(id, codem, emergenze, arch){
   const r = await leggiPerCodem(id, 'gruppi', 'Gruppi', 'B', codem, emergenze, arch);
@@ -759,6 +772,7 @@ function avvia(sezione){
   const livScelta = L.layerGroup().addTo(map);
   const livCluster = L.layerGroup().addTo(map);   // badge dei punti aggregati
   const livPriorita = L.layerGroup().addTo(map);  // aloni rossi delle schede con persone
+  const livValutate = L.layerGroup().addTo(map);  // badge di priorità delle schede valutate
 
   $('bSfondo').onclick = () => {
     map.removeLayer(sfondi[iSfondo].l);
@@ -796,9 +810,12 @@ function avvia(sezione){
   const gruppoDi = s => gruppi.find(g => g.ID_GRUPPO === s.GRUPPO) || null;
   const emergenzaScelta = () => emergenze.find(e => e.CODEM === $('selEmergenza').value) || null;
 
+  /* Una scheda valutata "duplicato" dal campo sparisce dalla carta e dai
+     conteggi della Sala: la situazione è già in un'altra scheda. */
+  const duplicata = s => !!(s.VAL && s.VAL.ESITO === 'duplicato');
   function visibili(){
     const sig = $('selComando').value;
-    return schede.filter(s => !nascoste.has(categoria(s).k)
+    return schede.filter(s => !duplicata(s) && !nascoste.has(categoria(s).k)
       && (!sig || String(s.CODEM).slice(-10, -8) === sig));
   }
 
@@ -826,8 +843,41 @@ function avvia(sezione){
         <span>Contatto ${esc(s.ID_CONTATTO)} · scheda NUE ${esc(s.ALTROENTE_IDSCHEDA)}${stessa > 1 ? ` (${stessa} chiamate)` : ''}</span>
         <span>${esc(s.CODEM)}${g ? ' · <b>' + esc(codiceDi(g)) + '</b>' : ''}</span>
       </div>
+      ${valutazioneHtml(s)}
       <a href="https://www.google.com/maps?q=${la},${lo}" target="_blank" rel="noopener">Apri in Google Maps</a>
     </div>`;
+  }
+
+  function valutazioneHtml(s){
+    const v = s.VAL, A = FA();
+    if (!v || !A) return '';
+    const p = +v.PRIORITA || 0;
+    return `<div class="diff-pop-val" style="border-color:${A.COLORI[p]}">
+      <b>${esc(A.tipo(v.TIPO).ic + ' ' + A.tipo(v.TIPO).n)}</b>
+      <span style="color:${A.COLORI[p]}">${A.stelle(p)} ${esc(A.PRIORITA[p])}</span>
+      <span>${esc(A.esito(v.ESITO))} · ${esc(A.ora(v.TS))}</span>
+      <span>👤 <b>${esc(v.NOMINATIVO || '—')}</b>${v.SQUADRA ? ' · ' + esc(v.SQUADRA) : ''}</span>
+      ${A.dettagli(v).map(([k, x]) => `<span>${esc(k)}: <b>${esc(x)}</b></span>`).join('')}
+      ${v.NOTE ? `<i>${esc(v.NOTE)}</i>` : ''}
+      ${sbloccabile(s) ? '<a href="#" class="diff-sblocca">🔓 Sblocca: il campo potrà rivalutarla</a>' : ''}</div>`;
+  }
+  const sbloccabile = s => !!(s.VAL && id && id.ruolo === 'COMANDO'
+    && (emergenze.find(e => e.CODEM === s.CODEM) || {}).STATO === 'ATTIVA');
+
+  /* Riapre una scheda valutata: la valutazione resta nella storia, la
+     scheda torna "da valutare" e il campo può compilarla di nuovo. */
+  async function sbloccaScheda(s){
+    const v = s.VAL;
+    if (!await chiedi({ok: '🔓 Sblocca', testo: `Riaprire la valutazione di questa scheda?\n`
+      + `${FA() ? FA().riassunto(v) : ''}\n${v.NOMINATIVO || ''} ${v.SQUADRA ? '— ' + v.SQUADRA : ''} · ${FA() ? FA().ora(v.TS) : ''}\n\n`
+      + 'Sul campo tornerà valutabile; la valutazione attuale resta nella storia.'})) return;
+    map.closePopup();
+    stato('Sblocco della scheda…');
+    try {
+      await api(id, 'sblocca', {codem: s.CODEM, idContatto: s.ID_CONTATTO});
+      await ricarica(true);
+      stato('Scheda sbloccata: sul campo è di nuovo valutabile.');
+    } catch(e){ stato('Sblocco non riuscito: ' + e.message); }
   }
 
   /* ------------------------- marcatori e pile -------------------------
@@ -839,12 +889,13 @@ function avvia(sezione){
      attorno al punto vero, a distanza fissa sullo schermo. */
   const marcatori = new Map();          // chiave -> {s, m, area, firma}
   const chiave = s => s.CODEM + '|' + s.ID_CONTATTO;
-  const firma = s => CAMPI.map(k => s[k]).join('\u241F') + '\u241F' + (s.GRUPPO || '');
+  const firma = s => CAMPI.map(k => s[k]).join('\u241F') + '\u241F' + (s.GRUPPO || '')
+    + '\u241F' + (s.VAL ? s.VAL.ID_ASS : '');
   const chiavePunto = s => num(s.LAT).toFixed(5) + ',' + num(s.LON).toFixed(5);
 
   function passaFiltri(s){
     const sig = $('selComando').value;
-    return !nascoste.has(categoria(s).k) && (!sig || String(s.CODEM).slice(-10, -8) === sig);
+    return !duplicata(s) && !nascoste.has(categoria(s).k) && (!sig || String(s.CODEM).slice(-10, -8) === sig);
   }
 
   /* Posizione a schermo dell'i-esimo di n punti sovrapposti. */
@@ -867,6 +918,7 @@ function avvia(sezione){
       const p = offsetPila(num(x.s.LAT), num(x.s.LON), i, el.length);
       x.m.setLatLng(p);
       if (x.alone) x.alone.setLatLng(p);
+      if (x.badge) x.badge.setLatLng(p);
     }));
   }
   /* ---------------------------- aggregazione ----------------------------
@@ -907,9 +959,10 @@ function avvia(sezione){
       });
       const g = settori.size === 1 ? gruppoDi(el[0].s) : null;
       const n = el.length;
+      const pMax = Math.max(-1, ...el.map(x => x.s.VAL ? +x.s.VAL.PRIORITA || 0 : -1));
       const lato = n < 10 ? 30 : n < 50 ? 36 : n < 100 ? 42 : n < 250 ? 48 : 56;
       const b = L.marker([la / n, lo / n], {pmIgnore: true, snapIgnore: true, icon: L.divIcon({
-        className: 'diff-cluster ' + classeBadge(n), iconSize: [lato, lato], iconAnchor: [lato / 2, lato / 2],
+        className: 'diff-cluster ' + classeBadge(n) + (pMax >= 4 ? ' diff-cluster-urgente' : ''), iconSize: [lato, lato], iconAnchor: [lato / 2, lato / 2],
         html: `<span${g ? ` style="box-shadow:0 0 0 3px ${esc(g.COLORE)}"` : ''}>${n}</span>`})});
       b.bindTooltip([...tipi].sort((a, c) => c[1] - a[1]).map(([t, c]) => `${c} · ${esc(t)}`).join('<br>')
         + (g ? `<br><b>${esc(codiceDi(g))}</b>` : ''), {direction: 'top'});
@@ -922,7 +975,15 @@ function avvia(sezione){
       livCluster.addLayer(b);
     });
   }
-  const aggiornaVista = () => { raggruppa(); posizionaPile(); };
+  const aggiornaVista = () => {
+    raggruppa();
+    marcatori.forEach(x => { if (x.badge){
+      const vis = x.m && livSchede.hasLayer(x.m);
+      if (vis && !livValutate.hasLayer(x.badge)) livValutate.addLayer(x.badge);
+      if (!vis && livValutate.hasLayer(x.badge)) livValutate.removeLayer(x.badge);
+    } });
+    posizionaPile();
+  };
   map.on('zoomend', aggiornaVista);
 
   function creaMarcatore(s){
@@ -947,6 +1008,8 @@ function avvia(sezione){
         if (f) livScelta.addLayer(f);
         const a = ev.popup.getElement().querySelector('.diff-cli');
         if (a) a.onclick = e => { e.preventDefault(); NS.copiaTesto(e, d.CLI); };
+        const sb = ev.popup.getElement().querySelector('.diff-sblocca');
+        if (sb) sb.onclick = e => { e.preventDefault(); sbloccaScheda(s); };
       } catch(e){
         if (ev.popup.isOpen()) ev.popup.setContent(`<div class="diff-pop"><b>${esc(categoria(s).n)}</b>
           <div class="diff-errore">Dettaglio non disponibile: ${esc(e.message)}</div></div>`);
@@ -967,6 +1030,7 @@ function avvia(sezione){
     if (x.m) livSchede.removeLayer(x.m);
     if (x.area) livAree.removeLayer(x.area);
     if (x.alone) livPriorita.removeLayer(x.alone);
+    if (x.badge) livValutate.removeLayer(x.badge);
     marcatori.delete(k);
   }
 
@@ -980,6 +1044,18 @@ function avvia(sezione){
           pmIgnore: true, snapIgnore: true, icon: L.divIcon({className: 'diff-alone', iconSize: [34, 34],
             iconAnchor: [17, 17], html: '<span></span>'})});
         livPriorita.addLayer(x.alone);
+      }
+      if (s.VAL && FA()){
+        const p = +s.VAL.PRIORITA || 0;
+        /* Anello del colore "valutata" attorno al pallino, e in alto a destra
+           il numero della priorità (✓ se l'intervento è eseguito). */
+        x.badge = L.marker([num(s.LAT), num(s.LON)], {pane: 'diffEtichette', interactive: false,
+          pmIgnore: true, snapIgnore: true, icon: L.divIcon({className: 'diff-val' + (p === 5 ? ' p5' : '')
+            + (s.VAL.ESITO === 'eseguito' || s.VAL.ESITO === 'non_necessario' ? ' chiusa' : ''),
+            iconSize: [24, 24], iconAnchor: [12, 12],
+            html: `<em style="border-color:${FA().COLORE_VALUTATA}"></em>`
+              + `<span style="background:${FA().COLORI[p]}">${s.VAL.ESITO === 'eseguito' ? '✓' : p}</span>`})});
+        livValutate.addLayer(x.badge);
       }
       if ($('aree').checked){ x.area = formaLocalizzazione(s); if (x.area) livAree.addLayer(x.area); }
     }
@@ -1089,7 +1165,7 @@ function avvia(sezione){
   /* Ridisegno completo: al primo caricamento, al cambio di emergenza o di
      filtri, quando cambia quello che si vuole vedere e non i dati. */
   function disegna(){
-    livSchede.clearLayers(); livAree.clearLayers(); livScelta.clearLayers(); livPriorita.clearLayers();
+    livSchede.clearLayers(); livAree.clearLayers(); livScelta.clearLayers(); livPriorita.clearLayers(); livValutate.clearLayers();
     marcatori.clear();
     schede.forEach(metti);
     aggiornaVista();
@@ -1175,7 +1251,8 @@ function avvia(sezione){
 
   function riepilogo(v){
     const conteggi = new Map(), tipi = new Map();
-    schede.forEach(s => { const c = categoria(s); tipi.set(c.k, c); conteggi.set(c.k, (conteggi.get(c.k) || 0) + 1); });
+    schede.filter(s => !duplicata(s)).forEach(s => { const c = categoria(s); tipi.set(c.k, c); conteggi.set(c.k, (conteggi.get(c.k) || 0) + 1); });
+    const dup = schede.filter(duplicata).length;
     const senza = v.filter(s => !conPosizione(s)).length;
     const inGruppo = v.filter(s => s.GRUPPO).length;
     const nue = new Set(v.map(s => s.ALTROENTE_IDSCHEDA).filter(Boolean)).size;
@@ -1188,7 +1265,13 @@ function avvia(sezione){
         <div><b>${nue}</b><span>schede NUE</span></div>
         <div><b>${inGruppo}</b><span>nei settori</span></div>
       </div>
+      ${dup ? `<p class="pagina-nota" style="margin:0 0 6px">⧉ ${dup} ${dup === 1 ? 'duplicato nascosto' : 'duplicati nascosti'} dalla carta</p>` : ''}
       ${v.some(prioritaria) ? `<p class="diff-pr-riga">⚠ ${v.filter(prioritaria).length} con persone / soccorso</p>` : ''}
+      ${(() => { const val = v.filter(s => s.VAL); if (!val.length) return '';
+        const urg = val.filter(s => +s.VAL.PRIORITA >= 4 && s.VAL.ESITO === 'da_intervenire').length;
+        const da = val.filter(s => s.VAL.ESITO === 'da_intervenire').length;
+        return `<p class="diff-val-riga">📝 ${val.length} valutate su ${v.length} · ${da} da intervenire`
+          + `${urg ? ` · <b>${urg} con priorità 4-5</b>` : ''}</p>`; })()}
       ${senza ? `<p class="diff-errore">${senza} senza coordinate: non compaiono sulla carta.</p>` : ''}
       <div class="diff-legenda">${voci || '<p class="pagina-nota">Nessuna scheda per la selezione.</p>'}</div>`;
     $('riepilogo').querySelectorAll('input[data-cat]').forEach(i => {
@@ -1238,7 +1321,8 @@ function avvia(sezione){
       n.onclick = () => seleziona(sel);
       const c = document.createElement('td');
       c.className = 'diff-tab-num';
-      c.textContent = conta(gg);
+      const sg = schedeDi(gg), fatte = sg.filter(x => x.VAL).length;
+      c.innerHTML = `${conta(gg)}${fatte ? `<small title="valutate">✓${fatte}</small>` : ''}`;
       const a = document.createElement('td');
       a.className = 'diff-tab-azioni';
       const btn = (t, tit, f, cls) => {
@@ -1251,6 +1335,9 @@ function avvia(sezione){
       btn('🔍', 'Inquadra', () => { const b = limitiDi(gg); if (b) map.fitBounds(b, {padding: [40, 40], maxZoom: 17}); });
       if (cmd) btn('🖨', 'PDF', () => stampa(schedeDi(gg), sel.tipo === 'ss' ? codiceDi(gg[0])
         : sel.tipo === 'ws' ? `Worksite ${codiceWs(sel.settore, sel.ws)}` : 'Settore ' + sel.settore, gg));
+      if (cmd) btn('🔗', 'Link alla pagina da campo di questa zona', () => linkCampo(gg,
+        sel.tipo === 'ss' ? codiceDi(gg[0]) : sel.tipo === 'ws' ? `Worksite ${codiceWs(sel.settore, sel.ws)}`
+          : 'Settore ' + sel.settore));
       if (gg.every(scrivibile)) btn('🗑', 'Elimina', () => eliminaGruppi(gg, etichetta.replace(/<[^>]+>/g, '')), 'diff-rosso');
       tr.append(n, c, a);
       corpo.appendChild(tr);
@@ -1389,6 +1476,9 @@ function avvia(sezione){
       const vista = [id.ente, codem || '', arch].join('|');
       const lette = await leggiSchede(id, codem, emergenze, arch);
       const gr = await leggiGruppi(id, codem, emergenze, arch);
+      const ult = FA() ? FA().ultime(await leggiValutazioni(id, codem, emergenze, arch)) : new Map();
+      lette.forEach(s => { s.VAL = ult.get(s.CODEM + '|' + s.ID_CONTATTO) || null; });
+      controllaPriorita5([...ult.values()], lette);
       /* I sotto-settori appena creati si vedono subito, prima che il foglio
          li restituisca: restano "provvisori" finché la lettura non li trova. */
       provvisori.forEach((g, k) => { if (gr.some(x => x.CODEM === g.CODEM && x.NOME === g.NOME)) provvisori.delete(k); });
@@ -1752,6 +1842,86 @@ function avvia(sezione){
     }
   }
 
+  /* ------------------------- link per il campo -------------------------
+     Un indirizzo della pagina differibili-campo.html con il CODEM, gli ID
+     dei sotto-settori della zona e il nome da mostrare. La pagina legge da
+     sé le schede di quei sotto-settori: chi la apre non deve avere FireOps.
+     Il link vale finché l'emergenza è in corso. */
+  async function linkCampo(gg, nome){
+    const veri = gg.filter(g => !g.provvisorio);
+    if (!veri.length) return stato('Il sotto-settore è ancora in salvataggio: riprova tra poco.');
+    const u = new URL('differibili-campo.html', location.href);
+    u.search = new URLSearchParams({c: veri[0].CODEM, g: veri.map(g => g.ID_GRUPPO).join(','), n: nome}).toString();
+    const link = u.toString();
+    const n = schede.filter(s => veri.some(g => g.ID_GRUPPO === s.GRUPPO)).length;
+    const testo = `FireOps VVF — ${nome} (${veri[0].CODEM}): ${n} schede differibili.\n${link}`;
+    inviaLink(nome, n, veri.length, testo);
+  }
+
+  /* Invio come in Messaggistica: prefisso e numero, poi WhatsApp Desktop,
+     WhatsApp Web o Telegram. I pulsanti si accendono quando il numero è
+     plausibile. Telegram non accetta un testo precompilato verso un numero:
+     il messaggio si copia negli appunti e si apre la chat, basta incollare. */
+  let boxInvio = null;
+  function inviaLink(nome, n, nSS, testo){
+    if (!boxInvio){
+      boxInvio = document.createElement('div');
+      boxInvio.className = 'diff-modale';
+      boxInvio.innerHTML = `<div class="diff-modale-box diff-invio">
+        <div class="diff-modale-titolo"></div>
+        <div class="diff-invio-riga">
+          <label>Prefisso<input type="text" class="pref" value="+39" inputmode="tel" autocomplete="off"></label>
+          <label>Numero di telefono<input type="tel" class="tel" placeholder="Es. 3331234567" autocomplete="off"></label>
+        </div>
+        <textarea class="anteprima" rows="4" readonly></textarea>
+        <div class="diff-invio-azioni">
+          <button type="button" class="btn-whatsapp" data-a="wd" disabled>💻 WhatsApp Desktop</button>
+          <button type="button" class="btn-whatsapp" data-a="ww" disabled>📱 WhatsApp Web</button>
+          <button type="button" class="btn-telegram" data-a="tg" disabled>✈️ Telegram</button>
+        </div>
+        <div class="diff-modale-azioni"><button type="button" class="btn-toggle-radar" data-a="no">Chiudi</button></div>
+      </div>`;
+      app.appendChild(boxInvio);
+    }
+    const b = boxInvio;
+    b.querySelector('.diff-modale-titolo').textContent = `Invia il link — ${nome} · ${n} schede, ${nSS} sotto-settori`;
+    b.querySelector('.anteprima').value = testo;
+    const pref = b.querySelector('.pref'), tel = b.querySelector('.tel');
+    const numero = () => {
+      const p = pref.value.replace(/\D/g, '').replace(/^00/, '');
+      const t = tel.value.replace(/\D/g, '');
+      return p && t.length >= 6 ? p + t : '';
+    };
+    const pulsanti = b.querySelectorAll('.diff-invio-azioni button');
+    const controlla = () => {
+      const ok = !!numero();
+      pulsanti.forEach(x => { x.disabled = !ok; });
+      tel.classList.toggle('campo-mancante', !!tel.value && !ok);
+    };
+    pref.oninput = tel.oninput = controlla;
+    controlla();
+    const chiudi = () => { b.hidden = true; document.removeEventListener('keydown', esc_); };
+    const esc_ = e => { if (e.key === 'Escape') chiudi(); };
+    document.addEventListener('keydown', esc_);
+    b.querySelector('[data-a="no"]').onclick = chiudi;
+    const t = encodeURIComponent(testo);
+    b.querySelector('[data-a="wd"]').onclick = () => {
+      location.href = `whatsapp://send?phone=${numero()}&text=${t}`;
+      stato(`Link di ${nome} aperto in WhatsApp Desktop per +${numero()}.`); chiudi();
+    };
+    b.querySelector('[data-a="ww"]').onclick = () => {
+      window.open(`https://web.whatsapp.com/send?phone=${numero()}&text=${t}`, '_blank', 'noopener');
+      stato(`Link di ${nome} aperto in WhatsApp Web per +${numero()}.`); chiudi();
+    };
+    b.querySelector('[data-a="tg"]').onclick = async () => {
+      try { await navigator.clipboard.writeText(testo); } catch(e){}
+      window.open(`https://t.me/+${numero()}`, '_blank', 'noopener');
+      stato(`Messaggio copiato: incollalo nella chat Telegram di +${numero()}.`); chiudi();
+    };
+    b.hidden = false;
+    setTimeout(() => tel.focus(), 30);
+  }
+
   /* --------------------------- sotto-settori ---------------------------
      Codice, menu del perimetro, rinomina e modifica dei vertici. Le
      scritture passano in POST senza leggere la risposta; la carta si
@@ -1787,6 +1957,12 @@ function avvia(sezione){
     ];
     if (id && id.ruolo === 'COMANDO' && !g.provvisorio)
       voci.push({et: '🖨 PDF del sotto-settore', f: () => stampa(schede.filter(s => s.GRUPPO === g.ID_GRUPPO), codiceDi(g), [g])});
+    if (id && id.ruolo === 'COMANDO' && !g.provvisorio){
+      voci.push({et: `🔗 Link per il campo (${codiceDi(g)})`, f: () => linkCampo([g], codiceDi(g))});
+      const ws = gruppi.filter(y => y.CODEM === g.CODEM && livelli(y).settore === x.settore && livelli(y).ws === x.ws);
+      voci.push({et: `🔗 Link per il campo (worksite ${codiceWs(x.settore, x.ws)})`,
+        f: () => linkCampo(ws, `Worksite ${codiceWs(x.settore, x.ws)}`)});
+    }
     if (scrivibile){
       voci.push({et: '✏️ Modifica il perimetro', f: () => modificaPerimetro(g)});
       voci.push({et: '🏷 Cambia codice', f: () => rinominaGruppo(g)});
@@ -1914,6 +2090,7 @@ function avvia(sezione){
       {et: '🧭 Apri in Google Maps', f: () => window.open(
         `https://www.google.com/maps?q=${num(s.LAT)},${num(s.LON)}`, '_blank', 'noopener')}
     ];
+    if (sbloccabile(s)) voci.push({et: '🔓 Sblocca la valutazione', f: () => sbloccaScheda(s)});
     if (scrivibile){
       voci.push({t: 'titolo', et: g ? 'In ' + codiceDi(g) : 'Senza settore'});
       altri.forEach(x => voci.push({et: `➜ Sposta in ${codiceDi(x)}`, f: () => spostaScheda(s, x)}));
@@ -2104,6 +2281,8 @@ function avvia(sezione){
       <td>${esc(s.CLI)}</td>
       <td>${esc(s.DATA_INS)}</td>
       <td>${s.RMAX ? '±' + esc(Math.round(num(s.RMAX))) + ' m' : '—'}</td>
+      <td>${s.VAL && FA() ? esc(FA().stelle(+s.VAL.PRIORITA || 0) + ' ' + FA().tipo(s.VAL.TIPO).n + ' · '
+        + FA().esito(s.VAL.ESITO)) : ''}</td>
       <td>${esc(s.ID_CONTATTO)}</td></tr>`).join('');
     const doc = document.createElement('div');
     doc.id = 'diff-stampa-doc';
@@ -2116,7 +2295,7 @@ function avvia(sezione){
         <header class="dp-testata"><h1>Elenco schede — ${esc(titolo)}</h1>
           <p>${esc(ord[0].CODEM)} · ordinate per comune e indirizzo</p></header>
         <table class="dp-tab"><thead><tr><th>N.</th><th>Triage</th><th>Indirizzo</th><th>Comune</th>
-          <th>Note</th><th>Chiamante</th><th>Telefono</th><th>Inserita</th><th>Precisione</th><th>Contatto</th>
+          <th>Note</th><th>Chiamante</th><th>Telefono</th><th>Inserita</th><th>Precisione</th><th>Valutazione</th><th>Contatto</th>
         </tr></thead><tbody>${righe}</tbody></table>
       </section>`;
     document.body.appendChild(doc);
@@ -2129,7 +2308,7 @@ function avvia(sezione){
     const altezzaPrima = wrap.style.height;
     wrap.style.height = '';
 
-    [livSchede, livAree, livScelta, livGruppi, livCluster, livPriorita].forEach(l => map.removeLayer(l));
+    [livSchede, livAree, livScelta, livGruppi, livCluster, livPriorita, livValutate].forEach(l => map.removeLayer(l));
     const tmp = L.featureGroup().addTo(map);
     const gg = [].concat(gruppo || []).filter(g => g && g.GEOJSON);
     gg.forEach(g => {
@@ -2191,7 +2370,7 @@ function avvia(sezione){
       segno.remove();
       doc.remove();
       map.removeLayer(tmp);
-      [livGruppi, livAree, livSchede, livScelta, livCluster, livPriorita].forEach(l => map.addLayer(l));
+      [livGruppi, livAree, livSchede, livScelta, livCluster, livPriorita, livValutate].forEach(l => map.addLayer(l));
       occupato = false;
       setTimeout(() => { map.invalidateSize(); inquadraSettore(); }, 60);
     };
@@ -2229,6 +2408,65 @@ function avvia(sezione){
     $('selEmergenza').value = ''; $('selComando').value = '';
     identifica();
   };
+
+  /* PRIORITÀ 5 — "forza aggiornamento"
+     La pagina da campo non può spingere niente alla Sala: è la Sala che
+     controlla più spesso. Ogni SENTINELLA_MS si leggono le sole
+     valutazioni (poche righe); se ne compare una nuova con priorità 5 si
+     ricarica subito tutto e scatta l'allarme viola con un segnale sonoro.
+     Le priorità 5 già presenti all'apertura non suonano. */
+  const SENTINELLA_MS = 20000;
+  let visti5 = null;
+  function controllaPriorita5(vals, elenco){
+    const p5 = vals.filter(v => +v.PRIORITA === 5 && v.ESITO !== 'duplicato');
+    if (!visti5){ visti5 = new Set(p5.map(v => v.ID_ASS)); return false; }
+    const nuove = p5.filter(v => !visti5.has(v.ID_ASS));
+    nuove.forEach(v => visti5.add(v.ID_ASS));
+    if (nuove.length) allarme5(nuove, elenco || schede);
+    return nuove.length > 0;
+  }
+  function suona(){
+    try {
+      const ac = new (window.AudioContext || window.webkitAudioContext)();
+      [0, .35, .7].forEach(t => {
+        const o = ac.createOscillator(), g = ac.createGain();
+        o.frequency.value = 880; o.connect(g); g.connect(ac.destination);
+        g.gain.setValueAtTime(.25, ac.currentTime + t); g.gain.setValueAtTime(0, ac.currentTime + t + .22);
+        o.start(ac.currentTime + t); o.stop(ac.currentTime + t + .25);
+      });
+    } catch(e){}
+  }
+  function allarme5(nuove, elenco){
+    let box = app.querySelector('.diff-allarme5');
+    if (!box){
+      box = document.createElement('div');
+      box.className = 'diff-allarme5';
+      app.querySelector('.diff-mapwrap').appendChild(box);
+    }
+    const righe = nuove.map(v => {
+      const s = elenco.find(x => x.CODEM === v.CODEM && String(x.ID_CONTATTO) === String(v.ID_CONTATTO)) || {};
+      const g = gruppi.find(x => x.ID_GRUPPO === v.GRUPPO);
+      return `${g ? '<b>' + esc(codiceDi(g)) + '</b> · ' : ''}${esc(FA() ? FA().tipo(v.TIPO).n : v.TIPO)}`
+        + ` · ${esc(s.CITTA || '')} · ${esc([v.NOMINATIVO, v.SQUADRA].filter(Boolean).join(' — '))}`;
+    });
+    box.innerHTML = `<b>🚨 PRIORITÀ 5 — URGENTISSIMA</b><span>${righe.join('<br>')}</span>
+      <button type="button" class="btn-toggle-radar" data-a="vedi">Mostra</button>
+      <button type="button" class="diff-avviso-x" data-a="x" title="Chiudi">×</button>`;
+    box.hidden = false;
+    box.querySelector('[data-a="x"]').onclick = () => { box.hidden = true; };
+    box.querySelector('[data-a="vedi"]').onclick = () => {
+      const p = nuove.map(v => elenco.find(x => x.CODEM === v.CODEM && String(x.ID_CONTATTO) === String(v.ID_CONTATTO)))
+        .filter(x => x && conPosizione(x)).map(x => [num(x.LAT), num(x.LON)]);
+      if (p.length) map.fitBounds(L.latLngBounds(p), {padding: [80, 80], maxZoom: 17});
+    };
+    suona();
+  }
+  setInterval(async () => {
+    if (app.offsetParent === null || !id || id.errore || !caricato || ricaricaInCorso) return;
+    const codem = $('selEmergenza').value || undefined;
+    const vals = await leggiValutazioni(id, codem, emergenze, $('archiviate').checked);
+    if (controllaPriorita5(vals) && !occupato) ricarica(true);
+  }, SENTINELLA_MS);
 
   /* La DR segue le emergenze mentre i Comandi caricano: si rilegge ogni due
      minuti, ma solo con la sezione a schermo e nessun lavoro in corso. */
