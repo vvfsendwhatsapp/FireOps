@@ -2833,6 +2833,57 @@ body.diff-prep #diff-stampa-doc { display: block; position: fixed; left: -30000p
   #diff-stampa-doc .dp-tab tr.dp-pr td, .diff-num-pr span { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
 
+/* --- Invio del link per il campo: prefisso, numero, tre canali --- */
+.diff-invio { width: min(520px, 94vw); }
+.diff-invio-riga { display: grid; grid-template-columns: 110px 1fr; gap: 10px; }
+#diff-app .diff-invio label { display: flex; flex-direction: column; gap: 4px; color: var(--text-muted);
+  font-size: 12px; text-transform: uppercase; }
+#diff-app .diff-invio input, #diff-app .diff-invio textarea { width: 100%; padding: 9px 10px;
+  background: var(--dark-color); color: var(--text-main); border: 1px solid var(--border-color);
+  border-radius: 4px; font-size: 14px; }
+#diff-app .diff-invio textarea { font-size: 12px; color: var(--text-muted); resize: none; }
+.diff-invio-azioni { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.diff-invio-azioni button { padding: 10px 6px; border: none; border-radius: 4px; font-weight: bold;
+  font-size: 13px; cursor: pointer; }
+.diff-invio-azioni button:disabled { background: #333 !important; color: #666 !important; cursor: not-allowed; }
+@media (max-width: 520px) { .diff-invio-azioni { grid-template-columns: 1fr; } }
+
+/* --- VALUTAZIONI DAL CAMPO --- */
+/* Badge di priorità in alto a destra del punto: numero 0-5, ✓ se eseguito. */
+.diff-val { pointer-events: none !important; }
+/* Anello attorno al pallino (24 px, centrato sul punto) e numero di
+   priorità in alto a destra. */
+/* niente position:relative: l'icona Leaflet è già absolute e farebbe saltare il badge a ogni zoom */
+.diff-val em { position: absolute; inset: 0; border-radius: 50%; border: 3px solid;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .55), 0 0 6px rgba(0, 229, 255, .7); }
+.diff-val span { position: absolute; right: -9px; top: -9px; display: flex; align-items: center;
+  justify-content: center; width: 16px; height: 16px; border-radius: 8px; color: #fff;
+  font: bold 10px/1 sans-serif; border: 1.5px solid #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .6); }
+.diff-val.chiusa span { opacity: .65; }
+.diff-val.p5 span { animation: diffBadge5 1s ease-in-out infinite; }
+@keyframes diffBadge5 { 50% { transform: scale(1.4); box-shadow: 0 0 10px #8e24aa; } }
+.diff-cluster-urgente span { box-shadow: 0 0 0 3px #e53935, 0 0 10px #e53935 !important; }
+
+/* Popup, riepilogo, tabella settori */
+.diff-pop-val { display: flex; flex-direction: column; gap: 1px; margin: 6px 0; padding: 5px 7px;
+  border-left: 4px solid; background: #f6f6f6; border-radius: 3px; font-size: 12px; }
+.diff-val-riga { margin: 0 0 8px; padding: 5px 8px; border-radius: 6px; background: rgba(255, 255, 255, .06);
+  border: 1px solid var(--border-color, #555); font-size: 13px; }
+.diff-val-riga b { color: #ff8a80; }
+.diff-tab-num small { display: block; font-size: 10.5px; color: #8bc34a; }
+
+/* Allarme priorità 5: viola, in alto al centro, con segnale sonoro */
+.diff-allarme5 { position: absolute; z-index: 730; top: 56px; left: 50%; transform: translateX(-50%);
+  width: min(480px, calc(100% - 40px)); display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px;
+  padding: 10px 12px; border-radius: 10px; background: #6a1b9a; color: #fff; border: 2px solid #e040fb;
+  box-shadow: 0 0 24px rgba(224, 64, 251, .8); font-size: 13px; animation: diffLampo5 .7s ease-in-out 8; }
+.diff-allarme5[hidden] { display: none; }
+.diff-allarme5 b { flex: 1 1 100%; font-size: 15px; letter-spacing: .4px; }
+.diff-allarme5 span { flex: 1 1 auto; }
+.diff-allarme5 .btn-toggle-radar { background: #fff; color: #6a1b9a; border-color: #fff; font-weight: bold; }
+.diff-allarme5 .diff-avviso-x { color: #fff; }
+@keyframes diffLampo5 { 50% { background: #aa00ff; box-shadow: 0 0 40px #e040fb; } }
+
 /* ==========================================================
    ==========================================================
    MODULI AGGIUNTIVI

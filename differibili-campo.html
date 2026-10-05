@@ -23,9 +23,15 @@
   :root { --giallo: #ffd700; --scuro: #121212; --sup: #1e1e1e; --bordo: #333; --testo: #e0e0e0;
     --muto: #aaa; --rosso: #d50000; color-scheme: dark; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  /* Pagina a colonna fissa: testata, carta, comandi e sotto la tabella,
+     che è l'unica parte a scorrere. Così la carta resta sempre a vista e
+     l'intestazione della tabella si ancora al suo riquadro, non alla
+     finestra. */
+  html, body { height: 100%; }
   body { font: 14px/1.4 Arial, sans-serif; background: var(--scuro); color: var(--testo);
-    padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
-  header { position: sticky; top: 0; z-index: 1000; display: flex; align-items: center; gap: 10px;
+    padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+    display: flex; flex-direction: column; height: 100dvh; overflow: hidden; }
+  header { flex: 0 0 auto; z-index: 1000; display: flex; align-items: center; gap: 10px;
     padding: 8px 12px; background: var(--sup); border-bottom: 3px solid var(--giallo); }
   header img { height: 34px; }
   header h1 { font-size: 17px; color: var(--giallo); line-height: 1.2; }
@@ -36,15 +42,17 @@
     text-decoration: none; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
   button:hover, .bt:hover { border-color: var(--giallo); }
   button.attivo { background: var(--giallo); color: var(--scuro); border-color: var(--giallo); }
-  #mappa { height: 58vh; min-height: 300px; border-bottom: 1px solid var(--bordo); }
-  .barra { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 12px; align-items: center; }
+  #mappa { flex: 0 0 auto; height: 52vh; min-height: 260px; border-bottom: 1px solid var(--bordo); z-index: 1; }
+  .barra { flex: 0 0 auto; display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 12px; align-items: center; }
+  #allarme, #stato { flex: 0 0 auto; }
   .barra .info { flex: 1 1 auto; font-size: 12px; color: var(--muto); }
   #allarme { margin: 8px 12px 0; padding: 8px 12px; border-radius: 8px; background: #b71c1c;
     border: 2px solid #ff5252; color: #fff; font-weight: bold; }
   #allarme[hidden] { display: none; }
-  .tab-wrap { padding: 0 12px 24px; overflow-x: auto; }
+  .tab-wrap { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 0 12px 24px;
+    -webkit-overflow-scrolling: touch; }
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th { position: sticky; top: 58px; background: var(--scuro); color: var(--giallo); text-align: left;
+  th { position: sticky; top: 0; z-index: 2; background: var(--scuro); color: var(--giallo); text-align: left;
     font-size: 11px; text-transform: uppercase; padding: 6px; border-bottom: 2px solid var(--bordo); }
   td { padding: 7px 6px; border-bottom: 1px solid var(--bordo); vertical-align: top; }
   tr.riga { cursor: pointer; }
@@ -89,7 +97,8 @@
   .num-icona i { position: absolute; right: -9px; top: -9px; min-width: 16px; height: 16px; padding: 0 3px;
     border-radius: 8px; color: #fff; font: bold 10px/16px Arial, sans-serif; font-style: normal;
     text-align: center; border: 1.5px solid #fff; }
-  .num-icona { position: relative; }
+  /* L'icona Leaflet è già position:absolute (ed è il riferimento del
+     badge): sovrascriverla con relative la spostava a ogni zoom. */
   .num-icona.p5 i { animation: lampo 1s infinite; }
   @keyframes lampo { 50% { transform: scale(1.35); } }
   #modulo { position: fixed; inset: 0; z-index: 3000; background: rgba(0, 0, 0, .7); display: flex;
@@ -114,9 +123,8 @@
   .err { color: #ff8a80; font-weight: bold; font-size: 13px; }
   .storia { font-size: 12px; color: var(--muto); border-top: 1px solid var(--bordo); padding-top: 8px; }
   @media (max-width: 700px) {
-    #mappa { height: 50vh; }
+    #mappa { height: 42vh; }
     .col-larga { display: none; }
-    th { top: 50px; }
   }
 </style>
 </head>
