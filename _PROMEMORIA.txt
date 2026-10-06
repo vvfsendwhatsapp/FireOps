@@ -37,3 +37,5 @@ Trasmissione sitac tramite bluetooth, sitac 3d, mappa topografica e satellitare 
 https://script.google.com/macros/s/AKfycbyp6jQ331Yk5q7_hkM74ZyhUh1c3zQUJG7SpuoE18HslBO36YKSTYIQf-z7gSwXR4Yv/exec
 
 sitac con foto!
+aggiungi a fianco ad aree percorse, importa geojson aree percorse APR
+idem per aree a fuoco attivo import geojson aree attive APR
