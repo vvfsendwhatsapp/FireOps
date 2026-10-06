@@ -1,1433 +1,1206 @@
-/* FireOps VVF - modulo "comunicazioni"
- * Caricato da fireops-app.js alla prima apertura (#/comunicazioni).
- * CSS e HTML sono qui dentro; lo stile è limitato a .pg-comunicazioni per non toccare gli altri moduli.
+/* FireOps VVF - modulo Comunicazioni
+ * Missioni per soccorso e mancate timbrature via email.
+ * Si registra con FireOps.registra({id, css, html, init}); vedi app/js/fireops-app.js.
+ *
+ * Dati comando: usa FireOps.comandi() (db/comandi.json, già nel formato corto).
+ * Le direzioni regionali non sono ancora in un file dati condiviso: restano qui
+ * sotto DIREZIONI, da spostare in db/direzioni.json quando esisterà.
  */
-FireOps.registra({
-  id: "comunicazioni",
+(function () {
+  "use strict";
 
-  css: `
+  const TEST_ADDRESS = "andrea.pelizza.vvf@gmail.com";
+
+  const TIPOLOGIE = [
+    "Incendio fabbricato", "Incendio boschivo / vegetazione", "Incendio veicolo",
+    "Incidente stradale", "Dissesto statico", "Soccorso a persona",
+    "Ascensore bloccato con persona", "Apertura porta", "Recupero animale",
+    "Perdita gas", "Dispersione liquidi pericolosi", "Allagamento", "Danni d'acqua",
+    "Rimozione neve / ghiaccio", "Bonifica ordigno bellico",
+    "Esercitazione / servizio di vigilanza", "Altro (specificare in località)"
+  ];
+
+  // Direzioni regionali: indirizzo generale (dir.xxx@vigilfuoco.it). Valle d'Aosta non ne ha uno pubblicato.
+  const DIREZIONI = [
+    {c: "Direzione Regionale Abruzzo", rg: "Abruzzo", email: "dir.abruzzo@vigilfuoco.it"},
+    {c: "Direzione Regionale Basilicata", rg: "Basilicata", email: "dir.basilicata@vigilfuoco.it"},
+    {c: "Direzione Regionale Calabria", rg: "Calabria", email: "dir.calabria@vigilfuoco.it"},
+    {c: "Direzione Regionale Campania", rg: "Campania", email: "dir.campania@vigilfuoco.it"},
+    {c: "Direzione Regionale Emilia-Romagna", rg: "Emilia-Romagna", email: "dir.emiliaromagna@vigilfuoco.it"},
+    {c: "Direzione Regionale Friuli Venezia Giulia", rg: "Friuli Venezia Giulia", email: "dir.friuliveneziagiulia@vigilfuoco.it"},
+    {c: "Direzione Regionale Lazio", rg: "Lazio", email: "dir.lazio@vigilfuoco.it"},
+    {c: "Direzione Regionale Liguria", rg: "Liguria", email: "dir.liguria@vigilfuoco.it"},
+    {c: "Direzione Regionale Lombardia", rg: "Lombardia", email: "dir.lombardia@vigilfuoco.it"},
+    {c: "Direzione Regionale Marche", rg: "Marche", email: "dir.marche@vigilfuoco.it"},
+    {c: "Direzione Regionale Molise", rg: "Molise", email: "dir.molise@vigilfuoco.it"},
+    {c: "Direzione Regionale Piemonte", rg: "Piemonte", email: "dir.piemonte@vigilfuoco.it"},
+    {c: "Direzione Regionale Puglia", rg: "Puglia", email: "dir.puglia@vigilfuoco.it"},
+    {c: "Direzione Regionale Sardegna", rg: "Sardegna", email: "dir.sardegna@vigilfuoco.it"},
+    {c: "Direzione Regionale Sicilia", rg: "Sicilia", email: "dir.sicilia@vigilfuoco.it"},
+    {c: "Direzione Regionale Toscana", rg: "Toscana", email: "dir.toscana@vigilfuoco.it"},
+    {c: "Direzione Regionale Umbria", rg: "Umbria", email: "dir.umbria@vigilfuoco.it"},
+    {c: "Direzione Regionale Valle d'Aosta", rg: "Valle d'Aosta", email: ""},
+    {c: "Direzione Interregionale Veneto e Trentino-Alto Adige", rg: "Veneto", email: "dir.veneto@vigilfuoco.it", x: "trentino alto adige taa"}
+  ].map(d => Object.assign({dir: true, pr: ""}, d));
+
+  /* =====================================================================
+   * Stile (scopato sotto .pg-comunicazioni, variabili condivise dell'app)
+   * ===================================================================== */
+  const css = `
 .pg-comunicazioni {
-      --bg: #10141a;
-      --panel: #171d25;
-      --panel-2: #1d242e;
-      --line: #2a323d;
-      --red: #c8202b;
-      --red-dim: #5c1216;
-      --amber: #e8a33d;
-      --text: #eceff3;
-      --text-dim: #8b96a3;
-      --green: #3fa66b;
-      --wa: #25d366;
-      --tg: #29a9eb;
-      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", Consolas, "Liberation Mono", monospace;
+  --cm-acc: var(--ics-amministrazione, #2b73d6);
+  --cm-warn: var(--yellow, #e8a33d);
+  --cm-ok: #3fa66b;
+  --cm-err: #e8734a;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 12px 16px calc(24px + env(safe-area-inset-bottom, 0px));
 }
-.pg-comunicazioni, .pg-comunicazioni * {
-      box-sizing: border-box;
+
+.pg-comunicazioni .cm-test {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 9px 12px; margin-bottom: 12px; border-radius: 6px;
+  background: var(--cm-warn); color: #1a1400; font-size: 12.5px; font-weight: 700;
 }
-.pg-comunicazioni {
-      margin: 0;
-      padding: 0;
+.pg-comunicazioni .cm-test.off { background: var(--panel-2); color: var(--text-dim); border: 1px solid var(--line); }
+.pg-comunicazioni .cm-test button {
+  flex: none; background: #1a1400; color: var(--cm-warn); border: none; border-radius: 14px;
+  padding: 5px 12px; font-size: 11.5px; font-weight: 700; cursor: pointer;
 }
-.pg-comunicazioni {
-      background: var(--bg);
-      color: var(--text);
-      font-family: var(--sans);
-      -webkit-font-smoothing: antialiased;
-      min-height: 100vh;
-      padding-bottom: 80px;
+.pg-comunicazioni .cm-test.off button { background: var(--cm-err); color: #fff; }
+
+.pg-comunicazioni .cm-stepsbar { display: flex; gap: 5px; }
+.pg-comunicazioni .cm-dot { flex: 1; height: 4px; border-radius: 2px; background: var(--line); }
+.pg-comunicazioni .cm-dot.done { background: var(--cm-ok); }
+.pg-comunicazioni .cm-dot.active { background: var(--cm-warn); }
+.pg-comunicazioni .cm-steplabel { padding: 8px 0 0; font-size: 12.5px; color: var(--text-dim); text-align: center; }
+
+.pg-comunicazioni .cm-step { margin-top: 14px; }
+
+.pg-comunicazioni .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.pg-comunicazioni .panel + .panel { margin-top: 10px; }
+.pg-comunicazioni .row-group-label { padding: 10px 14px 6px; font-size: 12.5px; color: var(--text-dim); border-left: 3px solid var(--line); }
+.pg-comunicazioni .row-group-label.tep { border-left-color: var(--cm-warn); }
+.pg-comunicazioni .row-group-label.pers { border-left-color: var(--cm-ok); }
+
+.pg-comunicazioni .field { padding: 10px 14px; }
+.pg-comunicazioni .field label { display: block; font-size: 12.5px; color: var(--text-dim); margin-bottom: 5px; }
+.pg-comunicazioni .field input[type=text], .pg-comunicazioni .field input[type=date],
+.pg-comunicazioni .field input[type=time], .pg-comunicazioni .field input[type=datetime-local],
+.pg-comunicazioni .field select, .pg-comunicazioni .field textarea {
+  width: 100%; padding: 11px 12px; font-size: 15px; background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 6px; color: var(--text); font-family: var(--sans);
 }
-.pg-comunicazioni .wrap {
-      max-width: 640px;
-      margin: 0 auto;
-      padding: 0 16px;
-}
-.pg-comunicazioni header {
-      padding: 16px 16px 12px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      border-bottom: 1px solid var(--line);
-}
-.pg-comunicazioni .mark {
-      flex: none;
-      width: 34px;
-      height: 34px;
-      object-fit: contain;
-}
-.pg-comunicazioni .htitle {
-      flex: 1;
-      min-width: 0;
-}
-.pg-comunicazioni .home-btn {
-      flex: none;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 40px;
-      height: 40px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: var(--panel-2);
-      color: var(--text-dim);
-      text-decoration: none;
-}
-.pg-comunicazioni .home-btn:hover, .pg-comunicazioni .home-btn:focus-visible {
-      border-color: var(--amber);
-      color: var(--amber);
-}
-.pg-comunicazioni .htitle h1 {
-      margin: 0;
-      font-size: 17px;
-      font-weight: 600;
-}
-.pg-comunicazioni .htitle p {
-      margin: 2px 0 0;
-      font-size: 12.5px;
-      color: var(--text-dim);
-}
-.pg-comunicazioni .steps-bar {
-      display: flex;
-      gap: 5px;
-      padding: 14px 0 0;
-}
-.pg-comunicazioni .step-dot {
-      flex: 1;
-      height: 4px;
-      border-radius: 2px;
-      background: var(--line);
-}
-.pg-comunicazioni .step-dot.done {
-      background: var(--green);
-}
-.pg-comunicazioni .step-dot.active {
-      background: var(--amber);
-}
-.pg-comunicazioni .step-label {
-      padding: 8px 0 0;
-      font-size: 12.5px;
-      color: var(--text-dim);
-      text-align: center;
-}
-.pg-comunicazioni section.step {
-      margin-top: 14px;
-}
-.pg-comunicazioni .panel {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      overflow: hidden;
-      margin-bottom: 12px;
-}
-.pg-comunicazioni .row-group-label {
-      padding: 12px 14px 8px;
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--text);
-      border-left: 3px solid var(--line);
-      background: rgba(255,255,255,0.02);
-}
-.pg-comunicazioni .row-group-label.tep {
-      border-left-color: var(--amber);
-}
-.pg-comunicazioni .row-group-label.pers {
-      border-left-color: var(--green);
-}
-.pg-comunicazioni .field {
-      padding: 10px 14px;
-}
-.pg-comunicazioni .field label {
-      display: block;
-      font-size: 12.5px;
-      color: var(--text-dim);
-      margin-bottom: 6px;
-}
-.pg-comunicazioni .field input[type=text], .pg-comunicazioni .field input[type=date], .pg-comunicazioni .field input[type=time], .pg-comunicazioni .field input[type=datetime-local], .pg-comunicazioni .field select, .pg-comunicazioni .field textarea {
-      width: 100%;
-      padding: 12px;
-      font-size: 16px;
-      background: var(--panel-2);
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      color: var(--text);
-      font-family: var(--sans);
-}
-.pg-comunicazioni .field textarea {
-      font-family: var(--sans);
-      resize: vertical;
-}
+.pg-comunicazioni .field textarea { font-family: var(--mono); font-size: 13px; resize: vertical; }
 .pg-comunicazioni .field input:focus, .pg-comunicazioni .field select:focus, .pg-comunicazioni .field textarea:focus {
-      outline: none;
-      border-color: var(--amber);
+  outline: none; border-color: var(--cm-warn);
 }
-.pg-comunicazioni .field-row {
-      display: flex;
-      gap: 10px;
-      padding: 0 14px;
-}
-.pg-comunicazioni .field-row .field {
-      flex: 1;
-      padding: 10px 0;
-}
-.pg-comunicazioni .field-check {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 12px 14px;
-      font-size: 14px;
-}
-.pg-comunicazioni .field-check input {
-      width: 20px;
-      height: 20px;
-      flex: none;
-}
-.pg-comunicazioni .hint.hint-to {
-      padding: 6px 0 0;
-      color: #e8734a;
-}
-.pg-comunicazioni .hint {
-      font-size: 11.5px;
-      color: var(--text-dim);
-      padding: 0 14px 10px;
-}
-.pg-comunicazioni .comando-current {
-      padding: 8px 14px 14px;
-      font-size: 12.5px;
-      color: var(--text-dim);
-}
-.pg-comunicazioni .comando-current b {
-      color: var(--text);
-      font-weight: 600;
-}
-.pg-comunicazioni .tile-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      padding: 12px 14px 14px;
-}
+.pg-comunicazioni .field-row { display: flex; gap: 8px; }
+.pg-comunicazioni .field-row .field { flex: 1; padding-left: 0; }
+.pg-comunicazioni .field-row .field:first-child { padding-left: 14px; }
+.pg-comunicazioni .field-row .field:last-child { padding-right: 14px; }
+.pg-comunicazioni .field-check { display: flex; align-items: center; gap: 8px; padding: 12px 14px; font-size: 14px; }
+.pg-comunicazioni .field-check input { width: 18px; height: 18px; flex: none; }
+.pg-comunicazioni .hint { font-size: 11.5px; color: var(--text-dim); padding: 0 14px 10px; margin-top: -4px; }
+
+.pg-comunicazioni .comando-current { padding: 8px 14px 14px; font-size: 12.5px; color: var(--text-dim); line-height: 1.5; }
+.pg-comunicazioni .comando-current b { color: var(--text); font-weight: 600; }
+
+.pg-comunicazioni .tile-grid { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 14px 14px; }
 .pg-comunicazioni .tile {
-      flex: 1 1 calc(50% - 10px);
-      min-width: 140px;
-      padding: 16px 12px;
-      background: var(--panel-2);
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      color: var(--text-dim);
-      font-size: 13.5px;
-      font-weight: 600;
-      text-align: center;
-      cursor: pointer;
-      line-height: 1.4;
+  flex: 1 1 calc(50% - 8px); min-width: 150px; padding: 13px 10px; background: var(--panel-2);
+  border: 1px solid var(--line); border-radius: 6px; color: var(--text-dim); font-size: 12.5px;
+  font-weight: 600; text-align: center; cursor: pointer; line-height: 1.3;
 }
-.pg-comunicazioni .tile.selected {
-      background: var(--red);
-      border-color: var(--red);
-      color: #fff;
+.pg-comunicazioni .tile.selected { background: var(--cm-acc); border-color: var(--cm-acc); color: #fff; }
+.pg-comunicazioni .tile:active { opacity: .85; }
+
+.pg-comunicazioni .choice-list { padding: 6px 14px 14px; }
+.pg-comunicazioni .choice {
+  display: flex; align-items: center; gap: 10px; padding: 13px 14px; margin-top: 8px;
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; cursor: pointer;
 }
-.pg-comunicazioni .dyn-list {
-      padding: 6px 14px;
-}
-.pg-comunicazioni .person-row, .pg-comunicazioni .timb-row {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      background: var(--panel-2);
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      padding: 10px;
-      margin-bottom: 10px;
-}
-.pg-comunicazioni .person-select-wrapper {
-      flex: 1;
-      position: relative;
+.pg-comunicazioni .choice:first-child { margin-top: 0; }
+.pg-comunicazioni .choice input { width: 18px; height: 18px; flex: none; }
+.pg-comunicazioni .choice span { font-size: 14.5px; font-weight: 600; }
+.pg-comunicazioni .choice.selected { border-color: var(--cm-warn); background: #241d10; }
+
+.pg-comunicazioni .dyn-list { padding: 4px 14px 6px; }
+.pg-comunicazioni .person-row, .pg-comunicazioni .timb-row, .pg-comunicazioni .leg-row {
+  display: flex; gap: 8px; align-items: flex-start; padding: 6px 0;
 }
 .pg-comunicazioni .person-row input.person-input {
-      width: 100%;
-      padding: 10px;
-      font-size: 15px;
-      background: var(--bg);
-      border: 1px solid var(--line);
-      border-radius: 4px;
-      color: var(--text);
+  flex: 1; padding: 11px 12px; font-size: 15px; background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 6px; color: var(--text);
 }
-.pg-comunicazioni .timb-row {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 12px;
-      align-items: end;
-      flex-wrap: nowrap;
+.pg-comunicazioni .timb-row, .pg-comunicazioni .leg-row {
+  flex-wrap: wrap; background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px;
+  padding: 10px; margin-bottom: 8px;
 }
-.pg-comunicazioni .timb-row .tfield {
-      min-width: 0;
+.pg-comunicazioni .timb-row .tfield, .pg-comunicazioni .leg-row .lfield { flex: 1; min-width: 140px; }
+.pg-comunicazioni .timb-row .tfield label, .pg-comunicazioni .leg-row .lfield label {
+  font-size: 11px; color: var(--text-dim); margin-bottom: 4px; display: block;
 }
-.pg-comunicazioni .timb-row .tfield label {
-      font-size: 11.5px;
-      color: var(--text-dim);
-      margin-bottom: 4px;
-      display: block;
-}
-.pg-comunicazioni .timb-row input, .pg-comunicazioni .timb-row select {
-      width: 100%;
-      padding: 10px;
-      font-size: 14px;
-      background: var(--bg);
-      border: 1px solid var(--line);
-      border-radius: 4px;
-      color: var(--text);
-      color-scheme: dark;
-}
-.pg-comunicazioni .timb-row .tdate {
-      grid-column: 1 / -1;
-}
-.pg-comunicazioni .timb-row .tdate input {
-      font-size: 15px;
-}
-.pg-comunicazioni .timb-row .tshift {
-      min-width: 0;
-}
-.pg-comunicazioni .timb-row .tshift select {
-      font-size: 14px;
-}
-.pg-comunicazioni .timb-row .row-remove-btn {
-      margin-bottom: 1px;
-}
-.pg-comunicazioni .time-presets {
-      display: flex;
-      gap: 7px;
-      flex-wrap: wrap;
-      margin-top: 7px;
-}
-.pg-comunicazioni .time-preset {
-      padding: 7px 10px;
-      background: var(--panel-2);
-      border: 1px solid var(--line);
-      border-radius: 5px;
-      color: var(--text-dim);
-      font-size: 12px;
-      cursor: pointer;
-}
-.pg-comunicazioni .time-preset:hover {
-      border-color: var(--amber);
-      color: var(--amber);
-}
-.pg-comunicazioni .date-nav {
-      display: flex;
-      gap: 7px;
-      margin-top: 7px;
-}
-.pg-comunicazioni .date-nav button {
-      padding: 7px 10px;
-      background: var(--panel-2);
-      border: 1px solid var(--line);
-      border-radius: 5px;
-      color: var(--text-dim);
-      font-size: 12px;
-      cursor: pointer;
-}
-.pg-comunicazioni .date-nav button:hover {
-      border-color: var(--amber);
-      color: var(--amber);
-}
-.pg-comunicazioni .timb-row .row-remove-btn {
-      justify-self: end;
-}
-.pg-comunicazioni .field-row.stack {
-      flex-direction: column;
-      gap: 0;
-}
-.pg-comunicazioni .field-row.stack .field {
-      padding: 10px 0;
+.pg-comunicazioni .timb-row input, .pg-comunicazioni .leg-row input, .pg-comunicazioni .leg-row select {
+  width: 100%; padding: 10px; font-size: 14px; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; color: var(--text);
 }
 .pg-comunicazioni .row-remove-btn {
-      flex: none;
-      width: 36px;
-      height: 36px;
-      border-radius: 6px;
-      background: var(--bg);
-      border: 1px solid var(--line);
-      color: var(--text-dim);
-      cursor: pointer;
-      font-size: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+  flex: none; width: 34px; height: 34px; border-radius: 6px; background: var(--panel-2);
+  border: 1px solid var(--line); color: var(--text-dim); cursor: pointer; font-size: 16px; line-height: 1;
 }
-.pg-comunicazioni .row-remove-btn:active {
-      border-color: var(--red);
-      color: var(--red);
-}
+.pg-comunicazioni .timb-row .row-remove-btn, .pg-comunicazioni .leg-row .row-remove-btn { align-self: center; margin-top: 14px; }
+.pg-comunicazioni .row-remove-btn:active { border-color: var(--cm-err); color: var(--cm-err); }
+
 .pg-comunicazioni .add-row-btn {
-      width: calc(100% - 28px);
-      margin: 6px 14px 14px;
-      padding: 12px;
-      background: var(--panel-2);
-      border: 1px dashed var(--line);
-      border-radius: 6px;
-      color: var(--amber);
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
+  width: calc(100% - 28px); margin: 4px 14px 12px; padding: 11px; background: var(--panel-2);
+  border: 1px dashed var(--line); border-radius: 6px; color: var(--cm-warn); font-size: 13.5px;
+  font-weight: 600; cursor: pointer;
 }
-.pg-comunicazioni .nav-row {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: var(--panel);
-      border-top: 1px solid var(--line);
-      display: flex;
-      gap: 10px;
-      padding: 12px 16px;
-      z-index: 500;
-      box-shadow: 0 -4px 12px rgba(0,0,0,0.3);
-}
-.pg-comunicazioni .nav-btn {
-      flex: 1;
-      padding: 14px;
-      border: none;
-      border-radius: 6px;
-      font-size: 15px;
-      font-weight: 700;
-      cursor: pointer;
-}
-.pg-comunicazioni .nav-back {
-      background: var(--panel-2);
-      border: 1px solid var(--line) !important;
-      color: var(--text);
-}
-.pg-comunicazioni .nav-next {
-      background: var(--red);
-      color: #fff;
-}
-.pg-comunicazioni .preview-actions {
-      display: flex;
-      gap: 10px;
-      padding: 0 14px 14px;
-}
-.pg-comunicazioni .preview-actions button {
-      flex: 1;
-      padding: 14px 10px;
-      border: none;
-      border-radius: 6px;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-}
-.pg-comunicazioni .btn-mailto {
-      background: var(--green);
-      color: #fff;
-}
-.pg-comunicazioni .btn-eml {
-      background: var(--panel-2);
-      border: 1px solid var(--amber) !important;
-      color: var(--amber);
-}
+.pg-comunicazioni .add-row-btn:active { border-color: var(--cm-warn); }
+
+.pg-comunicazioni .nav-row { display: flex; gap: 8px; padding: 16px 0 4px; }
+.pg-comunicazioni .nav-btn { flex: 1; padding: 14px; border: none; border-radius: 6px; font-size: 14.5px; font-weight: 700; cursor: pointer; }
+.pg-comunicazioni .nav-back { background: var(--panel-2); border: 1px solid var(--line) !important; color: var(--text); }
+.pg-comunicazioni .nav-next { background: var(--cm-acc); color: #fff; }
+.pg-comunicazioni .nav-btn:active { opacity: .85; }
+
+.pg-comunicazioni .preview-actions { display: flex; gap: 8px; padding: 0 14px 14px; }
+.pg-comunicazioni .preview-actions button { flex: 1; padding: 13px 10px; border: none; border-radius: 6px; font-size: 13.5px; font-weight: 700; cursor: pointer; }
+.pg-comunicazioni .btn-mailto { background: var(--cm-ok); color: #fff; }
+.pg-comunicazioni .btn-eml { background: var(--panel-2); border: 1px solid var(--cm-warn) !important; color: var(--cm-warn); }
+
 .pg-comunicazioni .security-note {
-      margin-top: 10px;
-      margin-bottom: 20px;
-      padding: 14px;
-      background: var(--panel-2);
-      border: 1px solid var(--line);
-      border-left: 3px solid var(--green);
-      border-radius: 6px;
-      font-size: 13px;
-      color: var(--text-dim);
-      line-height: 1.55;
+  margin-top: 10px; padding: 12px 14px; background: var(--panel-2); border: 1px solid var(--line);
+  border-left: 3px solid var(--cm-ok); border-radius: 6px; font-size: 12.5px; color: var(--text-dim); line-height: 1.55;
 }
-.pg-comunicazioni .security-note strong {
-      color: var(--text);
-}
-.pg-comunicazioni .hidden {
-      display: none !important;
-}
-.pg-comunicazioni .suggestions-list {
-      position: absolute;
-      top: 100%;
-      left: 0;
-      right: 0;
-      max-height: 180px;
-      overflow-y: auto;
-      background: var(--panel-2);
-      border: 1px solid var(--line);
-      border-radius: 4px;
-      z-index: 1000;
-      display: none;
-}
-.pg-comunicazioni .suggestion-item {
-      padding: 10px 12px;
-      font-size: 14px;
-      cursor: pointer;
-      border-bottom: 1px solid var(--line);
-}
-.pg-comunicazioni .suggestion-item:hover, .pg-comunicazioni .suggestion-item:active {
-      background: var(--line);
-      color: var(--text);
-}
-.pg-comunicazioni .cbx-box {
-      position: relative;
-}
-.pg-comunicazioni .field .cbx-box input[type=text] {
-      padding-right: 42px;
-}
-.pg-comunicazioni .cbx-clear {
-      position: absolute;
-      right: 2px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 38px;
-      height: 38px;
-      background: none;
-      border: none;
-      color: var(--text-dim);
-      font-size: 16px;
-      cursor: pointer;
-}
-.pg-comunicazioni .cbx-results {
-      margin-top: 8px;
-      max-height: 264px;
-      overflow-y: auto;
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      background: var(--panel-2);
-}
-.pg-comunicazioni .cbx-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      gap: 10px;
-      padding: 12px 14px;
-      border-bottom: 1px solid var(--line);
-      cursor: pointer;
-}
-.pg-comunicazioni .cbx-item:last-child {
-      border-bottom: none;
-}
-.pg-comunicazioni .cbx-item b {
-      font-size: 14.5px;
-      font-weight: 600;
-}
-.pg-comunicazioni .cbx-item span {
-      font-size: 12px;
-      color: var(--text-dim);
-      white-space: nowrap;
-}
-.pg-comunicazioni .cbx-tools {
-      display: flex;
-      gap: 8px;
-      padding: 0 14px 8px;
-}
-.pg-comunicazioni .cbx-tools select {
-      flex: 1;
-      padding: 10px 12px;
-      font-size: 14px;
-      background: var(--panel-2);
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      color: var(--text);
-}
-.pg-comunicazioni .cbx-geo {
-      flex: none;
-      padding: 10px 14px;
-      background: var(--panel-2);
-      border: 1px solid var(--amber);
-      border-radius: 6px;
-      color: var(--amber);
-      font-size: 13px;
-      font-weight: 700;
-      cursor: pointer;
-}
+.pg-comunicazioni .security-note strong { color: var(--text); }
+
+/* utente registrato */
 .pg-comunicazioni .prof-details summary {
-      padding: 12px 14px;
-      font-size: 13.5px;
-      color: var(--amber);
-      font-weight: 700;
-      cursor: pointer;
-      border-top: 1px solid var(--line);
+  padding: 10px 14px; font-size: 13px; color: var(--cm-warn); font-weight: 700; cursor: pointer;
+  border-top: 1px solid var(--line); list-style: none;
 }
-.pg-comunicazioni .prof-actions {
-      display: flex;
-      gap: 8px;
-      padding: 10px 14px;
-}
-.pg-comunicazioni .prof-save {
-      flex: 1;
-      padding: 12px;
-      border: none;
-      border-radius: 6px;
-      background: var(--green);
-      color: #fff;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-}
-.pg-comunicazioni .prof-del {
-      flex: none;
-      padding: 12px 16px;
-      border-radius: 6px;
-      background: var(--panel-2);
-      border: 1px solid var(--line);
-      color: var(--text-dim);
-      font-size: 13px;
-      font-weight: 700;
-      cursor: pointer;
-}
-`,
+.pg-comunicazioni .prof-details summary::-webkit-details-marker { display: none; }
+.pg-comunicazioni .prof-details[open] summary { border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+.pg-comunicazioni .prof-actions { display: flex; gap: 8px; padding: 6px 14px 4px; }
+.pg-comunicazioni .prof-save { flex: 1; padding: 12px; border: none; border-radius: 6px; background: var(--cm-ok); color: #fff; font-size: 13.5px; font-weight: 700; cursor: pointer; }
+.pg-comunicazioni .prof-del { flex: none; padding: 12px 16px; border-radius: 6px; background: var(--panel-2); border: 1px solid var(--line); color: var(--text-dim); font-size: 13px; font-weight: 700; cursor: pointer; }
+.pg-comunicazioni .prof-del:active { border-color: var(--cm-err); color: var(--cm-err); }
 
-  html: `
-  <div class="wrap">
+/* ricerca comando */
+.pg-comunicazioni .cbx-box { position: relative; }
+.pg-comunicazioni .cbx-field input[type=text] { padding-right: 42px; }
+.pg-comunicazioni .cbx-clear { position: absolute; right: 2px; top: 50%; transform: translateY(-50%); width: 38px; height: 38px; background: none; border: none; color: var(--text-dim); font-size: 16px; cursor: pointer; }
+.pg-comunicazioni .cbx-results { margin-top: 8px; max-height: 264px; overflow-y: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); -webkit-overflow-scrolling: touch; }
+.pg-comunicazioni .cbx-item { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line); cursor: pointer; }
+.pg-comunicazioni .cbx-item:last-child { border-bottom: none; }
+.pg-comunicazioni .cbx-item b { font-size: 14.5px; font-weight: 600; }
+.pg-comunicazioni .cbx-item span { font-size: 12px; color: var(--text-dim); white-space: nowrap; }
+.pg-comunicazioni .cbx-item.active, .pg-comunicazioni .cbx-item:active { background: #241d10; }
+.pg-comunicazioni .cbx-empty { padding: 14px; font-size: 12.5px; color: var(--text-dim); line-height: 1.5; }
+.pg-comunicazioni .cbx-tools { display: flex; gap: 8px; padding: 0 14px 8px; }
+.pg-comunicazioni .cbx-tools select { flex: 1; min-width: 0; padding: 10px 12px; font-size: 14px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; color: var(--text); font-family: var(--sans); }
+.pg-comunicazioni .cbx-tools select:focus { outline: none; border-color: var(--cm-warn); }
+.pg-comunicazioni .cbx-geo { flex: none; padding: 10px 14px; background: var(--panel-2); border: 1px solid var(--cm-warn); border-radius: 6px; color: var(--cm-warn); font-size: 13px; font-weight: 700; cursor: pointer; }
+.pg-comunicazioni .cbx-geo:disabled { opacity: .6; }
+.pg-comunicazioni .cbx-recents { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 2px 14px 8px; }
+.pg-comunicazioni .cbx-recents-label { font-size: 12px; color: var(--text-dim); }
+.pg-comunicazioni .cbx-chip { padding: 7px 12px; border-radius: 16px; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.pg-comunicazioni .cbx-chip:active { border-color: var(--cm-warn); }
+.pg-comunicazioni .cbx-off { opacity: .45; pointer-events: none; }
 
-    <div class="steps-bar" id="stepsBar"></div>
-    <div class="step-label" id="stepLabel"></div>
+.pg-comunicazioni .hidden { display: none !important; }
+`;
 
-    <!-- STEP 1 -->
-    <section class="step" id="step-1">
-      <div class="panel">
-        <div class="row-group-label">Utente</div>
-        <div class="field">
-          <label>Utente registrato</label>
-          <select id="profiloSelect"></select>
-        </div>
-        <details id="profDetails" class="prof-details">
-          <summary>Modifica dati dell’unico utente registrato</summary>
-          <div class="field-row">
-            <div class="field"><label>Cognome</label><input type="text" id="uCognome" autocomplete="off" value="Pelizza"></div>
-            <div class="field"><label>Nome</label><input type="text" id="uNome" autocomplete="off" value="Andrea"></div>
-          </div>
-          <div class="field"><label>Codice fiscale</label><input type="text" id="uCf" maxlength="16" autocomplete="off" autocapitalize="characters" value="PLZNDR86B12A001C"></div>
-          <div class="field"><label>Email istituzionale</label><input type="text" id="uEmail" placeholder="nome.cognome@vigilfuoco.it" autocomplete="off" value="andrea.pelizza@vigilfuoco.it"></div>
-          <div class="field"><label>Qualifica</label>
-            <select id="qualificaSelect">
-              <option value="VVF">Vigile del Fuoco (VVF)</option>
-              <option value="VVFC">Vigile del Fuoco Coordinatore (VVFC)</option>
-              <option value="VE" selected>Vigile Esperto (VE)</option>
-              <option value="VEC">Vigile Esperto Coordinatore (VEC)</option>
-              <option value="VESC">VESC</option>
-              <option value="CS">Capo Squadra (CS)</option>
-              <option value="CSC">Capo Squadra Coordinatore (CSC)</option>
-              <option value="CR">Capo Reparto (CR)</option>
-              <option value="CRC">Capo Reparto Coordinatore (CRC)</option>
-              <option value="Funzionario">Funzionario</option>
-              <option value="Direttivo/Dirigente">Direttivo / Dirigente</option>
-            </select>
-          </div>
-          <div class="field-row">
-            <div class="field"><label>Turno</label>
-              <select id="turnoLettera">
-                <option value="">-</option>
-                <option>A</option>
-                <option>B</option>
-                <option>C</option>
-                <option>D</option>
-                <option>G</option>
-              </select>
-            </div>
-            <div class="field"><label>Salto turno</label>
-              <select id="turnoSalto">
-                <option value="">-</option>
-                <option selected>2</option>
-                <option>1</option>
-                <option>3</option>
-                <option>4</option>
-                <option>5</option>
-                <option>6</option>
-                <option>7</option>
-                <option>8</option>
-              </select>
-            </div>
-          </div>
-          <div class="field"><label>Sede</label><input type="text" id="sedeInput" placeholder="es. CENTRALE" value="CENTRALE"></div>
-          <div class="field"><label>Telefono</label><input type="text" id="uTel" value="3666382828"></div>
+  /* =====================================================================
+   * Markup
+   * ===================================================================== */
+  const QUALIFICHE = [
+    ["VVF", "Vigile del Fuoco (VVF)"], ["VVFC", "Vigile del Fuoco Coordinatore (VVFC)"],
+    ["VE", "Vigile Esperto (VE)"], ["VEC", "Vigile Esperto Coordinatore (VEC)"], ["VESC", "VESC"],
+    ["CS", "Capo Squadra (CS)"], ["CSC", "Capo Squadra Coordinatore (CSC)"],
+    ["CR", "Capo Reparto (CR)"], ["CRC", "Capo Reparto Coordinatore (CRC)"],
+    ["Funzionario", "Funzionario"], ["Direttivo/Dirigente", "Direttivo / Dirigente"]
+  ];
+  const qualificaOptions = QUALIFICHE.map(([v, t], i) =>
+    '<option value="' + v + '"' + (v === "VE" ? " selected" : "") + ">" + t + "</option>").join("");
 
-          <div class="row-group-label">Comando di appartenenza</div>
-          <div id="homeBox">
-            <div class="field">
-              <div class="cbx-box">
-                <input type="text" id="homeInput" placeholder="Cerca: capoluogo, provincia o sigla" autocomplete="off">
-                <button type="button" class="cbx-clear hidden" id="homeClear">&#10005;</button>
-              </div>
-              <div class="cbx-results hidden" id="homeResults"></div>
-            </div>
-            <div class="cbx-tools">
-              <select id="homeRegione"><option value="">Tutte le regioni</option></select>
-            </div>
-          </div>
-          <div class="comando-current" id="homeCurrent">Forlì-Cesena</div>
+  function comandoPickerHtml(prefix, withGeoRecents) {
+    return '' +
+      '<div class="field cbx-field" id="' + prefix + 'Box">' +
+      '<div class="cbx-box">' +
+      '<input type="text" id="' + prefix + 'Input" placeholder="Cerca: capoluogo, provincia o sigla (es. RM)" autocomplete="off" autocapitalize="off" spellcheck="false" role="combobox" aria-expanded="false" aria-controls="' + prefix + 'Results" aria-autocomplete="list" disabled>' +
+      '<button type="button" class="cbx-clear hidden" id="' + prefix + 'Clear" aria-label="Cancella">&#10005;</button>' +
+      '</div>' +
+      '<div class="cbx-results hidden" id="' + prefix + 'Results" role="listbox"></div>' +
+      '</div>' +
+      '<div class="cbx-tools">' +
+      '<select id="' + prefix + 'Regione" aria-label="Filtra per regione" disabled><option value="">Tutte le regioni</option></select>' +
+      (withGeoRecents ? '<button type="button" class="cbx-geo" id="' + prefix + 'Geo" disabled>Il piu vicino a me</button>' : '') +
+      '</div>' +
+      (withGeoRecents ? '<div class="cbx-recents hidden" id="' + prefix + 'Recents"></div>' : '') +
+      '<div class="comando-current" id="' + prefix + 'Current">Caricamento elenco comandi...</div>';
+  }
 
-          <div class="prof-actions">
-            <button type="button" class="prof-save" id="profSave">Salva utente</button>
-            <button type="button" class="prof-del" id="profDel">Elimina</button>
-          </div>
-          <div class="hint" id="profMsg"></div>
-        </details>
+  const html = `
+<div class="cm-test" id="fcTestBar">
+  <span id="fcTestLabel">MODALITA TEST ATTIVA</span>
+  <button type="button" id="fcTestToggle">Disattiva TEST</button>
+</div>
+
+<div class="cm-stepsbar" id="fcStepsBar"></div>
+<div class="cm-steplabel" id="fcStepLabel"></div>
+
+<!-- STEP 1 -->
+<section class="cm-step" id="fcStep1">
+  <div class="panel">
+    <div class="row-group-label">Utente</div>
+    <div class="field">
+      <label>Utente registrato</label>
+      <select id="fcProfiloSelect"></select>
+    </div>
+    <details id="fcProfDetails" class="prof-details">
+      <summary>Dati utente</summary>
+      <div class="field-row">
+        <div class="field"><label>Cognome</label><input type="text" id="fcUCognome" autocomplete="off"></div>
+        <div class="field"><label>Nome</label><input type="text" id="fcUNome" autocomplete="off"></div>
       </div>
-
-      <div class="panel">
-        <div class="row-group-label">Destinatario</div>
-        <div class="field-check">
-          <input type="checkbox" id="stessoComando" checked>
-          <label for="stessoComando">Spedire la mail allo stesso comando di appartenenza</label>
+      <div class="field"><label>Codice fiscale</label><input type="text" id="fcUCf" maxlength="16" autocomplete="off" autocapitalize="characters"></div>
+      <div class="field"><label>Email istituzionale</label><input type="text" id="fcUEmail" placeholder="nome.cognome@vigilfuoco.it" autocomplete="off"></div>
+      <div class="field"><label>Qualifica</label><select id="fcQualifica">${qualificaOptions}</select></div>
+      <div class="field-row">
+        <div class="field"><label>Turno</label>
+          <select id="fcTurnoL"><option value="">-</option><option>A</option><option>B</option><option>C</option><option>D</option><option>G</option></select>
         </div>
-        <div id="destBox" class="hidden">
-          <div class="field">
-            <label for="destSelect">Comando destinatario</label>
-            <select id="destSelect">
-              <option value="">Caricamento comandi...</option>
-            </select>
-          </div>
-        </div>
-        <div class="comando-current" id="destCurrent">Comando Forlì-Cesena</div>
-      </div>
-    </section>
-
-    <!-- STEP 2 -->
-    <section class="step hidden" id="step-2">
-      <div class="panel">
-        <div class="row-group-label">Tipo di comunicazione</div>
-        <div class="tile-grid" id="tipoTiles">
-          <div class="tile" data-tipo="timbratura">Mancata timbratura</div>
-          <div class="tile" data-tipo="missione">Missione per soccorso</div>
+        <div class="field"><label>Salto turno</label>
+          <select id="fcTurnoS"><option value="">-</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select>
         </div>
       </div>
-    </section>
+      <div class="field"><label>Sede</label><input type="text" id="fcSede" placeholder="es. CENTRALE" value="CENTRALE"></div>
 
-    <!-- STEP 3 - dettaglio dinamico -->
-    <section class="step hidden" id="step-3">
+      <div class="row-group-label">Comando di appartenenza</div>
+      ${comandoPickerHtml("fcHome", false)}
 
-      <div class="detail-block hidden" id="det-missione">
-        <div class="panel">
-          <div class="row-group-label tep">Dati intervento</div>
-          <div class="field-row stack">
-            <div class="field"><label>Data/ora inizio intervento</label><input type="datetime-local" id="msInizio"></div>
-            <div class="field"><label>Data/ora fine intervento</label><input type="datetime-local" id="msFine"></div>
-          </div>
-          <div class="field-row">
-            <div class="field"><label>Numero intervento</label><input type="text" id="msNumero"></div>
-            <div class="field"><label>Progressivo intervento</label><input type="text" id="msProgressivo"></div>
-          </div>
-          <div class="field"><label>Località</label><input type="text" id="msLocalita"></div>
-          <div class="field"><label>Tipologia intervento</label><select id="msTipologia"></select></div>
-        </div>
-        <div class="panel">
-          <div class="row-group-label pers">Personale intervenuto (Seleziona o scrivi in basso)</div>
-          <div class="dyn-list" id="msPersonaleList"></div>
-          <button type="button" class="add-row-btn" data-add="person" data-target="msPersonaleList">+ Aggiungi personale</button>
-        </div>
+      <div class="prof-actions">
+        <button type="button" class="prof-save" id="fcProfSave">Salva utente</button>
+        <button type="button" class="prof-del" id="fcProfDel">Elimina</button>
       </div>
-
-      <div class="detail-block hidden" id="det-timbratura">
-        <div class="panel">
-          <div class="row-group-label pers">Motivo</div>
-          <div class="field">
-            <label>Motivo mancata timbratura</label>
-            <select id="tmMotivoSelect">
-              <option value="Dimenticanza" selected>Dimenticanza</option>
-              <option value="Mancanza badge">Mancanza badge</option>
-              <option value="Altro">Altro (specificare)</option>
-            </select>
-          </div>
-          <div class="field hidden" id="tmMotivoAltroField">
-            <label>Specifica motivo</label>
-            <textarea id="tmMotivoAltro" rows="2" placeholder="Inserisci il motivo a mano..."></textarea>
-          </div>
-        </div>
-        <div class="panel">
-          <div class="row-group-label pers">Date e fasce orarie interessate</div>
-          <div class="dyn-list" id="tmDateList"></div>
-          <button type="button" class="add-row-btn" data-add="timbratura" data-target="tmDateList">+ Aggiungi data / fascia</button>
-          <div class="hint">Puoi inserire più giornate e più fasce. Usa i pulsanti rapidi per impostare 08:00–20:00, 20:00–08:00 o una fascia personalizzata.</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- STEP 4 - opzioni -->
-    <section class="step hidden" id="step-4">
-      <div class="panel">
-        <div class="row-group-label">Note</div>
-        <div class="field"><textarea id="noteInput" rows="3" placeholder="Note aggiuntive (facoltative)"></textarea></div>
-      </div>
-    </section>
-
-    <!-- STEP 5 - riepilogo -->
-    <section class="step hidden" id="step-5">
-      <div class="panel">
-        <div class="row-group-label">Destinatario</div>
-        <div class="field"><label>A:</label><input type="text" id="previewTo">
-          <div class="hint hint-to hidden" id="previewToHint"></div></div>
-        <div class="field"><label>Oggetto</label><input type="text" id="previewSubject"></div>
-      </div>
-      <div class="panel">
-        <div class="row-group-label">Anteprima Testo</div>
-        <div class="field"><textarea id="previewBody" rows="12"></textarea></div>
-        <div class="preview-actions">
-          <button type="button" class="btn-mailto" id="btnMailto">Apri nel client di posta</button>
-          <button type="button" class="btn-eml" id="btnEml">Scarica .eml</button>
-        </div>
-      </div>
-      <div class="security-note">
-        <strong>Invio protetto.</strong> "Apri nel client di posta" compila direttamente il tuo programma mail predefinito.
-      </div>
-    </section>
-
+      <div class="hint" id="fcProfMsg"></div>
+    </details>
   </div>
 
-  <!-- Barra di navigazione fissa in basso -->
-  <div class="nav-row" id="navRow">
-    <button type="button" class="nav-btn nav-back hidden" id="navBack" data-back>Indietro</button>
-    <button type="button" class="nav-btn nav-next" id="navNext" data-next>Avanti</button>
+  <div class="panel">
+    <div class="row-group-label">Destinatario</div>
+    <div class="field-check">
+      <input type="checkbox" id="fcStesso" checked>
+      <label for="fcStesso">Spedire la mail allo stesso comando di appartenenza</label>
+    </div>
+    ${comandoPickerHtml("fcDest", true)}
   </div>
 
-  
-`,
+  <div class="nav-row"><button type="button" class="nav-btn nav-next" data-next>Avanti</button></div>
+</section>
 
-  async init(root) {
+<!-- STEP 2 -->
+<section class="cm-step hidden" id="fcStep2">
+  <div class="panel">
+    <div class="row-group-label">Tipo di comunicazione</div>
+    <div class="tile-grid" id="fcTipoTiles">
+      <div class="tile" data-tipo="timbratura">Mancata timbratura</div>
+      <div class="tile" data-tipo="missione">Missione per soccorso</div>
+      <div class="tile" data-tipo="straaltre">Straord. altre attivita</div>
+      <div class="tile" data-tipo="straguida">Straord. guida / sostituzione</div>
+      <div class="tile" data-tipo="strasoccorso">Straord. per soccorso</div>
+      <div class="tile" data-tipo="strarinforzo">Straord. rinforzo personale</div>
+    </div>
+  </div>
+  <div class="nav-row">
+    <button type="button" class="nav-btn nav-back" data-back>Indietro</button>
+    <button type="button" class="nav-btn nav-next" data-next>Avanti</button>
+  </div>
+</section>
 
-    const MITTENTE = {nome: "Andrea", cognome: "Pelizza", cf: "PLZNDR86B12A001C", email: "andrea.pelizza@vigilfuoco.it", tel: "3666382828"};
+<!-- STEP 3 -->
+<section class="cm-step hidden" id="fcStep3">
 
-    const TIPOLOGIE = [
-      "Incendio fabbricato", "Incendio boschivo / vegetazione", "Incendio veicolo",
-      "Incidente stradale", "Dissesto statico", "Soccorso a persona",
-      "Ascensore bloccato con persona", "Apertura porta", "Recupero animale",
-      "Perdita gas", "Dispersione liquidi pericolosi", "Allagamento", "Danni d'acqua",
-      "Rimozione neve / ghiaccio", "Bonifica ordigno bellico",
-      "Esercitazione / servizio di vigilanza", "Altro (specificare in località)"
-    ];
+  <div class="detail-block hidden" id="fcDetMissione">
+    <div class="panel">
+      <div class="row-group-label tep">Dati intervento</div>
+      <div class="field-row">
+        <div class="field"><label>Data/ora inizio intervento</label><input type="datetime-local" id="fcMsInizio"></div>
+        <div class="field"><label>Data/ora fine intervento</label><input type="datetime-local" id="fcMsFine"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Numero intervento</label><input type="text" id="fcMsNumero"></div>
+        <div class="field"><label>Progressivo intervento</label><input type="text" id="fcMsProgressivo"></div>
+      </div>
+      <div class="field"><label>Localita</label><input type="text" id="fcMsLocalita"></div>
+      <div class="field"><label>Tipologia intervento</label><select id="fcMsTipologia"></select></div>
+    </div>
+    <div class="panel">
+      <div class="row-group-label pers">Personale intervenuto</div>
+      <div class="dyn-list" id="fcMsPersonaleList"></div>
+      <button type="button" class="add-row-btn" data-add="person" data-target="fcMsPersonaleList">+ Aggiungi personale</button>
+    </div>
+  </div>
 
-    let externalPersonnelList = ["Pelizza Andrea"];
+  <div class="detail-block hidden" id="fcDetTimbratura">
+    <div class="panel">
+      <div class="row-group-label pers">Motivo</div>
+      <div class="field"><label>Motivo mancata timbratura</label><textarea id="fcTmMotivo" rows="3"></textarea></div>
+    </div>
+    <div class="panel">
+      <div class="row-group-label pers">Date interessate</div>
+      <div class="dyn-list" id="fcTmDateList"></div>
+      <button type="button" class="add-row-btn" data-add="timbratura" data-target="fcTmDateList">+ Aggiungi data</button>
+    </div>
+  </div>
 
-    async function loadPersonnelFromSheet() {
-      try {
-        const res = await fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vSKeUUJhapaXP-YfechgFLRfgTVaJUtuK7oiBJF8NoiyBIn8iwLL2s_L4tDL1DVmBH5tCjVbCwrOuKo/pub?gid=0&single=true&output=csv");
-        const text = await res.text();
-        const lines = text.split("\n");
-        const sheetList = lines.map(line => {
-          const cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, "").trim());
-          if (cols.length >= 2) {
-            return (cols[1] + " " + cols[0]).trim();
-          } else if (cols.length === 1) {
-            return cols[0];
-          }
-          return "";
-        }).filter(Boolean);
+  <div class="detail-block hidden" id="fcDetStrasoccorso">
+    <div class="panel">
+      <div class="row-group-label tep">Dati intervento</div>
+      <div class="field-row">
+        <div class="field"><label>Data/ora inizio intervento</label><input type="datetime-local" id="fcSsInizio"></div>
+        <div class="field"><label>Data/ora fine intervento</label><input type="datetime-local" id="fcSsFine"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Numero intervento</label><input type="text" id="fcSsNumero"></div>
+        <div class="field"><label>Progressivo intervento</label><input type="text" id="fcSsProgressivo"></div>
+      </div>
+      <div class="field"><label>Localita</label><input type="text" id="fcSsLocalita"></div>
+      <div class="field"><label>Tipologia intervento</label><select id="fcSsTipologia"></select></div>
+    </div>
+    <div class="panel">
+      <div class="row-group-label pers">Personale intervenuto</div>
+      <div class="dyn-list" id="fcSsPersonaleList"></div>
+      <button type="button" class="add-row-btn" data-add="person" data-target="fcSsPersonaleList">+ Aggiungi personale</button>
+    </div>
+  </div>
 
-        const set = new Set(["Pelizza Andrea", ...sheetList]);
-        externalPersonnelList = Array.from(set);
-      } catch(e) {
-        externalPersonnelList = ["Pelizza Andrea", "Rossi Mario", "Bianchi Giovanni"];
-      }
-    }
-    loadPersonnelFromSheet();
+  <div class="detail-block hidden" id="fcDetStrarinforzo">
+    <div class="panel">
+      <div class="row-group-label tep">Dati rinforzo</div>
+      <div class="field-row">
+        <div class="field"><label>Data/ora inizio</label><input type="datetime-local" id="fcSrInizio"></div>
+        <div class="field"><label>Data/ora fine</label><input type="datetime-local" id="fcSrFine"></div>
+      </div>
+      <div class="field"><label>Sede / comando di rinforzo</label><input type="text" id="fcSrSede"></div>
+      <div class="field"><label>Motivo del rinforzo</label><textarea id="fcSrMotivo" rows="2"></textarea></div>
+    </div>
+    <div class="panel">
+      <div class="row-group-label pers">Personale coinvolto</div>
+      <div class="dyn-list" id="fcSrPersonaleList"></div>
+      <button type="button" class="add-row-btn" data-add="person" data-target="fcSrPersonaleList">+ Aggiungi personale</button>
+    </div>
+  </div>
 
-    // Elenco comandi: condiviso dall'app (db/comandi.json, caricato una volta sola)
-    const COMANDO_FALLBACK = {
-      c: "Forlì-Cesena", pr: "FC", rg: "Emilia-Romagna", cm: "Forlì",
-      lat: 44.213465, lon: 12.061362, esc: "so.forli@vigilfuoco.it"
-    };
-    let COMANDI = [COMANDO_FALLBACK];
-    let TUTTI = COMANDI;
-    let comandoDestinatario = COMANDO_FALLBACK;
+  <div class="detail-block hidden" id="fcDetStraaltre">
+    <div class="panel">
+      <div class="row-group-label tep">Dati attivita</div>
+      <div class="field-row">
+        <div class="field"><label>Data/ora inizio</label><input type="datetime-local" id="fcSaInizio"></div>
+        <div class="field"><label>Data/ora fine</label><input type="datetime-local" id="fcSaFine"></div>
+      </div>
+      <div class="field"><label>Descrizione attivita</label><textarea id="fcSaDescrizione" rows="3"></textarea></div>
+    </div>
+  </div>
 
-    // Utente registrato: al momento è presente un solo profilo.
-    const PROFILO_UNICO = {
-      id: "pelizza-andrea",
-      nome: "Andrea",
-      cognome: "Pelizza",
-      cf: "PLZNDR86B12A001C",
-      email: "andrea.pelizza@vigilfuoco.it",
-      tel: "3666382828"
-    };
+  <div class="detail-block hidden" id="fcDetStraguida">
+    <div class="panel">
+      <div class="row-group-label tep">Tratte guida</div>
+      <div class="dyn-list" id="fcGdLegList"></div>
+      <button type="button" class="add-row-btn" data-add="leg" data-target="fcGdLegList">+ Aggiungi tratta (andata/ritorno)</button>
+    </div>
+    <div class="panel">
+      <div class="field-check">
+        <input type="checkbox" id="fcGdIncludiMissione">
+        <label for="fcGdIncludiMissione">Includi anche i dati di una missione per soccorso</label>
+      </div>
+      <div id="fcGdMissioneBox" class="hidden">
+        <div class="field-row">
+          <div class="field"><label>Numero intervento</label><input type="text" id="fcGdNumero"></div>
+          <div class="field"><label>Progressivo intervento</label><input type="text" id="fcGdProgressivo"></div>
+        </div>
+        <div class="field"><label>Localita</label><input type="text" id="fcGdLocalita"></div>
+        <div class="field"><label>Tipologia intervento</label><select id="fcGdTipologia"></select></div>
+      </div>
+    </div>
+  </div>
 
-    const profiloSelect = document.getElementById("profiloSelect");
-    profiloSelect.innerHTML = "";
-    const profiloOption = document.createElement("option");
-    profiloOption.value = PROFILO_UNICO.id;
-    profiloOption.textContent = PROFILO_UNICO.cognome + " " + PROFILO_UNICO.nome;
-    profiloOption.selected = true;
-    profiloSelect.appendChild(profiloOption);
+  <div class="nav-row">
+    <button type="button" class="nav-btn nav-back" data-back>Indietro</button>
+    <button type="button" class="nav-btn nav-next" data-next>Avanti</button>
+  </div>
+</section>
 
-    let currentStep = 1;
-    let currentTipo = null;
-    let currentComando = COMANDO_FALLBACK;
+<!-- STEP 4 -->
+<section class="cm-step hidden" id="fcStep4">
+  <div class="panel">
+    <div class="row-group-label">Note</div>
+    <div class="field"><textarea id="fcNote" rows="2" placeholder="Note aggiuntive (facoltative)"></textarea></div>
+  </div>
+  <div class="panel hidden" id="fcBuonoPastoBox">
+    <div class="field-check"><input type="checkbox" id="fcBuonoPasto"><label for="fcBuonoPasto">Richiedo il secondo buono pasto</label></div>
+  </div>
+  <div class="nav-row">
+    <button type="button" class="nav-btn nav-back" data-back>Indietro</button>
+    <button type="button" class="nav-btn nav-next" id="fcGoSummary">Vai al riepilogo</button>
+  </div>
+</section>
+
+<!-- STEP 5 -->
+<section class="cm-step hidden" id="fcStep5">
+  <div class="panel">
+    <div class="row-group-label">Destinatario</div>
+    <div class="field"><label>A: (verifica prima di inviare)</label><input type="text" id="fcPrevTo"></div>
+    <div class="field"><label>Oggetto</label><input type="text" id="fcPrevSubject"></div>
+  </div>
+  <div class="panel">
+    <div class="row-group-label">Anteprima</div>
+    <div class="field"><textarea id="fcPrevBody" rows="16"></textarea></div>
+    <div class="preview-actions">
+      <button type="button" class="btn-mailto" id="fcBtnMailto">Apri nel client di posta</button>
+      <button type="button" class="btn-eml" id="fcBtnEml">Scarica .eml</button>
+    </div>
+  </div>
+  <div class="security-note">
+    <strong>Come funziona l'invio.</strong> Nessuna password e presente in questo file. "Apri nel client di posta" prepara l'email e la apre nel tuo programma di posta gia collegato al tuo account: l'invio lo fai tu. "Scarica .eml" fa lo stesso come file, utile per testi lunghi.
+  </div>
+  <div class="nav-row">
+    <button type="button" class="nav-btn nav-back" data-back>Indietro</button>
+    <button type="button" class="nav-btn nav-back" id="fcRestart">Ricomincia</button>
+  </div>
+</section>
+`;
+
+  /* =====================================================================
+   * Logica
+   * ===================================================================== */
+  function init(root) {
+    const $ = id => root.querySelector("#" + id);
     const STEP_LABELS = ["Mittente e comando", "Tipo di comunicazione", "Dettaglio", "Opzioni e note", "Riepilogo e invio"];
 
-    const stepsBar = document.getElementById("stepsBar");
-    for (let i = 1; i <= 5; i++) {const d = document.createElement("div"); d.className = "step-dot"; d.dataset.step = i; stepsBar.appendChild(d);}
+    const MITTENTE = {nome: "", cognome: "", cf: "", email: ""};
+    let currentStep = 1, currentTipo = null, currentComando = null, testMode = true;
+    let TUTTI = [], COMANDI = [];
 
-    const stessoComando = document.getElementById("stessoComando");
-    const destBox = document.getElementById("destBox");
-    const destSelect = document.getElementById("destSelect");
-    const destCurrent = document.getElementById("destCurrent");
+    const normTxt = s => (s || "").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
 
-    function aggiornaDestinatarioUI() {
-      const stesso = stessoComando.checked;
-      destBox.classList.toggle("hidden", stesso);
-
-      if (stesso) {
-        comandoDestinatario = currentComando;
-        destCurrent.innerHTML = "Comando <b>" + (currentComando?.c || "-") + "</b>";
-      } else {
-        aggiornaElencoDestinatari();
+    function comandoSlug(record) {
+      if (record && record.esc && /@vigilfuoco\.it$/i.test(record.esc)) {
+        const local = record.esc.split("@")[0];
+        const parts = local.split(".");
+        return {slug: parts[parts.length - 1], ok: true};
       }
+      const fallback = (record ? record.cm || record.c : "").toString().toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z]/g, "");
+      return {slug: fallback, ok: false};
+    }
+    function comandoAddresses(record) {
+      if (!record) return {tep: "", personale: "", ok: false};
+      if (record.dir) return {tep: record.email || "", personale: record.email || "", ok: !!record.email};
+      const s = comandoSlug(record);
+      return {
+        tep: s.slug ? ("tep." + s.slug + "@vigilfuoco.it") : "",
+        personale: s.slug ? ("personale." + s.slug + "@vigilfuoco.it") : "",
+        ok: s.ok
+      };
     }
 
-    function aggiornaElencoDestinatari() {
-      const precedente = comandoDestinatario?.c || "";
-      destSelect.innerHTML = "";
+    /* ---------- tipologia select ---------- */
+    ["fcMsTipologia", "fcSsTipologia", "fcGdTipologia"].forEach(id => {
+      const sel = $(id);
+      TIPOLOGIE.forEach(t => { const o = document.createElement("option"); o.value = t; o.textContent = t; sel.appendChild(o); });
+    });
 
-      const lista = [...TUTTI].sort((a, b) => String(a.c || "").localeCompare(String(b.c || ""), "it"));
-      lista.forEach(cmd => {
-        const opt = document.createElement("option");
-        opt.value = cmd.c || "";
-        opt.textContent = cmd.c + (cmd.pr ? " (" + cmd.pr + ")" : "");
-        destSelect.appendChild(opt);
+    /* ---------- selettore comando con ricerca ---------- */
+    function cbKm(lat1, lon1, lat2, lon2) {
+      const R = 6371, t = x => x * Math.PI / 180, dLat = t(lat2 - lat1), dLon = t(lon2 - lon1);
+      const h = Math.sin(dLat / 2) ** 2 + Math.cos(t(lat1)) * Math.cos(t(lat2)) * Math.sin(dLon / 2) ** 2;
+      return 2 * R * Math.asin(Math.sqrt(h));
+    }
+
+    function makeComandoPicker(prefix, opt) {
+      opt = opt || {};
+      const inp = $(prefix + "Input"), res = $(prefix + "Results"), clr = $(prefix + "Clear"),
+        reg = $(prefix + "Regione"), cur = $(prefix + "Current"), box = $(prefix + "Box");
+      const geo = opt.geo ? $(prefix + "Geo") : null;
+      const rcn = opt.recents ? $(prefix + "Recents") : null;
+      const RKEY = "fireops_com_comandi_recenti";
+      const P = {rec: null, onChange: function () {}};
+      let items = [], active = -1, pronto = false;
+
+      function search() {
+        const q = normTxt(inp.value), rg = reg.value;
+        let list = TUTTI.filter(r => !rg || r.rg === rg);
+        if (q) {
+          list = list.map(r => {
+            let s = 99;
+            if (r._p && r._p === q) s = 0;
+            else if (r._n.startsWith(q)) s = 1;
+            else if (r._k.split(" ").some(w => w.startsWith(q))) s = 2;
+            else if (r._k.includes(q)) s = 3;
+            return {r, s};
+          }).filter(x => x.s < 99).sort((a, b) => a.s - b.s || a.r.c.localeCompare(b.r.c, "it")).map(x => x.r);
+        } else if (!rg) {
+          list = [];
+        } else {
+          list.sort((a, b) => (!!b.dir - !!a.dir) || a.c.localeCompare(b.c, "it"));
+        }
+        return list;
+      }
+      function mark() {
+        Array.from(res.children).forEach((el, i) => {
+          el.classList.toggle("active", i === active);
+          if (i === active) el.scrollIntoView({block: "nearest"});
+        });
+      }
+      function render() {
+        if (!pronto) return;
+        items = search();
+        res.innerHTML = "";
+        if (!inp.value.trim() && !reg.value) { res.classList.add("hidden"); inp.setAttribute("aria-expanded", "false"); return; }
+        res.classList.remove("hidden");
+        inp.setAttribute("aria-expanded", "true");
+        if (!items.length) {
+          const d = document.createElement("div");
+          d.className = "cbx-empty";
+          d.textContent = "Nessun risultato. Prova con il capoluogo o la sigla (es. RM).";
+          res.appendChild(d);
+          active = -1;
+          return;
+        }
+        items.forEach(r => {
+          const row = document.createElement("div");
+          row.className = "cbx-item";
+          row.setAttribute("role", "option");
+          const b = document.createElement("b"); b.textContent = r.c;
+          const s = document.createElement("span"); s.textContent = r.dir ? "Direzione" : (r.pr + " - " + r.rg);
+          row.appendChild(b); row.appendChild(s);
+          row.addEventListener("click", () => P.select(r));
+          res.appendChild(row);
+        });
+        active = inp.value.trim() ? 0 : -1;
+        mark();
+      }
+
+      P.update = function (note, rec) {
+        rec = (rec === undefined) ? P.rec : rec;
+        if (!pronto) { cur.textContent = "Caricamento elenco comandi..."; return; }
+        if (!rec) { cur.textContent = note || "Nessun comando selezionato."; return; }
+        const dir = !!rec.dir;
+        const addr = comandoAddresses(rec);
+        let out = (dir ? "Direzione: <b>" : "Comando: <b>") + rec.c + "</b> (" + rec.rg + ")";
+        if (addr.tep) out += "<br>" + (dir ? "Indirizzo: " : "TEP: ") + addr.tep;
+        if (dir) out += "<br>" + (addr.ok ? "Uso l'indirizzo generale della direzione, verificalo al riepilogo." : "Indirizzo non disponibile: inseriscilo al riepilogo.");
+        else if (!addr.ok) out += "<br>Indirizzo dedotto automaticamente, verificalo al riepilogo.";
+        if (note) out += "<br>" + note;
+        cur.innerHTML = out;
+      };
+
+      function rLoad() { try { return JSON.parse(localStorage.getItem(RKEY) || "[]"); } catch (e) { return []; } }
+      function rSave(rec) {
+        try { const l = rLoad().filter(n => n !== rec.c); l.unshift(rec.c); localStorage.setItem(RKEY, JSON.stringify(l.slice(0, 5))); } catch (e) {}
+      }
+      function rRender() {
+        if (!rcn) return;
+        const recs = rLoad().map(n => TUTTI.find(r => r.c === n)).filter(Boolean);
+        rcn.innerHTML = "";
+        rcn.classList.toggle("hidden", !recs.length);
+        if (!recs.length) return;
+        const lab = document.createElement("span"); lab.className = "cbx-recents-label"; lab.textContent = "Recenti:";
+        rcn.appendChild(lab);
+        recs.forEach(r => {
+          const c = document.createElement("button");
+          c.type = "button"; c.className = "cbx-chip"; c.textContent = r.c;
+          c.addEventListener("click", () => P.select(r));
+          rcn.appendChild(c);
+        });
+      }
+
+      P.select = function (rec, note, skipRecent) {
+        P.rec = rec;
+        inp.value = rec.c;
+        clr.classList.remove("hidden");
+        res.classList.add("hidden");
+        inp.setAttribute("aria-expanded", "false");
+        reg.value = "";
+        P.update(note);
+        if (rcn && !skipRecent) { rSave(rec); rRender(); }
+        P.onChange(rec);
+      };
+      P.clear = function () {
+        inp.value = ""; P.rec = null;
+        clr.classList.add("hidden");
+        P.update(); render();
+        P.onChange(null);
+      };
+      P.setDisabled = function (d) {
+        inp.disabled = d; reg.disabled = d; clr.disabled = d;
+        if (geo) geo.disabled = d;
+        box.classList.toggle("cbx-off", d);
+        res.classList.add("hidden");
+      };
+
+      P.setData = function (list) {
+        pronto = true;
+        inp.disabled = false; reg.disabled = false;
+        if (geo) geo.disabled = false;
+        Array.from(new Set(list.map(r => r.rg))).sort((a, b) => a.localeCompare(b, "it")).forEach(rg => {
+          const o = document.createElement("option"); o.value = rg; o.textContent = rg; reg.appendChild(o);
+        });
+        rRender();
+        P.update();
+      };
+
+      inp.addEventListener("input", () => {
+        if (P.rec && inp.value !== P.rec.c) { P.rec = null; P.update(); P.onChange(null); }
+        clr.classList.toggle("hidden", !inp.value);
+        render();
       });
+      inp.addEventListener("focus", () => { if (P.rec && inp.value === P.rec.c) inp.select(); else render(); });
+      inp.addEventListener("keydown", e => {
+        if (e.key === "ArrowDown") { e.preventDefault(); if (items.length) { active = Math.min(items.length - 1, active + 1); mark(); } }
+        else if (e.key === "ArrowUp") { e.preventDefault(); if (items.length) { active = Math.max(0, active - 1); mark(); } }
+        else if (e.key === "Enter") { e.preventDefault(); if (items[active]) P.select(items[active]); }
+        else if (e.key === "Escape") { res.classList.add("hidden"); }
+      });
+      clr.addEventListener("click", () => { P.clear(); inp.focus(); });
+      reg.addEventListener("change", render);
+      document.addEventListener("click", e => { if (!e.target.closest("#" + prefix + "Box")) res.classList.add("hidden"); });
 
-      if (!lista.length) {
-        destSelect.innerHTML = '<option value="">Nessun comando disponibile</option>';
-        comandoDestinatario = null;
+      if (geo) {
+        geo.addEventListener("click", () => {
+          if (!navigator.geolocation) { P.update("Geolocalizzazione non disponibile su questo dispositivo."); return; }
+          geo.disabled = true; geo.textContent = "Cerco...";
+          navigator.geolocation.getCurrentPosition(p => {
+            let best = null, bd = Infinity;
+            COMANDI.forEach(r => { const d = cbKm(p.coords.latitude, p.coords.longitude, r.lat, r.lon); if (d < bd) { bd = d; best = r; } });
+            geo.disabled = false; geo.textContent = "Il piu vicino a me";
+            if (best) P.select(best, "Sede piu vicina alla tua posizione (circa " + Math.round(bd) + " km). Verifica che sia il comando competente.");
+          }, () => {
+            geo.disabled = false; geo.textContent = "Il piu vicino a me";
+            P.update("Posizione non disponibile: controlla i permessi del browser.");
+          }, {enableHighAccuracy: false, timeout: 10000, maximumAge: 300000});
+        });
+      }
+
+      P.update();
+      return P;
+    }
+
+    const home = makeComandoPicker("fcHome", {});
+    const dest = makeComandoPicker("fcDest", {geo: true, recents: true});
+    const stessoChk = $("fcStesso");
+
+    function applyDestinazione() {
+      const same = stessoChk.checked;
+      dest.setDisabled(same);
+      if (same) {
+        currentComando = home.rec;
+        dest.update(home.rec ? "Invio allo stesso comando di appartenenza." : "Imposta il comando di appartenenza in Dati utente.", home.rec);
+      } else {
+        currentComando = dest.rec;
+        dest.update();
+      }
+    }
+    let suggerisciDaPosizione = false;
+    home.onChange = function () { suggerisciDaPosizione = false; if (stessoChk.checked) applyDestinazione(); };
+    dest.onChange = function (r) { if (!stessoChk.checked) currentComando = r; };
+    stessoChk.addEventListener("change", applyDestinazione);
+
+    /* ---------- utenti registrati (salvati nel browser di questo dispositivo) ---------- */
+    const PROF_KEY = "fireops_com_utenti";
+    const PROF_ACT = "fireops_com_utente_attivo";
+    const profSel = $("fcProfiloSelect");
+    const profDet = $("fcProfDetails");
+    let profActiveId = "";
+
+    function val(id) { const el = $(id); return el ? el.value.trim() : ""; }
+    function profLoad() { try { return JSON.parse(localStorage.getItem(PROF_KEY) || "[]"); } catch (e) { return []; } }
+    function profStore(list) { try { localStorage.setItem(PROF_KEY, JSON.stringify(list)); return true; } catch (e) { return false; } }
+    function profSetActive(id) { try { localStorage.setItem(PROF_ACT, id || ""); } catch (e) {} }
+    function profMsg(t) { $("fcProfMsg").textContent = t || ""; }
+
+    function syncMittente() {
+      MITTENTE.nome = val("fcUNome");
+      MITTENTE.cognome = val("fcUCognome");
+      MITTENTE.cf = val("fcUCf").toUpperCase();
+      MITTENTE.email = val("fcUEmail");
+    }
+    function turnoStr() { return val("fcTurnoL") + val("fcTurnoS"); }
+    function qualificaLabel() { return $("fcQualifica").value; }
+
+    function profFromForm() {
+      return {
+        id: profActiveId || ("u" + Date.now().toString(36)),
+        nome: val("fcUNome"), cognome: val("fcUCognome"),
+        cf: val("fcUCf").toUpperCase(), email: val("fcUEmail"),
+        qualifica: $("fcQualifica").value,
+        sede: val("fcSede"),
+        turnoL: val("fcTurnoL"), turnoS: val("fcTurnoS"),
+        comando: home.rec ? home.rec.c : "",
+        stesso: stessoChk.checked
+      };
+    }
+    function profFill(p) {
+      $("fcUNome").value = p.nome || "";
+      $("fcUCognome").value = p.cognome || "";
+      $("fcUCf").value = p.cf || "";
+      $("fcUEmail").value = p.email || "";
+      $("fcQualifica").value = p.qualifica || "VE";
+      $("fcSede").value = p.sede || "";
+      $("fcTurnoL").value = p.turnoL || "";
+      $("fcTurnoS").value = p.turnoS || "";
+      suggerisciDaPosizione = false;
+      const rec = TUTTI.find(r => r.c === p.comando);
+      if (rec) home.select(rec, null, true); else home.clear();
+      stessoChk.checked = (p.stesso !== false);
+      applyDestinazione();
+      syncMittente();
+    }
+    function profBlank() {
+      profFill({qualifica: "VE", sede: "CENTRALE"});
+      // niente comando salvato: prova a suggerirlo dalla posizione rilevata dall'app
+      suggerisciDaPosizione = true;
+      provaSuggerimentoPosizione();
+    }
+    function provaSuggerimentoPosizione() {
+      if (!suggerisciDaPosizione || home.rec) return;
+      const pos = window.FireOps && window.FireOps.posizione ? window.FireOps.posizione() : null;
+      if (pos && pos.comando) {
+        home.select(pos.comando, "Suggerito dalla tua posizione attuale. Verifica che sia corretto.");
+        applyDestinazione();
+      }
+    }
+    document.addEventListener("fireops:posizione", provaSuggerimentoPosizione);
+
+    function profRenderSelect() {
+      const list = profLoad().sort((a, b) => (a.cognome + a.nome).localeCompare(b.cognome + b.nome, "it"));
+      profSel.innerHTML = "";
+      const add = (v, t) => { const o = document.createElement("option"); o.value = v; o.textContent = t; profSel.appendChild(o); };
+      add("", list.length ? "Scegli utente registrato" : "Nessun utente registrato");
+      list.forEach(p => add(p.id, p.cognome.toUpperCase() + " " + p.nome + (p.qualifica ? " (" + p.qualifica + ")" : "")));
+      add("__new__", "+ Nuovo utente");
+      profSel.value = profActiveId || "";
+    }
+
+    profSel.addEventListener("change", () => {
+      const v = profSel.value;
+      if (v === "") return;
+      if (v === "__new__") {
+        profActiveId = ""; profSetActive("");
+        profBlank();
+        profSel.value = "";
+        profDet.open = true;
+        $("fcUCognome").focus();
+        profMsg("Compila i dati e premi Salva utente.");
         return;
       }
-
-      const idx = lista.findIndex(c => c.c === precedente);
-      destSelect.selectedIndex = idx >= 0 ? idx : 0;
-      comandoDestinatario = lista[destSelect.selectedIndex];
-    }
-
-    stessoComando.addEventListener("change", aggiornaDestinatarioUI);
-    destSelect.addEventListener("change", function() {
-      comandoDestinatario = TUTTI.find(c => c.c === this.value) || null;
-      if (comandoDestinatario) {
-        destCurrent.innerHTML = "Destinatario: <b>" + comandoDestinatario.c + "</b>";
-      }
+      const p = profLoad().find(x => x.id === v);
+      if (!p) return;
+      profActiveId = p.id; profSetActive(p.id);
+      profFill(p);
+      profDet.open = false;
+      profMsg("");
     });
 
-    function fetchComandi() {
-      return FireOps.comandi();
-    }
-
-    async function caricaComandi() {
-      try {
-        const data = await fetchComandi();
-        COMANDI = data;
-        TUTTI = data;
-
-        // Mantiene il comando di appartenenza dell'utente, se presente nel JSON.
-        const trovato = TUTTI.find(c => c.c === currentComando.c || c.pr === currentComando.pr);
-        if (trovato) currentComando = trovato;
-
-        popolaRegioni();
-        setComandoAppartenenza(currentComando);
-      } catch (err) {
-        console.warn("Impossibile caricare comandi.json, uso il comando predefinito.", err);
-        aggiornaDestinatarioUI();
+    $("fcProfSave").addEventListener("click", () => {
+      syncMittente();
+      const list = profLoad();
+      if (!profActiveId) {
+        const dup = list.find(x => x.cognome.toLowerCase() === val("fcUCognome").toLowerCase() && x.nome.toLowerCase() === val("fcUNome").toLowerCase());
+        if (dup) profActiveId = dup.id;
       }
-    }
+      const p = profFromForm();
+      if (!p.nome || !p.cognome) { profMsg("Inserisci almeno nome e cognome."); return; }
+      if (!p.comando) { profMsg("Scegli il comando di appartenenza."); return; }
+      if (p.cf && !/^[A-Z0-9]{16}$/.test(p.cf)) { profMsg("Il codice fiscale deve avere 16 caratteri."); return; }
+      const i = list.findIndex(x => x.id === p.id);
+      if (i >= 0) list[i] = p; else list.push(p);
+      if (!profStore(list)) { profMsg("Impossibile salvare: il browser blocca la memoria locale."); return; }
+      profActiveId = p.id; profSetActive(p.id);
+      profRenderSelect();
+      profMsg("Utente salvato su questo dispositivo.");
+    });
 
-    // ---- Comando di appartenenza: ricerca per capoluogo, provincia o sigla ----
-    const homeInput = document.getElementById("homeInput");
-    const homeClear = document.getElementById("homeClear");
-    const homeResults = document.getElementById("homeResults");
-    const homeRegione = document.getElementById("homeRegione");
-    const homeCurrent = document.getElementById("homeCurrent");
+    $("fcProfDel").addEventListener("click", () => {
+      if (!profActiveId) { profMsg("Nessun utente selezionato."); return; }
+      const list = profLoad();
+      const p = list.find(x => x.id === profActiveId);
+      if (!p || !confirm("Eliminare " + p.cognome + " " + p.nome + " da questo dispositivo?")) return;
+      profStore(list.filter(x => x.id !== profActiveId));
+      profActiveId = ""; profSetActive("");
+      profRenderSelect(); profBlank();
+      profMsg("Utente eliminato.");
+    });
 
-    function normalizza(t) {
-      return String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    }
+    ["fcUNome", "fcUCognome", "fcUEmail"].forEach(id => $(id).addEventListener("input", syncMittente));
+    $("fcUCf").addEventListener("input", function () { this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, ""); syncMittente(); });
 
-    function popolaRegioni() {
-      const regioni = [...new Set(TUTTI.map(c => c.rg).filter(Boolean))].sort((a, b) => a.localeCompare(b, "it"));
-      homeRegione.innerHTML = '<option value="">Tutte le regioni</option>';
-      regioni.forEach(r => {
-        const o = document.createElement("option");
-        o.value = r; o.textContent = r;
-        homeRegione.appendChild(o);
-      });
-    }
-
-    function setComandoAppartenenza(cmd) {
-      currentComando = cmd;
-      homeCurrent.innerHTML = "Comando <b>" + cmd.c + "</b>" + (cmd.pr ? " (" + cmd.pr + ")" : "");
-      aggiornaDestinatarioUI();
-    }
-
-    function renderHomeResults() {
-      const q = normalizza(homeInput.value.trim());
-      const rg = homeRegione.value;
-      homeClear.classList.toggle("hidden", !homeInput.value);
-
-      if (!q && !rg) {homeResults.classList.add("hidden"); return;}
-
-      const lista = TUTTI
-        .filter(c => !rg || c.rg === rg)
-        .filter(c => !q || normalizza(c.c).includes(q) || normalizza(c.cm).includes(q) || normalizza(c.pr) === q)
-        .sort((a, b) => String(a.c).localeCompare(String(b.c), "it"));
-
-      homeResults.innerHTML = "";
-      if (!lista.length) {
-        homeResults.innerHTML = '<div class="cbx-item"><span>Nessun comando trovato</span></div>';
-      } else {
-        lista.forEach(c => {
-          const item = document.createElement("div");
-          item.className = "cbx-item";
-          item.innerHTML = "<b>" + c.c + "</b> <span>" + [c.pr, c.rg].filter(Boolean).join(" · ") + "</span>";
-          item.addEventListener("click", () => {
-            setComandoAppartenenza(c);
-            homeInput.value = "";
-            homeClear.classList.add("hidden");
-            homeResults.classList.add("hidden");
-          });
-          homeResults.appendChild(item);
+    /* ---------- caricamento comandi (db/comandi.json via FireOps) ---------- */
+    function avviaDati() {
+      if (!(window.FireOps && window.FireOps.comandi)) {
+        home.update("Elenco comandi non disponibile in questa pagina.");
+        dest.update("Elenco comandi non disponibile in questa pagina.");
+        return;
+      }
+      window.FireOps.comandi().then(list => {
+        COMANDI = list;
+        TUTTI = COMANDI.concat(DIREZIONI);
+        TUTTI.forEach(r => {
+          r._n = normTxt(r.c);
+          r._p = normTxt(r.pr);
+          r._k = normTxt([r.c, r.cm, r.pr, r.rg, r.x].join(" "));
         });
-      }
-      homeResults.classList.remove("hidden");
-    }
+        home.setData(TUTTI);
+        dest.setData(TUTTI);
 
-    homeInput.addEventListener("input", renderHomeResults);
-    homeInput.addEventListener("focus", renderHomeResults);
-    homeRegione.addEventListener("change", renderHomeResults);
-    homeClear.addEventListener("click", () => {
-      homeInput.value = "";
-      renderHomeResults();
-      homeInput.focus();
-    });
-    document.addEventListener("click", e => {
-      if (!document.getElementById("homeBox").contains(e.target)) homeResults.classList.add("hidden");
-    });
-
-    function renderStepsBar() {
-      stepsBar.querySelectorAll(".step-dot").forEach(d => {
-        const n = Number(d.dataset.step);
-        d.classList.toggle("done", n < currentStep);
-        d.classList.toggle("active", n === currentStep);
+        const list2 = profLoad();
+        let act = ""; try { act = localStorage.getItem(PROF_ACT) || ""; } catch (e) {}
+        const p = list2.find(x => x.id === act) || (list2.length === 1 ? list2[0] : null);
+        if (p) { profActiveId = p.id; profFill(p); }
+        else { profBlank(); profDet.open = true; }
+        profRenderSelect();
+      }).catch(() => {
+        home.update("Impossibile caricare l'elenco comandi. Riprova più tardi.");
+        dest.update("Impossibile caricare l'elenco comandi. Riprova più tardi.");
       });
-      document.getElementById("stepLabel").textContent = "Passo " + currentStep + " di 5 - " + STEP_LABELS[currentStep - 1];
     }
+    avviaDati();
 
-    function updateNavButtons() {
-      const btnBack = document.getElementById("navBack");
-      const btnNext = document.getElementById("navNext");
-      btnBack.classList.toggle("hidden", currentStep <= 1);
-      btnNext.textContent =
-        currentStep === 5 ? "Ricomincia" :
-        currentStep === 4 ? "Vai al riepilogo" : "Avanti";
-    }
-
-    function showDetailBlock() {
-      document.querySelectorAll(".detail-block").forEach(b => b.classList.add("hidden"));
-      document.querySelectorAll("#tipoTiles .tile").forEach(x => {
-        x.classList.toggle("selected", x.dataset.tipo === currentTipo);
-      });
-      if (currentTipo) {
-        const el = document.getElementById("det-" + currentTipo);
-        if (el) el.classList.remove("hidden");
-      }
-    }
-
-    function showStep(n) {
-      currentStep = n;
-      document.querySelectorAll("section.step").forEach(s => s.classList.toggle("hidden", s.id !== "step-" + n));
-      if (n === 3) showDetailBlock();
-      if (n === 5) generatePreview();
-      renderStepsBar();
-      updateNavButtons();
-      window.scrollTo({top: 0, behavior: "smooth"});
-    }
-
-    function goNext() {
-      if (currentStep === 5) {showStep(1); return;}
-      if (currentStep === 2 && !currentTipo) {alert("Seleziona il tipo di comunicazione."); return;}
-      showStep(currentStep + 1);
-    }
-    function goBack() {showStep(Math.max(1, currentStep - 1));}
-
-    document.querySelectorAll("[data-next]").forEach(b => b.addEventListener("click", goNext));
-    document.querySelectorAll("[data-back]").forEach(b => b.addEventListener("click", goBack));
-
-    document.querySelectorAll("#tipoTiles .tile").forEach(t => {
+    /* ---------- step 2: tile ---------- */
+    root.querySelectorAll("#fcTipoTiles .tile").forEach(t => {
       t.addEventListener("click", function () {
         currentTipo = this.dataset.tipo;
-        document.querySelectorAll("#tipoTiles .tile").forEach(x => x.classList.toggle("selected", x === this));
-        showStep(3);
+        root.querySelectorAll("#fcTipoTiles .tile").forEach(x => x.classList.toggle("selected", x === this));
       });
     });
 
-    const tmMotivoSelect = document.getElementById("tmMotivoSelect");
-    const tmMotivoAltroField = document.getElementById("tmMotivoAltroField");
-    tmMotivoSelect.addEventListener("change", function() {
-      tmMotivoAltroField.classList.toggle("hidden", this.value !== "Altro");
-    });
-
+    /* ---------- righe dinamiche ---------- */
     function addPersonRow(targetId) {
-      const list = document.getElementById(targetId);
+      const list = $(targetId);
       const row = document.createElement("div");
       row.className = "person-row";
-      
-      const wrapper = document.createElement("div");
-      wrapper.className = "person-select-wrapper";
-      
-      const inp = document.createElement("input");
-      inp.type = "text";
-      inp.className = "person-input";
-      inp.placeholder = "Pelizza Andrea o cerca...";
-      
-      const sug = document.createElement("div");
-      sug.className = "suggestions-list";
-      
-      wrapper.appendChild(inp);
-      wrapper.appendChild(sug);
-      
-      const removeBtn = document.createElement("button");
-      removeBtn.type = "button";
-      removeBtn.className = "row-remove-btn";
-      removeBtn.innerHTML = "&#10005;";
-      removeBtn.addEventListener("click", () => row.remove());
-      
-      row.appendChild(wrapper);
-      row.appendChild(removeBtn);
-      
-      function renderSuggestions(filter) {
-        sug.innerHTML = "";
-        const matches = externalPersonnelList.filter(p => p.toLowerCase().includes(filter.toLowerCase()));
-        if (!matches.length) {
-          sug.style.display = "none";
-          return;
-        }
-        matches.forEach(m => {
-          const item = document.createElement("div");
-          item.className = "suggestion-item";
-          item.textContent = m;
-          item.addEventListener("click", () => {
-            inp.value = m;
-            sug.style.display = "none";
-          });
-          sug.appendChild(item);
-        });
-        sug.style.display = "block";
-      }
-
-      inp.addEventListener("input", () => renderSuggestions(inp.value));
-      inp.addEventListener("focus", () => renderSuggestions(inp.value));
-      document.addEventListener("click", (e) => {
-        if (!wrapper.contains(e.target)) sug.style.display = "none";
-      });
-
+      row.innerHTML = '<input type="text" class="person-input" placeholder="Nome Cognome (qualifica)">'
+        + '<button type="button" class="row-remove-btn" aria-label="Rimuovi">\u2715</button>';
+      row.querySelector(".row-remove-btn").addEventListener("click", () => row.remove());
       list.appendChild(row);
     }
-
-    function localDateTimeValue(d) {
-      const y = d.getFullYear();
-      const m = pad2(d.getMonth() + 1);
-      const day = pad2(d.getDate());
-      const h = pad2(d.getHours());
-      const min = pad2(d.getMinutes());
-      return `${y}-${m}-${day}T${h}:${min}`;
-    }
-
-    function dateOnlyValue(d) {
-      return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
-    }
-
-    function setDateAndTimes(row, date, inHour, outHour, outNextDay = false) {
-      const inEl = row.querySelector(".timb-in");
-      const outEl = row.querySelector(".timb-out");
-
-      const dIn = new Date(date);
-      dIn.setHours(inHour, 0, 0, 0);
-
-      const dOut = new Date(date);
-      if (outNextDay) dOut.setDate(dOut.getDate() + 1);
-      dOut.setHours(outHour, 0, 0, 0);
-
-      inEl.value = localDateTimeValue(dIn);
-      outEl.value = localDateTimeValue(dOut);
-
-      const dateEl = row.querySelector(".timb-date");
-      if (dateEl) dateEl.value = dateOnlyValue(dIn);
-
-      const shift = row.querySelector(".timb-shift");
-      if (shift) shift.value = outNextDay ? "notte" : "giorno";
-    }
-
-    function getDefaultTimbraturaTimes() {
-      const now = new Date();
-      const hour = now.getHours();
-      const base = new Date(now);
-      base.setHours(0, 0, 0, 0);
-
-      if (hour >= 8 && hour < 20) {
-        return {date: base, inHour: 8, outHour: 20, outNextDay: false};
-      }
-
-      if (hour < 8) {
-        base.setDate(base.getDate() - 1);
-      }
-
-      return {date: base, inHour: 20, outHour: 8, outNextDay: true};
-    }
-
-    function addTimbraturaRow(targetId, preset = null) {
-      const list = document.getElementById(targetId);
+    function addTimbraturaRow(targetId) {
+      const list = $(targetId);
       const row = document.createElement("div");
       row.className = "timb-row";
-
-      const defs = preset || getDefaultTimbraturaTimes();
-
-      row.innerHTML =
-        '<div class="tfield tdate">' +
-          '<label>Data interessata</label>' +
-          '<input type="date" class="timb-date">' +
-          '<div class="date-nav">' +
-            '<button type="button" class="date-minus">− Giorno precedente</button>' +
-            '<button type="button" class="date-plus">+ Giorno successivo</button>' +
-          '</div>' +
-        '</div>' +
-
-        '<div class="tfield">' +
-          '<label>Data/ora ingresso</label>' +
-          '<input type="datetime-local" class="timb-in">' +
-          '<div class="time-presets">' +
-            '<button type="button" class="time-preset preset-day">08:00 → 20:00</button>' +
-          '</div>' +
-        '</div>' +
-
-        '<div class="tfield">' +
-          '<label>Data/ora uscita</label>' +
-          '<input type="datetime-local" class="timb-out">' +
-          '<div class="time-presets">' +
-            '<button type="button" class="time-preset preset-night">20:00 → 08:00</button>' +
-          '</div>' +
-        '</div>' +
-
-        '<div class="tfield tshift">' +
-          '<label>Fascia</label>' +
-          '<select class="timb-shift">' +
-            '<option value="giorno">Diurna</option>' +
-            '<option value="notte">Notturna</option>' +
-            '<option value="personalizzata">Personalizzata</option>' +
-          '</select>' +
-        '</div>' +
-
-        '<button type="button" class="row-remove-btn" aria-label="Rimuovi" title="Rimuovi fascia">&#10005;</button>';
-
+      row.innerHTML = '<div class="tfield"><label>Data/ora ingresso</label><input type="datetime-local" class="timb-in"></div>'
+        + '<div class="tfield"><label>Data/ora uscita</label><input type="datetime-local" class="timb-out"></div>'
+        + '<button type="button" class="row-remove-btn" aria-label="Rimuovi">\u2715</button>';
+      row.querySelector(".row-remove-btn").addEventListener("click", () => row.remove());
       list.appendChild(row);
-
-      const dateEl = row.querySelector(".timb-date");
-      const inEl = row.querySelector(".timb-in");
-      const outEl = row.querySelector(".timb-out");
-      const shiftEl = row.querySelector(".timb-shift");
-
-      function syncFromDate() {
-        if (!dateEl.value) return;
-        const [y, m, d] = dateEl.value.split("-").map(Number);
-        const base = new Date(y, m - 1, d);
-
-        if (shiftEl.value === "giorno") {
-          setDateAndTimes(row, base, 8, 20, false);
-        } else if (shiftEl.value === "notte") {
-          setDateAndTimes(row, base, 20, 8, true);
-        } else {
-          const currentIn = inEl.value;
-          const currentOut = outEl.value;
-          if (!currentIn || !currentOut) setDateAndTimes(row, base, 8, 20, false);
-        }
-      }
-
-      function syncDateFromInput(input) {
-        if (!input.value) return;
-        const d = new Date(input.value);
-        if (isNaN(d)) return;
-        dateEl.value = dateOnlyValue(d);
-      }
-
-      dateEl.addEventListener("change", syncFromDate);
-
-      inEl.addEventListener("change", () => {
-        syncDateFromInput(inEl);
-        if (shiftEl.value !== "personalizzata") shiftEl.value = "personalizzata";
-      });
-
-      outEl.addEventListener("change", () => {
-        syncDateFromInput(inEl);
-        if (shiftEl.value !== "personalizzata") shiftEl.value = "personalizzata";
-      });
-
-      shiftEl.addEventListener("change", syncFromDate);
-
-      row.querySelector(".preset-day").addEventListener("click", () => {
-        const d = dateEl.value ? new Date(dateEl.value + "T00:00") : new Date();
-        setDateAndTimes(row, d, 8, 20, false);
-      });
-
-      row.querySelector(".preset-night").addEventListener("click", () => {
-        const d = dateEl.value ? new Date(dateEl.value + "T00:00") : new Date();
-        setDateAndTimes(row, d, 20, 8, true);
-      });
-
-      row.querySelector(".date-minus").addEventListener("click", () => {
-        const d = dateEl.value ? new Date(dateEl.value + "T00:00") : new Date();
-        d.setDate(d.getDate() - 1);
-        dateEl.value = dateOnlyValue(d);
-        syncFromDate();
-      });
-
-      row.querySelector(".date-plus").addEventListener("click", () => {
-        const d = dateEl.value ? new Date(dateEl.value + "T00:00") : new Date();
-        d.setDate(d.getDate() + 1);
-        dateEl.value = dateOnlyValue(d);
-        syncFromDate();
-      });
-
-      row.querySelector(".row-remove-btn").addEventListener("click", () => {
-        const rows = list.querySelectorAll(".timb-row");
-        if (rows.length === 1) {
-          alert("Deve rimanere almeno una data/fascia oraria.");
-          return;
-        }
-        row.remove();
-      });
-
-      setDateAndTimes(row, defs.date, defs.inHour, defs.outHour, defs.outNextDay);
-      return row;
     }
-
-    document.querySelectorAll(".add-row-btn[data-add]").forEach(btn => {
+    function addLegRow(targetId, tipo) {
+      const list = $(targetId);
+      const row = document.createElement("div");
+      row.className = "leg-row";
+      row.innerHTML = '<div class="lfield"><label>Tipo</label><select class="leg-tipo"><option value="Andata">Andata</option><option value="Ritorno">Ritorno</option></select></div>'
+        + '<div class="lfield"><label>Sede partenza</label><input type="text" class="leg-partenza"></div>'
+        + '<div class="lfield"><label>Sede arrivo</label><input type="text" class="leg-arrivo"></div>'
+        + '<div class="lfield"><label>Data/ora inizio</label><input type="datetime-local" class="leg-inizio"></div>'
+        + '<div class="lfield"><label>Data/ora fine</label><input type="datetime-local" class="leg-fine"></div>'
+        + '<button type="button" class="row-remove-btn" aria-label="Rimuovi">\u2715</button>';
+      if (tipo) row.querySelector(".leg-tipo").value = tipo;
+      row.querySelector(".row-remove-btn").addEventListener("click", () => row.remove());
+      list.appendChild(row);
+    }
+    root.querySelectorAll(".add-row-btn[data-add]").forEach(btn => {
       btn.addEventListener("click", function () {
         const kind = this.dataset.add, target = this.dataset.target;
         if (kind === "person") addPersonRow(target);
         else if (kind === "timbratura") addTimbraturaRow(target);
+        else if (kind === "leg") addLegRow(target);
       });
     });
+    addPersonRow("fcMsPersonaleList");
+    addPersonRow("fcSsPersonaleList");
+    addPersonRow("fcSrPersonaleList");
+    addTimbraturaRow("fcTmDateList");
+    addLegRow("fcGdLegList", "Andata");
+    addLegRow("fcGdLegList", "Ritorno");
 
-    addPersonRow("msPersonaleList");
-    addTimbraturaRow("tmDateList", getDefaultTimbraturaTimes());
+    $("fcGdIncludiMissione").addEventListener("change", function () { $("fcGdMissioneBox").classList.toggle("hidden", !this.checked); });
 
-    const msTip = document.getElementById("msTipologia");
-    if (msTip) {
-      TIPOLOGIE.forEach(t => {const o = document.createElement("option"); o.value = t; o.textContent = t; msTip.appendChild(o);});
+    function getPersonList(listId) { return Array.from(root.querySelectorAll("#" + listId + " .person-input")).map(i => i.value.trim()).filter(Boolean); }
+
+    /* ---------- navigazione ---------- */
+    const stepsBar = $("fcStepsBar");
+    for (let i = 1; i <= 5; i++) { const d = document.createElement("div"); d.className = "cm-dot"; d.dataset.step = i; stepsBar.appendChild(d); }
+
+    function renderStepsBar() {
+      stepsBar.querySelectorAll(".cm-dot").forEach(d => {
+        const n = Number(d.dataset.step);
+        d.classList.toggle("done", n < currentStep);
+        d.classList.toggle("active", n === currentStep);
+      });
+      $("fcStepLabel").textContent = "Passo " + currentStep + " di 5 - " + STEP_LABELS[currentStep - 1];
     }
 
-    function pad2(n) {return String(n).padStart(2, "0");}
+    function showDetailBlock() {
+      root.querySelectorAll(".detail-block").forEach(b => b.classList.add("hidden"));
+      if (currentTipo) {
+        const map = {missione: "fcDetMissione", timbratura: "fcDetTimbratura", strasoccorso: "fcDetStrasoccorso",
+          strarinforzo: "fcDetStrarinforzo", straaltre: "fcDetStraaltre", straguida: "fcDetStraguida"};
+        const el = $(map[currentTipo]);
+        if (el) el.classList.remove("hidden");
+      }
+    }
+    function showOptionsBlocks() {
+      const withBuono = ["strasoccorso", "strarinforzo", "straaltre", "straguida"];
+      $("fcBuonoPastoBox").classList.toggle("hidden", !withBuono.includes(currentTipo));
+    }
+
+    function showStep(n) {
+      currentStep = n;
+      root.querySelectorAll(".cm-step").forEach(s => s.classList.toggle("hidden", s.id !== "fcStep" + n));
+      if (n === 3) showDetailBlock();
+      if (n === 4) showOptionsBlocks();
+      if (n === 5) generatePreview();
+      renderStepsBar();
+      root.scrollIntoView({block: "start", behavior: "smooth"});
+    }
+
+    function goNext() {
+      if (currentStep === 1) {
+        syncMittente();
+        if (!MITTENTE.nome || !MITTENTE.cognome) { profDet.open = true; alert("Scegli un utente o inserisci nome e cognome."); return; }
+        if (!currentComando) {
+          if (stessoChk.checked) { profDet.open = true; alert("Imposta il comando di appartenenza in Dati utente, oppure togli la spunta e scegli un altro comando."); }
+          else alert("Seleziona il comando destinatario.");
+          return;
+        }
+      }
+      if (currentStep === 2 && !currentTipo) { alert("Seleziona il tipo di comunicazione."); return; }
+      showStep(Math.min(5, currentStep + 1));
+    }
+    function goBack() { showStep(Math.max(1, currentStep - 1)); }
+
+    root.querySelectorAll("[data-next]").forEach(b => b.addEventListener("click", goNext));
+    root.querySelectorAll("[data-back]").forEach(b => b.addEventListener("click", goBack));
+    $("fcGoSummary").addEventListener("click", goNext);
+    $("fcRestart").addEventListener("click", () => showStep(1));
+
+    /* ---------- testo email ---------- */
+    function pad2(n) { return String(n).padStart(2, "0"); }
     function fmtDT(v) {
       if (!v) return "-";
       const d = new Date(v);
       if (isNaN(d)) return v;
       return pad2(d.getDate()) + "/" + pad2(d.getMonth() + 1) + "/" + d.getFullYear() + " " + pad2(d.getHours()) + ":" + pad2(d.getMinutes());
     }
+    function mittenteHeader() {
+      syncMittente();
+      let h = MITTENTE.cognome + " " + MITTENTE.nome + " (" + qualificaLabel() + ")";
+      if (MITTENTE.cf) h += " - CF " + MITTENTE.cf;
+      const t = turnoStr(), s = val("fcSede");
+      if (t) h += " - turno " + t;
+      if (s) h += " - sede " + s;
+      if (home.rec && currentComando && currentComando !== home.rec) h += " - in servizio presso " + home.rec.c;
+      return h;
+    }
 
-    function buildIntervento() {
-      const inizio = fmtDT(document.getElementById("msInizio").value);
-      const fine = fmtDT(document.getElementById("msFine").value);
-      const numero = document.getElementById("msNumero").value.trim();
-      const progressivo = document.getElementById("msProgressivo").value.trim();
-      const localita = document.getElementById("msLocalita").value.trim();
-      const tipologia = document.getElementById("msTipologia").value;
-      const personale = Array.from(document.querySelectorAll("#msPersonaleList .person-input")).map(i => i.value.trim()).filter(Boolean);
-      
+    function buildIntervento(prefix, isStraordinario) {
+      const inizio = fmtDT(val(prefix + "Inizio")), fine = fmtDT(val(prefix + "Fine"));
+      const numero = val(prefix + "Numero"), progressivo = val(prefix + "Progressivo"), localita = val(prefix + "Localita");
+      const tipSel = $(prefix + "Tipologia"); const tipologia = tipSel ? tipSel.value : "";
+      const personale = getPersonList(prefix + "PersonaleList");
+      const bp2 = isStraordinario ? $("fcBuonoPasto").checked : false;
       const lines = [];
-      lines.push("Comunicazione di missione per soccorso.");
+      lines.push(isStraordinario ? "Richiesta di straordinario per soccorso." : "Comunicazione di missione per soccorso.");
       lines.push("");
-      lines.push("Richiedente: " + MITTENTE.cognome + " " + MITTENTE.nome + " (" + document.getElementById("qualificaSelect").value + ") - CF " + MITTENTE.cf + " - turno " + document.getElementById("turnoLettera").value + document.getElementById("turnoSalto").value + " - sede " + document.getElementById("sedeInput").value);
-      lines.push("Comando: " + currentComando.c);
+      lines.push("Richiedente: " + mittenteHeader());
+      lines.push("Comando: " + (currentComando ? currentComando.c + " (" + currentComando.rg + ")" : "- non selezionato -"));
       lines.push("");
       lines.push("Data/ora inizio intervento: " + inizio);
       lines.push("Data/ora fine intervento: " + fine);
       lines.push("Numero intervento: " + (numero || "-"));
       lines.push("Progressivo intervento: " + (progressivo || "-"));
-      lines.push("Località: " + (localita || "-"));
-      lines.push("Tipologia intervento: " + tipologia);
+      lines.push("Localita: " + (localita || "-"));
+      lines.push("Tipologia intervento: " + (tipologia || "-"));
       lines.push("");
       lines.push("Personale intervenuto:");
       if (personale.length) personale.forEach((p, i) => lines.push("  " + (i + 1) + ". " + p));
       else lines.push("  (nessun nominativo inserito)");
-      
-      const note = document.getElementById("noteInput").value.trim();
-      if (note) {lines.push(""); lines.push("Note: " + note);}
+      if (isStraordinario) {
+        lines.push("");
+        lines.push(bp2 ? "Si richiede l'erogazione del secondo buono pasto." : "Non si richiede il secondo buono pasto.");
+      }
+      const note = val("fcNote");
+      if (note) { lines.push(""); lines.push("Note: " + note); }
       lines.push("");
       lines.push("Distinti saluti.");
       lines.push(MITTENTE.cognome + " " + MITTENTE.nome);
-      
-      const subject = "Missione per soccorso - " + MITTENTE.cognome + " " + MITTENTE.nome + " - interv. n. " + (numero || "s.n.");
+      const dataBreve = val(prefix + "Inizio") ? inizio.split(" ")[0] : "";
+      const subject = (isStraordinario ? "Straordinario per soccorso" : "Missione per soccorso") + " - " + MITTENTE.cognome + " " + MITTENTE.nome + " - interv. n. " + (numero || "s.n.") + (dataBreve ? " del " + dataBreve : "");
       return {subject, body: lines.join("\n")};
     }
-
     function buildTimbratura() {
-      const selMotivo = document.getElementById("tmMotivoSelect").value;
-      const motivo = selMotivo === "Altro" ? document.getElementById("tmMotivoAltro").value.trim() : selMotivo;
-      const rows = Array.from(document.querySelectorAll("#tmDateList .timb-row")).map(r => ({
-        in: r.querySelector(".timb-in").value, 
-        out: r.querySelector(".timb-out").value
-      }));
-      
+      const motivo = val("fcTmMotivo");
+      const rows = Array.from(root.querySelectorAll("#fcTmDateList .timb-row")).map(r => ({in: r.querySelector(".timb-in").value, out: r.querySelector(".timb-out").value}));
       const lines = [];
       lines.push("Comunicazione di mancata timbratura.");
       lines.push("");
-      lines.push("Richiedente: " + MITTENTE.cognome + " " + MITTENTE.nome + " (" + document.getElementById("qualificaSelect").value + ") - CF " + MITTENTE.cf + " - turno " + document.getElementById("turnoLettera").value + document.getElementById("turnoSalto").value + " - sede " + document.getElementById("sedeInput").value);
-      lines.push("Comando: " + currentComando.c);
+      lines.push("Richiedente: " + mittenteHeader());
+      lines.push("Comando: " + (currentComando ? currentComando.c + " (" + currentComando.rg + ")" : "- non selezionato -"));
       lines.push("");
       lines.push("Motivo: " + (motivo || "-"));
       lines.push("");
-      lines.push("Date e fasce orarie interessate:");
+      lines.push("Date interessate:");
       if (rows.length) rows.forEach((r, i) => lines.push("  " + (i + 1) + ". Ingresso: " + fmtDT(r.in) + "  -  Uscita: " + fmtDT(r.out)));
       else lines.push("  (nessuna data inserita)");
-      
-      const note = document.getElementById("noteInput").value.trim();
-      if (note) {lines.push(""); lines.push("Note: " + note);}
+      const note = val("fcNote");
+      if (note) { lines.push(""); lines.push("Note: " + note); }
       lines.push("");
       lines.push("Distinti saluti.");
       lines.push(MITTENTE.cognome + " " + MITTENTE.nome);
-      
-      const subject = "Mancata timbratura - " + MITTENTE.cognome + " " + MITTENTE.nome;
+      const primaData = rows.length && rows[0].in ? fmtDT(rows[0].in).split(" ")[0] : "";
+      const subject = "Mancata timbratura - " + MITTENTE.cognome + " " + MITTENTE.nome + (primaData ? " - " + primaData : "");
+      return {subject, body: lines.join("\n")};
+    }
+    function buildRinforzo() {
+      const inizio = fmtDT(val("fcSrInizio")), fine = fmtDT(val("fcSrFine")), sede = val("fcSrSede"), motivo = val("fcSrMotivo");
+      const personale = getPersonList("fcSrPersonaleList");
+      const bp2 = $("fcBuonoPasto").checked;
+      const lines = [];
+      lines.push("Richiesta di straordinario per rinforzo personale.");
+      lines.push("");
+      lines.push("Richiedente: " + mittenteHeader());
+      lines.push("Comando: " + (currentComando ? currentComando.c + " (" + currentComando.rg + ")" : "- non selezionato -"));
+      lines.push("");
+      lines.push("Data/ora inizio: " + inizio);
+      lines.push("Data/ora fine: " + fine);
+      lines.push("Sede / comando di rinforzo: " + (sede || "-"));
+      lines.push("Motivo: " + (motivo || "-"));
+      lines.push("");
+      lines.push("Personale coinvolto:");
+      if (personale.length) personale.forEach((p, i) => lines.push("  " + (i + 1) + ". " + p));
+      else lines.push("  (nessun nominativo inserito)");
+      lines.push("");
+      lines.push(bp2 ? "Si richiede l'erogazione del secondo buono pasto." : "Non si richiede il secondo buono pasto.");
+      const note = val("fcNote");
+      if (note) { lines.push(""); lines.push("Note: " + note); }
+      lines.push("");
+      lines.push("Distinti saluti.");
+      lines.push(MITTENTE.cognome + " " + MITTENTE.nome);
+      const dataBreve = val("fcSrInizio") ? inizio.split(" ")[0] : "";
+      const subject = "Straordinario rinforzo personale - " + MITTENTE.cognome + " " + MITTENTE.nome + (dataBreve ? " - " + dataBreve : "");
+      return {subject, body: lines.join("\n")};
+    }
+    function buildAltre() {
+      const inizio = fmtDT(val("fcSaInizio")), fine = fmtDT(val("fcSaFine")), descr = val("fcSaDescrizione");
+      const bp2 = $("fcBuonoPasto").checked;
+      const lines = [];
+      lines.push("Richiesta di straordinario per altre attivita.");
+      lines.push("");
+      lines.push("Richiedente: " + mittenteHeader());
+      lines.push("Comando: " + (currentComando ? currentComando.c + " (" + currentComando.rg + ")" : "- non selezionato -"));
+      lines.push("");
+      lines.push("Data/ora inizio: " + inizio);
+      lines.push("Data/ora fine: " + fine);
+      lines.push("Descrizione attivita: " + (descr || "-"));
+      lines.push("");
+      lines.push(bp2 ? "Si richiede l'erogazione del secondo buono pasto." : "Non si richiede il secondo buono pasto.");
+      const note = val("fcNote");
+      if (note) { lines.push(""); lines.push("Note: " + note); }
+      lines.push("");
+      lines.push("Distinti saluti.");
+      lines.push(MITTENTE.cognome + " " + MITTENTE.nome);
+      const dataBreve = val("fcSaInizio") ? inizio.split(" ")[0] : "";
+      const subject = "Straordinario altre attivita - " + MITTENTE.cognome + " " + MITTENTE.nome + (dataBreve ? " - " + dataBreve : "");
+      return {subject, body: lines.join("\n")};
+    }
+    function buildGuida() {
+      const legs = Array.from(root.querySelectorAll("#fcGdLegList .leg-row")).map(r => ({
+        tipo: r.querySelector(".leg-tipo").value, partenza: r.querySelector(".leg-partenza").value.trim(),
+        arrivo: r.querySelector(".leg-arrivo").value.trim(), inizio: r.querySelector(".leg-inizio").value, fine: r.querySelector(".leg-fine").value
+      }));
+      const bp2 = $("fcBuonoPasto").checked;
+      const includiMissione = $("fcGdIncludiMissione").checked;
+      const lines = [];
+      lines.push("Richiesta di straordinario per guida / sostituzione personale.");
+      lines.push("");
+      lines.push("Richiedente: " + mittenteHeader());
+      lines.push("Comando: " + (currentComando ? currentComando.c + " (" + currentComando.rg + ")" : "- non selezionato -"));
+      lines.push("");
+      lines.push("Tratte:");
+      if (legs.length) legs.forEach((l, i) => lines.push("  " + (i + 1) + ". " + l.tipo + ": " + (l.partenza || "-") + " -> " + (l.arrivo || "-") + "  |  " + fmtDT(l.inizio) + " - " + fmtDT(l.fine)));
+      else lines.push("  (nessuna tratta inserita)");
+      if (includiMissione) {
+        lines.push("");
+        lines.push("Dati missione per soccorso collegata:");
+        lines.push("  Numero intervento: " + (val("fcGdNumero") || "-"));
+        lines.push("  Progressivo intervento: " + (val("fcGdProgressivo") || "-"));
+        lines.push("  Localita: " + (val("fcGdLocalita") || "-"));
+        lines.push("  Tipologia intervento: " + ($("fcGdTipologia").value || "-"));
+      }
+      lines.push("");
+      lines.push(bp2 ? "Si richiede l'erogazione del secondo buono pasto." : "Non si richiede il secondo buono pasto.");
+      const note = val("fcNote");
+      if (note) { lines.push(""); lines.push("Note: " + note); }
+      lines.push("");
+      lines.push("Distinti saluti.");
+      lines.push(MITTENTE.cognome + " " + MITTENTE.nome);
+      const dataBreve = legs.length && legs[0].inizio ? fmtDT(legs[0].inizio).split(" ")[0] : "";
+      const subject = "Straordinario guida/sostituzione - " + MITTENTE.cognome + " " + MITTENTE.nome + (dataBreve ? " - " + dataBreve : "");
       return {subject, body: lines.join("\n")};
     }
 
-    // Casella dell'ufficio competente del comando:
-    //   missione per soccorso  -> tep.<comando>@vigilfuoco.it
-    //   mancata timbratura     -> personale.<comando>@vigilfuoco.it
-    // <comando> si ricava dalla mail della SO (so.forli@...) o del comando (com.forli@...).
-    function sigla(c) {
-      for (const m of [c && c.esc, c && c.ecom]) {
-        const r = /^(?:so|com)\.([a-z0-9-]+)@vigilfuoco\.it$/i.exec(String(m || "").trim());
-        if (r) return r[1].toLowerCase();
-      }
-      return null;
+    function recipientFor(tipo) {
+      const addr = comandoAddresses(currentComando);
+      return tipo === "timbratura" ? addr.personale : addr.tep;
     }
-
-    function emailUfficio(c, tipo) {
-      const s = sigla(c);
-      if (!s) return "";
-      return (tipo === "missione" ? "tep." : "personale.") + s + "@vigilfuoco.it";
-    }
-
     function generatePreview() {
-      let built = currentTipo === "missione" ? buildIntervento() : buildTimbratura();
-      const destinatario = stessoComando.checked ? currentComando : comandoDestinatario;
-      const realTo = emailUfficio(destinatario, currentTipo);
-      const hint = document.getElementById("previewToHint");
-      if (realTo) {
-        hint.classList.add("hidden");
-      } else {
-        hint.classList.remove("hidden");
-        hint.textContent = "Per " + (destinatario?.c || "questo comando") +
-          " l'indirizzo dell'ufficio non si ricava in automatico: scrivilo qui sopra prima di inviare.";
+      let built;
+      switch (currentTipo) {
+        case "missione": built = buildIntervento("fcMs", false); break;
+        case "timbratura": built = buildTimbratura(); break;
+        case "strasoccorso": built = buildIntervento("fcSs", true); break;
+        case "strarinforzo": built = buildRinforzo(); break;
+        case "straaltre": built = buildAltre(); break;
+        case "straguida": built = buildGuida(); break;
+        default: built = {subject: "", body: ""};
       }
-      document.getElementById("previewTo").value = realTo;
-      document.getElementById("previewSubject").value = built.subject;
-      document.getElementById("previewBody").value = built.body;
+      const realTo = recipientFor(currentTipo);
+      const to = testMode ? TEST_ADDRESS : realTo;
+      const subject = testMode ? "[TEST] " + built.subject : built.subject;
+      let body = built.body;
+      if (testMode) body = "*** MODALITA TEST - destinatario reale sarebbe: " + (realTo || "- non determinato -") + " ***\n\n" + body;
+      $("fcPrevTo").value = to || "";
+      $("fcPrevSubject").value = subject || "";
+      $("fcPrevBody").value = body || "";
     }
 
-    document.getElementById("btnMailto").addEventListener("click", function () {
-      const to = document.getElementById("previewTo").value.trim();
-      if (!to) {alert("Inserisci l'indirizzo del destinatario."); document.getElementById("previewTo").focus(); return;}
-      const subject = document.getElementById("previewSubject").value;
-      const body = document.getElementById("previewBody").value;
+    /* ---------- modalita TEST ---------- */
+    const testBar = $("fcTestBar"), testToggle = $("fcTestToggle"), testLabel = $("fcTestLabel");
+    function applyTestUi() {
+      testBar.classList.toggle("off", !testMode);
+      testToggle.textContent = testMode ? "Disattiva TEST" : "Attiva TEST";
+      testLabel.textContent = testMode ? "MODALITA TEST ATTIVA - le email vanno a " + TEST_ADDRESS : "Modalita reale - le email vanno ai destinatari effettivi";
+    }
+    testToggle.addEventListener("click", () => { testMode = !testMode; applyTestUi(); if (currentStep === 5) generatePreview(); });
+    applyTestUi();
+
+    /* ---------- invio ---------- */
+    $("fcBtnMailto").addEventListener("click", () => {
+      generatePreview();
+      const to = $("fcPrevTo").value, subject = $("fcPrevSubject").value, body = $("fcPrevBody").value;
+      if (!to) { alert('Seleziona prima un comando (passo 1) o verifica il campo "A:".'); return; }
       window.location.href = "mailto:" + encodeURIComponent(to) + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
     });
-
-    document.getElementById("btnEml").addEventListener("click", function () {
-      const to = document.getElementById("previewTo").value.trim();
-      if (!to) {alert("Inserisci l'indirizzo del destinatario."); document.getElementById("previewTo").focus(); return;}
-      const subject = document.getElementById("previewSubject").value;
-      const body = document.getElementById("previewBody").value;
-      const eml = "To: " + to + "\r\nSubject: " + subject + "\r\nDate: " + new Date().toUTCString() + "\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n" + body;
+    $("fcBtnEml").addEventListener("click", () => {
+      generatePreview();
+      const to = $("fcPrevTo").value, subject = $("fcPrevSubject").value, body = $("fcPrevBody").value;
+      const fromLine = MITTENTE.email ? "From: " + MITTENTE.cognome + " " + MITTENTE.nome + " <" + MITTENTE.email + ">\r\n" : "";
+      const eml = fromLine + "To: " + to + "\r\nSubject: " + subject + "\r\nDate: " + new Date().toUTCString() + "\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n" + body;
       const blob = new Blob([eml], {type: "message/rfc822"});
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
@@ -1436,10 +1209,13 @@ FireOps.registra({
       setTimeout(() => URL.revokeObjectURL(a.href), 2000);
     });
 
-    aggiornaDestinatarioUI();
-    caricaComandi();
+    root.addEventListener("change", () => { if (currentStep === 5) generatePreview(); });
+
     renderStepsBar();
-    updateNavButtons();
-  
+    showStep(1);
   }
-});
+
+  if (window.FireOps && window.FireOps.registra) {
+    window.FireOps.registra({id: "comunicazioni", css, html, init});
+  }
+})();
