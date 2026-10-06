@@ -2565,7 +2565,11 @@ async function chiediLatoSimbolo(layer){
       + `<span class="sitac-vento-glifo" style="transform:rotate(`
       + `${((vento.verso - 270) % 360 + 360) % 360}deg)">`
       + `${glifo ? glifo({senzaTesto:1}) : ''}</span>`
-      + `<span class="sitac-vento-dati">${esc(String(vento.velocita))} km/h<br>`
+      /* Il grado sta accanto ai km/h e non su una riga sua: il riquadro è
+         già denso, e "6 Bft" è la stessa informazione detta nella lingua
+         con cui il vento si passa per radio. */
+      + `<span class="sitac-vento-dati">${esc(String(vento.velocita))} km/h`
+      + ` · ${esc(String(V.gradoBeaufort(vento.velocita).g))} Bft<br>`
       + `${esc(String(vento.verso))}\u00b0</span>`;
   }
 
@@ -2648,16 +2652,23 @@ async function chiediLatoSimbolo(layer){
     return v;
   }
 
-  /* La scala è la colonna sinistra della tabella 1: dieci in dieci fino a
-     110, raggruppata nelle tre intensità della tavola. Accanto a ogni voce
-     quanto avanza il fuoco in un'ora, che è il numero che si cerca. */
+  /* La scala resta quella della tabella 1 — i km/h sono il dato che entra
+     nel calcolo — ma il raggruppamento è Beaufort: è la lingua con cui il
+     vento si descrive per radio, e "grado 6" dice più di "40 km/h" a chi
+     deve decidere se mandare una squadra sul fianco.
+     Accanto a ogni voce quanto avanza il fuoco in un'ora, che è il numero
+     per cui si sta scegliendo. */
   function scegliVelocita(){
     const V = NS.SitacVento;
     const voci = [];
-    let banda = null;
+    let grado = null;
     V.SCALA.forEach(v => {
-      const b = V.simboloVento(v);
-      if (b !== banda){ banda = b; voci.push({titolo: t(b)}); }
+      const b = V.gradoBeaufort(v);
+      if (grado !== b.g){
+        grado = b.g;
+        const nome = (lingua === 'en' && b.en) ? b.en : b.it;
+        voci.push({titolo: `${b.g} Beaufort — ${nome}`});
+      }
       voci.push({k:String(v), et: v + ' km/h',
         nota: t('conoAvanza', {m: Math.round(V.distanzaFronte(v, 60))})});
     });
@@ -5195,10 +5206,16 @@ function sfTabellaVento(){
   const ora = ventoCono.letto
     ? new Date(ventoCono.letto).toLocaleTimeString(lingua) : '\u2014';
   const avanza = m => Math.round(V.distanzaFronte(ventoCono.velocita, m)) + ' m';
+  const bft = V.gradoBeaufort(ventoCono.velocita);
+  const nomeBft = (lingua === 'en' && bft.en) ? bft.en : bft.it;
 
   return `<table class="sf-tab"><tbody>`
+    /* Sul foglio c'è lo spazio per dirlo per esteso: i km/h sono il dato
+       che entra nel calcolo, il grado Beaufort è come lo si descrive a
+       voce, e il nome del grado è quello che chi riceve il foglio ritrova
+       nel bollettino meteo. */
     + `<tr><th>Intensit\u00e0</th><td>${esc(String(ventoCono.velocita))} km/h`
-    + ` \u00b7 ${esc(t(V.simboloVento(ventoCono.velocita)))}</td></tr>`
+    + ` \u00b7 ${esc(String(bft.g))} Beaufort \u2014 ${esc(nomeBft)}</td></tr>`
     + `<tr><th>Direzione (verso cui va)</th><td>${esc(String(ventoCono.verso))}\u00b0</td></tr>`
     + `<tr><th>Provenienza</th><td>${esc(String(ventoCono.provenienza != null
         ? ventoCono.provenienza : (ventoCono.verso + 180) % 360))}\u00b0</td></tr>`

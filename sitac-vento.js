@@ -53,6 +53,35 @@ const R_TERRA = 6378137;
 const rad = x => x * Math.PI / 180;
 const gra = x => x * 180 / Math.PI;
 
+/* La scala Beaufort in km/h, nella versione standard: ogni grado è un
+   INTERVALLO, e qui è registrato il suo estremo superiore. Un vento di
+   30 km/h è grado 5, uno di 38 ancora grado 5, uno di 39 è grado 6.
+   Serve a raggruppare: il calcolo dell'avanzamento del fronte continua a
+   partire dai km/h veri, non dal grado — dentro un grado ci sono dieci
+   km/h di differenza, e su un'ora di propagazione si vedono. */
+const BEAUFORT = [
+  {g:0,  max:1,        it:'Calma',             en:'Calm'},
+  {g:1,  max:5,        it:'Bava di vento',     en:'Light air'},
+  {g:2,  max:11,       it:'Brezza leggera',    en:'Light breeze'},
+  {g:3,  max:19,       it:'Brezza tesa',       en:'Gentle breeze'},
+  {g:4,  max:28,       it:'Vento moderato',    en:'Moderate breeze'},
+  {g:5,  max:38,       it:'Vento teso',        en:'Fresh breeze'},
+  {g:6,  max:49,       it:'Vento fresco',      en:'Strong breeze'},
+  {g:7,  max:61,       it:'Vento forte',       en:'Near gale'},
+  {g:8,  max:74,       it:'Burrasca',          en:'Gale'},
+  {g:9,  max:88,       it:'Burrasca forte',    en:'Strong gale'},
+  {g:10, max:102,      it:'Tempesta',          en:'Storm'},
+  {g:11, max:117,      it:'Tempesta violenta', en:'Violent storm'},
+  {g:12, max:Infinity, it:'Uragano',           en:'Hurricane'}
+];
+
+function gradoBeaufort(kmh){
+  const v = Math.max(0, Number(kmh) || 0);
+  for (let i = 0; i < BEAUFORT.length; i++)
+    if (v <= BEAUFORT[i].max) return BEAUFORT[i];
+  return BEAUFORT[BEAUFORT.length - 1];
+}
+
 /* =======================================================================
    1. LETTURA DEL VENTO DA SERVIZIO
    Tre servizi in cascata. Open-Meteo per primo perché non chiede chiavi e
@@ -133,13 +162,15 @@ const versoPropagazione = provenienza => (provenienza + 180) % 360;
    un po' più indietro. */
 const arrotondaDecine = v => Math.min(110, Math.max(10, Math.ceil((+v || 0) / 10) * 10));
 
-/* Intensità secondo la scala della tavola: debole, moderata, forte.
-   La pubblicazione non fissa le soglie, quindi si usa Beaufort — sotto i
-   20 km/h brezza leggera, oltre i 40 vento fresco. */
+/* Le codine sono TRE e i gradi Beaufort tredici: il raggruppamento è
+   0-4 una, 5-8 due, 9-12 tre. Non è una scala inventata qui — è Beaufort
+   diviso in terzi, e il taglio cade dove il vento smette di essere una
+   brezza e dove comincia a essere ingovernabile.
+   Passa dal GRADO e non direttamente dai km/h: così la soglia sta scritta
+   in un posto solo, ed è la stessa che si legge nel menu di scelta. */
 function simboloVento(kmh){
-  if (kmh < 20) return 'vento_debole';
-  if (kmh < 40) return 'vento_moderato';
-  return 'vento_forte';
+  const g = gradoBeaufort(kmh).g;
+  return g <= 4 ? 'vento_debole' : g <= 8 ? 'vento_moderato' : 'vento_forte';
 }
 
 /* =======================================================================
@@ -428,6 +459,7 @@ NS.SitacVento = {
   leggi: leggiVento,
   chiaveOWM,
   simboloVento,
+  BEAUFORT, gradoBeaufort,
   versoPropagazione,
   arrotondaDecine,
   bussolaDisponibile,
