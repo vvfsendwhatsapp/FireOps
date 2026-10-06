@@ -393,12 +393,23 @@ let inquadratura = null;
 
 function inquadra(){
   if (!inquadratura || inquadratura.isEmpty()) return;
-  /* Il padding in basso è più largo: a camera inclinata il primo piano
-     occupa molto più schermo del fondo, e senza quel margine il disegno
-     finisce sotto il pannello dei comandi. */
-  map.fitBounds(inquadratura, {
+  /* `fitBounds` calcola lo zoom come se la camera fosse verticale e solo
+     dopo applica l'inclinazione: a 60 gradi la vista si allunga in
+     profondità e lo zoom risulta troppo spinto — la camera finisce dentro
+     il versante e non si vede più niente.
+     Si inquadra quindi in piano, si legge lo zoom che ne esce e lo si
+     arretra di quanto serve a far stare la scena anche coricata. */
+  const camera = map.cameraForBounds(inquadratura, {
     padding: {top: 90, bottom: 150, left: 230, right: 70},
-    pitch: 60, bearing: map.getBearing(), duration: 900
+    bearing: map.getBearing()
+  });
+  if (!camera) return;
+  map.easeTo({
+    center: camera.center,
+    zoom: Math.max(9, camera.zoom - 1.4),
+    pitch: 60,
+    bearing: map.getBearing(),
+    duration: 900
   });
 }
 
