@@ -30,10 +30,12 @@
       ]},
     {id: "pianificazione", nome: "Pianificazione", sigla: "P", colore: "var(--ics-pianificazione)", testo: "#fff",
       sub: "Situazione, posizione e risorse",
-      moduli: [
-        {id: "localizzati", nome: "Localizzati", sotto: "Comando competente, canali radio e numeri SO",
-          desc: "Comando competente, canali radio e numeri SO dalla posizione", ico: "📍"}
-      ]},
+    moduli: [
+      {id: "localizzati", nome: "Localizzati", sotto: "Comando competente, canali radio e numeri SO",
+        desc: "Comando competente, canali radio e numeri SO dalla posizione", ico: "📍"},
+      {id: "trigo", nome: "Trigo", sotto: "Altezze, distanze, posizione e aree",
+        desc: "Altezza di piante ed edifici, problema del faro, Snellius–Potenot, calcolo area da foto o pianta", ico: "📐"}
+    ]},
     {id: "logistica", nome: "Logistica", sigla: "L", colore: "var(--ics-logistica)", testo: "#10141a",
       sub: "Mezzi, materiali e supporto", moduli: []},
     {id: "amministrazione", nome: "Amministrazione", sigla: "A", colore: "var(--ics-amministrazione)", testo: "#fff",
