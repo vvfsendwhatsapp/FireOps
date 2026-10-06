@@ -48,10 +48,11 @@
   ].map(d => Object.assign({dir: true, pr: ""}, d));
 
   /* =====================================================================
-   * Stile (scopato sotto .pg-comunicazioni, variabili condivise dell'app)
+   * Stile (scopato sotto .pg-comunicazioni, variabili condivise dell'app; stessa impostazione di Trigo)
    * ===================================================================== */
   const css = `
 .pg-comunicazioni {
+  --line2: #3a4552;
   --cm-acc: var(--ics-amministrazione, #2b73d6);
   --cm-warn: var(--yellow, #e8a33d);
   --cm-ok: #3fa66b;
@@ -74,26 +75,27 @@
 }
 .pg-comunicazioni .cm-test.off button { background: var(--cm-err); color: #fff; }
 
-.pg-comunicazioni .cm-stepsbar { display: flex; gap: 5px; }
-.pg-comunicazioni .cm-dot { flex: 1; height: 5px; border-radius: 3px; background: var(--line); }
-.pg-comunicazioni .cm-dot.done { background: var(--cm-ok); }
-.pg-comunicazioni .cm-dot.active { background: var(--cm-warn); }
+.pg-comunicazioni .cm-stepsbar { display: grid; grid-template-columns: repeat(5, 1fr); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.pg-comunicazioni .cm-dot { background: var(--panel); border: 0; border-right: 1px solid var(--line); min-height: 44px; display: flex; align-items: center; justify-content: center; color: var(--text-dim); font: 600 14px var(--sans); cursor: default; padding: 0; }
+.pg-comunicazioni .cm-dot:last-child { border-right: 0; }
+.pg-comunicazioni .cm-dot b { display: inline-grid; place-items: center; width: 22px; height: 22px; border: 1.5px solid currentColor; border-radius: 50%; font-size: 12px; }
+.pg-comunicazioni .cm-dot.done { cursor: pointer; }
+.pg-comunicazioni .cm-dot.done b { background: var(--cm-ok); border-color: var(--cm-ok); color: #000; }
+.pg-comunicazioni .cm-dot.active { background: var(--yellow); color: #000; }
 .pg-comunicazioni .cm-steplabel { padding: 8px 0 0; font-size: 13px; color: var(--text-dim); text-align: center; }
 
 .pg-comunicazioni .cm-step { margin-top: 14px; }
 
-.pg-comunicazioni .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.pg-comunicazioni .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
 .pg-comunicazioni .panel + .panel { margin-top: 10px; }
-.pg-comunicazioni .row-group-label { padding: 10px 14px 6px; font-size: 12.5px; color: var(--text-dim); border-left: 3px solid var(--line); }
-.pg-comunicazioni .row-group-label.tep { border-left-color: var(--cm-warn); }
-.pg-comunicazioni .row-group-label.pers { border-left-color: var(--cm-ok); }
+.pg-comunicazioni .row-group-label { padding: 12px 14px 2px; font-size: 15px; font-weight: 700; color: var(--text); }
 
 .pg-comunicazioni .field { padding: 10px 14px; min-width: 0; }
 .pg-comunicazioni .field label { display: block; font-size: 13px; color: var(--text-dim); margin-bottom: 5px; }
 /* 16px: sotto questa soglia iOS ingrandisce la pagina quando si tocca un campo */
 .pg-comunicazioni .field input:not([type=checkbox]), .pg-comunicazioni .field select, .pg-comunicazioni .field textarea {
   display: block; width: 100%; min-width: 0; max-width: 100%; min-height: 46px; padding: 11px 12px; font-size: 16px;
-  background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; color: var(--text); font-family: var(--sans);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 6px; color: var(--text); font-family: var(--sans);
 }
 .pg-comunicazioni .field input[type=datetime-local], .pg-comunicazioni .field input[type=date], .pg-comunicazioni .field input[type=time] {
   -webkit-appearance: none; appearance: none; text-align: left;
@@ -121,7 +123,7 @@
   font-weight: 600; text-align: center; cursor: pointer; line-height: 1.3;
   display: flex; align-items: center; justify-content: center;
 }
-.pg-comunicazioni .tile.selected { background: var(--cm-acc); border-color: var(--cm-acc); color: #fff; }
+.pg-comunicazioni .tile.selected { background: var(--yellow); border-color: var(--yellow); color: #000; }
 .pg-comunicazioni .tile:active { opacity: .85; }
 .pg-comunicazioni .tile-grid.need { outline: 2px solid var(--cm-err); outline-offset: -2px; border-radius: 6px; }
 
@@ -153,11 +155,7 @@
 .pg-comunicazioni .timb-row .row-remove-btn, .pg-comunicazioni .leg-row .row-remove-btn { flex: 1 1 100%; width: auto; height: 40px; font-size: 13px; font-weight: 600; }
 .pg-comunicazioni .row-remove-btn:active { border-color: var(--cm-err); color: var(--cm-err); }
 
-.pg-comunicazioni .add-row-btn {
-  display: block; width: calc(100% - 28px); min-height: 48px; margin: 4px 14px 12px; padding: 12px; background: var(--panel-2);
-  border: 1px dashed var(--line); border-radius: 6px; color: var(--cm-warn); font-size: 14.5px;
-  font-weight: 600; cursor: pointer;
-}
+.pg-comunicazioni .add-row-btn { display: block; width: calc(100% - 28px); min-height: 48px; margin: 4px 14px 12px; padding: 12px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; color: var(--text); font-size: 14.5px; font-weight: 600; cursor: pointer; }
 .pg-comunicazioni .add-row-btn:active { border-color: var(--cm-warn); }
 
 /* barra di navigazione del wizard: resta sempre a portata di pollice */
@@ -173,21 +171,14 @@
 
 .pg-comunicazioni .preview-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 14px 14px; }
 .pg-comunicazioni .preview-actions button { flex: 1 1 140px; min-height: 50px; padding: 12px 10px; border: none; border-radius: 8px; font-size: 14.5px; font-weight: 700; cursor: pointer; }
-.pg-comunicazioni .btn-mailto { background: var(--cm-ok); color: #fff; }
-.pg-comunicazioni .btn-eml, .pg-comunicazioni .btn-copy, .pg-comunicazioni .btn-share { background: var(--panel-2); border: 1px solid var(--cm-warn) !important; color: var(--cm-warn); }
+.pg-comunicazioni .btn-mailto { background: var(--cm-acc); color: #fff; }
+.pg-comunicazioni .btn-eml, .pg-comunicazioni .btn-copy, .pg-comunicazioni .btn-share { background: var(--panel-2); border: 1px solid var(--line) !important; color: var(--text); }
 
-.pg-comunicazioni .security-note {
-  margin-top: 10px; padding: 12px 14px; background: var(--panel-2); border: 1px solid var(--line);
-  border-left: 3px solid var(--cm-ok); border-radius: 6px; font-size: 13px; color: var(--text-dim); line-height: 1.55;
-}
+.pg-comunicazioni .security-note { margin-top: 10px; padding: 10px 12px; background: transparent; border: 1px solid var(--line2, #3a4552); border-radius: 6px; font-size: 13px; color: var(--text-dim); line-height: 1.55; }
 .pg-comunicazioni .security-note strong { color: var(--text); }
 
 /* avviso: compare sopra la barra di navigazione, dove si guarda */
-.pg-comunicazioni .cm-msg {
-  position: fixed; left: 12px; right: 12px; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); z-index: 2500;
-  max-width: 616px; margin: 0 auto; padding: 12px 14px; border-radius: 8px; background: var(--cm-err); color: #fff;
-  font-size: 14px; font-weight: 600; line-height: 1.4; box-shadow: 0 6px 20px rgba(0, 0, 0, .45);
-}
+.pg-comunicazioni .cm-msg { position: fixed; left: 12px; right: 12px; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); z-index: 2500; max-width: 616px; margin: 0 auto; padding: 12px 14px; border-radius: 8px; background: var(--yellow); color: #000; font-size: 14px; font-weight: 600; line-height: 1.4; box-shadow: 0 6px 20px rgba(0, 0, 0, .45); }
 
 /* utente registrato */
 .pg-comunicazioni .prof-details summary {
@@ -197,7 +188,7 @@
 .pg-comunicazioni .prof-details summary::-webkit-details-marker { display: none; }
 .pg-comunicazioni .prof-details[open] summary { border-bottom: 1px solid var(--line); margin-bottom: 4px; }
 .pg-comunicazioni .prof-actions { display: flex; gap: 8px; padding: 6px 14px 4px; }
-.pg-comunicazioni .prof-save { flex: 1; min-height: 48px; padding: 12px; border: none; border-radius: 6px; background: var(--cm-ok); color: #fff; font-size: 14.5px; font-weight: 700; cursor: pointer; }
+.pg-comunicazioni .prof-save { flex: 1; min-height: 48px; padding: 12px; border: none; border-radius: 8px; background: var(--cm-acc); color: #fff; font-size: 14.5px; font-weight: 700; cursor: pointer; }
 .pg-comunicazioni .prof-del { flex: none; min-height: 48px; padding: 12px 16px; border-radius: 6px; background: var(--panel-2); border: 1px solid var(--line); color: var(--text-dim); font-size: 14px; font-weight: 700; cursor: pointer; }
 .pg-comunicazioni .prof-del:active { border-color: var(--cm-err); color: var(--cm-err); }
 
@@ -213,9 +204,9 @@
 .pg-comunicazioni .cbx-item.active, .pg-comunicazioni .cbx-item:active { background: #241d10; }
 .pg-comunicazioni .cbx-empty { padding: 14px; font-size: 13px; color: var(--text-dim); line-height: 1.5; }
 .pg-comunicazioni .cbx-tools { display: flex; gap: 8px; padding: 0 14px 8px; }
-.pg-comunicazioni .cbx-tools select { flex: 1; min-width: 0; min-height: 46px; padding: 10px 12px; font-size: 16px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; color: var(--text); font-family: var(--sans); }
+.pg-comunicazioni .cbx-tools select { flex: 1; min-width: 0; min-height: 46px; padding: 10px 12px; font-size: 16px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; color: var(--text); font-family: var(--sans); }
 .pg-comunicazioni .cbx-tools select:focus { outline: none; border-color: var(--cm-warn); }
-.pg-comunicazioni .cbx-geo { flex: none; min-height: 46px; padding: 10px 14px; background: var(--panel-2); border: 1px solid var(--cm-warn); border-radius: 6px; color: var(--cm-warn); font-size: 14px; font-weight: 700; cursor: pointer; }
+.pg-comunicazioni .cbx-geo { flex: none; min-height: 46px; padding: 10px 14px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; color: var(--text); font-size: 14px; font-weight: 700; cursor: pointer; }
 .pg-comunicazioni .cbx-geo:disabled { opacity: .6; }
 .pg-comunicazioni .cbx-recents { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 2px 14px 8px; }
 .pg-comunicazioni .cbx-recents-label { font-size: 12.5px; color: var(--text-dim); }
@@ -1007,13 +998,31 @@
 
     /* ---------- navigazione ---------- */
     const stepsBar = $("fcStepsBar");
-    for (let i = 1; i <= 5; i++) { const d = document.createElement("div"); d.className = "cm-dot"; d.dataset.step = i; stepsBar.appendChild(d); }
+    for (let i = 1; i <= 5; i++) {
+      const d = document.createElement("button");
+      d.type = "button"; d.className = "cm-dot"; d.dataset.step = i;
+      d.innerHTML = "<b>" + i + "</b>";
+      stepsBar.appendChild(d);
+    }
+    // i passi già fatti sono cliccabili per tornare indietro
+    stepsBar.addEventListener("click", e => {
+      const b = e.target.closest(".cm-dot");
+      if (!b) return;
+      const n = Number(b.dataset.step);
+      if (n < currentStep) vaiA(n);
+    });
+    function vaiA(n) {
+      if (history.state && history.state.fcStep === currentStep) history.go(n - currentStep);
+      else showStep(n, true);
+    }
 
     function renderStepsBar() {
       stepsBar.querySelectorAll(".cm-dot").forEach(d => {
         const n = Number(d.dataset.step);
         d.classList.toggle("done", n < currentStep);
         d.classList.toggle("active", n === currentStep);
+        d.setAttribute("aria-label", "Passo " + n + ": " + STEP_LABELS[n - 1]);
+        if (n === currentStep) d.setAttribute("aria-current", "step"); else d.removeAttribute("aria-current");
       });
       $("fcStepLabel").textContent = "Passo " + currentStep + " di 5 - " + STEP_LABELS[currentStep - 1];
     }

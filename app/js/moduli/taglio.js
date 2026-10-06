@@ -3,75 +3,93 @@
  * dove fare lo scarico e quanto profondo, in che ordine tagliare.
  * Versione semplificata per smartphone dello strumento "Sezionatura":
  * asse orizzontale, solo peso proprio, trave elastica a sezione circolare piena.
+ * Stile: lo stesso di Trigo (schede con titolo, avvisi a riquadro, selezione gialla, accento della sezione).
  */
 FireOps.registra({
   id: "taglio",
 
   css: `
-.pg-taglio { --compr: #E4572E; --traz: #4A93C8; --legno: #C9A227; --ok: #7FB069; --grave: #D93B3B; padding-bottom: 40px; }
-.pg-taglio .wrap { max-width: 640px; margin: 0 auto; padding: 0 16px; }
-.pg-taglio .blocco { margin-top: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
-.pg-taglio .tit { padding: 10px 14px 4px; font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--text-dim); }
+.pg-taglio {
+  --acc: var(--ics-operazioni);
+  --compr: #E4572E; --traz: #4A93C8; --legno: #C9A227; --ok: #3fa66b; --bad: #e8734a; --line2: #3a4552;
+  max-width: 640px; margin: 0 auto; padding: 12px 16px calc(24px + env(safe-area-inset-bottom, 0px));
+  color: var(--text); font-family: var(--sans);
+}
+.pg-taglio * { box-sizing: border-box; }
+.pg-taglio .wrap { padding: 0; }
 
-/* scelta vincolo */
-.pg-taglio .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 8px 14px 12px; }
+/* schede */
+.pg-taglio .blocco { margin-bottom: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px; overflow: hidden; }
+.pg-taglio .tit { margin: 0 0 8px; font-size: 15px; font-weight: 700; color: var(--text); }
+
+/* scelta vincolo: segmentato, selezione gialla */
+.pg-taglio .seg { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
 .pg-taglio .seg button {
-  padding: 10px 6px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 700;
-  background: var(--panel-2); border: 1px solid var(--line); color: var(--text-dim); line-height: 1.25;
+  flex: 1; min-height: 56px; padding: 8px 6px; background: var(--panel-2); border: 0; border-right: 1px solid var(--line);
+  font: inherit; font-size: 14px; font-weight: 600; color: var(--text-dim); cursor: pointer; line-height: 1.25;
 }
-.pg-taglio .seg button small { display: block; font-weight: 400; font-size: 11px; margin-top: 2px; }
-.pg-taglio .seg button[aria-pressed="true"] { background: var(--legno); border-color: var(--legno); color: #1E241F; }
+.pg-taglio .seg button:last-child { border-right: 0; }
+.pg-taglio .seg button small { display: block; font-weight: 400; font-size: 11.5px; margin-top: 2px; }
+.pg-taglio .seg button[aria-pressed="true"] { background: var(--yellow); color: #000; }
+.pg-taglio .seg button:focus-visible, .pg-taglio select:focus-visible, .pg-taglio input:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
 
-/* esito principale */
-.pg-taglio .verdetto { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); }
-.pg-taglio .vcell { background: var(--panel); padding: 12px 14px; }
+/* esito principale: due riquadri come la barra dei valori di Trigo */
+.pg-taglio .verdetto { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pg-taglio .vcell { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
 .pg-taglio .vcell .n {
-  display: inline-flex; width: 24px; height: 24px; border-radius: 50%; align-items: center; justify-content: center;
-  font-weight: 800; font-size: 13px; color: #10141a; margin-right: 6px; vertical-align: 1px;
+  display: inline-flex; width: 22px; height: 22px; border-radius: 50%; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 12px; color: #10141a; margin-right: 6px; vertical-align: 1px;
 }
-.pg-taglio .vcell .lbl { font-size: 12px; color: var(--text-dim); }
+.pg-taglio .vcell .lbl { font-size: 12.5px; color: var(--text-dim); }
 .pg-taglio .vcell .big { font-size: 21px; font-weight: 800; margin-top: 4px; line-height: 1.15; }
-.pg-taglio .vcell .sub { font-size: 12px; color: var(--text-dim); margin-top: 3px; }
+.pg-taglio .vcell .sub { font-size: 12.5px; color: var(--text-dim); margin-top: 3px; }
 .pg-taglio .vcell.c1 .n { background: var(--compr); } .pg-taglio .vcell.c1 .big { color: var(--compr); }
 .pg-taglio .vcell.c2 .n { background: var(--traz); } .pg-taglio .vcell.c2 .big { color: var(--traz); }
 .pg-taglio .vcell.unico { grid-column: 1 / -1; }
 .pg-taglio .vcell.unico .n { background: var(--ok); } .pg-taglio .vcell.unico .big { color: var(--ok); }
 
 .pg-taglio svg { display: block; width: 100%; height: auto; }
-.pg-taglio .legenda { display: flex; flex-wrap: wrap; gap: 6px 14px; padding: 4px 14px 12px; font-size: 11.5px; color: var(--text-dim); }
+.pg-taglio .legenda { display: flex; flex-wrap: wrap; gap: 6px 14px; padding: 8px 0 0; font-size: 12.5px; color: var(--text-dim); }
 .pg-taglio .legenda i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
 
 /* controlli */
-.pg-taglio .ctl { padding: 8px 14px; }
+.pg-taglio .ctl { padding: 10px 0; }
 .pg-taglio .ctl + .ctl { border-top: 1px solid var(--line); }
 .pg-taglio .ctl label { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; color: var(--text-dim); }
 .pg-taglio .ctl label b { font-family: var(--mono); font-size: 15px; color: var(--text); }
-.pg-taglio .ctl input[type=range] { width: 100%; margin: 8px 0 2px; accent-color: var(--legno); height: 28px; }
+.pg-taglio .ctl input[type=range] { width: 100%; margin: 8px 0 2px; accent-color: var(--yellow); height: 28px; padding: 0; }
 .pg-taglio .ctl select {
-  width: 100%; margin-top: 6px; padding: 10px; font-size: 15px; border-radius: 6px;
-  background: var(--panel-2); border: 1px solid var(--line); color: var(--text);
+  width: 100%; min-height: 46px; margin-top: 6px; padding: 10px 12px; font-size: 16px; border-radius: 6px;
+  background: var(--bg); border: 1px solid var(--line); color: var(--text); font-family: var(--sans);
 }
-.pg-taglio .ctl .h { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+.pg-taglio .ctl select:focus { outline: none; border-color: var(--yellow); }
+.pg-taglio .ctl .h { font-size: 12.5px; color: var(--text-dim); margin-top: 2px; }
 
-/* avvisi */
-.pg-taglio .avv { margin-top: 10px; padding: 10px 13px; border-radius: 0 6px 6px 0; font-size: 13px; line-height: 1.45;
-  border-left: 3px solid #F2C14E; background: rgba(242,193,78,.09); }
-.pg-taglio .avv.grave { border-color: var(--grave); background: rgba(217,59,59,.12); }
-.pg-taglio .avv.ok { border-color: var(--ok); background: rgba(127,176,105,.1); }
-.pg-taglio .avv b { display: block; font-size: 11px; letter-spacing: .07em; text-transform: uppercase; margin-bottom: 2px; }
+/* avvisi: riquadri come le note di Trigo */
+.pg-taglio .avv { margin-bottom: 10px; padding: 10px 12px; border-radius: 6px; font-size: 13px; line-height: 1.45;
+  border: 1px solid var(--yellow); background: transparent; color: var(--text); }
+.pg-taglio .avv.grave { border-color: var(--bad); color: var(--bad); }
+.pg-taglio .avv.ok { border-color: var(--ok); color: var(--ok); }
+.pg-taglio .avv b { display: block; font-size: 13px; margin-bottom: 2px; }
 
 /* sequenza */
-.pg-taglio .passo { display: grid; grid-template-columns: 44px 1fr; border-top: 1px solid var(--line); }
-.pg-taglio .passo .pn { display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; background: var(--panel-2); }
-.pg-taglio .passo .pt { padding: 10px 12px; font-size: 13px; color: var(--text-dim); line-height: 1.45; }
-.pg-taglio .passo .pt h4 { margin: 0 0 2px; font-size: 13.5px; color: var(--text); text-transform: uppercase; letter-spacing: .02em; }
+.pg-taglio .passo { display: grid; grid-template-columns: 34px 1fr; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); }
+.pg-taglio .passo:first-child { border-top: 0; padding-top: 2px; }
+.pg-taglio .passo .pn { display: inline-grid; place-items: center; width: 30px; height: 30px; border: 2px solid currentColor; border-radius: 50%; font-size: 14px; font-weight: 800; }
+.pg-taglio .passo .pt { font-size: 13px; color: var(--text-dim); line-height: 1.45; min-width: 0; }
+.pg-taglio .passo .pt h4 { margin: 0 0 2px; font-size: 14px; color: var(--text); }
 .pg-taglio .passo .pt b { color: var(--text); font-family: var(--mono); }
 
-.pg-taglio .dati { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1px; background: var(--line); border-top: 1px solid var(--line); }
-.pg-taglio .dati div { background: var(--panel); padding: 8px 10px; font-size: 11px; color: var(--text-dim); }
-.pg-taglio .dati b { display: block; font-family: var(--mono); font-size: 15px; color: var(--text); margin-top: 2px; }
+.pg-taglio .dati { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 10px; }
+.pg-taglio .dati div { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 12px; color: var(--text-dim); }
+.pg-taglio .dati b { display: block; font: 700 16px var(--mono); color: var(--text); margin-top: 2px; }
 
-.pg-taglio .limiti { margin-top: 12px; font-size: 11.5px; color: var(--text-dim); line-height: 1.5; }
+.pg-taglio .limiti { margin-top: 12px; font-size: 12.5px; color: var(--text-dim); line-height: 1.5; }
+
+@media (max-width: 400px) {
+  .pg-taglio .verdetto { grid-template-columns: 1fr; }
+  .pg-taglio .dati { grid-template-columns: 1fr 1fr; }
+}
 `,
 
   html: `
@@ -152,7 +170,7 @@ FireOps.registra({
 `,
 
   init(root) {
-    const $ = id => document.getElementById(id);
+    const $ = id => root.querySelector("#" + id);
     const g = 9.81;
     let modo = "appoggi";
     const C = {compr: "#E4572E", traz: "#4A93C8", legno: "#C9A227", testo: "#eceff3", tenue: "#8b96a3", linea: "#2a323d", fondo: "#171d25", ok: "#7FB069"};
@@ -411,9 +429,9 @@ FireOps.registra({
 
       const alto = d.comprSopra ? "ALTO" : "BASSO", basso = d.comprSopra ? "BASSO" : "ALTO";
       $("tgVerdetto").innerHTML = unico
-        ? '<div class="verdetto"><div class="vcell unico"><span class="n">1</span><span class="lbl">Punto scarico</span>' +
+        ? '<div class="tit">Esito</div><div class="verdetto"><div class="vcell unico"><span class="n">1</span><span class="lbl">Punto scarico</span>' +
           '<div class="big">Taglio unico</div><div class="sub">Qui le fibre non spingono né tirano. Attento solo a come rotola il pezzo.</div></div></div>'
-        : '<div class="verdetto">' +
+        : '<div class="tit">Esito</div><div class="verdetto">' +
             '<div class="vcell c1"><span class="n">1</span><span class="lbl">Scarico</span>' +
               '<div class="big">da ' + alto + '<br>' + (p * 100).toFixed(1) + ' cm</div>' +
               '<div class="sub">fibre compresse · ' + Math.round(p / s.D * 100) + '% del Ø</div></div>' +
@@ -426,7 +444,7 @@ FireOps.registra({
       $("tgDati").innerHTML =
         '<div>Massa tronco<b>' + massaTot.toFixed(0) + ' kg</b></div>' +
         '<div>Oltre il taglio<b>' + massaOltre.toFixed(0) + ' kg</b></div>' +
-        '<div>Sicurezza<b style="color:' + (FS < 1.5 ? "#D93B3B" : FS < 2 ? "#F2C14E" : "inherit") + '">' + (FS > 99 ? "> 99" : FS.toFixed(1)) + '</b></div>';
+        '<div>Sicurezza<b style="color:' + (FS < 1.5 ? "#e8734a" : FS < 2 ? "#ffd700" : "inherit") + '">' + (FS > 99 ? "> 99" : FS.toFixed(1)) + '</b></div>';
 
       // avvisi, dal più grave
       const av = [];

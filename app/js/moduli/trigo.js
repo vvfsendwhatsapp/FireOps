@@ -178,6 +178,13 @@ const CSS=`.pg-trigo{--acc:var(--ics-pianificazione);--ok:#3fa66b;--bad:#e8734a;
 .pg-trigo .ms-warn{color:var(--cut)}
 .pg-trigo .ms-note{font-size:12.5px;color:var(--text-dim);margin:4px 0 8px}
 .pg-trigo .ms details summary{color:var(--text-dim);font-size:13px;cursor:pointer}
+
+/* rotazione della pianta */
+.pg-trigo .ms-rot{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:10px}
+.pg-trigo .ms-tit{display:flex;justify-content:space-between;align-items:baseline;font-size:15px;font-weight:700;margin-bottom:8px}
+.pg-trigo .ms-tit b{font:700 15px var(--mono)}
+.pg-trigo .ms-rot .ms-row{margin-bottom:4px}
+.pg-trigo .ms-rot input[type=range]{width:100%;margin:8px 0 2px;accent-color:var(--yellow);height:28px;padding:0}
 `;
 const HTML=`<div class="tg-nav" id="tg-nav" hidden><button type="button" class="tg-back" id="tg-back">‹ Trigo</button><b id="tg-navt"></b></div>
 
@@ -268,6 +275,17 @@ const HTML=`<div class="tg-nav" id="tg-nav" hidden><button type="button" class="
           <button id="ms-sBozza" class="on" role="tab">1 · Bozza</button>
           <button id="ms-sMisure" role="tab" disabled>2 · Misure</button>
         </div>
+      </div>
+      <div class="ms-rot" id="ms-rotBox" hidden>
+        <div class="ms-tit">Ruota la pianta <b id="ms-rotv">0°</b></div>
+        <div class="ms-row">
+          <button id="ms-rotL" aria-label="Ruota di 90 gradi in senso antiorario">↺ 90°</button>
+          <button id="ms-rotR" aria-label="Ruota di 90 gradi in senso orario">↻ 90°</button>
+          <button id="ms-rotAl">L1 in orizzontale</button>
+          <button id="ms-rotZ">Azzera</button>
+        </div>
+        <input id="ms-rot" type="range" min="-180" max="180" step="1" value="0" aria-label="Rotazione della pianta in gradi">
+        <p class="ms-note">Positivo = senso orario. L'area, le misure e la chiusura non cambiano: si ricalcolano e restano coerenti. I nuovi vertici si agganciano alla griglia, non ai lati ruotati.</p>
       </div>
       <div id="ms-pBozza">
         <div class="ms-row">
@@ -1283,7 +1301,7 @@ const cv = $('cv'), ctx = cv.getContext('2d');
 let mode = 'foto';
 let img = null, surfaces = [], act = -1, tool = 'pan', pending = [];
 let poly = [], closed = false, orto = true, snap = true, planH = 0, planInit = false;
-let planView = 'bozza', sideVal = [], focusSide = -1;
+let planView = 'bozza', sideVal = [], focusSide = -1, rot = 0;
 const views = {foto:{s:1, x:0, y:0}, pianta:{s:60, x:0, y:0}};
 let view = views.foto;
 let dpr = window.devicePixelRatio || 1, CW = 0, CH = 0;
@@ -1398,6 +1416,18 @@ function planStats(pts){
   const area = polyArea(pts);
   return {area, per, h:planH, walls:per*planH, vol:area*planH};
 }
+const normDeg = a => { a = ((a + 180) % 360 + 360) % 360 - 180; return a === -180 ? 180 : a; };
+/* Ruota la bozza attorno al suo baricentro (positivo = senso orario sullo schermo). Lunghezze e misure restano valide. */
+function rotatePoly(deg){
+  if (poly.length < 2 || !deg) return;
+  const r = deg * Math.PI / 180, c = Math.cos(r), s = Math.sin(r);
+  let cx = 0, cy = 0;
+  poly.forEach(p => { cx += p.x; cy += p.y; });
+  cx /= poly.length; cy /= poly.length;
+  poly = poly.map(p => ({x: cx + (p.x - cx)*c - (p.y - cy)*s, y: cy + (p.x - cx)*s + (p.y - cy)*c}));
+  rot = normDeg(rot + deg);
+}
+function applyRot(deg){ rotatePoly(deg); fitPlan(); ui(); draw(); }
 const dispPts = () => { if (mode === 'pianta' && planView === 'misura'){ const r = rebuild(); if (r) return r.pts; } return poly; };
 
 /* ---------- vista ---------- */
@@ -1647,6 +1677,8 @@ function ui(soft){
     $('bPClose').hidden = !(poly.length >= 3 && !closed);
     $('bPUndo').disabled = !poly.length;
     $('bPNew').disabled = !poly.length;
+    $('rotBox').hidden = poly.length < 2;
+    $('rot').value = Math.round(rot); $('rotv').textContent = (rot > 0 ? '+' : '') + Math.round(rot) + '°';
     $('dL').disabled = $('dU').disabled = $('dD').disabled = $('dR').disabled = closed;
     $('bDel').hidden = true;
     $('bCopy').disabled = $('bCsv').disabled = !(planView === 'misura' && okPlan);
@@ -1663,7 +1695,7 @@ function results(){
     const st = planStats(r.pts), pct = r.tot > 0 ? r.mis / r.tot * 100 : 0;
     let html = `<table><tr class="ms-tot"><td>Area del pavimento</td><td>${fmt(st.area)} m²</td></tr>
       <tr><td>Perimetro</td><td>${fmt(st.per)} m</td></tr>
-      <tr><td>Errore di chiusura (compensato)</td><td>${fmt(r.mis)} m · ${fmt(pct)}%</td></tr>`;
+      <tr><td>Errore di chiusura (compensato)</td><td>${fmt(r.mis)} m · ${fmt(pct)}%</td></tr>${Math.abs(rot) > .05 ? `<tr><td>Rotazione della pianta</td><td>${rot > 0 ? '+' : ''}${rot.toLocaleString('it-IT', {maximumFractionDigits:1})}° (senso orario +)</td></tr>` : ''}`;
     if (st.h > 0) html += `<tr><td>Pareti (lorde, h ${fmt(st.h)} m)</td><td>${fmt(st.walls)} m²</td></tr>
       <tr><td>Volume</td><td>${fmt(st.vol)} m³</td></tr>`;
     html += '</table>';
@@ -1719,6 +1751,7 @@ function summary(){
     const l = ['FireOps · Pianta del locale', '',
       `Area pavimento: ${fmt(st.area)} m²`, `Perimetro: ${fmt(st.per)} m`,
       `Errore di chiusura: ${fmt(r.mis)} m (compensato)`];
+    if (Math.abs(rot) > .05) l.push(`Rotazione della pianta: ${Math.round(rot)}° (senso orario +)`);
     if (st.h > 0) l.push(`Altezza: ${fmt(st.h)} m`, `Pareti (lorde): ${fmt(st.walls)} m²`, `Volume: ${fmt(st.vol)} m³`);
     l.push('', 'Lati:');
     r.L.forEach((m, i) => l.push(`L${i+1}: ${r.meas[i] ? sideVal[i] + ' ' + UN[unit] + ' = ' : 'stimato '}${fmt(m)} m`));
@@ -1750,7 +1783,7 @@ $('bCsv').onclick = () => {
     rows.push([], ['Vertice','X m','Y m']);
     r.pts.forEach((p, i) => rows.push([i+1, p.x.toFixed(3), p.y.toFixed(3)]));
     rows.push([], ['Area pavimento m2', st.area.toFixed(2)], ['Perimetro m', st.per.toFixed(2)],
-      ['Errore di chiusura m', r.mis.toFixed(3)], ['Altezza m', st.h.toFixed(2)],
+      ['Errore di chiusura m', r.mis.toFixed(3)], ['Rotazione gradi', rot.toFixed(1)], ['Altezza m', st.h.toFixed(2)],
       ['Pareti lorde m2', st.walls.toFixed(2)], ['Volume m3', st.vol.toFixed(2)]);
   } else {
     rows = [['Nome','Larghezza m','Altezza m','Area lorda m2','Aperture m2','Area netta m2']];
@@ -1809,11 +1842,12 @@ $('fPH').oninput = e => { planH = num(e.target.value); results(); };
 $('bPClose').onclick = () => { if (poly.length >= 3){ closed = true; ui(); draw(); } };
 $('bPUndo').onclick = () => {
   if (closed) closed = false; else poly.pop();
+  if (!poly.length) rot = 0;
   structureChanged(); ui(); draw();
 };
 $('bPNew').onclick = () => {
   if (poly.length >= 3 && !confirm('Cancellare la pianta disegnata?')) return;
-  poly = []; closed = false; structureChanged(); fitPlan(); ui(); draw();
+  poly = []; closed = false; rot = 0; structureChanged(); fitPlan(); ui(); draw();
 };
 function addSide(dx, dy){
   if (closed) return;
@@ -1824,6 +1858,11 @@ function addSide(dx, dy){
   poly.push({x:l.x + dx*len, y:l.y + dy*len});
   structureChanged(); fitPlan(); ui(); draw();
 }
+$('rotL').onclick = () => applyRot(-90);
+$('rotR').onclick = () => applyRot(90);
+$('rotZ').onclick = () => applyRot(-rot);
+$('rotAl').onclick = () => { if (poly.length >= 2) applyRot(-Math.atan2(poly[1].y - poly[0].y, poly[1].x - poly[0].x) * 180 / Math.PI); };
+$('rot').oninput = e => applyRot(parseFloat(e.target.value) - rot);
 $('dL').onclick = () => addSide(-1, 0);
 $('dR').onclick = () => addSide(1, 0);
 $('dU').onclick = () => addSide(0, -1);
