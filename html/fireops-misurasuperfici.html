@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FireOps · Misura superfici</title>
+<style>
+:root{
+  --bg:#15181b; --panel:#1e2327; --line:#2f373d; --text:#e9edf0; --mute:#97a3ab;
+  --red:#c8102e; --red-d:#9d0c24; --measure:#4cc9f0; --cut:#ffb703; --ok:#7bd88f;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--text);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0)}
+header{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:3px solid var(--red);background:var(--panel)}
+header h1{font-size:16px;margin:0;font-weight:700;letter-spacing:.2px;flex:1;white-space:nowrap}
+header h1 span{color:var(--mute);font-weight:500}
+.tabs{display:flex}
+.tabs button{border-radius:0;min-height:38px;padding:7px 14px}
+.tabs button:first-child{border-radius:8px 0 0 8px}
+.tabs button:last-child{border-radius:0 8px 8px 0;border-left:0}
+button,.btn{font:inherit;color:var(--text);background:#2a3238;border:1px solid var(--line);border-radius:8px;
+  padding:9px 12px;min-height:40px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+button:active,.btn:active{background:#38424a}
+button:focus-visible,.btn:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--measure);outline-offset:2px}
+button.primary,.btn.primary{background:var(--red);border-color:var(--red-d);font-weight:600;color:#fff}
+button.primary:active,.btn.primary:active{background:var(--red-d)}
+button.on{background:var(--measure);color:#06222b;border-color:var(--measure);font-weight:600}
+button.danger{color:#ff8a8a}
+button:disabled{opacity:.4;pointer-events:none}
+#stage{position:relative;flex:1;min-height:180px;background:#0c0e10;touch-action:none;overflow:hidden}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+#hint{position:absolute;left:8px;right:8px;top:8px;background:rgba(15,18,20,.88);border:1px solid var(--line);
+  border-radius:8px;padding:7px 10px;font-size:13.5px;pointer-events:none}
+#empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
+  text-align:center;padding:24px;color:var(--mute)}
+#empty strong{color:var(--text);font-size:17px}
+.zoom{position:absolute;right:8px;bottom:8px;display:flex;flex-direction:column;gap:6px}
+.zoom button{width:46px;padding:0;font-size:20px;background:rgba(30,35,39,.92)}
+#panel{background:var(--panel);border-top:1px solid var(--line);padding:10px 12px calc(10px + env(safe-area-inset-bottom,0));
+  max-height:50vh;overflow-y:auto}
+.row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;align-items:center}
+.chips button{padding:6px 11px;min-height:34px;border-radius:999px;font-size:14px}
+.fields{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:8px;margin-bottom:8px}
+.sides{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px}
+@media (max-width:420px){.sides{grid-template-columns:repeat(2,1fr)}}
+.dirs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px}
+.dirs button{font-size:20px;padding:0}
+label{display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--mute)}
+input[type=text],input[type=number],select{font:inherit;color:var(--text);background:#14181b;border:1px solid var(--line);
+  border-radius:8px;padding:8px 10px;min-height:40px;width:100%}
+#res{font-size:14px}
+#res table{width:100%;border-collapse:collapse;margin:4px 0 8px}
+#res td{padding:4px 0;border-bottom:1px solid var(--line)}
+#res td:last-child{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+#res .tot td{border-bottom:0;color:var(--ok);font-size:16px;padding-top:8px}
+#res .warn{color:var(--cut)}
+.note{font-size:12.5px;color:var(--mute);margin:4px 0 8px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header>
+  <h1>FireOps <span>Misura superfici</span></h1>
+  <div class="tabs" role="tablist" aria-label="Modalità">
+    <button id="tFoto" class="on" role="tab">Foto</button>
+    <button id="tPianta" role="tab">Pianta</button>
+  </div>
+</header>
+
+<div id="stage">
+  <canvas id="cv"></canvas>
+  <div id="hint" hidden></div>
+  <div id="empty">
+    <strong>Carica la foto di una parete, del soffitto o del pavimento</strong>
+    <span>Segni i 4 spigoli, indichi larghezza e altezza reali di quella superficie e la pagina calcola l'area.</span>
+    <label class="btn primary" for="file" style="flex-direction:row;margin:0;font-size:15px">Carica foto</label>
+  </div>
+  <div class="zoom">
+    <button id="zin" aria-label="Zoom avanti">+</button>
+    <button id="zout" aria-label="Zoom indietro">−</button>
+    <button id="zfit" aria-label="Adatta alla vista" style="font-size:13px">Adatta</button>
+  </div>
+</div>
+<input id="file" type="file" accept="image/*" hidden>
+
+<section id="panel">
+
+  <!-- ===== FOTO ===== -->
+  <div id="pFoto">
+    <div class="row">
+      <label class="btn" for="file" style="flex-direction:row;margin:0;color:var(--text);font-size:15px">Foto</label>
+      <button id="bNew" class="primary" disabled>Nuova superficie</button>
+      <button id="bCut" disabled>Apertura</button>
+      <button id="bClose" hidden>Chiudi apertura</button>
+      <button id="bDist" disabled>Distanza</button>
+      <button id="bUndo" disabled>Annulla</button>
+    </div>
+    <div class="row chips" id="chips"></div>
+    <div class="fields" id="fields" hidden>
+      <label>Nome<input id="fName" type="text" placeholder="Parete nord"></label>
+      <label><span id="lW">Larghezza reale (m)</span><input id="fW" type="number" inputmode="decimal" step="any" min="0.1"></label>
+      <label><span id="lH">Altezza reale (m)</span><input id="fH" type="number" inputmode="decimal" step="any" min="0.1"></label>
+    </div>
+  </div>
+
+  <!-- ===== PIANTA ===== -->
+  <div id="pPianta" hidden>
+    <div class="row">
+      <div class="tabs" role="tablist" aria-label="Fase della pianta">
+        <button id="sBozza" class="on" role="tab">1 · Bozza</button>
+        <button id="sMisure" role="tab" disabled>2 · Misure</button>
+      </div>
+    </div>
+
+    <div id="pBozza">
+      <div class="row">
+        <button id="bOrto" class="on" aria-pressed="true">Orto</button>
+        <button id="bSnap" class="on" aria-pressed="true">Snap</button>
+        <label style="flex:1;min-width:120px">
+          <select id="fStep" aria-label="Passo della griglia">
+            <option value="0.05">Griglia 5 cm</option>
+            <option value="0.1">Griglia 10 cm</option>
+            <option value="0.25">Griglia 25 cm</option>
+            <option value="0.5" selected>Griglia 50 cm</option>
+            <option value="1">Griglia 1 m</option>
+            <option value="boot">Griglia 1 tacco-punta</option>
+          </select>
+        </label>
+      </div>
+      <div class="row">
+        <button id="bPClose" class="primary" hidden>Chiudi poligono</button>
+        <button id="bPUndo" disabled>Annulla</button>
+        <button id="bPNew" class="danger" disabled>Nuova pianta</button>
+      </div>
+      <details style="margin-bottom:8px">
+        <summary style="color:var(--mute);font-size:13px;cursor:pointer">Disegna lato per lato con una lunghezza esatta</summary>
+        <label style="margin:8px 0"><span id="lLen">Lunghezza lato (m)</span><input id="fLen" type="number" inputmode="decimal" step="any" min="0" placeholder="es. 4,5"></label>
+        <div class="dirs" role="group" aria-label="Aggiungi un lato nella direzione scelta">
+          <button id="dL" aria-label="Lato verso sinistra">←</button>
+          <button id="dU" aria-label="Lato verso l'alto">↑</button>
+          <button id="dD" aria-label="Lato verso il basso">↓</button>
+          <button id="dR" aria-label="Lato verso destra">→</button>
+        </div>
+      </details>
+    </div>
+
+    <div id="pMisure" hidden>
+      <div class="sides" id="sides"></div>
+      <label style="margin-bottom:8px"><span>Altezza del locale (m, facoltativa)</span>
+        <input id="fPH" type="number" inputmode="decimal" step="any" min="0" placeholder="es. 2,7"></label>
+    </div>
+  </div>
+
+  <!-- ===== COMUNE ===== -->
+  <div id="unitRow" hidden>
+    <div class="fields">
+      <label>Misurato in
+        <select id="fUnit">
+          <option value="m">Metri</option>
+          <option value="b">Tacco-punta (stivale)</option>
+          <option value="p">Passi</option>
+        </select>
+      </label>
+      <label id="bootLbl" hidden>1 tacco-punta = (cm)<input id="fBoot" type="number" inputmode="decimal" step="any" min="10" value="31"></label>
+      <label id="pasLbl" hidden>1 passo = (tacco-punta)<input id="fPas" type="number" inputmode="decimal" step="any" min="1" value="2.5"></label>
+    </div>
+    <div id="conv" class="note" hidden></div>
+  </div>
+  <div id="res"></div>
+  <div class="row">
+    <button id="bCopy" disabled>Copia riepilogo</button>
+    <button id="bCsv" disabled>Scarica CSV</button>
+    <button id="bDel" class="danger" hidden>Elimina superficie</button>
+  </div>
+  <p class="note" id="noteFoto">Per una misura corretta, i 4 spigoli devono formare un rettangolo reale (parete, soffitto, pavimento) e larghezza e altezza devono essere quelle effettive, rilevate con metro, distanziometro o a passi. Le misure interne al rettangolo (aperture, distanze) sono tanto più precise quanto più la foto è frontale.</p>
+  <p class="note" id="notePianta" hidden>1) Fai una bozza a mano libera del locale: la scala non conta, conta la forma (Orto tiene i lati dritti, Snap aggancia alla griglia). Tocca il vertice 1 (verde) per chiudere. 2) In "Misure" scrivi per ogni lato quanti tacco-punta o passi hai contato: la pagina ricostruisce la pianta e compensa l'errore di chiusura. Se cambi unità, i numeri già scritti vengono letti nella nuova unità.</p>
+</section>
+
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const cv = $('cv'), ctx = cv.getContext('2d');
+
+/* ---------- stato ---------- */
+let mode = 'foto';
+let img = null, surfaces = [], act = -1, tool = 'pan', pending = [];
+let poly = [], closed = false, orto = true, snap = true, planH = 0, planInit = false;
+let planView = 'bozza', sideVal = [], focusSide = -1;
+const views = {foto:{s:1, x:0, y:0}, pianta:{s:60, x:0, y:0}};
+let view = views.foto;
+let dpr = window.devicePixelRatio || 1, CW = 0, CH = 0;
+let unit = 'm', bootCm = 31, tpPerPasso = 2.5;
+const UN = {m:'m', b:'tp', p:'passi'};
+try {
+  bootCm = parseFloat(localStorage.getItem('fireops_boot_cm')) || 31;
+  tpPerPasso = parseFloat(localStorage.getItem('fireops_tp_passo')) || 2.5;
+  const u = localStorage.getItem('fireops_unit'); unit = (u === 'b' || u === 'p') ? u : 'm';
+} catch (e) {}
+$('fBoot').value = bootCm; $('fPas').value = tpPerPasso; $('fUnit').value = unit;
+
+const esc = t => t.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt = n => n.toLocaleString('it-IT', {minimumFractionDigits:2, maximumFractionDigits:2});
+const num = t => parseFloat(String(t).replace(',', '.')) || 0;
+const perUnit = () => unit === 'b' ? bootCm / 100 : unit === 'p' ? bootCm * tpPerPasso / 100 : 1;
+const toDisp = m => { const v = m / perUnit(); return unit === 'm' ? Math.round(v * 1000) / 1000 : Math.round(v * 100) / 100; };
+const fromDisp = v => v * perUnit();
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+const cur = () => surfaces[act];
+function lenTxt(m){
+  let t = fmt(m) + ' m';
+  if (unit !== 'm') t += ' · ' + (m / perUnit()).toLocaleString('it-IT', {maximumFractionDigits:1}) + ' ' + UN[unit];
+  return t;
+}
+
+/* ---------- geometria ---------- */
+function homography(src, dst){
+  const A = [];
+  for (let i = 0; i < 4; i++){
+    const {x, y} = src[i], {x:u, y:v} = dst[i];
+    A.push([x, y, 1, 0, 0, 0, -x*u, -y*u, u]);
+    A.push([0, 0, 0, x, y, 1, -x*v, -y*v, v]);
+  }
+  for (let c = 0; c < 8; c++){
+    let p = c;
+    for (let r = c+1; r < 8; r++) if (Math.abs(A[r][c]) > Math.abs(A[p][c])) p = r;
+    if (Math.abs(A[p][c]) < 1e-12) return null;
+    [A[c], A[p]] = [A[p], A[c]];
+    for (let r = 0; r < 8; r++){
+      if (r === c) continue;
+      const f = A[r][c] / A[c][c];
+      for (let k = c; k < 9; k++) A[r][k] -= f * A[c][k];
+    }
+  }
+  return A.map((row, i) => row[8] / row[i]);
+}
+function mapPt(h, p){
+  const d = h[6]*p.x + h[7]*p.y + 1;
+  return {x:(h[0]*p.x + h[1]*p.y + h[2])/d, y:(h[3]*p.x + h[4]*p.y + h[5])/d};
+}
+function polyArea(pts){
+  let a = 0;
+  for (let i = 0; i < pts.length; i++){
+    const p = pts[i], q = pts[(i+1) % pts.length];
+    a += p.x*q.y - q.x*p.y;
+  }
+  return Math.abs(a) / 2;
+}
+function H(s){
+  const w = +s.w, h = +s.h;
+  if (!(w > 0 && h > 0)) return null;
+  return homography(s.quad, [{x:0,y:0},{x:w,y:0},{x:w,y:h},{x:0,y:h}]);
+}
+function calc(s){
+  const h = H(s);
+  if (!h) return null;
+  const gross = s.w * s.h;
+  const cuts = s.cuts.map(c => polyArea(c.map(p => mapPt(h, p))));
+  const cutSum = cuts.reduce((a, b) => a + b, 0);
+  return {gross, cuts, cutSum, net: Math.max(0, gross - cutSum), h};
+}
+
+/* Ricostruzione della pianta: direzioni dalla bozza, lunghezze dalle misure.
+   Lati senza misura: lunghezza della bozza moltiplicata per la scala media dei lati misurati.
+   L'errore di chiusura viene distribuito sui lati in proporzione alla lunghezza (compensazione). */
+function rebuild(){
+  const n = poly.length;
+  if (!closed || n < 3) return null;
+  const d = [], u = [];
+  for (let i = 0; i < n; i++){
+    const a = poly[i], b = poly[(i+1) % n], l = dist(a, b);
+    d.push(l);
+    u.push(l > 1e-9 ? {x:(b.x - a.x)/l, y:(b.y - a.y)/l} : {x:0, y:0});
+  }
+  const pu = perUnit();
+  let sum = 0, cnt = 0;
+  for (let i = 0; i < n; i++) if (sideVal[i] > 0 && d[i] > 1e-9){ sum += sideVal[i] * pu / d[i]; cnt++; }
+  const k = cnt ? sum / cnt : 1;
+  const meas = [], L = [];
+  for (let i = 0; i < n; i++){
+    const m = sideVal[i] > 0;
+    meas.push(m);
+    L.push(m ? sideVal[i] * pu : d[i] * k);
+  }
+  const P = [{x:0, y:0}];
+  let x = 0, y = 0;
+  for (let i = 0; i < n; i++){ x += L[i]*u[i].x; y += L[i]*u[i].y; P.push({x, y}); }
+  const mis = P[n], tot = L.reduce((a, b) => a + b, 0);
+  const pts = [];
+  let cum = 0;
+  for (let i = 0; i < n; i++){
+    pts.push({x:P[i].x - mis.x*cum/tot, y:P[i].y - mis.y*cum/tot});
+    cum += L[i];
+  }
+  return {pts, L, meas, cnt, mis:Math.hypot(mis.x, mis.y), tot};
+}
+function planStats(pts){
+  const n = pts.length;
+  let per = 0;
+  for (let i = 0; i < n; i++) per += dist(pts[i], pts[(i+1) % n]);
+  const area = polyArea(pts);
+  return {area, per, h:planH, walls:per*planH, vol:area*planH};
+}
+const dispPts = () => { if (mode === 'pianta' && planView === 'misura'){ const r = rebuild(); if (r) return r.pts; } return poly; };
+
+/* ---------- vista ---------- */
+const toScr = p => ({x: p.x*view.s + view.x, y: p.y*view.s + view.y});
+const toImg = p => ({x: (p.x - view.x)/view.s, y: (p.y - view.y)/view.s});
+const lim = () => mode === 'foto' ? [0.05, 40] : [4, 800];
+function fit(){
+  if (!img) return;
+  const s = Math.min(CW / img.width, CH / img.height);
+  Object.assign(views.foto, {s, x:(CW - img.width*s)/2, y:(CH - img.height*s)/2});
+}
+function fitPlan(){
+  const v = views.pianta, pts = dispPts();
+  if (!pts.length){ Object.assign(v, {s:60, x:CW*0.12, y:CH*0.15}); return; }
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  pts.forEach(p => { x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y); });
+  const w = Math.max(x1 - x0, 1) + 2, h = Math.max(y1 - y0, 1) + 2;
+  const s = Math.min(800, Math.max(4, Math.min(CW / w, CH / h)));
+  v.s = s; v.x = CW/2 - (x0 + x1)/2 * s; v.y = CH/2 - (y0 + y1)/2 * s;
+}
+function resize(){
+  const r = cv.getBoundingClientRect();
+  CW = r.width; CH = r.height; dpr = window.devicePixelRatio || 1;
+  cv.width = Math.round(CW*dpr); cv.height = Math.round(CH*dpr);
+  draw();
+}
+function zoomAt(f, cx = CW/2, cy = CH/2){
+  const ip = toImg({x:cx, y:cy}), [lo, hi] = lim();
+  view.s = Math.min(hi, Math.max(lo, view.s * f));
+  view.x = cx - ip.x*view.s; view.y = cy - ip.y*view.s;
+  draw();
+}
+
+/* ---------- disegno comune ---------- */
+function path(pts, close){
+  ctx.beginPath();
+  pts.forEach((p, i) => { const q = toScr(p); i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y); });
+  if (close) ctx.closePath();
+}
+function dot(p, label, color, big){
+  const q = toScr(p);
+  ctx.beginPath(); ctx.arc(q.x, q.y, big ? 11 : 8, 0, 6.2832);
+  ctx.fillStyle = color; ctx.globalAlpha = .9; ctx.fill(); ctx.globalAlpha = 1;
+  ctx.lineWidth = 2; ctx.strokeStyle = '#0c0e10'; ctx.stroke();
+  if (label !== '' && label != null){
+    ctx.fillStyle = '#0c0e10'; ctx.font = '700 11px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(label, q.x, q.y + .5);
+  }
+}
+function chip(q, t, bg, fg){
+  ctx.font = '700 13px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const w = ctx.measureText(t).width + 12;
+  ctx.fillStyle = bg; ctx.fillRect(q.x - w/2, q.y - 12, w, 24);
+  ctx.fillStyle = fg; ctx.fillText(t, q.x, q.y);
+}
+function draw(){
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, CW, CH);
+  mode === 'foto' ? drawFoto() : drawPlan();
+}
+
+/* ---------- disegno foto ---------- */
+function drawFoto(){
+  if (!img) return;
+  ctx.drawImage(img, view.x, view.y, img.width*view.s, img.height*view.s);
+  surfaces.forEach((s, i) => {
+    const on = i === act;
+    path(s.quad, true);
+    ctx.fillStyle = on ? 'rgba(200,16,46,.20)' : 'rgba(200,16,46,.10)';
+    ctx.fill();
+    ctx.lineWidth = on ? 2.5 : 1.5; ctx.strokeStyle = on ? '#ff3b5c' : 'rgba(255,59,92,.6)'; ctx.stroke();
+    if (!on){
+      const c = toScr({x: s.quad.reduce((a,p)=>a+p.x,0)/4, y: s.quad.reduce((a,p)=>a+p.y,0)/4});
+      ctx.fillStyle = '#fff'; ctx.font = '600 13px system-ui'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(s.name, c.x, c.y);
+      return;
+    }
+    s.quad.forEach((p, k) => dot(p, k+1, '#ff3b5c', true));
+    s.cuts.forEach(c => {
+      path(c, true); ctx.fillStyle = 'rgba(255,183,3,.28)'; ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = '#ffb703'; ctx.stroke();
+      c.forEach(p => dot(p, '', '#ffb703'));
+    });
+    const h = H(s);
+    s.measures.forEach(m => {
+      path([m.a, m.b], false); ctx.lineWidth = 2.5; ctx.strokeStyle = '#4cc9f0'; ctx.stroke();
+      dot(m.a, '', '#4cc9f0'); dot(m.b, '', '#4cc9f0');
+      if (h){
+        const d = dist(mapPt(h, m.a), mapPt(h, m.b));
+        chip(toScr({x:(m.a.x+m.b.x)/2, y:(m.a.y+m.b.y)/2}), lenTxt(d), 'rgba(6,34,43,.92)', '#4cc9f0');
+      }
+    });
+  });
+  const col = tool === 'cut' ? '#ffb703' : tool === 'dist' ? '#4cc9f0' : '#ff3b5c';
+  if (pending.length > 1){ path(pending, false); ctx.lineWidth = 2; ctx.strokeStyle = col; ctx.stroke(); }
+  pending.forEach((p, k) => dot(p, tool === 'quad' ? k+1 : '', col, tool === 'quad'));
+}
+
+/* ---------- disegno pianta ---------- */
+function gridStep(){
+  const v = $('fStep').value;
+  return v === 'boot' ? bootCm / 100 : parseFloat(v);
+}
+function drawGrid(){
+  const tl = toImg({x:0, y:0}), br = toImg({x:CW, y:CH});
+  let g = gridStep(); while (g * view.s < 14) g *= 2;
+  const line = (step, color) => {
+    ctx.beginPath();
+    for (let i = Math.floor(tl.x/step); i * step <= br.x; i++){ const sx = Math.round(i*step*view.s + view.x) + .5; ctx.moveTo(sx, 0); ctx.lineTo(sx, CH); }
+    for (let j = Math.floor(tl.y/step); j * step <= br.y; j++){ const sy = Math.round(j*step*view.s + view.y) + .5; ctx.moveTo(0, sy); ctx.lineTo(CW, sy); }
+    ctx.lineWidth = 1; ctx.strokeStyle = color; ctx.stroke();
+  };
+  if (planView === 'bozza') line(g, 'rgba(255,255,255,.06)');
+  let m = 1; while (m * view.s < 30) m *= 5;
+  line(m, 'rgba(255,255,255,.16)');
+}
+function drawPlan(){
+  drawGrid();
+  if (planView === 'misura'){ const r = rebuild(); if (r) drawMisure(r); return; }
+  const n = poly.length;
+  if (!n) return;
+  if (n >= 3 && closed){ path(poly, true); ctx.fillStyle = 'rgba(200,16,46,.22)'; ctx.fill(); }
+  path(poly, closed);
+  ctx.lineWidth = 2.5; ctx.strokeStyle = '#ff3b5c'; ctx.stroke();
+  if (!closed && n >= 3){
+    ctx.save(); ctx.setLineDash([6, 6]); path([poly[n-1], poly[0]], false);
+    ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(255,59,92,.55)'; ctx.stroke(); ctx.restore();
+  }
+  const edges = closed ? n : n - 1;
+  for (let i = 0; i < edges; i++){
+    const a = poly[i], b = poly[(i+1) % n];
+    chip(toScr({x:(a.x+b.x)/2, y:(a.y+b.y)/2}), 'L' + (i+1), 'rgba(6,34,43,.92)', '#4cc9f0');
+  }
+  poly.forEach((p, i) => dot(p, i+1, (i === 0 && n >= 3 && !closed) ? '#7bd88f' : '#ff3b5c', true));
+}
+function drawMisure(r){
+  const P = r.pts, n = P.length;
+  path(P, true); ctx.fillStyle = 'rgba(200,16,46,.22)'; ctx.fill();
+  ctx.lineWidth = 2.5; ctx.strokeStyle = '#ff3b5c'; ctx.stroke();
+  if (focusSide >= 0 && focusSide < n){
+    path([P[focusSide], P[(focusSide+1) % n]], false);
+    ctx.lineWidth = 6; ctx.strokeStyle = '#ffb703'; ctx.stroke();
+  }
+  for (let i = 0; i < n; i++){
+    const a = P[i], b = P[(i+1) % n];
+    chip(toScr({x:(a.x+b.x)/2, y:(a.y+b.y)/2}), lenTxt(dist(a, b)), 'rgba(6,34,43,.92)', r.meas[i] ? '#4cc9f0' : '#ffb703');
+  }
+  P.forEach((p, i) => dot(p, i+1, '#ff3b5c', true));
+}
+
+/* ---------- interfaccia ---------- */
+function hintText(){
+  if (mode === 'pianta'){
+    if (planView === 'misura'){
+      const r = rebuild();
+      return r ? `Scrivi tacco-punta o passi per ogni lato (${r.cnt} di ${poly.length} misurati). I lati in giallo sono ancora stimati` : '';
+    }
+    if (!poly.length) return 'Bozza: tocca per segnare il primo vertice. La scala non conta, conta la forma';
+    if (!closed && poly.length < 3) return 'Tocca il vertice successivo';
+    if (!closed) return 'Aggiungi vertici, poi tocca il vertice 1 (verde) o "Chiudi poligono"';
+    return 'Bozza chiusa. Correggi i vertici trascinandoli, poi passa a "Misure"';
+  }
+  if (!img) return '';
+  if (tool === 'quad'){
+    const names = ['alto a sinistra','alto a destra','basso a destra','basso a sinistra'];
+    return pending.length < 4 ? `Tocca lo spigolo ${pending.length+1} di 4: ${names[pending.length]}` : '';
+  }
+  if (tool === 'cut') return pending.length < 3 ? `Apertura: tocca i vertici (${pending.length}, minimo 3), poi "Chiudi apertura"` : 'Altri vertici, oppure "Chiudi apertura"';
+  if (tool === 'dist') return pending.length ? 'Tocca il secondo punto' : 'Tocca il primo punto da misurare';
+  if (!surfaces.length) return 'Premi "Nuova superficie" e segna i 4 spigoli';
+  return 'Trascina un punto per correggerlo. Due dita: zoom e spostamento';
+}
+function unitLabels(){
+  const u = UN[unit];
+  $('lW').textContent = `Larghezza reale (${u})`;
+  $('lH').textContent = `Altezza reale (${u})`;
+  $('lLen').textContent = `Lunghezza lato (${u})`;
+  $('bootLbl').hidden = unit === 'm';
+  $('pasLbl').hidden = unit !== 'p';
+  const conv = $('conv');
+  if (unit === 'p') conv.textContent = `1 passo = ${fmt(bootCm * tpPerPasso / 100)} m`;
+  else if (unit === 'b') conv.textContent = `1 tacco-punta = ${fmt(bootCm / 100)} m`;
+  if (mode === 'foto' && act >= 0 && unit !== 'm') conv.textContent += ` · superficie ${fmt(cur().w)} × ${fmt(cur().h)} m`;
+  conv.hidden = unit === 'm';
+  document.querySelectorAll('#sides label > span').forEach((s, i) => s.textContent = `L${i+1} (${u})`);
+}
+function syncFields(){
+  if (act >= 0){ $('fName').value = cur().name; $('fW').value = toDisp(cur().w); $('fH').value = toDisp(cur().h); }
+  $('fPH').value = planH > 0 ? planH : '';
+  unitLabels();
+}
+function buildSides(){
+  const box = $('sides'); box.innerHTML = '';
+  poly.forEach((_, i) => {
+    const l = document.createElement('label');
+    const sp = document.createElement('span'); sp.textContent = `L${i+1} (${UN[unit]})`;
+    const inp = document.createElement('input');
+    inp.type = 'number'; inp.inputMode = 'decimal'; inp.step = 'any'; inp.min = '0'; inp.placeholder = 'da misurare';
+    inp.value = sideVal[i] > 0 ? sideVal[i] : '';
+    inp.oninput = () => { sideVal[i] = num(inp.value); results(); ui(true); draw(); };
+    inp.onfocus = () => { focusSide = i; draw(); };
+    inp.onblur = () => { focusSide = -1; draw(); };
+    l.appendChild(sp); l.appendChild(inp); box.appendChild(l);
+  });
+}
+function structureChanged(){ sideVal = []; planView = 'bozza'; focusSide = -1; }
+function setPlanView(v){
+  if (v === 'misura' && !(closed && poly.length >= 3)) return;
+  planView = v;
+  if (v === 'misura') buildSides();
+  fitPlan(); ui(); draw();
+}
+function ui(soft){
+  const foto = mode === 'foto', has = act >= 0;
+  $('tFoto').classList.toggle('on', foto); $('tPianta').classList.toggle('on', !foto);
+  $('pFoto').hidden = !foto; $('pPianta').hidden = foto;
+  $('noteFoto').hidden = !foto; $('notePianta').hidden = foto;
+  $('empty').hidden = !foto || !!img;
+  $('unitRow').hidden = foto ? !has : false;
+  if (foto){
+    $('bNew').disabled = !img;
+    $('bCut').disabled = !has; $('bDist').disabled = !has;
+    $('bClose').hidden = !(tool === 'cut' && pending.length >= 3);
+    $('bUndo').disabled = !(pending.length || (has && (cur().cuts.length || cur().measures.length)));
+    $('bCut').classList.toggle('on', tool === 'cut');
+    $('bDist').classList.toggle('on', tool === 'dist');
+    $('bNew').classList.toggle('on', tool === 'quad');
+    $('fields').hidden = !has;
+    $('bDel').hidden = !has;
+    $('bCopy').disabled = $('bCsv').disabled = !surfaces.length;
+    const chips = $('chips'); chips.innerHTML = '';
+    surfaces.forEach((s, i) => {
+      const b = document.createElement('button');
+      b.textContent = s.name; if (i === act) b.classList.add('on');
+      b.onclick = () => { act = i; tool = 'pan'; pending = []; syncFields(); ui(); draw(); };
+      chips.appendChild(b);
+    });
+  } else {
+    const okPlan = closed && poly.length >= 3;
+    $('sBozza').classList.toggle('on', planView === 'bozza');
+    $('sMisure').classList.toggle('on', planView === 'misura');
+    $('sMisure').disabled = !okPlan;
+    $('pBozza').hidden = planView !== 'bozza'; $('pMisure').hidden = planView !== 'misura';
+    $('bOrto').classList.toggle('on', orto); $('bOrto').setAttribute('aria-pressed', orto);
+    $('bSnap').classList.toggle('on', snap); $('bSnap').setAttribute('aria-pressed', snap);
+    $('bPClose').hidden = !(poly.length >= 3 && !closed);
+    $('bPUndo').disabled = !poly.length;
+    $('bPNew').disabled = !poly.length;
+    $('dL').disabled = $('dU').disabled = $('dD').disabled = $('dR').disabled = closed;
+    $('bDel').hidden = true;
+    $('bCopy').disabled = $('bCsv').disabled = !(planView === 'misura' && okPlan);
+  }
+  const hint = $('hint'), t = hintText();
+  hint.hidden = !t; hint.textContent = t;
+  results();
+}
+function results(){
+  const box = $('res');
+  if (mode === 'pianta'){
+    const r = planView === 'misura' ? rebuild() : null;
+    if (!r){ box.innerHTML = ''; return; }
+    const st = planStats(r.pts), pct = r.tot > 0 ? r.mis / r.tot * 100 : 0;
+    let html = `<table><tr class="tot"><td>Area del pavimento</td><td>${fmt(st.area)} m²</td></tr>
+      <tr><td>Perimetro</td><td>${fmt(st.per)} m</td></tr>
+      <tr><td>Errore di chiusura (compensato)</td><td>${fmt(r.mis)} m · ${fmt(pct)}%</td></tr>`;
+    if (st.h > 0) html += `<tr><td>Pareti (lorde, h ${fmt(st.h)} m)</td><td>${fmt(st.walls)} m²</td></tr>
+      <tr><td>Volume</td><td>${fmt(st.vol)} m³</td></tr>`;
+    html += '</table>';
+    if (r.cnt < poly.length) html += `<p class="note warn">${r.cnt} lati su ${poly.length} misurati: gli altri sono stimati dalla bozza.</p>`;
+    else if (pct > 5) html += '<p class="note warn">Errore di chiusura sopra il 5%: ricontrolla i conteggi dei lati.</p>';
+    box.innerHTML = html; return;
+  }
+  if (!surfaces.length){ box.innerHTML = ''; return; }
+  let html = '', tot = 0;
+  surfaces.forEach((s, i) => {
+    const r = calc(s);
+    if (i === act && r){
+      html += `<table><tr><td>${esc(s.name)} · area lorda</td><td>${fmt(r.gross)} m²</td></tr>`;
+      r.cuts.forEach((a, k) => html += `<tr><td>Apertura ${k+1}</td><td>− ${fmt(a)} m²</td></tr>`);
+      html += `<tr><td>Area netta</td><td>${fmt(r.net)} m²</td></tr></table>`;
+    }
+    if (r) tot += r.net;
+  });
+  html += `<table><tr class="tot"><td>Totale superfici (${surfaces.length})</td><td>${fmt(tot)} m²</td></tr></table>`;
+  box.innerHTML = html;
+}
+function setTool(t){ tool = t; pending = []; ui(); draw(); }
+function setMode(m){
+  if (m === mode) return;
+  mode = m; view = views[m]; pending = []; tool = 'pan';
+  if (m === 'pianta' && !planInit){ planInit = true; fitPlan(); }
+  syncFields(); ui(); draw();
+}
+
+/* ---------- pulsanti: comuni ---------- */
+$('tFoto').onclick = () => setMode('foto');
+$('tPianta').onclick = () => setMode('pianta');
+$('zin').onclick = () => zoomAt(1.4);
+$('zout').onclick = () => zoomAt(1/1.4);
+$('zfit').onclick = () => { mode === 'foto' ? fit() : fitPlan(); draw(); };
+$('fUnit').onchange = e => {
+  unit = e.target.value;
+  try { localStorage.setItem('fireops_unit', unit); } catch (err) {}
+  syncFields(); ui(); draw();
+};
+function saveConv(){
+  try { localStorage.setItem('fireops_boot_cm', String(bootCm)); localStorage.setItem('fireops_tp_passo', String(tpPerPasso)); } catch (err) {}
+  if (unit !== 'm' && act >= 0){ cur().w = fromDisp(num($('fW').value)); cur().h = fromDisp(num($('fH').value)); }
+  unitLabels(); ui(); draw();
+}
+$('fBoot').oninput = e => { const v = num(e.target.value); if (v < 10 || v > 60) return; bootCm = v; saveConv(); };
+$('fPas').oninput = e => { const v = num(e.target.value); if (v < 1 || v > 6) return; tpPerPasso = v; saveConv(); };
+function flash(b, t){ const o = b.textContent; b.textContent = t; setTimeout(() => b.textContent = o, 1200); }
+function summary(){
+  if (mode === 'pianta'){
+    const r = rebuild(); if (!r) return '';
+    const st = planStats(r.pts);
+    const l = ['FireOps · Pianta del locale', '',
+      `Area pavimento: ${fmt(st.area)} m²`, `Perimetro: ${fmt(st.per)} m`,
+      `Errore di chiusura: ${fmt(r.mis)} m (compensato)`];
+    if (st.h > 0) l.push(`Altezza: ${fmt(st.h)} m`, `Pareti (lorde): ${fmt(st.walls)} m²`, `Volume: ${fmt(st.vol)} m³`);
+    l.push('', 'Lati:');
+    r.L.forEach((m, i) => l.push(`L${i+1}: ${r.meas[i] ? sideVal[i] + ' ' + UN[unit] + ' = ' : 'stimato '}${fmt(m)} m`));
+    return l.join('\n');
+  }
+  let tot = 0;
+  const lines = ['FireOps · Misura superfici', ''];
+  surfaces.forEach(s => {
+    const r = calc(s); if (!r) return;
+    tot += r.net;
+    lines.push(`${s.name}: ${fmt(s.w)} x ${fmt(s.h)} m = ${fmt(r.gross)} m²` + (r.cutSum ? `, aperture − ${fmt(r.cutSum)} m², netta ${fmt(r.net)} m²` : ''));
+  });
+  lines.push('', `Totale netto: ${fmt(tot)} m²`);
+  return lines.join('\n');
+}
+$('bCopy').onclick = async () => {
+  const t = summary();
+  try { await navigator.clipboard.writeText(t); flash($('bCopy'), 'Copiato'); }
+  catch { const a = document.createElement('textarea'); a.value = t; document.body.appendChild(a); a.select();
+    try { document.execCommand('copy'); flash($('bCopy'), 'Copiato'); } catch { prompt('Copia il riepilogo:', t); } a.remove(); }
+};
+$('bCsv').onclick = () => {
+  let rows;
+  if (mode === 'pianta'){
+    const r = rebuild(); if (!r) return;
+    const st = planStats(r.pts);
+    rows = [['Lato','Valore inserito','Unita','Lunghezza usata m']];
+    r.L.forEach((m, i) => rows.push(['L' + (i+1), r.meas[i] ? sideVal[i] : '', r.meas[i] ? UN[unit] : 'stimato', m.toFixed(3)]));
+    rows.push([], ['Vertice','X m','Y m']);
+    r.pts.forEach((p, i) => rows.push([i+1, p.x.toFixed(3), p.y.toFixed(3)]));
+    rows.push([], ['Area pavimento m2', st.area.toFixed(2)], ['Perimetro m', st.per.toFixed(2)],
+      ['Errore di chiusura m', r.mis.toFixed(3)], ['Altezza m', st.h.toFixed(2)],
+      ['Pareti lorde m2', st.walls.toFixed(2)], ['Volume m3', st.vol.toFixed(2)]);
+  } else {
+    rows = [['Nome','Larghezza m','Altezza m','Area lorda m2','Aperture m2','Area netta m2']];
+    surfaces.forEach(s => { const r = calc(s); if (r) rows.push([s.name, s.w.toFixed(2), s.h.toFixed(2), r.gross.toFixed(2), r.cutSum.toFixed(2), r.net.toFixed(2)]); });
+  }
+  const csv = rows.map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(';')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], {type:'text/csv'}));
+  a.download = mode === 'pianta' ? 'pianta.csv' : 'superfici.csv'; a.click();
+};
+
+/* ---------- pulsanti: foto ---------- */
+$('file').onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  const im = new Image();
+  im.onload = () => {
+    img = im; surfaces = []; act = -1; tool = 'pan'; pending = [];
+    if (mode !== 'foto'){ mode = 'foto'; view = views.foto; }
+    resize(); fit(); syncFields(); ui(); draw();
+  };
+  im.src = URL.createObjectURL(f);
+  e.target.value = '';
+};
+$('bNew').onclick = () => setTool(tool === 'quad' ? 'pan' : 'quad');
+$('bCut').onclick = () => setTool(tool === 'cut' ? 'pan' : 'cut');
+$('bDist').onclick = () => setTool(tool === 'dist' ? 'pan' : 'dist');
+$('bClose').onclick = () => {
+  if (pending.length >= 3){ cur().cuts.push(pending.slice()); pending = []; tool = 'pan'; ui(); draw(); }
+};
+$('bUndo').onclick = () => {
+  if (pending.length) pending.pop();
+  else if (act >= 0){
+    const s = cur();
+    if (tool === 'dist' && s.measures.length) s.measures.pop();
+    else if (s.cuts.length) s.cuts.pop();
+    else s.measures.pop();
+  }
+  ui(); draw();
+};
+$('bDel').onclick = () => {
+  if (act < 0 || !confirm('Eliminare "' + cur().name + '"?')) return;
+  surfaces.splice(act, 1); act = surfaces.length - 1; tool = 'pan'; pending = [];
+  syncFields(); ui(); draw();
+};
+$('fName').oninput = e => { cur().name = e.target.value || 'Superficie'; ui(); draw(); };
+$('fW').oninput = e => { cur().w = fromDisp(num(e.target.value)); unitLabels(); results(); draw(); };
+$('fH').oninput = e => { cur().h = fromDisp(num(e.target.value)); unitLabels(); results(); draw(); };
+
+/* ---------- pulsanti: pianta ---------- */
+$('sBozza').onclick = () => setPlanView('bozza');
+$('sMisure').onclick = () => setPlanView('misura');
+$('bOrto').onclick = () => { orto = !orto; ui(); };
+$('bSnap').onclick = () => { snap = !snap; ui(); };
+$('fStep').onchange = () => draw();
+$('fPH').oninput = e => { planH = num(e.target.value); results(); };
+$('bPClose').onclick = () => { if (poly.length >= 3){ closed = true; ui(); draw(); } };
+$('bPUndo').onclick = () => {
+  if (closed) closed = false; else poly.pop();
+  structureChanged(); ui(); draw();
+};
+$('bPNew').onclick = () => {
+  if (poly.length >= 3 && !confirm('Cancellare la pianta disegnata?')) return;
+  poly = []; closed = false; structureChanged(); fitPlan(); ui(); draw();
+};
+function addSide(dx, dy){
+  if (closed) return;
+  const len = fromDisp(num($('fLen').value));
+  if (!(len > 0)){ $('fLen').focus(); return; }
+  if (!poly.length) poly.push({x:0, y:0});
+  const l = poly[poly.length - 1];
+  poly.push({x:l.x + dx*len, y:l.y + dy*len});
+  structureChanged(); fitPlan(); ui(); draw();
+}
+$('dL').onclick = () => addSide(-1, 0);
+$('dR').onclick = () => addSide(1, 0);
+$('dU').onclick = () => addSide(0, -1);
+$('dD').onclick = () => addSide(0, 1);
+
+/* ---------- puntatore: tocco, trascinamento, pinch ---------- */
+const ptrs = new Map();
+let drag = null, pinch = null, moved = false, downAt = null, downHit = null, wasPinch = false;
+function pos(e){ const r = cv.getBoundingClientRect(); return {x:e.clientX - r.left, y:e.clientY - r.top}; }
+function hit(sp){
+  const cands = [];
+  if (mode === 'pianta'){
+    if (planView !== 'bozza') return null;
+    poly.forEach((p, i) => cands.push({p, i}));
+  } else {
+    if (act < 0 || tool !== 'pan') return null;
+    const s = cur();
+    s.quad.forEach((p, i) => cands.push({p, ref:s.quad, i}));
+    s.cuts.forEach(c => c.forEach((p, i) => cands.push({p, ref:c, i})));
+    s.measures.forEach(m => { cands.push({p:m.a, ref:m, i:'a'}); cands.push({p:m.b, ref:m, i:'b'}); });
+  }
+  let best = null, bd = 26;
+  cands.forEach(c => { const q = toScr(c.p), d = Math.hypot(q.x - sp.x, q.y - sp.y); if (d < bd){ bd = d; best = c; } });
+  return best;
+}
+cv.addEventListener('pointerdown', e => {
+  if (mode === 'foto' && !img) return;
+  cv.setPointerCapture(e.pointerId);
+  const p = pos(e); ptrs.set(e.pointerId, p);
+  if (ptrs.size === 2){
+    const [a, b] = [...ptrs.values()];
+    pinch = {d:Math.hypot(a.x-b.x, a.y-b.y), s:view.s, ip:toImg({x:(a.x+b.x)/2, y:(a.y+b.y)/2})};
+    drag = null; wasPinch = true; return;
+  }
+  wasPinch = false; moved = false; downAt = p;
+  downHit = hit(p);
+  drag = downHit ? {type:'handle', h:downHit} : {type:'pan', ox:view.x, oy:view.y};
+});
+cv.addEventListener('pointermove', e => {
+  if (!ptrs.has(e.pointerId)) return;
+  const p = pos(e); ptrs.set(e.pointerId, p);
+  if (ptrs.size === 2 && pinch){
+    const [a, b] = [...ptrs.values()], [lo, hi] = lim();
+    const mid = {x:(a.x+b.x)/2, y:(a.y+b.y)/2}, d = Math.hypot(a.x-b.x, a.y-b.y);
+    view.s = Math.min(hi, Math.max(lo, pinch.s * d / pinch.d));
+    view.x = mid.x - pinch.ip.x*view.s; view.y = mid.y - pinch.ip.y*view.s;
+    draw(); return;
+  }
+  if (!drag) return;
+  const dx = p.x - downAt.x, dy = p.y - downAt.y;
+  if (Math.hypot(dx, dy) > 6) moved = true;
+  if (!moved) return;
+  if (drag.type === 'pan'){ view.x = drag.ox + dx; view.y = drag.oy + dy; }
+  else if (mode === 'pianta'){
+    poly[drag.h.i] = planDragPoint(p, drag.h.i);
+  } else {
+    const ip = toImg(p), h = drag.h;
+    if (h.ref.a && h.i === 'a') h.ref.a = ip;
+    else if (h.ref.b && h.i === 'b') h.ref.b = ip;
+    else h.ref[h.i] = ip;
+    results();
+  }
+  draw();
+});
+function endPtr(e){
+  const had = ptrs.has(e.pointerId);
+  ptrs.delete(e.pointerId);
+  if (ptrs.size < 2) pinch = null;
+  if (!had) return;
+  if (ptrs.size === 0 && drag && !moved && !wasPinch) tap(downAt, downHit);
+  if (ptrs.size === 0) drag = null;
+}
+cv.addEventListener('pointerup', endPtr);
+cv.addEventListener('pointercancel', endPtr);
+cv.addEventListener('wheel', e => { e.preventDefault(); const p = pos(e); zoomAt(e.deltaY < 0 ? 1.15 : 1/1.15, p.x, p.y); }, {passive:false});
+
+/* ---------- tocco ---------- */
+function inImg(p){ return p.x >= 0 && p.y >= 0 && p.x <= img.width && p.y <= img.height; }
+function tap(sp, h){
+  if (mode === 'pianta') return planTap(sp, h);
+  const ip = toImg(sp);
+  if (tool === 'quad'){
+    if (!inImg(ip)) return;
+    pending.push(ip);
+    if (pending.length === 4){
+      surfaces.push({name:'Superficie ' + (surfaces.length + 1), quad:pending.slice(), w:3, h:2.7, cuts:[], measures:[]});
+      act = surfaces.length - 1; pending = []; tool = 'pan'; syncFields();
+    }
+  } else if (tool === 'cut'){
+    if (inImg(ip)) pending.push(ip);
+  } else if (tool === 'dist'){
+    if (!inImg(ip)) return;
+    pending.push(ip);
+    if (pending.length === 2){ cur().measures.push({a:pending[0], b:pending[1]}); pending = []; }
+  }
+  ui(); draw();
+}
+
+/* ---------- pianta: Orto e Snap ---------- */
+function snapGrid(v){ const g = gridStep(); return Math.round(v / g) * g; }
+function snapVertex(p, sp, skip){
+  for (let i = 0; i < poly.length; i++){
+    if (i === skip) continue;
+    const q = toScr(poly[i]);
+    if (Math.hypot(q.x - sp.x, q.y - sp.y) < 16) return {x:poly[i].x, y:poly[i].y};
+  }
+  return null;
+}
+function planPoint(sp){
+  let p = toImg(sp);
+  const last = poly.length && !closed ? poly[poly.length - 1] : null;
+  if (snap){ const v = snapVertex(p, sp, -1); if (v) return v; }
+  if (orto && last){
+    if (Math.abs(p.x - last.x) >= Math.abs(p.y - last.y)){ p = {x: snap ? snapGrid(p.x) : p.x, y:last.y}; }
+    else { p = {x:last.x, y: snap ? snapGrid(p.y) : p.y}; }
+  } else if (snap){
+    p = {x:snapGrid(p.x), y:snapGrid(p.y)};
+  }
+  return p;
+}
+function planDragPoint(sp, i){
+  let p = toImg(sp);
+  if (snap){
+    const v = snapVertex(p, sp, i); if (v) return v;
+    p = {x:snapGrid(p.x), y:snapGrid(p.y)};
+  }
+  return p;
+}
+function planTap(sp, h){
+  if (closed || planView !== 'bozza') return;
+  if (h){
+    if (h.i === 0 && poly.length >= 3){ closed = true; ui(); draw(); }
+    return;
+  }
+  poly.push(planPoint(sp));
+  structureChanged();
+  ui(); draw();
+}
+
+window.addEventListener('resize', resize);
+new ResizeObserver(() => resize()).observe($('stage'));
+resize(); syncFields(); ui();
+})();
+</script>
+</body>
+</html>
