@@ -3419,6 +3419,68 @@ async function chiediLatoSimbolo(layer){
      quali marcatori PolylineDecorator tenga vivi non è visibile da qui. */
   const ventoGruppo = L.layerGroup().addTo(decori);
 
+    /* PENDENZA ATTORNO AL DOS — gemella del vento: si legge una volta e resta. */
+  let pendAsta = null, pendDeco = null;
+  const pendGruppo = L.layerGroup().addTo(decori);
+
+  /* Soglie di classe: ipotesi mia, non della pubblicazione. Da tarare. */
+  const chiavePendenza = p => p < 0.20 ? 'pend_lieve'
+    : p < 0.40 ? 'pend_moderata' : 'pend_forte';
+
+  function codinePendenza(){
+    if (!pendDos) return 1;
+    const r = (NS.SITAC_CODINE || {})[chiavePendenza(pendDos.pendenza)];
+    return r ? r.n : 1;
+  }
+
+  function disegnaFrecciaPendenza(){
+    pendGruppo.clearLayers();
+    pendAsta = null; pendDeco = null;
+    if (!posDos || !pendDos) return;
+    /* Parte dal DOS e sale verso monte: il vento sta a cavallo del DOS,
+       questa esce da un lato solo, così non si sovrappongono. */
+    const p = puntoDaAzimut(posDos, pendDos.azimut, distanzaManiglia() * 1.3);
+    pendAsta = L.polyline([posDos, p],
+      {color: COL.nero, weight: 2.8, pmIgnore: true, interactive: false})
+      .addTo(pendGruppo);
+    const finto = {color: COL.nero};
+    pendDeco = L.polylineDecorator(pendAsta, {patterns: [
+      motivo(finto, {tipo:'punta', dim:20, pieno:1, passo:0, offset:'100%'}, 'attivo', 1),
+      motivo(finto, {tipo:'codine', forma:'T', n: codinePendenza(), dim:20,
+                     passo:0, offset:0}, 'attivo', 1)
+    ]}).addTo(pendGruppo);
+  }
+
+  /* Il DOS si è spostato: il versante letto non vale più. */
+  function azzeraPendenza(){
+    if (!pendDos) return;
+    pendDos = null;
+    disegnaFrecciaPendenza();
+    mostraVento(ventoCono);
+    aggiornaLegenda();
+    aggiornaPassi();
+  }
+
+  async function leggiPendenzaDos(){
+    if (!posDos) return stato(t('ventoNoDos'));
+    stato(t('pendLeggo'));
+    try {
+      const r = await massimaPendenza(posDos, RAGGIO_PENDENZA_DOS);
+      if (r.pendenza < 0.02){
+        pendDos = null;
+        disegnaFrecciaPendenza();
+        mostraVento(ventoCono); aggiornaLegenda(); aggiornaPassi();
+        return stato(t('pendPiatto'));
+      }
+      pendDos = r;
+      disegnaFrecciaPendenza();
+      mostraVento(ventoCono);        // riscrive il quadro, ora con la riga ↗
+      aggiornaLegenda(); aggiornaPassi();
+      stato(t('pendTrovata', {a: Math.round(r.azimut),
+        p: (r.pendenza * 100).toFixed(0)}));
+    } catch(e){ stato(t('rilErrore', {e: e.message})); }
+  }
+
   /* Il rosso sulla carta è il fuoco e il dispositivo VVF, il nero il terreno,
      l'azzurro l'acqua: una freccia che non è nessuna di quelle cose non può
      prendere in prestito nessuno di quei colori, o a colpo d'occhio si legge
