@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="it" class="h-full bg-slate-950 text-slate-100 font-sans">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Clinometro AR & Navigazione Faro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                        },
+                        maritime: {
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        canvas { touch-action: none; }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col bg-slate-950 text-slate-100 overflow-x-hidden">
+
+    <header class="sticky top-0 z-50 glass-panel border-b border-slate-800/80 px-4 py-3">
+        <div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div class="flex items-center justify-between w-full sm:w-auto">
+                <div class="flex items-center gap-2.5">
+                    <div class="p-2 bg-gradient-to-br from-emerald-500 to-sky-600 rounded-xl shadow-lg shadow-emerald-950/50">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-1.5">
+                            Trigo AR <span class="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded-full font-mono">LIVE</span>
+                        </h1>
+                        <p class="text-[11px] text-slate-400">Misurazione Inclinometrica & Navigazione</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <nav class="flex p-1 bg-slate-900/90 rounded-xl border border-slate-800 w-full sm:w-auto">
+                <button id="tab-tree-btn" onclick="switchTab('tree')" class="flex-1 sm:flex-none px-4 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200 bg-emerald-600 text-white shadow-sm flex items-center justify-center gap-1.5">
+                    <span>🌲</span> Misura Albero (AR)
+                </button>
+                <button id="tab-lighthouse-btn" onclick="switchTab('lighthouse')" class="flex-1 sm:flex-none px-4 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200 text-slate-400 hover:text-white flex items-center justify-center gap-1.5">
+                    <span>🚨</span> Problema Faro
+                </button>
+                <button id="tab-theory-btn" onclick="switchTab('theory')" class="flex-1 sm:flex-none px-4 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200 text-slate-400 hover:text-white flex items-center justify-center gap-1.5">
+                    <span>📐</span> Formule
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-6xl w-full mx-auto px-4 py-6 space-y-6">
+
+        <section id="section-tree" class="space-y-6">
+
+            <!-- Camera Viewfinder / AR Overlay Section -->
+            <div class="glass-panel rounded-3xl p-4 border border-slate-800 shadow-2xl relative overflow-hidden">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <h2 class="text-sm font-bold uppercase tracking-wider text-slate-200">Visore Fotocamera & Clinometro</h2>
+                    </div>
+                    <div class="flex gap-2 w-full sm:w-auto">
+                        <button id="btn-perm" onclick="requestSensorsAndCamera()" class="flex-1 sm:flex-none px-3 py-1.5 bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/40 rounded-xl text-xs font-medium transition flex items-center justify-center gap-1.5">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            Attiva Fotocamera & Sensori
+                        </button>
+                        <button id="btn-toggle-cam" onclick="toggleCameraFacing()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl text-xs font-medium transition hidden">
+                            🔄
+                        </button>
+                        <button onclick="zeroOrientation()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl text-xs font-medium transition" title="Calibra zero inclinazione">
+                            🎯 Calibra Zero
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Camera Container -->
+                <div id="viewfinder-container" class="relative w-full aspect-[4/3] sm:aspect-[16/9] bg-slate-900 rounded-2xl overflow-hidden border border-slate-800/80 shadow-inner group">
+                    
+                    <!-- Video Feed -->
+                    <video id="webcam" autoplay playsinline class="w-full h-full object-cover"></video>
+
+                    <!-- Interactive Target Overlay -->
+                    <div id="target-overlay" class="absolute inset-0 cursor-crosshair flex items-center justify-center pointer-events-auto" onclick="handleCameraTap(event)">
+                        
+                        <!-- Horizon Line Indicator -->
+                        <div id="horizon-line" class="absolute left-0 right-0 h-0.5 bg-sky-400/60 shadow-[0_0_8px_rgba(56,189,248,0.8)] pointer-events-none transition-transform duration-75" style="top: 50%;"></div>
+                        
+                        <!-- Reticle / Crosshair -->
+                        <div class="relative w-20 h-20 border-2 border-emerald-400/80 rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.3)] pointer-events-none transition-transform duration-100">
+                            <div class="w-2 h-2 bg-emerald-400 rounded-full"></div>
+                            <div class="absolute w-8 h-0.5 bg-emerald-400/80"></div>
+                            <div class="absolute h-8 w-0.5 bg-emerald-400/80"></div>
+                        </div>
+
+                        <!-- Live Pitch Angle Badge -->
+                        <div class="absolute top-4 right-4 bg-slate-900/90 border border-slate-700 backdrop-blur-md px-3 py-1.5 rounded-xl font-mono text-xs flex items-center gap-2 shadow-lg">
+                            <span class="text-slate-400">Inclinazione:</span>
+                            <span id="live-pitch-display" class="font-bold text-emerald-400 text-sm">+0.0°</span>
+                        </div>
+
+                        <!-- Tap Instruction Banner -->
+                        <div id="ar-instruction-banner" class="absolute bottom-4 left-4 right-4 bg-slate-900/80 border border-slate-700 backdrop-blur-md p-2.5 rounded-xl text-center text-xs text-slate-300 transition-opacity">
+                            Punta il reticolo verso la <strong class="text-emerald-400">CIMA</strong> dell'albero e premi <span class="bg-emerald-600 text-white px-2 py-0.5 rounded font-semibold">Blocca Cima</span>.
+                        </div>
+                    </div>
+
+                    <!-- Lock Action Buttons Overlay -->
+                    <div class="absolute bottom-4 left-4 right-4 flex justify-between gap-3 pointer-events-none">
+                        <button onclick="lockTopAngle()" class="pointer-events-auto flex-1 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-semibold py-2.5 px-3 rounded-xl shadow-lg border border-emerald-400/30 text-xs sm:text-sm flex items-center justify-center gap-2 transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
+                            Blocca Cima (β): <span id="locked-top-badge" class="font-mono bg-emerald-950/60 px-1.5 py-0.5 rounded">--°</span>
+                        </button>
+                        <button onclick="lockBaseAngle()" class="pointer-events-auto flex-1 bg-amber-600 hover:bg-amber-500 active:scale-95 text-white font-semibold py-2.5 px-3 rounded-xl shadow-lg border border-amber-400/30 text-xs sm:text-sm flex items-center justify-center gap-2 transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+                            Blocca Base (α): <span id="locked-base-badge" class="font-mono bg-amber-950/60 px-1.5 py-0.5 rounded">--°</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mt-2 text-[11px] text-slate-400 flex items-center justify-between">
+                    <span>* Toccando lo schermo della fotocamera puoi bloccare alternativamente gli angoli della Cima e della Base.</span>
+                    <span id="sensor-status-indicator" class="text-slate-500">Sensori: Inattivi</span>
+                </div>
+            </div>
+
+            <!-- Parameters & Canvas Visualizer Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- Inputs Column -->
+                <div class="lg:col-span-5 space-y-6">
+                    <div class="glass-panel rounded-3xl p-6 space-y-5 border border-slate-800">
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-slate-300 border-b border-slate-800 pb-3 flex items-center gap-2">
+                            <span>⚙️</span> Parametri della Misurazione
+                        </h3>
+
+                        <!-- Mode Switcher -->
+                        <div>
+                            <label class="block text-xs text-slate-400 uppercase tracking-wider mb-2 font-medium">Modalità Terreno</label>
+                            <div class="grid grid-cols-2 gap-2 p-1 bg-slate-900 rounded-xl border border-slate-800">
+                                <button type="button" id="tree-mode-angle" onclick="setTreeMode('angle')" class="py-2 text-xs font-semibold rounded-lg bg-emerald-600 text-white shadow-sm transition">
+                                    Angolo Base (Inclinato)
+                                </button>
+                                <button type="button" id="tree-mode-eye" onclick="setTreeMode('eye')" class="py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-slate-200 transition">
+                                    Altezza Occhio (Pianeggiante)
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Distance D -->
+                        <div>
+                            <div class="flex justify-between items-center mb-1.5">
+                                <label for="tree-dist" class="text-xs font-medium text-slate-300">Distanza orizzontale dal tronco (D)</label>
+                                <span class="text-xs font-mono text-emerald-400" id="tree-dist-val">15.0 m</span>
+                            </div>
+                            <input type="range" id="tree-dist" min="1" max="100" step="0.5" value="15" class="w-full accent-emerald-500 cursor-pointer" oninput="updateTreeCalc()">
+                        </div>
+
+                        <!-- Beta Slider (Top) -->
+                        <div>
+                            <div class="flex justify-between items-center mb-1.5">
+                                <label for="tree-beta" class="text-xs font-medium text-slate-300">Angolo Cima (β)</label>
+                                <span id="tree-beta-val" class="text-xs font-mono font-bold text-emerald-400">40.0°</span>
+                            </div>
+                            <input type="range" id="tree-beta" min="1" max="80" step="0.5" value="40" class="w-full accent-emerald-500 cursor-pointer" oninput="updateTreeCalc()">
+                        </div>
+
+                        <!-- Dynamic Field: Alpha vs Eye Height -->
+                        <div id="tree-field-alpha">
+                            <div class="flex justify-between items-center mb-1.5">
+                                <label for="tree-alpha" class="text-xs font-medium text-slate-300">Angolo Base (α)</label>
+                                <span id="tree-alpha-val" class="text-xs font-mono font-bold text-amber-400">-6.0°</span>
+                            </div>
+                            <input type="range" id="tree-alpha" min="-45" max="35" step="0.5" value="-6" class="w-full accent-amber-500 cursor-pointer" oninput="updateTreeCalc()">
+                        </div>
+
+                        <div id="tree-field-eye" class="hidden">
+                            <div class="flex justify-between items-center mb-1.5">
+                                <label for="tree-eye" class="text-xs font-medium text-slate-300">Altezza Occhio (h_occhio)</label>
+                                <span id="tree-eye-val" class="text-xs font-mono text-emerald-400">1.65 m</span>
+                            </div>
+                            <input type="range" id="tree-eye" min="0.5" max="2.5" step="0.05" value="1.65" class="w-full accent-emerald-500 cursor-pointer" oninput="updateTreeCalc()">
+                        </div>
+
+                        <!-- Live Total Result Badge -->
+                        <div class="p-4 bg-gradient-to-br from-emerald-950/60 to-slate-900 rounded-2xl border border-emerald-500/30">
+                            <span class="text-[11px] font-bold text-emerald-400 uppercase tracking-wider block mb-1">Altezza Calcolata dell'Albero (H)</span>
+                            <div class="flex items-baseline gap-2">
+                                <span id="tree-result" class="text-4xl font-extrabold text-white font-mono">14.23</span>
+                                <span class="text-base font-bold text-emerald-400">metri</span>
+                            </div>
+                            <div class="mt-3 pt-3 border-t border-slate-800/80 grid grid-cols-2 gap-2 text-xs font-mono">
+                                <div class="text-slate-400">Sopra occhio (H₁): <span id="tree-h1-val" class="text-slate-200 font-bold">12.59m</span></div>
+                                <div class="text-slate-400">Sotto occhio (H₂): <span id="tree-h2-val" class="text-slate-200 font-bold">1.64m</span></div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Canvas & Geometry Column -->
+                <div class="lg:col-span-7 space-y-6">
+                    <div class="glass-panel rounded-3xl p-5 border border-slate-800 space-y-4">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                                <span>📐</span> Schema Trigonometrico
+                            </h3>
+                            <span class="text-[10px] font-mono bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full">Proiezione Geometrica</span>
+                        </div>
+                        <div class="relative w-full aspect-[16/10] bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 shadow-inner">
+                            <canvas id="treeCanvas" class="w-full h-full block"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="glass-panel rounded-3xl p-5 border border-slate-800 space-y-3">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-slate-800 pb-2">Passaggi Matematici Dettagliati</h4>
+                        <div id="tree-math-steps" class="space-y-2 text-xs font-mono text-slate-300">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- ========================================== -->
+        <!-- TAB 2: PROBLEMA DEL FARO (NAVIGAZIONE)    -->
+        <!-- ========================================== -->
+        <section id="section-lighthouse" class="space-y-6 hidden">
+
+            <div class="glass-panel rounded-3xl p-6 border border-slate-800">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            <span>🚨</span> Problema del Faro & Distanza dalla Costa
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-1">
+                            Calcolo della distanza $D$ da un faro nota la sua altezza della luce sulla carta nautica ($H_f$) e l'angolo di elevazione verticale misurato ($\theta$).
+                        </p>
+                    </div>
+                    <div class="px-3 py-1.5 bg-sky-950/60 border border-sky-500/30 rounded-xl text-xs text-sky-300 font-mono">
+                        Formula: D = (H_faro - h_occhio) / tan(θ)
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- Inputs Column -->
+                <div class="lg:col-span-5 space-y-6">
+                    <div class="glass-panel rounded-3xl p-6 space-y-5 border border-slate-800">
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-slate-300 border-b border-slate-800 pb-3">Dati Nautici</h3>
+
+                        <!-- Lighthouse Height Hf -->
+                        <div>
+                            <div class="flex justify-between items-center mb-1.5">
+                                <label for="lh-height" class="text-xs font-medium text-slate-300">Altezza Focale Faro (H_faro)</label>
+                                <span class="text-xs font-mono text-sky-400" id="lh-height-val">45.0 m</span>
+                            </div>
+                            <input type="range" id="lh-height" min="5" max="150" step="1" value="45" class="w-full accent-sky-500 cursor-pointer" oninput="updateLighthouseCalc()">
+                        </div>
+
+                        <!-- Observer Eye Height -->
+                        <div>
+                            <div class="flex justify-between items-center mb-1.5">
+                                <label for="lh-eye" class="text-xs font-medium text-slate-300">Altezza Occhio Osservatore (h_occhio)</label>
+                                <span class="text-xs font-mono text-sky-400" id="lh-eye-val">4.0 m</span>
+                            </div>
+                            <input type="range" id="lh-eye" min="0.5" max="25" step="0.5" value="4" class="w-full accent-sky-500 cursor-pointer" oninput="updateLighthouseCalc()">
+                        </div>
+
+                        <!-- Elevation Angle Theta -->
+                        <div>
+                            <div class="flex justify-between items-center mb-1.5">
+                                <label for="lh-theta" class="text-xs font-medium text-slate-300">Angolo Verticale Misurato (θ)</label>
+                                <span id="lh-theta-val" class="text-xs font-mono font-bold text-sky-400">1.20°</span>
+                            </div>
+                            <input type="range" id="lh-theta" min="0.1" max="10" step="0.05" value="1.2" class="w-full accent-sky-500 cursor-pointer" oninput="updateLighthouseCalc()">
+                        </div>
+
+                        <!-- Refraction Correction -->
+                        <div class="pt-2 border-t border-slate-800">
+                            <label class="flex items-center space-x-3 cursor-pointer">
+                                <input type="checkbox" id="lh-refraction" class="w-4 h-4 rounded border-slate-700 text-sky-600 focus:ring-sky-500 bg-slate-900" onchange="updateLighthouseCalc()" checked>
+                                <span class="text-xs font-medium text-slate-300">Includi Correzione Orizzonte Visivo Teorico</span>
+                            </label>
+                        </div>
+
+                        <!-- Results Card -->
+                        <div class="p-4 bg-gradient-to-br from-sky-950/60 to-slate-900 rounded-2xl border border-sky-500/30">
+                            <span class="text-[11px] font-bold text-sky-400 uppercase tracking-wider block mb-1">Distanza Calcolata dal Faro (D)</span>
+                            <div class="flex items-baseline gap-2">
+                                <span id="lh-result-m" class="text-4xl font-extrabold text-white font-mono">1957</span>
+                                <span class="text-base font-bold text-sky-400">metri</span>
+                            </div>
+                            <div class="mt-3 pt-3 border-t border-slate-800/80 grid grid-cols-2 gap-2 text-xs font-mono">
+                                <div class="text-slate-400">Miglia Nautiche: <span id="lh-result-nm" class="text-sky-300 font-bold">1.06 NM</span></div>
+                                <div class="text-slate-400">Orizzonte Visivo: <span id="lh-horizon" class="text-sky-300 font-bold">18.2 NM</span></div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Canvas Visualizer Column -->
+                <div class="lg:col-span-7 space-y-6">
+                    <div class="glass-panel rounded-3xl p-5 border border-slate-800 space-y-4">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                                <span>🌊</span> Profilo Marittimo & Linea di Vista
+                            </h3>
+                            <span class="text-[10px] font-mono bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full">Navigazione Costiera</span>
+                        </div>
+                        <div class="relative w-full aspect-[16/10] bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 shadow-inner">
+                            <canvas id="lighthouseCanvas" class="w-full h-full block"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="glass-panel rounded-3xl p-5 border border-slate-800 space-y-3">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-slate-800 pb-2">Passaggi e Risoluzione Nautica</h4>
+                        <div id="lh-math-steps" class="space-y-2 text-xs font-mono text-slate-300">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- ========================================== -->
+        <!-- TAB 3: FORMULE & TEORIA                   -->
+        <!-- ========================================== -->
+        <section id="section-theory" class="space-y-6 hidden">
+            
+            <div class="glass-panel rounded-3xl p-6 border border-slate-800 space-y-6">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <span>📐</span> Fondamenti di Clinometria e Trigonometria
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm text-slate-300">
+                    
+                    <div class="bg-slate-900/80 p-5 rounded-2xl border border-slate-800 space-y-3">
+                        <h3 class="font-bold text-emerald-400 text-base">1. Misurazione Altezza Albero</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Puntando lo smartphone verso la cima ($\beta$) e la base ($\alpha$) dell'albero a una distanza nota $D$, dividiamo l'albero in due triangoli rettangoli aventi come cateto adiacente comune la linea d'orizzonte dell'osservatore.
+                        </p>
+                        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 font-mono text-xs text-emerald-300">
+                            H_totale = D · tan(β) + D · tan(|α|)
+                        </div>
+                        <p class="text-xs text-slate-400">
+                            Se il terreno è perfettamente orizzontale, $D \cdot \tan(|\alpha|)$ equivale esattamente all'altezza degli occhi dell'osservatore $h_{occhio}$.
+                        </p>
+                    </div>
+
+                    <div class="bg-slate-900/80 p-5 rounded-2xl border border-slate-800 space-y-3">
+                        <h3 class="font-bold text-sky-400 text-base">2. Problema del Faro Nautico</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Nella navigazione costiera, l'altezza della luce del faro $H_f$ è nota dalle carte nautiche. Sottraendo l'altezza dell'occhio dell'osservatore $h_o$ dal livello del mare, si ottiene la differenza di altezza verticale effettivo $\Delta H$.
+                        </p>
+                        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 font-mono text-xs text-sky-300">
+                            Distanza D = (H_faro - h_occhio) / tan(θ)
+                        </div>
+                        <p class="text-xs text-slate-400">
+                            La portata geografica massima è limitata dalla curvatura terrestre: $D_{max} \approx 2.08 \cdot (\sqrt{H_f} + \sqrt{h_o})$ miglia nautiche.
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <script>
+        // ==========================================
+        // APP STATE & GLOBALS
+        // ==========================================
+        let currentTab = 'tree';
+        let treeMode = 'angle';
+        let currentPitch = 0; // Live phone pitch angle in degrees
+        let lockedBeta = 40;
+        let lockedAlpha = -6;
+        let cameraStream = null;
+        let facingMode = 'environment';
+        let orientationZeroOffset = 0;
+
+        // Initialize App
+        window.addEventListener('DOMContentLoaded', () => {
+            updateTreeCalc();
+            updateLighthouseCalc();
+            initDeviceSensors();
+        });
+
+        window.addEventListener('resize', () => {
+            if (currentTab === 'tree') updateTreeCalc();
+            else if (currentTab === 'lighthouse') updateLighthouseCalc();
+        });
+
+        // Tab Switching Logic
+        function switchTab(tab) {
+            currentTab = tab;
+            const treeBtn = document.getElementById('tab-tree-btn');
+            const lhBtn = document.getElementById('tab-lighthouse-btn');
+            const theoryBtn = document.getElementById('tab-theory-btn');
+
+            const treeSec = document.getElementById('section-tree');
+            const lhSec = document.getElementById('section-lighthouse');
+            const theorySec = document.getElementById('section-theory');
+
+            // Reset Tab Styles
+            [treeBtn, lhBtn, theoryBtn].forEach(b => b.className = "flex-1 sm:flex-none px-4 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200 text-slate-400 hover:text-white flex items-center justify-center gap-1.5");
+            [treeSec, lhSec, theorySec].forEach(s => s.classList.add('hidden'));
+
+            if (tab === 'tree') {
+                treeBtn.className = "flex-1 sm:flex-none px-4 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200 bg-emerald-600 text-white shadow-sm flex items-center justify-center gap-1.5";
+                treeSec.classList.remove('hidden');
+                setTimeout(updateTreeCalc, 10);
+            } else if (tab === 'lighthouse') {
+                lhBtn.className = "flex-1 sm:flex-none px-4 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200 bg-sky-600 text-white shadow-sm flex items-center justify-center gap-1.5";
+                lhSec.classList.remove('hidden');
+                setTimeout(updateLighthouseCalc, 10);
+            } else if (tab === 'theory') {
+                theoryBtn.className = "flex-1 sm:flex-none px-4 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200 bg-slate-700 text-white shadow-sm flex items-center justify-center gap-1.5";
+                theorySec.classList.remove('hidden');
+            }
+        }
+
+        function setTreeMode(mode) {
+            treeMode = mode;
+            const btnAngle = document.getElementById('tree-mode-angle');
+            const btnEye = document.getElementById('tree-mode-eye');
+            const fieldAlpha = document.getElementById('tree-field-alpha');
+            const fieldEye = document.getElementById('tree-field-eye');
+
+            if (mode === 'angle') {
+                btnAngle.className = "py-2 text-xs font-semibold rounded-lg bg-emerald-600 text-white shadow-sm transition";
+                btnEye.className = "py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-slate-200 transition";
+                fieldAlpha.classList.remove('hidden');
+                fieldEye.classList.add('hidden');
+            } else {
+                btnEye.className = "py-2 text-xs font-semibold rounded-lg bg-emerald-600 text-white shadow-sm transition";
+                btnAngle.className = "py-2 text-xs font-semibold rounded-lg text-slate-400 hover:text-slate-200 transition";
+                fieldEye.classList.remove('hidden');
+                fieldAlpha.classList.add('hidden');
+            }
+            updateTreeCalc();
+        }
+
+        // ==========================================
+        // CAMERA & SENSOR (DEVICE ORIENTATION) LOGIC
+        // ==========================================
+        async function requestSensorsAndCamera() {
+            // Request iOS Orientation Permission if needed
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                try {
+                    const response = await DeviceOrientationEvent.requestPermission();
+                    if (response === 'granted') {
+                        window.addEventListener('deviceorientation', handleOrientation);
+                    }
+                } catch (e) {
+                    console.error("Device orientation permission error:", e);
+                }
+            } else {
+                window.addEventListener('deviceorientation', handleOrientation);
+            }
+
+            // Request Camera Stream
+            try {
+                if (cameraStream) {
+                    cameraStream.getTracks().forEach(track => track.stop());
+                }
+                cameraStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: facingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
+                    audio: false
+                });
+                const videoEl = document.getElementById('webcam');
+                videoEl.srcObject = cameraStream;
+                document.getElementById('btn-toggle-cam').classList.remove('hidden');
+                document.getElementById('btn-perm').innerText = "✓ Fotocamera Attiva";
+                document.getElementById('btn-perm').classList.replace('bg-emerald-600/30', 'bg-slate-800');
+            } catch (err) {
+                alert("Impossibile accedere alla fotocamera. Assicurati di aver concesso i permessi nel browser.");
+            }
+        }
+
+        function toggleCameraFacing() {
+            facingMode = (facingMode === 'environment') ? 'user' : 'environment';
+            requestSensorsAndCamera();
+        }
+
+        function handleOrientation(e) {
+            let rawPitch = 0;
+            
+            // Derive pitch depending on device orientation angle
+            if (e.beta !== null && e.gamma !== null) {
+                // Device pitch calculation (handles portrait / landscape tilt)
+                rawPitch = e.beta; 
+            }
+
+            currentPitch = parseFloat((rawPitch - orientationZeroOffset).toFixed(1));
+
+            // Clamp pitch display limits
+            if (currentPitch > 89) currentPitch = 89;
+            if (currentPitch < -89) currentPitch = -89;
+
+            document.getElementById('live-pitch-display').innerText = (currentPitch >= 0 ? '+' : '') + currentPitch.toFixed(1) + '°';
+            document.getElementById('sensor-status-indicator').innerText = 'Sensori: Attivi (Inclinazione Live)';
+            document.getElementById('sensor-status-indicator').className = 'text-emerald-400 font-mono text-[10px]';
+
+            // Move Horizon Line Overlay
+            const horizonEl = document.getElementById('horizon-line');
+            const percentOffset = 50 - (currentPitch * 0.8);
+            if (horizonEl) {
+                horizonEl.style.top = Math.max(5, Math.min(95, percentOffset)) + '%';
+            }
+        }
+
+        function zeroOrientation() {
+            orientationZeroOffset += currentPitch;
+            currentPitch = 0;
+            document.getElementById('live-pitch-display').innerText = '+0.0°';
+        }
+
+        function lockTopAngle() {
+            lockedBeta = Math.max(1, Math.abs(currentPitch));
+            document.getElementById('tree-beta').value = lockedBeta;
+            document.getElementById('locked-top-badge').innerText = lockedBeta.toFixed(1) + '°';
+            updateTreeCalc();
+            showARInstruction("Cima bloccata! Ora punta verso la BASE dell'albero e premi 'Blocca Base'.");
+        }
+
+        function lockBaseAngle() {
+            lockedAlpha = currentPitch;
+            document.getElementById('tree-alpha').value = lockedAlpha;
+            document.getElementById('locked-base-badge').innerText = lockedAlpha.toFixed(1) + '°';
+            updateTreeCalc();
+            showARInstruction("Base bloccata! Calcolo altezza aggiornato in tempo reale.");
+        }
+
+        function handleCameraTap(e) {
+            // Alternates lock on camera tap
+            if (Math.abs(currentPitch - lockedBeta) < 2) {
+                lockBaseAngle();
+            } else {
+                lockTopAngle();
+            }
+        }
+
+        function showARInstruction(msg) {
+            const banner = document.getElementById('ar-instruction-banner');
+            if (banner) {
+                banner.innerHTML = msg;
+            }
+        }
+
+        // ==========================================
+        // TREE CALCULATIONS & CANVAS DRAWING
+        // ==========================================
+        function updateTreeCalc() {
+            const D = parseFloat(document.getElementById('tree-dist').value) || 15;
+            document.getElementById('tree-dist-val').innerText = D.toFixed(1) + ' m';
+
+            const betaDeg = parseFloat(document.getElementById('tree-beta').value);
+            document.getElementById('tree-beta-val').innerText = betaDeg.toFixed(1) + '°';
+
+            let alphaDeg = 0;
+            let eyeH = 1.65;
+
+            if (treeMode === 'angle') {
+                alphaDeg = parseFloat(document.getElementById('tree-alpha').value);
+                document.getElementById('tree-alpha-val').innerText = alphaDeg.toFixed(1) + '°';
+            } else {
+                eyeH = parseFloat(document.getElementById('tree-eye').value) || 1.65;
+                document.getElementById('tree-eye-val').innerText = eyeH.toFixed(2) + ' m';
+                alphaDeg = -Math.atan(eyeH / D) * (180 / Math.PI);
+            }
+
+            const betaRad = betaDeg * Math.PI / 180;
+            const alphaRad = alphaDeg * Math.PI / 180;
+
+            const H1 = D * Math.tan(betaRad);
+            const H2 = D * Math.tan(-alphaRad);
+            const H_total = H1 + H2;
+
+            document.getElementById('tree-result').innerText = H_total.toFixed(2);
+            document.getElementById('tree-h1-val').innerText = H1.toFixed(2) + 'm';
+            document.getElementById('tree-h2-val').innerText = (H2 >= 0 ? H2.toFixed(2) : `-${Math.abs(H2).toFixed(2)}`) + 'm';
+
+            // Mathematical Breakdown Steps
+            const stepsDiv = document.getElementById('tree-math-steps');
+            stepsDiv.innerHTML = `
+                <div class="p-2.5 bg-slate-900 rounded-xl border border-slate-800">
+                    <span class="text-emerald-400 font-bold">1. Parte Superiore (H₁):</span> D × tan(β) = ${D.toFixed(1)}m × tan(${betaDeg.toFixed(1)}°) = <strong>${H1.toFixed(2)}m</strong>
+                </div>
+                <div class="p-2.5 bg-slate-900 rounded-xl border border-slate-800">
+                    <span class="text-amber-400 font-bold">2. Parte Inferiore (H₂):</span> ${treeMode === 'angle' ? `D × tan(|α|) = ${D.toFixed(1)}m × tan(${Math.abs(alphaDeg).toFixed(1)}°) = <strong>${H2.toFixed(2)}m</strong>` : `Altezza occhio = <strong>${eyeH.toFixed(2)}m</strong>`}
+                </div>
+                <div class="p-2.5 bg-emerald-950/60 border border-emerald-500/40 rounded-xl font-bold text-emerald-300">
+                    Altezza Totale H = H₁ + H₂ = ${H1.toFixed(2)}m + ${H2.toFixed(2)}m = ${H_total.toFixed(2)} metri
+                </div>
+            `;
+
+            drawTreeCanvas(D, betaDeg, alphaDeg, H1, H2, H_total);
+        }
+
+        function drawTreeCanvas(D, betaDeg, alphaDeg, H1, H2, H_total) {
+            const canvas = document.getElementById('treeCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * window.devicePixelRatio;
+            canvas.height = rect.height * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+            const w = rect.width;
+            const h = rect.height;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // Dark canvas background
+            ctx.fillStyle = '#020617';
+            ctx.fillRect(0, 0, w, h);
+
+            const padX = 50;
+            const padY = 30;
+            const availableW = w - padX * 2 - 60;
+            const availableH = h - padY * 2 - 20;
+
+            const obsX = padX;
+            const eyeY = h - padY - 30;
+            const treeX = obsX + availableW;
+
+            const maxRealH = Math.max(H_total, 8);
+            const scaleY = availableH / maxRealH;
+
+            const treeTopY = eyeY - (H1 * scaleY);
+            const treeBaseY = eyeY + (H2 * scaleY);
+
+            // Ground Line
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, treeBaseY);
+            ctx.lineTo(w, treeBaseY);
+            ctx.stroke();
+
+            // Sight Line Horizontal
+            ctx.setLineDash([4, 4]);
+            ctx.strokeStyle = '#64748b';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(obsX, eyeY);
+            ctx.lineTo(treeX, eyeY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Line to Top
+            ctx.strokeStyle = '#10b981';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(obsX, eyeY);
+            ctx.lineTo(treeX, treeTopY);
+            ctx.stroke();
+
+            // Line to Base
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(obsX, eyeY);
+            ctx.lineTo(treeX, treeBaseY);
+            ctx.stroke();
+
+            // Observer Figure
+            ctx.strokeStyle = '#38bdf8';
+            ctx.fillStyle = '#38bdf8';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(obsX, eyeY - 6, 6, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(obsX, eyeY);
+            ctx.lineTo(obsX, eyeY + 18);
+            ctx.lineTo(obsX - 6, eyeY + 30);
+            ctx.moveTo(obsX, eyeY + 18);
+            ctx.lineTo(obsX + 6, eyeY + 30);
+            ctx.stroke();
+
+            // Tree Trunk
+            ctx.strokeStyle = '#78350f';
+            ctx.lineWidth = 6;
+            ctx.beginPath();
+            ctx.moveTo(treeX, treeTopY + 10);
+            ctx.lineTo(treeX, treeBaseY);
+            ctx.stroke();
+
+            // Tree Foliage
+            ctx.fillStyle = '#059669';
+            ctx.beginPath();
+            ctx.moveTo(treeX, treeTopY);
+            ctx.lineTo(treeX - 20, treeTopY + 35);
+            ctx.lineTo(treeX - 10, treeTopY + 35);
+            ctx.lineTo(treeX - 25, treeTopY + 70);
+            ctx.lineTo(treeX + 25, treeTopY + 70);
+            ctx.lineTo(treeX + 10, treeTopY + 35);
+            ctx.lineTo(treeX + 20, treeTopY + 35);
+            ctx.closePath();
+            ctx.fill();
+
+            // Angle arcs & Labels
+            ctx.font = '11px Inter, sans-serif';
+            ctx.fillStyle = '#10b981';
+            ctx.fillText(`β=${betaDeg.toFixed(1)}°`, obsX + 35, eyeY - 8);
+
+            if (Math.abs(alphaDeg) > 0.5) {
+                ctx.fillStyle = '#f59e0b';
+                ctx.fillText(`α=${alphaDeg.toFixed(1)}°`, obsX + 35, eyeY + 15);
+            }
+
+            // Height Bracket
+            const bracketX = treeX + 25;
+            ctx.strokeStyle = '#10b981';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(bracketX - 4, treeTopY);
+            ctx.lineTo(bracketX, treeTopY);
+            ctx.lineTo(bracketX, treeBaseY);
+            ctx.lineTo(bracketX - 4, treeBaseY);
+            ctx.stroke();
+
+            ctx.fillStyle = '#34d399';
+            ctx.font = 'bold 11px JetBrains Mono, monospace';
+            ctx.fillText(`H = ${H_total.toFixed(2)}m`, bracketX + 8, (treeTopY + treeBaseY) / 2);
+        }
+
+        // ==========================================
+        // LIGHTHOUSE CALCULATIONS & CANVAS DRAWING
+        // ==========================================
+        function updateLighthouseCalc() {
+            const H_faro = parseFloat(document.getElementById('lh-height').value) || 45;
+            document.getElementById('lh-height-val').innerText = H_faro.toFixed(1) + ' m';
+
+            const h_eye = parseFloat(document.getElementById('lh-eye').value) || 4;
+            document.getElementById('lh-eye-val').innerText = h_eye.toFixed(1) + ' m';
+
+            const thetaDeg = parseFloat(document.getElementById('lh-theta').value);
+            document.getElementById('lh-theta-val').innerText = thetaDeg.toFixed(2) + '°';
+
+            const useRefraction = document.getElementById('lh-refraction').checked;
+
+            const thetaRad = thetaDeg * Math.PI / 180;
+            const deltaH = H_faro - h_eye;
+
+            let distMeters = (deltaH > 0 && thetaRad > 0) ? (deltaH / Math.tan(thetaRad)) : 0;
+            const distNM = distMeters / 1852;
+            const horizonNM = 2.08 * (Math.sqrt(H_faro) + Math.sqrt(h_eye));
+
+            document.getElementById('lh-result-m').innerText = Math.round(distMeters).toLocaleString('it-IT');
+            document.getElementById('lh-result-nm').innerText = distNM.toFixed(2) + ' NM';
+            document.getElementById('lh-horizon').innerText = horizonNM.toFixed(1) + ' NM';
+
+            const stepsDiv = document.getElementById('lh-math-steps');
+            stepsDiv.innerHTML = `
+                <div class="p-2.5 bg-slate-900 rounded-xl border border-slate-800">
+                    <span class="text-sky-400 font-bold">1. Differenza Altezza ΔH:</span> H_faro - h_occhio = ${H_faro}m - ${h_eye}m = <strong>${deltaH.toFixed(1)} m</strong>
+                </div>
+                <div class="p-2.5 bg-slate-900 rounded-xl border border-slate-800">
+                    <span class="text-sky-400 font-bold">2. Distanza Trigonometrica D:</span> ΔH / tan(θ) = ${deltaH.toFixed(1)}m / tan(${thetaDeg.toFixed(2)}°) = <strong>${Math.round(distMeters)} metri</strong>
+                </div>
+                <div class="p-2.5 bg-sky-950/60 border border-sky-500/40 rounded-xl font-bold text-sky-300">
+                    Distanza in Miglia Nautiche (NM) = ${Math.round(distMeters)} / 1852 = ${distNM.toFixed(2)} NM
+                </div>
+            `;
+
+            drawLighthouseCanvas(H_faro, h_eye, thetaDeg, distMeters);
+        }
+
+        function drawLighthouseCanvas(H_faro, h_eye, thetaDeg, distMeters) {
+            const canvas = document.getElementById('lighthouseCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * window.devicePixelRatio;
+            canvas.height = rect.height * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+            const w = rect.width;
+            const h = rect.height;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // Night Sky & Sea
+            ctx.fillStyle = '#020617';
+            ctx.fillRect(0, 0, w, h);
+
+            const seaLevelY = h - 40;
+
+            // Sea Water
+            ctx.fillStyle = '#0369a1';
+            ctx.fillRect(0, seaLevelY, w, h - seaLevelY);
+
+            const shipX = 60;
+            const lighthouseX = w - 80;
+
+            const shipEyeY = seaLevelY - 20;
+            const lhTopY = seaLevelY - 90;
+
+            // Lighthouse
+            ctx.fillStyle = '#f8fafc';
+            ctx.beginPath();
+            ctx.moveTo(lighthouseX - 14, seaLevelY);
+            ctx.lineTo(lighthouseX - 8, lhTopY + 12);
+            ctx.lineTo(lighthouseX + 8, lhTopY + 12);
+            ctx.lineTo(lighthouseX + 14, seaLevelY);
+            ctx.closePath();
+            ctx.fill();
+
+            // Light beam glow
+            const lightGrad = ctx.createRadialGradient(lighthouseX, lhTopY + 5, 2, lighthouseX, lhTopY + 5, 100);
+            lightGrad.addColorStop(0, 'rgba(251, 191, 36, 0.9)');
+            lightGrad.addColorStop(1, 'rgba(251, 191, 36, 0)');
+            ctx.fillStyle = lightGrad;
+            ctx.beginPath();
+            ctx.arc(lighthouseX, lhTopY + 5, 100, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Ship
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillRect(shipX - 15, seaLevelY - 8, 30, 8);
+
+            // Sight Lines
+            ctx.setLineDash([4, 4]);
+            ctx.strokeStyle = '#64748b';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(shipX, shipEyeY);
+            ctx.lineTo(lighthouseX, shipEyeY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.strokeStyle = '#fbbf24';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(shipX, shipEyeY);
+            ctx.lineTo(lighthouseX, lhTopY + 5);
+            ctx.stroke();
+
+            // Distance Text
+            ctx.fillStyle = '#38bdf8';
+            ctx.font = 'bold 11px JetBrains Mono, monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(`D = ${Math.round(distMeters)}m (${(distMeters/1852).toFixed(2)} NM)`, (shipX + lighthouseX) / 2, seaLevelY + 22);
+        }
+    </script>
+</body>
+</html>
