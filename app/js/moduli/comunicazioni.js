@@ -133,13 +133,11 @@
 .pg-comunicazioni * { box-sizing: border-box; }
 
 
-.pg-comunicazioni .cm-stepsbar { display: grid; grid-template-columns: repeat(5, 1fr); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
-.pg-comunicazioni .cm-dot { background: var(--panel); border: 0; border-right: 1px solid var(--line); min-height: 44px; display: flex; align-items: center; justify-content: center; color: var(--text-dim); font: 600 14px var(--sans); cursor: default; padding: 0; }
-.pg-comunicazioni .cm-dot:last-child { border-right: 0; }
-.pg-comunicazioni .cm-dot b { display: inline-grid; place-items: center; width: 22px; height: 22px; border: 1.5px solid currentColor; border-radius: 50%; font-size: 12px; }
-.pg-comunicazioni .cm-dot.done { cursor: pointer; }
-.pg-comunicazioni .cm-dot.done b { background: var(--cm-ok); border-color: var(--cm-ok); color: #000; }
-.pg-comunicazioni .cm-dot.active { background: var(--yellow); color: #000; }
+.pg-comunicazioni .cm-stepsbar { display: flex; gap: 5px; }
+.pg-comunicazioni .cm-dot { position: relative; flex: 1; height: 6px; min-height: 0; padding: 0; border: 0; border-radius: 3px; background: var(--line); cursor: default; }
+.pg-comunicazioni .cm-dot::before { content: ""; position: absolute; left: -2px; right: -2px; top: -15px; bottom: -15px; }
+.pg-comunicazioni .cm-dot.done { background: var(--cm-ok); cursor: pointer; }
+.pg-comunicazioni .cm-dot.active { background: var(--yellow); }
 .pg-comunicazioni .cm-steplabel { padding: 8px 0 0; font-size: 13px; color: var(--text-dim); text-align: center; }
 
 .pg-comunicazioni .cm-step { margin-top: 14px; }
@@ -1096,7 +1094,6 @@
     for (let i = 1; i <= 5; i++) {
       const d = document.createElement("button");
       d.type = "button"; d.className = "cm-dot"; d.dataset.step = i;
-      d.innerHTML = "<b>" + i + "</b>";
       stepsBar.appendChild(d);
     }
     // i passi già fatti sono cliccabili per tornare indietro

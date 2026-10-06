@@ -30,14 +30,13 @@ const CSS=`.pg-trigo{--acc:var(--ics-pianificazione);--ok:#3fa66b;--bad:#e8734a;
 .pg-trigo .choice p{margin:0;font-size:12.5px;color:var(--text-dim);line-height:1.4}
 .pg-trigo .foot{margin:14px 0 0;padding-top:10px;border-top:1px solid var(--line);font-size:12.5px;color:var(--text-dim)}
 
-/* passi */
-.pg-trigo .steps{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:10px}
-.pg-trigo .step{background:var(--panel);border:0;border-right:1px solid var(--line);padding:9px 4px;font-weight:600;font-size:14px;
-  color:var(--text-dim);cursor:pointer;display:flex;gap:7px;justify-content:center;align-items:center;min-height:44px}
-.pg-trigo .step:last-child{border-right:0}
-.pg-trigo .step b{display:inline-grid;place-items:center;width:20px;height:20px;border:1.5px solid currentColor;border-radius:50%;font-size:12px}
-.pg-trigo .step.on{background:var(--yellow);color:#000}
-.pg-trigo .step.done b{background:var(--ok);border-color:var(--ok);color:#000}
+/* passi: righe sottili (poco spazio), area di tocco ampia, etichetta sotto */
+.pg-trigo .steps{display:flex;gap:5px;margin:8px 0 0}
+.pg-trigo .step{position:relative;flex:1;height:6px;min-height:0;padding:0;border:0;border-radius:3px;background:var(--line);cursor:pointer}
+.pg-trigo .step::before{content:'';position:absolute;left:-2px;right:-2px;top:-15px;bottom:-15px}
+.pg-trigo .step.done{background:var(--ok)}
+.pg-trigo .step.on{background:var(--yellow)}
+.pg-trigo .steplabel{padding:8px 0 10px;font-size:13px;color:var(--text-dim);text-align:center}
 .pg-trigo .strip{display:grid;grid-template-columns:repeat(var(--n,2),1fr);gap:8px;margin-bottom:10px}
 .pg-trigo .strip div{border:1px solid var(--line);border-radius:8px;padding:6px 10px;background:var(--panel)}
 .pg-trigo .strip span{display:block;font-size:12px;color:var(--text-dim)}
@@ -154,6 +153,12 @@ const CSS=`.pg-trigo{--acc:var(--ics-pianificazione);--ok:#3fa66b;--bad:#e8734a;
 .pg-trigo .ms-tabs button{flex:1;border-radius:0;min-height:42px}
 .pg-trigo .ms-tabs button:first-child{border-radius:8px 0 0 8px}
 .pg-trigo .ms-tabs button:last-child{border-radius:0 8px 8px 0;border-left:0}
+.pg-trigo .ms .ms-steps{display:flex;gap:5px;margin:2px 0 0}
+.pg-trigo .ms .ms-steps button{position:relative;flex:1;height:6px;min-height:0;padding:0;border:0;border-radius:3px;background:var(--line);cursor:pointer}
+.pg-trigo .ms .ms-steps button::before{content:'';position:absolute;left:-2px;right:-2px;top:-15px;bottom:-15px}
+.pg-trigo .ms .ms-steps button.done{background:var(--ok)}
+.pg-trigo .ms .ms-steps button.on{background:var(--yellow);border:0}
+.pg-trigo .ms .ms-steps button:disabled{opacity:.4}
 .pg-trigo #ms-stage{position:relative;height:54vh;min-height:280px;max-height:520px;background:#0c0e10;touch-action:none;overflow:hidden;border:1px solid var(--line);border-radius:8px;margin-bottom:10px}
 .pg-trigo #ms-cv{position:absolute;inset:0;width:100%;height:100%;display:block}
 .pg-trigo #ms-hint{position:absolute;left:8px;right:8px;top:8px;background:rgba(16,20,26,.9);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:13px;pointer-events:none}
@@ -270,12 +275,11 @@ const HTML=`<div class="tg-nav" id="tg-nav" hidden><button type="button" class="
     </div>
 
     <div id="ms-pPianta" hidden>
-      <div class="ms-row">
-        <div class="ms-tabs" role="tablist" aria-label="Fase della pianta" style="margin:0">
-          <button id="ms-sBozza" class="on" role="tab">1 · Bozza</button>
-          <button id="ms-sMisure" role="tab" disabled>2 · Misure</button>
-        </div>
+      <div class="ms-steps" role="tablist" aria-label="Fase della pianta">
+        <button id="ms-sBozza" class="on" role="tab" aria-label="Fase 1: bozza della pianta"></button>
+        <button id="ms-sMisure" role="tab" aria-label="Fase 2: misure dei lati" disabled></button>
       </div>
+      <div class="steplabel" id="ms-stlabel">Fase 1 di 2 · Bozza della pianta</div>
       <div class="ms-rot" id="ms-rotBox" hidden>
         <div class="ms-tit">Ruota la pianta <b id="ms-rotv">0°</b></div>
         <div class="ms-row">
@@ -746,10 +750,12 @@ function placeMap(ui,slotId){
 }
 function setupSteps(view,labels,onStep){
   const bar=$('.steps',view);
-  bar.innerHTML=labels.map((l,i)=>`<button type="button" class="step" data-s="${i+1}"><b>${i+1}</b>${l}</button>`).join('');
+  bar.innerHTML=labels.map((l,i)=>`<button type="button" class="step" data-s="${i+1}" aria-label="Passo ${i+1} di ${labels.length}: ${l}"></button>`).join('');
+  const lab=document.createElement('div');lab.className='steplabel';bar.after(lab);
   const api={
     go(n){
-      $$('.step',bar).forEach(b=>b.classList.toggle('on',+b.dataset.s===n));
+      $$('.step',bar).forEach(b=>{const on=+b.dataset.s===n;b.classList.toggle('on',on);if(on)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');});
+      lab.textContent='Passo '+n+' di '+labels.length+' · '+labels[n-1];
       $$('.panel',view).forEach(pn=>{pn.hidden=+pn.dataset.s!==n;});
       view.dataset.step=n;
       if(onStep)onStep(n);
@@ -1671,6 +1677,8 @@ function ui(soft){
     const okPlan = closed && poly.length >= 3;
     $('sBozza').classList.toggle('on', planView === 'bozza');
     $('sMisure').classList.toggle('on', planView === 'misura');
+    $('sBozza').classList.toggle('done', planView === 'misura');
+    $('stlabel').textContent = planView === 'misura' ? 'Fase 2 di 2 · Misure dei lati' : 'Fase 1 di 2 · Bozza della pianta';
     $('sMisure').disabled = !okPlan;
     $('pBozza').hidden = planView !== 'bozza'; $('pMisure').hidden = planView !== 'misura';
     $('bOrto').classList.toggle('on', orto); $('bOrto').setAttribute('aria-pressed', orto);
