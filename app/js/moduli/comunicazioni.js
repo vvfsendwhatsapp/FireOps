@@ -5,6 +5,10 @@
  * Dati comando: usa FireOps.comandi() (db/comandi.json, già nel formato corto).
  * Le direzioni regionali non sono ancora in un file dati condiviso: restano qui
  * sotto DIREZIONI, da spostare in db/direzioni.json quando esisterà.
+ *
+ * Revisione mobile del wizard: campi a 16px (niente zoom su iOS), righe a colonna sotto i 520px,
+ * barra Indietro/Avanti fissa in basso, avvisi nel punto in cui si guarda (non più alert()),
+ * tasto Indietro del telefono che torna al passo precedente, copia e condividi il testo.
  */
 (function () {
   "use strict";
@@ -56,24 +60,25 @@
   margin: 0 auto;
   padding: 12px 16px calc(24px + env(safe-area-inset-bottom, 0px));
 }
+.pg-comunicazioni * { box-sizing: border-box; }
 
 .pg-comunicazioni .cm-test {
-  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
   padding: 9px 12px; margin-bottom: 12px; border-radius: 6px;
   background: var(--cm-warn); color: #1a1400; font-size: 12.5px; font-weight: 700;
 }
 .pg-comunicazioni .cm-test.off { background: var(--panel-2); color: var(--text-dim); border: 1px solid var(--line); }
 .pg-comunicazioni .cm-test button {
-  flex: none; background: #1a1400; color: var(--cm-warn); border: none; border-radius: 14px;
-  padding: 5px 12px; font-size: 11.5px; font-weight: 700; cursor: pointer;
+  flex: none; min-height: 36px; background: #1a1400; color: var(--cm-warn); border: none; border-radius: 18px;
+  padding: 6px 14px; font-size: 12px; font-weight: 700; cursor: pointer;
 }
 .pg-comunicazioni .cm-test.off button { background: var(--cm-err); color: #fff; }
 
 .pg-comunicazioni .cm-stepsbar { display: flex; gap: 5px; }
-.pg-comunicazioni .cm-dot { flex: 1; height: 4px; border-radius: 2px; background: var(--line); }
+.pg-comunicazioni .cm-dot { flex: 1; height: 5px; border-radius: 3px; background: var(--line); }
 .pg-comunicazioni .cm-dot.done { background: var(--cm-ok); }
 .pg-comunicazioni .cm-dot.active { background: var(--cm-warn); }
-.pg-comunicazioni .cm-steplabel { padding: 8px 0 0; font-size: 12.5px; color: var(--text-dim); text-align: center; }
+.pg-comunicazioni .cm-steplabel { padding: 8px 0 0; font-size: 13px; color: var(--text-dim); text-align: center; }
 
 .pg-comunicazioni .cm-step { margin-top: 14px; }
 
@@ -83,15 +88,17 @@
 .pg-comunicazioni .row-group-label.tep { border-left-color: var(--cm-warn); }
 .pg-comunicazioni .row-group-label.pers { border-left-color: var(--cm-ok); }
 
-.pg-comunicazioni .field { padding: 10px 14px; }
-.pg-comunicazioni .field label { display: block; font-size: 12.5px; color: var(--text-dim); margin-bottom: 5px; }
-.pg-comunicazioni .field input[type=text], .pg-comunicazioni .field input[type=date],
-.pg-comunicazioni .field input[type=time], .pg-comunicazioni .field input[type=datetime-local],
-.pg-comunicazioni .field select, .pg-comunicazioni .field textarea {
-  width: 100%; padding: 11px 12px; font-size: 15px; background: var(--panel-2); border: 1px solid var(--line);
-  border-radius: 6px; color: var(--text); font-family: var(--sans);
+.pg-comunicazioni .field { padding: 10px 14px; min-width: 0; }
+.pg-comunicazioni .field label { display: block; font-size: 13px; color: var(--text-dim); margin-bottom: 5px; }
+/* 16px: sotto questa soglia iOS ingrandisce la pagina quando si tocca un campo */
+.pg-comunicazioni .field input:not([type=checkbox]), .pg-comunicazioni .field select, .pg-comunicazioni .field textarea {
+  display: block; width: 100%; min-width: 0; max-width: 100%; min-height: 46px; padding: 11px 12px; font-size: 16px;
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; color: var(--text); font-family: var(--sans);
 }
-.pg-comunicazioni .field textarea { font-family: var(--mono); font-size: 13px; resize: vertical; }
+.pg-comunicazioni .field input[type=datetime-local], .pg-comunicazioni .field input[type=date], .pg-comunicazioni .field input[type=time] {
+  -webkit-appearance: none; appearance: none; text-align: left;
+}
+.pg-comunicazioni .field textarea { min-height: 0; font-family: var(--mono); font-size: 16px; line-height: 1.4; resize: vertical; }
 .pg-comunicazioni .field input:focus, .pg-comunicazioni .field select:focus, .pg-comunicazioni .field textarea:focus {
   outline: none; border-color: var(--cm-warn);
 }
@@ -99,116 +106,142 @@
 .pg-comunicazioni .field-row .field { flex: 1; padding-left: 0; }
 .pg-comunicazioni .field-row .field:first-child { padding-left: 14px; }
 .pg-comunicazioni .field-row .field:last-child { padding-right: 14px; }
-.pg-comunicazioni .field-check { display: flex; align-items: center; gap: 8px; padding: 12px 14px; font-size: 14px; }
-.pg-comunicazioni .field-check input { width: 18px; height: 18px; flex: none; }
-.pg-comunicazioni .hint { font-size: 11.5px; color: var(--text-dim); padding: 0 14px 10px; margin-top: -4px; }
+.pg-comunicazioni .field-check { display: flex; align-items: center; gap: 12px; padding: 4px 14px; min-height: 52px; font-size: 15px; }
+.pg-comunicazioni .field-check input { width: 22px; height: 22px; flex: none; }
+.pg-comunicazioni .field-check label { flex: 1; padding: 10px 0; }
+.pg-comunicazioni .hint { font-size: 12px; color: var(--text-dim); padding: 0 14px 10px; margin-top: -4px; }
 
-.pg-comunicazioni .comando-current { padding: 8px 14px 14px; font-size: 12.5px; color: var(--text-dim); line-height: 1.5; }
+.pg-comunicazioni .comando-current { padding: 8px 14px 14px; font-size: 13px; color: var(--text-dim); line-height: 1.5; overflow-wrap: anywhere; }
 .pg-comunicazioni .comando-current b { color: var(--text); font-weight: 600; }
 
 .pg-comunicazioni .tile-grid { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 14px 14px; }
 .pg-comunicazioni .tile {
-  flex: 1 1 calc(50% - 8px); min-width: 150px; padding: 13px 10px; background: var(--panel-2);
-  border: 1px solid var(--line); border-radius: 6px; color: var(--text-dim); font-size: 12.5px;
+  flex: 1 1 calc(50% - 8px); min-width: 130px; min-height: 60px; padding: 12px 10px; background: var(--panel-2);
+  border: 1px solid var(--line); border-radius: 6px; color: var(--text-dim); font-size: 13.5px;
   font-weight: 600; text-align: center; cursor: pointer; line-height: 1.3;
+  display: flex; align-items: center; justify-content: center;
 }
 .pg-comunicazioni .tile.selected { background: var(--cm-acc); border-color: var(--cm-acc); color: #fff; }
 .pg-comunicazioni .tile:active { opacity: .85; }
-
-.pg-comunicazioni .choice-list { padding: 6px 14px 14px; }
-.pg-comunicazioni .choice {
-  display: flex; align-items: center; gap: 10px; padding: 13px 14px; margin-top: 8px;
-  background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; cursor: pointer;
-}
-.pg-comunicazioni .choice:first-child { margin-top: 0; }
-.pg-comunicazioni .choice input { width: 18px; height: 18px; flex: none; }
-.pg-comunicazioni .choice span { font-size: 14.5px; font-weight: 600; }
-.pg-comunicazioni .choice.selected { border-color: var(--cm-warn); background: #241d10; }
+.pg-comunicazioni .tile-grid.need { outline: 2px solid var(--cm-err); outline-offset: -2px; border-radius: 6px; }
 
 .pg-comunicazioni .dyn-list { padding: 4px 14px 6px; }
 .pg-comunicazioni .person-row, .pg-comunicazioni .timb-row, .pg-comunicazioni .leg-row {
   display: flex; gap: 8px; align-items: flex-start; padding: 6px 0;
 }
 .pg-comunicazioni .person-row input.person-input {
-  flex: 1; padding: 11px 12px; font-size: 15px; background: var(--panel-2); border: 1px solid var(--line);
-  border-radius: 6px; color: var(--text);
+  flex: 1; min-width: 0; min-height: 46px; padding: 11px 12px; font-size: 16px; background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 6px; color: var(--text); font-family: var(--sans);
 }
 .pg-comunicazioni .timb-row, .pg-comunicazioni .leg-row {
   flex-wrap: wrap; background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px;
   padding: 10px; margin-bottom: 8px;
 }
-.pg-comunicazioni .timb-row .tfield, .pg-comunicazioni .leg-row .lfield { flex: 1; min-width: 140px; }
+.pg-comunicazioni .timb-row .tfield, .pg-comunicazioni .leg-row .lfield { flex: 1 1 150px; min-width: 0; }
 .pg-comunicazioni .timb-row .tfield label, .pg-comunicazioni .leg-row .lfield label {
-  font-size: 11px; color: var(--text-dim); margin-bottom: 4px; display: block;
+  font-size: 12px; color: var(--text-dim); margin-bottom: 4px; display: block;
 }
 .pg-comunicazioni .timb-row input, .pg-comunicazioni .leg-row input, .pg-comunicazioni .leg-row select {
-  width: 100%; padding: 10px; font-size: 14px; background: var(--panel); border: 1px solid var(--line);
-  border-radius: 6px; color: var(--text);
+  display: block; width: 100%; min-width: 0; min-height: 46px; padding: 10px; font-size: 16px; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; color: var(--text); font-family: var(--sans); -webkit-appearance: none; appearance: none;
 }
+.pg-comunicazioni .leg-row select { -webkit-appearance: menulist; appearance: menulist; }
 .pg-comunicazioni .row-remove-btn {
-  flex: none; width: 34px; height: 34px; border-radius: 6px; background: var(--panel-2);
-  border: 1px solid var(--line); color: var(--text-dim); cursor: pointer; font-size: 16px; line-height: 1;
+  flex: none; width: 46px; height: 46px; border-radius: 6px; background: var(--panel-2);
+  border: 1px solid var(--line); color: var(--text-dim); cursor: pointer; font-size: 17px; line-height: 1;
 }
-.pg-comunicazioni .timb-row .row-remove-btn, .pg-comunicazioni .leg-row .row-remove-btn { align-self: center; margin-top: 14px; }
+.pg-comunicazioni .timb-row .row-remove-btn, .pg-comunicazioni .leg-row .row-remove-btn { flex: 1 1 100%; width: auto; height: 40px; font-size: 13px; font-weight: 600; }
 .pg-comunicazioni .row-remove-btn:active { border-color: var(--cm-err); color: var(--cm-err); }
 
 .pg-comunicazioni .add-row-btn {
-  width: calc(100% - 28px); margin: 4px 14px 12px; padding: 11px; background: var(--panel-2);
-  border: 1px dashed var(--line); border-radius: 6px; color: var(--cm-warn); font-size: 13.5px;
+  display: block; width: calc(100% - 28px); min-height: 48px; margin: 4px 14px 12px; padding: 12px; background: var(--panel-2);
+  border: 1px dashed var(--line); border-radius: 6px; color: var(--cm-warn); font-size: 14.5px;
   font-weight: 600; cursor: pointer;
 }
 .pg-comunicazioni .add-row-btn:active { border-color: var(--cm-warn); }
 
-.pg-comunicazioni .nav-row { display: flex; gap: 8px; padding: 16px 0 4px; }
-.pg-comunicazioni .nav-btn { flex: 1; padding: 14px; border: none; border-radius: 6px; font-size: 14.5px; font-weight: 700; cursor: pointer; }
-.pg-comunicazioni .nav-back { background: var(--panel-2); border: 1px solid var(--line) !important; color: var(--text); }
+/* barra di navigazione del wizard: resta sempre a portata di pollice */
+.pg-comunicazioni .nav-row {
+  position: sticky; bottom: 0; z-index: 20; display: flex; gap: 8px;
+  margin: 14px -16px 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(to top, var(--bg) 80%, rgba(16, 20, 26, 0));
+}
+.pg-comunicazioni .nav-btn { flex: 1; min-height: 52px; padding: 14px; border: none; border-radius: 8px; font-size: 15.5px; font-weight: 700; cursor: pointer; }
+.pg-comunicazioni .nav-back { background: var(--panel-2); border: 1px solid var(--line) !important; color: var(--text); flex: 0 0 34%; }
 .pg-comunicazioni .nav-next { background: var(--cm-acc); color: #fff; }
 .pg-comunicazioni .nav-btn:active { opacity: .85; }
 
-.pg-comunicazioni .preview-actions { display: flex; gap: 8px; padding: 0 14px 14px; }
-.pg-comunicazioni .preview-actions button { flex: 1; padding: 13px 10px; border: none; border-radius: 6px; font-size: 13.5px; font-weight: 700; cursor: pointer; }
+.pg-comunicazioni .preview-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 14px 14px; }
+.pg-comunicazioni .preview-actions button { flex: 1 1 140px; min-height: 50px; padding: 12px 10px; border: none; border-radius: 8px; font-size: 14.5px; font-weight: 700; cursor: pointer; }
 .pg-comunicazioni .btn-mailto { background: var(--cm-ok); color: #fff; }
-.pg-comunicazioni .btn-eml { background: var(--panel-2); border: 1px solid var(--cm-warn) !important; color: var(--cm-warn); }
+.pg-comunicazioni .btn-eml, .pg-comunicazioni .btn-copy, .pg-comunicazioni .btn-share { background: var(--panel-2); border: 1px solid var(--cm-warn) !important; color: var(--cm-warn); }
 
 .pg-comunicazioni .security-note {
   margin-top: 10px; padding: 12px 14px; background: var(--panel-2); border: 1px solid var(--line);
-  border-left: 3px solid var(--cm-ok); border-radius: 6px; font-size: 12.5px; color: var(--text-dim); line-height: 1.55;
+  border-left: 3px solid var(--cm-ok); border-radius: 6px; font-size: 13px; color: var(--text-dim); line-height: 1.55;
 }
 .pg-comunicazioni .security-note strong { color: var(--text); }
 
+/* avviso: compare sopra la barra di navigazione, dove si guarda */
+.pg-comunicazioni .cm-msg {
+  position: fixed; left: 12px; right: 12px; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); z-index: 2500;
+  max-width: 616px; margin: 0 auto; padding: 12px 14px; border-radius: 8px; background: var(--cm-err); color: #fff;
+  font-size: 14px; font-weight: 600; line-height: 1.4; box-shadow: 0 6px 20px rgba(0, 0, 0, .45);
+}
+
 /* utente registrato */
 .pg-comunicazioni .prof-details summary {
-  padding: 10px 14px; font-size: 13px; color: var(--cm-warn); font-weight: 700; cursor: pointer;
+  padding: 14px; min-height: 48px; font-size: 14px; color: var(--cm-warn); font-weight: 700; cursor: pointer;
   border-top: 1px solid var(--line); list-style: none;
 }
 .pg-comunicazioni .prof-details summary::-webkit-details-marker { display: none; }
 .pg-comunicazioni .prof-details[open] summary { border-bottom: 1px solid var(--line); margin-bottom: 4px; }
 .pg-comunicazioni .prof-actions { display: flex; gap: 8px; padding: 6px 14px 4px; }
-.pg-comunicazioni .prof-save { flex: 1; padding: 12px; border: none; border-radius: 6px; background: var(--cm-ok); color: #fff; font-size: 13.5px; font-weight: 700; cursor: pointer; }
-.pg-comunicazioni .prof-del { flex: none; padding: 12px 16px; border-radius: 6px; background: var(--panel-2); border: 1px solid var(--line); color: var(--text-dim); font-size: 13px; font-weight: 700; cursor: pointer; }
+.pg-comunicazioni .prof-save { flex: 1; min-height: 48px; padding: 12px; border: none; border-radius: 6px; background: var(--cm-ok); color: #fff; font-size: 14.5px; font-weight: 700; cursor: pointer; }
+.pg-comunicazioni .prof-del { flex: none; min-height: 48px; padding: 12px 16px; border-radius: 6px; background: var(--panel-2); border: 1px solid var(--line); color: var(--text-dim); font-size: 14px; font-weight: 700; cursor: pointer; }
 .pg-comunicazioni .prof-del:active { border-color: var(--cm-err); color: var(--cm-err); }
 
 /* ricerca comando */
 .pg-comunicazioni .cbx-box { position: relative; }
-.pg-comunicazioni .cbx-field input[type=text] { padding-right: 42px; }
-.pg-comunicazioni .cbx-clear { position: absolute; right: 2px; top: 50%; transform: translateY(-50%); width: 38px; height: 38px; background: none; border: none; color: var(--text-dim); font-size: 16px; cursor: pointer; }
-.pg-comunicazioni .cbx-results { margin-top: 8px; max-height: 264px; overflow-y: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); -webkit-overflow-scrolling: touch; }
-.pg-comunicazioni .cbx-item { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line); cursor: pointer; }
+.pg-comunicazioni .cbx-field input[type=text] { padding-right: 48px; }
+.pg-comunicazioni .cbx-clear { position: absolute; right: 0; top: 50%; transform: translateY(-50%); width: 46px; height: 46px; background: none; border: none; color: var(--text-dim); font-size: 17px; cursor: pointer; }
+.pg-comunicazioni .cbx-results { margin-top: 8px; max-height: min(264px, 42vh); overflow-y: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+.pg-comunicazioni .cbx-item { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 2px 10px; padding: 13px 14px; min-height: 48px; border-bottom: 1px solid var(--line); cursor: pointer; }
 .pg-comunicazioni .cbx-item:last-child { border-bottom: none; }
-.pg-comunicazioni .cbx-item b { font-size: 14.5px; font-weight: 600; }
-.pg-comunicazioni .cbx-item span { font-size: 12px; color: var(--text-dim); white-space: nowrap; }
+.pg-comunicazioni .cbx-item b { font-size: 15px; font-weight: 600; }
+.pg-comunicazioni .cbx-item span { font-size: 12.5px; color: var(--text-dim); }
 .pg-comunicazioni .cbx-item.active, .pg-comunicazioni .cbx-item:active { background: #241d10; }
-.pg-comunicazioni .cbx-empty { padding: 14px; font-size: 12.5px; color: var(--text-dim); line-height: 1.5; }
+.pg-comunicazioni .cbx-empty { padding: 14px; font-size: 13px; color: var(--text-dim); line-height: 1.5; }
 .pg-comunicazioni .cbx-tools { display: flex; gap: 8px; padding: 0 14px 8px; }
-.pg-comunicazioni .cbx-tools select { flex: 1; min-width: 0; padding: 10px 12px; font-size: 14px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; color: var(--text); font-family: var(--sans); }
+.pg-comunicazioni .cbx-tools select { flex: 1; min-width: 0; min-height: 46px; padding: 10px 12px; font-size: 16px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; color: var(--text); font-family: var(--sans); }
 .pg-comunicazioni .cbx-tools select:focus { outline: none; border-color: var(--cm-warn); }
-.pg-comunicazioni .cbx-geo { flex: none; padding: 10px 14px; background: var(--panel-2); border: 1px solid var(--cm-warn); border-radius: 6px; color: var(--cm-warn); font-size: 13px; font-weight: 700; cursor: pointer; }
+.pg-comunicazioni .cbx-geo { flex: none; min-height: 46px; padding: 10px 14px; background: var(--panel-2); border: 1px solid var(--cm-warn); border-radius: 6px; color: var(--cm-warn); font-size: 14px; font-weight: 700; cursor: pointer; }
 .pg-comunicazioni .cbx-geo:disabled { opacity: .6; }
-.pg-comunicazioni .cbx-recents { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 2px 14px 8px; }
-.pg-comunicazioni .cbx-recents-label { font-size: 12px; color: var(--text-dim); }
-.pg-comunicazioni .cbx-chip { padding: 7px 12px; border-radius: 16px; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.pg-comunicazioni .cbx-recents { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 2px 14px 8px; }
+.pg-comunicazioni .cbx-recents-label { font-size: 12.5px; color: var(--text-dim); }
+.pg-comunicazioni .cbx-chip { min-height: 40px; padding: 8px 14px; border-radius: 20px; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); font-size: 13.5px; font-weight: 600; cursor: pointer; }
 .pg-comunicazioni .cbx-chip:active { border-color: var(--cm-warn); }
 .pg-comunicazioni .cbx-off { opacity: .45; pointer-events: none; }
+
+.pg-comunicazioni button:focus-visible, .pg-comunicazioni summary:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+
+/* schermi stretti: date e coppie di campi una sotto l'altra, tutto a larghezza piena */
+@media (max-width: 520px) {
+  .pg-comunicazioni .field-row { flex-direction: column; gap: 0; }
+  .pg-comunicazioni .field-row .field, .pg-comunicazioni .field-row .field:first-child, .pg-comunicazioni .field-row .field:last-child {
+    padding-left: 14px; padding-right: 14px;
+  }
+  .pg-comunicazioni .timb-row .tfield, .pg-comunicazioni .leg-row .lfield { flex-basis: 100%; }
+  .pg-comunicazioni .cbx-tools { flex-wrap: wrap; }
+  .pg-comunicazioni .cbx-geo { flex: 1 1 100%; }
+  .pg-comunicazioni .nav-back { flex-basis: 32%; }
+}
+@media (max-width: 360px) {
+  .pg-comunicazioni { padding-left: 12px; padding-right: 12px; }
+  .pg-comunicazioni .nav-row { margin-left: -12px; margin-right: -12px; padding-left: 12px; padding-right: 12px; }
+  .pg-comunicazioni .tile { flex-basis: 100%; }
+}
+@media (prefers-reduced-motion: reduce) { .pg-comunicazioni * { scroll-behavior: auto !important; } }
 
 .pg-comunicazioni .hidden { display: none !important; }
 `;
@@ -230,7 +263,7 @@
     return '' +
       '<div class="field cbx-field" id="' + prefix + 'Box">' +
       '<div class="cbx-box">' +
-      '<input type="text" id="' + prefix + 'Input" placeholder="Cerca: capoluogo, provincia o sigla (es. RM)" autocomplete="off" autocapitalize="off" spellcheck="false" role="combobox" aria-expanded="false" aria-controls="' + prefix + 'Results" aria-autocomplete="list" disabled>' +
+      '<input type="text" id="' + prefix + 'Input" placeholder="Cerca: capoluogo, provincia o sigla (es. RM)" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="search" role="combobox" aria-expanded="false" aria-controls="' + prefix + 'Results" aria-autocomplete="list" disabled>' +
       '<button type="button" class="cbx-clear hidden" id="' + prefix + 'Clear" aria-label="Cancella">&#10005;</button>' +
       '</div>' +
       '<div class="cbx-results hidden" id="' + prefix + 'Results" role="listbox"></div>' +
@@ -257,27 +290,27 @@
   <div class="panel">
     <div class="row-group-label">Utente</div>
     <div class="field">
-      <label>Utente registrato</label>
+      <label for="fcProfiloSelect">Utente registrato</label>
       <select id="fcProfiloSelect"></select>
     </div>
     <details id="fcProfDetails" class="prof-details">
       <summary>Dati utente</summary>
       <div class="field-row">
-        <div class="field"><label>Cognome</label><input type="text" id="fcUCognome" autocomplete="off"></div>
-        <div class="field"><label>Nome</label><input type="text" id="fcUNome" autocomplete="off"></div>
+        <div class="field"><label for="fcUCognome">Cognome</label><input type="text" id="fcUCognome" autocomplete="off" autocapitalize="words" enterkeyhint="next"></div>
+        <div class="field"><label for="fcUNome">Nome</label><input type="text" id="fcUNome" autocomplete="off" autocapitalize="words" enterkeyhint="next"></div>
       </div>
-      <div class="field"><label>Codice fiscale</label><input type="text" id="fcUCf" maxlength="16" autocomplete="off" autocapitalize="characters"></div>
-      <div class="field"><label>Email istituzionale</label><input type="text" id="fcUEmail" placeholder="nome.cognome@vigilfuoco.it" autocomplete="off"></div>
-      <div class="field"><label>Qualifica</label><select id="fcQualifica">${qualificaOptions}</select></div>
+      <div class="field"><label for="fcUCf">Codice fiscale</label><input type="text" id="fcUCf" maxlength="16" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="next"></div>
+      <div class="field"><label for="fcUEmail">Email istituzionale</label><input type="email" id="fcUEmail" inputmode="email" placeholder="nome.cognome@vigilfuoco.it" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done"></div>
+      <div class="field"><label for="fcQualifica">Qualifica</label><select id="fcQualifica">${qualificaOptions}</select></div>
       <div class="field-row">
-        <div class="field"><label>Turno</label>
+        <div class="field"><label for="fcTurnoL">Turno</label>
           <select id="fcTurnoL"><option value="">-</option><option>A</option><option>B</option><option>C</option><option>D</option><option>G</option></select>
         </div>
-        <div class="field"><label>Salto turno</label>
+        <div class="field"><label for="fcTurnoS">Salto turno</label>
           <select id="fcTurnoS"><option value="">-</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select>
         </div>
       </div>
-      <div class="field"><label>Sede</label><input type="text" id="fcSede" placeholder="es. CENTRALE" value="CENTRALE"></div>
+      <div class="field"><label for="fcSede">Sede</label><input type="text" id="fcSede" placeholder="es. CENTRALE" value="CENTRALE" autocapitalize="characters"></div>
 
       <div class="row-group-label">Comando di appartenenza</div>
       ${comandoPickerHtml("fcHome", false)}
@@ -286,7 +319,7 @@
         <button type="button" class="prof-save" id="fcProfSave">Salva utente</button>
         <button type="button" class="prof-del" id="fcProfDel">Elimina</button>
       </div>
-      <div class="hint" id="fcProfMsg"></div>
+      <div class="hint" id="fcProfMsg" role="status"></div>
     </details>
   </div>
 
@@ -306,13 +339,13 @@
 <section class="cm-step hidden" id="fcStep2">
   <div class="panel">
     <div class="row-group-label">Tipo di comunicazione</div>
-    <div class="tile-grid" id="fcTipoTiles">
-      <div class="tile" data-tipo="timbratura">Mancata timbratura</div>
-      <div class="tile" data-tipo="missione">Missione per soccorso</div>
-      <div class="tile" data-tipo="straaltre">Straord. altre attivita</div>
-      <div class="tile" data-tipo="straguida">Straord. guida / sostituzione</div>
-      <div class="tile" data-tipo="strasoccorso">Straord. per soccorso</div>
-      <div class="tile" data-tipo="strarinforzo">Straord. rinforzo personale</div>
+    <div class="tile-grid" id="fcTipoTiles" role="radiogroup" aria-label="Tipo di comunicazione">
+      <div class="tile" role="radio" tabindex="0" aria-checked="false" data-tipo="timbratura">Mancata timbratura</div>
+      <div class="tile" role="radio" tabindex="0" aria-checked="false" data-tipo="missione">Missione per soccorso</div>
+      <div class="tile" role="radio" tabindex="0" aria-checked="false" data-tipo="straaltre">Straord. altre attivita</div>
+      <div class="tile" role="radio" tabindex="0" aria-checked="false" data-tipo="straguida">Straord. guida / sostituzione</div>
+      <div class="tile" role="radio" tabindex="0" aria-checked="false" data-tipo="strasoccorso">Straord. per soccorso</div>
+      <div class="tile" role="radio" tabindex="0" aria-checked="false" data-tipo="strarinforzo">Straord. rinforzo personale</div>
     </div>
   </div>
   <div class="nav-row">
@@ -328,15 +361,15 @@
     <div class="panel">
       <div class="row-group-label tep">Dati intervento</div>
       <div class="field-row">
-        <div class="field"><label>Data/ora inizio intervento</label><input type="datetime-local" id="fcMsInizio"></div>
-        <div class="field"><label>Data/ora fine intervento</label><input type="datetime-local" id="fcMsFine"></div>
+        <div class="field"><label for="fcMsInizio">Data/ora inizio intervento</label><input type="datetime-local" id="fcMsInizio"></div>
+        <div class="field"><label for="fcMsFine">Data/ora fine intervento</label><input type="datetime-local" id="fcMsFine"></div>
       </div>
       <div class="field-row">
-        <div class="field"><label>Numero intervento</label><input type="text" id="fcMsNumero"></div>
-        <div class="field"><label>Progressivo intervento</label><input type="text" id="fcMsProgressivo"></div>
+        <div class="field"><label for="fcMsNumero">Numero intervento</label><input type="text" id="fcMsNumero" autocomplete="off"></div>
+        <div class="field"><label for="fcMsProgressivo">Progressivo intervento</label><input type="text" id="fcMsProgressivo" autocomplete="off"></div>
       </div>
-      <div class="field"><label>Localita</label><input type="text" id="fcMsLocalita"></div>
-      <div class="field"><label>Tipologia intervento</label><select id="fcMsTipologia"></select></div>
+      <div class="field"><label for="fcMsLocalita">Localita</label><input type="text" id="fcMsLocalita" autocapitalize="words"></div>
+      <div class="field"><label for="fcMsTipologia">Tipologia intervento</label><select id="fcMsTipologia"></select></div>
     </div>
     <div class="panel">
       <div class="row-group-label pers">Personale intervenuto</div>
@@ -348,7 +381,7 @@
   <div class="detail-block hidden" id="fcDetTimbratura">
     <div class="panel">
       <div class="row-group-label pers">Motivo</div>
-      <div class="field"><label>Motivo mancata timbratura</label><textarea id="fcTmMotivo" rows="3"></textarea></div>
+      <div class="field"><label for="fcTmMotivo">Motivo mancata timbratura</label><textarea id="fcTmMotivo" rows="3"></textarea></div>
     </div>
     <div class="panel">
       <div class="row-group-label pers">Date interessate</div>
@@ -361,15 +394,15 @@
     <div class="panel">
       <div class="row-group-label tep">Dati intervento</div>
       <div class="field-row">
-        <div class="field"><label>Data/ora inizio intervento</label><input type="datetime-local" id="fcSsInizio"></div>
-        <div class="field"><label>Data/ora fine intervento</label><input type="datetime-local" id="fcSsFine"></div>
+        <div class="field"><label for="fcSsInizio">Data/ora inizio intervento</label><input type="datetime-local" id="fcSsInizio"></div>
+        <div class="field"><label for="fcSsFine">Data/ora fine intervento</label><input type="datetime-local" id="fcSsFine"></div>
       </div>
       <div class="field-row">
-        <div class="field"><label>Numero intervento</label><input type="text" id="fcSsNumero"></div>
-        <div class="field"><label>Progressivo intervento</label><input type="text" id="fcSsProgressivo"></div>
+        <div class="field"><label for="fcSsNumero">Numero intervento</label><input type="text" id="fcSsNumero" autocomplete="off"></div>
+        <div class="field"><label for="fcSsProgressivo">Progressivo intervento</label><input type="text" id="fcSsProgressivo" autocomplete="off"></div>
       </div>
-      <div class="field"><label>Localita</label><input type="text" id="fcSsLocalita"></div>
-      <div class="field"><label>Tipologia intervento</label><select id="fcSsTipologia"></select></div>
+      <div class="field"><label for="fcSsLocalita">Localita</label><input type="text" id="fcSsLocalita" autocapitalize="words"></div>
+      <div class="field"><label for="fcSsTipologia">Tipologia intervento</label><select id="fcSsTipologia"></select></div>
     </div>
     <div class="panel">
       <div class="row-group-label pers">Personale intervenuto</div>
@@ -382,11 +415,11 @@
     <div class="panel">
       <div class="row-group-label tep">Dati rinforzo</div>
       <div class="field-row">
-        <div class="field"><label>Data/ora inizio</label><input type="datetime-local" id="fcSrInizio"></div>
-        <div class="field"><label>Data/ora fine</label><input type="datetime-local" id="fcSrFine"></div>
+        <div class="field"><label for="fcSrInizio">Data/ora inizio</label><input type="datetime-local" id="fcSrInizio"></div>
+        <div class="field"><label for="fcSrFine">Data/ora fine</label><input type="datetime-local" id="fcSrFine"></div>
       </div>
-      <div class="field"><label>Sede / comando di rinforzo</label><input type="text" id="fcSrSede"></div>
-      <div class="field"><label>Motivo del rinforzo</label><textarea id="fcSrMotivo" rows="2"></textarea></div>
+      <div class="field"><label for="fcSrSede">Sede / comando di rinforzo</label><input type="text" id="fcSrSede" autocapitalize="words"></div>
+      <div class="field"><label for="fcSrMotivo">Motivo del rinforzo</label><textarea id="fcSrMotivo" rows="2"></textarea></div>
     </div>
     <div class="panel">
       <div class="row-group-label pers">Personale coinvolto</div>
@@ -399,10 +432,10 @@
     <div class="panel">
       <div class="row-group-label tep">Dati attivita</div>
       <div class="field-row">
-        <div class="field"><label>Data/ora inizio</label><input type="datetime-local" id="fcSaInizio"></div>
-        <div class="field"><label>Data/ora fine</label><input type="datetime-local" id="fcSaFine"></div>
+        <div class="field"><label for="fcSaInizio">Data/ora inizio</label><input type="datetime-local" id="fcSaInizio"></div>
+        <div class="field"><label for="fcSaFine">Data/ora fine</label><input type="datetime-local" id="fcSaFine"></div>
       </div>
-      <div class="field"><label>Descrizione attivita</label><textarea id="fcSaDescrizione" rows="3"></textarea></div>
+      <div class="field"><label for="fcSaDescrizione">Descrizione attivita</label><textarea id="fcSaDescrizione" rows="3"></textarea></div>
     </div>
   </div>
 
@@ -419,11 +452,11 @@
       </div>
       <div id="fcGdMissioneBox" class="hidden">
         <div class="field-row">
-          <div class="field"><label>Numero intervento</label><input type="text" id="fcGdNumero"></div>
-          <div class="field"><label>Progressivo intervento</label><input type="text" id="fcGdProgressivo"></div>
+          <div class="field"><label for="fcGdNumero">Numero intervento</label><input type="text" id="fcGdNumero" autocomplete="off"></div>
+          <div class="field"><label for="fcGdProgressivo">Progressivo intervento</label><input type="text" id="fcGdProgressivo" autocomplete="off"></div>
         </div>
-        <div class="field"><label>Localita</label><input type="text" id="fcGdLocalita"></div>
-        <div class="field"><label>Tipologia intervento</label><select id="fcGdTipologia"></select></div>
+        <div class="field"><label for="fcGdLocalita">Localita</label><input type="text" id="fcGdLocalita" autocapitalize="words"></div>
+        <div class="field"><label for="fcGdTipologia">Tipologia intervento</label><select id="fcGdTipologia"></select></div>
       </div>
     </div>
   </div>
@@ -438,7 +471,7 @@
 <section class="cm-step hidden" id="fcStep4">
   <div class="panel">
     <div class="row-group-label">Note</div>
-    <div class="field"><textarea id="fcNote" rows="2" placeholder="Note aggiuntive (facoltative)"></textarea></div>
+    <div class="field"><textarea id="fcNote" rows="3" placeholder="Note aggiuntive (facoltative)" aria-label="Note"></textarea></div>
   </div>
   <div class="panel hidden" id="fcBuonoPastoBox">
     <div class="field-check"><input type="checkbox" id="fcBuonoPasto"><label for="fcBuonoPasto">Richiedo il secondo buono pasto</label></div>
@@ -453,25 +486,29 @@
 <section class="cm-step hidden" id="fcStep5">
   <div class="panel">
     <div class="row-group-label">Destinatario</div>
-    <div class="field"><label>A: (verifica prima di inviare)</label><input type="text" id="fcPrevTo"></div>
-    <div class="field"><label>Oggetto</label><input type="text" id="fcPrevSubject"></div>
+    <div class="field"><label for="fcPrevTo">A: (verifica prima di inviare)</label><input type="email" id="fcPrevTo" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false"></div>
+    <div class="field"><label for="fcPrevSubject">Oggetto</label><input type="text" id="fcPrevSubject"></div>
   </div>
   <div class="panel">
     <div class="row-group-label">Anteprima</div>
-    <div class="field"><textarea id="fcPrevBody" rows="16"></textarea></div>
+    <div class="field"><textarea id="fcPrevBody" rows="14" aria-label="Testo della mail"></textarea></div>
     <div class="preview-actions">
       <button type="button" class="btn-mailto" id="fcBtnMailto">Apri nel client di posta</button>
+      <button type="button" class="btn-copy" id="fcBtnCopy">Copia testo</button>
+      <button type="button" class="btn-share hidden" id="fcBtnShare">Condividi</button>
       <button type="button" class="btn-eml" id="fcBtnEml">Scarica .eml</button>
     </div>
   </div>
   <div class="security-note">
-    <strong>Come funziona l'invio.</strong> Nessuna password e presente in questo file. "Apri nel client di posta" prepara l'email e la apre nel tuo programma di posta gia collegato al tuo account: l'invio lo fai tu. "Scarica .eml" fa lo stesso come file, utile per testi lunghi.
+    <strong>Come funziona l'invio.</strong> Nessuna password e presente in questo file. "Apri nel client di posta" prepara l'email e la apre nel tuo programma di posta gia collegato al tuo account: l'invio lo fai tu. Se il testo e lungo e il programma di posta lo tronca, usa "Copia testo" o "Condividi". "Scarica .eml" fa lo stesso come file.
   </div>
   <div class="nav-row">
     <button type="button" class="nav-btn nav-back" data-back>Indietro</button>
-    <button type="button" class="nav-btn nav-back" id="fcRestart">Ricomincia</button>
+    <button type="button" class="nav-btn nav-back" id="fcRestart" style="flex:1">Ricomincia</button>
   </div>
 </section>
+
+<div class="cm-msg hidden" id="fcMsg" role="alert"></div>
 `;
 
   /* =====================================================================
@@ -487,6 +524,21 @@
 
     const normTxt = s => (s || "").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
       .replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+
+    /* ---------- avvisi (al posto di alert) ---------- */
+    let msgTimer = 0;
+    function avviso(testo, el) {
+      const m = $("fcMsg");
+      m.textContent = testo;
+      m.classList.remove("hidden");
+      clearTimeout(msgTimer);
+      msgTimer = setTimeout(() => m.classList.add("hidden"), 6000);
+      if (el) {
+        el.scrollIntoView({block: "center", behavior: "smooth"});
+        try { el.focus({preventScroll: true}); } catch (e) {}
+      }
+    }
+    function nascondiAvviso() { clearTimeout(msgTimer); $("fcMsg").classList.add("hidden"); }
 
     function comandoSlug(record) {
       if (record && record.esc && /@vigilfuoco\.it$/i.test(record.esc)) {
@@ -529,7 +581,7 @@
       const geo = opt.geo ? $(prefix + "Geo") : null;
       const rcn = opt.recents ? $(prefix + "Recents") : null;
       const RKEY = "fireops_com_comandi_recenti";
-      const P = {rec: null, onChange: function () {}};
+      const P = {rec: null, onChange: function () {}, input: inp};
       let items = [], active = -1, pronto = false;
 
       function search() {
@@ -638,8 +690,8 @@
         P.onChange(null);
       };
       P.setDisabled = function (d) {
-        inp.disabled = d; reg.disabled = d; clr.disabled = d;
-        if (geo) geo.disabled = d;
+        inp.disabled = d || !pronto; reg.disabled = d || !pronto; clr.disabled = d;
+        if (geo) geo.disabled = d || !pronto;
         box.classList.toggle("cbx-off", d);
         res.classList.add("hidden");
       };
@@ -660,11 +712,15 @@
         clr.classList.toggle("hidden", !inp.value);
         render();
       });
-      inp.addEventListener("focus", () => { if (P.rec && inp.value === P.rec.c) inp.select(); else render(); });
+      inp.addEventListener("focus", () => {
+        if (P.rec && inp.value === P.rec.c) inp.select(); else render();
+        // con la tastiera aperta i risultati devono restare visibili
+        setTimeout(() => { try { inp.scrollIntoView({block: "center", behavior: "smooth"}); } catch (e) {} }, 250);
+      });
       inp.addEventListener("keydown", e => {
         if (e.key === "ArrowDown") { e.preventDefault(); if (items.length) { active = Math.min(items.length - 1, active + 1); mark(); } }
         else if (e.key === "ArrowUp") { e.preventDefault(); if (items.length) { active = Math.max(0, active - 1); mark(); } }
-        else if (e.key === "Enter") { e.preventDefault(); if (items[active]) P.select(items[active]); }
+        else if (e.key === "Enter") { e.preventDefault(); if (items[active]) P.select(items[active]); inp.blur(); }
         else if (e.key === "Escape") { res.classList.add("hidden"); }
       });
       clr.addEventListener("click", () => { P.clear(); inp.focus(); });
@@ -815,15 +871,16 @@
         if (dup) profActiveId = dup.id;
       }
       const p = profFromForm();
-      if (!p.nome || !p.cognome) { profMsg("Inserisci almeno nome e cognome."); return; }
-      if (!p.comando) { profMsg("Scegli il comando di appartenenza."); return; }
-      if (p.cf && !/^[A-Z0-9]{16}$/.test(p.cf)) { profMsg("Il codice fiscale deve avere 16 caratteri."); return; }
+      if (!p.nome || !p.cognome) { profMsg("Inserisci almeno nome e cognome."); avviso("Inserisci almeno nome e cognome.", p.cognome ? $("fcUNome") : $("fcUCognome")); return; }
+      if (!p.comando) { profMsg("Scegli il comando di appartenenza."); avviso("Scegli il comando di appartenenza.", home.input); return; }
+      if (p.cf && !/^[A-Z0-9]{16}$/.test(p.cf)) { profMsg("Il codice fiscale deve avere 16 caratteri."); avviso("Il codice fiscale deve avere 16 caratteri.", $("fcUCf")); return; }
       const i = list.findIndex(x => x.id === p.id);
       if (i >= 0) list[i] = p; else list.push(p);
       if (!profStore(list)) { profMsg("Impossibile salvare: il browser blocca la memoria locale."); return; }
       profActiveId = p.id; profSetActive(p.id);
       profRenderSelect();
       profMsg("Utente salvato su questo dispositivo.");
+      avviso("Utente salvato su questo dispositivo.");
     });
 
     $("fcProfDel").addEventListener("click", () => {
@@ -864,6 +921,7 @@
         if (p) { profActiveId = p.id; profFill(p); }
         else { profBlank(); profDet.open = true; }
         profRenderSelect();
+        applyDestinazione();
       }).catch(() => {
         home.update("Impossibile caricare l'elenco comandi. Riprova più tardi.");
         dest.update("Impossibile caricare l'elenco comandi. Riprova più tardi.");
@@ -872,11 +930,16 @@
     avviaDati();
 
     /* ---------- step 2: tile ---------- */
-    root.querySelectorAll("#fcTipoTiles .tile").forEach(t => {
-      t.addEventListener("click", function () {
-        currentTipo = this.dataset.tipo;
-        root.querySelectorAll("#fcTipoTiles .tile").forEach(x => x.classList.toggle("selected", x === this));
-      });
+    const tiles = Array.from(root.querySelectorAll("#fcTipoTiles .tile"));
+    function sceltaTipo(t) {
+      currentTipo = t.dataset.tipo;
+      tiles.forEach(x => { const on = x === t; x.classList.toggle("selected", on); x.setAttribute("aria-checked", on ? "true" : "false"); });
+      $("fcTipoTiles").classList.remove("need");
+      nascondiAvviso();
+    }
+    tiles.forEach(t => {
+      t.addEventListener("click", () => sceltaTipo(t));
+      t.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); sceltaTipo(t); } });
     });
 
     /* ---------- righe dinamiche ---------- */
@@ -884,10 +947,11 @@
       const list = $(targetId);
       const row = document.createElement("div");
       row.className = "person-row";
-      row.innerHTML = '<input type="text" class="person-input" placeholder="Nome Cognome (qualifica)">'
+      row.innerHTML = '<input type="text" class="person-input" placeholder="Nome Cognome (qualifica)" autocapitalize="words" enterkeyhint="done">'
         + '<button type="button" class="row-remove-btn" aria-label="Rimuovi">\u2715</button>';
       row.querySelector(".row-remove-btn").addEventListener("click", () => row.remove());
       list.appendChild(row);
+      return row;
     }
     function addTimbraturaRow(targetId) {
       const list = $(targetId);
@@ -895,9 +959,10 @@
       row.className = "timb-row";
       row.innerHTML = '<div class="tfield"><label>Data/ora ingresso</label><input type="datetime-local" class="timb-in"></div>'
         + '<div class="tfield"><label>Data/ora uscita</label><input type="datetime-local" class="timb-out"></div>'
-        + '<button type="button" class="row-remove-btn" aria-label="Rimuovi">\u2715</button>';
+        + '<button type="button" class="row-remove-btn" aria-label="Rimuovi questa data">Rimuovi questa data</button>';
       row.querySelector(".row-remove-btn").addEventListener("click", () => row.remove());
       list.appendChild(row);
+      return row;
     }
     function addLegRow(targetId, tipo) {
       const list = $(targetId);
@@ -908,17 +973,25 @@
         + '<div class="lfield"><label>Sede arrivo</label><input type="text" class="leg-arrivo"></div>'
         + '<div class="lfield"><label>Data/ora inizio</label><input type="datetime-local" class="leg-inizio"></div>'
         + '<div class="lfield"><label>Data/ora fine</label><input type="datetime-local" class="leg-fine"></div>'
-        + '<button type="button" class="row-remove-btn" aria-label="Rimuovi">\u2715</button>';
+        + '<button type="button" class="row-remove-btn" aria-label="Rimuovi questa tratta">Rimuovi questa tratta</button>';
       if (tipo) row.querySelector(".leg-tipo").value = tipo;
       row.querySelector(".row-remove-btn").addEventListener("click", () => row.remove());
       list.appendChild(row);
+      return row;
     }
     root.querySelectorAll(".add-row-btn[data-add]").forEach(btn => {
       btn.addEventListener("click", function () {
         const kind = this.dataset.add, target = this.dataset.target;
-        if (kind === "person") addPersonRow(target);
-        else if (kind === "timbratura") addTimbraturaRow(target);
-        else if (kind === "leg") addLegRow(target);
+        let row = null;
+        if (kind === "person") row = addPersonRow(target);
+        else if (kind === "timbratura") row = addTimbraturaRow(target);
+        else if (kind === "leg") row = addLegRow(target);
+        // la riga nuova va in vista e, per i nominativi, apre subito la tastiera
+        if (row) {
+          row.scrollIntoView({block: "center", behavior: "smooth"});
+          const f = row.querySelector(".person-input");
+          if (f) f.focus({preventScroll: true});
+        }
       });
     });
     addPersonRow("fcMsPersonaleList");
@@ -959,35 +1032,66 @@
       $("fcBuonoPastoBox").classList.toggle("hidden", !withBuono.includes(currentTipo));
     }
 
-    function showStep(n) {
+    // l'intestazione dell'app resta fissa in alto: la barra dei passi va portata sotto di essa
+    function scrollAiPassi() {
+      const h = document.querySelector(".foh");
+      const y = stepsBar.getBoundingClientRect().top + window.pageYOffset - (h ? h.offsetHeight : 0) - 12;
+      window.scrollTo({top: Math.max(0, y), behavior: "smooth"});
+    }
+
+    function showStep(n, daCronologia, silenzioso) {
+      const prima = currentStep;
       currentStep = n;
+      nascondiAvviso();
+      // un passo avanti = una voce di cronologia: il tasto Indietro del telefono torna al passo precedente
+      if (!daCronologia && n > prima) { try { history.pushState({fcStep: n}, "", location.href); } catch (e) {} }
       root.querySelectorAll(".cm-step").forEach(s => s.classList.toggle("hidden", s.id !== "fcStep" + n));
       if (n === 3) showDetailBlock();
       if (n === 4) showOptionsBlocks();
       if (n === 5) generatePreview();
       renderStepsBar();
-      root.scrollIntoView({block: "start", behavior: "smooth"});
+      if (!silenzioso) scrollAiPassi();
     }
 
     function goNext() {
       if (currentStep === 1) {
         syncMittente();
-        if (!MITTENTE.nome || !MITTENTE.cognome) { profDet.open = true; alert("Scegli un utente o inserisci nome e cognome."); return; }
+        if (!MITTENTE.nome || !MITTENTE.cognome) {
+          profDet.open = true;
+          avviso("Scegli un utente o inserisci nome e cognome.", MITTENTE.cognome ? $("fcUNome") : $("fcUCognome"));
+          return;
+        }
         if (!currentComando) {
-          if (stessoChk.checked) { profDet.open = true; alert("Imposta il comando di appartenenza in Dati utente, oppure togli la spunta e scegli un altro comando."); }
-          else alert("Seleziona il comando destinatario.");
+          if (stessoChk.checked) { profDet.open = true; avviso("Imposta il comando di appartenenza in Dati utente, oppure togli la spunta e scegli un altro comando.", home.input); }
+          else avviso("Seleziona il comando destinatario.", dest.input);
           return;
         }
       }
-      if (currentStep === 2 && !currentTipo) { alert("Seleziona il tipo di comunicazione."); return; }
+      if (currentStep === 2 && !currentTipo) {
+        $("fcTipoTiles").classList.add("need");
+        avviso("Seleziona il tipo di comunicazione.", tiles[0]);
+        return;
+      }
       showStep(Math.min(5, currentStep + 1));
     }
-    function goBack() { showStep(Math.max(1, currentStep - 1)); }
+    function goBack() {
+      if (currentStep <= 1) return;
+      if (history.state && history.state.fcStep === currentStep) history.back();   // popstate mostra il passo precedente
+      else showStep(currentStep - 1, true);
+    }
+    function ricomincia() {
+      if (currentStep > 1 && history.state && history.state.fcStep) history.go(-(currentStep - 1));
+      else showStep(1, true);
+    }
+    window.addEventListener("popstate", e => {
+      if (window.FireOps && window.FireOps.attivo && window.FireOps.attivo() !== "comunicazioni") return;
+      showStep((e.state && e.state.fcStep) || 1, true);
+    });
 
     root.querySelectorAll("[data-next]").forEach(b => b.addEventListener("click", goNext));
     root.querySelectorAll("[data-back]").forEach(b => b.addEventListener("click", goBack));
     $("fcGoSummary").addEventListener("click", goNext);
-    $("fcRestart").addEventListener("click", () => showStep(1));
+    $("fcRestart").addEventListener("click", ricomincia);
 
     /* ---------- testo email ---------- */
     function pad2(n) { return String(n).padStart(2, "0"); }
@@ -1193,9 +1297,28 @@
     $("fcBtnMailto").addEventListener("click", () => {
       generatePreview();
       const to = $("fcPrevTo").value, subject = $("fcPrevSubject").value, body = $("fcPrevBody").value;
-      if (!to) { alert('Seleziona prima un comando (passo 1) o verifica il campo "A:".'); return; }
-      window.location.href = "mailto:" + encodeURIComponent(to) + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
+      if (!to) { avviso('Manca il destinatario: scrivilo nel campo "A:" oppure scegli un comando al passo 1.', $("fcPrevTo")); return; }
+      const url = "mailto:" + encodeURIComponent(to) + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
+      if (url.length > 1900) avviso('Testo lungo: se la posta lo tronca usa "Copia testo" o "Condividi".');
+      window.location.href = url;
     });
+    function testoCompleto() { return "A: " + $("fcPrevTo").value + "\nOggetto: " + $("fcPrevSubject").value + "\n\n" + $("fcPrevBody").value; }
+    $("fcBtnCopy").addEventListener("click", async () => {
+      generatePreview();
+      const t = testoCompleto();
+      try { await navigator.clipboard.writeText(t); avviso("Testo copiato."); }
+      catch (e) {
+        const ta = $("fcPrevBody"); ta.focus(); ta.select();
+        try { document.execCommand("copy"); avviso("Testo del messaggio copiato."); } catch (e2) { avviso("Copia non riuscita: tieni premuto sul testo per selezionarlo."); }
+      }
+    });
+    if (navigator.share) {
+      $("fcBtnShare").classList.remove("hidden");
+      $("fcBtnShare").addEventListener("click", async () => {
+        generatePreview();
+        try { await navigator.share({title: $("fcPrevSubject").value, text: testoCompleto()}); } catch (e) { /* annullato */ }
+      });
+    }
     $("fcBtnEml").addEventListener("click", () => {
       generatePreview();
       const to = $("fcPrevTo").value, subject = $("fcPrevSubject").value, body = $("fcPrevBody").value;
@@ -1212,7 +1335,7 @@
     root.addEventListener("change", () => { if (currentStep === 5) generatePreview(); });
 
     renderStepsBar();
-    showStep(1);
+    showStep(1, true, true);
   }
 
   if (window.FireOps && window.FireOps.registra) {
