@@ -24,11 +24,6 @@
                             500: '#f97316',
                             600: '#ea580c',
                             700: '#c2410c',
-                        },
-                        tech: {
-                            500: '#38bdf8',
-                            600: '#0284c7',
-                            700: '#0369a1',
                         }
                     }
                 }
@@ -54,7 +49,6 @@
             border: 1px solid #334155;
             border-radius: 12px !important;
         }
-        /* Custom zoom range slider */
         input[type=range] {
             border-radius: 8px;
         }
@@ -73,20 +67,20 @@
                     </div>
                     <div>
                         <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-1.5">
-                            TopoTrigo AR <span class="text-[10px] bg-orange-500/20 text-orange-400 border border-orange-500/30 px-1.5 py-0.5 rounded-full font-mono">PRO</span>
+                            TopoTrigo AR <span class="text-[10px] bg-orange-500/20 text-orange-400 border border-orange-500/30 px-1.5 py-0.5 rounded-full font-mono">PRO v2.0</span>
                         </h1>
-                        <p class="text-[11px] text-slate-400">Misurazione Topografica, Mappa & Clinometro</p>
+                        <p class="text-[11px] text-slate-400">Rilievi Topografici, Clinometro & Gestione Target Mappa</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Global Tabs -->
+            <!-- Global Navigation Tabs -->
             <nav class="flex p-1 bg-slate-900/90 rounded-xl border border-slate-800 w-full md:w-auto overflow-x-auto">
                 <button id="tab-map-btn" onclick="switchTab('map')" class="flex-1 md:flex-none px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200 bg-orange-600 text-white shadow-sm flex items-center justify-center gap-1.5 whitespace-nowrap">
-                    🗺️ Mappa & Quote
+                    🗺️ Mappa & Target
                 </button>
                 <button id="tab-ar-btn" onclick="switchTab('ar')" class="flex-1 md:flex-none px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200 text-slate-400 hover:text-white flex items-center justify-center gap-1.5 whitespace-nowrap">
-                    📷 Fotocamera & Alzo
+                    📷 Camera & Clinometro
                 </button>
                 <button id="tab-calc-btn" onclick="switchTab('calc')" class="flex-1 md:flex-none px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200 text-slate-400 hover:text-white flex items-center justify-center gap-1.5 whitespace-nowrap">
                     📐 Calcoli & Profilo
@@ -101,7 +95,7 @@
     <main class="flex-grow max-w-7xl w-full mx-auto px-3 sm:px-4 py-4 space-y-6">
 
         <!-- ========================================== -->
-        <!-- TAB 1: MAPPA LEAFLET & QUOTE              -->
+        <!-- TAB 1: MAPPA LEAFLET & GESTIONE TARGET    -->
         <!-- ========================================== -->
         <section id="section-map" class="space-y-4">
             
@@ -109,22 +103,33 @@
                 
                 <!-- Map Viewport -->
                 <div class="lg:col-span-8 flex flex-col gap-3">
-                    <div class="glass-panel rounded-3xl p-3 border border-slate-800 flex flex-col h-[500px] relative overflow-hidden shadow-2xl">
+                    <div class="glass-panel rounded-3xl p-3 border border-slate-800 flex flex-col h-[520px] relative overflow-hidden shadow-2xl">
                         
                         <!-- Map Controls Bar -->
                         <div class="flex flex-wrap items-center justify-between gap-2 mb-2 px-1">
                             <div class="flex items-center gap-2">
                                 <span class="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse"></span>
-                                <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">Mappa Topografica</h2>
+                                <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">Mappa Topografica Dinamica</h2>
                             </div>
-                            <div class="flex gap-2 text-xs">
+                            <div class="flex flex-wrap gap-2 text-xs">
+                                <button id="btn-mode-target" onclick="togglePlacementMode('target')" class="px-2.5 py-1 bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/40 rounded-lg transition flex items-center gap-1 font-medium">
+                                    🎯 Posiziona Target
+                                </button>
+                                <button id="btn-mode-obs" onclick="togglePlacementMode('obs')" class="px-2.5 py-1 bg-sky-600/30 hover:bg-sky-600/50 text-sky-300 border border-sky-500/40 rounded-lg transition flex items-center gap-1 font-medium">
+                                    👤 Posiziona Osservatore
+                                </button>
                                 <button onclick="useCurrentLocationGPS()" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg transition flex items-center gap-1">
-                                    📍 Mia Posizione GPS
-                                </button>
-                                <button onclick="autoFetchElevations()" class="px-2.5 py-1 bg-orange-600/30 hover:bg-orange-600/50 text-orange-300 border border-orange-500/40 rounded-lg transition flex items-center gap-1">
-                                    ⛰️ Scarica Quote DEM
+                                    📍 GPS Mia Posizione
                                 </button>
                             </div>
+                        </div>
+
+                        <!-- Search Address Bar -->
+                        <div class="flex gap-2 mb-2">
+                            <input type="text" id="address-search-input" placeholder="Cerca indirizzo o luogo (es. Colosseo, Roma)..." class="flex-grow bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-orange-500">
+                            <button onclick="searchAddress()" class="px-3 py-1.5 bg-orange-600 hover:bg-orange-500 text-white rounded-xl text-xs font-medium transition">
+                                🔍 Cerca
+                            </button>
                         </div>
 
                         <!-- Leaflet Container -->
@@ -132,27 +137,37 @@
                         
                         <!-- Map Helper Banner -->
                         <div class="absolute bottom-5 left-5 right-5 z-20 pointer-events-none">
-                            <div class="bg-slate-950/80 backdrop-blur-md border border-slate-800 px-3 py-1.5 rounded-xl text-[11px] text-slate-300 text-center shadow-lg pointer-events-auto">
-                                💡 Transcina i marker <span class="text-blue-400 font-bold">Blu (Osservatore)</span> e <span class="text-amber-400 font-bold">Arancione (Target)</span> oppure clicca sulla mappa.
+                            <div id="map-status-banner" class="bg-slate-950/85 backdrop-blur-md border border-slate-800 px-3.5 py-2 rounded-xl text-[11px] text-slate-300 text-center shadow-lg pointer-events-auto">
+                                💡 Trascina il <span class="text-sky-400 font-bold">Marker Blu (Osservatore)</span> o l'<span class="text-emerald-400 font-bold">Albero/Target Verde</span> per calcolare la distanza geodesica <strong class="text-orange-400 font-mono">D</strong>.
                             </div>
                         </div>
 
                     </div>
                 </div>
 
-                <!-- Topographic Elevations Panel -->
+                <!-- Topographic Elevations & Distances Panel -->
                 <div class="lg:col-span-4 space-y-4">
                     
                     <div class="glass-panel rounded-3xl p-5 border border-slate-800 space-y-4">
                         <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 border-b border-slate-800 pb-2.5 flex items-center justify-between">
-                            <span>⛰️ Quote & Geometria Terreno</span>
+                            <span>⛰️ Altimetria Terreno & Coordinate</span>
                             <span id="elevation-loader" class="text-[10px] text-orange-400 hidden animate-pulse">Caricamento DEM...</span>
                         </h3>
+
+                        <!-- Horizontal Distance D -->
+                        <div class="p-3 bg-gradient-to-r from-orange-950/40 to-slate-900 rounded-2xl border border-orange-500/30">
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="text-xs font-bold text-orange-400 uppercase tracking-wider">Distanza Mappa Geodesica (D)</label>
+                                <span class="text-xs font-mono text-orange-300 font-bold" id="disp-dist-map">0.0 m</span>
+                            </div>
+                            <input type="number" id="input-dist-override" value="25.0" step="0.5" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-orange-500" onchange="recalculateAll()">
+                            <p class="text-[10px] text-slate-500 mt-1">* Aggiornata in tempo reale allo spostamento dei marker su mappa.</p>
+                        </div>
 
                         <!-- Observer Ground Altitude -->
                         <div>
                             <div class="flex justify-between items-center mb-1">
-                                <label class="text-xs text-slate-300">Quota Suolo Osservatore (Z_suolo_oss)</label>
+                                <label class="text-xs text-slate-300">Quota Suolo Osservatore ($Z_{\text{oss}}$)</label>
                                 <span class="text-xs font-mono text-sky-400 font-bold" id="disp-z-oss">0.0 m s.l.m.</span>
                             </div>
                             <div class="flex gap-2">
@@ -164,7 +179,7 @@
                         <!-- Observer Eye Height -->
                         <div>
                             <div class="flex justify-between items-center mb-1">
-                                <label class="text-xs text-slate-300">Altezza Occhio dal Suolo (h_occhi)</label>
+                                <label class="text-xs text-slate-300">Altezza Occhio/Smartphone ($h_{\text{occhio}}$)</label>
                                 <span class="text-xs font-mono text-sky-400" id="disp-h-occhi">1.65 m</span>
                             </div>
                             <input type="range" id="slider-h-occhi" min="0.5" max="20" step="0.05" value="1.65" class="w-full accent-sky-500 cursor-pointer" oninput="recalculateAll()">
@@ -173,8 +188,8 @@
                         <!-- Target Ground Altitude -->
                         <div>
                             <div class="flex justify-between items-center mb-1">
-                                <label class="text-xs text-slate-300">Quota Suolo Target (Z_suolo_target)</label>
-                                <span class="text-xs font-mono text-amber-400 font-bold" id="disp-z-target">0.0 m s.l.m.</span>
+                                <label class="text-xs text-slate-300">Quota Suolo Target ($Z_{\text{target}}$)</label>
+                                <span class="text-xs font-mono text-emerald-400 font-bold" id="disp-z-target">0.0 m s.l.m.</span>
                             </div>
                             <div class="flex gap-2">
                                 <input type="number" id="input-z-target" value="100.0" step="0.5" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-orange-500" onchange="recalculateAll()">
@@ -182,20 +197,10 @@
                             </div>
                         </div>
 
-                        <!-- Horizontal Distance D -->
-                        <div>
-                            <div class="flex justify-between items-center mb-1">
-                                <label class="text-xs text-slate-300">Distanza Mappa Orizzontale (D)</label>
-                                <span class="text-xs font-mono text-orange-400 font-bold" id="disp-dist-map">0.0 m</span>
-                            </div>
-                            <input type="number" id="input-dist-override" value="25.0" step="0.5" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-orange-500" onchange="recalculateAll()">
-                            <p class="text-[10px] text-slate-500 mt-1">* Modificando questo campo disattivi temporaneamente il calcolo automatico da mappa.</p>
-                        </div>
-
-                        <!-- Map Measurements Summary Card -->
+                        <!-- Topographic Geometry Summary -->
                         <div class="p-3.5 bg-slate-900/90 rounded-2xl border border-slate-800 space-y-1.5 font-mono text-xs">
                             <div class="flex justify-between text-slate-400">
-                                <span>Dislivello Terreno (ΔZ):</span>
+                                <span>Dislivello Suolo ($\Delta Z_{\text{terreno}}$):</span>
                                 <span id="summary-dz" class="text-white font-bold">0.00 m</span>
                             </div>
                             <div class="flex justify-between text-slate-400">
@@ -227,17 +232,17 @@
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3">
                     <div class="flex items-center gap-2">
                         <span class="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse"></span>
-                        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">Clinometro Fotocamera & Alzo 0</h2>
+                        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-200">Clinometro Fotocamera & Taratura Zero</h2>
                     </div>
                     <div class="flex flex-wrap gap-2 w-full sm:w-auto">
                         <button id="btn-perm" onclick="requestSensorsAndCamera()" class="px-3 py-1.5 bg-orange-600/30 hover:bg-orange-600/50 text-orange-300 border border-orange-500/40 rounded-xl text-xs font-medium transition flex items-center gap-1.5">
-                            📷 Attiva Fotocamera
+                            📷 Attiva Camera & Sensori
                         </button>
-                        <button onclick="zeroOrientation()" class="px-3 py-1.5 bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 border border-amber-500/40 rounded-xl text-xs font-medium transition" title="Imposta orientamento attuale come Alzo 0">
-                            🎯 Imposta Alzo 0
+                        <button onclick="zeroOrientation()" class="px-3 py-1.5 bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 border border-amber-500/40 rounded-xl text-xs font-medium transition" title="Calibra orientamento orizzontale">
+                            🎯 Tara Zero (0°)
                         </button>
                         <button onclick="resetZeroOffset()" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-xl text-xs transition">
-                            Reset Zero
+                            Reset Tara
                         </button>
                     </div>
                 </div>
@@ -249,7 +254,7 @@
                     <video id="webcam" autoplay playsinline class="w-full h-full object-cover origin-center transition-transform duration-75"></video>
 
                     <!-- Interactive Target Overlay -->
-                    <div id="target-overlay" class="absolute inset-0 cursor-crosshair flex items-center justify-center pointer-events-auto" onclick="handleCameraTap(event)">
+                    <div id="target-overlay" class="absolute inset-0 cursor-crosshair flex items-center justify-center pointer-events-auto">
                         
                         <!-- Dynamic Horizon Line -->
                         <div id="horizon-line" class="absolute left-0 right-0 h-0.5 bg-sky-400/70 shadow-[0_0_10px_rgba(56,189,248,0.9)] pointer-events-none transition-transform duration-75" style="top: 50%;"></div>
@@ -263,32 +268,32 @@
 
                         <!-- Pitch Indicator Badge -->
                         <div class="absolute top-4 right-4 bg-slate-950/90 border border-slate-700 backdrop-blur-md px-3.5 py-2 rounded-2xl font-mono text-xs flex flex-col items-end gap-0.5 shadow-xl">
-                            <span class="text-[10px] text-slate-400 uppercase tracking-wider">Inclinazione (Pitch)</span>
+                            <span class="text-[10px] text-slate-400 uppercase tracking-wider">Inclinazione Live (Pitch)</span>
                             <span id="live-pitch-display" class="font-bold text-orange-400 text-base">+0.0°</span>
-                            <span id="zero-offset-display" class="text-[9px] text-slate-500">Offset Zero: 0.0°</span>
+                            <span id="zero-offset-display" class="text-[9px] text-slate-500">Offset Tara: 0.0°</span>
                         </div>
 
-                        <!-- Digital Zoom Slider Overlay -->
+                        <!-- Digital Zoom Slider Overlay (1x - 5x) -->
                         <div class="absolute left-4 top-1/2 -translate-y-1/2 bg-slate-950/80 border border-slate-800 p-2 rounded-2xl backdrop-blur-md flex flex-col items-center gap-2 pointer-events-auto">
                             <span class="text-[10px] font-mono text-slate-400 font-bold">ZOOM</span>
-                            <input type="range" id="camera-zoom-slider" min="1" max="4" step="0.1" value="1" class="h-32 accent-orange-500 [writing-mode:vertical-lr] [direction:rtl]" oninput="updateCameraZoom(this.value)">
+                            <input type="range" id="camera-zoom-slider" min="1" max="5" step="0.1" value="1" class="h-32 accent-orange-500 [writing-mode:vertical-lr] [direction:rtl]" oninput="updateCameraZoom(this.value)">
                             <span id="zoom-val-display" class="text-[10px] font-mono text-orange-400">1.0x</span>
                         </div>
 
-                        <!-- Tap Instruction Banner -->
+                        <!-- Instruction Banner -->
                         <div id="ar-instruction-banner" class="absolute bottom-16 left-4 right-4 bg-slate-950/85 border border-slate-800 backdrop-blur-md p-2.5 rounded-xl text-center text-xs text-slate-300">
-                            Punta la fotocamera verso la <strong class="text-orange-400">CIMA</strong> o la <strong class="text-amber-400">BASE</strong> e premi i tasti sottostanti per bloccare l'alzo.
+                            Inquadra la <strong class="text-orange-400">CIMA</strong> dell'albero/struttura e premi "Blocca Cima", poi inquadra la <strong class="text-amber-400">BASE</strong> e premi "Blocca Base".
                         </div>
 
                     </div>
 
                     <!-- Lock Action Buttons Overlay -->
                     <div class="absolute bottom-3 left-4 right-4 flex justify-between gap-3 pointer-events-none">
-                        <button onclick="lockTopAngle()" class="pointer-events-auto flex-1 bg-orange-600 hover:bg-orange-500 active:scale-95 text-white font-semibold py-2 px-3 rounded-xl shadow-lg border border-orange-400/30 text-xs flex items-center justify-center gap-1.5 transition">
-                            ⬆️ Blocca Cima (β): <span id="locked-top-badge" class="font-mono bg-orange-950/80 px-1.5 py-0.5 rounded">--°</span>
+                        <button onclick="lockTopAngle()" class="pointer-events-auto flex-1 bg-orange-600 hover:bg-orange-500 active:scale-95 text-white font-semibold py-2.5 px-3 rounded-xl shadow-lg border border-orange-400/30 text-xs flex items-center justify-center gap-1.5 transition">
+                            ⬆️️ Blocca Cima ($\beta$): <span id="locked-top-badge" class="font-mono bg-orange-950/80 px-1.5 py-0.5 rounded">--°</span>
                         </button>
-                        <button onclick="lockBaseAngle()" class="pointer-events-auto flex-1 bg-amber-600 hover:bg-amber-500 active:scale-95 text-white font-semibold py-2 px-3 rounded-xl shadow-lg border border-amber-400/30 text-xs flex items-center justify-center gap-1.5 transition">
-                            ⬇️ Blocca Base (α): <span id="locked-base-badge" class="font-mono bg-amber-950/80 px-1.5 py-0.5 rounded">--°</span>
+                        <button onclick="lockBaseAngle()" class="pointer-events-auto flex-1 bg-amber-600 hover:bg-amber-500 active:scale-95 text-white font-semibold py-2.5 px-3 rounded-xl shadow-lg border border-amber-400/30 text-xs flex items-center justify-center gap-1.5 transition">
+                            ⬇️ Blocca Base ($\alpha$): <span id="locked-base-badge" class="font-mono bg-amber-950/80 px-1.5 py-0.5 rounded">--°</span>
                         </button>
                     </div>
 
@@ -299,7 +304,7 @@
         </section>
 
         <!-- ========================================== -->
-        <!-- TAB 3: CALCOLI & DIAGRAMMA PROFILO        -->
+        <!-- TAB 3: CALCOLI & DIAGRAMMA PROFILO 2D     -->
         <!-- ========================================== -->
         <section id="section-calc" class="space-y-5 hidden">
             
@@ -310,35 +315,35 @@
                     
                     <div class="glass-panel rounded-3xl p-5 border border-slate-800 space-y-4">
                         <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 border-b border-slate-800 pb-2.5">
-                            📊 Risultati Altimetrici Completi
+                            📊 Risultati Altimetrici & Trigonometria
                         </h3>
 
-                        <!-- Big Result Box -->
+                        <!-- Main Result Box -->
                         <div class="p-4 bg-gradient-to-br from-orange-950/60 via-slate-900 to-slate-950 rounded-2xl border border-orange-500/30">
-                            <span class="text-[11px] font-bold text-orange-400 uppercase tracking-wider block mb-1">Altezza Oggetto sulla Verticale Target (H_totale)</span>
+                            <span class="text-[11px] font-bold text-orange-400 uppercase tracking-wider block mb-1">Altezza Calcolata Albero / Struttura ($H_{\text{totale}}$)</span>
                             <div class="flex items-baseline gap-2">
                                 <span id="calc-h-total" class="text-4xl font-extrabold text-white font-mono">0.00</span>
                                 <span class="text-base font-bold text-orange-400">metri</span>
                             </div>
                             <div class="mt-3 pt-3 border-t border-slate-800 grid grid-cols-2 gap-2 text-xs font-mono">
                                 <div>
-                                    <span class="text-slate-400 block text-[10px]">Quota Cima Assoluta:</span>
-                                    <span id="calc-z-cima" class="text-sky-300 font-bold">100.00 m s.l.m.</span>
+                                    <span class="text-slate-400 block text-[10px]">Quota Cima Assoluta ($Z_{\text{cima}}$):</span>
+                                    <span id="calc-z-cima" class="text-sky-300 font-bold">0.00 m s.l.m.</span>
                                 </div>
                                 <div>
-                                    <span class="text-slate-400 block text-[10px]">Dislivello Suolo ΔZ:</span>
-                                    <span id="calc-dz-val" class="text-amber-300 font-bold">0.00 m</span>
+                                    <span class="text-slate-400 block text-[10px]">Dislivello Terreno ($\Delta Z_{\text{terreno}}$):</span>
+                                    <span id="calc-dz-val" class="text-emerald-300 font-bold">0.00 m</span>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Manual Angle Sliders Controls -->
                         <div class="space-y-3 pt-2">
-                            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Regolazione Manuale Angoli</h4>
+                            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Regolazione Manuale Angoli di Mira</h4>
                             
                             <div>
                                 <div class="flex justify-between items-center mb-1">
-                                    <label class="text-xs text-slate-300">Angolo Cima (β)</label>
+                                    <label class="text-xs text-slate-300">Angolo Cima ($\beta$)</label>
                                     <span id="slider-beta-val" class="text-xs font-mono font-bold text-orange-400">25.0°</span>
                                 </div>
                                 <input type="range" id="slider-beta" min="0.1" max="85" step="0.1" value="25" class="w-full accent-orange-500 cursor-pointer" oninput="recalculateAll()">
@@ -346,7 +351,7 @@
 
                             <div>
                                 <div class="flex justify-between items-center mb-1">
-                                    <label class="text-xs text-slate-300">Angolo Base (α)</label>
+                                    <label class="text-xs text-slate-300">Angolo Base ($\alpha$)</label>
                                     <span id="slider-alpha-val" class="text-xs font-mono font-bold text-amber-400">-5.0°</span>
                                 </div>
                                 <input type="range" id="slider-alpha" min="-60" max="60" step="0.1" value="-5" class="w-full accent-amber-500 cursor-pointer" oninput="recalculateAll()">
@@ -362,9 +367,9 @@
                     <div class="glass-panel rounded-3xl p-5 border border-slate-800 space-y-3">
                         <div class="flex justify-between items-center">
                             <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-                                <span>📐</span> Profilo Altidudinale & Raggi di Vista
+                                <span>📐</span> Profilo Altimetrico & Raggi di Vista 2D
                             </h3>
-                            <span class="text-[10px] font-mono bg-slate-900 text-slate-400 px-2 py-0.5 rounded-full border border-slate-800">Proiezione Verticale</span>
+                            <span class="text-[10px] font-mono bg-slate-900 text-slate-400 px-2 py-0.5 rounded-full border border-slate-800">Sezione Verticale</span>
                         </div>
                         <div class="relative w-full aspect-[16/10] bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 shadow-inner">
                             <canvas id="profileCanvas" class="w-full h-full block"></canvas>
@@ -374,10 +379,10 @@
                     <!-- Formula Breakdown -->
                     <div class="glass-panel rounded-3xl p-4 border border-slate-800 text-xs font-mono space-y-2 text-slate-300">
                         <div class="p-2 bg-slate-900 rounded-xl border border-slate-800">
-                            <strong>H_totale =</strong> D × [ tan(β) - tan(α) ]
+                            <strong>Formula Altezza Target:</strong> $H = D \cdot [\tan(\beta) - \tan(\alpha)]$
                         </div>
                         <div class="p-2 bg-slate-900 rounded-xl border border-slate-800">
-                            <strong>Z_cima =</strong> Z_target_suolo + H_totale
+                            <strong>Quota Assoluta Cima:</strong> $Z_{\text{cima}} = Z_{\text{oss}} + h_{\text{occhio}} + D \cdot \tan(\beta)$
                         </div>
                     </div>
                 </div>
@@ -396,36 +401,36 @@
                     🚨 Navigazione Costiera & Distanza dal Faro
                 </h2>
                 <p class="text-xs text-slate-400 mt-1">
-                    Calcola la distanza nautica $D$ osservando un faro di cui conosci l'altezza focale dalla carta nautica.
+                    Calcola la distanza nautica $D$ misurando l'angolo verticale della lanterna di un faro di altezza nota $H_{\text{faro}}$.
                 </p>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
                 <div class="lg:col-span-5 glass-panel rounded-3xl p-5 border border-slate-800 space-y-4">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 border-b border-slate-800 pb-2.5">Parametri Faro</h3>
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 border-b border-slate-800 pb-2.5">Parametri Navigazione</h3>
 
                     <div>
                         <div class="flex justify-between items-center mb-1">
-                            <label class="text-xs text-slate-300">Altezza Focale Faro (H_faro)</label>
+                            <label class="text-xs text-slate-300">Altezza Focale Faro ($H_{\text{faro}}$)</label>
                             <span id="lh-h-val" class="text-xs font-mono text-sky-400 font-bold">50.0 m</span>
                         </div>
-                        <input type="range" id="lh-h-slider" min="5" max="200" step="1" value="50" class="w-full accent-sky-500" oninput="updateLighthouse()">
+                        <input type="range" id="lh-h-slider" min="5" max="200" step="1" value="50" class="w-full accent-sky-500 cursor-pointer" oninput="updateLighthouse()">
                     </div>
 
                     <div>
                         <div class="flex justify-between items-center mb-1">
-                            <label class="text-xs text-slate-300">Altezza Occhio Osservatore (h_o)</label>
+                            <label class="text-xs text-slate-300">Altezza Occhio dall'Acqua ($h_o$)</label>
                             <span id="lh-eye-val" class="text-xs font-mono text-sky-400">4.0 m</span>
                         </div>
-                        <input type="range" id="lh-eye-slider" min="0.5" max="30" step="0.5" value="4" class="w-full accent-sky-500" oninput="updateLighthouse()">
+                        <input type="range" id="lh-eye-slider" min="0.5" max="30" step="0.5" value="4" class="w-full accent-sky-500 cursor-pointer" oninput="updateLighthouse()">
                     </div>
 
                     <div>
                         <div class="flex justify-between items-center mb-1">
-                            <label class="text-xs text-slate-300">Alzo Sestante / Verticale (θ)</label>
+                            <label class="text-xs text-slate-300">Alzo Sestante / Verticale ($\theta$)</label>
                             <span id="lh-theta-val" class="text-xs font-mono font-bold text-orange-400">1.50°</span>
                         </div>
-                        <input type="range" id="lh-theta-slider" min="0.1" max="15" step="0.05" value="1.5" class="w-full accent-orange-500" oninput="updateLighthouse()">
+                        <input type="range" id="lh-theta-slider" min="0.1" max="15" step="0.05" value="1.5" class="w-full accent-orange-500 cursor-pointer" oninput="updateLighthouse()">
                     </div>
 
                     <div class="p-4 bg-gradient-to-br from-sky-950/60 to-slate-900 rounded-2xl border border-sky-500/30">
@@ -441,7 +446,7 @@
                 </div>
 
                 <div class="lg:col-span-7 glass-panel rounded-3xl p-5 border border-slate-800 space-y-3">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300">Schema Profilo Marittimo</h3>
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300">Schema Profilo Marittimo 2D</h3>
                     <div class="relative w-full aspect-[16/10] bg-slate-950 rounded-2xl overflow-hidden border border-slate-800">
                         <canvas id="lhCanvas" class="w-full h-full block"></canvas>
                     </div>
@@ -457,13 +462,13 @@
         // STATE MANAGEMENT & GLOBALS
         // ==========================================
         let map, obsMarker, targetMarker, polyline;
-        let obsLatLng = [41.9028, 12.4964]; // Default Rome
+        let obsLatLng = [41.9028, 12.4964]; // Rome center default
         let targetLatLng = [41.9032, 12.4975];
 
+        let placementMode = 'none'; // 'obs' or 'target'
         let obsGroundZ = 100.0;
         let targetGroundZ = 100.0;
         let eyeH = 1.65;
-        let manualDistOverride = false;
 
         let livePitch = 0;
         let zeroPitchOffset = 0;
@@ -507,7 +512,7 @@
         }
 
         // ==========================================
-        // LEAFLET MAP & TOPOGRAPHY
+        // LEAFLET MAP & TARGET MANAGEMENT
         // ==========================================
         function initLeafletMap() {
             const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -528,52 +533,89 @@
 
             const baseMaps = {
                 "OpenStreetMap": osm,
-                "Vista Satellitare": esriSat
+                "Esri Satellite": esriSat
             };
 
             L.control.layers(baseMaps, null, { position: 'topright' }).addTo(map);
 
-            // Observer Marker (Blue)
+            // Observer Marker (Blue Icon)
             const obsIcon = L.divIcon({
                 className: 'custom-div-icon',
-                html: `<div style="background-color: #38bdf8; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(56,189,248,0.8);"></div>`,
-                iconSize: [16, 16],
-                iconAnchor: [8, 8]
-            });
-
-            // Target Marker (Orange)
-            const targetIcon = L.divIcon({
-                className: 'custom-div-icon',
-                html: `<div style="background-color: #f97316; width: 18px; height: 18px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px rgba(249,115,22,0.8);"></div>`,
+                html: `<div style="background-color: #38bdf8; width: 18px; height: 18px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 12px rgba(56,189,248,0.9); display:flex; align-items:center; justify-center; font-size:10px;">👤</div>`,
                 iconSize: [18, 18],
                 iconAnchor: [9, 9]
             });
 
-            obsMarker = L.marker(obsLatLng, { draggable: true, icon: obsIcon }).addTo(map).bindPopup("<b>Posizione Mia (Osservatore)</b>");
-            targetMarker = L.marker(targetLatLng, { draggable: true, icon: targetIcon }).addTo(map).bindPopup("<b>Posizione Target</b>");
+            // Target/Tree Marker (Green/Tree SVG Icon)
+            const targetIcon = L.divIcon({
+                className: 'custom-div-icon',
+                html: `<div style="background-color: #10b981; width: 22px; height: 22px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 12px rgba(16,185,129,0.9); display:flex; align-items:center; justify-center; font-size:12px;">🌲</div>`,
+                iconSize: [22, 22],
+                iconAnchor: [11, 11]
+            });
+
+            obsMarker = L.marker(obsLatLng, { draggable: true, icon: obsIcon }).addTo(map).bindPopup("<b>Osservatore (Stazione)</b>");
+            targetMarker = L.marker(targetLatLng, { draggable: true, icon: targetIcon }).addTo(map).bindPopup("<b>Target / Albero</b>");
 
             polyline = L.polyline([obsLatLng, targetLatLng], { color: '#f97316', weight: 3, dashArray: '6, 6' }).addTo(map);
 
-            // Drag Events
-            obsMarker.on('drag', onMarkerMove);
-            targetMarker.on('drag', onMarkerMove);
-
-            map.on('click', (e) => {
-                targetMarker.setLatLng(e.latlng);
-                onMarkerMove();
+            // Marker Drag Events
+            obsMarker.on('drag', () => {
+                updateMarkerPositions();
+                fetchElevation('oss');
+            });
+            targetMarker.on('drag', () => {
+                updateMarkerPositions();
                 fetchElevation('target');
+            });
+
+            // Map Click Placement Handler
+            map.on('click', (e) => {
+                if (placementMode === 'target') {
+                    targetMarker.setLatLng(e.latlng);
+                    updateMarkerPositions();
+                    fetchElevation('target');
+                    togglePlacementMode('none');
+                } else if (placementMode === 'obs') {
+                    obsMarker.setLatLng(e.latlng);
+                    updateMarkerPositions();
+                    fetchElevation('oss');
+                    togglePlacementMode('none');
+                }
             });
         }
 
-        function onMarkerMove() {
+        function togglePlacementMode(mode) {
+            const statusBanner = document.getElementById('map-status-banner');
+            const btnTarget = document.getElementById('btn-mode-target');
+            const btnObs = document.getElementById('btn-mode-obs');
+
+            if (placementMode === mode || mode === 'none') {
+                placementMode = 'none';
+                btnTarget.classList.remove('ring-2', 'ring-emerald-400');
+                btnObs.classList.remove('ring-2', 'ring-sky-400');
+                statusBanner.innerHTML = `💡 Trascina il <span class="text-sky-400 font-bold">Marker Blu (Osservatore)</span> o l'<span class="text-emerald-400 font-bold">Albero/Target Verde</span> per calcolare la distanza geodesica <strong class="text-orange-400 font-mono">D</strong>.`;
+            } else {
+                placementMode = mode;
+                if (mode === 'target') {
+                    btnTarget.classList.add('ring-2', 'ring-emerald-400');
+                    btnObs.classList.remove('ring-2', 'ring-sky-400');
+                    statusBanner.innerHTML = `🎯 <strong class="text-emerald-400">Clicca un punto sulla mappa</strong> per posizionare il Target/Albero.`;
+                } else {
+                    btnObs.classList.add('ring-2', 'ring-sky-400');
+                    btnTarget.classList.remove('ring-2', 'ring-emerald-400');
+                    statusBanner.innerHTML = `👤 <strong class="text-sky-400">Clicca un punto sulla mappa</strong> per posizionare l'Osservatore.`;
+                }
+            }
+        }
+
+        function updateMarkerPositions() {
             obsLatLng = [obsMarker.getLatLng().lat, obsMarker.getLatLng().lng];
             targetLatLng = [targetMarker.getLatLng().lat, targetMarker.getLatLng().lng];
             polyline.setLatLngs([obsLatLng, targetLatLng]);
 
-            if (!manualDistOverride) {
-                const distMeters = map.distance(obsLatLng, targetLatLng);
-                document.getElementById('input-dist-override').value = distMeters.toFixed(1);
-            }
+            const distMeters = map.distance(obsLatLng, targetLatLng);
+            document.getElementById('input-dist-override').value = distMeters.toFixed(1);
             recalculateAll();
         }
 
@@ -584,16 +626,37 @@
                     const lng = pos.coords.longitude;
                     obsMarker.setLatLng([lat, lng]);
                     map.setView([lat, lng], 18);
-                    onMarkerMove();
+                    updateMarkerPositions();
                     autoFetchElevations();
-                }, (err) => {
-                    alert("Impossibile ricavare la posizione GPS.");
+                }, () => {
+                    alert("Impossibile ricavare la posizione GPS. Verificare i permessi.");
                 });
             }
         }
 
+        async function searchAddress() {
+            const query = document.getElementById('address-search-input').value.trim();
+            if (!query) return;
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+                const data = await res.json();
+                if (data && data.length > 0) {
+                    const lat = parseFloat(data[0].lat);
+                    const lon = parseFloat(data[0].lon);
+                    obsMarker.setLatLng([lat, lon]);
+                    map.setView([lat, lon], 17);
+                    updateMarkerPositions();
+                    autoFetchElevations();
+                } else {
+                    alert("Indirizzo non trovato.");
+                }
+            } catch (e) {
+                alert("Errore durante la ricerca dell'indirizzo.");
+            }
+        }
+
         // ==========================================
-        // DEM ELEVATION FETCHING (OPEN-METEO API)
+        // DEM ELEVATION API (OPEN-METEO)
         // ==========================================
         async function fetchElevation(type) {
             const loader = document.getElementById('elevation-loader');
@@ -650,7 +713,7 @@
                 videoEl.srcObject = cameraStream;
                 document.getElementById('btn-perm').innerText = "✓ Camera Attiva";
             } catch (err) {
-                alert("Impossibile accedere alla fotocamera.");
+                alert("Impossibile accedere alla fotocamera. Assicurati di aver concesso i permessi.");
             }
         }
 
@@ -678,12 +741,12 @@
             zeroPitchOffset += livePitch;
             livePitch = 0;
             document.getElementById('live-pitch-display').innerText = '+0.0°';
-            document.getElementById('zero-offset-display').innerText = `Offset Zero: ${zeroPitchOffset.toFixed(1)}°`;
+            document.getElementById('zero-offset-display').innerText = `Offset Tara: ${zeroPitchOffset.toFixed(1)}°`;
         }
 
         function resetZeroOffset() {
             zeroPitchOffset = 0;
-            document.getElementById('zero-offset-display').innerText = `Offset Zero: 0.0°`;
+            document.getElementById('zero-offset-display').innerText = `Offset Tara: 0.0°`;
         }
 
         function updateCameraZoom(val) {
@@ -709,16 +772,8 @@
             recalculateAll();
         }
 
-        function handleCameraTap(e) {
-            if (Math.abs(livePitch - lockedBeta) < 2) {
-                lockBaseAngle();
-            } else {
-                lockTopAngle();
-            }
-        }
-
         // ==========================================
-        // TOPOGRAPHIC & TRIGONOMETRIC CALCULATIONS
+        // TRIGONOMETRIC CALCULATIONS & CANVAS PROFILE
         // ==========================================
         function recalculateAll() {
             obsGroundZ = parseFloat(document.getElementById('input-z-oss').value) || 0;
@@ -747,7 +802,7 @@
             const zEyeAbs = obsGroundZ + eyeH;
             document.getElementById('summary-z-eye-abs').innerText = zEyeAbs.toFixed(2) + ' m s.l.m.';
 
-            // Trig calculation
+            // Complete Trigonometric Formula: H = D * [tan(beta) - tan(alpha)]
             const betaRad = lockedBeta * Math.PI / 180;
             const alphaRad = lockedAlpha * Math.PI / 180;
 
@@ -755,7 +810,7 @@
             const hBaseFromEye = D * Math.tan(alphaRad);
 
             const hTotal = hTopFromEye - hBaseFromEye;
-            const zCima = targetGroundZ + hTotal;
+            const zCima = zEyeAbs + hTopFromEye;
 
             document.getElementById('calc-h-total').innerText = Math.max(0, hTotal).toFixed(2);
             document.getElementById('calc-z-cima').innerText = zCima.toFixed(2) + ' m s.l.m.';
@@ -791,11 +846,9 @@
             ctx.fillStyle = '#020617';
             ctx.fillRect(0, 0, w, h);
 
-            const padX = 40;
-            const padY = 30;
-
+            const padX = 50;
             const obsX = padX;
-            const targetX = w - padX - 40;
+            const targetX = w - padX - 30;
 
             const eyeY = h / 2;
             const scaleY = 3.5;
@@ -812,17 +865,17 @@
             ctx.lineTo(targetX, targetGroundY);
             ctx.stroke();
 
-            // Horizon Line
+            // Horizon Line (Eye level)
             ctx.setLineDash([4, 4]);
             ctx.strokeStyle = '#38bdf8';
             ctx.lineWidth = 1;
             ctx.beginPath();
             ctx.moveTo(obsX, eyeY);
-            ctx.lineTo(targetX + 30, eyeY);
+            ctx.lineTo(targetX + 20, eyeY);
             ctx.stroke();
             ctx.setLineDash([]);
 
-            // Rays
+            // Sight Rays
             ctx.strokeStyle = '#f97316';
             ctx.lineWidth = 2;
             ctx.beginPath();
@@ -837,18 +890,24 @@
             ctx.lineTo(targetX, targetGroundY);
             ctx.stroke();
 
-            // Target Object
-            ctx.strokeStyle = '#f97316';
+            // Target / Tree Icon 2D Drawing
+            ctx.strokeStyle = '#10b981';
             ctx.lineWidth = 4;
             ctx.beginPath();
             ctx.moveTo(targetX, targetTopY);
             ctx.lineTo(targetX, targetGroundY);
             ctx.stroke();
 
+            // Crown symbol
+            ctx.fillStyle = '#10b981';
+            ctx.beginPath();
+            ctx.arc(targetX, targetTopY, 8, 0, Math.PI * 2);
+            ctx.fill();
+
             // Observer Figure
             ctx.fillStyle = '#38bdf8';
             ctx.beginPath();
-            ctx.arc(obsX, eyeY - 4, 5, 0, Math.PI * 2);
+            ctx.arc(obsX, eyeY - 4, 6, 0, Math.PI * 2);
             ctx.fill();
         }
 
@@ -899,7 +958,7 @@
             // Distance line text
             ctx.fillStyle = '#38bdf8';
             ctx.font = '11px JetBrains Mono, monospace';
-            ctx.fillText(`Dista = ${Math.round(distM)}m (${(distM/1852).toFixed(2)} NM)`, w / 2 - 40, seaY + 20);
+            ctx.fillText(`Distanza = ${Math.round(distM)}m (${(distM/1852).toFixed(2)} NM)`, w / 2 - 60, seaY + 20);
         }
     </script>
 </body>
