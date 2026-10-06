@@ -381,6 +381,9 @@ function avvia(app){
       posComandoNo:'Nessun Comando attivo selezionato.',
       sch1:'1 · Dati intervento', sch2:'2 · Mappa', chiudiSitac:'Chiudi SITAC',
       chiudiSitacTit:'Chiudi la SITAC e torna alla vista a due colonne',
+      bImportaArea:'Importa',
+      bImportaAreaAiuto:'Importa un perimetro GeoJSON come {a}',
+      b3d:'Vista 3D',
       dataOra:'Data e ora', nQualifica:'Qualifica', qualificaVuota:'—',
       datiNota:'Compila tutti i campi: la posizione si sblocca dopo, e la mappa dopo la convalida.',
       posBloccata:'Prima compila intervento, qualifica, nominativo, ID DOS e telefono.',
@@ -3721,9 +3724,32 @@ async function chiediLatoSimbolo(layer){
       el.className = 'sitac-strumenti';
       if (SIM.origine) el.appendChild(bottoneSimbolo('origine', SIM.origine));
       corpo.appendChild(el);
+      /* Innesco e superfici sono due rilievi diversi e vanno staccati: in
+         fila continua il punto d'origine sembra la prima delle aree. */
+      corpo.insertAdjacentHTML('beforeend', '<div class="sitac-stacco"></div>');
       const ar = document.createElement('div');
       ar.className = 'sitac-strumenti';
-      Object.entries(AREE).forEach(([k, d]) => ar.appendChild(bottoneArea(k, d)));
+      Object.entries(AREE).forEach(([k, d]) => {
+        /* Percorsa e attiva arrivano spesso da fuori — un perimetro da
+           satellite, una traccia di volo — e cercare l'import nel passo 10
+           vuol dire uscire dal passo in cui si sta lavorando. Le altre tre
+           sono zone di gestione: si disegnano a mano e basta. */
+        if (AREE_SUPERFICIE.indexOf(k) < 0){
+          ar.appendChild(bottoneArea(k, d));
+          return;
+        }
+        const riga = document.createElement('div');
+        riga.className = 'sitac-coppia';
+        riga.appendChild(bottoneArea(k, d));
+        const imp = document.createElement('button');
+        imp.type = 'button';
+        imp.className = 'sitac-imp';
+        imp.textContent = t('bImportaArea');
+        imp.title = t('bImportaAreaAiuto', {a: nm(d)});
+        imp.onclick = () => importaArea(k);
+        riga.appendChild(imp);
+        ar.appendChild(riga);
+      });
       corpo.appendChild(ar);
       corpo.insertAdjacentHTML('beforeend',
         `<p class="sitac-conta" id="sitac-superficie"></p>`
@@ -4536,13 +4562,24 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
 </Document></kml>`;
   }
 
-  $('bImporta').onclick = () => $('file').click();
+  /* Il tipo scelto viaggia in una variabile e non nel file: l'input è uno
+     solo, e quale pulsante l'ha aperto lo sa solo chi l'ha premuto. Si
+     azzera dopo ogni lettura, o il prossimo import dal passo 10 erediterebbe
+     la scelta di prima. */
+  let areaDaImportare = null;
+  function importaArea(k){
+    areaDaImportare = k;
+    $('file').click();
+  }
+
+  $('bImporta').onclick = () => { areaDaImportare = null; $('file').click(); };
   $('file').onchange = ev => {
     const f = ev.target.files[0]; if (!f) return;
     const r = new FileReader();
     r.onload = () => {
-      try { carica(JSON.parse(r.result)); }
+      try { carica(JSON.parse(r.result), {forzaArea: areaDaImportare}); }
       catch(err){ stato(t('fileErrato', {e:err.message})); }
+      areaDaImportare = null;
       ev.target.value = '';
     };
     r.readAsText(f);
@@ -4561,7 +4598,8 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
      geometrie mute, cliccabili e illeggibili.
      Le properties di testa (intervento, DOS, posizione, vento) si adottano
      se ci sono: un file altrui porta con sé il suo intervento. */
-  function carica(fc){
+  function carica(fc, opz){
+    const o = opz || {};
     const tutte = (fc && fc.features) || (fc && fc.type === 'Feature' ? [fc] : []);
     if (!tutte.length) return stato(t('importNiente'));
 
@@ -4683,7 +4721,11 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
         const anelli = g.type === 'Polygon' ? [g.coordinates]
           : g.coordinates;
         anelli.forEach(poly => {
-          const k = AREE[tipo] ? tipo : 'percorsa';
+          /* Importando da un pulsante di area la destinazione è già decisa:
+             chi preme "Importa" accanto a Superficie percorsa sta dicendo
+             che QUEL perimetro è percorso. Senza, un file altrui finirebbe
+             sempre in percorsa anche quando lo si voleva a fuoco attivo. */
+          const k = o.forzaArea || (AREE[tipo] ? tipo : 'percorsa');
           const l = L.polygon(poly.map(verso), stileArea(AREE[k]));
           l._tipo = k; l._genere = 'area'; l._stato = st;
           l._testo = pr.testo || null;

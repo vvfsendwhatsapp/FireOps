@@ -5180,6 +5180,24 @@ a.btn-icon-hamburger:hover {
     filter: grayscale(.6);
 }
 
+/* Disegna e importa stanno sulla stessa riga perché sono due modi di fare
+   la stessa cosa: tracciare il perimetro a mano o prenderlo da un file —
+   un rilievo da satellite, una traccia di volo. Metà e metà, senza
+   gerarchia fra i due. */
+#sitac-barra .sitac-coppia {
+    display: flex;
+    gap: 4px;
+    width: 100%;
+}
+#sitac-barra .sitac-coppia > button {
+    flex: 1 1 50%;
+    min-width: 0;
+}
+#sitac-barra .sitac-coppia .sitac-imp {
+    justify-content: center;
+}
+#sitac-barra .sitac-stacco { height: 10px; }
+
 /* Il select della qualifica non è coperto da .sitac-dati-campo input */
 #sitac-app .sitac-dati-campo select {
     width: 100%;
