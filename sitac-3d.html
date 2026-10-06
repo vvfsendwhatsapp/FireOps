@@ -204,7 +204,7 @@ window.addEventListener('message', ev => {
   const d = ev.data;
   if (!d || d.fireops !== 'sitac3d' || !d.geojson) return;
   if (map.isStyleLoaded() && map.getTerrain()) disegna(d.geojson, d.coni);
-  else datiInAttesa = d.geojson;
+  else datiInAttesa = {fc: d.geojson, coni: d.coni};
 });
 
 /* Handshake: la finestra figlia dice "ci sono" e la madre risponde coi
