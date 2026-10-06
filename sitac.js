@@ -339,6 +339,8 @@ function avvia(app){
       geoErrore:'Provincia non determinata: {e}',
       geoFatto:'DOS in provincia di {p}.',
       bVentoDir:'Direzione sulla mappa', bVentoWeb:'Leggi da Open-Meteo',
+      bPendenza:'Leggi la pendenza attorno al DOS',
+      legPendenza:'Massima pendenza \u2014 {p}% verso {a}\u00b0',
       ventoTrascina:'Trascina la punta della freccia: indica dove VA il vento.',
       ventoNoDos:'Prima indica la posizione del DOS al passo 1.',
       ventoNota:'La stima da servizio meteo non vede il vento di versante: correggila a vista.',
@@ -1341,8 +1343,16 @@ function avvia(app){
   /* La posizione del DOS non è più "dove sta questo dispositivo": si sceglie
    il modo. In sala operativa il GPS è inutile, e il modo giusto è il clic
    sulla mappa o le coordinate dettate per radio. */
-let posDos = null;
-let provinciaDos = null;
+  let posDos = null;
+  let provinciaDos = null;
+
+  /* La pendenza attorno al DOS è un dato del terreno come il vento è un dato
+    dell'aria: sta nello stesso quadro, si legge una volta e resta.
+    Il raggio è 300 m, lo stesso del cono da pendenza: su una corona più
+    stretta il DEM — trenta metri di passo — restituisce rumore invece di
+    versante; su una più larga si media via il pendio che conta. */
+  const RAGGIO_PENDENZA_DOS = 300;
+  let pendDos = null;
 
 async function scriviPosizione(latlng, acc, opz){
   const o = opz || {};
@@ -2570,7 +2580,14 @@ async function chiediLatoSimbolo(layer){
          con cui il vento si passa per radio. */
       + `<span class="sitac-vento-dati">${esc(String(vento.velocita))} km/h`
       + ` · ${esc(String(V.gradoBeaufort(vento.velocita).g))} Bft<br>`
-      + `${esc(String(vento.verso))}\u00b0</span>`;
+      + `${esc(String(vento.verso))}\u00b0</span>`
+      /* La pendenza sta nello stesso quadro del vento perché si leggono
+         insieme: il fuoco sale col pendio e corre col vento, e separarle
+         in due riquadri vorrebbe dire guardare in due posti per fare una
+         somma sola. Compare solo se è stata letta. */
+      + (pendDos ? `<span class="sitac-vento-pend">\u2197 `
+          + `${esc(String(Math.round(pendDos.azimut)))}\u00b0 \u00b7 `
+          + `${esc((pendDos.pendenza * 100).toFixed(0))}%</span>` : '');
   }
 
   /* Il vento lo si imposta una volta sola, al passo 2: qui si riusa. La
@@ -3557,6 +3574,8 @@ async function chiediLatoSimbolo(layer){
     } catch(e){ stato(t('ventoErrore', {e: e.message})); }
   };
 
+  q('#sitac-bPendenza').onclick = leggiPendenzaDos;
+
   q('#sitac-ventoScala').oninput = function(){
     ventoVelocita = Number(this.value);
     q('#sitac-ventoValore').textContent = ventoVelocita + ' km/h';
@@ -4373,6 +4392,13 @@ async function chiediLatoSimbolo(layer){
     ventoAsta = null; ventoDeco = null;
     ventoGruppo.clearLayers();
     decori.addLayer(ventoGruppo);
+    /* La pendenza è un rilievo del terreno, non un disegno: ma vive nei
+       decori come la freccia del vento, e `clearLayers` l'ha già portata
+       via. Il riferimento va azzerato, o la legenda continua a dichiarare
+       una freccia che non c'è più. */
+    pendAsta = null; pendDeco = null; pendDos = null;
+    pendGruppo.clearLayers();
+    decori.addLayer(pendGruppo);
     mostraVento(null);
     /* Il cerchio del GPS sparisce con gli altri decori: si azzera il
        riferimento, o il pulsante della posizione crede di averlo ancora. */
@@ -4890,9 +4916,27 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
         + `<span>${esc(t('legVento', {v: ventoVelocita, d: ventoVerso}))}</span></div>`);
     }
 
+        /* Anche la pendenza ha la sua voce: sulla carta è una freccia nera con
+       le codine a T, e senza legenda si confonde con la pendenza posata a
+       mano dalla tavola — che è lo stesso simbolo, ma messo da una persona
+       invece che letto dal rilievo. */
+    if (pendAsta && pendDos){
+      const n = codinePendenza();
+      let g = '';
+      for (let i = 0; i < n; i++)
+        g += `<line x1="${12 - i * 5}" y1="10" x2="${12 - i * 5}" y2="20"`
+          + ` stroke="${COL.nero}" stroke-width="2.6" stroke-linecap="round"/>`;
+      leg.insertAdjacentHTML('beforeend',
+        `<div><i class="sitac-leg-lin"><svg viewBox="0 0 64 30">`
+        + `<line x1="6" y1="15" x2="52" y2="15" stroke="${COL.nero}" stroke-width="3"/>`
+        + `<path d="M61 15L47 9L47 21Z" fill="${COL.nero}"/>${g}</svg></i>`
+        + `<span>${esc(t('legPendenza', {p: (pendDos.pendenza * 100).toFixed(0),
+            a: Math.round(pendDos.azimut)}))}</span></div>`);
+    }
+
     const quanti = q('#sitac-legQuanti');
     if (quanti) quanti.textContent = visti.size || '';
-    if (!visti.size && !ventoAsta){
+    if (!visti.size && !ventoAsta && !pendAsta){
       leg.innerHTML = `<div class="sitac-leg-vuota">${esc(t('legVuota'))}</div>`;
       return;
     }
@@ -5516,7 +5560,7 @@ async function stampa(){
        </header>
         <h2>Punti d'innesco</h2>${sfTabellaInneschi()}
        <h2>Superfici</h2>${sfTabellaAree()}
-       <h2>Vento</h2>${sfTabellaVento()}
+       <h2>Vento e pendenza</h2>${sfTabellaVento()}
        <h2>Coni di propagazione</h2>${sfTabellaConi()}${avvertenza}
        <h2>${esc(t('stSquadre'))}</h2>${sfTabellaSquadre()}
         ${sfBloccoLanci()}
