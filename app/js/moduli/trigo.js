@@ -196,7 +196,7 @@ const HTML=`<div class="tg-nav" id="tg-nav" hidden><button type="button" class="
       <path d="M6 67h64"/><path d="M56 67V34"/><path d="M56 7l-10 15h6l-9 13h26l-9-13h6z"/>
       <circle cx="12" cy="57" r="3.2"/><path d="M12 57h28" stroke-dasharray="3 4"/>
       <path d="M12 57L56 9" stroke="#10141a"/><path d="M12 57L56 67" stroke="#10141a"/></svg></span>
-    <span class="tx"><h2>Altezza e area di proiezione</h2><p>Altezza di una pianta, di un edificio o di un punto alto, con l’area di caduta sulla mappa.</p></span>
+    <span class="tx"><h2>Altezza e area di proiezione</h2><p>Altezza di una pianta, di un edificio o di un punto alto di teleferica, con l’area di caduta per piante ed edifici.</p></span>
   </button>
 
   <button type="button" class="choice" data-to="faro">
@@ -770,6 +770,7 @@ const T1={
   teleferica:{n:'Teleferica',h:'Altezza del punto alto',top:'punto alto (sostegno o cavo)',base:'punto a terra sotto il punto alto',tgt:'Tocca il punto a terra sotto il punto alto da misurare.'},
   altro:{n:'Altro',h:'Altezza',top:'punto più alto',base:'punto a terra sotto il punto alto',tgt:'Tocca il punto a terra sotto il punto da misurare.'}
 };
+const hasArea=t=>t!=='teleferica';   // il punto alto di una teleferica non cade: niente raggio di proiezione
 const m1={type:'pianta',obs:null,tgt:null,D:null,dMode:'map',s:{zero:null,beta:null,alpha:null},margin:1,ui:null,flow:null,steps:null,fitted:false};
 
 function m1Calc(){
@@ -796,7 +797,7 @@ function m1Render(){
   // mappa: linea e aree
   const g=m1.ui.group;g.clearLayers();
   if(m1.obs&&m1.tgt)L.polyline([m1.obs,m1.tgt],{color:'#ffd400',weight:3,dashArray:'6 6'}).addTo(g);
-  if(ok&&m1.tgt){
+  if(ok&&m1.tgt&&hasArea(m1.type)){
     L.circle(m1.tgt,{radius:r.H,color:'#d8262f',weight:3,fillColor:'#d8262f',fillOpacity:.2}).addTo(g);
     if(m1.margin>1)L.circle(m1.tgt,{radius:r.H*m1.margin,color:'#ffd400',weight:2,dashArray:'8 6',fill:false}).addTo(g);
   }
@@ -807,7 +808,7 @@ function m1Render(){
   }else if(r.err){
     h=`<div class="note warn">${r.err}</div>`;
   }else{
-    const R=r.H,Ro=R*m1.margin;
+    const area=hasArea(m1.type),R=r.H,Ro=R*m1.margin;
     let stat;
     if(D<R)stat=`<div class="note warn stat">Sei dentro l’area di proiezione: allontanati di almeno ${fmt(R-D+1,0)} m.</div>`;
     else if(m1.margin>1&&D<Ro)stat=`<div class="note stat">Sei fuori dall’area, ma dentro la fascia di rispetto.</div>`;
@@ -824,7 +825,7 @@ function m1Render(){
       </dl>
       ${m1.s.zero==null?'<div class="note">Zero non fissato: gli angoli sono quelli grezzi del sensore.</div>':''}
     </div>
-    <div class="card"><h3>Area di proiezione</h3>
+    ${area?`    <div class="card"><h3>Area di proiezione</h3>
       <p class="sub" style="margin:0 0 8px">Cerchio di raggio pari all’altezza, centrato sul target.</p>
       <div class="seg" id="m1-seg">
         <button type="button" data-m="1" class="${m1.margin===1?'on':''}">Nessuna fascia</button>
@@ -838,7 +839,7 @@ function m1Render(){
       </dl>
       ${stat}
       ${m1.tgt?'':'<div class="note warn">Imposta il target sulla mappa per disegnare l’area.</div>'}
-    </div>
+    </div>`:`<div class="note stat">Per ${T.n.toLowerCase()} non c’è un’area di proiezione: il punto alto non cade. Sulla mappa restano il punto a terra e la tua posizione, a ${fmt(D,1)} m in orizzontale.</div>`}
     <div class="row"><button type="button" class="btn" id="m1-exp">Esporta GeoJSON</button><button type="button" class="btn" id="m1-new">Nuova misura</button></div>`;
   }
   res.innerHTML=h;
@@ -849,8 +850,8 @@ function m1Export(){
   if(!r||r.err||!m1.tgt){toast('Servono il target sulla mappa e una misura completa.');return;}
   const f=[{type:'Feature',properties:{ruolo:'target',tipo:m1.type,altezza_m:+r.H.toFixed(2)},geometry:{type:'Point',coordinates:[m1.tgt[1],m1.tgt[0]]}}];
   if(m1.obs)f.push({type:'Feature',properties:{ruolo:'osservatore',distanza_orizzontale_m:+m1.D.toFixed(1)},geometry:{type:'Point',coordinates:[m1.obs[1],m1.obs[0]]}});
-  f.push({type:'Feature',properties:{ruolo:'area_proiezione',raggio_m:+r.H.toFixed(2),area_m2:+(Math.PI*r.H*r.H).toFixed(1)},geometry:{type:'Polygon',coordinates:[ring(m1.tgt,r.H)]}});
-  if(m1.margin>1)f.push({type:'Feature',properties:{ruolo:'fascia_rispetto',raggio_m:+(r.H*m1.margin).toFixed(2)},geometry:{type:'Polygon',coordinates:[ring(m1.tgt,r.H*m1.margin)]}});
+  if(hasArea(m1.type))f.push({type:'Feature',properties:{ruolo:'area_proiezione',raggio_m:+r.H.toFixed(2),area_m2:+(Math.PI*r.H*r.H).toFixed(1)},geometry:{type:'Polygon',coordinates:[ring(m1.tgt,r.H)]}});
+  if(hasArea(m1.type)&&m1.margin>1)f.push({type:'Feature',properties:{ruolo:'fascia_rispetto',raggio_m:+(r.H*m1.margin).toFixed(2)},geometry:{type:'Polygon',coordinates:[ring(m1.tgt,r.H*m1.margin)]}});
   download(JSON.stringify({type:'FeatureCollection',features:f},null,1),'fireops-trigo-altezza-'+stamp()+'.geojson','application/geo+json');
 }
 function initM1(){
@@ -904,7 +905,7 @@ function initM1(){
     if(n===3){
       placeMap(m1.ui,'m1-slot3');m1Render();
       const r=m1Calc();
-      if(r&&!r.err&&m1.tgt){setTimeout(()=>{m1.ui.map.invalidateSize();m1.ui.map.fitBounds(boundsAround(m1.tgt,r.H*Math.max(1,m1.margin)).pad(0.3));},120);}
+      if(r&&!r.err&&m1.tgt&&hasArea(m1.type)){setTimeout(()=>{m1.ui.map.invalidateSize();m1.ui.map.fitBounds(boundsAround(m1.tgt,r.H*Math.max(1,m1.margin)).pad(0.3));},120);}
       else m1.ui.fit();
     }
     if(n!==2){Sensors.stop();showStart('m1');}

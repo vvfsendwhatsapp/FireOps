@@ -134,6 +134,9 @@ FireOps.registra({
       <input type="range" id="tgD" min="8" max="100" step="1" value="30"></div>
     <div class="ctl"><label for="tgL">Lunghezza <b><span id="tgLv">6.0</span> m</b></label>
       <input type="range" id="tgL" min="1" max="25" step="0.1" value="6"></div>
+    <div class="ctl"><label for="tgI">Inclinazione dell'asse <b><span id="tgIv">0</span>°</b></label>
+      <input type="range" id="tgI" min="0" max="70" step="1" value="0">
+      <div class="h">0° = tronco orizzontale. Misurala rispetto all'orizzontale, in salita o in discesa è lo stesso.</div></div>
     <div class="ctl" id="tgWA"><label for="tgA">Appoggio A <b><span id="tgAv">0.5</span> m</b></label>
       <input type="range" id="tgA" min="0" max="6" step="0.05" value="0.5"></div>
     <div class="ctl" id="tgWB"><label for="tgB">Appoggio B <b><span id="tgBv">4.0</span> m</b></label>
@@ -161,7 +164,7 @@ FireOps.registra({
   </div>
 
   <div class="limiti">
-    Modello semplificato: tronco orizzontale, solo peso proprio, legno omogeneo. Non vede nodi, marciumi,
+    Modello semplificato: asse dritto con inclinazione costante (0° = orizzontale), solo peso proprio, legno omogeneo. Con l'inclinazione la compressione lungo l'asse è sommata in modo prudente alla flessione. Non vede nodi, marciumi,
     tensioni di crescita, rami piegati a molla, pendenza del terreno né carichi sopra il tronco.
     Un ramo piegato a molla ha le fibre compresse sul lato interno della curva: lì va lo scarico, a fette.
     Valutazione dell'operatore, posizione, via di fuga e DPI restano ciò che decide.
@@ -183,6 +186,8 @@ FireOps.registra({
       if (x2 < x1) [x1, x2] = [x2, x1];
       if (x2 - x1 < 0.05) x2 = Math.min(L, x1 + 0.05);
       const s = {D, L, rho, A, q: rho * g * A, x1, x2, xa: Math.min(L, +$("tgR").value), xt: Math.min(L, +$("tgT").value), fm: (+$("tgF").value) * 1e6};
+      const th = (+$("tgI").value) * Math.PI / 180;
+      s.th = th; s.qp = s.q * Math.cos(th); s.qa = s.q * Math.sin(th);   // carico perpendicolare (flette) e lungo l'asse (comprime)
       s.R = reazione(s);
       return s;
     }
@@ -191,12 +196,12 @@ FireOps.registra({
     function reazione(s) {
       const a = s.xa, L = s.L;
       if (a < 0.02 * L) return 0;
-      return Math.max(0, 3 * (s.q * a * a * (6 * L * L - 4 * L * a + a * a) / 24) / (a * a * a));
+      return Math.max(0, 3 * (s.qp * a * a * (6 * L * L - 4 * L * a + a * a) / 24) / (a * a * a));
     }
 
     // M > 0 = fibre in alto compresse
     function momento(s, x) {
-      const {L, q, x1, x2} = s;
+      const {L, x1, x2} = s, q = s.qp;
       if (modo === "sbalzo") {
         let M = -q * (L - x) * (L - x) / 2;
         if (s.xa >= x) M += s.R * (s.xa - x);
@@ -206,6 +211,9 @@ FireOps.registra({
       const mac = v => v > 0 ? v : 0;
       return R1 * mac(x - x1) + R2 * mac(x - x2) - q * x * x / 2;
     }
+
+    // sforzo assiale (valore assoluto, prudente): peso del tratto che scarica lungo l'asse
+    function assiale(s, x) { return s.qa * (modo === "sbalzo" ? (s.L - x) : Math.max(x, s.L - x)); }
 
     // sezione circolare dopo lo scarico di profondità p (tolta la fascia sul lato compresso)
     function residua(D, p) {
@@ -225,18 +233,18 @@ FireOps.registra({
     function tabella(D) {
       if (tab.D === D) return tab.t;
       const t = [];
-      for (let i = 0; i <= 60; i++) { const p = .49 * D * i / 60, r = residua(D, p); t.push({p, W: r ? r.W : 0}); }
+      for (let i = 0; i <= 60; i++) { const p = .49 * D * i / 60, r = residua(D, p); t.push({p, W: r ? r.W : 0, A: r ? r.A : 0}); }
       tab = {D, t};
       return t;
     }
 
     // profondità massima prima che la sezione residua superi la resistenza
-    function pMax(s, M) {
-      const t = tabella(s.D), sig = W => W > 0 ? Math.abs(M) / W : Infinity;
-      if (sig(t[0].W) >= s.fm) return 0;
+    function pMax(s, M, N) {
+      const t = tabella(s.D), sig = e => e.W > 0 ? Math.abs(M) / e.W + N / e.A : Infinity;
+      if (sig(t[0]) >= s.fm) return 0;
       for (let i = 1; i < t.length; i++) {
-        if (sig(t[i].W) >= s.fm) {
-          const a = t[i - 1], b = t[i], f = (s.fm - sig(a.W)) / (sig(b.W) - sig(a.W));
+        if (sig(t[i]) >= s.fm) {
+          const a = t[i - 1], b = t[i], f = (s.fm - sig(a)) / (sig(b) - sig(a));
           return a.p + f * (b.p - a.p);
         }
       }
@@ -343,6 +351,7 @@ FireOps.registra({
       sv.appendChild(tx(ml, yb - amp - 6, "momento flettente", {"font-size": 10}));
       sv.appendChild(tx(W - mr, yb - amp - 6, (Math.abs(d.M) / 1000).toFixed(2) + " kN·m al taglio", {"font-size": 10, "text-anchor": "end", fill: C.testo}));
       sv.appendChild(tx(ml, 14, "0 m", {"font-size": 10}));
+      if (s.th > .01) sv.appendChild(tx(W / 2, 14, "asse inclinato di " + Math.round(s.th * 180 / Math.PI) + "°", {"font-size": 10, "text-anchor": "middle", fill: C.testo}));
       sv.appendChild(tx(W - mr, 14, s.L.toFixed(1) + " m", {"font-size": 10, "text-anchor": "end"}));
     }
 
@@ -408,15 +417,17 @@ FireOps.registra({
       const z = zeri(s);
       // taglio unico solo se il taglio cade davvero su un punto scarico (o M trascurabile in assoluto)
       const unico = Math.abs(M) < 1 || z.some(x => Math.abs(x - s.xt) < .015 * s.L);
-      const pmax = pMax(s, M);
+      const N = assiale(s, s.xt);
+      const pmax = pMax(s, M, N);
       const p = Math.max(0, Math.min(s.D / 3, .75 * pmax, .45 * s.D));
       const r = residua(s.D, p);
-      const sigma = r ? Math.abs(M) / r.W : Infinity;
+      const sigma = r ? Math.abs(M) / r.W + N / r.A : Infinity;
       const FS = sigma > 0 ? s.fm / sigma : 999;
-      const d = {M, comprSopra: M > 0, unico, pmax, p, FS, zeri: z};
+      const d = {M, N, comprSopra: M > 0, unico, pmax, p, FS, zeri: z};
 
       $("tgDv").textContent = (s.D * 100).toFixed(0);
       $("tgLv").textContent = s.L.toFixed(1);
+      $("tgIv").textContent = (+$("tgI").value).toFixed(0);
       $("tgAv").textContent = (+$("tgA").value).toFixed(2);
       $("tgBv").textContent = (+$("tgB").value).toFixed(2);
       $("tgTv").textContent = s.xt.toFixed(2);
@@ -455,6 +466,9 @@ FireOps.registra({
       if (sbalzoLibero && massaOltre > 80 && !unico) av.push(["", "Parte pesante che si stacca", massaOltre.toFixed(0) + " kg si liberano al taglio 2. Decidi prima dove cadono e da che parte esci."]);
       if (modo === "sbalzo" && s.R > 0 && s.xt < s.xa) av.push(["", "Il ramo farà leva sull'appoggio", "Tagliando qui il ramo resta sull'appoggio a " + s.xa.toFixed(2) + " m come su un fulcro: una parte scende, l'altra si alza. Guarda da che lato pende prima del taglio 2."]);
       if (modo === "appoggi" && !sbalzoLibero && !unico) av.push(["", "Taglio fra gli appoggi", "Le due parti restano appoggiate e tendono a chiudersi verso il basso: attento al pizzicamento a fine corsa."]);
+      const gradi = Math.round(s.th * 180 / Math.PI);
+      if (gradi >= 10) av.push(["", "Tronco inclinato di " + gradi + "°", "Il momento che flette è ridotto (× " + Math.cos(s.th).toFixed(2) + ") ma la sezione lavora anche a compressione lungo l'asse (" + (d.N / 1000).toFixed(2) + " kN al taglio). Il pezzo reciso tende a scivolare verso il basso lungo l'asse: libera la zona a valle."]);
+      if (gradi >= 45 && modo === "appoggi") av.push(["", "Inclinazione forte su appoggi", "Un tronco così inclinato non resta appoggiato da solo: il modello vale solo se è davvero trattenuto ai due punti. Se è attaccato alla pianta usa \"Attaccato\"."]);
       if (d.zeri.length && !unico) av.push(["ok", "Punti scarichi", "Momento nullo a " + d.zeri.map(z => z.toFixed(2) + " m").join(", ") + ": tagliando lì basta un taglio unico."]);
       $("tgAvvisi").innerHTML = av.map(([c, t, x]) => '<div class="avv ' + c + '"><b>' + t + '</b>' + x + '</div>').join("");
 
@@ -480,7 +494,7 @@ FireOps.registra({
     }
     $("tgAppoggi").addEventListener("click", () => scegli("appoggi"));
     $("tgSbalzo").addEventListener("click", () => scegli("sbalzo"));
-    ["tgD", "tgL", "tgA", "tgB", "tgR", "tgT", "tgE", "tgF"].forEach(id => $(id).addEventListener("input", aggiorna));
+    ["tgD", "tgL", "tgI", "tgA", "tgB", "tgR", "tgT", "tgE", "tgF"].forEach(id => $(id).addEventListener("input", aggiorna));
     aggiorna();
   }
 });
