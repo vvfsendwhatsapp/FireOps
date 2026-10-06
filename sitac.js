@@ -4314,7 +4314,6 @@ async function chiediLatoSimbolo(layer){
      9. AZIONI
      ===================================================================== */
   const $ = id => q('#sitac-' + id);
-
   agganciaFisa(q('#sitac-barra'));
 
   $('bModifica').onclick = function(){
@@ -4343,27 +4342,7 @@ async function chiediLatoSimbolo(layer){
     if (!await chiedi({testo: t('confPulisci')})) return;
     disegni.clearLayers(); decori.clearLayers();
     coni.length = 0;
-  $('b3d').onclick = apri3D;
 
-      /* La vista 3D vive in una finestra sua: è una lettura del terreno, non
-     una seconda carta. Riceve il GeoJSON che esce già dall'esportazione —
-     quello che si disegna resta qui, e qui si corregge. L'handshake serve
-     perché la finestra figlia va a chiedere i dati quando è pronta: su
-     rete lenta il documento arriva dopo il messaggio. */
-  function apri3D(){
-    const feat = raccogli();
-    if (!feat.length) return stato(t('nienteExport'));
-    const fc = {type:'FeatureCollection', features:feat};
-    const w = window.open('sitac-3d.html', 'sitac3d',
-      'width=1200,height=800,menubar=no,toolbar=no');
-    if (!w) return stato('La finestra 3D è stata bloccata dal browser.');
-    const rispondi = ev => {
-      if (!ev.data || ev.data.fireops !== 'sitac3d-pronto') return;
-      w.postMessage({fireops:'sitac3d', geojson: fc}, '*');
-    };
-    window.addEventListener('message', rispondi);
-    setTimeout(() => window.removeEventListener('message', rispondi), 15000);
-  }
     /* `decori.clearLayers()` porta via anche la freccia del vento, che vive
        lì insieme a motivi e maniglie. Ma il vento NON è un disegno: è un
        dato dello scenario, come l'intervento e il DOS, e chi svuota la carta
@@ -4424,6 +4403,31 @@ async function chiediLatoSimbolo(layer){
   };
   $('bCentra').onclick = () => centraSuGps(true);
   $('bStampa').onclick = stampa;
+
+    /* La vista 3D vive in una finestra sua: è una lettura del terreno, non
+     una seconda carta. Riceve il GeoJSON che esce già dall'esportazione —
+     quello che si disegna resta qui, e qui si corregge.
+     L'handshake serve perché la finestra figlia chiede i dati quando è
+     pronta: su rete lenta il documento arriva dopo il messaggio, e senza
+     risposta resterebbe davanti a una carta vuota. */
+  function apri3D(){
+    const feat = raccogli();
+    if (!feat.length) return stato(t('nienteExport'));
+    const fc = {type:'FeatureCollection', features:feat};
+    const w = window.open('sitac-3d.html', 'sitac3d',
+      'width=1200,height=800,menubar=no,toolbar=no');
+    if (!w) return stato('La finestra 3D è stata bloccata dal browser.');
+    const rispondi = ev => {
+      if (!ev.data || ev.data.fireops !== 'sitac3d-pronto') return;
+      w.postMessage({fireops:'sitac3d', geojson: fc}, '*');
+    };
+    window.addEventListener('message', rispondi);
+    /* Il listener non resta appeso per sempre: dopo quindici secondi la
+       finestra o ha chiesto i dati o non li chiederà più. */
+    setTimeout(() => window.removeEventListener('message', rispondi), 15000);
+  }
+
+  $('b3d').onclick = apri3D;
 
   /* Legenda: si apre e si chiude, perché su un pannello stretto coprirebbe
      mezza mappa proprio mentre si disegna. */
@@ -5632,7 +5636,7 @@ NS.Sitac = {
                       'sitac-telefono','sitac-posizione','sitac-bPosizione',
                       'sitac-bConvalida','sitac-bCentra','sitac-bModifica',
                       'sitac-bElimina','sitac-bAnnulla','sitac-bPulisci',
-                      'sitac-bSfondo','sitac-bImporta','sitac-bStampa',
+                      'sitac-bSfondo','sitac-bImporta','sitac-bStampa','sitac-b3d',
                       'sitac-bGeojson','sitac-bKml','sitac-file',
                       'sitac-qualifica','sitac-dataOra','sitac-carta',
                       'sitac-bPulisciDati', 'sitac-senzaScheda',
