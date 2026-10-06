@@ -13,7 +13,76 @@
 (function () {
   "use strict";
 
-  const TEST_ADDRESS = "andrea.pelizza.vvf@gmail.com";
+  // Personale del turno B: "Cognome Nome" e qualifica (senza patenti). Da spostare in db/ quando ci sarà un file condiviso.
+  const TURNO_B = [
+    ["ANGELONE LEONARDO", "VP"],
+    ["ANTONIOLI MARCO", "CS"],
+    ["ARFELLI STEFANO", "CRE"],
+    ["BALDACCI ANDREA", "VE"],
+    ["BALZANI ANDREA", "CS"],
+    ["BARDI ALFIERO", "CS"],
+    ["BATTISTINI CHRISTIAN", "CS"],
+    ["BAZZOCCHI MASSIMO", "CR"],
+    ["BERTOZZI CLAUDIO", "VC"],
+    ["BONETTI MASSIMILIANO", "CS"],
+    ["CANDUCCI DENIS", "VC"],
+    ["CAPACCI LUCA", "VE"],
+    ["CASTAGNOLI MARCO", "VC"],
+    ["CASTROGIOVANNI ANDRE", "VE"],
+    ["CECCARONI STEFANO", "VC"],
+    ["D'ATTARDI GIOVANNI", "VP"],
+    ["DALLA BELLA MARCO", "VE"],
+    ["DE LORENZI ENRICO", "VE"],
+    ["DE VITO ISRAEL", "CS"],
+    ["DI CANDIA MICHELE", "VE"],
+    ["DI CAPRIO GIOVANNI", "VPE"],
+    ["DI NICOLA MASSIMO", "VPC"],
+    ["DOGANA MARCO", "VC"],
+    ["FORTE GIANNI", "VF"],
+    ["GHETTI GABRIELE", "VC"],
+    ["GIARDINI LUCA", "CSE"],
+    ["GIULIANINI MAURO", "VC"],
+    ["GIUNCHI CLAUDIO", "VE"],
+    ["GORI FABIO", "VE"],
+    ["GRAZIANI CRISTIAN", "VC"],
+    ["GUIDI MARCO", "CSE"],
+    ["LA ROCCA VINCENZO", "VP"],
+    ["LEONI VINCENZO", "CSE"],
+    ["LIPPOLIS NICOLA", "VF"],
+    ["MANUZZI GIANLUCA", "CR"],
+    ["MANUZZI MICHELE", "VP"],
+    ["MARALDI MAURO", "CS"],
+    ["MARGHERITA MARCO", "VC"],
+    ["MARIANI MASSIMO", "VP"],
+    ["MARINO ANTONIO", "VE"],
+    ["MONCASTELLI ROBERTO", "CRE"],
+    ["MONTI DANILO", "VPC"],
+    ["MONTINI LORENZO", "VE"],
+    ["MORRI MAURO", "VF"],
+    ["OLIVUCCI ROBERT", "VE"],
+    ["PASSERI MIRKO", "VP"],
+    ["PELIZZA ANDREA", "VE"],
+    ["PENTOLI LUCA", "VE"],
+    ["PENTOLI MASSIMILIANO", "CSE"],
+    ["POLVERELLI IVAN", "VP"],
+    ["RIDOLFO DORIANO", "VP"],
+    ["RUFFILLI MASSIMILIANO", "CS"],
+    ["RUGGIERO FRANCESCO", "VE"],
+    ["SARDI SAMUELE", "VP"],
+    ["SPADAFINA FRANCESCO", "VP"],
+    ["TASSINARI PAOLO", "VC"],
+    ["TEDALDI NICOLA", "VC"],
+    ["VANDI CLAUDIO", "CSE"],
+    ["VANIGLINI ALAN", "CS"],
+    ["VITALI GIUSEPPE", "CSE"],
+    ["ZANELLI FABIO", "VPC"],
+    ["ZOFFOLI NICOLO'", "VF"]
+  ];
+  // "DE LORENZI ENRICO" -> "De Lorenzi Enrico (VE)"; "NICOLO'" -> "Nicolò"
+  const nominativo = (nome, qual) => nome.replace(/\s+/g, " ").trim().toLowerCase()
+    .replace(/(^|[ '])([a-zàèéìòù])/g, (m, a, b) => a + b.toUpperCase()).replace(/o'$/, "ò") + " (" + qual + ")";
+  const PERSONALE = TURNO_B.map(([n, q]) => nominativo(n, q));
+  const MOTIVI_TIMBRATURA = {dimenticanza: "Dimenticanza", senzabadge: "Senza badge"};
 
   const TIPOLOGIE = [
     "Incendio fabbricato", "Incendio boschivo / vegetazione", "Incendio veicolo",
@@ -63,17 +132,6 @@
 }
 .pg-comunicazioni * { box-sizing: border-box; }
 
-.pg-comunicazioni .cm-test {
-  display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
-  padding: 9px 12px; margin-bottom: 12px; border-radius: 6px;
-  background: var(--cm-warn); color: #1a1400; font-size: 12.5px; font-weight: 700;
-}
-.pg-comunicazioni .cm-test.off { background: var(--panel-2); color: var(--text-dim); border: 1px solid var(--line); }
-.pg-comunicazioni .cm-test button {
-  flex: none; min-height: 36px; background: #1a1400; color: var(--cm-warn); border: none; border-radius: 18px;
-  padding: 6px 14px; font-size: 12px; font-weight: 700; cursor: pointer;
-}
-.pg-comunicazioni .cm-test.off button { background: var(--cm-err); color: #fff; }
 
 .pg-comunicazioni .cm-stepsbar { display: grid; grid-template-columns: repeat(5, 1fr); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
 .pg-comunicazioni .cm-dot { background: var(--panel); border: 0; border-right: 1px solid var(--line); min-height: 44px; display: flex; align-items: center; justify-content: center; color: var(--text-dim); font: 600 14px var(--sans); cursor: default; padding: 0; }
@@ -234,6 +292,17 @@
 }
 @media (prefers-reduced-motion: reduce) { .pg-comunicazioni * { scroll-behavior: auto !important; } }
 
+/* scelta singola (come le altre selezioni: giallo) */
+.pg-comunicazioni .radio-list { display: flex; flex-direction: column; gap: 8px; padding: 6px 14px 12px; }
+.pg-comunicazioni .radio { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 0 14px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; }
+.pg-comunicazioni .radio input { width: 22px; height: 22px; flex: none; accent-color: var(--yellow); }
+.pg-comunicazioni .radio.selected { border-color: var(--yellow); }
+
+/* nominativi: menu del turno B, con "Altro" in fondo */
+.pg-comunicazioni .person-fields { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.pg-comunicazioni .person-sel { display: block; width: 100%; min-width: 0; min-height: 46px; padding: 10px 12px; font-size: 16px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; color: var(--text); font-family: var(--sans); }
+.pg-comunicazioni .person-sel:focus { outline: none; border-color: var(--cm-warn); }
+
 .pg-comunicazioni .hidden { display: none !important; }
 `;
 
@@ -268,11 +337,6 @@
   }
 
   const html = `
-<div class="cm-test" id="fcTestBar">
-  <span id="fcTestLabel">MODALITA TEST ATTIVA</span>
-  <button type="button" id="fcTestToggle">Disattiva TEST</button>
-</div>
-
 <div class="cm-stepsbar" id="fcStepsBar"></div>
 <div class="cm-steplabel" id="fcStepLabel"></div>
 
@@ -371,8 +435,13 @@
 
   <div class="detail-block hidden" id="fcDetTimbratura">
     <div class="panel">
-      <div class="row-group-label pers">Motivo</div>
-      <div class="field"><label for="fcTmMotivo">Motivo mancata timbratura</label><textarea id="fcTmMotivo" rows="3"></textarea></div>
+      <div class="row-group-label pers">Motivo della mancata timbratura</div>
+      <div class="radio-list" role="radiogroup" aria-label="Motivo della mancata timbratura">
+        <label class="radio selected"><input type="radio" name="fcTmTipo" value="dimenticanza" checked><span>Dimenticanza</span></label>
+        <label class="radio"><input type="radio" name="fcTmTipo" value="senzabadge"><span>Senza badge</span></label>
+        <label class="radio"><input type="radio" name="fcTmTipo" value="altro"><span>Altro</span></label>
+      </div>
+      <div class="field hidden" id="fcTmAltroBox"><label for="fcTmMotivo">Specifica il motivo</label><textarea id="fcTmMotivo" rows="3"></textarea></div>
     </div>
     <div class="panel">
       <div class="row-group-label pers">Date interessate</div>
@@ -510,7 +579,7 @@
     const STEP_LABELS = ["Mittente e comando", "Tipo di comunicazione", "Dettaglio", "Opzioni e note", "Riepilogo e invio"];
 
     const MITTENTE = {nome: "", cognome: "", cf: "", email: ""};
-    let currentStep = 1, currentTipo = null, currentComando = null, testMode = true;
+    let currentStep = 1, currentTipo = null, currentComando = null;
     let TUTTI = [], COMANDI = [];
 
     const normTxt = s => (s || "").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
@@ -933,13 +1002,34 @@
       t.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); sceltaTipo(t); } });
     });
 
+    /* ---------- motivo della mancata timbratura ---------- */
+    const tmRadios = Array.from(root.querySelectorAll('input[name="fcTmTipo"]'));
+    function tipoMotivo() { const c = tmRadios.find(r => r.checked); return c ? c.value : "dimenticanza"; }
+    function motivoTimbratura() { return tipoMotivo() === "altro" ? val("fcTmMotivo") : MOTIVI_TIMBRATURA[tipoMotivo()]; }
+    tmRadios.forEach(r => r.addEventListener("change", () => {
+      tmRadios.forEach(x => x.closest(".radio").classList.toggle("selected", x.checked));
+      const altro = tipoMotivo() === "altro";
+      $("fcTmAltroBox").classList.toggle("hidden", !altro);
+      if (altro) $("fcTmMotivo").focus({preventScroll: true});
+    }));
+
     /* ---------- righe dinamiche ---------- */
+    const personaleOptions = '<option value="">Scegli nominativo</option>'
+      + PERSONALE.map(n => '<option value="' + n.replace(/"/g, "&quot;") + '">' + n + "</option>").join("")
+      + '<option value="__altro__">Altro</option>';
     function addPersonRow(targetId) {
       const list = $(targetId);
       const row = document.createElement("div");
       row.className = "person-row";
-      row.innerHTML = '<input type="text" class="person-input" placeholder="Nome Cognome (qualifica)" autocapitalize="words" enterkeyhint="done">'
+      row.innerHTML = '<div class="person-fields"><select class="person-sel" aria-label="Nominativo">' + personaleOptions + '</select>'
+        + '<input type="text" class="person-input hidden" placeholder="Nome Cognome (qualifica)" autocapitalize="words" enterkeyhint="done" aria-label="Nominativo (altro)"></div>'
         + '<button type="button" class="row-remove-btn" aria-label="Rimuovi">\u2715</button>';
+      const sel = row.querySelector(".person-sel"), inp = row.querySelector(".person-input");
+      sel.addEventListener("change", () => {
+        const altro = sel.value === "__altro__";
+        inp.classList.toggle("hidden", !altro);
+        if (altro) inp.focus();
+      });
       row.querySelector(".row-remove-btn").addEventListener("click", () => row.remove());
       list.appendChild(row);
       return row;
@@ -980,7 +1070,7 @@
         // la riga nuova va in vista e, per i nominativi, apre subito la tastiera
         if (row) {
           row.scrollIntoView({block: "center", behavior: "smooth"});
-          const f = row.querySelector(".person-input");
+          const f = row.querySelector(".person-sel");
           if (f) f.focus({preventScroll: true});
         }
       });
@@ -994,7 +1084,12 @@
 
     $("fcGdIncludiMissione").addEventListener("change", function () { $("fcGdMissioneBox").classList.toggle("hidden", !this.checked); });
 
-    function getPersonList(listId) { return Array.from(root.querySelectorAll("#" + listId + " .person-input")).map(i => i.value.trim()).filter(Boolean); }
+    function getPersonList(listId) {
+      return Array.from(root.querySelectorAll("#" + listId + " .person-row")).map(r => {
+        const sel = r.querySelector(".person-sel");
+        return sel.value === "__altro__" ? r.querySelector(".person-input").value.trim() : sel.value;
+      }).filter(Boolean);
+    }
 
     /* ---------- navigazione ---------- */
     const stepsBar = $("fcStepsBar");
@@ -1081,6 +1176,10 @@
         avviso("Seleziona il tipo di comunicazione.", tiles[0]);
         return;
       }
+      if (currentStep === 3 && currentTipo === "timbratura" && tipoMotivo() === "altro" && !val("fcTmMotivo")) {
+        avviso("Specifica il motivo della mancata timbratura.", $("fcTmMotivo"));
+        return;
+      }
       showStep(Math.min(5, currentStep + 1));
     }
     function goBack() {
@@ -1157,7 +1256,7 @@
       return {subject, body: lines.join("\n")};
     }
     function buildTimbratura() {
-      const motivo = val("fcTmMotivo");
+      const motivo = motivoTimbratura();
       const rows = Array.from(root.querySelectorAll("#fcTmDateList .timb-row")).map(r => ({in: r.querySelector(".timb-in").value, out: r.querySelector(".timb-out").value}));
       const lines = [];
       lines.push("Comunicazione di mancata timbratura.");
@@ -1283,24 +1382,10 @@
         default: built = {subject: "", body: ""};
       }
       const realTo = recipientFor(currentTipo);
-      const to = testMode ? TEST_ADDRESS : realTo;
-      const subject = testMode ? "[TEST] " + built.subject : built.subject;
-      let body = built.body;
-      if (testMode) body = "*** MODALITA TEST - destinatario reale sarebbe: " + (realTo || "- non determinato -") + " ***\n\n" + body;
-      $("fcPrevTo").value = to || "";
-      $("fcPrevSubject").value = subject || "";
-      $("fcPrevBody").value = body || "";
+      $("fcPrevTo").value = realTo || "";
+      $("fcPrevSubject").value = built.subject || "";
+      $("fcPrevBody").value = built.body || "";
     }
-
-    /* ---------- modalita TEST ---------- */
-    const testBar = $("fcTestBar"), testToggle = $("fcTestToggle"), testLabel = $("fcTestLabel");
-    function applyTestUi() {
-      testBar.classList.toggle("off", !testMode);
-      testToggle.textContent = testMode ? "Disattiva TEST" : "Attiva TEST";
-      testLabel.textContent = testMode ? "MODALITA TEST ATTIVA - le email vanno a " + TEST_ADDRESS : "Modalita reale - le email vanno ai destinatari effettivi";
-    }
-    testToggle.addEventListener("click", () => { testMode = !testMode; applyTestUi(); if (currentStep === 5) generatePreview(); });
-    applyTestUi();
 
     /* ---------- invio ---------- */
     $("fcBtnMailto").addEventListener("click", () => {
