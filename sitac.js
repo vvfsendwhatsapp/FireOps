@@ -4412,18 +4412,34 @@ async function chiediLatoSimbolo(layer){
      risposta resterebbe davanti a una carta vuota. */
   function apri3D(){
     const feat = raccogli();
-    if (!feat.length) return stato(t('nienteExport'));
-    const fc = {type:'FeatureCollection', features:feat};
+    /* I coni non stanno in `disegni` ma nei decori: sono stime, non
+       rilievi, e per questo non finiscono nel GeoJSON esportato. Qui però
+       servono — guardare dove il fuoco andrà è metà del motivo per cui si
+       inclina la camera — quindi si raccolgono a parte e viaggiano in un
+       campo loro, che la vista 3D disegna in modo distinto. */
+    const archi = [];
+    coni.forEach(c => {
+      const prendi = x => {
+        if (x.eachLayer) return x.eachLayer(prendi);
+        if (!x.getLatLngs || !x.toGeoJSON) return;   // le etichette no
+        const f = x.toGeoJSON();
+        f.properties = {cono: c.id, velocita: c.vento.velocita,
+                        verso: c.vento.verso};
+        archi.push(f);
+      };
+      prendi(c.layer);
+    });
+    if (!feat.length && !archi.length) return stato(t('nienteExport'));
     const w = window.open('sitac-3d.html', 'sitac3d',
       'width=1200,height=800,menubar=no,toolbar=no');
     if (!w) return stato('La finestra 3D è stata bloccata dal browser.');
     const rispondi = ev => {
       if (!ev.data || ev.data.fireops !== 'sitac3d-pronto') return;
-      w.postMessage({fireops:'sitac3d', geojson: fc}, '*');
+      w.postMessage({fireops:'sitac3d',
+        geojson: {type:'FeatureCollection', features: feat},
+        coni: {type:'FeatureCollection', features: archi}}, '*');
     };
     window.addEventListener('message', rispondi);
-    /* Il listener non resta appeso per sempre: dopo quindici secondi la
-       finestra o ha chiesto i dati o non li chiederà più. */
     setTimeout(() => window.removeEventListener('message', rispondi), 15000);
   }
 

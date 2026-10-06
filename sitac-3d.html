@@ -188,7 +188,7 @@ map.on('load', () => {
     'fog-color': '#b8c4cf', 'fog-ground-blend': 0.6,
     'sky-horizon-blend': 0.5, 'horizon-fog-blend': 0.5
   });
-  if (datiInAttesa){ disegna(datiInAttesa); datiInAttesa = null; }
+  if (datiInAttesa){ disegna(datiInAttesa.fc, datiInAttesa.coni); datiInAttesa = null; }
 });
 
 /* -------------------------------------------------------------------
@@ -203,7 +203,7 @@ let pronti = false;
 window.addEventListener('message', ev => {
   const d = ev.data;
   if (!d || d.fireops !== 'sitac3d' || !d.geojson) return;
-  if (map.isStyleLoaded() && map.getTerrain()) disegna(d.geojson);
+  if (map.isStyleLoaded() && map.getTerrain()) disegna(d.geojson, d.coni);
   else datiInAttesa = d.geojson;
 });
 
@@ -225,7 +225,7 @@ setTimeout(() => {
    ------------------------------------------------------------------- */
 const marcatori = [];
 
-function disegna(fc){
+function disegna(fc, fcConi){
   pronti = true;
   $('avviso').hidden = true;
   marcatori.forEach(m => m.remove());
@@ -258,9 +258,11 @@ function disegna(fc){
   disegnaAree(aree);
   disegnaLinee(linee);
   fasciaAerei(aerei);
+  disegnaConi(fcConi);    
 
   $('conta').textContent = `${punti} simboli · ${linee.length} tracciati · `
-    + `${aree.length} aree · ${aerei.length} in volo`;
+    + `${aree.length} aree · ${aerei.length} in volo`
+    + ((fcConi && fcConi.features.length) ? ' · coni di propagazione' : '');
 
   if (!estremi.isEmpty()){
     inquadratura = estremi;
@@ -323,6 +325,23 @@ function disegnaLinee(lista){
     layout: {'line-cap': 'butt'},
     paint: {'line-color': '#ffffff', 'line-width': ['get', '_peso'],
             'line-dasharray': [1.6, 1.6], 'line-opacity': 0.9}});
+}
+
+/* I coni sono previsioni e devono leggersi come tali: nessun riempimento
+   pieno, solo il contorno. Su un versante 3D una campitura rossa coprirebbe
+   proprio il terreno che si è venuti a guardare — e farebbe sembrare
+   rilevato quello che è stimato. */
+function disegnaConi(fc){
+  if (!fc || !fc.features || !fc.features.length) return;
+  sorgente('coni', fc);
+  if (map.getLayer('coni-l')) return;
+  map.addLayer({id: 'coni-f', type: 'fill', source: 'coni',
+    filter: ['==', ['geometry-type'], 'Polygon'],
+    paint: {'fill-color': '#ff3b30', 'fill-opacity': 0.10}});
+  map.addLayer({id: 'coni-l', type: 'line', source: 'coni',
+    layout: {'line-cap': 'round', 'line-join': 'round'},
+    paint: {'line-color': '#ff3b30', 'line-width': 2.2,
+            'line-dasharray': [3, 2], 'line-opacity': 0.95}});
 }
 
 function disegnaAree(lista){
