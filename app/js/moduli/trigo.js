@@ -995,7 +995,8 @@ function m1SetD(D,mode){
   m1.D=D;m1.dMode=mode;
   if(document.activeElement!==$('#m1-d'))$('#m1-d').value=D>0?D.toFixed(1):'';
   if(document.activeElement!==$('#m1-p'))$('#m1-p').value=D>0?(Math.round(D/PASSO*10)/10):'';
-  $('#m1-dsrc').textContent=D>0?(mode==='map'?'Calcolata dalla mappa: distanza tra la tua posizione e il target.':'Valore inserito a mano.'):'Imposta target e posizione sulla mappa, oppure scrivi la distanza.';
+  if(document.activeElement!==$('#m1-b'))$('#m1-b').value=D>0?(Math.round(D/FT*10)/10):'';
+  $('#m1-dsrc').textContent=D>0?(mode==='map'?'Calcolata dai punti impostati (mappa, GPS o coordinate): distanza tra la tua posizione e il target.':'Valore inserito a mano.'):'Imposta target e posizione sulla mappa, oppure scrivi la distanza.';
   $('#m1-dmap').hidden=!(mode==='manual'&&m1.obs&&m1.tgt);
 }
 function m1Render(){
@@ -1027,7 +1028,7 @@ function m1Render(){
       <div class="big-l">${T.h}</div>
       <div class="big-n">${fmt(r.H,1)}<small>m</small></div>
       <dl class="kv">
-        <dt>Distanza orizzontale</dt><dd>${fmt(D,1)} m · ${fmt(D/PASSO,0)} passi</dd>
+        <dt>Distanza orizzontale</dt><dd>${fmt(D,1)} m · ${fmt(D/PASSO,0)} passi · ${fmt(D/FT,0)} tacco-punta</dd>
         <dt>Distanza inclinata alla base</dt><dd>${fmt(r.sBase,1)} m</dd>
         <dt>Distanza inclinata alla cima</dt><dd>${fmt(r.sTop,1)} m</dd>
         <dt>Alzo · angolo base</dt><dd>${sgn(m1.s.beta,1)}° · ${sgn(m1.s.alpha,1)}°</dd>
@@ -1064,6 +1065,14 @@ function m1Export(){
   if(hasArea(m1.type)&&m1.margin>1)f.push({type:'Feature',properties:{ruolo:'fascia_rispetto',raggio_m:+(r.H*m1.margin).toFixed(2)},geometry:{type:'Polygon',coordinates:[ring(m1.tgt,r.H*m1.margin)]}});
   download(JSON.stringify({type:'FeatureCollection',features:f},null,1),'fireops-trigo-altezza-'+stamp()+'.geojson','application/geo+json');
 }
+const m1c={fmt:'dd',zone:32};
+const m1CId=k=>'#m1-c'+(k==='tgt'?'t':'o');
+function m1CWrite(k){
+  const el=$(m1CId(k));if(!el)return;
+  if(document.activeElement!==el)el.value=m1[k]?fmtCoord(m1[k],m1c.fmt,m1c.zone):'';
+  el.removeAttribute('aria-invalid');
+}
+function m1CLabel(){$('#m1-ctl').textContent=m1.type==='teleferica'?'Punto a terra sotto il punto alto (target)':'Target (base dell’oggetto)';}
 function initM1(){
   const v=$('#tg-altezza');
   v.innerHTML=`<div class="steps"></div>
@@ -1074,13 +1083,29 @@ function initM1(){
       <div class="chips" id="m1-types">${Object.keys(T1).map(k=>`<button type="button" class="btn sm ${k===m1.type?'on':''}" data-t="${k}">${T1[k].n}</button>`).join('')}</div>
     </div>
     <div id="m1-slot1"></div>
+    <div class="card"><h3>Coordinate</h3>
+      <label class="f" for="m1-ct" id="m1-ctl"></label>
+      <div class="row">
+        <input id="m1-ct" class="m1c" inputmode="decimal" placeholder="41.8902, 12.4922" autocomplete="off">
+        <select class="m1zone fit" aria-label="Fuso UTM" hidden>${[31,32,33,34,35].map(z=>`<option value="${z}" ${z===32?'selected':''}>Fuso ${z}</option>`).join('')}</select>
+        <select class="m1fmt fit" aria-label="Formato coordinate"><option value="dd">Lat, Lon</option><option value="utm">UTM</option></select>
+      </div>
+      <label class="f" for="m1-co">La mia posizione (osservatore)</label>
+      <div class="row">
+        <input id="m1-co" class="m1c" inputmode="decimal" placeholder="41.8902, 12.4922" autocomplete="off">
+        <select class="m1zone fit" aria-label="Fuso UTM" hidden>${[31,32,33,34,35].map(z=>`<option value="${z}" ${z===32?'selected':''}>Fuso ${z}</option>`).join('')}</select>
+        <select class="m1fmt fit" aria-label="Formato coordinate"><option value="dd">Lat, Lon</option><option value="utm">UTM</option></select>
+      </div>
+      <p class="sub" id="m1-cinfo">Scrivi le coordinate, oppure usa la mappa o il GPS. Con entrambe la distanza si calcola da sola.</p>
+    </div>
     <div class="card"><h3>Distanza orizzontale</h3>
       <div class="row">
         <div><label class="f" for="m1-d">Metri</label><input id="m1-d" type="number" inputmode="decimal" step="0.1" min="0"></div>
         <div><label class="f" for="m1-p">Passi</label><input id="m1-p" type="number" inputmode="decimal" step="1" min="0"></div>
+        <div><label class="f" for="m1-b">Tacco-punta</label><input id="m1-b" type="number" inputmode="decimal" step="1" min="0"></div>
       </div>
       <p class="sub" id="m1-dsrc"></p>
-      <p class="sub">1 piede = 31 cm · 1 passo = 2,5 piedi = 77,5 cm. Puoi anche scrivere i passi contati sul terreno.</p>
+      <p class="sub">Scrivi la distanza in metri, in passi o in tacco-punta (piedi): gli altri campi si aggiornano. 1 tacco-punta = 31 cm · 1 passo = 2,5 tacco-punta = 77,5 cm.</p>
       <button type="button" class="btn sm" id="m1-dmap" style="margin-top:8px" hidden>Torna alla distanza da mappa</button>
     </div>
     <button type="button" class="btn pri big" data-go="2">Vai alla misura con la camera</button>
@@ -1103,10 +1128,11 @@ function initM1(){
     pins:{tgt:{t:'T',bg:'#d8262f',fg:'#fff'},obs:{t:'Io',bg:'#ffd400',fg:'#000'}},
     hints:{tgt:()=>T1[m1.type].tgt,obs:'Tocca la mappa dove ti trovi (oppure usa il GPS).'},
     idleHint:'Imposta il target e la tua posizione: la distanza si calcola da sola. Trascina i segnaposto per correggere.',
-    onChange:(k,ll)=>{
+    onChange:(k,ll,src)=>{
       m1[k]=ll;
+      if(m1c.fmt==='utm'&&src!=='drag'){const z=utmZone(ll[1]);if(z>=31&&z<=35){m1c.zone=z;$$('.m1zone',v).forEach(x=>{x.value=z;});}}
       if(m1.tgt&&m1.obs)m1SetD(distLL(m1.obs,m1.tgt),'map');
-      m1Render();
+      m1CWrite(k);m1Render();
     }
   },$('#m1-slot1'));
 
@@ -1140,10 +1166,11 @@ function initM1(){
   $('#m1-types').addEventListener('click',e=>{
     const b=e.target.closest('[data-t]');if(!b)return;
     m1.type=b.dataset.t;$$('#m1-types .btn').forEach(x=>x.classList.toggle('on',x===b));
-    m1.flow.refresh();m1.ui.refreshHint();m1Render();
+    m1CLabel();m1.flow.refresh();m1.ui.refreshHint();m1Render();
   });
-  $('#m1-d').addEventListener('input',()=>{const x=num('m1-d');m1SetD(x==null?null:x,'manual');if(x!=null)$('#m1-p').value=Math.round(x/PASSO*10)/10;m1Render();});
-  $('#m1-p').addEventListener('input',()=>{const x=num('m1-p');const d=x==null?null:r2(x*PASSO);m1SetD(d,'manual');if(d!=null)$('#m1-d').value=d.toFixed(1);m1Render();});
+  $('#m1-d').addEventListener('input',()=>{const x=num('m1-d');m1SetD(x==null?null:x,'manual');m1Render();});
+  $('#m1-p').addEventListener('input',()=>{const x=num('m1-p');const d=x==null?null:r2(x*PASSO);m1SetD(d,'manual');m1Render();});
+  $('#m1-b').addEventListener('input',()=>{const x=num('m1-b');const d=x==null?null:r2(x*FT);m1SetD(d,'manual');m1Render();});
   $('#m1-dmap').onclick=()=>{if(m1.obs&&m1.tgt){m1SetD(distLL(m1.obs,m1.tgt),'map');m1Render();}};
   v.addEventListener('click',e=>{
     const sg=e.target.closest('#m1-seg button');
@@ -1151,6 +1178,33 @@ function initM1(){
     if(e.target.closest('#m1-exp'))m1Export();
     if(e.target.closest('#m1-new')){m1.flow.reset();m1.steps.go(2);}
   });
+  const m1CSync=()=>{
+    $$('.m1fmt',v).forEach(x=>{x.value=m1c.fmt;});$$('.m1zone',v).forEach(x=>{x.value=m1c.zone;});
+    $$('.m1zone',v).forEach(x=>{x.hidden=m1c.fmt!=='utm';});
+    $$('.m1c',v).forEach(x=>{x.placeholder=m1c.fmt==='utm'?'291234 4640123':'41.8902, 12.4922';});
+    m1CWrite('tgt');m1CWrite('obs');
+  };
+  v.addEventListener('change',e=>{
+    const t=e.target;
+    if(t.classList.contains('m1fmt')){
+      m1c.fmt=t.value;
+      if(m1c.fmt==='utm'){const f=m1.tgt||m1.obs;if(f){const z=utmZone(f[1]);if(z>=31&&z<=35)m1c.zone=z;}}
+      m1CSync();return;
+    }
+    if(t.classList.contains('m1zone')){m1c.zone=parseInt(t.value,10);m1CSync();return;}
+    if(t.classList.contains('m1c')){
+      const k=t.id==='m1-ct'?'tgt':'obs',txt=t.value.trim();
+      if(!txt){m1[k]=null;m1.ui.removePoint(k);}
+      else{
+        const ll=parseCoord(txt,m1c.fmt,m1c.zone);
+        if(!ll){t.setAttribute('aria-invalid','true');toast(m1c.fmt==='utm'?'Formato non valido: scrivi Est e Nord, ad esempio 291234 4640123, e controlla il fuso.':'Formato non valido: scrivi latitudine e longitudine, ad esempio 41.8902, 12.4922.');return;}
+        m1[k]=ll;m1.ui.setPoint(k,ll);m1.ui.fit();
+      }
+      if(m1.tgt&&m1.obs)m1SetD(distLL(m1.obs,m1.tgt),'map');
+      m1CWrite(k);m1Render();
+    }
+  });
+  m1CLabel();
   m1SetD(null,'map');
   m1.steps.go(1);
   m1Render();
