@@ -19,7 +19,6 @@ const LOGO_DEF={corner:'tr',z:0.17,margin:0.04,r:0,a:100};
 const CORNERS={tl:'in alto a sinistra',tr:'in alto a destra',bl:'in basso a sinistra',br:'in basso a destra'};   // z e margine: frazione del lato corto della foto
 const STR={media:0.18,forte:0.3,massima:0.45};   // raggio di sfocatura rispetto al lato minore del riquadro
 const KINDS={zona:'Zona',volto:'Volto',targa:'Targa',marchio:'Marchio'};
-const OCR_URL='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
 const MP_URL='https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs';
 const MP_WASM='https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm';
 const MP_MODEL='https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite';
@@ -91,10 +90,6 @@ function nms(boxes,thr){
   }
   return out;
 }
-function isPlateText(t){
-  const s=String(t||'').toUpperCase().replace(/[\s.\-·]/g,'');
-  return /^[A-Z]{2}\d{3}[A-Z]{2}$/.test(s)||/^[A-Z]{2}\d{5,6}$/.test(s)||/^(?=.*\d)(?=.*[A-Z])[A-Z0-9]{5,8}$/.test(s);
-}
 /* logo: centro normalizzato (x,y), larghezza z (frazione del LATO CORTO della foto), rotazione r gradi, ar = altezza/larghezza */
 function logoHit(lg,px,py,W,H){
   const w=lg.z*Math.min(W,H),h=w*lg.ar,dx=px-lg.x*W,dy=py-lg.y*H,c=Math.cos(-lg.r*D2R),s=Math.sin(-lg.r*D2R);
@@ -130,43 +125,6 @@ function cropClampCenter(cx,cy,iw,ih,aDeg,fw,fh,s){
   const b=cropHalf(aDeg,fw,fh),lx=Math.max(0,iw/2-b.x/s),ly=Math.max(0,ih/2-b.y/s);
   return {x:Math.max(-lx,Math.min(lx,cx)),y:Math.max(-ly,Math.min(ly,cy))};
 }
-/* targhe italiane: AA 123 AA (nuove) e AA 12345 (vecchie); corregge le confusioni tipiche dell'OCR in base alla posizione */
-const L2D={O:'0',Q:'0',D:'0',I:'1',L:'1',B:'8',S:'5',Z:'2',G:'6'},D2L={'0':'O','1':'I','8':'B','5':'S','2':'Z','6':'G'};
-function fixPlate(t){
-  const s=String(t||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
-  if(s.length===7){
-    let o='';
-    for(let i=0;i<7;i++){
-      const ch=s[i],letter=i<2||i>4;
-      o+=letter?(/[A-Z]/.test(ch)?ch:(D2L[ch]||'?')):(/[0-9]/.test(ch)?ch:(L2D[ch]||'?'));
-    }
-    if(/^[A-Z]{2}\d{3}[A-Z]{2}$/.test(o))return o;
-  }
-  if(/^[A-Z]{2}\d{5,6}$/.test(s))return s;
-  return null;
-}
-/* parole OCR {t,x,y,w,h,c} → riquadri di targa; unisce fino a 3 parole vicine sulla stessa riga ("AB" "123" "CD") */
-function plateCandidates(words){
-  const ws=words.filter(w=>w&&w.t&&w.w>0&&w.h>0).slice().sort((a,b)=>a.x-b.x),out=[];
-  for(let i=0;i<ws.length;i++){
-    let txt='',x0=1e9,y0=1e9,x1=-1e9,y1=-1e9,last=null,cmin=100;
-    for(let j=i,n=0;j<ws.length&&n<3;j++){
-      const w=ws[j];
-      if(last){
-        const hh=Math.max(w.h,last.h),gap=w.x-(last.x+last.w);
-        if(Math.abs((w.y+w.h/2)-(last.y+last.h/2))>0.6*hh||gap>1.5*hh||gap<-0.5*hh)continue;
-      }
-      txt+=w.t;x0=Math.min(x0,w.x);y0=Math.min(y0,w.y);x1=Math.max(x1,w.x+w.w);y1=Math.max(y1,w.y+w.h);
-      last=w;n++;cmin=Math.min(cmin,w.c==null?100:w.c);
-      const f=fixPlate(txt);
-      if(f&&cmin>=40){const bw=x1-x0,bh=y1-y0,ar=bw/bh;if(ar>1.8&&ar<9)out.push({x:x0,y:y0,w:bw,h:bh,text:f});}
-    }
-  }
-  return out;
-}
-/* marchi scritti (solo testo leggibile, non le forme dei loghi) */
-const BRANDS=['FIAT','FORD','OPEL','AUDI','BMW','MERCEDES','VOLKSWAGEN','VOLVO','TOYOTA','HONDA','NISSAN','RENAULT','PEUGEOT','CITROEN','SKODA','SEAT','KIA','HYUNDAI','MAZDA','SUZUKI','JEEP','LANCIA','TESLA','IVECO','SCANIA','PIAGGIO','VESPA','DUCATI','YAMAHA','KAWASAKI','APRILIA','PORSCHE','FERRARI','MASERATI','LAMBORGHINI','DACIA','SUBARU','MITSUBISHI','AMAZON','DHL','BRT','GLS','ENEL','TAMOIL','SHELL','COCACOLA','MCDONALDS','ALFA','ROMEO','FEDEX','TNT'];
-function isBrandWord(t){return BRANDS.indexOf(String(t||'').toUpperCase().replace(/[^A-Z0-9]/g,''))>=0;}
 /*MATH-END*/
 
 const CSS=`.pg-foto{--acc:var(--ics-comando);--ok:#3fa66b;--bad:#e8734a;--line2:#3a4552;
@@ -280,13 +238,16 @@ const HTML=`<div class="steps" id="fo-steps"></div>
 </div>
 
 <div class="panel" data-s="3" hidden>
-  <div class="card"><h3>Riconoscimento automatico</h3>
-    <div class="row"><button type="button" class="btn pri" id="fo-faces">Trova volti</button><button type="button" class="btn" id="fo-plates">Trova targhe e marchi</button></div>
-    <p class="sub" id="fo-auto">Un riquadro sfocato per ogni volto, targa o marchio scritto trovato. Controlla sempre il risultato e correggi a mano: il riconoscimento può sbagliare.</p>
+  <div class="card"><h3>Volti</h3>
+    <div class="row"><button type="button" class="btn pri" id="fo-faces">Trova volti</button></div>
+    <p class="sub" id="fo-auto">Un riquadro sfocato per ogni volto trovato. Controlla sempre il risultato e correggi a mano: il riconoscimento può sbagliare. Targhe e marchi vanno segnati a mano (qui sotto, "Che cosa copri").</p>
   </div>
   <div class="card"><h3>Sfocatura a mano</h3>
     <div class="seg" id="fo-tools" role="group" aria-label="Strumento">
-      <button type="button" data-t="sel" class="on">Seleziona</button><button type="button" data-t="rect">Rettangolo</button><button type="button" data-t="oval">Ovale</button><button type="button" data-t="free">A mano</button>
+      <button type="button" data-t="sel" class="on">Seleziona</button><button type="button" data-t="rect">Rettangolo</button><button type="button" data-t="oval">Ovale</button><button type="button" data-t="free">A mano</button><button type="button" data-t="poly">Poligono</button>
+    </div>
+    <div class="row" id="fo-polybar" style="margin-top:8px" hidden>
+      <button type="button" class="btn sm pri" id="fo-pclosepoly">Chiudi forma</button><button type="button" class="btn sm" id="fo-ppt">Annulla punto</button><button type="button" class="btn sm" id="fo-ppc">Cancella</button>
     </div>
     <label class="f" for="fo-kind">Che cosa copri</label>
     <select id="fo-kind"><option value="zona">Zona</option><option value="volto">Volto</option><option value="targa">Targa</option><option value="marchio">Marchio</option></select>
@@ -298,7 +259,7 @@ const HTML=`<div class="steps" id="fo-steps"></div>
       <button type="button" class="btn sm" id="fo-shape">Forma</button><button type="button" class="btn sm" id="fo-dup">Duplica</button>
       <button type="button" class="btn sm" id="fo-del">Elimina</button><button type="button" class="btn sm" id="fo-undo">Annulla</button>
     </div>
-    <p class="sub">Con "Rettangolo" o "Ovale" trascini sulla foto per disegnare un riquadro; con "A mano" disegni col dito il contorno di una forma qualsiasi. Con "Seleziona" tocchi un riquadro per spostarlo o ridimensionarlo dagli angoli. Due dita: zoom e spostamento.</p>
+    <p class="sub">Con "Rettangolo" o "Ovale" trascini sulla foto per disegnare un riquadro; con "A mano" disegni col dito il contorno di una forma qualsiasi; con "Poligono" tocchi i vertici uno dopo l'altro e chiudi toccando il primo punto (o con "Chiudi forma"). Con "Seleziona" tocchi un riquadro per spostarlo o ridimensionarlo dagli angoli. Due dita: zoom e spostamento.</p>
   </div>
   <button type="button" class="btn pri big" data-go="4">Vai al logo</button>
 </div>
@@ -356,7 +317,7 @@ function toast(m){const t=$('#fo-toast');t.textContent=m;t.hidden=false;clearTim
 const S={
   img:null,iw:0,ih:0,W:0,H:0,comp:null,regions:[],sel:-1,hist:[],tool:'sel',kind:'zona',str:'forte',
   logo:{img:null,ar:0.5,ok:false,show:true,x:0.9,y:0.1,z:LOGO_DEF.z,r:LOGO_DEF.r,a:LOGO_DEF.a,corner:LOGO_DEF.corner,pad:LOGO_DEF.margin,lock:true},
-  orig:null,crop:null,view:{s:1,x:0,y:0},cw:0,ch:0,dpr:1,step:1,painting:false,busy:false
+  orig:null,crop:null,poly:[],view:{s:1,x:0,y:0},cw:0,ch:0,dpr:1,step:1,painting:false,busy:false
 };
 let cv,ctx,steps;
 
@@ -498,6 +459,11 @@ function draw(){
     });
     if(S.draft){if(S.draft.shape==='free'&&!S.draft.pts)S.draft=null;}
     if(S.draft){pathRegion(g,S.draft);g.lineWidth=2;g.strokeStyle='#ffd400';g.setLineDash([6,4]);g.stroke();g.setLineDash([]);}
+    if(S.tool==='poly'&&S.poly.length){
+      g.beginPath();S.poly.forEach((q,i)=>{const a=toScr({x:q[0]*S.W,y:q[1]*S.H});if(i)g.lineTo(a.x,a.y);else g.moveTo(a.x,a.y);});
+      g.lineWidth=2;g.strokeStyle='#ffd400';g.setLineDash([6,4]);g.stroke();g.setLineDash([]);
+      S.poly.forEach((q,i)=>{const a=toScr({x:q[0]*S.W,y:q[1]*S.H});g.beginPath();g.arc(a.x,a.y,i===0?9:5,0,Math.PI*2);g.fillStyle=i===0?'#ffd400':'#fff';g.fill();g.lineWidth=2;g.strokeStyle='#000';g.stroke();});
+    }
     if(S.sel>=0&&S.regions[S.sel]){
       corners(S.regions[S.sel]).forEach(c=>{g.fillStyle='#ffd400';g.strokeStyle='#000';g.lineWidth=2;g.beginPath();g.rect(c.x-9,c.y-9,18,18);g.fill();g.stroke();});
     }
@@ -520,6 +486,21 @@ function undo(){
   const o=JSON.parse(j);S.regions=o.r;S.sel=Math.min(o.s,S.regions.length-1);
   changed();
 }
+/* poligono: un tocco aggiunge un vertice; si chiude toccando il primo o con "Chiudi forma" */
+function polyAdd(ip){
+  const q=[clamp(ip.x,0,S.W)/S.W,clamp(ip.y,0,S.H)/S.H];
+  if(S.poly.length>=3){
+    const f=toScr({x:S.poly[0][0]*S.W,y:S.poly[0][1]*S.H}),c=toScr({x:q[0]*S.W,y:q[1]*S.H});
+    if(Math.hypot(f.x-c.x,f.y-c.y)<=22){polyClose();return;}
+  }
+  S.poly.push(q);uiRegions();paint();
+}
+function polyClose(){
+  if(S.poly.length<3){toast('Servono almeno 3 punti.');return;}
+  const pts=S.poly.slice(),bb=bboxPts(pts);S.poly=[];
+  if(bb.w*S.W*S.view.s<10||bb.h*S.H*S.view.s<10){uiRegions();paint();return;}
+  snap();S.regions.push({...bb,shape:'free',pts,kind:S.kind,s:S.str});S.sel=S.regions.length-1;changed();
+}
 function changed(){rebuildComp();uiRegions();paint();}
 
 /* ---------------- foto e inquadratura ---------------- */
@@ -528,7 +509,7 @@ function setBase(src,w,h){
   S.img=src;S.iw=w;S.ih=h;
   const k=Math.min(1,WORK_MAX/Math.max(w,h));
   S.W=Math.max(1,Math.round(w*k));S.H=Math.max(1,Math.round(h*k));
-  S.comp=null;S.regions=[];S.sel=-1;S.hist=[];S.draft=null;
+  S.comp=null;S.regions=[];S.sel=-1;S.hist=[];S.draft=null;S.poly=[];
   $('#fo-info').textContent='Foto '+w+' × '+h+' px. Salvando si tolgono i dati nascosti (EXIF), posizione GPS compresa.';
   snapCorner();
 }
@@ -681,81 +662,6 @@ async function findFaces(){
     toast('Riconoscimento volti non disponibile');
   }finally{b.disabled=false;b.textContent=t;}
 }
-let ocrLib=null;
-function loadScript(url){
-  return new Promise((res,rej)=>{
-    if(window.Tesseract)return res();
-    const sc=document.createElement('script');sc.src=url;sc.crossOrigin='anonymous';
-    sc.onload=()=>res();sc.onerror=()=>rej(new Error('script'));document.head.appendChild(sc);
-  });
-}
-function wordsOf(data){
-  const out=[];
-  const push=w=>{const b=w.bbox||{};out.push({t:String(w.text||'').toUpperCase().replace(/[^A-Z0-9]/g,''),x:b.x0,y:b.y0,w:b.x1-b.x0,h:b.y1-b.y0,c:w.confidence});};
-  if(data.words&&data.words.length)data.words.forEach(push);
-  else (data.blocks||[]).forEach(bl=>(bl.paragraphs||[]).forEach(pa=>(pa.lines||[]).forEach(li=>(li.words||[]).forEach(push))));
-  return out.filter(w=>w.t);
-}
-/* OCR su una porzione della foto (px originali ox,oy,w,h) ridotta a max 1600: restituisce le parole in px originali */
-async function ocrPart(worker,ox,oy,w,h){
-  const k=Math.min(1,1600/Math.max(w,h)),c=document.createElement('canvas');
-  c.width=Math.max(1,Math.round(w*k));c.height=Math.max(1,Math.round(h*k));
-  c.getContext('2d').drawImage(S.img,ox/S.iw*S.img.width,oy/S.ih*S.img.height,w/S.iw*S.img.width,h/S.ih*S.img.height,0,0,c.width,c.height);
-  const r=await worker.recognize(c);
-  return wordsOf(r.data).map(q=>({...q,x:q.x/k+ox,y:q.y/k+oy,w:q.w/k,h:q.h/k}));
-}
-async function ocrBoxes(info){
-  await loadScript(OCR_URL);
-  const T=window.Tesseract,worker=await T.createWorker('eng');
-  try{
-    await worker.setParameters({tessedit_pageseg_mode:String(T.PSM?T.PSM.SPARSE_TEXT:11),tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'});
-    const parts=[[0,0,S.iw,S.ih]];
-    if(Math.max(S.iw,S.ih)>2000){
-      const tw=Math.round(S.iw*0.6),th=Math.round(S.ih*0.6);
-      [[0,0],[0.4,0],[0,0.4],[0.4,0.4]].forEach(f=>parts.push([Math.round(S.iw*f[0]),Math.round(S.ih*f[1]),tw,th]));
-    }
-    let words=[];
-    for(let i=0;i<parts.length;i++){
-      info.textContent='Leggo il testo nella foto ('+(i+1)+' di '+parts.length+')…';
-      try{words=words.concat(await ocrPart(worker,...parts[i]));}catch(e){if(i===0)throw e;}
-    }
-    return words;
-  }finally{try{await worker.terminate();}catch(e){}}
-}
-function addTagged(boxes,kind,shape,pad){
-  return addBoxes(boxes,{width:S.iw,height:S.ih},kind,shape,pad);
-}
-async function findPlates(){
-  if(!S.img){toast('Carica prima una foto.');return;}
-  const info=$('#fo-auto'),b=$('#fo-plates'),t=b.textContent;
-  b.disabled=true;b.textContent='Cerco…';
-  let plates=[],brands=[],how='';
-  try{
-    if(typeof window.TextDetector==='function'){
-      try{
-        const c=detCanvas(),k=S.iw/c.width,res=await new window.TextDetector().detect(c);
-        plates=res.filter(r=>{const w=r.boundingBox.width,h=r.boundingBox.height,ar=w/Math.max(1,h);return isPlateText(r.rawValue)&&ar>1.6&&ar<8;})
-          .map(r=>({x:r.boundingBox.x*k,y:r.boundingBox.y*k,w:r.boundingBox.width*k,h:r.boundingBox.height*k}));
-        res.forEach(r=>{if(isBrandWord(r.rawValue))brands.push({x:r.boundingBox.x*k,y:r.boundingBox.y*k,w:r.boundingBox.width*k,h:r.boundingBox.height*k});});
-        how='td';
-      }catch(e){how='';}
-    }
-    if(!plates.length&&!brands.length){
-      const words=await ocrBoxes(info);
-      plates=nms(plateCandidates(words),0.3);
-      brands=nms(words.filter(w=>w.c>=50&&isBrandWord(w.t)),0.3);
-      how='ocr';
-    }
-    const np=plates.length?addTagged(plates,'targa','rect',0.12):0,nb=brands.length?addTagged(brands,'marchio','rect',0.2):0;
-    info.textContent=(np||nb)
-      ?(np?np+(np===1?' targa':' targhe'):'')+(np&&nb?' e ':'')+(nb?nb+(nb===1?' marchio':' marchi'):'')+' sfocati. Controlla la foto: il riconoscimento legge solo testo ben visibile, le targhe piccole o storte possono sfuggire. Aggiungi a mano quello che manca.'
-      :'Nessuna targa o marchio scritto riconosciuto. Segnali a mano con Rettangolo o A mano ("Che cosa copri": Targa o Marchio).';
-  }catch(e){
-    info.textContent='Riconoscimento delle targhe non disponibile: serve la connessione la prima volta (si scarica il lettore di testo). Segna le targhe a mano.';
-    toast('Targhe: riconoscimento non disponibile');
-  }finally{b.disabled=false;b.textContent=t;}
-}
-
 /* ---------------- interazione ---------------- */
 const ptr=new Map();
 let gest=null;
@@ -801,6 +707,7 @@ function onDown(e){
       if(i>=0){S.sel=i;uiRegions();gest={t:'move',i,ox:ip.x,oy:ip.y,r0:{...S.regions[i]},moved:false};paint();return;}
       S.sel=-1;uiRegions();gest={t:'pan',sx:sp.x,sy:sp.y,vx:S.view.x,vy:S.view.y};paint();return;
     }
+    if(S.tool==='poly'){gest={t:'polytap',s0:sp,sx:sp.x,sy:sp.y,vx:S.view.x,vy:S.view.y,moved:false};return;}
     if(S.tool==='free'){gest={t:'lasso',pts:[[ip.x,ip.y]],s0:sp};S.draft={shape:'free',pts:[[ip.x/S.W,ip.y/S.H]]};paint();return;}
     gest={t:'draw',p0:ip,s0:sp};return;
   }
@@ -841,7 +748,10 @@ function onMove(e){
     return;
   }
   const sp=cpos(e),ip=toImg(sp);
-  if(gest.t==='cresize'){
+  if(gest.t==='polytap'){
+    if(!gest.moved&&Math.hypot(sp.x-gest.s0.x,sp.y-gest.s0.y)>8)gest.moved=true;
+    if(gest.moved){S.vt=true;S.view.x=gest.vx+(sp.x-gest.sx);S.view.y=gest.vy+(sp.y-gest.sy);paint();}
+  }else if(gest.t==='cresize'){
     const r=cropRef();
     S.crop.fx=clamp(2*Math.abs(sp.x-S.cw/2)/r.w,0.1,1);S.crop.fy=clamp(2*Math.abs(sp.y-S.ch/2)/r.h,0.1,1);
     cropChanged();
@@ -879,7 +789,9 @@ function onMove(e){
 function onUp(e){
   if(!ptr.has(e.pointerId))return;
   const sp=cpos(e);ptr.delete(e.pointerId);
-  if(gest&&gest.t==='lasso'){
+  if(gest&&gest.t==='polytap'){
+    if(!gest.moved)polyAdd(toImg(sp));
+  }else if(gest&&gest.t==='lasso'){
     S.draft=null;
     let pts=thinPts(gest.pts.map(q=>[q[0]/S.W,q[1]/S.H]),3/Math.max(S.W*S.view.s,1));
     const bb=pts.length>=3?bboxPts(pts):null;
@@ -911,13 +823,15 @@ function uiRegions(){
   $('#fo-shape').textContent=sel?(sel.shape==='free'?'Forma: a mano':sel.shape==='oval'?'Forma: ovale':'Forma: rettangolo'):'Forma';
   $$('#fo-str button').forEach(b=>b.classList.toggle('on',b.dataset.v===(sel?sel.s:S.str)));
   if(sel)$('#fo-kind').value=sel.kind;
+  $('#fo-polybar').hidden=S.tool!=='poly';
+  $('#fo-pclosepoly').disabled=S.poly.length<3;$('#fo-ppt').disabled=!S.poly.length;$('#fo-ppc').disabled=!S.poly.length;
   $$('#fo-tools button').forEach(b=>b.classList.toggle('on',b.dataset.t===S.tool));
   steps&&steps.mark(3,S.regions.length>0);
   const h=$('#fo-hint');
   if(S.step===2&&S.img){h.hidden=false;h.textContent='Trascina per spostare; due dita per zoom e rotazione';}
   else if(S.step===3&&S.img){
     h.hidden=false;
-    h.textContent=S.tool==='sel'?(S.sel>=0?'Trascina per spostare, gli angoli per ridimensionare':'Tocca un riquadro, oppure scegli Rettangolo o Ovale per disegnarne uno'):(S.tool==='free'?'Disegna col dito il contorno da sfocare':'Trascina sulla foto per disegnare il riquadro');
+    h.textContent=S.tool==='sel'?(S.sel>=0?'Trascina per spostare, gli angoli per ridimensionare':'Tocca un riquadro, oppure scegli Rettangolo o Ovale per disegnarne uno'):(S.tool==='free'?'Disegna col dito il contorno da sfocare':S.tool==='poly'?(S.poly.length<3?'Tocca i vertici uno dopo l\'altro ('+S.poly.length+')':'Tocca il primo punto o "Chiudi forma" per finire'):'Trascina sulla foto per disegnare il riquadro');
   }else if(S.step===4&&S.img){h.hidden=false;h.textContent=S.logo.lock?'Logo fisso. Spunta "Modifica logo" per spostarlo':'Trascina il logo; due dita sul logo: dimensione e rotazione';}
   else h.hidden=true;
 }
@@ -1051,8 +965,8 @@ function setup(){
   $('#fo-creset').onclick=()=>{if(!C())return;Object.assign(C(),{q:0,t:0,asp:'orig',m:1,cx:0,cy:0,fx:1,fy:1,land:S.orig.w>=S.orig.h});cropChanged();};
 
   /* riquadri */
-  $('#fo-faces').onclick=findFaces;$('#fo-plates').onclick=findPlates;
-  $('#fo-tools').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.tool=b.dataset.t;uiRegions();paint();});
+  $('#fo-faces').onclick=findFaces;
+  $('#fo-tools').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.tool=b.dataset.t;if(S.tool!=='poly')S.poly=[];uiRegions();paint();});
   $('#fo-kind').onchange=e=>{S.kind=e.target.value;const rg=S.regions[S.sel];if(rg){snap();rg.kind=S.kind;uiRegions();}};
   $('#fo-str').addEventListener('click',e=>{
     const b=e.target.closest('button');if(!b)return;
@@ -1068,6 +982,9 @@ function setup(){
   };
   $('#fo-del').onclick=()=>{if(S.sel<0)return;snap();S.regions.splice(S.sel,1);S.sel=-1;changed();};
   $('#fo-undo').onclick=undo;
+  $('#fo-pclosepoly').onclick=polyClose;
+  $('#fo-ppt').onclick=()=>{S.poly.pop();uiRegions();paint();};
+  $('#fo-ppc').onclick=()=>{S.poly=[];uiRegions();paint();};
 
   /* logo */
   const L=S.logo,upd=()=>{snapCorner();uiLogo();saveLogoPrefs();paint();};
