@@ -19,7 +19,11 @@
   // ---- Funzioni ICS e moduli: per aggiungere un modulo basta una riga in "moduli" ----
   const SEZIONI = [
     {id: "comando", nome: "Comando", sigla: "C", colore: "var(--ics-comando)", testo: "#10141a",
-      sub: "Direzione e coordinamento", moduli: []},
+      sub: "Direzione e coordinamento",
+     moduli: [
+    {id:"foto", nome:"Foto", sotto:"Logo e sfocatura di volti, targhe e marchi",
+  desc:"Aggiungi il logo CNVVF e sfoca volti, targhe e marchi prima di condividere una foto", ico:"📷"}
+       ]},
     {id: "operazioni", nome: "Operazioni", sigla: "O", colore: "var(--ics-operazioni)", testo: "#fff",
       sub: "Gestione dell'intervento",
       moduli: [
