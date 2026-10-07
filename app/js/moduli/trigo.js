@@ -117,6 +117,7 @@ const CSS=`.pg-trigo{--acc:var(--ics-pianificazione);--ok:#3fa66b;--bad:#e8734a;
 .pg-trigo .mk.edge span{left:0;top:44%}
 .pg-trigo .mk.edge.r span{left:auto;right:0}
 
+.pg-trigo #m2-mode{flex-wrap:wrap}.pg-trigo #m2-mode button{flex:1 1 45%}
 .pg-trigo .stg{display:grid;grid-template-columns:repeat(var(--cols,3),1fr);gap:6px;margin-top:8px}
 .pg-trigo .stgc{border:1px solid var(--line);border-radius:6px;background:var(--panel);padding:4px 8px;display:grid;grid-template-columns:1fr auto;align-items:center;gap:0 4px}
 .pg-trigo .stgl{grid-column:1/-1;background:none;border:0;text-align:left;font-weight:600;font-size:13px;color:var(--text-dim);padding:2px 0;cursor:pointer}
@@ -240,7 +241,7 @@ const HTML=`<div class="tg-nav" id="tg-nav" hidden><button type="button" class="
       <path d="M52 66l4-40h8l4 40z"/><path d="M55 26v-8h10v8"/><path d="M54 18l6-9 6 9z"/>
       <path d="M4 68q4-4 8 0t8 0t8 0t8 0"/><circle cx="12" cy="58" r="3.2"/>
       <path d="M12 58h40" stroke-dasharray="3 4"/><path d="M12 58L60 22" stroke="#10141a"/></svg></span>
-    <span class="tx"><h2>Problema del faro</h2><p>Distanza da un punto di quota nota, con l’alzo.</p></span>
+    <span class="tx"><h2>Problema del faro</h2><p>Distanza, quota o posizione di un punto, con l’alzo.</p></span>
   </button>
 
   <button type="button" class="choice" data-to="area">
@@ -543,6 +544,12 @@ function distFromAngle(dz,thetaDeg,curv,k){
   return r.length?Math.min(...r):NaN;
 }
 
+/* Faro al contrario: dislivello da distanza e alzo (inversa di distFromAngle) */
+function dzFromDist(D,thetaDeg,curv,k){
+  k=(k==null)?0.13:k;
+  return D*Math.tan(thetaDeg*D2R)+(curv?(1-k)/(2*EARTH)*D*D:0);
+}
+
 /* Snellius–Potenot: intersezione di due archi capaci; P = riflesso di B rispetto alla retta dei centri */
 function circleCenter(P1,P2,angDeg){
   const s=Math.sin(angDeg*D2R); if(Math.abs(s)<1e-6) return null;
@@ -827,7 +834,7 @@ function makeFlow(p,stages,store,hint,onChange,onCapture,okc){
     onChange();
   });
   refresh();
-  return {refresh,act:()=>act,reset(){stages.forEach(s=>{store[s.key]=null;});act=0;refresh();onChange();}};
+  return {refresh,act:()=>act,go(i){act=i;refresh();},reset(){stages.forEach(s=>{store[s.key]=null;});act=0;refresh();onChange();}};
 }
 /* HUD di inclinazione (modalità clinometro) */
 function pitchRender(p,store){
@@ -1213,37 +1220,121 @@ function initM1(){
 /* ============================================================ */
 /*  2 · Problema del faro                                       */
 /* ============================================================ */
-const m2={obs:null,tgt:null,s:{zero:null,theta:null},ui:null,flow:null,steps:null};
+const m2={mode:'dist',obs:null,tgt:null,s:{zero:null,theta:null,az:0},azAuto:true,stages:null,ui:null,flow:null,steps:null};
 async function dem(ll){
   const r=await fetch('https://api.open-meteo.com/v1/elevation?latitude='+ll[0].toFixed(6)+'&longitude='+ll[1].toFixed(6));
   const j=await r.json();return j&&j.elevation?j.elevation[0]:null;
 }
+const UNITS={m:1,km:1000,NM:1852,passi:PASSO};
+function m2Dist(){const v=num('m2-dv'),u=UNITS[$('#m2-du').value]||1;return v==null||v<=0?null:v*u;}
 function m2Calc(){
-  const zo=num('m2-zo'),hp=num('m2-hp'),zt=num('m2-zt'),ht=num('m2-ht'),th=m2.s.theta;
-  if([zo,hp,zt,ht].some(x=>x==null)||th==null)return null;
-  const dz=(zt+ht)-(zo+hp),curv=$('#m2-curv').checked;
-  const D=distFromAngle(dz,th,curv),D0=distFromAngle(dz,th,false);
-  const Dp=distFromAngle(dz,th+0.1,curv),Dm=distFromAngle(dz,th-0.1,curv);
-  return {dz,D,D0,Dp,Dm,curv,th};
+  const zo=num('m2-zo'),hp=num('m2-hp'),zt=num('m2-zt'),ht=num('m2-ht'),th=m2.s.theta,curv=$('#m2-curv').checked,mode=m2.mode;
+  if(th==null)return null;
+  if(mode==='pos'){
+    if([zo,hp,zt,ht].some(x=>x==null)||m2.s.az==null)return null;
+    const dz=(zt+ht)-(zo+hp),D=distFromAngle(dz,th,curv),D0=distFromAngle(dz,th,false);
+    const Dp=distFromAngle(dz,th+0.1,curv),Dm=distFromAngle(dz,th-0.1,curv);
+    const decl=num('m2-decl')||0,brg=norm360(m2.s.az+decl);
+    const pos=(m2.obs&&Number.isFinite(D))?destLL(m2.obs,brg,D):null;
+    return {mode,dz,D,D0,Dp,Dm,curv,th,az:m2.s.az,decl,brg,pos,noObs:!m2.obs,lat:Number.isFinite(D)?D*Math.tan(3*D2R):NaN};
+  }
+  if(mode==='dist'){
+    if([zo,hp,zt,ht].some(x=>x==null))return null;
+    const dz=(zt+ht)-(zo+hp);
+    const D=distFromAngle(dz,th,curv),D0=distFromAngle(dz,th,false);
+    const Dp=distFromAngle(dz,th+0.1,curv),Dm=distFromAngle(dz,th-0.1,curv);
+    return {mode,dz,D,D0,Dp,Dm,curv,th};
+  }
+  const D=m2Dist();if(D==null)return null;
+  const dz=dzFromDist(D,th,curv),dzp=dzFromDist(D,th+0.1,curv),dzm=dzFromDist(D,th-0.1,curv),dz0=dzFromDist(D,th,false);
+  if(mode==='quota'){
+    if(zo==null||hp==null)return null;
+    const zeye=zo+hp,Z=zeye+dz;
+    return {mode,D,dz,dz0,curv,th,Z,Zlo:zeye+Math.min(dzp,dzm),Zhi:zeye+Math.max(dzp,dzm),Z0:zeye+dz0,hgt:zt!=null?Z-zt:null};
+  }
+  if(zt==null||ht==null||hp==null)return null;
+  const zp=zt+ht,Ze=zp-dz;
+  return {mode,D,dz,dz0,curv,th,Ze,Zg:Ze-hp,Zlo:zp-Math.max(dzp,dzm)-hp,Zhi:zp-Math.min(dzp,dzm)-hp,Zg0:zp-dz0-hp};
+}
+/* l'azimut serve solo in modalità "Posizione del punto": nelle altre vale 0 (già fissato) così il flusso non lo chiede */
+function m2SyncAz(){
+  const pos=m2.mode==='pos';
+  if(pos){if(m2.azAuto){m2.s.az=null;m2.azAuto=false;}}
+  else if(!m2.azAuto||m2.s.az==null){m2.s.az=0;m2.azAuto=true;}
+  if(m2.stages){
+    m2.stages[2].optional=!pos;
+    const root=$('#m2-flow');
+    if(root){root.style.setProperty('--cols',pos?3:2);const c=$('.stgc[data-i="2"]',root);if(c)c.hidden=!pos;}
+    if(m2.flow){m2.flow.refresh();if(pos&&m2.s.az==null&&m2.s.theta!=null)m2.flow.go(2);}
+  }
+}
+function m2Modes(){
+  const m=m2.mode;
+  $$('#m2-mode button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
+  $('#m2-wzo').hidden=m==='mia';$('#m2-wzeye').hidden=m==='mia';
+  $('#m2-wht').hidden=m==='quota';$('#m2-wztot').hidden=m==='quota';
+  $('#m2-cdist').hidden=m==='dist'||m==='pos';
+  $('#m2-cpos').hidden=m!=='pos';
+  m2SyncAz();
+  $('#m2-ltz').textContent=m==='quota'?'Quota del suolo alla base del punto (m s.l.m., facoltativa: serve per l’altezza sul suolo)':'Quota del suolo alla sua base (m s.l.m.)';
+  $('#m2-modesub').textContent={dist:'Conosci la quota del punto osservato (per esempio un faro): ricavi la distanza.',
+    quota:'Conosci la distanza (per esempio dai segnaposto sulla mappa): ricavi la quota del punto osservato.',
+    mia:'Conosci la distanza e la quota del punto osservato: ricavi la quota a cui ti trovi.',
+    pos:'Al contrario: conosci la tua posizione e quota e di un punto (una vetta, una cima, un traliccio) conosci solo la quota: con alzo e azimut ricavi la sua distanza e le sue coordinate.'}[m];
+  $('#m2-sdl').textContent=m==='dist'?'Distanza':m==='quota'?'Quota del punto':'La mia quota';
 }
 function m2Render(){
+  const mode=m2.mode;
   const zo=num('m2-zo'),hp=num('m2-hp'),zt=num('m2-zt'),ht=num('m2-ht');
   $('#m2-zeye').textContent=(zo!=null&&hp!=null)?fmt(zo+hp,1)+' m':'—';
   $('#m2-ztot').textContent=(zt!=null&&ht!=null)?fmt(zt+ht,1)+' m':'—';
   const r=m2Calc();
-  $('#m2-sd').textContent=r&&Number.isFinite(r.D)?(r.D>=10000?fmt(r.D/1000,2)+' km':fmt(r.D,0)+' m'):'—';
+  const km=D=>D>=10000?fmt(D/1000,2)+' km':fmt(D,0)+' m';
+  let main='—';
+  if(r){
+    if(mode==='dist'||mode==='pos')main=Number.isFinite(r.D)?km(r.D):'—';
+    else if(mode==='quota')main=fmt(r.Z,0)+' m';
+    else main=fmt(r.Ze,0)+' m';
+  }
+  $('#m2-sd').textContent=main;
   $('#m2-sz').textContent=r?sgn(r.dz,1)+' m':'—';
-  m2.steps.mark(1,zo!=null&&hp!=null&&zt!=null&&ht!=null);
-  const ok=r&&Number.isFinite(r.D);
-  m2.steps.mark(2,m2.s.theta!=null);m2.steps.mark(3,!!ok);
+  const oc=$('#m2-oc');if(oc&&m2.obs&&document.activeElement!==oc)oc.value=m2.obs[0].toFixed(6)+', '+m2.obs[1].toFixed(6);
+  const need1=mode==='pos'?(zo!=null&&hp!=null&&zt!=null&&ht!=null&&!!m2.obs):mode==='dist'?(zo!=null&&hp!=null&&zt!=null&&ht!=null):mode==='quota'?(zo!=null&&hp!=null&&m2Dist()!=null):(zt!=null&&ht!=null&&hp!=null&&m2Dist()!=null);
+  m2.steps.mark(1,need1);
+  const ok=r&&((mode==='dist'||mode==='pos')?Number.isFinite(r.D):true);
+  m2.steps.mark(2,m2.s.theta!=null&&(mode!=='pos'||m2.s.az!=null));m2.steps.mark(3,!!ok);
   const g=m2.ui.group;g.clearLayers();
-  if(ok&&m2.tgt)L.circle(m2.tgt,{radius:r.D,color:'#ffd400',weight:3,dashArray:'8 6',fill:false}).addTo(g);
-  if(m2.obs&&m2.tgt)L.polyline([m2.obs,m2.tgt],{color:'#d8262f',weight:2}).addTo(g);
+  if(mode==='pos'&&ok&&r.pos&&m2.obs){L.polyline([m2.obs,r.pos],{color:'#ffd400',weight:3}).addTo(g);L.circleMarker(r.pos,{radius:9,color:'#000',weight:2,fillColor:'#ffd400',fillOpacity:.95}).addTo(g);}
+  if(mode==='dist'&&ok&&m2.tgt)L.circle(m2.tgt,{radius:r.D,color:'#ffd400',weight:3,dashArray:'8 6',fill:false}).addTo(g);
+  if(mode!=='pos'&&m2.obs&&m2.tgt)L.polyline([m2.obs,m2.tgt],{color:'#d8262f',weight:2}).addTo(g);
   const res=$('#m2-res');
-  if(!r){res.innerHTML='<div class="note">Inserisci le quote (passo 1) e fissa l’alzo (passo 2) per vedere la distanza.</div>';return;}
+  if(!r){res.innerHTML='<div class="note">Inserisci i dati (passo 1) e fissa l’alzo (passo 2) per vedere il risultato.</div>';return;}
   if(!ok){res.innerHTML='<div class="note warn">Angolo e quote non sono coerenti: se il punto osservato è sopra il tuo occhio l’alzo deve essere positivo, se è sotto deve essere negativo. Controlla anche le quote.</div>';return;}
   const mapD=(m2.obs&&m2.tgt)?distLL(m2.obs,m2.tgt):null;
-  res.innerHTML=`<div class="card">
+  if(mode==='pos'){
+    const z=r.pos?utmZone(r.pos[1]):null,ll=r.pos?fmtCoord(r.pos,'dd'):'',ut=r.pos?'UTM '+z+utmBand(r.pos[0])+' '+fmtCoord(r.pos,'utm',z):'';
+    res.innerHTML=`<div class="card">
+    <div class="big-l">Distanza orizzontale del punto</div>
+    <div class="big-n">${fmt(r.D,0)}<small>m</small></div>
+    <dl class="kv">
+      <dt>In chilometri</dt><dd>${fmt(r.D/1000,2)} km</dd>
+      <dt>Azimut vero usato</dt><dd>${fmt(r.brg,0)}° <small>(letto ${fmt(r.az,0)}° ${r.decl>=0?'+':'−'} ${fmt(Math.abs(r.decl),1)}° declinazione)</small></dd>
+      <dt>Dislivello occhio–punto</dt><dd>${sgn(r.dz,1)} m</dd>
+      <dt>Alzo usato</dt><dd>${sgn(r.th,2)}°</dd>
+      <dt>Senza correzione curvatura</dt><dd>${fmt(r.D0,0)} m</dd>
+      <dt>Se l’alzo sbaglia di ±0,1°</dt><dd>${fmt(Math.min(r.Dp,r.Dm),0)} – ${fmt(Math.max(r.Dp,r.Dm),0)} m</dd>
+      <dt>Se l’azimut sbaglia di ±3°</dt><dd>±${fmt(r.lat,0)} m di lato</dd>
+    </dl>
+    ${r.pos?`<div class="card" style="margin:8px 0 0"><h3>Posizione stimata del punto</h3>
+      <dl class="kv"><dt>Lat, Lon</dt><dd>${ll}</dd><dt>UTM</dt><dd>${ut}</dd></dl>
+      <div class="row"><button type="button" class="btn sm" data-copy="${ll}">Copia Lat, Lon</button><button type="button" class="btn sm" data-copy="${ut}">Copia UTM</button></div></div>`
+      :'<div class="note warn">Per ricavare le coordinate serve la tua posizione: scrivila, usa il GPS o toccala sulla mappa (passo 1).</div>'}
+    ${Sensors.compass?'':'<div class="note">La bussola del telefono è relativa: se non conosci l’azimut reale scrivilo a mano nel riquadro “Azimut” (passo 2).</div>'}
+  </div>`;
+    return;
+  }
+  if(mode==='dist'){
+    res.innerHTML=`<div class="card">
     <div class="big-l">Distanza orizzontale stimata</div>
     <div class="big-n">${fmt(r.D,0)}<small>m</small></div>
     <dl class="kv">
@@ -1258,28 +1349,77 @@ function m2Render(){
     ${mapD!=null?`<div class="note stat">Distanza sulla mappa tra i due segnaposto: ${fmt(mapD,0)} m (scarto ${sgn((r.D-mapD)/mapD*100,1)}%).</div>`:''}
     ${m2.tgt?'<div class="note stat">Sulla mappa la circonferenza gialla è il luogo dei punti a questa distanza dal target: tu sei su di essa.</div>':'<div class="note">Imposta il target sulla mappa per tracciare la circonferenza di posizione.</div>'}
   </div>`;
+    return;
+  }
+  if(mode==='quota'){
+    res.innerHTML=`<div class="card">
+    <div class="big-l">Quota del punto osservato</div>
+    <div class="big-n">${fmt(r.Z,0)}<small>m s.l.m.</small></div>
+    <dl class="kv">
+      <dt>Distanza usata</dt><dd>${fmt(r.D,0)} m</dd>
+      <dt>Dislivello occhio–punto</dt><dd>${sgn(r.dz,1)} m</dd>
+      <dt>Alzo usato</dt><dd>${sgn(r.th,2)}°</dd>
+      ${r.hgt!=null?`<dt>Altezza sul suolo</dt><dd>${fmt(r.hgt,1)} m</dd>`:''}
+      <dt>Senza correzione curvatura</dt><dd>${fmt(r.Z0,0)} m</dd>
+      <dt>Se l’alzo sbaglia di ±0,1°</dt><dd>${fmt(r.Zlo,0)} – ${fmt(r.Zhi,0)} m</dd>
+    </dl>
+    ${mapD!=null?`<div class="note stat">Distanza sulla mappa tra i due segnaposto: ${fmt(mapD,0)} m (scarto ${sgn((r.D-mapD)/mapD*100,1)}%).</div>`:''}
+  </div>`;
+    return;
+  }
+  res.innerHTML=`<div class="card">
+    <div class="big-l">Quota del tuo punto di osservazione</div>
+    <div class="big-n">${fmt(r.Zg,0)}<small>m s.l.m. (suolo)</small></div>
+    <dl class="kv">
+      <dt>Quota dell’occhio</dt><dd>${fmt(r.Ze,1)} m</dd>
+      <dt>Distanza usata</dt><dd>${fmt(r.D,0)} m</dd>
+      <dt>Dislivello occhio–punto</dt><dd>${sgn(r.dz,1)} m</dd>
+      <dt>Alzo usato</dt><dd>${sgn(r.th,2)}°</dd>
+      <dt>Senza correzione curvatura</dt><dd>${fmt(r.Zg0,0)} m</dd>
+      <dt>Se l’alzo sbaglia di ±0,1°</dt><dd>${fmt(r.Zlo,0)} – ${fmt(r.Zhi,0)} m</dd>
+    </dl>
+  </div>`;
 }
 function initM2(){
   const v=$('#tg-faro');
   v.innerHTML=`<div class="steps"></div>
-  <div class="strip"><div><span>Dislivello occhio–punto</span><b id="m2-sz">—</b></div><div><span>Distanza</span><b id="m2-sd">—</b></div></div>
+  <div class="strip"><div><span>Dislivello occhio–punto</span><b id="m2-sz">—</b></div><div><span id="m2-sdl">Distanza</span><b id="m2-sd">—</b></div></div>
 
   <div class="panel" data-s="1">
+    <div class="card"><h3>Cosa vuoi trovare</h3>
+      <div class="seg" id="m2-mode" role="group" aria-label="Cosa vuoi trovare">
+        <button type="button" data-m="dist" class="on">Distanza</button><button type="button" data-m="quota">Quota del punto</button><button type="button" data-m="mia">La mia quota</button><button type="button" data-m="pos">Posizione del punto</button>
+      </div>
+      <p class="sub" id="m2-modesub"></p>
+    </div>
     <div class="card"><h3>Il tuo punto di osservazione</h3>
-      <label class="f" for="m2-zo">Quota del suolo (m s.l.m.)</label>
-      <div class="row"><input id="m2-zo" type="number" inputmode="decimal" step="0.1" value="0"><button type="button" class="btn sm fit" id="m2-gps">GPS + quota</button></div>
+      <div id="m2-wzo"><label class="f" for="m2-zo">Quota del suolo (m s.l.m.)</label>
+      <div class="row"><input id="m2-zo" type="number" inputmode="decimal" step="0.1" value="0"><button type="button" class="btn sm fit" id="m2-gps">GPS + quota</button></div></div>
       <label class="f" for="m2-hp">Altezza del telefono dal suolo (m)</label>
       <input id="m2-hp" type="number" inputmode="decimal" step="0.05" value="1.5">
-      <dl class="kv"><dt>Quota dell’occhio</dt><dd id="m2-zeye">—</dd></dl>
+      <dl class="kv" id="m2-wzeye"><dt>Quota dell’occhio</dt><dd id="m2-zeye">—</dd></dl>
       <p class="sub">In mare usa 0 come quota del suolo e l’altezza dell’occhio sul livello del mare.</p>
     </div>
+    <div class="card" id="m2-cpos" hidden><h3>La tua posizione</h3>
+      <label class="f" for="m2-oc">Coordinate (lat, lon — oppure UTM E N)</label>
+      <div class="row"><input id="m2-oc" type="text" inputmode="text" autocomplete="off" placeholder="es. 45.6983, 9.6773"><button type="button" class="btn sm fit" id="m2-oc-gps">GPS</button></div>
+      <p class="sub">Scrivile, usa il GPS oppure tocca la mappa qui sotto (“Imposta la mia posizione”). Servono per ricavare le coordinate del punto.</p>
+      <label class="f" for="m2-decl">Declinazione magnetica (°, Est +)</label>
+      <input id="m2-decl" type="number" inputmode="decimal" step="0.1" value="3">
+      <p class="sub">La bussola del telefono dà l’azimut magnetico: in Italia la declinazione è circa +3° (Est). Correggila se la conosci meglio.</p>
+    </div>
     <div class="card"><h3>Il punto che osservi</h3>
-      <label class="f" for="m2-zt">Quota del suolo alla sua base (m s.l.m.)</label>
+      <label class="f" for="m2-zt" id="m2-ltz">Quota del suolo alla sua base (m s.l.m.)</label>
       <div class="row"><input id="m2-zt" type="number" inputmode="decimal" step="0.1" value="0"><button type="button" class="btn sm fit" id="m2-dem">Quota dalla mappa</button></div>
-      <label class="f" for="m2-ht">Altezza del punto osservato sul suolo (m)</label>
-      <input id="m2-ht" type="number" inputmode="decimal" step="0.1" value="50">
-      <dl class="kv"><dt>Quota del punto</dt><dd id="m2-ztot">—</dd></dl>
+      <div id="m2-wht"><label class="f" for="m2-ht">Altezza del punto osservato sul suolo (m)</label>
+      <input id="m2-ht" type="number" inputmode="decimal" step="0.1" value="50"></div>
+      <dl class="kv" id="m2-wztot"><dt>Quota del punto</dt><dd id="m2-ztot">—</dd></dl>
       <p class="sub">Esempio: per la lanterna di un faro, quota della base più altezza della torre.</p>
+    </div>
+    <div class="card" id="m2-cdist" hidden><h3>Distanza orizzontale nota</h3>
+      <div class="row"><input id="m2-dv" type="number" inputmode="decimal" step="any" placeholder="es. 1200" aria-label="Distanza"><select id="m2-du" aria-label="Unità" style="flex:0 0 96px"><option value="m">m</option><option value="km">km</option><option value="NM">NM</option><option value="passi">passi</option></select></div>
+      <div class="row" style="margin-top:8px"><button type="button" class="btn sm" id="m2-dmap">Dai segnaposto sulla mappa</button></div>
+      <p class="sub">Dalla carta, da una misura o dai due segnaposto (tu e il punto osservato) sulla mappa qui sotto.</p>
     </div>
     <div class="card">
       <label style="display:flex;gap:10px;align-items:center"><input type="checkbox" id="m2-curv" checked style="width:22px;min-height:22px"> Correggi per curvatura terrestre e rifrazione</label>
@@ -1320,22 +1460,48 @@ function initM2(){
   m2.steps=setupSteps(v,['Dati','Misura','Risultato'],n=>{
     if(n===1)placeMap(m2.ui,'m2-slot1');
     if(n===3){placeMap(m2.ui,'m2-slot3');m2Render();setTimeout(()=>{m2.ui.map.invalidateSize();const r=m2Calc();
-      if(r&&Number.isFinite(r.D)&&m2.tgt)m2.ui.map.fitBounds(boundsAround(m2.tgt,r.D).pad(0.2));else m2.ui.fit();},120);}
+      if(r&&r.mode==='pos'&&r.pos&&m2.obs)m2.ui.map.fitBounds(L.latLngBounds([m2.obs,r.pos]).pad(0.35));
+      else if(r&&Number.isFinite(r.D)&&m2.tgt&&r.mode!=='pos')m2.ui.map.fitBounds(boundsAround(m2.tgt,r.D).pad(0.2));else m2.ui.fit();},120);}
     if(n!==2){Sensors.stop();showStart('m2');}
   });
   const stages=[
     {key:'zero',chip:'Zero',label:'Fissa lo zero',optional:true,skip:true,read:()=>Sensors.elev()},
-    {key:'theta',chip:'Alzo',label:'Fissa l’alzo sul punto',read:()=>Sensors.elev()-(m2.s.zero||0)}
+    {key:'theta',chip:'Alzo',label:'Fissa l’alzo sul punto',read:()=>Sensors.elev()-(m2.s.zero||0)},
+    {key:'az',chip:'Azimut',label:'Fissa l’azimut verso il punto',step:1,optional:true,read:()=>Sensors.az()}
   ];
+  m2.stages=stages;
   const hint=k=>k==='zero'
     ?'Inquadra l’orizzonte, o un punto alla tua stessa altezza. Tieni fermo e premi.'
+    :k==='az'
+    ?'Mira il punto con il mirino e premi: serve la direzione (azimut) verso di esso. Puoi anche scriverla a mano.'
     :'Porta il mirino sul punto osservato (la lanterna, la cima) e premi. Positivo verso l’alto, negativo verso il basso.';
   m2.flow=makeFlow('m2',stages,m2.s,hint,m2Render,(k,val,old)=>{
     if(k==='zero'&&m2.s.theta!=null){m2.s.theta=r2(m2.s.theta+(old==null?0:old)-val);m2.flow.refresh();}
   });
-  bindCam('m2',()=>pitchRender('m2',m2.s));
+  bindCam('m2',()=>{
+    pitchRender('m2',m2.s);
+    if(m2.mode==='pos'){
+      const a=Sensors.az();
+      $('#m2-hs').textContent=(Sensors.compass?'':'bussola relativa · ')+'azimut '+(Number.isFinite(a)?Math.round(a)+'°':'—');
+    }
+  });
 
-  ['m2-zo','m2-hp','m2-zt','m2-ht','m2-curv'].forEach(id=>$('#'+id).addEventListener('input',m2Render));
+  ['m2-zo','m2-hp','m2-zt','m2-ht','m2-curv','m2-dv','m2-du','m2-decl'].forEach(id=>$('#'+id).addEventListener('input',m2Render));
+  $('#m2-du').addEventListener('change',m2Render);
+  $('#m2-mode').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;m2.mode=b.dataset.m;m2Modes();m2Render();});
+  const setObs=ll=>{m2.obs=ll;m2.ui.setPoint('obs',ll);m2Render();};
+  $('#m2-oc').addEventListener('change',e=>{
+    const t=e.target.value.trim();if(!t)return;
+    const n=nums(t),utm=n.length>=2&&Math.abs(n[0])>1000;
+    const ll=parseCoord(t,utm?'utm':'dd',32);
+    if(!ll){toast('Coordinate non valide: scrivi “lat, lon” (es. 45.6983, 9.6773).');return;}
+    setObs(ll);
+  });
+  $('#m2-oc-gps').onclick=()=>$('#m2-gps').click();
+  $('#m2-dmap').onclick=()=>{
+    if(!m2.obs||!m2.tgt){toast('Imposta sulla mappa sia la tua posizione sia il punto osservato.');return;}
+    $('#m2-du').value='m';$('#m2-dv').value=Math.round(distLL(m2.obs,m2.tgt));m2Render();
+  };
   $('#m2-gps').onclick=()=>{
     if(!navigator.geolocation){toast('GPS non disponibile.');return;}
     toast('Ricerca posizione GPS…');
@@ -1352,8 +1518,10 @@ function initM2(){
     try{const z=await dem(m2.tgt);if(z!=null){$('#m2-zt').value=Math.round(z*10)/10;toast('Quota dal DEM: '+fmt(z,0)+' m (indicativa)');m2Render();}}
     catch(e){toast('Quota dal DEM non disponibile: scrivila a mano.');}
   };
-  v.addEventListener('click',e=>{if(e.target.closest('#m2-new')){m2.flow.reset();m2.steps.go(2);}});
+  v.addEventListener('click',e=>{if(e.target.closest('#m2-new')){m2.flow.reset();m2SyncAz();m2.steps.go(2);}
+    const cp=e.target.closest('[data-copy]');if(cp)copyText(cp.dataset.copy);});
   m2.steps.go(1);
+  m2Modes();
   m2Render();
 }
 
