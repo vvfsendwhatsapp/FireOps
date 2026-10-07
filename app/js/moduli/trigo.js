@@ -138,6 +138,15 @@ const CSS=`.pg-trigo{--acc:var(--ics-pianificazione);--ok:#3fa66b;--bad:#e8734a;
 .pg-trigo .ptc-h{display:flex;gap:8px;align-items:center}
 .pg-trigo .ptc-h input{min-height:36px}
 .pg-trigo .ptc-h+.row{margin-top:10px}
+.pg-trigo .ms-need{grid-column:1/-1;font-size:13px;color:var(--text-dim);padding:2px 2px 4px}
+.pg-trigo .ms-dgrp{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;border:1px dashed var(--line);border-radius:8px;padding:8px}
+.pg-trigo .ms-dgrp .ms-dh{grid-column:1/-1;font-size:13px;color:var(--text-dim)}
+.pg-trigo .ms-sides label.calc input{border-style:dashed;color:var(--text-dim)}
+.pg-trigo #ms-stage.stk{position:sticky;z-index:6;height:36vh;min-height:190px;margin-bottom:8px;box-shadow:0 8px 14px rgba(0,0,0,.45)}
+@media (max-width:420px){.pg-trigo .ms-dgrp{grid-template-columns:1fr 1fr}}
+.pg-trigo.tg-offline .pmap{display:none}
+.pg-trigo .mapwrap.nomap .note{margin:0 0 8px}
+.pg-trigo #tg-avanti .mapwrap.nomap .maptools{display:none}
 .pg-trigo #tg-avanti .row>select.fit{width:auto;max-width:42%}
 .pg-trigo #tg-avanti .cam{aspect-ratio:4/5;max-height:64vh}
 .pg-trigo #tg-avanti .cam-start{place-items:start center;padding-top:14%}
@@ -156,7 +165,10 @@ const CSS=`.pg-trigo{--acc:var(--ics-pianificazione);--ok:#3fa66b;--bad:#e8734a;
 .pg-trigo .ms-tabs{display:flex;margin-bottom:10px}
 .pg-trigo .ms-tabs button{flex:1;border-radius:0;min-height:42px}
 .pg-trigo .ms-tabs button:first-child{border-radius:8px 0 0 8px}
-.pg-trigo .ms-tabs button:last-child{border-radius:0 8px 8px 0;border-left:0}
+.pg-trigo .ms-tabs button:last-child{border-radius:0 8px 8px 0}
+.pg-trigo .ms-tabs button+button{border-left:0}
+.pg-trigo .am-v{width:24px;height:24px;border-radius:50%;background:var(--yellow);color:#000;border:2px solid #000;font:700 12px/20px var(--mono);text-align:center}
+.pg-trigo .am-l{background:#000c;color:#fff;border:1px solid var(--line2);border-radius:4px;padding:0 4px;font:600 11px/16px var(--mono);white-space:nowrap;transform:translate(-50%,-50%);display:inline-block}
 .pg-trigo .ms .ms-steps{display:flex;gap:5px;margin:2px 0 0}
 .pg-trigo .ms .ms-steps button{position:relative;flex:1;height:6px;min-height:0;padding:0;border:0;border-radius:3px;background:var(--line);cursor:pointer}
 .pg-trigo .ms .ms-steps button::before{content:'';position:absolute;left:-2px;right:-2px;top:-15px;bottom:-15px}
@@ -236,7 +248,7 @@ const HTML=`<div class="tg-nav" id="tg-nav" hidden><button type="button" class="
       <path d="M10 10h34v20h22v30H10z" fill="rgba(255,255,255,.2)"/>
       <path d="M10 68h56" stroke="#10141a"/><path d="M10 64v8M66 64v8" stroke="#10141a"/>
       <circle cx="10" cy="10" r="3" fill="currentColor" stroke="none"/><circle cx="44" cy="10" r="3" fill="currentColor" stroke="none"/><circle cx="44" cy="30" r="3" fill="currentColor" stroke="none"/><circle cx="66" cy="30" r="3" fill="currentColor" stroke="none"/><circle cx="66" cy="60" r="3" fill="currentColor" stroke="none"/><circle cx="10" cy="60" r="3" fill="currentColor" stroke="none"/></svg></span>
-    <span class="tx"><h2>Calcola area</h2><p>Superfici da foto o pianta misurata a passi.</p></span>
+    <span class="tx"><h2>Calcola area</h2><p>Superfici da foto, pianta a passi o mappa.</p></span>
   </button>
 
   <p class="foot">La precisione dipende dai sensori del telefono, di norma ±0,5–1°. Usa i risultati come stima e verifica con strumenti omologati quando serve.</p>
@@ -251,6 +263,7 @@ const HTML=`<div class="tg-nav" id="tg-nav" hidden><button type="button" class="
   <div class="ms-tabs" role="tablist" aria-label="Modalità">
     <button id="ms-tFoto" class="on" role="tab">Foto</button>
     <button id="ms-tPianta" role="tab">Pianta</button>
+    <button id="ms-tMappa" role="tab">Mappa</button>
   </div>
   <div id="ms-stage">
     <canvas id="ms-cv"></canvas>
@@ -258,7 +271,10 @@ const HTML=`<div class="tg-nav" id="tg-nav" hidden><button type="button" class="
     <div id="ms-empty">
       <strong>Carica la foto di una parete, del soffitto o del pavimento</strong>
       <span>Segni i 4 spigoli, indichi larghezza e altezza reali di quella superficie e la pagina calcola l'area.</span>
-      <label class="msb primary" for="ms-file" style="margin:0;font-size:15px">Carica foto</label>
+      <div class="ms-row" style="justify-content:center;gap:10px">
+        <label class="msb primary" for="ms-cam" style="margin:0;font-size:15px">Scatta foto</label>
+        <label class="msb" for="ms-file" style="margin:0;font-size:15px">Dalla galleria</label>
+      </div>
     </div>
     <div class="ms-zoom">
       <button id="ms-zin" aria-label="Zoom avanti">+</button>
@@ -267,11 +283,13 @@ const HTML=`<div class="tg-nav" id="tg-nav" hidden><button type="button" class="
     </div>
   </div>
   <input id="ms-file" type="file" accept="image/*" hidden>
+  <input id="ms-cam" type="file" accept="image/*" capture="environment" hidden>
 
   <div id="ms-panel">
     <div id="ms-pFoto">
       <div class="ms-row">
-        <label class="msb" for="ms-file" style="margin:0;font-size:15px">Foto</label>
+        <label class="msb" for="ms-cam" style="margin:0;font-size:15px">Scatta</label>
+        <label class="msb" for="ms-file" style="margin:0;font-size:15px">Galleria</label>
         <button id="ms-bNew" class="primary" disabled>Nuova superficie</button>
         <button id="ms-bCut" disabled>Apertura</button>
         <button id="ms-bClose" hidden>Chiudi apertura</button>
@@ -355,7 +373,15 @@ const HTML=`<div class="tg-nav" id="tg-nav" hidden><button type="button" class="
       <button id="ms-bDel" class="danger" hidden>Elimina superficie</button>
     </div>
     <p class="ms-note" id="ms-noteFoto">Per una misura corretta, i 4 spigoli devono formare un rettangolo reale (parete, soffitto, pavimento) e larghezza e altezza devono essere quelle effettive, rilevate con metro, distanziometro o a passi. Le misure interne al rettangolo (aperture, distanze) sono tanto più precise quanto più la foto è frontale.</p>
-    <p class="ms-note" id="ms-notePianta" hidden>1) Fai una bozza a mano libera del locale: la scala non conta, conta la forma (Orto tiene i lati dritti, Snap aggancia alla griglia). Tocca il vertice 1 (verde) per chiudere. 2) In "Misure" scrivi per ogni lato quanti tacco-punta o passi hai contato: la pagina ricostruisce la pianta e compensa l'errore di chiusura. Se cambi unità, i numeri già scritti vengono letti nella nuova unità.</p>
+    <p class="ms-note" id="ms-notePianta" hidden>1) Fai una bozza a mano libera del locale: la scala non conta, conta la forma (Orto tiene i lati dritti, Snap aggancia alla griglia). Tocca il vertice 1 (verde) per chiudere. 2) In "Misure" scrivi i tacco-punta o i passi contati: se la bozza ha angoli retti bastano le misure necessarie e gli altri lati si calcolano da soli (un lato obliquo ne vuole due: diagonale e altezza, oppure i due cateti). Senza angoli retti si misurano tutti i lati e la pagina compensa l'errore di chiusura. Se cambi unità, i numeri già scritti vengono letti nella nuova unità.</p>
+  </div>
+  <div id="ms-mapView" hidden>
+    <div id="am-slot"></div>
+    <div class="card">
+      <div class="row"><input id="am-coord" inputmode="decimal" placeholder="Vertice per coordinate: 41.8902, 12.4922" aria-label="Aggiungi un vertice per coordinate"><button type="button" class="btn sm fit" id="am-addc">Aggiungi</button></div>
+      <div class="row" style="margin-top:8px"><button type="button" class="btn sm" id="am-undo">Annulla ultimo</button><button type="button" class="btn sm" id="am-clear">Azzera</button></div>
+    </div>
+    <div id="am-res"></div>
   </div>
 </section>
 
@@ -387,6 +413,116 @@ function destLL(a,brg,d){
 }
 function toXY(ll,o){return {x:EARTH*Math.cos(o[0]*D2R)*(ll[1]-o[1])*D2R, y:EARTH*(ll[0]-o[0])*D2R};}
 function toLL(p,o){return [o[0]+p.y/EARTH*R2D, o[1]+p.x/(EARTH*Math.cos(o[0]*D2R))*R2D];}
+
+/* Pianta con angoli retti: le direzioni ortogonali vengono dalla bozza, i lati obliqui hanno due incognite.
+   Misure necessarie = lati H + lati V + 2·lati obliqui − 2 (la chiusura ne ricava due).
+   Lato H/V: una lunghezza. Lato obliquo: due fra diagonale, cateto orizzontale, cateto verticale.
+   sv = lunghezze (H/V) o diagonali, sx = cateti orizzontali, sy = cateti verticali, nell'unità scelta (pu m per unità). */
+function planOrtho(poly,sv,sx,sy,pu){
+  const n=poly.length;if(n<3)return null;
+  const d=[],u=[];
+  for(let i=0;i<n;i++){
+    const a=poly[i],b=poly[(i+1)%n],l=Math.hypot(b.x-a.x,b.y-a.y);
+    d.push(l);u.push(l>1e-9?{x:(b.x-a.x)/l,y:(b.y-a.y)/l}:{x:0,y:0});
+  }
+  const TOL=Math.sin(8*D2R),COS=Math.cos(8*D2R);
+  const right=i=>{const p=u[(i+n-1)%n],q=u[i];return Math.abs(p.x*q.x+p.y*q.y)<TOL;};
+  let ref=-1;
+  for(let i=0;i<n;i++)if((right(i)||right((i+1)%n))&&d[i]>1e-9&&(ref<0||d[i]>d[ref]))ref=i;
+  if(ref<0)return null;
+  const e=u[ref],f={x:-e.y,y:e.x};
+  const type=[],dxd=[],dyd=[];let hs=0,vs=0,ds=0;
+  for(let i=0;i<n;i++){
+    const x=d[i]*(u[i].x*e.x+u[i].y*e.y),y=d[i]*(u[i].x*f.x+u[i].y*f.y);
+    dxd.push(x);dyd.push(y);
+    const c=d[i]>1e-9?Math.abs(x)/d[i]:1;
+    const t=c>COS?'H':c<TOL?'V':'D';
+    type.push(t);if(t==='H')hs++;else if(t==='V')vs++;else ds++;
+  }
+  if(hs+vs===0)return null;
+  const need=hs+vs+2*ds-2;
+  const val=a=>(a>0?a*pu:null);
+  const X=new Array(n).fill(null),Y=new Array(n).fill(null),Lm=new Array(n).fill(null);
+  const derived=new Array(n).fill(false),est=new Array(n).fill(false),bad=new Array(n).fill(false);
+  const sgx=i=>dxd[i]>=0?1:-1,sgy=i=>dyd[i]>=0?1:-1;
+  let given=0;
+  for(let i=0;i<n;i++){
+    const l=val(sv[i]);
+    if(type[i]==='H'){if(l!=null){X[i]=sgx(i)*l;given++;}Y[i]=0;}
+    else if(type[i]==='V'){if(l!=null){Y[i]=sgy(i)*l;given++;}X[i]=0;}
+    else{
+      const a=val(sx[i]),b=val(sy[i]);Lm[i]=l;
+      given+=Math.min(2,[l,a,b].filter(q=>q!=null).length);
+      if(a!=null)X[i]=sgx(i)*a;if(b!=null)Y[i]=sgy(i)*b;
+    }
+  }
+  const resolveD=()=>{
+    for(let i=0;i<n;i++)if(type[i]==='D'&&Lm[i]!=null){
+      if(X[i]!=null&&Y[i]==null)Y[i]=sgy(i)*Math.sqrt(Math.max(0,Lm[i]*Lm[i]-X[i]*X[i]));
+      else if(Y[i]!=null&&X[i]==null)X[i]=sgx(i)*Math.sqrt(Math.max(0,Lm[i]*Lm[i]-Y[i]*Y[i]));
+    }
+  };
+  const closeOne=(C,dd)=>{
+    const unk=[];for(let i=0;i<n;i++)if(C[i]==null)unk.push(i);
+    if(unk.length!==1)return;
+    const k=unk[0];let sum=0;for(let i=0;i<n;i++)if(i!==k)sum+=C[i];
+    C[k]=-sum;derived[k]=true;
+    if(C[k]*dd[k]<-1e-9&&Math.abs(dd[k])>1e-9)bad[k]=true;
+  };
+  resolveD();
+  for(let pass=0;pass<3;pass++){closeOne(X,dxd);closeOne(Y,dyd);resolveD();}
+  /* scala media dai lati misurati, per le stime */
+  let ks=0,kc=0;
+  for(let i=0;i<n;i++){
+    if(type[i]==='H'&&X[i]!=null&&!derived[i]&&Math.abs(dxd[i])>1e-9){ks+=Math.abs(X[i])/Math.abs(dxd[i]);kc++;}
+    else if(type[i]==='V'&&Y[i]!=null&&!derived[i]&&Math.abs(dyd[i])>1e-9){ks+=Math.abs(Y[i])/Math.abs(dyd[i]);kc++;}
+    else if(type[i]==='D'&&Lm[i]!=null&&d[i]>1e-9){ks+=Lm[i]/d[i];kc++;}
+  }
+  const kk=kc?ks/kc:1;
+  for(let i=0;i<n;i++){
+    if(X[i]==null||Y[i]==null){
+      est[i]=true;
+      const sc=(type[i]==='D'&&Lm[i]!=null&&d[i]>1e-9)?Lm[i]/d[i]:kk;
+      if(X[i]==null)X[i]=dxd[i]*sc;
+      if(Y[i]==null)Y[i]=dyd[i]*sc;
+    }
+  }
+  const V=X.map((x,i)=>({x:x*e.x+Y[i]*f.x,y:x*e.y+Y[i]*f.y}));
+  const L=V.map(v=>Math.hypot(v.x,v.y));
+  const P=[{x:0,y:0}];let px=0,py=0;
+  V.forEach(v=>{px+=v.x;py+=v.y;P.push({x:px,y:py});});
+  const mis=P[n],tot=L.reduce((a,b)=>a+b,0);
+  const pts=[];let cum=0;
+  for(let i=0;i<n;i++){pts.push({x:P[i].x-mis.x*cum/tot,y:P[i].y-mis.y*cum/tot});cum+=L[i];}
+  const flag=type.map((t,i)=>est[i]?'e':derived[i]?'c':'m');
+  const dxv=X.map(Math.abs),dyv=Y.map(Math.abs);
+  return {ortho:true,pts,L,type,flag,meas:flag.map(q=>q!=='e'),bad,need,given,hs,vs,ds,e,f,dxv,dyv,
+    cnt:given,mis:Math.hypot(mis.x,mis.y),tot,sufficient:!est.some(Boolean)};
+}
+
+/* Area e perimetro di un poligono da vertici lat/lon (proiezione locale: errore trascurabile sotto i 10 km) */
+function segCross(a,b,c,d){
+  const o=(p,q,r)=>(q.x-p.x)*(r.y-p.y)-(q.y-p.y)*(r.x-p.x);
+  const d1=o(a,b,c),d2=o(a,b,d),d3=o(c,d,a),d4=o(c,d,b);
+  return ((d1>0&&d2<0)||(d1<0&&d2>0))&&((d3>0&&d4<0)||(d3<0&&d4>0));
+}
+function polyAreaLL(p){
+  const n=p.length;if(n<2)return null;
+  const o=[p.reduce((s,x)=>s+x[0],0)/n,p.reduce((s,x)=>s+x[1],0)/n];
+  const xy=p.map(q=>toXY(q,o)),sides=[],m=n>=3?n:n-1;
+  for(let i=0;i<m;i++)sides.push(distLL(p[i],p[(i+1)%n]));
+  const perim=sides.reduce((a,b)=>a+b,0);
+  if(n<3)return {n,perim,sides,area:0,closed:false,selfInt:false,centroid:null};
+  let a2=0,cx=0,cy=0;
+  for(let i=0;i<n;i++){const A=xy[i],B=xy[(i+1)%n],c=A.x*B.y-B.x*A.y;a2+=c;cx+=(A.x+B.x)*c;cy+=(A.y+B.y)*c;}
+  let selfInt=false;
+  for(let i=0;i<n&&!selfInt;i++)for(let j=i+2;j<n;j++){
+    if(i===0&&j===n-1)continue;
+    if(segCross(xy[i],xy[(i+1)%n],xy[j],xy[(j+1)%n])){selfInt=true;break;}
+  }
+  const centroid=a2!==0?toLL({x:cx/(3*a2),y:cy/(3*a2)},o):toLL({x:0,y:0},o);
+  return {n,perim,sides,area:Math.abs(a2)/2,closed:true,selfInt,centroid};
+}
 
 /* Altezza: H = D·(tan β − tan α); α negativo se la base è sotto l'orizzonte */
 function heightCalc(D,betaDeg,alphaDeg){
@@ -525,6 +661,9 @@ const fmt=(v,d=1)=>Number.isFinite(v)?v.toLocaleString('it-IT',{minimumFractionD
 const sgn=(v,d=1)=>Number.isFinite(v)?(v<0?'−':'+')+fmt(Math.abs(v),d):'—';
 const num=id=>{const el=$('#'+id);if(!el)return null;const v=parseFloat(String(el.value).replace(',','.'));return Number.isFinite(v)?v:null;};
 const r2=v=>Math.round(v*100)/100;
+/* Leaflet opzionale: se non si carica (nessuna connessione) la pagina funziona lo stesso, senza mappa */
+const DUMMY=new Proxy(function(){},{get:(t,k)=>k==='valueOf'?()=>0:k==='toString'?()=>'':(k==='then'||typeof k==='symbol')?undefined:DUMMY,apply:()=>DUMMY});
+const L=new Proxy({},{get:(t,k)=>typeof window.L!=='undefined'?window.L[k]:DUMMY});
 const HFOV=52, VFOV=68;   // campo visivo approssimato (verticale/orizzontale, ritratto, zoom 1×)
 let toastT;
 function toast(m){const t=$('#tg-toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>{t.hidden=true;},3600);}
@@ -702,7 +841,31 @@ function pitchRender(p,store){
 /* ============================================================ */
 /*  Mappa riutilizzabile                                        */
 /* ============================================================ */
+function createNoMapUI(cfg,slot){
+  const wrap=document.createElement('div');wrap.className='mapwrap nomap';
+  wrap.innerHTML=`<div class="note">Mappa non disponibile (nessuna connessione): scrivi le coordinate a mano o usa il GPS.</div><div class="maptools"><button type="button" class="btn sm" data-act="gps">${cfg.gpsLabel||'Mia posizione GPS'}</button></div>`;
+  slot.appendChild(wrap);
+  const pts={};
+  const ui={map:DUMMY,group:DUMMY,wrap,noMap:true};
+  ui.setPoint=(k,ll)=>{pts[k]=ll;};
+  ui.getPoint=k=>pts[k]||null;
+  ui.removePoint=k=>{delete pts[k];};
+  ui.setMode=()=>{};ui.refreshHint=()=>{};ui.fit=()=>{};ui.expand=()=>{};
+  $('[data-act=gps]',wrap).addEventListener('click',()=>{
+    if(!navigator.geolocation){toast('GPS non disponibile su questo dispositivo.');return;}
+    toast('Ricerca posizione GPS…');
+    navigator.geolocation.getCurrentPosition(pos=>{
+      const ll=[pos.coords.latitude,pos.coords.longitude];
+      const gk=typeof cfg.gpsKey==='function'?cfg.gpsKey():cfg.gpsKey;
+      if(!cfg.multi)ui.setPoint(gk,ll);
+      cfg.onChange&&cfg.onChange(gk,ll,'gps');
+      toast('Posizione acquisita (±'+Math.round(pos.coords.accuracy)+' m)');
+    },()=>toast('Posizione GPS non disponibile: controlla i permessi.'),{enableHighAccuracy:true,timeout:20000,maximumAge:0});
+  });
+  return ui;
+}
 function createMapUI(cfg,slot){
+  if(typeof window.L==='undefined')return createNoMapUI(cfg,slot);
   const wrap=document.createElement('div');wrap.className='mapwrap';
   wrap.innerHTML=`<div class="maptools">${cfg.modes.map(m=>`<button type="button" class="btn sm" data-mode="${m.key}">${m.label}</button>`).join('')}<button type="button" class="btn sm" data-act="gps">${cfg.gpsLabel||'Mia posizione GPS'}</button><button type="button" class="btn sm" data-act="expand">Espandi</button></div>
     <div class="mapsearch"><input type="search" placeholder="Cerca luogo o indirizzo" aria-label="Cerca luogo o indirizzo"><button type="button" class="btn sm" data-act="search">Cerca</button></div>
@@ -748,6 +911,7 @@ function createMapUI(cfg,slot){
   };
   map.on('click',e=>{
     if(!mode)return;
+    if(cfg.onMapClick){cfg.onMapClick(mode,[e.latlng.lat,e.latlng.lng]);return;}
     const k=mode,ll=[e.latlng.lat,e.latlng.lng];
     ui.setPoint(k,ll);ui.setMode(k);
     cfg.onChange&&cfg.onChange(k,ll,'click');
@@ -758,7 +922,8 @@ function createMapUI(cfg,slot){
     navigator.geolocation.getCurrentPosition(pos=>{
       const ll=[pos.coords.latitude,pos.coords.longitude];
       const gk=typeof cfg.gpsKey==='function'?cfg.gpsKey():cfg.gpsKey;
-      ui.setPoint(gk,ll);map.setView(ll,Math.max(map.getZoom(),17));
+      if(!cfg.multi)ui.setPoint(gk,ll);
+      map.setView(ll,Math.max(map.getZoom(),17));
       cfg.onChange&&cfg.onChange(gk,ll,'gps');
       toast('Posizione acquisita (±'+Math.round(pos.coords.accuracy)+' m)');
     },()=>toast('Posizione GPS non disponibile: controlla i permessi.'),{enableHighAccuracy:true,timeout:20000,maximumAge:0});
@@ -1603,7 +1768,7 @@ const cv = $('cv'), ctx = cv.getContext('2d');
 let mode = 'foto';
 let img = null, surfaces = [], act = -1, tool = 'pan', pending = [];
 let poly = [], closed = false, orto = true, snap = true, planH = 0, planInit = false;
-let planView = 'bozza', sideVal = [], focusSide = -1, rot = 0;
+let planView = 'bozza', sideVal = [], sideDx = [], sideDy = [], focusSide = -1, rot = 0;
 const views = {foto:{s:1, x:0, y:0}, pianta:{s:60, x:0, y:0}};
 let view = views.foto;
 let dpr = window.devicePixelRatio || 1, CW = 0, CH = 0;
@@ -1683,6 +1848,8 @@ function calc(s){
 function rebuild(){
   const n = poly.length;
   if (!closed || n < 3) return null;
+  const o = planOrtho(poly, sideVal, sideDx, sideDy, perUnit());
+  if (o) return o;
   const d = [], u = [];
   for (let i = 0; i < n; i++){
     const a = poly[i], b = poly[(i+1) % n], l = dist(a, b);
@@ -1709,7 +1876,7 @@ function rebuild(){
     pts.push({x:P[i].x - mis.x*cum/tot, y:P[i].y - mis.y*cum/tot});
     cum += L[i];
   }
-  return {pts, L, meas, cnt, mis:Math.hypot(mis.x, mis.y), tot};
+  return {ortho:false, pts, L, meas, flag:meas.map(m => m ? 'm' : 'e'), bad:[], need:n, given:cnt, cnt, mis:Math.hypot(mis.x, mis.y), tot};
 }
 function planStats(pts){
   const n = pts.length;
@@ -1718,6 +1885,7 @@ function planStats(pts){
   const area = polyArea(pts);
   return {area, per, h:planH, walls:per*planH, vol:area*planH};
 }
+const sideName = i => { const n = poly.length; return (i+1) + '-' + (((i+1) % n) + 1); };
 const normDeg = a => { a = ((a + 180) % 360 + 360) % 360 - 180; return a === -180 ? 180 : a; };
 /* Ruota la bozza attorno al suo baricentro (positivo = senso orario sullo schermo). Lunghezze e misure restano valide. */
 function rotatePoly(deg){
@@ -1862,7 +2030,7 @@ function drawPlan(){
   const edges = closed ? n : n - 1;
   for (let i = 0; i < edges; i++){
     const a = poly[i], b = poly[(i+1) % n];
-    chip(toScr({x:(a.x+b.x)/2, y:(a.y+b.y)/2}), 'L' + (i+1), 'rgba(6,34,43,.92)', '#4cc9f0');
+    chip(toScr({x:(a.x+b.x)/2, y:(a.y+b.y)/2}), sideName(i), 'rgba(6,34,43,.92)', '#4cc9f0');
   }
   poly.forEach((p, i) => dot(p, i+1, (i === 0 && n >= 3 && !closed) ? '#ffd700' : '#3fd37b', true));
 }
@@ -1871,12 +2039,19 @@ function drawMisure(r){
   path(P, true); ctx.fillStyle = 'rgba(47,158,91,.24)'; ctx.fill();
   ctx.lineWidth = 2.5; ctx.strokeStyle = '#3fd37b'; ctx.stroke();
   if (focusSide >= 0 && focusSide < n){
-    path([P[focusSide], P[(focusSide+1) % n]], false);
+    const a = P[focusSide], b = P[(focusSide+1) % n];
+    path([a, b], false);
     ctx.lineWidth = 6; ctx.strokeStyle = '#ffb703'; ctx.stroke();
+    if (r.ortho && r.type[focusSide] === 'D'){      /* lato obliquo: mostro i due cateti */
+      const dx = (b.x - a.x)*r.e.x + (b.y - a.y)*r.e.y, c = {x: a.x + dx*r.e.x, y: a.y + dx*r.e.y};
+      ctx.save(); ctx.setLineDash([6, 5]); path([a, c, b], false);
+      ctx.lineWidth = 2; ctx.strokeStyle = '#ffb703'; ctx.stroke(); ctx.restore();
+    }
   }
+  const FC = {m:'#4cc9f0', c:'#3fd37b', e:'#ffb703'};
   for (let i = 0; i < n; i++){
     const a = P[i], b = P[(i+1) % n];
-    chip(toScr({x:(a.x+b.x)/2, y:(a.y+b.y)/2}), lenTxt(dist(a, b)), 'rgba(6,34,43,.92)', r.meas[i] ? '#4cc9f0' : '#ffb703');
+    chip(toScr({x:(a.x+b.x)/2, y:(a.y+b.y)/2}), sideName(i) + ': ' + lenTxt(dist(a, b)), 'rgba(6,34,43,.92)', FC[r.flag[i]] || '#4cc9f0');
   }
   P.forEach((p, i) => dot(p, i+1, '#3fd37b', true));
 }
@@ -1886,7 +2061,9 @@ function hintText(){
   if (mode === 'pianta'){
     if (planView === 'misura'){
       const r = rebuild();
-      return r ? `Scrivi tacco-punta o passi per ogni lato (${r.cnt} di ${poly.length} misurati). I lati in giallo sono ancora stimati` : '';
+      if (!r) return '';
+      return r.ortho ? `Servono ${r.need} misure, ne hai inserite ${r.given}. Blu misurati, verde calcolati, giallo stimati`
+        : `Scrivi tacco-punta o passi per ogni lato (${r.cnt} di ${poly.length} misurati). I lati in giallo sono ancora stimati`;
     }
     if (!poly.length) return 'Bozza: tocca per segnare il primo vertice. La scala non conta, conta la forma';
     if (!closed && poly.length < 3) return 'Tocca il vertice successivo';
@@ -1915,28 +2092,66 @@ function unitLabels(){
   else if (unit === 'b') conv.textContent = `1 tacco-punta = ${fmt(bootCm / 100)} m`;
   if (mode === 'foto' && act >= 0 && unit !== 'm') conv.textContent += ` · superficie ${fmt(cur().w)} × ${fmt(cur().h)} m`;
   conv.hidden = unit === 'm';
-  root.querySelectorAll('#ms-sides label > span').forEach((s, i) => s.textContent = `L${i+1} (${u})`);
+  root.querySelectorAll('#ms-sides [data-lab]').forEach(s => s.textContent = sideLabel(s.dataset.lab, +s.dataset.i));
 }
 function syncFields(){
   if (act >= 0){ $('fName').value = cur().name; $('fW').value = toDisp(cur().w); $('fH').value = toDisp(cur().h); }
   $('fPH').value = planH > 0 ? planH : '';
   unitLabels();
 }
+function sideLabel(kind, i){
+  const u = UN[unit], nm = sideName(i);
+  return kind === 'dx' ? `Cateto orizzontale (${u})` : kind === 'dy' ? `Cateto verticale (${u})`
+    : kind === 'diag' ? `Diagonale ${nm} (${u})` : `Lato ${nm} (${u})`;
+}
 function buildSides(){
   const box = $('sides'); box.innerHTML = '';
-  poly.forEach((_, i) => {
+  const o = planOrtho(poly, [], [], [], 1);
+  const need = document.createElement('div'); need.className = 'ms-need'; need.id = 'ms-need'; box.appendChild(need);
+  const mk = (kind, i, arr, parent) => {
     const l = document.createElement('label');
-    const sp = document.createElement('span'); sp.textContent = `L${i+1} (${UN[unit]})`;
+    const sp = document.createElement('span'); sp.dataset.lab = kind; sp.dataset.i = i; sp.textContent = sideLabel(kind, i);
     const inp = document.createElement('input');
     inp.type = 'number'; inp.inputMode = 'decimal'; inp.step = 'any'; inp.min = '0'; inp.placeholder = 'da misurare';
-    inp.value = sideVal[i] > 0 ? sideVal[i] : '';
-    inp.oninput = () => { sideVal[i] = num(inp.value); results(); ui(true); draw(); };
+    inp.dataset.kind = kind; inp.dataset.i = i;
+    inp.value = arr[i] > 0 ? arr[i] : '';
+    inp.oninput = () => { arr[i] = num(inp.value); results(); ui(true); draw(); };
     inp.onfocus = () => { focusSide = i; draw(); };
     inp.onblur = () => { focusSide = -1; draw(); };
-    l.appendChild(sp); l.appendChild(inp); box.appendChild(l);
+    l.appendChild(sp); l.appendChild(inp); parent.appendChild(l);
+  };
+  poly.forEach((_, i) => {
+    if (o && o.type[i] === 'D'){
+      const g = document.createElement('div'); g.className = 'ms-dgrp';
+      const h = document.createElement('div'); h.className = 'ms-dh'; h.textContent = `Lato obliquo ${sideName(i)}: bastano 2 misure su 3 (diagonale e altezza, oppure i due cateti)`;
+      g.appendChild(h);
+      mk('diag', i, sideVal, g); mk('dx', i, sideDx, g); mk('dy', i, sideDy, g);
+      box.appendChild(g);
+    } else mk('len', i, sideVal, box);
+  });
+  refreshSides();
+}
+/* testo di stato e valori calcolati nei campi: solo le misure necessarie restano "da misurare" */
+function refreshSides(){
+  if (mode !== 'pianta' || planView !== 'misura') return;
+  const r = rebuild(), nd = $('need');
+  if (!r || !nd) return;
+  nd.textContent = r.ortho
+    ? `Angoli retti rilevati: bastano ${r.need} misure (inserite ${r.given}).` + (r.sufficient ? ' Misure sufficienti: il resto è calcolato.' : '')
+    : 'Nessun angolo retto nella bozza: misura tutti i lati.';
+  const pu = perUnit();
+  root.querySelectorAll('#ms-sides input').forEach(inp => {
+    const i = +inp.dataset.i, k = inp.dataset.kind;
+    let ph = 'da misurare', calc = false;
+    if (r.ortho && r.flag[i] !== 'e'){
+      const v = k === 'dx' ? r.dxv[i] : k === 'dy' ? r.dyv[i] : k === 'diag' ? r.L[i] : (r.type[i] === 'V' ? r.dyv[i] : r.dxv[i]);
+      ph = '≈ ' + fmt(v / pu) + ' calcolato'; calc = true;
+    }
+    inp.placeholder = ph;
+    inp.parentNode.classList.toggle('calc', calc && inp.value === '');
   });
 }
-function structureChanged(){ sideVal = []; planView = 'bozza'; focusSide = -1; }
+function structureChanged(){ sideVal = []; sideDx = []; sideDy = []; planView = 'bozza'; focusSide = -1; }
 function setPlanView(v){
   if (v === 'misura' && !(closed && poly.length >= 3)) return;
   planView = v;
@@ -1989,7 +2204,17 @@ function ui(soft){
   }
   const hint = $('hint'), t = hintText();
   hint.hidden = !t; hint.textContent = t;
+  syncSticky();
   results();
+}
+/* in Misure la pianta resta visibile sotto l'intestazione mentre si scorrono i campi */
+function syncSticky(){
+  const stk = mode === 'pianta' && planView === 'misura', st = $('stage');
+  if (st.classList.contains('stk') === stk) return;
+  st.classList.toggle('stk', stk);
+  const hd = document.querySelector('.foh');
+  st.style.top = stk ? ((hd ? hd.offsetHeight : 0) + 'px') : '';
+  requestAnimationFrame(() => { resize(); if (mode === 'pianta') fitPlan(); draw(); });
 }
 function results(){
   const box = $('res');
@@ -2003,9 +2228,11 @@ function results(){
     if (st.h > 0) html += `<tr><td>Pareti (lorde, h ${fmt(st.h)} m)</td><td>${fmt(st.walls)} m²</td></tr>
       <tr><td>Volume</td><td>${fmt(st.vol)} m³</td></tr>`;
     html += '</table>';
-    if (r.cnt < poly.length) html += `<p class="ms-note ms-warn">${r.cnt} lati su ${poly.length} misurati: gli altri sono stimati dalla bozza.</p>`;
+    if (r.ortho && r.bad.some(Boolean)) html += `<p class="ms-note ms-warn">Misure incoerenti: il lato ${sideName(r.bad.indexOf(true))} risulterebbe negativo. Ricontrolla le misure inserite.</p>`;
+    else if (r.ortho && !r.sufficient) html += `<p class="ms-note ms-warn">Servono ${r.need} misure, ne hai inserite ${r.given}: i lati in giallo sono stimati dalla bozza.</p>`;
+    else if (!r.ortho && r.cnt < poly.length) html += `<p class="ms-note ms-warn">${r.cnt} lati su ${poly.length} misurati: gli altri sono stimati dalla bozza.</p>`;
     else if (pct > 5) html += '<p class="ms-note ms-warn">Errore di chiusura sopra il 5%: ricontrolla i conteggi dei lati.</p>';
-    box.innerHTML = html; return;
+    box.innerHTML = html; refreshSides(); return;
   }
   if (!surfaces.length){ box.innerHTML = ''; return; }
   let html = '', tot = 0;
@@ -2030,8 +2257,15 @@ function setMode(m){
 }
 
 /* ---------- pulsanti: comuni ---------- */
-$('tFoto').onclick = () => setMode('foto');
-$('tPianta').onclick = () => setMode('pianta');
+function showMapTab(on){
+  $('stage').hidden = on; $('panel').hidden = on; $('mapView').hidden = !on;
+  $('tMappa').classList.toggle('on', on);
+  if (on){ $('tFoto').classList.remove('on'); $('tPianta').classList.remove('on'); amOpen(); }
+  else { ui(); resize(); draw(); }
+}
+$('tFoto').onclick = () => { showMapTab(false); setMode('foto'); };
+$('tPianta').onclick = () => { showMapTab(false); setMode('pianta'); };
+$('tMappa').onclick = () => showMapTab(true);
 $('zin').onclick = () => zoomAt(1.4);
 $('zout').onclick = () => zoomAt(1/1.4);
 $('zfit').onclick = () => { mode === 'foto' ? fit() : fitPlan(); draw(); };
@@ -2058,7 +2292,7 @@ function summary(){
     if (Math.abs(rot) > .05) l.push(`Rotazione della pianta: ${Math.round(rot)}° (senso orario +)`);
     if (st.h > 0) l.push(`Altezza: ${fmt(st.h)} m`, `Pareti (lorde): ${fmt(st.walls)} m²`, `Volume: ${fmt(st.vol)} m³`);
     l.push('', 'Lati:');
-    r.L.forEach((m, i) => l.push(`L${i+1}: ${r.meas[i] ? sideVal[i] + ' ' + UN[unit] + ' = ' : 'stimato '}${fmt(m)} m`));
+    r.L.forEach((m, i) => l.push(`${sideName(i)}: ${r.ortho ? (r.flag[i] === 'm' ? 'misurato ' : r.flag[i] === 'c' ? 'calcolato ' : 'stimato ') : (r.meas[i] ? sideVal[i] + ' ' + UN[unit] + ' = ' : 'stimato ')}${fmt(m)} m`));
     return l.join('\n');
   }
   let tot = 0;
@@ -2083,7 +2317,7 @@ $('bCsv').onclick = () => {
     const r = rebuild(); if (!r) return;
     const st = planStats(r.pts);
     rows = [['Lato','Valore inserito','Unita','Lunghezza usata m']];
-    r.L.forEach((m, i) => rows.push(['L' + (i+1), r.meas[i] ? sideVal[i] : '', r.meas[i] ? UN[unit] : 'stimato', m.toFixed(3)]));
+    r.L.forEach((m, i) => rows.push([sideName(i), sideVal[i] > 0 ? sideVal[i] : '', r.ortho ? (r.flag[i] === 'm' ? UN[unit] : r.flag[i] === 'c' ? 'calcolato' : 'stimato') : (r.meas[i] ? UN[unit] : 'stimato'), m.toFixed(3)]));
     rows.push([], ['Vertice','X m','Y m']);
     r.pts.forEach((p, i) => rows.push([i+1, p.x.toFixed(3), p.y.toFixed(3)]));
     rows.push([], ['Area pavimento m2', st.area.toFixed(2)], ['Perimetro m', st.per.toFixed(2)],
@@ -2100,7 +2334,7 @@ $('bCsv').onclick = () => {
 };
 
 /* ---------- pulsanti: foto ---------- */
-$('file').onchange = e => {
+$('file').onchange = $('cam').onchange = e => {
   const f = e.target.files[0]; if (!f) return;
   const im = new Image();
   im.onload = () => {
@@ -2314,6 +2548,88 @@ return {show(){ resize(); }};
 
 
 /* ============================================================ */
+/*  Calcola area · scheda Mappa                                 */
+/* ============================================================ */
+const am={ui:null,pts:[],mk:[],shape:null,ready:false};
+function amMarker(i){
+  const m=L.marker(am.pts[i],{draggable:true,icon:L.divIcon({className:'',html:'<div class="am-v">'+(i+1)+'</div>',iconSize:[24,24],iconAnchor:[12,12]})}).addTo(am.ui.group);
+  m.on('drag',()=>{const q=m.getLatLng();am.pts[i]=[q.lat,q.lng];amRender();});
+  am.mk[i]=m;
+}
+function amAdd(ll,center){
+  am.pts.push(ll);amMarker(am.pts.length-1);
+  if(center)am.ui.map.setView(ll,Math.max(17,typeof am.ui.map.getZoom==='function'?am.ui.map.getZoom():17));
+  amRender();
+}
+function amSummary(M){
+  const ha=M.area>=10000?' ('+fmt(M.area/10000,2)+' ha)':'';
+  return 'Area: '+fmt(M.area,M.area<100?2:0)+' m²'+ha+'\nPerimetro: '+fmt(M.perim,0)+' m\nVertici: '+M.n+(M.centroid?'\nCentro: '+M.centroid[0].toFixed(6)+', '+M.centroid[1].toFixed(6):'')+'\nLati: '+M.sides.map(x=>fmt(x,1)+' m').join(' · ');
+}
+function amRender(){
+  const res=$('#am-res'),n=am.pts.length;
+  if(am.shape)am.shape.clearLayers();
+  const M=n>=2?polyAreaLL(am.pts):null;
+  if(M&&am.shape){
+    if(M.closed)L.polygon(am.pts,{color:M.selfInt?'#d8262f':'#2fd36b',weight:2,fillColor:M.selfInt?'#d8262f':'#2fd36b',fillOpacity:.2}).addTo(am.shape);
+    else L.polyline(am.pts,{color:'#2fd36b',weight:2}).addTo(am.shape);
+    M.sides.forEach((d,i)=>{
+      const a=am.pts[i],b=am.pts[(i+1)%n];
+      L.marker([(a[0]+b[0])/2,(a[1]+b[1])/2],{interactive:false,icon:L.divIcon({className:'',html:'<span class="am-l">'+fmt(d,d<10?1:0)+' m</span>',iconSize:[0,0]})}).addTo(am.shape);
+    });
+  }
+  $('#am-undo').disabled=!n;$('#am-clear').disabled=!n;
+  if(!M){res.innerHTML='<div class="note">'+(n?'Aggiungi altri vertici: servono almeno 3 punti.':'Tocca la mappa per segnare i vertici del perimetro, o aggiungili con il GPS o per coordinate.')+'</div>';return;}
+  if(!M.closed){res.innerHTML='<div class="card"><dl class="kv"><dt>Lunghezza</dt><dd>'+fmt(M.perim,0)+' m</dd><dt>Vertici</dt><dd>'+n+'</dd></dl></div><div class="note">Servono almeno 3 vertici per calcolare l’area.</div>';return;}
+  const ha=M.area>=10000?'<dt>Ettari</dt><dd>'+fmt(M.area/10000,2)+' ha</dd>':'';
+  res.innerHTML=`<div class="card">
+    <div class="big-l">Area</div>
+    <div class="coords">${fmt(M.area,M.area<100?2:0)} m²</div>
+    <dl class="kv">${ha}<dt>Perimetro</dt><dd>${fmt(M.perim,0)} m</dd><dt>Vertici</dt><dd>${M.n}</dd>
+      <dt>Centro</dt><dd>${M.centroid[0].toFixed(6)}, ${M.centroid[1].toFixed(6)}</dd></dl>
+    ${M.selfInt?'<div class="note warn">Due lati si incrociano: l’area non è affidabile. Sposta o annulla i vertici fino a ottenere un perimetro senza incroci.</div>':''}
+    <p class="sub">Calcolo su proiezione locale: errore trascurabile sotto i 10 km. La precisione dipende da quella dei vertici (GPS circa 3–10 m, mappa a seconda dello zoom).</p>
+  </div>
+  <div class="row"><button type="button" class="btn" id="am-copy">Copia riepilogo</button><button type="button" class="btn" id="am-geo">Esporta GeoJSON</button></div>`;
+}
+async function amOpen(){
+  if(am.ready){setTimeout(()=>{am.ui.map.invalidateSize();},60);return;}
+  am.ready=true;
+  if(typeof window.L==='undefined'){
+    toast('Caricamento mappa…');
+    const ok=await Promise.race([FireOps.leaflet(),new Promise(r=>setTimeout(()=>r(false),7000))]);
+    if(!ok)toast('Mappa non disponibile: aggiungi i vertici con il GPS o per coordinate.');
+  }
+  root.classList.toggle('tg-offline',typeof window.L==='undefined');
+  am.ui=createMapUI({
+    modes:[{key:'P',label:'Aggiungi punti'}],
+    multi:true,gpsKey:'P',gpsLabel:'Aggiungi la mia posizione',pins:{},
+    hints:{P:'Tocca la mappa per aggiungere un vertice. Trascina i vertici per correggerli.'},
+    idleHint:'Attiva “Aggiungi punti” e tocca i vertici del perimetro.',
+    onMapClick:(k,ll)=>amAdd(ll,false),
+    onChange:(k,ll,src)=>{if(src==='gps')amAdd(ll,false);}
+  },$('#am-slot'));
+  am.shape=L.layerGroup().addTo(am.ui.map);
+  am.ui.setMode('P');
+  const v=$('#ms-mapView');
+  $('#am-addc').onclick=()=>{
+    const inp=$('#am-coord'),ll=parseCoord(inp.value.trim(),'dd',32);
+    if(!ll){inp.setAttribute('aria-invalid','true');toast('Coordinate non valide: scrivi latitudine e longitudine, ad esempio 41.8902, 12.4922.');return;}
+    inp.removeAttribute('aria-invalid');inp.value='';amAdd(ll,true);
+  };
+  $('#am-undo').onclick=()=>{if(!am.pts.length)return;am.pts.pop();const m=am.mk.pop();if(m)am.ui.group.removeLayer(m);amRender();};
+  $('#am-clear').onclick=()=>{am.pts=[];am.mk=[];am.ui.group.clearLayers();amRender();};
+  v.addEventListener('click',e=>{
+    const M=am.pts.length>=3?polyAreaLL(am.pts):null;if(!M)return;
+    if(e.target.closest('#am-copy'))copyText(amSummary(M));
+    if(e.target.closest('#am-geo')){
+      const ring=am.pts.map(q=>[+q[1].toFixed(7),+q[0].toFixed(7)]);ring.push(ring[0]);
+      download(JSON.stringify({type:'Feature',properties:{area_m2:+M.area.toFixed(1),perimetro_m:+M.perim.toFixed(1)},geometry:{type:'Polygon',coordinates:[ring]}}),'area-'+stamp()+'.geojson','application/geo+json');
+    }
+  });
+  amRender();
+}
+
+/* ============================================================ */
 /*  Navigazione interna: #/trigo, #/trigo/altezza, ...          */
 /* ============================================================ */
 const VIEWS={
@@ -2333,9 +2649,10 @@ async function go(name){
   $$('.cam-start').forEach(e=>{e.hidden=false;});
   if(o.mod&&typeof window.L==='undefined'){
     toast('Caricamento mappa…');
-    const ok=await FireOps.leaflet();
-    if(!ok){toast('Mappa non disponibile: controlla la connessione.');location.hash='#/trigo';return;}
+    const ok=await Promise.race([FireOps.leaflet(),new Promise(r=>setTimeout(()=>r(false),7000))]);
+    if(!ok)toast('Mappa non disponibile: uso la modalità senza mappa.');
   }
+  root.classList.toggle('tg-offline',typeof window.L==='undefined');
   Object.keys(VIEWS).forEach(n=>{$('#tg-'+n).hidden=n!==name;});
   $('#tg-nav').hidden=name==='home';
   $('#tg-navt').textContent=o.title;
