@@ -21,8 +21,8 @@
     {id: "comando", nome: "Comando", sigla: "C", colore: "var(--ics-comando)", testo: "#10141a",
       sub: "Direzione e coordinamento",
      moduli: [
-    {id:"foto", nome:"Foto", sotto:"Logo e sfocatura di volti, targhe e marchi",
-  desc:"Aggiungi il logo CNVVF e sfoca volti, targhe e marchi prima di condividere una foto", ico:"📷"}
+    {id:"foto", nome:"Co.Em.", sotto:"Comunicazione in Emergenza",
+  desc:"Prepara le foto da diffondere: inquadratura, sfocatura di volti, targhe e marchi, logo CNVVF", ico:"📷"}
        ]},
     {id: "operazioni", nome: "Operazioni", sigla: "O", colore: "var(--ics-operazioni)", testo: "#fff",
       sub: "Gestione dell'intervento",
