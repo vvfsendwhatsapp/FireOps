@@ -1342,13 +1342,21 @@ function m3Stats(){
 /*  poi mi sposto in B, imposto la posizione e miro di nuovo C.  */
 /* ============================================================ */
 const LET4=['A','B'];
-const m4={fmt:'dd',zone:32,pts:[{ll:null,name:''},{ll:null,name:''}],s:{a:null,b:null,ref:null,ea:null,eb:null},rd:{},sigma:2,sol:null,ui:null,flows:[null,null],steps:null,mkEl:null,cur:0};
+const m4={fmt:'dd',zone:32,pts:[{ll:null,name:''},{ll:null,name:''}],s:{a:null,b:null,ab:null,ba:null,ea:null,eb:null,eab:null,eba:null},rd:{},sigma:2,sol:null,ui:null,flows:[null,null],steps:null,mkEl:null,cur:0};
 const lab4=i=>LET4[i]+(m4.pts[i].name?' · '+m4.pts[i].name:'');
-const m4HasRef=()=>typeof m4.s.ref==='number';
-/* correzione bussola: da B si punta A (se visibile); vale per entrambe le stazioni, stesso telefono */
+
+/* correzione bussola: i riferimenti A→B (da A) e B→A (da B) danno ciascuno uno sfasamento, se ne fa la media */
+function m4OffList(){
+  const A=m4.pts[0].ll,B=m4.pts[1].ll,o=[];if(!A||!B)return o;
+  if(typeof m4.s.ab==='number')o.push(norm180(bearingLL(A,B)-m4.s.ab));
+  if(typeof m4.s.ba==='number')o.push(norm180(bearingLL(B,A)-m4.s.ba));
+  return o;
+}
+const m4HasRef=()=>m4OffList().length>0;
 function m4Off(){
-  if(!m4HasRef()||!m4.pts[0].ll||!m4.pts[1].ll)return 0;
-  return norm180(bearingLL(m4.pts[1].ll,m4.pts[0].ll)-m4.s.ref);
+  const o=m4OffList();if(!o.length)return 0;
+  let sn=0,cs=0;o.forEach(x=>{sn+=Math.sin(x*D2R);cs+=Math.cos(x*D2R);});
+  return norm180(Math.atan2(sn,cs)*R2D);
 }
 function m4Info(i){
   const ll=m4.pts[i].ll;if(!ll)return 'Non ancora impostato.';
@@ -1377,20 +1385,43 @@ function m4Render(){
   const res=$('#m4-res');
   if(!have){res.innerHTML='<div class="note">Servono le due stazioni: in A posizione e direzione verso C (passo 1), in B posizione e direzione verso C (passo 2).</div>';return;}
   if(!S){res.innerHTML='<div class="note warn">Le due direzioni sono quasi parallele: non si incontrano in un punto. Scegli per B un punto più distante da A, in modo che C sia visto con angoli diversi.</div>';return;}
-  if(S.behind){res.innerHTML='<div class="note warn">Le due semirette si allontanano: C risulterebbe alle tue spalle. Controlla di aver puntato lo stesso punto da A e da B. Se la bussola è sfasata, da B punta A e usa il riferimento.</div>';return;}
+  if(S.behind){res.innerHTML='<div class="note warn">Le due semirette si allontanano: C risulterebbe alle tue spalle. Controlla di aver puntato lo stesso punto da A e da B. Se la bussola è sfasata, usa i riferimenti A→B e B→A.</div>';return;}
   const ll=S.ll,u=ll2utm(ll[0],ll[1],utmZone(ll[1]));
   const bad=!Number.isFinite(S.err)||S.err>Math.max(50,S.base*0.5);
   /* dislivello: h = d·tan(alzo) + correzione di curvatura e rifrazione (0,0683 m per km²) */
-  const hq=(d,e)=>d*Math.tan(e*D2R)+0.0683*(d/1000)**2;
-  const hqErr=(d,e)=>d/Math.cos(e*D2R)**2*m4.sigma*D2R+(Number.isFinite(S.err)?Math.abs(Math.tan(e*D2R))*S.err:0);
+  const cur=d=>0.0683*(d/1000)**2, sg=m4.sigma*D2R, sec2=e=>1/Math.cos(e*D2R)**2;
+  const hq=(d,e)=>d*Math.tan(e*D2R)+cur(d);
+  const hqErr=(d,e)=>d*sec2(e)*sg+(Number.isFinite(S.err)?Math.abs(Math.tan(e*D2R))*S.err:0);
   const hA=(m4.s.ea!=null)?hq(S.dA,m4.s.ea):null, hB=(m4.s.eb!=null)?hq(S.dB,m4.s.eb):null;
   const eA=hA!=null?hqErr(S.dA,m4.s.ea):0, eB=hB!=null?hqErr(S.dB,m4.s.eb):0;
-  const quote=(hA!=null||hB!=null)?`<dl class="kv">
-      ${hA!=null?`<dt>Quota di C rispetto ad A</dt><dd>${sgn(hA,1)} m <small>± ${fmt(eA,1)}</small></dd>`:''}
-      ${hB!=null?`<dt>Quota di C rispetto a B</dt><dd>${sgn(hB,1)} m <small>± ${fmt(eB,1)}</small></dd>`:''}
-      ${(hA!=null&&hB!=null)?`<dt>Dislivello da A a B</dt><dd>${sgn(hA-hB,1)} m <small>± ${fmt(Math.hypot(eA,eB),1)}</small></dd>`:''}
+  /* dislivello A–B misurato direttamente: A→B da A e/o B→A da B (con entrambe la curvatura si elimina) */
+  const D=S.base,e1=(typeof m4.s.ab==='number'&&m4.s.eab!=null)?m4.s.eab:null,e2=(typeof m4.s.ba==='number'&&m4.s.eba!=null)?m4.s.eba:null;
+  const v1=e1!=null?D*Math.tan(e1*D2R)+cur(D):null, v2=e2!=null?-(D*Math.tan(e2*D2R)+cur(D)):null;
+  const s1=e1!=null?D*sec2(e1)*sg:0, s2=e2!=null?D*sec2(e2)*sg:0;
+  let dz=null,dzErr=0,dzSrc='';
+  if(v1!=null&&v2!=null){dz=(v1+v2)/2;dzErr=Math.hypot(s1,s2)/2;dzSrc='misurato A→B e B→A';}
+  else if(v1!=null){dz=v1;dzErr=s1;dzSrc='misurato da A';}
+  else if(v2!=null){dz=v2;dzErr=s2;dzSrc='misurato da B';}
+  /* quote di C: se il dislivello A–B è noto, le due misure di C si compensano a vicenda (media pesata) */
+  let cA=hA,cB=hB,cErr=null,mis=null,misErr=0,comp=false;
+  if(dz!=null&&hA!=null&&hB!=null){
+    const wA=1/Math.max(eA,1e-3)**2,wB=1/Math.max(Math.hypot(eB,dzErr),1e-3)**2;
+    cA=(hA*wA+(hB+dz)*wB)/(wA+wB);cB=cA-dz;cErr=1/Math.sqrt(wA+wB);
+    mis=hA-hB-dz;misErr=Math.hypot(eA,eB,dzErr);comp=true;
+  }else if(dz!=null&&hA!=null){cB=hA-dz;cErr=Math.hypot(eA,dzErr);}
+  else if(dz!=null&&hB!=null){cA=hB+dz;cErr=Math.hypot(eB,dzErr);}
+  else if(hA!=null&&hB!=null){dz=hA-hB;dzErr=Math.hypot(eA,eB);dzSrc='ricavato dalle quote di C';}
+  const ea_=cErr!=null?cErr:eA, eb_=cErr!=null?cErr:eB;
+  const q=(x,e)=>sgn(x,1)+' m <small>± '+fmt(e,1)+'</small>';
+  const quote=(cA!=null||cB!=null||dz!=null)?`<dl class="kv">
+      ${dz!=null?`<dt>Dislivello da A a B</dt><dd>${q(dz,dzErr)}</dd>`:''}
+      ${(v1!=null&&v2!=null)?`<dt>Scarto A→B / B→A</dt><dd>${fmt(Math.abs(v1-v2),1)} m</dd>`:''}
+      ${cA!=null?`<dt>Quota di C rispetto ad A</dt><dd>${q(cA,cErr!=null?cErr:eA)}</dd>`:''}
+      ${cB!=null?`<dt>Quota di C rispetto a B</dt><dd>${q(cB,cErr!=null?cErr:eB)}</dd>`:''}
+      ${mis!=null?`<dt>Chiusura delle misure</dt><dd>${sgn(mis,1)} m <small>± ${fmt(misErr,1)}</small></dd>`:''}
     </dl>
-    <p class="sub">Quote calcolate dall’alzo misurato, con il telefono alla stessa altezza dal suolo nelle due stazioni. Incertezza dominata dall’errore angolare ipotizzato.</p>`:'';
+    ${(mis!=null&&Math.abs(mis)>2*misErr)?'<div class="note warn">Le misure di quota non tornano tra loro: controlla di aver puntato lo stesso punto C e di aver tenuto il telefono fermo.</div>':''}
+    <p class="sub">${dz!=null&&dzSrc&&dzSrc!=='ricavato dalle quote di C'?'Dislivello A–B '+dzSrc+'. ':''}${comp?'Quote di C compensate con il dislivello A–B. ':''}${dz==null?'Per un dislivello A–B diretto, punta B da A e A da B (passaggio facoltativo). ':''}Il telefono va tenuto alla stessa altezza dal suolo nelle due stazioni.</p>`:'';
   m4.pts.forEach(p=>L.polyline([p.ll,ll],{color:'#ffd400',weight:2,dashArray:'6 6'}).addTo(g));
   L.polyline([m4.pts[0].ll,m4.pts[1].ll],{color:'#8b96a3',weight:1.5}).addTo(g);
   if(Number.isFinite(S.err))L.circle(ll,{radius:Math.max(S.err,1),color:'#2fd36b',weight:2,fillColor:'#2fd36b',fillOpacity:.15}).addTo(g);
@@ -1412,7 +1443,7 @@ function m4Render(){
     <select id="m4-sig">${[0.5,1,2,3].map(x=>`<option value="${x}" ${x===m4.sigma?'selected':''}>±${String(x).replace('.',',')}°</option>`).join('')}</select>
     ${(S.gamma<30||S.gamma>150)?'<div class="note warn">L’angolo in C è molto piccolo o molto grande: le due direzioni sono quasi parallele e l’errore si amplifica. Meglio una base più larga: l’angolo ideale è vicino a 90°.</div>':''}
     ${bad?'<div class="note warn">Incertezza elevata rispetto alla base: ripeti le misure da punti più distanti.</div>':''}
-    ${!m4HasRef()?'<div class="note">Non hai usato il riferimento: l’azimut dipende dalla bussola del telefono (declinazione magnetica compresa, in Italia circa +3°). Per una posizione più affidabile, da B punta A (se lo vedi) e conferma il riferimento.</div>':''}
+    ${!m4HasRef()?'<div class="note">Non hai usato nessun riferimento: l’azimut dipende dalla bussola del telefono (declinazione magnetica compresa, in Italia circa +3°). Per una posizione più affidabile punta B da A e/o A da B (passaggio facoltativo): serve anche per il dislivello A–B.</div>':''}
   </div>
   <div class="row">
     <button type="button" class="btn" id="m4-copy">Copia coordinate</button>
@@ -1455,7 +1486,7 @@ function m4Station(i){
     </div>
     ${camHTML(pr,{hud:'Direzione (azimut)',horizon:false})}
     <div id="${pr}-flow" style="margin-top:10px"></div>
-    <p class="sub">${i?'Punta il mirino su C, lo stesso punto mirato da A, e conferma. Se da qui vedi anche A, dopo puoi puntarlo per correggere la bussola (facoltativo).':'Punta il mirino proprio sul punto C (anche in alto o in basso: l’alzo serve per il dislivello) e conferma. Poi spostati in B.'}</p>
+    <p class="sub">${i?'Punta il mirino su C, lo stesso punto mirato da A, e conferma. Se da qui vedi anche A, puoi puntarlo dopo (facoltativo): dà il dislivello A–B e corregge la bussola.':'Punta il mirino proprio sul punto C (anche in alto o in basso: l’alzo serve per il dislivello) e conferma. Facoltativo: punta anche B. Poi spostati in B.'}</p>
   </div>`;
 }
 function initM4(){
@@ -1504,16 +1535,19 @@ function initM4(){
     return az;
   };
   const onCap=(k,val)=>{
-    if(k!=='a'&&k!=='b')return;
+    if(!['a','b','ab','ba'].includes(k))return;
     const r=m4.rd[k];m4.s['e'+k]=(r&&r.az===val&&Number.isFinite(r.el))?r.el:null;m4.rd[k]=null;
   };
-  m4.flows[0]=makeFlow('m4a',[{key:'a',chip:'A → C',step:0.1,label:()=>'Da '+lab4(0)+': conferma direzione verso C',read:need(0,'a')}],m4.s,
-    ()=>'Sei in A: imposta la posizione, poi punta il mirino su C e premi.',()=>{m4Render();},onCap,{go:2,text:'Vai al punto B',msg:'Direzione da A registrata.'});
+  m4.flows[0]=makeFlow('m4a',[
+    {key:'a',chip:'A → C',step:0.1,label:()=>'Da '+lab4(0)+': conferma direzione verso C',read:need(0,'a')},
+    {key:'ab',chip:'A → B',step:0.1,optional:true,skip:true,skipVal:'no',label:()=>'Facoltativo: punta '+lab4(1),read:need(0,'ab')}
+  ],m4.s,k=>k==='a'?'Sei in A: imposta la posizione, poi punta il mirino su C e premi.'
+    :'Facoltativo: se da A vedi B (o un segnale posto su B), puntalo e premi. Serve per il dislivello A–B e per correggere la bussola.',()=>{m4Render();},onCap,{go:2,text:'Vai al punto B',msg:'Direzione da A registrata.'});
   m4.flows[1]=makeFlow('m4b',[
     {key:'b',chip:'B → C',step:0.1,label:()=>'Da '+lab4(1)+': conferma direzione verso C',read:need(1,'b')},
-    {key:'ref',chip:'B → A',step:0.1,optional:true,skip:true,skipVal:'no',label:()=>'Riferimento: punta '+lab4(0)+' (facoltativo)',read:need(1)}
+    {key:'ba',chip:'B → A',step:0.1,optional:true,skip:true,skipVal:'no',label:()=>'Facoltativo: punta '+lab4(0),read:need(1,'ba')}
   ],m4.s,k=>k==='b'?'Sei in B: imposta la posizione, poi punta il mirino sullo stesso punto C e premi.'
-    :'Facoltativo: se da B vedi A, puntalo e premi. Serve a correggere la bussola.',()=>{m4Render();},onCap,{go:3,text:'Vedi risultato',msg:'Direzione da B registrata.'});
+    :'Facoltativo: se da B vedi A, puntalo e premi. Con A→B e B→A il dislivello A–B è più preciso.',()=>{m4Render();},onCap,{go:3,text:'Vedi risultato',msg:'Direzione da B registrata.'});
   bindCam('m4a',()=>m4CamRender(0));bindCam('m4b',()=>m4CamRender(1));
 
   const setFmt=()=>{
@@ -1552,7 +1586,7 @@ function initM4(){
       if(m4.ui.wrap.querySelector('[data-mode].on')===null||m4.ui.wrap.querySelector('[data-mode].on').dataset.mode!==LET4[i])m4.ui.setMode(LET4[i]);
       m4.ui.map.invalidateSize();m4.ui.wrap.scrollIntoView({block:'center',behavior:'smooth'});return;
     }
-    if(t.closest('#m4-new')){m4.s.ea=m4.s.eb=null;m4.flows.forEach(f=>f.reset());m4.steps.go(1);}
+    if(t.closest('#m4-new')){m4.s.ea=m4.s.eb=m4.s.eab=m4.s.eba=null;m4.flows.forEach(f=>f.reset());m4.steps.go(1);}
     if(t.closest('#m4-copy')&&m4.sol&&m4.sol.ll)copyText(m4.sol.ll[0].toFixed(6)+', '+m4.sol.ll[1].toFixed(6));
   });
   m4.steps.go(1);
