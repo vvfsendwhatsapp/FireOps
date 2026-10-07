@@ -137,6 +137,10 @@ const CSS=`.pg-trigo{--acc:var(--ics-pianificazione);--ok:#3fa66b;--bad:#e8734a;
 .pg-trigo .ptc:first-child{border-top:0}
 .pg-trigo .ptc-h{display:flex;gap:8px;align-items:center}
 .pg-trigo .ptc-h input{min-height:36px}
+.pg-trigo .ptc-h+.row{margin-top:10px}
+.pg-trigo #tg-avanti .row>select.fit{width:auto;max-width:42%}
+.pg-trigo #tg-avanti .cam{aspect-ratio:4/5;max-height:64vh}
+.pg-trigo #tg-avanti .cam-start{place-items:start center;padding-top:14%}
 .pg-trigo .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--yellow);color:#000;
   padding:10px 16px;font-weight:600;border-radius:6px;z-index:5000;max-width:90vw;text-align:center}
 .pg-trigo .leaflet-container{background:#0c0e10;font-family:var(--sans)}
@@ -1426,15 +1430,13 @@ function m4Station(i){
       <div class="ptc" data-i="${i}">
         <div class="ptc-h"><div class="pin mini" style="--bg:#ffd400;--fg:#000">${L_}</div><input class="pname" placeholder="Nome (facoltativo)" aria-label="Nome del punto ${L_}"></div>
         <div class="row"><button type="button" class="btn pri sm" data-m4gps>Imposta con il GPS</button><button type="button" class="btn sm fit pmap">Su mappa</button></div>
-        <label class="f">Oppure scrivi le coordinate del punto ${L_}</label>
-        <input class="pcoord" inputmode="decimal" placeholder="41.8902, 12.4922" aria-label="Coordinate del punto ${L_}">
+        <label class="f">Oppure scrivi le coordinate</label>
+        <div class="row">
+          <input class="pcoord" inputmode="decimal" placeholder="41.8902, 12.4922" aria-label="Coordinate del punto ${L_}">
+          <select class="m4zone fit" aria-label="Fuso UTM" hidden>${[31,32,33,34,35].map(z=>`<option value="${z}" ${z===32?'selected':''}>Fuso ${z}</option>`).join('')}</select>
+          <select class="m4fmt fit" aria-label="Formato coordinate"><option value="dd">Lat, Lon</option><option value="utm">UTM</option></select>
+        </div>
         <p class="sub pinfo">Non ancora impostato.</p>
-      </div>
-      <div class="row">
-        <div><label class="f">Formato</label>
-          <select class="m4fmt"><option value="dd">Lat, Lon (gradi decimali)</option><option value="utm">UTM WGS84 (Est Nord)</option></select></div>
-        <div class="m4zwrap" hidden><label class="f">Fuso</label>
-          <select class="m4zone">${[31,32,33,34,35].map(z=>`<option value="${z}" ${z===32?'selected':''}>${z}</option>`).join('')}</select></div>
       </div>
       <div id="m4-slot${i}" hidden></div>
     </div>
@@ -1494,7 +1496,7 @@ function initM4(){
 
   const setFmt=()=>{
     $$('.m4fmt',v).forEach(x=>{x.value=m4.fmt;});$$('.m4zone',v).forEach(x=>{x.value=m4.zone;});
-    $$('.m4zwrap',v).forEach(x=>{x.hidden=m4.fmt!=='utm';});
+    $$('.m4zone',v).forEach(x=>{x.hidden=m4.fmt!=='utm';});
     $$('.pcoord',v).forEach(x=>{x.placeholder=m4.fmt==='utm'?'291234 4640123':'41.8902, 12.4922';});
     [0,1].forEach(m4Write);
   };
