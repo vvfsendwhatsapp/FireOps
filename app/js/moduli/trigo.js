@@ -1,7 +1,7 @@
 /* FireOps VVF - modulo Trigo (Pianificazione)
- * Misure con camera e mappa: altezza e area di proiezione, problema del faro, Snellius-Potenot, calcola area.
+ * Misure con camera e mappa: altezza e area di proiezione, problema del faro, Snellius-Potenot, intersezione in avanti, calcola area.
  * Va in app/js/moduli/trigo.js. Leaflet arriva da FireOps.leaflet(); stile dalle variabili di fireops-app.css.
- * Sotto-pagine: #/trigo, #/trigo/altezza, #/trigo/faro, #/trigo/snellius, #/trigo/area
+ * Sotto-pagine: #/trigo, #/trigo/altezza, #/trigo/faro, #/trigo/snellius, #/trigo/avanti, #/trigo/area
  */
 (function(){
 'use strict';
@@ -228,12 +228,20 @@ const HTML=`<div class="tg-nav" id="tg-nav" hidden><button type="button" class="
     <span class="tx"><h2>Calcola area</h2><p>Superficie di pareti, soffitti e pavimenti da una foto, oppure pianta di un locale misurata a passi o tacco-punta.</p></span>
   </button>
 
+  <button type="button" class="choice" data-to="avanti">
+    <span class="sw"><svg viewBox="0 0 76 76" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 64L58 18M64 64L58 18" stroke="#10141a"/><path d="M12 64h52" stroke-dasharray="3 4"/>
+      <circle cx="12" cy="64" r="4" fill="currentColor"/><circle cx="64" cy="64" r="4" fill="currentColor"/><circle cx="58" cy="18" r="5" fill="#10141a" stroke="none"/></svg></span>
+    <span class="tx"><h2>Intersezione in avanti</h2><p>Coordinate di un punto C da due stazioni: in A imposti la posizione e punti C, poi ti sposti in B e punti di nuovo C.</p></span>
+  </button>
+
   <p class="foot">La precisione dipende dai sensori del telefono, di norma ±0,5–1°. Usa i risultati come stima e verifica con strumenti omologati quando serve.</p>
 </section>
 
 <section id="tg-altezza" hidden></section>
 <section id="tg-faro" hidden></section>
 <section id="tg-snellius" hidden></section>
+<section id="tg-avanti" hidden></section>
 
 <section id="tg-area" class="ms" hidden>
   <div class="ms-tabs" role="tablist" aria-label="Modalità">
@@ -435,6 +443,30 @@ function resection(ll,az,sigma){
           angAB:Math.abs(norm180(az[1]-az[0])), angBC:Math.abs(norm180(az[2]-az[1]))};
 }
 
+/* Intersezione in avanti: C è l'incontro delle semirette da A (azimut thA) e da B (azimut thB), azimut veri in gradi.
+   t e s sono le distanze A→C e B→C; se le semirette divergono (C "dietro") restituisce {behind:true}. */
+function rayIntersect(A,thA,B,thB){
+  const d1={x:Math.sin(thA*D2R),y:Math.cos(thA*D2R)}, d2={x:Math.sin(thB*D2R),y:Math.cos(thB*D2R)};
+  const c=d1.x*d2.y-d1.y*d2.x; if(Math.abs(c)<1e-6) return null;
+  const w={x:B.x-A.x,y:B.y-A.y};
+  const t=(w.x*d2.y-w.y*d2.x)/c, s=(w.x*d1.y-w.y*d1.x)/c;
+  if(t<=0||s<=0) return {behind:true};
+  return {x:A.x+t*d1.x,y:A.y+t*d1.y,t,s};
+}
+function forwardIntersection(ll,az,sigma){
+  const o=[(ll[0][0]+ll[1][0])/2,(ll[0][1]+ll[1][1])/2];
+  const A=toXY(ll[0],o), B=toXY(ll[1],o);
+  const r=rayIntersect(A,az[0],B,az[1]);
+  if(!r||r.behind) return r;
+  let err=0;
+  for(let i=0;i<4;i++){
+    const q=rayIntersect(A,az[0]+((i&1)?sigma:-sigma),B,az[1]+((i&2)?sigma:-sigma));
+    if(!q||q.behind){err=Infinity;break;}
+    err=Math.max(err,Math.hypot(q.x-r.x,q.y-r.y));
+  }
+  return {ll:toLL(r,o), dA:r.t, dB:r.s, gamma:Math.abs(norm180(az[0]-az[1])), err, base:Math.hypot(B.x-A.x,B.y-A.y)};
+}
+
 /* UTM WGS84 (serie di Krüger) */
 const UTM_A=6378137, UTM_F=1/298.257223563, UTM_K0=0.9996;
 function utmConst(){const n=UTM_F/(2-UTM_F);return {n,A:UTM_A/(1+n)*(1+n*n/4+n**4/64),e:Math.sqrt(UTM_F*(2-UTM_F))};}
@@ -607,14 +639,15 @@ function bindCam(p,render){
 function showStart(p){const s=$('#'+p+'-start');if(s)s.hidden=false;}
 
 /* Sequenza di acquisizione: bottone principale + riquadri con i valori (modificabili a mano) */
-function makeFlow(p,stages,store,hint,onChange,onCapture){
+function makeFlow(p,stages,store,hint,onChange,onCapture,okc){
+  okc=okc||{go:3,text:'Vedi risultato',msg:'Misura completa.'};
   let act=0;
   const root=$('#'+p+'-flow');
   root.style.setProperty('--cols',stages.length);
   root.innerHTML=`<button type="button" class="btn pri big" id="${p}-cap"></button>
     <p class="hint" id="${p}-hint"></p>
     <div class="stg">${stages.map((s,i)=>`<div class="stgc" data-i="${i}"><button type="button" class="stgl">${s.chip}</button><input type="number" inputmode="decimal" step="${s.step||0.1}" data-k="${s.key}" aria-label="${s.chip} (gradi)"><span>°</span></div>`).join('')}</div>
-    <div class="note ok" id="${p}-ok" hidden><span>Misura completa.</span><button type="button" class="btn sm" data-go="3">Vedi risultato</button></div>`;
+    <div class="note ok" id="${p}-ok" hidden><span>${okc.msg}</span><button type="button" class="btn sm" data-go="${okc.go}">${okc.text}</button></div>`;
   const cap=$('#'+p+'-cap'),hintEl=$('#'+p+'-hint');
   function refresh(){
     const st=stages[act];
@@ -623,7 +656,7 @@ function makeFlow(p,stages,store,hint,onChange,onCapture){
     $$('.stgc',root).forEach((c,i)=>{
       const s=stages[i],inp=$('input',c);
       c.classList.toggle('act',i===act);c.classList.toggle('done',store[s.key]!=null);
-      if(document.activeElement!==inp)inp.value=store[s.key]==null?'':(+store[s.key]).toFixed(1);
+      if(document.activeElement!==inp)inp.value=typeof store[s.key]==='number'?store[s.key].toFixed(1):'';
     });
     $('#'+p+'-ok').hidden=!stages.filter(s=>!s.optional).every(s=>store[s.key]!=null);
   }
@@ -639,7 +672,7 @@ function makeFlow(p,stages,store,hint,onChange,onCapture){
   root.addEventListener('click',e=>{
     const l=e.target.closest('.stgl');
     if(l){act=+l.parentNode.dataset.i;refresh();return;}
-    if(e.target.closest('[data-skip]')){store[stages[act].key]=0;next();refresh();onChange();}
+    if(e.target.closest('[data-skip]')){const sv=stages[act].skipVal;store[stages[act].key]=sv!==undefined?sv:0;next();refresh();onChange();}
   });
   root.addEventListener('input',e=>{
     const inp=e.target.closest('input[data-k]');if(!inp)return;
@@ -650,7 +683,8 @@ function makeFlow(p,stages,store,hint,onChange,onCapture){
     $('#'+p+'-ok').hidden=!stages.filter(s=>!s.optional).every(s=>store[s.key]!=null);
     onChange();
   });
-  return {refresh,reset(){stages.forEach(s=>{store[s.key]=null;});act=0;refresh();onChange();}};
+  refresh();
+  return {refresh,act:()=>act,reset(){stages.forEach(s=>{store[s.key]=null;});act=0;refresh();onChange();}};
 }
 /* HUD di inclinazione (modalità clinometro) */
 function pitchRender(p,store){
@@ -719,8 +753,9 @@ function createMapUI(cfg,slot){
     toast('Ricerca posizione GPS…');
     navigator.geolocation.getCurrentPosition(pos=>{
       const ll=[pos.coords.latitude,pos.coords.longitude];
-      ui.setPoint(cfg.gpsKey,ll);map.setView(ll,Math.max(map.getZoom(),17));
-      cfg.onChange&&cfg.onChange(cfg.gpsKey,ll,'gps');
+      const gk=typeof cfg.gpsKey==='function'?cfg.gpsKey():cfg.gpsKey;
+      ui.setPoint(gk,ll);map.setView(ll,Math.max(map.getZoom(),17));
+      cfg.onChange&&cfg.onChange(gk,ll,'gps');
       toast('Posizione acquisita (±'+Math.round(pos.coords.accuracy)+' m)');
     },()=>toast('Posizione GPS non disponibile: controlla i permessi.'),{enableHighAccuracy:true,timeout:20000,maximumAge:0});
   };
@@ -1297,6 +1332,208 @@ function m3Stats(){
   $('#m3-se').textContent=(m3.sol&&Number.isFinite(m3.sol.err))?'± '+fmt(m3.sol.err,0)+' m':'—';
 }
 
+/* ============================================================ */
+/*  5 · Intersezione in avanti                                  */
+/*  Si lavora per stazioni: in A imposto la posizione e miro C,  */
+/*  poi mi sposto in B, imposto la posizione e miro di nuovo C.  */
+/* ============================================================ */
+const LET4=['A','B'];
+const m4={fmt:'dd',zone:32,pts:[{ll:null,name:''},{ll:null,name:''}],s:{a:null,b:null,ref:null},sigma:2,sol:null,ui:null,flows:[null,null],steps:null,mkEl:null,cur:0};
+const lab4=i=>LET4[i]+(m4.pts[i].name?' · '+m4.pts[i].name:'');
+const m4HasRef=()=>typeof m4.s.ref==='number';
+/* correzione bussola: da B si punta A (se visibile); vale per entrambe le stazioni, stesso telefono */
+function m4Off(){
+  if(!m4HasRef()||!m4.pts[0].ll||!m4.pts[1].ll)return 0;
+  return norm180(bearingLL(m4.pts[1].ll,m4.pts[0].ll)-m4.s.ref);
+}
+function m4Info(i){
+  const ll=m4.pts[i].ll;if(!ll)return 'Non ancora impostato.';
+  return m4.fmt==='dd'?('UTM '+utmZone(ll[1])+utmBand(ll[0])+' '+fmtCoord(ll,'utm',utmZone(ll[1]))):('Lat, Lon '+fmtCoord(ll,'dd'));
+}
+function m4Write(i){
+  const row=$('.ptc[data-i="'+i+'"]',$('#tg-avanti'));if(!row)return;
+  const inp=$('.pcoord',row),ll=m4.pts[i].ll;
+  if(document.activeElement!==inp)inp.value=ll?fmtCoord(ll,m4.fmt,m4.zone):'';
+  inp.removeAttribute('aria-invalid');
+  $('.pinfo',row).textContent=m4Info(i);
+}
+function m4Stats(){
+  $('#m4-sp').textContent=m4.pts.filter(p=>p.ll).length+'/2';
+  $('#m4-sm').textContent=['a','b'].filter(k=>m4.s[k]!=null).length+'/2';
+  $('#m4-se').textContent=(m4.sol&&Number.isFinite(m4.sol.err))?'± '+fmt(m4.sol.err,0)+' m':'—';
+}
+function m4Render(){
+  const have=m4.pts.every(p=>p.ll)&&m4.s.a!=null&&m4.s.b!=null;
+  const off=m4Off();
+  m4.sol=have?forwardIntersection(m4.pts.map(p=>p.ll),[norm360(m4.s.a+off),norm360(m4.s.b+off)],m4.sigma):null;
+  const S=m4.sol;
+  m4.steps.mark(1,!!(m4.pts[0].ll&&m4.s.a!=null));m4.steps.mark(2,!!(m4.pts[1].ll&&m4.s.b!=null));m4.steps.mark(3,!!(S&&S.ll));
+  m4Stats();
+  const g=m4.ui.group;g.clearLayers();m4.ui.removePoint('C');
+  const res=$('#m4-res');
+  if(!have){res.innerHTML='<div class="note">Servono le due stazioni: in A posizione e direzione verso C (passo 1), in B posizione e direzione verso C (passo 2).</div>';return;}
+  if(!S){res.innerHTML='<div class="note warn">Le due direzioni sono quasi parallele: non si incontrano in un punto. Scegli per B un punto più distante da A, in modo che C sia visto con angoli diversi.</div>';return;}
+  if(S.behind){res.innerHTML='<div class="note warn">Le due semirette si allontanano: C risulterebbe alle tue spalle. Controlla di aver puntato lo stesso punto da A e da B. Se la bussola è sfasata, da B punta A e usa il riferimento.</div>';return;}
+  const ll=S.ll,u=ll2utm(ll[0],ll[1],utmZone(ll[1]));
+  const bad=!Number.isFinite(S.err)||S.err>Math.max(50,S.base*0.5);
+  m4.pts.forEach(p=>L.polyline([p.ll,ll],{color:'#ffd400',weight:2,dashArray:'6 6'}).addTo(g));
+  L.polyline([m4.pts[0].ll,m4.pts[1].ll],{color:'#8b96a3',weight:1.5}).addTo(g);
+  if(Number.isFinite(S.err))L.circle(ll,{radius:Math.max(S.err,1),color:'#2fd36b',weight:2,fillColor:'#2fd36b',fillOpacity:.15}).addTo(g);
+  m4.ui.setPoint('C',ll);
+  res.innerHTML=`<div class="card">
+    <div class="big-l">Coordinate del punto C</div>
+    <div class="coords">${ll[0].toFixed(6)}, ${ll[1].toFixed(6)}</div>
+    <div class="sub" style="font-size:15px;margin-top:4px">UTM WGS84 ${u.zone}${utmBand(ll[0])} · E ${Math.round(u.E)} · N ${Math.round(u.N)}</div>
+    <dl class="kv">
+      <dt>Distanza A → C</dt><dd>${fmt(S.dA,0)} m</dd>
+      <dt>Distanza B → C</dt><dd>${fmt(S.dB,0)} m</dd>
+      <dt>Distanza A–B (base)</dt><dd>${fmt(S.base,0)} m</dd>
+      <dt>Angolo in C</dt><dd>${fmt(S.gamma,1)}°</dd>
+      <dt>Incertezza stimata</dt><dd>${Number.isFinite(S.err)?'± '+fmt(S.err,0)+' m':'non determinabile'}</dd>
+      <dt>Correzione bussola</dt><dd>${m4HasRef()?sgn(off,1)+'°':'non usata'}</dd>
+    </dl>
+    <label class="f" for="m4-sig">Errore angolare ipotizzato</label>
+    <select id="m4-sig">${[0.5,1,2,3].map(x=>`<option value="${x}" ${x===m4.sigma?'selected':''}>±${String(x).replace('.',',')}°</option>`).join('')}</select>
+    ${(S.gamma<30||S.gamma>150)?'<div class="note warn">L’angolo in C è molto piccolo o molto grande: le due direzioni sono quasi parallele e l’errore si amplifica. Meglio una base più larga: l’angolo ideale è vicino a 90°.</div>':''}
+    ${bad?'<div class="note warn">Incertezza elevata rispetto alla base: ripeti le misure da punti più distanti.</div>':''}
+    ${!m4HasRef()?'<div class="note">Non hai usato il riferimento: l’azimut dipende dalla bussola del telefono (declinazione magnetica compresa, in Italia circa +3°). Per una posizione più affidabile, da B punta A (se lo vedi) e conferma il riferimento.</div>':''}
+  </div>
+  <div class="row">
+    <button type="button" class="btn" id="m4-copy">Copia coordinate</button>
+    <a class="btn" style="text-align:center;text-decoration:none;display:flex;align-items:center;justify-content:center" target="_blank" rel="noopener" href="https://www.google.com/maps?q=${ll[0].toFixed(6)},${ll[1].toFixed(6)}">Apri nel navigatore</a>
+  </div>
+  <div class="row" style="margin-top:8px"><button type="button" class="btn" id="m4-new">Rifai le misure</button></div>`;
+}
+function m4CamRender(i){
+  const p=i?'m4b':'m4a',az=Sensors.az();
+  $('#'+p+'-hv').textContent=Number.isFinite(az)?fmt(az,1)+'°':'—';
+  $('#'+p+'-hs').textContent=(Sensors.compass?'':'bussola relativa · ')+(Sensors.azStd()<0.5?'fermo':'instabile');
+  const el=m4.mkEl;if(!el)return;
+  /* in B mostro dove dovrebbe stare A, come aiuto per il riferimento */
+  if(i!==1||!m4.pts[0].ll||!m4.pts[1].ll||!Number.isFinite(az)){el.hidden=true;return;}
+  const hf=HFOV/Sensors.zoom,off=m4Off();
+  const rel=norm180(bearingLL(m4.pts[1].ll,m4.pts[0].ll)-(az+off)),inside=Math.abs(rel)<=hf/2;
+  el.hidden=false;el.classList.toggle('edge',!inside);el.classList.toggle('r',!inside&&rel>0);el.classList.toggle('done',m4HasRef());
+  const t=lab4(0);
+  if(inside){el.style.left=(50+rel/hf*100)+'%';el.style.right='auto';el.firstChild.textContent=t;}
+  else if(rel<0){el.style.left='0';el.style.right='auto';el.firstChild.textContent='◀ '+t+' '+Math.round(-rel)+'°';}
+  else{el.style.left='auto';el.style.right='0';el.firstChild.textContent=t+' '+Math.round(rel)+'° ▶';}
+}
+function m4Station(i){
+  const L_=LET4[i],pr=i?'m4b':'m4a';
+  return `<div class="panel" data-s="${i+1}" ${i?'hidden':''}>
+    <div class="card"><h3>Stazione ${L_}: dove sei</h3>
+      <div class="ptc" data-i="${i}">
+        <div class="ptc-h"><div class="pin mini" style="--bg:#ffd400;--fg:#000">${L_}</div><input class="pname" placeholder="Nome (facoltativo)" aria-label="Nome del punto ${L_}"></div>
+        <div class="row"><button type="button" class="btn pri sm" data-m4gps>Imposta con il GPS</button><button type="button" class="btn sm fit pmap">Su mappa</button></div>
+        <label class="f">Oppure scrivi le coordinate del punto ${L_}</label>
+        <input class="pcoord" inputmode="decimal" placeholder="41.8902, 12.4922" aria-label="Coordinate del punto ${L_}">
+        <p class="sub pinfo">Non ancora impostato.</p>
+      </div>
+      <div class="row">
+        <div><label class="f">Formato</label>
+          <select class="m4fmt"><option value="dd">Lat, Lon (gradi decimali)</option><option value="utm">UTM WGS84 (Est Nord)</option></select></div>
+        <div class="m4zwrap" hidden><label class="f">Fuso</label>
+          <select class="m4zone">${[31,32,33,34,35].map(z=>`<option value="${z}" ${z===32?'selected':''}>${z}</option>`).join('')}</select></div>
+      </div>
+      <div id="m4-slot${i}" hidden></div>
+    </div>
+    ${camHTML(pr,{hud:'Direzione (azimut)',horizon:false})}
+    <div id="${pr}-flow" style="margin-top:10px"></div>
+    <p class="sub">${i?'Punta il mirino su C, lo stesso punto mirato da A, e conferma. Se da qui vedi anche A, dopo puoi puntarlo per correggere la bussola (facoltativo).':'Punta il mirino sul punto C da trovare e conferma. Poi spostati in B: la camera si riavvia lì.'}</p>
+  </div>`;
+}
+function initM4(){
+  const v=$('#tg-avanti');
+  v.innerHTML=`<div class="steps"></div>
+  <div class="strip" style="--n:3"><div><span>Posizioni</span><b id="m4-sp">0/2</b></div><div><span>Direzioni</span><b id="m4-sm">0/2</b></div><div><span>Incertezza</span><b id="m4-se">—</b></div></div>
+  ${m4Station(0)}${m4Station(1)}
+  <div class="panel" data-s="3" hidden>
+    <div id="m4-res"></div>
+    <div id="m4-slot3" style="margin-top:10px"></div>
+  </div>`;
+
+  m4.ui=createMapUI({
+    modes:[{key:'A',label:'Punto A'},{key:'B',label:'Punto B'}],
+    gpsKey:()=>LET4[m4.cur],gpsLabel:'Mia posizione GPS',
+    pins:{A:{t:'A',bg:'#ffd400',fg:'#000'},B:{t:'B',bg:'#ffd400',fg:'#000'},C:{t:'C',bg:'#2fd36b',fg:'#000'}},
+    hints:{A:'Tocca la mappa sul punto A, dove ti trovi.',B:'Tocca la mappa sul punto B, dove ti trovi.'},
+    idleHint:()=>'Tocca “Punto '+LET4[m4.cur]+'” e poi la mappa, oppure usa il GPS.',
+    onChange:(k,ll,src)=>{
+      const i=LET4.indexOf(k);if(i<0)return;
+      m4.pts[i].ll=ll;
+      if(m4.fmt==='utm'&&src!=='drag'){const z=utmZone(ll[1]);if([31,32,33,34,35].includes(z)){m4.zone=z;$$('.m4zone',v).forEach(x=>{x.value=z;});}}
+      m4Write(i);m4Render();
+    }
+  },$('#m4-slot0'));
+
+  m4.steps=setupSteps(v,['Stazione A','Stazione B','Punto C'],n=>{
+    Sensors.stop();showStart('m4a');showStart('m4b');
+    if(n<3){
+      m4.cur=n-1;
+      $('#m4-slot0').hidden=true;$('#m4-slot1').hidden=true;
+      placeMap(m4.ui,'m4-slot'+(n-1));
+      m4.ui.refreshHint();
+    }else{
+      placeMap(m4.ui,'m4-slot3');m4Render();
+      setTimeout(()=>{m4.ui.map.invalidateSize();
+        if(m4.sol&&m4.sol.ll)m4.ui.map.fitBounds(L.latLngBounds([m4.sol.ll,...m4.pts.map(p=>p.ll)]).pad(0.3));else m4.ui.fit();},120);
+    }
+  });
+
+  m4.mkEl=(()=>{const d=document.createElement('div');d.className='mk';d.hidden=true;d.innerHTML='<span></span>';$('#m4b-mk').appendChild(d);return d;})();
+  const need=i=>()=>{if(!m4.pts[i].ll){toast('Imposta prima la posizione di '+LET4[i]+'.');return NaN;}return Sensors.az();};
+  m4.flows[0]=makeFlow('m4a',[{key:'a',chip:'A → C',step:0.1,label:()=>'Da '+lab4(0)+': conferma direzione verso C',read:need(0)}],m4.s,
+    ()=>'Sei in A: imposta la posizione, poi punta il mirino su C e premi.',()=>{m4Render();},null,{go:2,text:'Vai al punto B',msg:'Direzione da A registrata.'});
+  m4.flows[1]=makeFlow('m4b',[
+    {key:'b',chip:'B → C',step:0.1,label:()=>'Da '+lab4(1)+': conferma direzione verso C',read:need(1)},
+    {key:'ref',chip:'B → A',step:0.1,optional:true,skip:true,skipVal:'no',label:()=>'Riferimento: punta '+lab4(0)+' (facoltativo)',read:need(1)}
+  ],m4.s,k=>k==='b'?'Sei in B: imposta la posizione, poi punta il mirino sullo stesso punto C e premi.'
+    :'Facoltativo: se da B vedi A, puntalo e premi. Serve a correggere la bussola.',()=>{m4Render();},null,{go:3,text:'Vedi risultato',msg:'Direzione da B registrata.'});
+  bindCam('m4a',()=>m4CamRender(0));bindCam('m4b',()=>m4CamRender(1));
+
+  const setFmt=()=>{
+    $$('.m4fmt',v).forEach(x=>{x.value=m4.fmt;});$$('.m4zone',v).forEach(x=>{x.value=m4.zone;});
+    $$('.m4zwrap',v).forEach(x=>{x.hidden=m4.fmt!=='utm';});
+    $$('.pcoord',v).forEach(x=>{x.placeholder=m4.fmt==='utm'?'291234 4640123':'41.8902, 12.4922';});
+    [0,1].forEach(m4Write);
+  };
+  v.addEventListener('change',e=>{
+    const t=e.target;
+    if(t.classList.contains('m4fmt')){
+      m4.fmt=t.value;
+      if(m4.fmt==='utm'){const f=m4.pts.find(q=>q.ll);if(f){const z=utmZone(f.ll[1]);if(z>=31&&z<=35)m4.zone=z;}}
+      setFmt();return;
+    }
+    if(t.classList.contains('m4zone')){m4.zone=parseInt(t.value,10);setFmt();return;}
+    if(t.id==='m4-sig'){m4.sigma=parseFloat(t.value);m4Render();return;}
+    if(t.classList.contains('pcoord')){
+      const row=t.closest('.ptc'),i=+row.dataset.i,txt=t.value.trim();
+      if(!txt){m4.pts[i].ll=null;m4.ui.removePoint(LET4[i]);m4Write(i);m4Render();return;}
+      const ll=parseCoord(txt,m4.fmt,m4.zone);
+      if(!ll){t.setAttribute('aria-invalid','true');$('.pinfo',row).textContent=m4.fmt==='utm'?'Formato non valido: scrivi Est e Nord, ad esempio 291234 4640123, e controlla il fuso.':'Formato non valido: scrivi latitudine e longitudine, ad esempio 41.8902, 12.4922.';return;}
+      m4.pts[i].ll=ll;m4.ui.setPoint(LET4[i],ll);m4.ui.fit();m4Write(i);m4Render();
+    }
+  });
+  v.addEventListener('input',e=>{
+    if(e.target.classList.contains('pname')){m4.pts[+e.target.closest('.ptc').dataset.i].name=e.target.value.trim();m4.flows.forEach(f=>f.refresh());}
+  });
+  v.addEventListener('click',e=>{
+    const t=e.target;
+    if(t.closest('[data-m4gps]')){$('[data-act="gps"]',m4.ui.wrap).click();return;}
+    const pm=t.closest('.pmap');
+    if(pm){
+      const i=+pm.closest('.ptc').dataset.i,slot=$('#m4-slot'+i);
+      slot.hidden=false;placeMap(m4.ui,'m4-slot'+i);
+      if(m4.ui.wrap.querySelector('[data-mode].on')===null||m4.ui.wrap.querySelector('[data-mode].on').dataset.mode!==LET4[i])m4.ui.setMode(LET4[i]);
+      m4.ui.map.invalidateSize();m4.ui.wrap.scrollIntoView({block:'center',behavior:'smooth'});return;
+    }
+    if(t.closest('#m4-new')){m4.flows.forEach(f=>f.reset());m4.steps.go(1);}
+    if(t.closest('#m4-copy')&&m4.sol&&m4.sol.ll)copyText(m4.sol.ll[0].toFixed(6)+', '+m4.sol.ll[1].toFixed(6));
+  });
+  m4.steps.go(1);
+  m4Render();
+}
 
 /* ============================================================ */
 /*  4 · Calcola area (foto e pianta)                            */
@@ -2026,10 +2263,11 @@ const VIEWS={
   altezza:{title:'Altezza e area di proiezione',init:initM1,mod:m1},
   faro:{title:'Problema del faro',init:initM2,mod:m2},
   snellius:{title:'Snellius–Potenot',init:initM3,mod:m3},
+  avanti:{title:'Intersezione in avanti',init:initM4,mod:m4},
   area:{title:'Calcola area',init:initArea}
 };
 let curView='home';
-function collapseMaps(){[m1,m2,m3].forEach(m=>{if(m.ui&&m.ui.wrap.classList.contains('expanded'))m.ui.expand(false);});}
+function collapseMaps(){[m1,m2,m3,m4].forEach(m=>{if(m.ui&&m.ui.wrap.classList.contains('expanded'))m.ui.expand(false);});}
 async function go(name){
   if(!VIEWS[name])name='home';
   const o=VIEWS[name];
