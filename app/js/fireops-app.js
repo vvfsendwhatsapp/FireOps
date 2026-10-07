@@ -23,9 +23,9 @@
      moduli: [
     {id:"foto", nome:"Co.Em.", sotto:"Comunicazione in Emergenza",
   desc:"Prepara le foto da diffondere: inquadratura, sfocatura di volti, targhe e marchi, logo CNVVF", ico:"📷"},
-{id:"pumamappa", nome:"Mappa addestramenti", sotto:"PUMA · addestramenti in tempo reale",
+{id:"pumamappa", nome:"P.U.M.A. - Mappa addestramenti", sotto:"Mappa in tempo reale",
   desc:"Dove si svolgono ora gli addestramenti, con i dettagli di ciascuno", ico:"🗺️"},
-{id:"pumapresenze", nome:"Presenze odierne", sotto:"PUMA · tabella del giorno",
+{id:"pumapresenze", nome:"P.U.M.A. - Tabella Presenze", sotto:"Riepilogo in tempo reale",
   desc:"Personale presente oggi negli addestramenti, con aggiornamento automatico", ico:"📋"}
        ]},
     {id: "operazioni", nome: "Operazioni", sigla: "O", colore: "var(--ics-operazioni)", testo: "#fff",
