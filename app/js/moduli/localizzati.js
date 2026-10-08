@@ -1323,6 +1323,7 @@ body.map-open {
 
     // Etichetta ruotata come la linea, al centro: sopra distanza, sotto azimut (da "from" verso "to")
     function lineLabel(line, from, to, cls) {
+      if (!map || !map._loaded) return;
       const dist = fmtDist(haversine(from.lat, from.lon, to.lat, to.lon));
       const az = fmtAz(bearingDeg(from.lat, from.lon, to.lat, to.lon));
 
@@ -1401,6 +1402,10 @@ body.map-open {
         });
       }
 
+      // Leaflet: project()/lineLabel() richiedono centro e zoom già impostati (mappa appena creata)
+      if (!map._loaded) map.setView([record.lat, record.lon], 13, {animate: false});
+      map.invalidateSize();   // il contenitore era nascosto: ricalcola le dimensioni
+
       if (comandoMarker) {map.removeLayer(comandoMarker); comandoMarker = null;}
       if (userMarker) {map.removeLayer(userMarker); userMarker = null;}
       if (targetMarker) {map.removeLayer(targetMarker); targetMarker = null;}
@@ -1467,8 +1472,9 @@ body.map-open {
 
       if (!fit) return;   // aggiornamento da tracking: non toccare zoom/pan dell'utente
 
+      map.invalidateSize();
       if (boundsArray.length > 1) {
-        map.fitBounds(L.latLngBounds(boundsArray), {padding: [40, 40], maxZoom: 16});
+        map.fitBounds(L.latLngBounds(boundsArray), {padding: [40, 40], maxZoom: 16, animate: false});
       } else {
         map.setView([record.lat, record.lon], 13);
       }
