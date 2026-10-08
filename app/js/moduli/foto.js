@@ -215,6 +215,7 @@ const HTML=`<div class="steps" id="fo-steps"></div>
     <p class="sub" id="fo-info">La foto resta sul telefono: non viene inviata a nessuno. Salvando si tolgono i dati nascosti (EXIF), posizione GPS compresa.</p>
   </div>
   <button type="button" class="btn pri big" data-go="2" id="fo-next1">Vai all'inquadratura</button>
+  <button type="button" class="btn sm" id="fo-reset" style="margin-top:10px;width:100%">Reset dati</button>
 </div>
 
 <div class="panel" data-s="2" hidden>
@@ -1018,6 +1019,16 @@ function setup(){
   };
   $('#fo-lreset').onclick=()=>{L.show=true;L.a=LOGO_DEF.a;resetLogo();snapCorner();loadLogo();};
   $('#fo-save').onclick=save;$('#fo-share').onclick=share;
+  $('#fo-reset').onclick=()=>{
+    if(S.img&&!confirm('Cancellare foto, sfocature e inquadratura?'))return;
+    Object.assign(S,{img:null,iw:0,ih:0,W:0,H:0,comp:null,regions:[],sel:-1,hist:[],tool:'sel',orig:null,crop:null,poly:[],draft:null,view:{s:1,x:0,y:0}});
+    resetLogo();S.logo.lock=true;S.logo.show=true;S.logo.a=LOGO_DEF.a;
+    $('#fo-empty').hidden=false;
+    $('#fo-info').textContent='La foto resta sul telefono: non viene inviata a nessuno. Salvando si tolgono i dati nascosti (EXIF), posizione GPS compresa.';
+    [1,2,3,4].forEach(n=>steps.mark(n,false));
+    try{uiCrop();uiRegions();uiLogo();}catch(e){}
+    steps.go(1);paint();toast('Dati azzerati.');
+  };
 
   uiLogo();uiRegions();steps.go(1);
   loadLogo();

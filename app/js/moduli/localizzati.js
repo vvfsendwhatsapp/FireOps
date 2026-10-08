@@ -1001,6 +1001,7 @@ body.map-open {
       <div class="border-note hidden" id="borderNote"></div>
 
       <button class="link-btn" id="backToSearchBtn">cerca un altro comando</button>
+      <button class="link-btn" id="resetDataBtn">Reset dati</button>
     </section>
 
   </div>
@@ -2124,6 +2125,9 @@ body.map-open {
       window.scrollTo({top: 0, behavior: "smooth"});
     }
 
+    document.getElementById("resetDataBtn").addEventListener("click", function () {
+      if (confirm("Cancellare posizione, punto target e percorso?")) resetApp();
+    });
     FireOps.onLogo("localizzati", resetApp);
     FireOps.onShow("localizzati", function () {
       if (map) setTimeout(function () {map.invalidateSize();}, 60);

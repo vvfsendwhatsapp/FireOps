@@ -208,7 +208,7 @@ const CSS=`.pg-trigo{--acc:var(--ics-pianificazione);--ok:#3fa66b;--bad:#e8734a;
 .pg-trigo .ms-rot .ms-row{margin-bottom:4px}
 .pg-trigo .ms-rot input[type=range]{width:100%;margin:8px 0 2px;accent-color:var(--yellow);height:28px;padding:0}
 `;
-const HTML=`<div class="tg-nav" id="tg-nav" hidden><button type="button" class="tg-back" id="tg-back">‹ Trigo</button><b id="tg-navt"></b></div>
+const HTML=`<div class="tg-nav" id="tg-nav" hidden><button type="button" class="tg-back" id="tg-back">‹ Trigo</button><b id="tg-navt"></b><button type="button" class="tg-back tg-rst" style="margin-left:auto">Reset dati</button></div>
 
 <section id="tg-home">
   <p class="lead">Misure con la camera del telefono e la mappa. Scegli che cosa devi ricavare.</p>
@@ -253,6 +253,7 @@ const HTML=`<div class="tg-nav" id="tg-nav" hidden><button type="button" class="
   </button>
 
   <p class="foot">La precisione dipende dai sensori del telefono, di norma ±0,5–1°. Usa i risultati come stima e verifica con strumenti omologati quando serve.</p>
+  <button type="button" class="tg-back tg-rst" style="margin:14px 0 4px;width:100%">Reset dati</button>
 </section>
 
 <section id="tg-altezza" hidden></section>
@@ -2887,6 +2888,10 @@ async function go(name){
 function setup(){
   $$('.choice').forEach(b=>b.addEventListener('click',()=>{location.hash='#/trigo/'+b.dataset.to;}));
   $('#tg-back').addEventListener('click',()=>{location.hash='#/trigo';});
+  $$('.tg-rst').forEach(b=>b.addEventListener('click',()=>{
+    if(!confirm('Cancellare tutte le misure, i punti e i risultati di Trigo?'))return;
+    Sensors.stop();location.hash='#/trigo';location.reload();   // lo stato è solo in memoria: si riparte da zero (restano le impostazioni stivali/passo/unità)
+  }));
   document.addEventListener('keydown',e=>{if(e.key==='Escape')collapseMaps();});
   FireOps.onShow('trigo',()=>{go((location.hash.match(/^#\/trigo\/([\w-]+)/)||[])[1]||'home');});
   FireOps.onHide('trigo',()=>{Sensors.stop();collapseMaps();});
