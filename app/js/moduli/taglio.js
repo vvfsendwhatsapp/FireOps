@@ -123,7 +123,7 @@ FireOps.registra({
 
   <div class="blocco" id="tgDisegno">
     <div class="tit">Il tronco visto di lato</div>
-    <svg id="tgLat" viewBox="0 0 360 258" role="img" aria-label="Tronco con fibre compresse e tese e linee di taglio"></svg>
+    <svg id="tgLat" viewBox="0 0 360 300" role="img" aria-label="Tronco con fibre compresse e tese e linee di taglio"></svg>
     <div class="legenda">
       <span><i style="background:var(--compr)"></i>compresse: il taglio si chiude</span>
       <span><i style="background:var(--traz)"></i>tese: il taglio si apre</span>
@@ -339,12 +339,12 @@ FireOps.registra({
       // il tronco ruota di th attorno a un perno: la pianta (sbalzo) o il centro (appoggi)
       let px, py, len;
       if (sb) {
-        px = 26; py = 146;
+        px = 26; py = 204;
         len = sn > .02 ? (py - 14 - (hh + 30) * cs) / sn : 1e9;
         len = Math.min(len, (W - 16 - px) / Math.max(cs, .05));
       } else {
-        px = W / 2; py = 100;
-        len = sn > .02 ? 2 * (py - 12 - (hh + 34) * cs) / sn : 1e9;
+        px = W / 2; py = 138;
+        len = sn > .02 ? 2 * (Math.min(py - 12 - (hh + 34) * cs, 270 - py - (hh + 56) * cs)) / sn : 1e9;
         len = Math.min(len, 316);
       }
       len = Math.max(80, Math.min(316, len));
@@ -405,26 +405,22 @@ FireOps.registra({
         freccia(sv, X, y0 + hh + 4, -1, C.compr, "1");
         freccia(sv, X, y0 - hh - 4, 1, C.traz, "2");
       }
+      // diagramma del momento: lungo l'asse del tronco, ordinate perpendicolari all'asse (ruota col tronco)
+      const yb = hh + 42, amp = 14;
+      const sy = m => yb + m / Mmax * amp;         // M > 0 verso il basso (lato teso)
+      let area = `M${sx(0)} ${yb}`, linea = "";
+      vals.forEach((m, i) => { const p = `${sx(s.L * i / n).toFixed(1)} ${sy(m).toFixed(1)}`; area += " L" + p; linea += (i ? " L" : "M") + p; });
+      area += ` L${sx(s.L)} ${yb} Z`;
+      sv.appendChild(mk("path", {d: area, fill: C.traz, opacity: .25}));
+      sv.appendChild(mk("path", {d: linea, fill: "none", stroke: C.testo, "stroke-width": 1.5}));
+      sv.appendChild(mk("line", {x1: sx(0), y1: yb, x2: sx(s.L), y2: yb, stroke: C.tenue, "stroke-width": 1}));
+      sv.appendChild(mk("line", {x1: X, y1: y0 + hh + 34, x2: X, y2: yb + amp + 4, stroke: C.testo, "stroke-width": 1, "stroke-dasharray": "3 3", opacity: .7}));
+      sv.appendChild(mk("circle", {cx: X, cy: sy(d.M), r: 3.5, fill: C.testo}));
       unrot = 0;
 
-      // diagramma del momento, compatto sotto (sempre orizzontale)
-      const ml = 22, mr = 22, yb = 226, amp = 16;
-      const sxm = x => ml + x / s.L * (W - ml - mr);
-      const Xm = sxm(s.xt);
-      const sy = m => yb + m / Mmax * amp;         // M > 0 verso il basso (lato teso)
-      let area = `M${sxm(0)} ${yb}`, linea = "";
-      vals.forEach((m, i) => { const p = `${sxm(s.L * i / n).toFixed(1)} ${sy(m).toFixed(1)}`; area += " L" + p; linea += (i ? " L" : "M") + p; });
-      area += ` L${sxm(s.L)} ${yb} Z`;
-      svEl.appendChild(mk("path", {d: area, fill: C.traz, opacity: .25}));
-      svEl.appendChild(mk("path", {d: linea, fill: "none", stroke: C.testo, "stroke-width": 1.5}));
-      svEl.appendChild(mk("line", {x1: sxm(0), y1: yb, x2: sxm(s.L), y2: yb, stroke: C.tenue, "stroke-width": 1}));
-      svEl.appendChild(mk("line", {x1: Xm, y1: yb - amp - 4, x2: Xm, y2: yb + amp + 4, stroke: C.testo, "stroke-width": 1, "stroke-dasharray": "3 3", opacity: .7}));
-      svEl.appendChild(mk("circle", {cx: Xm, cy: sy(d.M), r: 3.5, fill: C.testo}));
-      svEl.appendChild(tx(ml, yb - amp - 6, "momento flettente", {"font-size": 10}));
-      svEl.appendChild(tx(W - mr, yb - amp - 6, (Math.abs(d.M) / 1000).toFixed(2) + " kN·m al taglio", {"font-size": 10, "text-anchor": "end", fill: C.testo}));
-      svEl.appendChild(tx(ml, 252, "0 m", {"font-size": 10}));
-      svEl.appendChild(tx(W - mr, 252, s.L.toFixed(1) + " m", {"font-size": 10, "text-anchor": "end"}));
-      svEl.appendChild(tx(W / 2, 252, "taglio a " + s.xt.toFixed(2) + " m" + (s.th > .01 ? " · inclinato di " + Math.round(deg) + "°" : ""), {"font-size": 10, "text-anchor": "middle", fill: C.testo}));
+      // testi sotto il disegno, sempre dritti
+      svEl.appendChild(tx(W / 2, 276, "linea bianca = momento flettente · " + (Math.abs(d.M) / 1000).toFixed(2) + " kN·m al taglio", {"font-size": 10, "text-anchor": "middle"}));
+      svEl.appendChild(tx(W / 2, 292, "lunghezza " + s.L.toFixed(1) + " m · taglio a " + s.xt.toFixed(2) + " m" + (s.th > .01 ? " · inclinato di " + Math.round(deg) + "°" : ""), {"font-size": 11, "text-anchor": "middle", fill: C.testo}));
     }
 
     function sezione(s, d) {

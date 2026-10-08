@@ -2,4 +2,4 @@
  * Questo file viene scaricato SEMPRE fresco da user.html.
  * Dopo ogni modifica a css/js/moduli basta cambiare il numero qui sotto.
  */
-window.FIREOPS_VERSIONE = "2026.10.08b";
+window.FIREOPS_VERSIONE = "2026.10.08c";
