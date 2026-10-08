@@ -1,5 +1,5 @@
 // ==========================================================
-// FireOps VVF — ADDESTRAMENTI ODIERNI (pulsante "F" accanto a 8P)
+// FireOps VVF — ADDESTRAMENTI ODIERNI (pulsante con il logo PUMA accanto a 8P)
 //
 // Legge dal foglio PUMA (Real_Time_Map) gli addestramenti di oggi e li
 // divide in tre gruppi rispetto al Comando attivo:
@@ -7,6 +7,9 @@
 //   2. Comandi limitrofi → organizzati da un Comando confinante
 //   3. Direzione regionale → organizzati da un altro Comando della stessa
 //                            Direzione (i limitrofi non vengono ripetuti)
+// In cima al modale un box "Estendi la ricerca a tutta Italia" aggiunge il
+// gruppo "Resto d'Italia" (raggruppato per Direzione). Il badge del pulsante
+// conta solo Comando + Direzione + limitrofi.
 // Per ogni addestramento: logo e tipologia (stessi loghi di PUMA),
 // organizzatore, squadra, area, orario, partecipanti, link alla mappa PUMA.
 //
@@ -145,8 +148,8 @@
 
     function classifica(righe) {
         const attivo = comandoAttivo();
-        const gruppi = { comando: [], direzione: [], limitrofi: [] };
-        if (!attivo) return gruppi;
+        const gruppi = { comando: [], direzione: [], limitrofi: [], italia: [] };
+        if (!attivo) { gruppi.italia = righe.slice(); return gruppi; }
 
         const limitrofi = new Set(
             (attivo["Concatena Comandi Confinanti"] || "").split(";").map(norm).filter(Boolean)
@@ -155,10 +158,10 @@
 
         righe.forEach(r => {
             const c = trovaComandoOrganizzatore(r.organizzatore);
-            if (!c) return;
-            if (c.Comando === attivo.Comando) gruppi.comando.push(r);
-            else if (limitrofi.has(norm(c.Comando))) gruppi.limitrofi.push(r);
-            else if (direzione && c["Direzione VVF"] === direzione) gruppi.direzione.push(r);
+            if (c && c.Comando === attivo.Comando) gruppi.comando.push(r);
+            else if (c && limitrofi.has(norm(c.Comando))) gruppi.limitrofi.push(r);
+            else if (c && direzione && c["Direzione VVF"] === direzione) gruppi.direzione.push(r);
+            else gruppi.italia.push(r);   // tutto il resto d'Italia (anche Comandi non riconosciuti)
         });
 
         const perOra = (a, b) => (a.inizio ? a.inizio.ms : Infinity) - (b.inizio ? b.inizio.ms : Infinity);
@@ -171,6 +174,9 @@
     let caricato = false;
     let errore = false;
     let ultimoAggiornamento = null;
+    const CHIAVE_STORAGE_ITALIA = "fireops_addestramenti_italia";
+    let tuttaItalia = false;   // box "Estendi a tutta Italia"
+    try { tuttaItalia = sessionStorage.getItem(CHIAVE_STORAGE_ITALIA) === "1"; } catch (e) {}
     let baseline = false;  // il primo caricamento non genera "nuovi"
     let visti = new Set();
     try { visti = new Set(JSON.parse(sessionStorage.getItem(CHIAVE_STORAGE_VISTI) || "[]")); } catch (e) {}
@@ -296,14 +302,41 @@
             + righe.map(schedaHtml).join("");
     }
 
+    function nomeDirezioneDi(r) {
+        const c = trovaComandoOrganizzatore(r.organizzatore);
+        return (c && c["Direzione VVF"]) || "Altri / non riconosciuti";
+    }
+
+    // Resto d'Italia: sotto-gruppi per Direzione, in ordine alfabetico
+    function italiaHtml(righe) {
+        if (!righe.length) return `<p class="pagina-nota">Nessun altro addestramento in Italia oggi.</p>`;
+        const perDir = new Map();
+        righe.forEach(r => {
+            const d = nomeDirezioneDi(r);
+            if (!perDir.has(d)) perDir.set(d, []);
+            perDir.get(d).push(r);
+        });
+        const perOra = (a, b) => (a.inizio ? a.inizio.ms : Infinity) - (b.inizio ? b.inizio.ms : Infinity);
+        const corpo = [...perDir.keys()].sort((a, b) => a.localeCompare(b, "it")).map(d => {
+            const lista = perDir.get(d).sort(perOra);
+            return `<h5 class="addestr-sottogruppo">${esc(d)} <span class="addestr-conteggio">${lista.length}</span></h5>`
+                + lista.map(schedaHtml).join("");
+        }).join("");
+        return `<h4 class="addestr-gruppo">Resto d'Italia <span class="addestr-conteggio">${righe.length}</span></h4>` + corpo;
+    }
+
+    function boxItalia(nItalia) {
+        return `<label class="addestr-estendi${tuttaItalia ? " attivo" : ""}">
+            <input type="checkbox" id="addestr-italia"${tuttaItalia ? " checked" : ""}>
+            <span class="addestr-estendi-testo"><b>🇮🇹 Estendi la ricerca a tutta Italia</b>
+            <small>${nItalia} ${nItalia === 1 ? "altro addestramento" : "altri addestramenti"} oltre a Comando, Direzione e limitrofi</small></span>
+        </label>`;
+    }
+
     function disegna() {
         if (!contenuto) return;
         const attivo = comandoAttivo();
 
-        if (!attivo) {
-            contenuto.innerHTML = `<p class="pagina-nota">Seleziona prima il Comando dal menu ☰.</p>`;
-            return;
-        }
         if (!caricato) {
             contenuto.innerHTML = errore
                 ? `<p class="pagina-nota" style="color:var(--danger-color);">Impossibile leggere il foglio PUMA. Riprova tra poco.</p>`
@@ -312,18 +345,28 @@
         }
 
         const { g, tot } = conteggi();
-        const dir = attivo["Direzione VVF"] || "Direzione";
+        const dir = attivo ? (attivo["Direzione VVF"] || "Direzione") : "";
         const agg = ultimoAggiornamento
             ? ultimoAggiornamento.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }) : "—";
 
-        const corpo = tot === 0
-            ? `<p class="pagina-nota">Nessun addestramento odierno per il Comando ${esc(attivo.Comando)}, la sua Direzione e i Comandi limitrofi.</p>`
-            : gruppoHtml(`Comando ${attivo.Comando}`, g.comando)
-              + gruppoHtml(`Direzione regionale — ${dir}`, g.direzione)
-              + gruppoHtml("Comandi limitrofi", g.limitrofi);
+        let corpo = "";
+        if (!attivo) {
+            corpo = `<p class="pagina-nota">Nessun Comando selezionato (menu ☰): tutta Italia mostrata sotto.</p>`;
+        } else if (tot === 0) {
+            corpo = `<p class="pagina-nota">Nessun addestramento odierno per il Comando ${esc(attivo.Comando)}, la sua Direzione e i Comandi limitrofi.</p>`;
+        } else {
+            corpo = gruppoHtml(`Comando ${attivo.Comando}`, g.comando)
+                + gruppoHtml(`Direzione regionale — ${dir}`, g.direzione)
+                + gruppoHtml("Comandi limitrofi", g.limitrofi);
+        }
+
+        // Senza Comando non c'è un "vicino" da cui espandere: si mostra direttamente tutta Italia
+        const mostraItalia = tuttaItalia || !attivo;
+        const box = attivo ? boxItalia(g.italia.length) : "";
 
         contenuto.innerHTML = `<p class="pagina-nota">Da PUMA · aggiornato alle ${esc(agg)} · i limitrofi non sono ripetuti nella Direzione.
-            <a href="${MAPPA_PUMA}" target="_blank" rel="noopener">Apri la mappa completa</a></p>` + corpo;
+            <a href="${MAPPA_PUMA}" target="_blank" rel="noopener">Apri la mappa completa</a></p>`
+            + box + corpo + (mostraItalia ? italiaHtml(g.italia) : "");
     }
 
     function apri() {
@@ -356,6 +399,14 @@
 
         badge = btn.querySelector(".addestr-badge");
         const chiusura = document.getElementById("modal-addestramenti-close");
+
+        contenuto.addEventListener("change", e => {
+            if (e.target && e.target.id === "addestr-italia") {
+                tuttaItalia = e.target.checked;
+                try { sessionStorage.setItem(CHIAVE_STORAGE_ITALIA, tuttaItalia ? "1" : "0"); } catch (err) {}
+                disegna();
+            }
+        });
 
         btn.addEventListener("click", apri);
         if (chiusura) chiusura.addEventListener("click", chiudi);
