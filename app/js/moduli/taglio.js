@@ -86,6 +86,31 @@ FireOps.registra({
 
 .pg-taglio .limiti { margin-top: 12px; font-size: 12.5px; color: var(--text-dim); line-height: 1.5; }
 
+[hidden] { display: none !important; }
+/* passi: linee sottili, come negli altri moduli */
+.pg-taglio .steps { display: flex; gap: 5px; margin: 2px 0 0; }
+.pg-taglio .step { position: relative; flex: 1; height: 6px; padding: 0; border: 0; border-radius: 3px; background: var(--line); cursor: pointer; }
+.pg-taglio .step::before { content: ''; position: absolute; left: -2px; right: -2px; top: -15px; bottom: -15px; }
+.pg-taglio .step.done { background: var(--ok); }
+.pg-taglio .step.on { background: var(--yellow); }
+.pg-taglio .steplabel { padding: 8px 0 10px; font-size: 13px; color: var(--text-dim); text-align: center; }
+.pg-taglio .lead { margin: 0 0 10px; font-size: 14px; line-height: 1.45; color: var(--text-dim); }
+.pg-taglio .nav { display: flex; gap: 8px; margin: 2px 0 10px; }
+.pg-taglio .btn { flex: 1; min-height: 50px; padding: 10px 12px; border-radius: 8px; background: var(--panel-2); border: 1px solid var(--line);
+  color: var(--text); font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; }
+.pg-taglio .btn:active { background: var(--line); }
+.pg-taglio .btn.pri { background: var(--acc); border-color: var(--acc); color: #10141a; flex: 2; }
+.pg-taglio .btn.sm { min-height: 40px; font-size: 13px; font-weight: 600; }
+/* cursore con − e + per la regolazione fine col dito */
+.pg-taglio .rng { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.pg-taglio .rng input[type=range] { flex: 1; min-width: 0; margin: 0; height: 40px; }
+.pg-taglio .rng .pm { flex: none; width: 44px; height: 44px; padding: 0; border-radius: 8px; background: var(--panel-2); border: 1px solid var(--line);
+  color: var(--text); font-size: 24px; font-weight: 700; line-height: 1; cursor: pointer; touch-action: manipulation; }
+.pg-taglio .rng .pm:active { background: var(--yellow); color: #000; }
+.pg-taglio .mini { margin-top: 8px; padding: 8px 10px; border-radius: 6px; background: var(--bg); border: 1px solid var(--line); font-size: 13.5px; line-height: 1.5; }
+.pg-taglio .mini b { font-family: var(--mono); }
+.pg-taglio .mini .c1 { color: var(--compr); } .pg-taglio .mini .c2 { color: var(--traz); } .pg-taglio .mini .c3 { color: var(--ok); }
+
 @media (max-width: 400px) {
   .pg-taglio .verdetto { grid-template-columns: 1fr; }
   .pg-taglio .dati { grid-template-columns: 1fr 1fr; }
@@ -94,81 +119,96 @@ FireOps.registra({
 
   html: `
 <div class="wrap">
+  <div class="steps" id="tgSteps"></div>
 
-  <div class="blocco">
-    <div class="tit">Come sta il tronco</div>
-    <div class="seg" role="group" aria-label="Vincolo">
-      <button type="button" id="tgAppoggi" aria-pressed="true">Su due appoggi<small>a terra o su cavalletti</small></button>
-      <button type="button" id="tgSbalzo" aria-pressed="false">Attaccato<small>alla pianta, a sbalzo</small></button>
-    </div>
-  </div>
-
-  <div class="blocco" id="tgVerdetto"></div>
-
-  <div class="blocco">
-    <div class="tit">Forze lungo il tronco</div>
-    <svg id="tgLat" viewBox="0 0 360 200" role="img" aria-label="Tronco con fibre compresse e tese e linee di taglio"></svg>
+  <div class="blocco" id="tgDisegno">
+    <div class="tit">Il tronco visto di lato</div>
+    <svg id="tgLat" viewBox="0 0 360 258" role="img" aria-label="Tronco con fibre compresse e tese e linee di taglio"></svg>
     <div class="legenda">
       <span><i style="background:var(--compr)"></i>compresse: il taglio si chiude</span>
       <span><i style="background:var(--traz)"></i>tese: il taglio si apre</span>
       <span><i style="background:var(--legno)"></i>0 = punto scarico</span>
     </div>
+    <div class="mini" id="tgMini"></div>
   </div>
 
-  <div class="blocco">
-    <div class="tit">Sezione al taglio</div>
-    <svg id="tgSez" viewBox="0 0 360 210" role="img" aria-label="Sezione del tronco con profondità dello scarico"></svg>
-    <div class="dati" id="tgDati"></div>
+  <div class="pannello" data-s="1">
+    <p class="lead">Descrivi il tronco. Il disegno sopra si aggiorna mentre muovi i cursori: usa − e + per regolare di precisione.</p>
+    <div class="blocco">
+      <div class="tit">Come sta il tronco</div>
+      <div class="seg" role="group" aria-label="Vincolo">
+        <button type="button" id="tgAppoggi" aria-pressed="true">Su due appoggi<small>a terra o su cavalletti</small></button>
+        <button type="button" id="tgSbalzo" aria-pressed="false">Attaccato<small>alla pianta, a sbalzo</small></button>
+      </div>
+    </div>
+    <div class="blocco">
+      <div class="tit">Misure e legno</div>
+      <div class="ctl"><label for="tgD">Diametro <b><span id="tgDv">30</span> cm</b></label>
+        <div class="rng"><button type="button" class="pm" data-t="tgD" data-d="-1" aria-label="Diametro meno">−</button><input type="range" id="tgD" min="8" max="100" step="1" value="30"><button type="button" class="pm" data-t="tgD" data-d="1" aria-label="Diametro più">+</button></div></div>
+      <div class="ctl"><label for="tgL">Lunghezza <b><span id="tgLv">6.0</span> m</b></label>
+        <div class="rng"><button type="button" class="pm" data-t="tgL" data-d="-1" aria-label="Lunghezza meno">−</button><input type="range" id="tgL" min="1" max="25" step="0.1" value="6"><button type="button" class="pm" data-t="tgL" data-d="1" aria-label="Lunghezza più">+</button></div></div>
+      <div class="ctl"><label for="tgI">Inclinazione <b><span id="tgIv">0</span>°</b></label>
+        <div class="rng"><button type="button" class="pm" data-t="tgI" data-d="-1" aria-label="Inclinazione meno">−</button><input type="range" id="tgI" min="0" max="70" step="1" value="0"><button type="button" class="pm" data-t="tgI" data-d="1" aria-label="Inclinazione più">+</button></div>
+        <div class="h">0° = orizzontale. Misurala rispetto all'orizzontale: in salita o in discesa è lo stesso.</div></div>
+      <div class="ctl"><label for="tgE">Essenza (legno fresco)</label>
+        <select id="tgE">
+          <option value="750">Conifera: abete, pino</option>
+          <option value="800" selected>Pioppo, salice</option>
+          <option value="900">Castagno</option>
+          <option value="1000">Faggio, robinia</option>
+          <option value="1080">Quercia, roverella</option>
+          <option value="1100">Eucalipto, platano</option>
+        </select></div>
+      <div class="ctl"><label for="tgF">Stato del legno</label>
+        <select id="tgF">
+          <option value="12">Nodoso o degradato</option>
+          <option value="20" selected>Fusto verde sano</option>
+          <option value="30">Legno netto</option>
+        </select></div>
+    </div>
+    <div class="nav"><button type="button" class="btn pri" data-go="2">Avanti: appoggi e taglio</button></div>
   </div>
 
-  <div id="tgAvvisi"></div>
-
-  <div class="blocco">
-    <div class="tit">Sequenza</div>
-    <div id="tgSeq"></div>
+  <div class="pannello" data-s="2" hidden>
+    <p class="lead" id="tgLead2">Indica dove il tronco è appoggiato e dove vuoi tagliare.</p>
+    <div class="blocco">
+      <div class="tit">Appoggi e punto di taglio</div>
+      <div class="ctl" id="tgWA"><label for="tgA">Appoggio A <b><span id="tgAv">0.5</span> m</b></label>
+        <div class="rng"><button type="button" class="pm" data-t="tgA" data-d="-1" aria-label="Appoggio A meno">−</button><input type="range" id="tgA" min="0" max="6" step="0.05" value="0.5"><button type="button" class="pm" data-t="tgA" data-d="1" aria-label="Appoggio A più">+</button></div></div>
+      <div class="ctl" id="tgWB"><label for="tgB">Appoggio B <b><span id="tgBv">4.0</span> m</b></label>
+        <div class="rng"><button type="button" class="pm" data-t="tgB" data-d="-1" aria-label="Appoggio B meno">−</button><input type="range" id="tgB" min="0" max="6" step="0.05" value="4"><button type="button" class="pm" data-t="tgB" data-d="1" aria-label="Appoggio B più">+</button></div></div>
+      <div class="ctl" id="tgWR"><label for="tgR">Appoggio a terra <b><span id="tgRv">nessuno</span></b></label>
+        <div class="rng"><button type="button" class="pm" data-t="tgR" data-d="-1" aria-label="Appoggio a terra meno">−</button><input type="range" id="tgR" min="0" max="6" step="0.05" value="0"><button type="button" class="pm" data-t="tgR" data-d="1" aria-label="Appoggio a terra più">+</button></div>
+        <div class="h">Tutto a sinistra = nessun appoggio, ramo libero a sbalzo.</div></div>
+      <div class="ctl"><label for="tgT">Posizione del taglio <b><span id="tgTv">5.0</span> m</b></label>
+        <div class="rng"><button type="button" class="pm" data-t="tgT" data-d="-1" aria-label="Taglio meno">−</button><input type="range" id="tgT" min="0" max="6" step="0.05" value="5"><button type="button" class="pm" data-t="tgT" data-d="1" aria-label="Taglio più">+</button></div>
+        <div class="h">Distanza dall'estremo sinistro del disegno. La linea tratteggiata mostra dove cade.</div></div>
+    </div>
+    <div class="nav"><button type="button" class="btn" data-go="1">Indietro</button><button type="button" class="btn pri" data-go="3">Vedi come tagliare</button></div>
   </div>
 
-  <div class="blocco">
-    <div class="tit">Dati</div>
-    <div class="ctl"><label for="tgD">Diametro <b><span id="tgDv">30</span> cm</b></label>
-      <input type="range" id="tgD" min="8" max="100" step="1" value="30"></div>
-    <div class="ctl"><label for="tgL">Lunghezza <b><span id="tgLv">6.0</span> m</b></label>
-      <input type="range" id="tgL" min="1" max="25" step="0.1" value="6"></div>
-    <div class="ctl"><label for="tgI">Inclinazione dell'asse <b><span id="tgIv">0</span>°</b></label>
-      <input type="range" id="tgI" min="0" max="70" step="1" value="0">
-      <div class="h">0° = tronco orizzontale. Misurala rispetto all'orizzontale, in salita o in discesa è lo stesso.</div></div>
-    <div class="ctl" id="tgWA"><label for="tgA">Appoggio A <b><span id="tgAv">0.5</span> m</b></label>
-      <input type="range" id="tgA" min="0" max="6" step="0.05" value="0.5"></div>
-    <div class="ctl" id="tgWB"><label for="tgB">Appoggio B <b><span id="tgBv">4.0</span> m</b></label>
-      <input type="range" id="tgB" min="0" max="6" step="0.05" value="4"></div>
-    <div class="ctl" id="tgWR"><label for="tgR">Appoggio a terra <b><span id="tgRv">nessuno</span></b></label>
-      <input type="range" id="tgR" min="0" max="6" step="0.05" value="0">
-      <div class="h">Tutto a sinistra = nessun appoggio, ramo libero a sbalzo.</div></div>
-    <div class="ctl"><label for="tgT">Posizione del taglio <b><span id="tgTv">5.0</span> m</b></label>
-      <input type="range" id="tgT" min="0" max="6" step="0.05" value="5"></div>
-    <div class="ctl"><label for="tgE">Essenza (legno fresco)</label>
-      <select id="tgE">
-        <option value="750">Conifera: abete, pino</option>
-        <option value="800" selected>Pioppo, salice</option>
-        <option value="900">Castagno</option>
-        <option value="1000">Faggio, robinia</option>
-        <option value="1080">Quercia, roverella</option>
-        <option value="1100">Eucalipto, platano</option>
-      </select></div>
-    <div class="ctl"><label for="tgF">Stato del legno</label>
-      <select id="tgF">
-        <option value="12">Nodoso o degradato</option>
-        <option value="20" selected>Fusto verde sano</option>
-        <option value="30">Legno netto</option>
-      </select></div>
+  <div class="pannello" data-s="3" hidden>
+    <div class="blocco" id="tgVerdetto"></div>
+    <div id="tgAvvisi"></div>
+    <div class="blocco">
+      <div class="tit">Sequenza</div>
+      <div id="tgSeq"></div>
+    </div>
+    <div class="blocco">
+      <div class="tit">Sezione al taglio</div>
+      <svg id="tgSez" viewBox="0 0 360 210" role="img" aria-label="Sezione del tronco con profondità dello scarico"></svg>
+      <div class="dati" id="tgDati"></div>
+    </div>
+    <div class="nav"><button type="button" class="btn" data-go="2">Cambia il taglio</button><button type="button" class="btn" data-go="1">Cambia il tronco</button></div>
+    <div class="limiti">
+      Modello semplificato: asse dritto con inclinazione costante (0° = orizzontale), solo peso proprio, legno omogeneo. Con l'inclinazione la compressione lungo l'asse è sommata in modo prudente alla flessione. Non vede nodi, marciumi,
+      tensioni di crescita, rami piegati a molla, pendenza del terreno né carichi sopra il tronco.
+      Un ramo piegato a molla ha le fibre compresse sul lato interno della curva: lì va lo scarico, a fette.
+      Valutazione dell'operatore, posizione, via di fuga e DPI restano ciò che decide.
+    </div>
   </div>
 
-  <div class="limiti">
-    Modello semplificato: asse dritto con inclinazione costante (0° = orizzontale), solo peso proprio, legno omogeneo. Con l'inclinazione la compressione lungo l'asse è sommata in modo prudente alla flessione. Non vede nodi, marciumi,
-    tensioni di crescita, rami piegati a molla, pendenza del terreno né carichi sopra il tronco.
-    Un ramo piegato a molla ha le fibre compresse sul lato interno della curva: lì va lo scarico, a fette.
-    Valutazione dell'operatore, posizione, via di fuga e DPI restano ciò che decide.
-  </div>
+  <div class="nav" style="margin-top:14px"><button type="button" class="btn sm" id="tgReset">Reset dati</button></div>
 </div>
 `,
 
@@ -269,8 +309,10 @@ FireOps.registra({
     // ---------------- disegno ----------------
     const NS = "http://www.w3.org/2000/svg";
     const mk = (t, a) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); return e; };
+    let unrot = 0;   // gradi di contro-rotazione: i testi dentro il tronco inclinato restano dritti
     const tx = (x, y, s, a = {}) => {
       const e = mk("text", Object.assign({x, y, fill: C.tenue, "font-size": 11, "font-family": "system-ui,sans-serif"}, a));
+      if (unrot) e.setAttribute("transform", "rotate(" + unrot + " " + x + " " + y + ")");
       e.textContent = s; return e;
     };
 
@@ -289,10 +331,37 @@ FireOps.registra({
     }
 
     function laterale(s, d) {
-      const sv = $("tgLat"); sv.textContent = "";
-      const W = 360, ml = 22, mr = 22, y0 = 78;
-      const sx = x => ml + x / s.L * (W - ml - mr);
-      const hh = Math.max(8, Math.min(17, s.D * 45));
+      const svEl = $("tgLat"); svEl.textContent = "";
+      const W = 360, hh = Math.max(8, Math.min(17, s.D * 45));
+      const deg = s.th * 180 / Math.PI, sn = Math.sin(s.th), cs = Math.cos(s.th);
+      const sb = modo === "sbalzo";
+
+      // il tronco ruota di th attorno a un perno: la pianta (sbalzo) o il centro (appoggi)
+      let px, py, len;
+      if (sb) {
+        px = 26; py = 146;
+        len = sn > .02 ? (py - 14 - (hh + 30) * cs) / sn : 1e9;
+        len = Math.min(len, (W - 16 - px) / Math.max(cs, .05));
+      } else {
+        px = W / 2; py = 100;
+        len = sn > .02 ? 2 * (py - 12 - (hh + 34) * cs) / sn : 1e9;
+        len = Math.min(len, 316);
+      }
+      len = Math.max(80, Math.min(316, len));
+      const sx = x => sb ? x / s.L * len : (x / s.L - .5) * len;   // coordinate locali lungo l'asse
+      const y0 = 0;
+
+      // riferimento orizzontale e arco dell'angolo
+      if (s.th > .01 && sb) {
+        const r = 52;
+        svEl.appendChild(mk("line", {x1: px - (sb ? 14 : 70), y1: py, x2: px + (sb ? 90 : 70), y2: py, stroke: C.tenue, "stroke-width": 1, "stroke-dasharray": "4 4", opacity: .8}));
+        svEl.appendChild(mk("path", {d: `M${px + r} ${py} A${r} ${r} 0 0 0 ${px + r * cs} ${py - r * sn}`, fill: "none", stroke: C.testo, "stroke-width": 1.3}));
+        svEl.appendChild(tx(px + (r + 16) * Math.cos(s.th / 2), py - (r + 16) * Math.sin(s.th / 2) + 4, Math.round(deg) + "°", {fill: C.testo, "font-size": 12, "font-weight": 800, "text-anchor": "middle"}));
+      }
+
+      const sv = mk("g", {transform: `translate(${px} ${py}) rotate(${-deg.toFixed(2)})`});
+      svEl.appendChild(sv);
+      unrot = +deg.toFixed(2);
 
       // fibre sopra/sotto colorate con intensità ~ |M|
       const n = 120, vals = [];
@@ -307,14 +376,14 @@ FireOps.registra({
       sv.appendChild(mk("rect", {x: sx(0), y: y0 - hh, width: sx(s.L) - sx(0), height: 2 * hh, fill: "none", stroke: C.testo, "stroke-width": 1.3, rx: 2}));
 
       // vincoli
-      if (modo === "appoggi") {
+      if (!sb) {
         appoggio(sv, sx(s.x1), y0 + hh); appoggio(sv, sx(s.x2), y0 + hh);
         sv.appendChild(tx(sx(s.x1), y0 + hh + 28, "A", {"text-anchor": "middle"}));
         sv.appendChild(tx(sx(s.x2), y0 + hh + 28, "B", {"text-anchor": "middle"}));
       } else {
         sv.appendChild(mk("rect", {x: sx(0) - 10, y: y0 - hh - 10, width: 9, height: 2 * hh + 20, fill: C.tenue}));
         for (let i = 0; i < 6; i++) sv.appendChild(mk("line", {x1: sx(0) - 10, y1: y0 - hh - 10 + i * (2 * hh + 20) / 5, x2: sx(0) - 18, y2: y0 - hh - 2 + i * (2 * hh + 20) / 5, stroke: C.tenue, "stroke-width": 1.4}));
-        sv.appendChild(tx(sx(0) - 4, y0 - hh - 16, "pianta", {"font-size": 10}));
+        sv.appendChild(tx(sx(0) - 4, y0 + hh + 24, "pianta", {"font-size": 10, "text-anchor": "middle"}));
         if (s.R > 0) appoggio(sv, sx(s.xa), y0 + hh);
       }
 
@@ -336,23 +405,26 @@ FireOps.registra({
         freccia(sv, X, y0 + hh + 4, -1, C.compr, "1");
         freccia(sv, X, y0 - hh - 4, 1, C.traz, "2");
       }
+      unrot = 0;
 
-      // diagramma del momento, compatto sotto il tronco
-      const yb = 168, amp = 22;
+      // diagramma del momento, compatto sotto (sempre orizzontale)
+      const ml = 22, mr = 22, yb = 226, amp = 16;
+      const sxm = x => ml + x / s.L * (W - ml - mr);
+      const Xm = sxm(s.xt);
       const sy = m => yb + m / Mmax * amp;         // M > 0 verso il basso (lato teso)
-      let area = `M${sx(0)} ${yb}`, linea = "";
-      vals.forEach((m, i) => { const p = `${sx(s.L * i / n).toFixed(1)} ${sy(m).toFixed(1)}`; area += " L" + p; linea += (i ? " L" : "M") + p; });
-      area += ` L${sx(s.L)} ${yb} Z`;
-      sv.appendChild(mk("path", {d: area, fill: C.traz, opacity: .25}));
-      sv.appendChild(mk("path", {d: linea, fill: "none", stroke: C.testo, "stroke-width": 1.5}));
-      sv.appendChild(mk("line", {x1: sx(0), y1: yb, x2: sx(s.L), y2: yb, stroke: C.tenue, "stroke-width": 1}));
-      sv.appendChild(mk("line", {x1: X, y1: yb - amp - 4, x2: X, y2: yb + amp + 4, stroke: C.testo, "stroke-width": 1, "stroke-dasharray": "3 3", opacity: .7}));
-      sv.appendChild(mk("circle", {cx: X, cy: sy(d.M), r: 3.5, fill: C.testo}));
-      sv.appendChild(tx(ml, yb - amp - 6, "momento flettente", {"font-size": 10}));
-      sv.appendChild(tx(W - mr, yb - amp - 6, (Math.abs(d.M) / 1000).toFixed(2) + " kN·m al taglio", {"font-size": 10, "text-anchor": "end", fill: C.testo}));
-      sv.appendChild(tx(ml, 14, "0 m", {"font-size": 10}));
-      if (s.th > .01) sv.appendChild(tx(W / 2, 14, "asse inclinato di " + Math.round(s.th * 180 / Math.PI) + "°", {"font-size": 10, "text-anchor": "middle", fill: C.testo}));
-      sv.appendChild(tx(W - mr, 14, s.L.toFixed(1) + " m", {"font-size": 10, "text-anchor": "end"}));
+      let area = `M${sxm(0)} ${yb}`, linea = "";
+      vals.forEach((m, i) => { const p = `${sxm(s.L * i / n).toFixed(1)} ${sy(m).toFixed(1)}`; area += " L" + p; linea += (i ? " L" : "M") + p; });
+      area += ` L${sxm(s.L)} ${yb} Z`;
+      svEl.appendChild(mk("path", {d: area, fill: C.traz, opacity: .25}));
+      svEl.appendChild(mk("path", {d: linea, fill: "none", stroke: C.testo, "stroke-width": 1.5}));
+      svEl.appendChild(mk("line", {x1: sxm(0), y1: yb, x2: sxm(s.L), y2: yb, stroke: C.tenue, "stroke-width": 1}));
+      svEl.appendChild(mk("line", {x1: Xm, y1: yb - amp - 4, x2: Xm, y2: yb + amp + 4, stroke: C.testo, "stroke-width": 1, "stroke-dasharray": "3 3", opacity: .7}));
+      svEl.appendChild(mk("circle", {cx: Xm, cy: sy(d.M), r: 3.5, fill: C.testo}));
+      svEl.appendChild(tx(ml, yb - amp - 6, "momento flettente", {"font-size": 10}));
+      svEl.appendChild(tx(W - mr, yb - amp - 6, (Math.abs(d.M) / 1000).toFixed(2) + " kN·m al taglio", {"font-size": 10, "text-anchor": "end", fill: C.testo}));
+      svEl.appendChild(tx(ml, 252, "0 m", {"font-size": 10}));
+      svEl.appendChild(tx(W - mr, 252, s.L.toFixed(1) + " m", {"font-size": 10, "text-anchor": "end"}));
+      svEl.appendChild(tx(W / 2, 252, "taglio a " + s.xt.toFixed(2) + " m" + (s.th > .01 ? " · inclinato di " + Math.round(deg) + "°" : ""), {"font-size": 10, "text-anchor": "middle", fill: C.testo}));
     }
 
     function sezione(s, d) {
@@ -451,6 +523,10 @@ FireOps.registra({
               '<div class="sub">fibre tese · stesso piano</div></div>' +
           '</div>';
 
+      $("tgMini").innerHTML = unico
+        ? '<span class="c3"><b>Taglio unico</b></span>: qui le fibre non spingono né tirano.'
+        : '<span class="c1"><b>1</b> scarico da ' + alto + ' · ' + (p * 100).toFixed(1) + ' cm</span><br><span class="c2"><b>2</b> chiusura da ' + basso + '</span>';
+
       const massaTot = s.rho * s.A * s.L, massaOltre = s.rho * s.A * (s.L - s.xt);
       $("tgDati").innerHTML =
         '<div>Massa tronco<b>' + massaTot.toFixed(0) + ' kg</b></div>' +
@@ -495,6 +571,58 @@ FireOps.registra({
     $("tgAppoggi").addEventListener("click", () => scegli("appoggi"));
     $("tgSbalzo").addEventListener("click", () => scegli("sbalzo"));
     ["tgD", "tgL", "tgI", "tgA", "tgB", "tgR", "tgT", "tgE", "tgF"].forEach(id => $(id).addEventListener("input", aggiorna));
-    aggiorna();
+
+    // − e + : un passo del cursore per volta (tenendo premuto si ripete)
+    root.querySelectorAll(".pm").forEach(b => {
+      const muovi = () => {
+        const el = $(b.dataset.t), st = parseFloat(el.step) || 1;
+        const v = Math.min(+el.max, Math.max(+el.min, +el.value + (+b.dataset.d) * st));
+        el.value = (Math.round(v / st) * st).toFixed(st < 1 ? 2 : 0);
+        aggiorna();
+      };
+      let t1 = null, t2 = null;
+      const ferma = () => { clearTimeout(t1); clearInterval(t2); t1 = t2 = null; };
+      b.addEventListener("pointerdown", e => { e.preventDefault(); muovi(); ferma(); t1 = setTimeout(() => { t2 = setInterval(muovi, 90); }, 450); });
+      ["pointerup", "pointerleave", "pointercancel"].forEach(ev => b.addEventListener(ev, ferma));
+      b.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); muovi(); } });
+    });
+
+    // ---------------- passi ----------------
+    const nomi = ["Tronco", "Appoggi e taglio", "Esito"];
+    const barra = $("tgSteps");
+    barra.innerHTML = nomi.map((l, i) => '<button type="button" class="step" data-s="' + (i + 1) + '" aria-label="Passo ' + (i + 1) + ' di ' + nomi.length + ': ' + l + '"></button>').join("");
+    const eti = document.createElement("div"); eti.className = "steplabel"; barra.after(eti);
+    let passo = 1, visti = {};
+    function vai(n) {
+      passo = n; visti[n] = true;
+      root.querySelectorAll(".pannello").forEach(p => { p.hidden = +p.dataset.s !== n; });
+      barra.querySelectorAll(".step").forEach(b => {
+        const k = +b.dataset.s;
+        b.classList.toggle("on", k === n);
+        b.classList.toggle("done", k !== n && !!visti[k]);
+        if (k === n) b.setAttribute("aria-current", "step"); else b.removeAttribute("aria-current");
+      });
+      eti.textContent = "Passo " + n + " di " + nomi.length + " · " + nomi[n - 1];
+      $("tgDisegno").hidden = n === 3;                 // all'esito il disegno non serve: contano i tagli
+      $("tgLead2").textContent = modo === "sbalzo"
+        ? "Se il ramo poggia a terra in un punto, indicalo. Poi scegli dove tagliare."
+        : "Indica dove poggia il tronco (A e B) e dove vuoi tagliare.";
+      aggiorna();
+      if (passo !== 1 || visti[2] || visti[3]) root.scrollIntoView({block: "start", behavior: "smooth"});
+    }
+    barra.addEventListener("click", e => { const b = e.target.closest(".step"); if (b) vai(+b.dataset.s); });
+    root.addEventListener("click", e => { const g = e.target.closest("[data-go]"); if (g) vai(+g.dataset.go); });
+
+    $("tgReset").addEventListener("click", () => {
+      if (!confirm("Riportare tutti i dati ai valori iniziali?")) return;
+      const ini = {tgD: 30, tgL: 6, tgI: 0, tgA: .5, tgB: 4, tgR: 0, tgT: 5, tgE: 800, tgF: 20};
+      Object.keys(ini).forEach(k => { $(k).value = ini[k]; });
+      visti = {}; modo = "appoggi";
+      $("tgAppoggi").setAttribute("aria-pressed", "true"); $("tgSbalzo").setAttribute("aria-pressed", "false");
+      vai(1);
+    });
+
+    FireOps.onShow("taglio", () => { aggiorna(); });
+    vai(1);
   }
 });
