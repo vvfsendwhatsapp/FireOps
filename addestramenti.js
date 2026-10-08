@@ -127,6 +127,35 @@
         return trovaLogo("Altro");
     }
 
+    // ---------- distanza in linea d'aria (haversine) dalla centrale ----------
+    function parseCoord(testo) {
+        const m = String(testo || "").match(/(-?\d+(?:[.,]\d+)?)\s*[,;]\s*(-?\d+(?:[.,]\d+)?)/);
+        if (!m) return null;
+        const lat = parseFloat(m[1].replace(",", ".")), lng = parseFloat(m[2].replace(",", "."));
+        return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
+    }
+
+    function distanzaKm(a, b) {
+        const R = 6371, rad = d => d * Math.PI / 180;
+        const dLat = rad(b.lat - a.lat), dLng = rad(b.lng - a.lng);
+        const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
+        return 2 * R * Math.asin(Math.sqrt(h));
+    }
+
+    // Distanza dalla centrale (Comando attivo) al punto dell'addestramento, o null
+    function distanzaDallaCentrale(r) {
+        const attivo = comandoAttivo();
+        const da = attivo && parseCoord(attivo["Coordinate"]);
+        const a = parseCoord(r.coordinate);
+        if (!da || !a) return null;
+        return distanzaKm(da, a);
+    }
+
+    function formattaKm(km) {
+        if (km < 1) return `${Math.round(km * 1000)} m`;
+        return `${(km < 10 ? km.toFixed(1) : Math.round(km).toString()).replace(".", ",")} km`;
+    }
+
     // ---------- Comando attivo e classificazione ----------
     function elencoComandi() { return Array.isArray(window.FireOpsComandi) ? window.FireOpsComandi : []; }
 
@@ -278,8 +307,10 @@
         const mappa = /^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/.test(coord)
             ? `<a class="addestr-mappa" href="${MAPPA_PUMA}?lat=${coord.split(",")[0]}&lng=${coord.split(",")[1]}&zoom=16" target="_blank" rel="noopener">🗺 Mappa PUMA</a>`
             : "";
+        const km = distanzaDallaCentrale(r);
         const dettagli = [
             `<span>🕒 ${esc(etichettaOrario(r))}</span>`,
+            km !== null ? `<span class="addestr-distanza" title="Distanza in linea d'aria dalla centrale (Comando ${esc((comandoAttivo() || {}).Comando)})">📏 ${formattaKm(km)} in linea d'aria</span>` : "",
             r.squadra ? `<span>🚒 Squadra ${esc(r.squadra)}</span>` : "",
             r.partecipanti ? `<span>👥 ${esc(r.partecipanti)}</span>` : "",
             r.area ? `<span>📍 ${esc(r.area)}</span>` : ""
