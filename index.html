@@ -91,6 +91,8 @@
         </div>
 
         <div class="header-right">
+            <button id="btn-addestramenti" class="btn-icon-hamburger btn-icon-testo" type="button"
+                title="Addestramenti odierni (PUMA)">F<span class="addestr-badge" hidden></span></button>
             <button id="btn-otto-passi" class="btn-icon-hamburger btn-icon-testo" type="button"
                 title="Gli 8 Passi">8P</button>
             <button id="btn-evento-rilevante" class="btn-icon-hamburger btn-icon-rilevante" type="button"
@@ -1275,6 +1277,15 @@
         </div>
     </div>
 
+    <!-- MODALE GLI PUMA -->
+    <div id="modal-addestramenti" class="modal-overlay" style="display:none;">
+        <div class="modal-content chiudibile modal-content-largo">
+            <span class="modal-close" id="modal-addestramenti-close" title="Chiudi">&times;</span>
+            <h2>🅵 Addestramenti odierni (PUMA)</h2>
+            <div id="addestramenti-contenuto"></div>
+        </div>
+    </div>
+
     <!-- MODALE VADEMECUM EVENTO RILEVANTE -->
     <div id="modal-evento-rilevante" class="modal-overlay" style="display:none;">
         <div class="modal-content chiudibile modal-content-largo">
@@ -1334,6 +1345,7 @@
                 "messaggistica.js", // BIS: Messaggistica estratta in modulo a sé, dopo script-bis.js
                 // (che espone window.FireOpsComandi/window.FireOps prima che serva qui)
                 "turnario.js",
+                "addestramenti.js",
                 "convertitore.js",
                 "radiotelefoni.js",
                 "terremoti.js",
