@@ -1169,6 +1169,7 @@ if (contenitoreFormCoord) {
     let coordMarkerComando = null;
     let repartiMostrati = [];
     let layerRepartiVolo = null;
+    let ultimoPuntoCambio = null;
 
         // Quale punto si sta per posare col prossimo clic: null, "target"
     // (mirino rosso) o "partenza" (mirino giallo). Un clic posa, poi si
@@ -1546,6 +1547,7 @@ document.addEventListener("fireops:comando-attivo-cambiato", (e) => {
         ultimoPuntoPartenza = null;
         popupPuntoPartenza = null;
         ultimoGeojsonPercorso = null;
+        ultimoPuntoCambio = null;
 
         if (coordMappaLeaflet) {
             if (coordLineaPercorso) { coordMappaLeaflet.removeLayer(coordLineaPercorso); coordLineaPercorso = null; }
@@ -1616,11 +1618,12 @@ document.addEventListener("fireops:comando-attivo-cambiato", (e) => {
     // Tre pulsanti, uno per tipologia: il clic sceglie il profilo E attiva
     // la modalità percorso. Con la squadra già piazzata ricalcola subito.
     const ETICHETTE_PROFILO_PERCORSO = {
-        "trekking": "Percorso a piedi",
-        "car-fast": "Percorso in auto",
-        "linea-diretta": "Linea diretta",
+    "soccorso": "Percorso di soccorso",
+    "auto": "Solo mezzo",
+    "piedi": "Solo piedi",
+    "linea-diretta": "Linea diretta",
     };
-    const PROFILO_PERCORSO_PREDEFINITO = "trekking";
+    const PROFILO_PERCORSO_PREDEFINITO = "soccorso";
     let profiloPercorsoAttivo = PROFILO_PERCORSO_PREDEFINITO;
     const btnScaricaKml = document.getElementById("btn-coord-scarica-kml");
     const btnScaricaGpx = document.getElementById("btn-coord-scarica-gpx");
@@ -1671,9 +1674,8 @@ function calcolaAzimut(lat1, lon1, lat2, lon2) {
     }
     if (!dati) { overlay.style.display = "none"; overlay.innerHTML = ""; return; }
 
-    const righe = [dati.lineaDiretta
-        ? `<div class="coord-mappa-overlay-titolo">📏 Linea diretta</div>`
-        : `<div class="coord-mappa-overlay-titolo">🧭 Percorso</div>`];
+    const titolo = dati.titolo || (dati.lineaDiretta ? "📏 Linea diretta" : "🧭 Percorso");
+    const righe = [`<div class="coord-mappa-overlay-titolo">${titolo}</div>`];
 
     // Azimut + distanza in linea d'aria: SEMPRE presenti, indipendentemente
     // dal profilo scelto (a piedi, auto, o linea diretta)
@@ -1711,11 +1713,16 @@ function calcolaAzimut(lat1, lon1, lat2, lon2) {
         righe.push(`<div class="coord-mappa-overlay-riga">D+ ${dati.dislivelloPositivo} m &nbsp; D− ${dati.dislivelloNegativo} m</div>`);
     }
 
+    // Percorso di soccorso: i due tratti separati, le sbarre, gli avvisi
+    (dati.tratti || []).forEach(t => righe.push(`<div class="coord-mappa-overlay-riga">${t}</div>`));
+    if (dati.avviso) righe.push(`<div class="coord-mappa-overlay-riga coord-mappa-overlay-avviso">${dati.avviso}</div>`);
+
     overlay.style.display = "block";
     overlay.innerHTML = righe.join("");
 }
 
 async function disegnaLineaDiretta(latPartenza, lonPartenza, latArrivo, lonArrivo, azimut, distanzaAriaKm, quote) {
+    ultimoPuntoCambio = null;   // in linea d'aria non c'è cambio di mezzo
     if (coordLineaPercorso) coordMappaLeaflet.removeLayer(coordLineaPercorso);
     coordLineaPercorso = L.polyline(
         [[latPartenza, lonPartenza], [latArrivo, lonArrivo]],
@@ -1790,58 +1797,7 @@ function disegnaMarkerPartenza(lat, lon, azimut) {
         return;
     }
 
-        try {
-            const url = `https://brouter.de/brouter?lonlats=${lonPartenza},${latPartenza}|${lonArrivo},${latArrivo}&profile=${profilo}&alternativeidx=0&format=geojson`;
-            const risposta = await fetch(url);
-            if (!risposta.ok) throw new Error("HTTP " + risposta.status);
-            const geojson = await risposta.json();
-            ultimoGeojsonPercorso = geojson;
-            if (coordLineaPercorso) coordMappaLeaflet.removeLayer(coordLineaPercorso);
-            coordLineaPercorso = L.geoJSON(geojson, { style: { color: COLORE_PERCORSO, weight: 5, opacity: 0.85 } }).addTo(coordMappaLeaflet);
-            coordMappaLeaflet.fitBounds(coordLineaPercorso.getBounds(), { padding: [30, 30] });
-
-            const proprieta = (geojson.features && geojson.features[0] && geojson.features[0].properties) || {};
-            const lunghezzaM = parseFloat(proprieta["track-length"]);
-            const tempoS = parseFloat(proprieta["total-time"]);
-            const risultatoAltimetria = disegnaGraficoAltimetria(geojson);
-            const quote = await promessaQuote;
-            const distanzaKm = !Number.isNaN(lunghezzaM) ? lunghezzaM / 1000 : null;
-
-            // Stima propria prima, total-time di BRouter solo come ripiego
-            let tempoMin = null;
-            if (profilo === "trekking") {
-                tempoMin = tempoPiediMin(distanzaKm,
-                    risultatoAltimetria ? risultatoAltimetria.dislivelloPositivo : 0,
-                    risultatoAltimetria ? risultatoAltimetria.dislivelloNegativo : 0);
-            } else if (profilo === "car-fast") {
-                tempoMin = tempoAutoMin(proprieta);
-            }
-            if (tempoMin === null && !Number.isNaN(tempoS)) tempoMin = Math.round(tempoS / 60);
-
-            aggiornaOverlayPercorso(null, {
-                azimut, distanzaAriaKm,
-                quotaPartenza: quote.partenza,
-                quotaArrivo: quote.arrivo,
-                distanzaKm,
-                tempoMin,
-                dislivelloPositivo: risultatoAltimetria ? risultatoAltimetria.dislivelloPositivo : null,
-                dislivelloNegativo: risultatoAltimetria ? risultatoAltimetria.dislivelloNegativo : null,
-            });
-
-            let testoInfo = "Percorso calcolato";
-            if (distanzaKm !== null) testoInfo += ` — ${distanzaKm.toFixed(2)} km`;
-            if (tempoMin !== null) testoInfo += ` — circa ${testoDurata(tempoMin)}`;
-            testoInfo += ". Clic destro sulla freccia gialla → Sposta per cambiare la partenza.";
-            if (elInfoPercorso) elInfoPercorso.textContent = testoInfo;
-            abilitaEsportazioni(true);
-        } catch (err) {
-            console.error("Errore routing BRouter:", err);
-            ultimoGeojsonPercorso = null;
-            if (elInfoPercorso) elInfoPercorso.textContent = "Impossibile calcolare il percorso (servizio BRouter non raggiungibile o punto fuori copertura).";
-            const quote = await promessaQuote;
-            aggiornaOverlayPercorso(null, { azimut, distanzaAriaKm, quotaPartenza: quote.partenza, quotaArrivo: quote.arrivo });
-            nascondiGraficoAltimetria("Percorso non calcolato: nessun dato altimetrico disponibile.");
-        }
+    await calcolaPercorsoSoccorso(latPartenza, lonPartenza, latArrivo, lonArrivo, azimut, distanzaAriaKm, promessaQuote, profilo);
     }
 
     const btnAnnullaPercorso = document.getElementById("btn-coord-annulla-percorso");
@@ -1872,9 +1828,10 @@ function aggiornaStatoBottonePercorso() {
         // Lookup diretto anche qui: la funzione può girare prima delle costanti
     document.querySelectorAll(".btn-coord-profilo-percorso").forEach(b => {
         b.disabled = !coordinateTargetCorrenti;
+        const info = b.dataset.info ? b.dataset.info + "\n\n" : "";
         b.title = coordinateTargetCorrenti
-            ? "Poi clicca sulla mappa la posizione della squadra VF"
-            : "Converti prima delle coordinate: serve un punto di arrivo";
+            ? info + "Poi clicca sulla mappa la posizione della squadra VF"
+            : info + "Converti prima delle coordinate: serve un punto di arrivo";
     });
 }
 
@@ -1966,6 +1923,12 @@ document.querySelectorAll(".btn-coord-profilo-percorso").forEach(b => {
             waypoint.push(`  <wpt lat="${ultimoPuntoPartenza.lat}" lon="${ultimoPuntoPartenza.lon}">
     <name>Squadra VF</name>
     <sym>Flag, Blue</sym>
+  </wpt>`);
+        }
+        if (ultimoPuntoCambio) {
+            waypoint.push(`  <wpt lat="${ultimoPuntoCambio.lat}" lon="${ultimoPuntoCambio.lon}">
+    <name>Punto di cambio (si prosegue a piedi)</name>
+    <sym>Parking Area</sym>
   </wpt>`);
         }
         if (coordinateTargetCorrenti) {
@@ -2128,6 +2091,290 @@ ${puntiTraccia}
     function testoDurata(minuti) {
         if (minuti === null || minuti === undefined) return "";
         return minuti >= 60 ? `${Math.floor(minuti / 60)} h ${String(minuti % 60).padStart(2, "0")} min` : `${minuti} min`;
+    }
+
+        // ==========================================================
+    // PERCORSO DI SOCCORSO: mezzo fin dove arriva, poi a piedi
+    //
+    // Il tratto col mezzo usa un profilo BRouter scritto qui e caricato
+    // sul server al primo uso: un'auto che ignora i divieti di accesso
+    // e passa sbarre e cancelli. BRouter aggancia l'arrivo all'ultimo
+    // punto raggiungibile dal mezzo: quello è il punto di cambio, e da
+    // lì si calcola il tratto a piedi fino al target.
+    // ==========================================================
+    const PROFILO_PIEDI_BROUTER = "hiking-mountain";   // "trekking" è un profilo da bici
+    const PROFILO_AUTO_RISERVA = "car-fast";
+    const SOGLIA_TRATTO_PIEDI_M = 30;      // sotto: il mezzo arriva sul target
+    const TEMPO_SBARRA_MIN = 1;            // apertura di una sbarra/cancello
+    const TEMPO_CAMBIO_MEZZO_MIN = 0;      // scesa dal mezzo e preparazione: da tarare
+    const CHIAVE_STORAGE_PROFILO_SOCCORSO = "fireops_brouter_profilo_soccorso";
+
+    const PROFILO_SOCCORSO_BROUTER = `
+# FireOps VVF - profilo "soccorso" per mezzi VF.
+# Come un'auto, ma ignora i divieti di accesso, passa sbarre e
+# cancelli con una piccola penalita' e percorre le piste forestali.
+# Restano escluse le vie che un mezzo fisicamente non percorre.
+
+---context:global
+assign validForCars        = true
+assign processUnusedTags   = true
+assign turnInstructionMode = 1
+
+---context:way
+assign isoneway   = or oneway=yes junction=roundabout
+assign contromano = and isoneway reversedirection=yes
+
+assign costobase =
+       switch highway=motorway|trunk                 1
+       switch highway=motorway_link|trunk_link       1.3
+       switch highway=primary|primary_link           1.2
+       switch highway=secondary|secondary_link       1.3
+       switch highway=tertiary|tertiary_link         1.4
+       switch highway=unclassified|road              1.6
+       switch highway=residential|living_street      1.8
+       switch highway=service                        2.2
+       switch highway=pedestrian                     4
+       switch highway=track
+              switch tracktype=grade1 2.5
+              switch tracktype=grade2 3.5
+              switch tracktype=grade3 5
+              switch tracktype=grade4 8
+              switch tracktype=grade5 12
+              4
+       10000
+
+assign costfactor  = switch contromano 10000 costobase
+assign turncost    = 90
+assign initialcost = 0
+
+---context:node
+assign initialcost =
+       switch barrier=bollard|block|stile|cycle_barrier|kissing_gate|turnstile 1000000
+       switch barrier=gate|lift_gate|swing_gate|chain 300
+       0
+`;
+
+    // Il profilo si carica una volta per sessione; l'id restituito dal
+    // server si riusa finché il server lo tiene in memoria
+    async function idProfiloSoccorso(rinnova = false) {
+        if (!rinnova) {
+            try {
+                const salvato = sessionStorage.getItem(CHIAVE_STORAGE_PROFILO_SOCCORSO);
+                if (salvato) return salvato;
+            } catch (err) {}
+        }
+        const risposta = await fetch("https://brouter.de/brouter/profile", {
+            method: "POST",
+            body: PROFILO_SOCCORSO_BROUTER,
+        });
+        if (!risposta.ok) throw new Error("Caricamento profilo: HTTP " + risposta.status);
+        const dati = await risposta.json();
+        if (!dati.profileid) throw new Error("Profilo rifiutato: " + (dati.error || "motivo non indicato"));
+        try { sessionStorage.setItem(CHIAVE_STORAGE_PROFILO_SOCCORSO, dati.profileid); } catch (err) {}
+        return dati.profileid;
+    }
+
+    async function richiestaBRouter(lonlats, profilo) {
+        const url = `https://brouter.de/brouter?lonlats=${lonlats}&profile=${encodeURIComponent(profilo)}&alternativeidx=0&format=geojson`;
+        const risposta = await fetch(url);
+        const testo = await risposta.text();
+        if (!risposta.ok) throw new Error(testo || "HTTP " + risposta.status);
+        return JSON.parse(testo);
+    }
+
+    // Prima il profilo soccorso (con un secondo tentativo a profilo
+    // ricaricato, se il server l'ha dimenticato); poi, come ripiego,
+    // l'auto civile, che rispetta sbarre e divieti
+    async function percorsoAutoSoccorso(lonlats) {
+        for (const rinnova of [false, true]) {
+            try {
+                const id = await idProfiloSoccorso(rinnova);
+                return { geojson: await richiestaBRouter(lonlats, id), profiloSoccorso: true };
+            } catch (err) {
+                console.warn("Profilo soccorso non utilizzabile:", err.message);
+            }
+        }
+        return { geojson: await richiestaBRouter(lonlats, PROFILO_AUTO_RISERVA), profiloSoccorso: false };
+    }
+
+    // Sbarre e cancelli attraversati, dalla tabella "messages" di BRouter
+    // (coordinate in milionesimi di grado)
+    function sbarreDalPercorso(proprieta) {
+        const m = proprieta && proprieta.messages;
+        if (!Array.isArray(m) || m.length < 2) return [];
+        const t = m[0];
+        const iLon = t.indexOf("Longitude"), iLat = t.indexOf("Latitude"), iNodo = t.indexOf("NodeTags");
+        if (iLon < 0 || iLat < 0 || iNodo < 0) return [];
+        return m.slice(1)
+            .filter(r => /barrier=/.test(String(r[iNodo] || "")))
+            .map(r => ({
+                lon: parseFloat(r[iLon]) / 1e6,
+                lat: parseFloat(r[iLat]) / 1e6,
+                tag: (String(r[iNodo]).match(/barrier=\S+/) || [""])[0],
+            }));
+    }
+
+    function iconaPuntoCambio() {
+        return L.divIcon({
+            className: "",
+            html: `<div style="width:24px;height:24px;border-radius:50%;background:#fff;border:2px solid ${COLORE_PERCORSO};display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:0 0 6px rgba(0,0,0,.6);">🥾</div>`,
+            iconSize: [24, 24],
+            iconAnchor: [12, 12],
+        });
+    }
+
+    function iconaSbarra() {
+        return L.divIcon({
+            className: "",
+            html: `<div style="width:22px;height:8px;background:repeating-linear-gradient(45deg,#AF2B1E 0 5px,#fff 5px 10px);border:1px solid #121212;border-radius:2px;box-shadow:0 0 4px rgba(0,0,0,.6);"></div>`,
+            iconSize: [22, 8],
+            iconAnchor: [11, 4],
+        });
+    }
+
+    function popupPuntoCambio(p, descrizione) {
+        const coppia = formattaDD(p.lat, p.lon);
+        return `<strong>${descrizione.titolo}</strong><br>${descrizione.testo}<br>`
+            + `<span class="cliccabile-copia" data-copia="${coppia}" title="Clicca per copiare">${coppia}</span>`;
+    }
+
+    const TITOLI_MODALITA = {
+        soccorso: "🚒 Percorso di soccorso",
+        auto: "🚒 Solo mezzo",
+        piedi: "🥾 Solo piedi",
+    };
+
+    // Un solo motore per tre modalità: "soccorso" fa mezzo + piedi,
+    // "auto" solo il mezzo, "piedi" solo a piedi dalla squadra
+    async function calcolaPercorsoSoccorso(latP, lonP, latT, lonT, azimut, distanzaAriaKm, promessaQuote, modalita = "soccorso") {
+        const conMezzo = modalita !== "piedi";
+        const conPiedi = modalita !== "auto";
+
+        // 1 — Col mezzo, verso il target
+        let auto = null;
+        if (conMezzo) {
+            try {
+                auto = await percorsoAutoSoccorso(`${lonP},${latP}|${lonT},${latT}`);
+            } catch (err) {
+                console.warn("Tratto col mezzo non calcolabile:", err);
+            }
+        }
+        const coordAuto = auto ? coordinatePercorso(auto.geojson) : [];
+        const propAuto = (auto && auto.geojson.features && auto.geojson.features[0].properties) || {};
+        const fineAuto = coordAuto.length
+            ? { lat: coordAuto[coordAuto.length - 1][1], lon: coordAuto[coordAuto.length - 1][0] }
+            : { lat: latP, lon: lonP };
+        const restanteM = distanzaKmHaversine(fineAuto.lat, fineAuto.lon, latT, lonT) * 1000;
+
+        // 2 — A piedi: dal punto di cambio, o dalla squadra in "solo piedi"
+        let coordPiedi = [], propPiedi = {};
+        if (conPiedi && restanteM > SOGLIA_TRATTO_PIEDI_M) {
+            try {
+                const g = await richiestaBRouter(`${fineAuto.lon},${fineAuto.lat}|${lonT},${latT}`, PROFILO_PIEDI_BROUTER);
+                coordPiedi = coordinatePercorso(g);
+                propPiedi = (g.features && g.features[0].properties) || {};
+            } catch (err) {
+                console.warn("Tratto a piedi non calcolabile:", err);
+            }
+        }
+
+        const quote = await promessaQuote;
+        if (!coordAuto.length && !coordPiedi.length) {
+            ultimoGeojsonPercorso = null;
+            aggiornaOverlayPercorso(null, {
+                titolo: TITOLI_MODALITA[modalita],
+                azimut, distanzaAriaKm, quotaPartenza: quote.partenza, quotaArrivo: quote.arrivo,
+                avviso: "⚠️ Percorso non calcolabile: BRouter non raggiungibile o punti fuori dalla rete viaria.",
+            });
+            nascondiGraficoAltimetria("Percorso non calcolato: nessun dato altimetrico disponibile.");
+            return;
+        }
+
+        const haCambio = coordAuto.length > 0 && coordPiedi.length > 0;
+        // Solo mezzo che non arriva al target: va detto dove si ferma
+        const fermoPrima = modalita === "auto" && coordAuto.length > 0 && restanteM > SOGLIA_TRATTO_PIEDI_M;
+        ultimoPuntoCambio = (haCambio || fermoPrima) ? fineAuto : null;
+        const sbarre = (auto && auto.profiloSoccorso) ? sbarreDalPercorso(propAuto) : [];
+
+        // Disegno: mezzo pieno, piedi puntinato, cambio e sbarre segnati
+        const aLatLng = c => [c[1], c[0]];
+        const gruppo = L.featureGroup();
+        if (coordAuto.length) {
+            L.polyline(coordAuto.map(aLatLng), { color: COLORE_PERCORSO, weight: 5, opacity: 0.85 }).addTo(gruppo);
+        }
+        if (coordPiedi.length) {
+            L.polyline(coordPiedi.map(aLatLng), { color: COLORE_PERCORSO, weight: 4, opacity: 0.95, dashArray: "1 9", lineCap: "round" }).addTo(gruppo);
+        }
+        if (haCambio || fermoPrima) {
+            const descrizione = haCambio
+                ? { titolo: "Punto di cambio", testo: "Fine percorribilità del mezzo: si prosegue a piedi" }
+                : { titolo: "Fine percorribilità del mezzo", testo: `Il mezzo si ferma a ${Math.round(restanteM)} m dal target` };
+            L.marker([fineAuto.lat, fineAuto.lon], { icon: iconaPuntoCambio(), zIndexOffset: 400, title: descrizione.titolo })
+                .bindPopup(popupPuntoCambio(fineAuto, descrizione)).addTo(gruppo);
+        }
+        sbarre.forEach(s => {
+            L.marker([s.lat, s.lon], { icon: iconaSbarra(), title: "Sbarra / cancello" })
+                .bindPopup(`<strong>Sbarra / cancello</strong><br>${testoSicuro(s.tag)}<br>Prevedere apertura o chiave`)
+                .addTo(gruppo);
+        });
+        if (coordLineaPercorso) coordMappaLeaflet.removeLayer(coordLineaPercorso);
+        coordLineaPercorso = gruppo.addTo(coordMappaLeaflet);
+        coordMappaLeaflet.fitBounds(gruppo.getBounds(), { padding: [30, 30] });
+
+        // Misure e tempi
+        const kmAuto = (parseFloat(propAuto["track-length"]) || 0) / 1000;
+        const kmPiedi = (parseFloat(propPiedi["track-length"]) || 0) / 1000;
+
+        let minAuto = 0;
+        if (coordAuto.length) {
+            minAuto = tempoAutoMin(propAuto);
+            if (minAuto === null) {
+                const s = parseFloat(propAuto["total-time"]);
+                minAuto = Number.isNaN(s) ? 0 : Math.round(s / 60);
+            }
+            minAuto += sbarre.length * TEMPO_SBARRA_MIN;
+        }
+        const dislPiedi = dislivelliFiltrati(coordPiedi.map(c => parseFloat(c[2])));
+        const minPiedi = coordPiedi.length ? (tempoPiediMin(kmPiedi, dislPiedi.salita, dislPiedi.discesa) || 0) : 0;
+        const minTotale = minAuto + minPiedi + (haCambio ? TEMPO_CAMBIO_MEZZO_MIN : 0);
+
+        // Esportazione e altimetria su un'unica traccia continua
+        ultimoGeojsonPercorso = {
+            type: "FeatureCollection",
+            features: [{
+                type: "Feature",
+                properties: { "track-length": (kmAuto + kmPiedi) * 1000 },
+                geometry: { type: "LineString", coordinates: coordAuto.concat(coordPiedi) },
+            }],
+        };
+        const altimetria = disegnaGraficoAltimetria(ultimoGeojsonPercorso);
+
+        // In "soccorso" i due tratti si vedono separati; nelle modalità
+        // a tratto unico bastano distanza e tempo totali
+        const tratti = [];
+        if (haCambio) {
+            tratti.push(`🚒 Mezzo: ${kmAuto.toFixed(2)} km · ${testoDurata(minAuto)}`);
+            tratti.push(`🥾 A piedi: ${kmPiedi.toFixed(2)} km · ${testoDurata(minPiedi)}`);
+        }
+        if (sbarre.length) tratti.push(`🚧 Sbarre/cancelli: ${sbarre.length}`);
+
+        let avviso = null;
+        if (auto && !auto.profiloSoccorso) avviso = "⚠️ Profilo mezzo VF non disponibile: calcolato come auto civile (sbarre e divieti rispettati).";
+        else if (conMezzo && !coordAuto.length) avviso = "⚠️ Tratto col mezzo non calcolabile: solo a piedi.";
+        else if (fermoPrima) avviso = `⚠️ Il mezzo si ferma a ${Math.round(restanteM)} m dal target (in linea d'aria).`;
+
+        aggiornaOverlayPercorso(null, {
+            titolo: TITOLI_MODALITA[modalita],
+            azimut, distanzaAriaKm,
+            quotaPartenza: quote.partenza,
+            quotaArrivo: quote.arrivo,
+            distanzaKm: kmAuto + kmPiedi,
+            tempoMin: minTotale,
+            dislivelloPositivo: altimetria ? altimetria.dislivelloPositivo : null,
+            dislivelloNegativo: altimetria ? altimetria.dislivelloNegativo : null,
+            tratti, avviso,
+        });
+        abilitaEsportazioni(true);
     }
 
     // Grafico altimetria (canvas, nessuna libreria esterna). Dipende dal

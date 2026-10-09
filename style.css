@@ -7705,26 +7705,40 @@ select:focus {
     margin-bottom: 12px;
 }
 
+/* Venti colonne: sopra cinque pulsanti da quattro, sotto quattro da cinque.
+   È il minimo comune multiplo che allinea le due righe ai bordi. */
 .coord-mappa-griglia {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(20, minmax(0, 1fr));
     gap: 8px;
 }
 
-.coord-mappa-griglia .btn-toggle-radar {
-    min-width: 0;
-    padding: 9px 8px;
-    font-size: 13px;
-    text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+.coord-mappa-griglia > * {
+    grid-column: span 5;
 }
 
-/* Pannello stretto: quattro righe da due invece di due da quattro */
+.coord-mappa-griglia > .coord-riga-cinque {
+    grid-column: span 4;
+}
+
+/* Avviso nel riquadro dati della mappa: può andare a capo */
+.coord-mappa-overlay-avviso {
+    color: var(--primary-color);
+    white-space: normal;
+    margin-top: 4px;
+}
+
+/* Pannello stretto: due per riga, Soccorso da solo in testa */
 @container (max-width: 480px) {
     .coord-mappa-griglia {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .coord-mappa-griglia > *,
+    .coord-mappa-griglia > .coord-riga-cinque {
+        grid-column: span 1;
+    }
+    .coord-mappa-griglia > [data-profilo="soccorso"] {
+        grid-column: span 2;
     }
 }
 

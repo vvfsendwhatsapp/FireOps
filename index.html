@@ -919,26 +919,37 @@
                         <div id="coord-tab-content-mappa" style="display:none;">
                             <div class="coord-mappa-pulsantiera">
                                 <div class="coord-mappa-griglia">
-                                    <button type="button" class="btn-toggle-radar btn-coord-profilo-percorso"
-                                        data-profilo="trekking" title="Mostra percorso a piedi" disabled>🚶 A
-                                        piedi</button>
-                                    <button type="button" class="btn-toggle-radar btn-coord-profilo-percorso"
-                                        data-profilo="car-fast" title="Mostra percorso in auto" disabled>🚗 In
-                                        auto</button>
-                                    <button type="button" class="btn-toggle-radar btn-coord-profilo-percorso"
-                                        data-profilo="linea-diretta" title="Mostra linea diretta" disabled>📏 Linea
+                                    <button type="button"
+                                        class="btn-toggle-radar btn-coord-profilo-percorso coord-riga-cinque"
+                                        data-profilo="soccorso" disabled
+                                        data-info="PERCORSO DI SOCCORSO&#10;• Mezzo VF fin dove arriva: ignora i divieti di accesso, supera sbarre e cancelli, percorre le piste forestali&#10;• Poi a piedi fino al target (tempo secondo DIN 33466)&#10;&#10;Sulla carta: linea piena = mezzo, puntinata = a piedi, 🥾 = punto di cambio, 🚧 = sbarre">🚒
+                                        Soccorso</button>
+                                    <button type="button"
+                                        class="btn-toggle-radar btn-coord-profilo-percorso coord-riga-cinque"
+                                        data-profilo="auto" disabled
+                                        data-info="SOLO MEZZO&#10;Mezzo VF fin dove arriva, sbarre e divieti superati.&#10;Se non raggiunge il target, mostra dove si ferma.">🚒
+                                        Solo mezzo</button>
+                                    <button type="button"
+                                        class="btn-toggle-radar btn-coord-profilo-percorso coord-riga-cinque"
+                                        data-profilo="piedi" disabled
+                                        data-info="SOLO PIEDI&#10;Tutto a piedi dalla squadra al target, su sentieri e piste.">🥾
+                                        Solo piedi</button>
+                                    <button type="button"
+                                        class="btn-toggle-radar btn-coord-profilo-percorso coord-riga-cinque"
+                                        data-profilo="linea-diretta" disabled
+                                        data-info="LINEA DIRETTA&#10;Distanza e azimut in linea d'aria.">📏 Linea
                                         diretta</button>
-                                    <button id="btn-coord-reparti-volo" class="btn-toggle-radar" type="button"
-                                        disabled>🚁 Reparti Volo</button>
+                                    <button id="btn-coord-reparti-volo" class="btn-toggle-radar coord-riga-cinque"
+                                        type="button" disabled>🚁 Reparti Volo</button>
 
                                     <button id="btn-coord-annulla-percorso" class="btn-toggle-radar" type="button"
                                         title="Annulla percorso" disabled>❌ Annulla</button>
                                     <button id="btn-coord-scarica-kml" class="btn-toggle-radar" type="button"
-                                        title="Esporta percorso KML" disabled>💾 Esporta KML</button>
+                                        title="Esporta percorso KML" disabled>💾 KML</button>
                                     <button id="btn-coord-scarica-gpx" class="btn-toggle-radar" type="button"
-                                        title="Esporta percorso GPX" disabled>🛰️ Esporta GPX</button>
-                                    <button id="btn-coord-tema" class="btn-toggle-radar" type="button">☀️
-                                        Chiara</button>
+                                        title="Esporta percorso GPX" disabled>🛰️ GPX</button>
+                                    <button id="btn-coord-tema" class="btn-toggle-radar" type="button">☀️ Tema
+                                        Chiaro</button>
                                 </div>
                             </div>
 
@@ -953,6 +964,14 @@
                                             <polygon points="11,1 20,20 11,15 2,20" fill="#ffd700" stroke="#121212"
                                                 stroke-width="1.5" stroke-linejoin="round" />
                                         </svg> Squadra VF (verso il target)</div>
+                                    <div class="coord-mappa-legenda-voce"><span
+                                            style="display:inline-block;width:16px;border-top:3px dotted #AF2B1E;margin-right:6px;"></span>
+                                        Tratto a piedi</div>
+                                    <div class="coord-mappa-legenda-voce"><span
+                                            style="font-size:12px;margin-right:4px;">🥾</span> Punto di cambio</div>
+                                    <div class="coord-mappa-legenda-voce"><span
+                                            style="display:inline-block;width:14px;height:6px;background:repeating-linear-gradient(45deg,#AF2B1E 0 3px,#fff 3px 6px);margin-right:6px;"></span>
+                                        Sbarra / cancello</div>
                                     <div class="coord-mappa-legenda-voce"><span class="coord-mappa-pallino"
                                             style="background:#AF2B1E;"></span> Target intervento</div>
                                     <div class="coord-mappa-legenda-voce"><span class="coord-mappa-pallino"
