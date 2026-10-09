@@ -2152,58 +2152,64 @@ body.map-open {
       info.textContent = "Calcolo del percorso misto soccorso…";
       try {
         const from = [userPos.lon, userPos.lat], to = [targetPos.lon, targetPos.lat];
-        const foot = await brouter("hiking-mountain", from, to);
-        const fc = foot.geometry.coordinates;
-        const fp = foot.properties || {};
         const dist = c => {let m = 0; for (let i = 1; i < c.length; i++) m += haversM(c[i - 1], c[i]); return m;};
-        const totFoot = dist(fc);
-        const k = fineStrada(foot);
-        if (k === null) throw new Error("tipo di strada non disponibile");
+        const salita = c => {let a = 0; for (let i = 1; i < c.length; i++) if (c[i][2] != null && c[i - 1][2] != null && c[i][2] > c[i - 1][2]) a += c[i][2] - c[i - 1][2]; return a;};
+        const durata = f => parseFloat((f.properties || {})["total-time"]) || 0;
 
-        const layers = [];
-        let carM = 0, carS = 0, walkM = 0, walkS = 0, asc = 0, note = "", parcheggio = null;
-        const tFoot = parseFloat(fp["total-time"]) || 0;
+        let carCoords = null, carM = 0, carS = 0, walkCoords = null, walkM = 0, walkS = 0, asc = 0, note = "", parcheggio = null;
 
-        // tratto a piedi: da fine strada al target
-        const walk = fc.slice(Math.max(0, k));
-        if (k < fc.length - 1) {
-          walkM = dist(walk);
-          walkS = totFoot > 0 ? tFoot * walkM / totFoot : 0;
-          for (let i = 1; i < walk.length; i++) if (walk[i][2] != null && walk[i - 1][2] != null && walk[i][2] > walk[i - 1][2]) asc += walk[i][2] - walk[i - 1][2];
-          layers.push(L.polyline(walk.map(c => [c[1], c[0]]), {color: "#3fa66b", weight: 5, opacity: 0.95, dashArray: "1,8", lineCap: "round"}));
+        // 1) il tratto in auto si cerca col profilo AUTO (il profilo a piedi preferisce sentieri e scorciatoie
+        //    e farebbe lasciare l'auto troppo presto), tagliato a sbarre, divieti e sterrati
+        let car = null;
+        try {car = await brouter("car-fast", from, to);} catch (e) {car = null;}
+        if (!car) {
+          // target lontano da ogni strada: l'auto non ci arriva. Si prova con punti sempre più vicini a me lungo il tracciato a piedi
+          try {
+            const foot0 = await brouter("hiking-mountain", from, to);
+            const fc0 = foot0.geometry.coordinates;
+            for (const f of [0.95, 0.85, 0.7, 0.5, 0.3, 0.15]) {
+              try {car = await brouter("car-fast", from, fc0[Math.floor(f * (fc0.length - 1))], 12000); break;} catch (e) {car = null;}
+            }
+          } catch (e) {car = null;}
+        }
+        if (car) {
+          const cc = car.geometry.coordinates;
+          let k = fineStrada(car);
+          if (k === null || k < 0) k = cc.length - 1;
+          carCoords = cc.slice(0, k + 1);
+          const dFull = dist(cc);
+          carM = k >= cc.length - 1 ? (parseFloat((car.properties || {})["track-length"]) || dFull) : dist(carCoords);
+          carS = dFull > 0 ? durata(car) * dist(carCoords) / dFull : 0;
+          if (carCoords.length < 2) carCoords = null;
         }
 
-        // tratto in auto: dalla posizione a fine strada
-        if (k > 0) {
-          const P = fc[k];
-          let carCoords = null;
-          if (k >= fc.length - 1) {
-            const car = await brouter("car-fast", from, to);
-            carCoords = car.geometry.coordinates;
-            carM = parseFloat((car.properties || {})["track-length"]) || dist(carCoords);
-            carS = parseFloat((car.properties || {})["total-time"]) || carM / 11;
-          } else {
-            try {
-              const car = await brouter("car-fast", from, P);
-              carCoords = car.geometry.coordinates;
-              carM = parseFloat((car.properties || {})["track-length"]) || dist(carCoords);
-              carS = parseFloat((car.properties || {})["total-time"]) || carM / 11;
-            } catch (e) {
-              // l'auto non entra fin lì (es. sterrato): si usa il tracciato a piedi, tempo stimato a 30 km/h
-              carCoords = fc.slice(0, k + 1);
-              carM = dist(carCoords); carS = carM / 8.3;
-              note = " Il tratto in auto non è calcolabile da BRouter: stimato a 30 km/h sul tracciato.";
-            }
+        // 2) da dove finisce l'auto al target: a piedi
+        const P = carCoords ? carCoords[carCoords.length - 1] : from;
+        if (haversM(P, to) > 40) {
+          try {
+            const foot = await brouter("hiking-mountain", P, to);
+            walkCoords = foot.geometry.coordinates;
+            walkM = parseFloat((foot.properties || {})["track-length"]) || dist(walkCoords);
+            walkS = durata(foot);
+            asc = salita(walkCoords);
+          } catch (e) {
+            if (!carCoords) throw e;
+            walkCoords = [P, to]; walkM = haversM(P, to); walkS = walkM / 1.1;
+            note += " Ultimo tratto a piedi in linea d'aria (percorso non calcolabile).";
           }
-          layers.push(L.polyline(carCoords.map(c => [c[1], c[0]]), {color: "#29a9eb", weight: 5, opacity: 0.9}));
-          if (walkM > 0) {
-            parcheggio = {lat: P[1], lon: P[0]};
-            const mUrl = "https://www.google.com/maps/dir/?api=1&destination=" + P[1].toFixed(6) + "," + P[0].toFixed(6) + "&travelmode=driving&dir_action=navigate";
-            layers.push(L.marker([P[1], P[0]], {zIndexOffset: 2000, icon: L.divIcon({className: "", html: '<div style="background:#ffd700;color:#10141a;font:800 12px system-ui;padding:4px 8px;border-radius:12px;border:2px solid #10141a;white-space:nowrap;transform:translate(-50%,-135%);box-shadow:0 1px 4px rgba(0,0,0,.5)">🅿 Lascia l\'auto qui</div><div style="width:14px;height:14px;background:#ffd700;border:3px solid #10141a;border-radius:50%;transform:translate(-50%,-50%)"></div>', iconSize: [0, 0]})})
-              .bindPopup("<b>Lascia l'auto qui</b><br>" + P[1].toFixed(6) + ", " + P[0].toFixed(6) + "<br>Da qui " + (walkM / 1000).toFixed(2) + " km a piedi.<br><a href='" + mUrl + "' target='_blank' rel='noopener'>Naviga fin qui</a>"));
-          }
-        } else {
-          note = " Nessun tratto carrabile verso il target: tutto a piedi.";
+        } else if (carCoords) {
+          carCoords.push(to);
+        }
+        if (!carCoords) note += " Nessuna strada carrabile verso il target: tutto a piedi.";
+
+        const layers = [];
+        if (carCoords) layers.push(L.polyline(carCoords.map(c => [c[1], c[0]]), {color: "#29a9eb", weight: 5, opacity: 0.9}));
+        if (walkCoords) layers.push(L.polyline(walkCoords.map(c => [c[1], c[0]]), {color: "#3fa66b", weight: 5, opacity: 0.95, dashArray: "1,8", lineCap: "round"}));
+        if (carCoords && walkCoords) {
+          parcheggio = {lat: P[1], lon: P[0]};
+          const mUrl = "https://www.google.com/maps/dir/?api=1&destination=" + P[1].toFixed(6) + "," + P[0].toFixed(6) + "&travelmode=driving&dir_action=navigate";
+          layers.push(L.marker([P[1], P[0]], {zIndexOffset: 2000, icon: L.divIcon({className: "", html: '<div style="background:#ffd700;color:#10141a;font:800 12px system-ui;padding:4px 8px;border-radius:12px;border:2px solid #10141a;white-space:nowrap;transform:translate(-50%,-135%);box-shadow:0 1px 4px rgba(0,0,0,.5)">🅿 Lascia l\'auto qui</div><div style="width:14px;height:14px;background:#ffd700;border:3px solid #10141a;border-radius:50%;transform:translate(-50%,-50%)"></div>', iconSize: [0, 0]})})
+            .bindPopup("<b>Lascia l'auto qui</b><br>" + P[1].toFixed(6) + ", " + P[0].toFixed(6) + "<br>Da qui " + (walkM / 1000).toFixed(2) + " km a piedi.<br><a href='" + mUrl + "' target='_blank' rel='noopener'>Naviga fin qui</a>"));
         }
 
         if (routeLayer && map) map.removeLayer(routeLayer);
