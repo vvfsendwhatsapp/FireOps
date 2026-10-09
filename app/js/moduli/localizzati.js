@@ -617,6 +617,7 @@ body.map-open {
 }
 .pg-localizzati .route-row {
       display: flex;
+      flex-wrap: wrap;
       gap: 8px;
       padding: 10px 14px 0;
 }
@@ -643,6 +644,10 @@ body.map-open {
 }
 .pg-localizzati .route-btn.car {
       border-color: var(--cyan);
+}
+.pg-localizzati .route-btn.mix {
+      flex-basis: 100%;
+      border-color: var(--yellow, #ffd700);
 }
 .pg-localizzati .route-info {
       margin: 8px 14px 0;
@@ -888,6 +893,7 @@ body.map-open {
           <div class="value" id="rTargetAlt">—</div>
         </div>
         <div class="route-row">
+          <button type="button" id="routeMix" class="route-btn mix">🚒 Soccorso: auto + piedi</button>
           <button type="button" id="routeFoot" class="route-btn foot">🥾 Mostra a piedi</button>
           <button type="button" id="routeCar" class="route-btn car">🚗 Mostra in auto</button>
         </div>
@@ -2031,7 +2037,7 @@ body.map-open {
 
     async function showRoute(profile, color, modeLabel) {
       const info = document.getElementById("routeInfo");
-      const btns = [document.getElementById("routeFoot"), document.getElementById("routeCar")];
+      const btns = [document.getElementById("routeFoot"), document.getElementById("routeCar"), document.getElementById("routeMix")];
       info.classList.remove("hidden", "error");
 
       if (!targetPos) return;
@@ -2086,6 +2092,148 @@ body.map-open {
       }
     }
 
+    // ---- Profilo misto soccorso: auto finché la strada è percorribile, poi a piedi fino al target ----
+    // Si calcola il percorso a piedi; dai tag delle strade (WayTags di BRouter) si trova dove finisce
+    // il tratto carrabile iniziale. Da lì a piedi; dalla posizione fino a quel punto, in auto.
+    // Carrabile = solo strade vere: niente sterrati/piste (track) né percorsi offroad; stop a sbarre, cancelli e divieti
+    const CARRABILE = /(^|\s)highway=(motorway|trunk|primary|secondary|tertiary|unclassified|residential|living_street|service|road)(_link)?(\s|$)/;
+    const VIETATO = /(^|\s)(access|motor_vehicle|motorcar|vehicle)=(no|private|forestry|agricultural|delivery)(\s|$)/;
+    const SBARRA = /(^|\s)barrier=(?!kerb|cattle_grid|toll_booth|border_control|entrance|turnstile\b)\w+/;
+    function haversM(a, b) {return haversine(a[1], a[0], b[1], b[0]) * 1000;}   // [lon,lat]
+
+    async function brouter(profile, from, to, ms) {
+      const url = "https://brouter.de/brouter?lonlats=" +
+        from[0].toFixed(6) + "," + from[1].toFixed(6) + "|" + to[0].toFixed(6) + "," + to[1].toFixed(6) +
+        "&profile=" + profile + "&alternativeidx=0&format=geojson";
+      const ctrl = new AbortController();
+      const tmo = setTimeout(() => ctrl.abort(), ms || 20000);
+      try {
+        const r = await fetch(url, {signal: ctrl.signal});
+        if (!r.ok) throw new Error((await r.text()).trim().slice(0, 120) || ("http " + r.status));
+        const data = await r.json();
+        const feat = data.features && data.features[0];
+        if (!feat) throw new Error("nessun percorso");
+        return feat;
+      } finally {clearTimeout(tmo);}
+    }
+
+    // indice (nelle coordinate) dell'ultimo nodo del tratto carrabile iniziale; -1 = nessuno, coords.length-1 = tutto carrabile
+    function fineStrada(feat) {
+      const coords = feat.geometry.coordinates;
+      const msgs = (feat.properties && feat.properties.messages) || [];
+      if (msgs.length < 2) return null;                       // senza tag non si può decidere
+      const head = msgs[0], iLon = head.indexOf("Longitude"), iLat = head.indexOf("Latitude"), iTag = head.indexOf("WayTags"), iNode = head.indexOf("NodeTags");
+      if (iLon < 0 || iLat < 0 || iTag < 0) return null;
+      let ci = 0, last = 0;
+      for (let i = 1; i < msgs.length; i++) {
+        const tag = msgs[i][iTag] || "";
+        if (tag && (!CARRABILE.test(tag) || VIETATO.test(tag))) break;     // strada non carrabile o vietata: fine strada (riga senza tag = partenza)
+        if (iNode >= 0 && SBARRA.test(msgs[i][iNode] || "")) break;       // sbarra/cancello su questo nodo: ci si ferma prima
+        const lon = Math.round(+msgs[i][iLon]), lat = Math.round(+msgs[i][iLat]);
+        let k = ci;
+        while (k < coords.length && !(Math.round(coords[k][0] * 1e6) === lon && Math.round(coords[k][1] * 1e6) === lat)) k++;
+        if (k >= coords.length) break;                        // non allineato: ci si ferma qui
+        ci = last = k;
+      }
+      return last;
+    }
+
+    async function showMixed() {
+      const info = document.getElementById("routeInfo");
+      const btns = [document.getElementById("routeFoot"), document.getElementById("routeCar"), document.getElementById("routeMix")];
+      info.classList.remove("hidden", "error");
+      if (!targetPos) return;
+      if (!userPos) {
+        info.classList.add("error");
+        info.textContent = "Posizione GPS non ancora ricevuta: attendi la lettura o usa \"Aggiorna posizione\".";
+        return;
+      }
+      btns.forEach(b => b.disabled = true);
+      info.textContent = "Calcolo del percorso misto soccorso…";
+      try {
+        const from = [userPos.lon, userPos.lat], to = [targetPos.lon, targetPos.lat];
+        const foot = await brouter("hiking-mountain", from, to);
+        const fc = foot.geometry.coordinates;
+        const fp = foot.properties || {};
+        const dist = c => {let m = 0; for (let i = 1; i < c.length; i++) m += haversM(c[i - 1], c[i]); return m;};
+        const totFoot = dist(fc);
+        const k = fineStrada(foot);
+        if (k === null) throw new Error("tipo di strada non disponibile");
+
+        const layers = [];
+        let carM = 0, carS = 0, walkM = 0, walkS = 0, asc = 0, note = "", parcheggio = null;
+        const tFoot = parseFloat(fp["total-time"]) || 0;
+
+        // tratto a piedi: da fine strada al target
+        const walk = fc.slice(Math.max(0, k));
+        if (k < fc.length - 1) {
+          walkM = dist(walk);
+          walkS = totFoot > 0 ? tFoot * walkM / totFoot : 0;
+          for (let i = 1; i < walk.length; i++) if (walk[i][2] != null && walk[i - 1][2] != null && walk[i][2] > walk[i - 1][2]) asc += walk[i][2] - walk[i - 1][2];
+          layers.push(L.polyline(walk.map(c => [c[1], c[0]]), {color: "#3fa66b", weight: 5, opacity: 0.95, dashArray: "1,8", lineCap: "round"}));
+        }
+
+        // tratto in auto: dalla posizione a fine strada
+        if (k > 0) {
+          const P = fc[k];
+          let carCoords = null;
+          if (k >= fc.length - 1) {
+            const car = await brouter("car-fast", from, to);
+            carCoords = car.geometry.coordinates;
+            carM = parseFloat((car.properties || {})["track-length"]) || dist(carCoords);
+            carS = parseFloat((car.properties || {})["total-time"]) || carM / 11;
+          } else {
+            try {
+              const car = await brouter("car-fast", from, P);
+              carCoords = car.geometry.coordinates;
+              carM = parseFloat((car.properties || {})["track-length"]) || dist(carCoords);
+              carS = parseFloat((car.properties || {})["total-time"]) || carM / 11;
+            } catch (e) {
+              // l'auto non entra fin lì (es. sterrato): si usa il tracciato a piedi, tempo stimato a 30 km/h
+              carCoords = fc.slice(0, k + 1);
+              carM = dist(carCoords); carS = carM / 8.3;
+              note = " Il tratto in auto non è calcolabile da BRouter: stimato a 30 km/h sul tracciato.";
+            }
+          }
+          layers.push(L.polyline(carCoords.map(c => [c[1], c[0]]), {color: "#29a9eb", weight: 5, opacity: 0.9}));
+          if (walkM > 0) {
+            parcheggio = {lat: P[1], lon: P[0]};
+            const mUrl = "https://www.google.com/maps/dir/?api=1&destination=" + P[1].toFixed(6) + "," + P[0].toFixed(6) + "&travelmode=driving&dir_action=navigate";
+            layers.push(L.marker([P[1], P[0]], {zIndexOffset: 2000, icon: L.divIcon({className: "", html: '<div style="background:#ffd700;color:#10141a;font:800 12px system-ui;padding:4px 8px;border-radius:12px;border:2px solid #10141a;white-space:nowrap;transform:translate(-50%,-135%);box-shadow:0 1px 4px rgba(0,0,0,.5)">🅿 Lascia l\'auto qui</div><div style="width:14px;height:14px;background:#ffd700;border:3px solid #10141a;border-radius:50%;transform:translate(-50%,-50%)"></div>', iconSize: [0, 0]})})
+              .bindPopup("<b>Lascia l'auto qui</b><br>" + P[1].toFixed(6) + ", " + P[0].toFixed(6) + "<br>Da qui " + (walkM / 1000).toFixed(2) + " km a piedi.<br><a href='" + mUrl + "' target='_blank' rel='noopener'>Naviga fin qui</a>"));
+          }
+        } else {
+          note = " Nessun tratto carrabile verso il target: tutto a piedi.";
+        }
+
+        if (routeLayer && map) map.removeLayer(routeLayer);
+        routeLayer = L.featureGroup(layers).addTo(map);
+        map.fitBounds(routeLayer.getBounds(), {padding: [40, 40]});
+        document.getElementById("resultMap").scrollIntoView({behavior: "smooth", block: "center"});
+
+        const kmf = m => (m / 1000).toFixed(1) + " km";
+        const tot = carS + walkS;
+        const parts = [];
+        if (carM > 0) parts.push("🚗 " + kmf(carM) + " · " + fmtDuration(carS));
+        if (walkM > 0) parts.push("🥾 " + kmf(walkM) + " · " + fmtDuration(walkS) + (asc > 0 ? " · +" + Math.round(asc) + " m" : ""));
+        const pk = parcheggio
+          ? "<br>🅿 <strong>Lascia l'auto a " + parcheggio.lat.toFixed(6) + ", " + parcheggio.lon.toFixed(6) + "</strong> (fine strada, sbarre e sterrati esclusi) e prosegui a piedi per " + kmf(walkM) + ". " +
+            '<a class="value-link" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=' + parcheggio.lat.toFixed(6) + "," + parcheggio.lon.toFixed(6) + '&travelmode=driving&dir_action=navigate">Naviga fin lì</a>'
+          : "";
+        info.innerHTML = "<strong>Misto soccorso</strong>: " + parts.join("  +  ") +
+          "<br><strong>Totale ≈ " + fmtDuration(tot) + "</strong>, " + kmf(carM + walkM) + "." + pk + "<br>" +
+          "Auto solo su strade percorribili, poi a piedi. Calcolato da BRouter alle " +
+          new Date().toLocaleTimeString("it-IT", {hour: "2-digit", minute: "2-digit"}) +
+          ", senza traffico; tempo a piedi stimato." + note;
+      } catch (e) {
+        info.classList.add("error");
+        info.textContent = "Percorso non disponibile (" + (e.name === "AbortError" ? "tempo scaduto" : e.message) + ").";
+      } finally {
+        btns.forEach(b => b.disabled = false);
+      }
+    }
+
+    document.getElementById("routeMix").addEventListener("click", showMixed);
     document.getElementById("routeFoot").addEventListener("click", function () {
       showRoute("hiking-mountain", "#3fa66b", "A piedi");
     });
