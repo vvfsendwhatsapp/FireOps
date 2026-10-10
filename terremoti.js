@@ -28,7 +28,8 @@
     const AMBITI = {
         italia:   {etichetta: 'Italia',                mag: 3},
         allargato:{etichetta: 'Italia + 1000 km',      mag: 3},
-        comando:  {etichetta: 'Vicino al Comando',     mag: 2}
+        comando:  {etichetta: 'Vicino al Comando',     mag: 2},
+        mondo:    {etichetta: 'Mondo',             mag: 5}
     };
 
     const PERIODI = {
@@ -96,6 +97,8 @@
             p.set('lat', String(CENTRO.lat));
             p.set('lon', String(CENTRO.lon));
             p.set('maxradiuskm', '1000');
+        } else if (ambito === 'mondo') {
+            // nessun filtro geografico: catalogo mondiale
         } else {
             const c = coordinateComando();
             if (!c) return null;
