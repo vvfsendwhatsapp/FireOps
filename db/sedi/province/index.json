@@ -1,0 +1,772 @@
+[
+ {
+  "sigla": "AG",
+  "provincia": "Agrigento",
+  "regione": "Sicilia",
+  "sedi": 15,
+  "file": "province/AG.geojson"
+ },
+ {
+  "sigla": "AL",
+  "provincia": "Alessandria",
+  "regione": "Piemonte",
+  "sedi": 7,
+  "file": "province/AL.geojson"
+ },
+ {
+  "sigla": "AN",
+  "provincia": "Ancona",
+  "regione": "Marche",
+  "sedi": 6,
+  "file": "province/AN.geojson"
+ },
+ {
+  "sigla": "AP",
+  "provincia": "Ascoli Piceno",
+  "regione": "Marche",
+  "sedi": 1,
+  "file": "province/AP.geojson"
+ },
+ {
+  "sigla": "AQ",
+  "provincia": "L'Aquila",
+  "regione": "Abruzzo",
+  "sedi": 5,
+  "file": "province/AQ.geojson"
+ },
+ {
+  "sigla": "AR",
+  "provincia": "Arezzo",
+  "regione": "Toscana",
+  "sedi": 12,
+  "file": "province/AR.geojson"
+ },
+ {
+  "sigla": "AT",
+  "provincia": "Asti",
+  "regione": "Piemonte",
+  "sedi": 5,
+  "file": "province/AT.geojson"
+ },
+ {
+  "sigla": "AV",
+  "provincia": "Avellino",
+  "regione": "Campania",
+  "sedi": 8,
+  "file": "province/AV.geojson"
+ },
+ {
+  "sigla": "BA",
+  "provincia": "Bari",
+  "regione": "Puglia",
+  "sedi": 15,
+  "file": "province/BA.geojson"
+ },
+ {
+  "sigla": "BG",
+  "provincia": "Bergamo",
+  "regione": "Lombardia",
+  "sedi": 21,
+  "file": "province/BG.geojson"
+ },
+ {
+  "sigla": "BI",
+  "provincia": "Biella",
+  "regione": "Piemonte",
+  "sedi": 7,
+  "file": "province/BI.geojson"
+ },
+ {
+  "sigla": "BL",
+  "provincia": "Belluno",
+  "regione": "Veneto",
+  "sedi": 18,
+  "file": "province/BL.geojson"
+ },
+ {
+  "sigla": "BN",
+  "provincia": "Benevento",
+  "regione": "Campania",
+  "sedi": 6,
+  "file": "province/BN.geojson"
+ },
+ {
+  "sigla": "BO",
+  "provincia": "Bologna",
+  "regione": "Emilia-Romagna",
+  "sedi": 27,
+  "file": "province/BO.geojson"
+ },
+ {
+  "sigla": "BR",
+  "provincia": "Brindisi",
+  "regione": "Puglia",
+  "sedi": 6,
+  "file": "province/BR.geojson"
+ },
+ {
+  "sigla": "BS",
+  "provincia": "Brescia",
+  "regione": "Lombardia",
+  "sedi": 30,
+  "file": "province/BS.geojson"
+ },
+ {
+  "sigla": "BT",
+  "provincia": "Barletta-Andria-Trani",
+  "regione": "Puglia",
+  "sedi": 1,
+  "file": "province/BT.geojson"
+ },
+ {
+  "sigla": "BZ",
+  "provincia": "Bolzano",
+  "regione": "Trentino-Alto Adige",
+  "sedi": 353,
+  "file": "province/BZ.geojson"
+ },
+ {
+  "sigla": "CA",
+  "provincia": "Cagliari",
+  "regione": "Sardegna",
+  "sedi": 9,
+  "file": "province/CA.geojson"
+ },
+ {
+  "sigla": "CB",
+  "provincia": "Campobasso",
+  "regione": "Molise",
+  "sedi": 2,
+  "file": "province/CB.geojson"
+ },
+ {
+  "sigla": "CE",
+  "provincia": "Caserta",
+  "regione": "Campania",
+  "sedi": 5,
+  "file": "province/CE.geojson"
+ },
+ {
+  "sigla": "CH",
+  "provincia": "Chieti",
+  "regione": "Abruzzo",
+  "sedi": 8,
+  "file": "province/CH.geojson"
+ },
+ {
+  "sigla": "CL",
+  "provincia": "Caltanissetta",
+  "regione": "Sicilia",
+  "sedi": 8,
+  "file": "province/CL.geojson"
+ },
+ {
+  "sigla": "CN",
+  "provincia": "Cuneo",
+  "regione": "Piemonte",
+  "sedi": 20,
+  "file": "province/CN.geojson"
+ },
+ {
+  "sigla": "CO",
+  "provincia": "Como",
+  "regione": "Lombardia",
+  "sedi": 15,
+  "file": "province/CO.geojson"
+ },
+ {
+  "sigla": "CR",
+  "provincia": "Cremona",
+  "regione": "Lombardia",
+  "sedi": 4,
+  "file": "province/CR.geojson"
+ },
+ {
+  "sigla": "CS",
+  "provincia": "Cosenza",
+  "regione": "Calabria",
+  "sedi": 10,
+  "file": "province/CS.geojson"
+ },
+ {
+  "sigla": "CT",
+  "provincia": "Catania",
+  "regione": "Sicilia",
+  "sedi": 18,
+  "file": "province/CT.geojson"
+ },
+ {
+  "sigla": "CZ",
+  "provincia": "Catanzaro",
+  "regione": "Calabria",
+  "sedi": 12,
+  "file": "province/CZ.geojson"
+ },
+ {
+  "sigla": "EN",
+  "provincia": "Enna",
+  "regione": "Sicilia",
+  "sedi": 7,
+  "file": "province/EN.geojson"
+ },
+ {
+  "sigla": "FC",
+  "provincia": "Forlì-Cesena",
+  "regione": "Emilia-Romagna",
+  "sedi": 9,
+  "file": "province/FC.geojson"
+ },
+ {
+  "sigla": "FE",
+  "provincia": "Ferrara",
+  "regione": "Emilia-Romagna",
+  "sedi": 6,
+  "file": "province/FE.geojson"
+ },
+ {
+  "sigla": "FG",
+  "provincia": "Foggia",
+  "regione": "Puglia",
+  "sedi": 5,
+  "file": "province/FG.geojson"
+ },
+ {
+  "sigla": "FI",
+  "provincia": "Firenze",
+  "regione": "Toscana",
+  "sedi": 14,
+  "file": "province/FI.geojson"
+ },
+ {
+  "sigla": "FM",
+  "provincia": "Fermo",
+  "regione": "Marche",
+  "sedi": 1,
+  "file": "province/FM.geojson"
+ },
+ {
+  "sigla": "FR",
+  "provincia": "Frosinone",
+  "regione": "Lazio",
+  "sedi": 4,
+  "file": "province/FR.geojson"
+ },
+ {
+  "sigla": "GE",
+  "provincia": "Genova",
+  "regione": "Liguria",
+  "sedi": 16,
+  "file": "province/GE.geojson"
+ },
+ {
+  "sigla": "GO",
+  "provincia": "Gorizia",
+  "regione": "Friuli-Venezia Giulia",
+  "sedi": 7,
+  "file": "province/GO.geojson"
+ },
+ {
+  "sigla": "GR",
+  "provincia": "Grosseto",
+  "regione": "Toscana",
+  "sedi": 7,
+  "file": "province/GR.geojson"
+ },
+ {
+  "sigla": "IM",
+  "provincia": "Imperia",
+  "regione": "Liguria",
+  "sedi": 4,
+  "file": "province/IM.geojson"
+ },
+ {
+  "sigla": "IS",
+  "provincia": "Isernia",
+  "regione": "Molise",
+  "sedi": 4,
+  "file": "province/IS.geojson"
+ },
+ {
+  "sigla": "KR",
+  "provincia": "Crotone",
+  "regione": "Calabria",
+  "sedi": 2,
+  "file": "province/KR.geojson"
+ },
+ {
+  "sigla": "LC",
+  "provincia": "Lecco",
+  "regione": "Lombardia",
+  "sedi": 8,
+  "file": "province/LC.geojson"
+ },
+ {
+  "sigla": "LE",
+  "provincia": "Lecce",
+  "regione": "Puglia",
+  "sedi": 7,
+  "file": "province/LE.geojson"
+ },
+ {
+  "sigla": "LI",
+  "provincia": "Livorno",
+  "regione": "Toscana",
+  "sedi": 11,
+  "file": "province/LI.geojson"
+ },
+ {
+  "sigla": "LO",
+  "provincia": "Lodi",
+  "regione": "Lombardia",
+  "sedi": 3,
+  "file": "province/LO.geojson"
+ },
+ {
+  "sigla": "LT",
+  "provincia": "Latina",
+  "regione": "Lazio",
+  "sedi": 4,
+  "file": "province/LT.geojson"
+ },
+ {
+  "sigla": "LU",
+  "provincia": "Lucca",
+  "regione": "Toscana",
+  "sedi": 4,
+  "file": "province/LU.geojson"
+ },
+ {
+  "sigla": "MB",
+  "provincia": "Monza e Brianza",
+  "regione": "Lombardia",
+  "sedi": 14,
+  "file": "province/MB.geojson"
+ },
+ {
+  "sigla": "MC",
+  "provincia": "Macerata",
+  "regione": "Marche",
+  "sedi": 5,
+  "file": "province/MC.geojson"
+ },
+ {
+  "sigla": "ME",
+  "provincia": "Messina",
+  "regione": "Sicilia",
+  "sedi": 8,
+  "file": "province/ME.geojson"
+ },
+ {
+  "sigla": "MI",
+  "provincia": "Milano",
+  "regione": "Lombardia",
+  "sedi": 48,
+  "file": "province/MI.geojson"
+ },
+ {
+  "sigla": "MN",
+  "provincia": "Mantova",
+  "regione": "Lombardia",
+  "sedi": 3,
+  "file": "province/MN.geojson"
+ },
+ {
+  "sigla": "MO",
+  "provincia": "Modena",
+  "regione": "Emilia-Romagna",
+  "sedi": 7,
+  "file": "province/MO.geojson"
+ },
+ {
+  "sigla": "MS",
+  "provincia": "Massa-Carrara",
+  "regione": "Toscana",
+  "sedi": 4,
+  "file": "province/MS.geojson"
+ },
+ {
+  "sigla": "MT",
+  "provincia": "Matera",
+  "regione": "Basilicata",
+  "sedi": 6,
+  "file": "province/MT.geojson"
+ },
+ {
+  "sigla": "NA",
+  "provincia": "Napoli",
+  "regione": "Campania",
+  "sedi": 28,
+  "file": "province/NA.geojson"
+ },
+ {
+  "sigla": "NO",
+  "provincia": "Novara",
+  "regione": "Piemonte",
+  "sedi": 6,
+  "file": "province/NO.geojson"
+ },
+ {
+  "sigla": "NU",
+  "provincia": "Nuoro",
+  "regione": "Sardegna",
+  "sedi": 3,
+  "file": "province/NU.geojson"
+ },
+ {
+  "sigla": "OG",
+  "provincia": "Ogliastra",
+  "regione": "Sardegna",
+  "sedi": 1,
+  "file": "province/OG.geojson"
+ },
+ {
+  "sigla": "OR",
+  "provincia": "Oristano",
+  "regione": "Sardegna",
+  "sedi": 5,
+  "file": "province/OR.geojson"
+ },
+ {
+  "sigla": "OT",
+  "provincia": "Gallura Nord-Est Sardegna",
+  "regione": "Sardegna",
+  "sedi": 5,
+  "file": "province/OT.geojson"
+ },
+ {
+  "sigla": "PA",
+  "provincia": "Palermo",
+  "regione": "Sicilia",
+  "sedi": 15,
+  "file": "province/PA.geojson"
+ },
+ {
+  "sigla": "PC",
+  "provincia": "Piacenza",
+  "regione": "Emilia-Romagna",
+  "sedi": 5,
+  "file": "province/PC.geojson"
+ },
+ {
+  "sigla": "PD",
+  "provincia": "Padova",
+  "regione": "Veneto",
+  "sedi": 5,
+  "file": "province/PD.geojson"
+ },
+ {
+  "sigla": "PE",
+  "provincia": "Pescara",
+  "regione": "Abruzzo",
+  "sedi": 9,
+  "file": "province/PE.geojson"
+ },
+ {
+  "sigla": "PG",
+  "provincia": "Perugia",
+  "regione": "Umbria",
+  "sedi": 13,
+  "file": "province/PG.geojson"
+ },
+ {
+  "sigla": "PI",
+  "provincia": "Pisa",
+  "regione": "Toscana",
+  "sedi": 13,
+  "file": "province/PI.geojson"
+ },
+ {
+  "sigla": "PN",
+  "provincia": "Pordenone",
+  "regione": "Friuli-Venezia Giulia",
+  "sedi": 7,
+  "file": "province/PN.geojson"
+ },
+ {
+  "sigla": "PO",
+  "provincia": "Prato",
+  "regione": "Toscana",
+  "sedi": 3,
+  "file": "province/PO.geojson"
+ },
+ {
+  "sigla": "PR",
+  "provincia": "Parma",
+  "regione": "Emilia-Romagna",
+  "sedi": 6,
+  "file": "province/PR.geojson"
+ },
+ {
+  "sigla": "PT",
+  "provincia": "Pistoia",
+  "regione": "Toscana",
+  "sedi": 4,
+  "file": "province/PT.geojson"
+ },
+ {
+  "sigla": "PU",
+  "provincia": "Pesaro e Urbino",
+  "regione": "Marche",
+  "sedi": 4,
+  "file": "province/PU.geojson"
+ },
+ {
+  "sigla": "PV",
+  "provincia": "Pavia",
+  "regione": "Lombardia",
+  "sedi": 12,
+  "file": "province/PV.geojson"
+ },
+ {
+  "sigla": "PZ",
+  "provincia": "Potenza",
+  "regione": "Basilicata",
+  "sedi": 5,
+  "file": "province/PZ.geojson"
+ },
+ {
+  "sigla": "RA",
+  "provincia": "Ravenna",
+  "regione": "Emilia-Romagna",
+  "sedi": 14,
+  "file": "province/RA.geojson"
+ },
+ {
+  "sigla": "RC",
+  "provincia": "Reggio Calabria",
+  "regione": "Calabria",
+  "sedi": 8,
+  "file": "province/RC.geojson"
+ },
+ {
+  "sigla": "RE",
+  "provincia": "Reggio Emilia",
+  "regione": "Emilia-Romagna",
+  "sedi": 10,
+  "file": "province/RE.geojson"
+ },
+ {
+  "sigla": "RG",
+  "provincia": "Ragusa",
+  "regione": "Sicilia",
+  "sedi": 7,
+  "file": "province/RG.geojson"
+ },
+ {
+  "sigla": "RI",
+  "provincia": "Rieti",
+  "regione": "Lazio",
+  "sedi": 3,
+  "file": "province/RI.geojson"
+ },
+ {
+  "sigla": "RM",
+  "provincia": "Roma",
+  "regione": "Lazio",
+  "sedi": 49,
+  "file": "province/RM.geojson"
+ },
+ {
+  "sigla": "RN",
+  "provincia": "Rimini",
+  "regione": "Emilia-Romagna",
+  "sedi": 5,
+  "file": "province/RN.geojson"
+ },
+ {
+  "sigla": "RO",
+  "provincia": "Rovigo",
+  "regione": "Veneto",
+  "sedi": 7,
+  "file": "province/RO.geojson"
+ },
+ {
+  "sigla": "SA",
+  "provincia": "Salerno",
+  "regione": "Campania",
+  "sedi": 14,
+  "file": "province/SA.geojson"
+ },
+ {
+  "sigla": "SI",
+  "provincia": "Siena",
+  "regione": "Toscana",
+  "sedi": 11,
+  "file": "province/SI.geojson"
+ },
+ {
+  "sigla": "SO",
+  "provincia": "Sondrio",
+  "regione": "Lombardia",
+  "sedi": 13,
+  "file": "province/SO.geojson"
+ },
+ {
+  "sigla": "SP",
+  "provincia": "La Spezia",
+  "regione": "Liguria",
+  "sedi": 5,
+  "file": "province/SP.geojson"
+ },
+ {
+  "sigla": "SR",
+  "provincia": "Siracusa",
+  "regione": "Sicilia",
+  "sedi": 17,
+  "file": "province/SR.geojson"
+ },
+ {
+  "sigla": "SS",
+  "provincia": "Sassari",
+  "regione": "Sardegna",
+  "sedi": 8,
+  "file": "province/SS.geojson"
+ },
+ {
+  "sigla": "SU",
+  "provincia": "Sulcis Iglesiente",
+  "regione": "Sardegna",
+  "sedi": 2,
+  "file": "province/SU.geojson"
+ },
+ {
+  "sigla": "SV",
+  "provincia": "Savona",
+  "regione": "Liguria",
+  "sedi": 13,
+  "file": "province/SV.geojson"
+ },
+ {
+  "sigla": "TA",
+  "provincia": "Taranto",
+  "regione": "Puglia",
+  "sedi": 8,
+  "file": "province/TA.geojson"
+ },
+ {
+  "sigla": "TE",
+  "provincia": "Teramo",
+  "regione": "Abruzzo",
+  "sedi": 2,
+  "file": "province/TE.geojson"
+ },
+ {
+  "sigla": "TN",
+  "provincia": "Trento",
+  "regione": "Trentino-Alto Adige",
+  "sedi": 235,
+  "file": "province/TN.geojson"
+ },
+ {
+  "sigla": "TO",
+  "provincia": "Torino",
+  "regione": "Piemonte",
+  "sedi": 67,
+  "file": "province/TO.geojson"
+ },
+ {
+  "sigla": "TP",
+  "provincia": "Trapani",
+  "regione": "Sicilia",
+  "sedi": 8,
+  "file": "province/TP.geojson"
+ },
+ {
+  "sigla": "TR",
+  "provincia": "Terni",
+  "regione": "Umbria",
+  "sedi": 4,
+  "file": "province/TR.geojson"
+ },
+ {
+  "sigla": "TS",
+  "provincia": "Trieste",
+  "regione": "Friuli-Venezia Giulia",
+  "sedi": 8,
+  "file": "province/TS.geojson"
+ },
+ {
+  "sigla": "TV",
+  "provincia": "Treviso",
+  "regione": "Veneto",
+  "sedi": 10,
+  "file": "province/TV.geojson"
+ },
+ {
+  "sigla": "UD",
+  "provincia": "Udine",
+  "regione": "Friuli-Venezia Giulia",
+  "sedi": 29,
+  "file": "province/UD.geojson"
+ },
+ {
+  "sigla": "VA",
+  "provincia": "Varese",
+  "regione": "Lombardia",
+  "sedi": 20,
+  "file": "province/VA.geojson"
+ },
+ {
+  "sigla": "VB",
+  "provincia": "Verbano-Cusio-Ossola",
+  "regione": "Piemonte",
+  "sedi": 10,
+  "file": "province/VB.geojson"
+ },
+ {
+  "sigla": "VC",
+  "provincia": "Vercelli",
+  "regione": "Piemonte",
+  "sedi": 12,
+  "file": "province/VC.geojson"
+ },
+ {
+  "sigla": "VE",
+  "provincia": "Venezia",
+  "regione": "Veneto",
+  "sedi": 16,
+  "file": "province/VE.geojson"
+ },
+ {
+  "sigla": "VI",
+  "provincia": "Vicenza",
+  "regione": "Veneto",
+  "sedi": 9,
+  "file": "province/VI.geojson"
+ },
+ {
+  "sigla": "VR",
+  "provincia": "Verona",
+  "regione": "Veneto",
+  "sedi": 7,
+  "file": "province/VR.geojson"
+ },
+ {
+  "sigla": "VS",
+  "provincia": "Medio Campidano",
+  "regione": "Sardegna",
+  "sedi": 1,
+  "file": "province/VS.geojson"
+ },
+ {
+  "sigla": "VT",
+  "provincia": "Viterbo",
+  "regione": "Lazio",
+  "sedi": 5,
+  "file": "province/VT.geojson"
+ },
+ {
+  "sigla": "VV",
+  "provincia": "Vibo Valentia",
+  "regione": "Calabria",
+  "sedi": 9,
+  "file": "province/VV.geojson"
+ },
+ {
+  "sigla": "XX",
+  "provincia": "",
+  "regione": "Valle d'Aosta",
+  "sedi": 27,
+  "file": "province/XX.geojson"
+ }
+]
