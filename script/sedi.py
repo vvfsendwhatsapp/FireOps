@@ -106,6 +106,8 @@ def classifica(t):
         return "portuale"
     if "rurale" in s:
         return "rurale"
+    if "direzione regionale" in s or s.strip().startswith("direzione"):
+        return "direzione"
     if "sede centrale" in s or "comando provinciale" in s or re.match(r"\s*comando\b", s):
         return "centrale"
     if "stagional" in s or "estiv" in s or "invernal" in s:
@@ -242,7 +244,7 @@ def costruisci(candidati, loc):
 
 # ---------------------------------------------------------------- correzioni
 STATI_OK = {"convalidata", "da_correggere", "non_vvf", "chiusa", "nuova"}
-TIPI_OK = {"centrale", "stagionale", "permanente", "volontario", "aeroportuale", "portuale", "rurale", "presidio", "altro"}
+TIPI_OK = {"direzione", "centrale", "stagionale", "permanente", "volontario", "aeroportuale", "portuale", "rurale", "presidio", "altro"}
 
 
 def leggi_correzioni(url, cartella, csv_url=""):
@@ -337,7 +339,7 @@ def applica_correzioni(righe, ultima, loc):
 
 # ---------------------------------------------------------------- nome standard
 NOME_TIPO = {
-    "centrale": "Sede centrale", "permanente": "Distaccamento", "volontario": "Distaccamento volontario",
+    "direzione": "Direzione regionale", "centrale": "Sede centrale", "permanente": "Distaccamento", "volontario": "Distaccamento volontario",
     "aeroportuale": "Distaccamento aeroportuale", "portuale": "Distaccamento portuale",
     "rurale": "Presidio rurale", "stagionale": "Sede stagionale", "presidio": "Presidio", "altro": "Sede",
 }
@@ -345,8 +347,10 @@ GENERICI = re.compile(r"^(vigili del fuoco|vvf|v\.v\.f\.?|caserma( dei)? (vigili
                       r"(freiwillige )?feuerwehr|vigili del fuoco volontari|distaccamento( vvf)?)$", re.I)
 
 
-def nome_auto(tipo, comune):
+def nome_auto(tipo, comune, regione=""):
     base = "Vigili del fuoco - " + NOME_TIPO.get(tipo, "Sede")
+    if tipo == "direzione":                 # "Vigili del fuoco - Direzione regionale Veneto"
+        return f"{base} {regione}" if regione else base
     return f"{base} di {comune}" if comune else base
 
 
@@ -357,7 +361,7 @@ def nomi_standard(righe):
     for r in righe:
         if r.get("nome_manuale"):
             continue
-        r["nome"] = nome_auto(r["tipo"], r["comune"])
+        r["nome"] = nome_auto(r["tipo"], r["comune"], r["regione"])
         gruppi.setdefault(r["nome"], []).append(r)
     for nome, lst in gruppi.items():
         if len(lst) < 2:

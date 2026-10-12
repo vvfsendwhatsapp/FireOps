@@ -13,7 +13,7 @@
   --head:#22272e; --headink:#fff; --accent:#c8102e; --chip:#eef0f3;
   --ok:#1f9d55; --warn:#e0a800; --ko:#5c6670;
   --t-permanente:#c8102e; --t-volontario:#e8790c; --t-aeroportuale:#1f6fd1;
-  --t-centrale:#7a0019; --t-portuale:#0f9aa8; --t-rurale:#3a8c2f; --t-stagionale:#c2185b; --t-presidio:#7b4bc4; --t-altro:#7a828c;
+  --t-direzione:#1d3557; --t-centrale:#7a0019; --t-portuale:#0f9aa8; --t-rurale:#3a8c2f; --t-stagionale:#c2185b; --t-presidio:#7b4bc4; --t-altro:#7a828c;
 }
 @media (prefers-color-scheme: dark){ :root{
   --bg:#15181c; --panel:#1e2228; --ink:#e7eaee; --muted:#9aa3ad; --line:#2f353d;
@@ -201,7 +201,7 @@ const ROOT = location.pathname.includes('/db/') ? location.pathname.split('/db/'
 const STORE = 'fireops-sedi-v1', CODA = 'fireops-sedi-coda-v1', UTENTE = 'fireops-sedi-utente';
 
 const TIPI = {
-  centrale:'Sede centrale', permanente:'Permanente', volontario:'Volontario', aeroportuale:'Aeroportuale',
+  direzione:'Direzione regionale', centrale:'Sede centrale', permanente:'Permanente', volontario:'Volontario', aeroportuale:'Aeroportuale',
   portuale:'Portuale', rurale:'Rurale', stagionale:'Sede stagionale', presidio:'Presidio', altro:'Altro / da verificare'
 };
 const STATI = {
@@ -211,11 +211,13 @@ const STATI = {
 const CAMPI = ['nome', 'tipo', 'comune', 'via', 'telefono'];
 // Nome standard: "Vigili del fuoco - {Tipologia} di {Comune}" (stessa regola di script/sedi.py)
 const NOME_TIPO = {
-  centrale: 'Sede centrale', permanente: 'Distaccamento', volontario: 'Distaccamento volontario',
+  direzione: 'Direzione regionale', centrale: 'Sede centrale', permanente: 'Distaccamento', volontario: 'Distaccamento volontario',
   aeroportuale: 'Distaccamento aeroportuale', portuale: 'Distaccamento portuale', rurale: 'Presidio rurale',
   stagionale: 'Sede stagionale', presidio: 'Presidio', altro: 'Sede'
 };
-const nomeAuto = (tipo, comune) => 'Vigili del fuoco - ' + (NOME_TIPO[tipo] || 'Sede') + (comune ? ' di ' + comune : '');
+// la Direzione regionale prende il nome della regione: "Vigili del fuoco - Direzione regionale Veneto"
+const nomeAuto = (tipo, comune, regione) => 'Vigili del fuoco - ' + (NOME_TIPO[tipo] || 'Sede') +
+  (tipo === 'direzione' ? (regione ? ' ' + regione : '') : (comune ? ' di ' + comune : ''));
 let nomeManuale = false;
 const css = getComputedStyle(document.documentElement);
 const COL = Object.fromEntries(Object.keys(TIPI).map(t => [t, css.getPropertyValue('--t-' + t).trim()]));
@@ -290,10 +292,10 @@ function applica(s) {
   s.e = {...s.p};
   s.stato = c ? c.stato || '' : (s.p.stato || '');
   if (c) for (const k of CAMPI) if (c[k] !== undefined && c[k] !== '') s.e[k] = String(c[k]);
-  if (c && !c.nome) s.e.nome = nomeAuto(s.e.tipo, s.e.comune);
   if (c && c.sigla_corretta && PROV[c.sigla_corretta]) {
     s.e.sigla = c.sigla_corretta; s.e.provincia = PROV[c.sigla_corretta].provincia; s.e.regione = PROV[c.sigla_corretta].regione;
   }
+  if (c && !c.nome) s.e.nome = nomeAuto(s.e.tipo, s.e.comune, s.e.regione);
   if (!TIPI[s.e.tipo]) s.e.tipo = 'altro';
   const lat = c && parseFloat(c.lat), lon = c && parseFloat(c.lon);
   if (c && isFinite(lat) && isFinite(lon)) { s.lat = lat; s.lon = lon; } else { s.lat = s.lat0; s.lon = s.lon0; }
@@ -463,13 +465,17 @@ function apriScheda(s) {
 
 function nomeIniziale(s) {
   nomeManuale = !!(s.corr && s.corr.nome);
-  return nomeManuale ? s.corr.nome : nomeAuto(s.e.tipo, s.e.comune);
+  return nomeManuale ? s.corr.nome : nomeAuto(s.e.tipo, s.e.comune, s.e.regione);
+}
+function regioneForm() {
+  const sg = $('f_sigla') && $('f_sigla').value;
+  return (sg && PROV[sg] && PROV[sg].regione) || (aperta && aperta.e.regione) || '';
 }
 function aggiornaNome() {
   const b = $('f_nomeauto');
   if (b) b.classList.toggle('on', nomeManuale), b.title = nomeManuale ? 'Nome scritto a mano: clicca per tornare a quello automatico' : 'Nome automatico';
   if (nomeManuale || !$('f_nome')) return;
-  $('f_nome').value = nomeAuto($('f_tipo').value, $('f_comune').value.trim());
+  $('f_nome').value = nomeAuto($('f_tipo').value, $('f_comune').value.trim(), regioneForm());
 }
 
 function svBox(s) {
@@ -582,10 +588,10 @@ function sposta(on) {
   }
 }
 $('panel').addEventListener('input', e => {
-  if (e.target.id === 'f_nome') nomeManuale = e.target.value.trim() !== nomeAuto($('f_tipo').value, $('f_comune').value.trim());
+  if (e.target.id === 'f_nome') nomeManuale = e.target.value.trim() !== nomeAuto($('f_tipo').value, $('f_comune').value.trim(), regioneForm());
   aggiornaNome(); marcaModificati();
 });
-$('panel').addEventListener('change', e => { if (e.target.id === 'f_tipo') { aggiornaNome(); marcaModificati(); } });
+$('panel').addEventListener('change', e => { if (e.target.id === 'f_tipo' || e.target.id === 'f_sigla') { aggiornaNome(); marcaModificati(); } });
 $('panel').addEventListener('submit', e => { e.preventDefault(); salva(); });
 
 // ---------------------------------------------------------------- filtri, elenco, mappa
