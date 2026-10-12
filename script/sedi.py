@@ -65,7 +65,6 @@ def prefiltra(pbf, tmpdir):
 
 # ---------------------------------------------------------------- selezione
 RE_VVF = re.compile(r"vigili del fuoco|\bv\.?v\.?f\b|feuerwehr|pompieri|corpo nazionale", re.I)
-RE_PRESIDIO = re.compile(r"presidio|portual|rurale|antincendi|\baib\b", re.I)
 ESCLUDI_CHIAVI = ("highway", "shop", "railway", "public_transport", "historic", "tourism",
                   "memorial", "healthcare", "leisure", "route", "natural", "waterway",
                   "boundary", "place", "power", "advertising")
@@ -85,10 +84,10 @@ def e_sede(t):
         return False
     if t.get("amenity") in ESCLUDI_AMENITY or t.get("emergency") in ESCLUDI_EMERGENCY:
         return False
+    # senza tag fire_station serve un riferimento esplicito ai VVF nel nome/operatore:
+    # "presidio", "portuale" ecc. da soli prendono ospedali e autorita' portuali.
     testo = " ".join(t.get(k, "") for k in ("name", "official_name", "operator", "short_name"))
-    if RE_VVF.search(testo):
-        return True
-    return bool(RE_PRESIDIO.search(testo)) and ("emergency" in t or "office" in t)
+    return bool(RE_VVF.search(testo))
 
 
 def classifica(t):
@@ -96,7 +95,7 @@ def classifica(t):
     s = " ".join(t.get(k, "") for k in ("name", "operator", "official_name", "name:de", "short_name")).lower()
     if "volontari" in s or "freiwillige" in s:
         return "volontario"
-    if "aeroport" in s or "airport" in s:
+    if "aeroport" in s or "aereoport" in s or "airport" in s:
         return "aeroportuale"
     if "portual" in s or "harbour" in s or "harbor" in s:
         return "portuale"
@@ -200,6 +199,8 @@ def costruisci(candidati, loc):
             fuori += 1
             continue
         prov, com = loc.trova(6, pt), loc.trova(8, pt)
+        if prov is None and reg.get("ISO3166-2") == "IT-23":   # la Valle d'Aosta non ha provincia in OSM
+            prov = {"name": "Aosta", "ref": "AO"}
         righe.append({
             "osm_type": tipo, "osm_id": oid,
             "nome": t.get("name") or t.get("official_name") or "",

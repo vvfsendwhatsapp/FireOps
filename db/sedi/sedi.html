@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FireOps VVF - Sedi</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.min.css">
+<style>
+:root{
+  --bg:#f4f5f7; --panel:#fff; --ink:#1d2228; --muted:#68717c; --line:#dfe3e8;
+  --head:#22272e; --headink:#fff; --accent:#c8102e; --chip:#eef0f3;
+  --t-permanente:#c8102e; --t-volontario:#e8790c; --t-aeroportuale:#1f6fd1;
+  --t-portuale:#0f9aa8; --t-rurale:#3a8c2f; --t-presidio:#7b4bc4; --t-altro:#7a828c;
+}
+@media (prefers-color-scheme: dark){ :root{
+  --bg:#15181c; --panel:#1e2228; --ink:#e7eaee; --muted:#9aa3ad; --line:#2f353d;
+  --head:#0f1114; --chip:#2a2f36;
+}}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+  font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body{display:flex;flex-direction:column;height:100dvh}
+button,select,input{font:inherit;color:inherit}
+
+header{background:var(--head);color:var(--headink);display:flex;align-items:center;gap:10px;
+  padding:8px 12px;padding-top:calc(8px + env(safe-area-inset-top))}
+header a.home{color:#fff;text-decoration:none;font-size:20px;line-height:1;padding:4px 8px;border-radius:6px;background:#ffffff14}
+header h1{font-size:16px;margin:0;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+header h1 b{color:#ff5a6e;font-weight:600}
+#count{font-size:12px;background:#ffffff1f;padding:3px 8px;border-radius:99px;white-space:nowrap}
+
+.bar{background:var(--panel);border-bottom:1px solid var(--line);padding:8px 12px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.bar input[type=search]{flex:1 1 180px;min-width:0;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.bar select{flex:1 1 130px;min-width:0;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.btn{padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--muted)}
+.btn.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.reset{color:var(--accent)}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:6px 12px;background:var(--panel);border-bottom:1px solid var(--line);scrollbar-width:none}
+.chip{display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:99px;background:var(--chip);border:1px solid transparent;cursor:pointer;white-space:nowrap;font-size:13px;user-select:none}
+.chip .dot{width:10px;height:10px;border-radius:50%}
+.chip.off{opacity:.4;text-decoration:line-through}
+.chip small{color:var(--muted)}
+
+main{flex:1;display:flex;min-height:0;position:relative}
+#list{width:360px;border-right:1px solid var(--line);background:var(--panel);overflow-y:auto}
+#map{flex:1;min-height:0}
+.item{padding:10px 12px;border-bottom:1px solid var(--line);cursor:pointer;display:flex;gap:10px}
+.item:hover{background:var(--chip)}
+.item .dot{flex:none;width:12px;height:12px;border-radius:50%;margin-top:4px}
+.item .n{font-weight:600}
+.item .s{color:var(--muted);font-size:12px}
+.item .d{margin-left:auto;color:var(--muted);font-size:12px;white-space:nowrap}
+.more{display:block;width:calc(100% - 24px);margin:10px 12px}
+.empty{padding:24px 12px;color:var(--muted);text-align:center}
+
+.tabs{display:none}
+@media (max-width:760px){
+  #list{position:absolute;inset:0;width:auto;border:0;z-index:1100;display:none}
+  .bar{gap:6px;padding:8px}
+  .bar input[type=search]{order:1;flex:1 1 120px}
+  #near{order:2} #reset{order:3}
+  .bar select{order:4;flex:1 1 120px}
+  #csv{order:6}
+  .bar .lbl{display:none}
+  main.showlist #list{display:block}
+  .tabs{display:flex;background:var(--panel);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+  .tabs button{flex:1;padding:10px;border:0;background:none;font-weight:600;color:var(--muted)}
+  .tabs button.on{color:var(--accent);box-shadow:inset 0 3px 0 var(--accent)}
+}
+
+.pin{width:16px;height:16px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #0006,0 1px 3px #0008}
+.me{width:16px;height:16px;border-radius:50%;background:#1f6fd1;border:3px solid #fff;box-shadow:0 0 0 6px #1f6fd140}
+.leaflet-popup-content{margin:12px 14px;min-width:220px}
+.pp h3{margin:0 0 4px;font-size:15px}
+.pp .tag{display:inline-block;color:#fff;font-size:11px;padding:1px 7px;border-radius:99px;margin-bottom:6px;text-transform:uppercase;letter-spacing:.03em}
+.pp div{margin:2px 0}
+.pp .k{color:#68717c}
+.pp .acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.pp .acts a,.pp .acts button{font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid #ccd;background:#f6f7f9;color:#1d2228;text-decoration:none;cursor:pointer}
+.pp .acts a.nav{background:#c8102e;border-color:#c8102e;color:#fff}
+#msg{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:900;background:var(--head);color:#fff;padding:8px 14px;border-radius:8px;font-size:13px;display:none;max-width:90%}
+footer{font-size:11px;color:var(--muted);padding:4px 12px;background:var(--panel);border-top:1px solid var(--line)}
+</style>
+</head>
+<body>
+<header>
+  <a class="home" href="./" title="Home FireOps">⌂</a>
+  <h1>FireOps VVF - <b>Sedi</b></h1>
+  <span id="count">…</span>
+</header>
+
+<div class="bar">
+  <input type="search" id="q" placeholder="Cerca nome, comune, via…" autocomplete="off">
+  <select id="reg"><option value="">Tutte le regioni</option></select>
+  <select id="prov"><option value="">Tutte le province</option></select>
+  <button class="btn" id="near" title="Ordina per distanza dalla mia posizione">📍<span class="lbl"> Vicino a me</span></button>
+  <button class="btn" id="csv" title="Scarica le sedi filtrate in CSV">⬇<span class="lbl"> CSV</span></button>
+  <button class="btn reset" id="reset">Reset dati</button>
+</div>
+<div class="chips" id="chips"></div>
+
+<main id="main">
+  <div id="list"></div>
+  <div id="map"></div>
+  <div id="msg"></div>
+</main>
+<nav class="tabs" id="tabs">
+  <button data-v="map" class="on">Mappa</button>
+  <button data-v="list">Elenco</button>
+</nav>
+<footer>Dati © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> · <span id="upd"></span> · tipologia stimata dal nome, da verificare</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
+<script>
+(() => {
+// Percorso dei dati rispetto a questa pagina (pagina nella root del repo).
+const DATA_URL = 'db/sedi/sedi_vvf.geojson';
+const STORE = 'fireops-sedi-v1';
+
+const TIPI = {
+  permanente:'Permanente', volontario:'Volontario', aeroportuale:'Aeroportuale',
+  portuale:'Portuale', rurale:'Rurale', presidio:'Presidio', altro:'Altro / da verificare'
+};
+const css = getComputedStyle(document.documentElement);
+const COL = Object.fromEntries(Object.keys(TIPI).map(t => [t, css.getPropertyValue('--t-' + t).trim()]));
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm = s => String(s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+const ITALIA = [[36.4, 6.6], [47.1, 18.6]];
+const map = L.map('map', {zoomControl: true, preferCanvas: false}).fitBounds(ITALIA);
+const base = {
+  'Stradale': L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19, attribution: '© OpenStreetMap'}),
+  'Satellite': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom: 19, attribution: 'Esri World Imagery'})
+};
+base['Stradale'].addTo(map);
+L.control.layers(base, null, {position: 'topright'}).addTo(map);
+L.control.scale({imperial: false}).addTo(map);
+const cluster = L.markerClusterGroup({showCoverageOnHover: false, maxClusterRadius: 45, disableClusteringAtZoom: 14, chunkedLoading: true});
+map.addLayer(cluster);
+
+let SEDI = [];
+let state = {q: '', reg: '', prov: '', off: [], me: null};
+let meMarker = null, shown = [], limit = 200;
+
+function load() { try { Object.assign(state, JSON.parse(localStorage.getItem(STORE) || '{}')); } catch (e) {} }
+function save() { try { const {me, ...s} = state; localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) {} }
+function toast(t, ms = 2500) { const m = $('msg'); m.textContent = t; m.style.display = 'block'; clearTimeout(toast.h); toast.h = setTimeout(() => m.style.display = 'none', ms); }
+
+function titolo(p) { return p.nome || ('Sede senza nome' + (p.comune ? ' – ' + p.comune : '')); }
+function luogo(p) { return [p.comune, p.sigla ? '(' + p.sigla + ')' : '', p.regione && !p.comune ? p.regione : ''].filter(Boolean).join(' '); }
+function km(a, b, c, d) {
+  const R = 6371, r = Math.PI / 180, x = (c - a) * r, y = (d - b) * r;
+  const h = Math.sin(x / 2) ** 2 + Math.cos(a * r) * Math.cos(c * r) * Math.sin(y / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+function fmtKm(k) { return k < 10 ? k.toFixed(1) + ' km' : Math.round(k) + ' km'; }
+
+function popup(s) {
+  const p = s.p, c = COL[p.tipo] || COL.altro;
+  const rows = [
+    luogo(p) && `<div>${esc(luogo(p))}</div>`,
+    p.via && `<div><span class="k">Indirizzo:</span> ${esc(p.via)}${p.cap ? ', ' + esc(p.cap) : ''}</div>`,
+    p.telefono && `<div><span class="k">Tel:</span> <a href="tel:${esc(p.telefono.replace(/\s/g, ''))}">${esc(p.telefono)}</a></div>`,
+    p.operatore && `<div><span class="k">Operatore:</span> ${esc(p.operatore)}</div>`,
+    state.me && `<div><span class="k">Distanza in linea d'aria:</span> ${fmtKm(s.dist)}</div>`,
+    `<div class="k">${s.lat.toFixed(5)}, ${s.lon.toFixed(5)}</div>`
+  ].filter(Boolean).join('');
+  return `<div class="pp">
+    <span class="tag" style="background:${c}">${esc(TIPI[p.tipo] || p.tipo)}</span>
+    <h3>${esc(titolo(p))}</h3>${rows}
+    <div class="acts">
+      <a class="nav" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}">Naviga</a>
+      <button data-copy="${s.lat.toFixed(6)}, ${s.lon.toFixed(6)}">Copia coord.</button>
+      ${p.sito ? `<a target="_blank" rel="noopener" href="${esc(p.sito)}">Sito</a>` : ''}
+      <a target="_blank" rel="noopener" href="https://www.openstreetmap.org/${esc(p.osm_type)}/${esc(p.osm_id)}">OSM</a>
+    </div></div>`;
+}
+
+function icona(tipo) {
+  return L.divIcon({className: '', html: `<div class="pin" style="background:${COL[tipo] || COL.altro}"></div>`, iconSize: [16, 16], iconAnchor: [8, 8], popupAnchor: [0, -8]});
+}
+
+function filtra() {
+  const q = norm(state.q).trim(), off = new Set(state.off);
+  return SEDI.filter(s => {
+    const p = s.p;
+    if (off.has(p.tipo)) return false;
+    if (state.reg && p.regione !== state.reg) return false;
+    if (state.prov && (p.sigla || 'XX') !== state.prov) return false;
+    if (q && !s.txt.includes(q)) return false;
+    return true;
+  });
+}
+
+function opzioniProvince() {
+  const sel = $('prov'), conta = {};
+  SEDI.forEach(s => { if (!state.reg || s.p.regione === state.reg) { const k = s.p.sigla || 'XX'; (conta[k] ||= {n: 0, nome: s.p.provincia}).n++; } });
+  if (state.prov && !conta[state.prov]) state.prov = '';
+  sel.innerHTML = '<option value="">Tutte le province</option>' + Object.keys(conta).sort().map(k =>
+    `<option value="${k}">${k === 'XX' ? 'Senza provincia' : k + ' – ' + esc(conta[k].nome)} (${conta[k].n})</option>`).join('');
+  sel.value = state.prov;
+}
+
+function chips() {
+  const conta = {}; const off = new Set(state.off);
+  SEDI.forEach(s => {
+    if (state.reg && s.p.regione !== state.reg) return;
+    if (state.prov && (s.p.sigla || 'XX') !== state.prov) return;
+    conta[s.p.tipo] = (conta[s.p.tipo] || 0) + 1;
+  });
+  $('chips').innerHTML = Object.keys(TIPI).filter(t => conta[t]).map(t =>
+    `<span class="chip ${off.has(t) ? 'off' : ''}" data-t="${t}"><span class="dot" style="background:${COL[t]}"></span>${TIPI[t]} <small>${conta[t]}</small></span>`).join('');
+}
+
+function lista() {
+  const el = $('list');
+  if (!shown.length) { el.innerHTML = '<div class="empty">Nessuna sede con questi filtri.</div>'; return; }
+  el.innerHTML = shown.slice(0, limit).map((s, i) =>
+    `<div class="item" data-i="${i}"><span class="dot" style="background:${COL[s.p.tipo] || COL.altro}"></span>
+      <div><div class="n">${esc(titolo(s.p))}</div><div class="s">${esc(TIPI[s.p.tipo])} · ${esc(luogo(s.p))}</div></div>
+      ${state.me ? `<span class="d">${fmtKm(s.dist)}</span>` : ''}</div>`).join('') +
+    (shown.length > limit ? `<button class="btn more" id="more">Mostra altre ${Math.min(200, shown.length - limit)} di ${shown.length - limit}</button>` : '');
+}
+
+function aggiorna(fit) {
+  shown = filtra();
+  if (state.me) { shown.forEach(s => s.dist = km(state.me[0], state.me[1], s.lat, s.lon)); shown.sort((a, b) => a.dist - b.dist); }
+  limit = 200;
+  cluster.clearLayers();
+  cluster.addLayers(shown.map(s => s.m));
+  $('count').textContent = shown.length + ' / ' + SEDI.length + ' sedi';
+  chips(); lista(); save();
+  if (fit && shown.length) map.fitBounds(L.latLngBounds(shown.map(s => [s.lat, s.lon])).pad(0.05), {maxZoom: 13});
+}
+
+function apri(s) {
+  if (matchMedia('(max-width:760px)').matches) vista('map');
+  cluster.zoomToShowLayer(s.m, () => s.m.openPopup());
+}
+
+function vista(v) {
+  $('main').classList.toggle('showlist', v === 'list');
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+  if (v === 'map') setTimeout(() => map.invalidateSize(), 50);
+}
+
+function scaricaCSV() {
+  const cols = ['nome', 'tipo', 'regione', 'provincia', 'sigla', 'comune', 'via', 'cap', 'telefono', 'operatore', 'lat', 'lon', 'osm_type', 'osm_id'];
+  const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+  const righe = shown.map(s => cols.map(c => q(c === 'lat' ? s.lat : c === 'lon' ? s.lon : s.p[c])).join(';'));
+  const blob = new Blob(['﻿' + cols.join(';') + '\n' + righe.join('\n')], {type: 'text/csv;charset=utf-8'});
+  const a = Object.assign(document.createElement('a'), {href: URL.createObjectURL(blob), download: `sedi_vvf_${state.prov || state.reg || 'italia'}.csv`.replace(/\s+/g, '_')});
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+// ---------------------------------------------------------------- eventi
+let tq;
+$('q').addEventListener('input', e => { clearTimeout(tq); tq = setTimeout(() => { state.q = e.target.value; aggiorna(false); }, 200); });
+$('reg').addEventListener('change', e => { state.reg = e.target.value; state.prov = ''; opzioniProvince(); aggiorna(true); });
+$('prov').addEventListener('change', e => { state.prov = e.target.value; aggiorna(true); });
+$('chips').addEventListener('click', e => {
+  const c = e.target.closest('.chip'); if (!c) return;
+  const off = new Set(state.off); off.has(c.dataset.t) ? off.delete(c.dataset.t) : off.add(c.dataset.t);
+  state.off = [...off]; aggiorna(false);
+});
+$('list').addEventListener('click', e => {
+  if (e.target.id === 'more') { limit += 200; lista(); return; }
+  const it = e.target.closest('.item'); if (it) apri(shown[+it.dataset.i]);
+});
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-copy]'); if (!b) return;
+  navigator.clipboard?.writeText(b.dataset.copy).then(() => toast('Coordinate copiate'), () => toast(b.dataset.copy, 5000));
+});
+$('tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) vista(b.dataset.v); });
+$('csv').addEventListener('click', scaricaCSV);
+$('near').addEventListener('click', () => {
+  if (state.me) { state.me = null; if (meMarker) map.removeLayer(meMarker); meMarker = null; $('near').classList.remove('on'); aggiorna(false); return; }
+  if (!navigator.geolocation) return toast('Geolocalizzazione non disponibile');
+  toast('Rilevo la posizione…', 10000);
+  navigator.geolocation.getCurrentPosition(pos => {
+    state.me = [pos.coords.latitude, pos.coords.longitude];
+    meMarker = L.marker(state.me, {icon: L.divIcon({className: '', html: '<div class="me"></div>', iconSize: [16, 16], iconAnchor: [8, 8]}), zIndexOffset: 1000}).addTo(map).bindTooltip('Tu sei qui');
+    $('near').classList.add('on'); toast('Elenco ordinato per distanza');
+    aggiorna(false);
+    const vicine = shown.slice(0, 5).map(s => [s.lat, s.lon]);
+    map.fitBounds(L.latLngBounds([state.me, ...vicine]).pad(0.2), {maxZoom: 13});
+  }, err => toast('Posizione non disponibile: ' + err.message, 4000), {enableHighAccuracy: true, timeout: 15000});
+});
+$('reset').addEventListener('click', () => {
+  try { localStorage.removeItem(STORE); } catch (e) {}
+  state = {q: '', reg: '', prov: '', off: [], me: null};
+  if (meMarker) map.removeLayer(meMarker); meMarker = null; $('near').classList.remove('on');
+  $('q').value = ''; $('reg').value = ''; opzioniProvince(); map.closePopup();
+  aggiorna(false); map.fitBounds(ITALIA); toast('Filtri azzerati');
+});
+
+// ---------------------------------------------------------------- avvio
+load();
+const u = new URLSearchParams(location.search);       // es. sedi.html?prov=TN  oppure ?reg=Lombardia&q=milano
+if (u.has('prov') || u.has('reg') || u.has('q')) { state.reg = u.get('reg') || ''; state.prov = (u.get('prov') || '').toUpperCase(); state.q = u.get('q') || ''; }
+
+fetch(DATA_URL, {cache: 'no-cache'}).then(r => {
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  const lm = r.headers.get('last-modified');
+  $('upd').textContent = lm ? 'aggiornato al ' + new Date(lm).toLocaleDateString('it-IT') : '';
+  return r.json();
+}).then(g => {
+  SEDI = g.features.map(f => {
+    const [lon, lat] = f.geometry.coordinates, p = f.properties;
+    if (!p.tipo || !TIPI[p.tipo]) p.tipo = 'altro';
+    const s = {p, lat, lon, txt: norm([p.nome, p.comune, p.provincia, p.sigla, p.via, p.operatore].join(' '))};
+    s.m = L.marker([lat, lon], {icon: icona(p.tipo), title: titolo(p)}).bindPopup(() => popup(s), {maxWidth: 300});
+    return s;
+  });
+  const regioni = [...new Set(SEDI.map(s => s.p.regione).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'it'));
+  $('reg').innerHTML += regioni.map(r => `<option>${esc(r)}</option>`).join('');
+  if (state.reg && !regioni.includes(state.reg)) state.reg = '';
+  $('reg').value = state.reg; $('q').value = state.q;
+  opzioniProvince();
+  aggiorna(!!(state.reg || state.prov));
+}).catch(e => {
+  $('count').textContent = 'errore';
+  $('list').innerHTML = `<div class="empty">Impossibile caricare <code>${esc(DATA_URL)}</code><br>${esc(e.message)}<br><br>Se apri il file direttamente dal PC (file://) il browser blocca il caricamento: usa la pagina pubblicata su GitHub Pages.</div>`;
+  vista('list');
+});
+})();
+</script>
+</body>
+</html>
