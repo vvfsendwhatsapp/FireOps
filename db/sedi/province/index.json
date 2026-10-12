@@ -21,6 +21,13 @@
   "file": "province/AN.geojson"
  },
  {
+  "sigla": "AO",
+  "provincia": "Aosta",
+  "regione": "Valle d'Aosta",
+  "sedi": 27,
+  "file": "province/AO.geojson"
+ },
+ {
   "sigla": "AP",
   "provincia": "Ascoli Piceno",
   "regione": "Marche",
@@ -59,14 +66,14 @@
   "sigla": "BA",
   "provincia": "Bari",
   "regione": "Puglia",
-  "sedi": 15,
+  "sedi": 13,
   "file": "province/BA.geojson"
  },
  {
   "sigla": "BG",
   "provincia": "Bergamo",
   "regione": "Lombardia",
-  "sedi": 21,
+  "sedi": 20,
   "file": "province/BG.geojson"
  },
  {
@@ -94,21 +101,21 @@
   "sigla": "BO",
   "provincia": "Bologna",
   "regione": "Emilia-Romagna",
-  "sedi": 27,
+  "sedi": 26,
   "file": "province/BO.geojson"
  },
  {
   "sigla": "BR",
   "provincia": "Brindisi",
   "regione": "Puglia",
-  "sedi": 6,
+  "sedi": 5,
   "file": "province/BR.geojson"
  },
  {
   "sigla": "BS",
   "provincia": "Brescia",
   "regione": "Lombardia",
-  "sedi": 30,
+  "sedi": 27,
   "file": "province/BS.geojson"
  },
  {
@@ -129,7 +136,7 @@
   "sigla": "CA",
   "provincia": "Cagliari",
   "regione": "Sardegna",
-  "sedi": 9,
+  "sedi": 6,
   "file": "province/CA.geojson"
  },
  {
@@ -150,7 +157,7 @@
   "sigla": "CH",
   "provincia": "Chieti",
   "regione": "Abruzzo",
-  "sedi": 8,
+  "sedi": 7,
   "file": "province/CH.geojson"
  },
  {
@@ -164,7 +171,7 @@
   "sigla": "CN",
   "provincia": "Cuneo",
   "regione": "Piemonte",
-  "sedi": 20,
+  "sedi": 19,
   "file": "province/CN.geojson"
  },
  {
@@ -192,7 +199,7 @@
   "sigla": "CT",
   "provincia": "Catania",
   "regione": "Sicilia",
-  "sedi": 18,
+  "sedi": 17,
   "file": "province/CT.geojson"
  },
  {
@@ -248,21 +255,21 @@
   "sigla": "FR",
   "provincia": "Frosinone",
   "regione": "Lazio",
-  "sedi": 4,
+  "sedi": 3,
   "file": "province/FR.geojson"
  },
  {
   "sigla": "GE",
   "provincia": "Genova",
   "regione": "Liguria",
-  "sedi": 16,
+  "sedi": 13,
   "file": "province/GE.geojson"
  },
  {
   "sigla": "GO",
   "provincia": "Gorizia",
   "regione": "Friuli-Venezia Giulia",
-  "sedi": 7,
+  "sedi": 6,
   "file": "province/GO.geojson"
  },
  {
@@ -297,14 +304,14 @@
   "sigla": "LC",
   "provincia": "Lecco",
   "regione": "Lombardia",
-  "sedi": 8,
+  "sedi": 7,
   "file": "province/LC.geojson"
  },
  {
   "sigla": "LE",
   "provincia": "Lecce",
   "regione": "Puglia",
-  "sedi": 7,
+  "sedi": 6,
   "file": "province/LE.geojson"
  },
  {
@@ -339,7 +346,7 @@
   "sigla": "MB",
   "provincia": "Monza e Brianza",
   "regione": "Lombardia",
-  "sedi": 14,
+  "sedi": 12,
   "file": "province/MB.geojson"
  },
  {
@@ -360,7 +367,7 @@
   "sigla": "MI",
   "provincia": "Milano",
   "regione": "Lombardia",
-  "sedi": 48,
+  "sedi": 44,
   "file": "province/MI.geojson"
  },
  {
@@ -437,7 +444,7 @@
   "sigla": "PA",
   "provincia": "Palermo",
   "regione": "Sicilia",
-  "sedi": 15,
+  "sedi": 14,
   "file": "province/PA.geojson"
  },
  {
@@ -472,7 +479,7 @@
   "sigla": "PI",
   "provincia": "Pisa",
   "regione": "Toscana",
-  "sedi": 13,
+  "sedi": 11,
   "file": "province/PI.geojson"
  },
  {
@@ -528,7 +535,7 @@
   "sigla": "RA",
   "provincia": "Ravenna",
   "regione": "Emilia-Romagna",
-  "sedi": 14,
+  "sedi": 6,
   "file": "province/RA.geojson"
  },
  {
@@ -612,7 +619,7 @@
   "sigla": "SR",
   "provincia": "Siracusa",
   "regione": "Sicilia",
-  "sedi": 17,
+  "sedi": 13,
   "file": "province/SR.geojson"
  },
  {
@@ -633,14 +640,14 @@
   "sigla": "SV",
   "provincia": "Savona",
   "regione": "Liguria",
-  "sedi": 13,
+  "sedi": 10,
   "file": "province/SV.geojson"
  },
  {
   "sigla": "TA",
   "provincia": "Taranto",
   "regione": "Puglia",
-  "sedi": 8,
+  "sedi": 7,
   "file": "province/TA.geojson"
  },
  {
@@ -654,14 +661,14 @@
   "sigla": "TN",
   "provincia": "Trento",
   "regione": "Trentino-Alto Adige",
-  "sedi": 235,
+  "sedi": 234,
   "file": "province/TN.geojson"
  },
  {
   "sigla": "TO",
   "provincia": "Torino",
   "regione": "Piemonte",
-  "sedi": 67,
+  "sedi": 66,
   "file": "province/TO.geojson"
  },
  {
@@ -682,7 +689,7 @@
   "sigla": "TS",
   "provincia": "Trieste",
   "regione": "Friuli-Venezia Giulia",
-  "sedi": 8,
+  "sedi": 6,
   "file": "province/TS.geojson"
  },
  {
@@ -696,7 +703,7 @@
   "sigla": "UD",
   "provincia": "Udine",
   "regione": "Friuli-Venezia Giulia",
-  "sedi": 29,
+  "sedi": 28,
   "file": "province/UD.geojson"
  },
  {
@@ -717,14 +724,14 @@
   "sigla": "VC",
   "provincia": "Vercelli",
   "regione": "Piemonte",
-  "sedi": 12,
+  "sedi": 11,
   "file": "province/VC.geojson"
  },
  {
   "sigla": "VE",
   "provincia": "Venezia",
   "regione": "Veneto",
-  "sedi": 16,
+  "sedi": 15,
   "file": "province/VE.geojson"
  },
  {
@@ -761,12 +768,5 @@
   "regione": "Calabria",
   "sedi": 9,
   "file": "province/VV.geojson"
- },
- {
-  "sigla": "XX",
-  "provincia": "",
-  "regione": "Valle d'Aosta",
-  "sedi": 27,
-  "file": "province/XX.geojson"
  }
 ]

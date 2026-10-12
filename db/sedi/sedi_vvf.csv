@@ -10,7 +10,6 @@ way,59399543,,,altro,Abruzzo,Chieti,CH,Chieti,,,,,42.361144,14.193521
 way,1299038483,Vigili del Fuoco,Corpo Nazionale dei Vigili del Fuoco,permanente,Abruzzo,Chieti,CH,Chieti,Viale Filippo Masci 115,66100,+39 0871 3177,https://www.vigilfuoco.it/comando-vvf-chieti,42.361195,14.193454
 way,1409538859,Vigili del Fuoco,Corpo Nazionale dei Vigili del Fuoco,permanente,Abruzzo,Chieti,CH,Lanciano,Via Santa Croce 142b,66034,+39 0872 712922,https://www.vigilfuoco.it/sedi-vvf/distaccamento-di-lanciano,42.235392,14.39826
 way,365007992,,,altro,Abruzzo,Chieti,CH,Ortona,,,,,42.347981,14.385244
-node,11093016911,Presidio Medico (Presenza Parziale),,presidio,Abruzzo,Chieti,CH,Palena,Strada Statale 84 Frentana,,,,41.986473,14.135526
 way,246653961,Vigili del Fuoco - Distaccamento di Vasto,Corpo Nazionale dei Vigili del Fuoco,permanente,Abruzzo,Chieti,CH,Vasto,,,,,42.113961,14.70226
 node,6418787106,Vigili del Fuoco - Distaccamento di Alanno,,permanente,Abruzzo,Pescara,PE,Alanno,,65020,+39 085 854 0019,https://www.vigilfuoco.it/sitiVVF/pescara/dislocazione.aspx?s=221&p=283,42.293423,14.021685
 way,1065815691,Vigili del Fuoco - Distaccamento Volontari di Montesilvano,,volontario,Abruzzo,Pescara,PE,Montesilvano,Via Giovanni Chiarini 56,65015,+39 085 468 0603,https://www.vigilfuoco.it/sitiVVF/pescara/dislocazione.aspx?s=221&p=283,42.504271,14.141012
@@ -136,7 +135,6 @@ way,672359787,Comando stazione Vigili del Fuoco,,permanente,Campania,Salerno,SA,
 way,109261268,Vigili del Fuoco - Distaccamento Cittadino Salerno Città,,permanente,Campania,Salerno,SA,Salerno,Via Porto 3,,,,40.677694,14.751247
 way,780979060,,Corpo Nazionale dei Vigili del Fuoco,permanente,Campania,Salerno,SA,Sarno,,,,,40.826578,14.61085
 way,222260790,Comando Vigili del Fuoco,,permanente,Campania,Salerno,SA,Vallo della Lucania,via Francesco Cammarota,84078,+39 0974 4488,,40.226911,15.262714
-node,5891699430,Ambulanza Aeroportuale,Croce Rossa Italiana - 118,aeroportuale,Emilia-Romagna,Bologna,BO,Bologna,,,,,44.529487,11.295315
 way,156797360,Comando Provinciale Vigili del Fuoco Bologna,,permanente,Emilia-Romagna,Bologna,BO,Bologna,,,,,44.53591,11.366864
 way,564387215,Direzione Regionale Vigili del Fuoco Emilia Romagna,,permanente,Emilia-Romagna,Bologna,BO,Bologna,,,,,44.537329,11.367525
 way,158912820,Vigili del Fuoco - Distaccamento Aeroportuale di Bologna,Corpo Nazionale dei Vigili del Fuoco,aeroportuale,Emilia-Romagna,Bologna,BO,Bologna,,,,,44.531422,11.289114
@@ -195,19 +193,11 @@ way,182280552,,,altro,Emilia-Romagna,Parma,PR,Fidenza,,,,,44.861198,10.06614
 node,441921948,Vigili del Fuoco,,permanente,Emilia-Romagna,Parma,PR,Fidenza,,,,,44.861384,10.066231
 way,180200205,Vigili del Fuoco,,permanente,Emilia-Romagna,Parma,PR,Langhirano,,,,,44.624076,10.270274
 way,39170665,Vigili Del Fuoco - Comando Prov. di Parma,,permanente,Emilia-Romagna,Parma,PR,Parma,,,,,44.785894,10.303095
-way,182145580,Vigili del Fuoco - Distaccamento Aereoportuale,,portuale,Emilia-Romagna,Parma,PR,Parma,,,,,44.818966,10.296997
+way,182145580,Vigili del Fuoco - Distaccamento Aereoportuale,,aeroportuale,Emilia-Romagna,Parma,PR,Parma,,,,,44.818966,10.296997
 node,2508843742,Vigili del Fuoco,,permanente,Emilia-Romagna,Ravenna,RA,Faenza,,,,,44.288615,11.887145
 node,722328867,,,altro,Emilia-Romagna,Ravenna,RA,Lugo,,,,,44.424441,11.914149
 way,158740974,,Ravenna Servizi Industriali S.C.p.A.,altro,Emilia-Romagna,Ravenna,RA,Ravenna,,,,,44.452695,12.233766
 way,325965826,,,altro,Emilia-Romagna,Ravenna,RA,Ravenna,,,,,44.408177,12.188835
-way,1547844280,Area Destra Cooperativa Portuale Soc. Coop.,,portuale,Emilia-Romagna,Ravenna,RA,Ravenna,Via Classicana 99,48122,+390544458193,https://www.cpravenna.it,44.454419,12.25051
-node,4752951332,Area San Vitale Cooperativa Portuale Soc. Coop.,,portuale,Emilia-Romagna,Ravenna,RA,Ravenna,Via Zani G. Antonio 11,48122,+390544458190,https://www.cpravenna.it,44.445272,12.255418
-way,1547844969,Area Sinistra Cooperativa Portuale Soc. Coop.,,portuale,Emilia-Romagna,Ravenna,RA,Ravenna,Via Trattaroli 151,48123,+390544458191,https://www.cpravenna.it,44.471602,12.248284
-way,1547848710,Area TCR Cooperativa Portuale Soc. Coop.,,portuale,Emilia-Romagna,Ravenna,RA,Ravenna,Via Classicana 105,48122,+390544458192,https://www.cpravenna.it,44.45078,12.2512
-way,157452103,Compagnia Portuale Srl,,portuale,Emilia-Romagna,Ravenna,RA,Ravenna,Via Antico Squero 6,48122,+390544458103,https://www.cpravenna.it,44.421865,12.208859
-way,1379647347,Cooperativa Portuale Soc. Coop - Area Operativa SV,,portuale,Emilia-Romagna,Ravenna,RA,Ravenna,Via Darsena San Vitale,48124,+390544458114,https://www.cpravenna.it,44.446138,12.251045
-way,1379647348,Cooperativa Portuale Soc. Coop - Area Operativa SV,,portuale,Emilia-Romagna,Ravenna,RA,Ravenna,Via Darsena San Vitale,48124,+390544458114,https://www.cpravenna.it,44.446217,12.251266
-way,1547846613,Cooperativa Portuale Soc. Coop.,,portuale,Emilia-Romagna,Ravenna,RA,Ravenna,Via dell'Antico Squero 6,48122,+390544458122,https://www.cpravenna.it,44.421865,12.208859
 way,157445076,Vigili del Fuoco Comando Provinciale Ravenna,Corpo Nazionale dei Vigili del Fuoco,permanente,Emilia-Romagna,Ravenna,RA,Ravenna,,,,,44.408126,12.189096
 way,158737924,Vigili del Fuoco Dist. portuale Ravenna,Corpo Nazionale dei Vigili del Fuoco,portuale,Emilia-Romagna,Ravenna,RA,Ravenna,,,,,44.43349,12.231097
 way,168379519,,,altro,Emilia-Romagna,Reggio Emilia,RE,Castelnovo ne' Monti,,,,,44.438292,10.403664
@@ -228,7 +218,6 @@ node,2127406166,Vigili del Fuoco Novafeltria,,permanente,Emilia-Romagna,Rimini,R
 node,316495402,Caserma dei Vigili del Fuoco,,permanente,Friuli-Venezia Giulia,Gorizia,GO,Gorizia,,,,,45.939773,13.609536
 way,36367389,Comando Vigili del Fuoco - Palazzina Amministrativa,Vigili del Fuoco,permanente,Friuli-Venezia Giulia,Gorizia,GO,Gorizia,,,,,45.940288,13.608608
 node,9828141066,Vigili del Fuoco,Vigili del Fuoco,permanente,Friuli-Venezia Giulia,Gorizia,GO,Grado,Via Giacomo Leopardi 1,34073,,https://www.vigilfuoco.it/,45.680266,13.383273
-node,13843514594,Autorità di Sistema Portuale del Mare Adriatico Orientale - Ufficio territoriale,,portuale,Friuli-Venezia Giulia,Gorizia,GO,Monfalcone,,,,,45.790959,13.560675
 way,36722241,Vigili del Fuoco,Vigili del Fuoco,permanente,Friuli-Venezia Giulia,Gorizia,GO,Monfalcone,Via Sant'Anna 2,34074,,http://www.vigilfuoco.it/,45.804117,13.541455
 way,1003506086,Protezione Civile di Moraro,,altro,Friuli-Venezia Giulia,Gorizia,GO,Moraro,,,,,45.927797,13.498597
 node,1617188896,,,altro,Friuli-Venezia Giulia,Gorizia,GO,Ronchi dei Legionari,,,,,45.824664,13.471731
@@ -241,10 +230,8 @@ way,36422694,,,altro,Friuli-Venezia Giulia,Pordenone,PN,Spilimbergo,,,,,46.11175
 way,1300884211,,,altro,Friuli-Venezia Giulia,Pordenone,PN,Spilimbergo,,,,,46.111477,12.88309
 node,985062486,,,altro,Friuli-Venezia Giulia,Trieste,TS,Muggia,,,,,45.599777,13.777735
 way,499402974,Associazione vigili del fuoco volontari / Združ prostovoljnih gasilcev Breg,,volontario,Friuli-Venezia Giulia,Trieste,TS,San Dorligo della Valle,,,+39 040 8329111,http://www.protezionecivile.fvg.it/it/comune/san-dorligo-della-valle,45.611914,13.855475
-node,13843524419,Autorità di Sistema Portuale del Mare Adriatico Orientale,,portuale,Friuli-Venezia Giulia,Trieste,TS,Trieste,,,,,45.636962,13.769695
 way,36416311,Comando Provinciale Vigili del Fuoco,,permanente,Friuli-Venezia Giulia,Trieste,TS,Trieste,,,,,45.636534,13.778969
 node,4057928379,Corpo Pompieri Volontari Trieste,,volontario,Friuli-Venezia Giulia,Trieste,TS,Trieste,,,,https://www.pompierivolontari.it/,45.619155,13.823853
-way,36398694,Sede Volontari Antincendio Boschivo e Protezione Civile - Comune di Trieste,Protezione Civile,volontario,Friuli-Venezia Giulia,Trieste,TS,Trieste,Strada per Vienna 80,34151,,,45.689415,13.795245
 way,36404883,Vigili del Fuoco,,permanente,Friuli-Venezia Giulia,Trieste,TS,Trieste,,,,,45.68802,13.772979
 way,36688925,Vigili del Fuoco,,permanente,Friuli-Venezia Giulia,Trieste,TS,Trieste,,,,,45.656956,13.76435
 node,12218836829,Distaccamento volontari Ampezzo,Corpo Nazionale dei Vigili del Fuoco,volontario,Friuli-Venezia Giulia,Udine,UD,Ampezzo,,,,,46.417518,12.792871
@@ -268,7 +255,6 @@ node,12218794441,,Corpo Nazionale dei Vigili del Fuoco,permanente,Friuli-Venezia
 node,13321743260,Distaccamento Volontari di Pontebba,Corpo Nazionale dei Vigili del Fuoco,volontario,Friuli-Venezia Giulia,Udine,UD,Pontebba,,,,,46.509711,13.344254
 node,1589000724,,,altro,Friuli-Venezia Giulia,Udine,UD,Rigolato,,,,,46.553852,12.853324
 way,1099934340,Vigili del Fuoco,Vigili del Fuoco,permanente,Friuli-Venezia Giulia,Udine,UD,San Daniele del Friuli,,,,https://www.vigilfuoco.it/,46.166646,13.008475
-node,12886720895,Impresa Portuale Porto Nogaro Srl,,portuale,Friuli-Venezia Giulia,Udine,UD,San Giorgio di Nogaro,,,+39 0431 65318,https://www.impresaportualeportonogaro.it/,45.815796,13.219333
 way,185462186,,,altro,Friuli-Venezia Giulia,Udine,UD,Tarvisio,,,,,46.507121,13.554336
 way,358511766,,Corpo Nazionale dei Vigili del Fuoco,permanente,Friuli-Venezia Giulia,Udine,UD,Tarvisio,,,,,46.507017,13.554627
 way,36019898,Pompieri Volontari Camporosso,,volontario,Friuli-Venezia Giulia,Udine,UD,Tarvisio,,,,,46.50969,13.528681
@@ -276,7 +262,6 @@ way,181977668,Vigili del Fuoco,,permanente,Friuli-Venezia Giulia,Udine,UD,Tolmez
 way,36139132,,,altro,Friuli-Venezia Giulia,Udine,UD,Udine,,,,,46.046616,13.212106
 way,36139138,,,altro,Friuli-Venezia Giulia,Udine,UD,Udine,,,,,46.046662,13.212582
 node,806587013,Comando Provinciale di Udine,,permanente,Friuli-Venezia Giulia,Udine,UD,Udine,,,,,46.046865,13.212656
-node,12151360201,Disco Lazio. Ente regionale per il diritto allo studio e alla conoscenza. Presidio territoriale Lazio Meridionale,,presidio,Lazio,Frosinone,FR,Cassino,,,,,41.468716,13.828348
 node,13999960701,Vigili del fuoco Fiuggi (Distaccamento),,permanente,Lazio,Frosinone,FR,Fiuggi,,,,,41.778813,13.226871
 node,13999960801,VIGILI DEL FUOCO FROSINONE,Vigili del Fuoco,permanente,Lazio,Frosinone,FR,Frosinone,,,,,41.637445,13.329585
 node,929836164,,,altro,Lazio,Frosinone,FR,Sora,,,,,41.699509,13.577353
@@ -341,7 +326,6 @@ way,347301605,Comando VVF Viterbo distaccamento di Latera,Corpo Nazionale dei Vi
 node,3680560766,Distaccamento Stagionale VVF Tarquinia,,permanente,Lazio,Viterbo,VT,Tarquinia,,,,,42.211776,11.708583
 way,927279817,Comando provinciale Vigili del fuoco,Corpo Nazionale dei Vigili del Fuoco,permanente,Lazio,Viterbo,VT,Viterbo,Strada Cassia Nord,01100,+39 0761 2443,https://www.vigilfuoco.it/,42.438524,12.090563
 way,417807514,Vigili Del Fuoco Nucleo Sommozzatori Viterbo,,permanente,Lazio,Viterbo,VT,Viterbo,Via Valerio Tedeschi 22,01100,+39 0761 513353;+39 0761 541024,https://www.vigilfuoco.it/,42.415067,12.114008
-node,4176643862,Centro Operativo Comunale di Protezione Civile ed antincendio boschivo,Comune di Arenzano,altro,Liguria,Genova,GE,Arenzano,,,+39 010 9110509,,44.403485,8.661502
 node,3951897325,Vigili del Fuoco - Distaccamento Busalla,Vigili del Fuoco,permanente,Liguria,Genova,GE,Busalla,Via Gino Suardi 29,16012,,,44.569039,8.948243
 way,482419220,Sede Protezione civile,,altro,Liguria,Genova,GE,Camogli,,,,,44.341597,9.174512
 way,226531302,,,altro,Liguria,Genova,GE,Chiavari,,,,,44.318511,9.340728
@@ -349,14 +333,12 @@ way,226537616,vigili del fuoco Chiavari,,permanente,Liguria,Genova,GE,Chiavari,,
 way,156889558,,,altro,Liguria,Genova,GE,Genova,,,,,44.426332,8.849462
 way,119395260,Distaccamento Aeroportuale di Genova - Aeroporto C. Colombo,Corpo Nazionale dei Vigili del Fuoco,aeroportuale,Liguria,Genova,GE,Genova,,,,,44.414146,8.842764
 way,119395275,Distaccamento Aeroportuale di Genova - Aeroporto C. Colombo,Corpo Nazionale dei Vigili del Fuoco,aeroportuale,Liguria,Genova,GE,Genova,,,,,44.41424,8.84207
-node,3788111668,Gruppo Comunale Volontari Protezione Civile e Antincendio Boschivo di Genova,Protezione Civile Nazionale,volontario,Liguria,Genova,GE,Genova,Via Cravasco 45,16158,,,44.43105,8.766532
 way,119395245,Reparto volo di Genova,Corpo Nazionale dei Vigili del Fuoco,permanente,Liguria,Genova,GE,Genova,,,,,44.41432,8.843502
 relation,1527709,Vigili del Fuoco - Comando Provinciale di Genova,,permanente,Liguria,Genova,GE,Genova,Via Ariberto Albertazzi 2,,,,44.408801,8.906303
 way,70316895,Vigili del Fuoco - Distaccamento Cittadino Bolzaneto,,permanente,Liguria,Genova,GE,Genova,,,,,44.457008,8.900439
 way,138480213,Vigili del Fuoco - Distaccamento Cittadino Genova Est,,permanente,Liguria,Genova,GE,Genova,,,,,44.434366,8.960215
 way,139529845,Vigili del Fuoco - Distaccamento Cittadino Multedo,,permanente,Liguria,Genova,GE,Genova,,,,,44.42533,8.826699
 node,1721894383,,,altro,Liguria,Genova,GE,Rapallo,,,,,44.354044,9.22944
-node,4735960168,Associazione Guardia Antincendi Sant'Olcese,,altro,Liguria,Genova,GE,Sant'Olcese,Via Vallombrosa 28,16010,,,44.482495,8.975158
 way,380686923,Vigili del Fuoco,,permanente,Liguria,Imperia,IM,Imperia,,,,,43.8867,8.025791
 node,13620384869,,,altro,Liguria,Imperia,IM,Riva Ligure,,,,,43.836438,7.864202
 way,160374498,Caserma Pompieri,,altro,Liguria,Imperia,IM,Sanremo,,,,,43.825285,7.77277
@@ -372,11 +354,8 @@ way,344167356,Vigili del Fuoco distaccamento di Cairo Montenotte,,permanente,Lig
 node,6358095560,Vigili del Fuoco,,permanente,Liguria,Savona,SV,Finale Ligure,,,,,44.181233,8.312489
 way,336732890,AIB Protezione Civile Quiliano,,altro,Liguria,Savona,SV,Quiliano,,,,,44.291475,8.417105
 node,9574690937,Distaccamento Vigili del Fuoco volontari Sassello,,volontario,Liguria,Savona,SV,Sassello,Viale Guglielmo Marconi,17046,,,44.480435,8.490473
-way,203050112,EX-Sede Autorità Portuale Savona,,portuale,Liguria,Savona,SV,Savona,,,+39 019 85541,,44.307283,8.489508
-node,14201029104,Sede Autorità Portuale Savona,,portuale,Liguria,Savona,SV,Savona,,,+39 019 85541,https://www.portsofgenoa.com/it/porti-e-logistica/i-ports-of-genoa/savona.html,44.3069,8.489012
 node,3691360479,Vigili del Fuoco,,permanente,Liguria,Savona,SV,Savona,,,,,44.292136,8.455474
 way,200439794,Vigili del Fuoco Porto,,permanente,Liguria,Savona,SV,Savona,,,,,44.315005,8.490781
-node,2641588383,Volontari Antincendi Boschivi Protezione Civile Savona,,volontario,Liguria,Savona,SV,Savona,Via Romagnoli 40,,,,44.304403,8.463128
 way,754936961,Distaccamento Vigili del Fuoco Varazze,Corpo Nazionale dei Vigili del Fuoco,permanente,Liguria,Savona,SV,Varazze,,,+39 019 97912,,44.367556,8.601472
 way,227314971,Distaccamento aeroportuale Villanova d'Albenga,Corpo Nazionale dei Vigili del Fuoco,aeroportuale,Liguria,Savona,SV,Villanova d'Albenga,,,,,44.045501,8.122385
 way,54932236,,,altro,Lombardia,Bergamo,BG,Bergamo,,,,,45.702743,9.684377
@@ -391,7 +370,6 @@ way,974802527,Vigili del Fuoco - Distaccamento Volontari di Gazzaniga,,volontari
 way,926009055,,,altro,Lombardia,Bergamo,BG,Madone,,,,,45.648664,9.536783
 way,1550799226,Vigili del Fuoco Distaccamento Volontari Madone,,volontario,Lombardia,Bergamo,BG,Madone,Via Carso 73,24040,+39 035 493 9037,,45.648664,9.536783
 way,86098654,Distaccamento Vigili del Fuoco di Medolago,,permanente,Lombardia,Bergamo,BG,Medolago,,,,,45.671806,9.498173
-node,13682363151,Out Antincendio,,altro,Lombardia,Bergamo,BG,Mozzo,Via dell'industria 3,24030,+39 035 614580,https://www.outantincendio.it/,45.707996,9.60464
 way,165260993,,,altro,Lombardia,Bergamo,BG,Orio al Serio,,,,,45.664018,9.708845
 way,1530997764,Vigili del Duoco Aeroporto di Orio al Serio,Corpo Nazionale dei Vigili del Fuoco,aeroportuale,Lombardia,Bergamo,BG,Orio al Serio,,,,,45.664007,9.708834
 node,11190678067,Vigili del Fuoco volontari Romano di Lombardia,,volontario,Lombardia,Bergamo,BG,Romano di Lombardia,Via Provinciale 101 20,24058,+39 0363 910222,,45.528128,9.761666
@@ -402,7 +380,6 @@ way,907704557,AIB Brembilla,,altro,Lombardia,Bergamo,BG,Val Brembilla,,,,,45.821
 way,908060879,Elisuperficie A.I.B.,,altro,Lombardia,Bergamo,BG,Val Brembilla,,,,,45.814541,9.608916
 node,12633467522,Distaccamento Volontari di Bagolino,,volontario,Lombardia,Brescia,BS,Bagolino,Via Mignano 68,25072,+39 0365 903211,https://www.vigilfuoco.it/sedi-vvf/distaccamento-volontari-di-bagolino,45.833341,10.454925
 way,466041565,Vigili del fuoco di Bagolino,,permanente,Lombardia,Brescia,BS,Bagolino,,,,,45.822999,10.466249
-way,307250087,Volontari Protezione Civile Antincendio Bovegno,,volontario,Lombardia,Brescia,BS,Bovegno,,,,,45.79085,10.270523
 way,467033548,Vigili Del Fuoco Nuovo Distaccamento Breno,,permanente,Lombardia,Brescia,BS,Breno,,,,,45.959624,10.309201
 way,75661528,,,altro,Lombardia,Brescia,BS,Brescia,,,,,45.525123,10.23641
 way,125493276,,,altro,Lombardia,Brescia,BS,Brescia,,,,,45.560906,10.215415
@@ -416,7 +393,6 @@ way,161651929,Vigili del Fuoco di Boario Terme,,permanente,Lombardia,Brescia,BS,
 way,215478019,,,altro,Lombardia,Brescia,BS,Desenzano del Garda,,,,https://www.vigilidelfuocodesenzano.it/vigilidelfuocodesenzano/HOME.html,45.447055,10.564915
 way,986873351,Caserma VVF Volontari Edolo,,volontario,Lombardia,Brescia,BS,Edolo,Via Antonio Gelpi 33,,,,46.179123,10.334021
 way,340185704,Stazione Vigili del Fuoco di Gardone Val Trompia,,permanente,Lombardia,Brescia,BS,Gardone Val Trompia,,,,,45.689117,10.176435
-way,463387859,Gruppo Comunale Protezione Civile Antincendio Boschivo Lozio,Protezione Civile,altro,Lombardia,Brescia,BS,Lozio,Via Alser,25040,,,45.9884,10.225539
 node,4611995727,Vigili del Fuoco Monte Isola,Vigili del Fuoco,permanente,Lombardia,Brescia,BS,Monte Isola,,,,,45.705246,10.095888
 way,280784394,,Squadra Volontari Antincendio Agro Forestale Nave,volontario,Lombardia,Brescia,BS,Nave,,,,,45.597406,10.267422
 way,385329731,Squadra Volontari Antincendio Agro Forestale Nave,,volontario,Lombardia,Brescia,BS,Nave,,,,,45.58007,10.282992
@@ -426,7 +402,6 @@ node,1099502851,Varo alaggio mezzi nautici di soccorso,,altro,Lombardia,Brescia,
 node,4917368558,,,altro,Lombardia,Brescia,BS,Sale Marasino,,,,,45.711922,10.109889
 node,7803184622,COC Centro operativo comunale Salò,,altro,Lombardia,Brescia,BS,Salò,Via Enrico Fermi 5,25087,,,45.583798,10.521449
 way,682926224,Vigili del Fuoco Salò,,permanente,Lombardia,Brescia,BS,Salò,Via Romualdo Turrini 6,25087,,,45.607463,10.511191
-node,5952475346,"Associazione Nazionale Alpini Sezione di Brescia Squadra Antincendio Boschivo ""Firmo Sanzogni""",,altro,Lombardia,Brescia,BS,Sarezzo,,,,,45.673077,10.18873
 node,1835893303,Vigili del Fuoco Volontari Verolanuova,,volontario,Lombardia,Brescia,BS,Verolanuova,,,,,45.33195,10.083392
 way,233540249,,,altro,Lombardia,Brescia,BS,Vestone,,,,,45.704334,10.392291
 node,6164183652,,,altro,Lombardia,Brescia,BS,Vezza d'Oglio,,,,,46.241044,10.406283
@@ -454,7 +429,6 @@ way,319080278,,,altro,Lombardia,Lecco,LC,Lecco,,,,,45.842072,9.400289
 node,2621036064,Vigili del Fuoco Lecco,,permanente,Lombardia,Lecco,LC,Lecco,,,,,45.842086,9.400034
 way,379080883,,,altro,Lombardia,Lecco,LC,Merate,,,,,45.692014,9.412724
 way,148827893,Distaccamento Volontari di Merate,Comando provinciale Vigili del Fuoco di Lecco,volontario,Lombardia,Lecco,LC,Merate,,,+39 039 9902222,,45.691987,9.413097
-node,8322698155,Protezione Civile ed Antincendio Boschivo Moggio,Protezione Civile,altro,Lombardia,Lecco,LC,Moggio,Piazza Fontana 2,23817,,https://www.protezionecivilemoggio.it/,45.931698,9.487972
 way,178807299,Gruppo Antincendio Boschivo Primaluna,,altro,Lombardia,Lecco,LC,Primaluna,,,,,45.986495,9.456649
 way,256446612,Vigili del Fuoco Valmadrera,Comando provinciale Vigili del Fuoco di Lecco,permanente,Lombardia,Lecco,LC,Valmadrera,Via Sabatelli 21,23868,,,45.8482,9.363307
 way,72135210,,,altro,Lombardia,Lodi,LO,Casalpusterlengo,,,,,45.177822,9.650626
@@ -462,7 +436,6 @@ node,335603580,Comando Provinciale Vigili del Fuoco di Lodi,Corpo Nazionale dei 
 way,477680731,Vigili del Fuoco Distaccamento Volontario di Sant'Angelo Lodigiano,Corpo Nazionale dei Vigili del Fuoco,volontario,Lombardia,Lodi,LO,Sant'Angelo Lodigiano,Via Giuseppe Mazzini 106,26866,,,45.232422,9.411731
 way,471847323,Vigili del Fuoco Distaccamento Volontario di Bovisio Masciago,Vigili del Fuoco,volontario,Lombardia,Monza e Brianza,MB,Bovisio Masciago,Via Bertacciola 100,20813,,https://www.vfv-bovisiomasciago.it/,45.609674,9.168322
 way,451882389,Distaccamento Vigili del fuoco Volontari di Carate Brianza,Vvf,volontario,Lombardia,Monza e Brianza,MB,Carate Brianza,Via Solferino 7,20048,,,45.674013,9.230476
-node,9095386305,P. A. protezione antincendio,,altro,Lombardia,Monza e Brianza,MB,Desio,,,,,45.606889,9.179928
 way,223466663,Vigili del Fuoco Distaccamento di Desio,Vigili del Fuoco,permanente,Lombardia,Monza e Brianza,MB,Desio,Via Matilde Serao 1,20832,+39 0362 632191,,45.615264,9.198068
 way,398317391,Distaccamento Vigili del Fuoco Volontari di Lazzate,Vigili del Fuoco Volontari,volontario,Lombardia,Monza e Brianza,MB,Lazzate,Via Padania 1,20824,+39 02 96721261,,45.668799,9.078608
 node,638382660,Caserma Vigili del Fuoco - Distaccamento Volontari Lissone,,volontario,Lombardia,Monza e Brianza,MB,Lissone,Viale Martiri della Libertà 77,20851,+39 039 482222,http://www.vvflissone.com/,45.618341,9.246354
@@ -471,18 +444,14 @@ way,233745642,,,altro,Lombardia,Monza e Brianza,MB,Monza,,,,,45.579466,9.260997
 way,347274761,,,altro,Lombardia,Monza e Brianza,MB,Monza,,,,,45.578661,9.260875
 way,347274763,,,altro,Lombardia,Monza e Brianza,MB,Monza,,,,,45.578866,9.260801
 way,261131053,Vigili del Fuoco Comando Monza,,permanente,Lombardia,Monza e Brianza,MB,Monza,Via Felice Cavallotti 67,20900,+39 039 2732342,https://www.vigilfuoco.it/sitiVVF/monza/,45.579112,9.260914
-node,9122359251,D.M.A. assistenza antincendio,,altro,Lombardia,Monza e Brianza,MB,Seregno,Via Luigi Cagnola 13,20831,,,45.655793,9.213919
 way,293393432,Vigili del Fuoco - Comando di Monza - Distaccamento di Seregno,,permanente,Lombardia,Monza e Brianza,MB,Seregno,Via Paolo Ballerini 23,20831,+39 0362 223365,https://www.vigilfuoco.it/sedi-vvf/distaccamento-di-seregno,45.650668,9.201495
 node,10576410266,Vigili del fuoco - Distaccamento Volontari di Vimercate,Vigili di Fuoco,volontario,Lombardia,Monza e Brianza,MB,Vimercate,Via Brianza 10,20059,+39 039 6918289,https://www.vfv-vimercate.it/,45.607105,9.365431
 way,306140905,Distaccamento Volontari di Abbiategrasso,Corpo Nazionale dei Vigili del Fuoco,volontario,Lombardia,Milano,MI,Abbiategrasso,Piazza Vittorio Veneto 2,20081,,https://www.vigilfuoco.it/sedi-vvf/distaccamento-volontari-di-abbiategrasso,45.401891,8.912912
-way,795627428,Global Antincendi,,altro,Lombardia,Milano,MI,Abbiategrasso,Via Giacomo Leopardi 16a,20081,,,45.386202,8.921908
-node,12648541012,Consorzio Est Ticino Villoresi - Presidio operativo di Arconate,,presidio,Lombardia,Milano,MI,Arconate,Via Roma 47,20020,,,45.541935,8.852877
 node,715785168,Distaccamento Vigili del Fuoco di Corbetta,,permanente,Lombardia,Milano,MI,Corbetta,,,,,45.464787,8.910609
 way,686580500,Vigili del Fuoco - Distaccamento Volontario di Garbagnate Milanese,Vigili del Fuoco,volontario,Lombardia,Milano,MI,Garbagnate Milanese,Via Venezia 8,20024,+39 02 9902 8775,https://www.vigilfuocogarbagnate.it,45.57483,9.071172
 way,204052041,Vigili del Fuoco Gorgonzola,,permanente,Lombardia,Milano,MI,Gorgonzola,Via degli Abeti 1,20064,+39 02 95304101;+39 02 95301377,,45.525972,9.4108
 way,405440155,Vigili del Fuoco - Distaccamento Volontari Inveruno,Vigili del Fuoco,volontario,Lombardia,Milano,MI,Inveruno,Via Lazzaretto 5,20010,+39 02 978 7022,,45.51118,8.856488
 way,355680049,Vigili del Fuoco - Distaccamento Provinciale Legnano,Vigili del Fuoco,permanente,Lombardia,Milano,MI,Legnano,,,,,45.598508,8.925746
-node,3741302789,Argo antincendio,,altro,Lombardia,Milano,MI,Magenta,,,,https://www.argoantincendio.it/,45.464634,8.877659
 node,603837459,Distaccamento VVF Magenta,,permanente,Lombardia,Milano,MI,Magenta,,,,,45.468897,8.889642
 way,256163839,Vigili del Fuoco - Distaccamento Volontari Melegnano,Vigili del Fuoco,volontario,Lombardia,Milano,MI,Melegnano,Viale della Repubblica 49,20077,+39 02 9834499,https://www.vigilfuoco.it/,45.357046,9.318202
 way,59685908,,,altro,Lombardia,Milano,MI,Milano,,,,,45.484427,9.172137
@@ -519,7 +488,6 @@ way,305776162,Vigili del Fuoco - Distaccamento Aeroportuale di Milano Linate,Vig
 node,10284232724,Vigili del Fuoco - Distaccamento Volontari Peschiera Borromeo,Corpo Nazionale dei Vigili del Fuoco,volontario,Lombardia,Milano,MI,Peschiera Borromeo,Via Giosuè Carducci 14,20068,,,45.429118,9.294855
 way,451881515,Distaccamento Vigili del Fuoco Volontari di Pieve Emanuele,,volontario,Lombardia,Milano,MI,Pieve Emanuele,Via Nilde Iotti 25,20090,,,45.33346,9.189566
 node,4552349384,Pronto Intervento Antincendio I.V.R.I.,Sicuritalia,altro,Lombardia,Milano,MI,Rho,,,,,45.518557,9.078949
-node,6126656355,Pronto Soccorso • Presidio Ospedaliero di Rho,,presidio,Lombardia,Milano,MI,Rho,Via Luigi Cadorna 4,20017,,,45.534255,9.033496
 way,399436105,Vigili del fuoco - Distaccamento Provinciale Rho,Vigili del Fuoco,permanente,Lombardia,Milano,MI,Rho,,,,,45.533891,9.030619
 way,755169924,Vigili del Fuoco,,permanente,Lombardia,Milano,MI,Sesto San Giovanni,Via Giuseppe Rovani,20099,,,45.535406,9.2245
 node,9871113169,,,altro,Lombardia,Mantova,MN,Castiglione delle Stiviere,via solferino 18,,,,45.375128,10.511857
@@ -619,7 +587,6 @@ way,336893438,Vigili del Fuoco,Corpo Nazionale dei Vigili del Fuoco,permanente,P
 node,10778717593,Vigili del Fuoco,,permanente,Piemonte,Cuneo,CN,Ceva,,,,,44.380649,8.023226
 way,281818233,,,altro,Piemonte,Cuneo,CN,Cuneo,Corso Alcide De Gasperi 71,12100,,,44.373449,7.524149
 way,373881695,,,altro,Piemonte,Cuneo,CN,Cuneo,,,,,44.373293,7.524312
-node,7093180859,Savec Antincendio,,altro,Piemonte,Cuneo,CN,Cuneo,,,,,44.426891,7.560674
 way,373881691,Vigili del Fuoco Cuneo,,permanente,Piemonte,Cuneo,CN,Cuneo,Corso Alcide De Gasperi 71,,,,44.373403,7.52448
 node,2276771376,Vigili del Fuoco,,permanente,Piemonte,Cuneo,CN,Dogliani,,,,,44.530738,7.950142
 way,320107232,,,altro,Piemonte,Cuneo,CN,Dronero,,,,,44.467403,7.346456
@@ -695,7 +662,6 @@ way,919673010,,,altro,Piemonte,Torino,TO,Torino,,,,,45.088925,7.64974
 way,919657569,Comando Provinciale Vigili del Fuoco di Torino,,permanente,Piemonte,Torino,TO,Torino,Corso Regina Margherita 330b,10143,,,45.088439,7.649365
 way,59023066,Comando provinciale Vigili del Fuoco di Torino,Corpo Nazionale dei Vigili del Fuoco,permanente,Piemonte,Torino,TO,Torino,,,,,45.089355,7.648915
 way,295789294,Distaccamento Vigili del Fuoco Stura,TAS Torino,permanente,Piemonte,Torino,TO,Torino,,,,,45.120359,7.713248
-way,402429213,Presidio sanitario “Vittorio Valletta”,,presidio,Piemonte,Torino,TO,Torino,,,,,45.015918,7.631102
 way,179930025,Vigili del Fuoco - Lingotto,,permanente,Piemonte,Torino,TO,Torino,,,,,45.017558,7.663196
 way,175536588,,,altro,Piemonte,Torino,TO,Torre Pellice,,,,,44.818283,7.220808
 node,626138559,Volontari Venaria,,volontario,Piemonte,Torino,TO,Venaria Reale,Corso Toscana 5,10078,,,45.114836,7.648441
@@ -725,24 +691,20 @@ way,422882002,Distaccamento Varallo,,permanente,Piemonte,Vercelli,VC,Varallo,,,,
 way,1224424258,VVF,,permanente,Piemonte,Vercelli,VC,Varallo,,,,,45.784827,8.273327
 way,422879592,Vigili del Fuoco,,permanente,Piemonte,Vercelli,VC,Varallo,,,,,45.785302,8.273078
 way,261060556,Comando Provinciale Vigili del Fuoco di Vercelli,,permanente,Piemonte,Vercelli,VC,Vercelli,,,+39 0161 261411,http://www.vigilfuoco.it/sitiVVF/vercelli/,45.313372,8.422439
-way,82513044,Presidio territoriale ARPA,Agenzia Regionale per la Protezione Ambientale,presidio,Piemonte,Vercelli,VC,Vercelli,,,,,45.310383,8.406248
 way,858811499,VVF Vercelli Area Addestramento Fluviale,,permanente,Piemonte,Vercelli,VC,Vercelli,,,,,45.319037,8.435892
 way,416237911,,,altro,Puglia,Bari,BA,Bari,,,,,41.1347,16.757898
 relation,6212728,,,altro,Puglia,Bari,BA,Bari,,,,,41.112654,16.902486
 relation,17040050,,,altro,Puglia,Bari,BA,Bari,,,,,41.114784,16.866898
-way,417998810,Autorità di Sistema Portuale del Mare Adriatico Meridionale,,portuale,Puglia,Bari,BA,Bari,Piazzale Cristoforo Colombo 1,70122,,https://www.adspmam.it,41.133033,16.870527
 way,28111249,Comando Provinciale Bari Vigili del Fuoco,Ministero dell'Interno,permanente,Puglia,Bari,BA,Bari,Via Tupputi 52,,,,41.091753,16.889127
 way,1357207883,Direzione Regionale Vigili del Fuoco Puglia,Corpo Nazionale dei Vigili del Fuoco,permanente,Puglia,Bari,BA,Bari,,,,https://www.vigilfuoco.it/direzione-regionale-vigili-del-fuoco-puglia,41.112641,16.902753
 relation,19355352,Vigili del Fuoco,,permanente,Puglia,Bari,BA,Bari,,,+39 0805316182,https://www.vigilfuoco.it/sedi-vvf/distaccamento-aeroportuale-di-bari,41.134975,16.758008
 way,1266884320,Vigili del Fuoco - Distaccamento Cittadino Carrassi-Minervini,Corpo Nazionale dei Vigili del Fuoco,permanente,Puglia,Bari,BA,Bari,Via Gaetano Devitofrancesco,70124,+39 0805425748,https://www.vigilfuoco.it/sedi-vvf/distaccamento-cittadino-carrassi-minervini,41.11488,16.866826
 node,1433747800,Vigili del Fuoco - Fiera,Vigili del Fuoco,permanente,Puglia,Bari,BA,Bari,,70132,,,41.136112,16.840986
 way,416564497,Vigili del Fuoco - Sede Cittadina Fiera-Pizzimenti,,permanente,Puglia,Bari,BA,Bari,,,+39 0805341965,https://www.vigilfuoco.it/,41.13401,16.84087
-node,13393918770,Unione Rurale Agricoltori,,rurale,Puglia,Bari,BA,Bitonto,,,,,41.108522,16.687364
 node,3008640984,,,altro,Puglia,Bari,BA,Monopoli,,,,,40.94083,17.305204
 node,14197269322,Distaccamento Vigili del Fuoco Monopoli,Corpo Nazionale dei Vigili del Fuoco,permanente,Puglia,Bari,BA,Monopoli,Via Procaccia 100,70043,+39 080 917 7356,https://www.vigilfuoco.it,40.946038,17.30888
 way,418435770,,,altro,Puglia,Bari,BA,Putignano,,,,,40.846593,17.129677
 way,1026775538,,,altro,Puglia,Bari,BA,Putignano,,,,,40.846544,17.129788
-way,641143821,Autorità di sistema portuale dell'adriatico meridionale - Brindisi,,portuale,Puglia,Brindisi,BR,Brindisi,Via regina Giovanna di Bulgaria,72100,,,40.639095,17.949083
 way,422366346,Distaccamento Aeroporto,,aeroportuale,Puglia,Brindisi,BR,Brindisi,Contrada Baroncino,72100,+39 0831 418096,,40.659334,17.941705
 way,422356053,Distaccamento Porto,VVF,permanente,Puglia,Brindisi,BR,Brindisi,Lungomare Calafati,72100,+39 0831574936,,40.641815,17.952187
 way,422354401,Vigili del Fuoco,,permanente,Puglia,Brindisi,BR,Brindisi,Via Nicola Brandi,72100,+39 0831554401,,40.643294,17.924263
@@ -758,7 +720,6 @@ way,403190405,Vigili del Fuoco,Vigili del Fuoco,permanente,Puglia,Lecce,LE,Galli
 way,410662095,Comando Provinciale Vigili del Fuoco,,permanente,Puglia,Lecce,LE,Lecce,,,,,40.343348,18.157934
 way,300124747,Nuova sede Comando Vigili del Fuoco,,permanente,Puglia,Lecce,LE,Lecce,,,,,40.335962,18.128225
 node,11091169177,Vigili del Fuoco Maglie,,permanente,Puglia,Lecce,LE,Maglie,,,,,40.128929,18.294959
-node,3918739670,Presidio Sanitario Estivo,ASL Lecce,presidio,Puglia,Lecce,LE,Trepuzzi,Via Trepuzzi,,,,40.497061,18.121771
 way,379546624,Vigili del Fuoco,,permanente,Puglia,Lecce,LE,Tricase,,,,,39.937103,18.338572
 node,8931363222,,,altro,Puglia,Lecce,LE,Veglie,,,,,40.344028,17.96906
 way,423819238,,,altro,Puglia,Taranto,TA,Castellaneta,,,,,40.60948,16.943363
@@ -766,17 +727,13 @@ way,422916994,Vigli del Fuoco,,altro,Puglia,Taranto,TA,Grottaglie,,,,,40.515213,
 way,423984126,,Corpo Nazionale dei Vigili del Fuoco,permanente,Puglia,Taranto,TA,Manduria,,,,,40.400967,17.615533
 way,423157311,Comando Vigili del Fuoco - Distaccamento di Martina Franca,,permanente,Puglia,Taranto,TA,Martina Franca,Via Pergolo,74015,,,40.689698,17.325142
 way,423169124,Comando Vigili del Fuoco - Distaccamento di Martina Franca,,permanente,Puglia,Taranto,TA,Martina Franca,Via Pergolo,74015,,,40.689692,17.32466
-node,8168764989,Autorità di Sistema Portuale del Mar Ionio - Porto di Taranto,,portuale,Puglia,Taranto,TA,Taranto,Porto Mercantile Molo S. Cataldo,74123,+390994711611,https://port.taranto.it/,40.478459,17.219951
 node,8155200654,Vigili del Fuoco,,permanente,Puglia,Taranto,TA,Taranto,,,,,40.477542,17.197076
 way,123274762,Vigili del Fuoco,Corpo Nazionale dei Vigili del Fuoco,permanente,Puglia,Taranto,TA,Taranto,,,,,40.443422,17.264833
-way,248785757,Presidio Forestas Murdega,,presidio,Sardegna,Cagliari,CA,Armungia,,,,,39.548464,9.462674
 way,541510552,Distaccamento Portuale,,portuale,Sardegna,Cagliari,CA,Cagliari,,09100,+39 070 652694,,39.211365,9.113577
 way,32365563,Vigili del fuoco di Cagliari,,permanente,Sardegna,Cagliari,CA,Cagliari,,,,,39.243636,9.150803
 way,281433410,,,altro,Sardegna,Cagliari,CA,Elmas,,,,,39.254839,9.056133
-way,1444137509,De Gioannis Antincendio,,altro,Sardegna,Cagliari,CA,Elmas,,,,,39.255355,9.069149
 way,1238922500,Vigili del Fuoco,,permanente,Sardegna,Cagliari,CA,Elmas,,,,,39.254997,9.056553
 node,2098253669,Vigili del Fuoco,Vigili del Fuoco,permanente,Sardegna,Cagliari,CA,Mandas,,,,,39.652155,9.133026
-way,172349591,Presidio Forestas Muravera,,presidio,Sardegna,Cagliari,CA,Muravera,,,,,39.384297,9.582656
 way,258902395,,Corpo Nazionale dei Vigili del Fuoco,permanente,Sardegna,Cagliari,CA,San Vito,,,,,39.432563,9.549771
 node,2130424442,Vigili del Fuoco,,permanente,Sardegna,Nuoro,NU,Macomer,,,,,40.265747,8.776529
 node,11378065260,"Vigili del Fuoco, Comando Provinciale di Nuoro",,permanente,Sardegna,Nuoro,NU,Nuoro,Via Sandro Pertini,,+39 0784 226600,,40.320535,9.303872
@@ -828,7 +785,6 @@ way,1119930774,Vigili del Fuoco,Corpo Nazionale Vigili del Fuoco,permanente,Sici
 way,51512391,Vigili del Fuoco,Corpo Nazionale dei Vigili del Fuoco,permanente,Sicilia,Caltanissetta,CL,Niscemi,,,,https://www.vigilfuoco.it,37.135895,14.398553
 node,10622090749,Vigili del Fuoco,Corpo Nazionale dei Vigili del Fuoco,permanente,Sicilia,Catania,CT,,,,,https://www.vigilfuoco.it,37.829156,14.861735
 way,157027021,,,altro,Sicilia,Catania,CT,Acireale,,,,,37.619737,15.151518
-node,10736003682,Antincendio Pennisi,,altro,Sicilia,Catania,CT,Acireale,,,,,37.621921,15.162212
 way,1139830982,Vigili del Fuoco,Corpo Nazionale dei Vigili del Fuoco,permanente,Sicilia,Catania,CT,Acireale,,,,https://www.vigilfuoco.it,37.61984,15.151423
 way,1139830974,Vigili del Fuoco,Corpo Nazionale dei Vigili del Fuoco,permanente,Sicilia,Catania,CT,Adrano,,,,https://www.vigilfuoco.it,37.663415,14.834487
 way,1126126331,Vigili del Fuoco,Corpo Nazionale dei Vigili del Fuoco,permanente,Sicilia,Catania,CT,Caltagirone,,,,https://www.vigilfuoco.it,37.230365,14.529364
@@ -869,7 +825,6 @@ way,279883629,,,altro,Sicilia,Palermo,PA,Palermo,,,,,38.11888,13.357737
 way,279885137,,,altro,Sicilia,Palermo,PA,Palermo,,,,,38.11908,13.357514
 way,279888815,,,altro,Sicilia,Palermo,PA,Palermo,,,,,38.119117,13.357635
 way,584191231,Comando Provinciale Vigili del Fuoco di Palermo,,permanente,Sicilia,Palermo,PA,Palermo,Via Alessandro Scarlatti 16,,+39 091 6059111,https://www.vigilfuoco.it/sitiVVF/palermo/,38.118839,13.35753
-way,1540295292,Dipartimento Regionale Sviluppo Rurale e Territoriale,,rurale,Sicilia,Palermo,PA,Palermo,,,,,38.144922,13.328717
 way,1065496508,Distaccamento Cittadino Brancaccio,,permanente,Sicilia,Palermo,PA,Palermo,Via Filippo Pecoraino,,+39 091 475551,https://www.vigilfuoco.it/sitiVVF/palermo/dislocazione.aspx?s=205&p=279,38.092351,13.406349
 way,318110035,Vigili del Fuoco - Distaccamento Cittadino Nord 1,,permanente,Sicilia,Palermo,PA,Palermo,Via dei Quartieri,,+39 091 6887690,https://www.vigilfuoco.it/sitiVVF/palermo/dislocazione.aspx?s=205&p=279,38.163624,13.32864
 node,10864472270,,,altro,Sicilia,Palermo,PA,Petralia Soprana,,,,,37.788821,14.109054
@@ -890,11 +845,7 @@ way,302137017,,,altro,Sicilia,Siracusa,SR,Noto,,,,,36.882203,15.078716
 way,397896392,Vigili del Fuoco,Corpo Nazionale dei Vigili del Fuoco,permanente,Sicilia,Siracusa,SR,Noto,,,,https://www.vigilfuoco.it,36.882081,15.078525
 way,397896394,Vigili del Fuoco,Corpo Nazionale dei Vigili del Fuoco,permanente,Sicilia,Siracusa,SR,Pachino,,,,https://www.vigilfuoco.it,36.722577,15.085205
 way,397896393,Vigili del Fuoco,Corpo Nazionale dei Vigili del Fuoco,permanente,Sicilia,Siracusa,SR,Palazzolo Acreide,,,,https://www.vigilfuoco.it,37.068228,14.910738
-way,953845834,Sistemi Antincendio,,altro,Sicilia,Siracusa,SR,Priolo Gargallo,,,,,37.146831,15.197074
 way,905909652,Vigili del Fuoco,Corpo Nazionale dei Vigili del Fuoco,permanente,Sicilia,Siracusa,SR,Priolo Gargallo,,,,https://www.vigilfuoco.it,37.146355,15.187149
-node,11669725072,Antincendio Pegaso,,altro,Sicilia,Siracusa,SR,Siracusa,,,+39 328 7973248,,37.099156,15.272257
-node,12276819688,Antincendio Zampi,,altro,Sicilia,Siracusa,SR,Siracusa,,,,,37.085781,15.287168
-node,8436150413,Nuova Antincendi,,altro,Sicilia,Siracusa,SR,Siracusa,,,,,37.078505,15.289656
 way,397896390,Vigili del Fuoco,Corpo Nazionale dei Vigili del Fuoco,permanente,Sicilia,Siracusa,SR,Siracusa,,,,https://www.vigilfuoco.it,37.077879,15.287294
 way,739604499,Vigili del Fuoco,Corpo Nazionale dei Vigili del Fuoco,permanente,Sicilia,Siracusa,SR,Siracusa,,,,https://www.vigilfuoco.it,37.090732,15.261266
 way,397896395,Vigili del Fuoco,Corpo Nazionale dei Vigili del Fuoco,permanente,Sicilia,Siracusa,SR,Sortino,,,,https://www.vigilfuoco.it,37.16717,15.031023
@@ -965,8 +916,6 @@ node,5580840653,VVF CVastelfranco di Sotto,,permanente,Toscana,Pisa,PI,Castelfra
 node,11443221298,,,altro,Toscana,Pisa,PI,Pisa,,,,,43.683,10.396124
 way,513528631,,,altro,Toscana,Pisa,PI,Pisa,,,,,43.706841,10.409319
 way,233491527,Comando Provinciale Vigili del Fuoco di Pisa,,permanente,Toscana,Pisa,PI,Pisa,Via Giacomo Matteotti 1,56100,+39 050 941912,https://www.vigilfuoco.it/sedi-vvf/comando-vvf-di-pisa,43.709295,10.410811
-node,5215988021,EMA Antincendi,,altro,Toscana,Pisa,PI,Pisa,Via Annibale Breccia 5,,,https://www.emantincendi.it/,43.671362,10.44104
-way,1280031926,Presidio di riabilitazione di Marina di Pisa,IRCCS Fondazione Stella Maris,presidio,Toscana,Pisa,PI,Pisa,,,+39 050 886622,,43.660625,10.283334
 way,274298832,Vigili del Fuoco - Distaccamento Aeroportuale di Pisa - Aeroporto Galileo Galilei,,aeroportuale,Toscana,Pisa,PI,Pisa,,,+39 050 502034,,43.697236,10.396152
 way,530295562,Vigili del Fuoco - Distaccamento Volontari di Ponsacco,,volontario,Toscana,Pisa,PI,Ponsacco,,,+39 0587 736864,,43.627102,10.624768
 node,1681773458,Vigili del Fuoco - Distaccamento Volontari di Pontedera,,volontario,Toscana,Pisa,PI,Pontedera,,,+39 0587 299125,,43.664149,10.616056
@@ -1347,7 +1296,6 @@ way,88077579,Vigili del Fuoco Volontari Ala,,volontario,Trentino-Alto Adige,Tren
 node,922455374,,,altro,Trentino-Alto Adige,Trento,TN,Albiano,,,,,46.14002,11.193688
 node,9277379545,Vigili del Fuoco Volontari Aldeno,,volontario,Trentino-Alto Adige,Trento,TN,Aldeno,,,,,45.981808,11.092229
 way,37541498,Caserma Vigili del fuoco,,permanente,Trentino-Alto Adige,Trento,TN,Altopiano della Vigolana,,,,,45.968981,11.233
-node,13725959363,Cassa Rurale Alta Valsugana,,rurale,Trentino-Alto Adige,Trento,TN,Altopiano della Vigolana,,,,,45.993768,11.220486
 way,899427401,Vigili volontari del fuoco di Bosentino,,volontario,Trentino-Alto Adige,Trento,TN,Altopiano della Vigolana,,,,,46.001794,11.225392
 way,899427402,Vigili volontari del fuoco di Vattaro,,volontario,Trentino-Alto Adige,Trento,TN,Altopiano della Vigolana,,,,,45.993058,11.22014
 way,111437901,Vigili volontari del fuoco di Vigolo Vattaro,,volontario,Trentino-Alto Adige,Trento,TN,Altopiano della Vigolana,,,,,46.002897,11.19724
@@ -1594,33 +1542,33 @@ node,3758564483,,,altro,Umbria,Terni,TR,Amelia,,,,,42.555191,12.418418
 way,1216690892,Distaccamento Vigili del Fuoco,Corpo Nazionale dei Vigili del Fuoco,permanente,Umbria,Terni,TR,Orvieto,,,,,42.720149,12.139528
 way,469079623,Comando provinciale Vigili del fuoco Terni,,permanente,Umbria,Terni,TR,Terni,Viale Ettore Proietti Divi 115,05100,,,42.573862,12.644372
 way,72463667,Vigili del Fuoco,,permanente,Umbria,Terni,TR,Terni,,,,,42.573656,12.644728
-node,1709675881,Caserma dei Vigili del Fuoco,,permanente,Valle d'Aosta,,,Aosta,,,,,45.74051,7.347181
-node,14003078901,Corpo valdostano dei Vigili del fuoco,,permanente,Valle d'Aosta,,,Aosta,,,,,45.740482,7.347353
-node,3583832848,Vigili del Fuoco di Arnad,,permanente,Valle d'Aosta,,,Arnad,,,,,45.64399,7.721825
-node,3896311990,Vigili del Fuoco Volontari di Ayas,,volontario,Valle d'Aosta,,,Ayas,,,,,45.825785,7.71485
-node,3889408587,Vigili del Fuco Volontari di Brusson,,volontario,Valle d'Aosta,,,Brusson,,,,,45.756727,7.733838
-node,2495997978,Vigili del Fuoco Volontari Challand Saint Anselme,,volontario,Valle d'Aosta,,,Challand-Saint-Anselme,,,,,45.714105,7.736819
-node,2495997979,Vigili del Fuoco Volontari Challand Saint Victor,,volontario,Valle d'Aosta,,,Challand-Saint-Victor,,,,,45.688527,7.704428
-node,13982163593,,,altro,Valle d'Aosta,,,Châtillon,,,,,45.748815,7.60771
-node,6412227896,Vigili del Fuoco Volontari di Cogne,Vigili del Fuoco Volontari Cogne,volontario,Valle d'Aosta,,,Cogne,,,,,45.609269,7.359928
-node,12066714801,Vigili del Fuoco Distaccamento Courmayeur,,permanente,Valle d'Aosta,,,Courmayeur,,,,,45.78992,6.970591
-node,13769868410,Distaccamento vigili del fuoco volontari di Emarèse,comando regionale dei Vigili del Fuoco della Valle d'Aosta,volontario,Valle d'Aosta,,,Emarèse,Strada Saint-Vincent Emarèse,1120,,,45.725526,7.699281
-node,893385947,Vigili del Fuoco di Fontanemoire,,permanente,Valle d'Aosta,,,Fontainemore,,,,,45.650955,7.8599
-node,13664505457,Distaccamento Volontari VV.F. di Aosta: Gignod,,volontario,Valle d'Aosta,,,Gignod,Frazione Chef Lieu 1,11010,,https://www.vigilfuoco.it/sedi-vvf/distaccamento-volontari-vvf-di-aosta-gignod,45.782137,7.29671
-node,2995533581,Vigili del Fuoco Gressoney La Trinité,,permanente,Valle d'Aosta,,,Gressoney-La-Trinité,,,,,45.832519,7.821918
-node,4146591313,Gressoney Saint Jean,,altro,Valle d'Aosta,,,Gressoney-Saint-Jean,,,,,45.760024,7.836009
-way,291863306,Garage pompieri volontari,,volontario,Valle d'Aosta,,,Introd,,,,,45.688813,7.188245
-node,13743544600,Vigili del Fuoco - Distaccamento Volontario di La Thuile,Comando regionale dei Vigili del Fuoco della Valle d'Aosta,volontario,Valle d'Aosta,,,La Thuile,Frazione Villaret 29,11016,+39 0858992222,https://www.vigilfuoco.it/sedi-vvf/distaccamento-volontari-vvf-di-aosta-la-thuile,45.70888,6.955929
-node,4033348997,Vigili del Fuoco Volontari di Lillianes,,volontario,Valle d'Aosta,,,Lillianes,,,,,45.633596,7.843559
-node,7359798545,Pompieri volontari,,volontario,Valle d'Aosta,,,Pollein,,,,,45.72761,7.360184
-node,3863346956,Corpo Valdostano Vigili del Fuoco Volontari Pont St. Martin,,volontario,Valle d'Aosta,,,Pont-Saint-Martin,Via Monte Rosa 2,,,https://www.facebook.com/Corpo-Valdostano-Vigili-del-Fuoco-Volontari-di-Pont-Saint-Martin-371874182125/,45.597242,7.798318
-node,1988127251,Vigili del Fuoco volontari di Saint-Pierre,,volontario,Valle d'Aosta,,,Saint-Pierre,,,,,45.711512,7.22165
-node,13959889250,Vigili del fuoco,,permanente,Valle d'Aosta,,,Sarre,,,,,45.728249,7.273277
-node,13959889251,Vigili del fuoco,,permanente,Valle d'Aosta,,,Sarre,,,,,45.727884,7.273192
-node,1479988171,,,altro,Valle d'Aosta,,,Valsavarenche,Frazione Dégioz 168,11010,,,45.591918,7.208705
-node,6477549137,Vigili del fuoco,,permanente,Valle d'Aosta,,,Valtournenche,,,,,45.882758,7.621402
-node,1726971135,Vigili del Fuoco di Verrès,,permanente,Valle d'Aosta,,,Verrès,,,,,45.670254,7.686914
-node,3694099834,,,altro,Valle d'Aosta,,,Villeneuve,,,,,45.700496,7.205395
+node,1709675881,Caserma dei Vigili del Fuoco,,permanente,Valle d'Aosta,Aosta,AO,Aosta,,,,,45.74051,7.347181
+node,14003078901,Corpo valdostano dei Vigili del fuoco,,permanente,Valle d'Aosta,Aosta,AO,Aosta,,,,,45.740482,7.347353
+node,3583832848,Vigili del Fuoco di Arnad,,permanente,Valle d'Aosta,Aosta,AO,Arnad,,,,,45.64399,7.721825
+node,3896311990,Vigili del Fuoco Volontari di Ayas,,volontario,Valle d'Aosta,Aosta,AO,Ayas,,,,,45.825785,7.71485
+node,3889408587,Vigili del Fuco Volontari di Brusson,,volontario,Valle d'Aosta,Aosta,AO,Brusson,,,,,45.756727,7.733838
+node,2495997978,Vigili del Fuoco Volontari Challand Saint Anselme,,volontario,Valle d'Aosta,Aosta,AO,Challand-Saint-Anselme,,,,,45.714105,7.736819
+node,2495997979,Vigili del Fuoco Volontari Challand Saint Victor,,volontario,Valle d'Aosta,Aosta,AO,Challand-Saint-Victor,,,,,45.688527,7.704428
+node,13982163593,,,altro,Valle d'Aosta,Aosta,AO,Châtillon,,,,,45.748815,7.60771
+node,6412227896,Vigili del Fuoco Volontari di Cogne,Vigili del Fuoco Volontari Cogne,volontario,Valle d'Aosta,Aosta,AO,Cogne,,,,,45.609269,7.359928
+node,12066714801,Vigili del Fuoco Distaccamento Courmayeur,,permanente,Valle d'Aosta,Aosta,AO,Courmayeur,,,,,45.78992,6.970591
+node,13769868410,Distaccamento vigili del fuoco volontari di Emarèse,comando regionale dei Vigili del Fuoco della Valle d'Aosta,volontario,Valle d'Aosta,Aosta,AO,Emarèse,Strada Saint-Vincent Emarèse,1120,,,45.725526,7.699281
+node,893385947,Vigili del Fuoco di Fontanemoire,,permanente,Valle d'Aosta,Aosta,AO,Fontainemore,,,,,45.650955,7.8599
+node,13664505457,Distaccamento Volontari VV.F. di Aosta: Gignod,,volontario,Valle d'Aosta,Aosta,AO,Gignod,Frazione Chef Lieu 1,11010,,https://www.vigilfuoco.it/sedi-vvf/distaccamento-volontari-vvf-di-aosta-gignod,45.782137,7.29671
+node,2995533581,Vigili del Fuoco Gressoney La Trinité,,permanente,Valle d'Aosta,Aosta,AO,Gressoney-La-Trinité,,,,,45.832519,7.821918
+node,4146591313,Gressoney Saint Jean,,altro,Valle d'Aosta,Aosta,AO,Gressoney-Saint-Jean,,,,,45.760024,7.836009
+way,291863306,Garage pompieri volontari,,volontario,Valle d'Aosta,Aosta,AO,Introd,,,,,45.688813,7.188245
+node,13743544600,Vigili del Fuoco - Distaccamento Volontario di La Thuile,Comando regionale dei Vigili del Fuoco della Valle d'Aosta,volontario,Valle d'Aosta,Aosta,AO,La Thuile,Frazione Villaret 29,11016,+39 0858992222,https://www.vigilfuoco.it/sedi-vvf/distaccamento-volontari-vvf-di-aosta-la-thuile,45.70888,6.955929
+node,4033348997,Vigili del Fuoco Volontari di Lillianes,,volontario,Valle d'Aosta,Aosta,AO,Lillianes,,,,,45.633596,7.843559
+node,7359798545,Pompieri volontari,,volontario,Valle d'Aosta,Aosta,AO,Pollein,,,,,45.72761,7.360184
+node,3863346956,Corpo Valdostano Vigili del Fuoco Volontari Pont St. Martin,,volontario,Valle d'Aosta,Aosta,AO,Pont-Saint-Martin,Via Monte Rosa 2,,,https://www.facebook.com/Corpo-Valdostano-Vigili-del-Fuoco-Volontari-di-Pont-Saint-Martin-371874182125/,45.597242,7.798318
+node,1988127251,Vigili del Fuoco volontari di Saint-Pierre,,volontario,Valle d'Aosta,Aosta,AO,Saint-Pierre,,,,,45.711512,7.22165
+node,13959889250,Vigili del fuoco,,permanente,Valle d'Aosta,Aosta,AO,Sarre,,,,,45.728249,7.273277
+node,13959889251,Vigili del fuoco,,permanente,Valle d'Aosta,Aosta,AO,Sarre,,,,,45.727884,7.273192
+node,1479988171,,,altro,Valle d'Aosta,Aosta,AO,Valsavarenche,Frazione Dégioz 168,11010,,,45.591918,7.208705
+node,6477549137,Vigili del fuoco,,permanente,Valle d'Aosta,Aosta,AO,Valtournenche,,,,,45.882758,7.621402
+node,1726971135,Vigili del Fuoco di Verrès,,permanente,Valle d'Aosta,Aosta,AO,Verrès,,,,,45.670254,7.686914
+node,3694099834,,,altro,Valle d'Aosta,Aosta,AO,Villeneuve,,,,,45.700496,7.205395
 node,1786377440,,,altro,Veneto,Belluno,BL,Agordo,,,,,46.287558,12.022301
 node,9689370125,Vigili del Fuoco - Distaccamento di Auronzo di Cadore,,permanente,Veneto,Belluno,BL,Auronzo di Cadore,,,,,46.558333,12.424201
 way,138781700,Ex caserma Vigili del Fuoco,,permanente,Veneto,Belluno,BL,Belluno,,,,,46.144854,12.206137
@@ -1672,7 +1620,6 @@ way,1304506196,Vigili del Fuoco,Vigili del Fuoco,permanente,Veneto,Venezia,VE,Sa
 way,138841619,,,altro,Veneto,Venezia,VE,Venezia,,,,,45.432461,12.311117
 way,145862419,,,altro,Veneto,Venezia,VE,Venezia,,,,,45.516815,12.242912
 way,791771454,,,altro,Veneto,Venezia,VE,Venezia,,,,,45.516335,12.24195
-node,1783927108,Autorita Portuale,,portuale,Veneto,Venezia,VE,Venezia,,,,,45.431455,12.312623
 way,30933112,Caserma provinciale dei Vigili del Fuoco,Corpo Nazionale dei Vigili del Fuoco,permanente,Veneto,Venezia,VE,Venezia,,,,,45.516526,12.242488
 way,878894727,Reparto Volo VVF Venezia,,permanente,Veneto,Venezia,VE,Venezia,,,,,45.508816,12.348739
 node,2262139790,Vigili del Fuoco,,permanente,Veneto,Venezia,VE,Venezia,3862,30123,,,45.435188,12.326143
