@@ -182,7 +182,7 @@ footer{font-size:11px;color:var(--muted);padding:4px 12px;background:var(--panel
 // Vuoto = modalita' locale: le correzioni restano nel browser e si esportano col pulsante in alto.
 const APPS_SCRIPT_URL = '';
 // Deve coincidere con TOKEN nello script Apps Script.
-const TOKEN = 'https://script.google.com/macros/s/AKfycbx41BHi8iOF-FBDTT9lRyCUpRtlBQoXnXb_Kg7jJFj5s0a3HDiUTzAh7fQyQeeVUu2s/exec';
+const TOKEN = 'cambia-questo-token';
 // ============================================================================
 
 // La pagina funziona sia nella root del repo sia dentro db/sedi/ (o altre sottocartelle).
@@ -263,7 +263,7 @@ function creaSede(p, lat, lon) {
 function applica(s) {
   const c = s.corr;
   s.e = {...s.p};
-  s.stato = c ? c.stato || '' : '';
+  s.stato = c ? c.stato || '' : (s.p.stato || '');
   if (c) for (const k of CAMPI) if (c[k] !== undefined && c[k] !== '') s.e[k] = String(c[k]);
   if (!TIPI[s.e.tipo]) s.e.tipo = 'altro';
   const lat = c && parseFloat(c.lat), lon = c && parseFloat(c.lon);

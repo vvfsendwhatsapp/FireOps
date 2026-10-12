@@ -8,12 +8,17 @@ Assegna a ogni sede regione, provincia (con sigla) e comune dai confini OSM
 Requisiti:  osmium-tool (CLI, per il prefiltro)  +  pip install osmium shapely
 Uso:        python script/sedi.py --pbf italy-latest.osm.pbf --out db/sedi
 
+Correzioni (modulo convalida di sedi.html), applicate sopra i dati OSM:
+  --correzioni-csv URL   foglio Google pubblicato in CSV                 [o variabile d'ambiente CORREZIONI_CSV]
+  --correzioni-url URL   Web App Apps Script (GET) del foglio condiviso  [o variabile d'ambiente CORREZIONI_URL]
+  --correzioni-dir DIR   cartella con i JSON esportati dalla pagina      [default: <out>/correzioni]
+
 Output in --out:
   sedi_vvf.sqlite / sedi_vvf.geojson / sedi_vvf.csv   (tutte le sedi)
   province/<SIGLA>.geojson                            (una per provincia)
   province/index.json                                 (elenco province con conteggi)
 """
-import argparse, csv, json, os, re, shutil, sqlite3, subprocess, sys, tempfile, time
+import argparse, csv, glob, io, json, os, re, shutil, sqlite3, subprocess, sys, tempfile, time, urllib.request
 
 import osmium
 from shapely import wkb
@@ -190,35 +195,128 @@ def nome_it(t):
 
 
 # ---------------------------------------------------------------- output
+def posizione(loc, pt):
+    """regione/provincia/sigla/comune dai confini OSM; None se fuori Italia."""
+    reg = loc.trova(4, pt)
+    if reg is None:
+        return None
+    prov, com = loc.trova(6, pt), loc.trova(8, pt)
+    if prov is None and reg.get("ISO3166-2") == "IT-23":   # la Valle d'Aosta non ha provincia in OSM
+        prov = {"name": "Aosta", "ref": "AO"}
+    return {"regione": nome_it(reg), "provincia": nome_it(prov), "sigla": sigla(prov), "comune": nome_it(com)}
+
+
+VUOTI = {"stato": "", "convalida_utente": "", "convalida_data": "", "note": ""}
+
+
 def costruisci(candidati, loc):
     righe, fuori = [], 0
     for tipo, oid, t, g in candidati:
         pt = g if g.geom_type == "Point" else g.representative_point()
-        reg = loc.trova(4, pt)
-        if reg is None:
+        pos = posizione(loc, pt)
+        if pos is None:
             fuori += 1
             continue
-        prov, com = loc.trova(6, pt), loc.trova(8, pt)
-        if prov is None and reg.get("ISO3166-2") == "IT-23":   # la Valle d'Aosta non ha provincia in OSM
-            prov = {"name": "Aosta", "ref": "AO"}
         righe.append({
             "osm_type": tipo, "osm_id": oid,
             "nome": t.get("name") or t.get("official_name") or "",
             "operatore": t.get("operator", ""),
             "tipo": classifica(t),
-            "regione": nome_it(reg),
-            "provincia": nome_it(prov),
-            "sigla": sigla(prov),
-            "comune": nome_it(com) or t.get("addr:city", ""),
+            "regione": pos["regione"], "provincia": pos["provincia"], "sigla": pos["sigla"],
+            "comune": pos["comune"] or t.get("addr:city", ""),
             "via": " ".join(x for x in (t.get("addr:street"), t.get("addr:housenumber")) if x),
             "cap": t.get("addr:postcode", ""),
             "telefono": t.get("phone") or t.get("contact:phone") or "",
             "sito": t.get("website") or t.get("contact:website") or "",
             "lat": round(pt.y, 6), "lon": round(pt.x, 6),
+            **VUOTI,
             "tags": json.dumps(t, ensure_ascii=False, sort_keys=True),
         })
-    righe.sort(key=lambda r: (r["regione"], r["sigla"], r["comune"], r["nome"]))
     return righe, fuori
+
+
+# ---------------------------------------------------------------- correzioni
+STATI_OK = {"convalidata", "da_correggere", "non_vvf", "chiusa", "nuova"}
+TIPI_OK = {"permanente", "volontario", "aeroportuale", "portuale", "rurale", "presidio", "altro"}
+
+
+def leggi_correzioni(url, cartella, csv_url=""):
+    tutte = []
+    if csv_url:
+        req = urllib.request.Request(csv_url, headers={"User-Agent": "FireOps-sedi/1.0"})
+        with urllib.request.urlopen(req, timeout=60) as r:   # il link pubblicato fa redirect: urllib lo segue
+            testo = r.read().decode("utf-8-sig")
+        if testo.lstrip().startswith("<"):
+            raise RuntimeError("il link CSV restituisce una pagina HTML: il foglio e' pubblicato in CSV?")
+        lst = [x for x in csv.DictReader(io.StringIO(testo)) if (x.get("chiave") or "").strip()]
+        tutte += lst
+        print(f"Correzioni dal foglio (CSV pubblicato): {len(lst)}")
+    if url:
+        req = urllib.request.Request(url, headers={"User-Agent": "FireOps-sedi/1.0"})
+        with urllib.request.urlopen(req, timeout=60) as r:   # Apps Script risponde con redirect: urllib lo segue
+            j = json.load(r)
+        if not j.get("ok"):
+            raise RuntimeError(f"Apps Script: {j}")
+        tutte += j.get("correzioni", [])
+        print(f"Correzioni dal foglio: {len(j.get('correzioni', []))}")
+    for f in sorted(glob.glob(os.path.join(cartella, "*.json"))):
+        with open(f, encoding="utf-8") as fh:
+            lst = json.load(fh)
+        tutte += lst if isinstance(lst, list) else lst.get("correzioni", [])
+        print(f"Correzioni da {f}: {len(lst)}")
+    # stessa correzione presente sia nel foglio sia in un file: tengo una sola copia (per id)
+    viste, uniche = set(), []
+    for c in tutte:
+        k = c.get("id") or json.dumps(c, sort_keys=True)
+        if k not in viste:
+            viste.add(k); uniche.append(c)
+    uniche.sort(key=lambda c: str(c.get("timestamp", "")))
+    ultima = {}
+    for c in uniche:                       # vince l'ultima correzione per ogni sede
+        if c.get("chiave") and c.get("stato") in STATI_OK:
+            ultima[c["chiave"]] = c
+    return ultima
+
+
+def applica_correzioni(righe, ultima, loc):
+    per_chiave = {f"{r['osm_type']}/{r['osm_id']}": r for r in righe}
+    usate, scartate, nuove, orfane = 0, 0, 0, 0
+    for chiave, c in ultima.items():
+        r = per_chiave.get(chiave)
+        if r is None:
+            if not chiave.startswith("nuova/"):
+                orfane += 1                # sede sparita da OSM: la correzione resta nel foglio, qui non serve
+                continue
+            r = {"osm_type": "nuova", "osm_id": chiave.split("/", 1)[1], "nome": "", "operatore": "", "tipo": "altro",
+                 "regione": "", "provincia": "", "sigla": "", "comune": "", "via": "", "cap": "", "telefono": "",
+                 "sito": "", "lat": 0.0, "lon": 0.0, **VUOTI, "tags": "{}"}
+            per_chiave[chiave] = r; righe.append(r); nuove += 1
+        for k in ("nome", "comune", "via", "telefono"):
+            if str(c.get(k, "")).strip():
+                r[k] = str(c[k]).strip()
+        if c.get("tipo") in TIPI_OK:
+            r["tipo"] = c["tipo"]
+        try:
+            lat, lon = float(c.get("lat") or "x"), float(c.get("lon") or "x")
+        except ValueError:
+            lat = lon = None
+        if lat is not None:
+            r["lat"], r["lon"] = round(lat, 6), round(lon, 6)
+            pos = posizione(loc, Point(lon, lat))
+            if pos:
+                r.update({k: v for k, v in pos.items() if v and not (k == "comune" and str(c.get("comune", "")).strip())})
+        r["stato"] = c["stato"]
+        r["convalida_utente"] = str(c.get("utente", ""))
+        r["convalida_data"] = str(c.get("timestamp", ""))[:19]
+        r["note"] = str(c.get("note", ""))
+        usate += 1
+    # tolgo le scartate e le sedi aggiunte a mano finite fuori dall'Italia (nessuna regione)
+    tenute = [r for r in righe if r["stato"] not in ("non_vvf", "chiusa") and r["lat"]
+              and (r["osm_type"] != "nuova" or r["regione"])]
+    scartate = len(righe) - len(tenute)
+    print(f"Correzioni applicate: {usate} (nuove sedi: {nuove}, tolte non VVF/chiuse: {scartate}, "
+          f"riferite a sedi non piu' in OSM: {orfane})")
+    return tenute
 
 
 def geojson(righe):
@@ -274,6 +372,11 @@ def main():
     ap.add_argument("--pbf", required=True, help="estratto Geofabrik, es. italy-latest.osm.pbf")
     ap.add_argument("--out", default="db/sedi")
     ap.add_argument("--min", type=int, default=500, help="sotto questo numero di sedi non scrive nulla (protezione)")
+    ap.add_argument("--correzioni-csv", default=os.environ.get("CORREZIONI_CSV", ""),
+                    help="URL del foglio Google pubblicato in CSV (File > Condividi > Pubblica sul web)")
+    ap.add_argument("--correzioni-url", default=os.environ.get("CORREZIONI_URL", ""),
+                    help="in alternativa: URL /exec della Web App Apps Script")
+    ap.add_argument("--correzioni-dir", default=None)
     args = ap.parse_args()
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -284,12 +387,19 @@ def main():
           + ", ".join(f"liv.{k}={len(v)}" for k, v in confini.items()) + f" ({time.time() - t:.0f}s)")
 
     candidati = deduplica(candidati)
-    righe, fuori = costruisci(candidati, Localizzatore(confini))
+    loc = Localizzatore(confini)
+    righe, fuori = costruisci(candidati, loc)
     senza_prov = sum(1 for r in righe if not r["sigla"])
     print(f"Sedi in Italia: {len(righe)}  (scartate fuori confine: {fuori}, senza provincia: {senza_prov})")
 
     if len(righe) < args.min:
         sys.exit(f"Solo {len(righe)} sedi (< {args.min}): qualcosa non va, non scrivo niente.")
+    cdir = args.correzioni_dir or os.path.join(args.out, "correzioni")
+    try:
+        righe = applica_correzioni(righe, leggi_correzioni(args.correzioni_url, cdir, args.correzioni_csv), loc)
+    except Exception as e:   # il foglio non risponde: scrivo comunque i dati OSM, ma lo segnalo forte
+        print(f"::warning::Correzioni NON applicate: {e}")
+    righe.sort(key=lambda r: (r["regione"], r["sigla"], r["comune"], r["nome"]))
     n = scrivi(righe, args.out)
     tipi = {}
     for r in righe:

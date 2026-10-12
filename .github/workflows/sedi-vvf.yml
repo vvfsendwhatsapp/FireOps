@@ -3,7 +3,7 @@ name: Aggiorna DB sedi VVF
 on:
   workflow_dispatch:        # bottone "Run workflow"
   schedule:
-    - cron: "0 3 1 * *"     # ogni 1 del mese, 03:00 UTC
+    - cron: "0 3 * * 1"     # ogni lunedi', 03:00 UTC (OSM aggiornato + correzioni del foglio)
 
 permissions:
   contents: write
@@ -41,7 +41,10 @@ jobs:
           md5sum -c italy-latest.osm.pbf.md5
           ls -lh italy-latest.osm.pbf
 
-      - name: Estrai sedi
+      - name: Estrai sedi e applica le correzioni del foglio
+        env:
+          # foglio Google pubblicato in CSV (File > Condividi > Pubblica sul web)
+          CORREZIONI_CSV: https://docs.google.com/spreadsheets/d/e/2PACX-1vSLE9Qh4MdnB6tdq_b4ssxNVxol1-kfukb4bos2b_6eklGdWJiFGKSS9YdH6ilayGhqhHhf7GXqLYQO/pub?output=csv
         run: python script/sedi.py --pbf "$RUNNER_TEMP/italy-latest.osm.pbf" --out db/sedi
 
       - name: Commit se cambiato
