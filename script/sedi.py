@@ -23,16 +23,27 @@ REGIONI = {
     "IT-23": "Valle d'Aosta", "IT-34": "Veneto",
 }
 
-QUERY = """[out:json][timeout:120];
+QUERY_BASE = """[out:json][timeout:90];
 area["ISO3166-2"="{iso}"]->.a;
 (
   nwr["amenity"="fire_station"](area.a);
   nwr["emergency"="fire_station"](area.a);
   nwr["building"="fire_station"](area.a);
-  nwr["name"~"presidio|nucleo|portual|rurale|antincendio|vigili del fuoco|vvf",i]["amenity"!~"^(restaurant|cafe|bar|school|parking|fuel)$"]["shop"!~"."]["highway"!~"."](area.a);
-  nwr["operator"~"vigili del fuoco|vvf",i]["amenity"!~"^(parking|fuel)$"]["highway"!~"."](area.a);
 );
 out center tags;"""
+
+# Pesante (regex sui nomi): ristretta a oggetti con chiavi tipiche, best-effort.
+NOMI = "presidio|nucleo|portual|rurale|antincendio|vigili del fuoco|vvf"
+QUERY_EXTRA = """[out:json][timeout:120];
+area["ISO3166-2"="{iso}"]->.a;
+(
+  nwr["emergency"]["name"~"%(n)s",i](area.a);
+  nwr["office"]["name"~"%(n)s",i](area.a);
+  nwr["operator"~"vigili del fuoco|vvf",i]["office"](area.a);
+  nwr["operator"~"vigili del fuoco|vvf",i]["emergency"](area.a);
+  nwr["operator"~"vigili del fuoco|vvf",i]["building"](area.a);
+);
+out center tags;""" % {"n": NOMI}
 
 
 def overpass(query):
@@ -42,11 +53,16 @@ def overpass(query):
         for attempt in range(2):
             try:
                 req = urllib.request.Request(url, data=data, headers={"User-Agent": "FireOps-sedi-vvf/1.0"})
-                with urllib.request.urlopen(req, timeout=180) as r:
-                    return json.load(r)
+                with urllib.request.urlopen(req, timeout=150) as r:
+                    j = json.load(r)
+                remark = str(j.get("remark", ""))
+                if "error" in remark.lower() or "timed out" in remark.lower() or "out of memory" in remark.lower():
+                    raise RuntimeError(f"remark Overpass: {remark}")
+                return j
             except Exception as e:  # noqa: BLE001
                 last = e
-                time.sleep(5)
+                print(f"  ! {url.split('/')[2]}: {e}", file=sys.stderr, flush=True)
+                time.sleep(8)
     raise RuntimeError(f"Overpass non raggiungibile: {last}")
 
 
@@ -118,10 +134,19 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default="db/sedi", help="cartella di output (default: db/sedi)")
     args = ap.parse_args()
-    viste, righe = set(), []
+    viste, righe, mancanti = set(), [], []
     for iso, nome in REGIONI.items():
         print(f"{nome}...", end=" ", flush=True)
-        els = overpass(QUERY.format(iso=iso)).get("elements", [])
+        try:
+            els = overpass(QUERY_BASE.format(iso=iso)).get("elements", [])
+        except RuntimeError as e:
+            print(f"ERRORE ({e})")
+            mancanti.append(nome)
+            continue
+        try:
+            els += overpass(QUERY_EXTRA.format(iso=iso)).get("elements", [])
+        except RuntimeError as e:
+            print(f"[query presidi saltata: {e}]", end=" ")
         n = 0
         for el in els:
             k = (el["type"], el["id"])
@@ -131,7 +156,9 @@ def main():
             if r:
                 viste.add(k); righe.append(r); n += 1
         print(n)
-        time.sleep(2)
+        time.sleep(3)
+    if mancanti:
+        sys.exit(f"Regioni NON scaricate: {', '.join(mancanti)}. Nessun file scritto (per non committare un DB parziale).")
     if not righe:
         sys.exit("Nessun risultato")
     scrivi(righe, args.out)
