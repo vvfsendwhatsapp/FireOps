@@ -130,39 +130,60 @@ def scrivi(righe, outdir="db/sedi", nome="sedi_vvf"):
         json.dump({"type": "FeatureCollection", "features": feats}, f, ensure_ascii=False)
 
 
+def scarica_regione(iso):
+    """Base obbligatoria (con retry sui mirror); presidi best-effort."""
+    els = overpass(QUERY_BASE.format(iso=iso)).get("elements", [])
+    try:
+        els += overpass(QUERY_EXTRA.format(iso=iso)).get("elements", [])
+    except RuntimeError as e:
+        print(f"[presidi saltati: {str(e)[:60]}]", end=" ")
+    return els
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default="db/sedi", help="cartella di output (default: db/sedi)")
+    ap.add_argument("--round", type=int, default=6, help="giri massimi di ripetizione sulle regioni in errore")
     args = ap.parse_args()
-    viste, righe, mancanti = set(), [], []
+
+    risultati = {}                       # iso -> elementi
+    da_fare = list(REGIONI)
+    for giro in range(1, args.round + 1):
+        if not da_fare:
+            break
+        if giro > 1:
+            attesa = min(60 * (giro - 1), 240)
+            print(f"\n== Giro {giro}/{args.round}: riprovo {len(da_fare)} regioni dopo {attesa}s ==", flush=True)
+            time.sleep(attesa)
+        ancora = []
+        for iso in da_fare:
+            print(f"{REGIONI[iso]}...", end=" ", flush=True)
+            try:
+                risultati[iso] = scarica_regione(iso)
+                print(len(risultati[iso]))
+            except RuntimeError as e:
+                print(f"ERRORE ({str(e)[:70]})")
+                ancora.append(iso)
+            time.sleep(3)
+        da_fare = ancora
+
+    if da_fare:
+        sys.exit("Regioni NON scaricate dopo tutti i giri: %s. Nessun file scritto (per non committare un DB parziale)."
+                 % ", ".join(REGIONI[i] for i in da_fare))
+
+    viste, righe = set(), []
     for iso, nome in REGIONI.items():
-        print(f"{nome}...", end=" ", flush=True)
-        try:
-            els = overpass(QUERY_BASE.format(iso=iso)).get("elements", [])
-        except RuntimeError as e:
-            print(f"ERRORE ({e})")
-            mancanti.append(nome)
-            continue
-        try:
-            els += overpass(QUERY_EXTRA.format(iso=iso)).get("elements", [])
-        except RuntimeError as e:
-            print(f"[query presidi saltata: {e}]", end=" ")
-        n = 0
-        for el in els:
+        for el in risultati[iso]:
             k = (el["type"], el["id"])
             if k in viste:
                 continue
             r = riga(el, nome)
             if r:
-                viste.add(k); righe.append(r); n += 1
-        print(n)
-        time.sleep(3)
-    if mancanti:
-        sys.exit(f"Regioni NON scaricate: {', '.join(mancanti)}. Nessun file scritto (per non committare un DB parziale).")
+                viste.add(k); righe.append(r)
     if not righe:
         sys.exit("Nessun risultato")
     scrivi(righe, args.out)
-    print(f"Totale: {len(righe)} sedi -> {args.out}/sedi_vvf.sqlite / .geojson / .csv")
+    print(f"\nTotale: {len(righe)} sedi -> {args.out}/sedi_vvf.sqlite / .geojson / .csv")
 
 
 if __name__ == "__main__":
