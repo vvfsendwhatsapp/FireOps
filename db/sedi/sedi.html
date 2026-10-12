@@ -13,7 +13,7 @@
   --head:#22272e; --headink:#fff; --accent:#c8102e; --chip:#eef0f3;
   --ok:#1f9d55; --warn:#e0a800; --ko:#5c6670;
   --t-permanente:#c8102e; --t-volontario:#e8790c; --t-aeroportuale:#1f6fd1;
-  --t-centrale:#7a0019; --t-portuale:#0f9aa8; --t-rurale:#3a8c2f; --t-presidio:#7b4bc4; --t-altro:#7a828c;
+  --t-centrale:#7a0019; --t-portuale:#0f9aa8; --t-rurale:#3a8c2f; --t-stagionale:#c2185b; --t-presidio:#7b4bc4; --t-altro:#7a828c;
 }
 @media (prefers-color-scheme: dark){ :root{
   --bg:#15181c; --panel:#1e2228; --ink:#e7eaee; --muted:#9aa3ad; --line:#2f353d;
@@ -202,13 +202,21 @@ const STORE = 'fireops-sedi-v1', CODA = 'fireops-sedi-coda-v1', UTENTE = 'fireop
 
 const TIPI = {
   centrale:'Sede centrale', permanente:'Permanente', volontario:'Volontario', aeroportuale:'Aeroportuale',
-  portuale:'Portuale', rurale:'Rurale', presidio:'Presidio', altro:'Altro / da verificare'
+  portuale:'Portuale', rurale:'Rurale', stagionale:'Sede stagionale', presidio:'Presidio', altro:'Altro / da verificare'
 };
 const STATI = {
   '': 'Da convalidare', convalidata: 'Convalidata', da_correggere: 'Da correggere',
   non_vvf: 'Non è una sede VVF', chiusa: 'Chiusa / dismessa', nuova: 'Aggiunta a mano'
 };
 const CAMPI = ['nome', 'tipo', 'comune', 'via', 'telefono'];
+// Nome standard: "Vigili del fuoco - {Tipologia} di {Comune}" (stessa regola di script/sedi.py)
+const NOME_TIPO = {
+  centrale: 'Sede centrale', permanente: 'Distaccamento', volontario: 'Distaccamento volontario',
+  aeroportuale: 'Distaccamento aeroportuale', portuale: 'Distaccamento portuale', rurale: 'Presidio rurale',
+  stagionale: 'Sede stagionale', presidio: 'Presidio', altro: 'Sede'
+};
+const nomeAuto = (tipo, comune) => 'Vigili del fuoco - ' + (NOME_TIPO[tipo] || 'Sede') + (comune ? ' di ' + comune : '');
+let nomeManuale = false;
 const css = getComputedStyle(document.documentElement);
 const COL = Object.fromEntries(Object.keys(TIPI).map(t => [t, css.getPropertyValue('--t-' + t).trim()]));
 const $ = id => document.getElementById(id);
@@ -282,6 +290,7 @@ function applica(s) {
   s.e = {...s.p};
   s.stato = c ? c.stato || '' : (s.p.stato || '');
   if (c) for (const k of CAMPI) if (c[k] !== undefined && c[k] !== '') s.e[k] = String(c[k]);
+  if (c && !c.nome) s.e.nome = nomeAuto(s.e.tipo, s.e.comune);
   if (c && c.sigla_corretta && PROV[c.sigla_corretta]) {
     s.e.sigla = c.sigla_corretta; s.e.provincia = PROV[c.sigla_corretta].provincia; s.e.regione = PROV[c.sigla_corretta].regione;
   }
@@ -425,7 +434,9 @@ function apriScheda(s) {
       ${nuova ? svBox(s) : ''}
       <div class="sec">${nuova ? 'Dati della nuova sede' : 'Modifica dati'}</div>
       <form class="f" id="pform" autocomplete="off">
-        <label for="f_nome">Nome</label><input id="f_nome" value="${esc(e.nome)}" placeholder="es. Distaccamento VVF di …">
+        <label for="f_nome">Nome</label>
+        <div class="pos"><input id="f_nome" value="${esc(nomeIniziale(s))}" style="flex:1" title="Si compila da Tipo e Comune; se lo scrivi a mano resta il tuo">
+          <button type="button" id="f_nomeauto" title="Torna al nome automatico">↺ auto</button></div>
         <label for="f_tipo">Tipo</label><select id="f_tipo">${opt(TIPI, e.tipo)}</select>
         <label for="f_comune">Comune</label><input id="f_comune" value="${esc(e.comune)}">
         <label for="f_sigla">Provincia</label><select id="f_sigla">${optProv(e.sigla)}</select>
@@ -446,8 +457,19 @@ function apriScheda(s) {
     </div>`;
   $('panel').classList.add('open');
   $('panel').dataset.lat = s.lat; $('panel').dataset.lon = s.lon;
-  marcaModificati();
+  aggiornaNome(); marcaModificati();
   document.querySelectorAll('.item').forEach(el => el.classList.toggle('sel', shown[+el.dataset.i] === s));
+}
+
+function nomeIniziale(s) {
+  nomeManuale = !!(s.corr && s.corr.nome);
+  return nomeManuale ? s.corr.nome : nomeAuto(s.e.tipo, s.e.comune);
+}
+function aggiornaNome() {
+  const b = $('f_nomeauto');
+  if (b) b.classList.toggle('on', nomeManuale), b.title = nomeManuale ? 'Nome scritto a mano: clicca per tornare a quello automatico' : 'Nome automatico';
+  if (nomeManuale || !$('f_nome')) return;
+  $('f_nome').value = nomeAuto($('f_tipo').value, $('f_comune').value.trim());
 }
 
 function svBox(s) {
@@ -511,7 +533,8 @@ function salva(statoForzato) {
   const sg = $('f_sigla').value;
   c.sigla_corretta = sg && sg !== String(s.p.sigla ?? '') ? sg : '';
   if (c.sigla_corretta && PROV[c.sigla_corretta]) { c.sigla = c.sigla_corretta; c.regione = PROV[c.sigla_corretta].regione; }
-  if (s.p.osm_type === 'nuova' && !c.nome) { $('f_nome').focus(); toast('Dai un nome alla nuova sede'); return; }
+  c.nome = nomeManuale ? $('f_nome').value.trim() : '';   // vuoto = nome automatico (lo rigenera anche il workflow)
+  if (s.p.osm_type === 'nuova' && !$('f_comune').value.trim() && !c.nome) { $('f_comune').focus(); toast('Scrivi il comune: serve per il nome'); return; }
   coda.push(c); ls.set(CODA, coda);
   s.storia.push(c); s.corr = c;
   const tenuta = s;
@@ -535,6 +558,7 @@ $('panel').addEventListener('click', e => {
     return;
   }
   if (t.id === 'f_sposta' || t.id === 'pfatto') return sposta(!spostando);
+  if (t.id === 'f_nomeauto') { nomeManuale = false; aggiornaNome(); marcaModificati(); return; }
 });
 
 function sposta(on) {
@@ -557,7 +581,11 @@ function sposta(on) {
     if (f) { f.src = svSrc(lat, lon); $('svlink').href = svLink(lat, lon); }
   }
 }
-$('panel').addEventListener('input', marcaModificati);
+$('panel').addEventListener('input', e => {
+  if (e.target.id === 'f_nome') nomeManuale = e.target.value.trim() !== nomeAuto($('f_tipo').value, $('f_comune').value.trim());
+  aggiornaNome(); marcaModificati();
+});
+$('panel').addEventListener('change', e => { if (e.target.id === 'f_tipo') { aggiornaNome(); marcaModificati(); } });
 $('panel').addEventListener('submit', e => { e.preventDefault(); salva(); });
 
 // ---------------------------------------------------------------- filtri, elenco, mappa
@@ -684,7 +712,7 @@ $('add').addEventListener('click', () => {
     const s = sedeNuova(c);
     cluster.addLayer(s.m);
     apriScheda(s);
-    setTimeout(() => $('f_nome') && $('f_nome').focus(), 50);
+    setTimeout(() => $('f_comune') && $('f_comune').focus(), 50);
   });
 });
 $('near').addEventListener('click', () => {

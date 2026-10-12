@@ -108,6 +108,8 @@ def classifica(t):
         return "rurale"
     if "sede centrale" in s or "comando provinciale" in s or re.match(r"\s*comando\b", s):
         return "centrale"
+    if "stagional" in s or "estiv" in s or "invernal" in s:
+        return "stagionale"
     if "presidio" in s:
         return "presidio"
     if "berufsfeuerwehr" in s or "permanente" in s:
@@ -208,7 +210,7 @@ def posizione(loc, pt):
     return {"regione": nome_it(reg), "provincia": nome_it(prov), "sigla": sigla(prov), "comune": nome_it(com)}
 
 
-VUOTI = {"convalidata": 0, "stato": "", "convalida_utente": "", "convalida_data": "", "note": ""}
+VUOTI = {"nome_manuale": 0, "convalidata": 0, "stato": "", "convalida_utente": "", "convalida_data": "", "note": ""}
 
 
 def costruisci(candidati, loc):
@@ -222,6 +224,7 @@ def costruisci(candidati, loc):
         righe.append({
             "osm_type": tipo, "osm_id": oid,
             "nome": t.get("name") or t.get("official_name") or "",
+            "nome_osm": t.get("name") or t.get("official_name") or "",
             "operatore": t.get("operator", ""),
             "tipo": classifica(t),
             "regione": pos["regione"], "provincia": pos["provincia"], "sigla": pos["sigla"],
@@ -239,7 +242,7 @@ def costruisci(candidati, loc):
 
 # ---------------------------------------------------------------- correzioni
 STATI_OK = {"convalidata", "da_correggere", "non_vvf", "chiusa", "nuova"}
-TIPI_OK = {"centrale", "permanente", "volontario", "aeroportuale", "portuale", "rurale", "presidio", "altro"}
+TIPI_OK = {"centrale", "stagionale", "permanente", "volontario", "aeroportuale", "portuale", "rurale", "presidio", "altro"}
 
 
 def leggi_correzioni(url, cartella, csv_url=""):
@@ -293,13 +296,14 @@ def applica_correzioni(righe, ultima, loc):
             if not chiave.startswith("nuova/"):
                 orfane += 1                # sede sparita da OSM: la correzione resta nel foglio, qui non serve
                 continue
-            r = {"osm_type": "nuova", "osm_id": chiave.split("/", 1)[1], "nome": "", "operatore": "", "tipo": "altro",
+            r = {"osm_type": "nuova", "osm_id": chiave.split("/", 1)[1], "nome": "", "nome_osm": "", "operatore": "", "tipo": "altro",
                  "regione": "", "provincia": "", "sigla": "", "comune": "", "via": "", "cap": "", "telefono": "",
                  "sito": "", "lat": 0.0, "lon": 0.0, **VUOTI, "tags": "{}"}
             per_chiave[chiave] = r; righe.append(r); nuove += 1
         for k in ("nome", "comune", "via", "telefono"):
             if str(c.get(k, "")).strip():
                 r[k] = str(c[k]).strip()
+        r["nome_manuale"] = 1 if str(c.get("nome", "")).strip() else 0   # nome scritto a mano: non lo rigenero
         if c.get("tipo") in TIPI_OK:
             r["tipo"] = c["tipo"]
         try:
@@ -329,6 +333,43 @@ def applica_correzioni(righe, ultima, loc):
     print(f"Correzioni applicate: {usate} (nuove sedi: {nuove}, tolte non VVF/chiuse: {scartate}, "
           f"riferite a sedi non piu' in OSM: {orfane})")
     return tenute
+
+
+# ---------------------------------------------------------------- nome standard
+NOME_TIPO = {
+    "centrale": "Sede centrale", "permanente": "Distaccamento", "volontario": "Distaccamento volontario",
+    "aeroportuale": "Distaccamento aeroportuale", "portuale": "Distaccamento portuale",
+    "rurale": "Presidio rurale", "stagionale": "Sede stagionale", "presidio": "Presidio", "altro": "Sede",
+}
+GENERICI = re.compile(r"^(vigili del fuoco|vvf|v\.v\.f\.?|caserma( dei)? (vigili del fuoco|pompieri)|pompieri|"
+                      r"(freiwillige )?feuerwehr|vigili del fuoco volontari|distaccamento( vvf)?)$", re.I)
+
+
+def nome_auto(tipo, comune):
+    base = "Vigili del fuoco - " + NOME_TIPO.get(tipo, "Sede")
+    return f"{base} di {comune}" if comune else base
+
+
+def nomi_standard(righe):
+    """nome = "Vigili del fuoco - {Tipologia} di {Comune}" (salvo nomi scritti a mano nelle correzioni).
+    Se nello stesso comune ci sono piu' sedi dello stesso tipo aggiungo tra parentesi il nome OSM, la via o un numero."""
+    gruppi = {}
+    for r in righe:
+        if r.get("nome_manuale"):
+            continue
+        r["nome"] = nome_auto(r["tipo"], r["comune"])
+        gruppi.setdefault(r["nome"], []).append(r)
+    for nome, lst in gruppi.items():
+        if len(lst) < 2:
+            continue
+        usati = set()
+        for i, r in enumerate(sorted(lst, key=lambda x: (x.get("nome_osm", ""), x.get("via", ""))), 1):
+            osm = (r.get("nome_osm") or "").strip()
+            extra = osm if osm and not GENERICI.match(osm) else (r.get("via") or "")
+            if not extra or extra in usati:
+                extra = f"{extra} {i}".strip() if extra else str(i)
+            usati.add(extra)
+            r["nome"] = f"{nome} ({extra})"
 
 
 def geojson(righe):
@@ -416,6 +457,7 @@ def main():
         righe = applica_correzioni(righe, leggi_correzioni(args.correzioni_url, cdir, args.correzioni_csv), loc)
     except Exception as e:   # il foglio non risponde: scrivo comunque i dati OSM, ma lo segnalo forte
         print(f"::warning::Correzioni NON applicate: {e}")
+    nomi_standard(righe)
     righe.sort(key=lambda r: (r["regione"], r["sigla"], r["comune"], r["nome"]))
     n = scrivi(righe, args.out)
     tipi = {}
