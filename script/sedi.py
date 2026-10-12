@@ -8,10 +8,11 @@ Opzione: --out CARTELLA
 import argparse, csv, json, os, sqlite3, sys, time, urllib.parse, urllib.request
 
 MIRRORS = [
-    "https://overpass-api.de/api/interpreter",
     "https://overpass.kumi.systems/api/interpreter",
     "https://overpass.private.coffee/api/interpreter",
+    "https://overpass-api.de/api/interpreter",   # ultimo: spesso sovraccarico
 ]
+LENTI = {}   # mirror -> n. fallimenti consecutivi; dopo 2 viene saltato finche' ce ne sono altri
 
 # Una query per regione (ISO 3166-2): piu' leggere e danno la regione gratis.
 REGIONI = {
@@ -49,18 +50,23 @@ out center tags;""" % {"n": NOMI}
 def overpass(query):
     data = urllib.parse.urlencode({"data": query}).encode()
     last = None
-    for url in MIRRORS:
+    ordine = [m for m in MIRRORS if LENTI.get(m, 0) < 2] or MIRRORS
+    if ordine is MIRRORS:
+        LENTI.clear()
+    for url in ordine:
         for attempt in range(2):
             try:
                 req = urllib.request.Request(url, data=data, headers={"User-Agent": "FireOps-sedi-vvf/1.0"})
                 with urllib.request.urlopen(req, timeout=150) as r:
                     j = json.load(r)
-                remark = str(j.get("remark", ""))
-                if "error" in remark.lower() or "timed out" in remark.lower() or "out of memory" in remark.lower():
+                remark = str(j.get("remark", "")).lower()
+                if "error" in remark or "timed out" in remark or "out of memory" in remark:
                     raise RuntimeError(f"remark Overpass: {remark}")
+                LENTI[url] = 0
                 return j
             except Exception as e:  # noqa: BLE001
                 last = e
+                LENTI[url] = LENTI.get(url, 0) + 1
                 print(f"  ! {url.split('/')[2]}: {e}", file=sys.stderr, flush=True)
                 time.sleep(8)
     raise RuntimeError(f"Overpass non raggiungibile: {last}")
