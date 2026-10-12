@@ -206,7 +206,7 @@ def posizione(loc, pt):
     return {"regione": nome_it(reg), "provincia": nome_it(prov), "sigla": sigla(prov), "comune": nome_it(com)}
 
 
-VUOTI = {"stato": "", "convalida_utente": "", "convalida_data": "", "note": ""}
+VUOTI = {"convalidata": 0, "stato": "", "convalida_utente": "", "convalida_data": "", "note": ""}
 
 
 def costruisci(candidati, loc):
@@ -306,6 +306,8 @@ def applica_correzioni(righe, ultima, loc):
             if pos:
                 r.update({k: v for k, v in pos.items() if v and not (k == "comune" and str(c.get("comune", "")).strip())})
         r["stato"] = c["stato"]
+        # flag separato: 1 = controllata e confermata da un operatore (convalidata o inserita a mano)
+        r["convalidata"] = 1 if c["stato"] in ("convalidata", "nuova") else 0
         r["convalida_utente"] = str(c.get("utente", ""))
         r["convalida_data"] = str(c.get("timestamp", ""))[:19]
         r["note"] = str(c.get("note", ""))
@@ -340,6 +342,7 @@ def scrivi(righe, outdir):
     db.execute("CREATE INDEX idx_prov ON sedi(sigla, tipo)")
     db.execute("CREATE INDEX idx_reg ON sedi(regione)")
     db.execute("CREATE INDEX idx_pos ON sedi(lat, lon)")
+    db.execute("CREATE INDEX idx_conv ON sedi(convalidata)")
     db.commit(); db.close()
     os.replace(tmp, base + ".sqlite")
 
@@ -348,6 +351,9 @@ def scrivi(righe, outdir):
         w.writeheader(); w.writerows(righe)
     with open(base + ".geojson", "w", encoding="utf-8") as f:
         json.dump(geojson(righe), f, ensure_ascii=False)
+    # solo le sedi controllate da un operatore (flag convalidata = 1)
+    with open(base + "_convalidate.geojson", "w", encoding="utf-8") as f:
+        json.dump(geojson([r for r in righe if r.get("convalidata")]), f, ensure_ascii=False)
 
     pdir = os.path.join(outdir, "province")
     if os.path.isdir(pdir):
@@ -361,7 +367,8 @@ def scrivi(righe, outdir):
         with open(os.path.join(pdir, f"{s}.geojson"), "w", encoding="utf-8") as f:
             json.dump(geojson(lst), f, ensure_ascii=False)
         indice.append({"sigla": s, "provincia": lst[0]["provincia"], "regione": lst[0]["regione"],
-                       "sedi": len(lst), "file": f"province/{s}.geojson"})
+                       "sedi": len(lst), "convalidate": sum(1 for r in lst if r.get("convalidata")),
+                       "file": f"province/{s}.geojson"})
     with open(os.path.join(pdir, "index.json"), "w", encoding="utf-8") as f:
         json.dump(indice, f, ensure_ascii=False, indent=1)
     return len(per_prov)
@@ -404,7 +411,9 @@ def main():
     tipi = {}
     for r in righe:
         tipi[r["tipo"]] = tipi.get(r["tipo"], 0) + 1
-    print(f"Scritto {args.out}: {len(righe)} sedi, {n} province. Tipi: {tipi}")
+    conv = sum(1 for r in righe if r.get("convalidata"))
+    print(f"Scritto {args.out}: {len(righe)} sedi ({conv} convalidate, {len(righe) - conv} da controllare), "
+          f"{n} province. Tipi: {tipi}")
 
 
 if __name__ == "__main__":
