@@ -98,6 +98,13 @@ def e_sede(t):
 def classifica(t):
     """Euristica sul nome/operatore. Da verificare a mano."""
     s = " ".join(t.get(k, "") for k in ("name", "operator", "official_name", "name:de", "short_name")).lower()
+    # specialisti prima di tutto (un reparto volo sta spesso in aeroporto, i sommozzatori in porto)
+    if "sommozzator" in s or "nucleo sub" in s:
+        return "sommozzatori"
+    if "reparto volo" in s or "elinucleo" in s or "nucleo elicotteri" in s:
+        return "volo"
+    if "telecomunicazion" in s or re.search(r"\btlc\b", s):
+        return "tlc"
     if "volontari" in s or "freiwillige" in s:
         return "volontario"
     if "aeroport" in s or "aereoport" in s or "airport" in s:
@@ -244,7 +251,7 @@ def costruisci(candidati, loc):
 
 # ---------------------------------------------------------------- correzioni
 STATI_OK = {"convalidata", "da_correggere", "non_vvf", "chiusa", "nuova"}
-TIPI_OK = {"direzione", "centrale", "stagionale", "permanente", "volontario", "aeroportuale", "portuale", "rurale", "presidio", "altro"}
+TIPI_OK = {"direzione", "centrale", "stagionale", "sommozzatori", "volo", "tlc", "permanente", "volontario", "aeroportuale", "portuale", "rurale", "presidio", "altro"}
 
 
 def leggi_correzioni(url, cartella, csv_url=""):
@@ -341,7 +348,8 @@ def applica_correzioni(righe, ultima, loc):
 NOME_TIPO = {
     "direzione": "Direzione regionale", "centrale": "Sede centrale", "permanente": "Distaccamento", "volontario": "Distaccamento volontario",
     "aeroportuale": "Distaccamento aeroportuale", "portuale": "Distaccamento portuale",
-    "rurale": "Presidio rurale", "stagionale": "Sede stagionale", "presidio": "Presidio", "altro": "Sede",
+    "rurale": "Presidio rurale", "stagionale": "Sede stagionale",
+    "sommozzatori": "Nucleo sommozzatori", "volo": "Reparto volo", "tlc": "Nucleo telecomunicazioni", "presidio": "Presidio", "altro": "Sede",
 }
 GENERICI = re.compile(r"^(vigili del fuoco|vvf|v\.v\.f\.?|caserma( dei)? (vigili del fuoco|pompieri)|pompieri|"
                       r"(freiwillige )?feuerwehr|vigili del fuoco volontari|distaccamento( vvf)?)$", re.I)
