@@ -117,8 +117,12 @@ footer{font-size:11px;color:var(--muted);padding:4px 12px;background:var(--panel
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
 <script>
 (() => {
-// Percorso dei dati rispetto a questa pagina (pagina nella root del repo).
-const DATA_URL = 'db/sedi/sedi_vvf.geojson';
+// La pagina funziona sia nella root del repo sia dentro db/sedi/ (o altre sottocartelle):
+// prova i percorsi in ordine e usa il primo che risponde.
+const DATA_CANDIDATI = ['sedi_vvf.geojson', 'db/sedi/sedi_vvf.geojson', '../db/sedi/sedi_vvf.geojson', '../../db/sedi/sedi_vvf.geojson'];
+let DATA_URL = DATA_CANDIDATI[0];
+// Home di FireOps = root del sito (la parte prima di /db/ se la pagina sta li')
+const ROOT = location.pathname.includes('/db/') ? location.pathname.split('/db/')[0] + '/' : './';
 const STORE = 'fireops-sedi-v1';
 
 const TIPI = {
@@ -304,8 +308,15 @@ load();
 const u = new URLSearchParams(location.search);       // es. sedi.html?prov=TN  oppure ?reg=Lombardia&q=milano
 if (u.has('prov') || u.has('reg') || u.has('q')) { state.reg = u.get('reg') || ''; state.prov = (u.get('prov') || '').toUpperCase(); state.q = u.get('q') || ''; }
 
-fetch(DATA_URL, {cache: 'no-cache'}).then(r => {
-  if (!r.ok) throw new Error('HTTP ' + r.status);
+document.querySelector('header a.home').href = ROOT;
+async function scarica() {
+  for (const u of DATA_CANDIDATI) {
+    try { const r = await fetch(u, {cache: 'no-cache'}); if (r.ok) { DATA_URL = u; return r; } } catch (e) {}
+  }
+  DATA_URL = DATA_CANDIDATI.join(' / ');
+  throw new Error('file dati non trovato (HTTP 404)');
+}
+scarica().then(r => {
   const lm = r.headers.get('last-modified');
   $('upd').textContent = lm ? 'aggiornato al ' + new Date(lm).toLocaleDateString('it-IT') : '';
   return r.json();
