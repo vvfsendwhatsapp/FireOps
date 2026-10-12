@@ -1,12 +1,16 @@
 name: Aggiorna DB sedi VVF
 
 on:
-  workflow_dispatch:        # bottone "Run workflow" su GitHub
+  workflow_dispatch:        # bottone "Run workflow"
   schedule:
     - cron: "0 3 1 * *"     # ogni 1 del mese, 03:00 UTC
 
 permissions:
   contents: write
+
+concurrency:
+  group: sedi-vvf
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -14,16 +18,38 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Scarica sedi da OSM
-        run: python script/sedi.py --out db/sedi
+
+      - name: Installa osmium
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq osmium-tool
+          pip install -q osmium shapely
+
+      - name: Scarica estratto Italia (Geofabrik)
+        run: |
+          cd "$RUNNER_TEMP"
+          for i in 1 2 3 4 5; do
+            curl -fL --retry 3 -o italy-latest.osm.pbf https://download.geofabrik.de/europe/italy-latest.osm.pbf \
+            && curl -fL --retry 3 -o italy-latest.osm.pbf.md5 https://download.geofabrik.de/europe/italy-latest.osm.pbf.md5 \
+            && md5sum -c italy-latest.osm.pbf.md5 && break
+            echo "Download fallito o file corrotto, riprovo tra 60s ($i/5)"; sleep 60
+          done
+          md5sum -c italy-latest.osm.pbf.md5
+          ls -lh italy-latest.osm.pbf
+
+      - name: Estrai sedi
+        run: python script/sedi.py --pbf "$RUNNER_TEMP/italy-latest.osm.pbf" --out db/sedi
+
       - name: Commit se cambiato
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add db/sedi
           git diff --cached --quiet && echo "Nessuna modifica" && exit 0
-          git commit -m "Aggiorna db/sedi (OSM)"
+          git commit -m "Aggiorna db/sedi (OSM Geofabrik)"
+          git pull --rebase
           git push

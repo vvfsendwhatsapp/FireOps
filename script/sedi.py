@@ -1,81 +1,100 @@
 #!/usr/bin/env python3
-"""Costruisce il DB delle sedi VVF in Italia (Trentino-Alto Adige incluso) da OpenStreetMap.
+"""DB sedi VVF in Italia (Trentino-Alto Adige incluso) dall'estratto OSM Geofabrik.
 
-Solo libreria standard. Uso:  python3 build_sedi_vvf.py
-Output (default in db/sedi): sedi_vvf.sqlite, sedi_vvf.geojson, sedi_vvf.csv
-Opzione: --out CARTELLA
+Niente Overpass: legge italy-latest.osm.pbf in locale.
+Assegna a ogni sede regione, provincia (con sigla) e comune dai confini OSM
+(admin_level 4 / 6 / 8) e scrive anche un GeoJSON per ogni provincia.
+
+Requisiti:  osmium-tool (CLI, per il prefiltro)  +  pip install osmium shapely
+Uso:        python script/sedi.py --pbf italy-latest.osm.pbf --out db/sedi
+
+Output in --out:
+  sedi_vvf.sqlite / sedi_vvf.geojson / sedi_vvf.csv   (tutte le sedi)
+  province/<SIGLA>.geojson                            (una per provincia)
+  province/index.json                                 (elenco province con conteggi)
 """
-import argparse, csv, json, os, sqlite3, sys, time, urllib.parse, urllib.request
+import argparse, csv, json, os, re, shutil, sqlite3, subprocess, sys, tempfile, time
 
-MIRRORS = [
-    "https://overpass.kumi.systems/api/interpreter",
-    "https://overpass.private.coffee/api/interpreter",
-    "https://overpass-api.de/api/interpreter",   # ultimo: spesso sovraccarico
-]
-LENTI = {}   # mirror -> n. fallimenti consecutivi; dopo 2 viene saltato finche' ce ne sono altri
+import osmium
+from shapely import wkb
+from shapely.geometry import Point
+from shapely.strtree import STRtree
 
-# Una query per regione (ISO 3166-2): piu' leggere e danno la regione gratis.
-REGIONI = {
-    "IT-65": "Abruzzo", "IT-77": "Basilicata", "IT-78": "Calabria", "IT-72": "Campania",
-    "IT-45": "Emilia-Romagna", "IT-36": "Friuli-Venezia Giulia", "IT-62": "Lazio",
-    "IT-42": "Liguria", "IT-25": "Lombardia", "IT-57": "Marche", "IT-67": "Molise",
-    "IT-21": "Piemonte", "IT-75": "Puglia", "IT-88": "Sardegna", "IT-82": "Sicilia",
-    "IT-52": "Toscana", "IT-32": "Trentino-Alto Adige", "IT-55": "Umbria",
-    "IT-23": "Valle d'Aosta", "IT-34": "Veneto",
-}
-
-QUERY_BASE = """[out:json][timeout:90];
-area["ISO3166-2"="{iso}"]->.a;
-(
-  nwr["amenity"="fire_station"](area.a);
-  nwr["emergency"="fire_station"](area.a);
-  nwr["building"="fire_station"](area.a);
-);
-out center tags;"""
-
-# Pesante (regex sui nomi): ristretta a oggetti con chiavi tipiche, best-effort.
-NOMI = "presidio|nucleo|portual|rurale|antincendio|vigili del fuoco|vvf"
-QUERY_EXTRA = """[out:json][timeout:120];
-area["ISO3166-2"="{iso}"]->.a;
-(
-  nwr["emergency"]["name"~"%(n)s",i](area.a);
-  nwr["office"]["name"~"%(n)s",i](area.a);
-  nwr["operator"~"vigili del fuoco|vvf",i]["office"](area.a);
-  nwr["operator"~"vigili del fuoco|vvf",i]["emergency"](area.a);
-  nwr["operator"~"vigili del fuoco|vvf",i]["building"](area.a);
-);
-out center tags;""" % {"n": NOMI}
+# ---------------------------------------------------------------- prefiltro
+# osmium tags-filter: case-sensitive, '*' iniziale = sottostringa. Volutamente largo:
+# la selezione vera la fa e_sede() in Python.
+ESPRESSIONI = """
+nwr/amenity=fire_station
+nwr/emergency=fire_station
+nwr/building=fire_station
+nwr/name=*igili del fuoco
+nwr/name=*IGILI DEL FUOCO
+nwr/name=*VVF
+nwr/name=*vvf
+nwr/name=*V.V.F
+nwr/name=*euerwehr
+nwr/name=*ompieri
+nwr/name=*residio
+nwr/name=*ortual
+nwr/name=*rurale
+nwr/name=*Rurale
+nwr/name=*ntincendi
+nwr/official_name=*igili del fuoco
+nwr/operator=*igili del fuoco
+nwr/operator=*IGILI DEL FUOCO
+nwr/operator=*VVF
+nwr/operator=*euerwehr
+r/admin_level=4,6,8
+"""
 
 
-def overpass(query):
-    data = urllib.parse.urlencode({"data": query}).encode()
-    last = None
-    ordine = [m for m in MIRRORS if LENTI.get(m, 0) < 2] or MIRRORS
-    if ordine is MIRRORS:
-        LENTI.clear()
-    for url in ordine:
-        for attempt in range(2):
-            try:
-                req = urllib.request.Request(url, data=data, headers={"User-Agent": "FireOps-sedi-vvf/1.0"})
-                with urllib.request.urlopen(req, timeout=150) as r:
-                    j = json.load(r)
-                remark = str(j.get("remark", "")).lower()
-                if "error" in remark or "timed out" in remark or "out of memory" in remark:
-                    raise RuntimeError(f"remark Overpass: {remark}")
-                LENTI[url] = 0
-                return j
-            except Exception as e:  # noqa: BLE001
-                last = e
-                LENTI[url] = LENTI.get(url, 0) + 1
-                print(f"  ! {url.split('/')[2]}: {e}", file=sys.stderr, flush=True)
-                time.sleep(8)
-    raise RuntimeError(f"Overpass non raggiungibile: {last}")
+def prefiltra(pbf, tmpdir):
+    exe = shutil.which("osmium")
+    if not exe:
+        print("! osmium-tool non trovato: leggo il PBF intero (lento, molta RAM)", file=sys.stderr)
+        return pbf
+    expr = os.path.join(tmpdir, "espressioni.txt")
+    out = os.path.join(tmpdir, "filtrato.osm.pbf")
+    with open(expr, "w") as f:
+        f.write(ESPRESSIONI)
+    t = time.time()
+    subprocess.run([exe, "tags-filter", pbf, "-e", expr, "-o", out, "--overwrite"], check=True)
+    print(f"Prefiltro: {os.path.getsize(out) / 1e6:.1f} MB in {time.time() - t:.0f}s")
+    return out
 
 
-def classifica(tags):
-    """Euristica: permanente / volontario / aeroportuale / altro. Da verificare a mano."""
-    s = " ".join(tags.get(k, "") for k in ("name", "operator", "official_name", "name:de", "short_name")).lower()
-    if "volontari" in s or "freiwillige" in s or "volontaria" in s:
+# ---------------------------------------------------------------- selezione
+RE_VVF = re.compile(r"vigili del fuoco|\bv\.?v\.?f\b|feuerwehr|pompieri|corpo nazionale", re.I)
+RE_PRESIDIO = re.compile(r"presidio|portual|rurale|antincendi|\baib\b", re.I)
+ESCLUDI_CHIAVI = ("highway", "shop", "railway", "public_transport", "historic", "tourism",
+                  "memorial", "healthcare", "leisure", "route", "natural", "waterway",
+                  "boundary", "place", "power", "advertising")
+ESCLUDI_AMENITY = {"restaurant", "cafe", "bar", "pub", "fast_food", "parking", "parking_space",
+                   "parking_entrance", "fuel", "school", "kindergarten", "hospital", "clinic",
+                   "doctors", "pharmacy", "place_of_worship", "bench", "waste_basket", "toilets",
+                   "drinking_water", "fountain", "vending_machine", "grave_yard", "post_box"}
+ESCLUDI_EMERGENCY = {"fire_hydrant", "fire_water_pond", "suction_point", "defibrillator",
+                     "assembly_point", "fire_extinguisher", "water_tank", "access_point",
+                     "phone", "siren", "life_ring", "landing_site", "lifeguard"}
+
+
+def e_sede(t):
+    if "fire_station" in (t.get("amenity"), t.get("emergency"), t.get("building")):
+        return True
+    if any(k in t for k in ESCLUDI_CHIAVI):
+        return False
+    if t.get("amenity") in ESCLUDI_AMENITY or t.get("emergency") in ESCLUDI_EMERGENCY:
+        return False
+    testo = " ".join(t.get(k, "") for k in ("name", "official_name", "operator", "short_name"))
+    if RE_VVF.search(testo):
+        return True
+    return bool(RE_PRESIDIO.search(testo)) and ("emergency" in t or "office" in t)
+
+
+def classifica(t):
+    """Euristica sul nome/operatore. Da verificare a mano."""
+    s = " ".join(t.get(k, "") for k in ("name", "operator", "official_name", "name:de", "short_name")).lower()
+    if "volontari" in s or "freiwillige" in s:
         return "volontario"
     if "aeroport" in s or "airport" in s:
         return "aeroportuale"
@@ -85,111 +104,196 @@ def classifica(tags):
         return "rurale"
     if "presidio" in s:
         return "presidio"
-    if any(x in s for x in ("vigili del fuoco", "vvf", "berufsfeuerwehr", "corpo nazionale", "distaccamento", "comando")):
+    if "berufsfeuerwehr" in s or "permanente" in s:
+        return "permanente"
+    if any(x in s for x in ("vigili del fuoco", "vvf", "corpo nazionale", "distaccamento", "comando")):
         return "permanente"
     return "altro"
 
 
-def riga(el, regione):
-    t = el.get("tags", {})
-    lat = el.get("lat") or el.get("center", {}).get("lat")
-    lon = el.get("lon") or el.get("center", {}).get("lon")
-    if lat is None or lon is None:
-        return None
-    return {
-        "osm_type": el["type"], "osm_id": el["id"],
-        "nome": t.get("name") or t.get("official_name") or "",
-        "operatore": t.get("operator", ""),
-        "tipo": classifica(t),
-        "regione": regione,
-        "provincia": t.get("addr:province", ""),
-        "comune": t.get("addr:city", ""),
-        "via": " ".join(x for x in (t.get("addr:street"), t.get("addr:housenumber")) if x),
-        "cap": t.get("addr:postcode", ""),
-        "telefono": t.get("phone") or t.get("contact:phone") or "",
-        "sito": t.get("website") or t.get("contact:website") or "",
-        "lat": lat, "lon": lon,
-        "tags": json.dumps(t, ensure_ascii=False),
-    }
+# ---------------------------------------------------------------- lettura PBF
+def leggi(path):
+    fab = osmium.geom.WKBFactory()
+    candidati, confini = [], {4: [], 6: [], 8: []}
+    fp = osmium.FileProcessor(path).with_locations().with_areas()
+    for o in fp:
+        try:
+            if o.is_node():
+                t = dict(o.tags)
+                if t and e_sede(t):
+                    candidati.append(("node", o.id, t, Point(o.location.lon, o.location.lat)))
+            elif o.is_area():
+                t = dict(o.tags)
+                if not t:
+                    continue
+                if t.get("boundary") == "administrative" and t.get("admin_level") in ("4", "6", "8"):
+                    g = wkb.loads(fab.create_multipolygon(o), hex=True)
+                    confini[int(t["admin_level"])].append((g, t))
+                elif e_sede(t):
+                    g = wkb.loads(fab.create_multipolygon(o), hex=True)
+                    tipo = "way" if o.from_way() else "relation"
+                    candidati.append((tipo, o.orig_id(), t, g))
+        except Exception as e:  # geometria rotta: la salto
+            print(f"! {getattr(o, 'id', '?')}: {e}", file=sys.stderr)
+    return candidati, confini
 
 
-def scrivi(righe, outdir="db/sedi", nome="sedi_vvf"):
+def deduplica(candidati):
+    """Se un nodo-sede sta dentro un poligono-sede, tengo il nodo e completo i suoi tag col poligono."""
+    nodi = [c for c in candidati if c[0] == "node"]
+    poli = [c for c in candidati if c[0] != "node"]
+    if not nodi or not poli:
+        return candidati
+    albero = STRtree([c[3] for c in nodi])
+    tieni = []
+    for p in poli:
+        dentro = [nodi[i] for i in albero.query(p[3], predicate="contains")]
+        if dentro:
+            for n in dentro:
+                for k, v in p[2].items():
+                    n[2].setdefault(k, v)
+        else:
+            tieni.append(p)
+    return nodi + tieni
+
+
+class Localizzatore:
+    def __init__(self, confini):
+        self.livelli = {}
+        for lv, lst in confini.items():
+            if lv == 4:  # solo regioni italiane (l'estratto sborda oltre confine)
+                lst = [x for x in lst if x[1].get("ISO3166-2", "").startswith("IT-")]
+            geoms = [g for g, _ in lst]
+            self.livelli[lv] = (STRtree(geoms) if geoms else None, lst)
+
+    def trova(self, lv, pt):
+        albero, lst = self.livelli[lv]
+        if albero is None:
+            return None
+        idx = albero.query(pt, predicate="intersects")
+        if len(idx) == 0:
+            return None
+        return min((lst[i] for i in idx), key=lambda x: x[0].area)[1]  # il piu' piccolo se sovrapposti
+
+
+def sigla(tp):
+    if not tp:
+        return ""
+    iso = tp.get("ISO3166-2", "")
+    if iso.startswith("IT-") and iso[3:].isalpha():
+        return iso[3:]
+    ref = tp.get("ref", "")
+    return ref if ref.isalpha() and len(ref) == 2 else ""
+
+
+def nome_it(t):
+    return t.get("name:it") or t.get("name", "") if t else ""
+
+
+# ---------------------------------------------------------------- output
+def costruisci(candidati, loc):
+    righe, fuori = [], 0
+    for tipo, oid, t, g in candidati:
+        pt = g if g.geom_type == "Point" else g.representative_point()
+        reg = loc.trova(4, pt)
+        if reg is None:
+            fuori += 1
+            continue
+        prov, com = loc.trova(6, pt), loc.trova(8, pt)
+        righe.append({
+            "osm_type": tipo, "osm_id": oid,
+            "nome": t.get("name") or t.get("official_name") or "",
+            "operatore": t.get("operator", ""),
+            "tipo": classifica(t),
+            "regione": nome_it(reg),
+            "provincia": nome_it(prov),
+            "sigla": sigla(prov),
+            "comune": nome_it(com) or t.get("addr:city", ""),
+            "via": " ".join(x for x in (t.get("addr:street"), t.get("addr:housenumber")) if x),
+            "cap": t.get("addr:postcode", ""),
+            "telefono": t.get("phone") or t.get("contact:phone") or "",
+            "sito": t.get("website") or t.get("contact:website") or "",
+            "lat": round(pt.y, 6), "lon": round(pt.x, 6),
+            "tags": json.dumps(t, ensure_ascii=False, sort_keys=True),
+        })
+    righe.sort(key=lambda r: (r["regione"], r["sigla"], r["comune"], r["nome"]))
+    return righe, fuori
+
+
+def geojson(righe):
+    return {"type": "FeatureCollection", "features": [
+        {"type": "Feature", "geometry": {"type": "Point", "coordinates": [r["lon"], r["lat"]]},
+         "properties": {k: v for k, v in r.items() if k not in ("lat", "lon", "tags")}} for r in righe]}
+
+
+def scrivi(righe, outdir):
     os.makedirs(outdir, exist_ok=True)
-    base = os.path.join(outdir, nome)
-    if os.path.exists(base + ".sqlite"):
-        os.remove(base + ".sqlite")
+    base = os.path.join(outdir, "sedi_vvf")
     cols = list(righe[0].keys())
-    db = sqlite3.connect(base + ".sqlite")
-    db.execute("DROP TABLE IF EXISTS sedi")
+
+    tmp = base + ".sqlite.tmp"
+    if os.path.exists(tmp):
+        os.remove(tmp)
+    db = sqlite3.connect(tmp)
     db.execute("CREATE TABLE sedi (%s, PRIMARY KEY (osm_type, osm_id))" % ", ".join(cols))
     db.executemany("INSERT INTO sedi VALUES (%s)" % ",".join("?" * len(cols)),
                    [tuple(r[c] for c in cols) for r in righe])
-    db.execute("CREATE INDEX idx_reg ON sedi(regione, tipo)")
+    db.execute("CREATE INDEX idx_prov ON sedi(sigla, tipo)")
+    db.execute("CREATE INDEX idx_reg ON sedi(regione)")
     db.execute("CREATE INDEX idx_pos ON sedi(lat, lon)")
     db.commit(); db.close()
+    os.replace(tmp, base + ".sqlite")
+
     with open(base + ".csv", "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=[c for c in cols if c != "tags"], extrasaction="ignore")
         w.writeheader(); w.writerows(righe)
-    feats = [{"type": "Feature", "geometry": {"type": "Point", "coordinates": [r["lon"], r["lat"]]},
-              "properties": {k: v for k, v in r.items() if k not in ("lat", "lon", "tags")}} for r in righe]
     with open(base + ".geojson", "w", encoding="utf-8") as f:
-        json.dump({"type": "FeatureCollection", "features": feats}, f, ensure_ascii=False)
+        json.dump(geojson(righe), f, ensure_ascii=False)
 
-
-def scarica_regione(iso):
-    """Base obbligatoria (con retry sui mirror); presidi best-effort."""
-    els = overpass(QUERY_BASE.format(iso=iso)).get("elements", [])
-    try:
-        els += overpass(QUERY_EXTRA.format(iso=iso)).get("elements", [])
-    except RuntimeError as e:
-        print(f"[presidi saltati: {str(e)[:60]}]", end=" ")
-    return els
+    pdir = os.path.join(outdir, "province")
+    if os.path.isdir(pdir):
+        shutil.rmtree(pdir)
+    os.makedirs(pdir)
+    per_prov = {}
+    for r in righe:
+        per_prov.setdefault(r["sigla"] or "XX", []).append(r)
+    indice = []
+    for s, lst in sorted(per_prov.items()):
+        with open(os.path.join(pdir, f"{s}.geojson"), "w", encoding="utf-8") as f:
+            json.dump(geojson(lst), f, ensure_ascii=False)
+        indice.append({"sigla": s, "provincia": lst[0]["provincia"], "regione": lst[0]["regione"],
+                       "sedi": len(lst), "file": f"province/{s}.geojson"})
+    with open(os.path.join(pdir, "index.json"), "w", encoding="utf-8") as f:
+        json.dump(indice, f, ensure_ascii=False, indent=1)
+    return len(per_prov)
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", default="db/sedi", help="cartella di output (default: db/sedi)")
-    ap.add_argument("--round", type=int, default=6, help="giri massimi di ripetizione sulle regioni in errore")
+    ap.add_argument("--pbf", required=True, help="estratto Geofabrik, es. italy-latest.osm.pbf")
+    ap.add_argument("--out", default="db/sedi")
+    ap.add_argument("--min", type=int, default=500, help="sotto questo numero di sedi non scrive nulla (protezione)")
     args = ap.parse_args()
 
-    risultati = {}                       # iso -> elementi
-    da_fare = list(REGIONI)
-    for giro in range(1, args.round + 1):
-        if not da_fare:
-            break
-        if giro > 1:
-            attesa = min(60 * (giro - 1), 240)
-            print(f"\n== Giro {giro}/{args.round}: riprovo {len(da_fare)} regioni dopo {attesa}s ==", flush=True)
-            time.sleep(attesa)
-        ancora = []
-        for iso in da_fare:
-            print(f"{REGIONI[iso]}...", end=" ", flush=True)
-            try:
-                risultati[iso] = scarica_regione(iso)
-                print(len(risultati[iso]))
-            except RuntimeError as e:
-                print(f"ERRORE ({str(e)[:70]})")
-                ancora.append(iso)
-            time.sleep(3)
-        da_fare = ancora
+    with tempfile.TemporaryDirectory() as tmp:
+        t = time.time()
+        src = prefiltra(args.pbf, tmp)
+        candidati, confini = leggi(src)
+    print(f"Letti {len(candidati)} candidati, confini: "
+          + ", ".join(f"liv.{k}={len(v)}" for k, v in confini.items()) + f" ({time.time() - t:.0f}s)")
 
-    if da_fare:
-        sys.exit("Regioni NON scaricate dopo tutti i giri: %s. Nessun file scritto (per non committare un DB parziale)."
-                 % ", ".join(REGIONI[i] for i in da_fare))
+    candidati = deduplica(candidati)
+    righe, fuori = costruisci(candidati, Localizzatore(confini))
+    senza_prov = sum(1 for r in righe if not r["sigla"])
+    print(f"Sedi in Italia: {len(righe)}  (scartate fuori confine: {fuori}, senza provincia: {senza_prov})")
 
-    viste, righe = set(), []
-    for iso, nome in REGIONI.items():
-        for el in risultati[iso]:
-            k = (el["type"], el["id"])
-            if k in viste:
-                continue
-            r = riga(el, nome)
-            if r:
-                viste.add(k); righe.append(r)
-    if not righe:
-        sys.exit("Nessun risultato")
-    scrivi(righe, args.out)
-    print(f"\nTotale: {len(righe)} sedi -> {args.out}/sedi_vvf.sqlite / .geojson / .csv")
+    if len(righe) < args.min:
+        sys.exit(f"Solo {len(righe)} sedi (< {args.min}): qualcosa non va, non scrivo niente.")
+    n = scrivi(righe, args.out)
+    tipi = {}
+    for r in righe:
+        tipi[r["tipo"]] = tipi.get(r["tipo"], 0) + 1
+    print(f"Scritto {args.out}: {len(righe)} sedi, {n} province. Tipi: {tipi}")
 
 
 if __name__ == "__main__":
