@@ -11,6 +11,7 @@
 :root{
   --bg:#f4f5f7; --panel:#fff; --ink:#1d2228; --muted:#68717c; --line:#dfe3e8;
   --head:#22272e; --headink:#fff; --accent:#c8102e; --chip:#eef0f3;
+  --ok:#1f9d55; --warn:#e0a800; --ko:#5c6670;
   --t-permanente:#c8102e; --t-volontario:#e8790c; --t-aeroportuale:#1f6fd1;
   --t-portuale:#0f9aa8; --t-rurale:#3a8c2f; --t-presidio:#7b4bc4; --t-altro:#7a828c;
 }
@@ -22,7 +23,7 @@
 html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
   font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 body{display:flex;flex-direction:column;height:100dvh}
-button,select,input{font:inherit;color:inherit}
+button,select,input,textarea{font:inherit;color:inherit}
 
 header{background:var(--head);color:var(--headink);display:flex;align-items:center;gap:10px;
   padding:8px 12px;padding-top:calc(8px + env(safe-area-inset-top))}
@@ -30,6 +31,9 @@ header a.home{color:#fff;text-decoration:none;font-size:20px;line-height:1;paddi
 header h1{font-size:16px;margin:0;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 header h1 b{color:#ff5a6e;font-weight:600}
 #count{font-size:12px;background:#ffffff1f;padding:3px 8px;border-radius:99px;white-space:nowrap}
+#sync{font-size:12px;padding:3px 8px;border-radius:99px;border:0;cursor:pointer;background:#ffffff1f;color:#fff;white-space:nowrap}
+#sync.pend{background:var(--warn);color:#1d2228}
+#sync.err{background:var(--accent)}
 
 .bar{background:var(--panel);border-bottom:1px solid var(--line);padding:8px 12px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .bar input[type=search]{flex:1 1 180px;min-width:0;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
@@ -43,45 +47,90 @@ header h1 b{color:#ff5a6e;font-weight:600}
 .chip .dot{width:10px;height:10px;border-radius:50%}
 .chip.off{opacity:.4;text-decoration:line-through}
 .chip small{color:var(--muted)}
+.chips .sep{width:1px;background:var(--line);flex:none;margin:2px 4px}
 
 main{flex:1;display:flex;min-height:0;position:relative}
 #list{width:360px;border-right:1px solid var(--line);background:var(--panel);overflow-y:auto}
 #map{flex:1;min-height:0}
+#map.adding{cursor:crosshair}
 .item{padding:10px 12px;border-bottom:1px solid var(--line);cursor:pointer;display:flex;gap:10px}
-.item:hover{background:var(--chip)}
+.item:hover,.item.sel{background:var(--chip)}
 .item .dot{flex:none;width:12px;height:12px;border-radius:50%;margin-top:4px}
 .item .n{font-weight:600}
 .item .s{color:var(--muted);font-size:12px}
-.item .d{margin-left:auto;color:var(--muted);font-size:12px;white-space:nowrap}
+.item .d{margin-left:auto;color:var(--muted);font-size:12px;white-space:nowrap;text-align:right}
+.st{font-size:11px;font-weight:600;white-space:nowrap}
+.st.convalidata,.st.nuova{color:var(--ok)} .st.da_correggere{color:var(--warn)} .st.non_vvf,.st.chiusa{color:var(--ko)}
 .more{display:block;width:calc(100% - 24px);margin:10px 12px}
 .empty{padding:24px 12px;color:var(--muted);text-align:center}
+
+/* scheda convalida */
+#panel{position:absolute;top:0;right:0;bottom:0;width:390px;max-width:100%;background:var(--panel);border-left:1px solid var(--line);
+  z-index:1200;display:none;flex-direction:column;box-shadow:-4px 0 16px #0002}
+#panel.open{display:flex}
+#panel .ph{padding:12px 14px 10px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:flex-start}
+#panel .ph h2{font-size:16px;margin:2px 0 0;line-height:1.25}
+#panel .ph .x{margin-left:auto;border:0;background:none;font-size:22px;line-height:1;cursor:pointer;color:var(--muted);padding:0 4px}
+#panel .pb{overflow-y:auto;padding:12px 14px;flex:1}
+#panel .pf{padding:10px 14px;border-top:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap;padding-bottom:calc(10px + env(safe-area-inset-bottom))}
+.tag{display:inline-block;color:#fff;font-size:11px;padding:1px 7px;border-radius:99px;text-transform:uppercase;letter-spacing:.03em}
+.info div{margin:2px 0}
+.k{color:var(--muted)}
+.acts{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px}
+.acts a,.acts button{font-size:12px;padding:6px 9px;border-radius:6px;border:1px solid var(--line);background:var(--bg);text-decoration:none;cursor:pointer;color:var(--ink)}
+.acts a.nav{background:var(--accent);border-color:var(--accent);color:#fff}
+.quick{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:14px 0 6px}
+.quick button{padding:9px 6px;border-radius:8px;border:1px solid var(--line);background:var(--bg);cursor:pointer;font-weight:600;font-size:13px}
+.quick button.ok{background:var(--ok);border-color:var(--ok);color:#fff;grid-column:1 / -1}
+.quick button.sel{outline:2px solid var(--ink);outline-offset:1px}
+.sec{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:16px 0 6px;font-weight:600}
+.f{display:grid;grid-template-columns:96px 1fr;gap:6px 8px;align-items:center}
+.f label{color:var(--muted);font-size:13px}
+.f input,.f select,.f textarea{width:100%;min-width:0;padding:7px 8px;border:1px solid var(--line);border-radius:7px;background:var(--bg)}
+.f input.chg,.f select.chg,.f textarea.chg{border-color:var(--warn);background:color-mix(in srgb,var(--warn) 10%,var(--bg))}
+.f textarea{resize:vertical;min-height:54px}
+.pos{display:flex;gap:6px;align-items:center}
+.pos code{font-size:12px;flex:1}
+.pos button{font-size:12px;padding:6px 8px;border-radius:6px;border:1px solid var(--line);background:var(--bg);cursor:pointer}
+.pos button.on{background:var(--warn);border-color:var(--warn);color:#1d2228}
+.hist{font-size:12px;color:var(--muted);margin:0;padding-left:16px}
+.hist li{margin:2px 0}
+.btn.save{background:var(--ink);color:var(--panel);border-color:var(--ink);flex:1;font-weight:600}
+.btn.save:disabled{opacity:.4;cursor:default}
+.note{font-size:12px;color:var(--muted);margin-top:8px}
 
 .tabs{display:none}
 @media (max-width:760px){
   #list{position:absolute;inset:0;width:auto;border:0;z-index:1100;display:none}
   .bar{gap:6px;padding:8px}
   .bar input[type=search]{order:1;flex:1 1 120px}
-  #near{order:2} #reset{order:3}
-  .bar select{order:4;flex:1 1 120px}
-  #csv{order:6}
+  #near{order:2} #add{order:3} #reset{order:4}
+  .bar select{order:5;flex:1 1 100px}
+  #csv{order:8}
   .bar .lbl{display:none}
   main.showlist #list{display:block}
   .tabs{display:flex;background:var(--panel);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
   .tabs button{flex:1;padding:10px;border:0;background:none;font-weight:600;color:var(--muted)}
   .tabs button.on{color:var(--accent);box-shadow:inset 0 3px 0 var(--accent)}
+  #panel{position:fixed;top:auto;left:0;right:0;bottom:0;width:auto;max-height:82dvh;border-left:0;border-top:1px solid var(--line);
+    border-radius:14px 14px 0 0;box-shadow:0 -6px 24px #0004;z-index:1300}
+  #panel .ph::before{content:"";position:absolute;left:50%;top:6px;width:40px;height:4px;border-radius:2px;background:var(--line);transform:translateX(-50%)}
+  #panel .ph{position:relative;padding-top:16px}
+  #count{display:none}
+  #panel.mini .pb,#panel.mini .pf{display:none}
+  #panel.mini .ph .k{display:none}
 }
+#pfatto{display:none;margin-left:auto;align-self:center}
+#panel.mini #pfatto{display:inline-block}
+#panel.mini .x{display:none}
 
-.pin{width:16px;height:16px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #0006,0 1px 3px #0008}
+.pin{width:16px;height:16px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #0006,0 1px 3px #0008;position:relative}
+.pin.convalidata,.pin.nuova{box-shadow:0 0 0 3px var(--ok),0 1px 3px #0008}
+.pin.da_correggere{box-shadow:0 0 0 3px var(--warn),0 1px 3px #0008}
+.pin.non_vvf,.pin.chiusa{opacity:.55;box-shadow:0 0 0 2px var(--ko)}
+.pin.sel{transform:scale(1.5)}
 .me{width:16px;height:16px;border-radius:50%;background:#1f6fd1;border:3px solid #fff;box-shadow:0 0 0 6px #1f6fd140}
-.leaflet-popup-content{margin:12px 14px;min-width:220px}
-.pp h3{margin:0 0 4px;font-size:15px}
-.pp .tag{display:inline-block;color:#fff;font-size:11px;padding:1px 7px;border-radius:99px;margin-bottom:6px;text-transform:uppercase;letter-spacing:.03em}
-.pp div{margin:2px 0}
-.pp .k{color:#68717c}
-.pp .acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.pp .acts a,.pp .acts button{font-size:12px;padding:5px 8px;border-radius:6px;border:1px solid #ccd;background:#f6f7f9;color:#1d2228;text-decoration:none;cursor:pointer}
-.pp .acts a.nav{background:#c8102e;border-color:#c8102e;color:#fff}
-#msg{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:900;background:var(--head);color:#fff;padding:8px 14px;border-radius:8px;font-size:13px;display:none;max-width:90%}
+#msg{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:1400;background:var(--head);color:#fff;padding:8px 14px;border-radius:8px;font-size:13px;display:none;max-width:90%;text-align:center}
 footer{font-size:11px;color:var(--muted);padding:4px 12px;background:var(--panel);border-top:1px solid var(--line)}
 </style>
 </head>
@@ -90,13 +139,23 @@ footer{font-size:11px;color:var(--muted);padding:4px 12px;background:var(--panel
   <a class="home" href="./" title="Home FireOps">⌂</a>
   <h1>FireOps VVF - <b>Sedi</b></h1>
   <span id="count">…</span>
+  <button id="sync" title="Stato salvataggio correzioni">…</button>
 </header>
 
 <div class="bar">
   <input type="search" id="q" placeholder="Cerca nome, comune, via…" autocomplete="off">
   <select id="reg"><option value="">Tutte le regioni</option></select>
   <select id="prov"><option value="">Tutte le province</option></select>
+  <select id="stato" title="Filtra per stato di convalida">
+    <option value="">Tutti gli stati</option>
+    <option value="da_conv">Da convalidare</option>
+    <option value="convalidata">Convalidate</option>
+    <option value="da_correggere">Da correggere</option>
+    <option value="nuova">Aggiunte a mano</option>
+    <option value="scartate">Scartate (non VVF / chiuse)</option>
+  </select>
   <button class="btn" id="near" title="Ordina per distanza dalla mia posizione">📍<span class="lbl"> Vicino a me</span></button>
+  <button class="btn" id="add" title="Aggiungi una sede che manca">＋<span class="lbl"> Sede</span></button>
   <button class="btn" id="csv" title="Scarica le sedi filtrate in CSV">⬇<span class="lbl"> CSV</span></button>
   <button class="btn reset" id="reset">Reset dati</button>
 </div>
@@ -105,6 +164,7 @@ footer{font-size:11px;color:var(--muted);padding:4px 12px;background:var(--panel
 <main id="main">
   <div id="list"></div>
   <div id="map"></div>
+  <aside id="panel"></aside>
   <div id="msg"></div>
 </main>
 <nav class="tabs" id="tabs">
@@ -117,26 +177,42 @@ footer{font-size:11px;color:var(--muted);padding:4px 12px;background:var(--panel
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
 <script>
 (() => {
-// La pagina funziona sia nella root del repo sia dentro db/sedi/ (o altre sottocartelle):
-// prova i percorsi in ordine e usa il primo che risponde.
+// ============================== CONFIGURAZIONE ==============================
+// URL della Web App Apps Script (Distribuisci > Nuova distribuzione > App web).
+// Vuoto = modalita' locale: le correzioni restano nel browser e si esportano col pulsante in alto.
+const APPS_SCRIPT_URL = '';
+// Deve coincidere con TOKEN nello script Apps Script.
+const TOKEN = 'https://script.google.com/macros/s/AKfycbx41BHi8iOF-FBDTT9lRyCUpRtlBQoXnXb_Kg7jJFj5s0a3HDiUTzAh7fQyQeeVUu2s/exec';
+// ============================================================================
+
+// La pagina funziona sia nella root del repo sia dentro db/sedi/ (o altre sottocartelle).
 const DATA_CANDIDATI = ['sedi_vvf.geojson', 'db/sedi/sedi_vvf.geojson', '../db/sedi/sedi_vvf.geojson', '../../db/sedi/sedi_vvf.geojson'];
 let DATA_URL = DATA_CANDIDATI[0];
-// Home di FireOps = root del sito (la parte prima di /db/ se la pagina sta li')
 const ROOT = location.pathname.includes('/db/') ? location.pathname.split('/db/')[0] + '/' : './';
-const STORE = 'fireops-sedi-v1';
+const STORE = 'fireops-sedi-v1', CODA = 'fireops-sedi-coda-v1', UTENTE = 'fireops-sedi-utente';
 
 const TIPI = {
   permanente:'Permanente', volontario:'Volontario', aeroportuale:'Aeroportuale',
   portuale:'Portuale', rurale:'Rurale', presidio:'Presidio', altro:'Altro / da verificare'
 };
+const STATI = {
+  '': 'Da convalidare', convalidata: 'Convalidata', da_correggere: 'Da correggere',
+  non_vvf: 'Non è una sede VVF', chiusa: 'Chiusa / dismessa', nuova: 'Aggiunta a mano'
+};
+const CAMPI = ['nome', 'tipo', 'comune', 'via', 'telefono'];
 const css = getComputedStyle(document.documentElement);
 const COL = Object.fromEntries(Object.keys(TIPI).map(t => [t, css.getPropertyValue('--t-' + t).trim()]));
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const norm = s => String(s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+const ls = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+};
 
 const ITALIA = [[36.4, 6.6], [47.1, 18.6]];
-const map = L.map('map', {zoomControl: true, preferCanvas: false}).fitBounds(ITALIA);
+const map = L.map('map', {zoomControl: true}).fitBounds(ITALIA);
 const base = {
   'Stradale': L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19, attribution: '© OpenStreetMap'}),
   'Satellite': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom: 19, attribution: 'Esri World Imagery'})
@@ -144,58 +220,317 @@ const base = {
 base['Stradale'].addTo(map);
 L.control.layers(base, null, {position: 'topright'}).addTo(map);
 L.control.scale({imperial: false}).addTo(map);
-const cluster = L.markerClusterGroup({showCoverageOnHover: false, maxClusterRadius: 45, disableClusteringAtZoom: 14, chunkedLoading: true});
+const cluster = L.markerClusterGroup({showCoverageOnHover: false, maxClusterRadius: 45, disableClusteringAtZoom: 15, chunkedLoading: true});
 map.addLayer(cluster);
 
-let SEDI = [];
-let state = {q: '', reg: '', prov: '', off: [], me: null};
-let meMarker = null, shown = [], limit = 200;
+let SEDI = [], PER_CHIAVE = new Map();
+let REMOTE = [];                       // correzioni lette dal foglio
+let coda = ls.get(CODA, []);           // correzioni non ancora inviate (o tutte, in modalita' locale)
+let state = {q: '', reg: '', prov: '', stato: '', off: [], me: null};
+let meMarker = null, shown = [], limit = 200, aperta = null, spostando = false, inviando = false;
 
-function load() { try { Object.assign(state, JSON.parse(localStorage.getItem(STORE) || '{}')); } catch (e) {} }
-function save() { try { const {me, ...s} = state; localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) {} }
 function toast(t, ms = 2500) { const m = $('msg'); m.textContent = t; m.style.display = 'block'; clearTimeout(toast.h); toast.h = setTimeout(() => m.style.display = 'none', ms); }
-
-function titolo(p) { return p.nome || ('Sede senza nome' + (p.comune ? ' – ' + p.comune : '')); }
-function luogo(p) { return [p.comune, p.sigla ? '(' + p.sigla + ')' : '', p.regione && !p.comune ? p.regione : ''].filter(Boolean).join(' '); }
+function salvaStato() { const {me, ...s} = state; ls.set(STORE, s); }
+function titolo(e) { return e.nome || ('Sede senza nome' + (e.comune ? ' – ' + e.comune : '')); }
+function luogo(e) { return [e.comune, e.sigla ? '(' + e.sigla + ')' : '', e.regione && !e.comune ? e.regione : ''].filter(Boolean).join(' '); }
 function km(a, b, c, d) {
   const R = 6371, r = Math.PI / 180, x = (c - a) * r, y = (d - b) * r;
   const h = Math.sin(x / 2) ** 2 + Math.cos(a * r) * Math.cos(c * r) * Math.sin(y / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 function fmtKm(k) { return k < 10 ? k.toFixed(1) + ' km' : Math.round(k) + ' km'; }
+function fmtData(t) { const d = new Date(t); return isNaN(d) ? '' : d.toLocaleString('it-IT', {day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit'}); }
+const scartata = s => s.stato === 'non_vvf' || s.stato === 'chiusa';
 
-function popup(s) {
-  const p = s.p, c = COL[p.tipo] || COL.altro;
-  const rows = [
-    luogo(p) && `<div>${esc(luogo(p))}</div>`,
-    p.via && `<div><span class="k">Indirizzo:</span> ${esc(p.via)}${p.cap ? ', ' + esc(p.cap) : ''}</div>`,
-    p.telefono && `<div><span class="k">Tel:</span> <a href="tel:${esc(p.telefono.replace(/\s/g, ''))}">${esc(p.telefono)}</a></div>`,
-    p.operatore && `<div><span class="k">Operatore:</span> ${esc(p.operatore)}</div>`,
-    state.me && `<div><span class="k">Distanza in linea d'aria:</span> ${fmtKm(s.dist)}</div>`,
-    `<div class="k">${s.lat.toFixed(5)}, ${s.lon.toFixed(5)}</div>`
-  ].filter(Boolean).join('');
-  return `<div class="pp">
-    <span class="tag" style="background:${c}">${esc(TIPI[p.tipo] || p.tipo)}</span>
-    <h3>${esc(titolo(p))}</h3>${rows}
-    <div class="acts">
-      <a class="nav" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}">Naviga</a>
-      <button data-copy="${s.lat.toFixed(6)}, ${s.lon.toFixed(6)}">Copia coord.</button>
-      ${p.sito ? `<a target="_blank" rel="noopener" href="${esc(p.sito)}">Sito</a>` : ''}
-      <a target="_blank" rel="noopener" href="https://www.openstreetmap.org/${esc(p.osm_type)}/${esc(p.osm_id)}">OSM</a>
-    </div></div>`;
+// ---------------------------------------------------------------- sedi e correzioni
+function icona(s) {
+  return L.divIcon({className: '', html: `<div class="pin ${s.stato || ''} ${aperta === s ? 'sel' : ''}" style="background:${COL[s.e.tipo] || COL.altro}"></div>`, iconSize: [16, 16], iconAnchor: [8, 8]});
 }
 
-function icona(tipo) {
-  return L.divIcon({className: '', html: `<div class="pin" style="background:${COL[tipo] || COL.altro}"></div>`, iconSize: [16, 16], iconAnchor: [8, 8], popupAnchor: [0, -8]});
+function creaSede(p, lat, lon) {
+  if (!p.tipo || !TIPI[p.tipo]) p.tipo = 'altro';
+  const s = {p, lat0: lat, lon0: lon, lat, lon, chiave: p.osm_type + '/' + p.osm_id, storia: [], stato: '', corr: null};
+  s.m = L.marker([lat, lon], {icon: L.divIcon({className: ''}), title: ''});
+  s.m.on('click', ev => {
+    if (map.getContainer().classList.contains('adding')) { map.fire('click', {latlng: ev.latlng}); return; }  // in modalita' aggiungi conta come clic sulla mappa
+    apriScheda(s);
+  });
+  s.m.on('dragend', () => { const ll = s.m.getLatLng(); aggiornaPos(ll.lat, ll.lng); });
+  applica(s);
+  return s;
 }
 
+function applica(s) {
+  const c = s.corr;
+  s.e = {...s.p};
+  s.stato = c ? c.stato || '' : '';
+  if (c) for (const k of CAMPI) if (c[k] !== undefined && c[k] !== '') s.e[k] = String(c[k]);
+  if (!TIPI[s.e.tipo]) s.e.tipo = 'altro';
+  const lat = c && parseFloat(c.lat), lon = c && parseFloat(c.lon);
+  if (c && isFinite(lat) && isFinite(lon)) { s.lat = lat; s.lon = lon; } else { s.lat = s.lat0; s.lon = s.lon0; }
+  s.txt = norm([s.e.nome, s.e.comune, s.e.provincia, s.e.sigla, s.e.via, s.e.operatore].join(' '));
+  s.m.setLatLng([s.lat, s.lon]);
+  s.m.setIcon(icona(s));
+  s.m.options.title = titolo(s.e);
+}
+
+// regione/provincia per una sede aggiunta a mano: quelle della sede OSM piu' vicina
+function vicina(lat, lon) {
+  let best = null, d = 1e9;
+  for (const s of SEDI) { if (s.p.osm_type === 'nuova') continue; const k = km(lat, lon, s.lat0, s.lon0); if (k < d) { d = k; best = s; } }
+  return best ? best.p : {};
+}
+
+function sedeNuova(c) {
+  const lat = parseFloat(c.lat), lon = parseFloat(c.lon);
+  const v = vicina(lat, lon);
+  const p = {osm_type: 'nuova', osm_id: c.chiave.split('/')[1], nome: '', tipo: 'altro', regione: v.regione || '', provincia: v.provincia || '', sigla: v.sigla || '', comune: '', via: '', telefono: '', operatore: ''};
+  const s = creaSede(p, lat, lon);
+  SEDI.push(s); PER_CHIAVE.set(s.chiave, s);
+  return s;
+}
+
+function ricalcolaCorrezioni() {
+  const tutte = [...REMOTE, ...coda].filter(c => c && c.chiave).sort((a, b) => String(a.timestamp).localeCompare(String(b.timestamp)));
+  for (const s of SEDI) { s.corr = null; s.storia = []; }
+  for (const c of tutte) {
+    let s = PER_CHIAVE.get(c.chiave);
+    if (!s && c.chiave.startsWith('nuova/')) s = sedeNuova(c);
+    if (!s) continue;
+    s.storia.push(c); s.corr = c;
+  }
+  for (const s of SEDI) applica(s);
+}
+
+// ---------------------------------------------------------------- server (Apps Script)
+async function leggiRemote() {
+  if (!APPS_SCRIPT_URL) return;
+  try {
+    const r = await fetch(APPS_SCRIPT_URL + '?t=' + Date.now());
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.errore || 'risposta non valida');
+    REMOTE = j.correzioni || [];
+    // tolgo dalla coda cio' che il foglio ha gia' (stesso id)
+    const visti = new Set(REMOTE.map(c => c.id));
+    const prima = coda.length;
+    coda = coda.filter(c => !visti.has(c.id));
+    if (coda.length !== prima) ls.set(CODA, coda);
+  } catch (e) {
+    console.warn('Lettura correzioni fallita', e);
+    toast('Correzioni condivise non raggiungibili: uso quelle locali', 3500);
+  }
+}
+
+async function invia() {
+  if (!APPS_SCRIPT_URL || inviando || !coda.length) { syncUI(); return; }
+  inviando = true; syncUI();
+  try {
+    while (coda.length) {
+      const c = coda[0];
+      const r = await fetch(APPS_SCRIPT_URL, {method: 'POST', body: JSON.stringify({...c, token: TOKEN})});
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.errore || 'rifiutata');
+      REMOTE.push(c); coda.shift(); ls.set(CODA, coda);
+    }
+  } catch (e) {
+    console.warn('Invio fallito', e);
+    syncUI(true); inviando = false;
+    return false;
+  }
+  inviando = false; syncUI();
+  return true;
+}
+
+function syncUI(errore) {
+  const b = $('sync');
+  b.classList.remove('pend', 'err');
+  if (!APPS_SCRIPT_URL) {
+    b.textContent = coda.length ? `💾 ${coda.length} locali` : '💾 locale';
+    b.title = 'Modalita\' locale: le correzioni restano in questo browser. Clicca per esportarle (JSON).';
+    if (coda.length) b.classList.add('pend');
+    return;
+  }
+  if (inviando) { b.textContent = '⟳ invio…'; return; }
+  if (coda.length) { b.textContent = `⚠ ${coda.length} da inviare`; b.classList.add(errore ? 'err' : 'pend'); b.title = 'Clicca per riprovare l\'invio'; }
+  else { b.textContent = '✔ sincronizzato'; b.title = 'Correzioni salvate sul foglio condiviso. Clicca per ricaricarle.'; }
+}
+
+function esportaCoda() {
+  const blob = new Blob([JSON.stringify(coda, null, 1)], {type: 'application/json'});
+  const a = Object.assign(document.createElement('a'), {href: URL.createObjectURL(blob), download: 'correzioni_sedi_' + new Date().toISOString().slice(0, 10) + '.json'});
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+// ---------------------------------------------------------------- scheda convalida/modifica
+function apriScheda(s) {
+  if (aperta && aperta !== s) chiudiScheda(true);
+  aperta = s; spostando = false;
+  s.m.setIcon(icona(s));
+  const e = s.e, c = COL[e.tipo] || COL.altro, utente = ls.get(UTENTE, '');
+  const nuova = s.p.osm_type === 'nuova' && !s.storia.length;
+  const storia = s.storia.slice().reverse().slice(0, 6).map(h =>
+    `<li>${esc(fmtData(h.timestamp))} – <b>${esc(h.utente || '?')}</b>: ${esc(STATI[h.stato] || h.stato)}${h.note ? ' · ' + esc(h.note) : ''}</li>`).join('');
+  const opt = (obj, v) => Object.entries(obj).map(([k, t]) => `<option value="${k}" ${k === v ? 'selected' : ''}>${esc(t)}</option>`).join('');
+  $('panel').innerHTML = `
+    <div class="ph">
+      <div style="flex:1;min-width:0">
+        <span class="tag" style="background:${c}">${esc(TIPI[e.tipo])}</span>
+        <span class="st ${s.stato}" style="margin-left:6px">${esc(STATI[s.stato] || '')}</span>
+        <h2>${nuova ? 'Nuova sede' : esc(titolo(e))}</h2>
+        <div class="k" style="font-size:12px">${esc(luogo(e))}</div>
+      </div>
+      <button class="btn save" id="pfatto" style="flex:none">✔ Fatto</button>
+      <button class="x" id="pclose" title="Chiudi">×</button>
+    </div>
+    <div class="pb">
+      ${nuova ? '' : `<div class="info">
+        ${e.via ? `<div><span class="k">Indirizzo:</span> ${esc(e.via)}${e.cap ? ', ' + esc(e.cap) : ''}</div>` : ''}
+        ${e.telefono ? `<div><span class="k">Tel:</span> <a href="tel:${esc(e.telefono.replace(/\s/g, ''))}">${esc(e.telefono)}</a></div>` : ''}
+        ${e.operatore ? `<div><span class="k">Operatore:</span> ${esc(e.operatore)}</div>` : ''}
+        ${state.me ? `<div><span class="k">Distanza in linea d'aria:</span> ${fmtKm(km(state.me[0], state.me[1], s.lat, s.lon))}</div>` : ''}
+      </div>
+      <div class="acts">
+        <a class="nav" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}">Naviga</a>
+        <button data-copy="${s.lat.toFixed(6)}, ${s.lon.toFixed(6)}">Copia coord.</button>
+        ${e.sito ? `<a target="_blank" rel="noopener" href="${esc(e.sito)}">Sito</a>` : ''}
+        ${s.p.osm_type !== 'nuova' ? `<a target="_blank" rel="noopener" href="https://www.openstreetmap.org/${esc(s.p.osm_type)}/${esc(s.p.osm_id)}">Vedi su OSM</a>` : ''}
+      </div>
+      <div class="quick">
+        <button class="ok" data-q="convalidata">✔ Convalida: dati corretti</button>
+        <button data-q="da_correggere">✎ Da correggere</button>
+        <button data-q="non_vvf">✖ Non è una sede VVF</button>
+        <button data-q="chiusa" style="grid-column:1 / -1">Chiusa / dismessa</button>
+      </div>`}
+      <div class="sec">${nuova ? 'Dati della nuova sede' : 'Modifica dati'}</div>
+      <form class="f" id="pform" autocomplete="off">
+        <label for="f_nome">Nome</label><input id="f_nome" value="${esc(e.nome)}" placeholder="es. Distaccamento VVF di …">
+        <label for="f_tipo">Tipo</label><select id="f_tipo">${opt(TIPI, e.tipo)}</select>
+        <label for="f_comune">Comune</label><input id="f_comune" value="${esc(e.comune)}">
+        <label for="f_via">Indirizzo</label><input id="f_via" value="${esc(e.via)}">
+        <label for="f_telefono">Telefono</label><input id="f_telefono" type="tel" value="${esc(e.telefono)}">
+        <label>Posizione</label>
+        <div class="pos"><code id="f_pos">${s.lat.toFixed(5)}, ${s.lon.toFixed(5)}</code><button type="button" id="f_sposta">✥ Sposta</button></div>
+        <label for="f_stato">Stato</label><select id="f_stato">${opt(nuova ? {nuova: STATI.nuova} : Object.fromEntries(Object.entries(STATI).filter(([k]) => k !== 'nuova')), nuova ? 'nuova' : (s.stato || 'convalidata'))}</select>
+        <label for="f_note">Note</label><textarea id="f_note" placeholder="es. sede trasferita in via …, turni, accesso mezzi…"></textarea>
+        <label for="f_utente">Chi sei</label><input id="f_utente" value="${esc(utente)}" placeholder="Cognome / qualifica" required>
+      </form>
+      ${storia ? `<div class="sec">Storico</div><ol class="hist">${storia}</ol>` : ''}
+      <div class="note">${APPS_SCRIPT_URL ? 'Le modifiche vanno sul foglio condiviso: le vedono tutti.' : 'Modalità locale: le modifiche restano in questo browser finché non le esporti (💾 in alto).'}</div>
+    </div>
+    <div class="pf">
+      <button class="btn" id="pannulla">Annulla</button>
+      <button class="btn save" id="psalva">Salva</button>
+    </div>`;
+  $('panel').classList.add('open');
+  $('panel').dataset.lat = s.lat; $('panel').dataset.lon = s.lon;
+  marcaModificati();
+  document.querySelectorAll('.item').forEach(el => el.classList.toggle('sel', shown[+el.dataset.i] === s));
+}
+
+function chiudiScheda(silenziosa) {
+  const s = aperta;
+  $('panel').classList.remove('open', 'mini'); $('panel').innerHTML = ''; spostando = false;
+  aperta = null;
+  map.getContainer().classList.remove('adding');
+  if (s) {
+    s.m.dragging && s.m.dragging.disable();
+    if (s.p.osm_type === 'nuova' && !s.storia.length) {   // nuova mai salvata: la tolgo
+      cluster.removeLayer(s.m); SEDI = SEDI.filter(x => x !== s); PER_CHIAVE.delete(s.chiave);
+    } else { applica(s); }
+  }
+  document.querySelectorAll('.item.sel').forEach(el => el.classList.remove('sel'));
+}
+
+function aggiornaPos(lat, lon) {
+  $('panel').dataset.lat = lat; $('panel').dataset.lon = lon;
+  const el = $('f_pos'); if (el) el.textContent = lat.toFixed(5) + ', ' + lon.toFixed(5);
+  marcaModificati();
+}
+
+function marcaModificati() {
+  const s = aperta; if (!s) return;
+  for (const k of CAMPI) { const el = $('f_' + k); if (el) el.classList.toggle('chg', el.value.trim() !== String(s.e[k] ?? '')); }
+}
+
+function salva(statoForzato) {
+  const s = aperta; if (!s) return;
+  const utente = $('f_utente').value.trim();
+  if (!utente) { $('f_utente').focus(); toast('Scrivi chi sei prima di salvare'); return; }
+  ls.set(UTENTE, utente);
+  const lat = +$('panel').dataset.lat, lon = +$('panel').dataset.lon;
+  const mosso = Math.abs(lat - s.lat0) > 1e-6 || Math.abs(lon - s.lon0) > 1e-6 || s.p.osm_type === 'nuova';
+  const c = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+    timestamp: new Date().toISOString(), utente, chiave: s.chiave,
+    osm_type: s.p.osm_type, osm_id: String(s.p.osm_id),
+    stato: statoForzato || $('f_stato').value,
+    note: $('f_note').value.trim(),
+    lat: mosso ? lat.toFixed(6) : '', lon: mosso ? lon.toFixed(6) : '',
+    regione: s.e.regione || '', sigla: s.e.sigla || ''
+  };
+  // salvo solo i campi che differiscono dal dato OSM originale (cosi' un aggiornamento OSM non viene coperto inutilmente)
+  for (const k of CAMPI) { const v = $('f_' + k).value.trim(); c[k] = v !== String(s.p[k] ?? '') ? v : ''; }
+  if (s.p.osm_type === 'nuova' && !c.nome) { $('f_nome').focus(); toast('Dai un nome alla nuova sede'); return; }
+  coda.push(c); ls.set(CODA, coda);
+  s.storia.push(c); s.corr = c;
+  const tenuta = s;
+  chiudiScheda(true);
+  applica(tenuta);
+  aggiorna(false);
+  toast(STATI[c.stato] ? 'Salvato: ' + STATI[c.stato] : 'Salvato');
+  invia();
+}
+
+$('panel').addEventListener('click', e => {
+  const t = e.target;
+  if (t.id === 'pclose' || t.id === 'pannulla') return chiudiScheda();
+  if (t.id === 'psalva') return salva();
+  if (t.dataset.q) {
+    if (t.dataset.q === 'convalidata' || t.dataset.q === 'non_vvf' || t.dataset.q === 'chiusa') {
+      if (!$('f_utente').value.trim()) { $('f_stato').value = t.dataset.q; $('f_utente').focus(); toast('Scrivi chi sei, poi premi Salva'); return; }
+      return salva(t.dataset.q);
+    }
+    $('f_stato').value = t.dataset.q; $('f_nome').focus(); toast('Correggi i campi e premi Salva');
+    return;
+  }
+  if (t.id === 'f_sposta' || t.id === 'pfatto') return sposta(!spostando);
+});
+
+function sposta(on) {
+  const s = aperta; if (!s) return;
+  spostando = on;
+  const b = $('f_sposta'), mob = matchMedia('(max-width:760px)').matches;
+  b.classList.toggle('on', on); b.textContent = on ? '✔ Fatto' : '✥ Sposta';
+  $('panel').classList.toggle('mini', on && mob);
+  if (on) {
+    const vai = () => {
+      s.m.dragging.enable();
+      map.setView(s.m.getLatLng(), Math.max(map.getZoom(), 17), {animate: false});
+      if (!mob) map.panBy([$('panel').offsetWidth / 2, 0], {animate: false});   // il pallino non finisce sotto la scheda
+    };
+    if (!map.hasLayer(s.m)) cluster.zoomToShowLayer(s.m, vai); else vai();
+    toast(mob ? 'Trascina il pallino, poi ✔ Fatto' : 'Trascina il pallino nella posizione giusta', 3500);
+  } else {
+    s.m.dragging && s.m.dragging.disable();
+  }
+}
+$('panel').addEventListener('input', marcaModificati);
+$('panel').addEventListener('submit', e => { e.preventDefault(); salva(); });
+
+// ---------------------------------------------------------------- filtri, elenco, mappa
 function filtra() {
   const q = norm(state.q).trim(), off = new Set(state.off);
   return SEDI.filter(s => {
-    const p = s.p;
-    if (off.has(p.tipo)) return false;
-    if (state.reg && p.regione !== state.reg) return false;
-    if (state.prov && (p.sigla || 'XX') !== state.prov) return false;
+    const e = s.e;
+    if (off.has(e.tipo)) return false;
+    if (state.reg && e.regione !== state.reg) return false;
+    if (state.prov && (e.sigla || 'XX') !== state.prov) return false;
+    if (state.stato === 'scartate') { if (!scartata(s)) return false; }
+    else {
+      if (scartata(s)) return false;
+      if (state.stato === 'da_conv' && s.stato) return false;
+      if (state.stato && state.stato !== 'da_conv' && s.stato !== state.stato) return false;
+    }
     if (q && !s.txt.includes(q)) return false;
     return true;
   });
@@ -203,7 +538,7 @@ function filtra() {
 
 function opzioniProvince() {
   const sel = $('prov'), conta = {};
-  SEDI.forEach(s => { if (!state.reg || s.p.regione === state.reg) { const k = s.p.sigla || 'XX'; (conta[k] ||= {n: 0, nome: s.p.provincia}).n++; } });
+  SEDI.forEach(s => { if (!state.reg || s.e.regione === state.reg) { const k = s.e.sigla || 'XX'; (conta[k] ||= {n: 0, nome: s.e.provincia}).n++; } });
   if (state.prov && !conta[state.prov]) state.prov = '';
   sel.innerHTML = '<option value="">Tutte le province</option>' + Object.keys(conta).sort().map(k =>
     `<option value="${k}">${k === 'XX' ? 'Senza provincia' : k + ' – ' + esc(conta[k].nome)} (${conta[k].n})</option>`).join('');
@@ -211,23 +546,27 @@ function opzioniProvince() {
 }
 
 function chips() {
-  const conta = {}; const off = new Set(state.off);
+  const conta = {}, off = new Set(state.off);
+  let conv = 0, tot = 0;
   SEDI.forEach(s => {
-    if (state.reg && s.p.regione !== state.reg) return;
-    if (state.prov && (s.p.sigla || 'XX') !== state.prov) return;
-    conta[s.p.tipo] = (conta[s.p.tipo] || 0) + 1;
+    if (state.reg && s.e.regione !== state.reg) return;
+    if (state.prov && (s.e.sigla || 'XX') !== state.prov) return;
+    if (scartata(s)) return;
+    conta[s.e.tipo] = (conta[s.e.tipo] || 0) + 1; tot++;
+    if (s.stato === 'convalidata' || s.stato === 'nuova') conv++;
   });
   $('chips').innerHTML = Object.keys(TIPI).filter(t => conta[t]).map(t =>
-    `<span class="chip ${off.has(t) ? 'off' : ''}" data-t="${t}"><span class="dot" style="background:${COL[t]}"></span>${TIPI[t]} <small>${conta[t]}</small></span>`).join('');
+    `<span class="chip ${off.has(t) ? 'off' : ''}" data-t="${t}"><span class="dot" style="background:${COL[t]}"></span>${TIPI[t]} <small>${conta[t]}</small></span>`).join('') +
+    `<span class="sep"></span><span class="chip" data-conv="1" title="Mostra le sedi ancora da convalidare"><span class="st convalidata">✔ ${conv}/${tot}</span> <small>convalidate</small></span>`;
 }
 
 function lista() {
   const el = $('list');
   if (!shown.length) { el.innerHTML = '<div class="empty">Nessuna sede con questi filtri.</div>'; return; }
   el.innerHTML = shown.slice(0, limit).map((s, i) =>
-    `<div class="item" data-i="${i}"><span class="dot" style="background:${COL[s.p.tipo] || COL.altro}"></span>
-      <div><div class="n">${esc(titolo(s.p))}</div><div class="s">${esc(TIPI[s.p.tipo])} · ${esc(luogo(s.p))}</div></div>
-      ${state.me ? `<span class="d">${fmtKm(s.dist)}</span>` : ''}</div>`).join('') +
+    `<div class="item ${aperta === s ? 'sel' : ''}" data-i="${i}"><span class="dot" style="background:${COL[s.e.tipo] || COL.altro}"></span>
+      <div><div class="n">${esc(titolo(s.e))}</div><div class="s">${esc(TIPI[s.e.tipo])} · ${esc(luogo(s.e))}</div></div>
+      <span class="d">${state.me ? fmtKm(s.dist) + '<br>' : ''}${s.stato ? `<span class="st ${s.stato}">${s.stato === 'convalidata' || s.stato === 'nuova' ? '✔' : s.stato === 'da_correggere' ? '✎' : '✖'}</span>` : ''}</span></div>`).join('') +
     (shown.length > limit ? `<button class="btn more" id="more">Mostra altre ${Math.min(200, shown.length - limit)} di ${shown.length - limit}</button>` : '');
 }
 
@@ -237,14 +576,15 @@ function aggiorna(fit) {
   limit = 200;
   cluster.clearLayers();
   cluster.addLayers(shown.map(s => s.m));
-  $('count').textContent = shown.length + ' / ' + SEDI.length + ' sedi';
-  chips(); lista(); save();
+  if (aperta && !shown.includes(aperta)) cluster.addLayer(aperta.m);   // la sede aperta resta visibile
+  $('count').textContent = shown.length + ' / ' + SEDI.filter(s => !scartata(s)).length + ' sedi';
+  chips(); lista(); salvaStato(); syncUI();
   if (fit && shown.length) map.fitBounds(L.latLngBounds(shown.map(s => [s.lat, s.lon])).pad(0.05), {maxZoom: 13});
 }
 
-function apri(s) {
+function vai(s) {
   if (matchMedia('(max-width:760px)').matches) vista('map');
-  cluster.zoomToShowLayer(s.m, () => s.m.openPopup());
+  cluster.zoomToShowLayer(s.m, () => apriScheda(s));
 }
 
 function vista(v) {
@@ -254,9 +594,9 @@ function vista(v) {
 }
 
 function scaricaCSV() {
-  const cols = ['nome', 'tipo', 'regione', 'provincia', 'sigla', 'comune', 'via', 'cap', 'telefono', 'operatore', 'lat', 'lon', 'osm_type', 'osm_id'];
+  const cols = ['nome', 'tipo', 'stato', 'regione', 'provincia', 'sigla', 'comune', 'via', 'cap', 'telefono', 'operatore', 'lat', 'lon', 'osm_type', 'osm_id'];
   const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
-  const righe = shown.map(s => cols.map(c => q(c === 'lat' ? s.lat : c === 'lon' ? s.lon : s.p[c])).join(';'));
+  const righe = shown.map(s => cols.map(c => q(c === 'lat' ? s.lat : c === 'lon' ? s.lon : c === 'stato' ? STATI[s.stato] : s.e[c])).join(';'));
   const blob = new Blob(['﻿' + cols.join(';') + '\n' + righe.join('\n')], {type: 'text/csv;charset=utf-8'});
   const a = Object.assign(document.createElement('a'), {href: URL.createObjectURL(blob), download: `sedi_vvf_${state.prov || state.reg || 'italia'}.csv`.replace(/\s+/g, '_')});
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
@@ -267,14 +607,16 @@ let tq;
 $('q').addEventListener('input', e => { clearTimeout(tq); tq = setTimeout(() => { state.q = e.target.value; aggiorna(false); }, 200); });
 $('reg').addEventListener('change', e => { state.reg = e.target.value; state.prov = ''; opzioniProvince(); aggiorna(true); });
 $('prov').addEventListener('change', e => { state.prov = e.target.value; aggiorna(true); });
+$('stato').addEventListener('change', e => { state.stato = e.target.value; aggiorna(false); });
 $('chips').addEventListener('click', e => {
   const c = e.target.closest('.chip'); if (!c) return;
+  if (c.dataset.conv) { state.stato = state.stato === 'da_conv' ? '' : 'da_conv'; $('stato').value = state.stato; aggiorna(false); return; }
   const off = new Set(state.off); off.has(c.dataset.t) ? off.delete(c.dataset.t) : off.add(c.dataset.t);
   state.off = [...off]; aggiorna(false);
 });
 $('list').addEventListener('click', e => {
   if (e.target.id === 'more') { limit += 200; lista(); return; }
-  const it = e.target.closest('.item'); if (it) apri(shown[+it.dataset.i]);
+  const it = e.target.closest('.item'); if (it) vai(shown[+it.dataset.i]);
 });
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-copy]'); if (!b) return;
@@ -282,6 +624,25 @@ document.addEventListener('click', e => {
 });
 $('tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) vista(b.dataset.v); });
 $('csv').addEventListener('click', scaricaCSV);
+$('sync').addEventListener('click', async () => {
+  if (!APPS_SCRIPT_URL) { if (coda.length) esportaCoda(); else toast('Nessuna correzione locale da esportare'); return; }
+  if (coda.length) { await invia(); }
+  await leggiRemote(); ricalcolaCorrezioni(); aggiorna(false); toast('Correzioni aggiornate');
+});
+$('add').addEventListener('click', () => {
+  if (matchMedia('(max-width:760px)').matches) vista('map');
+  chiudiScheda();
+  map.getContainer().classList.add('adding');
+  toast('Tocca la mappa nel punto esatto della sede', 4000);
+  map.once('click', ev => {
+    map.getContainer().classList.remove('adding');
+    const c = {chiave: 'nuova/' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), lat: ev.latlng.lat, lon: ev.latlng.lng};
+    const s = sedeNuova(c);
+    cluster.addLayer(s.m);
+    apriScheda(s);
+    setTimeout(() => $('f_nome') && $('f_nome').focus(), 50);
+  });
+});
 $('near').addEventListener('click', () => {
   if (state.me) { state.me = null; if (meMarker) map.removeLayer(meMarker); meMarker = null; $('near').classList.remove('on'); aggiorna(false); return; }
   if (!navigator.geolocation) return toast('Geolocalizzazione non disponibile');
@@ -291,50 +652,58 @@ $('near').addEventListener('click', () => {
     meMarker = L.marker(state.me, {icon: L.divIcon({className: '', html: '<div class="me"></div>', iconSize: [16, 16], iconAnchor: [8, 8]}), zIndexOffset: 1000}).addTo(map).bindTooltip('Tu sei qui');
     $('near').classList.add('on'); toast('Elenco ordinato per distanza');
     aggiorna(false);
-    const vicine = shown.slice(0, 5).map(s => [s.lat, s.lon]);
-    map.fitBounds(L.latLngBounds([state.me, ...vicine]).pad(0.2), {maxZoom: 13});
+    map.fitBounds(L.latLngBounds([state.me, ...shown.slice(0, 5).map(s => [s.lat, s.lon])]).pad(0.2), {maxZoom: 13});
   }, err => toast('Posizione non disponibile: ' + err.message, 4000), {enableHighAccuracy: true, timeout: 15000});
 });
 $('reset').addEventListener('click', () => {
-  try { localStorage.removeItem(STORE); } catch (e) {}
-  state = {q: '', reg: '', prov: '', off: [], me: null};
+  if (coda.length) {
+    const msg = APPS_SCRIPT_URL
+      ? `Ci sono ${coda.length} correzioni non ancora inviate al foglio. Cancellarle?`
+      : `Cancellare anche le ${coda.length} correzioni salvate in questo browser? (Esportale prima con 💾)`;
+    if (confirm(msg)) { coda = []; ls.del(CODA); ricalcolaCorrezioni(); }
+  }
+  ls.del(STORE);
+  state = {q: '', reg: '', prov: '', stato: '', off: [], me: null};
   if (meMarker) map.removeLayer(meMarker); meMarker = null; $('near').classList.remove('on');
-  $('q').value = ''; $('reg').value = ''; opzioniProvince(); map.closePopup();
+  chiudiScheda();
+  $('q').value = ''; $('reg').value = ''; $('stato').value = ''; opzioniProvince();
   aggiorna(false); map.fitBounds(ITALIA); toast('Filtri azzerati');
 });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && aperta) chiudiScheda(); });
+window.addEventListener('online', invia);
 
 // ---------------------------------------------------------------- avvio
-load();
+Object.assign(state, ls.get(STORE, {}), {me: null});
 const u = new URLSearchParams(location.search);       // es. sedi.html?prov=TN  oppure ?reg=Lombardia&q=milano
 if (u.has('prov') || u.has('reg') || u.has('q')) { state.reg = u.get('reg') || ''; state.prov = (u.get('prov') || '').toUpperCase(); state.q = u.get('q') || ''; }
-
 document.querySelector('header a.home').href = ROOT;
+syncUI();
+
 async function scarica() {
-  for (const u of DATA_CANDIDATI) {
-    try { const r = await fetch(u, {cache: 'no-cache'}); if (r.ok) { DATA_URL = u; return r; } } catch (e) {}
+  for (const p of DATA_CANDIDATI) {
+    try { const r = await fetch(p, {cache: 'no-cache'}); if (r.ok) { DATA_URL = p; return r; } } catch (e) {}
   }
   DATA_URL = DATA_CANDIDATI.join(' / ');
   throw new Error('file dati non trovato (HTTP 404)');
 }
-scarica().then(r => {
+
+Promise.all([scarica().then(async r => {
   const lm = r.headers.get('last-modified');
   $('upd').textContent = lm ? 'aggiornato al ' + new Date(lm).toLocaleDateString('it-IT') : '';
   return r.json();
-}).then(g => {
-  SEDI = g.features.map(f => {
-    const [lon, lat] = f.geometry.coordinates, p = f.properties;
-    if (!p.tipo || !TIPI[p.tipo]) p.tipo = 'altro';
-    const s = {p, lat, lon, txt: norm([p.nome, p.comune, p.provincia, p.sigla, p.via, p.operatore].join(' '))};
-    s.m = L.marker([lat, lon], {icon: icona(p.tipo), title: titolo(p)}).bindPopup(() => popup(s), {maxWidth: 300});
-    return s;
-  });
-  const regioni = [...new Set(SEDI.map(s => s.p.regione).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'it'));
+}), leggiRemote()]).then(([g]) => {
+  SEDI = g.features.map(f => creaSede(f.properties, f.geometry.coordinates[1], f.geometry.coordinates[0]));
+  SEDI.forEach(s => PER_CHIAVE.set(s.chiave, s));
+  ricalcolaCorrezioni();
+  const regioni = [...new Set(SEDI.map(s => s.e.regione).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'it'));
   $('reg').innerHTML += regioni.map(r => `<option>${esc(r)}</option>`).join('');
   if (state.reg && !regioni.includes(state.reg)) state.reg = '';
-  $('reg').value = state.reg; $('q').value = state.q;
+  $('reg').value = state.reg; $('q').value = state.q; $('stato').value = state.stato || '';
   opzioniProvince();
   aggiorna(!!(state.reg || state.prov));
+  invia();
 }).catch(e => {
+  console.error(e);
   $('count').textContent = 'errore';
   $('list').innerHTML = `<div class="empty">Impossibile caricare <code>${esc(DATA_URL)}</code><br>${esc(e.message)}<br><br>Se apri il file direttamente dal PC (file://) il browser blocca il caricamento: usa la pagina pubblicata su GitHub Pages.</div>`;
   vista('list');
