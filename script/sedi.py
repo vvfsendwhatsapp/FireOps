@@ -106,6 +106,8 @@ def classifica(t):
         return "portuale"
     if "rurale" in s:
         return "rurale"
+    if "sede centrale" in s or "comando provinciale" in s or re.match(r"\s*comando\b", s):
+        return "centrale"
     if "presidio" in s:
         return "presidio"
     if "berufsfeuerwehr" in s or "permanente" in s:
@@ -237,7 +239,7 @@ def costruisci(candidati, loc):
 
 # ---------------------------------------------------------------- correzioni
 STATI_OK = {"convalidata", "da_correggere", "non_vvf", "chiusa", "nuova"}
-TIPI_OK = {"permanente", "volontario", "aeroportuale", "portuale", "rurale", "presidio", "altro"}
+TIPI_OK = {"centrale", "permanente", "volontario", "aeroportuale", "portuale", "rurale", "presidio", "altro"}
 
 
 def leggi_correzioni(url, cartella, csv_url=""):
@@ -280,6 +282,10 @@ def leggi_correzioni(url, cartella, csv_url=""):
 
 def applica_correzioni(righe, ultima, loc):
     per_chiave = {f"{r['osm_type']}/{r['osm_id']}": r for r in righe}
+    province = {}                            # sigla -> (provincia, regione), dai dati OSM
+    for r in righe:
+        if r["sigla"] and r["sigla"] not in province:
+            province[r["sigla"]] = (r["provincia"], r["regione"])
     usate, scartate, nuove, orfane = 0, 0, 0, 0
     for chiave, c in ultima.items():
         r = per_chiave.get(chiave)
@@ -305,6 +311,10 @@ def applica_correzioni(righe, ultima, loc):
             pos = posizione(loc, Point(lon, lat))
             if pos:
                 r.update({k: v for k, v in pos.items() if v and not (k == "comune" and str(c.get("comune", "")).strip())})
+        # provincia corretta a mano (es. distaccamento che dipende da un altro Comando): vince sui confini OSM
+        sg = str(c.get("sigla_corretta") or "").strip().upper()
+        if sg and sg in province:
+            r["sigla"], r["provincia"], r["regione"] = sg, province[sg][0], province[sg][1]
         r["stato"] = c["stato"]
         # flag separato: 1 = controllata e confermata da un operatore (convalidata o inserita a mano)
         r["convalidata"] = 1 if c["stato"] in ("convalidata", "nuova") else 0

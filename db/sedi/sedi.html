@@ -13,7 +13,7 @@
   --head:#22272e; --headink:#fff; --accent:#c8102e; --chip:#eef0f3;
   --ok:#1f9d55; --warn:#e0a800; --ko:#5c6670;
   --t-permanente:#c8102e; --t-volontario:#e8790c; --t-aeroportuale:#1f6fd1;
-  --t-portuale:#0f9aa8; --t-rurale:#3a8c2f; --t-presidio:#7b4bc4; --t-altro:#7a828c;
+  --t-centrale:#7a0019; --t-portuale:#0f9aa8; --t-rurale:#3a8c2f; --t-presidio:#7b4bc4; --t-altro:#7a828c;
 }
 @media (prefers-color-scheme: dark){ :root{
   --bg:#15181c; --panel:#1e2228; --ink:#e7eaee; --muted:#9aa3ad; --line:#2f353d;
@@ -131,6 +131,12 @@ main{flex:1;display:flex;min-height:0;position:relative}
 .pin.sel{transform:scale(1.5)}
 .me{width:16px;height:16px;border-radius:50%;background:#1f6fd1;border:3px solid #fff;box-shadow:0 0 0 6px #1f6fd140}
 #msg{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:1400;background:var(--head);color:#fff;padding:8px 14px;border-radius:8px;font-size:13px;display:none;max-width:90%;text-align:center}
+/* anteprima Street View */
+.sv{margin:10px 0 2px;border-radius:8px;overflow:hidden;border:1px solid var(--line);background:var(--chip);position:relative}
+.sv iframe{display:block;width:100%;height:210px;border:0}
+.sv .svbar{display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:5px 8px;background:var(--panel);border-top:1px solid var(--line)}
+.sv .svbar a{color:var(--ink)}
+@media (max-width:760px){ .sv iframe{height:180px} }
 footer{font-size:11px;color:var(--muted);padding:4px 12px;background:var(--panel);border-top:1px solid var(--line)}
 </style>
 </head>
@@ -180,9 +186,12 @@ footer{font-size:11px;color:var(--muted);padding:4px 12px;background:var(--panel
 // ============================== CONFIGURAZIONE ==============================
 // URL della Web App Apps Script (Distribuisci > Nuova distribuzione > App web).
 // Vuoto = modalita' locale: le correzioni restano nel browser e si esportano col pulsante in alto.
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx41BHi8iOF-FBDTT9lRyCUpRtlBQoXnXb_Kg7jJFj5s0a3HDiUTzAh7fQyQeeVUu2s/exec';
+const APPS_SCRIPT_URL = '';
 // Deve coincidere con TOKEN nello script Apps Script.
 const TOKEN = 'cambia-questo-token';
+// Facoltativa: chiave Google "Maps Embed API" (gratuita) per l'anteprima Street View ufficiale.
+// Vuota = anteprima senza chiave (funziona quasi sempre, ma e' un formato non ufficiale di Google).
+const GOOGLE_MAPS_KEY = '';
 // ============================================================================
 
 // La pagina funziona sia nella root del repo sia dentro db/sedi/ (o altre sottocartelle).
@@ -192,7 +201,7 @@ const ROOT = location.pathname.includes('/db/') ? location.pathname.split('/db/'
 const STORE = 'fireops-sedi-v1', CODA = 'fireops-sedi-coda-v1', UTENTE = 'fireops-sedi-utente';
 
 const TIPI = {
-  permanente:'Permanente', volontario:'Volontario', aeroportuale:'Aeroportuale',
+  centrale:'Sede centrale', permanente:'Permanente', volontario:'Volontario', aeroportuale:'Aeroportuale',
   portuale:'Portuale', rurale:'Rurale', presidio:'Presidio', altro:'Altro / da verificare'
 };
 const STATI = {
@@ -224,6 +233,7 @@ const cluster = L.markerClusterGroup({showCoverageOnHover: false, maxClusterRadi
 map.addLayer(cluster);
 
 let SEDI = [], PER_CHIAVE = new Map();
+let PROV = {};                         // sigla -> {provincia, regione}, ricavato dai dati
 let REMOTE = [];                       // correzioni lette dal foglio
 let coda = ls.get(CODA, []);           // correzioni non ancora inviate (o tutte, in modalita' locale)
 let state = {q: '', reg: '', prov: '', stato: '', off: [], me: null};
@@ -240,6 +250,12 @@ function km(a, b, c, d) {
 }
 function fmtKm(k) { return k < 10 ? k.toFixed(1) + ' km' : Math.round(k) + ' km'; }
 function fmtData(t) { const d = new Date(t); return isNaN(d) ? '' : d.toLocaleString('it-IT', {day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit'}); }
+function svSrc(lat, lon) {
+  return GOOGLE_MAPS_KEY
+    ? `https://www.google.com/maps/embed/v1/streetview?key=${encodeURIComponent(GOOGLE_MAPS_KEY)}&location=${lat},${lon}&fov=80`
+    : `https://maps.google.com/maps?q=&layer=c&cbll=${lat},${lon}&cbp=11,0,0,0,0&output=svembed`;
+}
+function svLink(lat, lon) { return `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lon}`; }
 const scartata = s => s.stato === 'non_vvf' || s.stato === 'chiusa';
 const convalidata = s => s.stato === 'convalidata' || s.stato === 'nuova';   // = flag "convalidata" nel DB
 
@@ -266,6 +282,9 @@ function applica(s) {
   s.e = {...s.p};
   s.stato = c ? c.stato || '' : (s.p.stato || '');
   if (c) for (const k of CAMPI) if (c[k] !== undefined && c[k] !== '') s.e[k] = String(c[k]);
+  if (c && c.sigla_corretta && PROV[c.sigla_corretta]) {
+    s.e.sigla = c.sigla_corretta; s.e.provincia = PROV[c.sigla_corretta].provincia; s.e.regione = PROV[c.sigla_corretta].regione;
+  }
   if (!TIPI[s.e.tipo]) s.e.tipo = 'altro';
   const lat = c && parseFloat(c.lat), lon = c && parseFloat(c.lon);
   if (c && isFinite(lat) && isFinite(lon)) { s.lat = lat; s.lon = lon; } else { s.lat = s.lat0; s.lon = s.lon0; }
@@ -396,17 +415,20 @@ function apriScheda(s) {
         ${e.sito ? `<a target="_blank" rel="noopener" href="${esc(e.sito)}">Sito</a>` : ''}
         ${s.p.osm_type !== 'nuova' ? `<a target="_blank" rel="noopener" href="https://www.openstreetmap.org/${esc(s.p.osm_type)}/${esc(s.p.osm_id)}">Vedi su OSM</a>` : ''}
       </div>
+      ${svBox(s)}
       <div class="quick">
         <button class="ok" data-q="convalidata">✔ Convalida: dati corretti</button>
         <button data-q="da_correggere">✎ Da correggere</button>
         <button data-q="non_vvf">✖ Non è una sede VVF</button>
         <button data-q="chiusa" style="grid-column:1 / -1">Chiusa / dismessa</button>
       </div>`}
+      ${nuova ? svBox(s) : ''}
       <div class="sec">${nuova ? 'Dati della nuova sede' : 'Modifica dati'}</div>
       <form class="f" id="pform" autocomplete="off">
         <label for="f_nome">Nome</label><input id="f_nome" value="${esc(e.nome)}" placeholder="es. Distaccamento VVF di …">
         <label for="f_tipo">Tipo</label><select id="f_tipo">${opt(TIPI, e.tipo)}</select>
         <label for="f_comune">Comune</label><input id="f_comune" value="${esc(e.comune)}">
+        <label for="f_sigla">Provincia</label><select id="f_sigla">${optProv(e.sigla)}</select>
         <label for="f_via">Indirizzo</label><input id="f_via" value="${esc(e.via)}">
         <label for="f_telefono">Telefono</label><input id="f_telefono" type="tel" value="${esc(e.telefono)}">
         <label>Posizione</label>
@@ -426,6 +448,19 @@ function apriScheda(s) {
   $('panel').dataset.lat = s.lat; $('panel').dataset.lon = s.lon;
   marcaModificati();
   document.querySelectorAll('.item').forEach(el => el.classList.toggle('sel', shown[+el.dataset.i] === s));
+}
+
+function svBox(s) {
+  return `<div class="sv"><iframe id="svframe" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen
+      src="${svSrc(s.lat, s.lon)}" title="Street View"></iframe>
+    <div class="svbar"><span class="k">Street View · se è grigio, lì non ci sono foto</span><a id="svlink" target="_blank" rel="noopener" href="${svLink(s.lat, s.lon)}">Apri ↗</a></div></div>`;
+}
+
+function optProv(sel) {
+  const ks = Object.keys(PROV).sort();
+  if (sel && !PROV[sel]) ks.unshift(sel);
+  return (sel ? '' : '<option value="">—</option>') + ks.map(k =>
+    `<option value="${k}" ${k === sel ? 'selected' : ''}>${k} – ${esc(PROV[k] ? PROV[k].provincia : '?')}</option>`).join('');
 }
 
 function chiudiScheda(silenziosa) {
@@ -451,6 +486,7 @@ function aggiornaPos(lat, lon) {
 function marcaModificati() {
   const s = aperta; if (!s) return;
   for (const k of CAMPI) { const el = $('f_' + k); if (el) el.classList.toggle('chg', el.value.trim() !== String(s.e[k] ?? '')); }
+  const sg = $('f_sigla'); if (sg) sg.classList.toggle('chg', sg.value !== String(s.e.sigla ?? ''));
 }
 
 function salva(statoForzato) {
@@ -471,6 +507,10 @@ function salva(statoForzato) {
   };
   // salvo solo i campi che differiscono dal dato OSM originale (cosi' un aggiornamento OSM non viene coperto inutilmente)
   for (const k of CAMPI) { const v = $('f_' + k).value.trim(); c[k] = v !== String(s.p[k] ?? '') ? v : ''; }
+  // provincia: salvata solo se diversa da quella dei dati (per le sedi nuove: solo se l'hai scelta tu)
+  const sg = $('f_sigla').value;
+  c.sigla_corretta = sg && sg !== String(s.p.sigla ?? '') ? sg : '';
+  if (c.sigla_corretta && PROV[c.sigla_corretta]) { c.sigla = c.sigla_corretta; c.regione = PROV[c.sigla_corretta].regione; }
   if (s.p.osm_type === 'nuova' && !c.nome) { $('f_nome').focus(); toast('Dai un nome alla nuova sede'); return; }
   coda.push(c); ls.set(CODA, coda);
   s.storia.push(c); s.corr = c;
@@ -513,6 +553,8 @@ function sposta(on) {
     toast(mob ? 'Trascina il pallino, poi ✔ Fatto' : 'Trascina il pallino nella posizione giusta', 3500);
   } else {
     s.m.dragging && s.m.dragging.disable();
+    const lat = +$('panel').dataset.lat, lon = +$('panel').dataset.lon, f = $('svframe');
+    if (f) { f.src = svSrc(lat, lon); $('svlink').href = svLink(lat, lon); }
   }
 }
 $('panel').addEventListener('input', marcaModificati);
@@ -696,6 +738,7 @@ Promise.all([scarica().then(async r => {
 }), leggiRemote()]).then(([g]) => {
   SEDI = g.features.map(f => creaSede(f.properties, f.geometry.coordinates[1], f.geometry.coordinates[0]));
   SEDI.forEach(s => PER_CHIAVE.set(s.chiave, s));
+  SEDI.forEach(s => { const p = s.p; if (p.sigla && p.sigla !== 'XX' && !PROV[p.sigla]) PROV[p.sigla] = {provincia: p.provincia, regione: p.regione}; });
   ricalcolaCorrezioni();
   const regioni = [...new Set(SEDI.map(s => s.e.regione).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'it'));
   $('reg').innerHTML += regioni.map(r => `<option>${esc(r)}</option>`).join('');
