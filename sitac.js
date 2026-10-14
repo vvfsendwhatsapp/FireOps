@@ -4515,12 +4515,28 @@ async function chiediLatoSimbolo(layer){
        questione di resa, non di logica. */
     app.classList.toggle('sitac-sfondo-scuro', sfondi[iSfondo].k === 'sfSat');
   }
-  $('bSfondo').onclick = () => {
-    map.removeLayer(sfondi[iSfondo].l);
-    iSfondo = (iSfondo + 1) % sfondi.length;
-    map.addLayer(sfondi[iSfondo].l);
-    sfondi[iSfondo].l.bringToBack();
+  function vaiSfondo(i){
+    if (i < 0) return;
+    if (i !== iSfondo){
+      map.removeLayer(sfondi[iSfondo].l);
+      iSfondo = i;
+      map.addLayer(sfondi[iSfondo].l);
+      sfondi[iSfondo].l.bringToBack();
+    }
     etichettaSfondo();
+  }
+  /* Selettore sfondi condiviso di FireOps: sceglie lo sfondo (gli stessi tre
+     di qui) e ne mette un secondo in trasparenza sopra. Lo sfondo resta
+     quello di sfondi[]: stampa ed etichetta continuano a leggere iSfondo. */
+  const CHIAVE_SFONDO = {osm: 'sfStrada', topo: 'sfTopo', sat: 'sfSat'};
+  const selSfondi = window.FireOpsSfondi ? FireOpsSfondi.aggiungi(map, {
+    posizione: 'topright', predefinito: 'osm',
+    imposta: k => vaiSfondo(sfondi.findIndex(s => s.k === CHIAVE_SFONDO[k]))
+  }) : null;
+  $('bSfondo').onclick = () => {
+    const prossimo = (iSfondo + 1) % sfondi.length;
+    if (selSfondi) selSfondi.imposta(Object.keys(CHIAVE_SFONDO).find(k => CHIAVE_SFONDO[k] === sfondi[prossimo].k));
+    else vaiSfondo(prossimo);
   };
   $('bCentra').onclick = () => centraSuGps(true);
   $('bStampa').onclick = stampa;

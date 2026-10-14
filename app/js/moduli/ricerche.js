@@ -603,9 +603,11 @@ FireOps.registra({
 
       if (!mappa) {
         mappa = L.map("ricMap", {zoomControl: true, attributionControl: true});
-        L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        const osm = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
           maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
         }).addTo(mappa);
+        // selettore sfondi condiviso di FireOps (sfondo + uno in trasparenza)
+        if (window.FireOpsSfondi) FireOpsSfondi.aggiungi(mappa, {sostituisci: [osm], posizione: "topright"});
         strato = L.layerGroup().addTo(mappa);
         stratoRotta = L.layerGroup().addTo(mappa);
         stratoMe = L.layerGroup().addTo(mappa);

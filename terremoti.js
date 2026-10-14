@@ -195,10 +195,12 @@
 
         if (!mappa) {
             mappa = L.map(el.mappa).setView([CENTRO.lat, CENTRO.lon], 5);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             }).addTo(mappa);
+            // selettore sfondi condiviso di FireOps (sfondo + uno in trasparenza)
+            if (window.FireOpsSfondi) FireOpsSfondi.aggiungi(mappa, { sostituisci: [osm], posizione: 'topright' });
             gruppo = L.layerGroup().addTo(mappa);
             /* La sezione vive nei pannelli e nel magazzino nascosto: quando
                ricompare Leaflet crede ancora di essere largo zero. */

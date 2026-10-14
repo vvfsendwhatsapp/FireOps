@@ -202,6 +202,7 @@ footer{font-size:11px;color:var(--muted);padding:4px 12px;background:var(--panel
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
+<script src="../../fireops-sfondi.js"></script>
 <script>
 (() => {
 // ============================== CONFIGURAZIONE ==============================
@@ -264,7 +265,9 @@ const base = {
   ])
 };
 base['Stradale'].addTo(map);
-L.control.layers(base, null, {position: 'topright'}).addTo(map);
+// selettore sfondi condiviso di FireOps (sfondo + uno in trasparenza); ripiego: il vecchio controllo
+if (!(window.FireOpsSfondi && FireOpsSfondi.aggiungi(map, {sostituisci: [base['Stradale']], posizione: 'topright'})))
+  L.control.layers(base, null, {position: 'topright'}).addTo(map);
 L.control.scale({imperial: false}).addTo(map);
 const cluster = L.markerClusterGroup({showCoverageOnHover: false, maxClusterRadius: 45, disableClusteringAtZoom: 15, chunkedLoading: true});
 map.addLayer(cluster);

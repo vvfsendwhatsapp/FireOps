@@ -200,6 +200,7 @@
 <script src="differibili-assessment.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
   integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="fireops-sfondi.js"></script>
 <script>
 (function () {
 'use strict';
@@ -268,7 +269,9 @@ const sfondi = {
     {maxZoom: 19, attribution: 'Esri'}))
 };
 const map = L.map('mappa', {layers: [sfondi.strade], zoomControl: true}).setView([42.7, 12.7], 6);
-L.control.layers({'Stradale': sfondi.strade, 'Satellite': sfondi.satellite}, null, {position: 'topright'}).addTo(map);
+// selettore sfondi condiviso di FireOps (sfondo + uno in trasparenza); ripiego: il vecchio controllo
+if (!(window.FireOpsSfondi && FireOpsSfondi.aggiungi(map, {sostituisci: [sfondi.strade], posizione: 'topright'})))
+  L.control.layers({'Stradale': sfondi.strade, 'Satellite': sfondi.satellite}, null, {position: 'topright'}).addTo(map);
 L.control.scale({imperial: false}).addTo(map);
 const livZona = L.featureGroup().addTo(map);
 const livPunti = L.featureGroup().addTo(map);

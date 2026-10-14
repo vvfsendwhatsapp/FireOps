@@ -1502,8 +1502,17 @@ function iconaFrecciaDirezione(colore, azimutGradi) {
         if (!contenitore || typeof L === "undefined") return;
 
         coordMappaLeaflet = L.map("coord-mappa").setView([41.9, 12.5], 6);
-        creaSelettoreCarta(contenitore);
-        impostaCartaBase(chiaveBaseAttiva);
+        /* Selettore sfondi condiviso di FireOps (sfondo + uno in trasparenza
+           sopra); il vecchio selettore a destra resta solo come ripiego */
+        if (window.FireOpsSfondi) {
+            FireOpsSfondi.aggiungi(coordMappaLeaflet, {
+                posizione: "bottomleft",
+                imposta: k => impostaCartaBase(k === "sat" ? "satellite" : k),
+            });
+        } else {
+            creaSelettoreCarta(contenitore);
+            impostaCartaBase(chiaveBaseAttiva);
+        }
 
         coordMappaLeaflet.on("click", (e) => {
             if (puntoInAttesa === "partenza" && coordinateTargetCorrenti) {

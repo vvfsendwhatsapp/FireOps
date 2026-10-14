@@ -905,7 +905,9 @@ function createMapUI(cfg,slot){
   const map=L.map(cv,{zoomSnap:0.5}).setView([42.5,12.5],6);
   const osm=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
   const sat=satConEtichette(L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Immagini © Esri'}));
-  L.control.layers({'Mappa':osm,'Satellite':sat},null,{position:'topright'}).addTo(map);
+  // selettore sfondi condiviso di FireOps (sfondo + uno in trasparenza); ripiego: il vecchio controllo
+  if(!(window.FireOpsSfondi&&FireOpsSfondi.aggiungi(map,{sostituisci:[osm],posizione:'topright'})))
+    L.control.layers({'Mappa':osm,'Satellite':sat},null,{position:'topright'}).addTo(map);
   const group=L.layerGroup().addTo(map);
   const pts={};let mode=null;
   const ui={map,group,wrap};

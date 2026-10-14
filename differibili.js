@@ -903,7 +903,9 @@ function avvia(sezione){
     {n: '🗺 Stradale', l: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
       {maxZoom: 19, attribution: 'OpenStreetMap', crossOrigin: true})},
     {n: '🛰 Satellite', l: satConEtichette(L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      {maxZoom: 19, attribution: 'Esri'}))}
+      {maxZoom: 19, attribution: 'Esri'}))},
+    {n: '⛰ Topografica', l: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+      {maxZoom: 19, maxNativeZoom: 17, attribution: 'OpenTopoMap'})}
   ];
   let iSfondo = 0;
   const c0 = centroComando();
@@ -925,6 +927,19 @@ function avvia(sezione){
   const livPriorita = L.layerGroup().addTo(map);  // aloni rossi delle schede con persone
   const livValutate = L.layerGroup().addTo(map);  // badge di priorità delle schede valutate
 
+  /* Selettore sfondi condiviso di FireOps: sfondo + uno in trasparenza sopra.
+     Prende il posto del pulsante 🛰, che resta solo se il file non si carica. */
+  const CHIAVE_SFONDO = {osm: 0, sat: 1, topo: 2};
+  function vaiSfondo(i){
+    if (i === iSfondo || !sfondi[i]) return;
+    map.removeLayer(sfondi[iSfondo].l);
+    iSfondo = i;
+    map.addLayer(sfondi[iSfondo].l);
+    sfondi[iSfondo].l.bringToBack();
+    $('bSfondo').textContent = sfondi[(iSfondo + 1) % sfondi.length].n;
+  }
+  if (window.FireOpsSfondi && FireOpsSfondi.aggiungi(map, {posizione: 'topright', imposta: k => vaiSfondo(CHIAVE_SFONDO[k])}))
+    $('bSfondo').hidden = true;
   $('bSfondo').onclick = () => {
     map.removeLayer(sfondi[iSfondo].l);
     iSfondo = (iSfondo + 1) % sfondi.length;

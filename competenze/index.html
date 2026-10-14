@@ -170,6 +170,7 @@ dialog .df .btn{flex:1}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/h3-js@4.1.0/dist/h3-js.umd.js"></script>
+<script src="../fireops-sfondi.js"></script>
 <script>
 'use strict';
 const $ = id => document.getElementById(id);
@@ -198,7 +199,8 @@ let punto = null;           // marker del punto interrogato
 
 /* ------------------------------------------------------------ mappa */
 const map = L.map('map', {preferCanvas: true, zoomControl: true}).setView([44.05, 12.05], 9);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19, attribution: '© OpenStreetMap'}).addTo(map);
+const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19, attribution: '© OpenStreetMap'}).addTo(map);
+if (window.FireOpsSfondi) FireOpsSfondi.aggiungi(map, {sostituisci: [osm], posizione: 'topright'});   // sfondo + uno in trasparenza
 const rend = L.canvas({padding: .3});
 const livCelle = L.layerGroup().addTo(map);
 const livBordi = L.layerGroup().addTo(map);
