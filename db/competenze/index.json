@@ -2,9 +2,9 @@
  "province": {
   "FC": {
    "nome": "Forlì-Cesena",
-   "generato": "2026-10-14T07:50:21Z",
+   "generato": "2026-10-14T08:41:02Z",
    "metodo": "osrm",
-   "sedi": 26,
+   "sedi": 32,
    "celle": 3285
   }
  }
