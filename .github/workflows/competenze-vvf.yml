@@ -84,6 +84,9 @@ jobs:
           docker logs osrm; exit 1
 
       - name: Calcola le competenze
+        env:
+          # stesso foglio delle correzioni di sedi.html (vedi sedi-vvf.yml): le sedi convalidate contano subito
+          CORREZIONI_CSV: https://docs.google.com/spreadsheets/d/e/2PACX-1vSLE9Qh4MdnB6tdq_b4ssxNVxol1-kfukb4bos2b_6eklGdWJiFGKSS9YdH6ilayGhqhHhf7GXqLYQO/pub?output=csv
         run: |
           ARG=""
           [ -n "${{ github.event.inputs.provincia }}" ] && ARG="--provincia ${{ github.event.inputs.provincia }}"

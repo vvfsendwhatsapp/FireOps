@@ -20,7 +20,7 @@ Output in --out (default db/competenze):
   <SIGLA>_celle.csv     una riga per cella con le 6 competenze (per Excel / QGIS)
   index.json            elenco province calcolate
 """
-import argparse, csv, glob, json, math, os, re, sys, time, urllib.request
+import argparse, csv, glob, io, json, math, os, re, sys, time, urllib.request
 from datetime import datetime, timezone
 
 import h3
@@ -116,12 +116,12 @@ def nome_auto(tipo, comune):
 
 
 def leggi_sedi(cartella_sedi):
-    """Sedi da db/sedi/sedi_vvf.csv. Se il CSV non ha ancora le correzioni del foglio applicate
-    (manca la colonna 'stato'), applico qui quelle esportate in db/sedi/correzioni/*.json."""
+    """Sedi da db/sedi/sedi_vvf.csv, con sopra le correzioni piu' recenti: quelle esportate in
+    db/sedi/correzioni/*.json e quelle del foglio condiviso (CORREZIONI_CSV), cosi' una sede
+    convalidata o aggiunta in sedi.html conta subito, senza aspettare il giro del DB sedi."""
     with open(os.path.join(cartella_sedi, "sedi_vvf.csv"), encoding="utf-8") as f:
         righe = list(csv.DictReader(f))
-    if righe and "stato" not in righe[0]:
-        righe = applica_correzioni(righe, os.path.join(cartella_sedi, "correzioni"))
+    righe = applica_correzioni(righe, os.path.join(cartella_sedi, "correzioni"), os.environ.get("CORREZIONI_CSV", ""))
     sedi = []
     for r in righe:
         try:
@@ -141,11 +141,33 @@ def leggi_sedi(cartella_sedi):
     return sedi
 
 
-def applica_correzioni(righe, cartella):
+def leggi_foglio(url):
+    """Correzioni dal foglio Google pubblicato in CSV (stesso link del workflow del DB sedi)."""
+    if not url:
+        return []
+    req = urllib.request.Request(url, headers={"User-Agent": "FireOps-competenze/1.0"})
+    with urllib.request.urlopen(req, timeout=60) as r:
+        testo = r.read().decode("utf-8-sig")
+    if testo.lstrip().startswith("<"):
+        raise SystemExit("CORREZIONI_CSV restituisce una pagina HTML: il foglio e' pubblicato in CSV?")
+    lst = [x for x in csv.DictReader(io.StringIO(testo)) if (x.get("chiave") or "").strip()]
+    print(f"Correzioni dal foglio: {len(lst)}")
+    return lst
+
+
+def applica_correzioni(righe, cartella, url_foglio=""):
     corr = []
     for f in sorted(glob.glob(os.path.join(cartella, "*.json"))):
         lst = leggi_json(f, [])
         corr += lst if isinstance(lst, list) else lst.get("correzioni", [])
+    corr += leggi_foglio(url_foglio)
+    # stessa correzione nel foglio e in un file: una sola copia (per id)
+    viste, uniche = set(), []
+    for c in corr:
+        k = c.get("id") or json.dumps(c, sort_keys=True)
+        if k not in viste:
+            viste.add(k); uniche.append(c)
+    corr = [c for c in uniche if not str(c.get("chiave", "")).startswith("comando/")]   # flag "Comando concluso" di sedi.html
     corr.sort(key=lambda c: str(c.get("timestamp", "")))
     ultima = {c["chiave"]: c for c in corr if c.get("chiave")}       # vince l'ultima per sede
     per_chiave = {f"{r['osm_type']}/{r['osm_id']}": r for r in righe}
@@ -158,9 +180,12 @@ def applica_correzioni(righe, cartella):
                  "sigla": "", "comune": "", "lat": "", "lon": ""}
             per_chiave[chiave] = r
             righe.append(r)
-        for k in ("nome", "comune", "tipo", "lat", "lon"):
+        for k in ("comune", "tipo", "lat", "lon"):
             if str(c.get(k, "")).strip():
                 r[k] = str(c[k]).strip()
+        r["nome"] = str(c.get("nome") or "").strip()   # vuoto = nome automatico da tipo e comune, come sedi.py
+        if not r.get("sigla") and str(c.get("sigla") or "").strip():
+            r["sigla"] = str(c["sigla"]).strip().upper()
         if str(c.get("sigla_corretta") or "").strip():   # 'sigla' nel foglio e' la provincia vista in mappa: non affidabile
             r["sigla"] = str(c["sigla_corretta"]).strip().upper()
         r["stato"] = c.get("stato", "")

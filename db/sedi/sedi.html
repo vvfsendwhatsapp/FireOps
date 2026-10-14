@@ -137,6 +137,23 @@ main{flex:1;display:flex;min-height:0;position:relative}
 .sv .svbar{display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:5px 8px;background:var(--panel);border-top:1px solid var(--line)}
 .sv .svbar a{color:var(--ink)}
 @media (max-width:760px){ .sv iframe{height:180px} }
+/* comandi conclusi e ricerca indirizzo */
+#concl{display:none}
+#concl.vis{display:inline-block}
+#concl.fatto{background:var(--ok);border-color:var(--ok);color:#fff}
+.chip.concl.on{background:var(--ok);color:#fff}
+#geo{position:absolute;top:10px;left:56px;right:56px;max-width:420px;z-index:1250;background:var(--panel);border:1px solid var(--line);
+  border-radius:10px;box-shadow:0 4px 16px #0003;padding:8px;display:none}
+#geo.open{display:block}
+#geo .r{display:flex;gap:6px}
+#geo input{flex:1;min-width:0;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+#geo .k{font-size:12px;margin:6px 2px 0}
+.georis{list-style:none;margin:6px 0 0;padding:0;max-height:240px;overflow-y:auto}
+.georis li{padding:7px 8px;border-radius:6px;cursor:pointer;font-size:13px;line-height:1.3;border-bottom:1px solid var(--line)}
+.georis li:hover{background:var(--chip)}
+.georis li small{display:block;color:var(--muted);font-size:11px}
+.f .georis{grid-column:1 / -1;margin:0 0 4px;border:1px solid var(--line);border-radius:8px}
+@media (max-width:760px){ #geo{left:8px;right:8px;max-width:none} }
 footer{font-size:11px;color:var(--muted);padding:4px 12px;background:var(--panel);border-top:1px solid var(--line)}
 </style>
 </head>
@@ -163,6 +180,7 @@ footer{font-size:11px;color:var(--muted);padding:4px 12px;background:var(--panel
   <button class="btn" id="near" title="Ordina per distanza dalla mia posizione">📍<span class="lbl"> Vicino a me</span></button>
   <button class="btn" id="add" title="Aggiungi una sede che manca">＋<span class="lbl"> Sede</span></button>
   <button class="btn" id="csv" title="Scarica le sedi filtrate in CSV">⬇<span class="lbl"> CSV</span></button>
+  <button class="btn" id="concl" title="Segna il Comando come concluso: tutte le sedi controllate">🏁</button>
   <button class="btn reset" id="reset">Reset dati</button>
 </div>
 <div class="chips" id="chips"></div>
@@ -171,6 +189,9 @@ footer{font-size:11px;color:var(--muted);padding:4px 12px;background:var(--panel
   <div id="list"></div>
   <div id="map"></div>
   <aside id="panel"></aside>
+  <div id="geo"><div class="r"><input type="search" id="geoq" placeholder="Indirizzo o luogo della nuova sede" autocomplete="off" enterkeyhint="search">
+    <button class="btn" id="geogo">🔍</button><button class="btn" id="geox" title="Annulla">×</button></div>
+    <div class="k">…oppure tocca la mappa nel punto esatto</div><ul class="georis" id="georis"></ul></div>
   <div id="msg"></div>
 </main>
 <nav class="tabs" id="tabs">
@@ -246,8 +267,9 @@ map.addLayer(cluster);
 let SEDI = [], PER_CHIAVE = new Map();
 let PROV = {};                         // sigla -> {provincia, regione}, ricavato dai dati
 let REMOTE = [];                       // correzioni lette dal foglio
+let CONCLUSI = new Map();              // sigla -> ultima correzione "comando/<sigla>" (stato convalidata = concluso)
 let coda = ls.get(CODA, []);           // correzioni non ancora inviate (o tutte, in modalita' locale)
-let state = {q: '', reg: '', prov: '', stato: '', off: [], me: null};
+let state = {q: '', reg: '', prov: '', stato: '', off: [], me: null, noConcl: false};
 let meMarker = null, shown = [], limit = 200, aperta = null, spostando = false, inviando = false;
 
 function toast(t, ms = 2500) { const m = $('msg'); m.textContent = t; m.style.display = 'block'; clearTimeout(toast.h); toast.h = setTimeout(() => m.style.display = 'none', ms); }
@@ -325,7 +347,9 @@ function sedeNuova(c) {
 function ricalcolaCorrezioni() {
   const tutte = [...REMOTE, ...coda].filter(c => c && c.chiave).sort((a, b) => String(a.timestamp).localeCompare(String(b.timestamp)));
   for (const s of SEDI) { s.corr = null; s.storia = []; }
+  CONCLUSI = new Map();
   for (const c of tutte) {
+    if (c.chiave.startsWith('comando/')) { CONCLUSI.set(c.chiave.slice(8), c); continue; }
     let s = PER_CHIAVE.get(c.chiave);
     if (!s && c.chiave.startsWith('nuova/')) s = sedeNuova(c);
     if (!s) continue;
@@ -361,6 +385,9 @@ async function invia() {
       const c = coda[0];
       const r = await fetch(APPS_SCRIPT_URL, {method: 'POST', body: JSON.stringify({...c, token: TOKEN})});
       const j = await r.json();
+      if (!j.ok && c.chiave.startsWith('comando/')) {   // il foglio non accetta il flag: non blocco le altre correzioni
+        coda.shift(); ls.set(CODA, coda); toast('Il foglio ha rifiutato il flag "Comando concluso": ' + (j.errore || ''), 5000); continue;
+      }
       if (!j.ok) throw new Error(j.errore || 'rifiutata');
       REMOTE.push(c); coda.shift(); ls.set(CODA, coda);
     }
@@ -443,7 +470,10 @@ function apriScheda(s) {
         <label for="f_tipo">Tipo</label><select id="f_tipo">${opt(TIPI, e.tipo)}</select>
         <label for="f_comune">Comune</label><input id="f_comune" value="${esc(e.comune)}">
         <label for="f_sigla">Provincia</label><select id="f_sigla">${optProv(e.sigla)}</select>
-        <label for="f_via">Indirizzo</label><input id="f_via" value="${esc(e.via)}">
+        <label for="f_via">Indirizzo</label>
+        <div class="pos"><input id="f_via" value="${esc(e.via)}" style="flex:1" placeholder="via e civico" enterkeyhint="search">
+          <button type="button" id="f_cerca" title="Cerca l'indirizzo e sposta la sede lì">🔍 Cerca</button></div>
+        <ul class="georis" id="f_ris" hidden></ul>
         <label for="f_telefono">Telefono</label><input id="f_telefono" type="tel" value="${esc(e.telefono)}">
         <label>Posizione</label>
         <div class="pos"><code id="f_pos">${s.lat.toFixed(5)}, ${s.lon.toFixed(5)}</code><button type="button" id="f_sposta">✥ Sposta</button></div>
@@ -497,6 +527,7 @@ function chiudiScheda(silenziosa) {
   $('panel').classList.remove('open', 'mini'); $('panel').innerHTML = ''; spostando = false;
   aperta = null;
   map.getContainer().classList.remove('adding');
+  chiudiGeo();
   if (s) {
     s.m.dragging && s.m.dragging.disable();
     if (s.p.osm_type === 'nuova' && !s.storia.length) {   // nuova mai salvata: la tolgo
@@ -566,6 +597,7 @@ $('panel').addEventListener('click', e => {
   }
   if (t.id === 'f_sposta' || t.id === 'pfatto') return sposta(!spostando);
   if (t.id === 'f_nomeauto') { nomeManuale = false; aggiornaNome(); marcaModificati(); return; }
+  if (t.id === 'f_cerca') return cercaDallaScheda();
 });
 
 function sposta(on) {
@@ -593,6 +625,7 @@ $('panel').addEventListener('input', e => {
   aggiornaNome(); marcaModificati();
 });
 $('panel').addEventListener('change', e => { if (e.target.id === 'f_tipo' || e.target.id === 'f_sigla') { aggiornaNome(); marcaModificati(); } });
+$('panel').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'f_via') { e.preventDefault(); cercaDallaScheda(); } });
 $('panel').addEventListener('submit', e => { e.preventDefault(); salva(); });
 
 // ---------------------------------------------------------------- filtri, elenco, mappa
@@ -603,6 +636,7 @@ function filtra() {
     if (off.has(e.tipo)) return false;
     if (state.reg && e.regione !== state.reg) return false;
     if (state.prov && (e.sigla || 'XX') !== state.prov) return false;
+    if (state.noConcl && concluso(e.sigla)) return false;
     if (state.stato === 'scartate') { if (!scartata(s)) return false; }
     else {
       if (scartata(s)) return false;
@@ -620,7 +654,7 @@ function opzioniProvince() {
   SEDI.forEach(s => { if (!state.reg || s.e.regione === state.reg) { const k = s.e.sigla || 'XX'; (conta[k] ||= {n: 0, nome: s.e.provincia}).n++; } });
   if (state.prov && !conta[state.prov]) state.prov = '';
   sel.innerHTML = '<option value="">Tutte le province</option>' + Object.keys(conta).sort().map(k =>
-    `<option value="${k}">${k === 'XX' ? 'Senza provincia' : k + ' – ' + esc(conta[k].nome)} (${conta[k].n})</option>`).join('');
+    `<option value="${k}">${concluso(k) ? '✅ ' : ''}${k === 'XX' ? 'Senza provincia' : k + ' – ' + esc(conta[k].nome)} (${conta[k].n})</option>`).join('');
   sel.value = state.prov;
 }
 
@@ -636,7 +670,9 @@ function chips() {
   });
   $('chips').innerHTML = Object.keys(TIPI).filter(t => conta[t]).map(t =>
     `<span class="chip ${off.has(t) ? 'off' : ''}" data-t="${t}"><span class="dot" style="background:${COL[t]}"></span>${TIPI[t]} <small>${conta[t]}</small></span>`).join('') +
-    `<span class="sep"></span><span class="chip" data-conv="1" title="Mostra le sedi ancora da convalidare"><span class="st convalidata">✔ ${conv}/${tot}</span> <small>convalidate</small></span>`;
+    `<span class="sep"></span><span class="chip" data-conv="1" title="Mostra le sedi ancora da convalidare"><span class="st convalidata">✔ ${conv}/${tot}</span> <small>convalidate</small></span>` +
+    `<span class="chip concl ${state.noConcl ? 'on' : ''}" data-concl="1" title="Nascondi le sedi dei Comandi già conclusi">🏁 ${nConclusi()} <small>Comandi conclusi${state.noConcl ? ' · nascosti' : ''}</small></span>`;
+  bottoneConcluso();
 }
 
 function lista() {
@@ -690,6 +726,7 @@ $('stato').addEventListener('change', e => { state.stato = e.target.value; aggio
 $('chips').addEventListener('click', e => {
   const c = e.target.closest('.chip'); if (!c) return;
   if (c.dataset.conv) { state.stato = state.stato === 'da_conv' ? '' : 'da_conv'; $('stato').value = state.stato; aggiorna(false); return; }
+  if (c.dataset.concl) { state.noConcl = !state.noConcl; aggiorna(false); return; }
   const off = new Set(state.off); off.has(c.dataset.t) ? off.delete(c.dataset.t) : off.add(c.dataset.t);
   state.off = [...off]; aggiorna(false);
 });
@@ -712,16 +749,120 @@ $('add').addEventListener('click', () => {
   if (matchMedia('(max-width:760px)').matches) vista('map');
   chiudiScheda();
   map.getContainer().classList.add('adding');
-  toast('Tocca la mappa nel punto esatto della sede', 4000);
-  map.once('click', ev => {
-    map.getContainer().classList.remove('adding');
-    const c = {chiave: 'nuova/' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), lat: ev.latlng.lat, lon: ev.latlng.lng};
-    const s = sedeNuova(c);
-    cluster.addLayer(s.m);
-    apriScheda(s);
-    setTimeout(() => $('f_comune') && $('f_comune').focus(), 50);
-  });
+  $('geo').classList.add('open'); $('georis').innerHTML = ''; $('geoq').value = '';
+  setTimeout(() => $('geoq').focus(), 50);
+  map.off('click', clicNuova); map.once('click', clicNuova);
 });
+function clicNuova(ev) { if ($('geo').classList.contains('open')) nuovaSedeIn(ev.latlng.lat, ev.latlng.lng); }
+// Nuova sede nel punto scelto (clic sulla mappa o risultato della ricerca), con i dati dell'indirizzo se ci sono.
+function nuovaSedeIn(lat, lon, ind) {
+  chiudiGeo();
+  map.getContainer().classList.remove('adding');
+  const c = {chiave: 'nuova/' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), lat, lon};
+  const s = sedeNuova(c);
+  if (ind && ind.sigla && PROV[ind.sigla]) Object.assign(s.p, {sigla: ind.sigla, provincia: PROV[ind.sigla].provincia, regione: PROV[ind.sigla].regione});
+  applica(s);
+  cluster.addLayer(s.m);
+  map.setView([lat, lon], Math.max(map.getZoom(), 16));
+  apriScheda(s);
+  if (ind) compilaIndirizzo(ind);
+  setTimeout(() => { const el = $(ind && ind.comune ? 'f_tipo' : 'f_comune'); el && el.focus(); }, 50);
+}
+function chiudiGeo() { $('geo').classList.remove('open'); $('georis').innerHTML = ''; map.off('click', clicNuova); }
+$('geox').addEventListener('click', () => { chiudiGeo(); map.getContainer().classList.remove('adding'); });
+const cercaGeo = async () => {
+  const q = $('geoq').value.trim(); if (!q) return;
+  const ris = await geocodifica(q);
+  mostraRisultati($('georis'), ris, r => nuovaSedeIn(r.lat, r.lon, r));
+};
+$('geogo').addEventListener('click', cercaGeo);
+$('geoq').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); cercaGeo(); } if (e.key === 'Escape') $('geox').click(); });
+
+// ---------------------------------------------------------------- ricerca indirizzo (Nominatim / OpenStreetMap)
+async function geocodifica(q) {
+  const v = map.getBounds();
+  const url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=6&countrycodes=it'
+    + `&viewbox=${v.getWest()},${v.getNorth()},${v.getEast()},${v.getSouth()}&bounded=0&q=` + encodeURIComponent(q);
+  try {
+    const r = await fetch(url, {headers: {'Accept-Language': 'it'}});
+    const j = await r.json();
+    if (!j.length) toast('Nessun indirizzo trovato: prova con via e comune');
+    return j.map(x => {
+      const a = x.address || {};
+      const iso = a['ISO3166-2-lvl6'] || '';
+      const comune = a.city || a.town || a.village || a.municipality || a.hamlet || '';
+      const via = [a.road || a.pedestrian || a.square || '', a.house_number || ''].filter(Boolean).join(' ');
+      return {lat: +x.lat, lon: +x.lon, comune, via, sigla: /^IT-[A-Z]{2}$/.test(iso) ? iso.slice(3) : '',
+        titolo: x.name && x.name !== a.road ? x.name : (via || comune || x.display_name.split(',')[0]),
+        dett: x.display_name};
+    });
+  } catch (e) { toast('Ricerca indirizzo non disponibile'); return []; }
+}
+function mostraRisultati(ul, ris, scegli) {
+  ul.hidden = !ris.length;
+  ul.innerHTML = ris.map((r, i) => `<li data-i="${i}">${esc(r.titolo)}<small>${esc(r.dett)}</small></li>`).join('');
+  ul.onclick = e => { const li = e.target.closest('li'); if (li) { ul.hidden = true; ul.innerHTML = ''; scegli(ris[+li.dataset.i]); } };
+}
+// Riempie comune, indirizzo e provincia della scheda aperta (solo con valori trovati).
+function compilaIndirizzo(r) {
+  if (r.comune && $('f_comune')) $('f_comune').value = r.comune;
+  if (r.via && $('f_via')) $('f_via').value = r.via;
+  if (r.sigla && PROV[r.sigla] && $('f_sigla')) {
+    if (![...$('f_sigla').options].some(o => o.value === r.sigla)) $('f_sigla').innerHTML = optProv(r.sigla);
+    $('f_sigla').value = r.sigla;
+  }
+  aggiornaNome(); marcaModificati();
+}
+async function cercaDallaScheda() {
+  const s = aperta; if (!s) return;
+  const q = [$('f_via').value.trim(), $('f_comune').value.trim(), $('f_sigla').value].filter(Boolean).join(', ');
+  if (!q) { $('f_via').focus(); toast('Scrivi via e comune'); return; }
+  const ris = await geocodifica(q);
+  mostraRisultati($('f_ris'), ris, r => {
+    s.m.setLatLng([r.lat, r.lon]);
+    aggiornaPos(r.lat, r.lon);
+    compilaIndirizzo(r);
+    map.setView([r.lat, r.lon], Math.max(map.getZoom(), 17));
+    const f = $('svframe'); if (f) { f.src = svSrc(r.lat, r.lon); $('svlink').href = svLink(r.lat, r.lon); }
+    toast('Posizione aggiornata: controlla e premi Salva');
+  });
+}
+
+// ---------------------------------------------------------------- comandi conclusi
+const concluso = sg => { const c = CONCLUSI.get(sg); return !!c && c.stato === 'convalidata'; };
+const nConclusi = () => [...CONCLUSI.keys()].filter(concluso).length;
+function bottoneConcluso() {
+  const b = $('concl'), sg = state.prov;
+  b.classList.toggle('vis', !!sg && sg !== 'XX');
+  if (!sg) return;
+  const c = CONCLUSI.get(sg), fatto = concluso(sg);
+  b.classList.toggle('fatto', fatto);
+  b.textContent = fatto ? `✅ ${sg} concluso` : `🏁 Concludi ${sg}`;
+  b.title = fatto ? `Concluso da ${c.utente || '?'} il ${fmtData(c.timestamp)} · clic per riaprire` : 'Segna il Comando come concluso: tutte le sedi controllate';
+}
+$('concl').addEventListener('click', () => {
+  const sg = state.prov; if (!sg || sg === 'XX') return;
+  const fatto = concluso(sg);
+  const sedi = SEDI.filter(s => (s.e.sigla || 'XX') === sg && !scartata(s));
+  const mancano = sedi.filter(s => !s.stato).length;
+  const msg = fatto ? `Riaprire il Comando ${sg}? Tornerà tra quelli da completare.`
+    : `Segnare il Comando ${sg} come concluso?` + (mancano ? `\n\nAttenzione: ${mancano} sedi su ${sedi.length} sono ancora da convalidare.` : `\n\nTutte le ${sedi.length} sedi sono state controllate.`);
+  if (!confirm(msg)) return;
+  let utente = ls.get(UTENTE, '');
+  if (!utente) { utente = (prompt('Chi sei? (cognome / qualifica)') || '').trim(); if (!utente) return; ls.set(UTENTE, utente); }
+  const p = PROV[sg] || {};
+  const c = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+    timestamp: new Date().toISOString(), utente, chiave: 'comando/' + sg, osm_type: 'comando', osm_id: sg,
+    stato: fatto ? 'da_correggere' : 'convalidata', note: fatto ? 'Comando riaperto' : 'Comando concluso',
+    lat: '', lon: '', regione: p.regione || '', sigla: sg, nome: '', tipo: '', comune: '', via: '', telefono: '', sigla_corretta: ''
+  };
+  coda.push(c); ls.set(CODA, coda);
+  ricalcolaCorrezioni(); opzioniProvince(); aggiorna(false);
+  toast(fatto ? `Comando ${sg} riaperto` : `Comando ${sg} concluso`);
+  invia();
+});
+
 $('near').addEventListener('click', () => {
   if (state.me) { state.me = null; if (meMarker) map.removeLayer(meMarker); meMarker = null; $('near').classList.remove('on'); aggiorna(false); return; }
   if (!navigator.geolocation) return toast('Geolocalizzazione non disponibile');
@@ -742,7 +883,8 @@ $('reset').addEventListener('click', () => {
     if (confirm(msg)) { coda = []; ls.del(CODA); ricalcolaCorrezioni(); }
   }
   ls.del(STORE);
-  state = {q: '', reg: '', prov: '', stato: '', off: [], me: null};
+  state = {q: '', reg: '', prov: '', stato: '', off: [], me: null, noConcl: false};
+  chiudiGeo();
   if (meMarker) map.removeLayer(meMarker); meMarker = null; $('near').classList.remove('on');
   chiudiScheda();
   $('q').value = ''; $('reg').value = ''; $('stato').value = ''; opzioniProvince();
