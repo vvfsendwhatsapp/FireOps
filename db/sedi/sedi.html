@@ -398,9 +398,16 @@ async function invia() {
     while (coda.length) {
       const c = coda[0];
       let r;
-      try { r = await fetch(APPS_SCRIPT_URL, {method: 'POST', body: JSON.stringify({...c, token: TOKEN})}); }
-      catch (e) { throw new Error('foglio non raggiungibile (' + e.message + ')'); }
-      const testo = await r.text();
+      // senza un limite una richiesta appesa lascia l'invio fermo per sempre
+      const ac = new AbortController(), tmo = setTimeout(() => ac.abort(), 30000);
+      let testo;
+      try {
+        r = await fetch(APPS_SCRIPT_URL, {method: 'POST', body: JSON.stringify({...c, token: TOKEN}), signal: ac.signal});
+        testo = await r.text();
+      } catch (e) {
+        throw new Error(e.name === 'AbortError' ? 'il foglio non risponde da 30 secondi' : 'foglio non raggiungibile (' + e.message + ')');
+      } finally { clearTimeout(tmo); }
+      syncUI();
       let j;
       try { j = JSON.parse(testo); }
       catch (e) { throw new Error('risposta non valida del foglio (HTTP ' + r.status + '): ' + testo.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 140)); }
