@@ -1,0 +1,614 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FireOps VVF - Competenze</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root{
+  --bg:#f4f5f7; --panel:#fff; --ink:#1d2228; --muted:#68717c; --line:#dfe3e8;
+  --head:#22272e; --headink:#fff; --accent:#c8102e; --chip:#eef0f3; --ok:#1f9d55; --warn:#e0a800;
+}
+@media (prefers-color-scheme: dark){ :root{
+  --bg:#15181c; --panel:#1e2228; --ink:#e7eaee; --muted:#9aa3ad; --line:#2f353d; --head:#0f1114; --chip:#2a2f36;
+}}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body{display:flex;flex-direction:column;height:100dvh}
+button,select,input{font:inherit;color:inherit}
+
+header{background:var(--head);color:var(--headink);display:flex;align-items:center;gap:10px;padding:8px 12px;padding-top:calc(8px + env(safe-area-inset-top))}
+header a.home{color:#fff;text-decoration:none;font-size:20px;line-height:1;padding:4px 8px;border-radius:6px;background:#ffffff14}
+header h1{font-size:16px;margin:0;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+header h1 b{color:#ff5a6e;font-weight:600}
+#stamp{font-size:12px;background:#ffffff1f;padding:3px 8px;border-radius:99px;white-space:nowrap}
+
+.bar{background:var(--panel);border-bottom:1px solid var(--line);padding:8px 12px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.bar input[type=search]{flex:1 1 200px;min-width:0;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.bar select{flex:0 1 auto;min-width:0;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.btn{padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--muted)}
+.btn.reset{color:var(--accent)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+
+.livelli{display:flex;gap:6px;align-items:center;padding:6px 12px;background:var(--panel);border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.livelli .lbl{font-size:12px;color:var(--muted);margin-right:2px;white-space:nowrap}
+.liv{min-width:42px;padding:6px 10px;border-radius:99px;border:1px solid var(--line);background:var(--chip);cursor:pointer;font-weight:600}
+.liv.on{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+#sedeSel{margin-left:auto;max-width:56vw;padding:6px 8px;border:1px solid var(--line);border-radius:99px;background:var(--bg)}
+
+main{flex:1;display:flex;min-height:0;position:relative}
+#map{flex:1;min-height:0;background:var(--bg)}
+#leg{width:300px;border-left:1px solid var(--line);background:var(--panel);overflow-y:auto}
+#leg h3{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:12px 12px 6px}
+.lr{display:flex;align-items:center;gap:8px;padding:7px 12px;cursor:pointer;border-bottom:1px solid var(--line)}
+.lr:hover,.lr.sel{background:var(--chip)}
+.lr .sw{flex:none;width:14px;height:14px;border-radius:4px;border:1px solid #0003}
+.lr .n{flex:1;min-width:0;font-size:13px;line-height:1.25}
+.lr .n small{display:block;color:var(--muted);font-size:11px}
+.lr .v{font-size:12px;color:var(--muted);white-space:nowrap;text-align:right}
+.scala{display:flex;gap:3px;padding:6px 12px 10px}
+.scala span{flex:1;text-align:center;font-size:11px;font-weight:600;padding:4px 0;border-radius:4px;color:#fff}
+.nota{font-size:12px;color:var(--muted);padding:8px 12px 14px;line-height:1.45}
+
+#panel{position:absolute;top:0;right:0;bottom:0;width:380px;max-width:100%;background:var(--panel);border-left:1px solid var(--line);z-index:1200;display:none;flex-direction:column;box-shadow:-4px 0 16px #0002}
+#panel.open{display:flex}
+#panel .ph{padding:12px 14px 10px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:flex-start;position:relative}
+#panel .ph h2{font-size:16px;margin:2px 0 0;line-height:1.25}
+#panel .ph .k{font-size:12px;color:var(--muted)}
+#panel .ph .x{margin-left:auto;border:0;background:none;font-size:22px;line-height:1;cursor:pointer;color:var(--muted);padding:0 4px}
+#panel .pb{overflow-y:auto;padding:8px 14px 12px;flex:1}
+#panel .pf{padding:10px 14px;border-top:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap;padding-bottom:calc(10px + env(safe-area-inset-bottom))}
+#panel .pf .btn{flex:1}
+.cr{display:grid;grid-template-columns:34px 1fr auto;gap:2px 10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
+.cr .r{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:13px}
+.cr .s{font-weight:600;line-height:1.25}
+.cr .s small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.cr .t{text-align:right;font-weight:700;font-size:15px;white-space:nowrap}
+.cr .t small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+.tag{display:inline-block;font-size:10px;padding:1px 6px;border-radius:99px;text-transform:uppercase;letter-spacing:.03em;background:var(--chip);color:var(--muted);margin-left:4px;vertical-align:1px}
+.cr.evid{background:var(--chip);margin:0 -14px;padding:9px 14px;box-shadow:inset 3px 0 0 var(--accent)}
+.avv{font-size:12px;background:color-mix(in srgb,var(--warn) 18%,var(--panel));border-radius:6px;padding:6px 8px;margin:8px 0}
+
+dialog{border:0;border-radius:12px;padding:0;max-width:440px;width:calc(100% - 24px);background:var(--panel);color:var(--ink);box-shadow:0 10px 40px #0006}
+dialog::backdrop{background:#0007}
+dialog .dh{padding:14px 16px;border-bottom:1px solid var(--line);font-weight:600;display:flex}
+dialog .dh button{margin-left:auto;border:0;background:none;font-size:20px;cursor:pointer;color:var(--muted)}
+dialog .db{padding:12px 16px}
+dialog .db .sec{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:12px 0 6px;font-weight:600}
+dialog .db .sec:first-child{margin-top:0}
+.opz{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.opz label{display:flex;gap:8px;align-items:center;padding:9px 10px;border:1px solid var(--line);border-radius:8px;cursor:pointer;font-size:13px}
+.opz label:has(input:checked){border-color:var(--ink);background:var(--chip)}
+.opz label small{display:block;color:var(--muted);font-size:11px}
+dialog .df{padding:12px 16px;border-top:1px solid var(--line);display:flex;gap:8px}
+dialog .df .btn{flex:1}
+
+#msg{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:1400;background:var(--head);color:#fff;padding:8px 14px;border-radius:8px;font-size:13px;display:none;max-width:90%;text-align:center}
+#vuoto{position:absolute;inset:0;z-index:1500;display:none;align-items:center;justify-content:center;background:color-mix(in srgb,var(--bg) 88%,transparent);padding:24px;text-align:center}
+#vuoto div{max-width:420px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px}
+.pinS{width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #0007,0 1px 3px #0008}
+.pinS.est{border-radius:3px;transform:rotate(45deg)}
+.me{width:16px;height:16px;border-radius:50%;background:#1f6fd1;border:3px solid #fff;box-shadow:0 0 0 6px #1f6fd140}
+.leaflet-tooltip.etS{font-size:11px;padding:2px 6px}
+.tabs{display:none}
+
+@media (max-width:760px){
+  .bar{padding:8px}
+  .bar input[type=search]{flex:1 1 100%;order:-1}
+  .bar select{flex:1 1 0;min-width:0}
+  .bar .btn{flex:0 0 auto;padding:8px}
+  .livelli{flex-wrap:wrap;overflow:visible}
+  #sedeSel{order:9;flex:1 1 100%;max-width:none;margin-left:0}
+  #leg{position:absolute;inset:0;width:auto;border:0;z-index:1100;display:none}
+  main.showleg #leg{display:block}
+  .tabs{display:flex;background:var(--panel);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+  .tabs button{flex:1;padding:10px;border:0;background:none;font-weight:600;color:var(--muted)}
+  .tabs button.on{color:var(--accent);box-shadow:inset 0 3px 0 var(--accent)}
+  #panel{position:fixed;top:auto;left:0;right:0;bottom:0;width:auto;max-height:78dvh;border-left:0;border-top:1px solid var(--line);border-radius:14px 14px 0 0;box-shadow:0 -6px 24px #0004;z-index:1300}
+  #panel .ph{padding-top:16px}
+  #panel .ph::before{content:"";position:absolute;left:50%;top:6px;width:40px;height:4px;border-radius:2px;background:var(--line);transform:translateX(-50%)}
+}
+</style>
+</head>
+<body>
+<header>
+  <a class="home" href="../" title="Home FireOps">⌂</a>
+  <h1>FireOps VVF - <b>Competenze</b></h1>
+  <span id="stamp">…</span>
+</header>
+<div class="bar">
+  <input type="search" id="q" placeholder="Indirizzo, località o coordinate (44.22, 12.04)" autocomplete="off" enterkeyhint="search">
+  <select id="prov" title="Provincia"></select>
+  <button class="btn" id="gps" title="Le competenze della mia posizione">📍 Qui</button>
+  <button class="btn pri" id="exp">⬇ Esporta</button>
+  <button class="btn reset" id="reset">Reset dati</button>
+</div>
+<div class="livelli" id="livelli">
+  <span class="lbl">Competenza</span>
+  <select id="sedeSel" title="Mostra la scala di competenze di una sede"><option value="">Tutte le sedi</option></select>
+</div>
+<main id="main">
+  <div id="map"></div>
+  <aside id="leg"></aside>
+  <section id="panel">
+    <div class="ph"><div><h2 id="ptit">…</h2><div class="k" id="psub"></div></div><button class="x" id="pclose" aria-label="Chiudi">×</button></div>
+    <div class="pb" id="pbody"></div>
+    <div class="pf"><button class="btn" id="pcopy">📋 Copia</button><button class="btn" id="pmaps">🧭 Mappe</button></div>
+  </section>
+  <div id="msg"></div>
+  <div id="vuoto"><div><b>Competenze non ancora calcolate</b><p class="nota" style="padding:8px 0 0">Lancia su GitHub l'Action <i>Calcola competenze sedi VVF</i> (Actions → Run workflow). Il calcolo su strada richiede qualche minuto; al termine i dati compaiono qui.</p></div></div>
+</main>
+<nav class="tabs"><button class="on" data-t="map">Mappa</button><button data-t="leg">Sedi e zone</button></nav>
+
+<dialog id="dlg">
+  <div class="dh">Esporta competenze <button id="dclose" aria-label="Chiudi">×</button></div>
+  <div class="db">
+    <div class="sec">Cosa</div>
+    <div class="opz">
+      <label><input type="radio" name="cosa" value="zone" checked><span>Zone per sede<small>poligoni uniti</small></span></label>
+      <label><input type="radio" name="cosa" value="comuni"><span>Tabella per comune<small>ordine 1ª–6ª per comune</small></span></label>
+      <label><input type="radio" name="cosa" value="celle"><span>Celle<small>una riga per esagono</small></span></label>
+      <label><input type="radio" name="cosa" value="sedi"><span>Sedi candidate<small>con tempi di uscita</small></span></label>
+    </div>
+    <div class="sec">Livelli</div>
+    <div class="opz">
+      <label><input type="radio" name="liv" value="cur" checked><span id="livCur">Solo la 1ª</span></label>
+      <label><input type="radio" name="liv" value="all"><span>Dalla 1ª alla 6ª</span></label>
+    </div>
+    <div class="sec">Formato</div>
+    <div class="opz">
+      <label><input type="radio" name="fmt" value="geojson" checked><span>GeoJSON<small>QGIS, SITAC</small></span></label>
+      <label><input type="radio" name="fmt" value="kml"><span>KML<small>Google Earth, My Maps</small></span></label>
+      <label><input type="radio" name="fmt" value="csv"><span>CSV<small>Excel, Fogli</small></span></label>
+    </div>
+    <p class="nota" id="dnota" style="padding:8px 0 0"></p>
+  </div>
+  <div class="df"><button class="btn" id="dann">Annulla</button><button class="btn pri" id="dok">Scarica</button></div>
+</dialog>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/h3-js@4.1.0/dist/h3-js.umd.js"></script>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const DATI = '../db/competenze/';
+const PREF = 'fireops-competenze';
+const N = 6;
+const COLORI = ['#e6194b','#3cb44b','#4363d8','#f58231','#911eb4','#42d4f4','#f032e6','#bfef45','#469990','#9a6324',
+  '#800000','#808000','#000075','#ffe119','#a9a9a9','#fabed4','#ffd8b1','#aaffc3','#dcbeff','#00897b','#5d4037','#c2185b','#283593','#9e9d24'];
+/* scala 1ª → 6ª per la vista "una sede": dal rosso pieno al giallo chiaro */
+const SCALA = ['#b2182b','#d6604d','#f4a582','#fdc086','#fee08b','#ffffbf'];
+const TIPO = {centrale:'Sede centrale', permanente:'Permanente', volontario:'Volontari', aeroportuale:'Aeroportuale',
+  portuale:'Portuale', rurale:'Presidio rurale', presidio:'Presidio', stagionale:'Stagionale'};
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ord = n => n + 'ª';
+const nomeBreve = s => String(s.nome).replace(/^vigili del fuoco\s*-\s*/i, '');
+
+let pref = {};
+try { pref = JSON.parse(localStorage.getItem(PREF) || '{}') || {}; } catch (e) { pref = {}; }
+const salva = () => { try { localStorage.setItem(PREF, JSON.stringify(pref)); } catch (e) {} };
+
+let D = null;               // dati della provincia
+let celle = [];             // {h3, comune, agg, comp:[{s, t, k}], poly}
+let livello = +pref.livello || 1;
+let sedeFiltro = pref.sede ?? '';
+let punto = null;           // marker del punto interrogato
+
+/* ------------------------------------------------------------ mappa */
+const map = L.map('map', {preferCanvas: true, zoomControl: true}).setView([44.05, 12.05], 9);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19, attribution: '© OpenStreetMap'}).addTo(map);
+const rend = L.canvas({padding: .3});
+const livCelle = L.layerGroup().addTo(map);
+const livBordi = L.layerGroup().addTo(map);
+const livSedi = L.layerGroup().addTo(map);
+const livPunto = L.layerGroup().addTo(map);
+
+const msg = (t, ms = 2600) => { const m = $('msg'); m.textContent = t; m.style.display = 'block'; clearTimeout(msg._t); msg._t = setTimeout(() => m.style.display = 'none', ms); };
+
+/* ------------------------------------------------------------ dati */
+async function avvia() {
+  let idx = null;
+  try { idx = await (await fetch(DATI + 'index.json', {cache: 'no-cache'})).json(); } catch (e) {}
+  const prov = idx && idx.province ? Object.keys(idx.province) : [];
+  const sel = $('prov');
+  sel.innerHTML = prov.map(p => `<option value="${esc(p)}">${esc(p)} · ${esc(idx.province[p].nome)}</option>`).join('');
+  if (!prov.length) { $('vuoto').style.display = 'flex'; $('stamp').textContent = '—'; return; }
+  const qs = new URLSearchParams(location.search);
+  const scelta = [qs.get('p'), pref.prov].map(x => (x || '').toUpperCase()).find(x => prov.includes(x)) || prov[0];
+  sel.value = scelta;
+  if (qs.get('l')) livello = Math.min(N, Math.max(1, +qs.get('l') || 1));
+  await carica(scelta);
+}
+
+async function carica(sigla) {
+  try {
+    D = await (await fetch(DATI + encodeURIComponent(sigla) + '.json', {cache: 'no-cache'})).json();
+  } catch (e) { $('vuoto').style.display = 'flex'; return; }
+  $('vuoto').style.display = 'none';
+  pref.prov = sigla; salva();
+  const per = 3 + 3 * N;
+  celle = D.celle.map(r => {
+    const comp = [];
+    for (let i = 3; i < r.length && i < per; i += 3) comp.push({s: r[i], t: r[i + 1], k: r[i + 2]});
+    return {h3: r[0], comune: r[1], agg: r[2], comp, poly: h3.cellToBoundary(r[0])};
+  });
+  D.perH3 = new Map(celle.map(c => [c.h3, c]));
+  D.sedi.forEach((s, i) => s.col = COLORI[i % COLORI.length]);
+  const g = new Date(D.generato);
+  $('stamp').textContent = (D.metodo === 'osrm' ? '' : '⚠ ') + g.toLocaleDateString('it-IT');
+  $('stamp').title = `Calcolo del ${g.toLocaleString('it-IT')} · metodo: ${D.metodo} · celle H3 res ${D.h3_res}`;
+  $('sedeSel').innerHTML = '<option value="">Tutte le sedi</option>' + D.sedi.map(s =>
+    `<option value="${s.id}">${esc(nomeBreve(s))}${s.interna ? '' : ' (' + esc(s.sigla) + ')'}</option>`).join('');
+  if (sedeFiltro !== '' && !D.sedi[+sedeFiltro]) sedeFiltro = '';
+  $('sedeSel').value = sedeFiltro;
+  disegnaSedi();
+  disegna();
+  const b = L.latLngBounds(celle.map(c => h3.cellToLatLng(c.h3)));
+  if (b.isValid()) map.fitBounds(b, {padding: [10, 10]});
+}
+
+/* ------------------------------------------------------------ disegno */
+function bottoniLivello() {
+  const box = $('livelli');
+  box.querySelectorAll('.liv').forEach(b => b.remove());
+  for (let l = N; l >= 1; l--) {
+    const b = document.createElement('button');
+    b.className = 'liv' + (l === livello && sedeFiltro === '' ? ' on' : '');
+    b.textContent = ord(l);
+    b.title = `Zone di ${ord(l)} competenza`;
+    b.onclick = () => { livello = l; sedeFiltro = ''; $('sedeSel').value = ''; pref.livello = l; pref.sede = ''; salva(); disegna(); };
+    box.querySelector('.lbl').after(b);
+  }
+}
+
+function zoneDi(liv) {
+  /* sede -> elenco celle in cui e' la competenza di livello liv */
+  const z = new Map();
+  for (const c of celle) {
+    const x = c.comp[liv - 1];
+    if (!x) continue;
+    if (!z.has(x.s)) z.set(x.s, []);
+    z.get(x.s).push(c);
+  }
+  return z;
+}
+
+function disegna() {
+  bottoniLivello();
+  livCelle.clearLayers(); livBordi.clearLayers();
+  if (!D) return;
+  const unaSede = sedeFiltro !== '';
+  const sid = +sedeFiltro;
+  for (const c of celle) {
+    let col = null, op = .45;
+    if (unaSede) {
+      const r = c.comp.findIndex(x => x.s === sid);
+      if (r < 0) { col = '#888'; op = .08; } else { col = SCALA[r]; op = .6; }
+    } else {
+      const x = c.comp[livello - 1];
+      if (!x) continue;
+      col = D.sedi[x.s].col;
+    }
+    L.polygon(c.poly, {renderer: rend, stroke: false, fillColor: col, fillOpacity: op, interactive: false}).addTo(livCelle);
+  }
+  /* bordi delle zone: contorno unito delle celle di ogni sede */
+  if (unaSede) {
+    for (let r = 1; r <= N; r++) {
+      const cc = celle.filter(c => c.comp[r - 1] && c.comp[r - 1].s === sid).map(c => c.h3);
+      if (cc.length) contorno(cc, r === 1 ? '#000' : '#5a1a1a', r === 1 ? 2.2 : .8);
+    }
+  } else {
+    for (const [, cc] of zoneDi(livello)) contorno(cc.map(c => c.h3), '#1d2228', 1.4);
+  }
+  legenda();
+  livSedi.eachLayer(m => { const on = !unaSede || m.sid === sid; m.setOpacity(on ? 1 : .35); });
+  if (punto) scheda(punto.getLatLng());
+}
+
+function contorno(cells, col, peso) {
+  const mp = h3.cellsToMultiPolygon(cells, false);   // [[[lat,lng]...]...] per poligono
+  mp.forEach(poly => L.polygon(poly, {renderer: rend, color: col, weight: peso, fill: false, interactive: false, opacity: .85}).addTo(livBordi));
+}
+
+function disegnaSedi() {
+  livSedi.clearLayers();
+  D.sedi.forEach(s => {
+    const ic = L.divIcon({className: '', html: `<div class="pinS${s.interna ? '' : ' est'}" style="background:${s.col}"></div>`, iconSize: [14, 14], iconAnchor: [7, 7]});
+    const m = L.marker([s.lat, s.lon], {icon: ic, title: s.nome});
+    m.sid = s.id;
+    m.bindTooltip(nomeBreve(s), {className: 'etS', direction: 'top', offset: [0, -6]});
+    m.on('click', () => { sedeFiltro = String(s.id); $('sedeSel').value = sedeFiltro; pref.sede = sedeFiltro; salva(); disegna(); mostraLeg(); });
+    livSedi.addLayer(m);
+  });
+}
+
+const AREA = () => h3.getHexagonAreaAvg(D.h3_res, 'km2');
+
+function legenda() {
+  const leg = $('leg');
+  if (!D) { leg.innerHTML = ''; return; }
+  const area = AREA();
+  if (sedeFiltro !== '') {
+    const s = D.sedi[+sedeFiltro];
+    const righe = [];
+    for (let r = 1; r <= N; r++) {
+      const cc = celle.filter(c => c.comp[r - 1] && c.comp[r - 1].s === s.id);
+      const tm = cc.length ? Math.max(...cc.map(c => c.comp[r - 1].t)) : 0;
+      righe.push(`<div class="lr" data-l="${r}"><span class="sw" style="background:${SCALA[r - 1]}"></span>
+        <span class="n">${ord(r)} competenza<small>${cc.length ? 'arrivo entro ' + Math.ceil(tm) + ' min' : 'nessuna zona'}</small></span>
+        <span class="v">${(cc.length * area).toFixed(0)} km²</span></div>`);
+    }
+    const com = comuniDiSede(s.id);
+    leg.innerHTML = `<h3>${esc(nomeBreve(s))}</h3>
+      <div class="nota" style="padding-top:0">${esc(TIPO[s.tipo] || s.tipo)} · ${esc(s.comune)} (${esc(s.sigla)}) · uscita ${s.uscita_min} min</div>
+      ${righe.join('')}
+      <h3>Comuni in cui è 1ª competenza</h3>
+      <div class="nota">${com.length ? com.map(esc).join(', ') : '—'}</div>
+      <div style="padding:0 12px 12px"><button class="btn" id="legTutte" style="width:100%">← Tutte le sedi</button></div>`;
+    $('legTutte').onclick = () => { sedeFiltro = ''; $('sedeSel').value = ''; pref.sede = ''; salva(); disegna(); };
+    return;
+  }
+  const z = zoneDi(livello);
+  const elenco = [...z.entries()].sort((a, b) => b[1].length - a[1].length);
+  leg.innerHTML = `<h3>${ord(livello)} competenza · ${esc(D.nome)}</h3>` + elenco.map(([sid, cc]) => {
+    const s = D.sedi[sid];
+    const tm = Math.max(...cc.map(c => c.comp[livello - 1].t));
+    return `<div class="lr" data-s="${sid}"><span class="sw" style="background:${s.col}"></span>
+      <span class="n">${esc(nomeBreve(s))}<small>${esc(TIPO[s.tipo] || s.tipo)}${s.interna ? '' : ' · ' + esc(s.sigla)} · arrivo max ${Math.ceil(tm)} min</small></span>
+      <span class="v">${(cc.length * area).toFixed(0)} km²</span></div>`;
+  }).join('') + `<div class="nota">Tempo di arrivo = uscita della sede (${Object.entries(D.parametri.uscita_min).filter(([, v]) => v != null).map(([k, v]) => `${TIPO[k] || k} ${v}′`).join(', ')}) + percorrenza su strada${D.parametri.fattore_mezzo != 1 ? ' × ' + D.parametri.fattore_mezzo : ''}.
+    Celle esagonali da ~${area.toFixed(2)} km². Tocca una sede per vedere la sua scala dalla 1ª alla 6ª.${D.metodo === 'osrm' ? '' : '<br><b>⚠ Calcolo di prova in linea d\'aria, non su strada.</b>'}</div>`;
+  leg.querySelectorAll('.lr[data-s]').forEach(el => el.onclick = () => {
+    sedeFiltro = el.dataset.s; $('sedeSel').value = sedeFiltro; pref.sede = sedeFiltro; salva(); disegna();
+  });
+}
+
+function comuniDiSede(sid) {
+  return riepilogoComuni().filter(r => r.liv[0] && r.liv[0].s === sid).map(r => r.nome);
+}
+
+/* per ogni comune e livello: la sede con piu' celle (prevalente) e la sua quota */
+function riepilogoComuni() {
+  if (D._rc) return D._rc;
+  const per = new Map();
+  for (const c of celle) {
+    if (!per.has(c.comune)) per.set(c.comune, {n: 0, liv: Array.from({length: N}, () => new Map())});
+    const x = per.get(c.comune); x.n++;
+    c.comp.forEach((k, i) => x.liv[i].set(k.s, (x.liv[i].get(k.s) || 0) + 1));
+  }
+  /* ordine delle sedi nel comune: posizione media sulle sue celle (assente = 7ª), cosi'
+     la stessa sede non compare su due livelli; quota = celle in cui e' proprio a quel livello */
+  D._rc = [...per.entries()].map(([ci, x]) => {
+    const somma = new Map();
+    x.liv.forEach((m, i) => m.forEach((n, s) => somma.set(s, (somma.get(s) || 0) + n * (i + 1))));
+    const pos = [...somma.keys()].map(s => {
+      const presenti = x.liv.reduce((a, m) => a + (m.get(s) || 0), 0);
+      return {s, m: (somma.get(s) + (x.n - presenti) * (N + 1)) / x.n};
+    }).sort((a, b) => a.m - b.m).slice(0, N);
+    return {nome: D.comuni[ci] ?? '—', celle: x.n, liv: pos.map((p, i) => ({s: p.s, q: (x.liv[i].get(p.s) || 0) / x.n}))};
+  }).sort((a, b) => a.nome.localeCompare(b.nome, 'it'));
+  return D._rc;
+}
+
+/* ------------------------------------------------------------ scheda punto */
+function cellaDi(ll) {
+  const id = h3.latLngToCell(ll.lat, ll.lng, D.h3_res);
+  return D.perH3.get(id);
+}
+
+function scheda(ll) {
+  if (!D) return;
+  livPunto.clearLayers();
+  punto = L.marker(ll, {icon: L.divIcon({className: '', html: '<div class="me"></div>', iconSize: [16, 16], iconAnchor: [8, 8]})}).addTo(livPunto);
+  const c = cellaDi(ll);
+  const coord = `${ll.lat.toFixed(5)}, ${ll.lng.toFixed(5)}`;
+  if (!c) {
+    $('ptit').textContent = 'Fuori provincia';
+    $('psub').textContent = coord;
+    $('pbody').innerHTML = `<p class="nota" style="padding:8px 0">Il punto è fuori dal territorio di ${esc(D.nome)}: nessuna competenza calcolata.</p>`;
+    $('panel').classList.add('open'); scheda.testo = ''; scheda.ll = ll; return;
+  }
+  $('ptit').textContent = D.comuni[c.comune] || 'Punto';
+  $('psub').textContent = coord;
+  const r = c.comp.map((x, i) => {
+    const s = D.sedi[x.s];
+    const col = s.col;
+    const evid = sedeFiltro !== '' && +sedeFiltro === s.id;
+    return `<div class="cr${evid ? ' evid' : ''}"><span class="r" style="background:${i === 0 ? 'var(--accent)' : '#5c6670'}">${ord(i + 1)}</span>
+      <span class="s">${esc(nomeBreve(s))}<span class="tag" style="background:${col};color:#fff">${esc(TIPO[s.tipo] || s.tipo)}</span>
+        <small>${esc(s.comune)}${s.interna ? '' : ' (' + esc(s.sigla) + ')'} · uscita ${s.uscita_min}′</small></span>
+      <span class="t">${Math.round(x.t)}′<small>${x.k.toFixed(1)} km</small></span></div>`;
+  }).join('');
+  const avv = c.agg > 300 ? `<div class="avv">Il centro della cella è a ${c.agg} m dalla strada più vicina: il tempo include il tratto a piedi.</div>` : '';
+  $('pbody').innerHTML = avv + r + `<p class="nota" style="padding:8px 0 0">Tempi stimati: uscita + percorrenza su strada senza traffico. Cella H3 ${esc(c.h3)}.</p>`;
+  scheda.ll = ll;
+  scheda.testo = `Competenze ${D.comuni[c.comune] || ''} (${coord})\n` + c.comp.map((x, i) =>
+    `${ord(i + 1)} ${nomeBreve(D.sedi[x.s])} ~${Math.round(x.t)} min, ${x.k.toFixed(1)} km`).join('\n');
+  $('panel').classList.add('open');
+}
+
+map.on('click', e => scheda(e.latlng));
+$('pclose').onclick = () => { $('panel').classList.remove('open'); livPunto.clearLayers(); punto = null; };
+$('pcopy').onclick = async () => {
+  if (!scheda.testo) return;
+  try { await navigator.clipboard.writeText(scheda.testo); msg('Copiato'); } catch (e) { prompt('Copia il testo:', scheda.testo); }
+};
+$('pmaps').onclick = () => { if (scheda.ll) window.open(`https://www.google.com/maps/search/?api=1&query=${scheda.ll.lat},${scheda.ll.lng}`, '_blank'); };
+
+/* ------------------------------------------------------------ ricerca */
+$('q').addEventListener('keydown', async e => {
+  if (e.key !== 'Enter') return;
+  const t = $('q').value.trim();
+  if (!t) return;
+  const m = t.match(/^\s*(-?\d{1,2}[.,]\d+)\s*[,; ]\s*(-?\d{1,3}[.,]\d+)\s*$/);
+  if (m) { const ll = L.latLng(+m[1].replace(',', '.'), +m[2].replace(',', '.')); map.setView(ll, 13); scheda(ll); return; }
+  try {
+    const b = livCelle.getLayers().length ? L.latLngBounds(celle.map(c => h3.cellToLatLng(c.h3))) : map.getBounds();
+    const vb = `${b.getWest()},${b.getNorth()},${b.getEast()},${b.getSouth()}`;
+    const r = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=it&viewbox=${vb}&bounded=0&q=${encodeURIComponent(t)}`, {headers: {'Accept-Language': 'it'}});
+    const j = await r.json();
+    if (!j.length) { msg('Nessun risultato'); return; }
+    const ll = L.latLng(+j[0].lat, +j[0].lon);
+    map.setView(ll, 14); scheda(ll);
+  } catch (err) { msg('Ricerca non disponibile'); }
+});
+
+$('gps').onclick = () => {
+  if (!navigator.geolocation) { msg('Posizione non disponibile'); return; }
+  msg('Cerco la posizione…');
+  navigator.geolocation.getCurrentPosition(p => { const ll = L.latLng(p.coords.latitude, p.coords.longitude); map.setView(ll, 13); scheda(ll); },
+    () => msg('Posizione non concessa'), {enableHighAccuracy: true, timeout: 15000});
+};
+
+$('prov').onchange = e => { sedeFiltro = ''; pref.sede = ''; carica(e.target.value); };
+$('sedeSel').onchange = e => { sedeFiltro = e.target.value; pref.sede = sedeFiltro; salva(); disegna(); if (sedeFiltro !== '') mostraLeg(); };
+
+$('reset').onclick = () => {
+  if (!confirm('Azzerare filtri, livello e punto selezionato?')) return;
+  try { localStorage.removeItem(PREF); } catch (e) {}
+  pref = {}; livello = 1; sedeFiltro = ''; $('sedeSel').value = ''; $('q').value = '';
+  $('panel').classList.remove('open'); livPunto.clearLayers(); punto = null;
+  history.replaceState(null, '', location.pathname);
+  disegna();
+  const b = L.latLngBounds(celle.map(c => h3.cellToLatLng(c.h3)));
+  if (b.isValid()) map.fitBounds(b, {padding: [10, 10]});
+  msg('Dati azzerati');
+};
+
+/* schede mobile */
+function mostraLeg() { if (matchMedia('(max-width:760px)').matches) tab('leg'); }
+function tab(t) {
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
+  $('main').classList.toggle('showleg', t === 'leg');
+  if (t === 'map') setTimeout(() => map.invalidateSize(), 50);
+}
+document.querySelectorAll('.tabs button').forEach(b => b.onclick = () => tab(b.dataset.t));
+$('leg').addEventListener('click', e => { if (e.target.closest('.lr[data-s]') && matchMedia('(max-width:760px)').matches) tab('map'); });
+
+/* ------------------------------------------------------------ esportazione */
+const dlg = $('dlg');
+$('exp').onclick = () => {
+  if (!D) { msg('Nessun dato da esportare'); return; }
+  $('livCur').textContent = sedeFiltro !== '' ? 'Solo la sede scelta (1ª–6ª)' : `Solo la ${ord(livello)}`;
+  aggiornaNota(); dlg.showModal();
+};
+$('dclose').onclick = $('dann').onclick = () => dlg.close();
+dlg.addEventListener('change', aggiornaNota);
+function scelta(n) { return dlg.querySelector(`input[name=${n}]:checked`).value; }
+function aggiornaNota() {
+  const cosa = scelta('cosa'), fmt = scelta('fmt');
+  const geo = cosa === 'zone' || cosa === 'celle' || cosa === 'sedi';
+  dlg.querySelectorAll('input[name=fmt]').forEach(i => { i.disabled = !geo && i.value !== 'csv'; });
+  if (!geo && fmt !== 'csv') dlg.querySelector('input[name=fmt][value=csv]').checked = true;
+  const n = {zone: 'Un poligono per sede e per livello, con area e tempo massimo di arrivo.',
+    comuni: 'Per ogni comune le sedi in ordine di competenza (posizione media sul territorio comunale) e la quota di territorio in cui ognuna è esattamente a quel livello.',
+    celle: `${celle.length} esagoni con le 6 competenze, minuti e km di ognuna.`,
+    sedi: 'Le sedi usate nel calcolo, interne ed esterne, con tipo e tempo di uscita.'}[cosa];
+  $('dnota').textContent = n;
+}
+$('dok').onclick = () => {
+  const cosa = scelta('cosa'), fmt = scelta('fmt'), tutti = scelta('liv') === 'all';
+  const una = sedeFiltro !== '' && !tutti ? +sedeFiltro : null;
+  const livelli = tutti || una !== null ? [1, 2, 3, 4, 5, 6] : [livello];
+  const base = `competenze_${D.provincia}_` + (una !== null ? 'sede' + una : tutti ? '1-6' : 'liv' + livello);
+  let fc;
+  if (cosa === 'zone') fc = geoZone(livelli, una);
+  else if (cosa === 'celle') fc = geoCelle();
+  else if (cosa === 'sedi') fc = geoSedi();
+  if (cosa === 'comuni') return scarica(base + '_comuni.csv', csvComuni(livelli), 'text/csv');
+  if (fmt === 'geojson') scarica(`${base}_${cosa}.geojson`, JSON.stringify(fc), 'application/geo+json');
+  else if (fmt === 'kml') scarica(`${base}_${cosa}.kml`, kml(fc, `${D.nome} - competenze`), 'application/vnd.google-earth.kml+xml');
+  else scarica(`${base}_${cosa}.csv`, csvDa(fc), 'text/csv');
+  dlg.close();
+};
+
+function geoZone(livelli, una) {
+  const area = AREA(), feats = [];
+  for (const l of livelli) {
+    for (const [sid, cc] of zoneDi(l)) {
+      if (una !== null && sid !== una) continue;
+      const s = D.sedi[sid];
+      const coords = h3.cellsToMultiPolygon(cc.map(c => c.h3), true);
+      const tmax = Math.max(...cc.map(c => c.comp[l - 1].t));
+      feats.push({type: 'Feature', geometry: {type: 'MultiPolygon', coordinates: coords}, properties: {
+        livello: l, competenza: ord(l), sede: s.nome, tipo: s.tipo, sigla: s.sigla, comune_sede: s.comune,
+        area_km2: +(cc.length * area).toFixed(1), arrivo_max_min: Math.ceil(tmax), celle: cc.length,
+        colore: una !== null ? SCALA[l - 1] : s.col}});
+    }
+  }
+  return {type: 'FeatureCollection', features: feats};
+}
+function geoCelle() {
+  return {type: 'FeatureCollection', features: celle.map(c => {
+    const p = {h3: c.h3, comune: D.comuni[c.comune] ?? '', aggancio_strada_m: c.agg};
+    c.comp.forEach((x, i) => { p[`c${i + 1}_sede`] = D.sedi[x.s].nome; p[`c${i + 1}_min`] = x.t; p[`c${i + 1}_km`] = x.k; });
+    p.colore = D.sedi[c.comp[0].s].col;
+    return {type: 'Feature', geometry: {type: 'Polygon', coordinates: [h3.cellToBoundary(c.h3, true)]}, properties: p};
+  })};
+}
+function geoSedi() {
+  return {type: 'FeatureCollection', features: D.sedi.map(s => ({type: 'Feature', geometry: {type: 'Point', coordinates: [s.lon, s.lat]},
+    properties: {nome: s.nome, tipo: s.tipo, sigla: s.sigla, comune: s.comune, interna: s.interna, uscita_min: s.uscita_min, chiave: s.chiave, colore: s.col}}))};
+}
+function csvCampo(v) { v = v == null ? '' : String(v); return /[;"\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+function csvRighe(intest, righe) { return '﻿' + [intest, ...righe].map(r => r.map(csvCampo).join(';')).join('\r\n'); }
+function csvDa(fc) {
+  const keys = [...new Set(fc.features.flatMap(f => Object.keys(f.properties)))].filter(k => k !== 'colore');
+  const pt = fc.features[0] && fc.features[0].geometry.type === 'Point';
+  const intest = pt ? [...keys, 'lat', 'lon'] : keys;
+  return csvRighe(intest, fc.features.map(f => {
+    const r = keys.map(k => f.properties[k]);
+    if (pt) r.push(f.geometry.coordinates[1], f.geometry.coordinates[0]);
+    return r;
+  }));
+}
+function csvComuni(livelli) {
+  const rc = riepilogoComuni();
+  const intest = ['comune', 'celle'];
+  livelli.forEach(l => intest.push(`${ord(l)} sede`, `${ord(l)} quota %`));
+  return csvRighe(intest, rc.map(r => {
+    const row = [r.nome, r.celle];
+    livelli.forEach(l => { const x = r.liv[l - 1]; row.push(x ? D.sedi[x.s].nome : '', x ? Math.round(x.q * 100) : ''); });
+    return row;
+  }));
+}
+function kmlColore(hex, a) {   // #rrggbb -> aabbggrr
+  const h = hex.replace('#', '');
+  return a + h.slice(4, 6) + h.slice(2, 4) + h.slice(0, 2);
+}
+function kml(fc, nome) {
+  const x = s => esc(s);
+  const anelli = poly => poly.map((ring, i) => `<${i ? 'innerBoundaryIs' : 'outerBoundaryIs'}><LinearRing><coordinates>${ring.map(c => c[0].toFixed(6) + ',' + c[1].toFixed(6)).join(' ')}</coordinates></LinearRing></${i ? 'innerBoundaryIs' : 'outerBoundaryIs'}>`).join('');
+  const geom = g => g.type === 'Point' ? `<Point><coordinates>${g.coordinates.join(',')}</coordinates></Point>`
+    : g.type === 'Polygon' ? `<Polygon>${anelli(g.coordinates)}</Polygon>`
+    : `<MultiGeometry>${g.coordinates.map(p => `<Polygon>${anelli(p)}</Polygon>`).join('')}</MultiGeometry>`;
+  const pm = fc.features.map(f => {
+    const p = f.properties, col = p.colore || '#888888';
+    const titolo = p.sede ? `${p.competenza} ${p.sede}` : p.nome || p.h3;
+    const dati = Object.entries(p).filter(([k]) => k !== 'colore').map(([k, v]) => `<Data name="${x(k)}"><value>${x(v)}</value></Data>`).join('');
+    return `<Placemark><name>${x(titolo)}</name><Style><LineStyle><color>${kmlColore(col, 'ff')}</color><width>1.5</width></LineStyle><PolyStyle><color>${kmlColore(col, '73')}</color></PolyStyle><IconStyle><color>${kmlColore(col, 'ff')}</color></IconStyle></Style><ExtendedData>${dati}</ExtendedData>${geom(f.geometry)}</Placemark>`;
+  });
+  /* zone: una cartella per livello */
+  if (fc.features.length && fc.features[0].properties.livello) {
+    const per = new Map();
+    fc.features.forEach((f, i) => { const l = f.properties.livello; if (!per.has(l)) per.set(l, []); per.get(l).push(pm[i]); });
+    return `<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>${x(nome)}</name>` +
+      [...per.entries()].map(([l, p]) => `<Folder><name>${ord(l)} competenza</name>${p.join('')}</Folder>`).join('') + '</Document></kml>';
+  }
+  return `<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>${x(nome)}</name>${pm.join('')}</Document></kml>`;
+}
+function scarica(nome, testo, tipo) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([testo], {type: tipo + ';charset=utf-8'}));
+  a.download = nome;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  msg('Scaricato ' + nome);
+}
+
+avvia();
+</script>
+</body>
+</html>

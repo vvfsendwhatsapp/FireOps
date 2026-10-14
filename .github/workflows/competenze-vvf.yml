@@ -1,0 +1,100 @@
+name: Calcola competenze sedi VVF
+
+on:
+  workflow_dispatch:            # bottone "Run workflow"
+    inputs:
+      provincia:
+        description: "Sigla (vuoto = tutte quelle in db/competenze/config.json)"
+        required: false
+        default: ""
+  workflow_run:                 # dopo ogni aggiornamento del DB sedi
+    workflows: ["Aggiorna DB sedi VVF"]
+    types: [completed]
+  push:                         # quando cambiano i parametri o lo script
+    branches: [main]
+    paths:
+      - db/competenze/config.json
+      - script/competenze.py
+
+permissions:
+  contents: write
+
+concurrency:
+  group: competenze-vvf
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main             # dopo workflow_run prendo il DB sedi appena aggiornato
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Installa osmium, shapely, h3
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq osmium-tool
+          pip install -q osmium shapely h3
+
+      - name: Scarica Nord-Est e Centro (Geofabrik) e ritaglia l'area
+        run: |
+          cd "$RUNNER_TEMP"
+          for r in nord-est centro; do
+            for i in 1 2 3 4 5; do
+              curl -fL --retry 3 -o $r.osm.pbf https://download.geofabrik.de/europe/italy/$r-latest.osm.pbf \
+              && curl -fL --retry 3 -o $r.md5 https://download.geofabrik.de/europe/italy/$r-latest.osm.pbf.md5 \
+              && sed -i "s/$r-latest.osm.pbf/$r.osm.pbf/" $r.md5 && md5sum -c $r.md5 && break
+              echo "Download $r fallito, riprovo tra 60s ($i/5)"; sleep 60
+            done
+            md5sum -c $r.md5
+          done
+          osmium merge nord-est.osm.pbf centro.osm.pbf -o italia-nc.osm.pbf --overwrite
+          # riquadro dalle sedi della config: lo calcola lo script dai confini, qui basta largo
+          BBOX=$(python - <<'EOF'
+          import json
+          b = json.load(open("${{ github.workspace }}/db/competenze/config.json")).get("bbox_estratto", [9.0, 42.3, 13.7, 45.2])
+          print(",".join(map(str, b)))
+          EOF
+          )
+          echo "Ritaglio $BBOX"
+          osmium extract -b "$BBOX" --strategy=smart italia-nc.osm.pbf -o area.osm.pbf --overwrite
+          rm -f nord-est.osm.pbf centro.osm.pbf italia-nc.osm.pbf
+          ls -lh area.osm.pbf
+
+      - name: Prepara OSRM (profilo auto) e avvia il server
+        run: |
+          cd "$RUNNER_TEMP"
+          IMG=ghcr.io/project-osrm/osrm-backend
+          docker run --rm -v "$PWD:/data" $IMG osrm-extract -p /opt/car.lua /data/area.osm.pbf
+          docker run --rm -v "$PWD:/data" $IMG osrm-partition /data/area.osrm
+          docker run --rm -v "$PWD:/data" $IMG osrm-customize /data/area.osrm
+          docker run -d --name osrm -p 5000:5000 -v "$PWD:/data" $IMG \
+            osrm-routed --algorithm mld --max-table-size 2000 /data/area.osrm
+          for i in $(seq 1 60); do
+            curl -sf "http://localhost:5000/nearest/v1/driving/12.04,44.22" >/dev/null && echo "OSRM pronto" && exit 0
+            sleep 5
+          done
+          docker logs osrm; exit 1
+
+      - name: Calcola le competenze
+        run: |
+          ARG=""
+          [ -n "${{ github.event.inputs.provincia }}" ] && ARG="--provincia ${{ github.event.inputs.provincia }}"
+          python script/competenze.py --pbf "$RUNNER_TEMP/area.osm.pbf" --osrm http://localhost:5000 $ARG
+
+      - name: Commit se cambiato
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add db/competenze
+          git diff --cached --quiet && echo "Nessuna modifica" && exit 0
+          git commit -m "Aggiorna db/competenze (OSRM)"
+          git pull --rebase
+          git push

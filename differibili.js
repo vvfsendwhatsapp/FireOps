@@ -174,6 +174,91 @@ function dentro(lat, lon, anello){
   return d;
 }
 
+
+/* ===================== PROPOSTA AUTOMATICA DEI SETTORI =====================
+   K-means bilanciato: le schede si dividono in k gruppi compatti (una
+   squadra = un gruppo) senza che una squadra ne riceva il triplo di
+   un'altra. Il carico di una scheda prioritaria (persone, gas, fuoco) vale
+   doppio. Inizio k-means++, assegnazione con capienza massima, più
+   ripartenze: si tiene quella con la somma delle distanze più bassa.
+   Le distanze sono in linea d'aria su un piano locale in metri. */
+function kmeansBilanciato(punti, k, opz){
+  opz = opz || {};
+  const n = punti.length;
+  k = Math.max(1, Math.min(k, n));
+  const lat0 = punti.reduce((a, p) => a + p.lat, 0) / n, lon0 = punti.reduce((a, p) => a + p.lon, 0) / n;
+  const cx = Math.cos(lat0 * Math.PI / 180) * 111320;
+  const P = punti.map(p => ({x: (p.lon - lon0) * cx, y: (p.lat - lat0) * 110540, w: p.peso || 1}));
+  const W = P.reduce((a, p) => a + p.w, 0);
+  const cap = Math.max(...P.map(p => p.w), Math.ceil(W / k * (opz.tolleranza || 1.15)));
+  let seme = opz.seme || 1;
+  const rnd = () => { seme = (seme * 16807) % 2147483647; return (seme - 1) / 2147483646; };
+  const d2 = (a, b) => (a.x - b.x) ** 2 + (a.y - b.y) ** 2;
+  let migliore = null;
+  for (let r = 0; r < (opz.ripartenze || 8); r++){
+    /* k-means++ */
+    const C = [Object.assign({}, P[Math.floor(rnd() * n)])];
+    while (C.length < k){
+      const dd = P.map(p => Math.min(...C.map(c => d2(p, c))));
+      const tot = dd.reduce((a, b) => a + b, 0);
+      let t = rnd() * tot, i = 0;
+      while (i < n - 1 && (t -= dd[i]) > 0) i++;
+      C.push({x: P[i].x, y: P[i].y});
+    }
+    let ass = new Array(n).fill(-1);
+    for (let it = 0; it < 30; it++){
+      /* chi perde di più se non va al centro più vicino sceglie per primo,
+         poi ognuno va al centro più vicino che ha ancora posto */
+      const pref = P.map(p => C.map((c, j) => [d2(p, c), j]).sort((a, b) => a[0] - b[0]));
+      const turno = P.map((p, i) => i).sort((a, b) =>
+        ((pref[b][1] ? pref[b][1][0] : 0) - pref[b][0][0]) - ((pref[a][1] ? pref[a][1][0] : 0) - pref[a][0][0]));
+      const carico = new Array(k).fill(0), nuovo = new Array(n).fill(-1);
+      for (const i of turno){
+        const x = pref[i].find(([, j]) => carico[j] + P[i].w <= cap);
+        if (x){ nuovo[i] = x[1]; carico[x[1]] += P[i].w; }
+      }
+      /* avanzi (capienza troppo stretta per i pesi): al centro più vicino */
+      P.forEach((p, i) => { if (nuovo[i] < 0){ let b = 0; C.forEach((c, j) => { if (d2(p, c) < d2(p, C[b])) b = j; }); nuovo[i] = b; } });
+      const fermo = nuovo.every((v, i) => v === ass[i]);
+      ass = nuovo;
+      C.forEach((c, j) => {
+        let sx = 0, sy = 0, sw = 0;
+        P.forEach((p, i) => { if (ass[i] === j){ sx += p.x * p.w; sy += p.y * p.w; sw += p.w; } });
+        if (sw){ c.x = sx / sw; c.y = sy / sw; }
+      });
+      if (fermo) break;
+    }
+    const costo = P.reduce((a, p, i) => a + Math.sqrt(d2(p, C[ass[i]])) * p.w, 0);
+    if (!migliore || costo < migliore.costo) migliore = {costo, ass: ass.slice(), C: C.map(c => ({x: c.x, y: c.y}))};
+  }
+  /* numerazione stabile: in senso orario da nord attorno al centro delle schede */
+  const ang = c => (Math.atan2(c.x, c.y) + 2 * Math.PI) % (2 * Math.PI);
+  const ordine = migliore.C.map((c, j) => j).sort((a, b) => ang(migliore.C[a]) - ang(migliore.C[b]));
+  const rin = new Map(ordine.map((j, i) => [j, i]));
+  return {
+    k, cap,
+    gruppo: migliore.ass.map(j => rin.get(j)),
+    centri: ordine.map(j => ({lat: lat0 + migliore.C[j].y / 110540, lon: lon0 + migliore.C[j].x / cx})),
+    costoMedio_m: migliore.costo / W,
+  };
+}
+
+/* Perimetro di un gruppo di punti: inviluppo convesso dei punti allargati
+   di un raggio (in metri), così anche una o due schede hanno un'area e le
+   schede sul bordo restano dentro. Restituisce un anello GeoJSON [lon, lat]. */
+function inviluppo(punti, raggio){
+  const pts = [];
+  punti.forEach(p => { for (let g = 0; g < 360; g += 30) pts.push(puntoDaAzimut(p.lat, p.lon, g, raggio)); });
+  const xy = pts.map(([la, lo]) => [lo, la]).sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cr = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const giu = [], su = [];
+  for (const p of xy){ while (giu.length >= 2 && cr(giu[giu.length - 2], giu[giu.length - 1], p) <= 0) giu.pop(); giu.push(p); }
+  for (let i = xy.length - 1; i >= 0; i--){ const p = xy[i]; while (su.length >= 2 && cr(su[su.length - 2], su[su.length - 1], p) <= 0) su.pop(); su.push(p); }
+  const anello = giu.slice(0, -1).concat(su.slice(0, -1));
+  anello.push(anello[0]);
+  return anello.map(([lo, la]) => [+lo.toFixed(6), +la.toFixed(6)]);
+}
+
 /* ============================ LETTURA CSV ============================= */
 
 /* Separatore: si contano ; e , fuori dalle virgolette nella prima riga.
@@ -649,6 +734,8 @@ function avvia(sezione){
           title="Carica un CSV, un JSON o un Google Sheet di schede differibili">📥 Carica schede</button>
         <button type="button" id="diff-bGruppo" class="btn-toggle-radar diff-solo-comando"
           title="Disegna un perimetro sulla carta: le schede dentro formano un sottosettore">✏️ Crea settore</button>
+        <button type="button" id="diff-bProponi" class="btn-toggle-radar diff-solo-comando"
+          title="Divide in automatico le schede in gruppi compatti ed equilibrati, uno per squadra">🧠 Proponi settori</button>
         <button type="button" id="diff-bStampa" class="btn-toggle-radar diff-solo-comando"
           title="PDF con carta e tabella delle schede visibili">🖨 PDF</button>
         <button type="button" id="diff-bArchivia" class="btn-toggle-radar diff-solo-comando diff-rosso"
@@ -1673,6 +1760,7 @@ function avvia(sezione){
     const em = emergenzaScelta();
     const possibili = em ? em.STATO === 'ATTIVA' : emergenzeAttive().length > 0;
     $('bGruppo').disabled = !possibili;
+    $('bProponi').disabled = !possibili;
     $('bArchivia').disabled = !possibili;
     $('bStampa').disabled = !visibili().length;
     aggiornaVuoto();
@@ -2135,6 +2223,133 @@ function avvia(sezione){
       gruppi = gruppi.filter(x => x !== tmp);
       disegnaGruppi(); elencoGruppi();
       stato(`${nome} non salvato: ` + err.message);
+    }
+  }
+
+
+  /* ---------------------- proposta automatica dei settori ----------------------
+     Si sceglie quante squadre ci sono, kmeansBilanciato divide le schede
+     (non gestite, con posizione) in altrettanti gruppi compatti e
+     equilibrati, la carta mostra la proposta tratteggiata e solo dopo la
+     conferma si salvano i sotto-settori, come se fossero stati disegnati. */
+  const livProposta = L.layerGroup().addTo(map);
+  const COLORI_PROPOSTA = ['#e53935', '#1e88e5', '#fb8c00', '#8e24aa', '#00897b', '#c0ca33', '#6d4c41', '#d81b60',
+    '#3949ab', '#43a047', '#f4511e', '#00acc1'];
+  $('bProponi').onclick = async () => {
+    const em = await emergenzaDaUsare('proporre i settori');
+    if (!em) return;
+    occupato = true;
+    try { await proponiSettori(em); }
+    finally { occupato = false; livProposta.clearLayers(); }
+  };
+  async function proponiSettori(em){
+    const tutte = visibili().filter(s => s.CODEM === em.CODEM && conPosizione(s) && !gestita(s));
+    if (!tutte.length) return stato('Nessuna scheda con posizione da dividere.');
+    const libere = tutte.filter(s => !s.GRUPPO);
+    let usate = libere;
+    if (libere.length < tutte.length){
+      const k = await chiedi({testo: `${tutte.length} schede sulla carta, ${tutte.length - libere.length} già in un sotto-settore.\nQuali divido?`,
+        voci: [{k: 'libere', et: `Solo le ${libere.length} non assegnate`, nota: 'i settori esistenti restano come sono'},
+               {k: 'tutte', et: `Tutte le ${tutte.length}`, nota: 'le schede già assegnate passano ai nuovi sotto-settori'}]});
+      if (!k) return stato('Proposta annullata.');
+      usate = k === 'tutte' ? tutte : libere;
+    }
+    if (!usate.length) return stato('Tutte le schede sono già in un sotto-settore.');
+    const suggerite = Math.max(1, Math.min(26, Math.round(usate.length / 12)));
+    let nSquadre = null, errore = '';
+    while (nSquadre == null){
+      const v = await chiedi({campo: 1, valore: String(suggerite), ok: 'Avanti', segnaposto: 'es. 6',
+        testo: (errore ? errore + '\n\n' : '') + `${usate.length} schede (${usate.filter(prioritaria).length} prioritarie).\nQuante squadre ci sono? Un gruppo per squadra.`});
+      if (v === null) return stato('Proposta annullata.');
+      const x = parseInt(v, 10);
+      if (x >= 1 && x <= Math.min(26, usate.length)) nSquadre = x;
+      else errore = `Scrivi un numero da 1 a ${Math.min(26, usate.length)}.`;
+    }
+    /* settori già usati in questa emergenza: i nuovi prendono le lettere libere */
+    const usati = new Set(gruppi.filter(g => g.CODEM === em.CODEM).map(g => livelli(g).settore));
+    const liberi = SETTORI.filter(n => !usati.has(n));
+    if (!liberi.length) return stato('Tutte le lettere dei settori sono già usate in questa emergenza.');
+    const voci = [{k: 'ws', et: `Un settore ${liberi[0]}, un worksite per squadra`,
+      nota: `${inizialeDi(liberi[0])}1a, ${inizialeDi(liberi[0])}2a, … ${codiceWs(liberi[0], nSquadre)}a`}];
+    if (nSquadre > 1 && liberi.length >= nSquadre)
+      voci.push({k: 'settori', et: 'Un settore per squadra', nota: liberi.slice(0, nSquadre).map(n => inizialeDi(n) + '1a').join(', ')});
+    const forma = nSquadre === 1 || voci.length === 1 ? 'ws' : await chiedi({testo: 'Come li chiamo?', voci});
+    if (!forma) return stato('Proposta annullata.');
+
+    const punti = usate.map(s => ({lat: num(s.LAT), lon: num(s.LON), peso: prioritaria(s) ? 2 : 1}));
+    /* equilibrio fra carichi uguali e gruppi compatti: tolleranza sulla
+       capienza di ogni squadra rispetto alla media */
+    const EQUILIBRIO = [{t: 1.15, n: 'carichi quasi uguali'}, {t: 1.5, n: 'bilanciato'}, {t: 2.5, n: 'gruppi compatti'}];
+    let seme = 1, eq = 1;
+    for (;;){
+      stato('Calcolo della proposta…');
+      await new Promise(r => setTimeout(r, 30));
+      const r = kmeansBilanciato(punti, nSquadre, {seme, tolleranza: EQUILIBRIO[eq].t, ripartenze: punti.length * nSquadre > 8000 ? 4 : 10});
+      const proposta = Array.from({length: r.k}, (_, i) => {
+        const settore = forma === 'ws' ? liberi[0] : liberi[i];
+        const nome = forma === 'ws' ? nomeSS(settore, i + 1, 1) : nomeSS(settore, 1, 1);
+        const presi = usate.filter((s, j) => r.gruppo[j] === i);
+        return {nome, settore, presi, col: COLORI_PROPOSTA[i % COLORI_PROPOSTA.length],
+          anello: inviluppo(presi.map(s => ({lat: num(s.LAT), lon: num(s.LON)})), 35)};
+      });
+      livProposta.clearLayers();
+      proposta.forEach(p => {
+        const pol = L.polygon(p.anello.map(([lo, la]) => [la, lo]), {pane: 'diffGruppi', color: p.col, weight: 3,
+          dashArray: '8,6', fillColor: p.col, fillOpacity: .12, interactive: false, pmIgnore: true, snapIgnore: true});
+        livProposta.addLayer(pol);
+        p.presi.forEach(s => livProposta.addLayer(L.circleMarker([num(s.LAT), num(s.LON)], {renderer: tela, radius: 8,
+          color: p.col, weight: 3, fill: false, interactive: false, pmIgnore: true, snapIgnore: true})));
+        const pr = p.presi.filter(prioritaria).length;
+        livProposta.addLayer(L.marker(pol.getBounds().getCenter(), {pane: 'diffEtichette', interactive: false, pmIgnore: true, snapIgnore: true,
+          icon: L.divIcon({className: 'diff-etichetta-gruppo', iconSize: null,
+            html: `<span style="border-color:${p.col}">${esc(p.nome)} · ${p.presi.length}${pr ? ' · ' + pr + '❗' : ''}</span>`})}));
+      });
+      map.fitBounds(livProposta.getLayers().filter(l => l.getBounds).reduce((b, l) => b.extend(l.getBounds()), L.latLngBounds([])),
+        {padding: [40, 40], maxZoom: 16});
+      const conti = proposta.map(p => p.presi.length);
+      const k = await chiedi({testo: `Proposta: ${proposta.length} sotto-settori da ${Math.min(...conti)} a ${Math.max(...conti)} schede, `
+          + `distanza media dal centro del gruppo ${Math.round(r.costoMedio_m)} m (${EQUILIBRIO[eq].n}).\nControlla la carta.`,
+        voci: [{k: 'ok', et: `✅ Crea ${proposta.length} sotto-settori`, nota: proposta.map(p => `${p.nome} ${p.presi.length}`).join(' · ')},
+               {k: 'altra', et: '🔁 Un\'altra proposta', nota: 'stesso numero di squadre, punto di partenza diverso'}]
+          .concat(eq < EQUILIBRIO.length - 1 ? [{k: 'compatti', et: '📍 Più compatti', nota: 'gruppi più raccolti, carichi meno uguali'}] : [])
+          .concat(eq > 0 ? [{k: 'equi', et: '⚖️ Più equilibrati', nota: 'carichi più uguali, gruppi meno raccolti'}] : [])
+          .concat([{k: 'no', et: 'Annulla'}])});
+      if (k === 'altra'){ seme += 7919; continue; }
+      if (k === 'compatti'){ eq++; continue; }
+      if (k === 'equi'){ eq--; continue; }
+      if (k !== 'ok') return stato('Proposta annullata.');
+      return salvaProposta(em, proposta);
+    }
+  }
+  async function salvaProposta(em, proposta){
+    const tmp = proposta.map(p => ({ID_GRUPPO: 'tmp-' + Date.now() + '-' + p.nome, CODEM: em.CODEM, NOME: p.nome,
+      COLORE: coloreSettore(p.settore), GEOJSON: {type: 'Feature', properties: {}, geometry: {type: 'Polygon', coordinates: [p.anello]}},
+      N_SCHEDE: p.presi.length, provvisorio: true}));
+    tmp.forEach(t => provvisori.set(t.NOME, t));
+    gruppi = gruppi.concat(tmp);
+    livProposta.clearLayers();
+    disegnaGruppi(); elencoGruppi();
+    try {
+      for (let i = 0; i < proposta.length; i++){
+        stato(`Salvataggio ${i + 1}/${proposta.length}: ${proposta[i].nome}…`);
+        /* in sequenza: il foglio scrive una riga per volta e due salvataggi
+           insieme sulle stesse schede si scavalcherebbero */
+        await postSenzaRisposta({azione: 'salvaGruppo', codem: em.CODEM, nome: tmp[i].NOME, colore: tmp[i].COLORE,
+          geojson: tmp[i].GEOJSON, idContatti: proposta[i].presi.map(s => s.ID_CONTATTO)});
+      }
+      let mancano = proposta.map(p => p.nome);
+      for (let g = 0; g < 6 && mancano.length; g++){
+        if (g) await new Promise(r => setTimeout(r, 2000));
+        await ricarica(true);
+        mancano = mancano.filter(n => !gruppi.some(x => x.CODEM === em.CODEM && x.NOME === n && !x.provvisorio));
+      }
+      stato(mancano.length ? `Inviati ${proposta.length} sotto-settori, non ancora confermati: ${mancano.join(', ')} (restano tratteggiati finché non arrivano).`
+        : `Creati ${proposta.length} sotto-settori: ${proposta.map(p => p.nome).join(', ')}.`);
+    } catch(err){
+      tmp.forEach(t => provvisori.delete(t.NOME));
+      gruppi = gruppi.filter(x => !tmp.includes(x));
+      disegnaGruppi(); elencoGruppi();
+      stato('Proposta non salvata: ' + err.message);
     }
   }
 

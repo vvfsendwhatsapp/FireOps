@@ -1,0 +1,47 @@
+{
+ "_note": "Parametri del calcolo competenze (script/competenze.py). uscita_min = minuti dall'allarme alla partenza del mezzo, sommati alla percorrenza. fattore_mezzo moltiplica i tempi OSRM (auto): >1 per mezzi pesanti piu' lenti. Solo i tipi elencati qui sono candidati.",
+ "bbox_estratto": [
+  11.1,
+  43.3,
+  13.1,
+  44.75
+ ],
+ "_note_bbox": "riquadro [ovest, sud, est, nord] ritagliato dall'estratto OSM: deve contenere tutte le province e le sedi esterne con margine per le strade",
+ "fattore_mezzo": 1.0,
+ "velocita_fuori_strada_kmh": 4,
+ "tipi": {
+  "centrale": {
+   "uscita_min": 2
+  },
+  "permanente": {
+   "uscita_min": 2
+  },
+  "aeroportuale": {
+   "uscita_min": 3
+  },
+  "portuale": {
+   "uscita_min": 3
+  },
+  "stagionale": {
+   "uscita_min": 3
+  },
+  "presidio": {
+   "uscita_min": 5
+  },
+  "rurale": {
+   "uscita_min": 8
+  },
+  "volontario": {
+   "uscita_min": 10
+  }
+ },
+ "province": {
+  "FC": {
+   "nome": "Forlì-Cesena",
+   "h3_res": 8,
+   "raggio_esterni_km": 30,
+   "escludi": [],
+   "aggiungi": []
+  }
+ }
+}
