@@ -385,27 +385,45 @@ async function leggiRemote() {
   }
 }
 
+// Correzioni che il foglio ha rifiutato in modo esplicito (ok:false): escono dalla coda
+// per non bloccare le altre, ma restano qui con il motivo e si possono rimandare.
+const RIFIUTATE = 'fireops-sedi-rifiutate-v1';
+let ultimoErrore = '';
+
 async function invia() {
   if (!APPS_SCRIPT_URL || inviando || !coda.length) { syncUI(); return; }
-  inviando = true; syncUI();
+  inviando = true; ultimoErrore = ''; syncUI();
+  const rifiutate = [];
   try {
     while (coda.length) {
       const c = coda[0];
-      const r = await fetch(APPS_SCRIPT_URL, {method: 'POST', body: JSON.stringify({...c, token: TOKEN})});
-      const j = await r.json();
-      if (!j.ok && c.chiave.startsWith('comando/')) {   // il foglio non accetta il flag: non blocco le altre correzioni
-        coda.shift(); ls.set(CODA, coda); toast('Il foglio ha rifiutato il flag "Comando concluso": ' + (j.errore || ''), 5000); continue;
+      let r;
+      try { r = await fetch(APPS_SCRIPT_URL, {method: 'POST', body: JSON.stringify({...c, token: TOKEN})}); }
+      catch (e) { throw new Error('foglio non raggiungibile (' + e.message + ')'); }
+      const testo = await r.text();
+      let j;
+      try { j = JSON.parse(testo); }
+      catch (e) { throw new Error('risposta non valida del foglio (HTTP ' + r.status + '): ' + testo.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 140)); }
+      if (!j.ok) {
+        rifiutate.push({...c, motivo_rifiuto: j.errore || 'rifiutata', rifiutata_il: new Date().toISOString()});
+        coda.shift(); ls.set(CODA, coda);
+        continue;
       }
-      if (!j.ok) throw new Error(j.errore || 'rifiutata');
       REMOTE.push(c); coda.shift(); ls.set(CODA, coda);
     }
   } catch (e) {
     console.warn('Invio fallito', e);
-    syncUI(true); inviando = false;
-    return false;
+    ultimoErrore = e.message;
+    toast('Invio non riuscito: ' + e.message, 8000);
+  } finally {
+    if (rifiutate.length) {
+      ls.set(RIFIUTATE, ls.get(RIFIUTATE, []).concat(rifiutate));
+      const motivi = [...new Set(rifiutate.map(x => x.motivo_rifiuto))].join('; ');
+      toast(`${rifiutate.length} correzioni rifiutate dal foglio (${motivi}): tenute da parte, clicca il pulsante di stato per i dettagli`, 9000);
+    }
+    inviando = false; syncUI(!!ultimoErrore);
   }
-  inviando = false; syncUI();
-  return true;
+  return !ultimoErrore;
 }
 
 function syncUI(errore) {
@@ -417,8 +435,10 @@ function syncUI(errore) {
     if (coda.length) b.classList.add('pend');
     return;
   }
-  if (inviando) { b.textContent = '⟳ invio…'; return; }
-  if (coda.length) { b.textContent = `⚠ ${coda.length} da inviare`; b.classList.add(errore ? 'err' : 'pend'); b.title = 'Clicca per riprovare l\'invio'; }
+  if (inviando) { b.textContent = `⟳ invio… (${coda.length})`; return; }
+  const nr = ls.get(RIFIUTATE, []).length;
+  if (coda.length) { b.textContent = `⚠ ${coda.length} da inviare`; b.classList.add(errore ? 'err' : 'pend'); b.title = (ultimoErrore ? 'Ultimo errore: ' + ultimoErrore + '\n' : '') + 'Clicca per riprovare l\'invio'; }
+  else if (nr) { b.textContent = `⚠ ${nr} rifiutate`; b.classList.add('err'); b.title = 'Il foglio ha rifiutato alcune correzioni: clicca per i dettagli'; }
   else { b.textContent = '✔ sincronizzato'; b.title = 'Correzioni salvate sul foglio condiviso. Clicca per ricaricarle.'; }
 }
 
@@ -750,8 +770,21 @@ $('tabs').addEventListener('click', e => { const b = e.target.closest('button');
 $('csv').addEventListener('click', scaricaCSV);
 $('sync').addEventListener('click', async () => {
   if (!APPS_SCRIPT_URL) { if (coda.length) esportaCoda(); else toast('Nessuna correzione locale da esportare'); return; }
+  const rif = ls.get(RIFIUTATE, []);
+  if (!coda.length && rif.length) {
+    const motivi = [...new Set(rif.map(x => x.motivo_rifiuto))].join('\n- ');
+    const scelta = prompt(`${rif.length} correzioni rifiutate dal foglio.\nMotivo:\n- ${motivi}\n\nScrivi R per rimandarle, E per scaricarle (JSON), niente per lasciarle da parte.`, 'E');
+    const v = (scelta || '').trim().toUpperCase();
+    if (v === 'E') {
+      const blob = new Blob([JSON.stringify(rif, null, 1)], {type: 'application/json'});
+      const a = Object.assign(document.createElement('a'), {href: URL.createObjectURL(blob), download: 'correzioni_rifiutate_' + new Date().toISOString().slice(0, 10) + '.json'});
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    } else if (v === 'R') {
+      coda = rif.map(({motivo_rifiuto, rifiutata_il, ...c}) => c).concat(coda); ls.set(CODA, coda); ls.del(RIFIUTATE);
+    } else return;
+  }
   if (coda.length) { await invia(); }
-  await leggiRemote(); ricalcolaCorrezioni(); aggiorna(false); toast('Correzioni aggiornate');
+  await leggiRemote(); ricalcolaCorrezioni(); aggiorna(false); toast(ultimoErrore ? 'Invio non riuscito: ' + ultimoErrore : 'Correzioni aggiornate', ultimoErrore ? 8000 : 2500);
 });
 $('add').addEventListener('click', () => {
   if (matchMedia('(max-width:760px)').matches) vista('map');
