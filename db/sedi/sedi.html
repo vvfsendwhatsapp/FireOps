@@ -512,7 +512,7 @@ function apriScheda(s) {
         <label for="f_telefono">Telefono</label><input id="f_telefono" type="tel" value="${esc(e.telefono)}">
         <label>Posizione</label>
         <div class="pos"><code id="f_pos">${s.lat.toFixed(5)}, ${s.lon.toFixed(5)}</code><button type="button" id="f_sposta">✥ Sposta</button></div>
-        <label for="f_stato">Stato</label><select id="f_stato">${opt(nuova ? {nuova: STATI.nuova} : Object.fromEntries(Object.entries(STATI).filter(([k]) => k !== 'nuova')), nuova ? 'nuova' : (s.stato || 'convalidata'))}</select>
+        <label for="f_stato">Stato</label><select id="f_stato">${opt(statiScheda(s, nuova), nuova ? 'nuova' : (s.stato || 'convalidata'))}</select>
         <label for="f_note">Note</label><textarea id="f_note" placeholder="es. sede trasferita in via …, turni, accesso mezzi…"></textarea>
         <label for="f_utente">Chi sei</label><input id="f_utente" value="${esc(utente)}" placeholder="Cognome / qualifica" required>
       </form>
@@ -527,6 +527,15 @@ function apriScheda(s) {
   $('panel').dataset.lat = s.lat; $('panel').dataset.lon = s.lon;
   aggiornaNome(); marcaModificati();
   document.querySelectorAll('.item').forEach(el => el.classList.toggle('sel', shown[+el.dataset.i] === s));
+}
+
+// Stati proponibili nella scheda. Una sede aggiunta a mano resta "Aggiunta a mano" anche
+// quando la si riapre per correggerla: senza questa voce il menu ricadeva su
+// "Da convalidare" (stato vuoto) e il foglio rifiutava la correzione per dati mancanti.
+function statiScheda(s, nuova) {
+  if (nuova) return {nuova: STATI.nuova};
+  const voci = Object.fromEntries(Object.entries(STATI).filter(([k]) => k !== 'nuova'));
+  return s.p.osm_type === 'nuova' ? {nuova: STATI.nuova, ...voci} : voci;
 }
 
 function nomeIniziale(s) {
@@ -595,7 +604,7 @@ function salva(statoForzato) {
     id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
     timestamp: new Date().toISOString(), utente, chiave: s.chiave,
     osm_type: s.p.osm_type, osm_id: String(s.p.osm_id),
-    stato: statoForzato || $('f_stato').value,
+    stato: statoForzato || $('f_stato').value || (s.p.osm_type === 'nuova' ? 'nuova' : ''),
     note: $('f_note').value.trim(),
     lat: mosso ? lat.toFixed(6) : '', lon: mosso ? lon.toFixed(6) : '',
     regione: s.e.regione || '', sigla: s.e.sigla || ''
@@ -787,7 +796,9 @@ $('sync').addEventListener('click', async () => {
       const a = Object.assign(document.createElement('a'), {href: URL.createObjectURL(blob), download: 'correzioni_rifiutate_' + new Date().toISOString().slice(0, 10) + '.json'});
       document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     } else if (v === 'R') {
-      coda = rif.map(({motivo_rifiuto, rifiutata_il, ...c}) => c).concat(coda); ls.set(CODA, coda); ls.del(RIFIUTATE);
+      // riparo quelle note: sede aggiunta a mano salvata con stato vuoto
+      coda = rif.map(({motivo_rifiuto, rifiutata_il, ...c}) => (!c.stato && c.osm_type === 'nuova') ? {...c, stato: 'nuova'} : c).concat(coda);
+      ls.set(CODA, coda); ls.del(RIFIUTATE);
     } else return;
   }
   if (coda.length) { await invia(); }
