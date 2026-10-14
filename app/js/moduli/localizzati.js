@@ -647,19 +647,97 @@ body.map-open {
 }
 .pg-localizzati .route-btn.mix {
       flex-basis: 100%;
-      border-color: var(--yellow, #ffd700);
+      border-color: #e84747;
 }
+.pg-localizzati .route-btn small {
+      display: block;
+      font-weight: 400;
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 2px;
+}
+.pg-localizzati .route-btn.attivo {
+      background: #e84747;
+      border-color: #e84747;
+      color: #fff;
+}
+.pg-localizzati .route-btn.attivo small {
+      color: #fff;
+}
+.pg-localizzati .route-hint {
+      margin: 6px 14px 0;
+      font-size: 11px;
+      color: var(--text-dim);
+}
+/* riepilogo come il riquadro della carta di FireOps: titolo rosso, righe brevi */
 .pg-localizzati .route-info {
       margin: 8px 14px 0;
+      padding: 8px 12px;
       font-size: 13px;
       line-height: 1.5;
+      color: var(--text);
+      background: rgba(18, 18, 18, .9);
+      border: 1px solid #e84747;
+      border-radius: 6px;
+}
+.pg-localizzati .route-info .rt-titolo {
+      color: #e84747;
+      font-weight: 700;
+      margin-bottom: 2px;
+}
+.pg-localizzati .route-info .rt-nota {
       color: var(--text-dim);
+      font-size: 11px;
+      margin-top: 4px;
+}
+.pg-localizzati .route-info .rt-avviso {
+      color: #e8734a;
 }
 .pg-localizzati .route-info strong {
       color: var(--text);
 }
+.pg-localizzati .route-export {
+      display: flex;
+      gap: 8px;
+      padding: 8px 14px 0;
+}
+.pg-localizzati .route-export button {
+      flex: 1;
+      padding: 9px 6px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+}
+/* legenda sulla carta, uguale a quella di FireOps; compare solo con un percorso */
+.pg-localizzati .route-legenda {
+      position: absolute;
+      right: 8px;
+      bottom: 22px;              /* sopra l'attribuzione; a sinistra c'e' l'etichetta del Comando */
+      z-index: 1100;
+      background: rgba(18, 18, 18, .9);
+      border: 1px solid #e84747;
+      border-radius: 6px;
+      padding: 6px 9px;
+      font-size: 11px;
+      color: #eee;
+      pointer-events: none;
+}
+.pg-localizzati .route-legenda div {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+}
+.pg-localizzati .route-legenda div + div {
+      margin-top: 3px;
+}
 .pg-localizzati .route-info.error {
       color: #e8734a;
+      border-color: #e8734a;
 }
 .pg-localizzati .result-name-wrap {
       display: flex;
@@ -893,11 +971,15 @@ body.map-open {
           <div class="value" id="rTargetAlt">—</div>
         </div>
         <div class="route-row">
-          <button type="button" id="routeMix" class="route-btn mix">🚒 Soccorso: auto + piedi</button>
-          <button type="button" id="routeFoot" class="route-btn foot">🥾 Solo piedi</button>
-          <button type="button" id="routeCar" class="route-btn car">🚗 Solo auto</button>
+          <button type="button" id="routeMix" class="route-btn mix">🚒 Soccorso<small>mezzo VF fin dove arriva, poi a piedi</small></button>
+          <button type="button" id="routeCar" class="route-btn car">🚒 Solo mezzo<small>sbarre e divieti superati</small></button>
+          <button type="button" id="routeFoot" class="route-btn foot">🥾 Solo piedi<small>sentieri e piste</small></button>
         </div>
+        <div class="route-hint">Sulla carta: linea piena = mezzo, puntinata = a piedi, 🥾 = punto di cambio, 🚧 = sbarre</div>
         <div class="route-info hidden" id="routeInfo"></div>
+        <div class="route-export hidden" id="routeExport">
+          <button type="button" id="routeKml" title="Traccia e punti per Locus Map, Google Earth, OruxMaps">💾 KML (Locus Map)</button>
+        </div>
         <button type="button" id="openMapsTarget" class="maps-btn target">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">
@@ -910,6 +992,12 @@ body.map-open {
       <div class="panel">
         <div class="map-wrap">
           <div id="resultMap"></div>
+          <div class="route-legenda hidden" id="routeLegenda">
+            <div><span style="display:inline-block;width:16px;border-top:4px solid #e84747"></span> Mezzo VF</div>
+            <div><span style="display:inline-block;width:16px;border-top:3px dotted #e84747"></span> A piedi</div>
+            <div><span style="font-size:12px">🥾</span> Punto di cambio</div>
+            <div><span style="display:inline-block;width:14px;height:6px;background:repeating-linear-gradient(45deg,#e84747 0 3px,#fff 3px 6px)"></span> Sbarra / cancello</div>
+          </div>
           <button type="button" id="mapTargetBtn" class="map-target-btn hidden" title="Centra sul target"
             aria-label="Centra sul target">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e84747" stroke-width="2"
@@ -2045,9 +2133,15 @@ body.map-open {
 
     let routeLayer = null;
 
+    let ultimoPercorso = null;   // per l'esportazione KML
+
     function clearRoute() {
       if (routeLayer && map) map.removeLayer(routeLayer);
       routeLayer = null;
+      ultimoPercorso = null;
+      document.getElementById("routeExport").classList.add("hidden");
+      document.getElementById("routeLegenda").classList.add("hidden");
+      document.querySelectorAll(".pg-localizzati .route-btn").forEach(b => b.classList.remove("attivo"));
       const info = document.getElementById("routeInfo");
       info.classList.add("hidden");
       info.classList.remove("error");
@@ -2230,7 +2324,15 @@ assign initialcost =
       return min >= 60 ? Math.floor(min / 60) + " h " + String(min % 60).padStart(2, "0") + " min" : min + " min";
     }
 
-    const TITOLI_PERCORSO = {soccorso: "🚒 Percorso di soccorso", auto: "🚗 Solo auto", piedi: "🥾 Solo piedi"};
+    const TITOLI_PERCORSO = {soccorso: "🚒 Percorso di soccorso", auto: "🚒 Solo mezzo", piedi: "🥾 Solo piedi"};
+    const BOTTONE_PERCORSO = {soccorso: "routeMix", auto: "routeCar", piedi: "routeFoot"};
+
+    // punto di cambio: lo scarponcino, come nella carta di FireOps
+    function iconaPuntoCambio() {
+      return L.divIcon({className: "", iconSize: [26, 26], iconAnchor: [13, 13],
+        html: '<div style="width:26px;height:26px;border-radius:50%;background:#fff;border:2px solid ' + COLORE_PERCORSO +
+          ';display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 0 6px rgba(0,0,0,.6)">🥾</div>'});
+    }
 
     async function calcolaPercorso(modalita) {
       const info = document.getElementById("routeInfo");
@@ -2242,7 +2344,9 @@ assign initialcost =
         info.textContent = "Posizione GPS non ancora ricevuta: attendi la lettura o usa \"Aggiorna posizione\".";
         return;
       }
-      btns.forEach(b => b.disabled = true);
+      btns.forEach(b => {b.disabled = true; b.classList.toggle("attivo", b.id === BOTTONE_PERCORSO[modalita]);});
+      document.getElementById("routeExport").classList.add("hidden");
+      ultimoPercorso = null;
       info.textContent = "Calcolo del percorso…";
       try {
         const latP = userPos.lat, lonP = userPos.lon, latT = targetPos.lat, lonT = targetPos.lon;
@@ -2283,15 +2387,14 @@ assign initialcost =
         const aLatLng = c => [c[1], c[0]];
         const layers = [];
         if (coordAuto.length) layers.push(L.polyline(coordAuto.map(aLatLng), {color: COLORE_PERCORSO, weight: 5, opacity: 0.85}));
-        if (coordPiedi.length) layers.push(L.polyline(coordPiedi.map(aLatLng), {color: "#3fa66b", weight: 4, opacity: 0.95, dashArray: "1 9", lineCap: "round"}));
+        if (coordPiedi.length) layers.push(L.polyline(coordPiedi.map(aLatLng), {color: COLORE_PERCORSO, weight: 4, opacity: 0.95, dashArray: "1 9", lineCap: "round"}));
         let cambio = null;
         if (haCambio || fermoPrima) {
           cambio = fineAuto;
           const titolo = haCambio ? "Punto di cambio: lascia il mezzo" : "Fine percorribilità del mezzo";
           const testo = haCambio ? "Fine percorribilità del mezzo: si prosegue a piedi" : "Il mezzo si ferma a " + Math.round(restanteM) + " m dal target";
           const mUrl = "https://www.google.com/maps/dir/?api=1&destination=" + cambio.lat.toFixed(6) + "," + cambio.lon.toFixed(6) + "&travelmode=driving&dir_action=navigate";
-          layers.push(L.marker([cambio.lat, cambio.lon], {zIndexOffset: 2000, icon: L.divIcon({className: "", iconSize: [0, 0],
-            html: '<div style="background:#ffd700;color:#10141a;font:800 12px system-ui;padding:4px 8px;border-radius:12px;border:2px solid #10141a;white-space:nowrap;transform:translate(-50%,-135%);box-shadow:0 1px 4px rgba(0,0,0,.5)">🅿 ' + (haCambio ? "Lascia il mezzo qui" : "Il mezzo si ferma qui") + '</div><div style="width:14px;height:14px;background:#ffd700;border:3px solid #10141a;border-radius:50%;transform:translate(-50%,-50%)"></div>'})})
+          layers.push(L.marker([cambio.lat, cambio.lon], {zIndexOffset: 2000, title: titolo, icon: iconaPuntoCambio()})
             .bindPopup("<b>" + titolo + "</b><br>" + testo + "<br>" + cambio.lat.toFixed(6) + ", " + cambio.lon.toFixed(6) +
               "<br><a href='" + mUrl + "' target='_blank' rel='noopener'>Naviga fin qui</a>"));
         }
@@ -2302,6 +2405,7 @@ assign initialcost =
         });
         if (routeLayer && map) map.removeLayer(routeLayer);
         routeLayer = L.featureGroup(layers).addTo(map);
+        document.getElementById("routeLegenda").classList.remove("hidden");
         map.fitBounds(routeLayer.getBounds(), {padding: [40, 40]});
         document.getElementById("resultMap").scrollIntoView({behavior: "smooth", block: "center"});
 
@@ -2320,7 +2424,8 @@ assign initialcost =
         const disAuto = dislivelliFiltrati(coordAuto.map(c => parseFloat(c[2])));
 
         const righe = [];
-        righe.push("<strong>" + TITOLI_PERCORSO[modalita] + "</strong>: " + (kmAuto + kmPiedi).toFixed(2) + " km · <strong>" + testoDurata(minTot) + "</strong>");
+        righe.push('<div class="rt-titolo">' + TITOLI_PERCORSO[modalita] + "</div>");
+        righe.push("Distanza percorso: " + (kmAuto + kmPiedi).toFixed(2) + " km · Tempo: <strong>circa " + testoDurata(minTot) + "</strong>");
         if (haCambio) {
           righe.push("🚒 Mezzo: " + kmAuto.toFixed(2) + " km · " + testoDurata(minAuto));
           righe.push("🥾 A piedi: " + kmPiedi.toFixed(2) + " km · " + testoDurata(minPiedi));
@@ -2328,14 +2433,18 @@ assign initialcost =
         if (sbarre.length) righe.push("🚧 Sbarre/cancelli: " + sbarre.length);
         const salitaTot = Math.round(dis.salita + disAuto.salita), discTot = Math.round(dis.discesa + disAuto.discesa);
         if (salitaTot || discTot) righe.push("Dislivello: +" + salitaTot + " m / −" + discTot + " m");
-        if (cambio) righe.push("🅿 <strong>" + (haCambio ? "Lascia il mezzo a " : "Il mezzo si ferma a ") + cambio.lat.toFixed(6) + ", " + cambio.lon.toFixed(6) + "</strong> " +
+        if (cambio) righe.push("🥾 <strong>" + (haCambio ? "Punto di cambio " : "Il mezzo si ferma a ") + cambio.lat.toFixed(6) + ", " + cambio.lon.toFixed(6) + "</strong> " +
           '<a class="value-link" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=' + cambio.lat.toFixed(6) + "," + cambio.lon.toFixed(6) + '&travelmode=driving&dir_action=navigate">Naviga fin lì</a>');
-        if (auto && !auto.profiloSoccorso) righe.push("⚠️ Profilo mezzo VF non disponibile: calcolato come auto civile (sbarre e divieti rispettati).");
-        else if (conMezzo && !coordAuto.length) righe.push("⚠️ Tratto col mezzo non calcolabile: solo a piedi.");
-        else if (fermoPrima) righe.push("⚠️ Il mezzo si ferma a " + Math.round(restanteM) + " m dal target (in linea d'aria).");
-        righe.push("Calcolato da BRouter alle " + new Date().toLocaleTimeString("it-IT", {hour: "2-digit", minute: "2-digit"}) +
-          "; tempi: a piedi DIN 33466, mezzo da velocità medie per tipo di strada, senza traffico.");
-        info.innerHTML = righe.join("<br>");
+        if (auto && !auto.profiloSoccorso) righe.push('<span class="rt-avviso">⚠️ Profilo mezzo VF non disponibile: calcolato come auto civile (sbarre e divieti rispettati).</span>');
+        else if (conMezzo && !coordAuto.length) righe.push('<span class="rt-avviso">⚠️ Tratto col mezzo non calcolabile: solo a piedi.</span>');
+        else if (fermoPrima) righe.push('<span class="rt-avviso">⚠️ Il mezzo si ferma a ' + Math.round(restanteM) + " m dal target (in linea d'aria).</span>");
+        righe.push('<div class="rt-nota">Calcolato da BRouter alle ' + new Date().toLocaleTimeString("it-IT", {hour: "2-digit", minute: "2-digit"}) +
+          "; tempi: a piedi DIN 33466, mezzo da velocità medie per tipo di strada, senza traffico.</div>");
+        info.innerHTML = righe.join("<br>").replace(/<br><div/g, "<div").replace(/<\/div><br>/g, "</div>");
+        ultimoPercorso = {modalita: modalita, coordAuto: coordAuto, coordPiedi: coordPiedi, sbarre: sbarre,
+          partenza: {lat: latP, lon: lonP}, target: {lat: latT, lon: lonT}, cambio: cambio, haCambio: haCambio,
+          kmAuto: kmAuto, kmPiedi: kmPiedi, minAuto: minAuto, minPiedi: minPiedi, minTot: minTot};
+        document.getElementById("routeExport").classList.remove("hidden");
       } catch (e) {
         info.classList.add("error");
         info.textContent = "Percorso non disponibile (" + (e.name === "AbortError" ? "tempo scaduto" : e.message) + ").";
@@ -2343,6 +2452,60 @@ assign initialcost =
         btns.forEach(b => b.disabled = false);
       }
     }
+
+    /* KML per Locus Map (va bene anche per Google Earth e OruxMaps): i due tratti
+       separati con colori diversi (il KML non ha il tratteggio) e i punti utili sul
+       campo. Sul telefono si apre la condivisione, cosi' si sceglie "Locus Map". */
+    function kmlPercorso(p) {
+      const xml = t => String(t).replace(/[<>&"]/g, c => ({"<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;"}[c]));
+      const linea = c => c.map(x => x[0] + "," + x[1] + "," + (isFinite(parseFloat(x[2])) ? parseFloat(x[2]).toFixed(1) : 0)).join(" ");
+      const punto = (nome, desc, lat, lon, stile) => "    <Placemark><name>" + xml(nome) + "</name><description>" + xml(desc) +
+        "</description><styleUrl>#" + stile + "</styleUrl><Point><coordinates>" + lon.toFixed(6) + "," + lat.toFixed(6) + ",0</coordinates></Point></Placemark>";
+      const traccia = (nome, desc, c, stile) => "    <Placemark><name>" + xml(nome) + "</name><description>" + xml(desc) +
+        "</description><styleUrl>#" + stile + "</styleUrl><LineString><tessellate>1</tessellate><coordinates>" + linea(c) + "</coordinates></LineString></Placemark>";
+      const icona = (id, colore, href) => '    <Style id="' + id + '"><IconStyle><color>' + colore + "</color><Icon><href>" + href + "</href></Icon></IconStyle></Style>";
+      const quando = new Date().toLocaleString("it-IT", {day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"});
+      const nome = TITOLI_PERCORSO[p.modalita].replace(/^\S+\s/, "") + " FireOps " + quando;
+      const parti = [];
+      if (p.coordAuto.length) parti.push(traccia("Mezzo VF", p.kmAuto.toFixed(2) + " km, circa " + testoDurata(p.minAuto), p.coordAuto, "mezzo"));
+      if (p.coordPiedi.length) parti.push(traccia("A piedi", p.kmPiedi.toFixed(2) + " km, circa " + testoDurata(p.minPiedi), p.coordPiedi, "piedi"));
+      parti.push(punto("Squadra VF", "Partenza", p.partenza.lat, p.partenza.lon, "squadra"));
+      if (p.cambio) parti.push(punto(p.haCambio ? "Punto di cambio" : "Fine percorribilita' mezzo",
+        p.haCambio ? "Si lascia il mezzo, si prosegue a piedi" : "Il mezzo si ferma qui", p.cambio.lat, p.cambio.lon, "cambio"));
+      p.sbarre.forEach((sb, i) => parti.push(punto("Sbarra " + (i + 1), sb.tag + " - prevedere apertura o chiave", sb.lat, sb.lon, "sbarra")));
+      parti.push(punto("Target", "Target intervento", p.target.lat, p.target.lon, "target"));
+      const ic = "https://maps.google.com/mapfiles/kml/";
+      return '<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2">\n  <Document>\n    <name>' + xml(nome) + "</name>\n" +
+        "    <description>" + xml("Distanza " + (p.kmAuto + p.kmPiedi).toFixed(2) + " km, tempo circa " + testoDurata(p.minTot) + ". Calcolato da FireOps VVF (BRouter).") + "</description>\n" +
+        '    <Style id="mezzo"><LineStyle><color>ff4747e8</color><width>5</width></LineStyle></Style>\n' +
+        '    <Style id="piedi"><LineStyle><color>ff008cff</color><width>4</width></LineStyle></Style>\n' +
+        icona("squadra", "ff00d7ff", ic + "shapes/firedept.png") + "\n" +
+        icona("cambio", "ffffffff", ic + "shapes/hiker.png") + "\n" +
+        icona("sbarra", "ff4747e8", ic + "shapes/caution.png") + "\n" +
+        icona("target", "ff4747e8", ic + "paddle/red-circle.png") + "\n" +
+        parti.join("\n") + "\n  </Document>\n</kml>\n";
+    }
+    async function esportaKml() {
+      if (!ultimoPercorso) return;
+      const d = new Date(), z = n => String(n).padStart(2, "0");
+      const nomeFile = "percorso-fireops-" + d.getFullYear() + z(d.getMonth() + 1) + z(d.getDate()) + "-" + z(d.getHours()) + z(d.getMinutes()) + ".kml";
+      const blob = new Blob([kmlPercorso(ultimoPercorso)], {type: "application/vnd.google-earth.kml+xml"});
+      try {
+        const file = new File([blob], nomeFile, {type: blob.type});
+        if (navigator.canShare && navigator.canShare({files: [file]})) {
+          await navigator.share({files: [file], title: "Percorso FireOps"});
+          return;
+        }
+      } catch (e) {
+        if (e && e.name === "AbortError") return;   // condivisione annullata dall'utente
+      }
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = nomeFile;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    }
+    document.getElementById("routeKml").addEventListener("click", esportaKml);
 
     document.getElementById("routeMix").addEventListener("click", function () {calcolaPercorso("soccorso");});
     document.getElementById("routeFoot").addEventListener("click", function () {calcolaPercorso("piedi");});
