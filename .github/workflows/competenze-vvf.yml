@@ -11,7 +11,7 @@ on:
     workflows: ["Aggiorna DB sedi VVF"]
     types: [completed]
   push:                         # quando cambiano i parametri o lo script
-    branches: [main]
+    branches: [FireOps]
     paths:
       - db/competenze/config.json
       - script/competenze.py
@@ -31,7 +31,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main             # dopo workflow_run prendo il DB sedi appena aggiornato
+          ref: ${{ github.event.repository.default_branch }}   # dopo workflow_run prendo il DB sedi appena aggiornato
 
       - uses: actions/setup-python@v5
         with:
