@@ -1307,6 +1307,28 @@ function iconaFrecciaDirezione(colore, azimutGradi) {
     let temaCoordScelto = "chiara";
     let effemeridiTarget = null;
 
+    /* Il satellite Esri e' solo foto: strade con i nomi, localita' e confini sono
+       livelli a parte. Si agganciano allo sfondo satellite in un pannello sopra le
+       tile: lo sfondo resta un normale tileLayer (cambio sfondo, bringToBack e
+       controllo livelli funzionano come prima) e le scritte vanno e vengono con lui. */
+    function satConEtichette(sat) {
+      var ref = ['World_Transportation', 'World_Boundaries_and_Places'].map(function (n) {
+        return L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/' + n + '/MapServer/tile/{z}/{y}/{x}',
+          {maxZoom: sat.options.maxZoom || 19, maxNativeZoom: sat.options.maxNativeZoom || 19, pane: 'etichetteSat'});
+      });
+      sat.on('add', function () {
+        var m = sat._map;
+        if (!m.getPane('etichetteSat')) {
+          var p = m.createPane('etichetteSat');
+          p.style.zIndex = 250;            // sopra le tile (200), sotto le geometrie (400)
+          p.style.pointerEvents = 'none';
+        }
+        ref.forEach(function (l) { l.addTo(m); });
+      });
+      sat.on('remove', function () { ref.forEach(function (l) { l.remove(); }); });
+      return sat;
+    }
+
     const CARTE_BASE = {
         osm: {
             etichetta: "OpenStreetMap", icona: "🗺️", invertibile: true,
@@ -1326,10 +1348,10 @@ function iconaFrecciaDirezione(colore, azimutGradi) {
         },
         satellite: {
             etichetta: "Satellitare", icona: "🛰️", invertibile: false,
-            crea: () => L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+            crea: () => satConEtichette(L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
                 maxZoom: 19, maxNativeZoom: 18,
                 attribution: 'Tiles &copy; Esri — Maxar, Earthstar Geographics, GIS User Community',
-            }),
+            })),
         },
     };
 

@@ -1566,13 +1566,35 @@ function mostraComandoAfferente(sigla, nome){
      OSM come predefinito: è lo sfondo con cui si lavora normalmente in SO.
      Topografico per quota e sentieri, satellite per la vegetazione.
      ===================================================================== */
+  /* Il satellite Esri e' solo foto: strade con i nomi, localita' e confini sono
+     livelli a parte. Si agganciano allo sfondo satellite in un pannello sopra le
+     tile: lo sfondo resta un normale tileLayer (cambio sfondo, bringToBack e
+     controllo livelli funzionano come prima) e le scritte vanno e vengono con lui. */
+  function satConEtichette(sat) {
+    var ref = ['World_Transportation', 'World_Boundaries_and_Places'].map(function (n) {
+      return L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/' + n + '/MapServer/tile/{z}/{y}/{x}',
+        {maxZoom: sat.options.maxZoom || 19, maxNativeZoom: sat.options.maxNativeZoom || 19, pane: 'etichetteSat'});
+    });
+    sat.on('add', function () {
+      var m = sat._map;
+      if (!m.getPane('etichetteSat')) {
+        var p = m.createPane('etichetteSat');
+        p.style.zIndex = 250;            // sopra le tile (200), sotto le geometrie (400)
+        p.style.pointerEvents = 'none';
+      }
+      ref.forEach(function (l) { l.addTo(m); });
+    });
+    sat.on('remove', function () { ref.forEach(function (l) { l.remove(); }); });
+    return sat;
+  }
+
   const sfondi = [
     {k:'sfStrada', l:L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
         {maxZoom:19, attribution:'OpenStreetMap'})},
     {k:'sfTopo', l:L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
         {maxZoom:17, attribution:'OpenTopoMap'})},
-    {k:'sfSat', l:L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        {maxZoom:19, attribution:'Esri'})}
+    {k:'sfSat', l:satConEtichette(L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        {maxZoom:19, attribution:'Esri'}))}
   ];
   let iSfondo = 0;
 
