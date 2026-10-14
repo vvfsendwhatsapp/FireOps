@@ -13,7 +13,7 @@
   --head:#22272e; --headink:#fff; --accent:#c8102e; --chip:#eef0f3;
   --ok:#1f9d55; --warn:#e0a800; --ko:#5c6670;
   --t-permanente:#c8102e; --t-volontario:#e8790c; --t-aeroportuale:#1f6fd1;
-  --t-direzione:#1d3557; --t-centrale:#7a0019; --t-portuale:#0f9aa8; --t-rurale:#3a8c2f; --t-stagionale:#c2185b; --t-sommozzatori:#283593; --t-volo:#5d4037; --t-tlc:#9e9d24; --t-presidio:#7b4bc4; --t-altro:#7a828c;
+  --t-direzione:#1d3557; --t-centrale:#7a0019; --t-portuale:#0f9aa8; --t-rurale:#3a8c2f; --t-stagionale:#c2185b; --t-sommozzatori:#283593; --t-volo:#5d4037; --t-tlc:#9e9d24; --t-presidio:#7b4bc4; --t-didattico:#b8860b; --t-altro:#7a828c;
 }
 @media (prefers-color-scheme: dark){ :root{
   --bg:#15181c; --panel:#1e2228; --ink:#e7eaee; --muted:#9aa3ad; --line:#2f353d;
@@ -223,7 +223,7 @@ const STORE = 'fireops-sedi-v1', CODA = 'fireops-sedi-coda-v1', UTENTE = 'fireop
 
 const TIPI = {
   direzione:'Direzione regionale', centrale:'Sede centrale', permanente:'Permanente', volontario:'Volontario', aeroportuale:'Aeroportuale',
-  portuale:'Portuale', rurale:'Rurale', stagionale:'Sede stagionale', sommozzatori:'Sommozzatori', volo:'Reparto volo', tlc:'Telecomunicazioni', presidio:'Presidio', altro:'Altro / da verificare'
+  portuale:'Portuale', rurale:'Rurale', stagionale:'Sede stagionale', sommozzatori:'Sommozzatori', volo:'Reparto volo', tlc:'Telecomunicazioni', presidio:'Presidio', didattico:'Polo didattico', altro:'Altro / da verificare'
 };
 const STATI = {
   '': 'Da convalidare', convalidata: 'Convalidata', da_correggere: 'Da correggere',
@@ -235,7 +235,7 @@ const NOME_TIPO = {
   direzione: 'Direzione regionale', centrale: 'Sede centrale', permanente: 'Distaccamento', volontario: 'Distaccamento volontario',
   aeroportuale: 'Distaccamento aeroportuale', portuale: 'Distaccamento portuale', rurale: 'Presidio rurale',
   stagionale: 'Sede stagionale', sommozzatori: 'Nucleo sommozzatori', volo: 'Reparto volo',
-  tlc: 'Nucleo telecomunicazioni', presidio: 'Presidio', altro: 'Sede'
+  tlc: 'Nucleo telecomunicazioni', presidio: 'Presidio', didattico: 'Polo didattico', altro: 'Sede'
 };
 // la Direzione regionale prende il nome della regione: "Vigili del fuoco - Direzione regionale Veneto"
 const nomeAuto = (tipo, comune, regione) => 'Vigili del fuoco - ' + (NOME_TIPO[tipo] || 'Sede') +

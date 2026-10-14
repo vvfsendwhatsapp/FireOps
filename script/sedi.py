@@ -105,6 +105,8 @@ def classifica(t):
         return "volo"
     if "telecomunicazion" in s or re.search(r"\btlc\b", s):
         return "tlc"
+    if "didattic" in s:
+        return "didattico"
     if "volontari" in s or "freiwillige" in s:
         return "volontario"
     if "aeroport" in s or "aereoport" in s or "airport" in s:
@@ -251,7 +253,7 @@ def costruisci(candidati, loc):
 
 # ---------------------------------------------------------------- correzioni
 STATI_OK = {"convalidata", "da_correggere", "non_vvf", "chiusa", "nuova"}
-TIPI_OK = {"direzione", "centrale", "stagionale", "sommozzatori", "volo", "tlc", "permanente", "volontario", "aeroportuale", "portuale", "rurale", "presidio", "altro"}
+TIPI_OK = {"direzione", "centrale", "stagionale", "sommozzatori", "volo", "tlc", "permanente", "volontario", "aeroportuale", "portuale", "rurale", "presidio", "didattico", "altro"}
 
 
 def leggi_correzioni(url, cartella, csv_url=""):
@@ -349,7 +351,7 @@ NOME_TIPO = {
     "direzione": "Direzione regionale", "centrale": "Sede centrale", "permanente": "Distaccamento", "volontario": "Distaccamento volontario",
     "aeroportuale": "Distaccamento aeroportuale", "portuale": "Distaccamento portuale",
     "rurale": "Presidio rurale", "stagionale": "Sede stagionale",
-    "sommozzatori": "Nucleo sommozzatori", "volo": "Reparto volo", "tlc": "Nucleo telecomunicazioni", "presidio": "Presidio", "altro": "Sede",
+    "sommozzatori": "Nucleo sommozzatori", "volo": "Reparto volo", "tlc": "Nucleo telecomunicazioni", "presidio": "Presidio", "didattico": "Polo didattico", "altro": "Sede",
 }
 GENERICI = re.compile(r"^(vigili del fuoco|vvf|v\.v\.f\.?|caserma( dei)? (vigili del fuoco|pompieri)|pompieri|"
                       r"(freiwillige )?feuerwehr|vigili del fuoco volontari|distaccamento( vvf)?)$", re.I)
