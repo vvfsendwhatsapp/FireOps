@@ -234,10 +234,15 @@ async function carica(sigla) {
   celle = D.celle.map(r => {
     const comp = [];
     for (let i = 3; i < r.length && i < per; i += 3) comp.push({s: r[i], t: r[i + 1], k: r[i + 2]});
-    return {h3: r[0], comune: r[1], agg: r[2], comp, poly: h3.cellToBoundary(r[0])};
+    return {h3: r[0], comune: r[1], agg: r[2], comp};
   });
   D.perH3 = new Map(celle.map(c => [c.h3, c]));
-  D.sedi.forEach((s, i) => s.col = COLORI[i % COLORI.length]);
+  /* colori: prima alle sedi che hanno zone (in ordine di superficie), cosi' quelle che si
+     vedono sulla carta non ripetono lo stesso colore; le altre prendono i successivi */
+  const peso = new Map();
+  celle.forEach(c => c.comp.forEach((x, r) => peso.set(x.s, (peso.get(x.s) || 0) + (N - r) ** 3)));
+  D.sedi.slice().sort((a, b) => (peso.get(b.id) || 0) - (peso.get(a.id) || 0))
+    .forEach((s, i) => s.col = COLORI[i % COLORI.length]);
   const g = new Date(D.generato);
   $('stamp').textContent = (D.metodo === 'osrm' ? '' : '⚠ ') + g.toLocaleDateString('it-IT');
   $('stamp').title = `Calcolo del ${g.toLocaleString('it-IT')} · metodo: ${D.metodo} · celle H3 res ${D.h3_res}`;
@@ -283,35 +288,28 @@ function disegna() {
   if (!D) return;
   const unaSede = sedeFiltro !== '';
   const sid = +sedeFiltro;
-  for (const c of celle) {
-    let col = null, op = .45;
-    if (unaSede) {
-      const r = c.comp.findIndex(x => x.s === sid);
-      if (r < 0) { col = '#888'; op = .08; } else { col = SCALA[r]; op = .6; }
-    } else {
-      const x = c.comp[livello - 1];
-      if (!x) continue;
-      col = D.sedi[x.s].col;
-    }
-    L.polygon(c.poly, {renderer: rend, stroke: false, fillColor: col, fillOpacity: op, interactive: false}).addTo(livCelle);
-  }
-  /* bordi delle zone: contorno unito delle celle di ogni sede */
+  /* Ogni zona e' UN poligono (celle unite): disegnando gli esagoni uno per uno i bordi
+     si sovrapponevano e la trasparenza raddoppiava lungo le giunture (il reticolo bianco). */
+  const zona = (cells, col, op, bordo, peso) => {
+    if (!cells.length) return;
+    h3.cellsToMultiPolygon(cells, false).forEach(poly =>
+      L.polygon(poly, {renderer: rend, fillColor: col, fillOpacity: op, interactive: false,
+        stroke: !!bordo, color: bordo || col, weight: peso || 0, opacity: .85}).addTo(livCelle));
+  };
   if (unaSede) {
-    for (let r = 1; r <= N; r++) {
-      const cc = celle.filter(c => c.comp[r - 1] && c.comp[r - 1].s === sid).map(c => c.h3);
-      if (cc.length) contorno(cc, r === 1 ? '#000' : '#5a1a1a', r === 1 ? 2.2 : .8);
+    const perRango = Array.from({length: N}, () => []), fuori = [];
+    for (const c of celle) {
+      const r = c.comp.findIndex(x => x.s === sid);
+      (r < 0 ? fuori : perRango[r]).push(c.h3);
     }
+    zona(fuori, '#888', .08);
+    perRango.forEach((cc, r) => zona(cc, SCALA[r], .6, r === 0 ? '#000' : '#5a1a1a', r === 0 ? 2.2 : .8));
   } else {
-    for (const [, cc] of zoneDi(livello)) contorno(cc.map(c => c.h3), '#1d2228', 1.4);
+    for (const [sidZ, cc] of zoneDi(livello)) zona(cc.map(c => c.h3), D.sedi[sidZ].col, .45, '#1d2228', 1.4);
   }
   legenda();
   livSedi.eachLayer(m => { const on = !unaSede || m.sid === sid; m.setOpacity(on ? 1 : .35); });
   if (punto) scheda(punto.getLatLng());
-}
-
-function contorno(cells, col, peso) {
-  const mp = h3.cellsToMultiPolygon(cells, false);   // [[[lat,lng]...]...] per poligono
-  mp.forEach(poly => L.polygon(poly, {renderer: rend, color: col, weight: peso, fill: false, interactive: false, opacity: .85}).addTo(livBordi));
 }
 
 function disegnaSedi() {

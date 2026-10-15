@@ -132,6 +132,7 @@ body.trascino iframe{pointer-events:none}
 .pin.da_correggere{box-shadow:0 0 0 3px var(--warn),0 1px 3px #0008}
 .pin.non_vvf,.pin.chiusa{opacity:.55;box-shadow:0 0 0 2px var(--ko)}
 .pin.sel{transform:scale(1.5)}
+.civico{font:600 11px/1 system-ui,sans-serif;color:#1d2228;background:#fffc;border:1px solid #0003;border-radius:3px;padding:1px 3px;white-space:nowrap;transform:translate(-50%,-50%);width:auto!important;height:auto!important}
 .me{width:16px;height:16px;border-radius:50%;background:#1f6fd1;border:3px solid #fff;box-shadow:0 0 0 6px #1f6fd140}
 #msg{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:1400;background:var(--head);color:#fff;padding:8px 14px;border-radius:8px;font-size:13px;display:none;max-width:90%;text-align:center}
 /* anteprima Street View */
@@ -276,6 +277,47 @@ if (!(window.FireOpsSfondi && FireOpsSfondi.aggiungi(map, {sostituisci: [base['S
 L.control.scale({imperial: false}).addTo(map);
 const cluster = L.markerClusterGroup({showCoverageOnHover: false, maxClusterRadius: 45, disableClusteringAtZoom: 15, chunkedLoading: true});
 map.addLayer(cluster);
+
+/* Numeri civici. Le tile OSM li disegnano solo agli ultimi zoom e solo sullo Stradale;
+   satellite e topografica non li hanno. Da zoom 17 si leggono da OpenStreetMap (Overpass)
+   per l'area visibile e si scrivono sopra qualsiasi sfondo. Cache per riquadro, una sola
+   richiesta alla volta, nessuna richiesta sotto lo zoom 17. */
+const CIVICI_ZOOM = 17;
+const livCivici = L.layerGroup().addTo(map);
+map.createPane('civici').style.zIndex = 450;
+map.getPane('civici').style.pointerEvents = 'none';
+const civiciVisti = new Map();     // "lat,lon" -> numero, gia' disegnati
+const riquadriFatti = [];          // L.LatLngBounds gia' scaricati
+let civiciInCorso = null, civiciTimer = null;
+function civiciAggiorna() {
+  clearTimeout(civiciTimer);
+  if (map.getZoom() < CIVICI_ZOOM) { livCivici.remove(); return; }
+  if (!map.hasLayer(livCivici)) livCivici.addTo(map);
+  civiciTimer = setTimeout(civiciScarica, 500);
+}
+async function civiciScarica() {
+  const b = map.getBounds().pad(0.15);
+  if (riquadriFatti.some(r => r.contains(b)) || civiciInCorso) return;
+  const q = `[out:json][timeout:20];nwr["addr:housenumber"](${b.getSouth()},${b.getWest()},${b.getNorth()},${b.getEast()});out center 1500;`;
+  civiciInCorso = fetch('https://overpass-api.de/api/interpreter', {method: 'POST', body: 'data=' + encodeURIComponent(q)})
+    .then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))
+    .then(j => {
+      riquadriFatti.push(b);
+      (j.elements || []).forEach(e => {
+        const lat = e.lat ?? (e.center && e.center.lat), lon = e.lon ?? (e.center && e.center.lon);
+        const n = e.tags && e.tags['addr:housenumber'];
+        if (lat == null || !n) return;
+        const k = lat.toFixed(6) + ',' + lon.toFixed(6);
+        if (civiciVisti.has(k)) return;
+        civiciVisti.set(k, n);
+        L.marker([lat, lon], {pane: 'civici', interactive: false, keyboard: false,
+          icon: L.divIcon({className: 'civico', html: esc(n), iconSize: null})}).addTo(livCivici);
+      });
+    })
+    .catch(e => console.warn('Civici non disponibili', e))
+    .finally(() => { civiciInCorso = null; if (map.getZoom() >= CIVICI_ZOOM && !riquadriFatti.some(r => r.contains(map.getBounds()))) civiciAggiorna(); });
+}
+map.on('moveend zoomend', civiciAggiorna);
 
 let SEDI = [], PER_CHIAVE = new Map();
 let PROV = {};                         // sigla -> {provincia, regione}, ricavato dai dati
