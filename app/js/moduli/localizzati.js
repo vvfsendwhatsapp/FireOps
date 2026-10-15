@@ -429,6 +429,24 @@ FireOps.registra({
 .pg-localizzati .hidden {
       display: none !important;
 }
+.pg-localizzati .route-btn.ar { border-color: #ffd700; color: #ffd700; }
+.pg-localizzati .ar-ov { position: fixed; inset: 0; z-index: 4000; background: #000; color: #fff; overflow: hidden; }
+.pg-localizzati .ar-ov video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.pg-localizzati .ar-ov canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.pg-localizzati .ar-top { position: absolute; left: 0; right: 0; top: 0; display: flex; align-items: center; gap: 12px;
+      padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 14px; background: linear-gradient(rgba(0,0,0,.75), rgba(0,0,0,0)); }
+.pg-localizzati #arArrow { flex: none; width: 54px; height: 54px; border-radius: 50%; background: rgba(255,215,0,.95); color: #10141a;
+      display: flex; align-items: center; justify-content: center; font-size: 28px; line-height: 1; transition: transform .15s linear; }
+.pg-localizzati .ar-txt { display: flex; flex-direction: column; min-width: 0; text-shadow: 0 1px 3px #000; }
+.pg-localizzati .ar-txt b { font-size: 18px; }
+.pg-localizzati .ar-txt span { font-size: 13px; opacity: .92; }
+.pg-localizzati .ar-msg { position: absolute; left: 14px; right: 14px; top: 96px; padding: 10px 12px; border-radius: 8px;
+      background: rgba(0,0,0,.78); border: 1px solid #ffd700; font-size: 13.5px; line-height: 1.4; }
+.pg-localizzati .ar-bot { position: absolute; left: 0; right: 0; bottom: 0; display: flex; gap: 8px;
+      padding: 14px 12px calc(14px + env(safe-area-inset-bottom, 0px)); background: linear-gradient(rgba(0,0,0,0), rgba(0,0,0,.8)); }
+.pg-localizzati .ar-bot button { flex: 1; min-height: 50px; border-radius: 10px; border: 1px solid rgba(255,255,255,.35);
+      background: rgba(20,24,30,.8); color: #fff; font: 700 14px system-ui; cursor: pointer; }
+.pg-localizzati .ar-bot button:active { background: #ffd700; color: #000; }
 .pg-localizzati .map-wrap {
       position: relative;
 }
@@ -979,6 +997,7 @@ body.map-open {
         <div class="route-info hidden" id="routeInfo"></div>
         <div class="route-export hidden" id="routeExport">
           <button type="button" id="routeKml" title="Traccia e punti per Locus Map, Google Earth, OruxMaps">💾 KML (Locus Map)</button>
+          <button type="button" id="routeAR" class="route-btn ar">📷 Guida in realtà aumentata</button>
         </div>
         <button type="button" id="openMapsTarget" class="maps-btn target">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -1100,6 +1119,18 @@ body.map-open {
 
   </div>
 
+  <div class="ar-ov hidden" id="arOv">
+    <video id="arVideo" playsinline muted autoplay></video>
+    <canvas id="arCv"></canvas>
+    <div class="ar-top"><div id="arArrow">➤</div><div class="ar-txt"><b id="arNext">—</b><span id="arSub"></span></div></div>
+    <div class="ar-msg hidden" id="arMsg"></div>
+    <div class="ar-bot">
+      <button type="button" id="arClose">✕ Chiudi</button>
+      <button type="button" id="arMinus" aria-label="Sposta a sinistra">◀ 5°</button>
+      <button type="button" id="arAlign">🎯 Allinea</button>
+      <button type="button" id="arPlus" aria-label="Sposta a destra">5° ▶</button>
+    </div>
+  </div>
   <div class="place-modal hidden" id="placeModal">
     <div class="place-box">
       <h3>Inserire una località</h3>
@@ -2465,6 +2496,322 @@ assign initialcost =
     document.getElementById("routeMix").addEventListener("click", function () {calcolaPercorso("soccorso");});
     document.getElementById("routeFoot").addEventListener("click", function () {calcolaPercorso("piedi");});
     document.getElementById("routeCar").addEventListener("click", function () {calcolaPercorso("auto");});
+    /* ================= GUIDA IN REALTÀ AUMENTATA =================
+     * Camera posteriore + GPS + sensori di orientamento: il percorso calcolato viene disegnato sul terreno
+     * davanti a te (nastro con frecce), con i segnali del punto di cambio, delle sbarre e del target.
+     * Indicativo: GPS ±5-10 m e bussola ±10-20°. Se la bussola è storta: "Allinea" (inquadra il punto
+     * indicato e tocca) oppure ±5°.
+     */
+    let arRoute = null;       // {pts:[{lat,lon,seg}], cambioIdx, sbarre:[{lat,lon}], target:{lat,lon}}
+    let arStop = null;
+
+    // il percorso da disegnare è l'ultimo calcolato (lo stesso dell'esportazione KML)
+    function arCostruisciPercorso() {
+      const u = ultimoPercorso;
+      if (!u) return null;
+      const pts = u.coordAuto.map(function (c) {return {lat: c[1], lon: c[0], seg: "a"};});
+      u.coordPiedi.forEach(function (c, i) {if (!(i === 0 && pts.length)) pts.push({lat: c[1], lon: c[0], seg: "p"});});
+      if (pts.length < 2) return null;
+      return {pts: pts, cambioIdx: u.haCambio ? u.coordAuto.length - 1 : null,
+        sbarre: (u.sbarre || []).map(function (x) {return {lat: x.lat, lon: x.lon};}), target: {lat: u.target.lat, lon: u.target.lon}};
+    }
+
+    // MATH-START
+    const AR_CAM_H = 1.6;     // altezza della fotocamera da terra, m
+    const AR_NEAR = 0.5;      // piano vicino, m
+    const AR_FOVK = 0.82;     // lunghezza focale = FOVK x lato lungo dello schermo (circa 63° sul lato lungo)
+
+    function arEnu(lat0, lon0, lat, lon) {
+      return {e: (lon - lon0) * Math.cos(lat0 * Math.PI / 180) * 111320, n: (lat - lat0) * 110574};
+    }
+    // matrice W3C dispositivo -> terra (x=Est, y=Nord, z=su), Z-X'-Y''
+    function arRot(aD, bD, gD) {
+      const r = Math.PI / 180, cA = Math.cos(aD * r), sA = Math.sin(aD * r), cB = Math.cos(bD * r), sB = Math.sin(bD * r),
+        cG = Math.cos(gD * r), sG = Math.sin(gD * r);
+      return [
+        [cA * cG - sA * sB * sG, -cB * sA, cG * sA * sB + cA * sG],
+        [cG * sA + cA * sB * sG, cA * cB, sA * sG - cA * cG * sB],
+        [-cB * sG, sB, cB * cG]
+      ];
+    }
+    // direzione (dal nord, in senso orario) verso cui guarda la fotocamera posteriore
+    function arAzimuth(R) {
+      return (Math.atan2(-R[0][2], -R[1][2]) * 180 / Math.PI + 360) % 360;
+    }
+    // punto del mondo {e,n,u} rispetto alla fotocamera -> coordinate camera {x destra, y su, z avanti}
+    function arCam(R, v, scr) {
+      const dx = R[0][0] * v.e + R[1][0] * v.n + R[2][0] * v.u;
+      const dy = R[0][1] * v.e + R[1][1] * v.n + R[2][1] * v.u;
+      const dz = R[0][2] * v.e + R[1][2] * v.n + R[2][2] * v.u;
+      let x, y;
+      switch (((Math.round(scr / 90) * 90) % 360 + 360) % 360) {
+        case 90: x = -dy; y = dx; break;
+        case 180: x = -dx; y = -dy; break;
+        case 270: x = dy; y = -dx; break;
+        default: x = dx; y = dy;
+      }
+      return {x: x, y: y, z: -dz};
+    }
+    function arProj(c, W, H, f) {return {x: W / 2 + f * c.x / c.z, y: H / 2 - f * c.y / c.z};}
+
+    // punto della polilinea (in metri locali) più vicino a p: {i: indice segmento, t: 0-1, d: distanza, s: ascissa curvilinea}
+    function arNearest(pts, cum, p) {
+      let best = null;
+      for (let i = 0; i < pts.length - 1; i++) {
+        const a = pts[i], b = pts[i + 1], dx = b.e - a.e, dn = b.n - a.n, L2 = dx * dx + dn * dn;
+        let t = L2 > 0 ? ((p.e - a.e) * dx + (p.n - a.n) * dn) / L2 : 0;
+        t = Math.max(0, Math.min(1, t));
+        const qe = a.e + t * dx, qn = a.n + t * dn, d = Math.hypot(p.e - qe, p.n - qn);
+        if (!best || d < best.d) best = {i: i, t: t, d: d, s: cum[i] + t * (cum[i + 1] - cum[i]), e: qe, n: qn};
+      }
+      return best;
+    }
+    // punto a ascissa s lungo la polilinea
+    function arAt(pts, cum, s) {
+      s = Math.max(0, Math.min(cum[cum.length - 1], s));
+      let i = 0;
+      while (i < pts.length - 2 && cum[i + 1] < s) i++;
+      const L = cum[i + 1] - cum[i], t = L > 0 ? (s - cum[i]) / L : 0;
+      return {e: pts[i].e + t * (pts[i + 1].e - pts[i].e), n: pts[i].n + t * (pts[i + 1].n - pts[i].n), i: i};
+    }
+    // taglia un segmento (a, b in camera) al piano vicino: restituisce [ta, tb] in 0-1 oppure null
+    function arClipT(za, zb, near) {
+      if (za < near && zb < near) return null;
+      let t0 = 0, t1 = 1;
+      if (za < near) t0 = (near - za) / (zb - za);
+      if (zb < near) t1 = (near - za) / (zb - za);
+      return [t0, t1];
+    }
+    // differenza angolare con segno, -180..180
+    function arDiffAng(a, b) {return ((b - a + 540) % 360) - 180;}
+    // MATH-END
+
+    function arStart() {
+      arRoute = arCostruisciPercorso();
+      if (!arRoute) return;
+      const ov = document.getElementById("arOv"), vid = document.getElementById("arVideo"), cv = document.getElementById("arCv");
+      const g = cv.getContext("2d");
+      const msg = document.getElementById("arMsg");
+      const top = {arrow: document.getElementById("arArrow"), next: document.getElementById("arNext"), sub: document.getElementById("arSub")};
+      const showMsg = function (t) {msg.textContent = t; msg.classList.remove("hidden");};
+      msg.classList.add("hidden");
+      ov.classList.remove("hidden");
+
+      // geometria in metri locali (origine = primo punto)
+      const o = arRoute.pts[0];
+      const loc = arRoute.pts.map(function (p) {return arEnu(o.lat, o.lon, p.lat, p.lon);});
+      const cum = [0];
+      for (let i = 1; i < loc.length; i++) cum.push(cum[i - 1] + Math.hypot(loc[i].e - loc[i - 1].e, loc[i].n - loc[i - 1].n));
+      const sCambio = arRoute.cambioIdx != null ? cum[arRoute.cambioIdx] : null;
+      const pins = [];
+      if (arRoute.cambioIdx != null) pins.push({k: "cambio", p: arRoute.pts[arRoute.cambioIdx], t: "🅿 Lascia il mezzo", col: "#ffd700", tc: "#10141a", edge: true});
+      arRoute.sbarre.forEach(function (s) {pins.push({k: "sbarra", p: s, t: "🚧 Sbarra", col: "#fff", tc: "#e84747", edge: false});});
+      pins.push({k: "target", p: arRoute.target, t: "🎯 Target", col: "#e84747", tc: "#fff", edge: true});
+
+      let opened = true;
+
+      // ---- sensori ----
+      const ori = {a: 0, b: 90, g: 0, ok: false, cmp: null, off: null, abs: false};
+      let yawOff = 0;
+      const sm = function (cur, nw, k, circ) {
+        if (cur === null || cur === undefined) return nw;
+        if (!circ) return cur + (nw - cur) * k;
+        return (cur + arDiffAng(cur, nw) * k + 360) % 360;
+      };
+      let fa = null, fb = null, fg = null, offF = null;
+      const onOri = function (e) {
+        if (e.alpha == null || e.beta == null) return;
+        let a = e.alpha;
+        if (typeof e.webkitCompassHeading === "number") {          // iOS: alpha relativo, bussola a parte
+          const d = arDiffAng(a, (360 - e.webkitCompassHeading + 360) % 360);
+          offF = offF === null ? d : (offF + arDiffAng(offF, d) * 0.03);
+          a = a + offF;
+          ori.abs = true;
+        } else if (e.absolute) {
+          ori.abs = true;
+        }
+        fa = sm(fa, (a + 360) % 360, 0.35, true);
+        fb = sm(fb, e.beta, 0.35, false);
+        fg = sm(fg, e.gamma || 0, 0.35, false);
+        ori.ok = true;
+      };
+      const evName = ("ondeviceorientationabsolute" in window) ? "deviceorientationabsolute" : "deviceorientation";
+      const startSensors = function () {window.addEventListener(evName, onOri);};
+      if (typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission === "function") {
+        DeviceOrientationEvent.requestPermission().then(function (s) {
+          if (s === "granted") startSensors(); else showMsg("Permesso ai sensori di movimento negato: senza bussola la guida AR non funziona.");
+        }).catch(function () {showMsg("Sensori di movimento non disponibili.");});
+      } else {
+        startSensors();
+      }
+
+      // ---- GPS ----
+      let pos = userPos ? {lat: userPos.lat, lon: userPos.lon, acc: userAccuracy} : null, gpsId = null;
+      if (navigator.geolocation) {
+        gpsId = navigator.geolocation.watchPosition(function (p) {
+          pos = {lat: p.coords.latitude, lon: p.coords.longitude, acc: p.coords.accuracy};
+        }, function () {showMsg("Posizione GPS non disponibile.");}, {enableHighAccuracy: true, maximumAge: 1000, timeout: 20000});
+      }
+
+      // ---- fotocamera ----
+      let stream = null;
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({video: {facingMode: {ideal: "environment"}}, audio: false}).then(function (s) {
+          stream = s; vid.srcObject = s; vid.play().catch(function () { });
+          if (!opened) s.getTracks().forEach(function (t) {t.stop();});
+        }).catch(function () {showMsg("Fotocamera non disponibile: concedi il permesso. La guida resta visibile su sfondo nero.");});
+      } else {
+        showMsg("Questo browser non permette l'uso della fotocamera.");
+      }
+
+      // ---- disegno ----
+      let raf = 0, lastHud = 0, nextPin = null;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const resize = function () {
+        cv.width = Math.round(ov.clientWidth * dpr); cv.height = Math.round(ov.clientHeight * dpr);
+      };
+      resize();
+      window.addEventListener("resize", resize);
+
+      const R2 = function () {return arRot((fa + yawOff + 360) % 360, fb, fg);};
+
+      function frame() {
+        if (!opened) return;
+        raf = requestAnimationFrame(frame);
+        const W = cv.width, H = cv.height;
+        g.clearRect(0, 0, W, H);
+        if (!ori.ok || !pos) {
+          g.fillStyle = "#fff"; g.font = (14 * dpr) + "px system-ui"; g.textAlign = "center";
+          g.fillText(!pos ? "In attesa del GPS…" : "In attesa dei sensori…", W / 2, H / 2);
+          return;
+        }
+        const R = R2(), scr = screenAngle(), f = AR_FOVK * Math.max(W, H);
+        const me = arEnu(o.lat, o.lon, pos.lat, pos.lon);            // io, nel sistema locale
+        const near = arNearest(loc, cum, me);
+        const camAz = arAzimuth(R);
+        const toCam = function (e, n, u) {return arCam(R, {e: e - me.e, n: n - me.n, u: u - AR_CAM_H}, scr);};
+
+        // nastro del percorso, da dove sono a 450 m avanti
+        const sEnd = Math.min(cum[cum.length - 1], near.s + 450);
+        const seq = [{e: near.e, n: near.n}];
+        for (let i = near.i + 1; i < loc.length && cum[i] < sEnd; i++) seq.push({e: loc[i].e, n: loc[i].n});
+        const last = arAt(loc, cum, sEnd); seq.push({e: last.e, n: last.n});
+        const HW = 0.9;   // mezza larghezza del nastro, m
+        const poly = function (pts, fill, stroke) {
+          g.beginPath();
+          pts.forEach(function (p, i) {if (i) g.lineTo(p.x, p.y); else g.moveTo(p.x, p.y);});
+          g.closePath();
+          if (fill) {g.fillStyle = fill; g.fill();}
+          if (stroke) {g.strokeStyle = stroke; g.lineWidth = 2 * dpr; g.stroke();}
+        };
+        for (let i = seq.length - 2; i >= 0; i--) {                       // dal lontano al vicino
+          const a = seq[i], b = seq[i + 1];
+          const ca = toCam(a.e, a.n, 0), cb = toCam(b.e, b.n, 0);
+          const cl = arClipT(ca.z, cb.z, AR_NEAR);
+          if (!cl) continue;
+          const A = {e: a.e + cl[0] * (b.e - a.e), n: a.n + cl[0] * (b.n - a.n)};
+          const B = {e: a.e + cl[1] * (b.e - a.e), n: a.n + cl[1] * (b.n - a.n)};
+          const L = Math.hypot(B.e - A.e, B.n - A.n) || 1, ne = -(B.n - A.n) / L * HW, nn = (B.e - A.e) / L * HW;
+          const q = [[A.e + ne, A.n + nn], [B.e + ne, B.n + nn], [B.e - ne, B.n - nn], [A.e - ne, A.n - nn]].map(function (p) {
+            const c = toCam(p[0], p[1], 0); return arProj({x: c.x, y: c.y, z: Math.max(c.z, AR_NEAR)}, W, H, f);
+          });
+          const sIdx = Math.min(near.i + i, arRoute.pts.length - 2);
+          const piedi = arRoute.pts[sIdx + 1] && arRoute.pts[sIdx + 1].seg === "p";
+          poly(q, piedi ? "rgba(63,166,107,.62)" : "rgba(255,215,0,.55)", piedi ? "rgba(255,255,255,.9)" : "rgba(16,20,26,.8)");
+        }
+        // frecce sul terreno, ogni 7 m nei primi 70 m
+        for (let s = near.s + 4; s < Math.min(sEnd, near.s + 70); s += 7) {
+          const p = arAt(loc, cum, s), p2 = arAt(loc, cum, s + 1.5);
+          const L = Math.hypot(p2.e - p.e, p2.n - p.n) || 1, de = (p2.e - p.e) / L, dn = (p2.n - p.n) / L;
+          const tri = [[p.e + de * 1.4, p.n + dn * 1.4], [p.e - de * 0.7 - dn * 0.8, p.n - dn * 0.7 + de * 0.8], [p.e - de * 0.7 + dn * 0.8, p.n - dn * 0.7 - de * 0.8]].map(function (v) {return toCam(v[0], v[1], 0.02);});
+          if (tri.some(function (c) {return c.z < AR_NEAR;})) continue;
+          poly(tri.map(function (c) {return arProj(c, W, H, f);}), "rgba(255,255,255,.95)", null);
+        }
+
+        // segnali
+        const info = [];
+        pins.forEach(function (pn) {
+          const pe = arEnu(o.lat, o.lon, pn.p.lat, pn.p.lon);
+          const dist = Math.hypot(pe.e - me.e, pe.n - me.n);
+          if (pn.k === "sbarra" && dist > 400) return;
+          const cTop = toCam(pe.e, pe.n, 3.2), cBase = toCam(pe.e, pe.n, 0);
+          const label = pn.t + " · " + (dist >= 1000 ? (dist / 1000).toFixed(1) + " km" : Math.round(dist) + " m");
+          g.font = "700 " + (13 * dpr) + "px system-ui"; g.textAlign = "center";
+          if (cTop.z > AR_NEAR) {
+            const pt = arProj(cTop, W, H, f), pb = arProj({x: cBase.x, y: cBase.y, z: Math.max(cBase.z, AR_NEAR)}, W, H, f);
+            g.strokeStyle = pn.col; g.lineWidth = 2 * dpr; g.beginPath(); g.moveTo(pt.x, pt.y); g.lineTo(pb.x, pb.y); g.stroke();
+            const tw = g.measureText(label).width + 16 * dpr, th = 24 * dpr;
+            const bx = Math.max(tw / 2 + 4, Math.min(W - tw / 2 - 4, pt.x));
+            g.fillStyle = pn.col;
+            g.beginPath(); g.roundRect ? g.roundRect(bx - tw / 2, pt.y - th - 4 * dpr, tw, th, 12 * dpr) : g.rect(bx - tw / 2, pt.y - th - 4 * dpr, tw, th); g.fill();
+            g.fillStyle = pn.tc; g.fillText(label, bx, pt.y - 10 * dpr);
+          } else if (pn.edge) {
+            const brg = (Math.atan2(pe.e - me.e, pe.n - me.n) * 180 / Math.PI + 360) % 360, rel = arDiffAng(camAz, brg);
+            const right = rel > 0, ex = right ? W - 14 * dpr : 14 * dpr;
+            g.fillStyle = pn.col; g.beginPath();
+            g.moveTo(ex, H * 0.55); g.lineTo(ex + (right ? -22 : 22) * dpr, H * 0.55 - 14 * dpr); g.lineTo(ex + (right ? -22 : 22) * dpr, H * 0.55 + 14 * dpr); g.closePath(); g.fill();
+            g.fillStyle = "#fff"; g.textAlign = right ? "right" : "left";
+            g.fillText(label, ex + (right ? -28 : 28) * dpr, H * 0.55 + 5 * dpr);
+          }
+          info.push({pn: pn, dist: dist});
+        });
+
+        // HUD (4 volte al secondo)
+        const now = performance.now();
+        if (now - lastHud > 250) {
+          lastHud = now;
+          const fuori = near.d > 30;
+          const passatoCambio = sCambio === null || near.s > sCambio - 12;
+          const target = passatoCambio ? "target" : "cambio";
+          const meta = pins.filter(function (p) {return p.k === target;})[0];
+          const sMeta = target === "cambio" ? sCambio : cum[cum.length - 1];
+          const ahead = fuori ? {e: near.e, n: near.n} : arAt(loc, cum, near.s + 20);
+          const brg = (Math.atan2(ahead.e - me.e, ahead.n - me.n) * 180 / Math.PI + 360) % 360;
+          const rel = arDiffAng(camAz, brg);
+          top.arrow.style.transform = "rotate(" + (rel - 90 + 0) + "deg)";
+          const rem = fuori ? near.d : Math.max(0, sMeta - near.s);
+          const fmt = function (m) {return m >= 1000 ? (m / 1000).toFixed(1) + " km" : Math.round(m) + " m";};
+          top.next.textContent = fuori ? "Fuori percorso: " + fmt(near.d) + " dalla linea" : (target === "cambio" ? "Lascia il mezzo tra " : "Target tra ") + fmt(rem);
+          top.next.style.color = fuori ? "#ffb4a2" : "#fff";
+          top.sub.textContent = (Math.abs(rel) < 12 ? "Davanti a te" : (rel > 0 ? "Gira a destra " : "Gira a sinistra ") + Math.round(Math.abs(rel)) + "°") +
+            " · GPS ±" + (pos.acc != null ? Math.round(pos.acc) : "?") + " m" + (ori.abs || yawOff ? "" : " · bussola non calibrata: usa Allinea");
+          nextPin = meta || null;
+        }
+      }
+      raf = requestAnimationFrame(frame);
+
+      // allineamento: inquadra il punto indicato e tocca → la bussola si corregge
+      const align = function () {
+        if (!ori.ok || !pos || !nextPin) return;
+        const R = arRot((fa + yawOff + 360) % 360, fb, fg), az = arAzimuth(R);
+        const pe = arEnu(o.lat, o.lon, nextPin.p.lat, nextPin.p.lon), me = arEnu(o.lat, o.lon, pos.lat, pos.lon);
+        const brg = (Math.atan2(pe.e - me.e, pe.n - me.n) * 180 / Math.PI + 360) % 360;
+        yawOff = (yawOff + (az - brg) + 720) % 360;
+        showMsg("Bussola allineata su: " + nextPin.t.replace(/^\S+\s/, "") + ".");
+        setTimeout(function () {msg.classList.add("hidden");}, 2500);
+      };
+      const nudge = function (d) {yawOff = (yawOff + d + 360) % 360;};
+      const bAlign = document.getElementById("arAlign"), bM = document.getElementById("arMinus"), bP = document.getElementById("arPlus"), bC = document.getElementById("arClose");
+      bAlign.onclick = align;
+      bM.onclick = function () {nudge(-5);};    // ◀ sposta la scena a sinistra
+      bP.onclick = function () {nudge(5);};     // ▶ sposta la scena a destra
+      const stop = function () {
+        opened = false;
+        cancelAnimationFrame(raf);
+        window.removeEventListener(evName, onOri);
+        window.removeEventListener("resize", resize);
+        if (gpsId !== null) navigator.geolocation.clearWatch(gpsId);
+        if (stream) stream.getTracks().forEach(function (t) {t.stop();});
+        vid.srcObject = null;
+        ov.classList.add("hidden");
+        arStop = null;
+      };
+      bC.onclick = stop;
+      arStop = stop;
+    }
+
+    document.getElementById("routeAR").addEventListener("click", arStart);
+
     document.getElementById("navToComando").addEventListener("click", function () {
       if (!currentRecord) return;
       const url = "https://www.google.com/maps/dir/?api=1&destination=" +
@@ -2501,6 +2848,7 @@ assign initialcost =
     document.getElementById("resetDataBtn").addEventListener("click", function () {
       if (confirm("Cancellare posizione, punto target e percorso?")) resetApp();
     });
+    FireOps.onHide("localizzati", function () {if (arStop) arStop();});
     FireOps.onLogo("localizzati", resetApp);
     FireOps.onShow("localizzati", function () {
       if (map) setTimeout(function () {map.invalidateSize();}, 60);
