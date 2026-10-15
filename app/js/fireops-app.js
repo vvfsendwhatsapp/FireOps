@@ -298,6 +298,7 @@
     document.title = t;
   }
 
+  let condiviso = "";
   async function mostra(id) {
     const m = id && MODULI[id];
     if (attivo && attivo !== id) {
@@ -632,11 +633,25 @@
     localizza,
     // true una sola volta dopo un tocco sul comando in alto
     consumaAutoLocalizzati: () => { const v = autoLocalizzati; autoLocalizzati = false; return v; },
+    // testo ricevuto da "Condividi": si legge una volta sola
+    consumaCondiviso: () => { const v = condiviso; condiviso = ""; return v; },
     vai: id => { location.hash = id ? "#/" + id : "#/"; }
   });
 
   console.info("FireOps app versione", VERSIONE);
   $("fohLogo").title = "FireOps · versione " + VERSIONE;
+
+  // Condivisione da altre app: "Condividi > FireOps" con testo o link selezionato
+  // (es. coordinate o link di Google Maps) apre Localizzati e le incolla da sole
+  try {
+    const q = new URLSearchParams(location.search);
+    const cond = ["text", "url", "title"].map(k => (q.get(k) || "").trim()).filter(Boolean).join("\n");
+    if (cond) {
+      condiviso = cond;
+      history.replaceState(null, "", location.pathname);
+      location.hash = "#/localizzati";
+    }
+  } catch (e) { /* ignora */ }
 
   daHash();
   localizza();                  // autoposizionamento all'apertura

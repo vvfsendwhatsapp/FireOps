@@ -2858,6 +2858,13 @@ assign initialcost =
           document.getElementById("result-section").classList.contains("hidden")) {
         document.getElementById("locateBtn").click();
       }
+      // testo o link ricevuto da "Condividi > FireOps": lo inserisce e lo elabora
+      const cond = FireOps.consumaCondiviso && FireOps.consumaCondiviso();
+      if (cond) {
+        document.getElementById("targetInput").value = cond;
+        document.getElementById("targetInput").dispatchEvent(new Event("input"));
+        processTargetInput(cond);
+      }
     });
 
     async function fetchTargetElevation(lat, lon) {

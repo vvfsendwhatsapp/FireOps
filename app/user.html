@@ -8,6 +8,8 @@
   <link rel="icon" type="image/png" href="https://vvfsendwhatsapp.github.io/FireOps/images/logo.png">
   <link rel="apple-touch-icon" href="https://vvfsendwhatsapp.github.io/FireOps/images/logo.png">
   <meta name="theme-color" content="#10141a">
+  <link rel="manifest" href="manifest.webmanifest">
+  <script>if ("serviceWorker" in navigator) window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });</script>
   <!-- versione.js si scarica sempre fresco e decide la versione di tutti gli altri file -->
   <script>document.write('<script src="js/versione.js?t=' + Date.now() + '"><\/script>');</script>
   <script>document.write('<link rel="stylesheet" href="css/fireops-app.css?v=' + (window.FIREOPS_VERSIONE || Date.now()) + '">');</script>
