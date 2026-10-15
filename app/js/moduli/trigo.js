@@ -1122,6 +1122,7 @@ function initM1(){
         <select class="m1zone fit" aria-label="Fuso UTM" hidden>${[31,32,33,34,35].map(z=>`<option value="${z}" ${z===32?'selected':''}>Fuso ${z}</option>`).join('')}</select>
         <select class="m1fmt fit" aria-label="Formato coordinate"><option value="dd">Lat, Lon</option><option value="utm">UTM</option></select>
       </div>
+      <button type="button" class="btn sm" id="m1-where" style="margin-top:8px">◎ Dove sono (centra la mappa)</button>
       <p class="sub" id="m1-cinfo">Tocca la mappa sulla base, oppure scrivi le coordinate.</p>
     </div>
     <button type="button" class="btn pri big" data-go="2">Avanti: posizione della misura</button>
@@ -1187,8 +1188,28 @@ function initM1(){
     const on=$('[data-mode].on',w);
     if(!on||on.dataset.mode!==k)m1.ui.setMode(k);
   };
+  /* pallino blu della mia posizione, sempre visibile sulla mappa nei passi 1 e 2 */
+  const me={w:null,dot:null,acc:null,last:null};
+  const meDraw=(ll,acc)=>{ try{
+    me.last=ll;const map=m1.ui.map;if(!map||typeof L==='undefined')return;
+    if(!me.dot){
+      me.acc=L.circle(ll,{radius:acc||20,color:'#1e88e5',weight:1,fillColor:'#1e88e5',fillOpacity:.15,interactive:false}).addTo(map);
+      me.dot=L.circleMarker(ll,{radius:8,color:'#fff',weight:3,fillColor:'#1e88e5',fillOpacity:1,interactive:false}).addTo(map);
+    }else{me.dot.setLatLng(ll);me.acc.setLatLng(ll);me.acc.setRadius(acc||20);}
+  }catch(e){} };
+  const meStart=()=>{
+    if(me.w!=null||!navigator.geolocation)return;
+    try{me.w=navigator.geolocation.watchPosition(p=>meDraw([p.coords.latitude,p.coords.longitude],p.coords.accuracy),()=>{},{enableHighAccuracy:true,maximumAge:5000,timeout:30000});}catch(e){}
+  };
+  const meStop=()=>{if(me.w!=null){try{navigator.geolocation.clearWatch(me.w);}catch(e){}me.w=null;}};
+  const m1w=$('#m1-where',v);if(m1w)m1w.addEventListener('click',()=>{
+    if(!navigator.geolocation){toast('GPS non disponibile su questo dispositivo.');return;}
+    toast('Ricerca posizione GPS…');meStart();
+    navigator.geolocation.getCurrentPosition(p=>{const ll=[p.coords.latitude,p.coords.longitude];meDraw(ll,p.coords.accuracy);m1.ui.map.setView(ll,Math.max(m1.ui.map.getZoom(),17));toast('Sei qui (±'+Math.round(p.coords.accuracy)+' m)');},()=>toast('Posizione GPS non disponibile: controlla i permessi.'),{enableHighAccuracy:true,timeout:20000,maximumAge:0});
+  });
   const m1g=$('#m1-gps',v);if(m1g)m1g.addEventListener('click',()=>{const g=$('[data-act=gps]',m1.ui.wrap);if(g)g.click();});
   m1.steps=setupSteps(v,['Posizione pianta','Posizione misura','Angoli verticali','Risultato'],n=>{
+    if(n===1||n===2)meStart();else meStop();
     if(n===1){placeMap(m1.ui,'m1-slot1');m1Modo('tgt');}
     if(n===2){placeMap(m1.ui,'m1-slot2');m1Modo('obs');}
     if(n===4){
