@@ -715,8 +715,9 @@ function chips() {
   $('chips').innerHTML = Object.keys(TIPI).filter(t => conta[t]).map(t =>
     `<span class="chip ${off.has(t) ? 'off' : ''}" data-t="${t}"><span class="dot" style="background:${COL[t]}"></span>${TIPI[t]} <small>${conta[t]}</small></span>`).join('') +
     `<span class="sep"></span><span class="chip" data-conv="1" title="Mostra le sedi ancora da convalidare"><span class="st convalidata">✔ ${conv}/${tot}</span> <small>convalidate</small></span>` +
-    `<span class="chip concl ${state.noConcl ? 'on' : ''}" data-concl="1" title="Nascondi le sedi dei Comandi già conclusi">🏁 ${nConclusi()} <small>Comandi conclusi${state.noConcl ? ' · nascosti' : ''}</small></span>`;
+    `<span class="chip concl ${state.noConcl ? 'on' : ''}" data-concl="1" title="Nascondi le sedi dei Comandi già conclusi">🏁 ${nConclusi()} <small>Comandi conclusi · ✅ ${REGIONI.filter(regioneCompleta).length}/${REGIONI.length} regioni${state.noConcl ? ' · nascosti' : ''}</small></span>`;
   bottoneConcluso();
+  if (REGIONI.length) opzioniRegioni();
 }
 
 function lista() {
@@ -890,17 +891,41 @@ async function cercaDallaScheda() {
 // ---------------------------------------------------------------- comandi conclusi
 const concluso = sg => { const c = CONCLUSI.get(sg); return !!c && c.stato === 'convalidata'; };
 const nConclusi = () => [...CONCLUSI.keys()].filter(concluso).length;
+// Regione completa = tutte le sue province concluse. Si calcola, non si salva: riaprendo
+// un Comando la spunta della regione sparisce da sola. Le province sono quelle dei dati
+// (stesso elenco del menu Province).
+const provinceDi = reg => Object.keys(PROV).filter(sg => PROV[sg].regione === reg).sort();
+const regioneCompleta = reg => { const pp = provinceDi(reg); return pp.length > 0 && pp.every(concluso); };
+let REGIONI = [];
+function opzioniRegioni() {
+  const sel = $('reg');
+  sel.innerHTML = '<option value="">Tutte le regioni</option>' + REGIONI.map(r => {
+    const pp = provinceDi(r), n = pp.filter(concluso).length;
+    return `<option value="${esc(r)}">${regioneCompleta(r) ? '✅ ' : ''}${esc(r)}${n && n < pp.length ? ` (${n}/${pp.length})` : ''}</option>`;
+  }).join('');
+  sel.value = state.reg;
+}
 function bottoneConcluso() {
   const b = $('concl'), sg = state.prov;
-  b.classList.toggle('vis', !!sg && sg !== 'XX');
-  if (!sg) return;
+  b.classList.toggle('vis', (!!sg && sg !== 'XX') || (!sg && !!state.reg));
+  if (!sg) {
+    if (!state.reg) return;
+    const pp = provinceDi(state.reg), n = pp.filter(concluso).length, ok = regioneCompleta(state.reg);
+    b.classList.toggle('fatto', ok);
+    b.textContent = ok ? `✅ ${state.reg} completa` : `🏁 ${n}/${pp.length} province`;
+    b.title = ok ? 'Tutte le province della regione sono concluse'
+      : 'Mancano: ' + pp.filter(x => !concluso(x)).join(', ') + ' · scegli una provincia per concluderla';
+    return;
+  }
   const c = CONCLUSI.get(sg), fatto = concluso(sg);
   b.classList.toggle('fatto', fatto);
   b.textContent = fatto ? `✅ ${sg} concluso` : `🏁 Concludi ${sg}`;
   b.title = fatto ? `Concluso da ${c.utente || '?'} il ${fmtData(c.timestamp)} · clic per riaprire` : 'Segna il Comando come concluso: tutte le sedi controllate';
 }
 $('concl').addEventListener('click', () => {
-  const sg = state.prov; if (!sg || sg === 'XX') return;
+  const sg = state.prov;
+  if (!sg && state.reg) { toast($('concl').title, 5000); return; }
+  if (!sg || sg === 'XX') return;
   const fatto = concluso(sg);
   const sedi = SEDI.filter(s => (s.e.sigla || 'XX') === sg && !scartata(s));
   const mancano = sedi.filter(s => !s.stato).length;
@@ -918,7 +943,8 @@ $('concl').addEventListener('click', () => {
   };
   coda.push(c); ls.set(CODA, coda);
   ricalcolaCorrezioni(); opzioniProvince(); aggiorna(false);
-  toast(fatto ? `Comando ${sg} riaperto` : `Comando ${sg} concluso`);
+  const reg = (PROV[sg] || {}).regione;
+  toast(fatto ? `Comando ${sg} riaperto` : (reg && regioneCompleta(reg) ? `Comando ${sg} concluso · ✅ ${reg} completa!` : `Comando ${sg} concluso`), 4000);
   invia();
 });
 
@@ -976,9 +1002,9 @@ Promise.all([scarica().then(async r => {
   SEDI.forEach(s => PER_CHIAVE.set(s.chiave, s));
   SEDI.forEach(s => { const p = s.p; if (p.sigla && p.sigla !== 'XX' && !PROV[p.sigla]) PROV[p.sigla] = {provincia: p.provincia, regione: p.regione}; });
   ricalcolaCorrezioni();
-  const regioni = [...new Set(SEDI.map(s => s.e.regione).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'it'));
-  $('reg').innerHTML += regioni.map(r => `<option>${esc(r)}</option>`).join('');
-  if (state.reg && !regioni.includes(state.reg)) state.reg = '';
+  REGIONI = [...new Set(SEDI.map(s => s.e.regione).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'it'));
+  if (state.reg && !REGIONI.includes(state.reg)) state.reg = '';
+  opzioniRegioni();
   $('reg').value = state.reg; $('q').value = state.q; $('stato').value = state.stato || '';
   opzioniProvince();
   aggiorna(!!(state.reg || state.prov));
