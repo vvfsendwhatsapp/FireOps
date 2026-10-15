@@ -1036,7 +1036,7 @@ function m1Render(){
   $('#m1-sd').textContent=D>0?fmt(D,1)+' m':'—';
   $('#m1-shl').textContent=T.h;
   $('#m1-sh').textContent=ok?fmt(r.H,1)+' m':'—';
-  m1.steps.mark(1,D>0);m1.steps.mark(2,!!ok);m1.steps.mark(3,!!ok);
+  m1.steps.mark(1,!!m1.tgt);m1.steps.mark(2,D>0);m1.steps.mark(3,m1.s.beta!=null&&m1.s.alpha!=null);m1.steps.mark(4,!!ok);
   // mappa: linea e aree
   const g=m1.ui.group;g.clearLayers();
   if(m1.obs&&m1.tgt)L.polyline([m1.obs,m1.tgt],{color:'#ffd400',weight:3,dashArray:'6 6'}).addTo(g);
@@ -1047,7 +1047,7 @@ function m1Render(){
   // pannello risultato
   const res=$('#m1-res');let h='';
   if(!r){
-    h=`<div class="note">Completa la distanza (passo 1) e le misure con la camera (passo 2) per vedere altezza e area.</div>`;
+    h=`<div class="note">Imposta la pianta (passo 1), la tua posizione e la distanza (passo 2) e gli angoli verticali (passo 3) per vedere altezza e area.</div>`;
   }else if(r.err){
     h=`<div class="note warn">${r.err}</div>`;
   }else{
@@ -1115,20 +1115,28 @@ function initM1(){
       <div class="chips" id="m1-types">${Object.keys(T1).map(k=>`<button type="button" class="btn sm ${k===m1.type?'on':''}" data-t="${k}">${T1[k].n}</button>`).join('')}</div>
     </div>
     <div id="m1-slot1"></div>
-    <div class="card"><h3>Coordinate</h3>
+    <div class="card"><h3>Coordinate della pianta</h3>
       <label class="f" for="m1-ct" id="m1-ctl"></label>
       <div class="row">
         <input id="m1-ct" class="m1c" inputmode="decimal" placeholder="41.8902, 12.4922" autocomplete="off">
         <select class="m1zone fit" aria-label="Fuso UTM" hidden>${[31,32,33,34,35].map(z=>`<option value="${z}" ${z===32?'selected':''}>Fuso ${z}</option>`).join('')}</select>
         <select class="m1fmt fit" aria-label="Formato coordinate"><option value="dd">Lat, Lon</option><option value="utm">UTM</option></select>
       </div>
-      <label class="f" for="m1-co">La mia posizione (osservatore)</label>
+      <p class="sub" id="m1-cinfo">Tocca la mappa sulla base, oppure scrivi le coordinate.</p>
+    </div>
+    <button type="button" class="btn pri big" data-go="2">Avanti: posizione della misura</button>
+  </div>
+
+  <div class="panel" data-s="2" hidden>
+    <div id="m1-slot2"></div>
+    <div class="card"><h3>La mia posizione</h3>
+      <label class="f" for="m1-co">Coordinate (osservatore)</label>
       <div class="row">
         <input id="m1-co" class="m1c" inputmode="decimal" placeholder="41.8902, 12.4922" autocomplete="off">
         <select class="m1zone fit" aria-label="Fuso UTM" hidden>${[31,32,33,34,35].map(z=>`<option value="${z}" ${z===32?'selected':''}>Fuso ${z}</option>`).join('')}</select>
         <select class="m1fmt fit" aria-label="Formato coordinate"><option value="dd">Lat, Lon</option><option value="utm">UTM</option></select>
       </div>
-      <p class="sub" id="m1-cinfo">Scrivi le coordinate, oppure usa la mappa o il GPS. Con entrambe la distanza si calcola da sola.</p>
+      <p class="sub">Tocca la mappa dove ti trovi, usa il GPS o scrivi le coordinate. Con il target impostato la distanza si calcola da sola.</p>
     </div>
     <div class="card"><h3>Distanza orizzontale</h3>
       <div class="row">
@@ -1140,18 +1148,20 @@ function initM1(){
       <p class="sub">Scrivi la distanza in metri, in passi o in tacco-punta (piedi): gli altri campi si aggiornano. 1 tacco-punta = 31 cm · 1 passo = 2,5 tacco-punta = 77,5 cm.</p>
       <button type="button" class="btn sm" id="m1-dmap" style="margin-top:8px" hidden>Torna alla distanza da mappa</button>
     </div>
-    <button type="button" class="btn pri big" data-go="2">Vai alla misura con la camera</button>
-  </div>
-
-  <div class="panel" data-s="2" hidden>
-    ${camHTML('m1',{hud:'Inclinazione',horizon:true})}
-    <div id="m1-flow" style="margin-top:10px"></div>
-    <p class="sub">Tieni il telefono fermo con entrambe le mani. Il valore è la media degli ultimi istanti.</p>
+    <div class="row nav2"><button type="button" class="btn" data-go="1">Indietro</button><button type="button" class="btn pri" data-go="3">Avanti: angoli verticali</button></div>
   </div>
 
   <div class="panel" data-s="3" hidden>
+    ${camHTML('m1',{hud:'Inclinazione',horizon:true})}
+    <div id="m1-flow" style="margin-top:10px"></div>
+    <p class="sub">Tieni il telefono fermo con entrambe le mani. Il valore è la media degli ultimi istanti.</p>
+    <div class="row nav2" style="margin-top:8px"><button type="button" class="btn" data-go="2">Indietro</button></div>
+  </div>
+
+  <div class="panel" data-s="4" hidden>
     <div id="m1-res"></div>
-    <div id="m1-slot3"></div>
+    <div id="m1-slot4"></div>
+    <div class="row nav2" style="margin-top:8px"><button type="button" class="btn" data-go="3">Rifai gli angoli</button><button type="button" class="btn" data-go="2">Cambia posizione</button></div>
   </div>`;
 
   m1.ui=createMapUI({
@@ -1168,15 +1178,25 @@ function initM1(){
     }
   },$('#m1-slot1'));
 
-  m1.steps=setupSteps(v,['Mappa','Misura','Risultato'],n=>{
-    if(n===1)placeMap(m1.ui,'m1-slot1');
-    if(n===3){
-      placeMap(m1.ui,'m1-slot3');m1Render();
+  // mappa: nel passo 1 si imposta solo la pianta, nel passo 2 solo la propria posizione
+  const m1Modo=k=>{
+    const w=m1.ui.wrap;
+    $$('[data-mode]',w).forEach(b=>{b.hidden=b.dataset.mode!==k;});
+    const g=$('[data-act=gps]',w);if(g)g.hidden=(k!=='obs');
+    const on=$('[data-mode].on',w);
+    if(!on||on.dataset.mode!==k)m1.ui.setMode(k);
+  };
+  m1.steps=setupSteps(v,['Posizione pianta','Posizione misura','Angoli verticali','Risultato'],n=>{
+    if(n===1){placeMap(m1.ui,'m1-slot1');m1Modo('tgt');}
+    if(n===2){placeMap(m1.ui,'m1-slot2');m1Modo('obs');}
+    if(n===4){
+      placeMap(m1.ui,'m1-slot4');m1Render();
+      $$('[data-mode]',m1.ui.wrap).forEach(b=>{b.hidden=false;});const g=$('[data-act=gps]',m1.ui.wrap);if(g)g.hidden=false;
       const r=m1Calc();
       if(r&&!r.err&&m1.tgt&&hasArea(m1.type)){setTimeout(()=>{m1.ui.map.invalidateSize();m1.ui.map.fitBounds(boundsAround(m1.tgt,r.H*Math.max(1,m1.margin)).pad(0.3));},120);}
       else m1.ui.fit();
     }
-    if(n!==2){Sensors.stop();showStart('m1');}
+    if(n!==3){Sensors.stop();showStart('m1');}
   });
 
   const stages=[
@@ -1192,7 +1212,7 @@ function initM1(){
   };
   m1.flow=makeFlow('m1',stages,m1.s,hint,m1Render,(k,val,old)=>{
     if(k==='zero'){const o=old==null?0:old;['beta','alpha'].forEach(x=>{if(m1.s[x]!=null)m1.s[x]=r2(m1.s[x]+o-val);});m1.flow.refresh();}
-  });
+  },{go:4,text:'Vedi risultato',msg:'Misura completa.'});
   bindCam('m1',()=>pitchRender('m1',m1.s));
 
   $('#m1-types').addEventListener('click',e=>{
@@ -1208,7 +1228,7 @@ function initM1(){
     const sg=e.target.closest('#m1-seg button');
     if(sg){m1.margin=parseFloat(sg.dataset.m);m1Render();return;}
     if(e.target.closest('#m1-exp'))m1Export();
-    if(e.target.closest('#m1-new')){m1.flow.reset();m1.steps.go(2);}
+    if(e.target.closest('#m1-new')){m1.flow.reset();m1.steps.go(3);}
   });
   const m1CSync=()=>{
     $$('.m1fmt',v).forEach(x=>{x.value=m1c.fmt;});$$('.m1zone',v).forEach(x=>{x.value=m1c.zone;});
