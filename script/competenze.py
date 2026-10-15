@@ -366,6 +366,19 @@ def tratti_veloci(veloci, area, passo_m=500):
                        "coords": [(round(y, 5), round(x, 5)) for x, y in pezzo],
                        "ref": tag["ref"] or tag["name"], "classe": tag["highway"],
                        "dir": DIREZIONI[int((br + 22.5) // 45) % 8]})
+    # Un solo nome per senso di marcia lungo tutta la strada: l'asse principale della strada
+    # (media degli angoli raddoppiati) e i due versi lungo l'asse. Una superstrada che curva
+    # non cambia "direzione" a ogni tornante.
+    per_strada = {}
+    for t in tratti:
+        per_strada.setdefault(t["ref"] or "?", []).append(t)
+    for lst in per_strada.values():
+        sx = sum(math.sin(math.radians(2 * t["bearing"])) * t["lung"] for t in lst)
+        cx = sum(math.cos(math.radians(2 * t["bearing"])) * t["lung"] for t in lst)
+        asse = (math.degrees(math.atan2(sx, cx)) / 2) % 180            # 0..180
+        for t in lst:
+            verso = asse if math.cos(math.radians(t["bearing"] - asse)) >= 0 else asse + 180
+            t["dir"] = DIREZIONI[int((verso + 22.5) // 45) % 8]
     print(f"Tratti veloci: {len(tratti)} (circa {sum(t['lung'] for t in tratti) / 1000:.0f} km di carreggiata)")
     return tratti
 
