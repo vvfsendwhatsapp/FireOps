@@ -891,10 +891,24 @@ async function cercaDallaScheda() {
 // ---------------------------------------------------------------- comandi conclusi
 const concluso = sg => { const c = CONCLUSI.get(sg); return !!c && c.stato === 'convalidata'; };
 const nConclusi = () => [...CONCLUSI.keys()].filter(concluso).length;
-// Regione completa = tutte le sue province concluse. Si calcola, non si salva: riaprendo
-// un Comando la spunta della regione sparisce da sola. Le province sono quelle dei dati
-// (stesso elenco del menu Province).
-const provinceDi = reg => Object.keys(PROV).filter(sg => PROV[sg].regione === reg).sort();
+// Regione completa = conclusi tutti i Comandi provinciali VVF che stanno nella regione
+// (db/comandi.json: in Sardegna sono 4, CA NU OR SS, non le 8 province; il Trentino-Alto
+// Adige ha BZ e TN). Si calcola, non si salva: riaprendo un Comando la spunta sparisce.
+// Se comandi.json non si legge, ripiego sulle province dei dati.
+let COMANDI = null;   // [{sigla, regione}] dei soli Comandi provinciali
+async function leggiComandi() {
+  try {
+    const r = await fetch(ROOT + 'db/comandi.json', {cache: 'no-cache'});
+    const j = await r.json();
+    const lst = Array.isArray(j) ? j : (Object.values(j).find(Array.isArray) || []);
+    COMANDI = lst.filter(c => String(c['CHS Comando'] || '').trim() && /^[A-Z]{2}$/.test(String(c.Provincia || '').trim()))
+      .map(c => ({sigla: String(c.Provincia).trim(), regione: String(c.Regione || '').trim(), nome: c.Comando}));
+    if (!COMANDI.length) COMANDI = null;
+  } catch (e) { COMANDI = null; console.warn('comandi.json non letto: uso le province dei dati', e); }
+}
+const provinceDi = reg => COMANDI
+  ? [...new Set(COMANDI.filter(c => (PROV[c.sigla] ? PROV[c.sigla].regione : c.regione) === reg).map(c => c.sigla))].sort()
+  : Object.keys(PROV).filter(sg => PROV[sg].regione === reg).sort();
 const regioneCompleta = reg => { const pp = provinceDi(reg); return pp.length > 0 && pp.every(concluso); };
 let REGIONI = [];
 function opzioniRegioni() {
@@ -912,9 +926,9 @@ function bottoneConcluso() {
     if (!state.reg) return;
     const pp = provinceDi(state.reg), n = pp.filter(concluso).length, ok = regioneCompleta(state.reg);
     b.classList.toggle('fatto', ok);
-    b.textContent = ok ? `✅ ${state.reg} completa` : `🏁 ${n}/${pp.length} province`;
-    b.title = ok ? 'Tutte le province della regione sono concluse'
-      : 'Mancano: ' + pp.filter(x => !concluso(x)).join(', ') + ' · scegli una provincia per concluderla';
+    b.textContent = ok ? `✅ ${state.reg} completa` : `🏁 ${n}/${pp.length} Comandi`;
+    b.title = ok ? 'Tutti i Comandi provinciali della regione sono conclusi'
+      : 'Comandi mancanti: ' + pp.filter(x => !concluso(x)).join(', ') + ' · scegli una provincia per concluderla';
     return;
   }
   const c = CONCLUSI.get(sg), fatto = concluso(sg);
@@ -997,7 +1011,7 @@ Promise.all([scarica().then(async r => {
   const lm = r.headers.get('last-modified');
   $('upd').textContent = lm ? 'aggiornato al ' + new Date(lm).toLocaleDateString('it-IT') : '';
   return r.json();
-}), leggiRemote()]).then(([g]) => {
+}), leggiRemote(), leggiComandi()]).then(([g]) => {
   SEDI = g.features.map(f => creaSede(f.properties, f.geometry.coordinates[1], f.geometry.coordinates[0]));
   SEDI.forEach(s => PER_CHIAVE.set(s.chiave, s));
   SEDI.forEach(s => { const p = s.p; if (p.sigla && p.sigla !== 'XX' && !PROV[p.sigla]) PROV[p.sigla] = {provincia: p.provincia, regione: p.regione}; });
