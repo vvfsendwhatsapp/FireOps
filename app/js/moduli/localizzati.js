@@ -942,9 +942,10 @@ body.map-open {
         <div class="row-group-label target">Inserisci coordinate, OLC o link Maps</div>
         <div class="target-input-box">
           <div class="target-input-row">
-            <input type="text" id="targetInput" placeholder="es. 44.48, 11.35, UTM, DMS o OLC...">
+            <input type="text" id="targetInput" placeholder="Coordinate, link Maps, UTM, DMS, OLC… anche dentro a un testo" autocomplete="off" autocapitalize="off" spellcheck="false">
             <button type="button" class="target-go-btn" id="targetGoBtn">Vai</button>
           </div>
+          <div id="targetDetect" style="font-size:12px;opacity:.85;min-height:16px;margin:4px 2px 0"></div>
           <button type="button" id="pasteClipBtn" class="paste-clip-btn">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
               <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2" stroke="currentColor"
@@ -3017,6 +3018,57 @@ assign initialcost =
       return coords ? {coords: coords} : {error: "Codice OLC non valido."};
     }
 
+    /* --- Estrazione coordinate da testo libero, link di mappe e valori incollati --- */
+    function estraiCoordinateDaTesto(raw) {
+      let t = String(raw || "");
+      try { t = decodeURIComponent(t); } catch (e) {}
+      t = t.replace(/ /g, " ").replace(/&amp;/g, "&");
+      const N = "(-?\\d+(?:\\.\\d+)?)";
+      const ok = (la, lo) => {
+        la = parseFloat(la); lo = parseFloat(lo);
+        return isFinite(la) && isFinite(lo) && Math.abs(la) <= 90 && Math.abs(lo) <= 180 ? {lat: la, lon: lo} : null;
+      };
+      /* 1. link di mappe (Google, OSM, Apple, Bing, Waze, geo:, ...) */
+      if (/:\/\/|geo:|www\.|maps/i.test(t)) {
+        const pats = [
+          new RegExp("@" + N + ",\\s*" + N),
+          new RegExp("!3d" + N + "!4d" + N),
+          new RegExp("[?&#;](?:q|ll|sll|query|daddr|saddr|destination|center|cbll|coordinate|coordinates|pos|loc|to|ref)=(?:loc:|ll\\.|geo:)?\\s*" + N + "\\s*[,;~ ]\\s*" + N, "i"),
+          new RegExp("[?&]mlat=" + N + "&mlon=" + N, "i"),
+          new RegExp("[?&]lat=" + N + "&(?:lon|lng|long)=" + N, "i"),
+          new RegExp("#map=\\d+(?:\\.\\d+)?/" + N + "/" + N),
+          new RegExp("geo:" + N + ",\\s*" + N, "i"),
+          new RegExp("/(?:place|search|dir|maps)/(?:[^/@]*/)?" + N + ",\\s*\\+?" + N, "i"),
+          new RegExp("[?&]cp=" + N + "~" + N, "i")
+        ];
+        for (const re of pats) {
+          const m = t.match(re);
+          if (m) { const c = ok(m[1], m[2]); if (c) return {coords: c}; }
+        }
+        if (/goo\.gl|maps\.app|bit\.ly|tinyurl|what3words|w3w\.co|share\.google|\/\/t\.co/i.test(t)) {
+          return {error: "Link abbreviato: non contiene le coordinate. Aprilo, copia il link completo dalla barra del browser (o le coordinate) e incollalo qui."};
+        }
+      }
+      /* 2. codice Plus Code intero dentro al testo */
+      const olc = t.match(/\b[23456789CFGHJMPQRVWX]{8}\+[23456789CFGHJMPQRVWX]{2,7}(?![23456789CFGHJMPQRVWX])/i);
+      if (olc) { const c = olcDecode(olc[0]); if (c) return {coords: c}; }
+      /* 3. UTM dentro al testo (es. 32T 291234 4775201) */
+      const utm = t.match(/\b\d{1,2}\s*[C-X]\s+\d{5,7}(?:[.,]\d+)?\s+\d{6,8}(?:[.,]\d+)?\b/i);
+      if (utm) { const c = parseCoordinatesInput(utm[0]); if (c) return {coords: c}; }
+      /* 4. valori numerici (decimali, gradi-minuti, DMS, con N S E W/O) in mezzo al testo */
+      const norm = s => s.replace(/(\d[\s°º'’′"”″]*)O\b/gi, "$1W").replace(/\bO(\s*\d)/gi, "W$1").trim();
+      t = t.replace(/\b(?:latitudine|longitudine|lat|lon|lng|long|coordinate|coord|gps|posizione)\b\s*[:=]?/gi, " ");
+      const runs = t.match(/[NSEWOnsewo]?[\s\d.,;°º'’′"”″+\-\/NSEWOnsewo]{6,}/g) || [];
+      const cand = runs.map(norm).filter(r => (r.match(/\d+/g) || []).length >= 2)
+        .map(r => r.replace(/[\/;]/g, " ").replace(/^[\s,+]+|[\s,]+$/g, ""))
+        .sort((a, b) => b.length - a.length);
+      for (const r of cand) {
+        const c = parseCoordinatesInput(r);
+        if (c) return {coords: c};
+      }
+      return null;
+    }
+
     async function processTargetInput(inputVal) {
       const statusEl = document.getElementById("statusMsg");
       statusEl.classList.remove("hidden", "error");
@@ -3032,6 +3084,15 @@ assign initialcost =
         coords = shortRes.coords;
       } else {
         coords = parseCoordinatesInput(inputVal);
+        if (!coords) {
+          const est = estraiCoordinateDaTesto(inputVal);
+          if (est && est.error) {
+            statusEl.classList.add("error");
+            statusEl.textContent = est.error;
+            return;
+          }
+          if (est) coords = est.coords;
+        }
       }
       if (!coords || !inItaly(coords)) {
         statusEl.classList.add("error");
@@ -3057,6 +3118,21 @@ assign initialcost =
         showResult(vicini[0].rec, vicini[0].dist, vicini.slice(1), "dist");
       }
     }
+
+    /* anteprima: mostra subito cosa viene riconosciuto mentre si scrive o si incolla */
+    document.getElementById("targetInput").addEventListener("input", function () {
+      const el = document.getElementById("targetDetect");
+      const v = this.value.trim();
+      if (!v) { el.textContent = ""; return; }
+      let c = null, err = "";
+      try {
+        c = parseCoordinatesInput(v);
+        if (!c) { const e = estraiCoordinateDaTesto(v); if (e && e.coords) c = e.coords; else if (e && e.error) err = e.error; }
+      } catch (e) {}
+      if (c) el.textContent = "✓ Rilevato: " + c.lat.toFixed(6) + ", " + c.lon.toFixed(6) + (inItaly(c) ? "" : " (fuori dall'Italia)");
+      else if (OLC_SHORT_RE.test(v)) el.textContent = "Codice OLC corto: si userà la località di riferimento.";
+      else el.textContent = err || "Nessuna coordinata riconosciuta (ancora)…";
+    });
 
     document.getElementById("targetGoBtn").addEventListener("click", async function () {
       await processTargetInput(document.getElementById("targetInput").value);

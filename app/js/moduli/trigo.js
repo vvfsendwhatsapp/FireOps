@@ -55,6 +55,9 @@ const CSS=`.pg-trigo{--acc:var(--ics-pianificazione);--ok:#3fa66b;--bad:#e8734a;
 .pg-trigo .row{display:flex;gap:8px;align-items:flex-end}
 .pg-trigo .row>*{flex:1;min-width:0}
 .pg-trigo .row>.fit{flex:0 0 auto}
+.pg-trigo .row:has(>select[aria-label="Formato coordinate"]){flex-wrap:wrap;align-items:stretch;gap:8px}
+.pg-trigo .row:has(>select[aria-label="Formato coordinate"])>input{flex:1 1 200px}
+.pg-trigo .row:has(>select[aria-label="Formato coordinate"])>select.fit{flex:1 1 40%;width:auto;max-width:none!important}
 .pg-trigo .sub{font-size:12.5px;color:var(--text-dim);margin:6px 0 0}
 .pg-trigo .hint{margin:8px 0;font-size:14px}
 .pg-trigo .lnk{background:none;border:0;color:var(--yellow);text-decoration:underline;padding:0;cursor:pointer}
@@ -644,7 +647,37 @@ function utm2ll(E,N,zone,south){
   return [p*R2D,l*R2D];
 }
 function nums(s){return (String(s).match(/-?\d+(?:[.,]\d+)?/g)||[]).map(x=>parseFloat(x.replace(',','.')));}
+/* coordinate dentro a un link di mappe (Google, OSM, Apple, Bing, Waze, geo:) */
+function coordDaLink(s){
+  let t=String(s||'');try{t=decodeURIComponent(t);}catch(e){}
+  if(!/:\/\/|geo:|www\.|maps/i.test(t)) return null;
+  const N='(-?\\d+(?:\\.\\d+)?)';
+  const pats=[new RegExp('@'+N+',\\s*'+N),new RegExp('!3d'+N+'!4d'+N),
+    new RegExp('[?&#;](?:q|ll|sll|query|daddr|saddr|destination|center|cbll|coordinate|coordinates|pos|loc|to|ref)=(?:loc:|ll\\.|geo:)?\\s*'+N+'\\s*[,;~ ]\\s*'+N,'i'),
+    new RegExp('[?&]mlat='+N+'&(?:amp;)?mlon='+N,'i'),new RegExp('[?&]lat='+N+'&(?:amp;)?(?:lon|lng|long)='+N,'i'),
+    new RegExp('#map=\\d+(?:\\.\\d+)?/'+N+'/'+N),new RegExp('geo:'+N+',\\s*'+N,'i'),
+    new RegExp('/(?:place|search|dir|maps)/(?:[^/@]*/)?'+N+',\\s*\\+?'+N,'i'),new RegExp('[?&]cp='+N+'~'+N,'i')];
+  for(const re of pats){const m=t.match(re);if(m){const la=parseFloat(m[1]),lo=parseFloat(m[2]);if(Math.abs(la)<=90&&Math.abs(lo)<=180)return [la,lo];}}
+  return null;
+}
+/* gradi-minuti-secondi o gradi-minuti decimali, con N S E W/O */
+function coordDMS(s){
+  let t=String(s||'').toUpperCase();
+  if(!/[°º'’′"”″]|[NSEWO]/.test(t)) return null;
+  if(/[°º'’′"”″]/.test(t)) t=t.replace(/(\d),(\d)/g,'$1.$2');
+  t=t.replace(/(\d[\s°º'’′"”″]*)O\b/g,'$1W').replace(/\bO(\s*\d)/g,'W$1');
+  const hasS=/\d\s*S\b|\bS\s*\d/.test(t),hasW=/\d\s*W\b|\bW\s*\d/.test(t);
+  const v=(t.replace(/[°º'’′"”″,]/g,' ').match(/\d+(?:\.\d+)?/g)||[]).map(Number);
+  let la,lo;
+  if(v.length===6){la=v[0]+v[1]/60+v[2]/3600;lo=v[3]+v[4]/60+v[5]/3600;}
+  else if(v.length===4){la=v[0]+v[1]/60;lo=v[2]+v[3]/60;}
+  else return null;
+  if(hasS)la=-la;if(hasW)lo=-lo;
+  return Math.abs(la)<=90&&Math.abs(lo)<=180?[la,lo]:null;
+}
 function parseCoord(s,fmt,zone){
+  const lk=coordDaLink(s); if(lk) return lk;
+  if(fmt!=='utm'){const d=coordDMS(s); if(d) return d;}
   const v=nums(s); if(v.length<2) return null;
   if(fmt==='utm'){
     let E=v[0],N=v[1];
@@ -1118,7 +1151,7 @@ function initM1(){
     <div class="card"><h3>Coordinate della pianta</h3>
       <label class="f" for="m1-ct" id="m1-ctl"></label>
       <div class="row">
-        <input id="m1-ct" class="m1c" inputmode="decimal" placeholder="41.8902, 12.4922" autocomplete="off">
+        <input id="m1-ct" class="m1c" inputmode="decimal" placeholder="41.8902, 12.4922 · link Maps · DMS" autocomplete="off">
         <select class="m1zone fit" aria-label="Fuso UTM" hidden>${[31,32,33,34,35].map(z=>`<option value="${z}" ${z===32?'selected':''}>Fuso ${z}</option>`).join('')}</select>
         <select class="m1fmt fit" aria-label="Formato coordinate"><option value="dd">Lat, Lon</option><option value="utm">UTM</option></select>
       </div>
@@ -1133,7 +1166,7 @@ function initM1(){
     <div class="card"><h3>La mia posizione</h3>
       <label class="f" for="m1-co">Coordinate (osservatore)</label>
       <div class="row">
-        <input id="m1-co" class="m1c" inputmode="decimal" placeholder="41.8902, 12.4922" autocomplete="off">
+        <input id="m1-co" class="m1c" inputmode="decimal" placeholder="41.8902, 12.4922 · link Maps · DMS" autocomplete="off">
         <button type="button" class="btn pri" id="m1-gps" aria-label="Usa la mia posizione GPS" title="Usa la mia posizione GPS" style="flex:0 0 auto;width:48px;min-width:48px;padding:0;border-radius:50%;font-size:20px;line-height:1">◎</button>
         <select class="m1zone fit" aria-label="Fuso UTM" hidden>${[31,32,33,34,35].map(z=>`<option value="${z}" ${z===32?'selected':''}>Fuso ${z}</option>`).join('')}</select>
         <select class="m1fmt fit" aria-label="Formato coordinate"><option value="dd">Lat, Lon</option><option value="utm">UTM</option></select>
@@ -1256,7 +1289,7 @@ function initM1(){
   const m1CSync=()=>{
     $$('.m1fmt',v).forEach(x=>{x.value=m1c.fmt;});$$('.m1zone',v).forEach(x=>{x.value=m1c.zone;});
     $$('.m1zone',v).forEach(x=>{x.hidden=m1c.fmt!=='utm';});
-    $$('.m1c',v).forEach(x=>{x.placeholder=m1c.fmt==='utm'?'291234 4640123':'41.8902, 12.4922';});
+    $$('.m1c',v).forEach(x=>{x.placeholder=m1c.fmt==='utm'?'291234 4640123':'41.8902, 12.4922 · link Maps · DMS';});
     m1CWrite('tgt');m1CWrite('obs');
   };
   v.addEventListener('change',e=>{
