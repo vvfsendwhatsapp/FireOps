@@ -2,7 +2,11 @@ package it.vvf.fireops.localizzati;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.ComponentName;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
@@ -112,7 +116,10 @@ public class MainActivity extends Activity {
             if (web.getUrl() == null) web.loadUrl(BASE + "#/localizzati");
             return;
         }
-        final String t = testo.trim();
+        gestisciTesto(testo.trim());
+    }
+
+    private void gestisciTesto(final String t) {
         if (corto(t)) {
             // i link abbreviati (maps.app.goo.gl) non contengono le coordinate: si segue il reindirizzamento
             web.loadUrl(BASE + "#/localizzati");
@@ -129,6 +136,31 @@ public class MainActivity extends Activity {
         } else {
             carica(t);
         }
+    }
+
+
+    /** Aperta dall'icona: se negli appunti c'e' un link di mappe o delle coordinate nuove, le usa. */
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (!hasFocus || web == null) return;
+        Intent in = getIntent();
+        if (in != null && in.getAction() != null && !Intent.ACTION_MAIN.equals(in.getAction())) return;
+        try {
+            ClipboardManager cm = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+            if (cm == null || !cm.hasPrimaryClip()) return;
+            ClipData d = cm.getPrimaryClip();
+            if (d == null || d.getItemCount() == 0) return;
+            CharSequence c = d.getItemAt(0).coerceToText(this);
+            if (c == null) return;
+            String t = c.toString().trim();
+            if (t.length() < 6 || t.length() > 600) return;
+            if (!(corto(t) || t.matches("(?s).*(maps|geo:|openstreetmap|waze).*") || t.matches("(?s).*-?\\d{1,3}[.,]\\d{3,}\\D{1,4}-?\\d{1,3}[.,]\\d{3,}.*"))) return;
+            SharedPreferences sp = getSharedPreferences("fo", MODE_PRIVATE);
+            if (t.equals(sp.getString("ultimo", ""))) return;
+            sp.edit().putString("ultimo", t).apply();
+            gestisciTesto(t);
+        } catch (Exception ignora) { }
     }
 
     private void carica(String testo) {
