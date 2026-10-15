@@ -82,6 +82,9 @@ main{flex:1;display:flex;min-height:0;position:relative}
 .quick{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:14px 0 6px}
 .quick button{padding:9px 6px;border-radius:8px;border:1px solid var(--line);background:var(--bg);cursor:pointer;font-weight:600;font-size:13px}
 .quick button.ok{background:var(--ok);border-color:var(--ok);color:#fff;grid-column:1 / -1}
+.quick button.tipo{border-color:var(--c);color:var(--c)}
+.quick button.tipo:hover{background:var(--c);color:#fff}
+body.trascino iframe{pointer-events:none}
 .quick button.sel{outline:2px solid var(--ink);outline-offset:1px}
 .sec{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:16px 0 6px;font-weight:600}
 .f{display:grid;grid-template-columns:96px 1fr;gap:6px 8px;align-items:center}
@@ -296,6 +299,13 @@ function svSrc(lat, lon) {
     ? `https://www.google.com/maps/embed/v1/streetview?key=${encodeURIComponent(GOOGLE_MAPS_KEY)}&location=${lat},${lon}&fov=80`
     : `https://maps.google.com/maps?q=&layer=c&cbll=${lat},${lon}&cbp=11,0,0,0,0&output=svembed`;
 }
+// ricarica lo Street View della scheda solo se il punto e' cambiato di qualche metro
+function aggiornaSV(lat, lon) {
+  const f = $('svframe'); if (!f) return;
+  if (f.dataset.ll && km(lat, lon, ...f.dataset.ll.split(',').map(Number)) < 0.003) return;
+  f.dataset.ll = lat + ',' + lon;
+  f.src = svSrc(lat, lon); $('svlink').href = svLink(lat, lon);
+}
 function svLink(lat, lon) { return `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lon}`; }
 const scartata = s => s.stato === 'non_vvf' || s.stato === 'chiusa';
 const convalidata = s => s.stato === 'convalidata' || s.stato === 'nuova';   // = flag "convalidata" nel DB
@@ -313,7 +323,13 @@ function creaSede(p, lat, lon) {
     if (map.getContainer().classList.contains('adding')) { map.fire('click', {latlng: ev.latlng}); return; }  // in modalita' aggiungi conta come clic sulla mappa
     apriScheda(s);
   });
-  s.m.on('dragend', () => { const ll = s.m.getLatLng(); aggiornaPos(ll.lat, ll.lng); });
+  // durante il trascinamento lo Street View (iframe) non deve "mangiarsi" il rilascio del mouse;
+  // al rilascio la posizione si aggiorna subito, Street View compreso
+  s.m.on('dragstart', () => document.body.classList.add('trascino'));
+  s.m.on('dragend', () => {
+    document.body.classList.remove('trascino');
+    const ll = s.m.getLatLng(); aggiornaPos(ll.lat, ll.lng); aggiornaSV(ll.lat, ll.lng);
+  });
   applica(s);
   return s;
 }
@@ -492,6 +508,8 @@ function apriScheda(s) {
       ${svBox(s)}
       <div class="quick">
         <button class="ok" data-q="convalidata">✔ Convalida: dati corretti</button>
+        <button class="tipo" data-qt="permanente" style="--c:${COL.permanente}">✔ È Permanente</button>
+        <button class="tipo" data-qt="volontario" style="--c:${COL.volontario}">✔ È Volontario</button>
         <button data-q="da_correggere">✎ Da correggere</button>
         <button data-q="non_vvf">✖ Non è una sede VVF</button>
         <button data-q="chiusa" style="grid-column:1 / -1">Chiusa / dismessa</button>
@@ -631,6 +649,12 @@ $('panel').addEventListener('click', e => {
   const t = e.target;
   if (t.id === 'pclose' || t.id === 'pannulla') return chiudiScheda();
   if (t.id === 'psalva') return salva();
+  if (t.dataset.qt) {   // cambia il tipo e convalida con un tocco (nome automatico aggiornato)
+    $('f_tipo').value = t.dataset.qt;
+    aggiornaNome(); marcaModificati();
+    if (!$('f_utente').value.trim()) { $('f_stato').value = 'convalidata'; $('f_utente').focus(); toast('Scrivi chi sei, poi premi Salva'); return; }
+    return salva('convalidata');
+  }
   if (t.dataset.q) {
     if (t.dataset.q === 'convalidata' || t.dataset.q === 'non_vvf' || t.dataset.q === 'chiusa') {
       if (!$('f_utente').value.trim()) { $('f_stato').value = t.dataset.q; $('f_utente').focus(); toast('Scrivi chi sei, poi premi Salva'); return; }
@@ -657,13 +681,19 @@ function sposta(on) {
       if (!mob) map.panBy([$('panel').offsetWidth / 2, 0], {animate: false});   // il pallino non finisce sotto la scheda
     };
     if (!map.hasLayer(s.m)) cluster.zoomToShowLayer(s.m, vai); else vai();
-    toast(mob ? 'Trascina il pallino, poi ✔ Fatto' : 'Trascina il pallino nella posizione giusta', 3500);
+    toast(mob ? 'Trascina il pallino (o tocca la carta), poi ✔ Fatto' : 'Trascina il pallino o clicca sulla carta nel punto giusto', 3500);
   } else {
     s.m.dragging && s.m.dragging.disable();
-    const lat = +$('panel').dataset.lat, lon = +$('panel').dataset.lon, f = $('svframe');
-    if (f) { f.src = svSrc(lat, lon); $('svlink').href = svLink(lat, lon); }
+    document.body.classList.remove('trascino');
+    aggiornaSV(+$('panel').dataset.lat, +$('panel').dataset.lon);
   }
 }
+// in modalita' Sposta basta anche un clic sulla carta: il pallino va li' (utile sul telefono)
+map.on('click', ev => {
+  if (!spostando || !aperta || map.getContainer().classList.contains('adding')) return;
+  aperta.m.setLatLng(ev.latlng);
+  aggiornaPos(ev.latlng.lat, ev.latlng.lng); aggiornaSV(ev.latlng.lat, ev.latlng.lng);
+});
 $('panel').addEventListener('input', e => {
   if (e.target.id === 'f_nome') nomeManuale = e.target.value.trim() !== nomeAuto($('f_tipo').value, $('f_comune').value.trim(), regioneForm());
   aggiornaNome(); marcaModificati();
@@ -883,7 +913,7 @@ async function cercaDallaScheda() {
     aggiornaPos(r.lat, r.lon);
     compilaIndirizzo(r);
     map.setView([r.lat, r.lon], Math.max(map.getZoom(), 17));
-    const f = $('svframe'); if (f) { f.src = svSrc(r.lat, r.lon); $('svlink').href = svLink(r.lat, r.lon); }
+    aggiornaSV(r.lat, r.lon);
     toast('Posizione aggiornata: controlla e premi Salva');
   });
 }
