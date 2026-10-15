@@ -259,6 +259,94 @@ function inviluppo(punti, raggio){
   return anello.map(([lo, la]) => [+lo.toFixed(6), +la.toFixed(6)]);
 }
 
+/* Punto dentro un perimetro GeoJSON qualsiasi: Polygon (con eventuali buchi) o
+   MultiPolygon. I settori proposti a esagoni possono essere in più pezzi. */
+function dentroGeo(lat, lon, gj){
+  const g = gj && (gj.geometry || gj);
+  if (!g || !g.coordinates) return false;
+  const poli = g.type === 'MultiPolygon' ? g.coordinates : g.type === 'Polygon' ? [g.coordinates] : [];
+  const anello = r => r.map(p => ({lat: p[1], lng: p[0]}));
+  return poli.some(pl => pl.length && dentro(lat, lon, anello(pl[0])) && !pl.slice(1).some(h => dentro(lat, lon, anello(h))));
+}
+
+/* h3-js serve solo alla proposta dei settori: si carica la prima volta che serve. */
+let h3Pronto = null;
+function caricaH3(){
+  if (window.h3) return Promise.resolve(window.h3);
+  if (!h3Pronto) h3Pronto = new Promise((ok, ko) => {
+    const sc = document.createElement('script');
+    sc.src = 'https://cdn.jsdelivr.net/npm/h3-js@4.1.0/dist/h3-js.umd.js';
+    sc.onload = () => window.h3 ? ok(window.h3) : ko(new Error('h3-js non disponibile'));
+    sc.onerror = () => { h3Pronto = null; ko(new Error('h3-js non scaricato')); };
+    document.head.appendChild(sc);
+  });
+  return h3Pronto;
+}
+
+/* Settori a esagoni senza sovrapposizioni. Ogni scheda "occupa" gli esagoni attorno a sé
+   (H3, lato ~66 m, ~25 m se due gruppi si contendono lo stesso esagono); ogni esagono va al
+   gruppo della scheda più vicina; gli esagoni dentro settori già esistenti sono esclusi;
+   i buchi interni di un gruppo, se liberi, si riempiono. Restituisce un GeoJSON per gruppo
+   (Polygon o MultiPolygon, coordinate [lon, lat]) e quante schede finiscono fuori. */
+function settoriEsagonali(h3, punti, gruppo, k, esistenti){
+  const occupati = c => { const [la, lo] = h3.cellToLatLng(c); return esistenti.some(g => dentroGeo(la, lo, g.GEOJSON)); };
+  for (const res of [10, 11]){
+    const raggio = res === 10 ? 2 : 4;
+    const proprietario = new Map();          // cella -> {g, d}
+    const mia = punti.map(p => h3.latLngToCell(p.lat, p.lon, res));
+    // celle proprie delle schede: se due gruppi diversi cadono nello stesso esagono, si scende di risoluzione
+    const contese = new Map();
+    mia.forEach((c, i) => { const g0 = contese.get(c); contese.set(c, g0 === undefined || g0 === gruppo[i] ? gruppo[i] : -1); });
+    if (res === 10 && [...contese.values()].some(v => v === -1)) continue;
+    punti.forEach((p, i) => {
+      for (const c of h3.gridDisk(mia[i], raggio)){
+        const [la, lo] = h3.cellToLatLng(c);
+        const d = (la - p.lat) ** 2 + ((lo - p.lon) * Math.cos(p.lat * Math.PI / 180)) ** 2;
+        const att = proprietario.get(c);
+        if (!att || d < att.d) proprietario.set(c, {g: gruppo[i], d});
+      }
+    });
+    /* dentro l'inviluppo di ogni gruppo si riempie tutto (chi vince e' sempre la scheda piu'
+       vicina, di qualunque gruppo): i settori vengono compatti invece che a isolette */
+    const vicino = (la, lo) => { let m = Infinity, g = -1;
+      punti.forEach((p, i) => { const d = (la - p.lat) ** 2 + ((lo - p.lon) * Math.cos(p.lat * Math.PI / 180)) ** 2; if (d < m){ m = d; g = gruppo[i]; } });
+      return {g, d: m}; };
+    for (let g = 0; g < k; g++){
+      const pp = punti.filter((p, i) => gruppo[i] === g);
+      if (pp.length < 3) continue;
+      for (const c of h3.polygonToCells([inviluppo(pp, 35)], res, true)){
+        if (proprietario.has(c)) continue;
+        const [la, lo] = h3.cellToLatLng(c);
+        proprietario.set(c, vicino(la, lo));
+      }
+    }
+    mia.forEach((c, i) => { if (contese.get(c) !== -1) proprietario.set(c, {g: gruppo[i], d: 0}); });
+    const libera = new Map();                // cache: esagono fuori dai settori esistenti?
+    const fuoriEsistenti = c => { if (!libera.has(c)) libera.set(c, !occupati(c)); return libera.get(c); };
+    const celle = Array.from({length: k}, () => []);
+    const proprie = new Set(mia);
+    proprietario.forEach((v, c) => { if (proprie.has(c) && contese.get(c) === v.g) { celle[v.g].push(c); return; }
+      if (fuoriEsistenti(c)) celle[v.g].push(c); });
+    // buchi interni liberi: si riempiono col gruppo che li circonda
+    celle.forEach((cc, g) => {
+      if (!cc.length) return;
+      for (const poli of h3.cellsToMultiPolygon(cc, true)) for (const buco of poli.slice(1)){
+        for (const c of h3.polygonToCells([buco], res, true)){
+          if (!proprietario.has(c) && fuoriEsistenti(c)){ proprietario.set(c, {g, d: 1}); cc.push(c); }
+        }
+      }
+    });
+    const geo = celle.map(cc => {
+      const mp = cc.length ? h3.cellsToMultiPolygon(cc, true) : [];
+      return {type: 'Feature', properties: {},
+        geometry: mp.length === 1 ? {type: 'Polygon', coordinates: mp[0]} : {type: 'MultiPolygon', coordinates: mp}};
+    });
+    const fuori = punti.filter((p, i) => !dentroGeo(p.lat, p.lon, geo[gruppo[i]])).length;
+    return {geo, res, fuori};
+  }
+  return null;
+}
+
 /* ============================ LETTURA CSV ============================= */
 
 /* Separatore: si contano ; e , fuori dalle virgolette nella prima riga.
@@ -1524,11 +1612,7 @@ function avvia(sezione){
   map.on('click', e => {
     if (map.pm.globalDrawModeEnabled && map.pm.globalDrawModeEnabled()) return;
     if (inModifica) return;
-    const dentroA = gruppi.filter(g => {
-      const geo = g.GEOJSON && (g.GEOJSON.geometry || g.GEOJSON);
-      const c = geo && geo.coordinates && geo.coordinates[0];
-      return c && dentro(e.latlng.lat, e.latlng.lng, c.map(p => ({lat: p[1], lng: p[0]})));
-    });
+    const dentroA = gruppi.filter(g => dentroGeo(e.latlng.lat, e.latlng.lng, g.GEOJSON));
     if (!dentroA.length){ if (selezione){ selezione = null; disegnaGruppi(); elencoGruppi(); } return; }
     const area = g => { const b = limitiDi([g]); return b ? (b.getNorth() - b.getSouth()) * (b.getEast() - b.getWest()) : 0; };
     const g = dentroA.sort((a, b) => area(a) - area(b))[0];
@@ -1546,11 +1630,7 @@ function avvia(sezione){
     menuGruppo(g, e.containerPoint);
   });
   function gruppoInPunto(ll){
-    const dentroA = gruppi.filter(g => {
-      const geo = g.GEOJSON && (g.GEOJSON.geometry || g.GEOJSON);
-      const c = geo && geo.coordinates && geo.coordinates[0];
-      return c && dentro(ll.lat, ll.lng, c.map(p => ({lat: p[1], lng: p[0]})));
-    });
+    const dentroA = gruppi.filter(g => dentroGeo(ll.lat, ll.lng, g.GEOJSON));
     const area = g => { const b = limitiDi([g]); return b ? (b.getNorth() - b.getSouth()) * (b.getEast() - b.getWest()) : 0; };
     return dentroA.sort((a, b) => area(a) - area(b))[0] || null;
   }
@@ -2314,6 +2394,12 @@ function avvia(sezione){
     if (!forma) return stato('Proposta annullata.');
 
     const punti = usate.map(s => ({lat: num(s.LAT), lon: num(s.LON), peso: prioritaria(s) ? 2 : 1}));
+    /* perimetri a esagoni (h3-js); se la libreria non si carica, ripiego sull'inviluppo di prima */
+    let h3lib = null;
+    try { h3lib = await caricaH3(); } catch(e){ console.warn('Esagoni non disponibili:', e.message); }
+    /* i nuovi settori non devono coprire quelli che restano: con "solo le libere" restano tutti */
+    const esistenti = usate.length < tutte.length || usate === libere
+      ? gruppi.filter(g => g.CODEM === em.CODEM && g.GEOJSON) : [];
     /* equilibrio fra carichi uguali e gruppi compatti: tolleranza sulla
        capienza di ogni squadra rispetto alla media */
     const EQUILIBRIO = [{t: 1.15, n: 'carichi quasi uguali'}, {t: 1.5, n: 'bilanciato'}, {t: 2.5, n: 'gruppi compatti'}];
@@ -2322,17 +2408,19 @@ function avvia(sezione){
       stato('Calcolo della proposta…');
       await new Promise(r => setTimeout(r, 30));
       const r = kmeansBilanciato(punti, nSquadre, {seme, tolleranza: EQUILIBRIO[eq].t, ripartenze: punti.length * nSquadre > 8000 ? 4 : 10});
+      const esa = h3lib ? settoriEsagonali(h3lib, punti, r.gruppo, r.k, esistenti) : null;
       const proposta = Array.from({length: r.k}, (_, i) => {
         const settore = forma === 'ws' ? liberi[0] : liberi[i];
         const nome = forma === 'ws' ? nomeSS(settore, i + 1, 1) : nomeSS(settore, 1, 1);
         const presi = usate.filter((s, j) => r.gruppo[j] === i);
-        return {nome, settore, presi, col: COLORI_PROPOSTA[i % COLORI_PROPOSTA.length],
-          anello: inviluppo(presi.map(s => ({lat: num(s.LAT), lon: num(s.LON)})), 35)};
+        const geo = esa ? esa.geo[i] : {type: 'Feature', properties: {}, geometry: {type: 'Polygon',
+          coordinates: [inviluppo(presi.map(s => ({lat: num(s.LAT), lon: num(s.LON)})), 35)]}};
+        return {nome, settore, presi, col: COLORI_PROPOSTA[i % COLORI_PROPOSTA.length], geo};
       });
       livProposta.clearLayers();
       proposta.forEach(p => {
-        const pol = L.polygon(p.anello.map(([lo, la]) => [la, lo]), {pane: 'diffGruppi', color: p.col, weight: 3,
-          dashArray: '8,6', fillColor: p.col, fillOpacity: .12, interactive: false, pmIgnore: true, snapIgnore: true});
+        const pol = L.geoJSON(p.geo, {pane: 'diffGruppi', interactive: false, pmIgnore: true, snapIgnore: true,
+          style: {color: p.col, weight: 2.5, dashArray: '8,6', fillColor: p.col, fillOpacity: .18}});
         livProposta.addLayer(pol);
         p.presi.forEach(s => livProposta.addLayer(L.circleMarker([num(s.LAT), num(s.LON)], {renderer: tela, radius: 8,
           color: p.col, weight: 3, fill: false, interactive: false, pmIgnore: true, snapIgnore: true})));
@@ -2345,7 +2433,9 @@ function avvia(sezione){
         {padding: [40, 40], maxZoom: 16});
       const conti = proposta.map(p => p.presi.length);
       const k = await chiedi({testo: `Proposta: ${proposta.length} sotto-settori da ${Math.min(...conti)} a ${Math.max(...conti)} schede, `
-          + `distanza media dal centro del gruppo ${Math.round(r.costoMedio_m)} m (${EQUILIBRIO[eq].n}).\nControlla la carta.`,
+          + `distanza media dal centro del gruppo ${Math.round(r.costoMedio_m)} m (${EQUILIBRIO[eq].n}).`
+          + (esa ? ` Perimetri a esagoni (lato ${esa.res === 10 ? '~66' : '~25'} m), senza sovrapposizioni.` : '')
+          + (esa && esa.fuori ? `\n⚠ ${esa.fuori} schede restano dentro un settore esistente.` : '') + `\nControlla la carta.`,
         voci: [{k: 'ok', et: `✅ Crea ${proposta.length} sotto-settori`, nota: proposta.map(p => `${p.nome} ${p.presi.length}`).join(' · ')},
                {k: 'altra', et: '🔁 Un\'altra proposta', nota: 'stesso numero di squadre, punto di partenza diverso'}]
           .concat(eq < EQUILIBRIO.length - 1 ? [{k: 'compatti', et: '📍 Più compatti', nota: 'gruppi più raccolti, carichi meno uguali'}] : [])
@@ -2360,7 +2450,7 @@ function avvia(sezione){
   }
   async function salvaProposta(em, proposta){
     const tmp = proposta.map(p => ({ID_GRUPPO: 'tmp-' + Date.now() + '-' + p.nome, CODEM: em.CODEM, NOME: p.nome,
-      COLORE: coloreSettore(p.settore), GEOJSON: {type: 'Feature', properties: {}, geometry: {type: 'Polygon', coordinates: [p.anello]}},
+      COLORE: coloreSettore(p.settore), GEOJSON: p.geo,
       N_SCHEDE: p.presi.length, provvisorio: true}));
     tmp.forEach(t => provvisori.set(t.NOME, t));
     gruppi = gruppi.concat(tmp);
@@ -2541,8 +2631,10 @@ function avvia(sezione){
   function modificaPerimetro(g){
     if (inModifica) return;
     const geo = g.GEOJSON.geometry || g.GEOJSON;
-    const ll = geo.coordinates[0].map(p => [p[1], p[0]]);
-    if (ll.length > 1 && ll[0][0] === ll[ll.length - 1][0] && ll[0][1] === ll[ll.length - 1][1]) ll.pop();
+    // Polygon (anelli) o MultiPolygon (poligoni di anelli): Leaflet accetta entrambi
+    const anelli = pl => pl.map(r => { const a = r.map(p => [p[1], p[0]]);
+      if (a.length > 1 && a[0][0] === a[a.length - 1][0] && a[0][1] === a[a.length - 1][1]) a.pop(); return a; });
+    const ll = geo.type === 'MultiPolygon' ? geo.coordinates.map(anelli) : anelli(geo.coordinates);
     inModifica = g.ID_GRUPPO;
     occupato = true;
     disegnaGruppi();
@@ -2568,10 +2660,9 @@ function avvia(sezione){
     document.addEventListener('keydown', tasti);
     barraModifica.querySelector('[data-a="no"]').onclick = () => { fine(); stato('Modifica annullata.'); };
     barraModifica.querySelector('[data-a="ok"]').onclick = async () => {
-      const anello = ed.getLatLngs()[0];
       const nuovoGeo = ed.toGeoJSON();
       const dentroOra = schede.filter(s => s.CODEM === g.CODEM && conPosizione(s)
-        && dentro(num(s.LAT), num(s.LON), anello));
+        && dentroGeo(num(s.LAT), num(s.LON), nuovoGeo));
       if (!dentroOra.length) return stato('Il perimetro non contiene schede: allargalo o annulla.');
       fine();
       /* In locale subito: perimetro nuovo e schede riassegnate. */
