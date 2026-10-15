@@ -1133,6 +1133,7 @@ function initM1(){
       <label class="f" for="m1-co">Coordinate (osservatore)</label>
       <div class="row">
         <input id="m1-co" class="m1c" inputmode="decimal" placeholder="41.8902, 12.4922" autocomplete="off">
+        <button type="button" class="btn pri" id="m1-gps" aria-label="Usa la mia posizione GPS" title="Usa la mia posizione GPS" style="flex:0 0 auto;width:48px;min-width:48px;padding:0;border-radius:50%;font-size:20px;line-height:1">◎</button>
         <select class="m1zone fit" aria-label="Fuso UTM" hidden>${[31,32,33,34,35].map(z=>`<option value="${z}" ${z===32?'selected':''}>Fuso ${z}</option>`).join('')}</select>
         <select class="m1fmt fit" aria-label="Formato coordinate"><option value="dd">Lat, Lon</option><option value="utm">UTM</option></select>
       </div>
@@ -1186,6 +1187,7 @@ function initM1(){
     const on=$('[data-mode].on',w);
     if(!on||on.dataset.mode!==k)m1.ui.setMode(k);
   };
+  const m1g=$('#m1-gps',v);if(m1g)m1g.addEventListener('click',()=>{const g=$('[data-act=gps]',m1.ui.wrap);if(g)g.click();});
   m1.steps=setupSteps(v,['Posizione pianta','Posizione misura','Angoli verticali','Risultato'],n=>{
     if(n===1){placeMap(m1.ui,'m1-slot1');m1Modo('tgt');}
     if(n===2){placeMap(m1.ui,'m1-slot2');m1Modo('obs');}
