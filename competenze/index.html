@@ -36,6 +36,10 @@ header h1 b{color:#ff5a6e;font-weight:600}
 .livelli .lbl{font-size:12px;color:var(--muted);margin-right:2px;white-space:nowrap}
 .liv{min-width:42px;padding:6px 10px;border-radius:99px;border:1px solid var(--line);background:var(--chip);cursor:pointer;font-weight:600}
 .liv.on{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+#bTratti{order:99;min-width:42px;padding:6px 10px;border-radius:99px;border:1px solid var(--line);background:var(--chip);cursor:pointer;font-weight:600}
+#bTratti.on{background:#1f6fd1;border-color:#1f6fd1;color:#fff}
+.carr{margin:10px 0 2px;padding:6px 8px;border-radius:6px;background:var(--chip);font-weight:600;font-size:13px}
+.carr small{font-weight:400;color:var(--muted)}
 #sedeSel{margin-left:auto;max-width:56vw;padding:6px 8px;border:1px solid var(--line);border-radius:99px;background:var(--bg)}
 
 main{flex:1;display:flex;min-height:0;position:relative}
@@ -127,6 +131,7 @@ dialog .df .btn{flex:1}
 </div>
 <div class="livelli" id="livelli">
   <span class="lbl">Competenza</span>
+  <button class="liv-tr" id="bTratti" title="Autostrade e superstrade: competenze per senso di marcia" hidden>🛣</button>
   <select id="sedeSel" title="Mostra la scala di competenze di una sede"><option value="">Tutte le sedi</option></select>
 </div>
 <main id="main">
@@ -151,6 +156,7 @@ dialog .df .btn{flex:1}
       <label><input type="radio" name="cosa" value="comuni"><span>Tabella per comune<small>ordine 1ª–6ª per comune</small></span></label>
       <label><input type="radio" name="cosa" value="celle"><span>Celle<small>una riga per esagono</small></span></label>
       <label><input type="radio" name="cosa" value="sedi"><span>Sedi candidate<small>con tempi di uscita</small></span></label>
+      <label id="optTratti"><input type="radio" name="cosa" value="tratti"><span>Autostrade<small>per carreggiata</small></span></label>
     </div>
     <div class="sec">Livelli</div>
     <div class="opz">
@@ -206,6 +212,9 @@ const livCelle = L.layerGroup().addTo(map);
 const livBordi = L.layerGroup().addTo(map);
 const livSedi = L.layerGroup().addTo(map);
 const livPunto = L.layerGroup().addTo(map);
+const livGriglia = L.layerGroup().addTo(map);
+const livTratti = L.layerGroup().addTo(map);
+let mostraTratti = pref.tratti !== false;
 
 const msg = (t, ms = 2600) => { const m = $('msg'); m.textContent = t; m.style.display = 'block'; clearTimeout(msg._t); msg._t = setTimeout(() => m.style.display = 'none', ms); };
 
@@ -234,9 +243,17 @@ async function carica(sigla) {
   celle = D.celle.map(r => {
     const comp = [];
     for (let i = 3; i < r.length && i < per; i += 3) comp.push({s: r[i], t: r[i + 1], k: r[i + 2]});
-    return {h3: r[0], comune: r[1], agg: r[2], comp};
+    return {h3: r[0], comune: r[1], agg: r[2], comp, poly: h3.cellToBoundary(r[0])};
   });
   D.perH3 = new Map(celle.map(c => [c.h3, c]));
+  /* tratti di autostrada/superstrada per senso di marcia (dal calcolo, se presenti) */
+  D.tr = (D.tratti || []).map(t => {
+    const comp = [];
+    for (let i = 0; i + 2 < t.comp.length + 1 && i < 3 * N; i += 3) comp.push({s: t.comp[i], t: t.comp[i + 1], k: t.comp[i + 2]});
+    const m = t.coords[Math.floor(t.coords.length / 2)];
+    return {...t, comp, mid: L.latLng(m[0], m[1])};
+  });
+  $('bTratti').hidden = !D.tr.length;
   /* colori: prima alle sedi che hanno zone (in ordine di superficie), cosi' quelle che si
      vedono sulla carta non ripetono lo stesso colore; le altre prendono i successivi */
   const peso = new Map();
@@ -307,9 +324,56 @@ function disegna() {
   } else {
     for (const [sidZ, cc] of zoneDi(livello)) zona(cc.map(c => c.h3), D.sedi[sidZ].col, .45, '#1d2228', 1.4);
   }
+  /* griglia: il bordo di ogni esagono, sottile e senza riempimento, sopra le zone piene:
+     esagoni leggibili senza che i riempimenti si sommino */
+  livGriglia.clearLayers();
+  for (const c of celle) L.polygon(c.poly, {renderer: rend, fill: false, color: '#fff', weight: .6, opacity: .45, interactive: false}).addTo(livGriglia);
+  disegnaTratti();
   legenda();
   livSedi.eachLayer(m => { const on = !unaSede || m.sid === sid; m.setOpacity(on ? 1 : .35); });
   if (punto) scheda(punto.getLatLng());
+}
+
+/* Autostrade e superstrade: ogni carreggiata col colore della sede competente in quel senso
+   di marcia (al livello scelto, o la scala 1ª-6ª della sede scelta). Il tocco sulla carta apre
+   la scheda, che mostra anche le due carreggiate vicine al punto. */
+function disegnaTratti() {
+  livTratti.clearLayers();
+  $('bTratti').classList.toggle('on', mostraTratti);
+  if (!D || !D.tr.length || !mostraTratti) return;
+  const unaSede = sedeFiltro !== '', sid = +sedeFiltro;
+  for (const t of D.tr) {
+    let col;
+    if (unaSede) { const r = t.comp.findIndex(x => x.s === sid); col = r < 0 ? '#9aa3ad' : SCALA[r]; }
+    else { const x = t.comp[livello - 1]; col = x ? D.sedi[x.s].col : '#9aa3ad'; }
+    L.polyline(t.coords, {renderer: rend, color: '#111', weight: 7, opacity: .8, interactive: false}).addTo(livTratti);
+    L.polyline(t.coords, {renderer: rend, color: col, weight: 4, opacity: 1, interactive: false}).addTo(livTratti);
+  }
+}
+$('bTratti').onclick = () => { mostraTratti = !mostraTratti; pref.tratti = mostraTratti; salva(); disegnaTratti(); if (punto) scheda(punto.getLatLng()); };
+
+// carreggiate entro 400 m dal punto: la piu' vicina per ogni strada e senso
+function trattiVicini(ll) {
+  if (!D || !D.tr || !D.tr.length || !mostraTratti) return [];
+  const migliori = new Map();
+  for (const t of D.tr) {
+    let d = Infinity;
+    for (const c of t.coords) d = Math.min(d, ll.distanceTo(c));
+    if (d > 400) continue;
+    const k = t.ref + '|' + t.dir;
+    if (!migliori.has(k) || migliori.get(k).d > d) migliori.set(k, {t, d});
+  }
+  return [...migliori.values()].sort((a, b) => a.t.ref.localeCompare(b.t.ref) || a.t.bearing - b.t.bearing).map(x => x.t);
+}
+function righeComp(comp) {
+  return comp.map((x, i) => {
+    const s = D.sedi[x.s];
+    const evid = sedeFiltro !== '' && +sedeFiltro === s.id;
+    return `<div class="cr${evid ? ' evid' : ''}"><span class="r" style="background:${i === 0 ? 'var(--accent)' : '#5c6670'}">${ord(i + 1)}</span>
+      <span class="s">${esc(nomeBreve(s))}<span class="tag" style="background:${s.col};color:#fff">${esc(TIPO[s.tipo] || s.tipo)}</span>
+        <small>${esc(s.comune)}${s.interna ? '' : ' (' + esc(s.sigla) + ')'} · uscita ${s.uscita_min}′</small></span>
+      <span class="t">${Math.round(x.t)}′<small>${x.k.toFixed(1)} km</small></span></div>`;
+  }).join('');
 }
 
 function disegnaSedi() {
@@ -412,20 +476,17 @@ function scheda(ll) {
   }
   $('ptit').textContent = D.comuni[c.comune] || 'Punto';
   $('psub').textContent = coord;
-  const r = c.comp.map((x, i) => {
-    const s = D.sedi[x.s];
-    const col = s.col;
-    const evid = sedeFiltro !== '' && +sedeFiltro === s.id;
-    return `<div class="cr${evid ? ' evid' : ''}"><span class="r" style="background:${i === 0 ? 'var(--accent)' : '#5c6670'}">${ord(i + 1)}</span>
-      <span class="s">${esc(nomeBreve(s))}<span class="tag" style="background:${col};color:#fff">${esc(TIPO[s.tipo] || s.tipo)}</span>
-        <small>${esc(s.comune)}${s.interna ? '' : ' (' + esc(s.sigla) + ')'} · uscita ${s.uscita_min}′</small></span>
-      <span class="t">${Math.round(x.t)}′<small>${x.k.toFixed(1)} km</small></span></div>`;
-  }).join('');
+  const r = righeComp(c.comp);
   const avv = c.agg > 300 ? `<div class="avv">Il centro della cella è a ${c.agg} m dalla strada più vicina: il tempo include il tratto a piedi.</div>` : '';
-  $('pbody').innerHTML = avv + r + `<p class="nota" style="padding:8px 0 0">Tempi stimati: uscita + percorrenza su strada senza traffico. Cella H3 ${esc(c.h3)}.</p>`;
+  const vicini = trattiVicini(ll);
+  const carr = vicini.map(t => `<div class="carr">🛣 ${esc(t.ref || (t.classe === 'motorway' ? 'Autostrada' : 'Superstrada'))} · carreggiata verso ${esc(t.dir)}
+      <small>· solo per chi è sulla carreggiata</small></div>${righeComp(t.comp)}`).join('');
+  $('pbody').innerHTML = avv + (vicini.length ? '<div class="carr">📍 Viabilità ordinaria</div>' : '') + r + carr
+    + `<p class="nota" style="padding:8px 0 0">Tempi stimati: uscita + percorrenza su strada senza traffico. Cella H3 ${esc(c.h3)}.</p>`;
   scheda.ll = ll;
-  scheda.testo = `Competenze ${D.comuni[c.comune] || ''} (${coord})\n` + c.comp.map((x, i) =>
-    `${ord(i + 1)} ${nomeBreve(D.sedi[x.s])} ~${Math.round(x.t)} min, ${x.k.toFixed(1)} km`).join('\n');
+  const testoComp = comp => comp.map((x, i) => `${ord(i + 1)} ${nomeBreve(D.sedi[x.s])} ~${Math.round(x.t)} min, ${x.k.toFixed(1)} km`).join('\n');
+  scheda.testo = `Competenze ${D.comuni[c.comune] || ''} (${coord})\n` + testoComp(c.comp)
+    + vicini.map(t => `\n\n${t.ref} carreggiata verso ${t.dir}:\n` + testoComp(t.comp)).join('');
   $('panel').classList.add('open');
 }
 
@@ -492,6 +553,7 @@ const dlg = $('dlg');
 $('exp').onclick = () => {
   if (!D) { msg('Nessun dato da esportare'); return; }
   $('livCur').textContent = sedeFiltro !== '' ? 'Solo la sede scelta (1ª–6ª)' : `Solo la ${ord(livello)}`;
+  $('optTratti').hidden = !(D.tr && D.tr.length);
   aggiornaNota(); dlg.showModal();
 };
 $('dclose').onclick = $('dann').onclick = () => dlg.close();
@@ -499,13 +561,14 @@ dlg.addEventListener('change', aggiornaNota);
 function scelta(n) { return dlg.querySelector(`input[name=${n}]:checked`).value; }
 function aggiornaNota() {
   const cosa = scelta('cosa'), fmt = scelta('fmt');
-  const geo = cosa === 'zone' || cosa === 'celle' || cosa === 'sedi';
+  const geo = cosa === 'zone' || cosa === 'celle' || cosa === 'sedi' || cosa === 'tratti';
   dlg.querySelectorAll('input[name=fmt]').forEach(i => { i.disabled = !geo && i.value !== 'csv'; });
   if (!geo && fmt !== 'csv') dlg.querySelector('input[name=fmt][value=csv]').checked = true;
   const n = {zone: 'Un poligono per sede e per livello, con area e tempo massimo di arrivo.',
     comuni: 'Per ogni comune le sedi in ordine di competenza (posizione media sul territorio comunale) e la quota di territorio in cui ognuna è esattamente a quel livello.',
     celle: `${celle.length} esagoni con le 6 competenze, minuti e km di ognuna.`,
-    sedi: 'Le sedi usate nel calcolo, interne ed esterne, con tipo e tempo di uscita.'}[cosa];
+    sedi: 'Le sedi usate nel calcolo, interne ed esterne, con tipo e tempo di uscita.',
+    tratti: `${(D.tr || []).length} tratti di autostrada/superstrada (circa 500 m) con le 6 competenze per senso di marcia.`}[cosa];
   $('dnota').textContent = n;
 }
 $('dok').onclick = () => {
@@ -517,6 +580,7 @@ $('dok').onclick = () => {
   if (cosa === 'zone') fc = geoZone(livelli, una);
   else if (cosa === 'celle') fc = geoCelle();
   else if (cosa === 'sedi') fc = geoSedi();
+  else if (cosa === 'tratti') fc = geoTratti();
   if (cosa === 'comuni') return scarica(base + '_comuni.csv', csvComuni(livelli), 'text/csv');
   if (fmt === 'geojson') scarica(`${base}_${cosa}.geojson`, JSON.stringify(fc), 'application/geo+json');
   else if (fmt === 'kml') scarica(`${base}_${cosa}.kml`, kml(fc, `${D.nome} - competenze`), 'application/vnd.google-earth.kml+xml');
@@ -546,6 +610,14 @@ function geoCelle() {
     c.comp.forEach((x, i) => { p[`c${i + 1}_sede`] = D.sedi[x.s].nome; p[`c${i + 1}_min`] = x.t; p[`c${i + 1}_km`] = x.k; });
     p.colore = D.sedi[c.comp[0].s].col;
     return {type: 'Feature', geometry: {type: 'Polygon', coordinates: [h3.cellToBoundary(c.h3, true)]}, properties: p};
+  })};
+}
+function geoTratti() {
+  return {type: 'FeatureCollection', features: (D.tr || []).map(t => {
+    const p = {strada: t.ref, classe: t.classe, direzione: t.dir, km: t.km};
+    t.comp.forEach((x, i) => { p[`c${i + 1}_sede`] = D.sedi[x.s].nome; p[`c${i + 1}_min`] = x.t; p[`c${i + 1}_km`] = x.k; });
+    p.colore = t.comp[0] ? D.sedi[t.comp[0].s].col : '#888888';
+    return {type: 'Feature', geometry: {type: 'LineString', coordinates: t.coords.map(c => [c[1], c[0]])}, properties: p};
   })};
 }
 function geoSedi() {
@@ -583,12 +655,13 @@ function kml(fc, nome) {
   const anelli = poly => poly.map((ring, i) => `<${i ? 'innerBoundaryIs' : 'outerBoundaryIs'}><LinearRing><coordinates>${ring.map(c => c[0].toFixed(6) + ',' + c[1].toFixed(6)).join(' ')}</coordinates></LinearRing></${i ? 'innerBoundaryIs' : 'outerBoundaryIs'}>`).join('');
   const geom = g => g.type === 'Point' ? `<Point><coordinates>${g.coordinates.join(',')}</coordinates></Point>`
     : g.type === 'Polygon' ? `<Polygon>${anelli(g.coordinates)}</Polygon>`
+    : g.type === 'LineString' ? `<LineString><tessellate>1</tessellate><coordinates>${g.coordinates.map(c => c[0].toFixed(6) + ',' + c[1].toFixed(6)).join(' ')}</coordinates></LineString>`
     : `<MultiGeometry>${g.coordinates.map(p => `<Polygon>${anelli(p)}</Polygon>`).join('')}</MultiGeometry>`;
   const pm = fc.features.map(f => {
     const p = f.properties, col = p.colore || '#888888';
-    const titolo = p.sede ? `${p.competenza} ${p.sede}` : p.nome || p.h3;
+    const titolo = p.sede ? `${p.competenza} ${p.sede}` : p.strada !== undefined ? `${p.strada} verso ${p.direzione}` : p.nome || p.h3;
     const dati = Object.entries(p).filter(([k]) => k !== 'colore').map(([k, v]) => `<Data name="${x(k)}"><value>${x(v)}</value></Data>`).join('');
-    return `<Placemark><name>${x(titolo)}</name><Style><LineStyle><color>${kmlColore(col, 'ff')}</color><width>1.5</width></LineStyle><PolyStyle><color>${kmlColore(col, '73')}</color></PolyStyle><IconStyle><color>${kmlColore(col, 'ff')}</color></IconStyle></Style><ExtendedData>${dati}</ExtendedData>${geom(f.geometry)}</Placemark>`;
+    return `<Placemark><name>${x(titolo)}</name><Style><LineStyle><color>${kmlColore(col, 'ff')}</color><width>${f.geometry.type === 'LineString' ? 4 : 1.5}</width></LineStyle><PolyStyle><color>${kmlColore(col, '73')}</color></PolyStyle><IconStyle><color>${kmlColore(col, 'ff')}</color></IconStyle></Style><ExtendedData>${dati}</ExtendedData>${geom(f.geometry)}</Placemark>`;
   });
   /* zone: una cartella per livello */
   if (fc.features.length && fc.features[0].properties.livello) {

@@ -20,7 +20,7 @@ Output in --out (default db/competenze):
   <SIGLA>_celle.csv     una riga per cella con le 6 competenze (per Excel / QGIS)
   index.json            elenco province calcolate
 """
-import argparse, csv, glob, io, json, math, os, re, sys, time, urllib.request
+import argparse, csv, glob, io, json, math, os, re, sys, time, urllib.error, urllib.request
 from datetime import datetime, timezone
 
 import h3
@@ -256,29 +256,163 @@ def griglia(confine, comuni, res):
     return out
 
 
+# ---------------------------------------------------------------- strade
+VELOCI = {"motorway", "trunk"}                     # autostrade e strade ad alto scorrimento
+ORDINARIE = {"primary", "secondary", "tertiary", "unclassified", "residential", "living_street", "service",
+             "road", "track", "primary_link", "secondary_link", "tertiary_link"}
+
+
+def leggi_strade(pbf, area):
+    """Dall'estratto OSM, dentro 'area' (poligono shapely): le strade ordinarie (LineString)
+    e le autostrade/superstrade come [(coords [(lon,lat)...], tag)]."""
+    import osmium
+    from shapely.geometry import LineString, box
+    x0, y0, x1, y1 = area.bounds
+    ordinarie, veloci = [], []
+
+    class H(osmium.SimpleHandler):
+        def way(self, w):
+            hw = w.tags.get("highway")
+            if hw not in VELOCI and hw not in ORDINARIE:
+                return
+            if hw == "track" and w.tags.get("tracktype") in ("grade4", "grade5"):
+                return
+            if w.tags.get("access") in ("no", "private") and hw != "track":
+                return
+            try:
+                cc = [(n.lon, n.lat) for n in w.nodes]
+            except osmium.InvalidLocationError:
+                return
+            if len(cc) < 2 or not any(x0 <= x <= x1 and y0 <= y <= y1 for x, y in cc):
+                return
+            if hw in VELOCI:
+                veloci.append((cc, {"highway": hw, "ref": w.tags.get("ref", ""), "name": w.tags.get("name", ""),
+                                    "oneway": w.tags.get("oneway", ""), "id": w.id}))
+            else:
+                ordinarie.append(LineString(cc))
+
+    H().apply_file(pbf, locations=True, idx="flex_mem")
+    print(f"Strade: {len(ordinarie)} ordinarie, {len(veloci)} tratti autostradali/superstrade")
+    return ordinarie, veloci
+
+
+def aggancia_celle(celle, ordinarie):
+    """Il centro di ogni cella si porta sul punto piu' vicino della viabilita' ORDINARIA: un esagono
+    attraversato dall'autostrada non deve prendere la competenza della carreggiata (lì si arriva
+    solo dai caselli). La distanza di aggancio diventa il tratto a piedi."""
+    from shapely.ops import nearest_points
+    if not ordinarie:
+        return
+    albero = STRtree(ordinarie)
+    for c in celle:
+        p = Point(c["lon"], c["lat"])
+        g = ordinarie[int(albero.nearest(p))]
+        q = nearest_points(g, p)[0]
+        c["lat_s"], c["lon_s"] = q.y, q.x
+        c["aggancio_m"] = km(c["lat"], c["lon"], q.y, q.x) * 1000
+
+
+def rotta(a, b):
+    """Direzione in gradi (0 = nord) da a=(lon,lat) a b."""
+    la1, la2 = math.radians(a[1]), math.radians(b[1])
+    dl = math.radians(b[0] - a[0])
+    y = math.sin(dl) * math.cos(la2)
+    x = math.cos(la1) * math.sin(la2) - math.sin(la1) * math.cos(la2) * math.cos(dl)
+    return (math.degrees(math.atan2(y, x)) + 360) % 360
+
+
+DIREZIONI = ["Nord", "Nord-Est", "Est", "Sud-Est", "Sud", "Sud-Ovest", "Ovest", "Nord-Ovest"]
+
+
+def tratti_veloci(veloci, area, passo_m=500):
+    """Spezza autostrade e superstrade dentro 'area' in tratti di circa passo_m, ognuno con la sua
+    direzione di marcia. Le carreggiate separate (oneway) sono gia' due vie in OSM; una strada a
+    doppio senso diventa due tratti, uno per senso."""
+    from shapely.geometry import LineString
+    out = []
+    for cc, tag in veloci:
+        sensi = [cc]
+        ow = tag.get("oneway")
+        if ow == "-1":
+            sensi = [cc[::-1]]
+        elif tag["highway"] == "trunk" and ow not in ("yes", "true", "1"):
+            sensi = [cc, cc[::-1]]
+        for sc in sensi:
+            # lati lunghi (rettilinei con pochi nodi) spezzati, cosi' nessun tratto supera il passo
+            fitto = [sc[0]]
+            for a, b in zip(sc, sc[1:]):
+                n = int(km(a[1], a[0], b[1], b[0]) * 1000 // passo_m)
+                fitto += [(a[0] + (b[0] - a[0]) * k / (n + 1), a[1] + (b[1] - a[1]) * k / (n + 1)) for k in range(1, n + 1)] + [b]
+            sc = fitto
+            pezzo, lung = [sc[0]], 0.0
+            for a, b in zip(sc, sc[1:]):
+                d = km(a[1], a[0], b[1], b[0]) * 1000
+                pezzo.append(b)
+                lung += d
+                if lung >= passo_m:
+                    out.append((pezzo, lung, tag)); pezzo, lung = [b], 0.0
+            if len(pezzo) >= 2 and lung > 30:
+                out.append((pezzo, lung, tag))
+    tratti = []
+    for pezzo, lung, tag in out:
+        linea = LineString(pezzo)
+        if not area.intersects(linea):
+            continue
+        m = linea.interpolate(0.5, normalized=True)
+        # direzione presa sul pezzetto attorno al punto medio, non fra i due estremi (curve)
+        a = linea.interpolate(0.45, normalized=True); b = linea.interpolate(0.55, normalized=True)
+        br = rotta((a.x, a.y), (b.x, b.y)) if a.distance(b) > 0 else rotta(pezzo[0], pezzo[-1])
+        tratti.append({"lat": m.y, "lon": m.x, "bearing": br, "lung": lung,
+                       "coords": [(round(y, 5), round(x, 5)) for x, y in pezzo],
+                       "ref": tag["ref"] or tag["name"], "classe": tag["highway"],
+                       "dir": DIREZIONI[int((br + 22.5) // 45) % 8]})
+    print(f"Tratti veloci: {len(tratti)} (circa {sum(t['lung'] for t in tratti) / 1000:.0f} km di carreggiata)")
+    return tratti
+
+
 # ---------------------------------------------------------------- percorrenze
-def tabella_osrm(base, sedi, celle, blocco=400, profilo="driving"):
-    """Matrice durate (s) e distanze (m) sede -> cella, piu' la distanza di aggancio alla strada di ogni cella."""
+def richiesta_osrm(url):
+    for tent in range(5):
+        try:
+            with urllib.request.urlopen(url, timeout=300) as r:
+                return json.load(r)
+        except urllib.error.HTTPError as e:
+            try:
+                return json.load(e)          # OSRM risponde 400 con il codice d'errore in JSON (es. NoSegment)
+            except Exception:
+                pass
+            print(f"OSRM: {e}, riprovo ({tent + 1}/5)", file=sys.stderr)
+        except Exception as e:
+            print(f"OSRM: {e}, riprovo ({tent + 1}/5)", file=sys.stderr)
+        time.sleep(5)
+    raise SystemExit("OSRM non risponde")
+
+
+def tabella_osrm(base, sedi, punti, blocco=400, profilo="driving"):
+    """Matrice durate (s) e distanze (m) sede -> punto, piu' la distanza di aggancio alla strada di ogni punto.
+    Un punto con 'bearing' (gradi) si aggancia solo a una carreggiata con quella direzione (+-25 gradi):
+    serve per le autostrade, dove le due carreggiate hanno competenze diverse."""
     n = len(sedi)
-    dur = [[None] * len(celle) for _ in sedi]
-    dist = [[None] * len(celle) for _ in sedi]
-    aggancio = [0.0] * len(celle)
+    dur = [[None] * len(punti) for _ in sedi]
+    dist = [[None] * len(punti) for _ in sedi]
+    aggancio = [0.0] * len(punti)
     src = ";".join(f"{s['lon']:.6f},{s['lat']:.6f}" for s in sedi)
-    for i0 in range(0, len(celle), blocco):
-        parte = celle[i0:i0 + blocco]
+    con_dir = any(p.get("bearing") is not None for p in punti)
+    for i0 in range(0, len(punti), blocco):
+        parte = punti[i0:i0 + blocco]
         dst = ";".join(f"{c['lon']:.6f},{c['lat']:.6f}" for c in parte)
         url = (f"{base.rstrip('/')}/table/v1/{profilo}/{src};{dst}?sources={';'.join(map(str, range(n)))}"
                f"&destinations={';'.join(map(str, range(n, n + len(parte))))}&annotations=duration,distance")
-        for tent in range(5):
-            try:
-                with urllib.request.urlopen(url, timeout=300) as r:
-                    j = json.load(r)
+        # se una carreggiata non si trova con la direzione stretta (NoSegment) si allarga, poi si toglie
+        for ampiezza in ((25, 60, None) if con_dir else (None,)):
+            u = url
+            if ampiezza:
+                b = [""] * n + [f"{int(round(c['bearing'])) % 360},{ampiezza}" if c.get("bearing") is not None else "" for c in parte]
+                u += "&bearings=" + ";".join(b)
+            j = richiesta_osrm(u)
+            if j.get("code") == "Ok":
                 break
-            except Exception as e:
-                print(f"OSRM: {e}, riprovo ({tent + 1}/5)", file=sys.stderr)
-                time.sleep(5)
-        else:
-            raise SystemExit("OSRM non risponde")
+            print(f"  OSRM: {j.get('code')} con direzione +-{ampiezza}: {j.get('message')}", file=sys.stderr)
         if j.get("code") != "Ok":
             raise SystemExit(f"OSRM: {j.get('code')} {j.get('message')}")
         for k, d in enumerate(j["destinations"]):
@@ -287,7 +421,7 @@ def tabella_osrm(base, sedi, celle, blocco=400, profilo="driving"):
             for k in range(len(parte)):
                 dur[si][i0 + k] = j["durations"][si][k]
                 dist[si][i0 + k] = j["distances"][si][k]
-        print(f"  OSRM: celle {i0 + len(parte)}/{len(celle)}")
+        print(f"  OSRM: {i0 + len(parte)}/{len(punti)}")
     return dur, dist, aggancio
 
 
@@ -310,7 +444,9 @@ def competenze(sedi, celle, dur, dist, aggancio, cfg):
     a_piedi = float(cfg.get("velocita_fuori_strada_kmh", 4.0))
     for j, c in enumerate(celle):
         # tratto dalla strada al centro cella: a piedi, solo oltre i primi 100 m
-        extra_min = max(0.0, aggancio[j] - 100) / 1000 / a_piedi * 60
+        if "aggancio_m" in c:
+            aggancio[j] = c["aggancio_m"] + aggancio[j]
+        extra_min = 0.0 if c.get("bearing") is not None else max(0.0, aggancio[j] - 100) / 1000 / a_piedi * 60
         cand = []
         for i, s in enumerate(sedi):
             d = dur[i][j]
@@ -324,7 +460,7 @@ def competenze(sedi, celle, dur, dist, aggancio, cfg):
     return celle
 
 
-def scrivi(sigla, nome_prov, sedi, celle, comuni, cfg, metodo, outdir):
+def scrivi(sigla, nome_prov, sedi, celle, comuni, cfg, metodo, outdir, tratti=None):
     os.makedirs(outdir, exist_ok=True)
     res = cfg["province"][sigla].get("h3_res", 8)
     out = {
@@ -337,6 +473,10 @@ def scrivi(sigla, nome_prov, sedi, celle, comuni, cfg, metodo, outdir):
         "comuni": [c[1] for c in comuni],
         # cella: [h3, indice comune, aggancio strada m, sede1, min1, km1, ... sede6, min6, km6]
         "celle": [[c["h3"], c["comune"], c["aggancio"]] + [x for t in c["comp"] for x in t] for c in celle],
+        # tratti di autostrada/superstrada per senso di marcia: competenze sulla carreggiata
+        "tratti": [{"ref": t["ref"], "classe": t["classe"], "dir": t["dir"], "bearing": round(t["bearing"]),
+                    "km": round(t["lung"] / 1000, 2), "coords": t["coords"],
+                    "comp": [x for c in t["comp"] for x in c]} for t in (tratti or []) if t.get("comp")],
     }
     with open(os.path.join(outdir, f"{sigla}.json"), "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, separators=(",", ":"))
@@ -349,6 +489,16 @@ def scrivi(sigla, nome_prov, sedi, celle, comuni, cfg, metodo, outdir):
             for i, t, k in c["comp"]:
                 riga += [sedi[i]["nome"], t, k]
             w.writerow(riga)
+    if tratti:
+        with open(os.path.join(outdir, f"{sigla}_tratti.csv"), "w", encoding="utf-8", newline="") as f:
+            w = csv.writer(f)
+            w.writerow(["strada", "classe", "direzione", "lat", "lon", "km_tratto"]
+                       + [f"{k}{n}" for n in range(1, N_COMPETENZE + 1) for k in ("sede_", "min_", "km_")])
+            for t in tratti:
+                riga = [t["ref"], t["classe"], t["dir"], round(t["lat"], 6), round(t["lon"], 6), round(t["lung"] / 1000, 2)]
+                for i, m, k in t.get("comp", []):
+                    riga += [sedi[i]["nome"], m, k]
+                w.writerow(riga)
     # riepilogo: celle in 1a competenza per sede
     conta = {}
     for c in celle:
@@ -391,12 +541,26 @@ def main():
             print(f"   {'*' if s['interna'] else ' '} {s['sigla']:2} {s['tipo']:12} {s['nome']}")
         celle = griglia(confine, comuni, pcfg.get("h3_res", 8))
         print(f"{sigla}: {len(celle)} celle H3 res {pcfg.get('h3_res', 8)}")
+        tratti = []
+        if args.pbf:
+            area = confine.buffer(0.01)     # ~1 km oltre il confine
+            ordinarie, veloci = leggi_strade(args.pbf, area)
+            aggancia_celle(celle, ordinarie)
+            tratti = tratti_veloci(veloci, confine, pcfg.get("passo_tratti_m", 500))
+        # le celle si raggiungono dal punto agganciato alla viabilita' ordinaria
+        dest = [{"lat": c.get("lat_s", c["lat"]), "lon": c.get("lon_s", c["lon"])} for c in celle]
         if args.osrm:
-            dur, dist, agg = tabella_osrm(args.osrm, sedi, celle)
+            dur, dist, agg = tabella_osrm(args.osrm, sedi, dest)
         else:
-            dur, dist, agg = tabella_aria(sedi, celle)
+            dur, dist, agg = tabella_aria(sedi, dest)
         competenze(sedi, celle, dur, dist, agg, cfg)
-        out = scrivi(sigla, pcfg.get("nome", sigla), sedi, celle, comuni, cfg, metodo, args.out)
+        if tratti:
+            if args.osrm:
+                dur, dist, agg = tabella_osrm(args.osrm, sedi, tratti, blocco=250)
+            else:
+                dur, dist, agg = tabella_aria(sedi, tratti)
+            competenze(sedi, tratti, dur, dist, agg, cfg)
+        out = scrivi(sigla, pcfg.get("nome", sigla), sedi, celle, comuni, cfg, metodo, args.out, tratti)
         indice["province"][sigla] = {"nome": out["nome"], "generato": out["generato"], "metodo": metodo,
                                      "sedi": len(sedi), "celle": len(celle)}
     with open(os.path.join(args.out, "index.json"), "w", encoding="utf-8") as f:
