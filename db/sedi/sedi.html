@@ -145,6 +145,7 @@ body.trascino iframe{pointer-events:none}
 #concl.vis{display:inline-block}
 #concl.fatto{background:var(--ok);border-color:var(--ok);color:#fff}
 .chip.concl.on{background:var(--ok);color:#fff}
+.chip.uff.on{background:#c8102e;color:#fff}
 #geo{position:absolute;top:10px;left:56px;right:56px;max-width:420px;z-index:1250;background:var(--panel);border:1px solid var(--line);
   border-radius:10px;box-shadow:0 4px 16px #0003;padding:8px;display:none}
 #geo.open{display:block}
@@ -192,9 +193,10 @@ footer{font-size:11px;color:var(--muted);padding:4px 12px;background:var(--panel
   <div id="list"></div>
   <div id="map"></div>
   <aside id="panel"></aside>
-  <div id="geo"><div class="r"><input type="search" id="geoq" placeholder="Indirizzo o luogo della nuova sede" autocomplete="off" enterkeyhint="search">
+  <div id="geo"><div class="r"><input type="search" id="geoq" placeholder="Comune, indirizzo, coordinate o link Maps" autocomplete="off" enterkeyhint="search">
     <button class="btn" id="geogo">🔍</button><button class="btn" id="geox" title="Annulla">×</button></div>
-    <div class="k">…oppure tocca la mappa nel punto esatto</div><ul class="georis" id="georis"></ul></div>
+    <div class="k">Cerca anche "vigili del fuoco + comune" e le sedi ufficiali vigilfuoco.it ·
+      <a href="#" id="geogm">Google Maps ↗</a> · oppure tocca la mappa nel punto esatto</div><ul class="georis" id="georis"></ul></div>
   <div id="msg"></div>
 </main>
 <nav class="tabs" id="tabs">
@@ -525,7 +527,8 @@ function apriScheda(s) {
         <label for="f_sigla">Provincia</label><select id="f_sigla">${optProv(e.sigla)}</select>
         <label for="f_via">Indirizzo</label>
         <div class="pos"><input id="f_via" value="${esc(e.via)}" style="flex:1" placeholder="via e civico" enterkeyhint="search">
-          <button type="button" id="f_cerca" title="Cerca l'indirizzo e sposta la sede lì">🔍 Cerca</button></div>
+          <button type="button" id="f_cerca" title="Cerca l'indirizzo e sposta la sede lì">🔍 Cerca</button>
+          <button type="button" id="f_gmaps" title="Cerca su Google Maps (vigili del fuoco + comune)">G↗</button></div>
         <ul class="georis" id="f_ris" hidden></ul>
         <label for="f_telefono">Telefono</label><input id="f_telefono" type="tel" value="${esc(e.telefono)}">
         <label>Posizione</label>
@@ -666,6 +669,7 @@ $('panel').addEventListener('click', e => {
   if (t.id === 'f_sposta' || t.id === 'pfatto') return sposta(!spostando);
   if (t.id === 'f_nomeauto') { nomeManuale = false; aggiornaNome(); marcaModificati(); return; }
   if (t.id === 'f_cerca') return cercaDallaScheda();
+  if (t.id === 'f_gmaps') return apriGoogleMaps([$('f_via').value.trim(), $('f_comune').value.trim()].filter(Boolean).join(' ') || titolo(aperta.e));
 });
 
 function sposta(on) {
@@ -748,6 +752,7 @@ function chips() {
     `<span class="chip concl ${state.noConcl ? 'on' : ''}" data-concl="1" title="Nascondi le sedi dei Comandi già conclusi">🏁 ${nConclusi()} <small>Comandi conclusi · ✅ ${REGIONI.filter(regioneCompleta).length}/${REGIONI.length} regioni${state.noConcl ? ' · nascosti' : ''}</small></span>`;
   bottoneConcluso();
   if (REGIONI.length) opzioniRegioni();
+  $('chips').insertAdjacentHTML('beforeend', `<span class="chip uff ${state.uff ? 'on' : ''}" data-uff="1" title="Sedi ufficiali vigilfuoco.it che nel DB non ci sono (o non sono nella posizione giusta)">🚒 vigilfuoco.it${UFFICIALI && state.uff ? ` <small>${livUff.getLayers().length} mancanti</small>` : ''}</span>`);
 }
 
 function lista() {
@@ -767,6 +772,7 @@ function aggiorna(fit) {
   cluster.clearLayers();
   cluster.addLayers(shown.map(s => s.m));
   if (aperta && !shown.includes(aperta)) cluster.addLayer(aperta.m);   // la sede aperta resta visibile
+  if (state.uff && UFFICIALI && aggiorna._filtro !== state.reg + '|' + state.prov) disegnaUfficiali().then(chips);
   $('count').textContent = shown.length + ' / ' + SEDI.filter(s => !scartata(s)).length + ' sedi';
   chips(); lista(); salvaStato(); syncUI();
   if (fit && shown.length) map.fitBounds(L.latLngBounds(shown.map(s => [s.lat, s.lon])).pad(0.05), {maxZoom: 13});
@@ -802,6 +808,7 @@ $('chips').addEventListener('click', e => {
   const c = e.target.closest('.chip'); if (!c) return;
   if (c.dataset.conv) { state.stato = state.stato === 'da_conv' ? '' : 'da_conv'; $('stato').value = state.stato; aggiorna(false); return; }
   if (c.dataset.concl) { state.noConcl = !state.noConcl; aggiorna(false); return; }
+  if (c.dataset.uff) { state.uff = !state.uff; disegnaUfficiali().then(() => aggiorna(false)); return; }
   const off = new Set(state.off); off.has(c.dataset.t) ? off.delete(c.dataset.t) : off.add(c.dataset.t);
   state.off = [...off]; aggiorna(false);
 });
@@ -856,7 +863,22 @@ function nuovaSedeIn(lat, lon, ind) {
   map.setView([lat, lon], Math.max(map.getZoom(), 16));
   apriScheda(s);
   if (ind) compilaIndirizzo(ind);
+  if (ind && ind.tipo && TIPI[ind.tipo] && $('f_tipo')) { $('f_tipo').value = ind.tipo; aggiornaNome(); marcaModificati(); }
+  if (ind && ind.url && $('f_note')) $('f_note').value = 'Fonte: ' + ind.url;
+  if (ind && !ind.via) completaVia(ind.lat, ind.lon);
   setTimeout(() => { const el = $(ind && ind.comune ? 'f_tipo' : 'f_comune'); el && el.focus(); }, 50);
+}
+// via e civico dal punto (Nominatim reverse), solo se il campo e' ancora vuoto
+async function completaVia(lat, lon) {
+  try {
+    const j = await (await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&lat=${lat}&lon=${lon}`, {headers: {'Accept-Language': 'it'}})).json();
+    const a = j.address || {};
+    const via = [a.road || a.pedestrian || a.square || '', a.house_number || ''].filter(Boolean).join(' ');
+    const comune = a.city || a.town || a.village || a.municipality || '';
+    if (via && $('f_via') && !$('f_via').value.trim()) $('f_via').value = via;
+    if (comune && $('f_comune') && !$('f_comune').value.trim()) $('f_comune').value = comune;
+    aggiornaNome(); marcaModificati();
+  } catch (e) {}
 }
 function chiudiGeo() { $('geo').classList.remove('open'); $('georis').innerHTML = ''; map.off('click', clicNuova); }
 $('geox').addEventListener('click', () => { chiudiGeo(); map.getContainer().classList.remove('adding'); });
@@ -866,27 +888,99 @@ const cercaGeo = async () => {
   mostraRisultati($('georis'), ris, r => nuovaSedeIn(r.lat, r.lon, r));
 };
 $('geogo').addEventListener('click', cercaGeo);
+$('geogm').addEventListener('click', e => { e.preventDefault(); apriGoogleMaps($('geoq').value.trim()); });
 $('geoq').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); cercaGeo(); } if (e.key === 'Escape') $('geox').click(); });
 
 // ---------------------------------------------------------------- ricerca indirizzo (Nominatim / OpenStreetMap)
-async function geocodifica(q) {
+// ---------------------------------------------------------------- sedi ufficiali (vigilfuoco.it)
+// db/sedi/vigilfuoco.json: le "Mappa sedi" dei Comandi sul sito vigilfuoco.it (script/sedi_vigilfuoco.py)
+let UFFICIALI = null, ufficialiInCorso = null;
+function caricaUfficiali() {
+  if (UFFICIALI) return Promise.resolve(UFFICIALI);
+  return ufficialiInCorso ||= fetch(ROOT + 'db/sedi/vigilfuoco.json', {cache: 'no-cache'})
+    .then(r => r.ok ? r.json() : {sedi: []})
+    .then(j => (UFFICIALI = (j.sedi || []).map(x => ({...x, txt: norm(x.nome)}))))
+    .catch(() => (UFFICIALI = []));
+}
+const PAROLE_VUOTE = new Set(['vigili', 'del', 'fuoco', 'vvf', 'vv.f.', 'di', 'caserma', 'distaccamento', 'sede', 'comando']);
+const comuneDaNome = nome => (String(nome).match(/\b(?:di|del|della|dei)\s+(.+)$/i) || [])[1] || '';
+
+// coordinate scritte o link di Google Maps / OSM incollati
+function coordinateDaTesto(t) {
+  const prova = [/@(-?\d{1,2}\.\d+),(-?\d{1,3}\.\d+)/, /!3d(-?\d{1,2}\.\d+)!4d(-?\d{1,3}\.\d+)/, /[?&](?:q|query|ll|destination|mlat)=(-?\d{1,2}\.\d+)(?:,|%2C|&mlon=)(-?\d{1,3}\.\d+)/,
+    /^\s*(-?\d{1,2}[.,]\d+)\s*[,; ]\s*(-?\d{1,3}[.,]\d+)\s*$/];
+  for (const re of prova) {
+    const m = t.match(re);
+    if (m) { const lat = +m[1].replace(',', '.'), lon = +m[2].replace(',', '.'); if (lat > 35 && lat < 48 && lon > 6 && lon < 19) return {lat, lon}; }
+  }
+  return null;
+}
+
+async function nominatim(q) {
   const v = map.getBounds();
   const url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=6&countrycodes=it'
     + `&viewbox=${v.getWest()},${v.getNorth()},${v.getEast()},${v.getSouth()}&bounded=0&q=` + encodeURIComponent(q);
-  try {
-    const r = await fetch(url, {headers: {'Accept-Language': 'it'}});
-    const j = await r.json();
-    if (!j.length) toast('Nessun indirizzo trovato: prova con via e comune');
-    return j.map(x => {
-      const a = x.address || {};
-      const iso = a['ISO3166-2-lvl6'] || '';
-      const comune = a.city || a.town || a.village || a.municipality || a.hamlet || '';
-      const via = [a.road || a.pedestrian || a.square || '', a.house_number || ''].filter(Boolean).join(' ');
-      return {lat: +x.lat, lon: +x.lon, comune, via, sigla: /^IT-[A-Z]{2}$/.test(iso) ? iso.slice(3) : '',
-        titolo: x.name && x.name !== a.road ? x.name : (via || comune || x.display_name.split(',')[0]),
-        dett: x.display_name};
+  const r = await fetch(url, {headers: {'Accept-Language': 'it'}});
+  return (await r.json()).map(x => {
+    const a = x.address || {};
+    const iso = a['ISO3166-2-lvl6'] || '';
+    const comune = a.city || a.town || a.village || a.municipality || a.hamlet || '';
+    const via = [a.road || a.pedestrian || a.square || '', a.house_number || ''].filter(Boolean).join(' ');
+    const vvf = x.type === 'fire_station' || /vigili del fuoco|vvf|pompieri|feuerwehr/i.test(x.name || '');
+    return {lat: +x.lat, lon: +x.lon, comune, via, sigla: /^IT-[A-Z]{2}$/.test(iso) ? iso.slice(3) : '', vvf,
+      titolo: (vvf ? '🚒 ' : '') + (x.name && x.name !== a.road ? x.name : (via || comune || x.display_name.split(',')[0])),
+      dett: x.display_name};
+  });
+}
+
+// Ricerca unica: sedi ufficiali vigilfuoco.it + "vigili del fuoco {testo}" + il testo cosi' com'e'
+// su OpenStreetMap; prima le sedi VVF, poi gli indirizzi. Doppioni entro 60 m tolti.
+async function geocodifica(q) {
+  const c = coordinateDaTesto(q);
+  if (c) return [{...c, comune: '', via: '', sigla: '', titolo: '📍 ' + c.lat.toFixed(6) + ', ' + c.lon.toFixed(6), dett: 'Coordinate inserite'}];
+  const parole = norm(q).split(/[\s,]+/).filter(w => w.length > 1 && !PAROLE_VUOTE.has(w));
+  const giaVVF = /vigili|vvf|pompier|caserm|distacc/i.test(q);
+  const [uff, n1, n2] = await Promise.all([
+    caricaUfficiali().then(u => parole.length ? u.filter(x => parole.every(w => x.txt.includes(w))).slice(0, 6) : []),
+    giaVVF ? Promise.resolve([]) : nominatim('vigili del fuoco ' + q).catch(() => []),
+    nominatim(q).catch(() => null)
+  ]);
+  if (n2 === null && !uff.length) { toast('Ricerca indirizzo non disponibile'); return []; }
+  const ris = uff.map(x => ({lat: x.lat, lon: x.lon, comune: comuneDaNome(x.nome), via: '', sigla: x.sigla, tipo: x.tipo,
+    titolo: '🚒 ' + x.nome, dett: `Sede ufficiale vigilfuoco.it · ${x.sigla}` + (vicinaInDB(x.lat, x.lon) ? ' · già nel DB' : ''), url: x.url}));
+  for (const r of [...(n1 || []).filter(x => x.vvf), ...(n2 || [])]) {
+    if (!ris.some(o => km(o.lat, o.lon, r.lat, r.lon) < 0.06)) ris.push(r);
+  }
+  if (!ris.length) toast('Nessun risultato: prova "Google Maps" e incolla qui il link o le coordinate', 5000);
+  return ris.slice(0, 10);
+}
+// c'e' gia' una sede del DB a meno di 150 m?
+function vicinaInDB(lat, lon) { return SEDI.some(s => !scartata(s) && km(lat, lon, s.lat, s.lon) < 0.15); }
+// Livello delle sedi ufficiali che mancano nel DB (nessuna sede a meno di 150 m): un clic e si aggiunge
+const livUff = L.layerGroup().addTo(map);
+async function disegnaUfficiali() {
+  aggiorna._filtro = state.reg + '|' + state.prov;
+  const u = state.uff ? await caricaUfficiali() : [];
+  livUff.clearLayers();
+  if (!state.uff) return;
+  if (!u.length) { toast('Elenco vigilfuoco.it non ancora disponibile (lo prepara l\'Action "Sedi ufficiali vigilfuoco.it")', 5000); return; }
+  u.filter(x => (!state.prov || x.sigla === state.prov) && (!state.reg || (PROV[x.sigla] || {}).regione === state.reg) && !vicinaInDB(x.lat, x.lon))
+    .forEach(x => {
+      const m = L.circleMarker([x.lat, x.lon], {radius: 9, color: '#c8102e', weight: 3, dashArray: '3,3', fillColor: '#fff', fillOpacity: .8});
+      m.bindPopup(`<b>${esc(x.nome)}</b><br><small>vigilfuoco.it · ${esc(x.sigla)} · non nel DB</small><br>
+        <button class="btn" data-agg="${u.indexOf(x)}" style="margin-top:6px">＋ Aggiungi questa sede</button>
+        ${x.url ? `<a href="${esc(x.url)}" target="_blank" rel="noopener" style="margin-left:6px">scheda ↗</a>` : ''}`);
+      livUff.addLayer(m);
     });
-  } catch (e) { toast('Ricerca indirizzo non disponibile'); return []; }
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-agg]'); if (!b || !UFFICIALI) return;
+  const x = UFFICIALI[+b.dataset.agg]; map.closePopup();
+  nuovaSedeIn(x.lat, x.lon, {lat: x.lat, lon: x.lon, comune: comuneDaNome(x.nome), via: '', sigla: x.sigla, tipo: x.tipo, url: x.url});
+});
+function apriGoogleMaps(q) {
+  window.open('https://www.google.com/maps/search/' + encodeURIComponent(/vigili|vvf/i.test(q) ? q : 'vigili del fuoco ' + q), '_blank', 'noopener');
+  toast('Su Google Maps: tieni premuto sul punto, copia coordinate o link e incollali qui', 6000);
 }
 function mostraRisultati(ul, ris, scegli) {
   ul.hidden = !ris.length;
@@ -905,7 +999,7 @@ function compilaIndirizzo(r) {
 }
 async function cercaDallaScheda() {
   const s = aperta; if (!s) return;
-  const q = [$('f_via').value.trim(), $('f_comune').value.trim(), $('f_sigla').value].filter(Boolean).join(', ');
+  const q = [$('f_via').value.trim(), $('f_comune').value.trim()].filter(Boolean).join(', ');
   if (!q) { $('f_via').focus(); toast('Scrivi via e comune'); return; }
   const ris = await geocodifica(q);
   mostraRisultati($('f_ris'), ris, r => {

@@ -1,0 +1,38 @@
+name: Sedi ufficiali vigilfuoco.it
+
+on:
+  workflow_dispatch:          # bottone "Run workflow"
+  schedule:
+    - cron: "30 3 * * 1"      # ogni lunedi', dopo l'aggiornamento del DB sedi
+  push:
+    branches: [FireOps]
+    paths:
+      - script/sedi_vigilfuoco.py
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sedi-vigilfuoco
+  cancel-in-progress: false
+
+jobs:
+  leggi:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Legge le "Mappa sedi" dei Comandi
+        run: python script/sedi_vigilfuoco.py
+      - name: Commit se cambiato
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add db/sedi/vigilfuoco.json
+          git diff --cached --quiet && echo "Nessuna modifica" && exit 0
+          git commit -m "Aggiorna db/sedi/vigilfuoco.json (sedi ufficiali)"
+          git pull --rebase
+          git push
