@@ -359,7 +359,6 @@
       </div>
       <div class="field"><label for="fcUCf">Codice fiscale</label><input type="text" id="fcUCf" maxlength="16" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="next"></div>
       <div class="field"><label for="fcUEmail">Email istituzionale</label><input type="email" id="fcUEmail" inputmode="email" placeholder="nome.cognome@vigilfuoco.it" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="done"></div>
-      <div class="field"><label for="fcUEmail2">Email personale (facoltativa)</label><input type="email" id="fcUEmail2" inputmode="email" placeholder="nome@gmail.com" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="next"></div>
       <div class="field"><label for="fcUTel">Cellulare</label><input type="tel" id="fcUTel" inputmode="tel" placeholder="+39 333 1234567" autocomplete="off" enterkeyhint="next"></div>
       <div class="field"><label for="fcQualifica">Qualifica</label><select id="fcQualifica">${qualificaOptions}</select></div>
       <div class="field-row">
@@ -583,7 +582,7 @@
     const $ = id => root.querySelector("#" + id);
     const STEP_LABELS = ["Mittente e comando", "Tipo di comunicazione", "Dettaglio", "Opzioni e note", "Riepilogo e invio"];
 
-    const MITTENTE = {nome: "", cognome: "", cf: "", email: "", tel: "", email2: ""};
+    const MITTENTE = {nome: "", cognome: "", cf: "", email: "", tel: ""};
     let currentStep = 1, currentTipo = null, currentComando = null;
     let TUTTI = [], COMANDI = [];
 
@@ -851,7 +850,6 @@
       MITTENTE.cf = val("fcUCf").toUpperCase();
       MITTENTE.email = val("fcUEmail");
       MITTENTE.tel = val("fcUTel");
-      MITTENTE.email2 = val("fcUEmail2");
     }
     /* Firma in fondo a ogni comunicazione, dai dati dell'utente: qualifica, nome cognome, cellulare, email */
     function fmtTel(t) {
@@ -867,7 +865,6 @@
       const tel = fmtTel(MITTENTE.tel);
       if (tel) out.push((/^\+39 3/.test(tel) ? "Cellulare: " : "Telefono: ") + tel);
       if (MITTENTE.email) out.push("e-m@il: " + MITTENTE.email);
-      if (MITTENTE.email2) out.push("e-m@il: " + MITTENTE.email2);
       return out;
     }
     function turnoStr() { return val("fcTurnoL") + val("fcTurnoS"); }
@@ -877,7 +874,7 @@
       return {
         id: profActiveId || ("u" + Date.now().toString(36)),
         nome: val("fcUNome"), cognome: val("fcUCognome"),
-        cf: val("fcUCf").toUpperCase(), email: val("fcUEmail"), tel: val("fcUTel"), email2: val("fcUEmail2"),
+        cf: val("fcUCf").toUpperCase(), email: val("fcUEmail"), tel: val("fcUTel"),
         qualifica: $("fcQualifica").value,
         sede: val("fcSede"),
         turnoL: val("fcTurnoL"), turnoS: val("fcTurnoS"),
@@ -891,7 +888,6 @@
       $("fcUCf").value = p.cf || "";
       $("fcUEmail").value = p.email || "";
       $("fcUTel").value = p.tel || "";
-      $("fcUEmail2").value = p.email2 || "";
       { const q = p.qualifica || "VE", sel = $("fcQualifica");
         if (!Array.from(sel.options).some(o => o.value === q)) sel.appendChild(new Option(q, q));   // sigla non più in elenco (profili salvati prima)
         sel.value = q; }
@@ -920,7 +916,7 @@
       // se l'utente ha compilato l'Area personale, parte da quei dati
       const P = (window.FireOps && window.FireOps.personale && window.FireOps.personale()) || {};
       profFill({
-        nome: P.nome, cognome: P.cognome, cf: P.cf, email: P.email, tel: P.telefono, email2: P.emailPers,
+        nome: P.nome, cognome: P.cognome, cf: P.cf, email: P.email, tel: P.telefono,
         qualifica: P.qualifica || "VE", sede: P.sede || "CENTRALE",
         turnoL: P.turnoL, turnoS: P.turnoS, comando: P.comando
       });
@@ -1005,7 +1001,7 @@
       profMsg("Utente eliminato.");
     });
 
-    ["fcUNome", "fcUCognome", "fcUEmail", "fcUTel", "fcUEmail2"].forEach(id => $(id).addEventListener("input", syncMittente));
+    ["fcUNome", "fcUCognome", "fcUEmail", "fcUTel"].forEach(id => $(id).addEventListener("input", syncMittente));
     $("fcUCf").addEventListener("input", function () { this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, ""); syncMittente(); });
 
     /* ---------- caricamento comandi (db/comandi.json via FireOps) ---------- */

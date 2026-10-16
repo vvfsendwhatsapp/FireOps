@@ -58,8 +58,6 @@ Gli altri moduli li usano per precompilare i moduli (ad esempio Comunicazioni).<
   <h3>Contatti</h3>
   <div class="fld"><label class="f" for="pe-email">Email istituzionale</label>
     <input id="pe-email" data-k="email" type="email" inputmode="email" autocomplete="off" autocapitalize="none" placeholder="nome.cognome@vigilfuoco.it"></div>
-  <div class="fld"><label class="f" for="pe-email2">Email personale (facoltativa)</label>
-    <input id="pe-email2" data-k="emailPers" type="email" inputmode="email" autocomplete="off" autocapitalize="none" placeholder="nome@gmail.com"></div>
   <div class="fld"><label class="f" for="pe-tel">Cellulare</label>
     <input id="pe-tel" data-k="telefono" type="tel" inputmode="tel" autocomplete="off" placeholder="+39 333 1234567"></div>
 </div>
