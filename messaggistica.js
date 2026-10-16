@@ -192,7 +192,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
         selectAnnoIntervento.addEventListener("change", generaMessaggioMessaggistica);
 
-        aggiornaAbilitazioneCampi(); // stato iniziale coerente con l'HTML ("Senza" attivo)
+        // Messaggio unico: il link con numero e anno d'intervento e' SEMPRE incluso
+        // e obbligatorio. La scelta Con/Senza non serve piu' e viene nascosta.
+        chkLinkCoordinate.checked = true;
+        btnLinkCon.classList.add("attivo");
+        btnLinkSenza.classList.remove("attivo");
+        const campoConSenza = btnLinkCon.closest(".msg-campo");
+        if (campoConSenza) campoConSenza.style.display = "none";
+
+        aggiornaAbilitazioneCampi(); // stato iniziale: link sempre attivo
         validaCampiMessaggistica(); // colora Con/Senza fin da subito, coerente con gli altri campi
     }
     initLinkCoordinateUI();
@@ -1033,6 +1041,39 @@ Koordináták küldéséhez:
         hu: 'Koordináták küldéséhez:\n1. Kattintson a linkre 🔗\n2. Engedélyezze a helyhozzáférést, ha erre kéri a rendszer ✅'
     };
 
+    // Riga che introduce le istruzioni manuali, mostrate sotto il link come
+    // alternativa. Lingue non elencate ricadono sull'inglese (le 28 lingue del messaggio sono tutte presenti).
+    const ISTRUZIONI_ALTERNATIVA = {
+        it: "➖ In alternativa al link, può inviare la posizione anche così:",
+        en: "➖ As an alternative to the link, you can also send your location this way:",
+        es: "➖ Como alternativa al enlace, también puede enviar la ubicación así:",
+        fr: "➖ En alternative au lien, vous pouvez aussi envoyer votre position ainsi :",
+        sq: "➖ Si alternativë ndaj lidhjes, mund ta dërgoni vendndodhjen edhe kështu:",
+        ar: "➖ كبديل للرابط، يمكنك أيضًا إرسال موقعك بهذه الطريقة:",
+        bg: "➖ Като алтернатива на връзката можете да изпратите местоположението си и по този начин:",
+        cs: "➖ Jako alternativu k odkazu můžete polohu odeslat také takto:",
+        "zh-CN": "➖ 除 链 接 外，您 也 可 以 这 样 发 送 位 置：",
+        hr: "➖ Kao alternativu poveznici, lokaciju možete poslati i ovako:",
+        da: "➖ Som alternativ til linket kan du også sende din placering på denne måde:",
+        et: "➖ Lingi asemel saate asukoha saata ka nii:",
+        fi: "➖ Linkin vaihtoehtona voit lähettää sijaintisi myös näin:",
+        el: "➖ Ως εναλλακτική στον σύνδεσμο, μπορείτε να στείλετε την τοποθεσία σας και ως εξής:",
+        ga: "➖ Mar mhalairt ar an nasc, is féidir leat do shuíomh a sheoladh mar seo freisin:",
+        lv: "➖ Kā alternatīvu saitei varat nosūtīt savu atrašanās vietu arī šādi:",
+        lt: "➖ Vietoje nuorodos savo buvimo vietą galite išsiųsti ir taip:",
+        mt: "➖ Bħala alternattiva għall-link, tistgħu tibagħtu l-pożizzjoni wkoll hekk:",
+        nl: "➖ Als alternatief voor de link kunt u uw locatie ook zo sturen:",
+        pl: "➖ Zamiast linku możesz wysłać lokalizację także w ten sposób:",
+        pt: "➖ Em alternativa ao link, pode também enviar a localização assim:",
+        ro: "➖ Ca alternativă la link, puteți trimite locația și astfel:",
+        ru: "➖ Вместо ссылки вы также можете отправить местоположение так:",
+        sk: "➖ Ako alternatívu k odkazu môžete polohu odoslať aj takto:",
+        sl: "➖ Kot alternativo povezavi lahko lokacijo pošljete tudi tako:",
+        sv: "➖ Som alternativ till länken kan du också skicka din position på detta sätt:",
+        de: "➖ Alternativ zum Link können Sie Ihren Standort auch so senden:",
+        hu: "➖ A link helyett a helyzetét így is elküldheti:"
+    };
+
     // Individua il blocco "bandiere → istruzioni manuali → frase di chiusura"
     // per struttura: inizia subito dopo 🇪🇺🇮🇹, finisce appena prima della
     // prima riga in grassetto (quella che apre con "*"). Funziona uguale in
@@ -1053,10 +1094,14 @@ Koordináták küldéséhez:
 
         if (link) {
             const istruzioniLink = ISTRUZIONI_LINK[codiceLingua] || ISTRUZIONI_LINK.it;
-            testo = testo.replace(
-                BLOCCO_ISTRUZIONI_RE,
-                "🇪🇺🇮🇹\n\n" + link + "\n\n" + istruzioniLink + "\n\n"
-            );
+            const alternativa = ISTRUZIONI_ALTERNATIVA[codiceLingua] || ISTRUZIONI_ALTERNATIVA.en;
+            // Messaggio unico: link + istruzioni brevi, e sotto le istruzioni
+            // manuali (graffetta/Posizione) come alternativa al link.
+            testo = testo.replace(BLOCCO_ISTRUZIONI_RE, blocco => {
+                // toglie la prima riga ("Per l'invio delle coordinate:"): la sostituisce la riga "In alternativa"
+                const manuale = blocco.slice("🇪🇺🇮🇹\n\n".length).replace(/\s+$/, "").replace(/^[^\n]*\r?\n/, "");
+                return "🇪🇺🇮🇹\n\n" + link + "\n\n" + istruzioniLink + "\n\n" + alternativa + "\n" + manuale + "\n\n";
+            });
         }
 
         return testo;
