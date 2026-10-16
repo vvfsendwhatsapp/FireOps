@@ -46,6 +46,7 @@
             document.documentElement.classList.add('comando-gia-scelto');
         }
     </script>
+    <style>#utilizzo-comandi{font-size:13px;line-height:1.4}#utilizzo-comandi .ut-tit{font-weight:700;margin-bottom:6px}#utilizzo-comandi .ut-filtro{display:block;margin:0 0 8px;opacity:.85}#utilizzo-comandi .ut-elenco{max-height:220px;overflow:auto;border:1px solid rgba(255,255,255,.2);border-radius:6px}#utilizzo-comandi .ut-riga{display:flex;justify-content:space-between;gap:8px;padding:6px 8px;border-top:1px solid rgba(255,255,255,.1)}#utilizzo-comandi .ut-riga:first-child{border-top:0}#utilizzo-comandi .ut-vecchia{background:rgba(255,215,0,.15)}#utilizzo-comandi .ut-nota{margin-top:6px;opacity:.8}#utilizzo-comandi .ut-btn{margin-top:8px;padding:8px 12px;border-radius:6px;border:1px solid #ffd700;background:transparent;color:#ffd700;font-weight:700;cursor:pointer}</style>
 </head>
 
 <body>
@@ -1284,6 +1285,7 @@
                     rel="noopener">t.me/AndreaPelizza_DeltaAlfa</a><br><br>
                 👥 Accessi: <span id="display-contatore-accessi">...</span><br>
                 🏷️ Versione: <span id="display-versione-modale">—</span>
+                <div id="utilizzo-comandi" style="margin-top:14px;"></div>
             </p>
         </div>
     </div>
@@ -1377,7 +1379,8 @@
                 "sitac.js",
                 "qrcode.js",
                 "normative-ricerca.js",
-                "qrcoder.js"
+                "qrcoder.js",
+                "utilizzo.js"
             ];
 
             // document.write e non appendChild: gli script inseriti a mano nel
