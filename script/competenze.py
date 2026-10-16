@@ -20,7 +20,7 @@ Output in --out (default db/competenze):
   <SIGLA>_celle.csv     una riga per cella con le 6 competenze (per Excel / QGIS)
   index.json            elenco province calcolate
 """
-import argparse, csv, glob, io, json, math, os, re, sys, time, urllib.error, urllib.request
+import argparse, collections, csv, glob, io, json, math, os, re, sys, time, urllib.error, urllib.request
 from datetime import datetime, timezone
 
 import h3
@@ -262,17 +262,90 @@ ORDINARIE = {"primary", "secondary", "tertiary", "unclassified", "residential", 
              "road", "track", "primary_link", "secondary_link", "tertiary_link"}
 
 
+GUIDABILI = VELOCI | ORDINARIE | {"motorway_link", "trunk_link"}
+TUNNEL = {"yes", "building_passage", "avalanche_protector"}
+
+
+def altezza_m(v):
+    """'3.5', '3,5 m', '3.20m', 11'2"  -> metri; 'none', 'default', '' -> None"""
+    v = (v or "").strip().lower().replace(",", ".")
+    m = re.match(r"^(\d+(?:\.\d+)?)\s*(m)?$", v)
+    if m:
+        return float(m.group(1))
+    m = re.match(r"^(\d+)\s*'\s*(?:(\d+)\s*\")?$", v)
+    if m:
+        return round(int(m.group(1)) * 0.3048 + int(m.group(2) or 0) * 0.0254, 2)
+    return None
+
+
+def geojson_sottopassi(sotto, area, altezza_mezzo):
+    """Sottopassi, gallerie, passaggi sotto edifici e limiti di altezza dentro 'area'.
+    'critico' = altezza nota e inferiore all'altezza del mezzo: il camion non passa."""
+    from shapely.geometry import LineString
+    feats, visti = [], set()
+    for cc, t, tipo_osm, oid in sotto:
+        if (tipo_osm, oid) in visti:
+            continue
+        visti.add((tipo_osm, oid))
+        geom = Point(cc[0]) if tipo_osm == "node" else LineString(cc)
+        if not area.intersects(geom):
+            continue
+        h = altezza_m(t.get("maxheight:physical")) or altezza_m(t.get("maxheight"))
+        lung = 0.0 if tipo_osm == "node" else sum(km(a[1], a[0], b[1], b[0]) * 1000 for a, b in zip(cc, cc[1:]))
+        if tipo_osm == "node":
+            tipo = "limite di altezza"
+        elif t.get("tunnel") == "building_passage":
+            tipo = "passaggio sotto edificio"
+        elif t.get("tunnel") in TUNNEL:
+            tipo = "galleria" if lung > 300 else "sottopasso"
+        elif t.get("covered") == "yes":
+            tipo = "tratto coperto"
+        else:
+            tipo = "limite di altezza"
+        feats.append({"type": "Feature",
+                      "geometry": {"type": "Point", "coordinates": [round(cc[0][0], 6), round(cc[0][1], 6)]} if tipo_osm == "node"
+                      else {"type": "LineString", "coordinates": [[round(x, 6), round(y, 6)] for x, y in cc]},
+                      "properties": {"tipo": tipo, "nome": t.get("name", ""), "strada": t.get("ref", ""), "classe": t.get("highway", ""),
+                                     "altezza_m": h, "altezza_osm": t.get("maxheight:physical") or t.get("maxheight") or "",
+                                     "lunghezza_m": round(lung), "allagabile": t.get("flood_prone") == "yes",
+                                     "critico": h is not None and h < altezza_mezzo,
+                                     "osm": f"https://www.openstreetmap.org/{tipo_osm}/{oid}"}})
+    feats.sort(key=lambda f: (not f["properties"]["critico"], f["properties"]["altezza_m"] or 99))
+    return {"type": "FeatureCollection", "altezza_mezzo_m": altezza_mezzo, "features": feats}
+
+
 def leggi_strade(pbf, area):
     """Dall'estratto OSM, dentro 'area' (poligono shapely): le strade ordinarie (LineString)
     e le autostrade/superstrade come [(coords [(lon,lat)...], tag)]."""
     import osmium
     from shapely.geometry import LineString, box
     x0, y0, x1, y1 = area.bounds
-    ordinarie, veloci = [], []
+    ordinarie, veloci, sotto = [], [], []
 
     class H(osmium.SimpleHandler):
+        def node(self, n):
+            # barriere di altezza e limiti di altezza su un nodo (portali, sbarre ad altezza)
+            t = n.tags
+            if "maxheight" not in t and t.get("barrier") != "height_restrictor":
+                return
+            try:
+                x, y = n.location.lon, n.location.lat
+            except osmium.InvalidLocationError:
+                return
+            if x0 <= x <= x1 and y0 <= y <= y1:
+                sotto.append(([(x, y)], {k: t.get(k, "") for k in ("maxheight", "maxheight:physical", "barrier", "name")}, "node", n.id))
+
         def way(self, w):
             hw = w.tags.get("highway")
+            if hw in GUIDABILI and (w.tags.get("tunnel") in TUNNEL or w.tags.get("covered") == "yes"
+                                    or "maxheight" in w.tags or "maxheight:physical" in w.tags):
+                try:
+                    cc = [(n.lon, n.lat) for n in w.nodes]
+                except osmium.InvalidLocationError:
+                    cc = []
+                if len(cc) >= 2 and any(x0 <= x <= x1 and y0 <= y <= y1 for x, y in cc):
+                    sotto.append((cc, {k: w.tags.get(k, "") for k in ("highway", "tunnel", "covered", "maxheight",
+                                  "maxheight:physical", "name", "ref", "layer", "flood_prone")}, "way", w.id))
             if hw not in VELOCI and hw not in ORDINARIE:
                 return
             if hw == "track" and w.tags.get("tracktype") in ("grade4", "grade5"):
@@ -292,7 +365,8 @@ def leggi_strade(pbf, area):
                 ordinarie.append(LineString(cc))
 
     H().apply_file(pbf, locations=True, idx="flex_mem")
-    print(f"Strade: {len(ordinarie)} ordinarie, {len(veloci)} tratti autostradali/superstrade")
+    print(f"Strade: {len(ordinarie)} ordinarie, {len(veloci)} tratti autostradali/superstrade, {len(sotto)} sottopassi/limiti di altezza")
+    leggi_strade.sottopassi = sotto
     return ordinarie, veloci
 
 
@@ -560,6 +634,14 @@ def main():
             ordinarie, veloci = leggi_strade(args.pbf, area)
             aggancia_celle(celle, ordinarie)
             tratti = tratti_veloci(veloci, confine, pcfg.get("passo_tratti_m", 500))
+            hmezzo = float(cfg.get("mezzo", {}).get("altezza_m", 3.5))
+            gs = geojson_sottopassi(getattr(leggi_strade, "sottopassi", []), confine, hmezzo)
+            os.makedirs(args.out, exist_ok=True)
+            with open(os.path.join(args.out, f"{sigla}_sottopassi.geojson"), "w", encoding="utf-8") as f:
+                json.dump(gs, f, ensure_ascii=False, separators=(",", ":"))
+            n = collections.Counter(x["properties"]["tipo"] for x in gs["features"])
+            print(f"Sottopassi {sigla}: {len(gs['features'])} ({dict(n)}), sotto {hmezzo} m: "
+                  f"{sum(x['properties']['critico'] for x in gs['features'])}")
         # le celle si raggiungono dal punto agganciato alla viabilita' ordinaria
         dest = [{"lat": c.get("lat_s", c["lat"]), "lon": c.get("lon_s", c["lon"])} for c in celle]
         if args.osrm:

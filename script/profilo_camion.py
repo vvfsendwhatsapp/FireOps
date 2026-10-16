@@ -7,8 +7,8 @@ Cosa cambia rispetto all'auto:
   - i limiti di velocita' (maxspeed) e il fondo stradale non abbassano piu' la velocita';
   - percorso scelto per il tempo piu' breve (weight_name = duration), niente preferenze;
   - niente penalita' di svolta e semafori (velocita' costante, senza traffico);
-  - ingombri di un camion: le strade con limiti di altezza, larghezza, lunghezza o
-    peso inferiori al mezzo sono escluse.
+  - ingombri del camion: escluse le strade con limiti di ALTEZZA o LARGHEZZA inferiori al
+    mezzo; peso e lunghezza non contano (in soccorso il divieto si valuta sul posto).
 
 Uso:  python script/profilo_camion.py car.lua camion.lua [--config db/competenze/config.json]
 Il file prodotto va messo accanto a lib/ del profilo originale (nell'immagine OSRM: /opt).
@@ -17,7 +17,7 @@ import argparse, json, os, re, sys
 
 QUI = os.path.dirname(os.path.abspath(__file__))
 PREDEFINITE = {"autostrada": 90, "superstrada": 90, "svincolo": 60, "ordinaria": 60}
-MEZZO = {"altezza_m": 3.5, "larghezza_m": 2.55, "lunghezza_m": 8.5, "peso_kg": 16000}
+MEZZO = {"altezza_m": 3.5, "larghezza_m": 2.55}
 
 
 def tabella_velocita(v):
@@ -63,11 +63,12 @@ def main():
     t = sostituisci(t, r"(oncoming_turn_penalty\s*=\s*)[\d.]+", r"\g<1>0", "oncoming_turn_penalty", False)
     t = sostituisci(t, r"(traffic_light_penalty\s*=\s*)[\d.]+", r"\g<1>0", "traffic_light_penalty", False)
     t = sostituisci(t, r"(traffic_signal_penalty\s*=\s*)[\d.]+", r"\g<1>0", "traffic_signal_penalty", False)
-    # ingombri del mezzo
-    for chiave, campo in (("vehicle_height", "altezza_m"), ("vehicle_width", "larghezza_m"),
-                          ("vehicle_length", "lunghezza_m"), ("vehicle_weight", "peso_kg")):
-        val = int(m[campo]) if campo == "peso_kg" else m[campo]
-        t = sostituisci(t, rf"({chiave}\s*=\s*)[\d.]+", rf"\g<1>{val}", chiave)
+    # ingombri del mezzo: contano solo altezza e larghezza (limiti fisici). Peso e lunghezza
+    # no: in soccorso un divieto di transito si valuta sul posto, non esclude la strada.
+    for chiave, campo in (("vehicle_height", "altezza_m"), ("vehicle_width", "larghezza_m")):
+        t = sostituisci(t, rf"({chiave}\s*=\s*)[\d.]+", rf"\g<1>{m[campo]}", chiave)
+    t = sostituisci(t, r"\n\s*WayHandlers\.handle_length,", "\n    -- WayHandlers.handle_length, (soccorso: lunghezza non esclude)", "handle_length")
+    t = sostituisci(t, r"\n\s*WayHandlers\.handle_weight,", "\n    -- WayHandlers.handle_weight, (soccorso: peso non esclude)", "handle_weight")
     t = sostituisci(t, r"(vehicle_max_speed\s*=\s*)nil", rf"\g<1>{int(max(v.values()))}", "vehicle_max_speed", False)
 
     t = ("-- FireOps VVF: profilo camion generato da script/profilo_camion.py\n"

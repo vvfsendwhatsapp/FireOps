@@ -9,7 +9,7 @@
  "_note_bbox": "riquadro [ovest, sud, est, nord] ritagliato dall'estratto OSM: deve contenere tutte le province e le sedi esterne con margine per le strade",
  "fattore_mezzo": 1.0,
  "velocita_fuori_strada_kmh": 4,
- "_note_velocita": "Velocita' COSTANTI dei mezzi VVF (camion), senza traffico, km/h: diventano il profilo OSRM 'camion' (script/profilo_camion.py). Le strade con limiti di altezza/larghezza/lunghezza/peso inferiori al mezzo sono escluse.",
+ "_note_velocita": "Velocita' COSTANTI dei mezzi VVF (camion), senza traffico, km/h: diventano il profilo OSRM 'camion' (script/profilo_camion.py). Escluse le strade con limiti di altezza o larghezza inferiori al mezzo; peso e lunghezza non contano (soccorso).",
  "velocita": {
   "ordinaria": 60,
   "autostrada": 90,
@@ -18,9 +18,7 @@
  },
  "mezzo": {
   "altezza_m": 3.5,
-  "larghezza_m": 2.55,
-  "lunghezza_m": 8.5,
-  "peso_kg": 16000
+  "larghezza_m": 2.55
  },
  "tipi": {
   "centrale": {
