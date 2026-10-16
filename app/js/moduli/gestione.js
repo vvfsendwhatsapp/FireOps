@@ -67,8 +67,8 @@ FireOps.registra({
   init(root) {
     "use strict";
     const KEY = "fireops_gestione";
-    const SPEC = [["cinofilo", "Cinofilo"], ["smzt", "SMZT"], ["saf", "SAF"]];
-    const TIPI = [["ordinaria", "Ordinaria"], ["cinofila", "Cinofila"], ["smzt", "SMZT"], ["saf", "SAF (aree impervie)"]];
+    const SPEC = [["cinofilo", "Cinofilo"], ["smzt", "SMZT (sommozzatori)"], ["saf", "SAF"]];
+    const TIPI = [["ordinaria", "Ordinaria"], ["cinofila", "Cinofila"], ["smzt", "SMZT (sommozzatori)"], ["saf", "SAF (aree impervie)"]];
     const STATI = ["Disponibile", "In movimento", "In zona", "Rientrata"];
     const QUALIFICHE = FireOps.qualifiche || [];
 
