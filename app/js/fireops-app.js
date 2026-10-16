@@ -692,6 +692,38 @@
     window.addEventListener("resize", aggiorna);
   })();
 
+  // Aggiornamento automatico: ogni 5 minuti (e quando la finestra torna in primo piano)
+  // rilegge versione.js dal server. Se il numero e' cambiato: dalla home ricarica da sola,
+  // altrimenti mostra una barra "Aggiorna" per non far perdere il lavoro in corso.
+  (function controlloVersione() {
+    let nuova = "", barra = null;
+    const inHome = () => !location.hash || location.hash === "#" || location.hash === "#/";
+    function mostraBarra() {
+      if (barra) return;
+      barra = document.createElement("div");
+      barra.setAttribute("role", "status");
+      barra.style.cssText = "position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:9999;display:flex;align-items:center;gap:10px;padding:12px 14px;background:#ffd700;color:#000;border-radius:10px;font:600 14px/1.3 system-ui,sans-serif;box-shadow:0 4px 18px rgba(0,0,0,.5)";
+      barra.innerHTML = '<span style="flex:1">Nuova versione di FireOps disponibile</span><button type="button" style="min-height:40px;padding:0 16px;border:0;border-radius:8px;background:#10141a;color:#ffd700;font:700 14px system-ui,sans-serif;cursor:pointer">Aggiorna</button>';
+      barra.querySelector("button").addEventListener("click", () => location.reload());
+      document.body.appendChild(barra);
+    }
+    function applica() { if (!nuova) return; if (inHome()) location.reload(); else mostraBarra(); }
+    async function controlla() {
+      if (document.hidden) return;
+      try {
+        const r = await fetch("js/versione.js?t=" + Date.now(), {cache: "no-store"});
+        if (!r.ok) return;
+        const m = (await r.text()).match(/FIREOPS_VERSIONE\s*=\s*["']([^"']+)["']/);
+        if (m && m[1] !== VERSIONE) { nuova = m[1]; applica(); }
+      } catch (e) { /* senza rete: riprova al prossimo giro */ }
+    }
+    window.addEventListener("hashchange", applica);               // tornando alla home aggiorna
+    document.addEventListener("visibilitychange", controlla);
+    setInterval(controlla, 5 * 60 * 1000);
+    setTimeout(controlla, 20000);
+    window.FireOpsControllaVersione = controlla;
+  })();
+
   console.info("FireOps app versione", VERSIONE);
   $("fohLogo").title = "FireOps · versione " + VERSIONE;
 
