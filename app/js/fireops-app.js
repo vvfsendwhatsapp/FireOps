@@ -29,13 +29,15 @@
     area: '<svg viewBox="0 0 76 76" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"> <path d="M10 10h34v20h22v30H10z" fill="rgba(255,255,255,.2)"/> <path d="M10 68h56" stroke="#10141a"/><path d="M10 64v8M66 64v8" stroke="#10141a"/> <circle cx="10" cy="10" r="3" fill="currentColor" stroke="none"/><circle cx="44" cy="10" r="3" fill="currentColor" stroke="none"/><circle cx="44" cy="30" r="3" fill="currentColor" stroke="none"/><circle cx="66" cy="30" r="3" fill="currentColor" stroke="none"/><circle cx="66" cy="60" r="3" fill="currentColor" stroke="none"/><circle cx="10" cy="60" r="3" fill="currentColor" stroke="none"/></svg>',
     taglio: '<svg viewBox="0 0 76 76" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 50h64"/><rect x="10" y="30" width="56" height="16" rx="3" fill="rgba(255,255,255,.2)"/><path d="M38 24v28" stroke="#10141a"/><path d="M32 26l6 8 6-8" stroke="#10141a"/><path d="M14 50v14M62 50v14"/></svg>'
   };
-  // Ordine e colori per famiglia: rosso = trovare (Localizzati, Ricerche), verde = misurare (Misura), giallo = addestramento (PUMA),
+  // Ordine e colori per famiglia: rosso = trovare (Localizzati, Ricerche, Gestione ricerca), verde = misurare (Misura), giallo = addestramento (PUMA),
   // blu = comunicare e riferire, grigio = dati personali.
   const FUNZIONI = [
     {id: "localizzati", nome: "Localizzati", ico: "📍", colore: "var(--ics-operazioni)", testo: "#fff",
       sotto: "Comando competente, canali radio, percorsi e AR", href: "#/localizzati"},
     {id: "ricerche", nome: "Ricerche", ico: "🔎", colore: "var(--ics-operazioni)", testo: "#fff",
       sotto: "Ricerche in corso da Messaggistica", href: "#/ricerche"},
+    {id: "gestione", nome: "Gestione ricerca", ico: "🧭", colore: "var(--ics-operazioni)", testo: "#fff",
+      sotto: "Personale, squadre e zone", href: "#/gestione"},
     {id: "misura", nome: "Misura", ico: ICONE.altezza, colore: "var(--ics-pianificazione)", testo: "#fff",
       sotto: "Alberi, altezze, distanze e aree",
       voci: [
@@ -92,6 +94,7 @@
     pumapresenze: {nome: "PUMA - Tabella presenze", sotto: "Riepilogo in tempo reale", padre: "puma"},
     localizzati: {nome: "Localizzati", sotto: "Comando competente, canali radio e numeri SO"},
     ricerche: {nome: "Ricerche", sotto: "Ricerche in corso da Messaggistica"},
+    gestione: {nome: "Gestione ricerca", sotto: "Personale e squadre, anche senza rete"},
     foto: {nome: "Co.Em. - Foto", sotto: "Comunicazione in Emergenza", padre: "coem"},
     video: {nome: "Co.Em. - Video", sotto: "Comunicazione in Emergenza", padre: "coem",
       segnaposto: "Il modulo Video è in preparazione."},
