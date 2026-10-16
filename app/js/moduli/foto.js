@@ -138,6 +138,11 @@ const CSS=`.pg-foto{--acc:var(--ics-comando);--ok:#3fa66b;--bad:#e8734a;--line2:
 .pg-foto .step::before{content:'';position:absolute;left:-2px;right:-2px;top:-15px;bottom:-15px}
 .pg-foto .step.done{background:var(--ok)}
 .pg-foto .step.on{background:var(--yellow)}
+.pg-foto .stepnav{position:sticky;top:var(--foh-h,0px);z-index:40;display:flex;align-items:center;gap:8px;margin:8px -16px 12px;padding:8px 16px;background:var(--bg);border-bottom:1px solid var(--line)}
+.pg-foto .stepnav .sn-l{flex:1;min-width:0;text-align:center;font-size:12.5px;font-weight:700;color:var(--text-dim);line-height:1.25}
+.pg-foto .stepnav .sn-b{flex:none;min-height:42px;padding:0 14px;border-radius:6px;border:1px solid var(--line);background:var(--panel-2);color:var(--text);font-size:14px;font-weight:700;cursor:pointer}
+.pg-foto .stepnav .sn-n{background:var(--yellow);border-color:var(--yellow);color:#000}
+.pg-foto .stepnav .sn-b:disabled{opacity:.35;cursor:default}
 .pg-foto .steplabel{padding:8px 0 10px;font-size:13px;color:var(--text-dim);text-align:center}
 .pg-foto .card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:10px}
 .pg-foto .card h3{font-size:15px;font-weight:700;margin:0 0 8px}
@@ -219,31 +224,59 @@ const HTML=`<div class="steps" id="fo-steps"></div>
 </div>
 
 <div class="panel" data-s="2" hidden>
-  <div class="card"><h3>Inquadratura <span style="font-weight:400;color:var(--text-dim)">(facoltativa)</span></h3>
+  <div class="card"><h3>Ridimensiona <span style="font-weight:400;color:var(--text-dim)">(facoltativo)</span></h3>
     <label class="f">Formato</label>
     <div class="chips" id="fo-asp" role="group" aria-label="Formato">
       <button type="button" class="btn sm on" data-a="orig">Originale</button><button type="button" class="btn sm" data-a="43">4:3</button><button type="button" class="btn sm" data-a="32">3:2</button><button type="button" class="btn sm" data-a="169">16:9</button><button type="button" class="btn sm" data-a="54">5:4</button><button type="button" class="btn sm" data-a="11">1:1</button><button type="button" class="btn sm" data-a="free">Libero</button>
     </div>
-    <div class="row" style="margin-top:8px"><button type="button" class="btn sm" id="fo-orient">Orizzontale</button>
-      <button type="button" class="btn sm" id="fo-rl" aria-label="Ruota di 90 gradi a sinistra">⟲ 90°</button>
+    <div class="row" style="margin-top:8px"><button type="button" class="btn sm" id="fo-orient">Orizzontale</button></div>
+    <label class="f">Dimensione del file salvato (lato lungo)</label>
+    <div class="chips" id="fo-outsz" role="group" aria-label="Dimensione del file salvato">
+      <button type="button" class="btn sm on" data-o="4096">Massima</button><button type="button" class="btn sm" data-o="2048">2048 px</button><button type="button" class="btn sm" data-o="1600">1600 px</button><button type="button" class="btn sm" data-o="1280">1280 px</button><button type="button" class="btn sm" data-o="1024">1024 px</button>
+    </div>
+    <p class="sub" id="fo-szinfo"></p>
+    <div class="row" style="margin-top:10px"><button type="button" class="btn sm" id="fo-creset">Azzera formato, rotazione e zoom</button></div>
+    <p class="sub">Con "Libero" trascini gli angoli del riquadro sulla foto. Se non tocchi nulla la foto resta intera. Cambiando formato, rotazione o zoom i riquadri di sfocatura vanno rifatti, quindi conviene farlo prima.</p>
+  </div>
+  <button type="button" class="btn pri big" data-go="3">Avanti: ruota</button>
+</div>
+
+<div class="panel" data-s="3" hidden>
+  <div class="card"><h3>Ruota</h3>
+    <div class="row"><button type="button" class="btn sm" id="fo-rl" aria-label="Ruota di 90 gradi a sinistra">⟲ 90°</button>
       <button type="button" class="btn sm" id="fo-rr" aria-label="Ruota di 90 gradi a destra">⟳ 90°</button></div>
     <label class="f" for="fo-ct">Rotazione fine / raddrizza (gradi, passo 0,1)</label>
     <div class="two"><input type="range" id="fo-ct" min="-45" max="45" step="0.1"><input type="number" id="fo-ctn" min="-45" max="45" step="0.1" inputmode="decimal"></div>
     <div class="row" style="margin-top:6px"><button type="button" class="btn sm" data-tn="-1">−1°</button><button type="button" class="btn sm" data-tn="-0.1">−0,1°</button><button type="button" class="btn sm" data-tn="0.1">+0,1°</button><button type="button" class="btn sm" data-tn="1">+1°</button></div>
-    <label class="f" for="fo-cm">Zoom (%)</label>
-    <div class="two"><input type="range" id="fo-cm" min="100" max="800" step="5"><input type="number" id="fo-cmn" min="100" max="800" step="5" inputmode="decimal"></div>
-    <div class="row" style="margin-top:10px"><button type="button" class="btn sm" id="fo-creset">Azzera inquadratura</button></div>
-    <p class="sub">Trascina la foto per spostarla, due dita per zoom e rotazione. Con "Libero" trascini gli angoli del riquadro. Se non tocchi nulla la foto resta intera. Cambiando l'inquadratura i riquadri di sfocatura vanno rifatti, quindi conviene farla prima.</p>
+    <p class="sub">Per raddrizzare l'orizzonte usa la rotazione fine, oppure ruota con due dita sulla foto.</p>
   </div>
-  <button type="button" class="btn pri big" data-go="3">Vai alla sfocatura</button>
+  <button type="button" class="btn pri big" data-go="4">Avanti: zoom</button>
 </div>
 
-<div class="panel" data-s="3" hidden>
+<div class="panel" data-s="4" hidden>
+  <div class="card"><h3>Zoom</h3>
+    <label class="f" for="fo-cm">Zoom (%)</label>
+    <div class="two"><input type="range" id="fo-cm" min="100" max="800" step="5"><input type="number" id="fo-cmn" min="100" max="800" step="5" inputmode="decimal"></div>
+    <div class="row" style="margin-top:8px"><button type="button" class="btn sm" data-zm="-10">−10%</button><button type="button" class="btn sm" data-zm="10">+10%</button><button type="button" class="btn sm" data-zm="reset">100%</button></div>
+    <p class="sub">Trascina la foto per spostarla nel riquadro, due dita per zoom e rotazione.</p>
+  </div>
+  <button type="button" class="btn pri big" data-go="5">Avanti: volti</button>
+</div>
+
+<div class="panel" data-s="5" hidden>
   <div class="card"><h3>Volti</h3>
     <div class="row"><button type="button" class="btn pri" id="fo-faces">Trova volti</button></div>
-    <p class="sub" id="fo-auto">Un riquadro sfocato per ogni volto trovato. Controlla sempre il risultato e correggi a mano: il riconoscimento può sbagliare. Targhe e marchi vanno segnati a mano (qui sotto, "Che cosa copri").</p>
+    <p class="sub" id="fo-auto">Un riquadro sfocato per ogni volto trovato. Controlla sempre il risultato e correggi a mano: il riconoscimento può sbagliare. Targhe e marchi vanno segnati a mano nel passo successivo.</p>
   </div>
-  <div class="card"><h3>Sfocatura a mano</h3>
+  <div class="card"><h3>Controlla i riquadri</h3>
+    <p class="sub" style="margin-top:0">Tocca un riquadro sulla foto per selezionarlo: trascinalo per spostarlo, gli angoli per ridimensionarlo.</p>
+    <div class="row" style="margin-top:8px"><button type="button" class="btn sm" id="fo-del5">Elimina il selezionato</button><button type="button" class="btn sm" id="fo-undo5">Annulla</button></div>
+  </div>
+  <button type="button" class="btn pri big" data-go="6">Avanti: blur ulteriore</button>
+</div>
+
+<div class="panel" data-s="6" hidden>
+  <div class="card"><h3>Blur ulteriore</h3>
     <div class="seg" id="fo-tools" role="group" aria-label="Strumento">
       <button type="button" data-t="sel" class="on">Seleziona</button><button type="button" data-t="rect">Rettangolo</button><button type="button" data-t="oval">Ovale</button><button type="button" data-t="free">A mano</button><button type="button" data-t="poly">Poligono</button>
     </div>
@@ -262,11 +295,11 @@ const HTML=`<div class="steps" id="fo-steps"></div>
     </div>
     <p class="sub">Con "Rettangolo" o "Ovale" trascini sulla foto per disegnare un riquadro; con "A mano" disegni col dito il contorno di una forma qualsiasi; con "Poligono" tocchi i vertici uno dopo l'altro e chiudi toccando il primo punto (o con "Chiudi forma"). Con "Seleziona" tocchi un riquadro per spostarlo o ridimensionarlo dagli angoli. Due dita: zoom e spostamento.</p>
   </div>
-  <button type="button" class="btn pri big" data-go="4">Vai al logo</button>
+  <button type="button" class="btn pri big" data-go="7">Avanti: logo</button>
 </div>
 
-<div class="panel" data-s="4" hidden>
-  <div class="card"><h3>Logo CNVVF</h3>
+<div class="panel" data-s="7" hidden>
+  <div class="card"><h3>Logo CNVVF: posizione e dimensione</h3>
     <label class="chk"><input type="checkbox" id="fo-lshow" checked> Mostra il logo</label>
     <div class="note warn" id="fo-lnote" hidden>Il logo non è stato trovato in images/CNVVF.png: ho messo un segnaposto. Scegli il file del logo qui sotto.</div>
     <button type="button" class="btn" id="fo-ppos" style="width:100%" aria-haspopup="dialog">Posizione: in alto a destra</button>
@@ -318,9 +351,12 @@ function toast(m){const t=$('#fo-toast');t.textContent=m;t.hidden=false;clearTim
 const S={
   img:null,iw:0,ih:0,W:0,H:0,comp:null,regions:[],sel:-1,hist:[],tool:'sel',kind:'zona',str:'forte',
   logo:{img:null,ar:0.5,ok:false,show:true,x:0.9,y:0.1,z:LOGO_DEF.z,r:LOGO_DEF.r,a:LOGO_DEF.a,corner:LOGO_DEF.corner,pad:LOGO_DEF.margin,lock:true},
-  orig:null,crop:null,poly:[],view:{s:1,x:0,y:0},cw:0,ch:0,dpr:1,step:1,painting:false,busy:false
+  orig:null,crop:null,poly:[],view:{s:1,x:0,y:0},cw:0,ch:0,dpr:1,step:1,painting:false,busy:false,outMax:EXPORT_MAX
 };
 let cv,ctx,steps;
+const inCrop=()=>S.step>=2&&S.step<=4;          // Ridimensiona, Ruota, Zoom: lavorano sull'inquadratura
+const inBlur=()=>S.step===5||S.step===6;        // Volti, Blur ulteriore
+const LOGO_STEP=7;
 
 function loadLogoPrefs(){
   try{
@@ -444,7 +480,7 @@ function draw(){
   g.fillStyle='#0c0e10';g.fillRect(0,0,cv.width,cv.height);
   if(!S.img)return;
   g.setTransform(d,0,0,d,0,0);
-  if(S.step===2&&S.orig){drawCrop(g);return;}
+  if(inCrop()&&S.orig){drawCrop(g);return;}
   if(!S.comp)rebuildComp();
   g.save();g.translate(S.view.x,S.view.y);g.scale(S.view.s,S.view.s);
   g.imageSmoothingQuality='high';
@@ -452,7 +488,7 @@ function draw(){
   drawLogo(g,1);
   g.restore();
   /* sovrapposizioni (non finiscono nel file salvato) */
-  if(S.step===3){
+  if(inBlur()){
     S.regions.forEach((rg,i)=>{
       pathRegion(g,rg);
       g.lineWidth=i===S.sel?3:1.5;g.strokeStyle=i===S.sel?'#ffd400':'rgba(255,255,255,.85)';
@@ -469,7 +505,7 @@ function draw(){
       corners(S.regions[S.sel]).forEach(c=>{g.fillStyle='#ffd400';g.strokeStyle='#000';g.lineWidth=2;g.beginPath();g.rect(c.x-9,c.y-9,18,18);g.fill();g.stroke();});
     }
   }
-  if(S.step===4&&S.logo.show&&S.logo.img&&!S.logo.lock){
+  if(S.step===LOGO_STEP&&S.logo.show&&S.logo.img&&!S.logo.lock){
     const l=S.logo,c=toScr({x:l.x*S.W,y:l.y*S.H}),w=l.z*Math.min(S.W,S.H)*S.view.s,h=w*l.ar;
     g.save();g.translate(c.x,c.y);g.rotate(l.r*D2R);
     g.strokeStyle='#ffd400';g.lineWidth=2;g.setLineDash([6,4]);g.strokeRect(-w/2,-h/2,w,h);g.restore();
@@ -554,7 +590,7 @@ function applyCrop(){
     setBase(cvs,cvs.width,cvs.height);
   }
   c.applied=cropKey();
-  steps.mark(2,!cropIdentity());
+  markCrop();
   fitView();uiLogo();
 }
 function drawCrop(g){
@@ -566,13 +602,19 @@ function drawCrop(g){
   g.strokeStyle='rgba(255,255,255,.35)';g.lineWidth=1;g.beginPath();
   for(let i=1;i<3;i++){g.moveTo(fx+q.fw*i/3,fy);g.lineTo(fx+q.fw*i/3,fy+q.fh);g.moveTo(fx,fy+q.fh*i/3);g.lineTo(fx+q.fw,fy+q.fh*i/3);}
   g.stroke();
-  if(c.asp==='free')cropHandles(q).forEach(h=>{g.fillStyle='#ffd400';g.strokeStyle='#000';g.lineWidth=2;g.beginPath();g.rect(h.x-9,h.y-9,18,18);g.fill();g.stroke();});
+  if(c.asp==='free'&&S.step===2)cropHandles(q).forEach(h=>{g.fillStyle='#ffd400';g.strokeStyle='#000';g.lineWidth=2;g.beginPath();g.rect(h.x-9,h.y-9,18,18);g.fill();g.stroke();});
 }
 function cropHandles(q){
   const fx=(S.cw-q.fw)/2,fy=(S.ch-q.fh)/2;
   return [{x:fx,y:fy},{x:fx+q.fw,y:fy},{x:fx+q.fw,y:fy+q.fh},{x:fx,y:fy+q.fh}];
 }
-function cropChanged(){uiCrop();paint();}
+function markCrop(){
+  const c=S.crop;if(!c||!steps)return;
+  steps.mark(2,c.asp!=='orig'||S.outMax!==EXPORT_MAX);
+  steps.mark(3,c.q!==0||c.t!==0);
+  steps.mark(4,Math.abs(c.m-1)>0.001||Math.round(c.cx)!==0||Math.round(c.cy)!==0);
+}
+function cropChanged(){uiCrop();markCrop();paint();}
 function uiCrop(){
   const c=S.crop;if(!c)return;
   $$('#fo-asp button').forEach(b=>b.classList.toggle('on',b.dataset.a===c.asp));
@@ -581,6 +623,19 @@ function uiCrop(){
   let mm=1;if(S.cw>0){try{mm=cropGeom().mmin;}catch(e){}}
   const mn=Math.max(5,Math.floor(Math.min(1,mm)*100));$('#fo-cm').min=mn;$('#fo-cmn').min=mn;
   const z=Math.round(c.m*100);$('#fo-cm').value=z;$('#fo-cmn').value=z;
+  uiOut();
+}
+/* dimensione del file salvato: la foto di partenza non viene mai ingrandita */
+function outSize(){
+  const w=S.iw||0,h=S.ih||0;if(!w)return null;
+  let ow=w,oh=h;
+  if(S.step>=2&&S.step<=4&&S.orig&&S.cw>0){try{const g=cropGeom();ow=Math.max(1,Math.round(g.fw/g.s));oh=Math.max(1,Math.round(g.fh/g.s));}catch(e){}}
+  const k=Math.min(1,S.outMax/Math.max(ow,oh));
+  return {w:Math.round(ow*k),h:Math.round(oh*k)};
+}
+function uiOut(){
+  $$('#fo-outsz button').forEach(b=>b.classList.toggle('on',+b.dataset.o===S.outMax));
+  const o=outSize();$('#fo-szinfo').textContent=o?'File salvato: circa '+o.w+' × '+o.h+' px.':'Scegli prima una foto.';
 }
 function cropZoom(f){S.crop.m=clamp(S.crop.m*f,0.05,8);cropChanged();}
 
@@ -594,7 +649,7 @@ function loadPhoto(file){
     setBase(im,w,h);S.crop.applied=cropKey();
     $('#fo-empty').hidden=true;
     resize();fitView();uiCrop();uiRegions();uiLogo();syncSticky();paint();
-    steps.mark(1,true);steps.mark(2,false);
+    steps.mark(1,true);[2,3,4].forEach(n=>steps.mark(n,false));
     try{URL.revokeObjectURL(url);}catch(e){}
     steps.go(2);
   };
@@ -639,12 +694,13 @@ async function faceBoxes(c){
 }
 function addBoxes(boxes,c,kind,shape,pad){
   snap();
+  if(kind==='volto')S.regions=S.regions.filter(r=>!r.auto);   // rifacendo la ricerca non si duplicano i volti
   let n=0;
   boxes.forEach(b=>{
     const px=b.w*pad,py=b.h*pad;
     const x0=clamp(b.x-px,0,c.width),y0=clamp(b.y-py,0,c.height),x1=clamp(b.x+b.w+px,0,c.width),y1=clamp(b.y+b.h+py,0,c.height);
     if(x1-x0<2||y1-y0<2)return;
-    S.regions.push({x:x0/c.width,y:y0/c.height,w:(x1-x0)/c.width,h:(y1-y0)/c.height,shape,kind,s:S.str});n++;
+    S.regions.push({x:x0/c.width,y:y0/c.height,w:(x1-x0)/c.width,h:(y1-y0)/c.height,shape,kind,s:S.str,auto:kind==='volto'||undefined});n++;
   });
   S.sel=n?S.regions.length-1:S.sel;
   changed();
@@ -678,7 +734,7 @@ function regionAt(ip){
   return -1;
 }
 function zoomAt(f,sp){
-  if(S.step===2){cropZoom(f);return;}
+  if(inCrop()){cropZoom(f);return;}
   sp=sp||{x:S.cw/2,y:S.ch/2};S.vt=true;
   const s0=S.view.s,s1=clamp(s0*f,0.1,12),k=s1/s0;
   S.view.x=sp.x-(sp.x-S.view.x)*k;S.view.y=sp.y-(sp.y-S.view.y)*k;S.view.s=s1;
@@ -696,8 +752,8 @@ function onDown(e){
     const q=cropGeom(),hs=cropHandles(q);
     if(hs.some(h=>Math.hypot(h.x-sp.x,h.y-sp.y)<=26)){gest={t:'cresize'};return;}
   }
-  if(S.step===2){gest={t:'cpan',sx:sp.x,sy:sp.y,cx0:S.crop.cx,cy0:S.crop.cy};return;}
-  if(S.step===3){
+  if(inCrop()){gest={t:'cpan',sx:sp.x,sy:sp.y,cx0:S.crop.cx,cy0:S.crop.cy};return;}
+  if(inBlur()){
     if(S.tool==='sel'){
       const h=handleAt(sp);
       if(h>=0){
@@ -712,7 +768,7 @@ function onDown(e){
     if(S.tool==='free'){gest={t:'lasso',pts:[[ip.x,ip.y]],s0:sp};S.draft={shape:'free',pts:[[ip.x/S.W,ip.y/S.H]]};paint();return;}
     gest={t:'draw',p0:ip,s0:sp};return;
   }
-  if(S.step===4&&S.logo.show&&!S.logo.lock&&logoHit(S.logo,ip.x,ip.y,S.W,S.H)){
+  if(S.step===LOGO_STEP&&S.logo.show&&!S.logo.lock&&logoHit(S.logo,ip.x,ip.y,S.W,S.H)){
     S.logo.corner=null;uiLogo();gest={t:'logo',ox:ip.x,oy:ip.y,x0:S.logo.x,y0:S.logo.y};return;
   }
   gest={t:'pan',sx:sp.x,sy:sp.y,vx:S.view.x,vy:S.view.y};
@@ -721,9 +777,9 @@ function startPinch(){
   const [a,b]=[...ptr.values()];
   if(gest&&(gest.t==='draw'||gest.t==='lasso')){S.draft=null;}
   const mid=toImg({x:(a.x+b.x)/2,y:(a.y+b.y)/2});
-  const onLogo=S.step===4&&S.logo.show&&!S.logo.lock&&logoHit(S.logo,mid.x,mid.y,S.W,S.H);
+  const onLogo=S.step===LOGO_STEP&&S.logo.show&&!S.logo.lock&&logoHit(S.logo,mid.x,mid.y,S.W,S.H);
   gest={t:'pinch',d0:Math.hypot(b.x-a.x,b.y-a.y)||1,a0:Math.atan2(b.y-a.y,b.x-a.x),m0:{x:(a.x+b.x)/2,y:(a.y+b.y)/2},
-    v0:{...S.view},z0:S.logo.z,r0:S.logo.r,onLogo,onCrop:S.step===2,m0c:S.crop?S.crop.m:1,t0c:S.crop?S.crop.t:0};
+    v0:{...S.view},z0:S.logo.z,r0:S.logo.r,onLogo,onCrop:inCrop(),m0c:S.crop?S.crop.m:1,t0c:S.crop?S.crop.t:0};
   paint();
 }
 function onMove(e){
@@ -827,13 +883,17 @@ function uiRegions(){
   $('#fo-polybar').hidden=S.tool!=='poly';
   $('#fo-pclosepoly').disabled=S.poly.length<3;$('#fo-ppt').disabled=!S.poly.length;$('#fo-ppc').disabled=!S.poly.length;
   $$('#fo-tools button').forEach(b=>b.classList.toggle('on',b.dataset.t===S.tool));
-  steps&&steps.mark(3,S.regions.length>0);
+  if(steps){steps.mark(5,S.regions.some(r=>r.kind==='volto'));steps.mark(6,S.regions.some(r=>r.kind!=='volto'));}
+  $('#fo-del5').disabled=!sel;$('#fo-undo5').disabled=!S.hist.length;
   const h=$('#fo-hint');
-  if(S.step===2&&S.img){h.hidden=false;h.textContent='Trascina per spostare; due dita per zoom e rotazione';}
-  else if(S.step===3&&S.img){
+  if(S.step===2&&S.img){h.hidden=false;h.textContent=S.crop&&S.crop.asp==='free'?'Trascina gli angoli del riquadro; trascina la foto per spostarla':'Scegli il formato: il riquadro giallo è quello che resta';}
+  else if(S.step===3&&S.img){h.hidden=false;h.textContent='Ruota con i pulsanti o con due dita sulla foto';}
+  else if(S.step===4&&S.img){h.hidden=false;h.textContent='Trascina per spostare; due dita per zoom e rotazione';}
+  else if(S.step===5&&S.img){h.hidden=false;h.textContent=S.regions.length?'Tocca un riquadro per spostarlo, ridimensionarlo o eliminarlo':'Premi "Trova volti"';}
+  else if(S.step===6&&S.img){
     h.hidden=false;
     h.textContent=S.tool==='sel'?(S.sel>=0?'Trascina per spostare, gli angoli per ridimensionare':'Tocca un riquadro, oppure scegli Rettangolo o Ovale per disegnarne uno'):(S.tool==='free'?'Disegna col dito il contorno da sfocare':S.tool==='poly'?(S.poly.length<3?'Tocca i vertici uno dopo l\'altro ('+S.poly.length+')':'Tocca il primo punto o "Chiudi forma" per finire'):'Trascina sulla foto per disegnare il riquadro');
-  }else if(S.step===4&&S.img){h.hidden=false;h.textContent=S.logo.lock?'Logo fisso. Spunta "Modifica logo" per spostarlo':'Trascina il logo; due dita sul logo: dimensione e rotazione';}
+  }else if(S.step===LOGO_STEP&&S.img){h.hidden=false;h.textContent=S.logo.lock?'Logo fisso. Spunta "Modifica logo" per spostarlo':'Trascina il logo; due dita sul logo: dimensione e rotazione';}
   else h.hidden=true;
 }
 function uiLogo(){
@@ -847,12 +907,12 @@ function uiLogo(){
   $('#fo-ledit').checked=!l.lock;$('#fo-ladv').hidden=l.lock;
   $('#fo-ppos').textContent='Posizione: '+(CORNERS[l.corner]||'personalizzata');
   $$('#fo-prect button').forEach(b=>b.classList.toggle('pri',b.dataset.p===l.corner));
-  if(S.step===4)uiRegions();
+  if(S.step===LOGO_STEP)uiRegions();
 }
 /* l'anteprima prende le proporzioni della foto: niente bordi neri, il logo si allinea ai bordi veri dell'immagine */
 function layoutStage(){
   const st=$('#fo-stage');if(!st)return;
-  if(!S.img||S.step===2){st.style.width='';st.style.height='';st.style.minHeight='';st.style.maxHeight='';return;}
+  if(!S.img||inCrop()){st.style.width='';st.style.height='';st.style.minHeight='';st.style.maxHeight='';return;}
   st.style.width='';st.style.minHeight='0';st.style.maxHeight='none';
   const fullW=st.getBoundingClientRect().width||S.cw||320;
   const maxH=(window.innerHeight||700)*(S.step>1?0.4:0.5);
@@ -864,29 +924,36 @@ function syncSticky(){
   const on=!!S.img&&S.step>1,st=$('#fo-stage');
   st.classList.toggle('stk',on);
   const hd=document.querySelector('.foh');
-  st.style.top=on?((hd?hd.offsetHeight:0)+'px'):'';
+  const nv=$('#fo-stepnav');
+  st.style.top=on?((hd?hd.offsetHeight:0)+(nv?nv.offsetHeight:0)+'px'):'';
   layoutStage();S.vt=false;resize();fitView();paint();
   requestAnimationFrame(()=>{layoutStage();resize();if(!S.vt)fitView();paint();});
 }
 function setupSteps(){
-  const labels=['Foto','Inquadra','Sfocatura','Logo e salvataggio'],bar=$('#fo-steps');
+  const labels=['Foto','Ridimensiona','Ruota','Zoom','Volti','Blur ulteriore','Logo'],bar=$('#fo-steps');
   bar.innerHTML=labels.map((l,i)=>`<button type="button" class="step" data-s="${i+1}" aria-label="Passo ${i+1} di ${labels.length}: ${l}"></button>`).join('');
-  const lab=document.createElement('div');lab.className='steplabel';bar.after(lab);
+  /* barra in alto, sempre visibile sotto l'intestazione: Indietro | passo | Avanti */
+  const nav=document.createElement('div');nav.className='stepnav';nav.id='fo-stepnav';
+  nav.innerHTML='<button type="button" class="sn-b" data-sn="-1" aria-label="Passo precedente">‹ Indietro</button><span class="sn-l"></span><button type="button" class="sn-b sn-n" data-sn="1" aria-label="Passo successivo">Avanti ›</button>';
+  bar.after(nav);
   const api={
     go(n){
       if(n>1&&!S.img){toast('Carica prima una foto.');n=1;}
-      if(n>2&&S.crop&&S.crop.applied!==cropKey()){
+      if(n>4&&S.crop&&S.crop.applied!==cropKey()){
         if(S.regions.length&&!confirm("Cambiando l'inquadratura i riquadri di sfocatura vengono cancellati. Continuare?"))return;
         applyCrop();
       }
       S.step=n;
+      if(n===5)S.tool='sel';
       $$('.step',bar).forEach(b=>{const on=+b.dataset.s===n;b.classList.toggle('on',on);if(on)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');});
-      lab.textContent='Passo '+n+' di '+labels.length+' · '+labels[n-1];
+      $('.sn-l',nav).textContent=n+'/'+labels.length+' · '+labels[n-1];
+      $('[data-sn="-1"]',nav).disabled=n<=1;$('[data-sn="1"]',nav).disabled=n>=labels.length;
       $$('.panel',root).forEach(p=>{p.hidden=+p.dataset.s!==n;});
-      syncSticky();uiRegions();paint();
+      syncSticky();uiRegions();uiCrop&&S.crop&&uiOut();paint();
     },
     mark(n,done){const b=$('.step[data-s="'+n+'"]',bar);if(b)b.classList.toggle('done',!!done);}
   };
+  nav.addEventListener('click',e=>{const b=e.target.closest('[data-sn]');if(!b||b.disabled)return;api.go(S.step+(+b.dataset.sn));});
   bar.addEventListener('click',e=>{const b=e.target.closest('.step');if(b)api.go(+b.dataset.s);});
   root.addEventListener('click',e=>{const g=e.target.closest('[data-go]');if(g)api.go(+g.dataset.go);});
   return api;
@@ -894,7 +961,7 @@ function setupSteps(){
 
 /* ---------------- salvataggio ---------------- */
 function exportCanvas(){
-  const k=Math.min(1,EXPORT_MAX/Math.max(S.iw,S.ih)),w=Math.round(S.iw*k),h=Math.round(S.ih*k);
+  const k=Math.min(1,S.outMax/Math.max(S.iw,S.ih)),w=Math.round(S.iw*k),h=Math.round(S.ih*k);
   const c=document.createElement('canvas');c.width=w;c.height=h;
   const g=c.getContext('2d');
   /* le scale delle regioni sono relative all'anteprima: S.W×S.H → w×h */
@@ -943,7 +1010,7 @@ function setup(){
   cv.addEventListener('pointerdown',onDown);cv.addEventListener('pointermove',onMove);
   cv.addEventListener('pointerup',onUp);cv.addEventListener('pointercancel',onUp);
   cv.addEventListener('wheel',e=>{if(!S.img)return;e.preventDefault();zoomAt(e.deltaY<0?1.15:1/1.15,cpos(e));},{passive:false});
-  $('#fo-zin').onclick=()=>zoomAt(1.4);$('#fo-zout').onclick=()=>zoomAt(1/1.4);$('#fo-zfit').onclick=()=>{if(S.step===2&&S.crop){S.crop.m=1;S.crop.cx=0;S.crop.cy=0;cropChanged();}else{S.vt=false;fitView();paint();}};
+  $('#fo-zin').onclick=()=>zoomAt(1.4);$('#fo-zout').onclick=()=>zoomAt(1/1.4);$('#fo-zfit').onclick=()=>{if(inCrop()&&S.crop){S.crop.m=1;S.crop.cx=0;S.crop.cy=0;cropChanged();}else{S.vt=false;fitView();paint();}};
   if(typeof ResizeObserver==='function')new ResizeObserver(()=>{resize();if(!S.vt)fitView();paint();}).observe($('#fo-stage'));
   window.addEventListener('resize',()=>{layoutStage();resize();if(!S.vt)fitView();paint();});
 
@@ -963,6 +1030,11 @@ function setup(){
   $$('[data-tn]').forEach(b=>b.addEventListener('click',()=>{if(!C())return;C().t=clamp(Math.round((C().t+parseFloat(b.dataset.tn))*10)/10,-45,45);cropChanged();}));
   cnum('#fo-ct',v=>{C().t=clamp(v,-45,45);});cnum('#fo-ctn',v=>{C().t=clamp(v,-45,45);});
   cnum('#fo-cm',v=>{C().m=clamp(v/100,0.05,8);});cnum('#fo-cmn',v=>{C().m=clamp(v/100,0.05,8);});
+  $('#fo-outsz').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.outMax=+b.dataset.o;markCrop();uiOut();});
+  $$('[data-zm]').forEach(b=>b.addEventListener('click',()=>{
+    if(!C())return;const v=b.dataset.zm;
+    if(v==='reset'){C().m=1;C().cx=0;C().cy=0;}else C().m=clamp(C().m*(1+(+v)/100),0.05,8);
+    cropChanged();}));
   $('#fo-creset').onclick=()=>{if(!C())return;Object.assign(C(),{q:0,t:0,asp:'orig',m:1,cx:0,cy:0,fx:1,fy:1,land:S.orig.w>=S.orig.h});cropChanged();};
 
   /* riquadri */
@@ -982,7 +1054,8 @@ function setup(){
     if(rg.pts){const dx=n.x-rg.x,dy=n.y-rg.y;n.pts=rg.pts.map(q=>[q[0]+dx,q[1]+dy]);}S.regions.push(n);S.sel=S.regions.length-1;changed();
   };
   $('#fo-del').onclick=()=>{if(S.sel<0)return;snap();S.regions.splice(S.sel,1);S.sel=-1;changed();};
-  $('#fo-undo').onclick=undo;
+  $('#fo-undo').onclick=undo;$('#fo-undo5').onclick=undo;
+  $('#fo-del5').onclick=()=>$('#fo-del').click();
   $('#fo-pclosepoly').onclick=polyClose;
   $('#fo-ppt').onclick=()=>{S.poly.pop();uiRegions();paint();};
   $('#fo-ppc').onclick=()=>{S.poly=[];uiRegions();paint();};
@@ -1025,7 +1098,7 @@ function setup(){
     resetLogo();S.logo.lock=true;S.logo.show=true;S.logo.a=LOGO_DEF.a;
     $('#fo-empty').hidden=false;
     $('#fo-info').textContent='La foto resta sul telefono: non viene inviata a nessuno. Salvando si tolgono i dati nascosti (EXIF), posizione GPS compresa.';
-    [1,2,3,4].forEach(n=>steps.mark(n,false));
+    [1,2,3,4,5,6,7].forEach(n=>steps.mark(n,false));S.outMax=EXPORT_MAX;
     try{uiCrop();uiRegions();uiLogo();}catch(e){}
     steps.go(1);paint();toast('Dati azzerati.');
   };

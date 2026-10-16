@@ -93,6 +93,11 @@ FireOps.registra({
 .pg-taglio .step::before { content: ''; position: absolute; left: -2px; right: -2px; top: -15px; bottom: -15px; }
 .pg-taglio .step.done { background: var(--ok); }
 .pg-taglio .step.on { background: var(--yellow); }
+.pg-taglio .stepnav { position: sticky; top: var(--foh-h, 0px); z-index: 40; display: flex; align-items: center; gap: 8px; margin: 8px -16px 12px; padding: 8px 16px; background: var(--bg); border-bottom: 1px solid var(--line); }
+.pg-taglio .stepnav .sn-l { flex: 1; min-width: 0; text-align: center; font-size: 12.5px; font-weight: 700; color: var(--text-dim); line-height: 1.25; }
+.pg-taglio .stepnav .sn-b { flex: none; min-height: 42px; padding: 0 14px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.pg-taglio .stepnav .sn-n { background: var(--yellow); border-color: var(--yellow); color: #000; }
+.pg-taglio .stepnav .sn-b:disabled { opacity: .35; cursor: default; }
 .pg-taglio .steplabel { padding: 8px 0 10px; font-size: 13px; color: var(--text-dim); text-align: center; }
 .pg-taglio .lead { margin: 0 0 10px; font-size: 14px; line-height: 1.45; color: var(--text-dim); }
 .pg-taglio .nav { display: flex; gap: 8px; margin: 2px 0 10px; }
@@ -587,7 +592,16 @@ FireOps.registra({
     const nomi = ["Tronco", "Appoggi e taglio", "Esito"];
     const barra = $("tgSteps");
     barra.innerHTML = nomi.map((l, i) => '<button type="button" class="step" data-s="' + (i + 1) + '" aria-label="Passo ' + (i + 1) + ' di ' + nomi.length + ': ' + l + '"></button>').join("");
-    const eti = document.createElement("div"); eti.className = "steplabel"; barra.after(eti);
+    // barra in alto, sempre visibile sotto l'intestazione: Indietro | passo | Avanti
+    const eti = document.createElement("div"); eti.className = "stepnav";
+    eti.innerHTML = '<button type="button" class="sn-b" data-sn="-1" aria-label="Passo precedente">‹ Indietro</button><span class="sn-l"></span><button type="button" class="sn-b sn-n" data-sn="1" aria-label="Passo successivo">Avanti ›</button>';
+    barra.after(eti);
+    eti.addEventListener("click", e => {
+      const b = e.target.closest("[data-sn]");
+      if (!b || b.disabled) return;
+      const n = passo + (+b.dataset.sn);
+      if (n >= 1 && n <= nomi.length) vai(n);
+    });
     let passo = 1, visti = {};
     function vai(n) {
       passo = n; visti[n] = true;
@@ -598,7 +612,9 @@ FireOps.registra({
         b.classList.toggle("done", k !== n && !!visti[k]);
         if (k === n) b.setAttribute("aria-current", "step"); else b.removeAttribute("aria-current");
       });
-      eti.textContent = "Passo " + n + " di " + nomi.length + " · " + nomi[n - 1];
+      eti.querySelector(".sn-l").textContent = n + "/" + nomi.length + " · " + nomi[n - 1];
+      eti.querySelector('[data-sn="-1"]').disabled = n <= 1;
+      eti.querySelector('[data-sn="1"]').disabled = n >= nomi.length;
       $("tgDisegno").hidden = n === 3;                 // all'esito il disegno non serve: contano i tagli
       $("tgLead2").textContent = modo === "sbalzo"
         ? "Se il ramo poggia a terra in un punto, indicalo. Poi scegli dove tagliare."

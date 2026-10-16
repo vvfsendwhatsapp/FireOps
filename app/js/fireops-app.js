@@ -16,46 +16,67 @@
   const DB = "../db/";                          // cartella dati del repo FireOps
   const DB_FALLBACK = "https://vvfsendwhatsapp.github.io/FireOps/db/";
 
-  // ---- Funzioni ICS e moduli: per aggiungere un modulo basta una riga in "moduli" ----
-  const SEZIONI = [
-    {id: "comando", nome: "Comando", sigla: "C", colore: "var(--ics-comando)", testo: "#10141a",
-      sub: "Direzione e coordinamento",
-     moduli: [
-    {id:"foto", nome:"Co.Em.", sotto:"Comunicazione in Emergenza",
-  desc:"Prepara le foto da diffondere: inquadratura, sfocatura di volti, targhe e marchi, logo CNVVF", ico:"📷"},
-{id:"pumamappa", nome:"P.U.M.A. - Mappa addestramenti", sotto:"Mappa in tempo reale",
-  desc:"Dove si svolgono ora gli addestramenti, con i dettagli di ciascuno", ico:"🗺️"},
-{id:"pumapresenze", nome:"P.U.M.A. - Tabella Presenze", sotto:"Riepilogo in tempo reale",
-  desc:"Personale presente oggi negli addestramenti, con aggiornamento automatico", ico:"📋"}
-       ]},
-    {id: "operazioni", nome: "Operazioni", sigla: "O", colore: "var(--ics-operazioni)", testo: "#fff",
-      sub: "Gestione dell'intervento",
-      moduli: [
-        {id: "ricerche", nome: "Ricerche", sotto: "Ricerche in corso da Messaggistica",
-          desc: "Ricerche per intervento con la posizione migliore: tuo comando e limitrofi entro 50 km", ico: "🔎"},
-        {id: "taglio", nome: "Taglio alberi", sotto: "Fibre compresse e tese, scarico e sequenza di taglio",
-          desc: "Dove fare lo scarico e quanto profondo, in che ordine tagliare tronchi e rami", ico: "🪚"}
+  // ---- Tasti funzione della home. Una voce con "voci" apre una pagina con i sotto-tasti;
+  //      una voce con "href" apre direttamente il modulo. Per aggiungere un modulo basta una riga qui sotto.
+  const PUMA_HOME = "https://sites.google.com/view/pumavvf/home-page";
+  const FUNZIONI = [
+    {id: "misura", nome: "Misura", ico: "📐", colore: "var(--ics-pianificazione)", testo: "#fff",
+      sotto: "Alberi, altezze, distanze e aree",
+      voci: [
+        {nome: "Taglio alberi", ico: "🪚", href: "#/taglio", desc: "Dove fare lo scarico, quanto profondo, in che ordine tagliare"},
+        {nome: "Altezza e area di proiezione", ico: "📏", href: "#/trigo/altezza", desc: "Piante, edifici e teleferiche, con area di caduta"},
+        {nome: "Intersezione in avanti", ico: "📐", href: "#/trigo/avanti", desc: "Coordinate e dislivello di un punto da due stazioni"},
+        {nome: "Intersezione all’indietro", ico: "🧭", href: "#/trigo/snellius", desc: "Snellius–Potenot: la tua posizione da tre punti noti"},
+        {nome: "Problema del faro", ico: "🗼", href: "#/trigo/faro", desc: "Distanza, quota o posizione di un punto, con l’alzo"},
+        {nome: "Calcola area", ico: "🗺️", href: "#/trigo/area", desc: "Superfici da foto, pianta a passi o mappa"}
       ]},
-    {id: "pianificazione", nome: "Pianificazione", sigla: "P", colore: "var(--ics-pianificazione)", testo: "#fff",
-      sub: "Situazione, posizione e risorse",
-    moduli: [
-      {id: "localizzati", nome: "Localizzati", sotto: "Comando competente, canali radio e numeri SO",
-        desc: "Comando competente, canali radio e numeri SO dalla posizione", ico: "📍"},
-      {id: "trigo", nome: "Trigo", sotto: "Altezze, distanze, posizione e aree",
-        desc: "Altezza di piante ed edifici, problema del faro, Snellius–Potenot, calcolo area da foto o pianta", ico: "📐"}
-    ]},
-    {id: "logistica", nome: "Logistica", sigla: "L", colore: "var(--ics-logistica)", testo: "#10141a",
-      sub: "Mezzi, materiali e supporto", moduli: []},
-    {id: "amministrazione", nome: "Amministrazione", sigla: "A", colore: "var(--ics-amministrazione)", testo: "#fff",
-      sub: "Pratiche e comunicazioni del personale",
-      moduli: [
-        {id: "comunicazioni", nome: "Comunicazioni", sotto: "Missioni per soccorso e mancate timbrature",
-          desc: "Missioni per soccorso e mancate timbrature via email", ico: "✉️"}
-      ]}
+    {id: "puma", nome: "PUMA", ico: "🧑‍🚒", colore: "var(--ics-operazioni)", testo: "#fff",
+      sotto: "Piattaforma Unificata Monitoraggio Addestramenti",
+      voci: [
+        {nome: "Home PUMA", ico: "🏠", href: PUMA_HOME, esterno: true, desc: "Il sito PUMA, si apre in una nuova scheda"},
+        {nome: "Mappa addestramenti", ico: "🗺️", href: "#/pumamappa", desc: "Dove si svolgono ora gli addestramenti, con i dettagli di ciascuno"},
+        {nome: "Tabella presenze", ico: "📋", href: "#/pumapresenze", desc: "Personale presente oggi negli addestramenti, con aggiornamento automatico"}
+      ]},
+    {id: "localizzati", nome: "Localizzati", ico: "📍", colore: "var(--ics-comando)", testo: "#10141a",
+      sotto: "Comando competente, canali radio, percorsi e AR", href: "#/localizzati"},
+    {id: "ricerche", nome: "Ricerche", ico: "🔎", colore: "var(--ics-amministrazione)", testo: "#fff",
+      sotto: "Ricerche in corso da Messaggistica", href: "#/ricerche"},
+    {id: "coem", nome: "Co.Em.", ico: "📷", colore: "var(--ics-logistica)", testo: "#10141a",
+      sotto: "Comunicazione in Emergenza",
+      voci: [
+        {nome: "Foto", ico: "📷", href: "#/foto", desc: "Inquadra, ruota, ingrandisci, sfoca volti e targhe, aggiungi il logo CNVVF"},
+        {nome: "Video", ico: "🎬", href: "#/video", desc: "In preparazione"},
+        {nome: "Comunicato", ico: "📰", href: "#/comunicato", desc: "In preparazione"}
+      ]},
+    {id: "comunicazioni", nome: "Comunicazioni", ico: "✉️", colore: "var(--ics-amministrazione)", testo: "#fff",
+      sotto: "Missioni per soccorso e mancate timbrature", href: "#/comunicazioni"},
+    {id: "rapporti", nome: "Rapporti d’intervento", ico: "📝", colore: "var(--ics-comando)", testo: "#10141a",
+      sotto: "In preparazione", href: "#/rapporti"},
+    {id: "personale", nome: "Area personale", ico: "👤", colore: "var(--panel-2)", testo: "#eceff3",
+      sotto: "I tuoi dati, salvati solo su questo telefono", href: "#/personale"}
   ];
+  const HUBS = {};
+  FUNZIONI.forEach(f => { if (f.voci) HUBS[f.id] = f; });
 
-  const MODULI = {};
-  SEZIONI.forEach(s => s.moduli.forEach(m => { MODULI[m.id] = m; }));
+  // Moduli (un file per modulo in js/moduli/). "padre": pagina a cui torna il logo.
+  // "segnaposto": modulo non ancora pronto, la pagina mostra solo l'avviso.
+  const MODULI = {
+    taglio: {nome: "Taglio alberi", sotto: "Scarico e sequenza di taglio", padre: "misura"},
+    trigo: {nome: "Misura", sotto: "Altezze, distanze, posizione e aree", padre: "misura"},
+    pumamappa: {nome: "PUMA - Mappa addestramenti", sotto: "Mappa in tempo reale", padre: "puma"},
+    pumapresenze: {nome: "PUMA - Tabella presenze", sotto: "Riepilogo in tempo reale", padre: "puma"},
+    localizzati: {nome: "Localizzati", sotto: "Comando competente, canali radio e numeri SO"},
+    ricerche: {nome: "Ricerche", sotto: "Ricerche in corso da Messaggistica"},
+    foto: {nome: "Co.Em. - Foto", sotto: "Comunicazione in Emergenza", padre: "coem"},
+    video: {nome: "Co.Em. - Video", sotto: "Comunicazione in Emergenza", padre: "coem",
+      segnaposto: "Il modulo Video è in preparazione."},
+    comunicato: {nome: "Co.Em. - Comunicato", sotto: "Comunicazione in Emergenza", padre: "coem",
+      segnaposto: "Il modulo Comunicato è in preparazione."},
+    comunicazioni: {nome: "Comunicazioni", sotto: "Missioni per soccorso e mancate timbrature"},
+    rapporti: {nome: "Rapporti d’intervento", sotto: "In preparazione",
+      segnaposto: "I rapporti d’intervento arriveranno in un prossimo aggiornamento."},
+    personale: {nome: "Area personale", sotto: "I tuoi dati, solo su questo telefono"}
+  };
 
   const $ = id => document.getElementById(id);
   const esc = s => String(s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
@@ -265,6 +286,16 @@
 
   async function montaModulo(id) {
     if (montati[id]) return montati[id];
+    if (MODULI[id] && MODULI[id].segnaposto) {
+      const sp = document.createElement("section");
+      sp.className = "pg pg-" + id;
+      sp.hidden = true;
+      sp.innerHTML = '<div class="segnaposto"><div class="segnaposto-ico" aria-hidden="true">🛠️</div><p>' +
+        esc(MODULI[id].segnaposto) + '</p><a class="segnaposto-btn" href="#/' + (MODULI[id].padre || "") + '">Indietro</a></div>';
+      $("view-mod").appendChild(sp);
+      montati[id] = sp;
+      return sp;
+    }
     const def = await scaricaModulo(id);
     if (def.css) {
       const st = document.createElement("style");
@@ -304,12 +335,25 @@
     if (attivo && attivo !== id) {
       (hookHide[attivo] || []).forEach(fn => { try { fn(); } catch (e) { console.error(e); } });
     }
+    if (id && HUBS[id]) {                       // pagina con i sotto-tasti di una funzione
+      attivo = null;
+      Object.keys(montati).forEach(k => { montati[k].hidden = true; });
+      $("view-mod").hidden = true;
+      $("view-home").hidden = true;
+      $("view-hub").hidden = false;
+      mostraHub(HUBS[id]);
+      $("fohHome").hidden = false;
+      impostaTitolo(HUBS[id].nome, HUBS[id].sotto);
+      window.scrollTo(0, 0);
+      return;
+    }
+    $("view-hub").hidden = true;
     if (!m) {
       attivo = null;
       $("view-mod").hidden = true;
       $("view-home").hidden = false;
       $("fohHome").hidden = true;
-      impostaTitolo("App", "Sala operativa · funzioni ICS");
+      impostaTitolo("App", "Sala operativa · tasti funzione");
       window.scrollTo(0, 0);
       return;
     }
@@ -366,7 +410,8 @@
   // Logo: dentro un modulo lo azzera (se il modulo lo prevede), altrimenti porta alla home
   function tapLogo() {
     if (attivo && hookLogo[attivo] && hookLogo[attivo].length) hookLogo[attivo].forEach(fn => fn());
-    else if (attivo) location.hash = "#/";
+    else if (attivo) location.hash = "#/" + ((MODULI[attivo] && MODULI[attivo].padre) || "");
+    else location.hash = "#/";
   }
   $("fohLogo").addEventListener("click", tapLogo);
   $("fohLogo").addEventListener("keydown", e => { if (e.key === "Enter") tapLogo(); });
@@ -376,70 +421,39 @@
   // =====================================================================
   const CHEVRON = '<svg class="ics-chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
   const home = $("view-home");
+  home.classList.add("fn-list");
 
-  function salvaAperta(id) {
-    try { id ? localStorage.setItem("fireops_home_sezione", id) : localStorage.removeItem("fireops_home_sezione"); } catch (e) { }
+  // Un tasto grande: icona su fondo colorato, nome, riga di spiegazione
+  function creaTasto(t) {
+    const a = document.createElement("a");
+    a.className = "fn";
+    a.style.setProperty("--c", t.colore || "var(--panel-2)");
+    a.style.setProperty("--on-c", t.testo || "#fff");
+    a.href = t.href || ("#/" + t.id);
+    if (t.esterno) { a.target = "_blank"; a.rel = "noopener"; }
+    a.innerHTML =
+      '<span class="fn-swatch" aria-hidden="true">' + (t.ico || "•") + '</span>' +
+      '<span class="fn-text"><span class="fn-name">' + esc(t.nome) + '</span>' +
+      '<span class="fn-sub">' + esc(t.sotto || t.desc || "") + '</span></span>' + CHEVRON;
+    // precarica il modulo appena il dito tocca, così l'apertura è immediata
+    const m = /^#\/([\w-]+)/.exec(a.getAttribute("href"));
+    if (m && MODULI[m[1]] && !MODULI[m[1]].segnaposto) a.addEventListener("pointerdown", () => { scaricaModulo(m[1]).catch(() => { }); }, {once: true});
+    return a;
   }
 
-  SEZIONI.forEach(s => {
-    const box = document.createElement("section");
-    box.className = "ics";
-    box.id = "ics-" + s.id;
-    box.style.setProperty("--c", s.colore);
-    box.style.setProperty("--on-c", s.testo);
+  FUNZIONI.forEach(f => home.appendChild(creaTasto({
+    id: f.id, nome: f.nome, ico: f.ico, colore: f.colore, testo: f.testo, sotto: f.sotto,
+    href: f.voci ? "#/" + f.id : f.href
+  })));
 
-    const n = s.moduli.length;
-    const head = document.createElement("button");
-    head.type = "button";
-    head.className = "ics-head";
-    head.setAttribute("aria-expanded", "false");
-    head.innerHTML =
-      '<span class="ics-swatch" aria-hidden="true">' + s.sigla + '</span>' +
-      '<span class="ics-text"><span class="ics-name">' + esc(s.nome) + '</span>' +
-      '<span class="ics-sub">' + esc(s.sub) + ' · ' + (n === 1 ? "1 modulo" : n + " moduli") + '</span></span>' +
-      CHEVRON;
-
-    const body = document.createElement("div");
-    body.className = "ics-body";
-    if (n) {
-      s.moduli.forEach(m => {
-        const a = document.createElement("a");
-        a.className = "mod";
-        a.href = "#/" + m.id;
-        a.innerHTML =
-          '<span class="mod-ico" aria-hidden="true">' + (m.ico || "•") + '</span>' +
-          '<span class="mod-text"><span class="mod-name">' + esc(m.nome) + '</span>' +
-          (m.desc ? '<span class="mod-desc">' + esc(m.desc) + '</span>' : '') + '</span>';
-        // precarica il modulo appena il dito tocca, così l'apertura è immediata
-        a.addEventListener("pointerdown", () => { scaricaModulo(m.id).catch(() => { }); }, {once: true});
-        body.appendChild(a);
-      });
-    } else {
-      body.innerHTML = '<div class="empty">Nessun modulo in questa funzione per ora.</div>';
-    }
-
-    head.addEventListener("click", () => {
-      const apri = !box.classList.contains("open");
-      home.querySelectorAll(".ics.open").forEach(x => {
-        x.classList.remove("open");
-        x.querySelector(".ics-head").setAttribute("aria-expanded", "false");
-      });
-      if (apri) {
-        box.classList.add("open");
-        head.setAttribute("aria-expanded", "true");
-      }
-      home.classList.toggle("has-open", apri);
-      salvaAperta(apri ? s.id : null);
-    });
-
-    box.append(head, body);
-    home.appendChild(box);
-  });
-
-  try {
-    const ultima = localStorage.getItem("fireops_home_sezione");
-    if (ultima && $("ics-" + ultima)) $("ics-" + ultima).querySelector(".ics-head").click();
-  } catch (e) { }
+  // Pagina dei sotto-tasti (Misura, PUMA, Co.Em.)
+  function mostraHub(f) {
+    const box = $("view-hub");
+    box.innerHTML = "";
+    f.voci.forEach(v => box.appendChild(creaTasto({
+      nome: v.nome, ico: v.ico, colore: f.colore, testo: f.testo, sotto: v.desc, href: v.href, esterno: v.esterno
+    })));
+  }
 
   // =====================================================================
   // Autoposizionamento: all'apertura rileva la posizione e mostra il comando competente
@@ -635,8 +649,19 @@
     consumaAutoLocalizzati: () => { const v = autoLocalizzati; autoLocalizzati = false; return v; },
     // testo ricevuto da "Condividi": si legge una volta sola
     consumaCondiviso: () => { const v = condiviso; condiviso = ""; return v; },
-    vai: id => { location.hash = id ? "#/" + id : "#/"; }
+    vai: id => { location.hash = id ? "#/" + id : "#/"; },
+    // dati personali salvati in locale dall'Area personale ({} se vuoti)
+    personale: () => { try { return JSON.parse(localStorage.getItem("fireops_personale") || "{}") || {}; } catch (e) { return {}; } }
   });
+
+  // Altezza dell'intestazione fissa: le barre dei wizard restano appiccicate subito sotto
+  (function () {
+    const h = document.querySelector(".foh");
+    const aggiorna = () => document.documentElement.style.setProperty("--foh-h", Math.round(h.getBoundingClientRect().height) + "px");
+    aggiorna();
+    if (window.ResizeObserver) new ResizeObserver(aggiorna).observe(h);
+    window.addEventListener("resize", aggiorna);
+  })();
 
   console.info("FireOps app versione", VERSIONE);
   $("fohLogo").title = "FireOps · versione " + VERSIONE;

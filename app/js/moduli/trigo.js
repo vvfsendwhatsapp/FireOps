@@ -36,6 +36,11 @@ const CSS=`.pg-trigo{--acc:var(--ics-pianificazione);--ok:#3fa66b;--bad:#e8734a;
 .pg-trigo .step::before{content:'';position:absolute;left:-2px;right:-2px;top:-15px;bottom:-15px}
 .pg-trigo .step.done{background:var(--ok)}
 .pg-trigo .step.on{background:var(--yellow)}
+.pg-trigo .stepnav{position:sticky;top:var(--foh-h,0px);z-index:40;display:flex;align-items:center;gap:8px;margin:8px -16px 12px;padding:8px 16px;background:var(--bg);border-bottom:1px solid var(--line)}
+.pg-trigo .stepnav .sn-l{flex:1;min-width:0;text-align:center;font-size:12.5px;font-weight:700;color:var(--text-dim);line-height:1.25}
+.pg-trigo .stepnav .sn-b{flex:none;min-height:42px;padding:0 14px;border-radius:6px;border:1px solid var(--line);background:var(--panel-2);color:var(--text);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+.pg-trigo .stepnav .sn-n{background:var(--yellow);border-color:var(--yellow);color:#000}
+.pg-trigo .stepnav .sn-b:disabled{opacity:.35;cursor:default}
 .pg-trigo .steplabel{padding:8px 0 10px;font-size:13px;color:var(--text-dim);text-align:center}
 .pg-trigo .strip{display:grid;grid-template-columns:repeat(var(--n,2),1fr);gap:8px;margin-bottom:10px}
 .pg-trigo .strip div{border:1px solid var(--line);border-radius:8px;padding:6px 10px;background:var(--panel)}
@@ -211,7 +216,7 @@ const CSS=`.pg-trigo{--acc:var(--ics-pianificazione);--ok:#3fa66b;--bad:#e8734a;
 .pg-trigo .ms-rot .ms-row{margin-bottom:4px}
 .pg-trigo .ms-rot input[type=range]{width:100%;margin:8px 0 2px;accent-color:var(--yellow);height:28px;padding:0}
 `;
-const HTML=`<div class="tg-nav" id="tg-nav" hidden><button type="button" class="tg-back" id="tg-back">‹ Trigo</button><b id="tg-navt"></b><button type="button" class="tg-back tg-rst" style="margin-left:auto">Reset dati</button></div>
+const HTML=`<div class="tg-nav" id="tg-nav" hidden><button type="button" class="tg-back" id="tg-back">‹ Misura</button><b id="tg-navt"></b><button type="button" class="tg-back tg-rst" style="margin-left:auto">Reset dati</button></div>
 
 <section id="tg-home">
   <p class="lead">Misure con la camera del telefono e la mappa. Scegli che cosa devi ricavare.</p>
@@ -1020,11 +1025,20 @@ function placeMap(ui,slotId){
 function setupSteps(view,labels,onStep){
   const bar=$('.steps',view);
   bar.innerHTML=labels.map((l,i)=>`<button type="button" class="step" data-s="${i+1}" aria-label="Passo ${i+1} di ${labels.length}: ${l}"></button>`).join('');
-  const lab=document.createElement('div');lab.className='steplabel';bar.after(lab);
+  const lab=document.createElement('div');lab.className='steplabel';
+  /* Barra in alto, sempre visibile sotto l'intestazione: Indietro | passo corrente | Avanti */
+  const nav=document.createElement('div');nav.className='stepnav';
+  nav.innerHTML='<button type="button" class="sn-b" data-sn="-1" aria-label="Passo precedente">‹ Indietro</button><span class="sn-l"></span><button type="button" class="sn-b sn-n" data-sn="1" aria-label="Passo successivo">Avanti ›</button>';
+  const snL=$('.sn-l',nav);
+  bar.after(nav);
+  let cur=1;
+  nav.addEventListener('click',e=>{const b=e.target.closest('[data-sn]');if(!b||b.disabled)return;const n=cur+(+b.dataset.sn);if(n>=1&&n<=labels.length)api.go(n);});
   const api={
     go(n){
+      cur=n;
+      $('[data-sn="-1"]',nav).disabled=n<=1;$('[data-sn="1"]',nav).disabled=n>=labels.length;
       $$('.step',bar).forEach(b=>{const on=+b.dataset.s===n;b.classList.toggle('on',on);if(on)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current');});
-      lab.textContent='Passo '+n+' di '+labels.length+' · '+labels[n-1];
+      snL.textContent=n+'/'+labels.length+' · '+labels[n-1];lab.textContent='';
       $$('.panel',view).forEach(pn=>{pn.hidden=+pn.dataset.s!==n;});
       view.dataset.step=n;
       if(onStep)onStep(n);
@@ -2987,15 +3001,19 @@ async function go(name){
 }
 function setup(){
   $$('.choice').forEach(b=>b.addEventListener('click',()=>{location.hash='#/trigo/'+b.dataset.to;}));
-  $('#tg-back').addEventListener('click',()=>{location.hash='#/trigo';});
+  $('#tg-back').addEventListener('click',()=>{location.hash='#/misura';});
   $$('.tg-rst').forEach(b=>b.addEventListener('click',()=>{
     if(!confirm('Cancellare tutte le misure, i punti e i risultati di Trigo?'))return;
-    Sensors.stop();location.hash='#/trigo';location.reload();   // lo stato è solo in memoria: si riparte da zero (restano le impostazioni stivali/passo/unità)
+    Sensors.stop();location.hash='#/misura';location.reload();   // lo stato è solo in memoria: si riparte da zero (restano le impostazioni stivali/passo/unità)
   }));
   document.addEventListener('keydown',e=>{if(e.key==='Escape')collapseMaps();});
-  FireOps.onShow('trigo',()=>{go((location.hash.match(/^#\/trigo\/([\w-]+)/)||[])[1]||'home');});
+  FireOps.onShow('trigo',()=>{
+    const v=(location.hash.match(/^#\/trigo\/([\w-]+)/)||[])[1];
+    if(!v||!VIEWS[v]||v==='home'){location.hash='#/misura';return;}   // la scelta della misura sta nella pagina Misura
+    go(v);
+  });
   FireOps.onHide('trigo',()=>{Sensors.stop();collapseMaps();});
-  FireOps.onLogo('trigo',()=>{if(curView!=='home')location.hash='#/trigo';else FireOps.vai('');});
+  FireOps.onLogo('trigo',()=>{location.hash='#/misura';});
 }
 
 FireOps.registra({id:'trigo',css:CSS,html:HTML,init(sec){root=sec;setup();}});

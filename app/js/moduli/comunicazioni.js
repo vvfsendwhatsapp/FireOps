@@ -134,6 +134,12 @@
 
 
 .pg-comunicazioni .cm-stepsbar { display: flex; gap: 5px; }
+/* barra Indietro / passo / Avanti in alto, sempre visibile sotto l'intestazione dell'app */
+.pg-comunicazioni .cm-stepnav { position: sticky; top: var(--foh-h, 0px); z-index: 40; display: flex; align-items: center; gap: 8px; margin: 8px -16px 12px; padding: 8px 16px; background: var(--bg); border-bottom: 1px solid var(--line); }
+.pg-comunicazioni .cm-stepnav .sn-l { flex: 1; min-width: 0; text-align: center; font-size: 12.5px; font-weight: 700; color: var(--text-dim); line-height: 1.25; }
+.pg-comunicazioni .cm-stepnav .sn-b { flex: none; min-height: 42px; padding: 0 14px; border-radius: 6px; border: 1px solid var(--line); background: var(--panel-2); color: var(--text); font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.pg-comunicazioni .cm-stepnav .sn-n { background: var(--cm-acc); border-color: var(--cm-acc); color: #fff; }
+.pg-comunicazioni .cm-stepnav .sn-b:disabled { opacity: .35; cursor: default; }
 .pg-comunicazioni .cm-dot { position: relative; flex: 1; height: 6px; min-height: 0; padding: 0; border: 0; border-radius: 3px; background: var(--line); cursor: default; }
 .pg-comunicazioni .cm-dot::before { content: ""; position: absolute; left: -2px; right: -2px; top: -15px; bottom: -15px; }
 .pg-comunicazioni .cm-dot.done { background: var(--cm-ok); cursor: pointer; }
@@ -336,7 +342,12 @@
 
   const html = `
 <div class="cm-stepsbar" id="fcStepsBar"></div>
-<div class="cm-steplabel" id="fcStepLabel"></div>
+<div class="cm-steplabel" id="fcStepLabel" hidden></div>
+<div class="cm-stepnav" id="fcStepNav">
+  <button type="button" class="sn-b" id="fcSnBack" aria-label="Passo precedente">‹ Indietro</button>
+  <span class="sn-l" id="fcSnLabel"></span>
+  <button type="button" class="sn-b sn-n" id="fcSnNext" aria-label="Passo successivo">Avanti ›</button>
+</div>
 
 <!-- STEP 1 -->
 <section class="cm-step" id="fcStep1">
@@ -821,7 +832,7 @@
       }
     }
     let suggerisciDaPosizione = false;
-    home.onChange = function () { suggerisciDaPosizione = false; if (stessoChk.checked) applyDestinazione(); };
+    home.onChange = function () { suggerisciDaPosizione = false; if (stessoChk.checked) applyDestinazione(); refreshPersonRows(); };
     dest.onChange = function (r) { if (!stessoChk.checked) currentComando = r; };
     stessoChk.addEventListener("change", applyDestinazione);
 
@@ -874,9 +885,16 @@
       stessoChk.checked = (p.stesso !== false);
       applyDestinazione();
       syncMittente();
+      refreshPersonRows();
     }
     function profBlank() {
-      profFill({qualifica: "VE", sede: "CENTRALE"});
+      // se l'utente ha compilato l'Area personale, parte da quei dati
+      const P = (window.FireOps && window.FireOps.personale && window.FireOps.personale()) || {};
+      profFill({
+        nome: P.nome, cognome: P.cognome, cf: P.cf, email: P.email,
+        qualifica: P.qualifica || "VE", sede: P.sede || "CENTRALE",
+        turnoL: P.turnoL, turnoS: P.turnoS, comando: P.comando
+      });
       // niente comando salvato: prova a suggerirlo dalla posizione rilevata dall'app
       suggerisciDaPosizione = true;
       provaSuggerimentoPosizione();
@@ -1015,6 +1033,14 @@
     const personaleOptions = '<option value="">Scegli nominativo</option>'
       + PERSONALE.map(n => '<option value="' + n.replace(/"/g, "&quot;") + '">' + n + "</option>").join("")
       + '<option value="__altro__">Altro</option>';
+    // L'elenco dei nominativi compare solo per il turno B di Forlì-Cesena: altrimenti si scrive a mano
+    function usaElenco() { return val("fcTurnoL") === "B" && !!home.rec && /forl/i.test(home.rec.c || ""); }
+    function applyRowMode(row) {
+      const sel = row.querySelector(".person-sel"), inp = row.querySelector(".person-input");
+      if (usaElenco()) { sel.classList.remove("hidden"); inp.classList.toggle("hidden", sel.value !== "__altro__"); }
+      else { sel.classList.add("hidden"); inp.classList.remove("hidden"); }
+    }
+    function refreshPersonRows() { root.querySelectorAll(".person-row").forEach(applyRowMode); }
     function addPersonRow(targetId) {
       const list = $(targetId);
       const row = document.createElement("div");
@@ -1030,6 +1056,7 @@
       });
       row.querySelector(".row-remove-btn").addEventListener("click", () => row.remove());
       list.appendChild(row);
+      applyRowMode(row);
       return row;
     }
     function addTimbraturaRow(targetId) {
@@ -1084,8 +1111,9 @@
 
     function getPersonList(listId) {
       return Array.from(root.querySelectorAll("#" + listId + " .person-row")).map(r => {
-        const sel = r.querySelector(".person-sel");
-        return sel.value === "__altro__" ? r.querySelector(".person-input").value.trim() : sel.value;
+        const sel = r.querySelector(".person-sel"), inp = r.querySelector(".person-input");
+        if (sel.classList.contains("hidden")) return inp.value.trim();
+        return sel.value === "__altro__" ? inp.value.trim() : sel.value;
       }).filter(Boolean);
     }
 
@@ -1117,6 +1145,9 @@
         if (n === currentStep) d.setAttribute("aria-current", "step"); else d.removeAttribute("aria-current");
       });
       $("fcStepLabel").textContent = "Passo " + currentStep + " di 5 - " + STEP_LABELS[currentStep - 1];
+      $("fcSnLabel").textContent = currentStep + "/5 · " + STEP_LABELS[currentStep - 1];
+      $("fcSnBack").disabled = currentStep <= 1;
+      $("fcSnNext").disabled = currentStep >= 5;
     }
 
     function showDetailBlock() {
@@ -1196,6 +1227,9 @@
     root.querySelectorAll("[data-next]").forEach(b => b.addEventListener("click", goNext));
     root.querySelectorAll("[data-back]").forEach(b => b.addEventListener("click", goBack));
     $("fcGoSummary").addEventListener("click", goNext);
+    $("fcSnNext").addEventListener("click", goNext);
+    $("fcTurnoL").addEventListener("change", refreshPersonRows);
+    $("fcSnBack").addEventListener("click", goBack);
     $("fcRestart").addEventListener("click", ricomincia);
 
     /* ---------- testo email ---------- */
