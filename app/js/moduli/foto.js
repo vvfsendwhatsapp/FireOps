@@ -227,8 +227,9 @@ const HTML=`<div class="steps" id="fo-steps"></div>
   <div class="card"><h3>Ridimensiona <span style="font-weight:400;color:var(--text-dim)">(facoltativo)</span></h3>
     <label class="f">Formato</label>
     <div class="chips" id="fo-asp" role="group" aria-label="Formato">
-      <button type="button" class="btn sm on" data-a="orig">Originale</button><button type="button" class="btn sm" data-a="43">4:3</button><button type="button" class="btn sm" data-a="32">3:2</button><button type="button" class="btn sm" data-a="169">16:9</button><button type="button" class="btn sm" data-a="54">5:4</button><button type="button" class="btn sm" data-a="11">1:1</button><button type="button" class="btn sm" data-a="free">Libero</button>
+      <button type="button" class="btn sm on" data-a="orig">Originale</button><button type="button" class="btn sm" data-a="43">4:3</button><button type="button" class="btn sm" data-a="32">3:2</button><button type="button" class="btn sm" data-a="169">16:9</button><button type="button" class="btn sm" data-a="54">5:4</button><button type="button" class="btn sm" data-a="11">1:1</button><button type="button" class="btn sm" data-a="219">21:9</button><button type="button" class="btn sm" data-a="free">Libero</button><button type="button" class="btn sm" data-a="cust">Personalizzato</button>
     </div>
+    <div class="row" id="fo-custrow" style="margin-top:8px" hidden><label class="f" for="fo-cw" style="margin:0">Rapporto</label><input id="fo-cw" type="text" inputmode="decimal" value="4" style="width:64px" aria-label="Larghezza"> <b>:</b> <input id="fo-ch" type="text" inputmode="decimal" value="3" style="width:64px" aria-label="Altezza"></div>
     <div class="row" style="margin-top:8px"><button type="button" class="btn sm" id="fo-orient">Orizzontale</button></div>
     <label class="f">Dimensione del file salvato (lato lungo)</label>
     <div class="chips" id="fo-outsz" role="group" aria-label="Dimensione del file salvato">
@@ -550,14 +551,15 @@ function setBase(src,w,h){
   $('#fo-info').textContent='Foto '+w+' × '+h+' px. Salvando si tolgono i dati nascosti (EXIF), posizione GPS compresa.';
   snapCorner();
 }
-function cropKey(){const c=S.crop;return JSON.stringify([c.q,c.t,c.asp,c.land,Math.round(c.m*1000),Math.round(c.cx),Math.round(c.cy),Math.round(c.fx*1000),Math.round(c.fy*1000)]);}
+function cropKey(){const c=S.crop;return JSON.stringify([c.q,c.t,c.asp,c.cr||0,c.land,Math.round(c.m*1000),Math.round(c.cx),Math.round(c.cy),Math.round(c.fx*1000),Math.round(c.fy*1000)]);}
 function cropIdentity(){const c=S.crop;return c.q===0&&c.t===0&&c.asp==='orig'&&c.m===1&&c.cx===0&&c.cy===0&&c.fx===1&&c.fy===1;}
-const ASP={'43':4/3,'32':3/2,'169':16/9,'54':5/4};
+const ASP={'43':4/3,'32':3/2,'169':16/9,'54':5/4,'219':21/9};
+const aspVal=c=>c.asp==='cust'?(c.cr||4/3):ASP[c.asp];
 function cropAspect(){
   const c=S.crop,O=S.orig;
   if(c.asp==='orig'||c.asp==='free')return c.q%2?O.h/O.w:O.w/O.h;
   if(c.asp==='11')return 1;
-  const v=ASP[c.asp];
+  const v=aspVal(c);
   return c.land?v:1/v;
 }
 /* riquadro di riferimento per lo zoom: quello del formato scelto, oppure tutta l'area per "Libero" */
@@ -618,7 +620,7 @@ function cropChanged(){uiCrop();markCrop();paint();}
 function uiCrop(){
   const c=S.crop;if(!c)return;
   $$('#fo-asp button').forEach(b=>b.classList.toggle('on',b.dataset.a===c.asp));
-  const ob=$('#fo-orient');ob.disabled=!ASP[c.asp];ob.textContent=c.land?'Orizzontale':'Verticale';
+  const ob=$('#fo-orient');ob.disabled=!aspVal(c);$('#fo-custrow').hidden=c.asp!=='cust';ob.textContent=c.land?'Orizzontale':'Verticale';
   $('#fo-ct').value=c.t;$('#fo-ctn').value=c.t;
   let mm=1;if(S.cw>0){try{mm=cropGeom().mmin;}catch(e){}}
   const mn=Math.max(5,Math.floor(Math.min(1,mm)*100));$('#fo-cm').min=mn;$('#fo-cmn').min=mn;
@@ -1021,8 +1023,12 @@ function setup(){
       const g=cropGeom();c.asp='free';const r=cropRef();
       c.fx=clamp(g.fw/r.w,0.1,1);c.fy=clamp(g.fh/r.h,0.1,1);
       c.m=g.s/cropMinScale(S.orig.w,S.orig.h,c.q*90+c.t,r.w,r.h);
+    }else if(a==='cust'&&c.asp!=='cust'){custApply();return;
     }else if(a!==c.asp){c.asp=a;c.fx=1;c.fy=1;c.m=1;c.cx=0;c.cy=0;}
     cropChanged();});
+  const custApply=()=>{const c=C();if(!c)return;const n=id=>parseFloat(String($(id).value).replace(',','.'));const w=n('#fo-cw'),h=n('#fo-ch');
+    if(!(w>0&&h>0))return;const r=Math.min(20,Math.max(1/20,w/h));c.cr=Math.max(r,1/r);c.land=r>=1;c.asp='cust';c.fx=1;c.fy=1;c.m=1;c.cx=0;c.cy=0;cropChanged();};
+  $('#fo-cw').addEventListener('input',custApply);$('#fo-ch').addEventListener('input',custApply);
   $('#fo-orient').onclick=()=>{if(!C())return;C().land=!C().land;C().m=1;C().cx=0;C().cy=0;cropChanged();};
   $('#fo-rl').onclick=()=>{if(!C())return;C().q=(C().q+3)%4;C().m=1;C().fx=1;C().fy=1;C().cx=0;C().cy=0;cropChanged();};
   $('#fo-rr').onclick=()=>{if(!C())return;C().q=(C().q+1)%4;C().m=1;C().fx=1;C().fy=1;C().cx=0;C().cy=0;cropChanged();};

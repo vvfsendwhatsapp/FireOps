@@ -45,8 +45,8 @@
       sotto: "Comunicazione in Emergenza",
       voci: [
         {nome: "Foto", ico: "📷", href: "#/foto", desc: "Inquadra, ruota, ingrandisci, sfoca volti e targhe, aggiungi il logo CNVVF"},
-        {nome: "Video", ico: "🎬", href: "#/video", desc: "In preparazione"},
-        {nome: "Comunicato", ico: "📰", href: "#/comunicato", desc: "In preparazione"}
+        {nome: "Video", ico: "🎬", href: "#/video", desc: "Testo AI con intestazione e chiusura"},
+        {nome: "Comunicato", ico: "📰", href: "#/comunicato", desc: "Testo riscritto con AI"}
       ]},
     {id: "comunicazioni", nome: "Comunicazioni", ico: "✉️", colore: "var(--ics-amministrazione)", testo: "#fff",
       sotto: "Missioni per soccorso e mancate timbrature", href: "#/comunicazioni"},
@@ -70,8 +70,7 @@
     foto: {nome: "Co.Em. - Foto", sotto: "Comunicazione in Emergenza", padre: "coem"},
     video: {nome: "Co.Em. - Video", sotto: "Comunicazione in Emergenza", padre: "coem",
       segnaposto: "Il modulo Video è in preparazione."},
-    comunicato: {nome: "Co.Em. - Comunicato", sotto: "Comunicazione in Emergenza", padre: "coem",
-      segnaposto: "Il modulo Comunicato è in preparazione."},
+    comunicato: {nome: "Co.Em. - Comunicato", sotto: "Comunicazione in Emergenza", padre: "coem"},
     comunicazioni: {nome: "Comunicazioni", sotto: "Missioni per soccorso e mancate timbrature"},
     rapporti: {nome: "Rapporti d’intervento", sotto: "In preparazione",
       segnaposto: "I rapporti d’intervento arriveranno in un prossimo aggiornamento."},
