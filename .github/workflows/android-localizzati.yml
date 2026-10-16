@@ -1,4 +1,4 @@
-name: APK FireOps VVF App
+name: APK FireOps VVF
 
 on:
   workflow_dispatch:
@@ -30,17 +30,17 @@ jobs:
         run: gradle --no-daemon assembleDebug
 
       - name: Rinomina
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk FireOps-VVF-App.apk
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk FireOps-VVF.apk
 
       - uses: actions/upload-artifact@v4
         with:
-          name: FireOps-VVF-App-apk
-          path: FireOps-VVF-App.apk
+          name: FireOps-VVF-apk
+          path: FireOps-VVF.apk
 
       - name: Pubblica nella release "apk-localizzati" (link fisso per scaricare dal telefono)
         uses: softprops/action-gh-release@v2
         with:
           tag_name: apk-localizzati
-          name: FireOps VVF App (APK)
-          body: Scarica FireOps-VVF-App.apk dal telefono e installalo (serve consentire l'installazione da questa fonte).
-          files: FireOps-VVF-App.apk
+          name: FireOps VVF (APK)
+          body: Scarica FireOps-VVF.apk dal telefono e installalo (serve consentire l'installazione da questa fonte).
+          files: FireOps-VVF.apk
