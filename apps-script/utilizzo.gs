@@ -9,7 +9,7 @@
  *      if (e.parameter && e.parameter.utilizzo) return rispostaJson_(elencoUtilizzo_(Number(e.parameter.giorni) || 90));
  * 3) Distribuisci di nuovo la Web App ("Nuova versione"), accesso "Chiunque".
  *
- * Il foglio tiene UNA riga per Comando + piattaforma (desktop/mobile): ultimo accesso, versione, numero di aperture.
+ * Il foglio tiene UNA riga per Comando + piattaforma; l'app mostra solo i nomi dei Comandi che hanno fatto login su desktop.
  * Non si registrano nomi di persone ne' indirizzi IP: solo il Comando.
  */
 function rispostaJson_(obj) {

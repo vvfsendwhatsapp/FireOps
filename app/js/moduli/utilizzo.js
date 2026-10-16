@@ -1,6 +1,5 @@
 /* FireOps VVF - modulo "Info Comandi"
- * Quali Comandi si sono collegati a FireOps DESKTOP (non all'app), con versione e ultimo accesso.
- * Serve a capire chi avvisare di aggiornare con F5. Legge il foglio DB_Utilizzo
+ * Quali Comandi hanno fatto il login in FireOps DESKTOP (non nell'app): solo i nomi. Legge il foglio DB_Utilizzo
  * dalla Web App Apps Script (vedi apps-script/utilizzo.gs): GET ?utilizzo=1&giorni=N.
  * L'app non registra nulla su di se': la registrazione la fa solo FireOps desktop (utilizzo.js in radice).
  */
@@ -31,12 +30,11 @@ FireOps.registra({
 `,
 
   html: `
-<p class="lead">I Comandi che si sono collegati a <b>FireOps desktop</b> negli ultimi 90 giorni. Quelli con una versione vecchia vanno avvisati di aggiornare con F5.</p>
-<div id="ut-num"></div>
+<p class="lead">I Comandi che hanno effettuato l’accesso a <b>FireOps desktop</b> negli ultimi 90 giorni.</p>
 <div class="card" id="ut-elenco"><div class="vuoto">Carico l’elenco…</div></div>
 <div class="acts">
   <button type="button" class="btn pri" id="ut-agg">Aggiorna</button>
-  <button type="button" class="btn" id="ut-copia" hidden>Copia i Comandi da avvisare</button>
+  <button type="button" class="btn" id="ut-copia" hidden>Copia l’elenco</button>
 </div>
 <p class="nota" id="ut-nota"></p>
 `,
@@ -46,51 +44,31 @@ FireOps.registra({
     const WEBAPP = "https://script.google.com/macros/s/AKfycbyp6jQ331Yk5q7_hkM74ZyhUh1c3zQUJG7SpuoE18HslBO36YKSTYIQf-z7gSwXR4Yv/exec";
     const $ = s => root.querySelector(s);
     const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
-    let daAvvisare = [];
-
-    function fa(iso) {
-      const m = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
-      if (m < 60) return m + " min fa";
-      if (m < 1440) return Math.round(m / 60) + " h fa";
-      return Math.round(m / 1440) + " gg fa";
-    }
-
-    // versione attuale di FireOps desktop: sta in /FireOps/versione.js (l'app e' in /FireOps/app/)
-    async function versioneDesktop() {
-      try {
-        const r = await fetch("../versione.js?t=" + Date.now(), {cache: "no-store"});
-        const m = (await r.text()).match(/FIREOPS_VERSIONE\s*=\s*["']([^"']+)["']/);
-        return m ? m[1] : "";
-      } catch (e) { return ""; }
-    }
+    let nomi = [];
 
     async function carica() {
       $("#ut-elenco").innerHTML = '<div class="vuoto">Carico l’elenco…</div>';
-      $("#ut-copia").hidden = true; $("#ut-num").innerHTML = ""; $("#ut-nota").textContent = "";
+      $("#ut-copia").hidden = true; $("#ut-nota").textContent = "";
       let dati = null;
-      const [ver, risp] = await Promise.all([
-        versioneDesktop(),
-        fetch(WEBAPP + "?" + new URLSearchParams({utilizzo: "1", giorni: "90"})).then(r => r.ok ? r.json() : null).catch(() => null)
-      ]);
-      if (risp && Array.isArray(risp.comandi)) dati = risp.comandi.filter(r => r.piattaforma === "desktop");
+      try {
+        const r = await fetch(WEBAPP + "?" + new URLSearchParams({utilizzo: "1", giorni: "90"}));
+        const j = r.ok ? await r.json() : null;
+        if (j && Array.isArray(j.comandi)) dati = j.comandi.filter(x => x.piattaforma === "desktop");
+      } catch (e) { }
       if (!dati) {
         $("#ut-elenco").innerHTML = '<div class="vuoto">Elenco non disponibile.<br>Serve la connessione e lo script Apps Script aggiornato (apps-script/utilizzo.gs).</div>';
         return;
       }
-      if (!dati.length) { $("#ut-elenco").innerHTML = '<div class="vuoto">Nessun Comando collegato a FireOps desktop negli ultimi 90 giorni.</div>'; return; }
-      const vecchio = r => ver && r.versione !== ver;
-      daAvvisare = dati.filter(vecchio).map(r => r.comando);
-      $("#ut-num").innerHTML = '<div class="num"><div><b>' + dati.length + "</b><span>Comandi</span></div><div><b>" + (dati.length - daAvvisare.length) +
-        "</b><span>aggiornati</span></div><div><b>" + daAvvisare.length + "</b><span>da avvisare</span></div></div>";
-      $("#ut-elenco").innerHTML = dati.map(r => '<div class="it' + (vecchio(r) ? " vecchia" : "") + '"><div class="tx"><b>' + esc(r.comando) + "</b><small>Ultimo accesso " + fa(r.ultimo) +
-        " · " + r.aperture + (r.aperture === 1 ? " apertura" : " aperture") + "</small></div><div class=\"st\">" + (vecchio(r) ? "⚠️ da aggiornare" : "✅ aggiornato") + "</div></div>").join("");
-      $("#ut-copia").hidden = !daAvvisare.length;
-      $("#ut-nota").textContent = ver ? "Versione attuale di FireOps desktop: " + ver : "Versione attuale non rilevata: non si può dire chi è da aggiornare.";
+      nomi = Array.from(new Set(dati.map(x => x.comando))).sort((a, b) => a.localeCompare(b, "it"));
+      if (!nomi.length) { $("#ut-elenco").innerHTML = '<div class="vuoto">Nessun Comando collegato a FireOps desktop negli ultimi 90 giorni.</div>'; return; }
+      $("#ut-elenco").innerHTML = nomi.map(n => '<div class="it"><div class="tx"><b>' + esc(n) + "</b></div></div>").join("");
+      $("#ut-nota").textContent = nomi.length + (nomi.length === 1 ? " Comando" : " Comandi");
+      $("#ut-copia").hidden = false;
     }
 
     $("#ut-agg").addEventListener("click", carica);
     $("#ut-copia").addEventListener("click", () => {
-      const t = Array.from(new Set(daAvvisare)).join("\n"), b = $("#ut-copia");
+      const t = nomi.join("\n"), b = $("#ut-copia");
       (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => { b.textContent = "Copiato ✔"; }).catch(() => { b.textContent = t.replace(/\n/g, ", "); });
     });
     carica();

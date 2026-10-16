@@ -1,8 +1,7 @@
 /* FireOps desktop - utilizzo e aggiornamento.
- * 1) Registra (una volta ogni 6 ore) quale Comando sta usando l'app: solo il nome del Comando,
- *    la versione e se e' desktop o telefono. Nessun dato personale.
- * 2) Nel modale "Aiuto e contatti" mostra i Comandi che usano FireOps, con la versione:
- *    quelli con versione diversa dalla tua sono da avvisare (F5).
+ * 1) Registra il Comando scelto al login ("Conferma e Accedi" e cambio Comando dal menu ☰),
+ *    al massimo una volta ogni 6 ore per Comando. Solo il nome: nessun dato personale.
+ * 2) Nel modale "Aiuto e contatti" mostra solo i nomi dei Comandi collegati a FireOps desktop.
  * 3) Controlla ogni 5 minuti se esiste una versione nuova e mostra la barra "Aggiorna".
  * Il registro sta nel foglio DB_Utilizzo (vedi apps-script/utilizzo.gs).
  */
@@ -48,43 +47,26 @@
     } catch (e) { }
   }
   document.addEventListener("fireops:comando-attivo-cambiato", e => ping(e.detail && e.detail.Comando ? e.detail.Comando : e.detail || leggi(CHIAVE_COMANDO)));
-  setTimeout(() => ping(leggi(CHIAVE_COMANDO)), 4000);
 
   /* ---------- 2) elenco nel modale ---------- */
   const modale = document.getElementById("modal-help");
   const box = document.getElementById("utilizzo-comandi");
-  let ultimoCaricamento = 0, dati = null, soloDesktop = true;
-
-  function fa(iso) {
-    const m = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
-    if (m < 60) return m + " min fa";
-    if (m < 1440) return Math.round(m / 60) + " h fa";
-    return Math.round(m / 1440) + " gg fa";
-  }
+  let ultimoCaricamento = 0, dati = null;
 
   function disegna() {
     if (!box) return;
     if (!dati) { box.innerHTML = '<div class="ut-nota">Elenco non disponibile.</div>'; return; }
-    const righe = dati.filter(r => !soloDesktop || r.piattaforma === "desktop");
-    const vecchi = righe.filter(r => r.versione !== versione);
-    let h = '<div class="ut-tit">🖥️ Comandi che usano FireOps</div>' +
-      '<label class="ut-filtro"><input type="checkbox" id="ut-desktop"' + (soloDesktop ? " checked" : "") + '> Solo desktop</label>';
-    if (!righe.length) h += '<div class="ut-nota">Nessun Comando negli ultimi 90 giorni.</div>';
+    const nomi = Array.from(new Set(dati.filter(r => r.piattaforma === "desktop").map(r => r.comando))).sort((a, b) => a.localeCompare(b, "it"));
+    let h = '<div class="ut-tit">🖥️ Comandi collegati a FireOps desktop</div>';
+    if (!nomi.length) h += '<div class="ut-nota">Nessun Comando negli ultimi 90 giorni.</div>';
     else {
-      h += '<div class="ut-elenco">' + righe.map(r => {
-        const ok = r.versione === versione;
-        return '<div class="ut-riga' + (ok ? "" : " ut-vecchia") + '"><span>' + (r.piattaforma === "mobile" ? "📱 " : "🖥️ ") + esc(r.comando) + "</span><span>" +
-          (ok ? "✅" : "⚠️ da aggiornare") + " · " + fa(r.ultimo) + "</span></div>";
-      }).join("") + "</div>";
-      h += '<div class="ut-nota">' + righe.length + " Comandi, " + vecchi.length + " con versione diversa dalla tua (" + esc(versione) + ").</div>";
-      if (vecchi.length) h += '<button type="button" class="ut-btn" id="ut-copia">Copia i Comandi da avvisare</button>';
+      h += '<div class="ut-elenco">' + nomi.map(n => '<div class="ut-riga"><span>' + esc(n) + "</span></div>").join("") + "</div>" +
+        '<div class="ut-nota">' + nomi.length + (nomi.length === 1 ? " Comando" : " Comandi") + '</div><button type="button" class="ut-btn" id="ut-copia">Copia l’elenco</button>';
     }
     box.innerHTML = h;
-    const cb = box.querySelector("#ut-desktop");
-    if (cb) cb.addEventListener("change", () => { soloDesktop = cb.checked; disegna(); });
     const bt = box.querySelector("#ut-copia");
     if (bt) bt.addEventListener("click", () => {
-      const t = Array.from(new Set(vecchi.map(r => r.comando))).join("\n");
+      const t = nomi.join("\n");
       (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => { bt.textContent = "Copiato ✔"; }).catch(() => { bt.textContent = t.replace(/\n/g, ", "); });
     });
   }
