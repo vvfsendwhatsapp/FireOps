@@ -88,6 +88,7 @@ FireOps.registra({
 
 [hidden] { display: none !important; }
 /* passi: linee sottili, come negli altri moduli */
+.pg-taglio .wrap.taglia #tgLat { touch-action: none; cursor: ew-resize; }
 .pg-taglio .steps { display: flex; gap: 5px; margin: 2px 0 0; }
 .pg-taglio .step { position: relative; flex: 1; height: 6px; padding: 0; border: 0; border-radius: 3px; background: var(--line); cursor: pointer; }
 .pg-taglio .step::before { content: ''; position: absolute; left: -2px; right: -2px; top: -15px; bottom: -15px; }
@@ -171,13 +172,13 @@ FireOps.registra({
           <option value="30">Legno netto</option>
         </select></div>
     </div>
-    <div class="nav"><button type="button" class="btn pri" data-go="2">Avanti: appoggi e taglio</button></div>
+    <div class="nav"><button type="button" class="btn pri" data-go="2">Avanti: appoggi</button></div>
   </div>
 
   <div class="pannello" data-s="2" hidden>
-    <p class="lead" id="tgLead2">Indica dove il tronco è appoggiato e dove vuoi tagliare.</p>
+    <p class="lead" id="tgLead2">Indica dove il tronco è appoggiato.</p>
     <div class="blocco">
-      <div class="tit">Appoggi e punto di taglio</div>
+      <div class="tit">Appoggi</div>
       <div class="ctl" id="tgWA"><label for="tgA">Appoggio A <b><span id="tgAv">0.5</span> m</b></label>
         <div class="rng"><button type="button" class="pm" data-t="tgA" data-d="-1" aria-label="Appoggio A meno">−</button><input type="range" id="tgA" min="0" max="6" step="0.05" value="0.5"><button type="button" class="pm" data-t="tgA" data-d="1" aria-label="Appoggio A più">+</button></div></div>
       <div class="ctl" id="tgWB"><label for="tgB">Appoggio B <b><span id="tgBv">4.0</span> m</b></label>
@@ -185,14 +186,17 @@ FireOps.registra({
       <div class="ctl" id="tgWR"><label for="tgR">Appoggio a terra <b><span id="tgRv">nessuno</span></b></label>
         <div class="rng"><button type="button" class="pm" data-t="tgR" data-d="-1" aria-label="Appoggio a terra meno">−</button><input type="range" id="tgR" min="0" max="6" step="0.05" value="0"><button type="button" class="pm" data-t="tgR" data-d="1" aria-label="Appoggio a terra più">+</button></div>
         <div class="h">Tutto a sinistra = nessun appoggio, ramo libero a sbalzo.</div></div>
-      <div class="ctl"><label for="tgT">Posizione del taglio <b><span id="tgTv">5.0</span> m</b></label>
-        <div class="rng"><button type="button" class="pm" data-t="tgT" data-d="-1" aria-label="Taglio meno">−</button><input type="range" id="tgT" min="0" max="6" step="0.05" value="5"><button type="button" class="pm" data-t="tgT" data-d="1" aria-label="Taglio più">+</button></div>
-        <div class="h">Distanza dall'estremo sinistro del disegno. La linea tratteggiata mostra dove cade.</div></div>
     </div>
-    <div class="nav"><button type="button" class="btn" data-go="1">Indietro</button><button type="button" class="btn pri" data-go="3">Vedi come tagliare</button></div>
+    <div class="nav"><button type="button" class="btn" data-go="1">Indietro</button><button type="button" class="btn pri" data-go="3">Avanti: dove tagliare</button></div>
   </div>
 
   <div class="pannello" data-s="3" hidden>
+    <div class="blocco" id="tgBloccoTaglio">
+      <div class="tit">Dove tagli</div>
+      <div class="ctl"><label for="tgT">Posizione del taglio <b><span id="tgTv">5.0</span> m</b></label>
+        <div class="rng"><button type="button" class="pm" data-t="tgT" data-d="-1" aria-label="Taglio meno">−</button><input type="range" id="tgT" min="0" max="6" step="0.05" value="5"><button type="button" class="pm" data-t="tgT" data-d="1" aria-label="Taglio più">+</button></div>
+        <div class="h">Muovi il cursore o trascina il disegno: la linea tratteggiata e l'esito si aggiornano subito. Misura dall'estremo sinistro del disegno.</div></div>
+    </div>
     <div class="blocco" id="tgVerdetto"></div>
     <div id="tgAvvisi"></div>
     <div class="blocco">
@@ -204,7 +208,7 @@ FireOps.registra({
       <svg id="tgSez" viewBox="0 0 360 210" role="img" aria-label="Sezione del tronco con profondità dello scarico"></svg>
       <div class="dati" id="tgDati"></div>
     </div>
-    <div class="nav"><button type="button" class="btn" data-go="2">Cambia il taglio</button><button type="button" class="btn" data-go="1">Cambia il tronco</button></div>
+    <div class="nav"><button type="button" class="btn" data-go="2">Cambia gli appoggi</button><button type="button" class="btn" data-go="1">Cambia il tronco</button></div>
     <div class="limiti">
       Modello semplificato: asse dritto con inclinazione costante (0° = orizzontale), solo peso proprio, legno omogeneo. Con l'inclinazione la compressione lungo l'asse è sommata in modo prudente alla flessione. Non vede nodi, marciumi,
       tensioni di crescita, rami piegati a molla, pendenza del terreno né carichi sopra il tronco.
@@ -314,6 +318,7 @@ FireOps.registra({
     // ---------------- disegno ----------------
     const NS = "http://www.w3.org/2000/svg";
     const mk = (t, a) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); return e; };
+    let geo = null;
     let unrot = 0;   // gradi di contro-rotazione: i testi dentro il tronco inclinato restano dritti
     const tx = (x, y, s, a = {}) => {
       const e = mk("text", Object.assign({x, y, fill: C.tenue, "font-size": 11, "font-family": "system-ui,sans-serif"}, a));
@@ -367,6 +372,7 @@ FireOps.registra({
       const sv = mk("g", {transform: `translate(${px} ${py}) rotate(${-deg.toFixed(2)})`});
       svEl.appendChild(sv);
       unrot = +deg.toFixed(2);
+      geo = {px, py, sn, cs, len, sb, L: s.L};
 
       // fibre sopra/sotto colorate con intensità ~ |M|
       const n = 120, vals = [];
@@ -588,8 +594,27 @@ FireOps.registra({
       b.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); muovi(); } });
     });
 
+    // ---------------- trascinare il taglio sul disegno (passo 3) ----------------
+    (function () {
+      const sv = $("tgLat");
+      let giu = false;
+      const imposta = e => {
+        if (!geo || !sv.getScreenCTM) return;
+        const m = sv.getScreenCTM(); if (!m) return;
+        const pt = sv.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+        const q = pt.matrixTransform(m.inverse());
+        const u = (q.x - geo.px) * geo.cs - (q.y - geo.py) * geo.sn;            // lungo l'asse del tronco
+        let x = geo.sb ? u / geo.len * geo.L : (u / geo.len + .5) * geo.L;
+        x = Math.max(0, Math.min(geo.L, Math.round(x / .05) * .05));
+        $("tgT").value = x; aggiorna();
+      };
+      sv.addEventListener("pointerdown", e => { if (passo !== 3) return; giu = true; try { sv.setPointerCapture(e.pointerId); } catch (_) { } imposta(e); e.preventDefault(); });
+      sv.addEventListener("pointermove", e => { if (giu) imposta(e); });
+      ["pointerup", "pointercancel"].forEach(ev => sv.addEventListener(ev, () => { giu = false; }));
+    })();
+
     // ---------------- passi ----------------
-    const nomi = ["Tronco", "Appoggi e taglio", "Esito"];
+    const nomi = ["Tronco", "Appoggi", "Taglio"];
     const barra = $("tgSteps");
     barra.innerHTML = nomi.map((l, i) => '<button type="button" class="step" data-s="' + (i + 1) + '" aria-label="Passo ' + (i + 1) + ' di ' + nomi.length + ': ' + l + '"></button>').join("");
     // barra in alto, sempre visibile sotto l'intestazione: Indietro | passo | Avanti
@@ -615,10 +640,10 @@ FireOps.registra({
       eti.querySelector(".sn-l").textContent = n + "/" + nomi.length + " · " + nomi[n - 1];
       eti.querySelector('[data-sn="-1"]').disabled = n <= 1;
       eti.querySelector('[data-sn="1"]').disabled = n >= nomi.length;
-      $("tgDisegno").hidden = n === 3;                 // all'esito il disegno non serve: contano i tagli
+      root.querySelector(".wrap").classList.toggle("taglia", n === 3);   // al passo 3 il disegno si trascina
       $("tgLead2").textContent = modo === "sbalzo"
-        ? "Se il ramo poggia a terra in un punto, indicalo. Poi scegli dove tagliare."
-        : "Indica dove poggia il tronco (A e B) e dove vuoi tagliare.";
+        ? "Se il ramo poggia a terra in un punto, indicalo."
+        : "Indica dove poggia il tronco (A e B).";
       aggiorna();
       if (passo !== 1 || visti[2] || visti[3]) root.scrollIntoView({block: "start", behavior: "smooth"});
     }

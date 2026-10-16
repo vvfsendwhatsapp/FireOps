@@ -1,20 +1,21 @@
 /* FireOps VVF - modulo Co.Em. Comunicato
- * Riscrive con l'intelligenza artificiale il testo di un intervento in forma di comunicato stampa,
- * con intestazione e chiusura fisse (modificabili). Tutto resta sul telefono: chiavi e testi si salvano
+ * Riscrive con l'intelligenza artificiale il testo di un intervento in forma di comunicato
+ * (titolo + testo), con chiusura fissa modificabile. Tutto resta sul telefono: chiavi e testi si salvano
  * in localStorage; il testo parte solo verso il servizio AI scelto, e solo quando premi "Riscrivi".
  */
 (function () {
   "use strict";
 
-  const K_AI = "fireops_ai", K_CMT = "fireops_comunicato";
+  const K_AI = "fireops_ai", K_CMT = "fireops_comunicato2";
   const PROVIDERS = {
-    gemini: {nome: "Google Gemini", modello: "gemini-2.0-flash"},
+    gemini: {nome: "Google Gemini", modello: "gemini-flash-latest", alt: ["gemini-3.8-flash", "gemini-2.5-flash"]},
     groq: {nome: "Groq", modello: "llama-3.3-70b-versatile"},
     mistral: {nome: "Mistral", modello: "mistral-small-latest"}
   };
   const ORDINE = ["gemini", "groq", "mistral"];
-  const HEAD0 = "🚒 VIGILI DEL FUOCO – {COMANDO}\nCOMUNICATO STAMPA – {DATA}";
-  const FOOT0 = "Vigili del Fuoco – Sala Operativa {COMANDO}\nSoccorso pubblico: 115";
+  // telefono e mail compaiono solo per i comandi che li hanno qui sotto (per ora Forlì-Cesena)
+  const CONTATTI = [{re: /forl/i, tel: "0543 410807", mail: "cdv.forli@vigilfuoco.it"}];
+  const FOOT0 = "Vigili del Fuoco {COMANDO}\nCo.Em. Comunicazione in Emergenza\nTel. {TEL}\nMail: {MAIL}\nwww.vigilfuoco.tv";
   const TONI = {
     sintetico: "Sii molto sintetico: 2-3 frasi.",
     standard: "Scrivi un breve testo di 4-6 frasi.",
@@ -57,7 +58,7 @@
 `;
 
   const HTML = `
-<p class="lead">Scrivi i fatti dell’intervento come ti vengono: l’AI li riscrive in forma di comunicato, con intestazione e chiusura fisse. Controlla sempre il testo prima di diffonderlo.</p>
+<p class="lead">Scrivi i fatti dell’intervento come ti vengono: l’AI li riscrive in forma di comunicato, con titolo e chiusura fissa. Controlla sempre il testo prima di diffonderlo.</p>
 
 <div class="card">
   <h3>1 · Cosa è successo</h3>
@@ -83,14 +84,12 @@
 </div>
 
 <details>
-  <summary>Intestazione, chiusura e AI</summary>
+  <summary>Chiusura e AI</summary>
   <div class="card">
-    <label class="f" for="cm-head">Intestazione</label>
-    <textarea id="cm-head" class="sm"></textarea>
     <label class="f" for="cm-foot">Chiusura</label>
-    <textarea id="cm-foot" class="sm"></textarea>
-    <p class="nota">Segnaposto: {COMANDO} (dall’Area personale o dalla posizione), {DATA}, {ORA}.</p>
-    <div class="acts"><button type="button" class="btn" id="cm-hfdef">Ripristina intestazione e chiusura</button></div>
+    <textarea id="cm-foot" class="sm" style="min-height:130px"></textarea>
+    <p class="nota">Segnaposto: {COMANDO} (dall’Area personale o dalla posizione), {DATA}, {ORA}, {TEL} e {MAIL}. Le righe con {TEL} o {MAIL} compaiono solo per i comandi che hanno telefono e mail (per ora Forlì-Cesena).</p>
+    <div class="acts"><button type="button" class="btn" id="cm-hfdef">Ripristina la chiusura</button></div>
     <label class="f" for="cm-prov">Servizio AI preferito</label>
     <select id="cm-prov"><option value="">Automatico (il primo con chiave)</option>${ORDINE.map(p => '<option value="' + p + '">' + PROVIDERS[p].nome + "</option>").join("")}</select>
     ${ORDINE.map(p => '<label class="f" for="cm-k-' + p + '">Chiave ' + PROVIDERS[p].nome + '</label><input id="cm-k-' + p + '" data-p="' + p + '" type="password" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="incolla la chiave API">').join("")}
@@ -102,7 +101,20 @@
 
   function chiamaAI(p, chiave, sistema, utente) {
     if (p === "gemini") {
-      return fetch("https://generativelanguage.googleapis.com/v1beta/models/" + PROVIDERS.gemini.modello + ":generateContent?key=" + encodeURIComponent(chiave), {
+      // "gemini-flash-latest" punta sempre all'ultimo Flash; se Google ritira un nome si passa al successivo
+      const modelli = [PROVIDERS.gemini.modello].concat(PROVIDERS.gemini.alt);
+      const prova = i => chiamaGemini(modelli[i], chiave, sistema, utente).catch(e => {
+        if (i + 1 < modelli.length && /no longer available|not found|not supported|404/i.test(String(e && e.message))) return prova(i + 1);
+        throw e;
+      });
+      return prova(0);
+    }
+    return chiamaOpenAI(p, chiave, sistema, utente);
+  }
+
+  function chiamaGemini(modello, chiave, sistema, utente) {
+    {
+      return fetch("https://generativelanguage.googleapis.com/v1beta/models/" + modello + ":generateContent?key=" + encodeURIComponent(chiave), {
         method: "POST", headers: {"Content-Type": "application/json"},
         body: JSON.stringify({
           systemInstruction: {parts: [{text: sistema}]},
@@ -116,6 +128,9 @@
         return t.map(x => x.text || "").join("");
       }));
     }
+  }
+
+  function chiamaOpenAI(p, chiave, sistema, utente) {
     const url = p === "groq" ? "https://api.groq.com/openai/v1/chat/completions" : "https://api.mistral.ai/v1/chat/completions";
     return fetch(url, {
       method: "POST", headers: {"Content-Type": "application/json", "Authorization": "Bearer " + chiave},
@@ -138,7 +153,7 @@
       const jget = k => { try { return JSON.parse(localStorage.getItem(k) || "{}") || {}; } catch (e) { return {}; } };
       const jset = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } };
       let cfg = jget(K_CMT), ai = jget(K_AI);
-      let corpo = "";   // testo del comunicato senza intestazione/chiusura
+      let corpo = "", titolo = "";   // testo del comunicato senza chiusura
 
       const stato = (t, cls) => { const el = $("#cm-stato"); el.textContent = t || ""; el.className = "stato" + (cls ? " " + cls : ""); };
       const comando = () => {
@@ -149,34 +164,35 @@
       };
       const riempi = t => {
         const d = new Date(), pad = n => String(n).padStart(2, "0");
-        return String(t || "").replace(/\{COMANDO\}/gi, comando() || "COMANDO")
+        const ct = CONTATTI.find(x => x.re.test(comando())) || {tel: "", mail: ""};
+        t = String(t || "").split("\n").filter(r => !(/\{TEL\}/i.test(r) && !ct.tel) && !(/\{MAIL\}/i.test(r) && !ct.mail)).join("\n");
+        return t.replace(/\{TEL\}/gi, ct.tel).replace(/\{MAIL\}/gi, ct.mail).replace(/\{COMANDO\}/gi, comando() || "COMANDO")
           .replace(/\{DATA\}/gi, pad(d.getDate()) + "/" + pad(d.getMonth() + 1) + "/" + d.getFullYear())
           .replace(/\{ORA\}/gi, pad(d.getHours()) + ":" + pad(d.getMinutes()));
       };
-      const compone = c => [riempi($("#cm-head").value).trim(), String(c || "").trim(), riempi($("#cm-foot").value).trim()].filter(Boolean).join("\n\n");
+      const compone = (ti, c) => [String(ti || "").trim(), String(c || "").trim(), riempi($("#cm-foot").value).trim()].filter(Boolean).join("\n\n");
 
-      $("#cm-head").value = cfg.head != null ? cfg.head : HEAD0;
       $("#cm-foot").value = cfg.foot != null ? cfg.foot : FOOT0;
       $("#cm-prov").value = ai.pref || "";
       ORDINE.forEach(p => { $("#cm-k-" + p).value = (ai.keys && ai.keys[p]) || ""; });
 
       const salvaCfg = () => {
-        cfg = {head: $("#cm-head").value, foot: $("#cm-foot").value};
+        cfg = {foot: $("#cm-foot").value};
         const keys = {};
         ORDINE.forEach(p => { const v = $("#cm-k-" + p).value.trim(); if (v) keys[p] = v; });
         ai = {pref: $("#cm-prov").value, keys};
         jset(K_CMT, cfg); jset(K_AI, ai);
       };
       root.addEventListener("change", e => { if (e.target.closest("details")) salvaCfg(); });
-      root.addEventListener("input", e => { if (e.target.id === "cm-head" || e.target.id === "cm-foot") salvaCfg(); });
-      $("#cm-hfdef").addEventListener("click", () => { $("#cm-head").value = HEAD0; $("#cm-foot").value = FOOT0; salvaCfg(); });
+      root.addEventListener("input", e => { if (e.target.id === "cm-foot") salvaCfg(); });
+      $("#cm-hfdef").addEventListener("click", () => { $("#cm-foot").value = FOOT0; salvaCfg(); });
 
-      const mostra = c => { corpo = c; $("#cm-out").value = compone(c); };
+      const mostra = (ti, c) => { titolo = ti; corpo = c; $("#cm-out").value = compone(ti, c); };
 
       $("#cm-noai").addEventListener("click", () => {
         const t = $("#cm-src").value.trim();
         if (!t) { stato("Scrivi prima i fatti dell’intervento.", "err"); return; }
-        mostra(t); stato("Testo inserito senza AI.", "ok");
+        mostra("", t); stato("Testo inserito senza AI.", "ok");
       });
 
       $("#cm-gen").addEventListener("click", async () => {
@@ -184,19 +200,23 @@
         if (!t) { stato("Scrivi prima i fatti dell’intervento.", "err"); return; }
         salvaCfg();
         const con = ORDINE.filter(p => ai.keys && ai.keys[p]);
-        if (!con.length) { stato("Manca la chiave AI: aprila da “Intestazione, chiusura e AI”.", "err"); $("details").open = true; return; }
+        if (!con.length) { stato("Manca la chiave AI: aprila da “Chiusura e AI”.", "err"); $("details").open = true; return; }
         const ordine = ai.pref && con.includes(ai.pref) ? [ai.pref].concat(con.filter(p => p !== ai.pref)) : con;
-        const sistema = "Sei l'addetto stampa dei Vigili del Fuoco italiani. Riscrivi i fatti forniti come corpo di un comunicato stampa in italiano, " +
-          "tono istituzionale, sobrio e chiaro, al passato. Usa SOLO le informazioni fornite: non inventare luoghi, orari, numeri, cause o esiti. " +
+        const oggi = new Date().toLocaleDateString("it-IT", {day: "numeric", month: "long", year: "numeric"});
+        const sistema = "Sei l'addetto alla comunicazione dei Vigili del Fuoco italiani. Riscrivi i fatti forniti come comunicato (non 'comunicato stampa') in italiano, " +
+          "tono istituzionale, sobrio e chiaro, al passato. Oggi è il " + oggi + ". Il comunicato ha un TITOLO breve sulla prima riga (es. 'Intervento di ricerca e soccorso a persona nella zona di Campigna'), " +
+          "poi una riga vuota, poi il testo, che si apre come 'Nel pomeriggio del 13 ottobre 2026 i Vigili del Fuoco del Comando di Forlì-Cesena sono intervenuti nel comune di ...' e prosegue con cosa è accaduto, i mezzi e le squadre intervenute e l'esito. Usa SOLO le informazioni fornite: non inventare luoghi, orari, numeri, cause o esiti. " +
           "Non citare nomi di persone coinvolte (usa 'un uomo di 40 anni', 'una donna') e non fare ipotesi sulle responsabilità. " +
-          TONI[$("#cm-tono").value] + " Restituisci solo il testo del corpo, senza titolo, intestazione, saluti, elenchi o commenti.";
+          TONI[$("#cm-tono").value] + " Restituisci solo titolo e testo, senza grassetti, markdown, saluti, elenchi o commenti, e senza la chiusura con contatti.";
         const b = $("#cm-gen"); b.disabled = true;
         let ultimo = "";
         for (const p of ordine) {
           stato("Riscrivo con " + PROVIDERS[p].nome + "…");
           try {
             const r = await chiamaAI(p, ai.keys[p], sistema, t);
-            mostra(r.trim());
+            const tx = r.replace(/\*+/g, "").replace(/^\s*#+\s*/, "").trim();
+            const m = tx.match(/^(?:titolo\s*:\s*)?([^\n]+)\n+([\s\S]*)$/i);
+            if (m) mostra(m[1].trim(), m[2].trim()); else mostra("", tx);
             stato("Fatto con " + PROVIDERS[p].nome + ". Controlla il testo prima di diffonderlo.", "ok");
             b.disabled = false; return;
           } catch (e) { ultimo = PROVIDERS[p].nome + ": " + (e && e.message || e); }
@@ -206,8 +226,7 @@
       });
 
       // se cambio intestazione/chiusura dopo aver generato, aggiorno il testo completo
-      const ricompone = () => { if (corpo) $("#cm-out").value = compone(corpo); };
-      $("#cm-head").addEventListener("input", ricompone);
+      const ricompone = () => { if (corpo) $("#cm-out").value = compone(titolo, corpo); };
       $("#cm-foot").addEventListener("input", ricompone);
       // modifiche a mano nel comunicato: diventano il nuovo testo (intestazione e chiusura incluse)
       $("#cm-out").addEventListener("input", () => { corpo = ""; });
@@ -227,10 +246,10 @@
       });
 
       $("#cm-reset").addEventListener("click", () => {
-        if (!confirm("Cancellare testi, intestazione, chiusura e chiavi AI salvati su questo telefono?")) return;
+        if (!confirm("Cancellare testi, chiusura e chiavi AI salvati su questo telefono?")) return;
         try { localStorage.removeItem(K_AI); localStorage.removeItem(K_CMT); } catch (e) { }
-        cfg = {}; ai = {}; corpo = "";
-        $("#cm-head").value = HEAD0; $("#cm-foot").value = FOOT0; $("#cm-prov").value = "";
+        cfg = {}; ai = {}; corpo = ""; titolo = "";
+        $("#cm-foot").value = FOOT0; $("#cm-prov").value = "";
         ORDINE.forEach(p => { $("#cm-k-" + p).value = ""; });
         $("#cm-src").value = ""; $("#cm-out").value = ""; stato("Dati cancellati.", "ok");
       });
