@@ -28,7 +28,7 @@
     area: '<svg viewBox="0 0 76 76" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"> <path d="M10 10h34v20h22v30H10z" fill="rgba(255,255,255,.2)"/> <path d="M10 68h56" stroke="#10141a"/><path d="M10 64v8M66 64v8" stroke="#10141a"/> <circle cx="10" cy="10" r="3" fill="currentColor" stroke="none"/><circle cx="44" cy="10" r="3" fill="currentColor" stroke="none"/><circle cx="44" cy="30" r="3" fill="currentColor" stroke="none"/><circle cx="66" cy="30" r="3" fill="currentColor" stroke="none"/><circle cx="66" cy="60" r="3" fill="currentColor" stroke="none"/><circle cx="10" cy="60" r="3" fill="currentColor" stroke="none"/></svg>',
     taglio: '<svg viewBox="0 0 76 76" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 50h64"/><rect x="10" y="30" width="56" height="16" rx="3" fill="rgba(255,255,255,.2)"/><path d="M38 24v28" stroke="#10141a"/><path d="M32 26l6 8 6-8" stroke="#10141a"/><path d="M14 50v14M62 50v14"/></svg>'
   };
-  // Ordine e colori per famiglia: rosso = trovare (Localizzati, Ricerche), verde = misurare e addestrare (Misura, PUMA),
+  // Ordine e colori per famiglia: rosso = trovare (Localizzati, Ricerche), verde = misurare (Misura), giallo = addestramento (PUMA),
   // blu = comunicare e riferire, grigio = dati personali.
   const FUNZIONI = [
     {id: "localizzati", nome: "Localizzati", ico: "📍", colore: "var(--ics-operazioni)", testo: "#fff",
@@ -45,7 +45,7 @@
         {nome: "Problema del faro", ico: ICONE.faro, href: "#/trigo/faro", desc: "Distanza, quota o posizione di un punto, con l’alzo"},
         {nome: "Calcola area", ico: ICONE.area, href: "#/trigo/area", desc: "Superfici da foto, pianta a passi o mappa"}
       ]},
-    {id: "puma", nome: "PUMA", ico: "🧑‍🚒", colore: "var(--ics-pianificazione)", testo: "#fff",
+    {id: "puma", nome: "PUMA", ico: "🧑‍🚒", colore: "var(--ics-logistica)", testo: "#10141a",
       sotto: "Piattaforma Unificata Monitoraggio Addestramenti",
       voci: [
         {nome: "Home PUMA", ico: "🏠", href: PUMA_HOME, esterno: true, desc: "Il sito PUMA, si apre in una nuova scheda"},
