@@ -14,6 +14,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.webkit.GeolocationPermissions;
 import android.webkit.PermissionRequest;
+import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
@@ -35,6 +36,8 @@ public class MainActivity extends Activity {
     static final String BASE = "https://" + HOST + "/FireOps/app/user.html";
 
     private WebView web;
+    private ValueCallback<Uri[]> sceltaFile;   // campo "scegli file" della pagina (galleria in Foto)
+    private static final int RICHIESTA_FILE = 77;
 
     @Override
     protected void onCreate(Bundle b) {
@@ -70,6 +73,19 @@ public class MainActivity extends Activity {
             }
 
             @Override
+            public boolean onShowFileChooser(WebView v, ValueCallback<Uri[]> cb, FileChooserParams p) {
+                if (sceltaFile != null) sceltaFile.onReceiveValue(null);
+                sceltaFile = cb;
+                try {
+                    startActivityForResult(p.createIntent(), RICHIESTA_FILE);
+                } catch (Exception e) {
+                    sceltaFile = null;
+                    return false;
+                }
+                return true;
+            }
+
+            @Override
             public void onPermissionRequest(final PermissionRequest req) {
                 runOnUiThread(new Runnable() {
                     @Override
@@ -80,6 +96,15 @@ public class MainActivity extends Activity {
 
         chiediPermessi();
         gestisci(getIntent());
+    }
+
+    @Override
+    protected void onActivityResult(int codice, int esito, Intent dati) {
+        super.onActivityResult(codice, esito, dati);
+        if (codice == RICHIESTA_FILE && sceltaFile != null) {
+            sceltaFile.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(esito, dati));
+            sceltaFile = null;
+        }
     }
 
     @Override

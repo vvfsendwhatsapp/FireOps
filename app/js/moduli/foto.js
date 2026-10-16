@@ -212,7 +212,7 @@ const HTML=`<div class="steps" id="fo-steps"></div>
 <div class="panel" data-s="1">
   <div class="card"><h3>Foto</h3>
     <div class="row">
-      <label class="btn pri" for="fo-cam">Scatta foto</label>
+      <button type="button" class="btn pri" id="fo-camb">Scatta foto</button>
       <label class="btn" for="fo-file">Dalla galleria</label>
     </div>
     <input id="fo-cam" type="file" accept="image/*" capture="environment" hidden>
@@ -1002,12 +1002,50 @@ async function share(){
   }catch(e){if(!e||e.name!=='AbortError')toast('Condivisione non riuscita: usa "Salva foto".');}
 }
 
+/* ---------------- fotocamera dal vivo ---------------- */
+// Con la fotocamera del browser (getUserMedia) funziona anche nell'app Android, dove il campo file con "capture" non apre la fotocamera.
+// Se la fotocamera dal vivo non e' disponibile si ripiega sul campo file classico.
+let camStream=null,camBox=null;
+function chiudiCamera(){
+  if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;}
+  if(camBox){camBox.remove();camBox=null;}
+}
+async function apriCamera(){
+  if(camBox)return;
+  if(!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia)){$('#fo-cam').click();return;}
+  let st;
+  try{
+    st=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:4096},height:{ideal:3072}},audio:false});
+  }catch(e){
+    $('#fo-info').textContent='Fotocamera non disponibile: concedi il permesso alla fotocamera, oppure usa "Dalla galleria".';
+    $('#fo-cam').click();return;
+  }
+  camStream=st;
+  camBox=document.createElement('div');
+  camBox.style.cssText='position:fixed;inset:0;z-index:99999;background:#000;display:flex;flex-direction:column';
+  camBox.innerHTML='<video playsinline muted autoplay style="flex:1;min-height:0;width:100%;object-fit:contain;background:#000"></video>'+
+    '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 24px calc(16px + env(safe-area-inset-bottom));background:#10141a">'+
+    '<button type="button" id="fo-cam-x" style="min-height:48px;padding:0 18px;border:1px solid #444;border-radius:10px;background:#1d242e;color:#eceff3;font:600 15px system-ui,sans-serif">Annulla</button>'+
+    '<button type="button" id="fo-cam-s" aria-label="Scatta" style="width:72px;height:72px;border-radius:50%;border:5px solid #fff;background:#ffd700"></button>'+
+    '<span style="width:84px"></span></div>';
+  document.body.appendChild(camBox);
+  const v=camBox.querySelector('video');v.srcObject=st;v.play().catch(()=>{});
+  camBox.querySelector('#fo-cam-x').onclick=chiudiCamera;
+  camBox.querySelector('#fo-cam-s').onclick=()=>{
+    if(!v.videoWidth)return;
+    const c=document.createElement('canvas');c.width=v.videoWidth;c.height=v.videoHeight;
+    c.getContext('2d').drawImage(v,0,0);
+    c.toBlob(b=>{chiudiCamera();if(b)loadPhoto(new File([b],'foto.jpg',{type:'image/jpeg'}));},'image/jpeg',0.95);
+  };
+}
+
 /* ---------------- avvio ---------------- */
 function setup(){
   cv=$('#fo-cv');ctx=cv.getContext('2d');
   loadLogoPrefs();
   steps=setupSteps();
   $('#fo-share').hidden=!(navigator.share&&navigator.canShare);
+  $('#fo-camb').onclick=apriCamera;
   $('#fo-file').onchange=$('#fo-cam').onchange=e=>{const f=e.target.files[0];if(f)loadPhoto(f);e.target.value='';};
   cv.addEventListener('pointerdown',onDown);cv.addEventListener('pointermove',onMove);
   cv.addEventListener('pointerup',onUp);cv.addEventListener('pointercancel',onUp);
