@@ -413,6 +413,7 @@ body {
   font-size: 26px;
 }
 
+.fn-swatch .fn-logo { width: 100%; height: 100%; object-fit: contain; display: block; }
 .fn-swatch svg { width: 44px; height: 44px; }
 
 .fn-text { flex: 1; min-width: 0; padding: 10px 0; }

@@ -19,6 +19,7 @@
   // ---- Tasti funzione della home. Una voce con "voci" apre una pagina con i sotto-tasti;
   //      una voce con "href" apre direttamente il modulo. Per aggiungere un modulo basta una riga qui sotto.
   const PUMA_HOME = "https://sites.google.com/view/pumavvf/home-page";
+  const LOGO_PUMA = '<img src="../images/puma.jpg" alt="" class="fn-logo">';
   // Icone della sezione Misura (le stesse della vecchia pagina di Trigo)
   const ICONE = {
     altezza: '<svg viewBox="0 0 76 76" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"> <path d="M6 67h64"/><path d="M56 67V34"/><path d="M56 7l-10 15h6l-9 13h26l-9-13h6z"/> <circle cx="12" cy="57" r="3.2"/><path d="M12 57h28" stroke-dasharray="3 4"/> <path d="M12 57L56 9" stroke="#10141a"/><path d="M12 57L56 67" stroke="#10141a"/></svg>',
@@ -45,10 +46,10 @@
         {nome: "Problema del faro", ico: ICONE.faro, href: "#/trigo/faro", desc: "Distanza, quota o posizione di un punto, con l’alzo"},
         {nome: "Calcola area", ico: ICONE.area, href: "#/trigo/area", desc: "Superfici da foto, pianta a passi o mappa"}
       ]},
-    {id: "puma", nome: "PUMA", ico: "🧑‍🚒", colore: "var(--ics-logistica)", testo: "#10141a",
+    {id: "puma", nome: "PUMA", ico: LOGO_PUMA, colore: "var(--ics-logistica)", testo: "#10141a",
       sotto: "Piattaforma Unificata Monitoraggio Addestramenti",
       voci: [
-        {nome: "Home PUMA", ico: "🏠", href: PUMA_HOME, esterno: true, desc: "Il sito PUMA, si apre in una nuova scheda"},
+        {nome: "Home PUMA", ico: LOGO_PUMA, href: PUMA_HOME, esterno: true, desc: "Il sito PUMA, si apre in una nuova scheda"},
         {nome: "Mappa addestramenti", ico: "🗺️", href: "#/pumamappa", desc: "Dove si svolgono ora gli addestramenti, con i dettagli di ciascuno"},
         {nome: "Tabella presenze", ico: "📋", href: "#/pumapresenze", desc: "Personale presente oggi negli addestramenti, con aggiornamento automatico"}
       ]},
