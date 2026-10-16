@@ -39,6 +39,7 @@ FireOps.registra({
 .pg-gestione .chip.t-ordinaria { border-color: #5b8def; color: #8fb2ff; }
 .pg-gestione .chip.t-cinofila { border-color: #e0a030; color: #f0c060; }
 .pg-gestione .chip.t-smzt { border-color: #3fb68b; color: #6fd8b0; }
+.pg-gestione .chip.t-drone, .pg-gestione .chip.t-elicottero { border-color: #a07be0; color: #c4a8ff; }
 .pg-gestione .chip.t-saf { border-color: #d8262f; color: #ff8a73; }
 .pg-gestione .sqh { display: flex; align-items: center; gap: 8px; }
 .pg-gestione .sqh b { flex: 1; font-size: 15.5px; }
@@ -68,7 +69,9 @@ FireOps.registra({
     "use strict";
     const KEY = "fireops_gestione";
     const SPEC = [["cinofilo", "Cinofilo"], ["smzt", "SMZT (sommozzatori)"], ["saf", "SAF"]];
-    const TIPI = [["ordinaria", "Ordinaria"], ["cinofila", "Cinofila"], ["smzt", "SMZT (sommozzatori)"], ["saf", "SAF (aree impervie)"]];
+    // livelli (tipo di mezzo/squadra) e enti: la ricerca e' multi agenzia, sotto il coordinamento dei VVF
+    const TIPI = [["drone", "Drone APR"], ["elicottero", "Elicottero"], ["cinofila", "K9 cinofili"], ["ordinaria", "Squadra a terra"], ["saf", "SAF (aree impervie)"], ["smzt", "SMZT (sommozzatori)"]];
+    const ENTI = ["VVF", "CNSAS", "CRI", "Protezione Civile", "Carabinieri", "Carabinieri Forestali", "Guardia di Finanza", "Polizia di Stato", "Polizia Locale", "Altro volontariato", "Altro"];
     const STATI = ["Disponibile", "In movimento", "In zona", "Rientrata"];
     const QUALIFICHE = FireOps.qualifiche || [];
 
@@ -111,7 +114,7 @@ FireOps.registra({
       db.pers.slice().sort((a, b) => a.cognome.localeCompare(b.cognome, "it")).forEach(p => {
         const s = sqDi(p.id);
         h += '<div class="it"><div class="tx"><b' + (p.presente === false ? ' style="opacity:.5"' : "") + ">" + esc(nomeP(p)) + "</b>" +
-          '<small>' + (p.presente === false ? "Non presente" : s ? "Squadra: " + esc(s.nome) : "Libero") +
+          '<small>' + (p.ente && p.ente !== "VVF" ? esc(p.ente) + " · " : "") + (p.presente === false ? "Non presente" : s ? "Squadra: " + esc(s.nome) : "Libero") +
           (p.tel ? " · " + esc(p.tel) : "") + "</small>" + chipSpec(p) + "</div>" +
           '<button type="button" class="btn sm" data-a="mod-p" data-id="' + p.id + '">Modifica</button></div>';
       });
@@ -123,13 +126,14 @@ FireOps.registra({
     }
 
     function formPers() {
-      const p = modifica.id ? pers(modifica.id) : {cognome: "", nome: "", qual: "", tel: "", spec: [], presente: true, note: ""};
+      const p = modifica.id ? pers(modifica.id) : {cognome: "", nome: "", qual: "", tel: "", spec: [], presente: true, note: "", ente: "VVF"};
       const q = '<option value="">–</option>' + QUALIFICHE.map(g => '<optgroup label="' + esc(g[0]) + '">' +
         g[1].map(x => '<option value="' + esc(x[0]) + '"' + (p.qual === x[0] ? " selected" : "") + ">" + esc(x[1] === x[0] ? x[1] : x[1] + " (" + x[0] + ")") + "</option>").join("") + "</optgroup>").join("");
       return '<div class="card"><h3>' + (modifica.id ? "Modifica persona" : "Nuova persona") + "</h3>" +
         '<div class="row"><div><label class="f" for="gp-cog" style="margin-top:0">Cognome</label><input type="text" id="gp-cog" autocapitalize="words" autocomplete="off" value="' + esc(p.cognome) + '"></div>' +
         '<div><label class="f" for="gp-nom" style="margin-top:0">Nome</label><input type="text" id="gp-nom" autocapitalize="words" autocomplete="off" value="' + esc(p.nome) + '"></div></div>' +
         '<label class="f" for="gp-qual">Qualifica</label><select id="gp-qual">' + q + "</select>" +
+        '<label class="f" for="gp-ente">Ente</label><select id="gp-ente">' + ENTI.map(x => "<option" + ((p.ente || "VVF") === x ? " selected" : "") + ">" + x + "</option>").join("") + '</select>' +
         '<label class="f" for="gp-tel">Cellulare</label><input type="tel" id="gp-tel" inputmode="tel" autocomplete="off" value="' + esc(p.tel) + '">' +
         '<label class="f">Specialità</label>' + SPEC.map(s => '<label class="chk"><input type="checkbox" data-spec="' + s[0] + '"' + ((p.spec || []).includes(s[0]) ? " checked" : "") + ">" + s[1] + "</label>").join("") +
         '<label class="chk" style="margin-top:6px"><input type="checkbox" id="gp-pres"' + (p.presente !== false ? " checked" : "") + ">Presente</label>" +
@@ -142,7 +146,7 @@ FireOps.registra({
       const cog = $("#gp-cog").value.trim();
       if (!cog) { stato("Scrivi almeno il cognome.", false); return; }
       const d = {
-        cognome: cog, nome: $("#gp-nom").value.trim(), qual: $("#gp-qual").value, tel: $("#gp-tel").value.trim(),
+        cognome: cog, nome: $("#gp-nom").value.trim(), qual: $("#gp-qual").value, ente: $("#gp-ente").value, tel: $("#gp-tel").value.trim(),
         spec: Array.from(root.querySelectorAll("[data-spec]:checked")).map(e => e.dataset.spec),
         presente: $("#gp-pres").checked, note: $("#gp-note").value.trim()
       };
@@ -166,10 +170,13 @@ FireOps.registra({
       if (modifica && modifica.tipo === "sq") return formSq();
       let h = "";
       if (!db.sq.length) h += '<div class="card"><div class="vuoto">Nessuna squadra. ' + (db.pers.length ? "Creane una." : "Inserisci prima il personale.") + "</div></div>";
-      db.sq.forEach(s => {
+      const ord = t => TIPI.findIndex(x => x[0] === t);
+      let ultimo = "";
+      db.sq.slice().sort((x, y) => ord(x.tipo) - ord(y.tipo)).forEach(s => {
+        if (s.tipo !== ultimo) { ultimo = s.tipo; h += '<h3 style="margin:14px 2px 8px">' + esc(nomeTipo(s.tipo)) + " (" + db.sq.filter(z => z.tipo === s.tipo).length + ")</h3>"; }
         const capo = pers(s.capo);
         const mem = (s.membri || []).map(pers).filter(Boolean);
-        h += '<div class="card"><div class="sqh"><b>' + esc(s.nome) + '</b><span class="chip t-' + s.tipo + '">' + esc(nomeTipo(s.tipo)) + "</span>" +
+        h += '<div class="card"><div class="sqh"><b>' + esc(s.nome) + '</b><span class="chip t-' + s.tipo + '">' + esc(nomeTipo(s.tipo)) + "</span>" + (s.ente ? '<span class="chip">' + esc(s.ente) + "</span>" : "") +
           '<button type="button" class="btn sm" data-a="mod-s" data-id="' + s.id + '">Modifica</button></div>' +
           '<div class="tx" style="margin-top:6px;font-size:14px;line-height:1.5">' +
           (capo ? "Capo: <b>" + esc(nomeP(capo)) + "</b>" + (capo.tel ? " · " + esc(capo.tel) : "") + "<br>" : "") +
@@ -183,13 +190,14 @@ FireOps.registra({
     }
 
     function formSq() {
-      const s = modifica.id ? db.sq.find(x => x.id === modifica.id) : {nome: "", tipo: "ordinaria", capo: "", membri: [], stato: "Disponibile", rad: "", note: ""};
+      const s = modifica.id ? db.sq.find(x => x.id === modifica.id) : {nome: "", tipo: "ordinaria", capo: "", membri: [], stato: "Disponibile", rad: "", note: "", ente: "VVF"};
       // scegliibili: presenti e non già in un'altra squadra
       const disp = db.pers.filter(p => p.presente !== false && (!sqDi(p.id) || sqDi(p.id).id === s.id));
       return '<div class="card"><h3>' + (modifica.id ? "Modifica squadra" : "Nuova squadra") + "</h3>" +
         '<label class="f" for="gs-nome" style="margin-top:0">Nome</label><input type="text" id="gs-nome" autocomplete="off" placeholder="es. Alfa 1" value="' + esc(s.nome) + '">' +
         '<label class="f" for="gs-tipo">Tipo</label><select id="gs-tipo">' + TIPI.map(t => '<option value="' + t[0] + '"' + (s.tipo === t[0] ? " selected" : "") + ">" + t[1] + "</option>").join("") + "</select>" +
-        '<label class="f" for="gs-capo">Capo squadra</label><select id="gs-capo"><option value="">–</option>' +
+        '<label class="f" for="gs-ente">Ente</label><select id="gs-ente">' + ENTI.map(x => "<option" + ((s.ente || "VVF") === x ? " selected" : "") + ">" + x + "</option>").join("") + '</select>' +
+        '<label class="f" for="gs-capo">Capo squadra / pilota / conduttore</label><select id="gs-capo"><option value="">–</option>' +
         disp.map(p => '<option value="' + p.id + '"' + (s.capo === p.id ? " selected" : "") + ">" + esc(nomeP(p)) + "</option>").join("") + "</select>" +
         '<label class="f">Componenti</label>' +
         (disp.length ? disp.map(p => '<label class="chk"><input type="checkbox" data-mem="' + p.id + '"' + ((s.membri || []).includes(p.id) ? " checked" : "") + ">" + esc(nomeP(p)) + " " + chipSpec(p) + "</label>").join("")
@@ -205,7 +213,7 @@ FireOps.registra({
       if (!nome) { stato("Dai un nome alla squadra.", false); return; }
       const capo = $("#gs-capo").value;
       const membri = Array.from(root.querySelectorAll("[data-mem]:checked")).map(e => e.dataset.mem).filter(x => x !== capo);
-      const d = {nome, tipo: $("#gs-tipo").value, capo, membri, rad: $("#gs-rad").value.trim(), note: $("#gs-note").value.trim()};
+      const d = {nome, tipo: $("#gs-tipo").value, ente: $("#gs-ente").value, capo, membri, rad: $("#gs-rad").value.trim(), note: $("#gs-note").value.trim()};
       if (modifica.id) Object.assign(db.sq.find(x => x.id === modifica.id), d);
       else db.sq.push(Object.assign({id: nuovoId(), stato: "Disponibile"}, d));
       salva(); modifica = null; stato("Salvato su questo telefono.", true); disegna();
