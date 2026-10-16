@@ -198,6 +198,9 @@ FireOps.registra({
   async init(root) {
     // Stessa Web App di messaggistica.js (WEBAPP_URL_ID_SEARCH)
     const WEBAPP = "https://script.google.com/macros/s/AKfycbwS8Vtq5MbfPG-lLdobd8IpFqh2Mi90mTciotejfh9L1E7cUkMjdQko-zcj0thYOZ44/exec";
+    // seconda Web App: quella usata da messaggistica.js (WEBAPP_URL_ID_SEARCH), provata se la prima non risponde
+    const WEBAPPS = [WEBAPP, "https://script.google.com/macros/s/AKfycbyp6jQ331Yk5q7_hkM74ZyhUh1c3zQUJG7SpuoE18HslBO36YKSTYIQf-z7gSwXR4Yv/exec"];
+    let WEBAPP_OK = null;
     const ORE = 24;
     const RAGGIO_KM = 50;
     const AGGIORNA_MS = 60000;
@@ -321,13 +324,22 @@ FireOps.registra({
 
       try {
         const nomi = await comandiDaChiedere(ctx);
-        const url = WEBAPP + "?" + new URLSearchParams({comandi: nomi.join(","), ore: String(ORE)});
-        const ctrl = new AbortController();
-        const tmo = setTimeout(() => ctrl.abort(), 20000);
-        const r = await fetch(url, {signal: ctrl.signal});
-        clearTimeout(tmo);
-        if (!r.ok) throw new Error("HTTP " + r.status);
-        const d = await r.json();
+        const qs = "?" + new URLSearchParams({comandi: nomi.join(","), ore: String(ORE)});
+        // prova prima l'ultimo indirizzo che ha funzionato, poi gli altri
+        const ordine = WEBAPPS.slice().sort((x, y) => (y === WEBAPP_OK) - (x === WEBAPP_OK));
+        let d = null, ultimo = null;
+        for (const base of ordine) {
+          const ctrl = new AbortController();
+          const tmo = setTimeout(() => ctrl.abort(), 20000);
+          try {
+            const r = await fetch(base + qs, {signal: ctrl.signal});
+            if (!r.ok) throw new Error("HTTP " + r.status);
+            const j = await r.json();
+            if (!j || (!Array.isArray(j.messaggi) && !Array.isArray(j.posizioni))) throw new Error("risposta non valida");
+            d = j; WEBAPP_OK = base; break;
+          } catch (err) { ultimo = err; } finally { clearTimeout(tmo); }
+        }
+        if (!d) throw ultimo || new Error("nessuna risposta");
         ultimoDato = {messaggi: d.messaggi || [], posizioni: d.posizioni || [], ctx};
         disegna();
         $("ricAgg").textContent = "Aggiornato alle " + new Date().toLocaleTimeString("it-IT", {hour: "2-digit", minute: "2-digit"}) + " · automatico ogni minuto";
