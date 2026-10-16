@@ -236,7 +236,7 @@ const HTML=`<div class="steps" id="fo-steps"></div>
       <button type="button" class="btn sm on" data-o="4096">Massima</button><button type="button" class="btn sm" data-o="2048">2048 px</button><button type="button" class="btn sm" data-o="1600">1600 px</button><button type="button" class="btn sm" data-o="1280">1280 px</button><button type="button" class="btn sm" data-o="1024">1024 px</button>
     </div>
     <p class="sub" id="fo-szinfo"></p>
-    <div class="row" style="margin-top:10px"><button type="button" class="btn sm" id="fo-creset">Azzera formato, rotazione e zoom</button></div>
+    <div class="row" style="margin-top:10px"><button type="button" class="btn sm fo-cundo" disabled>↩ Indietro</button><button type="button" class="btn sm fo-crestore" id="fo-creset" disabled>Ripristina originale</button></div>
     <p class="sub">Con "Libero" trascini gli angoli del riquadro sulla foto. Se non tocchi nulla la foto resta intera. Cambiando formato, rotazione o zoom i riquadri di sfocatura vanno rifatti, quindi conviene farlo prima.</p>
   </div>
   <button type="button" class="btn pri big" data-go="3">Avanti: ruota</button>
@@ -251,6 +251,7 @@ const HTML=`<div class="steps" id="fo-steps"></div>
     <div class="row" style="margin-top:6px"><button type="button" class="btn sm" data-tn="-1">−1°</button><button type="button" class="btn sm" data-tn="-0.1">−0,1°</button><button type="button" class="btn sm" data-tn="0.1">+0,1°</button><button type="button" class="btn sm" data-tn="1">+1°</button></div>
     <p class="sub">Per raddrizzare l'orizzonte usa la rotazione fine, oppure ruota con due dita sulla foto.</p>
   </div>
+  <div class="row" style="margin:0 0 10px"><button type="button" class="btn sm fo-cundo" disabled>↩ Indietro</button><button type="button" class="btn sm fo-crestore" disabled>Ripristina originale</button></div>
   <button type="button" class="btn pri big" data-go="4">Avanti: zoom</button>
 </div>
 
@@ -261,6 +262,7 @@ const HTML=`<div class="steps" id="fo-steps"></div>
     <div class="row" style="margin-top:8px"><button type="button" class="btn sm" data-zm="-10">−10%</button><button type="button" class="btn sm" data-zm="10">+10%</button><button type="button" class="btn sm" data-zm="reset">100%</button></div>
     <p class="sub">Trascina la foto per spostarla nel riquadro, due dita per zoom e rotazione.</p>
   </div>
+  <div class="row" style="margin:0 0 10px"><button type="button" class="btn sm fo-cundo" disabled>↩ Indietro</button><button type="button" class="btn sm fo-crestore" disabled>Ripristina originale</button></div>
   <button type="button" class="btn pri big" data-go="5">Avanti: volti</button>
 </div>
 
@@ -616,7 +618,36 @@ function markCrop(){
   steps.mark(3,c.q!==0||c.t!==0);
   steps.mark(4,Math.abs(c.m-1)>0.001||Math.round(c.cx)!==0||Math.round(c.cy)!==0);
 }
-function cropChanged(){uiCrop();markCrop();paint();}
+/* storia dell'inquadratura (formato, rotazione, zoom, dimensione): "Indietro" annulla l'ultima mossa,
+   "Ripristina originale" torna alla foto di partenza (e si puo' a sua volta annullare) */
+let chistT=0;
+function cSnap(){return JSON.stringify({c:S.crop,o:S.outMax});}
+function uiCUndo(){
+  const n=S.chist?S.chist.length:0;
+  $$('.fo-cundo').forEach(b=>{b.disabled=!n;});
+  $$('.fo-crestore').forEach(b=>{b.disabled=!S.crop||(cropIdentity()&&S.outMax===EXPORT_MAX);});
+}
+function cropChanged(){
+  const now=cSnap();
+  if(S.chist&&S.cprev!==undefined&&S.cprev!==now){
+    const t=Date.now();
+    // una trascinata continua conta come una sola mossa
+    if(t-chistT>800||!S.chist.length){S.chist.push(S.cprev);if(S.chist.length>60)S.chist.shift();}
+    chistT=t;
+  }
+  S.cprev=now;uiCrop();markCrop();paint();uiCUndo();
+}
+function cropUndo(){
+  const j=S.chist&&S.chist.pop();if(!j)return;
+  const o=JSON.parse(j);Object.assign(S.crop,o.c);S.outMax=o.o;
+  S.cprev=cSnap();chistT=0;cropChanged();
+}
+function cropRestore(){
+  if(!S.crop||!S.orig)return;
+  S.chist.push(cSnap());if(S.chist.length>60)S.chist.shift();
+  Object.assign(S.crop,{q:0,t:0,asp:'orig',cr:0,m:1,cx:0,cy:0,fx:1,fy:1,land:S.orig.w>=S.orig.h});
+  S.outMax=EXPORT_MAX;S.cprev=cSnap();chistT=0;cropChanged();
+}
 function uiCrop(){
   const c=S.crop;if(!c)return;
   $$('#fo-asp button').forEach(b=>b.classList.toggle('on',b.dataset.a===c.asp));
@@ -646,11 +677,11 @@ function loadPhoto(file){
   const im=new Image();
   im.onload=()=>{
     const w=im.naturalWidth||im.width,h=im.naturalHeight||im.height;
-    S.orig={img:im,w,h};S.crop={q:0,t:0,asp:'orig',land:w>=h,m:1,cx:0,cy:0,fx:1,fy:1,applied:''};
+    S.orig={img:im,w,h};S.crop={q:0,t:0,asp:'orig',land:w>=h,m:1,cx:0,cy:0,fx:1,fy:1,applied:''};S.chist=[];S.cprev=undefined;S.outMax=EXPORT_MAX;chistT=0;
     resetLogo();S.logo.lock=true;
     setBase(im,w,h);S.crop.applied=cropKey();
     $('#fo-empty').hidden=true;
-    resize();fitView();uiCrop();uiRegions();uiLogo();syncSticky();paint();
+    resize();fitView();uiCrop();uiRegions();uiLogo();syncSticky();paint();S.cprev=cSnap();uiCUndo();
     steps.mark(1,true);[2,3,4].forEach(n=>steps.mark(n,false));
     try{URL.revokeObjectURL(url);}catch(e){}
     steps.go(2);
@@ -1031,11 +1062,20 @@ async function apriCamera(){
   document.body.appendChild(camBox);
   const v=camBox.querySelector('video');v.srcObject=st;v.play().catch(()=>{});
   camBox.querySelector('#fo-cam-x').onclick=chiudiCamera;
-  camBox.querySelector('#fo-cam-s').onclick=()=>{
-    if(!v.videoWidth)return;
+  const avviso=m=>{const d=document.createElement('div');d.textContent=m;d.style.cssText='position:absolute;left:16px;right:16px;top:calc(16px + env(safe-area-inset-top));padding:10px 12px;border-radius:8px;background:#ffd700;color:#000;font:600 14px system-ui,sans-serif;text-align:center';camBox.appendChild(d);setTimeout(()=>d.remove(),3500);};
+  const sh=camBox.querySelector('#fo-cam-s');let fatto=false;
+  const pronto=()=>v.videoWidth>0&&v.readyState>=2;
+  const stato=()=>{sh.style.opacity=pronto()&&!fatto?'1':'.45';};
+  ['loadedmetadata','loadeddata','playing','canplay'].forEach(ev=>v.addEventListener(ev,stato));stato();
+  // un solo tocco: se la fotocamera non e' ancora partita aspetta (fino a 4 s) e poi scatta da sola
+  sh.onclick=async()=>{
+    if(fatto)return;fatto=true;stato();
+    if(!pronto())await new Promise(res=>{const t=setTimeout(res,4000);const f=()=>{if(pronto()){clearTimeout(t);res();}};['loadeddata','playing','canplay'].forEach(ev=>v.addEventListener(ev,f));});
+    if(!pronto()){fatto=false;stato();avviso('La fotocamera non è pronta, riprova tra un attimo.');return;}
+    const fl=document.createElement('div');fl.style.cssText='position:absolute;inset:0;background:#fff;opacity:.7;pointer-events:none';camBox.appendChild(fl);
     const c=document.createElement('canvas');c.width=v.videoWidth;c.height=v.videoHeight;
     c.getContext('2d').drawImage(v,0,0);
-    c.toBlob(b=>{chiudiCamera();if(b)loadPhoto(new File([b],'foto.jpg',{type:'image/jpeg'}));},'image/jpeg',0.95);
+    c.toBlob(b=>{chiudiCamera();if(b)loadPhoto(new File([b],'foto.jpg',{type:'image/jpeg'}));else avviso('Scatto non riuscito, riprova.');},'image/jpeg',0.95);
   };
 }
 
@@ -1074,12 +1114,12 @@ function setup(){
   $$('[data-tn]').forEach(b=>b.addEventListener('click',()=>{if(!C())return;C().t=clamp(Math.round((C().t+parseFloat(b.dataset.tn))*10)/10,-45,45);cropChanged();}));
   cnum('#fo-ct',v=>{C().t=clamp(v,-45,45);});cnum('#fo-ctn',v=>{C().t=clamp(v,-45,45);});
   cnum('#fo-cm',v=>{C().m=clamp(v/100,0.05,8);});cnum('#fo-cmn',v=>{C().m=clamp(v/100,0.05,8);});
-  $('#fo-outsz').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.outMax=+b.dataset.o;markCrop();uiOut();});
+  $('#fo-outsz').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.outMax=+b.dataset.o;cropChanged();});
   $$('[data-zm]').forEach(b=>b.addEventListener('click',()=>{
     if(!C())return;const v=b.dataset.zm;
     if(v==='reset'){C().m=1;C().cx=0;C().cy=0;}else C().m=clamp(C().m*(1+(+v)/100),0.05,8);
     cropChanged();}));
-  $('#fo-creset').onclick=()=>{if(!C())return;Object.assign(C(),{q:0,t:0,asp:'orig',m:1,cx:0,cy:0,fx:1,fy:1,land:S.orig.w>=S.orig.h});cropChanged();};
+  $$('.fo-cundo').forEach(b=>{b.onclick=cropUndo;});$$('.fo-crestore').forEach(b=>{b.onclick=cropRestore;});
 
   /* riquadri */
   $('#fo-faces').onclick=findFaces;
