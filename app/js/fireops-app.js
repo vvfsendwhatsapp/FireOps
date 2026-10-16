@@ -62,6 +62,8 @@
       ]},
     {id: "comunicazioni", nome: "Comunicazioni", ico: "✉️", colore: "var(--ics-amministrazione)", testo: "#fff",
       sotto: "Missioni per soccorso e mancate timbrature", href: "#/comunicazioni"},
+    {id: "telegram", nome: "Telegram", ico: "✈️", colore: "var(--ics-amministrazione)", testo: "#fff",
+      sotto: "Messaggi del canale", href: "#/telegram"},
     {id: "rapporti", nome: "Rapporti d’intervento", ico: "📝", colore: "var(--ics-amministrazione)", testo: "#fff",
       sotto: "In preparazione", href: "#/rapporti"},
     {id: "personale", nome: "Area personale", ico: "👤", colore: "var(--panel-2)", testo: "#eceff3",
@@ -97,6 +99,7 @@
     comunicazioni: {nome: "Comunicazioni", sotto: "Missioni per soccorso e mancate timbrature"},
     rapporti: {nome: "Rapporti d’intervento", sotto: "In preparazione",
       segnaposto: "I rapporti d’intervento arriveranno in un prossimo aggiornamento."},
+    telegram: {nome: "Telegram", sotto: "Messaggi del canale"},
     personale: {nome: "Area personale", sotto: "I tuoi dati, solo su questo telefono"}
   };
 
