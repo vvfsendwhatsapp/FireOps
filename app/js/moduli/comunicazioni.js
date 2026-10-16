@@ -883,6 +883,16 @@
       syncMittente();
       refreshPersonRows();
     }
+    const persDati = () => (window.FireOps && window.FireOps.personale && window.FireOps.personale()) || {};
+    const persCompleta = () => { const P = persDati(); return !!(P.cognome && P.nome); };
+    let daPersonale = false;      // il modulo sta usando i dati dell'Area personale
+    function profDaPersonale() {
+      daPersonale = true; profActiveId = ""; profSetActive("");
+      profBlank();
+      profRenderSelect();
+      profDet.open = false;
+      profMsg("Dati presi dall’Area personale.");
+    }
     function profBlank() {
       // se l'utente ha compilato l'Area personale, parte da quei dati
       const P = (window.FireOps && window.FireOps.personale && window.FireOps.personale()) || {};
@@ -904,20 +914,26 @@
       }
     }
     document.addEventListener("fireops:posizione", provaSuggerimentoPosizione);
+    // se nel frattempo hai modificato l'Area personale, tornando qui i dati si aggiornano
+    if (window.FireOps && window.FireOps.onShow) window.FireOps.onShow("comunicazioni", () => { if (daPersonale && persCompleta() && TUTTI.length) profDaPersonale(); });
 
     function profRenderSelect() {
       const list = profLoad().sort((a, b) => (a.cognome + a.nome).localeCompare(b.cognome + b.nome, "it"));
       profSel.innerHTML = "";
       const add = (v, t) => { const o = document.createElement("option"); o.value = v; o.textContent = t; profSel.appendChild(o); };
-      add("", list.length ? "Scegli utente registrato" : "Nessun utente registrato");
+      const P = persDati();
+      if (persCompleta()) add("__pers__", "Io · " + String(P.cognome).toUpperCase() + " " + P.nome + " (Area personale)");
+      add("", list.length ? "Scegli utente registrato" : (persCompleta() ? "Altri utenti registrati" : "Nessun utente registrato"));
       list.forEach(p => add(p.id, p.cognome.toUpperCase() + " " + p.nome + (p.qualifica ? " (" + p.qualifica + ")" : "")));
       add("__new__", "+ Nuovo utente");
-      profSel.value = profActiveId || "";
+      profSel.value = daPersonale && persCompleta() ? "__pers__" : (profActiveId || "");
     }
 
     profSel.addEventListener("change", () => {
       const v = profSel.value;
       if (v === "") return;
+      if (v === "__pers__") { profDaPersonale(); return; }
+      daPersonale = false;
       if (v === "__new__") {
         profActiveId = ""; profSetActive("");
         profBlank();
@@ -949,7 +965,7 @@
       const i = list.findIndex(x => x.id === p.id);
       if (i >= 0) list[i] = p; else list.push(p);
       if (!profStore(list)) { profMsg("Impossibile salvare: il browser blocca la memoria locale."); return; }
-      profActiveId = p.id; profSetActive(p.id);
+      daPersonale = false; profActiveId = p.id; profSetActive(p.id);
       profRenderSelect();
       profMsg("Utente salvato su questo dispositivo.");
       avviso("Utente salvato su questo dispositivo.");
@@ -990,7 +1006,8 @@
         const list2 = profLoad();
         let act = ""; try { act = localStorage.getItem(PROF_ACT) || ""; } catch (e) {}
         const p = list2.find(x => x.id === act) || (list2.length === 1 ? list2[0] : null);
-        if (p) { profActiveId = p.id; profFill(p); }
+        if (persCompleta()) profDaPersonale();            // l'utente dell'Area personale ha la precedenza
+        else if (p) { profActiveId = p.id; profFill(p); }
         else { profBlank(); profDet.open = true; }
         profRenderSelect();
         applyDestinazione();
