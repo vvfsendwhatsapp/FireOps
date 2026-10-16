@@ -72,8 +72,8 @@ FireOps.registra({
     // livelli (tipo di mezzo/squadra) e enti: la ricerca e' multi agenzia, sotto il coordinamento dei VVF
     const TIPI = [["drone", "Drone APR"], ["elicottero", "Elicottero"], ["cinofila", "K9 cinofili"], ["ordinaria", "Squadra a terra"], ["saf", "SAF (aree impervie)"], ["smzt", "SMZT (sommozzatori)"]];
     const ENTI = ["VVF", "CNSAS", "CRI", "Protezione Civile", "Carabinieri", "Carabinieri Forestali", "Guardia di Finanza", "Polizia di Stato", "Polizia Locale", "Altro volontariato", "Altro"];
-    // per gli enti diversi dai VVF non si usano le qualifiche: si distingue solo il tipo di volontario
-    const RUOLI = [["", "–"], ["volontario", "Volontario"], ["sas", "Volontario Soccorso Alpino (SAS)"]];
+    // per gli enti diversi dai VVF non si usano le qualifiche: un solo campo libero (con suggerimenti)
+    const RUOLI = ["Volontario", "Volontario SAS"];   // suggerimenti: il campo resta libero
     const STATI = ["Disponibile", "In movimento", "In zona", "Rientrata"];
     const QUALIFICHE = FireOps.qualifiche || [];
 
@@ -116,7 +116,7 @@ FireOps.registra({
       db.pers.slice().sort((a, b) => a.cognome.localeCompare(b.cognome, "it")).forEach(p => {
         const s = sqDi(p.id);
         h += '<div class="it"><div class="tx"><b' + (p.presente === false ? ' style="opacity:.5"' : "") + ">" + esc(nomeP(p)) + "</b>" +
-          '<small>' + (p.ente && p.ente !== "VVF" ? esc(p.ente) + (p.ruolo ? " (" + esc((RUOLI.find(x => x[0] === p.ruolo) || [, ""])[1]) + ")" : "") + " · " : "") + (p.presente === false ? "Non presente" : s ? "Squadra: " + esc(s.nome) : "Libero") +
+          '<small>' + (p.ente && p.ente !== "VVF" ? esc(p.ente) + (p.ruolo ? " (" + esc(p.ruolo) + ")" : "") + " · " : "") + (p.presente === false ? "Non presente" : s ? "Squadra: " + esc(s.nome) : "Libero") +
           (p.tel ? " · " + esc(p.tel) : "") + "</small>" + chipSpec(p) + "</div>" +
           '<button type="button" class="btn sm" data-a="mod-p" data-id="' + p.id + '">Modifica</button></div>';
       });
@@ -138,8 +138,8 @@ FireOps.registra({
         '<div><label class="f" for="gp-nom" style="margin-top:0">Nome</label><input type="text" id="gp-nom" autocapitalize="words" autocomplete="off" value="' + esc(p.nome) + '"></div></div>' +
         // Qualifica solo per i VVF; per gli altri enti si distingue soltanto il tipo di volontario
         '<div id="gp-bq"' + (ente === "VVF" ? "" : " hidden") + '><label class="f" for="gp-qual">Qualifica</label><select id="gp-qual">' + q + "</select></div>" +
-        '<div id="gp-br"' + (ente === "VVF" ? " hidden" : "") + '><label class="f" for="gp-ruolo">Volontario</label><select id="gp-ruolo">' +
-        RUOLI.map(x => '<option value="' + x[0] + '"' + ((p.ruolo || "") === x[0] ? " selected" : "") + ">" + x[1] + "</option>").join("") + "</select></div>" +
+        '<div id="gp-br"' + (ente === "VVF" ? " hidden" : "") + '><label class="f" for="gp-ruolo">Ruolo (facoltativo, a mano)</label><input type="text" id="gp-ruolo" list="gp-ruoli" autocomplete="off" placeholder="es. Volontario" value="' + esc(p.ruolo || "") + '">' +
+        '<datalist id="gp-ruoli">' + RUOLI.map(x => '<option value="' + x + '">').join("") + "</datalist></div>" +
         '<label class="f" for="gp-tel">Cellulare</label><input type="tel" id="gp-tel" inputmode="tel" autocomplete="off" value="' + esc(p.tel) + '">' +
         '<label class="f">Specialità</label>' + SPEC.map(s => '<label class="chk"><input type="checkbox" data-spec="' + s[0] + '"' + ((p.spec || []).includes(s[0]) ? " checked" : "") + ">" + s[1] + "</label>").join("") +
         '<label class="chk" style="margin-top:6px"><input type="checkbox" id="gp-pres"' + (p.presente !== false ? " checked" : "") + ">Presente</label>" +
@@ -152,7 +152,7 @@ FireOps.registra({
       const cog = $("#gp-cog").value.trim();
       if (!cog) { stato("Scrivi almeno il cognome.", false); return; }
       const d = {
-        cognome: cog, nome: $("#gp-nom").value.trim(), ente: $("#gp-ente").value, qual: $("#gp-ente").value === "VVF" ? $("#gp-qual").value : "", ruolo: $("#gp-ente").value === "VVF" ? "" : $("#gp-ruolo").value, tel: $("#gp-tel").value.trim(),
+        cognome: cog, nome: $("#gp-nom").value.trim(), ente: $("#gp-ente").value, qual: $("#gp-ente").value === "VVF" ? $("#gp-qual").value : "", ruolo: $("#gp-ente").value === "VVF" ? "" : $("#gp-ruolo").value.trim(), tel: $("#gp-tel").value.trim(),
         spec: Array.from(root.querySelectorAll("[data-spec]:checked")).map(e => e.dataset.spec),
         presente: $("#gp-pres").checked, note: $("#gp-note").value.trim()
       };
