@@ -15,9 +15,9 @@
 
   // Personale del turno B: "Cognome Nome" e qualifica (senza patenti). Da spostare in db/ quando ci sarà un file condiviso.
   const TURNO_B = [
-    ["ANGELONE LEONARDO", "VP"],
+    ["ANGELONE LEONARDO", "VF"],
     ["ANTONIOLI MARCO", "CS"],
-    ["ARFELLI STEFANO", "CRE"],
+    ["ARFELLI STEFANO", "CR"],
     ["BALDACCI ANDREA", "VE"],
     ["BALZANI ANDREA", "CS"],
     ["BARDI ALFIERO", "CS"],
@@ -30,13 +30,13 @@
     ["CASTAGNOLI MARCO", "VC"],
     ["CASTROGIOVANNI ANDRE", "VE"],
     ["CECCARONI STEFANO", "VC"],
-    ["D'ATTARDI GIOVANNI", "VP"],
+    ["D'ATTARDI GIOVANNI", "VF"],
     ["DALLA BELLA MARCO", "VE"],
     ["DE LORENZI ENRICO", "VE"],
     ["DE VITO ISRAEL", "CS"],
     ["DI CANDIA MICHELE", "VE"],
-    ["DI CAPRIO GIOVANNI", "VPE"],
-    ["DI NICOLA MASSIMO", "VPC"],
+    ["DI CAPRIO GIOVANNI", "VE"],
+    ["DI NICOLA MASSIMO", "VC"],
     ["DOGANA MARCO", "VC"],
     ["FORTE GIANNI", "VF"],
     ["GHETTI GABRIELE", "VC"],
@@ -46,36 +46,36 @@
     ["GORI FABIO", "VE"],
     ["GRAZIANI CRISTIAN", "VC"],
     ["GUIDI MARCO", "CSE"],
-    ["LA ROCCA VINCENZO", "VP"],
+    ["LA ROCCA VINCENZO", "VF"],
     ["LEONI VINCENZO", "CSE"],
     ["LIPPOLIS NICOLA", "VF"],
     ["MANUZZI GIANLUCA", "CR"],
-    ["MANUZZI MICHELE", "VP"],
+    ["MANUZZI MICHELE", "VF"],
     ["MARALDI MAURO", "CS"],
     ["MARGHERITA MARCO", "VC"],
-    ["MARIANI MASSIMO", "VP"],
+    ["MARIANI MASSIMO", "VF"],
     ["MARINO ANTONIO", "VE"],
-    ["MONCASTELLI ROBERTO", "CRE"],
-    ["MONTI DANILO", "VPC"],
+    ["MONCASTELLI ROBERTO", "CR"],
+    ["MONTI DANILO", "VC"],
     ["MONTINI LORENZO", "VE"],
     ["MORRI MAURO", "VF"],
     ["OLIVUCCI ROBERT", "VE"],
-    ["PASSERI MIRKO", "VP"],
+    ["PASSERI MIRKO", "VF"],
     ["PELIZZA ANDREA", "VE"],
     ["PENTOLI LUCA", "VE"],
     ["PENTOLI MASSIMILIANO", "CSE"],
-    ["POLVERELLI IVAN", "VP"],
-    ["RIDOLFO DORIANO", "VP"],
+    ["POLVERELLI IVAN", "VF"],
+    ["RIDOLFO DORIANO", "VF"],
     ["RUFFILLI MASSIMILIANO", "CS"],
     ["RUGGIERO FRANCESCO", "VE"],
-    ["SARDI SAMUELE", "VP"],
-    ["SPADAFINA FRANCESCO", "VP"],
+    ["SARDI SAMUELE", "VF"],
+    ["SPADAFINA FRANCESCO", "VF"],
     ["TASSINARI PAOLO", "VC"],
     ["TEDALDI NICOLA", "VC"],
     ["VANDI CLAUDIO", "CSE"],
     ["VANIGLINI ALAN", "CS"],
     ["VITALI GIUSEPPE", "CSE"],
-    ["ZANELLI FABIO", "VPC"],
+    ["ZANELLI FABIO", "VC"],
     ["ZOFFOLI NICOLO'", "VF"]
   ];
   // "DE LORENZI ENRICO" -> "De Lorenzi Enrico (VE)"; "NICOLO'" -> "Nicolò"
@@ -313,15 +313,9 @@
   /* =====================================================================
    * Markup
    * ===================================================================== */
-  const QUALIFICHE = [
-    ["VVF", "Vigile del Fuoco (VVF)"], ["VVFC", "Vigile del Fuoco Coordinatore (VVFC)"],
-    ["VE", "Vigile Esperto (VE)"], ["VEC", "Vigile Esperto Coordinatore (VEC)"], ["VESC", "VESC"],
-    ["CS", "Capo Squadra (CS)"], ["CSC", "Capo Squadra Coordinatore (CSC)"],
-    ["CR", "Capo Reparto (CR)"], ["CRC", "Capo Reparto Coordinatore (CRC)"],
-    ["Funzionario", "Funzionario"], ["Direttivo/Dirigente", "Direttivo / Dirigente"]
-  ];
-  const qualificaOptions = QUALIFICHE.map(([v, t], i) =>
-    '<option value="' + v + '"' + (v === "VE" ? " selected" : "") + ">" + t + "</option>").join("");
+  const QUALIFICHE = (window.FireOps && window.FireOps.qualifiche) || [["Vigili del fuoco", [["VE", "Vigile del fuoco esperto"]]]];
+  const qualificaOptions = QUALIFICHE.map(g => '<optgroup label="' + g[0] + '">' + g[1].map(([v, t]) =>
+    '<option value="' + v.replace(/"/g, "&quot;") + '"' + (v === "VE" ? " selected" : "") + ">" + (t === v ? t : t + " (" + v + ")") + "</option>").join("") + "</optgroup>").join("");
 
   function comandoPickerHtml(prefix, withGeoRecents) {
     return '' +
@@ -875,7 +869,9 @@
       $("fcUCognome").value = p.cognome || "";
       $("fcUCf").value = p.cf || "";
       $("fcUEmail").value = p.email || "";
-      $("fcQualifica").value = p.qualifica || "VE";
+      { const q = p.qualifica || "VE", sel = $("fcQualifica");
+        if (!Array.from(sel.options).some(o => o.value === q)) sel.appendChild(new Option(q, q));   // sigla non più in elenco (profili salvati prima)
+        sel.value = q; }
       $("fcSede").value = p.sede || "";
       $("fcTurnoL").value = p.turnoL || "";
       $("fcTurnoS").value = p.turnoS || "";

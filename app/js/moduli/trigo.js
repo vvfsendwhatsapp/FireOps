@@ -328,7 +328,7 @@ const HTML=`<div class="tg-nav" id="tg-nav" hidden><button type="button" class="
           <button id="ms-rotAl">L1 in orizzontale</button>
           <button id="ms-rotZ">Azzera</button>
         </div>
-        <input id="ms-rot" type="range" min="-180" max="180" step="1" value="0" aria-label="Rotazione della pianta in gradi">
+        <input id="ms-rot" type="range" min="-90" max="90" step="1" value="0" aria-label="Rotazione della pianta in gradi">
         <p class="ms-note">Positivo = senso orario. L'area, le misure e la chiusura non cambiano: si ricalcolano e restano coerenti. I nuovi vertici si agganciano alla griglia, non ai lati ruotati.</p>
       </div>
       <div id="ms-pBozza">
@@ -1881,7 +1881,7 @@ function m4Render(){
   const off=m4Off();
   m4.sol=have?forwardIntersection(m4.pts.map(p=>p.ll),[norm360(m4.s.a+off),norm360(m4.s.b+off)],m4.sigma):null;
   const S=m4.sol;
-  m4.steps.mark(1,!!(m4.pts[0].ll&&m4.s.a!=null));m4.steps.mark(2,!!(m4.pts[1].ll&&m4.s.b!=null));m4.steps.mark(3,!!(S&&S.ll));
+  m4.steps.mark(1,!!m4.pts[0].ll);m4.steps.mark(2,m4.s.a!=null);m4.steps.mark(3,!!m4.pts[1].ll);m4.steps.mark(4,m4.s.b!=null);m4.steps.mark(5,!!(S&&S.ll));
   m4Stats();
   const g=m4.ui.group;g.clearLayers();m4.ui.removePoint('C');
   const res=$('#m4-res');
@@ -1971,7 +1971,7 @@ function m4CamRender(i){
 }
 function m4Station(i){
   const L_=LET4[i],pr=i?'m4b':'m4a';
-  return `<div class="panel" data-s="${i+1}" ${i?'hidden':''}>
+  return `<div class="panel" data-s="${2*i+1}" ${i?'hidden':''}>
     <div class="card"><h3>Stazione ${L_}: dove sei</h3>
       <div class="ptc" data-i="${i}">
         <div class="ptc-h"><div class="pin mini" style="--bg:#ffd400;--fg:#000">${L_}</div><input class="pname" placeholder="Nome (facoltativo)" aria-label="Nome del punto ${L_}"></div>
@@ -1986,8 +1986,13 @@ function m4Station(i){
       </div>
       <div id="m4-slot${i}" hidden></div>
     </div>
+    <div class="row nav2">${i?'<button type="button" class="btn" data-go="2">Indietro</button>':''}<button type="button" class="btn pri" data-go="${2*i+2}">Avanti: rilevamento da ${L_}</button></div>
+  </div>
+  <div class="panel" data-s="${2*i+2}" hidden>
+    <div class="note" id="m4-pos${i}" style="margin-bottom:10px"></div>
     ${camHTML(pr,{hud:'Direzione (azimut)',horizon:false})}
     <div id="${pr}-flow" style="margin-top:10px"></div>
+    <div class="row nav2" style="margin-top:8px"><button type="button" class="btn" data-go="${2*i+1}">Cambia posizione ${L_}</button></div>
     <p class="sub">${i?'Punta il mirino su C, lo stesso punto mirato da A, e conferma. Se da qui vedi anche A, puoi puntarlo dopo (facoltativo): dà il dislivello A–B e corregge la bussola.':'Punta il mirino proprio sul punto C (anche in alto o in basso: l’alzo serve per il dislivello) e conferma. Facoltativo: punta anche B. Poi spostati in B.'}</p>
   </div>`;
 }
@@ -1996,7 +2001,7 @@ function initM4(){
   v.innerHTML=`<div class="steps"></div>
   <div class="strip" style="--n:3"><div><span>Posizioni</span><b id="m4-sp">0/2</b></div><div><span>Direzioni</span><b id="m4-sm">0/2</b></div><div><span>Incertezza</span><b id="m4-se">—</b></div></div>
   ${m4Station(0)}${m4Station(1)}
-  <div class="panel" data-s="3" hidden>
+  <div class="panel" data-s="5" hidden>
     <div id="m4-res"></div>
     <div id="m4-slot3" style="margin-top:10px"></div>
   </div>`;
@@ -2015,13 +2020,18 @@ function initM4(){
     }
   },$('#m4-slot0'));
 
-  m4.steps=setupSteps(v,['Stazione A','Stazione B','Punto C'],n=>{
+  m4.steps=setupSteps(v,['Posizione A','Rilevamento da A','Posizione B','Rilevamento da B','Posizione stimata di C'],n=>{
     Sensors.stop();showStart('m4a');showStart('m4b');
-    if(n<3){
-      m4.cur=n-1;
+    if(n<5){
+      m4.cur=n%2?(n-1)/2:n/2-1;
       $('#m4-slot0').hidden=true;$('#m4-slot1').hidden=true;
-      placeMap(m4.ui,'m4-slot'+(n-1));
-      m4.ui.refreshHint();
+      if(n%2){
+        placeMap(m4.ui,'m4-slot'+m4.cur);
+        m4.ui.refreshHint();
+      }else{
+        const p=m4.pts[m4.cur];
+        $('#m4-pos'+m4.cur).textContent='Stazione '+LET4[m4.cur]+': '+(p.ll?(p.ll[0].toFixed(5)+', '+p.ll[1].toFixed(5)):'posizione non ancora impostata, torna al passo precedente')+'.';
+      }
     }else{
       placeMap(m4.ui,'m4-slot3');m4Render();
       setTimeout(()=>{m4.ui.map.invalidateSize();
@@ -2044,12 +2054,12 @@ function initM4(){
     {key:'a',chip:'A → C',step:0.1,label:()=>'Da '+lab4(0)+': conferma direzione verso C',read:need(0,'a')},
     {key:'ab',chip:'A → B',step:0.1,optional:true,skip:true,skipVal:'no',label:()=>'Facoltativo: punta '+lab4(1),read:need(0,'ab')}
   ],m4.s,k=>k==='a'?'Sei in A: imposta la posizione, poi punta il mirino su C e premi.'
-    :'Facoltativo: se da A vedi B (o un segnale posto su B), puntalo e premi. Serve per il dislivello A–B e per correggere la bussola.',()=>{m4Render();},onCap,{go:2,text:'Vai al punto B',msg:'Direzione da A registrata.'});
+    :'Facoltativo: se da A vedi B (o un segnale posto su B), puntalo e premi. Serve per il dislivello A–B e per correggere la bussola.',()=>{m4Render();},onCap,{go:3,text:'Vai alla posizione B',msg:'Direzione da A registrata.'});
   m4.flows[1]=makeFlow('m4b',[
     {key:'b',chip:'B → C',step:0.1,label:()=>'Da '+lab4(1)+': conferma direzione verso C',read:need(1,'b')},
     {key:'ba',chip:'B → A',step:0.1,optional:true,skip:true,skipVal:'no',label:()=>'Facoltativo: punta '+lab4(0),read:need(1,'ba')}
   ],m4.s,k=>k==='b'?'Sei in B: imposta la posizione, poi punta il mirino sullo stesso punto C e premi.'
-    :'Facoltativo: se da B vedi A, puntalo e premi. Con A→B e B→A il dislivello A–B è più preciso.',()=>{m4Render();},onCap,{go:3,text:'Vedi risultato',msg:'Direzione da B registrata.'});
+    :'Facoltativo: se da B vedi A, puntalo e premi. Con A→B e B→A il dislivello A–B è più preciso.',()=>{m4Render();},onCap,{go:5,text:'Vedi risultato',msg:'Direzione da B registrata.'});
   bindCam('m4a',()=>m4CamRender(0));bindCam('m4b',()=>m4CamRender(1));
 
   const setFmt=()=>{

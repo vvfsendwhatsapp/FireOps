@@ -19,41 +19,63 @@
   // ---- Tasti funzione della home. Una voce con "voci" apre una pagina con i sotto-tasti;
   //      una voce con "href" apre direttamente il modulo. Per aggiungere un modulo basta una riga qui sotto.
   const PUMA_HOME = "https://sites.google.com/view/pumavvf/home-page";
+  // Icone della sezione Misura (le stesse della vecchia pagina di Trigo)
+  const ICONE = {
+    altezza: '<svg viewBox="0 0 76 76" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"> <path d="M6 67h64"/><path d="M56 67V34"/><path d="M56 7l-10 15h6l-9 13h26l-9-13h6z"/> <circle cx="12" cy="57" r="3.2"/><path d="M12 57h28" stroke-dasharray="3 4"/> <path d="M12 57L56 9" stroke="#10141a"/><path d="M12 57L56 67" stroke="#10141a"/></svg>',
+    avanti: '<svg viewBox="0 0 76 76" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"> <path d="M12 64L58 18M64 64L58 18" stroke="#10141a"/><path d="M12 64h52" stroke-dasharray="3 4"/> <circle cx="12" cy="64" r="4" fill="currentColor"/><circle cx="64" cy="64" r="4" fill="currentColor"/><circle cx="58" cy="18" r="5" fill="#10141a" stroke="none"/></svg>',
+    snellius: '<svg viewBox="0 0 76 76" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"> <path d="M10 62L66 56L36 10z"/><path d="M37 40L10 62M37 40L66 56M37 40L36 10" stroke="#10141a"/> <circle cx="37" cy="40" r="4" fill="#10141a" stroke="none"/> <circle cx="10" cy="62" r="3.2" style="fill:var(--ics-pianificazione)"/><circle cx="66" cy="56" r="3.2" style="fill:var(--ics-pianificazione)"/><circle cx="36" cy="10" r="3.2" style="fill:var(--ics-pianificazione)"/></svg>',
+    faro: '<svg viewBox="0 0 76 76" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"> <path d="M52 66l4-40h8l4 40z"/><path d="M55 26v-8h10v8"/><path d="M54 18l6-9 6 9z"/> <path d="M4 68q4-4 8 0t8 0t8 0t8 0"/><circle cx="12" cy="58" r="3.2"/> <path d="M12 58h40" stroke-dasharray="3 4"/><path d="M12 58L60 22" stroke="#10141a"/></svg>',
+    area: '<svg viewBox="0 0 76 76" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"> <path d="M10 10h34v20h22v30H10z" fill="rgba(255,255,255,.2)"/> <path d="M10 68h56" stroke="#10141a"/><path d="M10 64v8M66 64v8" stroke="#10141a"/> <circle cx="10" cy="10" r="3" fill="currentColor" stroke="none"/><circle cx="44" cy="10" r="3" fill="currentColor" stroke="none"/><circle cx="44" cy="30" r="3" fill="currentColor" stroke="none"/><circle cx="66" cy="30" r="3" fill="currentColor" stroke="none"/><circle cx="66" cy="60" r="3" fill="currentColor" stroke="none"/><circle cx="10" cy="60" r="3" fill="currentColor" stroke="none"/></svg>',
+    taglio: '<svg viewBox="0 0 76 76" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 50h64"/><rect x="10" y="30" width="56" height="16" rx="3" fill="rgba(255,255,255,.2)"/><path d="M38 24v28" stroke="#10141a"/><path d="M32 26l6 8 6-8" stroke="#10141a"/><path d="M14 50v14M62 50v14"/></svg>'
+  };
+  // Ordine e colori per famiglia: rosso = trovare (Localizzati, Ricerche), verde = misurare e addestrare (Misura, PUMA),
+  // blu = comunicare e riferire, grigio = dati personali.
   const FUNZIONI = [
-    {id: "misura", nome: "Misura", ico: "📐", colore: "var(--ics-pianificazione)", testo: "#fff",
+    {id: "localizzati", nome: "Localizzati", ico: "📍", colore: "var(--ics-operazioni)", testo: "#fff",
+      sotto: "Comando competente, canali radio, percorsi e AR", href: "#/localizzati"},
+    {id: "ricerche", nome: "Ricerche", ico: "🔎", colore: "var(--ics-operazioni)", testo: "#fff",
+      sotto: "Ricerche in corso da Messaggistica", href: "#/ricerche"},
+    {id: "misura", nome: "Misura", ico: ICONE.altezza, colore: "var(--ics-pianificazione)", testo: "#fff",
       sotto: "Alberi, altezze, distanze e aree",
       voci: [
-        {nome: "Taglio alberi", ico: "🪚", href: "#/taglio", desc: "Dove fare lo scarico, quanto profondo, in che ordine tagliare"},
-        {nome: "Altezza e area di proiezione", ico: "📏", href: "#/trigo/altezza", desc: "Piante, edifici e teleferiche, con area di caduta"},
-        {nome: "Intersezione in avanti", ico: "📐", href: "#/trigo/avanti", desc: "Coordinate e dislivello di un punto da due stazioni"},
-        {nome: "Intersezione all’indietro", ico: "🧭", href: "#/trigo/snellius", desc: "Snellius–Potenot: la tua posizione da tre punti noti"},
-        {nome: "Problema del faro", ico: "🗼", href: "#/trigo/faro", desc: "Distanza, quota o posizione di un punto, con l’alzo"},
-        {nome: "Calcola area", ico: "🗺️", href: "#/trigo/area", desc: "Superfici da foto, pianta a passi o mappa"}
+        {nome: "Taglio alberi", ico: ICONE.taglio, href: "#/taglio", desc: "Dove fare lo scarico, quanto profondo, in che ordine tagliare"},
+        {nome: "Altezza e area di proiezione", ico: ICONE.altezza, href: "#/trigo/altezza", desc: "Piante, edifici e teleferiche, con area di caduta"},
+        {nome: "Intersezione in avanti", ico: ICONE.avanti, href: "#/trigo/avanti", desc: "Coordinate e dislivello di un punto da due stazioni"},
+        {nome: "Intersezione all’indietro", ico: ICONE.snellius, href: "#/trigo/snellius", desc: "Snellius–Potenot: la tua posizione da tre punti noti"},
+        {nome: "Problema del faro", ico: ICONE.faro, href: "#/trigo/faro", desc: "Distanza, quota o posizione di un punto, con l’alzo"},
+        {nome: "Calcola area", ico: ICONE.area, href: "#/trigo/area", desc: "Superfici da foto, pianta a passi o mappa"}
       ]},
-    {id: "puma", nome: "PUMA", ico: "🧑‍🚒", colore: "var(--ics-operazioni)", testo: "#fff",
+    {id: "puma", nome: "PUMA", ico: "🧑‍🚒", colore: "var(--ics-pianificazione)", testo: "#fff",
       sotto: "Piattaforma Unificata Monitoraggio Addestramenti",
       voci: [
         {nome: "Home PUMA", ico: "🏠", href: PUMA_HOME, esterno: true, desc: "Il sito PUMA, si apre in una nuova scheda"},
         {nome: "Mappa addestramenti", ico: "🗺️", href: "#/pumamappa", desc: "Dove si svolgono ora gli addestramenti, con i dettagli di ciascuno"},
         {nome: "Tabella presenze", ico: "📋", href: "#/pumapresenze", desc: "Personale presente oggi negli addestramenti, con aggiornamento automatico"}
       ]},
-    {id: "localizzati", nome: "Localizzati", ico: "📍", colore: "var(--ics-comando)", testo: "#10141a",
-      sotto: "Comando competente, canali radio, percorsi e AR", href: "#/localizzati"},
-    {id: "ricerche", nome: "Ricerche", ico: "🔎", colore: "var(--ics-amministrazione)", testo: "#fff",
-      sotto: "Ricerche in corso da Messaggistica", href: "#/ricerche"},
-    {id: "coem", nome: "Co.Em.", ico: "📷", colore: "var(--ics-logistica)", testo: "#10141a",
+    {id: "coem", nome: "Co.Em.", ico: "📷", colore: "var(--ics-amministrazione)", testo: "#fff",
       sotto: "Comunicazione in Emergenza",
       voci: [
         {nome: "Foto", ico: "📷", href: "#/foto", desc: "Inquadra, ruota, ingrandisci, sfoca volti e targhe, aggiungi il logo CNVVF"},
-        {nome: "Video", ico: "🎬", href: "#/video", desc: "Testo AI con intestazione e chiusura"},
-        {nome: "Comunicato", ico: "📰", href: "#/comunicato", desc: "Testo riscritto con AI"}
+        {nome: "Comunicato", ico: "📰", href: "#/comunicato", desc: "Scrivi i fatti e l’AI prepara il comunicato, con titolo e chiusura"},
+        {nome: "Video", ico: "🎬", href: "#/video", desc: "In preparazione"}
       ]},
     {id: "comunicazioni", nome: "Comunicazioni", ico: "✉️", colore: "var(--ics-amministrazione)", testo: "#fff",
       sotto: "Missioni per soccorso e mancate timbrature", href: "#/comunicazioni"},
-    {id: "rapporti", nome: "Rapporti d’intervento", ico: "📝", colore: "var(--ics-comando)", testo: "#10141a",
+    {id: "rapporti", nome: "Rapporti d’intervento", ico: "📝", colore: "var(--ics-amministrazione)", testo: "#fff",
       sotto: "In preparazione", href: "#/rapporti"},
     {id: "personale", nome: "Area personale", ico: "👤", colore: "var(--panel-2)", testo: "#eceff3",
       sotto: "I tuoi dati, salvati solo su questo telefono", href: "#/personale"}
+  ];
+  // Qualifiche del CNVVF (DM 10.02.2012 sui gradi); le sigle sono quelle in uso al comando.
+  // Dove non c'è una sigla il valore è il nome per esteso.
+  const QUALIFICHE = [
+    ["Vigili del fuoco", [["VF", "Vigile del fuoco"], ["VE", "Vigile del fuoco esperto"], ["VESC", "Vigile del fuoco esperto scatto convenzionale"], ["VC", "Vigile del fuoco coordinatore"]]],
+    ["Capi squadra e capi reparto", [["CS", "Capo squadra"], ["CSE", "Capo squadra esperto"], ["CR", "Capo reparto"]]],
+    ["Ispettori e sostituti direttori", [["Viceispettore antincendi", "Viceispettore antincendi"], ["IA", "Ispettore antincendi"], ["Ispettore antincendi esperto", "Ispettore antincendi esperto"],
+      ["Sostituto direttore antincendi", "Sostituto direttore antincendi"], ["Sostituto direttore antincendi capo", "Sostituto direttore antincendi capo"], ["Sostituto direttore antincendi capo esperto", "Sostituto direttore antincendi capo esperto"]]],
+    ["Direttivi", [["Vice direttore", "Vice direttore"], ["D", "Direttore"], ["Direttore vice dirigente", "Direttore vice dirigente"]]],
+    ["Dirigenti", [["Primo dirigente", "Primo dirigente"], ["Dirigente superiore", "Dirigente superiore"], ["Dirigente generale", "Dirigente generale"]]],
+    ["Volontari", [["Vigile del fuoco volontario", "Vigile del fuoco volontario"], ["Capo squadra volontario", "Capo squadra volontario"], ["Capo reparto volontario", "Capo reparto volontario"]]]
   ];
   const HUBS = {};
   FUNZIONI.forEach(f => { if (f.voci) HUBS[f.id] = f; });
@@ -648,6 +670,7 @@
     consumaAutoLocalizzati: () => { const v = autoLocalizzati; autoLocalizzati = false; return v; },
     // testo ricevuto da "Condividi": si legge una volta sola
     consumaCondiviso: () => { const v = condiviso; condiviso = ""; return v; },
+    qualifiche: QUALIFICHE,
     vai: id => { location.hash = id ? "#/" + id : "#/"; },
     // dati personali salvati in locale dall'Area personale ({} se vuoti)
     personale: () => { try { return JSON.parse(localStorage.getItem("fireops_personale") || "{}") || {}; } catch (e) { return {}; } }

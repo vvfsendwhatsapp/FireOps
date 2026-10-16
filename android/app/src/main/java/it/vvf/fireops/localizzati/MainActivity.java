@@ -113,7 +113,7 @@ public class MainActivity extends Activity {
             if (c != null) testo = c.toString();
         }
         if (testo == null || testo.trim().isEmpty()) {
-            if (web.getUrl() == null) web.loadUrl(BASE + "#/localizzati");
+            if (web.getUrl() == null) web.loadUrl(BASE);   // avvio normale: home dell'app
             return;
         }
         gestisciTesto(testo.trim());
