@@ -479,7 +479,7 @@ def scrivi(sigla, nome_prov, sedi, celle, comuni, cfg, metodo, outdir, tratti=No
     out = {
         "provincia": sigla, "nome": nome_prov, "generato": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "metodo": metodo, "h3_res": res, "n_competenze": N_COMPETENZE,
-        "parametri": {"fattore_mezzo": cfg.get("fattore_mezzo", 1.0),
+        "parametri": {"fattore_mezzo": cfg.get("fattore_mezzo", 1.0), "velocita": cfg.get("velocita", {}), "mezzo": cfg.get("mezzo", {}),
                       "uscita_min": {k: v.get("uscita_min") for k, v in cfg["tipi"].items()},
                       "raggio_esterni_km": cfg["province"][sigla].get("raggio_esterni_km", 30)},
         "sedi": [{k: s[k] for k in ("id", "chiave", "nome", "tipo", "sigla", "comune", "lat", "lon", "uscita_min", "interna")} for s in sedi],

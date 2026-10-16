@@ -422,11 +422,17 @@ function legenda() {
     return `<div class="lr" data-s="${sid}"><span class="sw" style="background:${s.col}"></span>
       <span class="n">${esc(nomeBreve(s))}<small>${esc(TIPO[s.tipo] || s.tipo)}${s.interna ? '' : ' · ' + esc(s.sigla)} · arrivo max ${Math.ceil(tm)} min</small></span>
       <span class="v">${(cc.length * area).toFixed(0)} km²</span></div>`;
-  }).join('') + `<div class="nota">Tempo di arrivo = uscita della sede (${Object.entries(D.parametri.uscita_min).filter(([, v]) => v != null).map(([k, v]) => `${TIPO[k] || k} ${v}′`).join(', ')}) + percorrenza su strada${D.parametri.fattore_mezzo != 1 ? ' × ' + D.parametri.fattore_mezzo : ''}.
+  }).join('') + `<div class="nota">Tempo di arrivo = uscita della sede (${Object.entries(D.parametri.uscita_min).filter(([, v]) => v != null).map(([k, v]) => `${TIPO[k] || k} ${v}′`).join(', ')}) + percorrenza su strada${D.parametri.fattore_mezzo != 1 ? ' × ' + D.parametri.fattore_mezzo : ''}${velocitaTesto()}, percorso più veloce.
     Celle esagonali da ~${area.toFixed(2)} km². Tocca una sede per vedere la sua scala dalla 1ª alla 6ª.${D.metodo === 'osrm' ? '' : '<br><b>⚠ Calcolo di prova in linea d\'aria, non su strada.</b>'}</div>`;
   leg.querySelectorAll('.lr[data-s]').forEach(el => el.onclick = () => {
     sedeFiltro = el.dataset.s; $('sedeSel').value = sedeFiltro; pref.sede = sedeFiltro; salva(); disegna();
   });
+}
+
+// velocita' del camion usate nel calcolo (costanti, senza traffico)
+function velocitaTesto() {
+  const v = (D.parametri || {}).velocita || {};
+  return v.ordinaria ? ` (camion a velocità costante: ${v.ordinaria} km/h su strada ordinaria, ${v.autostrada} in autostrada${v.superstrada && v.superstrada !== v.autostrada ? ', ' + v.superstrada + ' in superstrada' : ''}, senza traffico)` : '';
 }
 
 function comuniDiSede(sid) {
@@ -482,7 +488,7 @@ function scheda(ll) {
   const carr = vicini.map(t => `<div class="carr">🛣 ${esc(t.ref || (t.classe === 'motorway' ? 'Autostrada' : 'Superstrada'))} · carreggiata verso ${esc(t.dir)}
       <small>· solo per chi è sulla carreggiata</small></div>${righeComp(t.comp)}`).join('');
   $('pbody').innerHTML = avv + (vicini.length ? '<div class="carr">📍 Viabilità ordinaria</div>' : '') + r + carr
-    + `<p class="nota" style="padding:8px 0 0">Tempi stimati: uscita + percorrenza su strada senza traffico. Cella H3 ${esc(c.h3)}.</p>`;
+    + `<p class="nota" style="padding:8px 0 0">Tempi stimati: uscita + percorrenza più veloce su strada${velocitaTesto()}. Cella H3 ${esc(c.h3)}.</p>`;
   scheda.ll = ll;
   const testoComp = comp => comp.map((x, i) => `${ord(i + 1)} ${nomeBreve(D.sedi[x.s])} ~${Math.round(x.t)} min, ${x.k.toFixed(1)} km`).join('\n');
   scheda.testo = `Competenze ${D.comuni[c.comune] || ''} (${coord})\n` + testoComp(c.comp)

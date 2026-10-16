@@ -15,6 +15,7 @@ on:
     paths:
       - db/competenze/config.json
       - script/competenze.py
+      - script/profilo_camion.py
 
 permissions:
   contents: write
@@ -72,7 +73,10 @@ jobs:
         run: |
           cd "$RUNNER_TEMP"
           IMG=ghcr.io/project-osrm/osrm-backend
-          docker run --rm -v "$PWD:/data" $IMG osrm-extract -p /opt/car.lua /data/area.osm.pbf
+          # profilo camion VVF: velocita' costanti (60 ordinaria, 90 autostrada...) da config.json
+          docker run --rm $IMG cat /opt/car.lua > car.lua
+          python3 "${{ github.workspace }}/script/profilo_camion.py" car.lua camion.lua --config "${{ github.workspace }}/db/competenze/config.json"
+          docker run --rm -v "$PWD:/data" -v "$PWD/camion.lua:/opt/camion.lua:ro" $IMG osrm-extract -p /opt/camion.lua /data/area.osm.pbf
           docker run --rm -v "$PWD:/data" $IMG osrm-partition /data/area.osrm
           docker run --rm -v "$PWD:/data" $IMG osrm-customize /data/area.osrm
           docker run -d --name osrm -p 5000:5000 -v "$PWD:/data" $IMG \

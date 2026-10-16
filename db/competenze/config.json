@@ -1,5 +1,5 @@
 {
- "_note": "Parametri del calcolo competenze (script/competenze.py). uscita_min = minuti dall'allarme alla partenza del mezzo, sommati alla percorrenza. fattore_mezzo moltiplica i tempi OSRM (auto): >1 per mezzi pesanti piu' lenti. Solo i tipi elencati qui sono candidati.",
+ "_note": "Parametri del calcolo competenze (script/competenze.py). uscita_min = minuti dall'allarme alla partenza del mezzo, sommati alla percorrenza. fattore_mezzo moltiplica i tempi OSRM (lasciare 1.0: le velocita' del camion sono gia' in 'velocita'). Solo i tipi elencati qui sono candidati.",
  "bbox_estratto": [
   11.1,
   43.3,
@@ -9,6 +9,19 @@
  "_note_bbox": "riquadro [ovest, sud, est, nord] ritagliato dall'estratto OSM: deve contenere tutte le province e le sedi esterne con margine per le strade",
  "fattore_mezzo": 1.0,
  "velocita_fuori_strada_kmh": 4,
+ "_note_velocita": "Velocita' COSTANTI dei mezzi VVF (camion), senza traffico, km/h: diventano il profilo OSRM 'camion' (script/profilo_camion.py). Le strade con limiti di altezza/larghezza/lunghezza/peso inferiori al mezzo sono escluse.",
+ "velocita": {
+  "ordinaria": 60,
+  "autostrada": 90,
+  "superstrada": 90,
+  "svincolo": 60
+ },
+ "mezzo": {
+  "altezza_m": 3.5,
+  "larghezza_m": 2.55,
+  "lunghezza_m": 8.5,
+  "peso_kg": 16000
+ },
  "tipi": {
   "centrale": {
    "uscita_min": 2
