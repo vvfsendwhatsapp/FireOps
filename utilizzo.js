@@ -51,20 +51,18 @@
   /* ---------- 2) elenco nel modale ---------- */
   const modale = document.getElementById("modal-help");
   const box = document.getElementById("utilizzo-comandi");
-  let ultimoCaricamento = 0, dati = null, msg = [];
+  let ultimoCaricamento = 0, dati = null;
 
   function disegna() {
     if (!box) return;
     if (!dati) { box.innerHTML = '<div class="ut-nota">Elenco non disponibile.</div>'; return; }
-    const nomi = Array.from(new Set(dati.filter(r => r.piattaforma === "desktop").map(r => r.comando))).sort((a, b) => a.localeCompare(b, "it"));
-    let h = '<div class="ut-tit">🖥️ Comandi collegati a FireOps desktop</div>';
-    if (!nomi.length) h += '<div class="ut-nota">Nessun Comando negli ultimi 90 giorni.</div>';
+    const nomi = Array.from(new Set(dati.map(r => r.comando))).sort((a, b) => a.localeCompare(b, "it"));
+    let h = '<div class="ut-tit">🖥️ Comandi che usano FireOps</div>';
+    if (!nomi.length) h += '<div class="ut-nota">Nessun Comando registrato.</div>';
     else {
       h += '<div class="ut-elenco">' + nomi.map(n => '<div class="ut-riga"><span>' + esc(n) + "</span></div>").join("") + "</div>" +
         '<div class="ut-nota">' + nomi.length + (nomi.length === 1 ? " Comando" : " Comandi") + '</div><button type="button" class="ut-btn" id="ut-copia">Copia l’elenco</button>';
     }
-    h += '<div class="ut-tit" style="margin-top:10px">✉️ Hanno inviato messaggi (Messaggistica)</div>' +
-      (msg.length ? '<div class="ut-elenco">' + msg.map(m => '<div class="ut-riga"><span>' + esc(m.comando) + (m.canali && m.canali.length ? " · " + esc(m.canali.join(", ")) : "") + "</span></div>").join("") + "</div>" : '<div class="ut-nota">Nessun Comando.</div>');
     box.innerHTML = h;
     const bt = box.querySelector("#ut-copia");
     if (bt) bt.addEventListener("click", () => {
@@ -78,11 +76,10 @@
     ultimoCaricamento = Date.now();
     box.innerHTML = '<div class="ut-nota">Carico l’elenco…</div>';
     try {
-      const r = await fetch(WEBAPP + "?" + new URLSearchParams({utilizzo: "1", giorni: "90"}));
+      const r = await fetch(WEBAPP + "?" + new URLSearchParams({utilizzo: "1"}));
       if (!r.ok) throw new Error("HTTP " + r.status);
       const j = await r.json();
       dati = Array.isArray(j.comandi) ? j.comandi : null;
-      msg = Array.isArray(j.messaggistica) ? j.messaggistica : [];
     } catch (e) { dati = null; ultimoCaricamento = 0; }
     disegna();
   }

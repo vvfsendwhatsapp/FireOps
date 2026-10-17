@@ -1,5 +1,5 @@
 /* FireOps VVF - modulo "Info Comandi"
- * Quali Comandi hanno fatto il login in FireOps DESKTOP (non nell'app): solo i nomi. Legge il foglio DB_Utilizzo
+ * Elenco unico e storico dei Comandi che usano FireOps: solo i nomi. Legge il foglio DB_Utilizzo
  * dalla Web App Apps Script (vedi apps-script/utilizzo.gs): GET ?utilizzo=1&giorni=N.
  * L'app non registra nulla su di se': la registrazione la fa solo FireOps desktop (utilizzo.js in radice).
  */
@@ -30,10 +30,8 @@ FireOps.registra({
 `,
 
   html: `
-<p class="lead">I Comandi che hanno effettuato l’accesso a <b>FireOps desktop</b> negli ultimi 90 giorni.</p>
+<p class="lead">Tutti i Comandi che hanno usato <b>FireOps</b> (storico: login e invii di Messaggistica).</p>
 <div class="card" id="ut-elenco"><div class="vuoto">Carico l’elenco…</div></div>
-<p class="lead" style="margin-top:14px">Per confronto: i Comandi che hanno <b>inviato messaggi</b> con Messaggistica.</p>
-<div class="card" id="ut-msg"><div class="vuoto">—</div></div>
 <div class="acts">
   <button type="button" class="btn pri" id="ut-agg">Aggiorna</button>
   <button type="button" class="btn" id="ut-copia" hidden>Copia l’elenco</button>
@@ -51,20 +49,18 @@ FireOps.registra({
     async function carica() {
       $("#ut-elenco").innerHTML = '<div class="vuoto">Carico l’elenco…</div>';
       $("#ut-copia").hidden = true; $("#ut-nota").textContent = "";
-      let dati = null, msg = [];
+      let dati = null;
       try {
-        const r = await fetch(WEBAPP + "?" + new URLSearchParams({utilizzo: "1", giorni: "90"}));
+        const r = await fetch(WEBAPP + "?" + new URLSearchParams({utilizzo: "1"}));
         const j = r.ok ? await r.json() : null;
-        if (j && Array.isArray(j.comandi)) dati = j.comandi.filter(x => x.piattaforma === "desktop");
-        if (j && Array.isArray(j.messaggistica)) msg = j.messaggistica;
+        if (j && Array.isArray(j.comandi)) dati = j.comandi;
       } catch (e) { }
       if (!dati) {
         $("#ut-elenco").innerHTML = '<div class="vuoto">Elenco non disponibile.<br>Serve la connessione e lo script Apps Script aggiornato (apps-script/utilizzo.gs).</div>';
         return;
       }
-      $("#ut-msg").innerHTML = msg.length ? msg.map(m => '<div class="it"><div class="tx"><b>' + esc(m.comando) + "</b>" + (m.canali && m.canali.length ? "<small>" + esc(m.canali.join(", ")) + "</small>" : "") + "</div></div>").join("") : '<div class="vuoto">Nessun Comando.</div>';
       nomi = Array.from(new Set(dati.map(x => x.comando))).sort((a, b) => a.localeCompare(b, "it"));
-      if (!nomi.length) { $("#ut-elenco").innerHTML = '<div class="vuoto">Nessun Comando collegato a FireOps desktop negli ultimi 90 giorni.</div>'; return; }
+      if (!nomi.length) { $("#ut-elenco").innerHTML = '<div class="vuoto">Nessun Comando registrato.</div>'; return; }
       $("#ut-elenco").innerHTML = nomi.map(n => '<div class="it"><div class="tx"><b>' + esc(n) + "</b></div></div>").join("");
       $("#ut-nota").textContent = nomi.length + (nomi.length === 1 ? " Comando" : " Comandi");
       $("#ut-copia").hidden = false;

@@ -6,7 +6,7 @@
  *      if (payload.foglio === "DB_Utilizzo") { registraUtilizzo_(payload); return rispostaJson_({ok: true}); }
  *    (payload = JSON.parse(e.postData.contents), come per gli altri fogli)
  * 2) Dentro doGet(e), in cima, aggiungere:
- *      if (e.parameter && e.parameter.utilizzo) return rispostaJson_(elencoUtilizzo_(Number(e.parameter.giorni) || 90));
+ *      if (e.parameter && e.parameter.utilizzo) return rispostaJson_(elencoUtilizzo_(Number(e.parameter.giorni) || 0));
  * 3) Distribuisci di nuovo la Web App ("Nuova versione"), accesso "Chiunque".
  *
  * Il foglio tiene UNA riga per Comando + piattaforma; l'app mostra solo i nomi dei Comandi che hanno fatto login su desktop.
@@ -43,32 +43,44 @@ function registraUtilizzo_(p) {
   }
 }
 
+// Elenco unico, storico (tutti i Comandi, senza limite di giorni).
+// Prima di rispondere completa DB_Utilizzo con i Comandi presenti in DB_ID_Search (Messaggistica)
+// che non ci sono ancora: ultimo invio come UltimoAccesso, numero di invii come Aperture, Piattaforma "storico".
 function elencoUtilizzo_(giorni) {
   const ss = SpreadsheetApp.openById("1rcBe5m4StM4KAG5YBEK5BLCIkSQBHLkKhaH7b_Qvb3c");
-  const limite = Date.now() - giorni * 86400000;
-  let comandi = [];
-  const sh = ss.getSheetByName("DB_Utilizzo");
-  if (sh) {
-    comandi = sh.getDataRange().getValues().slice(1)
-      .filter(r => r[0] && r[3] && new Date(r[3]).getTime() >= limite)
-      .map(r => ({comando: r[0], piattaforma: r[1], versione: String(r[2]), ultimo: new Date(r[3]).toISOString(), aperture: Number(r[4] || 0)}))
-      .sort((a, b) => b.ultimo.localeCompare(a.ultimo));
+  let sh = ss.getSheetByName("DB_Utilizzo");
+  if (!sh) {
+    sh = ss.insertSheet("DB_Utilizzo");
+    sh.appendRow(["Comando", "Piattaforma", "Versione", "UltimoAccesso", "Aperture"]);
   }
-  // Comandi che hanno inviato messaggi con Messaggistica (foglio DB_ID_Search), solo per confronto: nome + canali usati
-  const msg = {};
-  const fm = ss.getSheetByName("DB_ID_Search");
-  if (fm) {
-    const v = fm.getDataRange().getValues();
-    const h = v.shift().map(x => String(x).trim());
-    const cT = h.indexOf("Timestamp"), cC = h.indexOf("Comando"), cK = h.indexOf("Canale");
-    if (cT > -1 && cC > -1) v.forEach(r => {
-      const d = aData(r[cT]);
-      if (!r[cC] || !d || d.getTime() < limite) return;
-      const n = String(r[cC]).trim();
-      msg[n] = msg[n] || {};
-      if (cK > -1 && r[cK]) msg[n][String(r[cK])] = true;
-    });
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const presenti = {};
+    sh.getDataRange().getValues().slice(1).forEach(r => { if (r[0]) presenti[String(r[0]).trim().toLowerCase()] = true; });
+    const fm = ss.getSheetByName("DB_ID_Search");
+    if (fm) {
+      const v = fm.getDataRange().getValues();
+      const h = v.shift().map(x => String(x).trim());
+      const cT = h.indexOf("Timestamp"), cC = h.indexOf("Comando");
+      const agg = {};
+      if (cT > -1 && cC > -1) v.forEach(r => {
+        const n = String(r[cC] || "").trim();
+        if (!n || presenti[n.toLowerCase()]) return;
+        const d = aData(r[cT]);
+        const a = agg[n] = agg[n] || {ultimo: null, n: 0};
+        a.n++;
+        if (d && (!a.ultimo || d > a.ultimo)) a.ultimo = d;
+      });
+      Object.keys(agg).forEach(n => sh.appendRow([n, "storico", "", agg[n].ultimo || new Date(), agg[n].n]));
+    }
+  } finally {
+    lock.releaseLock();
   }
-  const messaggistica = Object.keys(msg).sort().map(n => ({comando: n, canali: Object.keys(msg[n])}));
-  return {comandi: comandi, messaggistica: messaggistica};
+  const limite = giorni > 0 ? Date.now() - giorni * 86400000 : 0;
+  const comandi = sh.getDataRange().getValues().slice(1)
+    .filter(r => r[0] && r[3] && new Date(r[3]).getTime() >= limite)
+    .map(r => ({comando: r[0], piattaforma: r[1], versione: String(r[2]), ultimo: new Date(r[3]).toISOString(), aperture: Number(r[4] || 0)}))
+    .sort((a, b) => b.ultimo.localeCompare(a.ultimo));
+  return {comandi: comandi};
 }
