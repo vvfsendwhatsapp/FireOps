@@ -8026,6 +8026,21 @@ select:focus {
 
 .addestr-distanza { font-weight: 700; }
 
+/* Convertitore: pulsante Reset coordinate accanto a "Converti" */
+.msg-azioni #btn-coord-reset {
+    flex: 0 0 auto;
+    min-width: 0;
+    padding: 12px 18px;
+    background: var(--dark-color);
+    border: 1px solid var(--danger-color);
+    color: var(--danger-color);
+}
+.msg-azioni #btn-coord-reset:hover {
+    background: var(--danger-color);
+    color: var(--text-main);
+    opacity: 1;
+}
+
 /* ==========================================================
    ==========================================================
    RESPONSIVE

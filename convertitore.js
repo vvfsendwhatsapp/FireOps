@@ -940,14 +940,32 @@ function aggiornaBottoneConverti() {
             const ripulito = filtraTestoNumerico(campo.value);
             if (ripulito !== campo.value) campo.value = ripulito;
         });
+        // Entrando nel campo il testo si SELEZIONA (non si cancella): se si
+        // digita si sostituisce, se si torna solo a guardare resta com'è
         campo.addEventListener("focus", () => {
-            if (conversioneFatta) return;   // dati fermi: non si azzera nulla
-            if (!campo.value) return;
-            campo.value = "";
-            salvaStatoFormCoord();
-            aggiornaBottoneConverti();
+            if (conversioneFatta) return;
+            setTimeout(() => campo.select(), 0);
         });
     });
+
+    // Pulsante "Reset": svuota tutti i campi di input, riporta segni ed
+    // emisfero al default e toglie il target dalla mappa
+    function resetCoordinate() {
+        if (coordinateTargetCorrenti && !confirm("Cancellare le coordinate inserite e il target sulla mappa?")) return;
+        const colonna = document.getElementById("coord-input-colonna");
+        if (colonna) {
+            colonna.querySelectorAll("input").forEach(c => { c.value = ""; });
+            colonna.querySelectorAll("select.coord-campo-segno").forEach(sel => { sel.value = "+"; });
+        }
+        const emisfero = document.getElementById("coord-utm-emisfero");
+        if (emisfero) emisfero.value = "N";
+        azzeraConvertitore();
+        const gruppo = gruppiInput[selectFormato ? selectFormato.value : "dd"];
+        const primo = gruppo && gruppo.querySelector("input:not([type=hidden])");
+        if (primo) primo.focus();
+    }
+    const btnResetCoord = document.getElementById("btn-coord-reset");
+    if (btnResetCoord) btnResetCoord.addEventListener("click", resetCoordinate);
 
     // Digitando le coordinate a raffica, i campi a larghezza fissa (gradi e
     // primi interi) passano da soli al successivo appena sono pieni: si batte
@@ -3423,13 +3441,10 @@ function disegnaGraficoAltimetria(geojson) {
         inputAppunti.addEventListener("keydown", (e) => {
             if (e.key === "Enter") { e.preventDefault(); convertiDaAppunti(); }
         });
-        // Entrando si svuota: una coppia incollata si sostituisce, non si corregge
+        // Entrando si seleziona: incollando si sostituisce, senza perdere nulla
         inputAppunti.addEventListener("focus", () => {
             if (conversioneFatta) return;
-            if (!inputAppunti.value) return;
-            inputAppunti.value = "";
-            salvaStatoFormCoord();
-            aggiornaBottoneConverti();
+            setTimeout(() => inputAppunti.select(), 0);
         });
     }
 });
