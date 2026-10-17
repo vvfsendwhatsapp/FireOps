@@ -944,7 +944,8 @@ function aggiornaBottoneConverti() {
         // digita si sostituisce, se si torna solo a guardare resta com'è
         campo.addEventListener("focus", () => {
             if (conversioneFatta) return;
-            setTimeout(() => campo.select(), 0);
+            const valoreIngresso = campo.value;
+            setTimeout(() => { if (campo.value === valoreIngresso) campo.select(); }, 0);
         });
     });
 
@@ -984,12 +985,18 @@ function aggiornaBottoneConverti() {
     // (compreso quello nascosto della combo Comune) senza doverli agganciare uno per uno
     const contenitoreFormCoord = document.getElementById("coord-input-colonna");
 if (contenitoreFormCoord) {
-    contenitoreFormCoord.addEventListener("input", () => {
+    // Un campo bloccato non è una modifica: dopo una conversione da appunti
+    // (incolla o Invio) il campo, uscendo, emette ancora "change" perché il
+    // valore è cambiato dall'ingresso, e riporterebbe il pulsante su Converti
+    const campoBloccato = e => conversioneFatta && e.target && (e.target.readOnly || e.target.disabled);
+    contenitoreFormCoord.addEventListener("input", (e) => {
+        if (campoBloccato(e)) return;
         conversioneFatta = false;   // si è tornati a modificare: il pulsante riconverte
         salvaStatoFormCoord();
         aggiornaBottoneConverti();
     });
-    contenitoreFormCoord.addEventListener("change", () => {
+    contenitoreFormCoord.addEventListener("change", (e) => {
+        if (campoBloccato(e)) return;
         conversioneFatta = false;
         salvaStatoFormCoord();
         aggiornaBottoneConverti();
@@ -3493,7 +3500,8 @@ function disegnaGraficoAltimetria(geojson) {
         // Entrando si seleziona: incollando si sostituisce, senza perdere nulla
         inputAppunti.addEventListener("focus", () => {
             if (conversioneFatta) return;
-            setTimeout(() => inputAppunti.select(), 0);
+            const valoreIngresso = inputAppunti.value;
+            setTimeout(() => { if (inputAppunti.value === valoreIngresso) inputAppunti.select(); }, 0);
         });
     }
 });
