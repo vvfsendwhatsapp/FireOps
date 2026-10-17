@@ -51,7 +51,7 @@
   /* ---------- 2) elenco nel modale ---------- */
   const modale = document.getElementById("modal-help");
   const box = document.getElementById("utilizzo-comandi");
-  let ultimoCaricamento = 0, dati = null;
+  let ultimoCaricamento = 0, dati = null, msg = [];
 
   function disegna() {
     if (!box) return;
@@ -63,6 +63,8 @@
       h += '<div class="ut-elenco">' + nomi.map(n => '<div class="ut-riga"><span>' + esc(n) + "</span></div>").join("") + "</div>" +
         '<div class="ut-nota">' + nomi.length + (nomi.length === 1 ? " Comando" : " Comandi") + '</div><button type="button" class="ut-btn" id="ut-copia">Copia l’elenco</button>';
     }
+    h += '<div class="ut-tit" style="margin-top:10px">✉️ Hanno inviato messaggi (Messaggistica)</div>' +
+      (msg.length ? '<div class="ut-elenco">' + msg.map(m => '<div class="ut-riga"><span>' + esc(m.comando) + (m.canali && m.canali.length ? " · " + esc(m.canali.join(", ")) : "") + "</span></div>").join("") + "</div>" : '<div class="ut-nota">Nessun Comando.</div>');
     box.innerHTML = h;
     const bt = box.querySelector("#ut-copia");
     if (bt) bt.addEventListener("click", () => {
@@ -80,6 +82,7 @@
       if (!r.ok) throw new Error("HTTP " + r.status);
       const j = await r.json();
       dati = Array.isArray(j.comandi) ? j.comandi : null;
+      msg = Array.isArray(j.messaggistica) ? j.messaggistica : [];
     } catch (e) { dati = null; ultimoCaricamento = 0; }
     disegna();
   }

@@ -44,12 +44,31 @@ function registraUtilizzo_(p) {
 }
 
 function elencoUtilizzo_(giorni) {
-  const sh = SpreadsheetApp.openById("1rcBe5m4StM4KAG5YBEK5BLCIkSQBHLkKhaH7b_Qvb3c").getSheetByName("DB_Utilizzo");
-  if (!sh) return {comandi: []};
+  const ss = SpreadsheetApp.openById("1rcBe5m4StM4KAG5YBEK5BLCIkSQBHLkKhaH7b_Qvb3c");
   const limite = Date.now() - giorni * 86400000;
-  const comandi = sh.getDataRange().getValues().slice(1)
-    .filter(r => r[0] && r[3] && new Date(r[3]).getTime() >= limite)
-    .map(r => ({comando: r[0], piattaforma: r[1], versione: String(r[2]), ultimo: new Date(r[3]).toISOString(), aperture: Number(r[4] || 0)}))
-    .sort((a, b) => b.ultimo.localeCompare(a.ultimo));
-  return {comandi: comandi};
+  let comandi = [];
+  const sh = ss.getSheetByName("DB_Utilizzo");
+  if (sh) {
+    comandi = sh.getDataRange().getValues().slice(1)
+      .filter(r => r[0] && r[3] && new Date(r[3]).getTime() >= limite)
+      .map(r => ({comando: r[0], piattaforma: r[1], versione: String(r[2]), ultimo: new Date(r[3]).toISOString(), aperture: Number(r[4] || 0)}))
+      .sort((a, b) => b.ultimo.localeCompare(a.ultimo));
+  }
+  // Comandi che hanno inviato messaggi con Messaggistica (foglio DB_ID_Search), solo per confronto: nome + canali usati
+  const msg = {};
+  const fm = ss.getSheetByName("DB_ID_Search");
+  if (fm) {
+    const v = fm.getDataRange().getValues();
+    const h = v.shift().map(x => String(x).trim());
+    const cT = h.indexOf("Timestamp"), cC = h.indexOf("Comando"), cK = h.indexOf("Canale");
+    if (cT > -1 && cC > -1) v.forEach(r => {
+      const d = aData(r[cT]);
+      if (!r[cC] || !d || d.getTime() < limite) return;
+      const n = String(r[cC]).trim();
+      msg[n] = msg[n] || {};
+      if (cK > -1 && r[cK]) msg[n][String(r[cK])] = true;
+    });
+  }
+  const messaggistica = Object.keys(msg).sort().map(n => ({comando: n, canali: Object.keys(msg[n])}));
+  return {comandi: comandi, messaggistica: messaggistica};
 }
