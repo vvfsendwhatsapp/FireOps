@@ -24,7 +24,7 @@ function registraUtilizzo_(p) {
   const lock = LockService.getScriptLock();
   lock.waitLock(10000);
   try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = SpreadsheetApp.openById("1rcBe5m4StM4KAG5YBEK5BLCIkSQBHLkKhaH7b_Qvb3c");
     let sh = ss.getSheetByName("DB_Utilizzo");
     if (!sh) {
       sh = ss.insertSheet("DB_Utilizzo");
@@ -44,7 +44,7 @@ function registraUtilizzo_(p) {
 }
 
 function elencoUtilizzo_(giorni) {
-  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("DB_Utilizzo");
+  const sh = SpreadsheetApp.openById("1rcBe5m4StM4KAG5YBEK5BLCIkSQBHLkKhaH7b_Qvb3c").getSheetByName("DB_Utilizzo");
   if (!sh) return {comandi: []};
   const limite = Date.now() - giorni * 86400000;
   const comandi = sh.getDataRange().getValues().slice(1)
