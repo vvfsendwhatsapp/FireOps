@@ -1619,6 +1619,8 @@ document.addEventListener("fireops:comando-attivo-cambiato", (e) => {
         azzeraPercorso({ mantieniTipologia: false });
 
         coordinateTargetCorrenti = null;
+        if (coordMappaLeaflet && coordMarkerTarget) coordMappaLeaflet.removeLayer(coordMarkerTarget);
+        coordMarkerTarget = null;
         rimuoviRepartiVoloDallaMappa();
         rimuoviMarkerComandoCompetente();
         effemeridiTarget = null;
