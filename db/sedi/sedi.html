@@ -132,6 +132,8 @@ body.trascino iframe{pointer-events:none}
 .pin.da_correggere{box-shadow:0 0 0 3px var(--warn),0 1px 3px #0008}
 .pin.non_vvf,.pin.chiusa{opacity:.55;box-shadow:0 0 0 2px var(--ko)}
 .pin.sel{transform:scale(1.5)}
+.stato-civici{display:none;font:600 12px/1.3 system-ui,sans-serif;background:#fffe;color:#1d2228;border:1px solid #0003;border-radius:6px;padding:4px 8px;max-width:260px;box-shadow:0 1px 4px #0003}
+.stato-civici.errore{color:#b3261e;border-color:#b3261e}
 .civico{font:600 11px/1 system-ui,sans-serif;color:#1d2228;background:#fffc;border:1px solid #0003;border-radius:3px;padding:1px 3px;white-space:nowrap;transform:translate(-50%,-50%);width:auto!important;height:auto!important}
 .me{width:16px;height:16px;border-radius:50%;background:#1f6fd1;border:3px solid #fff;box-shadow:0 0 0 6px #1f6fd140}
 #msg{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:1400;background:var(--head);color:#fff;padding:8px 14px;border-radius:8px;font-size:13px;display:none;max-width:90%;text-align:center}
@@ -283,41 +285,93 @@ map.addLayer(cluster);
    per l'area visibile e si scrivono sopra qualsiasi sfondo. Cache per riquadro, una sola
    richiesta alla volta, nessuna richiesta sotto lo zoom 17. */
 const CIVICI_ZOOM = 17;
+// Overpass pubblico: il server principale va spesso in sovraccarico (429/504) o risponde
+// "vuoto" per timeout. Si provano i server in ordine; una risposta con errore non conta
+// come scaricata, cosi' quella zona viene richiesta di nuovo.
+const OVERPASS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+  'https://overpass.private.coffee/api/interpreter',
+];
 const livCivici = L.layerGroup().addTo(map);
 map.createPane('civici').style.zIndex = 450;
 map.getPane('civici').style.pointerEvents = 'none';
 const civiciVisti = new Map();     // "lat,lon" -> numero, gia' disegnati
 const riquadriFatti = [];          // L.LatLngBounds gia' scaricati
-let civiciInCorso = null, civiciTimer = null;
+let civiciInCorso = null, civiciTimer = null, civiciAttesa = 500;
+
+// Stato dei civici in basso a sinistra: senza, un errore di Overpass sembra "non ci sono"
+const CtrlCivici = L.Control.extend({
+  options: {position: 'bottomleft'},
+  onAdd() { const d = L.DomUtil.create('div', 'stato-civici'); L.DomEvent.disableClickPropagation(d); return d; }
+});
+const ctrlCivici = new CtrlCivici().addTo(map);
+function civiciStato(t, errore = false) {
+  const d = ctrlCivici.getContainer();
+  d.textContent = t; d.style.display = t ? 'block' : 'none'; d.classList.toggle('errore', errore);
+}
+
 function civiciAggiorna() {
   clearTimeout(civiciTimer);
-  if (map.getZoom() < CIVICI_ZOOM) { livCivici.remove(); return; }
+  if (map.getZoom() < CIVICI_ZOOM) {
+    livCivici.remove();
+    civiciStato(map.getZoom() >= CIVICI_ZOOM - 3 ? `Civici visibili da zoom ${CIVICI_ZOOM} (ora ${map.getZoom()}): avvicinati` : '');
+    return;
+  }
   if (!map.hasLayer(livCivici)) livCivici.addTo(map);
-  civiciTimer = setTimeout(civiciScarica, 500);
+  if (riquadriFatti.some(r => r.contains(map.getBounds()))) { civiciStato(''); return; }
+  civiciTimer = setTimeout(civiciScarica, civiciAttesa);
 }
+
+async function overpassCivici(q) {
+  let ultimoErrore = null;
+  for (const url of OVERPASS) {
+    try {
+      const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), 25000);
+      const r = await fetch(url, {method: 'POST', signal: ctrl.signal,
+        headers: {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'},
+        body: 'data=' + encodeURIComponent(q)}).finally(() => clearTimeout(t));
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const j = await r.json();
+      // Timeout o memoria esaurita: Overpass risponde 200 con "remark" e niente dati
+      if (j.remark && /error|timed out|runtime/i.test(j.remark)) throw new Error(j.remark);
+      return j;
+    } catch (e) { ultimoErrore = e; console.warn('Civici: ' + url + ' non disponibile', e); }
+  }
+  throw ultimoErrore || new Error('Overpass non raggiungibile');
+}
+
 async function civiciScarica() {
   const b = map.getBounds().pad(0.15);
   if (riquadriFatti.some(r => r.contains(b)) || civiciInCorso) return;
-  const q = `[out:json][timeout:20];nwr["addr:housenumber"](${b.getSouth()},${b.getWest()},${b.getNorth()},${b.getEast()});out center 1500;`;
-  civiciInCorso = fetch('https://overpass-api.de/api/interpreter', {method: 'POST', body: 'data=' + encodeURIComponent(q)})
-    .then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))
+  civiciStato('Civici: caricamento…');
+  const q = `[out:json][timeout:25];nwr["addr:housenumber"](${b.getSouth()},${b.getWest()},${b.getNorth()},${b.getEast()});out center 2000;`;
+  civiciInCorso = overpassCivici(q)
     .then(j => {
       riquadriFatti.push(b);
+      civiciAttesa = 500;
+      let nuovi = 0;
       (j.elements || []).forEach(e => {
         const lat = e.lat ?? (e.center && e.center.lat), lon = e.lon ?? (e.center && e.center.lon);
         const n = e.tags && e.tags['addr:housenumber'];
         if (lat == null || !n) return;
         const k = lat.toFixed(6) + ',' + lon.toFixed(6);
         if (civiciVisti.has(k)) return;
-        civiciVisti.set(k, n);
+        civiciVisti.set(k, n); nuovi++;
         L.marker([lat, lon], {pane: 'civici', interactive: false, keyboard: false,
           icon: L.divIcon({className: 'civico', html: esc(n), iconSize: null})}).addTo(livCivici);
       });
+      civiciStato(civiciVisti.size ? '' : 'Nessun civico mappato in OpenStreetMap in questa zona');
     })
-    .catch(e => console.warn('Civici non disponibili', e))
+    .catch(() => {
+      // Si riprova da soli, aspettando sempre di piu' (fino a 1 minuto) per non peggiorare il sovraccarico
+      civiciAttesa = Math.min(Math.max(civiciAttesa * 2, 4000), 60000);
+      civiciStato(`Civici non disponibili (OpenStreetMap sovraccarico): riprovo fra ${Math.round(civiciAttesa / 1000)} s`, true);
+    })
     .finally(() => { civiciInCorso = null; if (map.getZoom() >= CIVICI_ZOOM && !riquadriFatti.some(r => r.contains(map.getBounds()))) civiciAggiorna(); });
 }
 map.on('moveend zoomend', civiciAggiorna);
+civiciAggiorna();
 
 let SEDI = [], PER_CHIAVE = new Map();
 let PROV = {};                         // sigla -> {provincia, regione}, ricavato dai dati
