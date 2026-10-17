@@ -1,7 +1,7 @@
 /*!
  * FireOps VVF — fireops-sfondi.js — selettore sfondi condiviso dalle mappe
  *
- * Un pulsante 🗺 sulla carta apre un piccolo pannello:
+ * Un pulsante "livelli" sulla carta apre un piccolo pannello:
  *   - Sfondo: OpenStreetMap, Satellite (con nomi di strade e località), OpenTopoMap;
  *   - In trasparenza: un secondo sfondo sopra il primo, con un cursore
  *     da trasparente a opaco (es. satellite che sfuma sulla topografica).
@@ -68,7 +68,7 @@
 
   var CSS = '' +
     '.fos{background:#1b1f24;color:#e8eaed;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,.45);font:13px/1.3 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}' +
-    '.fos-btn{display:block;width:36px;height:36px;border:0;border-radius:8px;background:#1b1f24;color:#fff;font-size:19px;cursor:pointer;line-height:36px;text-align:center;padding:0}' +
+    '.fos-btn svg{display:block;margin:7px auto}.fos-btn{display:block;width:36px;height:36px;border:0;border-radius:8px;background:#1b1f24;color:#fff;font-size:19px;cursor:pointer;line-height:36px;text-align:center;padding:0}' +
     '.fos-pan{display:none;padding:10px 10px 8px;width:268px;max-width:calc(100vw - 70px)}' +
     '.fos.aperto .fos-btn{display:none}.fos.aperto .fos-pan{display:block}' +
     '.fos-tit{display:flex;align-items:center;justify-content:space-between;font-weight:700;margin-bottom:6px}' +
@@ -140,7 +140,7 @@
           return '<button type="button" data-' + tipo + '="' + k + '" title="' + c.nome + '"><b>' + c.icona + '</b>' + c.breve + '</button>';
         };
         box.innerHTML =
-          '<button type="button" class="fos-btn" title="Sfondi della carta" aria-label="Sfondi della carta">🗺</button>' +
+          '<button type="button" class="fos-btn" title="Sfondi della carta" aria-label="Sfondi della carta"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M12 3 2 8l10 5 10-5-10-5z"/><path d="m2 12 10 5 10-5"/><path d="m2 16 10 5 10-5"/></svg></button>' +
           '<div class="fos-pan">' +
             '<div class="fos-tit">Sfondi <button type="button" class="fos-x" aria-label="Chiudi">×</button></div>' +
             '<div class="fos-lbl">Sfondo</div>' +
