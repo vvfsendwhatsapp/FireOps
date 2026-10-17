@@ -2076,7 +2076,8 @@ ${puntiTraccia}
         return { salita, discesa };
     }
 
-    // DIN 33466: 4 km/h in piano, 300 m/h in salita, 500 m/h in discesa.
+    // DIN 33466 (DAV), ripiego quando la traccia non ha le quote:
+    // 4 km/h in piano, 300 m/h in salita, 500 m/h in discesa.
     // Il tempo è il maggiore fra orizzontale e verticale più metà del minore.
     function tempoPiediMin(distanzaKm, salitaM, discesaM) {
         if (!(distanzaKm > 0)) return null;
@@ -2084,6 +2085,48 @@ ${puntiTraccia}
         const oreVerticali = (salitaM || 0) / 300 + (discesaM || 0) / 500;
         const ore = Math.max(oreOrizzontali, oreVerticali) + Math.min(oreOrizzontali, oreVerticali) / 2;
         return Math.round(ore * 60 * FATTORE_TEMPO_PIEDI);
+    }
+
+    // Modello Sentieri Svizzeri, adottato dal CAI (Quaderno di
+    // escursionismo n. 1, p. 51) e usato per i tempi della segnaletica:
+    // minuti per km orizzontale in funzione della pendenza, valido fra
+    // -40% e +40%. Variabile: pendenza in % divisa per 10.
+    // Verifica sui valori pubblicati: piano 14,3 min/km, +10% 20,0, +30% 48,8.
+    const COEFF_SENTIERI_SVIZZERI = [
+        14.271, 3.6991, 2.5922, -1.4384, 0.32105, 0.81542,
+        -0.090261, -0.20757, 0.010192, 0.028588, -0.00057466, -0.0021842,
+        1.5176e-5, 8.6894e-5, -1.3584e-7, -1.4026e-6,
+    ];
+
+    function minutiPerKmCAI(pendenzaPercento) {
+        const x = Math.max(-40, Math.min(40, pendenzaPercento)) / 10;
+        return COEFF_SENTIERI_SVIZZERI.reduce((t, c, i) => t + c * Math.pow(x, i), 0);
+    }
+
+    // La pendenza si misura su tratti di almeno 100 m: punto per punto le
+    // quote SRTM oscillano di qualche metro, e su segmenti di 10 m quel
+    // rumore diventerebbe una pendenza del 30% che non esiste
+    const PASSO_PENDENZA_M = 100;
+
+    function tempoPiediCAIMin(coordinate) {
+        const punti = coordinate.filter(c => c.length >= 3 && !Number.isNaN(parseFloat(c[2])));
+        if (punti.length < 2) return null;
+
+        let minuti = 0, tratto = 0;
+        let quotaInizio = parseFloat(punti[0][2]);
+        for (let i = 1; i < punti.length; i++) {
+            tratto += distanzaKmHaversine(punti[i - 1][1], punti[i - 1][0], punti[i][1], punti[i][0]) * 1000;
+            const ultimo = i === punti.length - 1;
+            if (tratto >= PASSO_PENDENZA_M || ultimo) {
+                if (tratto > 0) {
+                    const quota = parseFloat(punti[i][2]);
+                    minuti += (tratto / 1000) * minutiPerKmCAI((quota - quotaInizio) / tratto * 100);
+                    quotaInizio = quota;
+                }
+                tratto = 0;
+            }
+        }
+        return Math.round(minuti * FATTORE_TEMPO_PIEDI);
     }
 
     // Velocità MEDIE, non limiti: incroci, curve e centri abitati
@@ -2384,7 +2427,11 @@ assign initialcost =
             minAuto += sbarre.length * TEMPO_SBARRA_MIN;
         }
         const dislPiedi = dislivelliFiltrati(coordPiedi.map(c => parseFloat(c[2])));
-        const minPiedi = coordPiedi.length ? (tempoPiediMin(kmPiedi, dislPiedi.salita, dislPiedi.discesa) || 0) : 0;
+        // Modello CAI sulla traccia con le quote; la DIN 33466 resta come
+        // ripiego se BRouter non ha restituito le quote
+        const minPiedi = coordPiedi.length
+            ? (tempoPiediCAIMin(coordPiedi) ?? tempoPiediMin(kmPiedi, dislPiedi.salita, dislPiedi.discesa) ?? 0)
+            : 0;
         const minTotale = minAuto + minPiedi + (haCambio ? TEMPO_CAMBIO_MEZZO_MIN : 0);
 
         // Esportazione e altimetria su un'unica traccia continua
