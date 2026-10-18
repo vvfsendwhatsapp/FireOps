@@ -69,7 +69,7 @@ FireOps.registra({
     <button type="button" id="pl-zm" aria-label="Allontana">−</button>
     <button type="button" id="pl-zp" aria-label="Avvicina">+</button>
   </div>
-  <div class="leg"><span><i style="background:#ffd700"></i>palo</span><span><i style="background:#4A93C8"></i>tiranti</span><span><i style="background:#e8734a"></i>carico</span><span><i style="background:#2f9e5b"></i>capo di recupero</span><span><i style="background:#d8262f"></i>risultante sulla testa</span></div>
+  <div class="leg"><span><i style="background:#ffd700"></i>palo</span><span><i style="background:#4A93C8"></i>tiranti</span><span><i style="background:#e8734a"></i>carico</span><span><i style="background:#2f9e5b"></i>capo di recupero</span><span><i style="background:#d8262f"></i>risultante sulla testa</span><span><i style="background:#ff9f1c"></i>forza su ancoraggi e base</span></div>
   <p class="nota">Trascina per ruotare. La zona rossa a terra è il vuoto (davanti), l’altra è il retro con gli ancoraggi. Gli elementi più vicini sono più marcati, quelli lontani più sbiaditi.</p>
 </div>
 
@@ -144,6 +144,7 @@ FireOps.registra({
     const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
     const len = a => Math.hypot(a[0], a[1], a[2]);
     const uni = a => { const l = len(a) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
+    const per = (v, k) => [v[0] * k, v[1] * k, v[2] * k];
     const det = (a, b, c) => a[0] * (b[1] * c[2] - b[2] * c[1]) - a[1] * (b[0] * c[2] - b[2] * c[0]) + a[2] * (b[0] * c[1] - b[1] * c[0]);
 
     let geo = null;   // ultimo calcolo, usato dal disegno
@@ -220,7 +221,11 @@ FireOps.registra({
       const I = Math.PI / 64 * (Math.pow(Dm, 4) - Math.pow(Dm - 2 * sp, 4));
       const Pcr = Math.PI * Math.PI * E * I / (L * L);
       const ok = !!ris && C > 0 && cavi.every((c, i) => !isNaN(t[i]) && (cfgB || t[i] > 0));
-      geo = {B, H, cavi, P, interno, L, W, T, Fc, ok, t};
+      // forze sui punti d'appoggio: il cavo tira l'ancoraggio verso la testa, il palo spinge il terreno lungo l'asse
+      const forze = cavi.map((c, i) => ({pos: c.pos, F: per(uni(sub(H, c.pos)), Math.max(0, t[i] || 0)), nome: c.nome, col: "#ff9f1c"}));
+      if (!interno) forze.push({pos: P, F: per(uni(sub(H, P)), T), nome: "Recupero", col: "#ff9f1c"});
+      if (isFinite(Cg)) forze.push({pos: B, F: per(a, -Cg), nome: "Base", col: "#ff9f1c", base: true});
+      geo = {B, H, cavi, P, interno, L, W, T, Fc, ok, t, forze};
       tabellaGeo(H, cavi, P, t, T, interno);
 
       const avv = [];
@@ -273,6 +278,14 @@ FireOps.registra({
       const lin = [{a: "B", b: "H", col: "#ffd700", lw: 5}];
       cavi.forEach(c => { pts.push(pr(c.id, c.pos, c.col, c.nome)); lin.push({a: "H", b: c.id, col: c.col, dash: [6, 4], testo: fmt(lung(c.pos), 1) + " m"}); });
       if (!interno) { pts.push(Object.assign(pr("p", P, "#2f9e5b", "Recupero"), {ly: 60})); lin.push({a: "H", b: "p", col: "#2f9e5b", dash: [6, 4]}); }
+      const fmax = Math.max(1, ...geo.forze.map(f => len(f.F)));
+      geo.forze.forEach((f, i) => {
+        const fh = Math.hypot(f.F[0], f.F[1]);
+        if (fh < 1 || f.base) return;
+        const l3 = Math.max(0.4, geo.L * 0.45 * len(f.F) / fmax), l = l3 * fh / len(f.F);
+        pts.push({id: "fa" + i, x: f.pos[0] + l * f.F[0] / fh, y: f.pos[1] + l * f.F[1] / fh, fisso: true, col: f.col, nome: "", sotto: "", nascosto: true});
+        lin.push({a: [f.pos[0], f.pos[1]], b: "fa" + i, col: f.col, lw: 3, freccia: true, testo: fmt(len(f.F) / 1000, 2) + " kN"});
+      });
       if (Fh > 1) {
         const lf = Math.max(1, geo.L * 0.5);
         pts.push({id: "F", x: H[0] + lf * Fc[0] / Fh, y: H[1] + lf * Fc[1] / Fh, fisso: true, col: "#d8262f", nome: "Risultante", sotto: fmt(len(Fc) / 1000, 2) + " kN (orizz. " + fmt(Fh / 1000, 2) + ")", ly: 0});
@@ -326,7 +339,9 @@ FireOps.registra({
       const {B, H, cavi, P, L, Fc, interno} = geo;
       const Fm = len(Fc) || 1, Fp = [H[0] + L * 0.5 * Fc[0] / Fm, H[1] + L * 0.5 * Fc[1] / Fm, H[2] + L * 0.5 * Fc[2] / Fm];
       const Cd = [H[0], H[1], Math.max(-0.5, Math.min(H[2] - 0.5, 0.4))];     // carico appeso quasi a terra
-      const pts = [B, H, P, Fp, Cd].concat(cavi.map(c => c.pos));
+      const fmax = Math.max(1, ...geo.forze.map(f => len(f.F)));
+      const fine = geo.forze.map(f => { const l = L * 0.45 * len(f.F) / fmax, m = len(f.F) || 1; return [f.pos[0] + l * f.F[0] / m, f.pos[1] + l * f.F[1] / m, f.pos[2] + l * f.F[2] / m]; });
+      const pts = [B, H, P, Fp, Cd].concat(cavi.map(c => c.pos), fine);
       let mn = [1e9, 1e9, 1e9], mx = [-1e9, -1e9, -1e9];
       pts.forEach(q => q.forEach((v, i) => { mn[i] = Math.min(mn[i], v); mx[i] = Math.max(mx[i], v); }));
       const c = [(mn[0] + mx[0]) / 2, (mn[1] + mx[1]) / 2, (mn[2] + mx[2]) / 2];
@@ -378,6 +393,15 @@ FireOps.registra({
       ctx.fillStyle = "#10141a"; ctx.strokeStyle = "#eceff3"; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(th[0], th[1], 6, 0, 7); ctx.fill(); ctx.stroke();
       ctx.fillStyle = "#eceff3"; ctx.beginPath(); ctx.arc(tb[0], tb[1], 4, 0, 7); ctx.fill();
+      // risultanti sugli ancoraggi, sul recupero e sul terreno alla base
+      geo.forze.forEach((f, i) => {
+        if (len(f.F) < 1) return;
+        const t0 = pr(f.pos), t1 = pr(fine[i]), an2 = Math.atan2(t1[1] - t0[1], t1[0] - t0[0]);
+        ctx.strokeStyle = f.col; ctx.fillStyle = f.col; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(t0[0], t0[1]); ctx.lineTo(t1[0], t1[1]); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(t1[0], t1[1]); ctx.lineTo(t1[0] - 9 * Math.cos(an2 - 0.4), t1[1] - 9 * Math.sin(an2 - 0.4)); ctx.lineTo(t1[0] - 9 * Math.cos(an2 + 0.4), t1[1] - 9 * Math.sin(an2 + 0.4)); ctx.fill();
+        ctx.font = "bold 11px sans-serif"; ctx.fillText(fmt(len(f.F) / 1000, 2) + " kN", t1[0] + 6, t1[1] + (f.base ? 14 : -4));
+      });
       // risultante sulla testa (freccia)
       const tf = pr(Fp), an = Math.atan2(tf[1] - th[1], tf[0] - th[0]);
       ctx.strokeStyle = "#d8262f"; ctx.fillStyle = "#d8262f"; ctx.lineWidth = 3.5;

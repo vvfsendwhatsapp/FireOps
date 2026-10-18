@@ -58,6 +58,7 @@
         });
         // punti
         punti.forEach(p => {
+          if (p.nascosto) return;
           const x = X(p.x), y = Y(p.y);
           ctx.fillStyle = p.col || "#ffd700"; ctx.strokeStyle = "#10141a"; ctx.lineWidth = 2;
           if (p.fisso) ctx.fillRect(x - 6, y - 6, 12, 12);

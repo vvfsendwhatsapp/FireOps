@@ -89,7 +89,7 @@ FireOps.registra({
 <div class="blocco">
   <h2 class="tit">Pianta del sistema di recupero</h2>
   <canvas id="pa-pi" class="pi" role="img" aria-label="Pianta del sistema di recupero: trascina gli ancoraggi"></canvas>
-  <p class="nota">Il carico pende dal ciglio (quadrato). Trascina gli ancoraggi sulla pianta, poi alzali o abbassali con + e −: l’altezza è rispetto al ciglio. Direzione: 0° verso il vuoto, 90° a sinistra guardando il vuoto, 180° dietro il ciglio.</p>
+  <p class="nota">Il carico pende dal ciglio (quadrato). Le frecce arancioni sono le risultanti sui punti (in pianta, con i kN). Trascina gli ancoraggi sulla pianta, poi alzali o abbassali con + e −: l’altezza è rispetto al ciglio. Direzione: 0° verso il vuoto, 90° a sinistra guardando il vuoto, 180° dietro il ciglio.</p>
   <div class="riga4 tt"><span></span><span>Distanza dal ciglio (m)</span><span>Direzione (°)</span><span>Altezza sul ciglio (m)</span></div>
   <div class="riga4"><b style="color:#ffd700">Ancoraggio</b>
     <input type="number" id="pa-ad" inputmode="decimal" min="0.3" step="0.1" value="6" aria-label="Distanza ancoraggio">
@@ -278,6 +278,15 @@ FireOps.registra({
         const ult = seq[seq.length - 1], lp = Math.max(0.8, 2.5 * Math.cos(os));
         pts.push({id: "o", x: ult[0] + lp * Math.cos(od), y: ult[1] + lp * Math.sin(od), fisso: true, col: "#2f9e5b", nome: "Tiro", sotto: kN(Tf) + " kN"});
         lin.push({a: ids[ids.length - 1], b: "o", col: "#2f9e5b", lw: 3, freccia: true});
+        // risultante su ciglio, ancoraggi e rinvio: proiezione in pianta della somma delle corde
+        const fmax = Math.max(1, ...nodi.map(n => n.mod));
+        nodi.forEach((n, i) => {
+          const fh = Math.hypot(n.F[0], n.F[1]);
+          if (fh < 1) return;
+          const l = Math.max(0.4, 2.2 * fh / fmax);
+          pts.push({id: "fa" + i, x: n.pos[0] + l * n.F[0] / fh, y: n.pos[1] + l * n.F[1] / fh, fisso: true, col: "#ff9f1c", nome: "", sotto: "", nascosto: true});
+          lin.push({a: [n.pos[0], n.pos[1]], b: "fa" + i, col: "#ff9f1c", lw: 3.5, freccia: true, testo: kN(n.mod) + " kN"});
+        });
         pianta.set(pts, lin);
       }
 
