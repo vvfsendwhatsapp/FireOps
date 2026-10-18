@@ -325,7 +325,8 @@ FireOps.registra({
       ctx.clearRect(0, 0, w, h);
       const {B, H, cavi, P, L, Fc, interno} = geo;
       const Fm = len(Fc) || 1, Fp = [H[0] + L * 0.5 * Fc[0] / Fm, H[1] + L * 0.5 * Fc[1] / Fm, H[2] + L * 0.5 * Fc[2] / Fm];
-      const pts = [B, H, P, Fp, [H[0], H[1], H[2] - 1]].concat(cavi.map(c => c.pos));
+      const Cd = [H[0], H[1], Math.max(-0.5, Math.min(H[2] - 0.5, 0.4))];     // carico appeso quasi a terra
+      const pts = [B, H, P, Fp, Cd].concat(cavi.map(c => c.pos));
       let mn = [1e9, 1e9, 1e9], mx = [-1e9, -1e9, -1e9];
       pts.forEach(q => q.forEach((v, i) => { mn[i] = Math.min(mn[i], v); mx[i] = Math.max(mx[i], v); }));
       const c = [(mn[0] + mx[0]) / 2, (mn[1] + mx[1]) / 2, (mn[2] + mx[2]) / 2];
@@ -367,9 +368,10 @@ FireOps.registra({
       if (!interno) { linea(H, P, "#2f9e5b", 2); const tp = pr(P); ctx.fillStyle = "#2f9e5b"; ctx.beginPath(); ctx.arc(tp[0], tp[1], 5, 0, 7); ctx.fill(); }
       else linea(H, B, "#2f9e5b", 2, [2, 3]);
       // carico appeso
-      const Cd = [H[0], H[1], H[2] - Math.min(1, L / 4)];
       linea(H, Cd, "#e8734a", 2);
-      const tc = pr(Cd); ctx.fillStyle = "#e8734a"; ctx.fillRect(tc[0] - 7, tc[1] - 1, 14, 14);
+      const tc = pr(Cd); ctx.fillStyle = "#e8734a"; ctx.fillRect(tc[0] - 9, tc[1] - 1, 18, 16);
+      ctx.font = "bold 11px sans-serif"; ctx.fillText(fmt(geo.W / G, 0) + " kg", tc[0] + 13, tc[1] + 12);
+      linea(Cd, [Cd[0], Cd[1], 0], "#2a323d", 1, [3, 3]);
       // palo
       linea(B, H, "#ffd700", 6);
       const th = pr(H), tb = pr(B);
