@@ -141,6 +141,7 @@ FireOps.registra({
   <div id="pl-avv"></div>
   <h3 class="tit" style="margin-top:12px;font-size:14px">Forze sugli ancoraggi, scomposte sui 3 assi</h3>
   <div id="pl-comp"></div>
+  <div id="pl-compg" style="margin-top:8px"></div>
   <p class="nota">Forza che ogni punto riceve (il tirante tira l’ancoraggio verso la testa del palo; alla base il palo spinge il terreno). X: verso il vuoto, positivo in fuori. Y: laterale, positivo a sinistra guardando il vuoto. Z: verticale, positivo verso l’alto, quindi uno Z negativo è una spinta verso il basso e uno Z positivo un’estrazione dal terreno. Nel 3D le componenti sono tratteggiate: rosso X, verde Y, blu Z.</p>
   <p class="nota">Modello semplificato: palo a cerniera alla base, tiranti e capo di recupero senza elasticità, nessuna forza dinamica né vento. Il carico di instabilità è quello di Eulero per tubo pieno di materiale ideale. Non sostituisce la verifica del produttore e dell’istruttore SAF.</p>
 </div>
@@ -307,6 +308,24 @@ FireOps.registra({
       const cc = v => fmt(v / 1000, 2);
       $("#pl-comp").innerHTML = '<table class="geo"><tr><th></th><th>X</th><th>Y</th><th>Z</th><th>Totale</th></tr>' +
         forze.map(f => '<tr><td style="color:' + (f.base ? "#eceff3" : f.nome === "Recupero" ? "#2f9e5b" : (cavi.find(c => c.nome === f.nome) || {}).col) + '">' + f.nome + "</td><td>" + cc(f.F[0]) + "</td><td>" + cc(f.F[1]) + "</td><td>" + cc(f.F[2]) + "</td><td>" + cc(len(f.F)) + " kN</td></tr>").join("") + "</table>";
+      {
+        // grafico a barre divergenti: una riga per componente, zero al centro, a destra positivo
+        const mx = Math.max(1, ...forze.map(f => Math.max(Math.abs(f.F[0]), Math.abs(f.F[1]), Math.abs(f.F[2])))), cz = 165, sc = 80 / mx, rh = 16, gh = 12;
+        const ass = [["X", "#d8262f"], ["Y", "#2f9e5b"], ["Z", "#4A93C8"]];
+        const Ht = forze.length * (3 * rh + gh) + 4;
+        let g = '<svg viewBox="0 0 300 ' + Ht + '" role="img" aria-label="Componenti X Y Z delle forze sui punti d’appoggio" style="width:100%;height:auto;display:block;background:var(--bg);border:1px solid var(--line);border-radius:8px"><line x1="' + cz + '" y1="0" x2="' + cz + '" y2="' + Ht + '" stroke="#3a4552"/>';
+        forze.forEach((f, i) => {
+          const y0 = 4 + i * (3 * rh + gh), col = f.base ? "#eceff3" : f.nome === "Recupero" ? "#2f9e5b" : (cavi.find(c => c.nome === f.nome) || {}).col;
+          g += '<text x="4" y="' + (y0 + 10) + '" font-size="11" font-weight="700" fill="' + col + '">' + f.nome + "</text>";
+          ass.forEach((a, k) => {
+            const v = f.F[k], w = v * sc, y = y0 + k * rh + 2, x = w >= 0 ? cz : cz + w;
+            g += '<rect x="' + x + '" y="' + y + '" width="' + Math.max(1, Math.abs(w)) + '" height="11" rx="2" fill="' + a[1] + '"/>';
+            const tx = w >= 0 ? cz + w + 4 : cz + w - 4;
+            g += '<text x="' + tx + '" y="' + (y + 9) + '" font-size="10" fill="#eceff3" text-anchor="' + (w >= 0 ? "start" : "end") + '">' + a[0] + " " + cc(v) + "</text>";
+          });
+        });
+        $("#pl-compg").innerHTML = g + "</svg>";
+      }
       $("#pl-avv").innerHTML = avv.map(x => '<div class="avv">' + x + "</div>").join("");
       disegna();
     }
