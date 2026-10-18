@@ -48,6 +48,26 @@ FireOps.registra({
 
   html: `
 <div class="blocco">
+  <h2 class="tit">Vista 3D</h2>
+  <div class="vista"><canvas id="sc-cv" tabindex="0" role="img" aria-label="Scala appoggiata al muro in 3D: trascina per ruotare"></canvas></div>
+  <div class="barra">
+    <button type="button" id="sc-lato">Di lato</button>
+    <button type="button" id="sc-fronte">Dal muro</button>
+    <button type="button" id="sc-alto">Dall’alto</button>
+    <button type="button" id="sc-iso">3D</button>
+    <button type="button" id="sc-zm" aria-label="Allontana">−</button>
+    <button type="button" id="sc-zp" aria-label="Avvicina">+</button>
+  </div>
+  <p class="nota">Trascina per ruotare, pizzica o usa la rotella per lo zoom. Gli anelli bianchi si spostano: quello al piede della scala ne cambia la distanza dal muro, quello sulla corda il suo angolo (alzo). Il muro è il reticolo grigio, il terreno quello più scuro; la freccia rossa è la forza sull’ancoraggio, la linea blu la corda verso il discensore, il segno verde a terra il piede minimo. Gli elementi più vicini sono più marcati.</p>
+</div>
+
+<div class="blocco">
+  <h2 class="tit">Schema</h2>
+  <div id="sc-sv"></div>
+  <p class="nota">Il muro è a sinistra, la testa della scala è ancorata in alto. La freccia rossa è la forza risultante sull’ancoraggio, la linea blu è la corda verso il discensore. Il segno verde a terra è il piede minimo.</p>
+</div>
+
+<div class="blocco">
   <h2 class="tit">Dati</h2>
   <div class="riga">
     <div><label for="sc-P">Carico operatore (kg)</label><input type="number" id="sc-P" inputmode="decimal" min="30" max="250" step="1" value="100"></div>
@@ -66,26 +86,6 @@ FireOps.registra({
   <div class="stato ok" id="sc-st" role="status"></div>
   <div class="grid" id="sc-m"></div>
   <p class="nota" id="sc-f"></p>
-</div>
-
-<div class="blocco">
-  <h2 class="tit">Schema</h2>
-  <div id="sc-sv"></div>
-  <p class="nota">Il muro è a sinistra, la testa della scala è ancorata in alto. La freccia rossa è la forza risultante sull’ancoraggio, la linea blu è la corda verso il discensore. Il segno verde a terra è il piede minimo.</p>
-</div>
-
-<div class="blocco">
-  <h2 class="tit">Vista 3D</h2>
-  <div class="vista"><canvas id="sc-cv" tabindex="0" role="img" aria-label="Scala appoggiata al muro in 3D: trascina per ruotare"></canvas></div>
-  <div class="barra">
-    <button type="button" id="sc-lato">Di lato</button>
-    <button type="button" id="sc-fronte">Dal muro</button>
-    <button type="button" id="sc-alto">Dall’alto</button>
-    <button type="button" id="sc-iso">3D</button>
-    <button type="button" id="sc-zm" aria-label="Allontana">−</button>
-    <button type="button" id="sc-zp" aria-label="Avvicina">+</button>
-  </div>
-  <p class="nota">Trascina per ruotare, pizzica o usa la rotella per lo zoom. Gli anelli bianchi si spostano: quello al piede della scala ne cambia la distanza dal muro, quello sulla corda il suo angolo (alzo). Il muro è il reticolo grigio, il terreno quello più scuro; la freccia rossa è la forza sull’ancoraggio, la linea blu la corda verso il discensore, il segno verde a terra il piede minimo. Gli elementi più vicini sono più marcati.</p>
 </div>
 
 <div class="blocco">

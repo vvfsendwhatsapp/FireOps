@@ -55,6 +55,33 @@ FireOps.registra({
 
   html: `
 <div class="blocco">
+  <h2 class="tit">Pianta del sistema di recupero</h2>
+  <canvas id="pa-pi" class="pi" role="img" aria-label="Pianta del sistema di recupero: trascina gli ancoraggi"></canvas>
+  <p class="nota">Il carico pende dal ciglio (quadrato). Le frecce arancioni sono le risultanti sui punti (in pianta, con i kN). Trascina gli ancoraggi sulla pianta, poi alzali o abbassali con + e −: l’altezza è rispetto al ciglio. Direzione: 0° verso il vuoto, 90° a sinistra guardando il vuoto, 180° dietro il ciglio.</p>
+  <div class="riga4 tt"><span></span><span>Distanza dal ciglio (m)</span><span>Direzione (°)</span><span>Altezza sul ciglio (m)</span></div>
+  <div class="riga4"><b style="color:#ffd700">Ancoraggio</b>
+    <input type="number" id="pa-ad" inputmode="decimal" min="0.3" step="0.1" value="6" aria-label="Distanza ancoraggio">
+    <input type="number" id="pa-aa" inputmode="decimal" step="1" value="180" aria-label="Direzione ancoraggio">
+    <input type="number" id="pa-az" inputmode="decimal" step="0.1" value="0" aria-label="Quota ancoraggio"></div>
+  <div class="riga4" id="pa-rb" hidden><b style="color:#ffd700">Ancor. 2</b>
+    <input type="number" id="pa-bd" inputmode="decimal" min="0.3" step="0.1" value="10" aria-label="Distanza secondo ancoraggio">
+    <input type="number" id="pa-ba" inputmode="decimal" step="1" value="160" aria-label="Direzione secondo ancoraggio">
+    <input type="number" id="pa-bz" inputmode="decimal" step="0.1" value="0" aria-label="Quota secondo ancoraggio"></div>
+  <div class="riga4" id="pa-rr" hidden><b style="color:#4A93C8">Rinvio</b>
+    <input type="number" id="pa-rd" inputmode="decimal" min="0.3" step="0.1" value="8" aria-label="Distanza rinvio">
+    <input type="number" id="pa-ra" inputmode="decimal" step="1" value="200" aria-label="Direzione rinvio">
+    <input type="number" id="pa-rz" inputmode="decimal" step="0.1" value="0" aria-label="Quota rinvio"></div>
+  <div class="riga4"><b style="color:#2f9e5b">Operatori</b>
+    <input type="number" id="pa-od" inputmode="decimal" step="1" value="180" aria-label="Direzione di tiro">
+    <input type="number" id="pa-os" inputmode="decimal" min="-90" max="90" step="1" value="0" aria-label="Pendenza di tiro">
+    <span style="font-size:11.5px;color:var(--text-dim)">direzione e pendenza (°) del tiro</span></div>
+</div>
+
+<div class="blocco">
+  <h2 class="tit">Schema</h2>
+  <div class="schemi" id="pa-sch"></div>
+  <p class="nota">Il blocco in alto è fisso, quello in basso è mobile (sul carico). Il quadratino è il capo morto, la freccia è il capo di tiro.</p>
+</div><div class="blocco">
   <h2 class="tit">Sistema</h2>
   <div class="chips" id="pa-pre"></div>
   <div class="riga">
@@ -87,29 +114,6 @@ FireOps.registra({
 </div>
 
 <div class="blocco">
-  <h2 class="tit">Pianta del sistema di recupero</h2>
-  <canvas id="pa-pi" class="pi" role="img" aria-label="Pianta del sistema di recupero: trascina gli ancoraggi"></canvas>
-  <p class="nota">Il carico pende dal ciglio (quadrato). Le frecce arancioni sono le risultanti sui punti (in pianta, con i kN). Trascina gli ancoraggi sulla pianta, poi alzali o abbassali con + e −: l’altezza è rispetto al ciglio. Direzione: 0° verso il vuoto, 90° a sinistra guardando il vuoto, 180° dietro il ciglio.</p>
-  <div class="riga4 tt"><span></span><span>Distanza dal ciglio (m)</span><span>Direzione (°)</span><span>Altezza sul ciglio (m)</span></div>
-  <div class="riga4"><b style="color:#ffd700">Ancoraggio</b>
-    <input type="number" id="pa-ad" inputmode="decimal" min="0.3" step="0.1" value="6" aria-label="Distanza ancoraggio">
-    <input type="number" id="pa-aa" inputmode="decimal" step="1" value="180" aria-label="Direzione ancoraggio">
-    <input type="number" id="pa-az" inputmode="decimal" step="0.1" value="0" aria-label="Quota ancoraggio"></div>
-  <div class="riga4" id="pa-rb" hidden><b style="color:#ffd700">Ancor. 2</b>
-    <input type="number" id="pa-bd" inputmode="decimal" min="0.3" step="0.1" value="10" aria-label="Distanza secondo ancoraggio">
-    <input type="number" id="pa-ba" inputmode="decimal" step="1" value="160" aria-label="Direzione secondo ancoraggio">
-    <input type="number" id="pa-bz" inputmode="decimal" step="0.1" value="0" aria-label="Quota secondo ancoraggio"></div>
-  <div class="riga4" id="pa-rr" hidden><b style="color:#4A93C8">Rinvio</b>
-    <input type="number" id="pa-rd" inputmode="decimal" min="0.3" step="0.1" value="8" aria-label="Distanza rinvio">
-    <input type="number" id="pa-ra" inputmode="decimal" step="1" value="200" aria-label="Direzione rinvio">
-    <input type="number" id="pa-rz" inputmode="decimal" step="0.1" value="0" aria-label="Quota rinvio"></div>
-  <div class="riga4"><b style="color:#2f9e5b">Operatori</b>
-    <input type="number" id="pa-od" inputmode="decimal" step="1" value="180" aria-label="Direzione di tiro">
-    <input type="number" id="pa-os" inputmode="decimal" min="-90" max="90" step="1" value="0" aria-label="Pendenza di tiro">
-    <span style="font-size:11.5px;color:var(--text-dim)">direzione e pendenza (°) del tiro</span></div>
-</div>
-
-<div class="blocco">
   <h2 class="tit">Risultato</h2>
   <div class="grid" id="pa-ris"></div>
   <div id="pa-avv"></div>
@@ -121,11 +125,7 @@ FireOps.registra({
   <p class="nota">Somma vettoriale delle corde che arrivano al punto: l’angolo tra le corde conta, più è stretto più il punto è caricato. Il coefficiente è rispetto alla resistenza che hai indicato. I valori non sostituiscono la verifica del tuo istruttore SAF.</p>
 </div>
 
-<div class="blocco">
-  <h2 class="tit">Schema</h2>
-  <div class="schemi" id="pa-sch"></div>
-  <p class="nota">Il blocco in alto è fisso, quello in basso è mobile (sul carico). Il quadratino è il capo morto, la freccia è il capo di tiro.</p>
-</div>
+
 `,
 
   init(root) {
