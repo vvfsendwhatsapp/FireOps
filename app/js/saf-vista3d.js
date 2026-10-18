@@ -9,7 +9,7 @@
   window.SafVista3D = {
     crea(cv, opz) {
       const ctx = cv.getContext("2d");
-      let yaw = -0.7, pitch = 0.45, zoom = 1;
+      let yaw = -0.7, pitch = 0.45, zoom = 1, man = [], ultimoC = null, presa = null;
       const proietta = (pt, c) => {
         const x = pt[0] - c[0], y = pt[1] - c[1], z = pt[2] - c[2];
         const cy = Math.cos(yaw), sy = Math.sin(yaw), x1 = x * cy - y * sy, y1 = x * sy + y * cy;
@@ -33,14 +33,31 @@
           ctx.globalAlpha = k; ctx.strokeStyle = col; ctx.lineWidth = lw * (0.6 + 0.4 * k); ctx.setLineDash(dash || []);
           ctx.beginPath(); ctx.moveTo(p1[0], p1[1]); ctx.lineTo(p2[0], p2[1]); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
         };
-        opz.disegna({ctx, w, h, pr, linea, chiaro, raggio, centro, mn, mx});
+        man = [];
+        const c = {ctx, w, h, pr, linea, chiaro, raggio, centro, mn, mx, maniglia: (id, q, txt) => {
+          const p = pr(q); man.push({id, x: p[0], y: p[1]});
+          ctx.strokeStyle = "#eceff3"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(p[0], p[1], 12, 0, 7); ctx.stroke();
+          if (txt) { ctx.fillStyle = "#eceff3"; ctx.font = "bold 11px sans-serif"; ctx.textAlign = "left"; ctx.fillText(txt, p[0] + 16, p[1] + 4); }
+        }};
+        ultimoC = c;
+        opz.disegna(c);
       }
       const dita = new Map();
       let ultimo = null, dpz = 0;
-      cv.addEventListener("pointerdown", e => { cv.setPointerCapture(e.pointerId); dita.set(e.pointerId, [e.clientX, e.clientY]); ultimo = [e.clientX, e.clientY]; dpz = 0; });
+      cv.addEventListener("pointerdown", e => {
+        cv.setPointerCapture(e.pointerId); dita.set(e.pointerId, [e.clientX, e.clientY]); ultimo = [e.clientX, e.clientY]; dpz = 0;
+        const rc = cv.getBoundingClientRect(), px = e.clientX - rc.left, py = e.clientY - rc.top;
+        let best = null, bd = 28;
+        man.forEach(m => { const d = Math.hypot(m.x - px, m.y - py); if (d < bd) { bd = d; best = m; } });
+        presa = best && dita.size === 1 ? best.id : null;
+      });
       cv.addEventListener("pointermove", e => {
         if (!dita.has(e.pointerId)) return;
         dita.set(e.pointerId, [e.clientX, e.clientY]);
+        if (presa && dita.size === 1 && opz.trascina) {
+          const rc = cv.getBoundingClientRect();
+          opz.trascina(presa, e.clientX - rc.left, e.clientY - rc.top, ultimoC); return;
+        }
         if (dita.size === 2) {
           const [p1, p2] = [...dita.values()], dd = Math.hypot(p1[0] - p2[0], p1[1] - p2[1]);
           if (dpz) zoom = Math.min(4, Math.max(0.4, zoom * dd / dpz));
@@ -50,7 +67,7 @@
         pitch = Math.min(1.5, Math.max(-0.1, pitch + (e.clientY - ultimo[1]) * 0.01));
         ultimo = [e.clientX, e.clientY]; disegna();
       });
-      const fine = e => { dita.delete(e.pointerId); dpz = 0; ultimo = dita.size ? [...dita.values()][0] : null; };
+      const fine = e => { presa = null; dita.delete(e.pointerId); dpz = 0; ultimo = dita.size ? [...dita.values()][0] : null; };
       cv.addEventListener("pointerup", fine); cv.addEventListener("pointercancel", fine);
       cv.addEventListener("wheel", e => { e.preventDefault(); zoom = Math.min(4, Math.max(0.4, zoom * (e.deltaY < 0 ? 1.1 : 0.9))); disegna(); }, {passive: false});
       cv.addEventListener("keydown", e => {

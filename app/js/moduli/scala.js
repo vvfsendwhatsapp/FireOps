@@ -85,7 +85,7 @@ FireOps.registra({
     <button type="button" id="sc-zm" aria-label="Allontana">−</button>
     <button type="button" id="sc-zp" aria-label="Avvicina">+</button>
   </div>
-  <p class="nota">Trascina per ruotare, pizzica o usa la rotella per lo zoom. Il muro è il reticolo grigio, il terreno quello più scuro; la freccia rossa è la forza sull’ancoraggio, la linea blu la corda verso il discensore, il segno verde a terra il piede minimo. Gli elementi più vicini sono più marcati.</p>
+  <p class="nota">Trascina per ruotare, pizzica o usa la rotella per lo zoom. Gli anelli bianchi si spostano: quello al piede della scala ne cambia la distanza dal muro, quello sulla corda il suo angolo (alzo). Il muro è il reticolo grigio, il terreno quello più scuro; la freccia rossa è la forza sull’ancoraggio, la linea blu la corda verso il discensore, il segno verde a terra il piede minimo. Gli elementi più vicini sono più marcati.</p>
 </div>
 
 <div class="blocco">
@@ -167,6 +167,7 @@ FireOps.registra({
     let q3 = null;
     let v3 = null;
     const avvia3d = () => { v3 = SafVista3D.crea($("#sc-cv"), {
+      trascina: (id, px, py, c) => trascina(id, px, py, c),
       punti: () => { const g = q3 || {L: 10, d: 4, hh: 9}; return [[-0.5, -2.5, 0], [g.d + 2, 2.5, g.hh + 1], [0, 0, g.hh]]; },
       disegna: c => {
         if (!q3) return;
@@ -203,11 +204,27 @@ FireOps.registra({
         const pf = pr([A[0] + F[0], 0, A[2] + F[2]]), p0 = pr(A), an = Math.atan2(pf[1] - p0[1], pf[0] - p0[0]);
         ctx.fillStyle = "#d8262f"; ctx.beginPath(); ctx.moveTo(pf[0], pf[1]); ctx.lineTo(pf[0] - 11 * Math.cos(an - 0.4), pf[1] - 11 * Math.sin(an - 0.4)); ctx.lineTo(pf[0] - 11 * Math.cos(an + 0.4), pf[1] - 11 * Math.sin(an + 0.4)); ctx.fill();
         txt(fmt(r.Fmag, 0) + " N", [A[0] + F[0], 0, A[2] + F[2]], "#d8262f", 0, 16);
+        c.maniglia("piede", [d, 0, 0], "piede " + fmt(d, 1) + " m");
+        c.maniglia("alzo", [ro * Math.cos(ph), 0, hh - ro * Math.sin(ph)], "alzo " + al + "°");
         const pa = pr(A); ctx.fillStyle = "#eceff3"; ctx.beginPath(); ctx.arc(pa[0], pa[1], 5, 0, 7); ctx.fill();
       }
     }); v3.disegna(); };
     if (window.SafVista3D) avvia3d();
     else { const sc = document.createElement("script"); sc.src = "js/saf-vista3d.js?v=" + (window.FIREOPS_VERSIONE || ""); sc.onload = avvia3d; document.head.appendChild(sc); }
+    function trascina(id, px, py, c) {
+      // trova il valore che porta la maniglia piu' vicina al dito (ricerca sui valori ammessi)
+      const L = q3.L, ph = a => a * Math.PI / 180, ro = Math.min(L * 0.35, 3), hhd = dd => Math.sqrt(Math.max(0.01, L * L - dd * dd));
+      let bv = null, bd = 1e9;
+      if (id === "piede") {
+        for (let dd = 0.3; dd <= Math.min(12, L * 0.99); dd += 0.1) { const p = c.pr([dd, 0, 0]), q = Math.hypot(p[0] - px, p[1] - py); if (q < bd) { bd = q; bv = Math.round(dd * 10) / 10; } }
+        if (bv != null) $("#sc-d").value = String(bv);
+      } else {
+        const hh = q3.hh;
+        for (let a = -90; a <= 90; a += 5) { const p = c.pr([ro * Math.cos(ph(a)), 0, hh - ro * Math.sin(ph(a))]), q = Math.hypot(p[0] - px, p[1] - py); if (q < bd) { bd = q; bv = a; } }
+        if (bv != null) $("#sc-a").value = String(bv);
+      }
+      aggiorna();
+    }
     const vista = (y, p) => () => v3 && v3.vista(y, p);
     $("#sc-lato").addEventListener("click", vista(0, 0.05));
     $("#sc-fronte").addEventListener("click", vista(Math.PI / 2, 0.05));
