@@ -60,12 +60,14 @@ FireOps.registra({
   <div class="barra">
     <button type="button" id="pl-lato">Di lato</button>
     <button type="button" id="pl-alto">Dall’alto</button>
+    <button type="button" id="pl-dietro">Da dietro</button>
+    <button type="button" id="pl-vuoto">Dal vuoto</button>
     <button type="button" id="pl-iso">3D</button>
     <button type="button" id="pl-zm" aria-label="Allontana">−</button>
     <button type="button" id="pl-zp" aria-label="Avvicina">+</button>
   </div>
   <div class="leg"><span><i style="background:#ffd700"></i>palo</span><span><i style="background:#4A93C8"></i>tiranti</span><span><i style="background:#e8734a"></i>carico</span><span><i style="background:#2f9e5b"></i>capo di recupero</span><span><i style="background:#d8262f"></i>risultante sulla testa</span></div>
-  <p class="nota">Trascina per ruotare. Lo sbalzo è verso destra nella vista di lato.</p>
+  <p class="nota">Trascina per ruotare. La zona rossa a terra è il vuoto (davanti), l’altra è il retro con gli ancoraggi. Gli elementi più vicini sono più marcati, quelli lontani più sbiaditi.</p>
 </div>
 
 <div class="blocco">
@@ -293,12 +295,12 @@ FireOps.registra({
     const cv = $("#pl-cv"), ctx = cv.getContext("2d");
     let yaw = -0.7, pitch = 0.45, zoom = 1;
     function proietta(pt, c) {
-      // ruota attorno a z (yaw) poi inclina (pitch): x destra, y profondita', z su
+      // ruota attorno a z (yaw) poi inclina (pitch): x destra, Y profondita' (positivo = lontano), Z su; camera sopra il piano
       let x = pt[0] - c[0], y = pt[1] - c[1], z = pt[2] - c[2];
       const cy = Math.cos(yaw), sy = Math.sin(yaw);
       const x1 = x * cy - y * sy, y1 = x * sy + y * cy;
       const cp = Math.cos(pitch), sp = Math.sin(pitch);
-      const Y = y1 * cp + z * sp, Z = z * cp - y1 * sp;
+      const Y = y1 * cp - z * sp, Z = z * cp + y1 * sp;
       return [x1, Y, Z];
     }
     function disegna() {
@@ -320,17 +322,26 @@ FireOps.registra({
         const r = proietta(q, c), f = dist / (dist + r[1]);      // prospettiva leggera
         return [w / 2 + r[0] * sc * f, h / 2 - r[2] * sc * f + 8, f];
       };
+      // profondita': f vicino a 1.33 = vicino all'osservatore, 0.8 = lontano; linee lontane piu' sottili e sbiadite
+      const chiaro = f => Math.max(0.3, Math.min(1, 0.3 + 0.7 * (f - 0.8) / 0.53));
       const linea = (a, b, col, lw, dash) => {
-        const p1 = pr(a), p2 = pr(b);
-        ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.setLineDash(dash || []);
-        ctx.beginPath(); ctx.moveTo(p1[0], p1[1]); ctx.lineTo(p2[0], p2[1]); ctx.stroke(); ctx.setLineDash([]);
+        const p1 = pr(a), p2 = pr(b), f = (p1[2] + p2[2]) / 2, k = chiaro(f);
+        ctx.globalAlpha = k; ctx.strokeStyle = col; ctx.lineWidth = lw * (0.6 + 0.4 * k); ctx.setLineDash(dash || []);
+        ctx.beginPath(); ctx.moveTo(p1[0], p1[1]); ctx.lineTo(p2[0], p2[1]); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
       };
+      const etichetta = (q, txt, col) => { const t = pr(q); ctx.globalAlpha = Math.max(0.6, chiaro(t[2])); ctx.fillStyle = col; ctx.font = "bold 12px sans-serif"; ctx.textAlign = "center"; ctx.fillText(txt, t[0], t[1]); ctx.globalAlpha = 1; ctx.textAlign = "left"; };
       // terreno: griglia
       const g = Math.max(1, Math.round(raggio / 4));
       const x0 = Math.floor(mn[0] / g - 1) * g, x1 = Math.ceil(mx[0] / g + 1) * g, y0 = Math.floor(mn[1] / g - 1) * g, y1 = Math.ceil(mx[1] / g + 1) * g;
+      // zona del vuoto (davanti, x > 0) in rosso, retro in grigio; il ciglio e' la linea x = 0
+      const quad = (xa, xb, col) => { const q = [[xa, y0], [xb, y0], [xb, y1], [xa, y1]].map(v => pr([v[0], v[1], 0])); ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(q[0][0], q[0][1]); q.slice(1).forEach(v => ctx.lineTo(v[0], v[1])); ctx.closePath(); ctx.fill(); };
+      quad(0, x1, "rgba(216,38,47,.16)"); quad(x0, 0, "rgba(139,150,163,.07)");
       for (let x = x0; x <= x1; x += g) linea([x, y0, 0], [x, y1, 0], "#2a323d", 1);
       for (let y = y0; y <= y1; y += g) linea([x0, y, 0], [x1, y, 0], "#2a323d", 1);
-      linea(B, [g, 0, 0], "#d8262f", 1.5); linea(B, [0, g, 0], "#2f9e5b", 1.5);
+      linea([0, y0, 0], [0, y1, 0], "#d8262f", 2, [8, 5]);
+      linea(B, [g, 0, 0], "#d8262f", 2); linea(B, [0, g, 0], "#2f9e5b", 2);
+      etichetta([x1 - g * 0.6, 0, 0], "VUOTO", "#e8734a"); etichetta([x0 + g * 0.6, 0, 0], "RETRO", "#8b96a3");
+      etichetta([g * 1.25, 0, 0], "x", "#d8262f"); etichetta([0, g * 1.25, 0], "sinistra", "#2f9e5b");
       // cavi
       cavi.forEach((cv_, i) => {
         const att = geo.ok || cv_.col; const scarico = geo.t && !(geo.t[i] > 1e-6);
@@ -387,6 +398,8 @@ FireOps.registra({
     const vista = (y, p) => () => { yaw = y; pitch = p; zoom = 1; disegna(); };
     $("#pl-lato").addEventListener("click", vista(0, 0));
     $("#pl-alto").addEventListener("click", vista(0, 1.5));
+    $("#pl-dietro").addEventListener("click", vista(Math.PI / 2, 0.3));
+    $("#pl-vuoto").addEventListener("click", vista(-Math.PI / 2, 0.3));
     $("#pl-iso").addEventListener("click", vista(-0.7, 0.45));
     $("#pl-zp").addEventListener("click", () => { zoom = Math.min(4, zoom * 1.25); disegna(); });
     $("#pl-zm").addEventListener("click", () => { zoom = Math.max(0.4, zoom / 1.25); disegna(); });
