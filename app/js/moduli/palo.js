@@ -64,36 +64,44 @@ FireOps.registra({
     <button type="button" id="pl-zm" aria-label="Allontana">−</button>
     <button type="button" id="pl-zp" aria-label="Avvicina">+</button>
   </div>
-  <div class="leg"><span><i style="background:#ffd700"></i>palo</span><span><i style="background:#4A93C8"></i>tiranti</span><span><i style="background:#e8734a"></i>carico</span><span><i style="background:#2f9e5b"></i>capo di recupero</span></div>
+  <div class="leg"><span><i style="background:#ffd700"></i>palo</span><span><i style="background:#4A93C8"></i>tiranti</span><span><i style="background:#e8734a"></i>carico</span><span><i style="background:#2f9e5b"></i>capo di recupero</span><span><i style="background:#d8262f"></i>risultante sulla testa</span></div>
   <p class="nota">Trascina per ruotare. Lo sbalzo è verso destra nella vista di lato.</p>
 </div>
 
 <div class="blocco">
   <h2 class="tit">Palo</h2>
+  <div class="riga">
+    <div><label for="pl-cf">Configurazione</label><select id="pl-cf"><option value="A">A: 2 venti</option><option value="B">B: 1 vento, 2 laterali</option></select></div>
+    <div><label for="pl-rc">Recupero</label><select id="pl-rc"><option value="E">Esterno al palo</option><option value="I">Interno (winch)</option></select></div>
+  </div>
   <div class="riga3">
     <div><label for="pl-L">Lunghezza (m)</label><input type="number" id="pl-L" inputmode="decimal" min="1" max="12" step="0.1" value="4"></div>
     <div><label for="pl-th">Inclinazione (°)</label><input type="number" id="pl-th" inputmode="decimal" min="0" max="45" step="1" value="10"></div>
     <div><label for="pl-ph">Verso (°)</label><input type="number" id="pl-ph" inputmode="decimal" min="-180" max="360" step="5" value="0"></div>
   </div>
-  <p class="nota">Inclinazione dalla verticale. Verso: 0° = inclinato verso il vuoto.</p>
+  <p class="nota">Inclinazione dalla verticale. Verso: 0° = inclinato verso il vuoto. Con 3 cavi (B) il sistema è iperstatico: i tiri sono ripartiti nel modo più uniforme possibile e i cavi che resterebbero compressi vengono considerati scarichi.</p>
 </div>
 
 <div class="blocco">
   <h2 class="tit">Ancoraggi e recupero</h2>
   <div class="riga3 tt"><span></span><span>Distanza dalla base (m)</span><span>Direzione (°)</span><span>Quota sulla base (m)</span></div>
-  <div class="riga4"><b style="color:#4A93C8">Tirante 1</b>
-    <input type="number" id="pl-a1d" inputmode="decimal" min="0.3" step="0.1" value="5" aria-label="Distanza tirante 1">
-    <input type="number" id="pl-a1a" inputmode="decimal" step="1" value="145" aria-label="Direzione tirante 1">
-    <input type="number" id="pl-a1z" inputmode="decimal" step="0.1" value="0" aria-label="Quota tirante 1"></div>
-  <div class="riga4"><b style="color:#4A93C8">Tirante 2</b>
-    <input type="number" id="pl-a2d" inputmode="decimal" min="0.3" step="0.1" value="5" aria-label="Distanza tirante 2">
-    <input type="number" id="pl-a2a" inputmode="decimal" step="1" value="215" aria-label="Direzione tirante 2">
-    <input type="number" id="pl-a2z" inputmode="decimal" step="0.1" value="0" aria-label="Quota tirante 2"></div>
-  <div class="riga4"><b style="color:#2f9e5b">Recupero</b>
+  <div class="riga4"><b id="pl-n1" style="color:#4A93C8">Vento 1</b>
+    <input type="number" id="pl-a1d" inputmode="decimal" min="0.3" step="0.1" value="5" aria-label="Distanza primo cavo">
+    <input type="number" id="pl-a1a" inputmode="decimal" step="1" value="145" aria-label="Direzione primo cavo">
+    <input type="number" id="pl-a1z" inputmode="decimal" step="0.1" value="0" aria-label="Quota primo cavo"></div>
+  <div class="riga4"><b id="pl-n2" style="color:#4A93C8">Vento 2</b>
+    <input type="number" id="pl-a2d" inputmode="decimal" min="0.3" step="0.1" value="5" aria-label="Distanza secondo cavo">
+    <input type="number" id="pl-a2a" inputmode="decimal" step="1" value="215" aria-label="Direzione secondo cavo">
+    <input type="number" id="pl-a2z" inputmode="decimal" step="0.1" value="0" aria-label="Quota secondo cavo"></div>
+  <div class="riga4" id="pl-r3" hidden><b id="pl-n3" style="color:#27c4c4">Laterale 2</b>
+    <input type="number" id="pl-a3d" inputmode="decimal" min="0.3" step="0.1" value="3" aria-label="Distanza terzo cavo">
+    <input type="number" id="pl-a3a" inputmode="decimal" step="1" value="270" aria-label="Direzione terzo cavo">
+    <input type="number" id="pl-a3z" inputmode="decimal" step="0.1" value="0" aria-label="Quota terzo cavo"></div>
+  <div class="riga4" id="pl-rp"><b style="color:#2f9e5b">Recupero</b>
     <input type="number" id="pl-pd" inputmode="decimal" min="0" step="0.1" value="0" aria-label="Distanza punto di recupero">
     <input type="number" id="pl-pa" inputmode="decimal" step="1" value="180" aria-label="Direzione punto di recupero">
     <input type="number" id="pl-pz" inputmode="decimal" step="0.1" value="0" aria-label="Quota punto di recupero"></div>
-  <p class="nota">Ogni ancoraggio ha la sua distanza, direzione e quota (+ sopra la base, − sotto): puoi metterli a quote diverse, per esempio uno su un albero e uno a terra.</p>
+  <p class="nota" id="pl-nr">Ogni ancoraggio ha la sua distanza, direzione e quota (+ sopra la base, − sotto): puoi metterli a quote diverse, per esempio uno su un albero e uno a terra.</p>
   <div id="pl-geo"></div>
 </div>
 
@@ -134,8 +142,52 @@ FireOps.registra({
     const det = (a, b, c) => a[0] * (b[1] * c[2] - b[2] * c[1]) - a[1] * (b[0] * c[2] - b[2] * c[0]) + a[2] * (b[0] * c[1] - b[1] * c[0]);
 
     let geo = null;   // ultimo calcolo, usato dal disegno
+    let pianta = null;
+
+    // Risolve C*a + somma(t_i * s_i) = rhs. Cavi in eccesso (3): minimo di somma dei tiri al quadrato, palo "gratis".
+    // I cavi con tiro negativo vengono tolti e si risolve di nuovo. Restituisce {C, t: [...], attivi: [bool]} oppure null.
+    function solve3(M, b) {
+      const d = det(M[0], M[1], M[2]);
+      if (!(Math.abs(d) > 0)) return null;
+      const A = [M[0], M[1], M[2]];
+      const rep = j => A.map((r, i) => r.map((v, k) => (k === j ? b[i] : v)));
+      return [0, 1, 2].map(j => { const m = rep(j); return det(m[0], m[1], m[2]) / d; });
+    }
+    function risolvi(a, cavi, rhs, esatto) {
+      let att = cavi.map((_, i) => i);
+      for (let giro = 0; giro < 4; giro++) {
+        const vett = [a].concat(att.map(i => cavi[i].s)), w = [1e-4].concat(att.map(() => 1));
+        // M = V W^-1 V^T (3x3) con un velo di regolarizzazione, poi x = W^-1 V^T y con M y = rhs
+        const M = [0, 1, 2].map(r => [0, 1, 2].map(c => vett.reduce((acc, v, k) => acc + v[r] * v[c] / w[k], 0)));
+        const lam = 1e-10 * (M[0][0] + M[1][1] + M[2][2]);
+        for (let i = 0; i < 3; i++) M[i][i] += lam;
+        const y = solve3(M, rhs);
+        if (!y) return null;
+        const x = vett.map((v, k) => (v[0] * y[0] + v[1] * y[1] + v[2] * y[2]) / w[k]);
+        // residuo: se le forze non si equilibrano (carico fuori dal piano dei cavi) il sistema non regge
+        const res = [0, 1, 2].map(r => vett.reduce((acc, v, k) => acc + v[r] * x[k], 0) - rhs[r]);
+        if (Math.hypot(res[0], res[1], res[2]) > 1e-3 * (Math.hypot(rhs[0], rhs[1], rhs[2]) || 1)) return null;
+        const neg = att.filter((i, k) => x[k + 1] < -1e-6);
+        if (esatto || !neg.length) {
+          const t = cavi.map(() => 0);
+          att.forEach((i, k) => { t[i] = x[k + 1]; });
+          return {C: x[0], t, attivi: cavi.map((_, i) => att.includes(i))};
+        }
+        att = att.filter(i => !neg.includes(i));
+      }
+      return null;
+    }
 
     function calcola() {
+      const cfgB = $("#pl-cf").value === "B", interno = $("#pl-rc").value === "I";
+      $("#pl-r3").hidden = !cfgB;
+      $("#pl-rp").hidden = interno;
+      $("#pl-n1").textContent = cfgB ? "Vento" : "Vento 1";
+      $("#pl-n2").textContent = cfgB ? "Laterale 1" : "Vento 2";
+      $("#pl-n2").style.color = cfgB ? "#27c4c4" : "#4A93C8";
+      $("#pl-nr").textContent = interno ? "Recupero interno: il verricello è sul palo, il capo di recupero scende lungo il palo fino alla base. Ogni ancoraggio ha la sua distanza, direzione e quota (+ sopra la base, − sotto)."
+        : "Recupero esterno: il capo di recupero va a un punto a parte (verricello o squadra), con la sua posizione e quota. Ogni ancoraggio ha la sua distanza, direzione e quota (+ sopra la base, − sotto).";
+
       const L = Math.max(0.5, num("#pl-L", 4)), th = Math.min(60, Math.max(0, num("#pl-th", 10))) * RAD, ph = num("#pl-ph", 0) * RAD;
       const kg = Math.max(0, num("#pl-kg", 200)), eta = Math.min(1, Math.max(0.5, num("#pl-eta", 0.95)));
       const E = num("#pl-mat", 70) * 1e9, Dm = Math.max(10, num("#pl-D", 80)) / 1000, sp = Math.min(Dm / 2 - 0.0005, Math.max(0.5, num("#pl-s", 4)) / 1000);
@@ -143,73 +195,85 @@ FireOps.registra({
       const polare = (id, dmin) => { const d = Math.max(dmin, num("#pl-" + id + "d", 5)), an = num("#pl-" + id + "a", 0) * RAD; return [d * Math.cos(an), d * Math.sin(an), num("#pl-" + id + "z", 0)]; };
 
       const B = [0, 0, 0], H = [L * Math.sin(th) * Math.cos(ph), L * Math.sin(th) * Math.sin(ph), L * Math.cos(th)];
-      const A1 = polare("a1", 0.3), A2 = polare("a2", 0.3), P = polare("p", 0);
+      const P = interno ? B : polare("p", 0);
+      const nomi = cfgB ? ["Vento", "Laterale 1", "Laterale 2"] : ["Vento 1", "Vento 2"];
+      const cavi = nomi.map((nome, i) => {
+        const pos = polare("a" + (i + 1), 0.3);
+        return {id: "a" + (i + 1), nome, pos, s: uni(sub(pos, H)), col: cfgB && i > 0 ? "#27c4c4" : "#4A93C8"};
+      });
       const W = kg * G, T = W / eta;
-      const a = uni(sub(H, B)), s1 = uni(sub(A1, H)), s2 = uni(sub(A2, H)), h = uni(sub(P, H));
-      // C*a + t1*s1 + t2*s2 = -(T*h + W*(0,0,-1))
-      const rhs = [-(T * h[0]), -(T * h[1]), -(T * h[2] - W)];
-      const D0 = det(a, s1, s2);
-      let C = NaN, t1 = NaN, t2 = NaN;
-      if (Math.abs(D0) > 1e-9) {
-        C = det(rhs, s1, s2) / D0; t1 = det(a, rhs, s2) / D0; t2 = det(a, s1, rhs) / D0;
-      }
-      // reazione alla base: il palo spinge sul terreno con -C*a ... piu' la componente del tiro di recupero se arriva alla base
-      const Hb = Math.hypot(C * a[0], C * a[1]), Vb = C * a[2];
+      const a = uni(sub(H, B)), h = uni(sub(P, H));
+      const Fc = [T * h[0], T * h[1], T * h[2] - W];          // risultante sulla testa: carico appeso + capo di recupero
+      const rhs = [-Fc[0], -Fc[1], -Fc[2]];
+      const ris = risolvi(a, cavi, rhs, !cfgB);
+      const C = ris ? ris.C : NaN, t = ris ? ris.t : cavi.map(() => NaN);
+      const Fmod = len(Fc), angV = Fmod > 0 ? Math.acos(Math.max(-1, Math.min(1, -Fc[2] / Fmod))) / RAD : 0;
+      // reazione a terra: se il recupero e' interno il tiro del verricello e' interno al sistema
+      const Cg = interno ? C - T : C;
+      const Hb = Math.hypot(Cg * a[0], Cg * a[1]), Vb = Cg * a[2];
       const attr = Vb > 0 ? Hb / Vb : Infinity;
       const I = Math.PI / 64 * (Math.pow(Dm, 4) - Math.pow(Dm - 2 * sp, 4));
       const Pcr = Math.PI * Math.PI * E * I / (L * L);
-      geo = {B, H, A1, A2, P, L, W, T, ok: isFinite(C) && t1 > 0 && t2 > 0 && C > 0};
-      tabellaGeo(H, A1, A2, P, t1, t2);
+      const ok = !!ris && C > 0 && cavi.every((c, i) => !isNaN(t[i]) && (cfgB || t[i] > 0));
+      geo = {B, H, cavi, P, interno, L, W, T, Fc, ok, t};
+      tabellaGeo(H, cavi, P, t, T, interno);
 
       const avv = [];
-      if (!isFinite(C)) avv.push("Configurazione indeterminata: i tiranti sono allineati con il palo. Cambia apertura o distanza.");
+      if (!ris) avv.push(cfgB ? "Con questi cavi il sistema non regge: serve almeno un cavo che trattenga il carico, oppure cambia posizioni." : "Configurazione indeterminata: i tiranti sono allineati con il palo. Cambia apertura o distanza.");
       else {
-        if (t1 <= 0 || t2 <= 0) avv.push("Un tirante risulta scarico: con questa inclinazione il capo di recupero tira il palo all’indietro più di quanto lo sbalzo lo spinga in fuori, e il palo tenderebbe a tornare verso la verticale. Aumenta l’inclinazione o avvicina il punto di recupero alla base.");
+        if (!cfgB && t.some(v => v <= 0)) avv.push("Un tirante risulta scarico: con questa inclinazione il capo di recupero tira il palo all’indietro più di quanto lo sbalzo lo spinga in fuori, e il palo tenderebbe a tornare verso la verticale. Aumenta l’inclinazione o avvicina il punto di recupero alla base.");
+        if (cfgB) cavi.forEach((c, i) => { if (!ris.attivi[i]) avv.push(c.nome + " risulta scarico (non lavora in questa condizione): serve solo se il carico cambia direzione."); });
         if (C <= 0) avv.push("Il palo risulta teso invece che compresso: controlla i dati.");
-        const el = Math.max(...[A1, A2].map(q => Math.atan2(H[2] - q[2], Math.hypot(H[0] - q[0], H[1] - q[1])) / RAD));
-        if (el > 60) avv.push("I tiranti sono molto ripidi (" + fmt(el, 0) + "° sull’orizzontale): lavorano male. Allontana gli ancoraggi.");
+        const el = Math.max(...cavi.map(c => Math.atan2(H[2] - c.pos[2], Math.hypot(H[0] - c.pos[0], H[1] - c.pos[1])) / RAD));
+        if (el > 60) avv.push("I cavi sono molto ripidi (" + fmt(el, 0) + "° sull’orizzontale): lavorano male. Allontana gli ancoraggi.");
         if (Pcr > 0 && C > Pcr / 3) avv.push("La compressione supera un terzo del carico di instabilità del palo: usa un tubo più robusto o più corto.");
-        if (R > 0 && Math.max(t1, t2) / 1000 > R / 3) avv.push("Il tirante più carico supera un terzo della resistenza indicata per ancoraggi e tiranti.");
+        if (R > 0 && Math.max(...t.filter(v => isFinite(v))) / 1000 > R / 3) avv.push("Il cavo più carico supera un terzo della resistenza indicata per ancoraggi e tiranti.");
         if (attr > 0.5) avv.push("La base spinge molto di lato rispetto al verticale: serve un arresto o un ancoraggio della base contro lo scivolamento.");
+        if (!interno && R > 0 && T / 1000 > R / 3) avv.push("Il capo di recupero carica il suo punto oltre un terzo della resistenza indicata.");
       }
       const k = v => fmt(v / 1000, 2) + ' <small>kN</small>';
       const elemento = (kk, v, ko) => '<div class="vcell' + (ko ? " ko" : "") + '"><div class="k">' + kk + '</div><div class="v">' + v + "</div></div>";
+      const tmax = Math.max.apply(null, t.filter(v => isFinite(v)).concat([0]));
       $("#pl-ris").innerHTML =
+        elemento("Risultante sulla testa", k(Fmod) + ' <small>' + fmt(angV, 0) + '° dalla verticale</small>') +
         elemento("Compressione nel palo", isFinite(C) ? k(C) : "—", !isFinite(C) || C <= 0) +
         elemento("Carico di instabilità (Eulero)", k(Pcr)) +
-        elemento("Tirante 1", isFinite(t1) ? k(t1) : "—", !(t1 > 0)) +
-        elemento("Tirante 2", isFinite(t2) ? k(t2) : "—", !(t2 > 0)) +
+        elemento("Coefficiente del palo", isFinite(C) && C > 0 ? fmt(Pcr / C, 1) : "—") +
+        cavi.map((c, i) => elemento(c.nome, isFinite(t[i]) ? k(Math.max(0, t[i])) : "—", !cfgB && !(t[i] > 0))).join("") +
         elemento("Capo di recupero", k(T)) +
-        elemento("Coefficiente del tirante", isFinite(t1) && R > 0 && Math.max(t1, t2) > 0 ? fmt(R * 1000 / Math.max(t1, t2), 1) : "—") +
-        elemento("Spinta orizzontale alla base", isFinite(C) ? k(Hb) : "—") +
-        elemento("Coefficiente del palo", isFinite(C) && C > 0 ? fmt(Pcr / C, 1) : "—");
-      $("#pl-avv").innerHTML = avv.map(t => '<div class="avv">' + t + "</div>").join("");
+        elemento("Coefficiente dei cavi", R > 0 && tmax > 0 ? fmt(R * 1000 / tmax, 1) : "—") +
+        elemento(interno ? "Reazione a terra (C − T)" : "Reazione a terra", isFinite(Cg) ? k(Math.abs(Cg)) : "—") +
+        elemento("Spinta orizzontale alla base", isFinite(Cg) ? k(Hb) : "—");
+      $("#pl-avv").innerHTML = avv.map(x => '<div class="avv">' + x + "</div>").join("");
       disegna();
     }
 
     // ---------- pianta e angoli ----------
-    let pianta = null;
-    function tabellaGeo(H, A1, A2, P, t1, t2) {
+    function tabellaGeo(H, cavi, P, t, T, interno) {
       const el = q => Math.atan2(H[2] - q[2], Math.hypot(H[0] - q[0], H[1] - q[1])) / RAD;
       const lung = q => len(sub(q, H));
-      const dirPalo = Math.atan2(H[1], H[0]) / RAD;
       const ang = (a, b) => { let d = Math.abs(Math.atan2(a[1], a[0]) - Math.atan2(b[1], b[0])) / RAD; return d > 180 ? 360 - d : d; };
-      const riga = (n, q, col, t) => '<tr><td style="color:' + col + '">' + n + '</td><td>' + fmt(lung(q), 2) + ' m</td><td>' + fmt(el(q), 0) + '°</td><td>' + (isFinite(t) ? fmt(t / 1000, 2) + " kN" : "—") + "</td></tr>";
+      const riga = (n, q, col, tt) => '<tr><td style="color:' + col + '">' + n + '</td><td>' + fmt(lung(q), 2) + ' m</td><td>' + fmt(el(q), 0) + '°</td><td>' + (isFinite(tt) ? fmt(Math.max(0, tt) / 1000, 2) + " kN" : "—") + "</td></tr>";
+      const Fc = geo.Fc, Fh = Math.hypot(Fc[0], Fc[1]);
       $("#pl-geo").innerHTML = '<table class="geo"><tr><th></th><th>Lunghezza</th><th>Angolo sull’orizzontale</th><th>Tiro</th></tr>' +
-        riga("Tirante 1", A1, "#4A93C8", t1) + riga("Tirante 2", A2, "#4A93C8", t2) + riga("Recupero", P, "#2f9e5b", geo ? geo.T : NaN) + "</table>" +
-        '<p class="nota">Angolo tra i due tiranti in pianta: ' + fmt(ang(A1, A2), 0) + "°. Altezza della testa: " + fmt(H[2], 2) + " m.</p>";
+        cavi.map((c, i) => riga(c.nome, c.pos, c.col, t[i])).join("") + riga("Recupero", P, "#2f9e5b", T) + "</table>" +
+        '<p class="nota">' + (cavi.length > 1 ? "Angolo in pianta tra " + cavi[0].nome + " e " + cavi[1].nome + ": " + fmt(ang(cavi[0].pos, cavi[1].pos), 0) + "°. " : "") +
+        "Altezza della testa: " + fmt(H[2], 2) + " m. Risultante sulla testa: componente orizzontale " + fmt(Fh / 1000, 2) + " kN" + (Fh > 1 ? " verso " + fmt(((Math.atan2(Fc[1], Fc[0]) / RAD) + 360) % 360, 0) + "°" : "") + ", verticale " + fmt(Fc[2] / 1000, 2) + " kN.</p>";
       if (!pianta) return;
       const pr = (id, q, col, nome) => ({id, x: q[0], y: q[1], col, nome, sotto: (q[2] >= 0 ? "+" : "") + fmt(q[2], 1) + " m"});
-      pianta.set([
+      const pts = [
         {id: "B", x: 0, y: 0, fisso: true, col: "#eceff3", nome: "Base", ly: 30},
-        {id: "H", x: H[0], y: H[1], fisso: true, col: "#ffd700", nome: "Testa", sotto: "+" + fmt(H[2], 1) + " m", ly: -30},
-        pr("a1", A1, "#4A93C8", "T1"), pr("a2", A2, "#4A93C8", "T2"), Object.assign(pr("p", P, "#2f9e5b", "Recupero"), {ly: 60})
-      ], [
-        {a: "B", b: "H", col: "#ffd700", lw: 5},
-        {a: "H", b: "a1", col: "#4A93C8", dash: [6, 4], testo: fmt(lung(A1), 1) + " m"},
-        {a: "H", b: "a2", col: "#4A93C8", dash: [6, 4], testo: fmt(lung(A2), 1) + " m"},
-        {a: "H", b: "p", col: "#2f9e5b", dash: [6, 4]}
-      ]);
+        {id: "H", x: H[0], y: H[1], fisso: true, col: "#ffd700", nome: "Testa", sotto: "+" + fmt(H[2], 1) + " m", ly: -30}
+      ];
+      const lin = [{a: "B", b: "H", col: "#ffd700", lw: 5}];
+      cavi.forEach(c => { pts.push(pr(c.id, c.pos, c.col, c.nome)); lin.push({a: "H", b: c.id, col: c.col, dash: [6, 4], testo: fmt(lung(c.pos), 1) + " m"}); });
+      if (!interno) { pts.push(Object.assign(pr("p", P, "#2f9e5b", "Recupero"), {ly: 60})); lin.push({a: "H", b: "p", col: "#2f9e5b", dash: [6, 4]}); }
+      if (Fh > 1) {
+        const lf = Math.max(1, geo.L * 0.5);
+        pts.push({id: "F", x: H[0] + lf * Fc[0] / Fh, y: H[1] + lf * Fc[1] / Fh, fisso: true, col: "#d8262f", nome: "Risultante", sotto: fmt(len(Fc) / 1000, 2) + " kN (orizz. " + fmt(Fh / 1000, 2) + ")", ly: 0});
+        lin.push({a: "H", b: "F", col: "#d8262f", lw: 3, freccia: true});
+      }
+      pianta.set(pts, lin);
     }
     const sincro = (id, x, y) => {
       const d = Math.hypot(x, y), an = Math.atan2(y, x) / RAD;
@@ -218,6 +282,12 @@ FireOps.registra({
       calcola();
     };
     const avviaPianta = () => { pianta = SafPianta.crea($("#pl-pi"), {onMove: sincro}); calcola(); };
+
+    // valori di partenza per configurazione
+    $("#pl-cf").addEventListener("change", () => {
+      const v = $("#pl-cf").value === "B" ? [[5, 180], [3, 90], [3, 270]] : [[5, 145], [5, 215]];
+      v.forEach((q, i) => { $("#pl-a" + (i + 1) + "d").value = q[0]; $("#pl-a" + (i + 1) + "a").value = q[1]; });
+    });
 
     // ---------- vista 3D ----------
     const cv = $("#pl-cv"), ctx = cv.getContext("2d");
@@ -237,8 +307,9 @@ FireOps.registra({
       if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, w, h);
-      const {B, H, A1, A2, P, L} = geo;
-      const pts = [B, H, A1, A2, P, [H[0], H[1], H[2] - 1]];
+      const {B, H, cavi, P, L, Fc, interno} = geo;
+      const Fm = len(Fc) || 1, Fp = [H[0] + L * 0.5 * Fc[0] / Fm, H[1] + L * 0.5 * Fc[1] / Fm, H[2] + L * 0.5 * Fc[2] / Fm];
+      const pts = [B, H, P, Fp, [H[0], H[1], H[2] - 1]].concat(cavi.map(c => c.pos));
       let mn = [1e9, 1e9, 1e9], mx = [-1e9, -1e9, -1e9];
       pts.forEach(q => q.forEach((v, i) => { mn[i] = Math.min(mn[i], v); mx[i] = Math.max(mx[i], v); }));
       const c = [(mn[0] + mx[0]) / 2, (mn[1] + mx[1]) / 2, (mn[2] + mx[2]) / 2];
@@ -259,14 +330,17 @@ FireOps.registra({
       const x0 = Math.floor(mn[0] / g - 1) * g, x1 = Math.ceil(mx[0] / g + 1) * g, y0 = Math.floor(mn[1] / g - 1) * g, y1 = Math.ceil(mx[1] / g + 1) * g;
       for (let x = x0; x <= x1; x += g) linea([x, y0, 0], [x, y1, 0], "#2a323d", 1);
       for (let y = y0; y <= y1; y += g) linea([x0, y, 0], [x1, y, 0], "#2a323d", 1);
-      // assi
       linea(B, [g, 0, 0], "#d8262f", 1.5); linea(B, [0, g, 0], "#2f9e5b", 1.5);
-      // tiranti
-      linea(H, A1, geo.ok ? "#4A93C8" : "#e8734a", 2); linea(H, A2, geo.ok ? "#4A93C8" : "#e8734a", 2);
-      [A1, A2].forEach(q => { const t = pr(q); ctx.fillStyle = "#4A93C8"; ctx.fillRect(t[0] - 4, t[1] - 4, 8, 8); linea(q, [q[0], q[1], 0], "#2a323d", 1, [3, 3]); });
-      // capo di recupero e punto di tiro
-      linea(H, P, "#2f9e5b", 2);
-      const tp = pr(P); ctx.fillStyle = "#2f9e5b"; ctx.beginPath(); ctx.arc(tp[0], tp[1], 5, 0, 7); ctx.fill();
+      // cavi
+      cavi.forEach((cv_, i) => {
+        const att = geo.ok || cv_.col; const scarico = geo.t && !(geo.t[i] > 1e-6);
+        linea(H, cv_.pos, scarico ? "#e8734a" : cv_.col, 2, scarico ? [5, 4] : null);
+        const t = pr(cv_.pos); ctx.fillStyle = cv_.col; ctx.fillRect(t[0] - 4, t[1] - 4, 8, 8);
+        linea(cv_.pos, [cv_.pos[0], cv_.pos[1], 0], "#2a323d", 1, [3, 3]);
+      });
+      // capo di recupero
+      if (!interno) { linea(H, P, "#2f9e5b", 2); const tp = pr(P); ctx.fillStyle = "#2f9e5b"; ctx.beginPath(); ctx.arc(tp[0], tp[1], 5, 0, 7); ctx.fill(); }
+      else linea(H, B, "#2f9e5b", 2, [2, 3]);
       // carico appeso
       const Cd = [H[0], H[1], H[2] - Math.min(1, L / 4)];
       linea(H, Cd, "#e8734a", 2);
@@ -277,6 +351,12 @@ FireOps.registra({
       ctx.fillStyle = "#10141a"; ctx.strokeStyle = "#eceff3"; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(th[0], th[1], 6, 0, 7); ctx.fill(); ctx.stroke();
       ctx.fillStyle = "#eceff3"; ctx.beginPath(); ctx.arc(tb[0], tb[1], 4, 0, 7); ctx.fill();
+      // risultante sulla testa (freccia)
+      const tf = pr(Fp), an = Math.atan2(tf[1] - th[1], tf[0] - th[0]);
+      ctx.strokeStyle = "#d8262f"; ctx.fillStyle = "#d8262f"; ctx.lineWidth = 3.5;
+      ctx.beginPath(); ctx.moveTo(th[0], th[1]); ctx.lineTo(tf[0], tf[1]); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(tf[0], tf[1]); ctx.lineTo(tf[0] - 11 * Math.cos(an - 0.4), tf[1] - 11 * Math.sin(an - 0.4)); ctx.lineTo(tf[0] - 11 * Math.cos(an + 0.4), tf[1] - 11 * Math.sin(an + 0.4)); ctx.fill();
+      ctx.font = "bold 12px sans-serif"; ctx.fillText(fmt(Fm / 1000, 2) + " kN", tf[0] + 8, tf[1] + 4);
       ctx.fillStyle = "#8b96a3"; ctx.font = "12px sans-serif";
       ctx.fillText("L = " + fmt(L, 1) + " m", th[0] + 10, th[1] - 6);
     }
