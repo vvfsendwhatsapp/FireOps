@@ -39,10 +39,11 @@
     {id: "gestione", nome: "Gestione ricerca", ico: "🧭", colore: "var(--ics-operazioni)", testo: "#fff",
       sotto: "Personale, squadre e zone", href: "#/gestione"},
     {id: "saf", nome: "SAF", ico: "🧗", colore: "var(--ics-operazioni)", testo: "#fff",
-      sotto: "Paranchi, ancoraggi e palo pescante",
+      sotto: "Paranchi, palo pescante e scala",
       voci: [
-        {nome: "Paranchi e vantaggio meccanico", ico: "⚙️", href: "#/paranchi", desc: "Vantaggio teorico e reale con gli attriti, tiro da fare, forze sugli ancoraggi e schema"},
-        {nome: "Palo pescante 3D", ico: "🏗️", href: "#/palo", desc: "Il palo in 3D con tiranti e carico: compressione, tiri e carico di instabilità"}
+        {nome: "Paranchi e vantaggio meccanico", ico: "⚙️", href: "#/paranchi", desc: "Vantaggio con gli attriti, disposizione in pianta, forze sugli ancoraggi e schema"},
+        {nome: "Palo pescante 3D", ico: "🏗️", href: "#/palo", desc: "Pianta, quote e angoli degli ancoraggi, vista 3D, compressione e tiri"},
+        {nome: "Scala appoggiata al muro", ico: "🪜", href: "#/scala", desc: "Piede minimo contro il ribaltamento con sistema discensore 2:1"}
       ]},
     {id: "misura", nome: "Misura", ico: ICONE.altezza, colore: "var(--ics-pianificazione)", testo: "#fff",
       sotto: "Alberi, altezze, distanze e aree",
@@ -95,6 +96,7 @@
   // "segnaposto": modulo non ancora pronto, la pagina mostra solo l'avviso.
   const MODULI = {
     paranchi: {nome: "SAF - Paranchi", sotto: "Vantaggio meccanico e forze sugli ancoraggi", padre: "saf"},
+    scala: {nome: "SAF - Scala appoggiata", sotto: "Piede minimo contro il ribaltamento", padre: "saf"},
     palo: {nome: "SAF - Palo pescante 3D", sotto: "Forze su palo, tiranti e ancoraggi", padre: "saf"},
     taglio: {nome: "Taglio alberi", sotto: "Scarico e sequenza di taglio", padre: "misura"},
     trigo: {nome: "Misura", sotto: "Altezze, distanze, posizione e aree", padre: "misura"},

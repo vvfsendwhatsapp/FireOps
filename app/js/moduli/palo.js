@@ -1,11 +1,12 @@
 /* FireOps VVF - modulo "palo" (funzione SAF): palo pescante in 3D con le forze.
  * Modello statico (testa del palo in equilibrio, base a cerniera sul terreno):
- *   C*a + t1*s1 + t2*s2 + T*h + W*(0,0,-1) = 0
- * a = asse del palo (dalla base alla testa), s1 e s2 = versori dalla testa verso i due ancoraggi dei tiranti,
- * h = versore dalla testa verso il punto di tiro, W = carico, T = tiro sul capo di recupero (W / rendimento della carrucola in testa).
- * C = compressione nel palo, t1 e t2 = tiri nei tiranti. Se un tiro esce negativo il tirante e' lento: la configurazione non regge.
- * Assi: x = verso lo sbalzo (il vuoto), y = laterale, z = verso l'alto. Vista 3D: proiezione prospettica fatta a mano,
- * si ruota col dito o col mouse. Nessuna libreria: funziona anche offline.
+ *   C*a + sum(t_i*s_i) + T*h + W*(0,0,-1) = 0
+ * a = asse del palo (dalla base alla testa), s_i = versori dalla testa verso gli ancoraggi dei tiranti (posizione e quota
+ * di ciascuno a scelta), h = versore verso il punto di recupero, W = carico, T = W / rendimento della carrucola in testa.
+ * Con 2 tiranti il sistema e' determinato; con 3 o 4 la ripartizione e' stimata a minimo sforzo (somma dei quadrati dei tiri
+ * minima, tiri mai negativi). Assi: x = verso lo sbalzo (il vuoto), y = laterale, z = verso l'alto, origine = base del palo.
+ * Angolo di un ancoraggio: 0 = dietro il palo (opposto al vuoto), positivo a destra guardando verso il vuoto.
+ * Viste: 3D, pianta e profilo, tutte disegnate a mano (nessuna libreria), funzionano anche offline.
  */
 FireOps.registra({
   id: "palo",
@@ -21,6 +22,15 @@ FireOps.registra({
 .pg-palo .barra { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
 .pg-palo .barra button { flex: 1 1 auto; min-height: 44px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
 .pg-palo .riga { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+.pg-palo .riga3, .pg-palo .riga4 { display: grid; gap: 8px; margin-top: 8px; align-items: center; }
+.pg-palo .riga3 { grid-template-columns: 1fr 1fr 1fr; }
+.pg-palo .riga4 { grid-template-columns: 68px 1fr 1fr 1fr; font-size: 13px; }
+.pg-palo .riga3.tt { grid-template-columns: 68px 1fr 1fr 1fr; font-size: 11.5px; color: var(--text-dim); margin-top: 0; }
+.pg-palo canvas.pi { height: 260px; cursor: default; }
+.pg-palo .geo { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+.pg-palo .geo td, .pg-palo .geo th { padding: 5px 3px; border-top: 1px solid var(--line); text-align: right; font-weight: 600; }
+.pg-palo .geo th { color: var(--text-dim); font-size: 11.5px; font-weight: 400; }
+.pg-palo .geo td:first-child, .pg-palo .geo th:first-child { text-align: left; }
 .pg-palo .riga:first-of-type { margin-top: 0; }
 .pg-palo label { display: block; font-size: 12.5px; color: var(--text-dim); margin-bottom: 4px; }
 .pg-palo select, .pg-palo input[type=number] { width: 100%; min-height: 44px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--text); font: inherit; font-size: 16px; }
@@ -39,6 +49,12 @@ FireOps.registra({
 
   html: `
 <div class="blocco">
+  <h2 class="tit">Pianta</h2>
+  <div class="vista"><canvas id="pl-pi" class="pi" role="img" aria-label="Pianta del montaggio: trascina i punti"></canvas></div>
+  <p class="nota">Trascina i punti blu (ancoraggi dei tiranti) e verde (recupero). Distanze e direzioni si aggiornano, le quote le scrivi qui sotto. Direzione: 0° verso il vuoto, 90° a sinistra guardando il vuoto, 180° dietro.</p>
+</div>
+
+<div class="blocco">
   <h2 class="tit">Vista 3D</h2>
   <div class="vista"><canvas id="pl-cv" tabindex="0" role="img" aria-label="Palo pescante in 3D: trascina per ruotare"></canvas></div>
   <div class="barra">
@@ -53,19 +69,32 @@ FireOps.registra({
 </div>
 
 <div class="blocco">
-  <h2 class="tit">Montaggio</h2>
-  <div class="riga">
-    <div><label for="pl-L">Lunghezza del palo (m)</label><input type="number" id="pl-L" inputmode="decimal" min="1" max="12" step="0.1" value="4"></div>
-    <div><label for="pl-th">Inclinazione verso il vuoto (°)</label><input type="number" id="pl-th" inputmode="decimal" min="0" max="45" step="1" value="10"></div>
+  <h2 class="tit">Palo</h2>
+  <div class="riga3">
+    <div><label for="pl-L">Lunghezza (m)</label><input type="number" id="pl-L" inputmode="decimal" min="1" max="12" step="0.1" value="4"></div>
+    <div><label for="pl-th">Inclinazione (°)</label><input type="number" id="pl-th" inputmode="decimal" min="0" max="45" step="1" value="10"></div>
+    <div><label for="pl-ph">Verso (°)</label><input type="number" id="pl-ph" inputmode="decimal" min="-180" max="360" step="5" value="0"></div>
   </div>
-  <div class="riga">
-    <div><label for="pl-d">Distanza ancoraggi tiranti dalla base (m)</label><input type="number" id="pl-d" inputmode="decimal" min="0.5" max="30" step="0.1" value="5"></div>
-    <div><label for="pl-be">Apertura dei tiranti (°)</label><input type="number" id="pl-be" inputmode="decimal" min="0" max="85" step="1" value="35"></div>
-  </div>
-  <div class="riga">
-    <div><label for="pl-p">Punto di recupero: distanza dietro la base (m)</label><input type="number" id="pl-p" inputmode="decimal" min="0" max="30" step="0.1" value="0"></div>
-    <div><label for="pl-ds">Dislivello degli ancoraggi (m)</label><input type="number" id="pl-ds" inputmode="decimal" min="-5" max="5" step="0.1" value="0"></div>
-  </div>
+  <p class="nota">Inclinazione dalla verticale. Verso: 0° = inclinato verso il vuoto.</p>
+</div>
+
+<div class="blocco">
+  <h2 class="tit">Ancoraggi e recupero</h2>
+  <div class="riga3 tt"><span></span><span>Distanza dalla base (m)</span><span>Direzione (°)</span><span>Quota sulla base (m)</span></div>
+  <div class="riga4"><b style="color:#4A93C8">Tirante 1</b>
+    <input type="number" id="pl-a1d" inputmode="decimal" min="0.3" step="0.1" value="5" aria-label="Distanza tirante 1">
+    <input type="number" id="pl-a1a" inputmode="decimal" step="1" value="145" aria-label="Direzione tirante 1">
+    <input type="number" id="pl-a1z" inputmode="decimal" step="0.1" value="0" aria-label="Quota tirante 1"></div>
+  <div class="riga4"><b style="color:#4A93C8">Tirante 2</b>
+    <input type="number" id="pl-a2d" inputmode="decimal" min="0.3" step="0.1" value="5" aria-label="Distanza tirante 2">
+    <input type="number" id="pl-a2a" inputmode="decimal" step="1" value="215" aria-label="Direzione tirante 2">
+    <input type="number" id="pl-a2z" inputmode="decimal" step="0.1" value="0" aria-label="Quota tirante 2"></div>
+  <div class="riga4"><b style="color:#2f9e5b">Recupero</b>
+    <input type="number" id="pl-pd" inputmode="decimal" min="0" step="0.1" value="0" aria-label="Distanza punto di recupero">
+    <input type="number" id="pl-pa" inputmode="decimal" step="1" value="180" aria-label="Direzione punto di recupero">
+    <input type="number" id="pl-pz" inputmode="decimal" step="0.1" value="0" aria-label="Quota punto di recupero"></div>
+  <p class="nota">Ogni ancoraggio ha la sua distanza, direzione e quota (+ sopra la base, − sotto): puoi metterli a quote diverse, per esempio uno su un albero e uno a terra.</p>
+  <div id="pl-geo"></div>
 </div>
 
 <div class="blocco">
@@ -107,16 +136,14 @@ FireOps.registra({
     let geo = null;   // ultimo calcolo, usato dal disegno
 
     function calcola() {
-      const L = Math.max(0.5, num("#pl-L", 4)), th = Math.min(60, Math.max(0, num("#pl-th", 10))) * RAD;
-      const d = Math.max(0.3, num("#pl-d", 5)), be = Math.min(88, Math.max(0, num("#pl-be", 35))) * RAD;
-      const p = Math.max(0, num("#pl-p", 0)), dz = num("#pl-ds", 0);
+      const L = Math.max(0.5, num("#pl-L", 4)), th = Math.min(60, Math.max(0, num("#pl-th", 10))) * RAD, ph = num("#pl-ph", 0) * RAD;
       const kg = Math.max(0, num("#pl-kg", 200)), eta = Math.min(1, Math.max(0.5, num("#pl-eta", 0.95)));
       const E = num("#pl-mat", 70) * 1e9, Dm = Math.max(10, num("#pl-D", 80)) / 1000, sp = Math.min(Dm / 2 - 0.0005, Math.max(0.5, num("#pl-s", 4)) / 1000);
       const R = Math.max(0, num("#pl-r", 22));
+      const polare = (id, dmin) => { const d = Math.max(dmin, num("#pl-" + id + "d", 5)), an = num("#pl-" + id + "a", 0) * RAD; return [d * Math.cos(an), d * Math.sin(an), num("#pl-" + id + "z", 0)]; };
 
-      const B = [0, 0, 0], H = [L * Math.sin(th), 0, L * Math.cos(th)];
-      const A1 = [-d * Math.cos(be), d * Math.sin(be), dz], A2 = [-d * Math.cos(be), -d * Math.sin(be), dz];
-      const P = [-p, 0, 0];
+      const B = [0, 0, 0], H = [L * Math.sin(th) * Math.cos(ph), L * Math.sin(th) * Math.sin(ph), L * Math.cos(th)];
+      const A1 = polare("a1", 0.3), A2 = polare("a2", 0.3), P = polare("p", 0);
       const W = kg * G, T = W / eta;
       const a = uni(sub(H, B)), s1 = uni(sub(A1, H)), s2 = uni(sub(A2, H)), h = uni(sub(P, H));
       // C*a + t1*s1 + t2*s2 = -(T*h + W*(0,0,-1))
@@ -132,13 +159,14 @@ FireOps.registra({
       const I = Math.PI / 64 * (Math.pow(Dm, 4) - Math.pow(Dm - 2 * sp, 4));
       const Pcr = Math.PI * Math.PI * E * I / (L * L);
       geo = {B, H, A1, A2, P, L, W, T, ok: isFinite(C) && t1 > 0 && t2 > 0 && C > 0};
+      tabellaGeo(H, A1, A2, P, t1, t2);
 
       const avv = [];
       if (!isFinite(C)) avv.push("Configurazione indeterminata: i tiranti sono allineati con il palo. Cambia apertura o distanza.");
       else {
         if (t1 <= 0 || t2 <= 0) avv.push("Un tirante risulta scarico: con questa inclinazione il capo di recupero tira il palo all’indietro più di quanto lo sbalzo lo spinga in fuori, e il palo tenderebbe a tornare verso la verticale. Aumenta l’inclinazione o avvicina il punto di recupero alla base.");
         if (C <= 0) avv.push("Il palo risulta teso invece che compresso: controlla i dati.");
-        const el = Math.atan2(H[2] - A1[2], Math.hypot(H[0] - A1[0], H[1] - A1[1])) / RAD;
+        const el = Math.max(...[A1, A2].map(q => Math.atan2(H[2] - q[2], Math.hypot(H[0] - q[0], H[1] - q[1])) / RAD));
         if (el > 60) avv.push("I tiranti sono molto ripidi (" + fmt(el, 0) + "° sull’orizzontale): lavorano male. Allontana gli ancoraggi.");
         if (Pcr > 0 && C > Pcr / 3) avv.push("La compressione supera un terzo del carico di instabilità del palo: usa un tubo più robusto o più corto.");
         if (R > 0 && Math.max(t1, t2) / 1000 > R / 3) avv.push("Il tirante più carico supera un terzo della resistenza indicata per ancoraggi e tiranti.");
@@ -158,6 +186,38 @@ FireOps.registra({
       $("#pl-avv").innerHTML = avv.map(t => '<div class="avv">' + t + "</div>").join("");
       disegna();
     }
+
+    // ---------- pianta e angoli ----------
+    let pianta = null;
+    function tabellaGeo(H, A1, A2, P, t1, t2) {
+      const el = q => Math.atan2(H[2] - q[2], Math.hypot(H[0] - q[0], H[1] - q[1])) / RAD;
+      const lung = q => len(sub(q, H));
+      const dirPalo = Math.atan2(H[1], H[0]) / RAD;
+      const ang = (a, b) => { let d = Math.abs(Math.atan2(a[1], a[0]) - Math.atan2(b[1], b[0])) / RAD; return d > 180 ? 360 - d : d; };
+      const riga = (n, q, col, t) => '<tr><td style="color:' + col + '">' + n + '</td><td>' + fmt(lung(q), 2) + ' m</td><td>' + fmt(el(q), 0) + '°</td><td>' + (isFinite(t) ? fmt(t / 1000, 2) + " kN" : "—") + "</td></tr>";
+      $("#pl-geo").innerHTML = '<table class="geo"><tr><th></th><th>Lunghezza</th><th>Angolo sull’orizzontale</th><th>Tiro</th></tr>' +
+        riga("Tirante 1", A1, "#4A93C8", t1) + riga("Tirante 2", A2, "#4A93C8", t2) + riga("Recupero", P, "#2f9e5b", geo ? geo.T : NaN) + "</table>" +
+        '<p class="nota">Angolo tra i due tiranti in pianta: ' + fmt(ang(A1, A2), 0) + "°. Altezza della testa: " + fmt(H[2], 2) + " m.</p>";
+      if (!pianta) return;
+      const pr = (id, q, col, nome) => ({id, x: q[0], y: q[1], col, nome, sotto: (q[2] >= 0 ? "+" : "") + fmt(q[2], 1) + " m"});
+      pianta.set([
+        {id: "B", x: 0, y: 0, fisso: true, col: "#eceff3", nome: "Base", ly: 30},
+        {id: "H", x: H[0], y: H[1], fisso: true, col: "#ffd700", nome: "Testa", sotto: "+" + fmt(H[2], 1) + " m", ly: -30},
+        pr("a1", A1, "#4A93C8", "T1"), pr("a2", A2, "#4A93C8", "T2"), Object.assign(pr("p", P, "#2f9e5b", "Recupero"), {ly: 60})
+      ], [
+        {a: "B", b: "H", col: "#ffd700", lw: 5},
+        {a: "H", b: "a1", col: "#4A93C8", dash: [6, 4], testo: fmt(lung(A1), 1) + " m"},
+        {a: "H", b: "a2", col: "#4A93C8", dash: [6, 4], testo: fmt(lung(A2), 1) + " m"},
+        {a: "H", b: "p", col: "#2f9e5b", dash: [6, 4]}
+      ]);
+    }
+    const sincro = (id, x, y) => {
+      const d = Math.hypot(x, y), an = Math.atan2(y, x) / RAD;
+      $("#pl-" + id + "d").value = fmt(d, 1).replace(",", ".");
+      $("#pl-" + id + "a").value = String(Math.round(an < 0 ? an + 360 : an));
+      calcola();
+    };
+    const avviaPianta = () => { pianta = SafPianta.crea($("#pl-pi"), {onMove: sincro}); calcola(); };
 
     // ---------- vista 3D ----------
     const cv = $("#pl-cv"), ctx = cv.getContext("2d");
@@ -253,8 +313,10 @@ FireOps.registra({
 
     root.addEventListener("input", calcola);
     root.addEventListener("change", calcola);
-    window.addEventListener("resize", disegna);
+    window.addEventListener("resize", () => { disegna(); if (pianta) pianta.disegna(); });
     calcola();
     setTimeout(disegna, 100);
+    if (window.SafPianta) avviaPianta();
+    else { const sc = document.createElement("script"); sc.src = "js/saf-pianta.js?v=" + (window.FIREOPS_VERSIONE || ""); sc.onload = avviaPianta; document.head.appendChild(sc); }
   }
 });
