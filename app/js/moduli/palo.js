@@ -242,7 +242,10 @@ FireOps.registra({
       const tmaxV = Math.max.apply(null, t.filter(v => isFinite(v)).concat([0]));
       const Mr = len(cross(H, Fc));                                   // momento ribaltante di carico + recupero rispetto alla base
       const fsScivol = isFinite(attr) && attr > 0 ? mu / attr : (isFinite(attr) ? Infinity : 0);
-      const fsRibalt = R > 0 && tmaxV > 0 ? R * 1000 / tmaxV : NaN;
+      // ribaltamento: il momento di carico appeso + tiro esterno attorno alla base deve essere contrastato da tiranti che lavorano
+      // solo a trazione (t >= 0); se per equilibrio servirebbe un tiro negativo (tirante in compressione) il palo si ribalta
+      const tiranteCompresso = !ris || (!cfgB && t.some(v => !(v > 1e-6)));
+      const fsRibalt = tiranteCompresso ? 0 : (R > 0 && tmaxV > 0 ? R * 1000 / tmaxV : NaN);
       const ok = !!ris && C > 0 && cavi.every((c, i) => !isNaN(t[i]) && (cfgB || t[i] > 0));
       // forze sui punti d'appoggio: il cavo tira l'ancoraggio verso la testa, il palo spinge il terreno lungo l'asse
       const forze = cavi.map((c, i) => ({pos: c.pos, F: per(uni(sub(H, c.pos)), Math.max(0, t[i] || 0)), nome: c.nome, col: "#ff9f1c"}));
@@ -252,7 +255,7 @@ FireOps.registra({
       tabellaGeo(H, cavi, P, t, T, interno);
 
       const avv = [];
-      if (!ris) avv.push(cfgB ? "Con questi cavi il sistema non regge: serve almeno un cavo che trattenga il carico, oppure cambia posizioni." : "Configurazione indeterminata: i tiranti sono allineati con il palo. Cambia apertura o distanza.");
+      if (!ris) avv.push("Ribaltamento: nessuna combinazione di tiranti in trazione contrasta il momento di carico e recupero. " + (cfgB ? "Con questi cavi il sistema non regge: serve almeno un cavo che trattenga il carico, oppure cambia posizioni." : "Configurazione indeterminata: i tiranti sono allineati con il palo. Cambia apertura o distanza."));
       else {
         if (!cfgB && t.some(v => v <= 0)) avv.push("Un tirante risulta scarico: con questa inclinazione il capo di recupero tira il palo all’indietro più di quanto lo sbalzo lo spinga in fuori, e il palo tenderebbe a tornare verso la verticale. Aumenta l’inclinazione o avvicina il punto di recupero alla base.");
         if (cfgB) cavi.forEach((c, i) => { if (!ris.attivi[i]) avv.push(c.nome + " risulta scarico (non lavora in questa condizione): serve solo se il carico cambia direzione."); });
@@ -262,7 +265,8 @@ FireOps.registra({
         if (Pcr > 0 && C > Pcr / 3) avv.push("La compressione supera un terzo del carico di instabilità del palo: usa un tubo più robusto o più corto.");
         if (R > 0 && Math.max(...t.filter(v => isFinite(v))) / 1000 > R / 3) avv.push("Il cavo più carico supera un terzo della resistenza indicata per ancoraggi e tiranti.");
         if (isFinite(fsScivol) && fsScivol < 1.5) avv.push("Scivolamento della base: l’attrito richiesto (" + fmt(attr, 2) + ") è oltre i due terzi di quello disponibile (μ " + fmt(mu, 2) + "). Il piede del palo può scivolare e il palo ribaltarsi verso il vuoto: blocca la base con un arresto, una piastra o un ancoraggio, oppure riduci l’inclinazione.");
-        if (isFinite(fsRibalt) && fsRibalt < 3) avv.push("Ribaltamento: il margine sui tiranti è sotto 3. Se un tirante cede o si scarica il palo si ribalta verso il vuoto: rinforza i tiranti o riduci il carico.");
+        if (tiranteCompresso) avv.push("Ribaltamento: con il carico appeso e il tiro del recupero il momento attorno alla base non è contrastato da tiranti in trazione. I tiranti non lavorano a compressione: il palo si ribalta verso il vuoto. Porta gli ancoraggi più indietro, aumenta l’inclinazione verso il vuoto o avvicina il recupero alla base.");
+        else if (isFinite(fsRibalt) && fsRibalt < 3) avv.push("Ribaltamento: il margine sui tiranti è sotto 3. Se un tirante cede o si scarica il palo si ribalta verso il vuoto: rinforza i tiranti o riduci il carico.");
         if (attr > 0.5) avv.push("La base spinge molto di lato rispetto al verticale: serve un arresto o un ancoraggio della base contro lo scivolamento.");
         if (!interno && R > 0 && T / 1000 > R / 3) avv.push("Il capo di recupero carica il suo punto oltre un terzo della resistenza indicata.");
       }
@@ -281,7 +285,7 @@ FireOps.registra({
         elemento("Spinta orizzontale alla base", isFinite(Cg) ? k(Hb) : "—") +
         elemento("Scivolamento della base (μ " + fmt(mu, 2) + ")", isFinite(fsScivol) ? "× " + fmt(fsScivol, 1) + " <small>attrito richiesto " + fmt(isFinite(attr) ? attr : 0, 2) + "</small>" : "—", !(fsScivol >= 1.5)) +
         elemento("Momento ribaltante alla base", fmt(Mr / 1000, 2) + ' <small>kN·m</small>') +
-        elemento("Ribaltamento del palo", isFinite(fsRibalt) ? "× " + fmt(fsRibalt, 1) + " <small>sul cedimento dei tiranti</small>" : "—", isFinite(fsRibalt) && fsRibalt < 3);
+        elemento("Ribaltamento del palo", tiranteCompresso ? "RIBALTA <small>servirebbe un tirante compresso</small>" : isFinite(fsRibalt) ? "× " + fmt(fsRibalt, 1) + " <small>carico + tiro esterno, tiranti solo a trazione</small>" : "—", tiranteCompresso || (isFinite(fsRibalt) && fsRibalt < 3));
       $("#pl-avv").innerHTML = avv.map(x => '<div class="avv">' + x + "</div>").join("");
       disegna();
     }
