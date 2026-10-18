@@ -1,14 +1,16 @@
-/* FireOps - "Gestione ricerca": ricerche aperte e registrazione del personale.
- * Fogli: "DB_Ricerche_Gestione" (ricerche aperte/chiuse) e "DB_Registrazioni" (persone registrate).
+/* FireOps - "Gestione ricerca" / "SAR - Gestione ricerca": ricerche aperte, registrazione del personale
+ * e stato condiviso della ricerca (personale per giorno, squadre, zone, orari).
+ * Fogli: "DB_Ricerche_Gestione" (ricerche aperte/chiuse), "DB_Registrazioni" (persone registrate con il QR),
+ * "DB_SAR_Stato" (stato della ricerca usato dalla scheda SAR del sito, una riga per ricerca).
  * Da incollare nello stesso progetto Apps Script della Web App usata da Messaggistica, Locator e Info Comandi
  * (quella con URL ...AKfycbyp6jQ331Yk5q7_hkM74ZyhUh1c3zQUJG7SpuoE18HslBO36YKSTYIQf-z7gSwXR4Yv/exec).
  * rispostaJson_() c'e' gia' (utilizzo.gs): non va copiata di nuovo.
  *
  * 1) Dentro doPost(e), dove si smista per "foglio", aggiungere:
- *      if (payload.foglio === "DB_Registrazioni" || payload.foglio === "DB_Ricerche_Gestione") return rispostaJson_(gestioneRicercaPost_(payload));
+ *      if (["DB_Registrazioni", "DB_Ricerche_Gestione", "DB_SAR_Stato"].indexOf(payload.foglio) >= 0) return rispostaJson_(gestioneRicercaPost_(payload));
  *    (payload = JSON.parse(e.postData.contents), come per gli altri fogli)
  * 2) Dentro doGet(e), in cima, aggiungere:
- *      if (e.parameter && (e.parameter.registrazioni || e.parameter.ricercheAperte !== undefined)) return rispostaJson_(gestioneRicercaGet_(e.parameter));
+ *      if (e.parameter && (e.parameter.registrazioni || e.parameter.sarStato || e.parameter.ricercheAperte !== undefined)) return rispostaJson_(gestioneRicercaGet_(e.parameter));
  * 3) Distribuisci di nuovo la Web App ("Gestisci distribuzioni" > modifica > "Nuova versione"), accesso "Chiunque".
  *
  * ID ricerca: stesso formato di Messaggistica (numero intervento a 8 cifre _ anno _ sigla Comando,
@@ -49,6 +51,7 @@ function gestioneRicercaPost_(p) {
   lock.waitLock(10000);
   try {
     if (p.foglio === GR_RICERCHE_) return grRicercaPost_(p);
+    if (p.foglio === GR_STATO_) return grStatoPost_(p);
     return grRegistra_(p);
   } finally {
     lock.releaseLock();
@@ -103,13 +106,26 @@ function grRegistra_(p) {
 
 function gestioneRicercaGet_(q) {
   const shR = grFoglio_(GR_RICERCHE_, GR_RICERCHE_INT_);
-  // Ricerche aperte (di un Comando, o una sola per ID): senza chiave, solo ID, nome e Comando
+  // Ricerche aperte (di un Comando, o una sola per ID): senza chiave, solo ID, nome e Comando.
+  // Con tutte=1 anche quelle chiuse negli ultimi 30 giorni (elenco della scheda SAR del sito).
   if (q.ricercheAperte !== undefined) {
-    const sigla = grTesto_(q.ricercheAperte, 12).toUpperCase(), solo = grTesto_(q.id, 40);
+    const sigla = grTesto_(q.ricercheAperte, 12).toUpperCase(), solo = grTesto_(q.id, 40), tutte = q.tutte === "1";
+    const limite = Date.now() - 30 * 24 * 3600 * 1000;
     const ricerche = shR.getDataRange().getValues().slice(1)
-      .filter(r => r[5] === "aperta" && (solo ? String(r[0]) === solo : (!sigla || String(r[1]).toUpperCase() === sigla)))
-      .map(r => ({id: String(r[0]), sigla: String(r[1]), comando: String(r[2]), nome: String(r[3]), aperta: r[6] instanceof Date ? r[6].toISOString() : ""}));
+      .filter(r => (r[5] === "aperta" || (tutte && r[7] instanceof Date && r[7].getTime() >= limite)) &&
+        (solo ? String(r[0]) === solo : (!sigla || String(r[1]).toUpperCase() === sigla)))
+      .map(r => ({id: String(r[0]), sigla: String(r[1]), comando: String(r[2]), nome: String(r[3]), stato: String(r[5]),
+        aperta: r[6] instanceof Date ? r[6].toISOString() : "", chiusa: r[7] instanceof Date ? r[7].toISOString() : ""}));
     return {ok: true, ricerche: ricerche};
+  }
+  // Stato condiviso della ricerca: solo con la chiave. Con v=<versione> e nulla di nuovo risponde "invariato".
+  if (q.sarStato) {
+    const id = grTesto_(q.sarStato, 40);
+    const ric = GR_ID_RE_.test(id) ? grTrovaRicerca_(shR, id) : null;
+    if (!ric || String(ric.v[4]) !== grTesto_(q.chiave, 40)) return {ok: false, errore: "chiave non valida"};
+    const st = grLeggiStato_(id);
+    if (q.v && Number(q.v) === st.versione) return {ok: true, versione: st.versione, invariato: true, statoRicerca: String(ric.v[5])};
+    return {ok: true, versione: st.versione, stato: st.stato, statoRicerca: String(ric.v[5])};
   }
   // Registrati: solo con la chiave della ricerca
   const codice = grTesto_(q.registrazioni, 40);
@@ -120,4 +136,71 @@ function gestioneRicercaGet_(q) {
     .map(r => ({id: String(r[2]), registrata: r[1] instanceof Date ? r[1].toISOString() : "", ente: String(r[3]), cognome: String(r[4]), nome: String(r[5]),
       qual: String(r[6]), ruolo: String(r[7]), tel: String(r[8]), spec: String(r[9]).split(",").filter(Boolean), note: String(r[10])}));
   return {ok: true, stato: String(ric.v[5]), persone: persone};
+}
+
+/* ------------------------------------------------------------------------------------------
+ * STATO CONDIVISO (scheda "SAR - Gestione ricerca" del sito)
+ * Lo stato e' un JSON con raccolte di elementi {id, t, del?}: pers (personale), sq (squadre),
+ * zone, ass (assegnazioni squadra-zona con orari). Ogni PC manda il suo stato intero: qui si fonde
+ * con quello salvato elemento per elemento (vince l'elemento con "t" piu' recente; le cancellazioni
+ * restano come del:true), cosi' due operatori che lavorano insieme non si cancellano a vicenda.
+ * Il JSON sta nella riga della ricerca, spezzato in celle da 45.000 caratteri (limite Sheets 50.000).
+ * ------------------------------------------------------------------------------------------ */
+const GR_STATO_ = "DB_SAR_Stato";
+const GR_RACCOLTE_ = ["pers", "sq", "zone", "ass"];
+const GR_PEZZO_ = 45000;
+
+function grLeggiStato_(id) {
+  const sh = grFoglio_(GR_STATO_, ["IdRicerca", "Versione", "Aggiornato", "Stato (JSON a pezzi)"]);
+  const dati = sh.getDataRange().getValues();
+  for (let i = 1; i < dati.length; i++) {
+    if (String(dati[i][0]) === id) {
+      const testo = dati[i].slice(3).map(String).join("");
+      let stato = {};
+      try { stato = testo ? JSON.parse(testo) : {}; } catch (e) { stato = {}; }
+      return {riga: i + 1, versione: Number(dati[i][1]) || 0, stato: stato};
+    }
+  }
+  return {riga: 0, versione: 0, stato: {}};
+}
+
+function grFondi_(vecchio, nuovo) {
+  const out = {v: 1};
+  const iv = vecchio.info || {}, in_ = nuovo.info || {};
+  out.info = (Number(in_.t) || 0) >= (Number(iv.t) || 0) ? in_ : iv;
+  GR_RACCOLTE_.forEach(k => {
+    const m = {};
+    (vecchio[k] || []).forEach(e => { if (e && e.id) m[e.id] = e; });
+    (nuovo[k] || []).forEach(e => {
+      if (!e || !e.id) return;
+      const g = m[e.id];
+      if (!g || (Number(e.t) || 0) >= (Number(g.t) || 0)) m[e.id] = e;
+    });
+    out[k] = Object.keys(m).map(x => m[x]);
+  });
+  return out;
+}
+
+function grStatoPost_(p) {
+  const id = grTesto_(p.id, 40);
+  const ric = GR_ID_RE_.test(id) ? grTrovaRicerca_(grFoglio_(GR_RICERCHE_, GR_RICERCHE_INT_), id) : null;
+  if (!ric || String(ric.v[4]) !== grTesto_(p.chiave, 40)) return {ok: false, errore: "chiave non valida"};
+  if (!p.stato || typeof p.stato !== "object") return {ok: false, errore: "dati mancanti"};
+  const st = grLeggiStato_(id);
+  const fuso = grFondi_(st.stato, p.stato);
+  const testo = JSON.stringify(fuso);
+  const pezzi = [];
+  for (let i = 0; i < testo.length; i += GR_PEZZO_) pezzi.push(testo.slice(i, i + GR_PEZZO_));
+  const versione = st.versione + 1;
+  const sh = grFoglio_(GR_STATO_, ["IdRicerca", "Versione", "Aggiornato", "Stato (JSON a pezzi)"]);
+  // l'apostrofo tiene ogni pezzo come testo: Sheets altrimenti trasforma "=...", numeri, date e TRUE/FALSE
+  const riga = [id, versione, new Date()].concat(pezzi.map(x => "'" + x));
+  if (st.riga) {
+    const vecchie = sh.getLastColumn();
+    if (vecchie > riga.length) sh.getRange(st.riga, riga.length + 1, 1, vecchie - riga.length).clearContent();
+    sh.getRange(st.riga, 1, 1, riga.length).setValues([riga]);
+  } else {
+    sh.appendRow(riga);
+  }
+  return {ok: true, versione: versione, stato: fuso};
 }

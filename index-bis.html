@@ -375,6 +375,19 @@
             </div>
         </section>
 
+        <!-- SAR - GESTIONE RICERCA PERSONA (solo BIS) -->
+        <section id="sar-gestione" class="page-section">
+            <div class="pagina-box pagina-box-larga">
+                <div class="pagina-box-header pagina-box-header-con-nota">
+                    <p class="pagina-nota pagina-nota-inline">Ricerca persona: ricerche aperte, personale giorno per giorno,
+                        squadre, zone e orari, condivisi fra i PC della Sala.</p>
+                    <button class="btn-toggle-radar btn-fullscreen-pagina" type="button"
+                        title="Espandi a schermo intero">⛶ Espandi</button>
+                </div>
+                <div id="sar-app"></div>
+            </div>
+        </section>
+
         <!-- HOME -->
         <section id="homepage" class="page-section">
             <p class="pagina-nota">
@@ -1359,6 +1372,7 @@
                 "sitac.js",
                 "qrcode.js",
                 "differibili.js",    // BIS: modulo Differibili (non presente in produzione)
+                "sar.js",            // BIS: SAR - Gestione ricerca persona (dopo qrcode.js e fireops-sfondi.js)
                 "normative-ricerca.js",
                 "qrcoder.js",
                 "utilizzo.js"
