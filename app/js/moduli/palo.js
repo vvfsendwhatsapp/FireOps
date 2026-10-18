@@ -143,7 +143,7 @@ FireOps.registra({
   <h3 class="tit" style="margin-top:12px;font-size:14px">Forze sugli ancoraggi, scomposte sui 3 assi</h3>
   <div id="pl-comp"></div>
   <div id="pl-compg" style="margin-top:8px"></div>
-  <p class="nota">Forza che ogni punto riceve (il tirante tira l’ancoraggio verso la testa del palo; alla base il palo spinge il terreno). X: verso il vuoto, positivo in fuori. Y: laterale, positivo a sinistra guardando il vuoto. Z: verticale, positivo verso l’alto, quindi uno Z negativo è una spinta verso il basso e uno Z positivo un’estrazione dal terreno. Nel 3D le componenti sono frecce a gradini, in scala propria per ogni punto (vale il numero scritto): rosso X, verde Y, blu Z (il pulsante «Componenti X Y Z» le nasconde).</p>
+  <p class="nota">Forza che ogni punto riceve (il tirante tira l’ancoraggio verso la testa del palo; alla base il palo spinge il terreno). X: verso il vuoto, positivo in fuori. Y: laterale, positivo a sinistra guardando il vuoto. Z: verticale, positivo verso l’alto, quindi uno Z negativo è una spinta verso il basso e uno Z positivo un’estrazione dal terreno. Nel 3D le componenti sono tre frecce che partono dal punto, una per asse, in scala propria per ogni punto (vale il numero scritto): rosso X, verde Y, blu Z (il pulsante «Componenti X Y Z» le nasconde).</p>
   <p class="nota">Modello semplificato: palo a cerniera alla base, tiranti e capo di recupero senza elasticità, nessuna forza dinamica né vento. Il carico di instabilità è quello di Eulero per tubo pieno di materiale ideale. Non sostituisce la verifica del produttore e dell’istruttore SAF.</p>
 </div>
 `,
@@ -490,18 +490,17 @@ FireOps.registra({
         ctx.font = "bold 11px sans-serif"; ctx.fillText(fmt(len(f.F) / 1000, 2) + " kN", t1[0] + 6, t1[1] + (f.base ? 14 : -4));
         // componenti sui tre assi: a gradini X, poi Y, poi Z
         const mc = Math.max(1, Math.abs(f.F[0]), Math.abs(f.F[1]), Math.abs(f.F[2])), l = L * 0.4 / mc, cx = f.F[0] * l, cy = f.F[1] * l, cz = f.F[2] * l;
-        const q1 = [f.pos[0] + cx, f.pos[1], f.pos[2]], q2 = [q1[0], q1[1] + cy, q1[2]];
+        const P0 = f.pos, q1 = [P0[0] + cx, P0[1], P0[2]], q2 = [P0[0], P0[1] + cy, P0[2]], q3 = [P0[0], P0[1], P0[2] + cz];
         if (mostraComp) {
-          const q3 = [q2[0], q2[1], q2[2] + cz], ff = 0.03 * mc;
-          [[f.pos, q1, "#d8262f", "X", f.F[0]], [q1, q2, "#2f9e5b", "Y", f.F[1]], [q2, q3, "#4A93C8", "Z", f.F[2]]].forEach(c => {
+          const ff = 0.03 * mc;
+          [[P0, q1, "#d8262f", "X", f.F[0]], [P0, q2, "#2f9e5b", "Y", f.F[1]], [P0, q3, "#4A93C8", "Z", f.F[2]]].forEach(c => {
             if (Math.abs(c[4]) < ff) return;
             const a0 = pr(c[0]), a1 = pr(c[1]), ag = Math.atan2(a1[1] - a0[1], a1[0] - a0[0]);
             ctx.strokeStyle = c[2]; ctx.fillStyle = c[2]; ctx.lineWidth = 3; ctx.globalAlpha = 0.95; ctx.setLineDash([]);
             ctx.beginPath(); ctx.moveTo(a0[0], a0[1]); ctx.lineTo(a1[0], a1[1]); ctx.stroke();
             ctx.beginPath(); ctx.moveTo(a1[0], a1[1]); ctx.lineTo(a1[0] - 8 * Math.cos(ag - 0.45), a1[1] - 8 * Math.sin(ag - 0.45)); ctx.lineTo(a1[0] - 8 * Math.cos(ag + 0.45), a1[1] - 8 * Math.sin(ag + 0.45)); ctx.fill();
-            ctx.font = "bold 10px sans-serif"; ctx.textAlign = "center"; ctx.fillText(c[3] + " " + fmt(c[4] / 1000, 2), (a0[0] + a1[0]) / 2 + 12, (a0[1] + a1[1]) / 2 - 4); ctx.textAlign = "left"; ctx.globalAlpha = 1;
+            ctx.font = "bold 10px sans-serif"; ctx.textAlign = a1[0] >= a0[0] ? "left" : "right"; ctx.fillText(c[3] + " " + fmt(c[4] / 1000, 2), a1[0] + (a1[0] >= a0[0] ? 8 : -8), a1[1] + 4); ctx.textAlign = "left"; ctx.globalAlpha = 1;
           });
-          linea(f.pos, q3, "#8b96a3", 1, [2, 3]);
         }
       });
       // risultante sulla testa (freccia)
