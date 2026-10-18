@@ -46,6 +46,9 @@ header h1 b{color:#ff5a6e;font-weight:600}
 .chip{display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:99px;background:var(--chip);border:1px solid transparent;cursor:pointer;white-space:nowrap;font-size:13px;user-select:none}
 .chip .dot{width:10px;height:10px;border-radius:50%}
 .chip.off{opacity:.4;text-decoration:line-through}
+.chip.on{background:var(--ink);color:var(--panel)}
+.chip.on small{color:inherit;opacity:.75}
+.chip.dim{opacity:.45}
 .chip small{color:var(--muted)}
 .chips .sep{width:1px;background:var(--line);flex:none;margin:2px 4px}
 
@@ -276,8 +279,8 @@ const base = {
 };
 base['Stradale'].addTo(map);
 // selettore sfondi condiviso di FireOps (sfondo + uno in trasparenza); ripiego: il vecchio controllo
-if (!(window.FireOpsSfondi && FireOpsSfondi.aggiungi(map, {sostituisci: [base['Stradale']], posizione: 'topright'})))
-  L.control.layers(base, null, {position: 'topright'}).addTo(map);
+if (!(window.FireOpsSfondi && FireOpsSfondi.aggiungi(map, {sostituisci: [base['Stradale']], posizione: 'topleft'})))
+  L.control.layers(base, null, {position: 'topleft'}).addTo(map);
 L.control.scale({imperial: false}).addTo(map);
 const cluster = L.markerClusterGroup({showCoverageOnHover: false, maxClusterRadius: 45, disableClusteringAtZoom: 15, chunkedLoading: true});
 map.addLayer(cluster);
@@ -471,7 +474,7 @@ let PROV = {};                         // sigla -> {provincia, regione}, ricavat
 let REMOTE = [];                       // correzioni lette dal foglio
 let CONCLUSI = new Map();              // sigla -> ultima correzione "comando/<sigla>" (stato convalidata = concluso)
 let coda = ls.get(CODA, []);           // correzioni non ancora inviate (o tutte, in modalita' locale)
-let state = {q: '', reg: '', prov: '', stato: '', off: [], me: null, noConcl: false};
+let state = {q: '', reg: '', prov: '', stato: '', sel: [], me: null, noConcl: false};
 let meMarker = null, shown = [], limit = 200, aperta = null, spostando = false, inviando = false;
 
 function toast(t, ms = 2500) { const m = $('msg'); m.textContent = t; m.style.display = 'block'; clearTimeout(toast.h); toast.h = setTimeout(() => m.style.display = 'none', ms); }
@@ -897,10 +900,10 @@ $('panel').addEventListener('submit', e => { e.preventDefault(); salva(); });
 
 // ---------------------------------------------------------------- filtri, elenco, mappa
 function filtra() {
-  const q = norm(state.q).trim(), off = new Set(state.off);
+  const q = norm(state.q).trim(), sel = new Set(state.sel || []);
   return SEDI.filter(s => {
     const e = s.e;
-    if (off.has(e.tipo)) return false;
+    if (sel.size && !sel.has(e.tipo)) return false;   // tipi selezionati nei filtri rapidi: mostro solo quelli
     if (state.reg && e.regione !== state.reg) return false;
     if (state.prov && (e.sigla || 'XX') !== state.prov) return false;
     if (state.noConcl && concluso(e.sigla)) return false;
@@ -926,7 +929,7 @@ function opzioniProvince() {
 }
 
 function chips() {
-  const conta = {}, off = new Set(state.off);
+  const conta = {}, sel = new Set(state.sel || []);
   let conv = 0, tot = 0;
   SEDI.forEach(s => {
     if (state.reg && s.e.regione !== state.reg) return;
@@ -936,7 +939,7 @@ function chips() {
     if (convalidata(s)) conv++;
   });
   $('chips').innerHTML = Object.keys(TIPI).filter(t => conta[t]).map(t =>
-    `<span class="chip ${off.has(t) ? 'off' : ''}" data-t="${t}"><span class="dot" style="background:${COL[t]}"></span>${TIPI[t]} <small>${conta[t]}</small></span>`).join('') +
+    `<span class="chip ${sel.has(t) ? 'on' : sel.size ? 'dim' : ''}" data-t="${t}" title="${sel.has(t) ? 'Clic: togli dalla selezione' : 'Clic: mostra solo questo tipo (altri clic ne aggiungono)'}"><span class="dot" style="background:${COL[t]}"></span>${TIPI[t]} <small>${conta[t]}</small></span>`).join('') +
     `<span class="sep"></span><span class="chip" data-conv="1" title="Mostra le sedi ancora da convalidare"><span class="st convalidata">✔ ${conv}/${tot}</span> <small>convalidate</small></span>` +
     `<span class="chip concl ${state.noConcl ? 'on' : ''}" data-concl="1" title="Nascondi le sedi dei Comandi già conclusi">🏁 ${nConclusi()} <small>Comandi conclusi · ✅ ${REGIONI.filter(regioneCompleta).length}/${REGIONI.length} regioni${state.noConcl ? ' · nascosti' : ''}</small></span>`;
   bottoneConcluso();
@@ -954,9 +957,11 @@ function lista() {
     (shown.length > limit ? `<button class="btn more" id="more">Mostra altre ${Math.min(200, shown.length - limit)} di ${shown.length - limit}</button>` : '');
 }
 
+const ALFA = new Intl.Collator('it', {sensitivity: 'base', numeric: true});
 function aggiorna(fit) {
   shown = filtra();
   if (state.me) { shown.forEach(s => s.dist = km(state.me[0], state.me[1], s.lat, s.lon)); shown.sort((a, b) => a.dist - b.dist); }
+  else shown.sort((a, b) => ALFA.compare(titolo(a.e), titolo(b.e)));   // colonna sinistra in ordine alfabetico
   limit = 200;
   cluster.clearLayers();
   cluster.addLayers(shown.map(s => s.m));
@@ -998,8 +1003,9 @@ $('chips').addEventListener('click', e => {
   if (c.dataset.conv) { state.stato = state.stato === 'da_conv' ? '' : 'da_conv'; $('stato').value = state.stato; aggiorna(false); return; }
   if (c.dataset.concl) { state.noConcl = !state.noConcl; aggiorna(false); return; }
   if (c.dataset.uff) { state.uff = !state.uff; disegnaUfficiali().then(() => aggiorna(false)); return; }
-  const off = new Set(state.off); off.has(c.dataset.t) ? off.delete(c.dataset.t) : off.add(c.dataset.t);
-  state.off = [...off]; aggiorna(false);
+  if (!c.dataset.t) return;
+  const sel = new Set(state.sel || []); sel.has(c.dataset.t) ? sel.delete(c.dataset.t) : sel.add(c.dataset.t);
+  state.sel = [...sel]; aggiorna(false);
 });
 $('list').addEventListener('click', e => {
   if (e.target.id === 'more') { limit += 200; lista(); return; }
@@ -1295,7 +1301,7 @@ $('reset').addEventListener('click', () => {
     if (confirm(msg)) { coda = []; ls.del(CODA); ricalcolaCorrezioni(); }
   }
   ls.del(STORE);
-  state = {q: '', reg: '', prov: '', stato: '', off: [], me: null, noConcl: false};
+  state = {q: '', reg: '', prov: '', stato: '', sel: [], me: null, noConcl: false};
   chiudiGeo();
   if (meMarker) map.removeLayer(meMarker); meMarker = null; $('near').classList.remove('on');
   chiudiScheda();
