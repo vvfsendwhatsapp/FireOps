@@ -139,6 +139,9 @@ FireOps.registra({
   <h2 class="tit">5 · Forze</h2>
   <div class="grid" id="pl-ris"></div>
   <div id="pl-avv"></div>
+  <h3 class="tit" style="margin-top:12px;font-size:14px">Forze sugli ancoraggi, scomposte sui 3 assi</h3>
+  <div id="pl-comp"></div>
+  <p class="nota">Forza che ogni punto riceve (il tirante tira l’ancoraggio verso la testa del palo; alla base il palo spinge il terreno). X: verso il vuoto, positivo in fuori. Y: laterale, positivo a sinistra guardando il vuoto. Z: verticale, positivo verso l’alto, quindi uno Z negativo è una spinta verso il basso e uno Z positivo un’estrazione dal terreno. Nel 3D le componenti sono tratteggiate: rosso X, verde Y, blu Z.</p>
   <p class="nota">Modello semplificato: palo a cerniera alla base, tiranti e capo di recupero senza elasticità, nessuna forza dinamica né vento. Il carico di instabilità è quello di Eulero per tubo pieno di materiale ideale. Non sostituisce la verifica del produttore e dell’istruttore SAF.</p>
 </div>
 `,
@@ -301,6 +304,9 @@ FireOps.registra({
         elemento("Scivolamento della base (μ " + fmt(mu, 2) + ")", isFinite(fsScivol) ? "× " + fmt(fsScivol, 1) + " <small>attrito richiesto " + fmt(isFinite(attr) ? attr : 0, 2) + "</small>" : "—", !(fsScivol >= 1.5)) +
         elemento("Momento ribaltante alla base", fmt(Mr / 1000, 2) + ' <small>kN·m</small>') +
         elemento("Ribaltamento del palo", tiranteCompresso ? "RIBALTA <small>servirebbe un tirante compresso</small>" : isFinite(fsRibalt) ? "× " + fmt(fsRibalt, 1) + " <small>carico + tiro esterno, tiranti solo a trazione</small>" : "—", tiranteCompresso || (isFinite(fsRibalt) && fsRibalt < 3));
+      const cc = v => fmt(v / 1000, 2);
+      $("#pl-comp").innerHTML = '<table class="geo"><tr><th></th><th>X</th><th>Y</th><th>Z</th><th>Totale</th></tr>' +
+        forze.map(f => '<tr><td style="color:' + (f.base ? "#eceff3" : f.nome === "Recupero" ? "#2f9e5b" : (cavi.find(c => c.nome === f.nome) || {}).col) + '">' + f.nome + "</td><td>" + cc(f.F[0]) + "</td><td>" + cc(f.F[1]) + "</td><td>" + cc(f.F[2]) + "</td><td>" + cc(len(f.F)) + " kN</td></tr>").join("") + "</table>";
       $("#pl-avv").innerHTML = avv.map(x => '<div class="avv">' + x + "</div>").join("");
       disegna();
     }
@@ -462,6 +468,10 @@ FireOps.registra({
         ctx.beginPath(); ctx.moveTo(t0[0], t0[1]); ctx.lineTo(t1[0], t1[1]); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(t1[0], t1[1]); ctx.lineTo(t1[0] - 9 * Math.cos(an2 - 0.4), t1[1] - 9 * Math.sin(an2 - 0.4)); ctx.lineTo(t1[0] - 9 * Math.cos(an2 + 0.4), t1[1] - 9 * Math.sin(an2 + 0.4)); ctx.fill();
         ctx.font = "bold 11px sans-serif"; ctx.fillText(fmt(len(f.F) / 1000, 2) + " kN", t1[0] + 6, t1[1] + (f.base ? 14 : -4));
+        // componenti sui tre assi: a gradini X, poi Y, poi Z
+        const m = len(f.F) || 1, l = L * 0.45 * m / fmax / m, cx = f.F[0] * l, cy = f.F[1] * l, cz = f.F[2] * l;
+        const q1 = [f.pos[0] + cx, f.pos[1], f.pos[2]], q2 = [q1[0], q1[1] + cy, q1[2]];
+        linea(f.pos, q1, "#d8262f", 2, [4, 3]); linea(q1, q2, "#2f9e5b", 2, [4, 3]); linea(q2, [q2[0], q2[1], q2[2] + cz], "#4A93C8", 2, [4, 3]);
       });
       // risultante sulla testa (freccia)
       const tf = pr(Fp), an = Math.atan2(tf[1] - th[1], tf[0] - th[0]);
