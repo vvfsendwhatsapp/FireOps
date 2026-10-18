@@ -32,6 +32,11 @@ FireOps.registra({
 .pg-scala .vcell .v { font-size: 21px; font-weight: 800; margin-top: 2px; font-variant-numeric: tabular-nums; }
 .pg-scala .vcell .v small { font-size: 13px; font-weight: 600; color: var(--text-dim); }
 .pg-scala svg { width: 100%; height: auto; display: block; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; }
+.pg-scala .vista { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; touch-action: none; }
+.pg-scala canvas { display: block; width: 100%; height: 300px; cursor: grab; }
+.pg-scala .barra { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.pg-scala .barra button { flex: 1 1 auto; min-height: 44px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.pg-scala .barra button:focus-visible, .pg-scala canvas:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
 .pg-scala .tab { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 .pg-scala .tab th { color: var(--text-dim); font-weight: 400; font-size: 11px; text-align: right; padding: 4px 2px; }
 .pg-scala .tab td { padding: 5px 2px; border-top: 1px solid var(--line); text-align: right; font-variant-numeric: tabular-nums; }
@@ -67,6 +72,20 @@ FireOps.registra({
   <h2 class="tit">Schema</h2>
   <div id="sc-sv"></div>
   <p class="nota">Il muro è a sinistra, la testa della scala è ancorata in alto. La freccia rossa è la forza risultante sull’ancoraggio, la linea blu è la corda verso il discensore. Il segno verde a terra è il piede minimo.</p>
+</div>
+
+<div class="blocco">
+  <h2 class="tit">Vista 3D</h2>
+  <div class="vista"><canvas id="sc-cv" tabindex="0" role="img" aria-label="Scala appoggiata al muro in 3D: trascina per ruotare"></canvas></div>
+  <div class="barra">
+    <button type="button" id="sc-lato">Di lato</button>
+    <button type="button" id="sc-fronte">Dal muro</button>
+    <button type="button" id="sc-alto">Dall’alto</button>
+    <button type="button" id="sc-iso">3D</button>
+    <button type="button" id="sc-zm" aria-label="Allontana">−</button>
+    <button type="button" id="sc-zp" aria-label="Avvicina">+</button>
+  </div>
+  <p class="nota">Trascina per ruotare, pizzica o usa la rotella per lo zoom. Il muro è il reticolo grigio, il terreno quello più scuro; la freccia rossa è la forza sull’ancoraggio, la linea blu la corda verso il discensore, il segno verde a terra il piede minimo. Gli elementi più vicini sono più marcati.</p>
 </div>
 
 <div class="blocco">
@@ -121,6 +140,7 @@ FireOps.registra({
       return s + "</svg>";
     }
 
+    let aggiorna3 = () => {};
     function aggiorna() {
       const P = Math.max(30, num("#sc-P", 100)), Wl = Math.max(0, num("#sc-Wl", 35)), L = Math.max(2, num("#sc-L", 10.33));
       const d = Math.max(0.3, num("#sc-d", 4)), al = num("#sc-a", 0);
@@ -135,6 +155,7 @@ FireOps.registra({
         c("Forza sull’ancoraggio", fmt(r.Fmag, 0), "N") + c("Tensione della corda", fmt(r.T, 0), "N");
       $("#sc-f").textContent = "F = (" + fmt(r.Fx, 0) + " N, " + fmt(r.Fy, 0) + " N). Attrito richiesto al piede: " + fmt(r.ca / (2 - r.sa), 2) + ".";
       $("#sc-sv").innerHTML = schema(L, d, al, r);
+      aggiorna3(L, d, al, r, P);
       let t = "<tr><th>Alzo</th><th>Piede min. senza scala</th><th>con scala</th><th>Angolo</th><th>|F| (N)</th></tr>";
       for (let a = -90; a <= 90; a += 15) {
         const q = calc(P, Wl, a, L), m = d - q.piede2, cls = m < 0 ? "e" : m < 0.5 ? "w" : "";
@@ -142,6 +163,58 @@ FireOps.registra({
       }
       $("#sc-t").innerHTML = t;
     }
+    // ---------- vista 3D: x = distanza dal muro, y = larghezza, z = altezza ----------
+    let q3 = null;
+    let v3 = null;
+    const avvia3d = () => { v3 = SafVista3D.crea($("#sc-cv"), {
+      punti: () => { const g = q3 || {L: 10, d: 4, hh: 9}; return [[-0.5, -2.5, 0], [g.d + 2, 2.5, g.hh + 1], [0, 0, g.hh]]; },
+      disegna: c => {
+        if (!q3) return;
+        const {L, d, hh, r, al, P} = q3, {ctx, pr, linea} = c;
+        const ph = Math.PI / 180 * al, ym = 0.25;
+        const txt = (t, q, col, dx, dy) => { const p = pr(q); ctx.globalAlpha = c.chiaro(p[2]); ctx.fillStyle = col; ctx.font = "bold 12px sans-serif"; ctx.textAlign = "center"; ctx.fillText(t, p[0] + (dx || 0), p[1] + (dy || 0)); ctx.globalAlpha = 1; };
+        const W = Math.max(3, L / 3), xe = d + 2;
+        // muro (piano x = 0) e terreno (piano z = 0)
+        for (let z = 0; z <= hh + 1; z += 1) linea([0, -W, z], [0, W, z], "#4a5460", 1);
+        for (let y = -W; y <= W + 1e-6; y += 1) linea([0, y, 0], [0, y, hh + 1], "#4a5460", 1);
+        for (let x = 0; x <= xe + 1e-6; x += 1) linea([x, -W, 0], [x, W, 0], "#2e3844", 1);
+        for (let y = -W; y <= W + 1e-6; y += 1) linea([0, y, 0], [xe, y, 0], "#2e3844", 1);
+        txt("MURO", [0, 0, hh + 1.3], "#8b96a3"); txt("TERRENO", [xe, 0, 0], "#8b96a3", 0, 14);
+        // scala: due montanti e pioli
+        [-ym, ym].forEach(y => linea([d, y, 0], [0, y, hh], "#e8734a", 5));
+        const n = Math.max(3, Math.round(L / 0.3));
+        for (let i = 1; i < n; i++) { const t = i / n; linea([d * (1 - t), -ym, hh * t], [d * (1 - t), ym, hh * t], "#e8734a", 2); }
+        // piede minimo
+        const dm = Math.min(r.piede2, xe);
+        linea([dm, -ym - 0.3, 0], [dm, ym + 0.3, 0], "#3fa66b", 3);
+        txt("piede min " + fmt(r.piede2, 2) + " m", [dm, 0, 0], "#3fa66b", 0, -8);
+        // ancoraggio, due tratti verso il carico, corda al discensore
+        const A = [0, 0, hh], zc = Math.max(0.3, hh - 2.5);
+        linea(A, [0.08, 0, zc], "#8b96a3", 2); linea([0.0, 0.08, hh], [0.0, 0.08, zc], "#8b96a3", 2);
+        const pc = pr([0.04, 0, zc]); ctx.fillStyle = "#ffd700"; ctx.fillRect(pc[0] - 9, pc[1] - 5, 18, 12);
+        txt(fmt(P, 0) + " kg", [0.04, 0, zc], "#ffd700", 0, 24);
+        const ro = Math.min(L * 0.35, 3);
+        linea(A, [ro * Math.cos(ph), 0, hh - ro * Math.sin(ph)], "#4A93C8", 3);
+        txt("discensore", [ro * Math.cos(ph), 0, hh - ro * Math.sin(ph)], "#4A93C8", 0, -6);
+        // forza sull'ancoraggio
+        const k = Math.min(L * 0.45, 4.5) / Math.max(r.Fmag, 1);
+        const F = [r.Fx * k, 0, r.Fy * k];
+        linea(A, [A[0] + F[0], 0, A[2] + F[2]], "#d8262f", 4);
+        const pf = pr([A[0] + F[0], 0, A[2] + F[2]]), p0 = pr(A), an = Math.atan2(pf[1] - p0[1], pf[0] - p0[0]);
+        ctx.fillStyle = "#d8262f"; ctx.beginPath(); ctx.moveTo(pf[0], pf[1]); ctx.lineTo(pf[0] - 11 * Math.cos(an - 0.4), pf[1] - 11 * Math.sin(an - 0.4)); ctx.lineTo(pf[0] - 11 * Math.cos(an + 0.4), pf[1] - 11 * Math.sin(an + 0.4)); ctx.fill();
+        txt(fmt(r.Fmag, 0) + " N", [A[0] + F[0], 0, A[2] + F[2]], "#d8262f", 0, 16);
+        const pa = pr(A); ctx.fillStyle = "#eceff3"; ctx.beginPath(); ctx.arc(pa[0], pa[1], 5, 0, 7); ctx.fill();
+      }
+    }); v3.disegna(); };
+    if (window.SafVista3D) avvia3d();
+    else { const sc = document.createElement("script"); sc.src = "js/saf-vista3d.js?v=" + (window.FIREOPS_VERSIONE || ""); sc.onload = avvia3d; document.head.appendChild(sc); }
+    const vista = (y, p) => () => v3 && v3.vista(y, p);
+    $("#sc-lato").addEventListener("click", vista(0, 0.05));
+    $("#sc-fronte").addEventListener("click", vista(Math.PI / 2, 0.05));
+    $("#sc-alto").addEventListener("click", vista(0, 1.5));
+    $("#sc-iso").addEventListener("click", vista(-0.7, 0.45));
+    $("#sc-zm").addEventListener("click", () => v3 && v3.zoom(0.8)); $("#sc-zp").addEventListener("click", () => v3 && v3.zoom(1.25));
+    aggiorna3 = (L, d, al, r, P) => { q3 = {L, d, hh: Math.sqrt(Math.max(0.01, L * L - Math.min(d, L * 0.999) ** 2)), r, al, P}; if (v3) v3.disegna(); };
     root.addEventListener("input", aggiorna);
     aggiorna();
   }

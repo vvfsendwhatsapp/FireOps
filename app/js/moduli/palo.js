@@ -28,6 +28,7 @@ FireOps.registra({
 .pg-palo .riga3.tt { grid-template-columns: 62px 1fr 1fr 1.9fr; font-size: 11.5px; color: var(--text-dim); margin-top: 0; }
 .pg-palo canvas.pi { height: 260px; cursor: default; }
 .pg-palo .st { display: flex; gap: 4px; align-items: center; }
+.pg-palo .tasto { width: 100%; min-height: 44px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
 .pg-palo .st input { min-width: 0; width: auto; flex: 1 1 0; padding: 0 6px; }
 .pg-palo .st button { flex: none; width: 31px; padding: 0; min-height: 44px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 18px; font-weight: 800; cursor: pointer; }
 .pg-palo .geo { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
@@ -52,13 +53,13 @@ FireOps.registra({
 
   html: `
 <div class="blocco">
-  <h2 class="tit">Pianta</h2>
+  <h2 class="tit">2 · Pianta dell’impianto</h2>
   <div class="vista"><canvas id="pl-pi" class="pi" role="img" aria-label="Pianta del montaggio: trascina i punti"></canvas></div>
   <p class="nota">Trascina i punti blu (ancoraggi dei tiranti) e verde (recupero). Distanze e direzioni si aggiornano, le quote le scrivi qui sotto. Direzione: 0° verso il vuoto, 90° a sinistra guardando il vuoto, 180° dietro.</p>
 </div>
 
 <div class="blocco">
-  <h2 class="tit">Vista 3D</h2>
+  <h2 class="tit">3 · Vista 3D</h2>
   <div class="vista"><canvas id="pl-cv" tabindex="0" role="img" aria-label="Palo pescante in 3D: trascina per ruotare"></canvas></div>
   <div class="barra">
     <button type="button" id="pl-lato">Di lato</button>
@@ -74,7 +75,7 @@ FireOps.registra({
 </div>
 
 <div class="blocco">
-  <h2 class="tit">Palo</h2>
+  <h2 class="tit">1 · Palo</h2>
   <div class="riga">
     <div><label for="pl-cf">Configurazione</label><select id="pl-cf"><option value="A">A: 2 venti</option><option value="B">B: 1 vento, 2 laterali</option></select></div>
     <div><label for="pl-rc">Recupero</label><select id="pl-rc"><option value="E">Esterno al palo</option><option value="I">Interno (winch)</option></select></div>
@@ -82,13 +83,14 @@ FireOps.registra({
   <div class="riga3">
     <div><label for="pl-L">Lunghezza (m)</label><input type="number" id="pl-L" inputmode="decimal" min="1" max="12" step="0.1" value="4"></div>
     <div><label for="pl-th">Inclinazione (°)</label><input type="number" id="pl-th" inputmode="decimal" min="0" max="45" step="1" value="10"></div>
-    <div><label for="pl-ph">Verso (°)</label><input type="number" id="pl-ph" inputmode="decimal" min="-180" max="360" step="5" value="0"></div>
+    <div><label for="pl-ph">Verso (°)</label><input type="number" id="pl-ph" inputmode="decimal" min="-180" max="360" step="5" value="0" disabled></div>
   </div>
-  <p class="nota">Inclinazione dalla verticale. Verso: 0° = inclinato verso il vuoto. Con 3 cavi (B) il sistema è iperstatico: i tiri sono ripartiti nel modo più uniforme possibile e i cavi che resterebbero compressi vengono considerati scarichi.</p>
+  <div class="riga"><div><label for="pl-vm">Verso di inclinazione</label><select id="pl-vm"><option value="A">Automatico: sulla bisettrice dei tiranti</option><option value="M">Manuale</option></select></div></div>
+  <p class="nota" id="pl-nv">Inclinazione dalla verticale. In automatico l’asse del palo segue la bisettrice dei tiranti, dalla parte opposta (verso il vuoto): sposti gli ancoraggi e il palo si orienta da solo. Con 3 cavi (B) il sistema è iperstatico: i tiri sono ripartiti nel modo più uniforme possibile e i cavi che resterebbero compressi vengono considerati scarichi.</p>
 </div>
 
 <div class="blocco">
-  <h2 class="tit">Ancoraggi e recupero</h2>
+  <h2 class="tit">2 · Ancoraggi e recupero</h2>
   <div class="riga3 tt"><span></span><span>Distanza dalla base (m)</span><span>Direzione (°)</span><span>Altezza da terra (m)</span></div>
   <div class="riga4"><b id="pl-n1" style="color:#4A93C8">Vento 1</b>
     <input type="number" id="pl-a1d" inputmode="decimal" min="0.3" step="0.1" value="5" aria-label="Distanza primo cavo">
@@ -106,12 +108,14 @@ FireOps.registra({
     <input type="number" id="pl-pd" inputmode="decimal" min="0" step="0.1" value="0" aria-label="Distanza punto di recupero">
     <input type="number" id="pl-pa" inputmode="decimal" step="1" value="180" aria-label="Direzione punto di recupero">
     <input type="number" id="pl-pz" inputmode="decimal" step="0.1" value="0" aria-label="Quota punto di recupero"></div>
+  <div class="riga"><div><label for="pl-qq">Quota comune degli ancoraggi (m)</label><div class="st"><button type="button" id="pl-qm" aria-label="Abbassa">−</button><input type="number" id="pl-qq" inputmode="decimal" step="0.1" value="0"><button type="button" id="pl-qp" aria-label="Solleva">+</button></div></div>
+    <div><label>&nbsp;</label><button type="button" id="pl-qa" class="tasto">Applica a tutti</button></div></div>
   <p class="nota" id="pl-nr">Ogni ancoraggio ha la sua distanza, direzione e altezza da terra: puoi sollevarli con + e −, per esempio uno su un albero, uno su un cavalletto e uno a terra. La terra è il piano della base del palo.</p>
   <div id="pl-geo"></div>
 </div>
 
 <div class="blocco">
-  <h2 class="tit">Carico e materiali</h2>
+  <h2 class="tit">4 · Carico e materiali</h2>
   <div class="riga">
     <div><label for="pl-kg">Carico (kg)</label><input type="number" id="pl-kg" inputmode="decimal" min="1" step="1" value="200"></div>
     <div><label for="pl-eta">Rendimento carrucola in testa</label><input type="number" id="pl-eta" inputmode="decimal" min="0.5" max="1" step="0.01" value="0.95"></div>
@@ -128,7 +132,7 @@ FireOps.registra({
 </div>
 
 <div class="blocco">
-  <h2 class="tit">Forze</h2>
+  <h2 class="tit">5 · Forze</h2>
   <div class="grid" id="pl-ris"></div>
   <div id="pl-avv"></div>
   <p class="nota">Modello semplificato: palo a cerniera alla base, tiranti e capo di recupero senza elasticità, nessuna forza dinamica né vento. Il carico di instabilità è quello di Eulero per tubo pieno di materiale ideale. Non sostituisce la verifica del produttore e dell’istruttore SAF.</p>
@@ -194,7 +198,16 @@ FireOps.registra({
       $("#pl-nr").textContent = interno ? "Recupero interno: il verricello è sul palo, il capo di recupero scende lungo il palo fino alla base. Ogni ancoraggio ha la sua distanza, direzione e quota (altezza da terra: + sopra, − sotto il piano della base)."
         : "Recupero esterno: il capo di recupero va a un punto a parte (verricello o squadra), con la sua posizione e quota. Ogni ancoraggio ha la sua distanza, direzione e quota (altezza da terra: + sopra, − sotto il piano della base).";
 
-      const L = Math.max(0.5, num("#pl-L", 4)), th = Math.min(60, Math.max(0, num("#pl-th", 10))) * RAD, ph = num("#pl-ph", 0) * RAD;
+      const L = Math.max(0.5, num("#pl-L", 4)), th = Math.min(60, Math.max(0, num("#pl-th", 10))) * RAD;
+      const auto = $("#pl-vm").value === "A";
+      let ph = num("#pl-ph", 0) * RAD;
+      if (auto) {
+        // bisettrice dei tiranti in pianta: somma dei versori orizzontali verso gli ancoraggi; il palo si inclina dalla parte opposta
+        let sx = 0, sy = 0;
+        for (let i = 1; i <= (cfgB ? 3 : 2); i++) { const an = num("#pl-a" + i + "a", 0) * RAD; sx += Math.cos(an); sy += Math.sin(an); }
+        if (Math.hypot(sx, sy) > 0.05) { ph = Math.atan2(-sy, -sx); const g = Math.round(ph / RAD * 10) / 10; $("#pl-ph").value = String(((g % 360) + 360) % 360); }
+      }
+      $("#pl-ph").disabled = auto;
       const kg = Math.max(0, num("#pl-kg", 200)), eta = Math.min(1, Math.max(0.5, num("#pl-eta", 0.95)));
       const E = num("#pl-mat", 70) * 1e9, Dm = Math.max(10, num("#pl-D", 80)) / 1000, sp = Math.min(Dm / 2 - 0.0005, Math.max(0.5, num("#pl-s", 4)) / 1000);
       const R = Math.max(0, num("#pl-r", 22));
@@ -311,6 +324,12 @@ FireOps.registra({
       bm.addEventListener("click", passo(-0.5)); bp.addEventListener("click", passo(0.5));
       w.append(bm, inp, bp);
     });
+
+    $("#pl-vm").addEventListener("change", calcola);
+    const qq = d => () => { $("#pl-qq").value = String(Math.round((num("#pl-qq", 0) + d) * 10) / 10); };
+    $("#pl-qm").addEventListener("click", qq(-0.5)); $("#pl-qp").addEventListener("click", qq(0.5));
+    $("#pl-qq").addEventListener("input", () => {});
+    $("#pl-qa").addEventListener("click", () => { ["a1", "a2", "a3"].forEach(i => { $("#pl-" + i + "z").value = String(num("#pl-qq", 0)); }); calcola(); });
 
     // valori di partenza per configurazione
     $("#pl-cf").addEventListener("change", () => {
