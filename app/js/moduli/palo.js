@@ -86,7 +86,7 @@ FireOps.registra({
     <div><label for="pl-ph">Verso (°)</label><input type="number" id="pl-ph" inputmode="decimal" min="-180" max="360" step="5" value="0" disabled></div>
   </div>
   <div class="riga"><div><label for="pl-vm">Verso di inclinazione</label><select id="pl-vm"><option value="A">Automatico: sulla bisettrice dei tiranti</option><option value="M">Manuale</option></select></div></div>
-  <p class="nota" id="pl-nv">Inclinazione dalla verticale. In automatico l’asse del palo segue la bisettrice dei tiranti, dalla parte opposta (verso il vuoto): sposti gli ancoraggi e il palo si orienta da solo. Con 3 cavi (B) il sistema è iperstatico: i tiri sono ripartiti nel modo più uniforme possibile e i cavi che resterebbero compressi vengono considerati scarichi.</p>
+  <p class="nota" id="pl-nv">Inclinazione dalla verticale, sempre verso l’esterno (il vuoto): mai verso gli ancoraggi. In automatico l’asse del palo segue la bisettrice dei tiranti, dalla parte opposta (verso il vuoto): sposti gli ancoraggi e il palo si orienta da solo. Con 3 cavi (B) il sistema è iperstatico: i tiri sono ripartiti nel modo più uniforme possibile e i cavi che resterebbero compressi vengono considerati scarichi.</p>
 </div>
 
 <div class="blocco">
@@ -210,8 +210,14 @@ FireOps.registra({
         // bisettrice dei tiranti in pianta: somma dei versori orizzontali verso gli ancoraggi; il palo si inclina dalla parte opposta
         let sx = 0, sy = 0;
         for (let i = 1; i <= (cfgB ? 3 : 2); i++) { const an = num("#pl-a" + i + "a", 0) * RAD; sx += Math.cos(an); sy += Math.sin(an); }
-        if (Math.hypot(sx, sy) > 0.05) { ph = Math.atan2(-sy, -sx); const g = Math.round(ph / RAD * 10) / 10; $("#pl-ph").value = String(((g % 360) + 360) % 360); }
+        // tutti sul ciglio (nessuna componente all'indietro): il palo si inclina dritto verso il vuoto
+        ph = -sx > 0.05 ? Math.atan2(-sy, -sx) : 0;
+        const g = Math.round(ph / RAD * 10) / 10; $("#pl-ph").value = String(((g % 360) + 360) % 360);
       }
+      // l'inclinazione e' sempre verso l'esterno (verso il vuoto): componente lungo x mai negativa
+      let phn = Math.atan2(Math.sin(ph), Math.cos(ph));
+      if (Math.abs(phn) > Math.PI / 2) { phn = phn > 0 ? Math.PI / 2 : -Math.PI / 2; $("#pl-ph").value = String(((Math.round(phn / RAD) % 360) + 360) % 360); }
+      ph = phn;
       $("#pl-ph").disabled = auto;
       const kg = Math.max(0, num("#pl-kg", 200)), eta = Math.min(1, Math.max(0.5, num("#pl-eta", 0.95)));
       const E = num("#pl-mat", 70) * 1e9, Dm = Math.max(10, num("#pl-D", 80)) / 1000, sp = Math.min(Dm / 2 - 0.0005, Math.max(0.5, num("#pl-s", 4)) / 1000);
