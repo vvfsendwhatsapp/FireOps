@@ -71,7 +71,12 @@ FireOps.registra({
     const SPEC = [["cinofilo", "Cinofilo"], ["smzt", "SMZT (sommozzatori)"], ["saf", "SAF"]];
     // livelli (tipo di mezzo/squadra) e enti: la ricerca e' multi agenzia, sotto il coordinamento dei VVF
     const TIPI = [["drone", "Drone APR"], ["elicottero", "Elicottero"], ["cinofila", "K9 cinofili"], ["ordinaria", "Squadra a terra"], ["saf", "SAF (aree impervie)"], ["smzt", "SMZT (sommozzatori)"]];
-    const ENTI = ["VVF", "CNSAS", "CRI", "Protezione Civile", "Carabinieri", "Carabinieri Forestali", "Guardia di Finanza", "Polizia di Stato", "Polizia Locale", "Altro volontariato", "Altro"];
+    // CNSAS in fondo, subito prima di "Altro volontariato" (stesso ordine in app/registrazione.html)
+    const ENTI = ["VVF", "CRI", "Protezione Civile", "Carabinieri", "Carabinieri Forestali", "Guardia di Finanza", "Polizia di Stato", "Polizia Locale", "CNSAS", "Altro volontariato", "Altro"];
+    // Registrazione dal telefono di ognuno (app/registrazione.html): passa dal foglio "DB_Registrazioni"
+    // della Web App di Apps Script (apps-script/registrazioni.gs)
+    const WEBAPP = "https://script.google.com/macros/s/AKfycbyp6jQ331Yk5q7_hkM74ZyhUh1c3zQUJG7SpuoE18HslBO36YKSTYIQf-z7gSwXR4Yv/exec";
+    let timerReg = null;
     // per gli enti diversi dai VVF non si usano le qualifiche: un solo campo libero (con suggerimenti)
     const RUOLI = ["Volontario", "Volontario SAS"];   // suggerimenti: il campo resta libero
     const STATI = ["Disponibile", "In movimento", "In zona", "Rientrata"];
@@ -107,6 +112,7 @@ FireOps.registra({
     /* ---------------- Personale ---------------- */
     function vistaPers() {
       if (modifica && modifica.tipo === "pers") return formPers();
+      if (modifica && modifica.tipo === "reg") return vistaReg();
       const liberi = db.pers.filter(p => p.presente !== false && !sqDi(p.id)).length;
       const pres = db.pers.filter(p => p.presente !== false).length;
       let h = '<div class="num"><div><b>' + pres + "</b><span>presenti</span></div><div><b>" + (pres - liberi) +
@@ -117,13 +123,14 @@ FireOps.registra({
         const s = sqDi(p.id);
         h += '<div class="it"><div class="tx"><b' + (p.presente === false ? ' style="opacity:.5"' : "") + ">" + esc(nomeP(p)) + "</b>" +
           '<small>' + (p.ente && p.ente !== "VVF" ? esc(p.ente) + (p.ruolo ? " (" + esc(p.ruolo) + ")" : "") + " · " : "") + (p.presente === false ? "Non presente" : s ? "Squadra: " + esc(s.nome) : "Libero") +
-          (p.tel ? " · " + esc(p.tel) : "") + "</small>" + chipSpec(p) + "</div>" +
+          (p.tel ? " · " + esc(p.tel) : "") + "</small>" + (p.reg ? '<span class="chip" title="Registrato dal proprio telefono con il QR">📱 registrato</span>' : "") + chipSpec(p) + "</div>" +
           '<button type="button" class="btn sm" data-a="mod-p" data-id="' + p.id + '">Modifica</button></div>';
       });
       h += "</div>";
       h += '<div class="acts"><button type="button" class="btn pri" data-a="nuovo-p">+ Aggiungi persona</button>' +
         '<button type="button" class="btn" data-a="io">Aggiungi me</button></div>';
-      h += '<p class="nota">“Aggiungi me” usa i dati dell’Area personale.</p>';
+      h += '<div class="acts" style="margin-top:8px"><button type="button" class="btn" data-a="reg">📱 QR per la registrazione del personale</button></div>';
+      h += '<p class="nota">“Aggiungi me” usa i dati dell’Area personale. Con il QR ognuno si registra dal proprio telefono e compare qui.</p>';
       return h;
     }
 
@@ -169,6 +176,118 @@ FireOps.registra({
       if (gia) { stato("Sei già nell’elenco.", false); return; }
       db.pers.push({id: nuovoId(), cognome: me.cognome, nome: me.nome || "", qual: me.qualifica || "", tel: me.telefono || "", spec: [], presente: true, note: ""});
       salva(); stato("Aggiunto: " + me.cognome + ".", true); disegna();
+    }
+
+    /* ---------------- Registrazione con QR ---------------- */
+    function codiceReg() {
+      if (!db.op.codice) {
+        const a = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789", r = new Uint32Array(10);
+        crypto.getRandomValues(r);
+        db.op.codice = Array.from(r, x => a[x % a.length]).join("");
+        salva();
+      }
+      return db.op.codice;
+    }
+    function linkReg() {
+      const u = new URL("registrazione.html", location.href);
+      u.search = ""; u.hash = "";
+      u.searchParams.set("r", codiceReg());
+      if (db.op.nome) u.searchParams.set("n", db.op.nome);
+      const tel = (db.op.telReg || "").replace(/[^\d+]/g, "");
+      if (tel) u.searchParams.set("t", tel);
+      return u.toString();
+    }
+
+    function vistaReg() {
+      if (db.op.telReg == null) db.op.telReg = ((FireOps.personale && FireOps.personale()) || {}).telefono || "";
+      const link = linkReg();
+      const n = db.pers.filter(p => p.reg).length;
+      return '<div class="card"><h3>Registrazione del personale</h3>' +
+        '<p class="lead">Mostra il QR: ognuno lo inquadra con il proprio telefono, compila i suoi dati e compare nell’elenco del Personale.' +
+        (db.op.nome ? "" : " <b>Consiglio:</b> dai prima un nome alla ricerca (scheda Operazione), così chi si registra lo vede.") + "</p>" +
+        '<div style="text-align:center;background:#fff;border-radius:8px;padding:14px;margin:4px 0 10px"><canvas id="gr-qr" style="width:100%;max-width:300px;image-rendering:pixelated" aria-label="QR code per la registrazione"></canvas></div>' +
+        '<div class="nota" style="word-break:break-all;margin-top:0">' + esc(link) + "</div>" +
+        '<div class="acts"><button type="button" class="btn pri" data-a="reg-condividi">Condividi il link</button><button type="button" class="btn" data-a="reg-scarica">Scarica i registrati</button></div>' +
+        '<div class="stato" id="gr-stato">' + (n ? n + (n === 1 ? " persona registrata" : " persone registrate") + " nell’elenco." : "") + "</div>" +
+        '<label class="f" for="gr-tel">Cellulare per le registrazioni senza rete (SMS / WhatsApp)</label>' +
+        '<input type="tel" id="gr-tel" inputmode="tel" autocomplete="off" placeholder="il tuo numero" value="' + esc(db.op.telReg) + '">' +
+        '<p class="nota">Se a chi si registra manca la connessione dati, la pagina gli propone di mandarti la registrazione con un messaggio: incollalo qui sotto. Cambiando il numero cambia il QR.</p>' +
+        '<label class="f" for="gr-incolla">Incolla registrazioni ricevute per messaggio</label>' +
+        '<textarea id="gr-incolla" placeholder="Incolla uno o più messaggi “Registrazione ricerca …”"></textarea>' +
+        '<div class="acts"><button type="button" class="btn" data-a="reg-incolla">Aggiungi dai messaggi</button><button type="button" class="btn" data-a="annulla">Chiudi</button></div></div>';
+    }
+
+    async function disegnaQR() {
+      const cv = $("#gr-qr");
+      if (!cv) return;
+      try {
+        if (!window.FireOpsQR) await FireOps.carica("../qrcode.js?v=" + (window.FIREOPS_VERSIONE || ""));
+        const qr = FireOpsQR.genera(linkReg(), "M"), n = qr.dimensione, bordo = 2, scala = 8;
+        cv.width = cv.height = (n + bordo * 2) * scala;
+        const c = cv.getContext("2d");
+        c.fillStyle = "#fff"; c.fillRect(0, 0, cv.width, cv.height); c.fillStyle = "#000";
+        for (let r = 0; r < n; r++) for (let k = 0; k < n; k++) if (qr.moduli[r][k]) c.fillRect((k + bordo) * scala, (r + bordo) * scala, scala, scala);
+      } catch (e) {
+        cv.replaceWith(Object.assign(document.createElement("div"), {textContent: "QR non disponibile: condividi il link.", style: "color:#000;padding:20px"}));
+      }
+    }
+
+    // Unisce le persone registrate all'elenco: la stessa persona (stesso id di registrazione,
+    // o stesso cognome e nome inserito a mano) si aggiorna, non si duplica
+    function unisciRegistrati(lista) {
+      let nuovi = 0, aggiornati = 0;
+      lista.forEach(r => {
+        if (!r || !r.id || !r.cognome) return;
+        const d = {cognome: r.cognome, nome: r.nome || "", ente: ENTI.includes(r.ente) ? r.ente : (r.ente ? "Altro" : "VVF"),
+          qual: r.ente === "VVF" ? (r.qual || "") : "", ruolo: r.ente === "VVF" ? "" : (r.ruolo || (ENTI.includes(r.ente) ? "" : r.ente || "")),
+          tel: r.tel || "", spec: (Array.isArray(r.spec) ? r.spec : []).filter(k => SPEC.some(x => x[0] === k))};
+        const chiave = p => (p.cognome + "|" + (p.nome || "")).toLowerCase().replace(/\s+/g, " ").trim();
+        let p = db.pers.find(x => x.reg === r.id) || db.pers.find(x => !x.reg && chiave(x) === chiave(d));
+        if (p) {
+          const prima = JSON.stringify([p.cognome, p.nome, p.ente, p.qual, p.ruolo, p.tel, p.spec]);
+          Object.assign(p, d, {reg: r.id});
+          if (r.note && !(p.note || "").includes(r.note)) p.note = (p.note ? p.note + " · " : "") + r.note;
+          if (JSON.stringify([p.cognome, p.nome, p.ente, p.qual, p.ruolo, p.tel, p.spec]) !== prima) aggiornati++;
+        } else {
+          db.pers.push(Object.assign({id: nuovoId(), reg: r.id, presente: true, note: r.note || ""}, d));
+          nuovi++;
+        }
+      });
+      if (nuovi || aggiornati) salva();
+      return {nuovi, aggiornati};
+    }
+
+    async function scaricaRegistrati(silenzioso) {
+      const st = $("#gr-stato");
+      if (st && !silenzioso) st.textContent = "Scarico i registrati…";
+      try {
+        const r = await fetch(WEBAPP + "?" + new URLSearchParams({registrazioni: codiceReg()}));
+        const j = r.ok ? await r.json() : null;
+        if (!j || !Array.isArray(j.persone)) throw new Error("risposta");
+        const {nuovi, aggiornati} = unisciRegistrati(j.persone);
+        const msg = j.persone.length + (j.persone.length === 1 ? " registrata" : " registrate") +
+          (nuovi ? " · " + nuovi + (nuovi === 1 ? " nuova aggiunta" : " nuove aggiunte") + " al Personale" : "") +
+          (aggiornati ? " · " + aggiornati + " aggiornate" : "") + (nuovi || aggiornati ? "" : " · nessuna novità");
+        if (st && (!silenzioso || nuovi || aggiornati)) { st.textContent = msg + " (" + new Date().toLocaleTimeString("it-IT", {hour: "2-digit", minute: "2-digit"}) + ")"; st.classList.toggle("ok", !!(nuovi || aggiornati)); }
+      } catch (e) {
+        if (st && !silenzioso) { st.textContent = "Registrati non disponibili: serve la connessione e lo script Apps Script aggiornato (apps-script/registrazioni.gs)."; st.classList.remove("ok"); }
+      }
+    }
+
+    function incollaRegistrazioni() {
+      const testo = $("#gr-incolla").value, lista = [];
+      (testo.match(/FOREG1\s+[A-Za-z0-9_-]+/g) || []).forEach(m => {
+        try {
+          const b = m.split(/\s+/)[1].replace(/-/g, "+").replace(/_/g, "/");
+          const o = JSON.parse(decodeURIComponent(escape(atob(b + "===".slice((b.length + 3) % 4)))));
+          if (o.r && o.r !== db.op.codice && !confirm("La registrazione di " + o.c + " è di un’altra ricerca. Aggiungerla comunque?")) return;
+          lista.push({id: o.i, ente: o.e, cognome: o.c, nome: o.n, qual: o.q, ruolo: o.u, tel: o.t, spec: o.s, note: o.o});
+        } catch (e) { }
+      });
+      if (!lista.length) { stato("Nessuna registrazione riconosciuta nel testo incollato.", false); return; }
+      const {nuovi, aggiornati} = unisciRegistrati(lista);
+      $("#gr-incolla").value = "";
+      stato(lista.length + (lista.length === 1 ? " registrazione letta" : " registrazioni lette") + ": " + nuovi + " nuove, " + aggiornati + " aggiornate.", true);
     }
 
     /* ---------------- Squadre ---------------- */
@@ -253,6 +372,12 @@ FireOps.registra({
     function disegna() {
       root.querySelectorAll(".tab").forEach(b => b.classList.toggle("on", b.dataset.tab === tab));
       $("#ge-corpo").innerHTML = tab === "pers" ? vistaPers() : tab === "sq" ? vistaSq() : vistaOp();
+      // QR aperto: si disegna e ogni 30 s si scaricano i nuovi registrati
+      clearInterval(timerReg); timerReg = null;
+      if (tab === "pers" && modifica && modifica.tipo === "reg") {
+        disegnaQR();
+        timerReg = setInterval(() => { if (root.isConnected && $("#gr-qr")) scaricaRegistrati(true); else { clearInterval(timerReg); timerReg = null; } }, 30000);
+      }
     }
 
     function scarica(nome, testo) {
@@ -278,6 +403,14 @@ FireOps.registra({
         salva(); modifica = null; disegna();
       }
       else if (a === "io") aggiungiMe();
+      else if (a === "reg") { modifica = {tipo: "reg"}; disegna(); scaricaRegistrati(true); }
+      else if (a === "reg-scarica") scaricaRegistrati(false);
+      else if (a === "reg-incolla") incollaRegistrazioni();
+      else if (a === "reg-condividi") {
+        const link = linkReg(), titolo = "Registrazione " + (db.op.nome || "ricerca persona");
+        if (navigator.share) navigator.share({title: titolo, text: titolo + ": registrati con questo link", url: link}).catch(() => {});
+        else (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject()).then(() => stato("Link copiato.", true), () => prompt("Copia il link:", link));
+      }
       else if (a === "nuovo-s") { modifica = {tipo: "sq", id: null}; disegna(); }
       else if (a === "mod-s") { modifica = {tipo: "sq", id}; disegna(); }
       else if (a === "salva-s") leggiSq();
@@ -302,6 +435,7 @@ FireOps.registra({
 
     root.addEventListener("change", e => {
       const t = e.target;
+      if (t.id === "gr-tel") { db.op.telReg = t.value.trim(); salva(); disegna(); return; }
       if (t.id === "gp-ente") {
         const vvf = t.value === "VVF";
         $("#gp-bq").hidden = !vvf; $("#gp-br").hidden = vvf;
