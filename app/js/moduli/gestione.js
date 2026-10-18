@@ -178,40 +178,136 @@ FireOps.registra({
       salva(); stato("Aggiunto: " + me.cognome + ".", true); disegna();
     }
 
-    /* ---------------- Registrazione con QR ---------------- */
-    function codiceReg() {
-      if (!db.op.codice) {
-        const a = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789", r = new Uint32Array(10);
-        crypto.getRandomValues(r);
-        db.op.codice = Array.from(r, x => a[x % a.length]).join("");
-        salva();
-      }
-      return db.op.codice;
+    /* ---------------- ID ricerca (ricerca aperta su tutti i telefoni) ----------------
+     * Stesso formato dell'ID di Messaggistica: numero intervento a 8 cifre _ anno _ sigla Comando
+     * (es. 00000456_2026_ComFC). Non e' detto che sia lo stesso intervento: lo sceglie il coordinatore.
+     * "Apri" la registra nel foglio DB_Ricerche_Gestione con una chiave segreta (solo su questo telefono
+     * e nei file esportati): con la chiave si leggono i registrati e si chiude la ricerca. */
+    const siglaDi = c => c && c.pr ? "Com" + c.pr : "";
+    function comandoAttuale() { const p = FireOps.posizione && FireOps.posizione(); return p && p.comando ? p.comando : null; }
+    function idRicerca(numero, anno, sigla) {
+      const n = String(numero || "").replace(/\D/g, "").padStart(8, "0").slice(-8);
+      return n + "_" + anno + "_" + sigla;
     }
+    function nuovaChiave() {
+      const a = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789", r = new Uint32Array(20);
+      crypto.getRandomValues(r);
+      return Array.from(r, x => a[x % a.length]).join("");
+    }
+    async function postRicerca(azione) {
+      const o = db.op;
+      const r = await fetch(WEBAPP, {method: "POST", headers: {"Content-Type": "text/plain;charset=utf-8"},
+        body: JSON.stringify({foglio: "DB_Ricerche_Gestione", azione, id: o.id, chiave: o.chiave, nome: o.nome, sigla: o.sigla, comando: o.comando})});
+      const j = await r.json();
+      if (!j || !j.ok) throw new Error((j && j.errore) || "risposta");
+      return j;
+    }
+    async function ricercheAperte(sigla) {
+      const r = await fetch(WEBAPP + "?" + new URLSearchParams({ricercheAperte: sigla || ""}));
+      const j = await r.json();
+      if (!j || !Array.isArray(j.ricerche)) throw new Error("risposta");
+      return j.ricerche;
+    }
+
+    function cardIdRicerca() {
+      const o = db.op;
+      if (o.aperta) {
+        return '<div class="card" style="border-left:3px solid var(--yellow)"><h3>ID ricerca · aperta</h3>' +
+          '<div style="font:700 19px/1.3 ui-monospace,Menlo,monospace;letter-spacing:.02em;word-break:break-all">' + esc(o.id) + "</div>" +
+          '<div class="nota" style="margin-top:4px">' + esc(o.comando || o.sigla) + " · il personale si registra con il QR (scheda Personale)</div>" +
+          '<div class="acts"><button type="button" class="btn" data-a="ric-qr">📱 QR registrazione</button><button type="button" class="btn danger" data-a="ric-chiudi">Chiudi la ricerca</button></div>' +
+          '<div class="stato" id="go-ric-stato"></div><div id="go-aperte"></div></div>';
+      }
+      const c = comandoAttuale();
+      const anno = o.anno || String(new Date().getFullYear());
+      const sigla = o.sigla || siglaDi(c);
+      const anteprima = o.numero && sigla ? idRicerca(o.numero, anno, sigla) : "";
+      return '<div class="card"><h3>ID ricerca</h3>' +
+        '<p class="lead">Apri la ricerca per far registrare il personale con il QR. Formato come Messaggistica: numero intervento, anno, Comando' +
+        " (il numero può essere diverso da quello del messaggio).</p>" +
+        '<div class="row"><div><label class="f" for="go-num" style="margin-top:0">Numero intervento</label><input type="text" id="go-num" inputmode="numeric" autocomplete="off" placeholder="es. 456" value="' + esc(o.numero || "") + '"></div>' +
+        '<div><label class="f" for="go-anno" style="margin-top:0">Anno</label><input type="text" id="go-anno" inputmode="numeric" autocomplete="off" value="' + esc(anno) + '"></div></div>' +
+        '<label class="f">Comando</label><div class="nota" style="margin:0">' + (sigla ? esc((o.comando || (c && c.c) || "") + " (" + sigla + ")") : "In attesa del Comando: localizzati o sceglilo dal menu in alto.") + "</div>" +
+        (anteprima ? '<div style="margin-top:10px;font:700 17px ui-monospace,Menlo,monospace">' + esc(anteprima) + "</div>" : "") +
+        '<div class="acts"><button type="button" class="btn pri" data-a="ric-apri"' + (sigla ? "" : " disabled") + ">Apri la ricerca</button></div>" +
+        '<div class="stato" id="go-ric-stato"></div><div id="go-aperte"></div></div>';
+    }
+
+    // Altre ricerche aperte dello stesso Comando (solo per vederle: si gestiscono dal telefono che le ha aperte)
+    async function mostraAperte() {
+      const box = $("#go-aperte"), sigla = db.op.sigla || siglaDi(comandoAttuale());
+      if (!box || !sigla) return;
+      try {
+        const l = (await ricercheAperte(sigla)).filter(r => r.id !== db.op.id);
+        if (!$("#go-aperte")) return;
+        box.innerHTML = l.length ? '<label class="f">Altre ricerche aperte del Comando</label>' + l.map(r => '<div class="nota" style="margin-top:4px"><b>' + esc(r.id) + "</b>" +
+          (r.nome ? " · " + esc(r.nome) : "") + "</div>").join("") : "";
+      } catch (e) { }
+    }
+
+    async function apriRicerca() {
+      const o = db.op, c = comandoAttuale();
+      const numero = $("#go-num").value.replace(/\D/g, ""), anno = $("#go-anno").value.replace(/\D/g, "");
+      if (!numero) return stato("Scrivi il numero intervento.", false);
+      if (!/^\d{4}$/.test(anno)) return stato("Anno non valido.", false);
+      if (!o.sigla) { if (!c) return stato("Serve il Comando: localizzati o sceglilo dal menu in alto.", false); o.sigla = siglaDi(c); o.comando = c.c; }
+      o.numero = numero; o.anno = anno; o.id = idRicerca(numero, anno, o.sigla);
+      if (!o.chiave) o.chiave = nuovaChiave();
+      salva();
+      const st = $("#go-ric-stato"); if (st) st.textContent = "Apro la ricerca…";
+      try {
+        await postRicerca("apri");
+        o.aperta = true; salva(); disegna(); stato("Ricerca " + o.id + " aperta: ora il personale può registrarsi.", true);
+      } catch (e) {
+        const msg = /usato/.test(e.message) ? "Questo ID è già usato da un’altra ricerca aperta da un altro telefono: cambia il numero." :
+          "Impossibile aprire la ricerca: serve la connessione e lo script Apps Script aggiornato (apps-script/registrazioni.gs).";
+        if (/usato/.test(e.message)) { o.chiave = ""; salva(); }
+        if (st) st.textContent = msg; else stato(msg, false);
+      }
+    }
+
+    async function chiudiRicerca(silenziosa) {
+      if (!db.op.aperta) return true;
+      if (!silenziosa && !confirm("Chiudere la ricerca " + db.op.id + "? Nessuno potrà più registrarsi. Personale e squadre restano su questo telefono.")) return false;
+      try { await postRicerca("chiudi"); }
+      catch (e) { if (!confirm("Non riesco a chiuderla sul foglio (rete?). Chiuderla solo su questo telefono? Resterà nell’elenco delle ricerche aperte.")) return false; }
+      db.op.aperta = false; salva();
+      return true;
+    }
+
+    /* ---------------- Registrazione con QR ---------------- */
+    let tipoQR = "ricerca";   // "ricerca" (questa ricerca) | "comando" (QR fisso: sceglie fra le ricerche aperte)
     function linkReg() {
       const u = new URL("registrazione.html", location.href);
       u.search = ""; u.hash = "";
-      u.searchParams.set("r", codiceReg());
-      if (db.op.nome) u.searchParams.set("n", db.op.nome);
+      if (tipoQR === "comando") { u.searchParams.set("c", db.op.sigla); return u.toString(); }
+      u.searchParams.set("r", db.op.id);
       const tel = (db.op.telReg || "").replace(/[^\d+]/g, "");
       if (tel) u.searchParams.set("t", tel);
       return u.toString();
     }
 
     function vistaReg() {
+      if (!db.op.aperta) {
+        return '<div class="card"><h3>Registrazione del personale</h3><p class="lead">Prima apri la ricerca con il suo ID (scheda Operazione): il QR porta a quella ricerca.</p>' +
+          '<div class="acts"><button type="button" class="btn pri" data-tab="op">Vai a Operazione</button><button type="button" class="btn" data-a="annulla">Chiudi</button></div></div>';
+      }
       if (db.op.telReg == null) db.op.telReg = ((FireOps.personale && FireOps.personale()) || {}).telefono || "";
       const link = linkReg();
       const n = db.pers.filter(p => p.reg).length;
+      const tabQR = (k, t) => '<button type="button" class="tab' + (tipoQR === k ? " on" : "") + '" data-a="qr-tipo" data-k="' + k + '" style="min-height:38px;font-size:13px">' + t + "</button>";
       return '<div class="card"><h3>Registrazione del personale</h3>' +
-        '<p class="lead">Mostra il QR: ognuno lo inquadra con il proprio telefono, compila i suoi dati e compare nell’elenco del Personale.' +
-        (db.op.nome ? "" : " <b>Consiglio:</b> dai prima un nome alla ricerca (scheda Operazione), così chi si registra lo vede.") + "</p>" +
+        '<div class="tabs" style="margin-bottom:8px">' + tabQR("ricerca", "QR di questa ricerca") + tabQR("comando", "QR fisso del Comando") + "</div>" +
+        '<p class="lead">' + (tipoQR === "comando"
+          ? "QR da stampare e tenere sul mezzo o in UCL: vale sempre. Chi lo inquadra vede le ricerche aperte del Comando di " + esc(db.op.comando || db.op.sigla) + " e sceglie la sua."
+          : "Porta direttamente alla ricerca <b>" + esc(db.op.id) + "</b>" + (db.op.nome ? " (" + esc(db.op.nome) + ")" : "") + ". Vale finché la ricerca resta aperta.") + "</p>" +
         '<div style="text-align:center;background:#fff;border-radius:8px;padding:14px;margin:4px 0 10px"><canvas id="gr-qr" style="width:100%;max-width:300px;image-rendering:pixelated" aria-label="QR code per la registrazione"></canvas></div>' +
         '<div class="nota" style="word-break:break-all;margin-top:0">' + esc(link) + "</div>" +
         '<div class="acts"><button type="button" class="btn pri" data-a="reg-condividi">Condividi il link</button><button type="button" class="btn" data-a="reg-scarica">Scarica i registrati</button></div>' +
         '<div class="stato" id="gr-stato">' + (n ? n + (n === 1 ? " persona registrata" : " persone registrate") + " nell’elenco." : "") + "</div>" +
         '<label class="f" for="gr-tel">Cellulare per le registrazioni senza rete (SMS / WhatsApp)</label>' +
         '<input type="tel" id="gr-tel" inputmode="tel" autocomplete="off" placeholder="il tuo numero" value="' + esc(db.op.telReg) + '">' +
-        '<p class="nota">Se a chi si registra manca la connessione dati, la pagina gli propone di mandarti la registrazione con un messaggio: incollalo qui sotto. Cambiando il numero cambia il QR.</p>' +
+        '<p class="nota">Se a chi si registra manca la connessione dati, la pagina gli propone di mandarti la registrazione con un messaggio: incollalo qui sotto. Il numero è nel QR di questa ricerca, non in quello fisso.</p>' +
         '<label class="f" for="gr-incolla">Incolla registrazioni ricevute per messaggio</label>' +
         '<textarea id="gr-incolla" placeholder="Incolla uno o più messaggi “Registrazione ricerca …”"></textarea>' +
         '<div class="acts"><button type="button" class="btn" data-a="reg-incolla">Aggiungi dai messaggi</button><button type="button" class="btn" data-a="annulla">Chiudi</button></div></div>';
@@ -261,8 +357,10 @@ FireOps.registra({
       const st = $("#gr-stato");
       if (st && !silenzioso) st.textContent = "Scarico i registrati…";
       try {
-        const r = await fetch(WEBAPP + "?" + new URLSearchParams({registrazioni: codiceReg()}));
+        if (!db.op.id || !db.op.chiave) throw new Error("ricerca non aperta");
+        const r = await fetch(WEBAPP + "?" + new URLSearchParams({registrazioni: db.op.id, chiave: db.op.chiave}));
         const j = r.ok ? await r.json() : null;
+        if (j && j.errore === "chiave non valida") { if (st && !silenzioso) st.textContent = "Il foglio non riconosce questa ricerca da questo telefono (chiave diversa)."; return; }
         if (!j || !Array.isArray(j.persone)) throw new Error("risposta");
         const {nuovi, aggiornati} = unisciRegistrati(j.persone);
         const msg = j.persone.length + (j.persone.length === 1 ? " registrata" : " registrate") +
@@ -280,7 +378,7 @@ FireOps.registra({
         try {
           const b = m.split(/\s+/)[1].replace(/-/g, "+").replace(/_/g, "/");
           const o = JSON.parse(decodeURIComponent(escape(atob(b + "===".slice((b.length + 3) % 4)))));
-          if (o.r && o.r !== db.op.codice && !confirm("La registrazione di " + o.c + " è di un’altra ricerca. Aggiungerla comunque?")) return;
+          if (o.r && o.r !== db.op.id && !confirm("La registrazione di " + o.c + " è di un’altra ricerca. Aggiungerla comunque?")) return;
           lista.push({id: o.i, ente: o.e, cognome: o.c, nome: o.n, qual: o.q, ruolo: o.u, tel: o.t, spec: o.s, note: o.o});
         } catch (e) { }
       });
@@ -348,7 +446,7 @@ FireOps.registra({
     function vistaOp() {
       const o = db.op;
       const pua = o.pua ? o.pua.lat.toFixed(5) + ", " + o.pua.lon.toFixed(5) : "non impostato";
-      return '<div class="card"><h3>Ricerca</h3>' +
+      return cardIdRicerca() + '<div class="card"><h3>Ricerca</h3>' +
         '<label class="f" for="go-nome" style="margin-top:0">Nome della ricerca</label><input type="text" id="go-nome" autocomplete="off" placeholder="es. Ricerca Campigna" value="' + esc(o.nome) + '">' +
         '<label class="f" for="go-data">Data</label><input type="date" id="go-data" value="' + esc(o.data) + '">' +
         '<label class="f">PUA (punto ultimo avvistamento)</label><div class="nota" style="margin:0 0 8px" id="go-pua">' + pua + "</div>" +
@@ -362,7 +460,10 @@ FireOps.registra({
     }
 
     function leggiOp() {
+      const prima = db.op.nome;
       db.op.nome = $("#go-nome").value.trim();
+      // il nome si vede in chi si registra: si aggiorna anche sul foglio
+      if (db.op.aperta && db.op.nome !== prima) postRicerca("rinomina").catch(() => {});
       db.op.data = $("#go-data").value;
       db.op.note = $("#go-note").value.trim();
       salva();
@@ -374,6 +475,7 @@ FireOps.registra({
       $("#ge-corpo").innerHTML = tab === "pers" ? vistaPers() : tab === "sq" ? vistaSq() : vistaOp();
       // QR aperto: si disegna e ogni 30 s si scaricano i nuovi registrati
       clearInterval(timerReg); timerReg = null;
+      if (tab === "op") mostraAperte();
       if (tab === "pers" && modifica && modifica.tipo === "reg") {
         disegnaQR();
         timerReg = setInterval(() => { if (root.isConnected && $("#gr-qr")) scaricaRegistrati(true); else { clearInterval(timerReg); timerReg = null; } }, 30000);
@@ -403,7 +505,11 @@ FireOps.registra({
         salva(); modifica = null; disegna();
       }
       else if (a === "io") aggiungiMe();
-      else if (a === "reg") { modifica = {tipo: "reg"}; disegna(); scaricaRegistrati(true); }
+      else if (a === "reg") { modifica = {tipo: "reg"}; disegna(); if (db.op.aperta) scaricaRegistrati(true); }
+      else if (a === "qr-tipo") { tipoQR = t.dataset.k; disegna(); }
+      else if (a === "ric-apri") apriRicerca();
+      else if (a === "ric-chiudi") chiudiRicerca(false).then(ok => { if (ok) { disegna(); stato("Ricerca chiusa.", true); } });
+      else if (a === "ric-qr") { tab = "pers"; modifica = {tipo: "reg"}; disegna(); scaricaRegistrati(true); }
       else if (a === "reg-scarica") scaricaRegistrati(false);
       else if (a === "reg-incolla") incollaRegistrazioni();
       else if (a === "reg-condividi") {
@@ -428,8 +534,9 @@ FireOps.registra({
       else if (a === "esporta") { leggiOp(); scarica("ricerca-" + (db.op.data || "dati") + ".json", JSON.stringify(db, null, 1)); stato("File esportato.", true); }
       else if (a === "importa") $("#go-file").click();
       else if (a === "reset") {
-        if (!confirm("Cancellare personale, squadre e dati della ricerca da questo telefono? Esporta prima se ti servono.")) return;
-        db = vuoto(); salva(); stato("Nuova ricerca pronta.", true); disegna();
+        if (!confirm("Cancellare personale, squadre e dati della ricerca da questo telefono? Esporta prima se ti servono." +
+          (db.op.aperta ? "\nLa ricerca " + db.op.id + " viene anche chiusa." : ""))) return;
+        chiudiRicerca(true).then(ok => { if (!ok) return; db = vuoto(); salva(); stato("Nuova ricerca pronta.", true); disegna(); });
       }
     });
 
@@ -441,6 +548,7 @@ FireOps.registra({
         $("#gp-bq").hidden = !vvf; $("#gp-br").hidden = vvf;
       }
       else if (t.dataset && t.dataset.a === "stato-s") { const s = db.sq.find(x => x.id === t.dataset.id); if (s) { s.stato = t.value; salva(); } }
+      else if (t.id === "go-num" || t.id === "go-anno") { db.op.numero = $("#go-num").value.replace(/\D/g, ""); db.op.anno = $("#go-anno").value.replace(/\D/g, ""); salva(); disegna(); }
       else if (t.id && t.id.indexOf("go-") === 0 && t.id !== "go-file") leggiOp();
       else if (t.id === "go-file" && t.files[0]) {
         const r = new FileReader();

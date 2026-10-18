@@ -45,6 +45,11 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--y
 .stato.ok { color: var(--ok); }
 .stato.err { color: #ff8a73; }
 .nota { font-size: 12.5px; line-height: 1.5; color: var(--text-dim); margin: 10px 0 0; }
+.ric { display: block; width: 100%; text-align: left; margin-top: 10px; padding: 12px 14px; border-radius: 8px; border: 1px solid var(--line);
+  background: var(--panel-2); color: var(--text); font-family: inherit; font-size: 15px; cursor: pointer; }
+.ric b { display: block; font-size: 16px; }
+.ric small { display: block; margin-top: 3px; color: var(--text-dim); font-size: 12.5px; }
+.ric:active { border-color: var(--yellow); }
 .fatto { text-align: center; padding: 18px 8px; }
 .fatto .ico { font-size: 44px; line-height: 1; }
 .fatto h2 { margin: 10px 0 6px; font-size: 18px; color: var(--ok); text-transform: none; letter-spacing: 0; }
@@ -60,7 +65,15 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--y
 <main>
   <div class="card" id="errore-link" hidden>
     <h2>Link non valido</h2>
-    <p class="lead">Questo link non contiene il codice della ricerca. Inquadra di nuovo il QR code mostrato dal coordinatore.</p>
+    <p class="lead">Questo link non contiene l’ID della ricerca né il Comando. Inquadra di nuovo il QR code mostrato dal coordinatore.</p>
+  </div>
+
+  <!-- QR fisso del Comando: si sceglie fra le ricerche aperte in questo momento -->
+  <div class="card" id="scelta" hidden>
+    <h2>Ricerche aperte</h2>
+    <p class="lead" id="scelta-testo">Carico le ricerche aperte…</p>
+    <div id="scelta-lista"></div>
+    <button type="button" class="btn" id="scelta-agg" hidden>⟳ Aggiorna l’elenco</button>
   </div>
 
   <form id="modulo" class="card" novalidate hidden>
@@ -137,12 +150,57 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--y
   const scrivi = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
 
   const par = new URLSearchParams(location.search);
-  const codice = (par.get("r") || "").trim();
-  const nomeRicerca = (par.get("n") || "").trim();
+  const ID_RE = /^[A-Za-z0-9_]{6,40}$/;
+  let codice = (par.get("r") || "").trim();          // ID ricerca (es. 00000456_2026_ComFC)
+  let nomeRicerca = (par.get("n") || "").trim();
+  const siglaComando = (par.get("c") || "").replace(/[^A-Za-z]/g, "");   // QR fisso del Comando (es. ComFC)
   const telCoord = (par.get("t") || "").replace(/[^\d+]/g, "");
-  if (!/^[A-Za-z0-9]{6,20}$/.test(codice)) { $("errore-link").hidden = false; return; }
-  if (nomeRicerca) { $("ricerca").textContent = nomeRicerca; document.title = "Registrazione · " + nomeRicerca; }
-  $("modulo").hidden = false;
+  function mostraRicerca() {
+    const t = nomeRicerca ? nomeRicerca + " · " + codice : "ID ricerca " + codice;
+    $("ricerca").textContent = t; document.title = "Registrazione · " + (nomeRicerca || codice);
+  }
+  async function ricercheAperte(extra) {
+    const ctrl = new AbortController(), tm = setTimeout(() => ctrl.abort(), 20000);
+    try {
+      const r = await fetch(WEBAPP + "?" + new URLSearchParams(extra), {signal: ctrl.signal});
+      const j = await r.json();
+      if (!j || !Array.isArray(j.ricerche)) throw new Error("risposta");
+      return j.ricerche;
+    } finally { clearTimeout(tm); }
+  }
+  function apriModulo() { $("scelta").hidden = true; $("modulo").hidden = false; mostraRicerca(); }
+
+  if (ID_RE.test(codice)) {
+    apriModulo();
+    // nome della ricerca e controllo che sia ancora aperta (senza rete si prova comunque)
+    ricercheAperte({ricercheAperte: "", id: codice}).then(l => {
+      if (l.length) { nomeRicerca = l[0].nome || nomeRicerca; mostraRicerca(); }
+      else stato("Questa ricerca risulta chiusa: chiedi al coordinatore il QR aggiornato.", "err");
+    }).catch(() => {});
+  } else if (siglaComando) {
+    $("scelta").hidden = false;
+    $("ricerca").textContent = "Comando " + siglaComando.replace(/^Com/i, "");
+    const carica = async () => {
+      $("scelta-testo").textContent = "Carico le ricerche aperte…"; $("scelta-lista").innerHTML = ""; $("scelta-agg").hidden = true;
+      try {
+        const l = await ricercheAperte({ricercheAperte: siglaComando});
+        if (!l.length) $("scelta-testo").textContent = "In questo momento non ci sono ricerche aperte per questo Comando. Riprova fra poco o chiedi al coordinatore.";
+        else {
+          $("scelta-testo").textContent = l.length === 1 ? "Tocca la ricerca a cui partecipi:" : "Ci sono " + l.length + " ricerche aperte: tocca quella a cui partecipi.";
+          $("scelta-lista").innerHTML = l.map((r, i) => '<button type="button" class="ric" data-i="' + i + '"><b>' + esc(r.nome || "Ricerca persona") + "</b><small>ID " + esc(r.id) +
+            (r.aperta ? " · aperta " + esc(new Date(r.aperta).toLocaleString("it-IT", {day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"})) : "") + "</small></button>").join("");
+          $("scelta-lista").querySelectorAll(".ric").forEach(b => b.addEventListener("click", () => {
+            const r = l[+b.dataset.i]; codice = r.id; nomeRicerca = r.nome || ""; apriModulo(); window.scrollTo(0, 0);
+          }));
+        }
+      } catch (e) {
+        $("scelta-testo").textContent = "Elenco non raggiungibile (manca la connessione?). Riprova, oppure chiedi al coordinatore il QR della sua ricerca.";
+      }
+      $("scelta-agg").hidden = false;
+    };
+    $("scelta-agg").addEventListener("click", carica);
+    carica();
+  } else { $("errore-link").hidden = false; return; }
 
   $("ente").innerHTML = ENTI.map(x => "<option>" + esc(x) + "</option>").join("");
   $("qual").innerHTML = '<option value="">–</option>' + QUALIFICHE.map(g => '<optgroup label="' + esc(g[0]) + '">' +
@@ -205,27 +263,17 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--y
     };
   }
 
+  // {ok: true} | {ok: false, chiusa: true} | {ok: false} (rete)
   async function invia(d) {
-    const idPersona = d.id;
-    const corpo = JSON.stringify(d);
-    // Prima la richiesta normale, che dice se e' andata a buon fine
     try {
       const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), 20000);
-      const r = await fetch(WEBAPP, {method: "POST", headers: {"Content-Type": "text/plain;charset=utf-8"}, body: corpo, signal: ctrl.signal})
+      const r = await fetch(WEBAPP, {method: "POST", headers: {"Content-Type": "text/plain;charset=utf-8"}, body: JSON.stringify(d), signal: ctrl.signal})
         .finally(() => clearTimeout(t));
       const j = await r.json();
-      if (j && j.ok) return true;
-      if (j && j.errore) throw new Error(j.errore);
-    } catch (e) {
-      if (!navigator.onLine) return false;
-    }
-    // Se il browser non legge la risposta: invio "alla cieca" e controllo con l'elenco della ricerca
-    try {
-      await fetch(WEBAPP, {method: "POST", mode: "no-cors", headers: {"Content-Type": "text/plain;charset=utf-8"}, body: corpo});
-      const r = await fetch(WEBAPP + "?" + new URLSearchParams({registrazioni: codice}));
-      const j = await r.json();
-      return !!(j && Array.isArray(j.persone) && j.persone.some(p => p.id === idPersona));
-    } catch (e) { return false; }
+      if (j && j.ok) return {ok: true};
+      if (j && /chiusa|inesistente/.test(j.errore || "")) return {ok: false, chiusa: true};
+    } catch (e) { }
+    return {ok: false};
   }
 
   $("modulo").addEventListener("submit", async ev => {
@@ -236,8 +284,9 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--y
     d.id = idPer(d);
     scrivi(MEM, {ente: d.ente, cognome: d.cognome, nome: d.nome, qual: d.qual, ruolo: d.ruolo, tel: d.tel, spec: d.spec});
     $("invia").disabled = true; stato("Invio in corso…");
-    const ok = await invia(d);
+    const esito = await invia(d), ok = esito.ok;
     $("invia").disabled = false;
+    if (esito.chiusa) { stato("Questa ricerca è chiusa o non esiste più: chiedi al coordinatore il QR aggiornato.", "err"); return; }
     if (ok) {
       stato(""); ultimoId = d.id; idInCorrezione = null;
       $("modulo").hidden = true; $("fatto").hidden = false;
