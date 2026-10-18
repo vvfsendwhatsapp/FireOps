@@ -41,10 +41,13 @@ FireOps.registra({
 .pg-paranchi .schemi figcaption { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
 .pg-paranchi svg { width: 100%; height: auto; }
 .pg-paranchi .avv { margin-top: 8px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--yellow); background: rgba(255,215,0,.08); font-size: 13px; line-height: 1.4; }
-.pg-paranchi .riga4 { display: grid; grid-template-columns: 68px 1fr 1fr 1fr; gap: 8px; margin-top: 8px; align-items: center; font-size: 13px; }
+.pg-paranchi .riga4 { display: grid; grid-template-columns: 62px 1fr 1fr 1.9fr; gap: 8px; margin-top: 8px; align-items: center; font-size: 13px; }
 .pg-paranchi .riga4.tt { font-size: 11.5px; color: var(--text-dim); margin-top: 0; }
 .pg-paranchi .riga4[hidden] { display: none; }
 .pg-paranchi canvas.pi { display: block; width: 100%; height: 280px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; touch-action: none; }
+.pg-paranchi .st { display: flex; gap: 4px; align-items: center; }
+.pg-paranchi .st input { min-width: 0; width: auto; flex: 1 1 0; padding: 0 6px; }
+.pg-paranchi .st button { flex: none; width: 31px; padding: 0; min-height: 44px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 18px; font-weight: 800; cursor: pointer; }
 .pg-paranchi .tab { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .pg-paranchi .tab td { padding: 6px 4px; border-top: 1px solid var(--line); }
 .pg-paranchi .tab td:last-child { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -86,8 +89,8 @@ FireOps.registra({
 <div class="blocco">
   <h2 class="tit">Pianta del sistema di recupero</h2>
   <canvas id="pa-pi" class="pi" role="img" aria-label="Pianta del sistema di recupero: trascina gli ancoraggi"></canvas>
-  <p class="nota">Il carico pende dal ciglio (quadrato). Trascina gli ancoraggi sulla pianta, poi scrivi le quote. Direzione: 0° verso il vuoto, 90° a sinistra guardando il vuoto, 180° dietro il ciglio.</p>
-  <div class="riga4 tt"><span></span><span>Distanza dal ciglio (m)</span><span>Direzione (°)</span><span>Quota sul ciglio (m)</span></div>
+  <p class="nota">Il carico pende dal ciglio (quadrato). Trascina gli ancoraggi sulla pianta, poi alzali o abbassali con + e −: l’altezza è rispetto al ciglio. Direzione: 0° verso il vuoto, 90° a sinistra guardando il vuoto, 180° dietro il ciglio.</p>
+  <div class="riga4 tt"><span></span><span>Distanza dal ciglio (m)</span><span>Direzione (°)</span><span>Altezza sul ciglio (m)</span></div>
   <div class="riga4"><b style="color:#ffd700">Ancoraggio</b>
     <input type="number" id="pa-ad" inputmode="decimal" min="0.3" step="0.1" value="6" aria-label="Distanza ancoraggio">
     <input type="number" id="pa-aa" inputmode="decimal" step="1" value="180" aria-label="Direzione ancoraggio">
@@ -301,6 +304,15 @@ FireOps.registra({
       calcola();
     });
     $("#pa-eta").addEventListener("input", () => { $("#pa-tipo").value = "x"; });
+    root.querySelectorAll('input[id$="z"]').forEach(inp => {
+      const w = document.createElement("div"); w.className = "st";
+      inp.parentNode.insertBefore(w, inp);
+      const bm = document.createElement("button"), bp = document.createElement("button");
+      bm.type = bp.type = "button"; bm.textContent = "−"; bp.textContent = "+"; bm.setAttribute("aria-label", "Abbassa"); bp.setAttribute("aria-label", "Solleva");
+      const passo = d => () => { inp.value = String(Math.round((nm("#" + inp.id) + d) * 10) / 10); calcola(); };
+      bm.addEventListener("click", passo(-0.5)); bp.addEventListener("click", passo(0.5));
+      w.append(bm, inp, bp);
+    });
     const sincro = (id, x, y) => {
       const an = Math.atan2(y, x) / RAD;
       $("#pa-" + id + "d").value = fmt(Math.hypot(x, y), 1).replace(",", ".");

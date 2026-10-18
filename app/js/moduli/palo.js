@@ -24,9 +24,12 @@ FireOps.registra({
 .pg-palo .riga { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
 .pg-palo .riga3, .pg-palo .riga4 { display: grid; gap: 8px; margin-top: 8px; align-items: center; }
 .pg-palo .riga3 { grid-template-columns: 1fr 1fr 1fr; }
-.pg-palo .riga4 { grid-template-columns: 68px 1fr 1fr 1fr; font-size: 13px; }
-.pg-palo .riga3.tt { grid-template-columns: 68px 1fr 1fr 1fr; font-size: 11.5px; color: var(--text-dim); margin-top: 0; }
+.pg-palo .riga4 { grid-template-columns: 62px 1fr 1fr 1.9fr; font-size: 13px; }
+.pg-palo .riga3.tt { grid-template-columns: 62px 1fr 1fr 1.9fr; font-size: 11.5px; color: var(--text-dim); margin-top: 0; }
 .pg-palo canvas.pi { height: 260px; cursor: default; }
+.pg-palo .st { display: flex; gap: 4px; align-items: center; }
+.pg-palo .st input { min-width: 0; width: auto; flex: 1 1 0; padding: 0 6px; }
+.pg-palo .st button { flex: none; width: 31px; padding: 0; min-height: 44px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 18px; font-weight: 800; cursor: pointer; }
 .pg-palo .geo { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
 .pg-palo .geo td, .pg-palo .geo th { padding: 5px 3px; border-top: 1px solid var(--line); text-align: right; font-weight: 600; }
 .pg-palo .geo th { color: var(--text-dim); font-size: 11.5px; font-weight: 400; }
@@ -86,7 +89,7 @@ FireOps.registra({
 
 <div class="blocco">
   <h2 class="tit">Ancoraggi e recupero</h2>
-  <div class="riga3 tt"><span></span><span>Distanza dalla base (m)</span><span>Direzione (°)</span><span>Quota sulla base (m)</span></div>
+  <div class="riga3 tt"><span></span><span>Distanza dalla base (m)</span><span>Direzione (°)</span><span>Altezza da terra (m)</span></div>
   <div class="riga4"><b id="pl-n1" style="color:#4A93C8">Vento 1</b>
     <input type="number" id="pl-a1d" inputmode="decimal" min="0.3" step="0.1" value="5" aria-label="Distanza primo cavo">
     <input type="number" id="pl-a1a" inputmode="decimal" step="1" value="145" aria-label="Direzione primo cavo">
@@ -103,7 +106,7 @@ FireOps.registra({
     <input type="number" id="pl-pd" inputmode="decimal" min="0" step="0.1" value="0" aria-label="Distanza punto di recupero">
     <input type="number" id="pl-pa" inputmode="decimal" step="1" value="180" aria-label="Direzione punto di recupero">
     <input type="number" id="pl-pz" inputmode="decimal" step="0.1" value="0" aria-label="Quota punto di recupero"></div>
-  <p class="nota" id="pl-nr">Ogni ancoraggio ha la sua distanza, direzione e quota (+ sopra la base, − sotto): puoi metterli a quote diverse, per esempio uno su un albero e uno a terra.</p>
+  <p class="nota" id="pl-nr">Ogni ancoraggio ha la sua distanza, direzione e altezza da terra: puoi sollevarli con + e −, per esempio uno su un albero, uno su un cavalletto e uno a terra. La terra è il piano della base del palo.</p>
   <div id="pl-geo"></div>
 </div>
 
@@ -187,8 +190,8 @@ FireOps.registra({
       $("#pl-n1").textContent = cfgB ? "Vento" : "Vento 1";
       $("#pl-n2").textContent = cfgB ? "Laterale 1" : "Vento 2";
       $("#pl-n2").style.color = cfgB ? "#27c4c4" : "#4A93C8";
-      $("#pl-nr").textContent = interno ? "Recupero interno: il verricello è sul palo, il capo di recupero scende lungo il palo fino alla base. Ogni ancoraggio ha la sua distanza, direzione e quota (+ sopra la base, − sotto)."
-        : "Recupero esterno: il capo di recupero va a un punto a parte (verricello o squadra), con la sua posizione e quota. Ogni ancoraggio ha la sua distanza, direzione e quota (+ sopra la base, − sotto).";
+      $("#pl-nr").textContent = interno ? "Recupero interno: il verricello è sul palo, il capo di recupero scende lungo il palo fino alla base. Ogni ancoraggio ha la sua distanza, direzione e quota (altezza da terra: + sopra, − sotto il piano della base)."
+        : "Recupero esterno: il capo di recupero va a un punto a parte (verricello o squadra), con la sua posizione e quota. Ogni ancoraggio ha la sua distanza, direzione e quota (altezza da terra: + sopra, − sotto il piano della base).";
 
       const L = Math.max(0.5, num("#pl-L", 4)), th = Math.min(60, Math.max(0, num("#pl-th", 10))) * RAD, ph = num("#pl-ph", 0) * RAD;
       const kg = Math.max(0, num("#pl-kg", 200)), eta = Math.min(1, Math.max(0.5, num("#pl-eta", 0.95)));
@@ -285,6 +288,17 @@ FireOps.registra({
     };
     const avviaPianta = () => { pianta = SafPianta.crea($("#pl-pi"), {onMove: sincro}); calcola(); };
 
+    // pulsanti - e + sull'altezza da terra (sul telefono i campi numerici non hanno le frecce)
+    root.querySelectorAll('input[id$="z"]').forEach(inp => {
+      const w = document.createElement("div"); w.className = "st";
+      inp.parentNode.insertBefore(w, inp);
+      const bm = document.createElement("button"), bp = document.createElement("button");
+      bm.type = bp.type = "button"; bm.textContent = "−"; bp.textContent = "+"; bm.setAttribute("aria-label", "Abbassa"); bp.setAttribute("aria-label", "Solleva");
+      const passo = d => () => { inp.value = String(Math.round((num("#" + inp.id, 0) + d) * 10) / 10); calcola(); };
+      bm.addEventListener("click", passo(-0.5)); bp.addEventListener("click", passo(0.5));
+      w.append(bm, inp, bp);
+    });
+
     // valori di partenza per configurazione
     $("#pl-cf").addEventListener("change", () => {
       const v = $("#pl-cf").value === "B" ? [[5, 180], [3, 90], [3, 270]] : [[5, 145], [5, 215]];
@@ -347,7 +361,7 @@ FireOps.registra({
         const att = geo.ok || cv_.col; const scarico = geo.t && !(geo.t[i] > 1e-6);
         linea(H, cv_.pos, scarico ? "#e8734a" : cv_.col, 2, scarico ? [5, 4] : null);
         const t = pr(cv_.pos); ctx.fillStyle = cv_.col; ctx.fillRect(t[0] - 4, t[1] - 4, 8, 8);
-        linea(cv_.pos, [cv_.pos[0], cv_.pos[1], 0], "#2a323d", 1, [3, 3]);
+        if (Math.abs(cv_.pos[2]) > 0.05) { linea(cv_.pos, [cv_.pos[0], cv_.pos[1], 0], "#8b96a3", 2.5); const tf = pr([cv_.pos[0], cv_.pos[1], 0]); ctx.fillStyle = "#8b96a3"; ctx.beginPath(); ctx.arc(tf[0], tf[1], 3, 0, 7); ctx.fill(); }
       });
       // capo di recupero
       if (!interno) { linea(H, P, "#2f9e5b", 2); const tp = pr(P); ctx.fillStyle = "#2f9e5b"; ctx.beginPath(); ctx.arc(tp[0], tp[1], 5, 0, 7); ctx.fill(); }
