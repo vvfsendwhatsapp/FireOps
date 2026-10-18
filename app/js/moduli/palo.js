@@ -110,7 +110,7 @@ FireOps.registra({
     <input type="number" id="pl-pz" inputmode="decimal" step="0.1" value="0" aria-label="Quota punto di recupero"></div>
   <div class="riga"><div><label for="pl-qq">Quota comune degli ancoraggi (m)</label><div class="st"><button type="button" id="pl-qm" aria-label="Abbassa">−</button><input type="number" id="pl-qq" inputmode="decimal" step="0.1" value="0"><button type="button" id="pl-qp" aria-label="Solleva">+</button></div></div>
     <div><label>&nbsp;</label><button type="button" id="pl-qa" class="tasto">Applica a tutti</button></div></div>
-  <p class="nota" id="pl-nr">Ogni ancoraggio ha la sua distanza, direzione e altezza da terra: puoi sollevarli con + e −, per esempio uno su un albero, uno su un cavalletto e uno a terra. La terra è il piano della base del palo.</p>
+  <p class="nota" id="pl-nr">Gli ancoraggi dei tiranti stanno al massimo sul ciglio (direzione 90° o 270°), mai nel vuoto. Ogni ancoraggio ha la sua distanza, direzione e altezza da terra: puoi sollevarli con + e −, per esempio uno su un albero, uno su un cavalletto e uno a terra. La terra è il piano della base del palo.</p>
   <div id="pl-geo"></div>
 </div>
 
@@ -216,6 +216,15 @@ FireOps.registra({
       const kg = Math.max(0, num("#pl-kg", 200)), eta = Math.min(1, Math.max(0.5, num("#pl-eta", 0.95)));
       const E = num("#pl-mat", 70) * 1e9, Dm = Math.max(10, num("#pl-D", 80)) / 1000, sp = Math.min(Dm / 2 - 0.0005, Math.max(0.5, num("#pl-s", 4)) / 1000);
       const R = Math.max(0, num("#pl-r", 22));
+      // i tiranti stanno al massimo sul ciglio (x = 0), mai nel vuoto (x > 0): se un ancoraggio finisce oltre il ciglio lo riporto sul ciglio
+      for (let i = 1; i <= (cfgB ? 3 : 2); i++) {
+        const d0 = Math.max(0.3, num("#pl-a" + i + "d", 5)), an0 = num("#pl-a" + i + "a", 0) * RAD, x0 = d0 * Math.cos(an0), y0 = d0 * Math.sin(an0);
+        if (x0 > 1e-6) {
+          const sg = y0 >= 0 ? 1 : -1;
+          $("#pl-a" + i + "d").value = String(Math.max(0.3, Math.round(Math.abs(y0) * 10) / 10));
+          $("#pl-a" + i + "a").value = String(sg > 0 ? 90 : 270);
+        }
+      }
       const polare = (id, dmin) => { const d = Math.max(dmin, num("#pl-" + id + "d", 5)), an = num("#pl-" + id + "a", 0) * RAD; return [d * Math.cos(an), d * Math.sin(an), num("#pl-" + id + "z", 0)]; };
 
       const B = [0, 0, 0], H = [L * Math.sin(th) * Math.cos(ph), L * Math.sin(th) * Math.sin(ph), L * Math.cos(th)];
