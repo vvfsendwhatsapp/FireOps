@@ -67,6 +67,7 @@ FireOps.registra({
     <button type="button" id="pl-dietro">Da dietro</button>
     <button type="button" id="pl-vuoto">Dal vuoto</button>
     <button type="button" id="pl-iso">3D</button>
+    <button type="button" id="pl-comp3" aria-pressed="true">Componenti X Y Z</button>
     <button type="button" id="pl-zm" aria-label="Allontana">−</button>
     <button type="button" id="pl-zp" aria-label="Avvicina">+</button>
   </div>
@@ -142,7 +143,7 @@ FireOps.registra({
   <h3 class="tit" style="margin-top:12px;font-size:14px">Forze sugli ancoraggi, scomposte sui 3 assi</h3>
   <div id="pl-comp"></div>
   <div id="pl-compg" style="margin-top:8px"></div>
-  <p class="nota">Forza che ogni punto riceve (il tirante tira l’ancoraggio verso la testa del palo; alla base il palo spinge il terreno). X: verso il vuoto, positivo in fuori. Y: laterale, positivo a sinistra guardando il vuoto. Z: verticale, positivo verso l’alto, quindi uno Z negativo è una spinta verso il basso e uno Z positivo un’estrazione dal terreno. Nel 3D le componenti sono tratteggiate: rosso X, verde Y, blu Z.</p>
+  <p class="nota">Forza che ogni punto riceve (il tirante tira l’ancoraggio verso la testa del palo; alla base il palo spinge il terreno). X: verso il vuoto, positivo in fuori. Y: laterale, positivo a sinistra guardando il vuoto. Z: verticale, positivo verso l’alto, quindi uno Z negativo è una spinta verso il basso e uno Z positivo un’estrazione dal terreno. Nel 3D le componenti sono frecce a gradini, in scala propria per ogni punto (vale il numero scritto): rosso X, verde Y, blu Z (il pulsante «Componenti X Y Z» le nasconde).</p>
   <p class="nota">Modello semplificato: palo a cerniera alla base, tiranti e capo di recupero senza elasticità, nessuna forza dinamica né vento. Il carico di instabilità è quello di Eulero per tubo pieno di materiale ideale. Non sostituisce la verifica del produttore e dell’istruttore SAF.</p>
 </div>
 `,
@@ -408,7 +409,7 @@ FireOps.registra({
       const Y = y1 * cp - z * sp, Z = z * cp + y1 * sp;
       return [x1, Y, Z];
     }
-    let maniglie = [], presa3 = null;
+    let maniglie = [], presa3 = null, mostraComp = true;
     function disegna() {
       if (!geo) return;
       const w = cv.clientWidth || 320, h = cv.clientHeight || 300, dpr = window.devicePixelRatio || 1;
@@ -488,9 +489,20 @@ FireOps.registra({
         ctx.beginPath(); ctx.moveTo(t1[0], t1[1]); ctx.lineTo(t1[0] - 9 * Math.cos(an2 - 0.4), t1[1] - 9 * Math.sin(an2 - 0.4)); ctx.lineTo(t1[0] - 9 * Math.cos(an2 + 0.4), t1[1] - 9 * Math.sin(an2 + 0.4)); ctx.fill();
         ctx.font = "bold 11px sans-serif"; ctx.fillText(fmt(len(f.F) / 1000, 2) + " kN", t1[0] + 6, t1[1] + (f.base ? 14 : -4));
         // componenti sui tre assi: a gradini X, poi Y, poi Z
-        const m = len(f.F) || 1, l = L * 0.45 * m / fmax / m, cx = f.F[0] * l, cy = f.F[1] * l, cz = f.F[2] * l;
+        const mc = Math.max(1, Math.abs(f.F[0]), Math.abs(f.F[1]), Math.abs(f.F[2])), l = L * 0.4 / mc, cx = f.F[0] * l, cy = f.F[1] * l, cz = f.F[2] * l;
         const q1 = [f.pos[0] + cx, f.pos[1], f.pos[2]], q2 = [q1[0], q1[1] + cy, q1[2]];
-        linea(f.pos, q1, "#d8262f", 2, [4, 3]); linea(q1, q2, "#2f9e5b", 2, [4, 3]); linea(q2, [q2[0], q2[1], q2[2] + cz], "#4A93C8", 2, [4, 3]);
+        if (mostraComp) {
+          const q3 = [q2[0], q2[1], q2[2] + cz], ff = 0.03 * mc;
+          [[f.pos, q1, "#d8262f", "X", f.F[0]], [q1, q2, "#2f9e5b", "Y", f.F[1]], [q2, q3, "#4A93C8", "Z", f.F[2]]].forEach(c => {
+            if (Math.abs(c[4]) < ff) return;
+            const a0 = pr(c[0]), a1 = pr(c[1]), ag = Math.atan2(a1[1] - a0[1], a1[0] - a0[0]);
+            ctx.strokeStyle = c[2]; ctx.fillStyle = c[2]; ctx.lineWidth = 3; ctx.globalAlpha = 0.95; ctx.setLineDash([]);
+            ctx.beginPath(); ctx.moveTo(a0[0], a0[1]); ctx.lineTo(a1[0], a1[1]); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(a1[0], a1[1]); ctx.lineTo(a1[0] - 8 * Math.cos(ag - 0.45), a1[1] - 8 * Math.sin(ag - 0.45)); ctx.lineTo(a1[0] - 8 * Math.cos(ag + 0.45), a1[1] - 8 * Math.sin(ag + 0.45)); ctx.fill();
+            ctx.font = "bold 10px sans-serif"; ctx.textAlign = "center"; ctx.fillText(c[3] + " " + fmt(c[4] / 1000, 2), (a0[0] + a1[0]) / 2 + 12, (a0[1] + a1[1]) / 2 - 4); ctx.textAlign = "left"; ctx.globalAlpha = 1;
+          });
+          linea(f.pos, q3, "#8b96a3", 1, [2, 3]);
+        }
       });
       // risultante sulla testa (freccia)
       const tf = pr(Fp), an = Math.atan2(tf[1] - th[1], tf[0] - th[0]);
@@ -542,6 +554,7 @@ FireOps.registra({
     $("#pl-dietro").addEventListener("click", vista(Math.PI / 2, 0.3));
     $("#pl-vuoto").addEventListener("click", vista(-Math.PI / 2, 0.3));
     $("#pl-iso").addEventListener("click", vista(-0.7, 0.45));
+    $("#pl-comp3").addEventListener("click", () => { mostraComp = !mostraComp; $("#pl-comp3").setAttribute("aria-pressed", mostraComp); $("#pl-comp3").style.opacity = mostraComp ? 1 : 0.55; disegna(); });
     $("#pl-zp").addEventListener("click", () => { zoom = Math.min(4, zoom * 1.25); disegna(); });
     $("#pl-zm").addEventListener("click", () => { zoom = Math.max(0.4, zoom / 1.25); disegna(); });
 
