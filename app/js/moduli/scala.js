@@ -191,7 +191,7 @@ FireOps.registra({
         txt("piede min " + fmt(r.piede2, 2) + " m", [dm, 0, 0], "#3fa66b", 0, -8);
         // ancoraggio, due tratti verso il carico, corda al discensore
         const A = [0, 0, hh], zc = Math.max(0.3, hh - 2.5);
-        linea(A, [0.08, 0, zc], "#8b96a3", 2); linea([0.0, 0.08, hh], [0.0, 0.08, zc], "#8b96a3", 2);
+        linea(A, [0.04, 0, zc], "#8b96a3", 2); linea([0.14, 0, hh], [0.14, 0, zc], "#8b96a3", 2);
         const pc = pr([0.04, 0, zc]); ctx.fillStyle = "#ffd700"; ctx.fillRect(pc[0] - 9, pc[1] - 5, 18, 12);
         txt(fmt(P, 0) + " kg", [0.04, 0, zc], "#ffd700", 0, 24);
         const ro = Math.min(L * 0.35, 3);
