@@ -164,6 +164,8 @@ body.trascino iframe{pointer-events:none}
 .georis li small{display:block;color:var(--muted);font-size:11px}
 .f .georis{grid-column:1 / -1;margin:0 0 4px;border:1px solid var(--line);border-radius:8px}
 @media (max-width:760px){ #geo{left:8px;right:8px;max-width:none} }
+.leaflet-middle{position:absolute;top:50%;transform:translateY(-50%);z-index:1000;pointer-events:none}
+.leaflet-middle .leaflet-control{margin-top:0;margin-bottom:0}
 footer{font-size:11px;color:var(--muted);padding:4px 12px;background:var(--panel);border-top:1px solid var(--line)}
 </style>
 </head>
@@ -267,7 +269,10 @@ const ls = {
 const ITALIA = [[36.4, 6.6], [47.1, 18.6]];
 // Zoom massimo dichiarato sulla carta: altrimenti Leaflet lo ricava dagli sfondi caricati
 // e, se uno ha un limite piu' basso, la carta si ferma prima del livello dei numeri civici
-const map = L.map('map', {zoomControl: true, maxZoom: 19}).fitBounds(ITALIA);
+const map = L.map('map', {zoomControl: false, maxZoom: 19}).fitBounds(ITALIA);
+// pulsanti + / - a meta' altezza sul lato sinistro (Leaflet non ha questa posizione: creo l'angolo "leftmiddle")
+map._controlCorners.leftmiddle = L.DomUtil.create('div', 'leaflet-left leaflet-middle', map._controlContainer);
+L.control.zoom({position: 'leftmiddle', zoomInTitle: 'Avvicina', zoomOutTitle: 'Allontana'}).addTo(map);
 const base = {
   'Stradale': L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19, attribution: '© OpenStreetMap'}),
   // la foto satellitare non ha scritte: sopra metto i livelli "riferimento" di Esri (strade con i nomi, comuni, confini)
