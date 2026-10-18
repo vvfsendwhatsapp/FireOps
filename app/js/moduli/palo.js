@@ -71,7 +71,7 @@ FireOps.registra({
     <button type="button" id="pl-zp" aria-label="Avvicina">+</button>
   </div>
   <div class="leg"><span><i style="background:#ffd700"></i>palo</span><span><i style="background:#4A93C8"></i>tiranti</span><span><i style="background:#e8734a"></i>carico</span><span><i style="background:#2f9e5b"></i>capo di recupero</span><span><i style="background:#d8262f"></i>risultante sulla testa</span><span><i style="background:#ff9f1c"></i>forza su ancoraggi e base</span></div>
-  <p class="nota">Trascina per ruotare. La zona rossa a terra è il vuoto (davanti), l’altra è il retro con gli ancoraggi. Gli elementi più vicini sono più marcati, quelli lontani più sbiaditi.</p>
+  <p class="nota">Trascina per ruotare. La zona rossa a terra è il vuoto (davanti), l’altra è il retro con gli ancoraggi. Gli elementi più vicini sono più marcati, quelli lontani più sbiaditi. Gli anelli bianchi sono gli ancoraggi e il recupero: trascinali in alto o in basso per regolarne la quota (passo 0,1 m).</p>
 </div>
 
 <div class="blocco">
@@ -124,6 +124,10 @@ FireOps.registra({
     <div><label for="pl-mat">Palo</label>
       <select id="pl-mat"><option value="70">Alluminio</option><option value="210">Acciaio</option></select></div>
     <div><label for="pl-r">Resistenza minima di tiranti e ancoraggi (kN)</label><input type="number" id="pl-r" inputmode="decimal" min="1" step="1" value="22"></div>
+  </div>
+  <div class="riga">
+    <div><label for="pl-mu">Attrito base-terreno (μ)</label><input type="number" id="pl-mu" inputmode="decimal" min="0.05" max="1.2" step="0.05" value="0.5"></div>
+    <div><label>&nbsp;</label><p class="nota" style="margin:0">Roccia 0,6 · terra 0,4 · bagnato 0,3 · piastra su erba 0,3</p></div>
   </div>
   <div class="riga">
     <div><label for="pl-D">Diametro esterno del palo (mm)</label><input type="number" id="pl-D" inputmode="decimal" min="20" step="1" value="80"></div>
@@ -188,6 +192,7 @@ FireOps.registra({
       return null;
     }
 
+    const cross = (u, v) => [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
     function calcola() {
       const cfgB = $("#pl-cf").value === "B", interno = $("#pl-rc").value === "I";
       $("#pl-r3").hidden = !cfgB;
@@ -233,6 +238,11 @@ FireOps.registra({
       const attr = Vb > 0 ? Hb / Vb : Infinity;
       const I = Math.PI / 64 * (Math.pow(Dm, 4) - Math.pow(Dm - 2 * sp, 4));
       const Pcr = Math.PI * Math.PI * E * I / (L * L);
+      const mu = Math.max(0.05, num("#pl-mu", 0.5));
+      const tmaxV = Math.max.apply(null, t.filter(v => isFinite(v)).concat([0]));
+      const Mr = len(cross(H, Fc));                                   // momento ribaltante di carico + recupero rispetto alla base
+      const fsScivol = isFinite(attr) && attr > 0 ? mu / attr : (isFinite(attr) ? Infinity : 0);
+      const fsRibalt = R > 0 && tmaxV > 0 ? R * 1000 / tmaxV : NaN;
       const ok = !!ris && C > 0 && cavi.every((c, i) => !isNaN(t[i]) && (cfgB || t[i] > 0));
       // forze sui punti d'appoggio: il cavo tira l'ancoraggio verso la testa, il palo spinge il terreno lungo l'asse
       const forze = cavi.map((c, i) => ({pos: c.pos, F: per(uni(sub(H, c.pos)), Math.max(0, t[i] || 0)), nome: c.nome, col: "#ff9f1c"}));
@@ -251,6 +261,8 @@ FireOps.registra({
         if (el > 60) avv.push("I cavi sono molto ripidi (" + fmt(el, 0) + "° sull’orizzontale): lavorano male. Allontana gli ancoraggi.");
         if (Pcr > 0 && C > Pcr / 3) avv.push("La compressione supera un terzo del carico di instabilità del palo: usa un tubo più robusto o più corto.");
         if (R > 0 && Math.max(...t.filter(v => isFinite(v))) / 1000 > R / 3) avv.push("Il cavo più carico supera un terzo della resistenza indicata per ancoraggi e tiranti.");
+        if (isFinite(fsScivol) && fsScivol < 1.5) avv.push("Scivolamento della base: l’attrito richiesto (" + fmt(attr, 2) + ") è oltre i due terzi di quello disponibile (μ " + fmt(mu, 2) + "). Il piede del palo può scivolare e il palo ribaltarsi verso il vuoto: blocca la base con un arresto, una piastra o un ancoraggio, oppure riduci l’inclinazione.");
+        if (isFinite(fsRibalt) && fsRibalt < 3) avv.push("Ribaltamento: il margine sui tiranti è sotto 3. Se un tirante cede o si scarica il palo si ribalta verso il vuoto: rinforza i tiranti o riduci il carico.");
         if (attr > 0.5) avv.push("La base spinge molto di lato rispetto al verticale: serve un arresto o un ancoraggio della base contro lo scivolamento.");
         if (!interno && R > 0 && T / 1000 > R / 3) avv.push("Il capo di recupero carica il suo punto oltre un terzo della resistenza indicata.");
       }
@@ -266,7 +278,10 @@ FireOps.registra({
         elemento("Capo di recupero", k(T)) +
         elemento("Coefficiente dei cavi", R > 0 && tmax > 0 ? fmt(R * 1000 / tmax, 1) : "—") +
         elemento(interno ? "Reazione a terra (C − T)" : "Reazione a terra", isFinite(Cg) ? k(Math.abs(Cg)) : "—") +
-        elemento("Spinta orizzontale alla base", isFinite(Cg) ? k(Hb) : "—");
+        elemento("Spinta orizzontale alla base", isFinite(Cg) ? k(Hb) : "—") +
+        elemento("Scivolamento della base (μ " + fmt(mu, 2) + ")", isFinite(fsScivol) ? "× " + fmt(fsScivol, 1) + " <small>attrito richiesto " + fmt(isFinite(attr) ? attr : 0, 2) + "</small>" : "—", !(fsScivol >= 1.5)) +
+        elemento("Momento ribaltante alla base", fmt(Mr / 1000, 2) + ' <small>kN·m</small>') +
+        elemento("Ribaltamento del palo", isFinite(fsRibalt) ? "× " + fmt(fsRibalt, 1) + " <small>sul cedimento dei tiranti</small>" : "—", isFinite(fsRibalt) && fsRibalt < 3);
       $("#pl-avv").innerHTML = avv.map(x => '<div class="avv">' + x + "</div>").join("");
       disegna();
     }
@@ -349,6 +364,7 @@ FireOps.registra({
       const Y = y1 * cp - z * sp, Z = z * cp + y1 * sp;
       return [x1, Y, Z];
     }
+    let maniglie = [], presa3 = null;
     function disegna() {
       if (!geo) return;
       const w = cv.clientWidth || 320, h = cv.clientHeight || 300, dpr = window.devicePixelRatio || 1;
@@ -392,15 +408,22 @@ FireOps.registra({
       etichetta([x1 - g * 0.6, 0, 0], "VUOTO", "#e8734a"); etichetta([x0 + g * 0.6, 0, 0], "RETRO", "#8b96a3");
       etichetta([g * 1.25, 0, 0], "x", "#d8262f"); etichetta([0, g * 1.25, 0], "sinistra", "#2f9e5b");
       // cavi
+      maniglie = [];
       cavi.forEach((cv_, i) => {
         const att = geo.ok || cv_.col; const scarico = geo.t && !(geo.t[i] > 1e-6);
         linea(H, cv_.pos, scarico ? "#e8734a" : cv_.col, 2, scarico ? [5, 4] : null);
         const t = pr(cv_.pos); ctx.fillStyle = cv_.col; ctx.fillRect(t[0] - 4, t[1] - 4, 8, 8);
+        maniglie.push({id: cv_.id, x: t[0], y: t[1], k: sc * t[2], col: cv_.col, z: cv_.pos[2]});
         if (Math.abs(cv_.pos[2]) > 0.05) { linea(cv_.pos, [cv_.pos[0], cv_.pos[1], 0], "#8b96a3", 2.5); const tf = pr([cv_.pos[0], cv_.pos[1], 0]); ctx.fillStyle = "#8b96a3"; ctx.beginPath(); ctx.arc(tf[0], tf[1], 3, 0, 7); ctx.fill(); }
       });
       // capo di recupero
-      if (!interno) { linea(H, P, "#2f9e5b", 2); const tp = pr(P); ctx.fillStyle = "#2f9e5b"; ctx.beginPath(); ctx.arc(tp[0], tp[1], 5, 0, 7); ctx.fill(); }
+      if (!interno) { linea(H, P, "#2f9e5b", 2); const tp = pr(P); ctx.fillStyle = "#2f9e5b"; ctx.beginPath(); ctx.arc(tp[0], tp[1], 5, 0, 7); ctx.fill(); maniglie.push({id: "p", x: tp[0], y: tp[1], k: sc * tp[2], col: "#2f9e5b", z: P[2]}); }
       else linea(H, B, "#2f9e5b", 2, [2, 3]);
+      // maniglie di quota: anello bianco e valore, si trascinano in verticale
+      maniglie.forEach(m => {
+        ctx.strokeStyle = "#eceff3"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(m.x, m.y, 11, 0, 7); ctx.stroke();
+        ctx.fillStyle = m.col; ctx.font = "bold 11px sans-serif"; ctx.textAlign = "left"; ctx.fillText((m.z >= 0 ? "+" : "") + fmt(m.z, 1) + " m", m.x + 14, m.y + 4);
+      });
       // carico appeso
       linea(H, Cd, "#e8734a", 2);
       const tc = pr(Cd); ctx.fillStyle = "#e8734a"; ctx.fillRect(tc[0] - 9, tc[1] - 1, 18, 16);
@@ -434,9 +457,20 @@ FireOps.registra({
     // rotazione col dito/mouse + pizzico per lo zoom
     const dita = new Map();
     let ultimo = null, dpz = 0;
-    cv.addEventListener("pointerdown", e => { cv.setPointerCapture(e.pointerId); dita.set(e.pointerId, [e.clientX, e.clientY]); ultimo = [e.clientX, e.clientY]; dpz = 0; cv.style.cursor = "grabbing"; });
+    cv.addEventListener("pointerdown", e => {
+      cv.setPointerCapture(e.pointerId); dita.set(e.pointerId, [e.clientX, e.clientY]); ultimo = [e.clientX, e.clientY]; dpz = 0; cv.style.cursor = "grabbing";
+      const rc = cv.getBoundingClientRect(), px = e.clientX - rc.left, py = e.clientY - rc.top;
+      let best = null, bd = 28;
+      maniglie.forEach(m => { const d = Math.hypot(m.x - px, m.y - py); if (d < bd) { bd = d; best = m; } });
+      presa3 = best && dita.size === 1 ? {id: best.id, k: best.k, z0: best.z, y0: e.clientY} : null;
+    });
     cv.addEventListener("pointermove", e => {
       if (!dita.has(e.pointerId)) return;
+      if (presa3 && dita.size === 1) {
+        const dz = -(e.clientY - presa3.y0) / (presa3.k * Math.max(0.25, Math.cos(pitch)));
+        $("#pl-" + presa3.id + "z").value = String(Math.round((presa3.z0 + dz) * 10) / 10);
+        dita.set(e.pointerId, [e.clientX, e.clientY]); calcola(); return;
+      }
       dita.set(e.pointerId, [e.clientX, e.clientY]);
       if (dita.size === 2) {
         const [p1, p2] = [...dita.values()], dd = Math.hypot(p1[0] - p2[0], p1[1] - p2[1]);
@@ -447,7 +481,7 @@ FireOps.registra({
       pitch = Math.min(1.5, Math.max(-0.1, pitch + (e.clientY - ultimo[1]) * 0.01));
       ultimo = [e.clientX, e.clientY]; disegna();
     });
-    const fine = e => { dita.delete(e.pointerId); dpz = 0; ultimo = dita.size ? [...dita.values()][0] : null; cv.style.cursor = "grab"; };
+    const fine = e => { presa3 = null; dita.delete(e.pointerId); dpz = 0; ultimo = dita.size ? [...dita.values()][0] : null; cv.style.cursor = "grab"; };
     cv.addEventListener("pointerup", fine); cv.addEventListener("pointercancel", fine);
     cv.addEventListener("wheel", e => { e.preventDefault(); zoom = Math.min(4, Math.max(0.4, zoom * (e.deltaY < 0 ? 1.1 : 0.9))); disegna(); }, {passive: false});
     cv.addEventListener("keydown", e => {
