@@ -1,10 +1,11 @@
-/* FireOps VVF - modulo "scala" (funzione SAF): scala appoggiata al muro con sistema discensore, taglia 2:1.
+/* FireOps VVF - modulo "scala" (funzione SAF): scala appoggiata al muro con sistema discensore, con o senza taglia 2:1 sulla barella.
  * Stato limite di ribaltamento: piede minimo in funzione dell'angolo di uscita della corda.
- * Stesse formule dello strumento "Analisi ribaltamento scala" (html/scala_discensore.html):
- *   T = P/2;  F = T*(cos a, sin a - 2);  |F| = (P/2)*sqrt(5 + 4 sin a)
- *   d_min = L cos a / sqrt(5 + 4 sin a)               (senza peso della scala)
- *   d_min,Wl = L cos a / sqrt(1 + k^2 + 2k sin a),  k = 2 + Wl/P
- *   beta = atan((2 - sin a)/cos a)                     (angolo della scala sull'orizzontale)
+ * Due modalita': con taglia 2:1 sulla barella (n = 2 tratti verticali) o senza taglia (n = 1 tratto).
+ *   T = P/n;  F = T*(cos a, -(n + sin a))  (forza sull'ancoraggio, y verso l'alto);  |F| = T*sqrt(1 + n^2 + 2 n sin a)
+ *   d_min = L cos a / sqrt(1 + n^2 + 2 n sin a)        (senza peso della scala)
+ *   d_min,Wl = L cos a / sqrt(1 + k^2 + 2k sin a),  k = n (1 + Wl/(2P))
+ *   beta = atan((n + sin a)/cos a)                     (angolo della scala sull'orizzontale)
+ * Con n = 2 coincide con lo strumento "Analisi ribaltamento scala" (html/scala_discensore.html).
  * a = alzo del discensore: positivo verso il basso, negativo verso l'alto.
  */
 FireOps.registra({
@@ -20,6 +21,7 @@ FireOps.registra({
 .pg-scala .riga:first-of-type { margin-top: 0; }
 .pg-scala label { display: block; font-size: 12.5px; color: var(--text-dim); margin-bottom: 4px; }
 .pg-scala input[type=number] { width: 100%; min-height: 44px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--text); font: inherit; font-size: 16px; }
+.pg-scala select { width: 100%; min-height: 44px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--text); font: inherit; font-size: 16px; }
 .pg-scala input[type=range] { width: 100%; min-height: 44px; accent-color: var(--yellow); }
 .pg-scala input:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
 .pg-scala .stato { padding: 12px; border-radius: 8px; font-weight: 800; font-size: 15px; text-align: center; border: 2px solid; }
@@ -69,6 +71,8 @@ FireOps.registra({
 
 <div class="blocco">
   <h2 class="tit">Dati</h2>
+  <div class="riga" style="margin-top:0"><div style="grid-column:1/-1"><label for="sc-md">Barella</label>
+    <select id="sc-md"><option value="T">Con taglia 2:1 sulla barella (due tratti di corda)</option><option value="S">Senza taglia (un solo tratto, la barella appesa alla corda)</option></select></div></div>
   <div class="riga">
     <div><label for="sc-P">Carico operatore (kg)</label><input type="number" id="sc-P" inputmode="decimal" min="30" max="250" step="1" value="100"></div>
     <div><label for="sc-Wl">Peso della scala (kg)</label><input type="number" id="sc-Wl" inputmode="decimal" min="0" max="120" step="1" value="35"></div>
@@ -96,7 +100,7 @@ FireOps.registra({
 
 <div class="blocco">
   <h2 class="tit">Ipotesi</h2>
-  <p class="nota" style="margin-top:0">Analisi statica piana. La scala è appoggiata a un muro liscio (solo reazione normale) e a terra ha attrito. La corda forma una taglia 2:1 dall’ancoraggio in testa: il carico dà T = P/2 in ogni tratto. Si trascurano effetti dinamici. Per verificare l’attrito al piede serve un coefficiente almeno pari a cos α / (2 − sin α). Non sostituisce la verifica del tuo istruttore SAF.</p>
+  <p class="nota" style="margin-top:0">Analisi statica piana. La scala è appoggiata a un muro liscio (solo reazione normale) e a terra ha attrito. Con la taglia 2:1 sulla barella la corda ha due tratti verticali e T = P/2 in ogni tratto; senza taglia c’è un solo tratto e T = P. La corda passa dall’ancoraggio in testa e va al discensore. Si trascurano effetti dinamici. Per verificare l’attrito al piede serve un coefficiente almeno pari a cos α / (n + sin α), con n = 2 con la taglia e n = 1 senza. Non sostituisce la verifica del tuo istruttore SAF.</p>
 </div>
 `,
 
@@ -107,16 +111,19 @@ FireOps.registra({
     const fmt = (v, d) => Number(v).toLocaleString("it-IT", {minimumFractionDigits: d, maximumFractionDigits: d});
     const num = (id, d) => { const v = parseFloat($(id).value); return isFinite(v) ? v : d; };
 
-    function calc(P_kg, Wl_kg, a_deg, L) {
-      const P = P_kg * G, Wl = Wl_kg * G, T = P / 2, a = a_deg * RAD, ca = Math.cos(a), sa = Math.sin(a);
-      const kw = 2 + Wl / P, d2 = Math.sqrt(Math.max(0, 5 + 4 * sa)), dw = Math.sqrt(Math.max(0, 1 + kw * kw + 2 * kw * sa));
+    const nTratti = () => ($("#sc-md").value === "S" ? 1 : 2);
+    function calc(P_kg, Wl_kg, a_deg, L, n) {
+      n = n || nTratti();
+      const P = P_kg * G, Wl = Wl_kg * G, T = P / n, a = a_deg * RAD, ca = Math.cos(a), sa = Math.sin(a);
+      const kw = n * (1 + Wl / (2 * P)), d2 = Math.sqrt(Math.max(0, 1 + n * n + 2 * n * sa)), dw = Math.sqrt(Math.max(0, 1 + kw * kw + 2 * kw * sa));
       return {
         piede2: d2 > 0 ? L * ca / d2 : 0, piedeW: dw > 0 ? L * ca / dw : 0,
-        beta: Math.atan2(2 - sa, ca) / RAD, Fx: T * ca, Fy: T * (sa - 2), Fmag: T * d2, T, ca, sa
+        beta: Math.atan2(n + sa, ca) / RAD, Fx: T * ca, Fy: -T * (n + sa), Fmag: T * d2, T, ca, sa, n
       };
     }
 
     function schema(L, d, alzo, r) {
+      const n = r.n;
       const W = 300, H = 230, x0 = 46, yg = 200, sc = 160 / L;
       const dd = Math.min(d, L * 0.999), hh = Math.sqrt(L * L - dd * dd), xf = x0 + dd * sc, yh = yg - hh * sc;
       const a = alzo * RAD, fs = 70 / Math.max(r.T, 1);
@@ -127,11 +134,17 @@ FireOps.registra({
       const dm = Math.min(r.piede2, L), xm = x0 + dm * sc;
       s += '<path d="M' + xm + ' ' + (yg - 8) + 'V' + (yg + 8) + '" stroke="#3fa66b" stroke-width="3"/><text x="' + xm + '" y="' + (yg - 14) + '" font-size="11" fill="#3fa66b" text-anchor="middle">min ' + fmt(r.piede2, 2) + ' m</text>';
       s += '<text x="' + xf + '" y="' + (yg + 22) + '" font-size="11" fill="#eceff3" text-anchor="middle">piede ' + fmt(d, 2) + ' m</text>';
-      // corda al discensore
+      // corda al discensore, prolungata tratteggiata fino a terra (o fino al bordo del disegno)
       const rx = x0 + 70 * Math.cos(a), ry = yh + 70 * Math.sin(a);
+      let ex = rx, ey = ry;
+      if (Math.sin(a) > 0.02) { const t = (yg - yh) / Math.sin(a); ex = x0 + t * Math.cos(a); ey = yg; if (ex > W - 8) { const t2 = (W - 8 - x0) / Math.cos(a); ex = W - 8; ey = yh + t2 * Math.sin(a); } }
+      else if (Math.cos(a) > 0.02) { const t2 = (W - 8 - x0) / Math.cos(a); ex = W - 8; ey = Math.max(8, yh + t2 * Math.sin(a)); }
+      s += '<path d="M' + rx + ' ' + ry + 'L' + ex + ' ' + ey + '" stroke="#4A93C8" stroke-width="2" stroke-dasharray="6 5" opacity=".8"/>';
       s += '<path d="M' + x0 + ' ' + yh + 'L' + rx + ' ' + ry + '" stroke="#4A93C8" stroke-width="2.5"/><text x="' + (rx + 4) + '" y="' + (ry + (alzo >= 0 ? 12 : -4)) + '" font-size="11" fill="#4A93C8">discensore</text>';
-      // due tratti verso il carico
-      s += '<path d="M' + (x0 + 6) + ' ' + yh + 'v42M' + (x0 + 14) + ' ' + yh + 'v42" stroke="#8b96a3" stroke-width="2"/><rect x="' + (x0 - 2) + '" y="' + (yh + 42) + '" width="26" height="14" rx="3" fill="#ffd700"/>';
+      // tratti verso il carico: due con la taglia, uno senza
+      s += n === 2
+        ? '<path d="M' + (x0 + 6) + ' ' + yh + 'v42M' + (x0 + 14) + ' ' + yh + 'v42" stroke="#8b96a3" stroke-width="2"/><rect x="' + (x0 - 2) + '" y="' + (yh + 42) + '" width="26" height="14" rx="3" fill="#ffd700"/>'
+        : '<path d="M' + (x0 + 10) + ' ' + yh + 'v42" stroke="#8b96a3" stroke-width="2"/><rect x="' + (x0 - 2) + '" y="' + (yh + 42) + '" width="26" height="14" rx="3" fill="#ffd700"/>';
       // forza risultante
       const fx = r.Fx * fs, fy = -r.Fy * fs;
       s += '<path d="M' + x0 + ' ' + yh + 'l' + fx + ' ' + fy + '" stroke="#d8262f" stroke-width="3"/>';
@@ -145,7 +158,7 @@ FireOps.registra({
       const P = Math.max(30, num("#sc-P", 100)), Wl = Math.max(0, num("#sc-Wl", 35)), L = Math.max(2, num("#sc-L", 10.33));
       const d = Math.max(0.3, num("#sc-d", 4)), al = num("#sc-a", 0);
       $("#sc-al").textContent = al + "°";
-      const r = calc(P, Wl, al, L), margine = d - r.piede2;
+      const n = nTratti(), r = calc(P, Wl, al, L, n), margine = d - r.piede2;
       const cl = margine < 0 ? "err" : margine < 0.5 ? "warn" : "ok";
       $("#sc-st").className = "stato " + cl;
       $("#sc-st").textContent = {ok: "STABILE: margine positivo", warn: "ATTENZIONE: margine sotto 0,5 m", err: "RIBALTAMENTO: aumenta il piede"}[cl];
@@ -153,28 +166,34 @@ FireOps.registra({
       $("#sc-m").innerHTML = c("Piede minimo senza peso scala", fmt(r.piede2, 2), "m") + c("Piede minimo con peso scala", fmt(r.piedeW, 2), "m") +
         c("Margine", (margine >= 0 ? "+" : "") + fmt(margine, 2), "m") + c("Angolo della scala", fmt(r.beta, 1), "°") +
         c("Forza sull’ancoraggio", fmt(r.Fmag, 0), "N") + c("Tensione della corda", fmt(r.T, 0), "N");
-      $("#sc-f").textContent = "F = (" + fmt(r.Fx, 0) + " N, " + fmt(r.Fy, 0) + " N). Attrito richiesto al piede: " + fmt(r.ca / (2 - r.sa), 2) + ".";
+      $("#sc-f").textContent = (n === 2 ? "Con taglia 2:1: due tratti verticali da P/2. " : "Senza taglia: un tratto da P, il carico pesa tutto sulla corda. ") + "F = (" + fmt(r.Fx, 0) + " N, " + fmt(r.Fy, 0) + " N). Attrito richiesto al piede: " + fmt(r.ca / (n + r.sa), 2) + ".";
       $("#sc-sv").innerHTML = schema(L, d, al, r);
       aggiorna3(L, d, al, r, P);
       let t = "<tr><th>Alzo</th><th>Piede min. senza scala</th><th>con scala</th><th>Angolo</th><th>|F| (N)</th></tr>";
       for (let a = -90; a <= 90; a += 15) {
-        const q = calc(P, Wl, a, L), m = d - q.piede2, cls = m < 0 ? "e" : m < 0.5 ? "w" : "";
+        const q = calc(P, Wl, a, L, n), m = d - q.piede2, cls = m < 0 ? "e" : m < 0.5 ? "w" : "";
         t += '<tr' + (Math.abs(a - al) < 7.5 ? ' class="cur"' : "") + "><td>" + a + '°</td><td class="' + cls + '">' + fmt(q.piede2, 2) + "</td><td>" + fmt(q.piedeW, 2) + "</td><td>" + fmt(q.beta, 0) + "°</td><td>" + fmt(q.Fmag, 0) + "</td></tr>";
       }
       $("#sc-t").innerHTML = t;
     }
     // ---------- vista 3D: x = distanza dal muro, y = larghezza, z = altezza ----------
     let q3 = null;
+    // punto in cui arriva la linea del discensore: a terra se scende, altrimenti dopo 1,5 L
+    const estremo = g => {
+      const a = g.al * RAD, ca = Math.cos(a), sa = Math.sin(a);
+      if (sa > 0.02) { const t = Math.min(g.hh / sa, 2 * g.L); return [t * ca, 0, g.hh - t * sa]; }
+      const t = g.L * 1.5; return [t * ca, 0, g.hh - t * sa];
+    };
     let v3 = null;
     const avvia3d = () => { v3 = SafVista3D.crea($("#sc-cv"), {
       trascina: (id, px, py, c) => trascina(id, px, py, c),
-      punti: () => { const g = q3 || {L: 10, d: 4, hh: 9}; return [[-0.5, -2.5, 0], [g.d + 2, 2.5, g.hh + 1], [0, 0, g.hh]]; },
+      punti: () => { const g = q3 || {L: 10, d: 4, hh: 9}; const E = g.al === undefined ? [0, 0, 0] : estremo(g); return [[-0.5, -2.5, 0], [Math.max(g.d, E[0]) + 2, 2.5, Math.max(g.hh, E[2]) + 1], [0, 0, g.hh], E]; },
       disegna: c => {
         if (!q3) return;
         const {L, d, hh, r, al, P} = q3, {ctx, pr, linea} = c;
         const ph = Math.PI / 180 * al, ym = 0.25;
         const txt = (t, q, col, dx, dy) => { const p = pr(q); ctx.globalAlpha = c.chiaro(p[2]); ctx.fillStyle = col; ctx.font = "bold 12px sans-serif"; ctx.textAlign = "center"; ctx.fillText(t, p[0] + (dx || 0), p[1] + (dy || 0)); ctx.globalAlpha = 1; };
-        const W = Math.max(3, L / 3), xe = d + 2;
+        const W = Math.max(3, L / 3), xe = Math.max(d, estremo(q3)[0]) + 2;
         // muro (piano x = 0) e terreno (piano z = 0)
         for (let z = 0; z <= hh + 1; z += 1) linea([0, -W, z], [0, W, z], "#4a5460", 1);
         for (let y = -W; y <= W + 1e-6; y += 1) linea([0, y, 0], [0, y, hh + 1], "#4a5460", 1);
@@ -191,12 +210,16 @@ FireOps.registra({
         txt("piede min " + fmt(r.piede2, 2) + " m", [dm, 0, 0], "#3fa66b", 0, -8);
         // ancoraggio, due tratti verso il carico, corda al discensore
         const A = [0, 0, hh], zc = Math.max(0.3, hh - 2.5);
-        linea(A, [0.04, 0, zc], "#8b96a3", 2); linea([0.14, 0, hh], [0.14, 0, zc], "#8b96a3", 2);
+        linea(A, [0.04, 0, zc], "#8b96a3", 2); if (r.n === 2) linea([0.14, 0, hh], [0.14, 0, zc], "#8b96a3", 2);
         const pc = pr([0.04, 0, zc]); ctx.fillStyle = "#ffd700"; ctx.fillRect(pc[0] - 9, pc[1] - 5, 18, 12);
         txt(fmt(P, 0) + " kg", [0.04, 0, zc], "#ffd700", 0, 24);
         const ro = Math.min(L * 0.35, 3);
         linea(A, [ro * Math.cos(ph), 0, hh - ro * Math.sin(ph)], "#4A93C8", 3);
         txt("discensore", [ro * Math.cos(ph), 0, hh - ro * Math.sin(ph)], "#4A93C8", 0, -6);
+        // prolungamento tratteggiato della linea del discensore, fino a terra se scende
+        const E = estremo(q3);
+        linea([ro * Math.cos(ph), 0, hh - ro * Math.sin(ph)], E, "#4A93C8", 2, [6, 5]);
+        if (E[2] < 0.01) { const pe = pr(E); ctx.fillStyle = "#4A93C8"; ctx.beginPath(); ctx.arc(pe[0], pe[1], 4, 0, 7); ctx.fill(); txt("a terra " + fmt(E[0], 1) + " m dal muro", E, "#4A93C8", 0, 16); }
         // forza sull'ancoraggio
         const k = Math.min(L * 0.45, 4.5) / Math.max(r.Fmag, 1);
         const F = [r.Fx * k, 0, r.Fy * k];
