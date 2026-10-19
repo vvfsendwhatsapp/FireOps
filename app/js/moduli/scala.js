@@ -76,7 +76,7 @@ FireOps.registra({
     <button type="button" id="sc-zm" aria-label="Allontana">−</button>
     <button type="button" id="sc-zp" aria-label="Avvicina">+</button>
   </div>
-  <p class="nota">Trascina per ruotare, pizzica o usa la rotella per lo zoom. Per spostare la vista usa due dita, il tasto destro del mouse (o Maiusc) oppure il pulsante «Sposta». I pulsanti delle viste la riportano al centro. Il centro della vista è la scala; la linea tratteggiata del discensore può uscire dal disegno. Gli anelli bianchi si spostano: quello al piede della scala ne cambia la distanza dal muro, quello sulla corda il suo angolo (alzo). Il muro è il reticolo grigio, il terreno quello più scuro; la freccia rossa è la forza sull’ancoraggio, la linea blu la corda verso il discensore, il segno verde a terra il piede minimo. Gli elementi più vicini sono più marcati.</p>
+  <p class="nota">Trascina per ruotare, pizzica o usa la rotella per lo zoom. Per spostare la vista usa due dita, il tasto destro del mouse (o Maiusc) oppure il pulsante «Sposta». I pulsanti delle viste la riportano al centro. Il centro della vista è la scala; la linea tratteggiata del discensore può uscire dal disegno. Gli anelli bianchi si spostano: quello al piede della scala ne cambia la distanza dal muro, quello sulla corda il suo angolo (alzo). Il muro è il reticolo grigio, il terreno quello più scuro; la freccia rossa è la forza sull’ancoraggio (in kN), la verde la reazione del muro, le arancioni la reazione e l’attrito a terra, la linea blu la corda verso il discensore, il segno verde a terra il piede minimo. Gli elementi più vicini sono più marcati.</p>
 </div>
 
 <div class="blocco">
@@ -164,16 +164,25 @@ FireOps.registra({
       const fx = r.Fx * fs, fy = -r.Fy * fs;
       s += '<path d="M' + x0 + ' ' + yh + 'l' + fx + ' ' + fy + '" stroke="#d8262f" stroke-width="3"/>';
       s += '<circle cx="' + x0 + '" cy="' + yh + '" r="5" fill="#eceff3"/>';
-      s += '<text x="' + (x0 + 10) + '" y="' + (yh - 8) + '" font-size="11" fill="#eceff3">|F| ' + fmt(r.Fmag, 0) + ' N</text>';
+      s += '<text x="' + (x0 + 10) + '" y="' + (yh - 8) + '" font-size="11" fill="#eceff3">|F| ' + kN(r.Fmag) + ' kN</text>';
       return s + "</svg>";
     }
 
+    const kN = v => fmt(v / 1000, 2);
+    // reazioni nella configurazione impostata (piede d): equilibrio di forze e momenti attorno al piede
+    function reazioni(q, Wl_kg, L, d) {
+      const Wl = Wl_kg * G, h = hAlt(L, d);
+      const N = (-d * q.Fy - h * q.Fx + d * Wl / 2) / h;     // reazione del muro sulla testa (positiva = spinge la scala via dal muro)
+      const Rn = -q.Fy + Wl, Rf = -(q.Fx + N);              // terra: verticale verso l'alto, attrito (negativo = verso il muro)
+      return {N, Rn, Rf, mu: Rn > 0 ? Math.abs(Rf) / Rn : Infinity, Rtot: Math.hypot(Rn, Rf), Wl};
+    }
     let aggiorna3 = () => {};
     function aggiorna() {
       const P = Math.max(30, num("#sc-P", 100)), Wl = Math.max(0, num("#sc-Wl", 35)), L = Math.max(2, num("#sc-L", 10.33));
       const d = Math.max(0.3, num("#sc-d", 4)), al = num("#sc-a", 0);
       $("#sc-al").textContent = al + "°";
       const n = nTratti(), r = calc(P, Wl, al, L, n), margine = d - r.piede2;
+      const rz = reazioni(r, Wl, L, d); r.rz = rz;
       const cl = margine < 0 ? "err" : margine < 0.5 ? "warn" : "ok";
       const al3 = $("#sc-all");
       if (margine < 0) { al3.hidden = false; al3.className = "allarme"; al3.innerHTML = "⚠ RIBALTAMENTO DELLA SCALA<small>Il piede è a " + fmt(d, 2) + " m dal muro, sotto il minimo di " + fmt(r.piede2, 2) + " m: la scala si ribalta. Allarga il piede di almeno " + fmt(-margine, 2) + " m o riduci il carico.</small>"; }
@@ -185,14 +194,16 @@ FireOps.registra({
       const c = (k, v, u) => '<div class="vcell"><div class="k">' + k + '</div><div class="v">' + v + " <small>" + u + "</small></div></div>";
       $("#sc-m").innerHTML = c("Piede minimo senza peso scala", fmt(r.piede2, 2), "m") + c("Piede minimo con peso scala", fmt(r.piedeW, 2), "m") +
         c("Margine", (margine >= 0 ? "+" : "") + fmt(margine, 2), "m") + c("Angolo della scala", fmt(r.beta, 1), "°") +
-        c("Forza sull’ancoraggio", fmt(r.Fmag, 0), "N") + c("Tensione della corda", fmt(r.T, 0), "N");
-      $("#sc-f").textContent = (n === 2 ? "Con taglia 2:1: due tratti verticali da P/2. " : "Senza taglia: un tratto da P, il carico pesa tutto sulla corda. ") + (r.sa > 0.02 ? "La linea del discensore arriva a terra a " + fmt(Math.min(hAlt(L, d) / r.sa, 2 * L) * r.ca, 1) + " m dal muro. " : "") + "F = (" + fmt(r.Fx, 0) + " N, " + fmt(r.Fy, 0) + " N). Attrito richiesto al piede: " + fmt(r.ca / (n + r.sa), 2) + ".";
+        c("Carico appeso (operatore + barella)", kN(P * G), "kN") + c("Tensione della corda", kN(r.T), "kN") +
+        c("Forza sull’ancoraggio", kN(r.Fmag), "kN") + c("Reazione del muro", kN(Math.max(0, rz.N)), "kN") +
+        c("Reazione verticale a terra", kN(rz.Rn), "kN") + c("Attrito a terra richiesto", kN(Math.abs(rz.Rf)), "kN <span>μ " + (isFinite(rz.mu) ? fmt(rz.mu, 2) : "—") + "</span>");
+      $("#sc-f").textContent = (n === 2 ? "Con taglia 2:1: due tratti verticali da P/2. " : "Senza taglia: un tratto da P, il carico pesa tutto sulla corda. ") + (r.sa > 0.02 ? "La linea del discensore arriva a terra a " + fmt(Math.min(hAlt(L, d) / r.sa, 2 * L) * r.ca, 1) + " m dal muro. " : "") + "F = (" + kN(r.Fx) + " kN, " + kN(r.Fy) + " kN), verso destra e verso il basso. Con il piede impostato l’attrito richiesto a terra è μ " + (isFinite(rz.mu) ? fmt(rz.mu, 2) : "—") + (rz.N < 0 ? " (il muro dovrebbe tirare: la scala si ribalta)." : ".");
       $("#sc-sv").innerHTML = schema(L, d, al, r);
       aggiorna3(L, d, al, r, P);
-      let t = "<tr><th>Alzo</th><th>Piede min. senza scala</th><th>con scala</th><th>Angolo</th><th>|F| (N)</th></tr>";
+      let t = "<tr><th>Alzo</th><th>Piede min. senza scala</th><th>con scala</th><th>Angolo</th><th>|F| (kN)</th></tr>";
       for (let a = -90; a <= 90; a += 15) {
         const q = calc(P, Wl, a, L, n), m = d - q.piede2, cls = m < 0 ? "e" : m < 0.5 ? "w" : "";
-        t += '<tr' + (Math.abs(a - al) < 7.5 ? ' class="cur"' : "") + "><td>" + a + '°</td><td class="' + cls + '">' + fmt(q.piede2, 2) + "</td><td>" + fmt(q.piedeW, 2) + "</td><td>" + fmt(q.beta, 0) + "°</td><td>" + fmt(q.Fmag, 0) + "</td></tr>";
+        t += '<tr' + (Math.abs(a - al) < 7.5 ? ' class="cur"' : "") + "><td>" + a + '°</td><td class="' + cls + '">' + fmt(q.piede2, 2) + "</td><td>" + fmt(q.piedeW, 2) + "</td><td>" + fmt(q.beta, 0) + "°</td><td>" + kN(q.Fmag) + "</td></tr>";
       }
       $("#sc-t").innerHTML = t;
     }
@@ -241,12 +252,24 @@ FireOps.registra({
         linea([ro * Math.cos(ph), 0, hh - ro * Math.sin(ph)], E, "#4A93C8", 2, [6, 5]);
         if (E[2] < 0.01 && E[0] < xe + L) { const pe = pr(E); ctx.fillStyle = "#4A93C8"; ctx.beginPath(); ctx.arc(pe[0], pe[1], 4, 0, 7); ctx.fill(); txt("a terra " + fmt(E[0], 1) + " m dal muro", E, "#4A93C8", 0, 16); }
         // forza sull'ancoraggio
-        const k = Math.min(L * 0.45, 4.5) / Math.max(r.Fmag, 1);
+        const rz = r.rz, k = Math.min(L * 0.4, 4) / Math.max(r.Fmag, Math.abs(rz.N), rz.Rn, Math.abs(rz.Rf), 1);
+        const fr = (P0, v, col, txtv, dy) => {
+          const P1 = [P0[0] + v[0] * k, 0, P0[2] + v[1] * k];
+          if (Math.hypot(v[0], v[1]) < 1) return;
+          linea(P0, P1, col, 4);
+          const q1 = pr(P1), q0 = pr(P0), g = Math.atan2(q1[1] - q0[1], q1[0] - q0[0]);
+          ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(q1[0], q1[1]); ctx.lineTo(q1[0] - 11 * Math.cos(g - 0.4), q1[1] - 11 * Math.sin(g - 0.4)); ctx.lineTo(q1[0] - 11 * Math.cos(g + 0.4), q1[1] - 11 * Math.sin(g + 0.4)); ctx.fill();
+          txt(txtv, P1, col, 0, dy);
+        };
+        // reazioni: muro sulla scala (via dal muro), terra sul piede (verticale e attrito)
+        if (rz.N > 1) fr([0, 0, hh * 0.3], [rz.N, 0], "#2f9e5b", "muro " + fmt(rz.N / 1000, 2) + " kN", -6);
+        fr([d, 0, 0], [0, rz.Rn], "#ff9f1c", "terra " + fmt(rz.Rn / 1000, 2) + " kN", -8);
+        fr([d, 0, 0], [rz.Rf, 0], "#ff9f1c", "attrito " + fmt(Math.abs(rz.Rf) / 1000, 2) + " kN", 16);
         const F = [r.Fx * k, 0, r.Fy * k];
         linea(A, [A[0] + F[0], 0, A[2] + F[2]], "#d8262f", 4);
         const pf = pr([A[0] + F[0], 0, A[2] + F[2]]), p0 = pr(A), an = Math.atan2(pf[1] - p0[1], pf[0] - p0[0]);
         ctx.fillStyle = "#d8262f"; ctx.beginPath(); ctx.moveTo(pf[0], pf[1]); ctx.lineTo(pf[0] - 11 * Math.cos(an - 0.4), pf[1] - 11 * Math.sin(an - 0.4)); ctx.lineTo(pf[0] - 11 * Math.cos(an + 0.4), pf[1] - 11 * Math.sin(an + 0.4)); ctx.fill();
-        txt(fmt(r.Fmag, 0) + " N", [A[0] + F[0], 0, A[2] + F[2]], "#d8262f", 0, 16);
+        txt(fmt(r.Fmag / 1000, 2) + " kN", [A[0] + F[0], 0, A[2] + F[2]], "#d8262f", 0, 16);
         c.maniglia("piede", [d, 0, 0], "piede " + fmt(d, 1) + " m");
         c.maniglia("alzo", [ro * Math.cos(ph), 0, hh - ro * Math.sin(ph)], "alzo " + al + "°");
         const pa = pr(A); ctx.fillStyle = "#eceff3"; ctx.beginPath(); ctx.arc(pa[0], pa[1], 5, 0, 7); ctx.fill();
