@@ -14,6 +14,10 @@ FireOps.registra({
   css: `
 .pg-palo { --acc: var(--ics-operazioni); max-width: 640px; margin: 0 auto; padding: 12px 16px calc(24px + env(safe-area-inset-bottom, 0px)); color: var(--text); font-family: var(--sans); }
 .pg-palo * { box-sizing: border-box; }
+.pg-palo .allarme { margin-bottom: 10px; padding: 12px 14px; border-radius: 8px; border: 2px solid #d8262f; background: rgba(216,38,47,.16); color: #ff6b6b; font-weight: 800; font-size: 15px; line-height: 1.35; }
+.pg-palo .allarme small { display: block; margin-top: 4px; font-weight: 600; font-size: 12.5px; color: var(--text); }
+.pg-palo .allarme.giallo { border-color: var(--yellow); background: rgba(255,215,0,.1); color: var(--yellow); }
+.pg-palo .allarme[hidden] { display: none; }
 .pg-palo .blocco { margin-bottom: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
 .pg-palo .tit { margin: 0 0 8px; font-size: 15px; font-weight: 700; }
 .pg-palo .nota { font-size: 12.5px; line-height: 1.45; color: var(--text-dim); margin: 8px 0 0; }
@@ -52,6 +56,7 @@ FireOps.registra({
 `,
 
   html: `
+<div class="allarme" id="pl-all" role="alert" hidden></div>
 <div class="blocco">
   <h2 class="tit">Pianta dell’impianto</h2>
   <div class="vista"><canvas id="pl-pi" class="pi" role="img" aria-label="Pianta del montaggio: trascina i punti"></canvas></div>
@@ -326,6 +331,14 @@ FireOps.registra({
           });
         });
         $("#pl-compg").innerHTML = g + "</svg>";
+      }
+      {
+        const a = $("#pl-all");
+        if (tiranteCompresso) { a.hidden = false; a.className = "allarme"; a.innerHTML = "⚠ RIBALTAMENTO DEL PALO<small>Con il carico appeso e il tiro del recupero i tiranti dovrebbero lavorare a compressione, e non possono: il palo si ribalta verso il vuoto. Porta gli ancoraggi più indietro, aumenta l’inclinazione verso il vuoto o avvicina il recupero alla base.</small>"; }
+        else if (isFinite(fsScivol) && fsScivol < 1) { a.hidden = false; a.className = "allarme"; a.innerHTML = "⚠ SCIVOLAMENTO DELLA BASE, RISCHIO RIBALTAMENTO<small>L’attrito richiesto (" + fmt(attr, 2) + ") supera quello disponibile (μ " + fmt(mu, 2) + "): la base scivola. Blocca il piede del palo o riduci l’inclinazione.</small>"; }
+        else if (isFinite(fsRibalt) && fsRibalt < 3) { a.hidden = false; a.className = "allarme giallo"; a.innerHTML = "⚠ RISCHIO DI RIBALTAMENTO<small>Margine sui tiranti × " + fmt(fsRibalt, 1) + ", sotto 3: se un tirante cede il palo si ribalta verso il vuoto.</small>"; }
+        else if (isFinite(fsScivol) && fsScivol < 1.5) { a.hidden = false; a.className = "allarme giallo"; a.innerHTML = "⚠ RISCHIO DI SCIVOLAMENTO DELLA BASE<small>Margine sull’attrito × " + fmt(fsScivol, 1) + ", sotto 1,5: blocca il piede del palo.</small>"; }
+        else a.hidden = true;
       }
       $("#pl-avv").innerHTML = avv.map(x => '<div class="avv">' + x + "</div>").join("");
       disegna();
