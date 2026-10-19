@@ -1011,34 +1011,34 @@ Koordináták küldéséhez:
     // identicamente per tutte le 27 lingue, comprese quelle con formattazione
     // diversa (righe vuote extra in francese/arabo, virgolette diverse ecc.).
     const ISTRUZIONI_LINK = {
-        it: 'Per l\'invio delle coordinate:\n1. Clicca sul link 🔗\n2. Autorizzi l\'accesso alla posizione se richiesto ✅',
-        en: 'To send coordinates:\n1. Click on the link 🔗\n2. Allow location access if prompted ✅',
-        es: 'Para enviar coordenadas:\n1. Haga clic en el enlace 🔗\n2. Permita el acceso a la ubicación si se solicita ✅',
-        fr: 'Pour envoyer vos coordonnées :\n1. Cliquez sur le lien 🔗\n2. Autorisez l\'accès à la position si demandé ✅',
-        sq: 'Për të dërguar koordinatat:\n1. Klikoni mbi lidhjen 🔗\n2. Lejoni qasjen në vendndodhje nëse kërkohet ✅',
-        ar: 'لإرسال الإحداثيات:\n١. انقر على الرابط 🔗\n٢. اسمح بالوصول إلى الموقع إذا طُلب ذلك ✅',
-        bg: 'За да изпратите координати:\n1. Кликнете върху връзката 🔗\n2. Разрешете достъп до местоположението, ако бъдете попитани ✅',
-        cs: 'Odeslání souřadnic:\n1. Klikněte na odkaz 🔗\n2. Povolte přístup k poloze, pokud budete vyzváni ✅',
-        "zh-CN": '发 送 坐 标：\n1. 点 击 链 接 🔗\n2. 如 有 提 示，请 允 许 访 问 位 置 ✅',
-        hr: 'Za slanje koordinata:\n1. Kliknite na poveznicu 🔗\n2. Dopustite pristup lokaciji ako se to zatraži ✅',
-        da: 'Sådan sender du koordinater:\n1. Klik på linket 🔗\n2. Tillad adgang til placering, hvis du bliver bedt om det ✅',
-        et: 'Koordinaatide saatmiseks:\n1. Klõpsake lingil 🔗\n2. Lubage asukohale juurdepääs, kui seda küsitakse ✅',
-        fi: 'Lähetä koordinaatit seuraavasti:\n1. Napsauta linkkiä 🔗\n2. Salli sijainnin käyttö, jos sitä pyydetään ✅',
-        el: 'Για να στείλετε συντεταγμένες:\n1. Κάντε κλικ στον σύνδεσμο 🔗\n2. Επιτρέψτε την πρόσβαση στην τοποθεσία εάν σας ζητηθεί ✅',
-        ga: 'Chun comhordanáidí a sheoladh:\n1. Cliceáil ar an nasc 🔗\n2. Ceadaigh rochtain ar an suíomh má iarrtar é ✅',
-        lv: 'Lai nosūtītu koordinātas:\n1. Noklikšķiniet uz saites 🔗\n2. Atļaujiet piekļuvi atrašanās vietai, ja tas tiek pieprasīts ✅',
-        lt: 'Norėdami išsiųsti koordinates:\n1. Spustelėkite nuorodą 🔗\n2. Leiskite pasiekti buvimo vietą, jei bus paprašyta ✅',
-        mt: 'Biex tibgħat koordinati:\n1. Ikklikkja fuq il-link 🔗\n2. Ippermetti l-aċċess għal-lokazzjoni jekk mitlub ✅',
-        nl: 'Om coördinaten te verzenden:\n1. Klik op de link 🔗\n2. Sta toegang tot locatie toe indien gevraagd ✅',
-        pl: 'Aby wysłać współrzędne:\n1. Kliknij link 🔗\n2. Zezwól na dostęp do lokalizacji, jeśli zostaniesz o to poproszony ✅',
-        pt: 'Para enviar as coordenadas:\n1. Clique no link 🔗\n2. Permita o acesso à localização, se solicitado ✅',
-        ro: 'Pentru a trimite coordonate:\n1. Faceți clic pe link 🔗\n2. Permiteți accesul la locație dacă vi se solicită ✅',
-        ru: 'Чтобы отправить координаты:\n1. Нажмите на ссылку 🔗\n2. Разрешите доступ к местоположению, если будет предложено ✅',
-        sk: 'Ak chcete odoslať súradnice:\n1. Kliknite na odkaz 🔗\n2. Povoľte prístup k polohe, ak sa zobrazí výzva ✅',
-        sl: 'Za pošiljanje koordinat:\n1. Kliknite na povezavo 🔗\n2. Če boste pozvani, dovolite dostop do lokacije ✅',
-        sv: 'För att skicka koordinater:\n1. Klicka på länken 🔗\n2. Tillåt platsåtkomst om du blir tillfrågad ✅',
-        de: 'So senden Sie Ihre Koordinaten:\n1. Klicken Sie auf den Link 🔗\n2. Erlauben Sie den Zugriff auf den Standort, falls Sie dazu aufgefordert werden ✅',
-        hu: 'Koordináták küldéséhez:\n1. Kattintson a linkre 🔗\n2. Engedélyezze a helyhozzáférést, ha erre kéri a rendszer ✅'
+        it: 'Per l\'invio delle coordinate:\n1. Clicchi sul link 🔗\n2. Autorizzi l\'accesso alla posizione se richiesto ✅\n3. Tenga aperta la pagina, il sistema provvederà automaticamente a trasmettere la posizione! ✈️',
+        en: 'To send coordinates:\n1. Click on the link 🔗\n2. Allow location access if prompted ✅\n3. Keep the page open, the system will automatically transmit your location! ✈️',
+        es: 'Para enviar coordenadas:\n1. Haga clic en el enlace 🔗\n2. Permita el acceso a la ubicación si se solicita ✅\n3. Mantenga la página abierta; el sistema transmitirá la ubicación automáticamente ✈️',
+        fr: 'Pour envoyer vos coordonnées :\n1. Cliquez sur le lien 🔗\n2. Autorisez l\'accès à la position si demandé ✅\n3. Laissez la page ouverte, le système transmettra automatiquement la position ✈️',
+        sq: 'Për të dërguar koordinatat:\n1. Klikoni mbi lidhjen 🔗\n2. Lejoni qasjen në vendndodhje nëse kërkohet ✅\n3. Mbajeni faqen hapur, sistemi do ta transmetojë automatikisht vendndodhjen ✈️',
+        ar: 'لإرسال الإحداثيات:\n١. انقر على الرابط 🔗\n٢. اسمح بالوصول إلى الموقع إذا طُلب ذلك ✅\n٣. اترك الصفحة مفتوحة، سيقوم النظام بنقل موقعك تلقائيًا ✈️',
+        bg: 'За да изпратите координати:\n1. Кликнете върху връзката 🔗\n2. Разрешете достъп до местоположението, ако бъдете попитани ✅\n3. Оставете страницата отворена, системата автоматично ще предаде местоположението ✈️',
+        cs: 'Odeslání souřadnic:\n1. Klikněte na odkaz 🔗\n2. Povolte přístup k poloze, pokud budete vyzváni ✅\n3. Nechte stránku otevřenou, systém automaticky odešle polohu ✈️',
+        "zh-CN": '发 送 坐 标：\n1. 点 击 链 接 🔗\n2. 如 有 提 示，请 允 许 访 问 位 置 ✅\n3. 请 保 持 页 面 打 开，系 统 将 自 动 传 输 位 置！✈️',
+        hr: 'Za slanje koordinata:\n1. Kliknite na poveznicu 🔗\n2. Dopustite pristup lokaciji ako se to zatraži ✅\n3. Ostavite stranicu otvorenu, sustav će automatski prenijeti lokaciju ✈️',
+        da: 'Sådan sender du koordinater:\n1. Klik på linket 🔗\n2. Tillad adgang til placering, hvis du bliver bedt om det ✅\n3. Lad siden være åben, systemet sender automatisk placeringen ✈️',
+        et: 'Koordinaatide saatmiseks:\n1. Klõpsake lingil 🔗\n2. Lubage asukohale juurdepääs, kui seda küsitakse ✅\n3. Hoidke leht avatuna, süsteem saadab asukoha automaatselt ✈️',
+        fi: 'Lähetä koordinaatit seuraavasti:\n1. Napsauta linkkiä 🔗\n2. Salli sijainnin käyttö, jos sitä pyydetään ✅\n3. Pidä sivu auki, järjestelmä lähettää sijainnin automaattisesti ✈️',
+        el: 'Για να στείλετε συντεταγμένες:\n1. Κάντε κλικ στον σύνδεσμο 🔗\n2. Επιτρέψτε την πρόσβαση στην τοποθεσία εάν σας ζητηθεί ✅\n3. Αφήστε τη σελίδα ανοιχτή, το σύστημα θα μεταδώσει αυτόματα την τοποθεσία ✈️',
+        ga: 'Chun comhordanáidí a sheoladh:\n1. Cliceáil ar an nasc 🔗\n2. Ceadaigh rochtain ar an suíomh má iarrtar é ✅\n3. Fág an leathanach ar oscailt, seolfaidh an córas an suíomh go huathoibríoch ✈️',
+        lv: 'Lai nosūtītu koordinātas:\n1. Noklikšķiniet uz saites 🔗\n2. Atļaujiet piekļuvi atrašanās vietai, ja tas tiek pieprasīts ✅\n3. Atstājiet lapu atvērtu, sistēma automātiski pārsūtīs atrašanās vietu ✈️',
+        lt: 'Norėdami išsiųsti koordinates:\n1. Spustelėkite nuorodą 🔗\n2. Leiskite pasiekti buvimo vietą, jei bus paprašyta ✅\n3. Palikite puslapį atvertą, sistema automatiškai persiųs buvimo vietą ✈️',
+        mt: 'Biex tibgħat koordinati:\n1. Ikklikkja fuq il-link 🔗\n2. Ippermetti l-aċċess għal-lokazzjoni jekk mitlub ✅\n3. Ħalli l-paġna miftuħa, is-sistema tibgħat il-pożizzjoni awtomatikament ✈️',
+        nl: 'Om coördinaten te verzenden:\n1. Klik op de link 🔗\n2. Sta toegang tot locatie toe indien gevraagd ✅\n3. Houd de pagina open, het systeem verzendt de locatie automatisch ✈️',
+        pl: 'Aby wysłać współrzędne:\n1. Kliknij link 🔗\n2. Zezwól na dostęp do lokalizacji, jeśli zostaniesz o to poproszony ✅\n3. Nie zamykaj strony, system automatycznie wyśle lokalizację ✈️',
+        pt: 'Para enviar as coordenadas:\n1. Clique no link 🔗\n2. Permita o acesso à localização, se solicitado ✅\n3. Mantenha a página aberta, o sistema transmitirá a localização automaticamente ✈️',
+        ro: 'Pentru a trimite coordonate:\n1. Faceți clic pe link 🔗\n2. Permiteți accesul la locație dacă vi se solicită ✅\n3. Lăsați pagina deschisă, sistemul va transmite automat locația ✈️',
+        ru: 'Чтобы отправить координаты:\n1. Нажмите на ссылку 🔗\n2. Разрешите доступ к местоположению, если будет предложено ✅\n3. Оставьте страницу открытой, система автоматически передаст местоположение ✈️',
+        sk: 'Ak chcete odoslať súradnice:\n1. Kliknite na odkaz 🔗\n2. Povoľte prístup k polohe, ak sa zobrazí výzva ✅\n3. Nechajte stránku otvorenú, systém automaticky odošle polohu ✈️',
+        sl: 'Za pošiljanje koordinat:\n1. Kliknite na povezavo 🔗\n2. Če boste pozvani, dovolite dostop do lokacije ✅\n3. Pustite stran odprto, sistem bo samodejno posredoval lokacijo ✈️',
+        sv: 'För att skicka koordinater:\n1. Klicka på länken 🔗\n2. Tillåt platsåtkomst om du blir tillfrågad ✅\n3. Håll sidan öppen, systemet skickar automatiskt din position ✈️',
+        de: 'So senden Sie Ihre Koordinaten:\n1. Klicken Sie auf den Link 🔗\n2. Erlauben Sie den Zugriff auf den Standort, falls Sie dazu aufgefordert werden ✅\n3. Lassen Sie die Seite geöffnet, das System übermittelt den Standort automatisch ✈️',
+        hu: 'Koordináták küldéséhez:\n1. Kattintson a linkre 🔗\n2. Engedélyezze a helyhozzáférést, ha erre kéri a rendszer ✅\n3. Hagyja nyitva az oldalt, a rendszer automatikusan továbbítja a helyzetet ✈️'
     };
 
     // Riga che introduce le istruzioni manuali, mostrate sotto il link come
@@ -1095,12 +1095,14 @@ Koordináták küldéséhez:
         if (link) {
             const istruzioniLink = ISTRUZIONI_LINK[codiceLingua] || ISTRUZIONI_LINK.it;
             const alternativa = ISTRUZIONI_ALTERNATIVA[codiceLingua] || ISTRUZIONI_ALTERNATIVA.en;
-            // Messaggio unico: link + istruzioni brevi, e sotto le istruzioni
-            // manuali (graffetta/Posizione) come alternativa al link.
+            // Messaggio unico: prima le istruzioni brevi (1-2-3, l'ultima
+            // dice di lasciare la pagina aperta), poi il link a cui si
+            // riferiscono, poi — come alternativa — le istruzioni manuali
+            // (graffetta/Posizione).
             testo = testo.replace(BLOCCO_ISTRUZIONI_RE, blocco => {
                 // toglie la prima riga ("Per l'invio delle coordinate:"): la sostituisce la riga "In alternativa"
                 const manuale = blocco.slice("🇪🇺🇮🇹\n\n".length).replace(/\s+$/, "").replace(/^[^\n]*\r?\n/, "");
-                return "🇪🇺🇮🇹\n\n" + link + "\n\n" + istruzioniLink + "\n\n" + alternativa + "\n" + manuale + "\n\n";
+                return "🇪🇺🇮🇹\n\n" + istruzioniLink + "\n\n" + link + "\n\n" + alternativa + "\n" + manuale + "\n\n";
             });
         }
 
