@@ -60,7 +60,7 @@ FireOps.registra({
     <button type="button" id="sc-zm" aria-label="Allontana">−</button>
     <button type="button" id="sc-zp" aria-label="Avvicina">+</button>
   </div>
-  <p class="nota">Trascina per ruotare, pizzica o usa la rotella per lo zoom. Gli anelli bianchi si spostano: quello al piede della scala ne cambia la distanza dal muro, quello sulla corda il suo angolo (alzo). Il muro è il reticolo grigio, il terreno quello più scuro; la freccia rossa è la forza sull’ancoraggio, la linea blu la corda verso il discensore, il segno verde a terra il piede minimo. Gli elementi più vicini sono più marcati.</p>
+  <p class="nota">Trascina per ruotare, pizzica o usa la rotella per lo zoom. Il centro della vista è la scala; la linea tratteggiata del discensore può uscire dal disegno. Gli anelli bianchi si spostano: quello al piede della scala ne cambia la distanza dal muro, quello sulla corda il suo angolo (alzo). Il muro è il reticolo grigio, il terreno quello più scuro; la freccia rossa è la forza sull’ancoraggio, la linea blu la corda verso il discensore, il segno verde a terra il piede minimo. Gli elementi più vicini sono più marcati.</p>
 </div>
 
 <div class="blocco">
@@ -111,6 +111,7 @@ FireOps.registra({
     const fmt = (v, d) => Number(v).toLocaleString("it-IT", {minimumFractionDigits: d, maximumFractionDigits: d});
     const num = (id, d) => { const v = parseFloat($(id).value); return isFinite(v) ? v : d; };
 
+    const hAlt = (L, d) => Math.sqrt(Math.max(0.01, L * L - Math.min(d, L * 0.999) ** 2));
     const nTratti = () => ($("#sc-md").value === "S" ? 1 : 2);
     function calc(P_kg, Wl_kg, a_deg, L, n) {
       n = n || nTratti();
@@ -166,7 +167,7 @@ FireOps.registra({
       $("#sc-m").innerHTML = c("Piede minimo senza peso scala", fmt(r.piede2, 2), "m") + c("Piede minimo con peso scala", fmt(r.piedeW, 2), "m") +
         c("Margine", (margine >= 0 ? "+" : "") + fmt(margine, 2), "m") + c("Angolo della scala", fmt(r.beta, 1), "°") +
         c("Forza sull’ancoraggio", fmt(r.Fmag, 0), "N") + c("Tensione della corda", fmt(r.T, 0), "N");
-      $("#sc-f").textContent = (n === 2 ? "Con taglia 2:1: due tratti verticali da P/2. " : "Senza taglia: un tratto da P, il carico pesa tutto sulla corda. ") + "F = (" + fmt(r.Fx, 0) + " N, " + fmt(r.Fy, 0) + " N). Attrito richiesto al piede: " + fmt(r.ca / (n + r.sa), 2) + ".";
+      $("#sc-f").textContent = (n === 2 ? "Con taglia 2:1: due tratti verticali da P/2. " : "Senza taglia: un tratto da P, il carico pesa tutto sulla corda. ") + (r.sa > 0.02 ? "La linea del discensore arriva a terra a " + fmt(Math.min(hAlt(L, d) / r.sa, 2 * L) * r.ca, 1) + " m dal muro. " : "") + "F = (" + fmt(r.Fx, 0) + " N, " + fmt(r.Fy, 0) + " N). Attrito richiesto al piede: " + fmt(r.ca / (n + r.sa), 2) + ".";
       $("#sc-sv").innerHTML = schema(L, d, al, r);
       aggiorna3(L, d, al, r, P);
       let t = "<tr><th>Alzo</th><th>Piede min. senza scala</th><th>con scala</th><th>Angolo</th><th>|F| (N)</th></tr>";
@@ -187,13 +188,13 @@ FireOps.registra({
     let v3 = null;
     const avvia3d = () => { v3 = SafVista3D.crea($("#sc-cv"), {
       trascina: (id, px, py, c) => trascina(id, px, py, c),
-      punti: () => { const g = q3 || {L: 10, d: 4, hh: 9}; const E = g.al === undefined ? [0, 0, 0] : estremo(g); return [[-0.5, -2.5, 0], [Math.max(g.d, E[0]) + 2, 2.5, Math.max(g.hh, E[2]) + 1], [0, 0, g.hh], E]; },
+      punti: () => { const g = q3 || {L: 10, d: 4, hh: 9}; return [[-0.5, -2.5, 0], [g.d + 2, 2.5, g.hh + 1], [0, 0, g.hh]]; },
       disegna: c => {
         if (!q3) return;
         const {L, d, hh, r, al, P} = q3, {ctx, pr, linea} = c;
         const ph = Math.PI / 180 * al, ym = 0.25;
         const txt = (t, q, col, dx, dy) => { const p = pr(q); ctx.globalAlpha = c.chiaro(p[2]); ctx.fillStyle = col; ctx.font = "bold 12px sans-serif"; ctx.textAlign = "center"; ctx.fillText(t, p[0] + (dx || 0), p[1] + (dy || 0)); ctx.globalAlpha = 1; };
-        const W = Math.max(3, L / 3), xe = Math.max(d, estremo(q3)[0]) + 2;
+        const W = Math.max(3, L / 3), xe = d + 2;
         // muro (piano x = 0) e terreno (piano z = 0)
         for (let z = 0; z <= hh + 1; z += 1) linea([0, -W, z], [0, W, z], "#4a5460", 1);
         for (let y = -W; y <= W + 1e-6; y += 1) linea([0, y, 0], [0, y, hh + 1], "#4a5460", 1);
@@ -219,7 +220,7 @@ FireOps.registra({
         // prolungamento tratteggiato della linea del discensore, fino a terra se scende
         const E = estremo(q3);
         linea([ro * Math.cos(ph), 0, hh - ro * Math.sin(ph)], E, "#4A93C8", 2, [6, 5]);
-        if (E[2] < 0.01) { const pe = pr(E); ctx.fillStyle = "#4A93C8"; ctx.beginPath(); ctx.arc(pe[0], pe[1], 4, 0, 7); ctx.fill(); txt("a terra " + fmt(E[0], 1) + " m dal muro", E, "#4A93C8", 0, 16); }
+        if (E[2] < 0.01 && E[0] < xe + L) { const pe = pr(E); ctx.fillStyle = "#4A93C8"; ctx.beginPath(); ctx.arc(pe[0], pe[1], 4, 0, 7); ctx.fill(); txt("a terra " + fmt(E[0], 1) + " m dal muro", E, "#4A93C8", 0, 16); }
         // forza sull'ancoraggio
         const k = Math.min(L * 0.45, 4.5) / Math.max(r.Fmag, 1);
         const F = [r.Fx * k, 0, r.Fy * k];
