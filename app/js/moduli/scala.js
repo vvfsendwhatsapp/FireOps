@@ -55,6 +55,12 @@ FireOps.registra({
 
   html: `
 <div class="blocco">
+  <h2 class="tit">Barella</h2>
+  <div class="riga" style="margin-top:0"><div style="grid-column:1/-1"><label for="sc-md">Con o senza taglia</label>
+    <select id="sc-md"><option value="T">Con taglia 2:1 sulla barella (due tratti di corda)</option><option value="S">Senza taglia (un solo tratto, la barella appesa alla corda)</option></select></div></div>
+</div>
+
+<div class="blocco">
   <h2 class="tit">Vista 3D</h2>
   <div class="vista"><canvas id="sc-cv" tabindex="0" role="img" aria-label="Scala appoggiata al muro in 3D: trascina per ruotare"></canvas></div>
   <div class="allarme" id="sc-all" role="alert" hidden style="margin:8px 0 0"></div>
@@ -78,8 +84,6 @@ FireOps.registra({
 
 <div class="blocco">
   <h2 class="tit">Dati</h2>
-  <div class="riga" style="margin-top:0"><div style="grid-column:1/-1"><label for="sc-md">Barella</label>
-    <select id="sc-md"><option value="T">Con taglia 2:1 sulla barella (due tratti di corda)</option><option value="S">Senza taglia (un solo tratto, la barella appesa alla corda)</option></select></div></div>
   <div class="riga">
     <div><label for="sc-P">Carico operatore (kg)</label><input type="number" id="sc-P" inputmode="decimal" min="30" max="250" step="1" value="100"></div>
     <div><label for="sc-Wl">Peso della scala (kg)</label><input type="number" id="sc-Wl" inputmode="decimal" min="0" max="120" step="1" value="35"></div>

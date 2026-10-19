@@ -48,8 +48,8 @@ FireOps.registra({
 .pg-paranchi .riga4[hidden] { display: none; }
 .pg-paranchi canvas.pi { display: block; width: 100%; height: 280px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; touch-action: none; }
 .pg-paranchi .st { display: flex; gap: 4px; align-items: center; }
-.pg-paranchi .st input { text-align: center; min-width: 0; width: auto; flex: 1 1 0; padding: 0 6px; }
-.pg-paranchi .st button { flex: none; width: 48px; min-height: 48px; padding: 0; min-height: 44px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 18px; font-weight: 800; cursor: pointer; }
+.pg-paranchi .st input { order: 1; text-align: center; min-width: 0; width: auto; flex: 1 1 0; padding: 0 6px; }
+.pg-paranchi .st button { order: 2; flex: none; width: 48px; min-height: 48px; padding: 0; min-height: 44px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 18px; font-weight: 800; cursor: pointer; }
 .pg-paranchi .tab { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .pg-paranchi .tab td { padding: 6px 4px; border-top: 1px solid var(--line); }
 .pg-paranchi .tab td:last-child { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }

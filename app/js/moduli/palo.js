@@ -34,8 +34,8 @@ FireOps.registra({
 .pg-palo canvas.pi { height: 260px; cursor: default; }
 .pg-palo .st { display: flex; gap: 4px; align-items: center; }
 .pg-palo .tasto { width: 100%; min-height: 44px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
-.pg-palo .st input { text-align: center; min-width: 0; width: auto; flex: 1 1 0; padding: 0 6px; }
-.pg-palo .st button { flex: none; width: 48px; min-height: 48px; padding: 0; min-height: 44px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 18px; font-weight: 800; cursor: pointer; }
+.pg-palo .st input { order: 1; text-align: center; min-width: 0; width: auto; flex: 1 1 0; padding: 0 6px; }
+.pg-palo .st button { order: 2; flex: none; width: 48px; min-height: 48px; padding: 0; min-height: 44px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 18px; font-weight: 800; cursor: pointer; }
 .pg-palo .geo { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
 .pg-palo .geo td, .pg-palo .geo th { padding: 5px 3px; border-top: 1px solid var(--line); text-align: right; font-weight: 600; }
 .pg-palo .geo th { color: var(--text-dim); font-size: 11.5px; font-weight: 400; }
@@ -57,6 +57,14 @@ FireOps.registra({
 `,
 
   html: `
+<div class="blocco">
+  <h2 class="tit">Configurazione</h2>
+  <div class="riga">
+    <div><label for="pl-cf">Configurazione</label><select id="pl-cf"><option value="A">A: 2 venti</option><option value="B">B: 1 vento, 2 laterali</option></select></div>
+    <div><label for="pl-rc">Recupero</label><select id="pl-rc"><option value="E">Esterno al palo</option><option value="I">Interno (winch)</option></select></div>
+  </div>
+</div>
+
 <div class="blocco">
   <h2 class="tit">Pianta dell’impianto</h2>
   <div class="vista"><canvas id="pl-pi" class="pi" role="img" aria-label="Pianta del montaggio: trascina i punti"></canvas></div>
@@ -83,10 +91,6 @@ FireOps.registra({
 
 <div class="blocco">
   <h2 class="tit">1 · Palo</h2>
-  <div class="riga">
-    <div><label for="pl-cf">Configurazione</label><select id="pl-cf"><option value="A">A: 2 venti</option><option value="B">B: 1 vento, 2 laterali</option></select></div>
-    <div><label for="pl-rc">Recupero</label><select id="pl-rc"><option value="E">Esterno al palo</option><option value="I">Interno (winch)</option></select></div>
-  </div>
   <div class="riga3">
     <div><label for="pl-L">Lunghezza (m)</label><input type="number" id="pl-L" inputmode="decimal" min="1" max="12" step="0.1" value="4"></div>
     <div><label for="pl-th">Inclinazione (°)</label><input type="number" id="pl-th" inputmode="decimal" min="0" max="45" step="1" value="10"></div>
