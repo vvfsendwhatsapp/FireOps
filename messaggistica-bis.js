@@ -1411,7 +1411,16 @@ Koordináták küldéséhez:
         // transizione CSS sulla classe "aperta" già impostata qui sopra
         // (vedi .riepilogo-msg-tab.aperta .riepilogo-msg-tab-freccia).
 
-        if (inFullscreen) caricaRiepilogoMessaggi();
+        if (inFullscreen) {
+            // L'operatore sta aprendo il riepilogo ORA: da questo istante
+            // in poi si ricomincia a contare "cosa è nuovo". Si spegne
+            // subito il lampeggio (non aspetta il prossimo giro da 60s) —
+            // l'ha appena visto, non deve lampeggiare mentre lo guarda.
+            ultimaAperturaRiepilogo = Date.now();
+            nuovoDatiNonVisti = false;
+            aggiornaVisualizzazioneTab();
+            caricaRiepilogoMessaggi();
+        }
         setTimeout(() => window.dispatchEvent(new Event("resize")), 150);
     }
 
@@ -1475,12 +1484,32 @@ Koordináták küldéséhez:
         if (!btnRiepilogoMsg) return;
         btnRiepilogoMsg.hidden = !messaggisticaAttivaInUnPannello();
         btnRiepilogoMsg.classList.toggle("con-dati", haDatiRiepilogo);
+        // "nuovo" (lampeggiante) solo se c'è davvero qualcosa di non visto
+        // E il pannello non è già aperto in questo momento — altrimenti,
+        // mentre l'operatore ha il riepilogo spalancato davanti, la tab
+        // continuerebbe a lampeggiare per l'ultimo aggiornamento che sta
+        // proprio guardando.
+        const pannelloAperto = overlayRiepilogoMsg && !overlayRiepilogoMsg.hidden;
+        btnRiepilogoMsg.classList.toggle("nuovo", nuovoDatiNonVisti && !pannelloAperto);
         aggiornaLatoTab();
     }
 
     // Unica fonte di verità su "ci sono dati da mostrare?", aggiornata da
     // aggiornaVisibilitaTab().
     let haDatiRiepilogo = false;
+
+    // "con-dati" (sopra) dice solo "esiste almeno un messaggio nelle 24h",
+    // statico finché quei messaggi restano nella finestra — non distingue
+    // "c'è roba vecchia che hai già visto" da "è appena arrivato qualcosa
+    // di nuovo". Questo secondo stato ("nuovo", lampeggiante) confronta il
+    // timestamp più recente fra messaggi e posizioni con l'ultima volta che
+    // l'operatore ha APERTO il riepilogo: se qualcosa è più recente di
+    // quell'apertura, lampeggia finché non lo riapre. Parte da Date.now()
+    // (non da 0) apposta: al carico della pagina c'è già eventualmente del
+    // "vecchio" arretrato nelle 24h, e quello non deve far lampeggiare la
+    // tab appena la pagina si apre — solo un arrivo DAVVERO successivo.
+    let ultimaAperturaRiepilogo = Date.now();
+    let nuovoDatiNonVisti = false;
 
     // Un unico punto sulla mini-mappa (marker + cerchio di precisione),
     // riusando lo stesso linguaggio visivo della mappa Comando: cerchio
@@ -2453,19 +2482,42 @@ Koordináták küldéséhez:
     // Non decide più se la tab compare (ora è sempre visibile): dice solo
     // se "accenderla" — classe "con-dati" — perché c'è almeno un messaggio
     // con link nelle ultime 24h.
+    // Timestamp più recente fra tutti i messaggi e tutte le posizioni
+    // restituiti dal foglio: serve a sapere "è arrivato qualcosa dopo
+    // l'ultima apertura del riepilogo?" — un nuovo messaggio (nuova riga)
+    // E un nuovo aggiornamento di posizione su un intervento già noto
+    // (Timestamp più recente sulla stessa riga) contano allo stesso modo.
+    function timestampPiuRecente(dati) {
+        let max = 0;
+        (dati.messaggi || []).forEach(m => {
+            const t = m.Timestamp ? new Date(m.Timestamp).getTime() : 0;
+            if (t > max) max = t;
+        });
+        (dati.posizioni || []).forEach(p => {
+            const t = p.Timestamp ? new Date(p.Timestamp).getTime() : 0;
+            if (t > max) max = t;
+        });
+        return max;
+    }
+
     function aggiornaVisibilitaTab() {
         if (!WEBAPP_URL_ID_SEARCH || !WEBAPP_URL_ID_SEARCH.startsWith("https://") || !comandiDaInterrogare()) {
             haDatiRiepilogo = false;
+            nuovoDatiNonVisti = false;
             aggiornaVisualizzazioneTab();
             return;
         }
         fetchDatiRiepilogo()
             .then(dati => {
                 haDatiRiepilogo = !!(dati.messaggi && dati.messaggi.length);
+                nuovoDatiNonVisti = timestampPiuRecente(dati) > ultimaAperturaRiepilogo;
                 aggiornaVisualizzazioneTab();
             })
             .catch(() => {
                 haDatiRiepilogo = false;
+                // Un errore di rete non significa "niente di nuovo": se lo
+                // stato precedente era già "nuovo", lo lascia com'era
+                // invece di spegnerlo per un giro di sfortuna sulla rete.
                 aggiornaVisualizzazioneTab();
             });
     }

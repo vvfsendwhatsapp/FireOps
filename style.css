@@ -7216,6 +7216,17 @@ select:focus {
     color: var(--primary-color);
 }
 
+/* "nuovo": è arrivato qualcosa dopo l'ultima apertura del riepilogo —
+   lampeggio rosso finché l'operatore non lo riapre, per distinguerlo dal
+   semplice "con-dati" (giallo statico, c'è solo roba già vista). */
+@keyframes riepilogoMsgLampeggio {
+    0%, 100% { background-color: #dc2626; border-color: #dc2626; color: #fff; }
+    50%      { background-color: #7f1d1d; border-color: #7f1d1d; color: #fff; }
+}
+.riepilogo-msg-tab.nuovo {
+    animation: riepilogoMsgLampeggio 1s infinite;
+}
+
 .riepilogo-msg-tab:hover {
     background: var(--primary-color);
     border-color: var(--primary-color);
