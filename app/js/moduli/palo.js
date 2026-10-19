@@ -23,18 +23,18 @@ FireOps.registra({
 .pg-palo .nota { font-size: 12.5px; line-height: 1.45; color: var(--text-dim); margin: 8px 0 0; }
 .pg-palo .vista { position: relative; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; touch-action: none; }
 .pg-palo canvas { display: block; width: 100%; height: 300px; cursor: grab; }
-.pg-palo .barra { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
-.pg-palo .barra button { flex: 1 1 auto; min-height: 44px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+.pg-palo .barra { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: 8px; margin-top: 8px; }
+.pg-palo .barra button { min-height: 48px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
 .pg-palo .riga { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-.pg-palo .riga3, .pg-palo .riga4 { display: grid; gap: 8px; margin-top: 8px; align-items: center; }
-.pg-palo .riga3 { grid-template-columns: 1fr 1fr 1fr; }
-.pg-palo .riga4 { grid-template-columns: 62px 1fr 1fr 1.9fr; font-size: 13px; }
-.pg-palo .riga3.tt { grid-template-columns: 62px 1fr 1fr 1.9fr; font-size: 11.5px; color: var(--text-dim); margin-top: 0; }
+.pg-palo .riga3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 8px; align-items: center; }
+.pg-palo .riga4 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; margin-top: 10px; align-items: end; font-size: 13px; padding-top: 10px; border-top: 1px solid var(--line); }
+.pg-palo .riga4 > b { grid-column: 1 / -1; font-size: 14px; }
+.pg-palo .riga4 .zc { grid-column: 1 / -1; }
 .pg-palo canvas.pi { height: 260px; cursor: default; }
 .pg-palo .st { display: flex; gap: 4px; align-items: center; }
 .pg-palo .tasto { width: 100%; min-height: 44px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
-.pg-palo .st input { min-width: 0; width: auto; flex: 1 1 0; padding: 0 6px; }
-.pg-palo .st button { flex: none; width: 31px; padding: 0; min-height: 44px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 18px; font-weight: 800; cursor: pointer; }
+.pg-palo .st input { text-align: center; min-width: 0; width: auto; flex: 1 1 0; padding: 0 6px; }
+.pg-palo .st button { flex: none; width: 48px; min-height: 48px; padding: 0; min-height: 44px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 18px; font-weight: 800; cursor: pointer; }
 .pg-palo .geo { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
 .pg-palo .geo td, .pg-palo .geo th { padding: 5px 3px; border-top: 1px solid var(--line); text-align: right; font-weight: 600; }
 .pg-palo .geo th { color: var(--text-dim); font-size: 11.5px; font-weight: 400; }
@@ -97,24 +97,23 @@ FireOps.registra({
 
 <div class="blocco">
   <h2 class="tit">2 · Ancoraggi e recupero</h2>
-  <div class="riga3 tt"><span></span><span>Distanza dalla base (m)</span><span>Direzione (°)</span><span>Altezza da terra (m)</span></div>
   <div class="riga4"><b id="pl-n1" style="color:#4A93C8">Vento 1</b>
-    <input type="number" id="pl-a1d" inputmode="decimal" min="0.3" step="0.1" value="5" aria-label="Distanza primo cavo">
-    <input type="number" id="pl-a1a" inputmode="decimal" step="1" value="145" aria-label="Direzione primo cavo">
-    <input type="number" id="pl-a1z" inputmode="decimal" step="0.1" value="0" aria-label="Quota primo cavo"></div>
+    <div><label for="pl-a1d">Distanza dalla base (m)</label><input type="number" id="pl-a1d" inputmode="decimal" min="0.3" step="0.1" value="5" aria-label="Distanza primo cavo"></div>
+    <div><label for="pl-a1a">Direzione (°)</label><input type="number" id="pl-a1a" inputmode="decimal" step="1" value="145" aria-label="Direzione primo cavo"></div>
+    <div class="zc"><label for="pl-a1z">Quota, altezza da terra (m)</label><input type="number" id="pl-a1z" inputmode="decimal" step="0.1" value="0" aria-label="Quota primo cavo"></div></div>
   <div class="riga4"><b id="pl-n2" style="color:#4A93C8">Vento 2</b>
-    <input type="number" id="pl-a2d" inputmode="decimal" min="0.3" step="0.1" value="5" aria-label="Distanza secondo cavo">
-    <input type="number" id="pl-a2a" inputmode="decimal" step="1" value="215" aria-label="Direzione secondo cavo">
-    <input type="number" id="pl-a2z" inputmode="decimal" step="0.1" value="0" aria-label="Quota secondo cavo"></div>
+    <div><label for="pl-a2d">Distanza dalla base (m)</label><input type="number" id="pl-a2d" inputmode="decimal" min="0.3" step="0.1" value="5" aria-label="Distanza secondo cavo"></div>
+    <div><label for="pl-a2a">Direzione (°)</label><input type="number" id="pl-a2a" inputmode="decimal" step="1" value="215" aria-label="Direzione secondo cavo"></div>
+    <div class="zc"><label for="pl-a2z">Quota, altezza da terra (m)</label><input type="number" id="pl-a2z" inputmode="decimal" step="0.1" value="0" aria-label="Quota secondo cavo"></div></div>
   <div class="riga4" id="pl-r3" hidden><b id="pl-n3" style="color:#27c4c4">Laterale 2</b>
-    <input type="number" id="pl-a3d" inputmode="decimal" min="0.3" step="0.1" value="3" aria-label="Distanza terzo cavo">
-    <input type="number" id="pl-a3a" inputmode="decimal" step="1" value="270" aria-label="Direzione terzo cavo">
-    <input type="number" id="pl-a3z" inputmode="decimal" step="0.1" value="0" aria-label="Quota terzo cavo"></div>
+    <div><label for="pl-a3d">Distanza dalla base (m)</label><input type="number" id="pl-a3d" inputmode="decimal" min="0.3" step="0.1" value="3" aria-label="Distanza terzo cavo"></div>
+    <div><label for="pl-a3a">Direzione (°)</label><input type="number" id="pl-a3a" inputmode="decimal" step="1" value="270" aria-label="Direzione terzo cavo"></div>
+    <div class="zc"><label for="pl-a3z">Quota, altezza da terra (m)</label><input type="number" id="pl-a3z" inputmode="decimal" step="0.1" value="0" aria-label="Quota terzo cavo"></div></div>
   <div class="riga4" id="pl-rp"><b style="color:#2f9e5b">Recupero</b>
-    <input type="number" id="pl-pd" inputmode="decimal" min="0" step="0.1" value="0" aria-label="Distanza punto di recupero">
-    <input type="number" id="pl-pa" inputmode="decimal" step="1" value="180" aria-label="Direzione punto di recupero">
-    <input type="number" id="pl-pz" inputmode="decimal" step="0.1" value="0" aria-label="Quota punto di recupero"></div>
-  <div class="riga"><div><label for="pl-qq">Quota comune degli ancoraggi (m)</label><div class="st"><button type="button" id="pl-qm" aria-label="Abbassa">−</button><input type="number" id="pl-qq" inputmode="decimal" step="0.1" value="0"><button type="button" id="pl-qp" aria-label="Solleva">+</button></div></div>
+    <div><label for="pl-pd">Distanza dalla base (m)</label><input type="number" id="pl-pd" inputmode="decimal" min="0" step="0.1" value="0" aria-label="Distanza punto di recupero"></div>
+    <div><label for="pl-pa">Direzione (°)</label><input type="number" id="pl-pa" inputmode="decimal" step="1" value="180" aria-label="Direzione punto di recupero"></div>
+    <div class="zc"><label for="pl-pz">Quota, altezza da terra (m)</label><input type="number" id="pl-pz" inputmode="decimal" step="0.1" value="0" aria-label="Quota punto di recupero"></div></div>
+  <div class="riga" style="grid-template-columns:1fr"><div><label for="pl-qq">Quota comune degli ancoraggi (m)</label><div class="st"><button type="button" id="pl-qm" aria-label="Abbassa">−</button><input type="number" id="pl-qq" inputmode="decimal" step="0.1" value="0"><button type="button" id="pl-qp" aria-label="Solleva">+</button></div></div>
     <div><label>&nbsp;</label><button type="button" id="pl-qa" class="tasto">Applica a tutti</button></div></div>
   <p class="nota" id="pl-nr">Gli ancoraggi dei tiranti stanno al massimo sul ciglio (direzione 90° o 270°), mai nel vuoto. Ogni ancoraggio ha la sua distanza, direzione e altezza da terra: puoi sollevarli con + e −, per esempio uno su un albero, uno su un cavalletto e uno a terra. La terra è il piano della base del palo.</p>
   <div id="pl-geo"></div>

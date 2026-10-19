@@ -36,8 +36,8 @@ FireOps.registra({
 .pg-scala svg { width: 100%; height: auto; display: block; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; }
 .pg-scala .vista { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; touch-action: none; }
 .pg-scala canvas { display: block; width: 100%; height: 300px; cursor: grab; }
-.pg-scala .barra { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
-.pg-scala .barra button { flex: 1 1 auto; min-height: 44px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.pg-scala .barra { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: 8px; margin-top: 8px; }
+.pg-scala .barra button { min-height: 48px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
 .pg-scala .barra button:focus-visible, .pg-scala canvas:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
 .pg-scala .allarme { margin-bottom: 10px; padding: 12px 14px; border-radius: 8px; border: 2px solid #d8262f; background: rgba(216,38,47,.16); color: #ff6b6b; font-weight: 800; font-size: 15px; line-height: 1.35; }
 .pg-scala .allarme small { display: block; margin-top: 4px; font-weight: 600; font-size: 12.5px; color: var(--text); }

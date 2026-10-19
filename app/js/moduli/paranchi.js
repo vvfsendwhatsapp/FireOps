@@ -20,8 +20,8 @@ FireOps.registra({
 .pg-paranchi .blocco { margin-bottom: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
 .pg-paranchi .tit { margin: 0 0 8px; font-size: 15px; font-weight: 700; }
 .pg-paranchi .nota { font-size: 12.5px; line-height: 1.45; color: var(--text-dim); margin: 8px 0 0; }
-.pg-paranchi .chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.pg-paranchi .chips button { min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); color: var(--text-dim); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+.pg-paranchi .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.pg-paranchi .chips button { min-height: 48px; min-width: 52px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); color: var(--text-dim); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
 .pg-paranchi .chips button[aria-pressed="true"] { background: var(--yellow); color: #000; border-color: var(--yellow); }
 .pg-paranchi .riga { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
 .pg-paranchi .riga.uno { grid-template-columns: 1fr; }
@@ -41,13 +41,15 @@ FireOps.registra({
 .pg-paranchi .schemi figcaption { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
 .pg-paranchi svg { width: 100%; height: auto; }
 .pg-paranchi .avv { margin-top: 8px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--yellow); background: rgba(255,215,0,.08); font-size: 13px; line-height: 1.4; }
-.pg-paranchi .riga4 { display: grid; grid-template-columns: 62px 1fr 1fr 1.9fr; gap: 8px; margin-top: 8px; align-items: center; font-size: 13px; }
+.pg-paranchi .riga4 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; margin-top: 10px; align-items: end; font-size: 13px; padding-top: 10px; border-top: 1px solid var(--line); }
+.pg-paranchi .riga4 > b { grid-column: 1 / -1; font-size: 14px; }
+.pg-paranchi .riga4 .zc { grid-column: 1 / -1; }
 .pg-paranchi .riga4.tt { font-size: 11.5px; color: var(--text-dim); margin-top: 0; }
 .pg-paranchi .riga4[hidden] { display: none; }
 .pg-paranchi canvas.pi { display: block; width: 100%; height: 280px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; touch-action: none; }
 .pg-paranchi .st { display: flex; gap: 4px; align-items: center; }
-.pg-paranchi .st input { min-width: 0; width: auto; flex: 1 1 0; padding: 0 6px; }
-.pg-paranchi .st button { flex: none; width: 31px; padding: 0; min-height: 44px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 18px; font-weight: 800; cursor: pointer; }
+.pg-paranchi .st input { text-align: center; min-width: 0; width: auto; flex: 1 1 0; padding: 0 6px; }
+.pg-paranchi .st button { flex: none; width: 48px; min-height: 48px; padding: 0; min-height: 44px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 18px; font-weight: 800; cursor: pointer; }
 .pg-paranchi .tab { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .pg-paranchi .tab td { padding: 6px 4px; border-top: 1px solid var(--line); }
 .pg-paranchi .tab td:last-child { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -58,22 +60,21 @@ FireOps.registra({
   <h2 class="tit">Pianta del sistema di recupero</h2>
   <canvas id="pa-pi" class="pi" role="img" aria-label="Pianta del sistema di recupero: trascina gli ancoraggi"></canvas>
   <p class="nota">Il carico pende dal ciglio (quadrato). Le frecce arancioni sono le risultanti sui punti (in pianta, con i kN). Trascina gli ancoraggi sulla pianta, poi alzali o abbassali con + e −: l’altezza è rispetto al ciglio. Direzione: 0° verso il vuoto, 90° a sinistra guardando il vuoto, 180° dietro il ciglio.</p>
-  <div class="riga4 tt"><span></span><span>Distanza dal ciglio (m)</span><span>Direzione (°)</span><span>Altezza sul ciglio (m)</span></div>
   <div class="riga4"><b style="color:#ffd700">Ancoraggio</b>
-    <input type="number" id="pa-ad" inputmode="decimal" min="0.3" step="0.1" value="6" aria-label="Distanza ancoraggio">
-    <input type="number" id="pa-aa" inputmode="decimal" step="1" value="180" aria-label="Direzione ancoraggio">
-    <input type="number" id="pa-az" inputmode="decimal" step="0.1" value="0" aria-label="Quota ancoraggio"></div>
+    <div><label for="pa-ad">Distanza dal ciglio (m)</label><input type="number" id="pa-ad" inputmode="decimal" min="0.3" step="0.1" value="6" aria-label="Distanza ancoraggio"></div>
+    <div><label for="pa-aa">Direzione (°)</label><input type="number" id="pa-aa" inputmode="decimal" step="1" value="180" aria-label="Direzione ancoraggio"></div>
+    <div class="zc"><label for="pa-az">Quota, altezza sul ciglio (m)</label><input type="number" id="pa-az" inputmode="decimal" step="0.1" value="0" aria-label="Quota ancoraggio"></div></div>
   <div class="riga4" id="pa-rb" hidden><b style="color:#ffd700">Ancor. 2</b>
-    <input type="number" id="pa-bd" inputmode="decimal" min="0.3" step="0.1" value="10" aria-label="Distanza secondo ancoraggio">
-    <input type="number" id="pa-ba" inputmode="decimal" step="1" value="160" aria-label="Direzione secondo ancoraggio">
-    <input type="number" id="pa-bz" inputmode="decimal" step="0.1" value="0" aria-label="Quota secondo ancoraggio"></div>
+    <div><label for="pa-bd">Distanza dal ciglio (m)</label><input type="number" id="pa-bd" inputmode="decimal" min="0.3" step="0.1" value="10" aria-label="Distanza secondo ancoraggio"></div>
+    <div><label for="pa-ba">Direzione (°)</label><input type="number" id="pa-ba" inputmode="decimal" step="1" value="160" aria-label="Direzione secondo ancoraggio"></div>
+    <div class="zc"><label for="pa-bz">Quota, altezza sul ciglio (m)</label><input type="number" id="pa-bz" inputmode="decimal" step="0.1" value="0" aria-label="Quota secondo ancoraggio"></div></div>
   <div class="riga4" id="pa-rr" hidden><b style="color:#4A93C8">Rinvio</b>
-    <input type="number" id="pa-rd" inputmode="decimal" min="0.3" step="0.1" value="8" aria-label="Distanza rinvio">
-    <input type="number" id="pa-ra" inputmode="decimal" step="1" value="200" aria-label="Direzione rinvio">
-    <input type="number" id="pa-rz" inputmode="decimal" step="0.1" value="0" aria-label="Quota rinvio"></div>
+    <div><label for="pa-rd">Distanza dal ciglio (m)</label><input type="number" id="pa-rd" inputmode="decimal" min="0.3" step="0.1" value="8" aria-label="Distanza rinvio"></div>
+    <div><label for="pa-ra">Direzione (°)</label><input type="number" id="pa-ra" inputmode="decimal" step="1" value="200" aria-label="Direzione rinvio"></div>
+    <div class="zc"><label for="pa-rz">Quota, altezza sul ciglio (m)</label><input type="number" id="pa-rz" inputmode="decimal" step="0.1" value="0" aria-label="Quota rinvio"></div></div>
   <div class="riga4"><b style="color:#2f9e5b">Operatori</b>
-    <input type="number" id="pa-od" inputmode="decimal" step="1" value="180" aria-label="Direzione di tiro">
-    <input type="number" id="pa-os" inputmode="decimal" min="-90" max="90" step="1" value="0" aria-label="Pendenza di tiro">
+    <div><label for="pa-od">Distanza dal ciglio (m)</label><input type="number" id="pa-od" inputmode="decimal" step="1" value="180" aria-label="Direzione di tiro"></div>
+    <div><label for="pa-os">Direzione (°)</label><input type="number" id="pa-os" inputmode="decimal" min="-90" max="90" step="1" value="0" aria-label="Pendenza di tiro"></div>
     <span style="font-size:11.5px;color:var(--text-dim)">direzione e pendenza (°) del tiro</span></div>
 </div>
 
