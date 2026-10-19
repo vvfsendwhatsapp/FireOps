@@ -24,7 +24,9 @@ FireOps.registra({
 .pg-palo .nota { font-size: 12.5px; line-height: 1.45; color: var(--text-dim); margin: 8px 0 0; }
 .pg-palo .vista { position: relative; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; touch-action: none; }
 .pg-palo canvas { display: block; width: 100%; height: 300px; cursor: grab; }
-.pg-palo .barra { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: 8px; margin-top: 8px; }
+.pg-palo .barra { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+.pg-palo .barra button { padding: 0 4px; font-size: 13px; }
+.pg-palo .barra #pl-zm, .pg-palo .barra #pl-zp { font-size: 22px; }
 .pg-palo .barra button { min-height: 48px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
 .pg-palo .riga { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
 .pg-palo .riga3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 8px; align-items: center; }
@@ -81,7 +83,7 @@ FireOps.registra({
     <button type="button" id="pl-dietro">Da dietro</button>
     <button type="button" id="pl-vuoto">Dal vuoto</button>
     <button type="button" id="pl-iso">3D</button>
-    <button type="button" id="pl-comp3" aria-pressed="true">Componenti X Y Z</button>
+    <button type="button" id="pl-comp3" aria-pressed="true" aria-label="Componenti X Y Z delle forze">Forze XYZ</button>
     <button type="button" id="pl-zm" aria-label="Allontana">−</button>
     <button type="button" id="pl-zp" aria-label="Avvicina">+</button>
   </div>
@@ -152,7 +154,7 @@ FireOps.registra({
   <h3 class="tit" style="margin-top:12px;font-size:14px">Forze sugli ancoraggi, scomposte sui 3 assi</h3>
   <div id="pl-comp"></div>
   <div id="pl-compg" style="margin-top:8px"></div>
-  <p class="nota">Forza che ogni punto riceve (il tirante tira l’ancoraggio verso la testa del palo; alla base il palo spinge il terreno). X: verso il vuoto, positivo in fuori. Y: laterale, positivo a sinistra guardando il vuoto. Z: verticale, positivo verso l’alto, quindi uno Z negativo è una spinta verso il basso e uno Z positivo un’estrazione dal terreno. Nel 3D le componenti sono tre frecce che partono dal punto, una per asse, in scala propria per ogni punto (vale il numero scritto): rosso X, verde Y, blu Z (il pulsante «Componenti X Y Z» le nasconde).</p>
+  <p class="nota">Forza che ogni punto riceve (il tirante tira l’ancoraggio verso la testa del palo; alla base il palo spinge il terreno). X: verso il vuoto, positivo in fuori. Y: laterale, positivo a sinistra guardando il vuoto. Z: verticale, positivo verso l’alto, quindi uno Z negativo è una spinta verso il basso e uno Z positivo un’estrazione dal terreno. Nel 3D le componenti sono tre frecce che partono dal punto, una per asse, in scala propria per ogni punto (vale il numero scritto): rosso X, verde Y, blu Z (il pulsante «Forze XYZ» le nasconde).</p>
   <p class="nota">Modello semplificato: palo a cerniera alla base, tiranti e capo di recupero senza elasticità, nessuna forza dinamica né vento. Il carico di instabilità è quello di Eulero per tubo pieno di materiale ideale. Non sostituisce la verifica del produttore e dell’istruttore SAF.</p>
 </div>
 `,
