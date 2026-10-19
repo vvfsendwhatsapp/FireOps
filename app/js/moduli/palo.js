@@ -24,9 +24,11 @@ FireOps.registra({
 .pg-palo .nota { font-size: 12.5px; line-height: 1.45; color: var(--text-dim); margin: 8px 0 0; }
 .pg-palo .vista { position: relative; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; touch-action: none; }
 .pg-palo canvas { display: block; width: 100%; height: 300px; cursor: grab; }
-.pg-palo .barra { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
-.pg-palo .barra button { padding: 0 4px; font-size: 13px; }
-.pg-palo .barra #pl-zm, .pg-palo .barra #pl-zp { font-size: 22px; }
+.pg-palo .barra { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+.pg-palo .barra button { grid-column: span 2; padding: 0 4px; font-size: 13px; }
+.pg-palo .barra #pl-zm, .pg-palo .barra #pl-zp { grid-column: span 1; order: 8; font-size: 22px; }
+.pg-palo .barra #pl-zp { order: 9; }
+.pg-palo .barra #pl-comp3 { grid-column: span 6; order: 10; }
 .pg-palo .barra button { min-height: 48px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
 .pg-palo .riga { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
 .pg-palo .riga3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 8px; align-items: center; }

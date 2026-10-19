@@ -36,9 +36,10 @@ FireOps.registra({
 .pg-scala svg { width: 100%; height: auto; display: block; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; }
 .pg-scala .vista { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; touch-action: none; }
 .pg-scala canvas { display: block; width: 100%; height: 300px; cursor: grab; }
-.pg-scala .barra { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
-.pg-scala .barra button { padding: 0 4px; font-size: 13px; }
-.pg-scala .barra #sc-zm, .pg-scala .barra #sc-zp { font-size: 22px; }
+.pg-scala .barra { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+.pg-scala .barra button { grid-column: span 2; padding: 0 4px; font-size: 13px; }
+.pg-scala .barra #sc-zm, .pg-scala .barra #sc-zp { grid-column: span 1; order: 8; font-size: 22px; }
+.pg-scala .barra #sc-zp { order: 9; }
 .pg-scala .barra button { min-height: 48px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
 .pg-scala .barra button:focus-visible, .pg-scala canvas:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
 .pg-scala .vista.rosso, .pg-scala #sc-sv.rosso svg { background: #3a1013; border-color: #d8262f; }
@@ -71,7 +72,7 @@ FireOps.registra({
     <button type="button" id="sc-fronte">Dal muro</button>
     <button type="button" id="sc-alto">Dall’alto</button>
     <button type="button" id="sc-iso">3D</button>
-    <button type="button" id="sc-pan" aria-pressed="false" style="grid-column: span 2">Sposta</button>
+    <button type="button" id="sc-pan" aria-pressed="false">Sposta</button>
     <button type="button" id="sc-zm" aria-label="Allontana">−</button>
     <button type="button" id="sc-zp" aria-label="Avvicina">+</button>
   </div>
