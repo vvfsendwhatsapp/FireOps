@@ -68,6 +68,17 @@ FireOps.registra({
 </div>
 
 <div class="blocco">
+  <h2 class="tit">Palo e inclinazione</h2>
+  <div class="riga3">
+    <div><label for="pl-L">Lunghezza (m)</label><input type="number" id="pl-L" inputmode="decimal" min="1" max="12" step="0.1" value="4"></div>
+    <div><label for="pl-th">Inclinazione (°)</label><input type="number" id="pl-th" inputmode="decimal" min="0" max="45" step="1" value="10"></div>
+    <div><label for="pl-ph">Verso (°)</label><input type="number" id="pl-ph" inputmode="decimal" min="-180" max="360" step="5" value="0" disabled></div>
+  </div>
+  <div class="riga"><div><label for="pl-vm">Verso di inclinazione</label><select id="pl-vm"><option value="A">Automatico: sulla bisettrice dei tiranti</option><option value="M">Manuale</option></select></div></div>
+  <p class="nota" id="pl-nv">Inclinazione dalla verticale, sempre verso l’esterno (il vuoto): mai verso gli ancoraggi. In automatico l’asse del palo segue la bisettrice dei tiranti, dalla parte opposta (verso il vuoto): sposti gli ancoraggi e il palo si orienta da solo. Con 3 cavi (B) il sistema è iperstatico: i tiri sono ripartiti nel modo più uniforme possibile e i cavi che resterebbero compressi vengono considerati scarichi.</p>
+</div>
+
+<div class="blocco">
   <h2 class="tit">Pianta dell’impianto</h2>
   <div class="vista"><canvas id="pl-pi" class="pi" role="img" aria-label="Pianta del montaggio: trascina i punti"></canvas></div>
   <p class="nota">Trascina i punti blu (ancoraggi dei tiranti) e verde (recupero). Distanze e direzioni si aggiornano, le quote le scrivi qui sotto. Direzione: 0° verso il vuoto, 90° a sinistra guardando il vuoto, 180° dietro.</p>
@@ -92,18 +103,7 @@ FireOps.registra({
 </div>
 
 <div class="blocco">
-  <h2 class="tit">1 · Palo</h2>
-  <div class="riga3">
-    <div><label for="pl-L">Lunghezza (m)</label><input type="number" id="pl-L" inputmode="decimal" min="1" max="12" step="0.1" value="4"></div>
-    <div><label for="pl-th">Inclinazione (°)</label><input type="number" id="pl-th" inputmode="decimal" min="0" max="45" step="1" value="10"></div>
-    <div><label for="pl-ph">Verso (°)</label><input type="number" id="pl-ph" inputmode="decimal" min="-180" max="360" step="5" value="0" disabled></div>
-  </div>
-  <div class="riga"><div><label for="pl-vm">Verso di inclinazione</label><select id="pl-vm"><option value="A">Automatico: sulla bisettrice dei tiranti</option><option value="M">Manuale</option></select></div></div>
-  <p class="nota" id="pl-nv">Inclinazione dalla verticale, sempre verso l’esterno (il vuoto): mai verso gli ancoraggi. In automatico l’asse del palo segue la bisettrice dei tiranti, dalla parte opposta (verso il vuoto): sposti gli ancoraggi e il palo si orienta da solo. Con 3 cavi (B) il sistema è iperstatico: i tiri sono ripartiti nel modo più uniforme possibile e i cavi che resterebbero compressi vengono considerati scarichi.</p>
-</div>
-
-<div class="blocco">
-  <h2 class="tit">2 · Ancoraggi e recupero</h2>
+  <h2 class="tit">1 · Ancoraggi e recupero</h2>
   <div class="riga4"><b id="pl-n1" style="color:#4A93C8">Vento 1</b>
     <div><label for="pl-a1d">Distanza dalla base (m)</label><input type="number" id="pl-a1d" inputmode="decimal" min="0.3" step="0.1" value="5" aria-label="Distanza primo cavo"></div>
     <div><label for="pl-a1a">Direzione (°)</label><input type="number" id="pl-a1a" inputmode="decimal" step="1" value="145" aria-label="Direzione primo cavo"></div>
@@ -127,7 +127,7 @@ FireOps.registra({
 </div>
 
 <div class="blocco">
-  <h2 class="tit">3 · Carico e materiali</h2>
+  <h2 class="tit">2 · Carico e materiali</h2>
   <div class="riga">
     <div><label for="pl-kg">Carico (kg)</label><input type="number" id="pl-kg" inputmode="decimal" min="1" step="1" value="200"></div>
     <div><label for="pl-eta">Rendimento carrucola in testa</label><input type="number" id="pl-eta" inputmode="decimal" min="0.5" max="1" step="0.01" value="0.95"></div>
@@ -148,7 +148,7 @@ FireOps.registra({
 </div>
 
 <div class="blocco">
-  <h2 class="tit">4 · Forze</h2>
+  <h2 class="tit">3 · Forze</h2>
   <div class="grid" id="pl-ris"></div>
   <div id="pl-avv"></div>
   <h3 class="tit" style="margin-top:12px;font-size:14px">Forze sugli ancoraggi, scomposte sui 3 assi</h3>
