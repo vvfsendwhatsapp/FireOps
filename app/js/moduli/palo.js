@@ -34,8 +34,8 @@ FireOps.registra({
 .pg-palo canvas.pi { height: 260px; cursor: default; }
 .pg-palo .st { display: flex; gap: 4px; align-items: center; }
 .pg-palo .tasto { width: 100%; min-height: 44px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
-.pg-palo .st input { order: 1; text-align: center; min-width: 0; width: auto; flex: 1 1 0; padding: 0 6px; }
-.pg-palo .st button { order: 2; flex: none; width: 48px; min-height: 48px; padding: 0; min-height: 44px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 18px; font-weight: 800; cursor: pointer; }
+.pg-palo .st input { order: 1; text-align: center; min-width: 0; width: auto; flex: 2 1 0; padding: 0 6px; }
+.pg-palo .st button { order: 2; flex: 1 1 0; min-width: 48px; width: auto; min-height: 48px; padding: 0; min-height: 44px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 18px; font-weight: 800; cursor: pointer; }
 .pg-palo .geo { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
 .pg-palo .geo td, .pg-palo .geo th { padding: 5px 3px; border-top: 1px solid var(--line); text-align: right; font-weight: 600; }
 .pg-palo .geo th { color: var(--text-dim); font-size: 11.5px; font-weight: 400; }
