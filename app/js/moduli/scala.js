@@ -57,10 +57,11 @@ FireOps.registra({
     <button type="button" id="sc-fronte">Dal muro</button>
     <button type="button" id="sc-alto">Dall’alto</button>
     <button type="button" id="sc-iso">3D</button>
+    <button type="button" id="sc-pan" aria-pressed="false">Sposta</button>
     <button type="button" id="sc-zm" aria-label="Allontana">−</button>
     <button type="button" id="sc-zp" aria-label="Avvicina">+</button>
   </div>
-  <p class="nota">Trascina per ruotare, pizzica o usa la rotella per lo zoom. Il centro della vista è la scala; la linea tratteggiata del discensore può uscire dal disegno. Gli anelli bianchi si spostano: quello al piede della scala ne cambia la distanza dal muro, quello sulla corda il suo angolo (alzo). Il muro è il reticolo grigio, il terreno quello più scuro; la freccia rossa è la forza sull’ancoraggio, la linea blu la corda verso il discensore, il segno verde a terra il piede minimo. Gli elementi più vicini sono più marcati.</p>
+  <p class="nota">Trascina per ruotare, pizzica o usa la rotella per lo zoom. Per spostare la vista usa due dita, il tasto destro del mouse (o Maiusc) oppure il pulsante «Sposta». I pulsanti delle viste la riportano al centro. Il centro della vista è la scala; la linea tratteggiata del discensore può uscire dal disegno. Gli anelli bianchi si spostano: quello al piede della scala ne cambia la distanza dal muro, quello sulla corda il suo angolo (alzo). Il muro è il reticolo grigio, il terreno quello più scuro; la freccia rossa è la forza sull’ancoraggio, la linea blu la corda verso il discensore, il segno verde a terra il piede minimo. Gli elementi più vicini sono più marcati.</p>
 </div>
 
 <div class="blocco">
@@ -254,6 +255,7 @@ FireOps.registra({
     $("#sc-fronte").addEventListener("click", vista(Math.PI / 2, 0.05));
     $("#sc-alto").addEventListener("click", vista(0, 1.5));
     $("#sc-iso").addEventListener("click", vista(-0.7, 0.45));
+    $("#sc-pan").addEventListener("click", () => { const on = $("#sc-pan").getAttribute("aria-pressed") !== "true"; $("#sc-pan").setAttribute("aria-pressed", on); $("#sc-pan").style.background = on ? "var(--yellow)" : ""; $("#sc-pan").style.color = on ? "#10141a" : ""; v3 && v3.modo(on ? "sposta" : "ruota"); });
     $("#sc-zm").addEventListener("click", () => v3 && v3.zoom(0.8)); $("#sc-zp").addEventListener("click", () => v3 && v3.zoom(1.25));
     aggiorna3 = (L, d, al, r, P) => { q3 = {L, d, hh: Math.sqrt(Math.max(0.01, L * L - Math.min(d, L * 0.999) ** 2)), r, al, P}; if (v3) v3.disegna(); };
     root.addEventListener("input", aggiorna);
