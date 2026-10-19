@@ -14,6 +14,7 @@ FireOps.registra({
   css: `
 .pg-palo { --acc: var(--ics-operazioni); max-width: 640px; margin: 0 auto; padding: 12px 16px calc(24px + env(safe-area-inset-bottom, 0px)); color: var(--text); font-family: var(--sans); }
 .pg-palo * { box-sizing: border-box; }
+.pg-palo .vista.rosso { background: #3a1013; border-color: #d8262f; }
 .pg-palo .allarme { margin-bottom: 10px; padding: 12px 14px; border-radius: 8px; border: 2px solid #d8262f; background: rgba(216,38,47,.16); color: #ff6b6b; font-weight: 800; font-size: 15px; line-height: 1.35; }
 .pg-palo .allarme small { display: block; margin-top: 4px; font-weight: 600; font-size: 12.5px; color: var(--text); }
 .pg-palo .allarme.giallo { border-color: var(--yellow); background: rgba(255,215,0,.1); color: var(--yellow); }
@@ -56,7 +57,6 @@ FireOps.registra({
 `,
 
   html: `
-<div class="allarme" id="pl-all" role="alert" hidden></div>
 <div class="blocco">
   <h2 class="tit">Pianta dell’impianto</h2>
   <div class="vista"><canvas id="pl-pi" class="pi" role="img" aria-label="Pianta del montaggio: trascina i punti"></canvas></div>
@@ -66,6 +66,7 @@ FireOps.registra({
 <div class="blocco">
   <h2 class="tit">Vista 3D</h2>
   <div class="vista"><canvas id="pl-cv" tabindex="0" role="img" aria-label="Palo pescante in 3D: trascina per ruotare"></canvas></div>
+  <div class="allarme" id="pl-all" role="alert" hidden style="margin:8px 0 0"></div>
   <div class="barra">
     <button type="button" id="pl-lato">Di lato</button>
     <button type="button" id="pl-alto">Dall’alto</button>
@@ -338,6 +339,7 @@ FireOps.registra({
         else if (isFinite(fsRibalt) && fsRibalt < 3) { a.hidden = false; a.className = "allarme giallo"; a.innerHTML = "⚠ RISCHIO DI RIBALTAMENTO<small>Margine sui tiranti × " + fmt(fsRibalt, 1) + ", sotto 3: se un tirante cede il palo si ribalta verso il vuoto.</small>"; }
         else if (isFinite(fsScivol) && fsScivol < 1.5) { a.hidden = false; a.className = "allarme giallo"; a.innerHTML = "⚠ RISCHIO DI SCIVOLAMENTO DELLA BASE<small>Margine sull’attrito × " + fmt(fsScivol, 1) + ", sotto 1,5: blocca il piede del palo.</small>"; }
         else a.hidden = true;
+        root.querySelectorAll(".vista").forEach(v => v.classList.toggle("rosso", !a.hidden && !a.classList.contains("giallo")));
       }
       $("#pl-avv").innerHTML = avv.map(x => '<div class="avv">' + x + "</div>").join("");
       disegna();

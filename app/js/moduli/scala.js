@@ -39,6 +39,7 @@ FireOps.registra({
 .pg-scala .barra { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: 8px; margin-top: 8px; }
 .pg-scala .barra button { min-height: 48px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
 .pg-scala .barra button:focus-visible, .pg-scala canvas:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+.pg-scala .vista.rosso, .pg-scala #sc-sv.rosso svg { background: #3a1013; border-color: #d8262f; }
 .pg-scala .allarme { margin-bottom: 10px; padding: 12px 14px; border-radius: 8px; border: 2px solid #d8262f; background: rgba(216,38,47,.16); color: #ff6b6b; font-weight: 800; font-size: 15px; line-height: 1.35; }
 .pg-scala .allarme small { display: block; margin-top: 4px; font-weight: 600; font-size: 12.5px; color: var(--text); }
 .pg-scala .allarme.giallo { border-color: var(--yellow); background: rgba(255,215,0,.1); color: var(--yellow); }
@@ -53,10 +54,10 @@ FireOps.registra({
 `,
 
   html: `
-<div class="allarme" id="sc-all" role="alert" hidden></div>
 <div class="blocco">
   <h2 class="tit">Vista 3D</h2>
   <div class="vista"><canvas id="sc-cv" tabindex="0" role="img" aria-label="Scala appoggiata al muro in 3D: trascina per ruotare"></canvas></div>
+  <div class="allarme" id="sc-all" role="alert" hidden style="margin:8px 0 0"></div>
   <div class="barra">
     <button type="button" id="sc-lato">Di lato</button>
     <button type="button" id="sc-fronte">Dal muro</button>
@@ -171,6 +172,7 @@ FireOps.registra({
       if (margine < 0) { al3.hidden = false; al3.className = "allarme"; al3.innerHTML = "⚠ RIBALTAMENTO DELLA SCALA<small>Il piede è a " + fmt(d, 2) + " m dal muro, sotto il minimo di " + fmt(r.piede2, 2) + " m: la scala si ribalta. Allarga il piede di almeno " + fmt(-margine, 2) + " m o riduci il carico.</small>"; }
       else if (margine < 0.5) { al3.hidden = false; al3.className = "allarme giallo"; al3.innerHTML = "⚠ RISCHIO DI RIBALTAMENTO<small>Il margine sul piede minimo è di soli " + fmt(margine, 2) + " m. Si consiglia almeno 0,5 m, e un coefficiente 2 sul piede minimo per gli effetti dinamici.</small>"; }
       else al3.hidden = true;
+      root.querySelectorAll(".vista, #sc-sv").forEach(v => v.classList.toggle("rosso", margine < 0));
       $("#sc-st").className = "stato " + cl;
       $("#sc-st").textContent = {ok: "STABILE: margine positivo", warn: "ATTENZIONE: margine sotto 0,5 m", err: "RIBALTAMENTO: aumenta il piede"}[cl];
       const c = (k, v, u) => '<div class="vcell"><div class="k">' + k + '</div><div class="v">' + v + " <small>" + u + "</small></div></div>";
