@@ -33,7 +33,7 @@
   // blu = comunicare e riferire, grigio = dati personali.
   const FUNZIONI = [
     {id: "localizzati", nome: "Localizzati", ico: "📍", colore: "var(--ics-operazioni)", testo: "#fff",
-      sotto: "Comando competente, canali radio, percorsi e AR", href: "#/localizzati"},
+      sotto: "Comando competente, canali radio, percorsi e AR sul target", href: "#/localizzati"},
     {id: "ricerche", nome: "Ricerche", ico: "🔎", colore: "var(--ics-operazioni)", testo: "#fff",
       sotto: "Ricerche in corso da Messaggistica", href: "#/ricerche"},
     {id: "gestione", nome: "Gestione ricerca", ico: "🧭", colore: "var(--ics-operazioni)", testo: "#fff",

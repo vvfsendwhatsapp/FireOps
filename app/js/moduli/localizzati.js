@@ -1086,7 +1086,6 @@ body.map-open {
         </div>
         <div class="cmd-actions">
           <button type="button" id="navToComando" class="nav-cmd-btn" title="Naviga alla sede del Comando con Google Maps">🧭 Naviga</button>
-          <button type="button" id="arToComando" class="nav-cmd-btn alt" title="Guida in realtà aumentata fino al Comando">📷 AR Comando</button>
           <button type="button" id="planToComando" class="nav-cmd-btn alt" title="Usa il Comando come target e pianifica il percorso">🗺 Pianifica a Comando</button>
         </div>
         <div class="result-addr" id="rCmdAddr"></div>
@@ -2850,13 +2849,6 @@ assign initialcost =
         info.classList.add("error");
         info.textContent = "Posizione GPS non ancora ricevuta: attendi la lettura, poi scegli Soccorso, Solo mezzo o Solo piedi.";
       }
-    });
-
-    document.getElementById("arToComando").addEventListener("click", async function () {
-      if (!comandoComeTarget()) return;
-      await calcolaPercorso("soccorso");
-      if (ultimoPercorso) arStart();
-      else document.getElementById("targetInfoPanel").scrollIntoView({behavior: "smooth", block: "start"});
     });
 
     // Il logo nell'intestazione azzera la pagina; la casetta porta alla home
