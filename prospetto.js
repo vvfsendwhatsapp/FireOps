@@ -15,7 +15,7 @@
  *    con una copia locale per lavorare anche senza rete. Modificare turni e salti richiede la password
  *    (scheda "Gestione personale"), che controlla lo script sul foglio.
  *  - Nella Gestione personale si aggiungono anche nominativi che non sono su PUMA, con qualifica, cellulare e corsi.
- *  - Schede: Prospetto (colonne A, B, C, D, G, N.O. con qualifica e nominativo), Gestione personale (turni e salti, con password),
+ *  - Schede, in quest'ordine: Gestione personale, Prospetto, Richiamo. Prospetto (colonne A, B, C, D, G, N.O. con qualifica e nominativo), Gestione personale (turni e salti, con password),
  *    Richiamo specializzati (adesso / +12 / +24 ore: turno libero e salti del turno, del precedente e del seguente).
  */
 (function () {
@@ -383,8 +383,8 @@ function disegna() {
     : sync.stato === 'ok' ? '<span class="pros-sync ok">✓ Turni sul foglio' + ora(sync.ora) + '</span>' : '';
   const stati = statoCarico + statoSync;
   const schede = `<div class="pros-schede" role="tablist">
-    <button type="button" class="pros-scheda${f.scheda === 'prospetto' ? ' on' : ''}" data-scheda="prospetto">📋 Prospetto disponibilità</button>
     <button type="button" class="pros-scheda${f.scheda === 'gestione' ? ' on' : ''}" data-scheda="gestione">${pwd ? '🔓' : '🔒'} Gestione personale</button>
+    <button type="button" class="pros-scheda${f.scheda === 'prospetto' ? ' on' : ''}" data-scheda="prospetto">📋 Prospetto disponibilità</button>
     <button type="button" class="pros-scheda${f.scheda === 'richiamo' ? ' on' : ''}" data-scheda="richiamo">📞 Richiamo specializzati</button>
   </div>`;
   const corpo = f.scheda === 'richiamo' ? htmlRichiamo(corsiDisp, qualDisp, base, stati)
