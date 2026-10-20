@@ -107,8 +107,11 @@ function dividiCorsi(s) {
     if ((ch === ',' || ch === ';') && liv === 0) { if (c.trim()) out.push(c.trim()); c = ''; } else c += ch;
   }
   if (c.trim()) out.push(c.trim());
-  return out.map(x => x.replace(/\s+/g, ' '));
+  return out.map(x => x.replace(/\s+/g, ' ')).filter(c => !corsoEscluso(c));
 }
+// corsi di PUMA da non usare nel prospetto (non si mostrano e non si filtrano)
+const CORSI_ESCLUSI = ['saf1a'];
+function corsoEscluso(c) { const n = norm(c); return CORSI_ESCLUSI.some(x => n.includes(x)); }
 function siglaCorso(c) { const m = String(c).match(/^([^(]+?)\s*\(/); const rest = String(c).replace(/\([^)]*\)/g, '').replace(/\s+/g, ' ').trim(); return m ? rest : c; }
 
 /* ============================== DATI PUMA ============================== */
@@ -141,6 +144,7 @@ async function carica() {
     scrivi(LS_TURNI, turni);
     carico = {stato: 'ok', errore: '', ora: new Date()};
     if (!f.comando) f.comando = comandoDefault();
+    if (corsoEscluso(f.corso)) f.corso = '';   // filtro salvato su un corso che non si usa piu'
   } catch (e) {
     carico = {stato: 'err', errore: e.message || String(e), ora: carico.ora};
   }
@@ -153,7 +157,7 @@ async function carica() {
  *   m: '1' (attivo) / '0' (eliminato) · n: nominativo · com: comando · q: qualifica · c: cellulare · corsi: [..]
  * e viaggia sul foglio come le altre voci (vince la modifica piu' recente).
  */
-function corsiDaTesto(v) { return Array.isArray(v) ? v : String(v || '').split('|').map(x => x.trim()).filter(Boolean); }
+function corsiDaTesto(v) { return (Array.isArray(v) ? v : String(v || '').split('|').map(x => x.trim()).filter(Boolean)).filter(c => !corsoEscluso(c)); }
 function ricomponi() {
   const man = Object.entries(turni).filter(([, v]) => v && v.m === '1').map(([k, v]) => ({
     k, manuale: true, cognome: v.n || '', nome: '', cell: v.c || '', qual: String(v.q || '').toUpperCase(), comando: v.com || '', corsi: corsiDaTesto(v.corsi)
