@@ -8532,3 +8532,11 @@ button.pros-chip.on { background: var(--pros-g); color: #000; }
   .pros-colonne { grid-template-columns: 1fr; overflow: visible; }
   .pros-col ol { max-height: none; }
 }
+/* Prospetto disponibilità: righe alterne nel personale (colonne del prospetto, gestione, richiamo) */
+.pros-col li:nth-child(even):not(.vuota) { background: rgba(255, 255, 255, .07); }
+.pros-tab tbody tr:nth-child(even) td { background: rgba(255, 255, 255, .07); }
+.pros-tab tbody tr:hover td, .pros-col li:hover:not(.vuota) { background: rgba(255, 215, 0, .08); }
+@media (max-width: 700px) {
+  .pros-tab tbody tr:nth-child(even) { background: rgba(255, 255, 255, .07); }
+  .pros-tab tbody tr:nth-child(even) td { background: transparent; }
+}
