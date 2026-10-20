@@ -8,7 +8,7 @@
  *
  * SCHEDE
  *  - Ricerche aperte: elenco del Comando attivo, nuova ricerca (ID nel formato di Messaggistica
- *    00000456_2026_ComFC), QR di registrazione (della ricerca e fisso del Comando) da scaricare.
+ *    00000456_2026_ComFC), QR di registrazione (della ricerca e fisso del Comando) in PDF A4 da stampare.
  *  - Personale: giorno per giorno chi c'e', aggiunto a mano o registrato con il QR.
  *  - Squadre: personale del giorno in squadre, con ID squadra, canale radio, GPS e team leader.
  *  - Zone: zonizzazione (griglia attorno al PUA o disegno a mano), assegnazione squadra-zona,
@@ -304,30 +304,88 @@ function linkRegistrazione(tipo) {
   else u.searchParams.set('r', tipo);
   return u.toString();
 }
-// PNG con il QR e due righe di testo sotto: si stampa o si manda in chat
-function pngQR(testo, titolo, sotto) {
-  const qr = window.FireOpsQR.genera(testo, 'M');
-  const n = qr.dimensione, scala = 10, bordo = 4, lato = (n + bordo * 2) * scala, alto = lato + 90;
-  const cv = document.createElement('canvas'); cv.width = lato; cv.height = alto;
-  const c = cv.getContext('2d');
-  c.fillStyle = '#fff'; c.fillRect(0, 0, lato, alto); c.fillStyle = '#000';
-  for (let r = 0; r < n; r++) for (let k = 0; k < n; k++) if (qr.moduli[r][k]) c.fillRect((k + bordo) * scala, (r + bordo) * scala, scala, scala);
-  c.textAlign = 'center';
-  c.font = 'bold 24px system-ui, sans-serif'; c.fillText(titolo, lato / 2, lato + 30, lato - 20);
-  c.font = '18px system-ui, sans-serif'; c.fillText(sotto, lato / 2, lato + 62, lato - 20);
-  return new Promise(ok => cv.toBlob(ok, 'image/png'));
+// PDF A4 da stampare e appendere: intestazione VVF, numero intervento, data, QR grande e istruzioni
+const JSPDF_URL = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+function caricaJsPDF() {
+  if (window.jspdf && window.jspdf.jsPDF) return Promise.resolve(window.jspdf.jsPDF);
+  return new Promise((ok, ko) => {
+    const sc = document.createElement('script'); sc.src = JSPDF_URL;
+    sc.onload = () => (window.jspdf && window.jspdf.jsPDF) ? ok(window.jspdf.jsPDF) : ko(new Error('jsPDF'));
+    sc.onerror = () => ko(new Error('jsPDF')); document.head.appendChild(sc);
+  });
+}
+function logoDataURL() {
+  return new Promise(ok => {
+    const im = new Image();
+    im.onload = () => { try { const cv = document.createElement('canvas'); cv.width = im.naturalWidth; cv.height = im.naturalHeight; cv.getContext('2d').drawImage(im, 0, 0); ok(cv.toDataURL('image/png')); } catch (e) { ok(null); } };
+    im.onerror = () => ok(null); im.src = 'images/logo.png';
+  });
+}
+function dataEstesa(d) {
+  const s = d.toLocaleDateString('it-IT', {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'});
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+async function pdfQR(o) {
+  const JsPDF = await caricaJsPDF(), logo = await logoDataURL();
+  const doc = new JsPDF({unit: 'mm', format: 'a4'}), W = 210, cx = W / 2, ROSSO = [178, 34, 34];
+  // intestazione
+  doc.setFillColor(...ROSSO); doc.rect(0, 0, W, 36, 'F');
+  if (logo) doc.addImage(logo, 'PNG', 12, 4, 28, 28);
+  doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(26);
+  doc.text('VIGILI DEL FUOCO', logo ? 48 : cx, 18, {align: logo ? 'left' : 'center'});
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(13);
+  if (o.comando) doc.text('Comando di ' + o.comando, logo ? 48 : cx, 27, {align: logo ? 'left' : 'center'});
+  // titolo e dati della ricerca
+  doc.setTextColor(...ROSSO); doc.setFont('helvetica', 'bold'); doc.setFontSize(30);
+  doc.text(o.titolo, cx, 54, {align: 'center'});
+  doc.setTextColor(20, 20, 20); let y = 66;
+  if (o.riga1) { doc.setFontSize(20); doc.text(o.riga1, cx, y, {align: 'center'}); y += 9; }
+  if (o.riga2) { doc.setFont('helvetica', 'normal'); doc.setFontSize(15); doc.text(doc.splitTextToSize(o.riga2, 180)[0], cx, y, {align: 'center'}); y += 8; }
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(14); doc.text(dataEstesa(new Date()), cx, y, {align: 'center'});
+  // QR vettoriale (nitido a qualunque stampa)
+  const qr = window.FireOpsQR.genera(o.link, 'M'), n = qr.dimensione, lato = 118, top = 90, m = lato / (n + 8), x0 = cx - lato / 2;
+  doc.setDrawColor(...ROSSO); doc.setLineWidth(0.8); doc.roundedRect(x0 - 4, top - 4, lato + 8, lato + 8, 3, 3, 'S');
+  doc.setFillColor(0, 0, 0);
+  for (let r = 0; r < n; r++) {
+    let k = 0;
+    while (k < n) {
+      if (!qr.moduli[r][k]) { k++; continue; }
+      let f = k; while (f < n && qr.moduli[r][f]) f++;
+      doc.rect(x0 + (k + 4) * m, top + (r + 4) * m, (f - k) * m + 0.02, m + 0.02, 'F'); k = f;
+    }
+  }
+  // istruzioni
+  y = top + lato + 20;
+  doc.setTextColor(...ROSSO); doc.setFont('helvetica', 'bold'); doc.setFontSize(24);
+  doc.text('Scansiona il QR code per registrarti', cx, y, {align: 'center'});
+  doc.setTextColor(40, 40, 40); doc.setFont('helvetica', 'normal'); doc.setFontSize(13); y += 10;
+  doc.splitTextToSize(o.istruzioni, 170).forEach(l => { doc.text(l, cx, y, {align: 'center'}); y += 6; });
+  // piede
+  doc.setDrawColor(...ROSSO); doc.setLineWidth(0.5); doc.line(15, 280, W - 15, 280);
+  doc.setTextColor(110, 110, 110); doc.setFontSize(9);
+  if (o.piede) doc.text(o.piede, 15, 285);
+  doc.text(doc.splitTextToSize(o.link, 180)[0], 15, 290);
+  doc.text('FireOps VVF', W - 15, 285, {align: 'right'});
+  return doc.output('blob');
 }
 async function scaricaQR(tipo, meta) {
   if (!window.FireOpsQR) { alert('Generatore QR non caricato.'); return; }
-  if (tipo === 'comando') {
-    const sigla = (meta && meta.sigla) || siglaComando();
-    if (!sigla) { alert('Scegli prima il Comando.'); return; }
-    const b = await pngQR(linkRegistrazione('comando'), 'Registrazione personale SAR', 'Comando ' + ((meta && meta.comando) || nomeComando()) + ' · ricerche aperte');
-    scarica('QR_registrazione_' + sigla + '.png', b);
-  } else {
-    const b = await pngQR(linkRegistrazione(meta.id), 'Registrazione ' + (meta.nome || 'ricerca persona'), 'ID ' + meta.id);
-    scarica('QR_registrazione_' + meta.id + '.png', b);
-  }
+  const istruzioni = 'Inquadra il codice con la fotocamera del telefono, apri il link e compila i tuoi dati. Registrati appena arrivi, prima di essere inserito in una squadra.';
+  try {
+    if (tipo === 'comando') {
+      const sigla = (meta && meta.sigla) || siglaComando();
+      if (!sigla) { alert('Scegli prima il Comando.'); return; }
+      const b = await pdfQR({titolo: 'REGISTRAZIONE PERSONALE', riga1: 'Ricerca persona (SAR)', riga2: 'Scegli dall’elenco la ricerca a cui partecipi',
+        comando: (meta && meta.comando) || nomeComando(), link: linkRegistrazione('comando'), istruzioni, piede: 'QR fisso del Comando · ' + sigla});
+      scarica('QR_registrazione_' + sigla + '.pdf', b);
+    } else {
+      const p = String(meta.id || '').split('_'), num = parseInt(p[0], 10);
+      const b = await pdfQR({titolo: 'RICERCA PERSONA',
+        riga1: isNaN(num) ? '' : 'Intervento n. ' + num + (p[1] ? ' / ' + p[1] : ''), riga2: meta.nome || '',
+        comando: meta.comando || (ricerca && ricerca.comando) || nomeComando(), link: linkRegistrazione(meta.id), istruzioni, piede: 'ID ricerca ' + meta.id});
+      scarica('QR_registrazione_' + meta.id + '.pdf', b);
+    }
+  } catch (e) { alert('Non riesco a creare il PDF: serve la connessione per caricare il generatore la prima volta.'); }
 }
 
 /* ============================== IMPIANTO ============================== */
@@ -422,13 +480,13 @@ function vistaRicerche() {
       '<td>' + (r.aperta ? esc(new Date(r.aperta).toLocaleString('it-IT', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'})) : '') +
       (r.stato === 'chiusa' ? '<br><small>chiusa ' + esc(r.chiusa ? new Date(r.chiusa).toLocaleDateString('it-IT') : '') + '</small>' : '') + '</td>' +
       '<td class="sar-az">' + (attiva ? '<span class="sar-chip on">Aperta qui</span>' : '<button type="button" class="sar-btn sm pri" data-a="ric-usa" data-id="' + esc(r.id) + '">Gestisci</button>') +
-      (r.stato !== 'chiusa' ? ' <button type="button" class="sar-btn sm" data-a="qr-ric" data-id="' + esc(r.id) + '" title="Scarica il QR di registrazione (PNG)">⬇ QR</button>' : '') +
+      (r.stato !== 'chiusa' ? ' <button type="button" class="sar-btn sm" data-a="qr-ric" data-id="' + esc(r.id) + '" title="Scarica il foglio A4 con il QR di registrazione (PDF)">⬇ QR PDF</button>' : '') +
       (mia ? (r.stato === 'chiusa' ? ' <button type="button" class="sar-btn sm" data-a="ric-riapri" data-id="' + esc(r.id) + '">Riapri</button>'
         : ' <button type="button" class="sar-btn sm danger" data-a="ric-chiudi" data-id="' + esc(r.id) + '">Chiudi</button>') : '') + '</td></tr>';
   };
   if (aperte.length) h += '<table class="sar-tab-dati"><thead><tr><th>Ricerca</th><th>Aperta</th><th></th></tr></thead><tbody>' + aperte.map(riga).join('') + '</tbody></table>';
   if (chiuse.length) h += '<details class="sar-chiuse"><summary>Chiuse negli ultimi 30 giorni (' + chiuse.length + ')</summary><table class="sar-tab-dati"><tbody>' + chiuse.map(riga).join('') + '</tbody></table></details>';
-  h += '<div class="sar-azioni"><button type="button" class="sar-btn" data-a="qr-comando"' + (sigla ? '' : ' disabled') + '>⬇ QR fisso del Comando (PNG)</button></div>' +
+  h += '<div class="sar-azioni"><button type="button" class="sar-btn" data-a="qr-comando"' + (sigla ? '' : ' disabled') + '>⬇ QR fisso del Comando (PDF)</button></div>' +
     '<p class="sar-nota">Il QR fisso del Comando vale sempre: chi lo inquadra sceglie fra le ricerche aperte. Il QR della ricerca porta diretto a quella.</p></div>';
 
   // nuova ricerca
