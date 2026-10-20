@@ -2275,8 +2275,9 @@ assign initialcost =
         return dati.profileid;
     }
 
-    async function richiestaBRouter(lonlats, profilo) {
-        const url = `https://brouter.de/brouter?lonlats=${lonlats}&profile=${encodeURIComponent(profilo)}&alternativeidx=0&format=geojson`;
+    async function richiestaBRouter(lonlats, profilo, nogos) {
+        const url = `https://brouter.de/brouter?lonlats=${lonlats}&profile=${encodeURIComponent(profilo)}&alternativeidx=0&format=geojson`
+            + (nogos && nogos.length ? "&nogos=" + nogos.map(n => `${n.lon.toFixed(6)},${n.lat.toFixed(6)},${Math.round(n.r)}`).join("|") : "");
         const risposta = await fetch(url);
         const testo = await risposta.text();
         if (!risposta.ok) throw new Error(testo || "HTTP " + risposta.status);
@@ -2286,17 +2287,22 @@ assign initialcost =
     // Prima il profilo soccorso (con un secondo tentativo a profilo
     // ricaricato, se il server l'ha dimenticato); poi, come ripiego,
     // l'auto civile, che rispetta sbarre e divieti
-    async function percorsoAutoSoccorso(lonlats) {
+    async function percorsoAutoSoccorso(lonlats, nogos) {
         for (const rinnova of [false, true]) {
             try {
                 const id = await idProfiloSoccorso(rinnova);
-                return { geojson: await richiestaBRouter(lonlats, id), profiloSoccorso: true };
+                return { geojson: await richiestaBRouter(lonlats, id, nogos), profiloSoccorso: true };
             } catch (err) {
                 console.warn("Profilo soccorso non utilizzabile:", err.message);
             }
         }
-        return { geojson: await richiestaBRouter(lonlats, PROFILO_AUTO_RISERVA), profiloSoccorso: false };
+        return { geojson: await richiestaBRouter(lonlats, PROFILO_AUTO_RISERVA, nogos), profiloSoccorso: false };
     }
+
+    /* Aggancio per il controllo camion (sottopassi, altezza, larghezza): lo fornisce
+       percorso-camion-bis.js, caricato solo in index-bis (modalità test). In produzione
+       window.FireOps.PercorsoCamion non esiste e il percorso resta quello di sempre. */
+    const camion = () => (window.FireOps && window.FireOps.PercorsoCamion) || null;
 
     // Sbarre e cancelli attraversati, dalla tabella "messages" di BRouter
     // (coordinate in milionesimi di grado)
@@ -2360,6 +2366,16 @@ assign initialcost =
                 console.warn("Tratto col mezzo non calcolabile:", err);
             }
         }
+        // Modalità test: ostacoli per il camion lungo il tratto col mezzo; quelli che il mezzo
+        // non passa (altezza/larghezza) si evitano ricalcolando con zone vietate (nogos)
+        let controlloCamion = null;
+        if (auto && camion()) {
+            try {
+                const ris = await camion().controlla(coordinatePercorso(auto.geojson), async nogos =>
+                    percorsoAutoSoccorso(`${lonP},${latP}|${lonT},${latT}`, nogos));
+                if (ris) { controlloCamion = ris; if (ris.auto) auto = ris.auto; }
+            } catch (err) { console.warn("Controllo camion non riuscito:", err); }
+        }
         const coordAuto = auto ? coordinatePercorso(auto.geojson) : [];
         const propAuto = (auto && auto.geojson.features && auto.geojson.features[0].properties) || {};
         const fineAuto = coordAuto.length
@@ -2418,6 +2434,7 @@ assign initialcost =
                 .bindPopup(`<strong>Sbarra / cancello</strong><br>${testoSicuro(s.tag)}<br>Prevedere apertura o chiave`)
                 .addTo(gruppo);
         });
+        if (controlloCamion && camion()) camion().disegna(controlloCamion, gruppo);
         if (coordLineaPercorso) coordMappaLeaflet.removeLayer(coordLineaPercorso);
         coordLineaPercorso = gruppo.addTo(coordMappaLeaflet);
         coordMappaLeaflet.fitBounds(gruppo.getBounds(), { padding: [30, 30] });
@@ -2462,6 +2479,7 @@ assign initialcost =
             tratti.push(`🥾 A piedi: ${kmPiedi.toFixed(2)} km · ${testoDurata(minPiedi)}`);
         }
         if (sbarre.length) tratti.push(`🚧 Sbarre/cancelli: ${sbarre.length}`);
+        if (controlloCamion && camion()) tratti.push(...camion().righe(controlloCamion));
 
         let avviso = null;
         if (auto && !auto.profiloSoccorso) avviso = "⚠️ Profilo mezzo VF non disponibile: calcolato come auto civile (sbarre e divieti rispettati).";
