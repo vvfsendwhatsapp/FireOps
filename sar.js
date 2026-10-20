@@ -1,6 +1,6 @@
 /*!
  * FireOps VVF — sar.js — SAR · Gestione ricerca persona (sala operativa)
- * Dipendenze: Leaflet 1.9 · Geoman 2.15 · fireops-core.js · fireops-sfondi.js · qrcode.js (FireOpsQR)
+ * Dipendenze: Leaflet 1.9 · Geoman 2.15 · fireops-core.js · fireops-sfondi.js · qrcode.js (FireOpsQR) · jspdf.umd.min.js (caricato al primo PDF)
  * Markup:     sezione #sar-gestione di index-bis.html (il contenuto lo costruisce questo file dentro #sar-app)
  * Stile:      style.css, sezione MODULI AGGIUNTIVI ("SAR - GESTIONE RICERCA")
  * Backend:    Web App Apps Script di Messaggistica/Locator, file apps-script/registrazioni.gs
@@ -305,13 +305,17 @@ function linkRegistrazione(tipo) {
   return u.toString();
 }
 // PDF A4 da stampare e appendere: intestazione VVF, numero intervento, data, QR grande e istruzioni
-const JSPDF_URL = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-function caricaJsPDF() {
+// jsPDF e' nel repo (funziona anche senza rete); la CDN resta solo come riserva
+const JSPDF_URL = ['jspdf.umd.min.js', 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'];
+function caricaJsPDF(i) {
+  i = i || 0;
   if (window.jspdf && window.jspdf.jsPDF) return Promise.resolve(window.jspdf.jsPDF);
+  if (i >= JSPDF_URL.length) return Promise.reject(new Error('jsPDF'));
   return new Promise((ok, ko) => {
-    const sc = document.createElement('script'); sc.src = JSPDF_URL;
-    sc.onload = () => (window.jspdf && window.jspdf.jsPDF) ? ok(window.jspdf.jsPDF) : ko(new Error('jsPDF'));
-    sc.onerror = () => ko(new Error('jsPDF')); document.head.appendChild(sc);
+    const sc = document.createElement('script'); sc.src = JSPDF_URL[i];
+    sc.onload = () => (window.jspdf && window.jspdf.jsPDF) ? ok(window.jspdf.jsPDF) : caricaJsPDF(i + 1).then(ok, ko);
+    sc.onerror = () => { sc.remove(); caricaJsPDF(i + 1).then(ok, ko); };
+    document.head.appendChild(sc);
   });
 }
 function logoDataURL() {
@@ -385,7 +389,7 @@ async function scaricaQR(tipo, meta) {
         comando: meta.comando || (ricerca && ricerca.comando) || nomeComando(), link: linkRegistrazione(meta.id), istruzioni, piede: 'ID ricerca ' + meta.id});
       scarica('QR_registrazione_' + meta.id + '.pdf', b);
     }
-  } catch (e) { alert('Non riesco a creare il PDF: serve la connessione per caricare il generatore la prima volta.'); }
+  } catch (e) { alert('Non riesco a creare il PDF: generatore (jspdf.umd.min.js) non caricato.'); }
 }
 
 /* ============================== IMPIANTO ============================== */
