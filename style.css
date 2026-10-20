@@ -8459,3 +8459,19 @@ button.pros-chip.on { background: var(--pros-g); color: #000; }
   .pros-tab tr td:first-child { box-shadow: none !important; }
   .pros-tab tr.st-servizio { box-shadow: inset 3px 0 0 #2fbf71; } .pros-tab tr.st-salto { box-shadow: inset 3px 0 0 #e879d0; }
 }
+/* Prospetto: schede e richiamo specializzati */
+.pros-schede { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 10px; border-bottom: 1px solid var(--border-color); }
+.pros-scheda { flex: 1 1 auto; padding: 8px 12px; background: transparent; color: var(--text-muted); border: 1px solid transparent; border-bottom: 0;
+  border-radius: 6px 6px 0 0; font-weight: 600; cursor: pointer; font-size: 13px; }
+.pros-scheda:hover { color: var(--text-main); }
+.pros-scheda.on, .pros-scheda.on:hover { color: #000; background: var(--primary-color); }
+.pros-gruppo { background: var(--surface-color); border: 1px solid var(--border-color); border-left: 3px solid var(--border-color); border-radius: 6px; padding: 8px 10px; margin-bottom: 8px; }
+.pros-gruppo h4 { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; font-size: 13.5px; font-weight: 500; }
+.pros-gruppo h4 b { color: var(--primary-color); }
+.pros-quanti { margin-left: auto; min-width: 26px; text-align: center; padding: 1px 8px; border-radius: 10px; background: var(--light-bg); font-weight: 700; font-size: 12px; }
+.pros-g-libero { border-left-color: #2fbf71; } .pros-g-saltoSel { border-left-color: #e879d0; }
+.pros-g-saltoPrec { border-left-color: #4f8cff; } .pros-g-saltoSucc { border-left-color: #ff9f1c; }
+.pros-nessuno { padding: 2px 0 4px; }
+.pros-tab-r td small { margin-left: 2px; color: var(--text-muted); }
+.pros-tab-r td:nth-child(1) { width: 32%; } .pros-tab-r td:nth-child(2), .pros-tab-r td:nth-child(3) { width: 7%; white-space: nowrap; }
+.pros-tab-r td a { white-space: nowrap; }

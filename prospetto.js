@@ -49,7 +49,7 @@ let turni = leggi(LS_TURNI, {});
 let coda = leggi(LS_CODA, []);                // [chiave, ...]
 let sync = {stato: '', errore: '', ora: null};
 let nomi = {};                                // chiave → {comando, cognome, nome} per l'invio al foglio
-const f = Object.assign({comando: '', data: '', fascia: fasciaAdesso(), corso: '', qual: '', testo: '', stato: ''},
+const f = Object.assign({comando: '', data: '', fascia: fasciaAdesso(), corso: '', qual: '', testo: '', stato: '', scheda: 'prospetto', quando: 0},
   leggi(LS_FILTRI, {}), {data: dataAdesso(), fascia: fasciaAdesso()});
 delete f.corsi; delete f.tutti;   // filtri della prima versione (piu' corsi insieme)
 
@@ -65,7 +65,7 @@ function oraRoma() { return +new Date().toLocaleString('en-GB', {timeZone: 'Euro
 function fasciaAdesso() { const h = oraRoma(); return (h >= 8 && h < 20) ? 'giorno' : 'notte'; }
 // fra mezzanotte e le 8 il turno di notte in corso e' quello montato la sera prima
 function dataAdesso() { return oraRoma() < 8 ? new Date(Date.now() - 864e5).toLocaleDateString('sv-SE', {timeZone: 'Europe/Rome'}) : oggiISO(); }
-function salvaFiltri() { scrivi(LS_FILTRI, {comando: f.comando, corso: f.corso, qual: f.qual, stato: f.stato}); }
+function salvaFiltri() { scrivi(LS_FILTRI, {comando: f.comando, corso: f.corso, qual: f.qual, stato: f.stato, scheda: f.scheda}); }
 // chiave della persona: cognome|nome|comando (niente cellulare: la chiave finisce sul foglio)
 function chiave(p) { return norm(p.cognome).slice(0, 60) + '|' + norm(p.nome).slice(0, 60) + '|' + normComando(p.comando).slice(0, 60); }
 function titolo(s) { return String(s || '').trim().toLowerCase().replace(/(^|[\s'’-])(\p{L})/gu, (m, a, b) => a + b.toUpperCase()); }
@@ -224,6 +224,54 @@ function statoPersona(p, sigla) {
   return (t.s && sigla.slice(1) === String(t.s)) ? 'salto' : 'servizio';
 }
 
+/* ============================== RICHIAMO SPECIALIZZATI ============================== */
+// I turni sono di 12 ore: giorno 08-20 e notte 20-08. Per un istante si cercano il turno in
+// servizio, quello prima (smontante) e quello dopo (montante); la lettera che manca e' il turno libero.
+
+const GIORNI_BREVI = ['dom', 'lun', 'mar', 'mer', 'gio', 'ven', 'sab'];
+function spostaGiorno(iso, n) { const [a, m, g] = iso.split('-').map(Number); return new Date(Date.UTC(a, m - 1, g + n)).toISOString().slice(0, 10); }
+function siglaDi(iso, fascia) {
+  const [a, m, g] = iso.split('-').map(Number);
+  const T = NS.turniDelGiorno ? NS.turniDelGiorno(a, m, g) : null;
+  return T ? String(T[fascia] || '').toUpperCase() : '';
+}
+// componenti dell'ora di Roma per un istante
+function romaDi(ms) {
+  const parti = {};
+  new Intl.DateTimeFormat('en-GB', {timeZone: 'Europe/Rome', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23'})
+    .formatToParts(new Date(ms)).forEach(x => { parti[x.type] = x.value; });
+  return {iso: parti.year + '-' + parti.month + '-' + parti.day, h: +parti.hour % 24, min: parti.minute};
+}
+function turnoAlMomento(ms) {
+  const r = romaDi(ms);
+  let iso = r.iso, fascia;
+  if (r.h < 8) { iso = spostaGiorno(r.iso, -1); fascia = 'notte'; }   // la notte e' del giorno in cui e' montata
+  else fascia = r.h < 20 ? 'giorno' : 'notte';
+  const prec = fascia === 'giorno' ? {iso: spostaGiorno(iso, -1), fascia: 'notte'} : {iso, fascia: 'giorno'};
+  const succ = fascia === 'giorno' ? {iso, fascia: 'notte'} : {iso: spostaGiorno(iso, 1), fascia: 'giorno'};
+  const sel = {iso, fascia};
+  [sel, prec, succ].forEach(x => { x.sigla = siglaDi(x.iso, x.fascia); x.l = x.sigla.charAt(0); x.n = x.sigla.slice(1); });
+  const liberi = ['A', 'B', 'C', 'D'].filter(l => ![sel.l, prec.l, succ.l].includes(l));
+  const gs = new Date(iso + 'T12:00:00Z').getUTCDay();
+  return {ms, roma: r, sel, prec, succ, liberi, gServizio: fascia === 'giorno' && gs >= 1 && gs <= 5};
+}
+// gruppo di richiamo di una persona: libero, saltoSel, saltoPrec, saltoSucc, oppure non richiamabile
+function gruppoRichiamo(p, T) {
+  const t = turni[p.k];
+  if (!t || !t.t) return 'nd';
+  if (t.t === 'G') return T.gServizio ? 'servizio' : 'libero';
+  const s = String(t.s || '');
+  if (t.t === T.sel.l) return s && s === T.sel.n ? 'saltoSel' : 'servizio';
+  if (t.t === T.prec.l) return s && s === T.prec.n ? 'saltoPrec' : 'smontante';
+  if (t.t === T.succ.l) return s && s === T.succ.n ? 'saltoSucc' : 'montante';
+  return 'libero';
+}
+function etichettaTurno(x) { return x.l ? 'turno ' + x.l + ' ' + (x.fascia === 'giorno' ? 'diurno' : 'notturno') + ' (' + x.sigla + ')' : '—'; }
+function quandoTesto(T) {
+  const d = new Date(T.roma.iso + 'T12:00:00Z');
+  return GIORNI_BREVI[d.getUTCDay()] + ' ' + T.roma.iso.slice(8, 10) + '/' + T.roma.iso.slice(5, 7) + ' ore ' + String(T.roma.h).padStart(2, '0') + ':' + T.roma.min;
+}
+
 /* ============================== FILTRI ============================== */
 
 function delComando() { const n = normComando(f.comando); return n ? righe.filter(p => normComando(p.comando) === n) : righe; }
@@ -271,7 +319,12 @@ function disegna() {
     : sync.stato === 'ok' ? '<span class="pros-sync ok">✓ Turni sul foglio' + ora(sync.ora) + '</span>' : '';
 
   const lettera = sigla.charAt(0).toUpperCase(), num = sigla.slice(1);
-  root.innerHTML = `
+  const schede = `<div class="pros-schede" role="tablist">
+    <button type="button" class="pros-scheda${f.scheda === 'prospetto' ? ' on' : ''}" data-scheda="prospetto">📋 Prospetto disponibilità</button>
+    <button type="button" class="pros-scheda${f.scheda === 'richiamo' ? ' on' : ''}" data-scheda="richiamo">📞 Richiamo specializzati</button>
+  </div>`;
+  if (f.scheda === 'richiamo') { root.innerHTML = schede + htmlRichiamo(corsiDisp, qualDisp, base, statoCarico + statoSync); return; }
+  root.innerHTML = schede + `
   <div class="pros-avviso">🚧 Sezione in costruzione. Personale e corsi arrivano da PUMA; <b>turno e salto turno</b> non sono su PUMA: si impostano qui e si salvano sul foglio Google (DB_Turni_Personale), così li ritrovano tutti i PC.</div>
   <div class="pros-testa">
     <label>Comando
@@ -327,6 +380,78 @@ function disegna() {
     : `<div class="pros-vuoto">${carico.stato === 'ok' ? 'Nessuna persona con questi filtri.' : carico.stato === 'err' ? 'Dati PUMA non disponibili.' : 'Caricamento…'}</div>`}`;
 }
 
+function selectComando() {
+  return `<label>Comando
+      <select id="pros-comando"><option value="">Tutti i comandi</option>${comandi().map(c => `<option${c === f.comando ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select></label>`;
+}
+function selectCorso(corsiDisp, base) {
+  return `<div class="pros-box pros-box-corso">
+    <label class="pros-corso">Corso
+      <select id="pros-corso"${corsiDisp.length ? '' : ' disabled'}>
+        <option value="">${corsiDisp.length ? 'Tutti i corsi (' + corsiDisp.length + ')' : (carico.stato === 'ok' ? 'Nessun corso registrato' : 'In attesa dei dati PUMA')}</option>
+        ${corsiDisp.map(c => `<option value="${esc(c)}"${c === f.corso ? ' selected' : ''}>${esc(c)} — ${base.filter(p => p.corsi.includes(c)).length}</option>`).join('')}
+      </select></label>
+  </div>`;
+}
+const GRUPPI_RICHIAMO = ['libero', 'saltoSel', 'saltoPrec', 'saltoSucc'];
+function elencoRichiamo(T) {
+  const g = {libero: [], saltoSel: [], saltoPrec: [], saltoSucc: [], nd: []};
+  const s = f.stato; f.stato = ''; const l = filtrati(''); f.stato = s;
+  l.forEach(p => { const x = gruppoRichiamo(p, T); if (g[x]) g[x].push(p); });
+  return g;
+}
+function titoliRichiamo(T) {
+  return {
+    libero: 'Personale in turno libero: <b>' + (T.liberi.join(', ') || '—') + '</b> (tutti i salti)' + (T.gServizio ? '' : ' e giornalieri G'),
+    saltoSel: 'Personale in salto turno del turno selezionato: <b>' + esc(T.sel.sigla) + '</b>',
+    saltoPrec: 'Personale in salto turno del turno precedente: <b>' + esc(T.prec.sigla) + '</b>',
+    saltoSucc: 'Personale in salto turno del turno seguente: <b>' + esc(T.succ.sigla) + '</b>'
+  };
+}
+function htmlRichiamo(corsiDisp, qualDisp, base, stati) {
+  const T = turnoAlMomento(Date.now() + f.quando * 3600e3);
+  const g = elencoRichiamo(T), tit = titoliRichiamo(T);
+  const totale = GRUPPI_RICHIAMO.reduce((n, k) => n + g[k].length, 0);
+  const riga = p => {
+    const t = turni[p.k] || {};
+    return `<tr><td data-l="Personale"><b>${esc(p.cognome)}</b> ${esc(p.nome)}${f.comando ? '' : `<div class="pros-com">${esc(p.comando)}</div>`}</td>
+      <td data-l="Qualifica">${esc(p.qual)}</td>
+      <td data-l="Turno">${esc(t.t || '')}${t.s ? '<small>' + esc(t.s) + '</small>' : ''}</td>
+      <td data-l="Corsi">${p.corsi.map(c => `<span class="pros-chip${c === f.corso ? ' on' : ''}" title="${esc(c)}">${esc(siglaCorso(c))}</span>`).join('') || '<span class="pros-nota">—</span>'}</td>
+      <td data-l="Cellulare">${p.cell ? `<a href="tel:${esc(p.cell)}">📞 ${esc(p.cell)}</a>` : ''}</td></tr>`;
+  };
+  return `
+  <div class="pros-testa">
+    ${selectComando()}
+    <div class="pros-fasce">
+      ${[[0, 'Adesso'], [12, '+12 ore'], [24, '+24 ore']].map(([h, n]) => `<button type="button" class="pros-fascia${f.quando === h ? ' on' : ''}" data-quando="${h}">${n}</button>`).join('')}
+    </div>
+    <div class="pros-sigla">${esc(quandoTesto(T))}: <b>${esc(etichettaTurno(T.sel))}</b>
+      <span>· prima ${esc(T.prec.sigla)} · dopo ${esc(T.succ.sigla)}</span></div>
+    <div class="pros-stati">${stati}</div>
+  </div>
+  ${selectCorso(corsiDisp, base)}
+  <div class="pros-barra">
+    <select id="pros-qual"><option value="">Tutte le qualifiche</option>${qualDisp.map(q => `<option${q === f.qual ? ' selected' : ''}>${esc(q)}</option>`).join('')}</select>
+    <span class="pros-nota">${totale} richiamabili${f.corso ? ' con ' + esc(siglaCorso(f.corso)) : ''}${g.nd.length ? ' · <b>' + g.nd.length + '</b> senza turno impostato (scheda Prospetto)' : ''}</span>
+    <button type="button" class="pros-btn" id="pros-csv-richiamo"${totale ? '' : ' disabled'}>⬇️ CSV richiamo</button>
+  </div>
+  ${GRUPPI_RICHIAMO.map(k => `
+  <div class="pros-gruppo pros-g-${k}">
+    <h4>${tit[k]} <span class="pros-quanti">${g[k].length}</span></h4>
+    ${g[k].length ? `<div class="pros-tabwrap"><table class="pros-tab pros-tab-r"><tbody>${g[k].map(riga).join('')}</tbody></table></div>`
+      : '<div class="pros-nota pros-nessuno">Nessuno' + (carico.stato === 'ok' ? '' : ' (in attesa dei dati PUMA)') + '</div>'}
+  </div>`).join('')}`;
+}
+function esportaRichiamo() {
+  const T = turnoAlMomento(Date.now() + f.quando * 3600e3), g = elencoRichiamo(T), tit = titoliRichiamo(T);
+  const q = v => '"' + String(v == null ? '' : v).replace(/<[^>]+>/g, '').replace(/"/g, '""') + '"';
+  const out = [[quandoTesto(T) + ' - ' + etichettaTurno(T.sel) + (f.corso ? ' - corso ' + f.corso : '')].map(q).join(';'),
+    ['Gruppo', 'Personale', 'Qualifica', 'Comando', 'Turno', 'Salto', 'Cellulare', 'Corsi'].map(q).join(';')];
+  GRUPPI_RICHIAMO.forEach(k => g[k].forEach(p => { const t = turni[p.k] || {}; out.push([tit[k], p.cognome, p.qual, p.comando, t.t || '', t.s || '', p.cell, p.corsi.join(' | ')].map(q).join(';')); }));
+  scarica('richiamo_' + T.roma.iso + '_' + String(T.roma.h).padStart(2, '0') + '.csv', '\ufeff' + out.join('\r\n'), 'text/csv;charset=utf-8');
+}
+
 /* ============================== AZIONI ============================== */
 
 function scarica(nome, testo, tipo) {
@@ -364,9 +489,12 @@ function eventi() {
   root.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.fascia) { f.fascia = b.dataset.fascia; disegna(); return; }
+    if (b.dataset.scheda) { f.scheda = b.dataset.scheda; salvaFiltri(); disegna(); return; }
+    if (b.dataset.quando !== undefined) { f.quando = +b.dataset.quando; disegna(); return; }
     if (b.dataset.stato) { f.stato = f.stato === b.dataset.stato ? '' : b.dataset.stato; salvaFiltri(); disegna(); return; }
     switch (b.id) {
       case 'pros-aggiorna': carica(); break;
+      case 'pros-csv-richiamo': esportaRichiamo(); break;
       case 'pros-csv': esportaCSV(); break;
       case 'pros-esporta': scarica('fireops_turni_personale_' + oggiISO() + '.json', JSON.stringify({tipo: 'fireops-prospetto-turni', creato: new Date().toISOString(), turni}, null, 1), 'application/json'); break;
       case 'pros-importa': root.querySelector('#pros-file').click(); break;
@@ -403,6 +531,11 @@ function eventi() {
   });
   document.addEventListener('fireops:comando-attivo-cambiato', () => { const c = comandoDefault(); if (c) { f.comando = c; f.corso = ''; f.qual = ''; salvaFiltri(); disegna(); scaricaTurni(); } });
   window.addEventListener('online', () => { if (coda.length) invia(); });
+  // nel richiamo "adesso" scorre: si ridisegna ogni minuto (solo se la scheda e' visibile e nessun menu e' aperto)
+  setInterval(() => {
+    const sez = document.getElementById('prospetto-disponibilita');
+    if (f.scheda === 'richiamo' && sez && sez.offsetParent !== null && !root.contains(document.activeElement)) disegna();
+  }, 60000);
   // il foglio si rilegge ogni tanto (altri PC possono aver cambiato i turni) e si ritenta l'invio
   setInterval(() => {
     if (carico.stato !== 'ok' || document.hidden) return;
@@ -429,6 +562,6 @@ function avvia() {
   } else parti();
 }
 
-NS.Prospetto = {avvia, carica, scaricaTurni, _dati: () => ({righe, turni, f, carico, coda, sync})};
+NS.Prospetto = {avvia, carica, scaricaTurni, _turno: turnoAlMomento, _dati: () => ({righe, turni, f, carico, coda, sync})};
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', avvia); else avvia();
 })();
