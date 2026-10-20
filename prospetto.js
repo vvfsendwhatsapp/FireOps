@@ -14,7 +14,8 @@
  *    sul foglio Google "DB_Turni_Personale" (apps-script/prospetto.gs, Web App di Messaggistica),
  *    con una copia locale per lavorare anche senza rete. Modificare turni e salti richiede la password
  *    (scheda "Gestione personale"), che controlla lo script sul foglio.
- *  - Schede: Prospetto (corsi × turni A, B, C, D, G, N.O.), Gestione personale (turni e salti, con password),
+ *  - Nella Gestione personale si aggiungono anche nominativi che non sono su PUMA, con qualifica, cellulare e corsi.
+ *  - Schede: Prospetto (colonne A, B, C, D, G, N.O. con qualifica e nominativo), Gestione personale (turni e salti, con password),
  *    Richiamo specializzati (adesso / +12 / +24 ore: turno libero e salti del turno, del precedente e del seguente).
  */
 (function () {
@@ -48,7 +49,9 @@ const NOMI_STATO = {servizio: 'In servizio', salto: 'Salto turno', libero: 'Libe
 /* ============================== STATO ============================== */
 
 let root = null;
-let righe = [];            // personale letto da PUMA (deduplicato)
+let righePuma = [];        // personale letto da PUMA (deduplicato)
+let righe = [];            // PUMA + nominativi aggiunti a mano (vedi ricomponi)
+let modMan = null;         // gestione: chiave del nominativo manuale in modifica, 'nuovo' per uno nuovo
 let carico = {stato: 'vuoto', errore: '', ora: null};
 let turni = leggi(LS_TURNI, {});
 let coda = leggi(LS_CODA, []);                // [chiave, ...]
@@ -133,8 +136,8 @@ async function carica() {
       p.k = chiave(p);
       if (!mappa.has(p.k)) mappa.set(p.k, p);
     });
-    righe = Array.from(mappa.values());
-    righe.forEach(p => { nomi[p.k] = {comando: p.comando, cognome: p.cognome, nome: p.nome}; });
+    righePuma = Array.from(mappa.values());
+    ricomponi();
     scrivi(LS_TURNI, turni);
     carico = {stato: 'ok', errore: '', ora: new Date()};
     if (!f.comando) f.comando = comandoDefault();
@@ -143,6 +146,38 @@ async function carica() {
   }
   disegna();
   if (carico.stato === 'ok') { scaricaTurni(); invia(); }
+}
+
+/* ============================== NOMINATIVI AGGIUNTI A MANO ==============================
+ * Chi non e' su PUMA si aggiunge dalla Gestione personale. Sta nella stessa voce dei turni, con in piu'
+ *   m: '1' (attivo) / '0' (eliminato) · n: nominativo · com: comando · q: qualifica · c: cellulare · corsi: [..]
+ * e viaggia sul foglio come le altre voci (vince la modifica piu' recente).
+ */
+function corsiDaTesto(v) { return Array.isArray(v) ? v : String(v || '').split('|').map(x => x.trim()).filter(Boolean); }
+function ricomponi() {
+  const man = Object.entries(turni).filter(([, v]) => v && v.m === '1').map(([k, v]) => ({
+    k, manuale: true, cognome: v.n || '', nome: '', cell: v.c || '', qual: String(v.q || '').toUpperCase(), comando: v.com || '', corsi: corsiDaTesto(v.corsi)
+  }));
+  const pumaK = new Set(righePuma.map(p => p.k));
+  righe = righePuma.concat(man.filter(p => !pumaK.has(p.k)));
+  righe.forEach(p => { nomi[p.k] = {comando: p.comando, cognome: p.cognome, nome: p.nome}; });
+}
+function chiaveManuale(nominativo, comando) {
+  return norm(nominativo).slice(0, 50) + '|m' + Date.now().toString(36) + '|' + normComando(comando).slice(0, 60);
+}
+function salvaManuale(k, d) {
+  if (!pwd) return false;
+  const prima = turni[k] || {};
+  turni[k] = {t: d.t || '', s: SENZA_SALTO(d.t) ? '' : (d.s || ''), ts: Date.now(), m: '1',
+    n: d.n, com: d.com, q: d.q, c: d.c, corsi: d.corsi};
+  if (prima.m === '1' && prima.t === turni[k].t && prima.s === turni[k].s) { /* solo anagrafica */ }
+  scrivi(LS_TURNI, turni); metti(k); ricomponi(); programmaInvio();
+  return true;
+}
+function eliminaManuale(k) {
+  if (!pwd || !turni[k] || turni[k].m !== '1') return;
+  turni[k] = Object.assign({}, turni[k], {m: '0', t: '', s: '', ts: Date.now()});
+  scrivi(LS_TURNI, turni); metti(k); ricomponi(); programmaInvio();
 }
 
 /* ============================== FOGLIO TURNI (Apps Script) ============================== */
@@ -166,16 +201,22 @@ async function scaricaTurni() {
     Object.entries(j.turni || {}).forEach(([k, v]) => {
       const loc = turni[k];
       if (coda.includes(k) && loc && (loc.ts || 0) >= (v.ts || 0)) return;   // la mia modifica deve ancora partire
-      if (!loc || (v.ts || 0) > (loc.ts || 0)) { turni[k] = {t: v.t || '', s: v.s || '', ts: v.ts || 0}; cambi++; }
+      if (!loc || (v.ts || 0) > (loc.ts || 0)) {
+        turni[k] = {t: v.t || '', s: v.s || '', ts: v.ts || 0};
+        if (v.m === '1' || v.m === '0') Object.assign(turni[k], {m: v.m, n: v.n || '', com: v.com || '', q: v.q || '', c: v.c || '', corsi: corsiDaTesto(v.corsi)});
+        cambi++;
+      }
     });
-    if (cambi) scrivi(LS_TURNI, turni);
+    if (cambi) { scrivi(LS_TURNI, turni); ricomponi(); }
     sync = {stato: coda.length ? 'attesa' : 'ok', errore: '', ora: new Date()};
   } catch (e) {
     sync = {stato: 'err', errore: e.name === 'AbortError' ? 'tempo scaduto' : (e.message || String(e)), ora: sync.ora};
   }
-  disegna();
+  ridisegna();
 }
 let timerInvio = null, inviando = false;
+// ridisegno chiesto dalla sincronizzazione: non mentre si compila il modulo del nominativo (si perderebbe quanto scritto)
+function ridisegna() { if (modMan && root && root.querySelector('#pros-man-form')) return; disegna(); }
 function programmaInvio() { clearTimeout(timerInvio); timerInvio = setTimeout(invia, 1500); }
 function salvaPwd(v) { pwd = v || ''; try { if (pwd) sessionStorage.setItem(SS_PWD, pwd); else sessionStorage.removeItem(SS_PWD); } catch (e) { /* niente */ } }
 async function sblocca(v) {
@@ -190,16 +231,19 @@ async function sblocca(v) {
   }
   disegna();
 }
-function blocca() { salvaPwd(''); sblocco = {stato: '', errore: ''}; disegna(); }
+function blocca() { salvaPwd(''); sblocco = {stato: '', errore: ''}; modMan = null; disegna(); }
+function scorriForm() { const x = root.querySelector('#pros-man-form'); if (x) { x.scrollIntoView({block: 'nearest'}); const i = x.querySelector('input[name=n]'); if (i) i.focus(); } }
 async function invia() {
   if (inviando || !coda.length || !pwd) return;   // senza password le modifiche restano in attesa
   inviando = true;
   const chiavi = coda.slice(0, 500);
   const voci = chiavi.map(k => {
     const v = turni[k] || {t: '', s: '', ts: Date.now()}, n = nomi[k] || {};
-    return {k, comando: n.comando || '', cognome: n.cognome || '', nome: n.nome || '', t: v.t || '', s: v.s || '', ts: v.ts || Date.now()};
+    const voce = {k, comando: n.comando || v.com || '', cognome: n.cognome || v.n || '', nome: n.nome || '', t: v.t || '', s: v.s || '', ts: v.ts || Date.now()};
+    if (v.m === '1' || v.m === '0') Object.assign(voce, {m: v.m, comando: v.com || '', cognome: v.n || '', q: v.q || '', c: v.c || '', corsi: corsiDaTesto(v.corsi)});
+    return voce;
   });
-  sync.stato = 'invio'; disegna();
+  sync.stato = 'invio'; ridisegna();
   try {
     await chiedi(WEBAPP, {method: 'POST', headers: {'Content-Type': 'text/plain;charset=utf-8'}, body: JSON.stringify({foglio: 'DB_Turni_Personale', password: pwd, voci})}, 30000);
     coda = coda.filter(k => !chiavi.includes(k)); scrivi(LS_CODA, coda);
@@ -209,13 +253,13 @@ async function invia() {
     if (/password/i.test(msg)) { salvaPwd(''); sblocco = {stato: 'err', errore: msg}; }   // password cambiata nello script: si richiede
     sync = {stato: 'err', errore: msg, ora: sync.ora};
   } finally { inviando = false; }
-  disegna();
+  ridisegna();
   if (coda.length && sync.stato !== 'err') programmaInvio();
 }
 // modifica di turno/salto di una persona: copia locale subito, foglio appena possibile
 function impostaTurno(k, t, s) {
   if (!pwd) return;
-  turni[k] = {t: t || '', s: SENZA_SALTO(t) ? '' : (s || ''), ts: Date.now()};
+  turni[k] = Object.assign({}, turni[k], {t: t || '', s: SENZA_SALTO(t) ? '' : (s || ''), ts: Date.now()});
   scrivi(LS_TURNI, turni); metti(k); programmaInvio();
 }
 
@@ -346,40 +390,34 @@ function disegna() {
   root.innerHTML = schede + corpo;
 }
 
-/* ---------- scheda PROSPETTO: corsi × turni (A, B, C, D, G, N.O.) ---------- */
+/* ---------- scheda PROSPETTO: colonne A, B, C, D, G, N.O. con sotto qualifica e nominativo ---------- */
 const COLONNE = ['A', 'B', 'C', 'D', 'G', 'NO', ''];   // '' = turno non impostato
 function htmlProspetto(corsiDisp, qualDisp, base, stati) {
-  const pers = base.filter(p => !f.qual || p.qual === f.qual);
+  const pers = base.filter(p => (!f.qual || p.qual === f.qual) && (!f.corso || p.corsi.includes(f.corso)));
   const turnoDi = p => { const t = turni[p.k]; return t && TURNI.includes(t.t) ? t.t : ''; };
-  const righeP = (f.corso ? [f.corso] : corsiDisp).map(c => ({corso: c, lista: pers.filter(p => p.corsi.includes(c))}));
-  if (!f.corso) righeP.unshift({corso: '', lista: pers, tutto: true});
-  const conta = lista => { const o = {}; COLONNE.forEach(t => { o[t] = []; }); lista.forEach(p => o[turnoDi(p)].push(p)); return o; };
-  const vedi = cella && righeP.find(r => r.corso === cella.corso);
-  const nomiCella = vedi ? conta(vedi.lista)[cella.turno] || [] : [];
+  const col = {}; COLONNE.forEach(t => { col[t] = []; });
+  pers.forEach(p => col[turnoDi(p)].push(p));
+  const adesso = turnoAlMomento(Date.now());
   const intest = t => t === '' ? 'Senza turno' : NOME_TURNO(t);
+  const colonne = COLONNE.filter(t => t !== '' || col[''].length);
   return `
   <div class="pros-testa">
     ${selectComando()}
     <label>Qualifica <select id="pros-qual"><option value="">Tutte</option>${qualDisp.map(q => `<option${q === f.qual ? ' selected' : ''}>${esc(q)}</option>`).join('')}</select></label>
+    <div class="pros-sigla">Adesso: <b>${esc(etichettaTurno(adesso.sel))}</b></div>
     <div class="pros-stati">${stati}</div>
   </div>
   ${selectCorso(corsiDisp, base)}
   ${pers.length ? `
-  <div class="pros-tabwrap"><table class="pros-tab pros-matrice">
-    <thead><tr><th>Corso</th>${COLONNE.map(t => `<th class="num${t === 'NO' ? ' no' : ''}${t === '' ? ' nd' : ''}">${intest(t)}</th>`).join('')}<th class="num">Totale</th></tr></thead>
-    <tbody>${righeP.map(r => {
-      const o = conta(r.lista);
-      return `<tr${r.tutto ? ' class="tutto"' : ''}><th title="${esc(r.corso)}">${r.tutto ? 'Tutto il personale' : esc(r.corso)}</th>${COLONNE.map(t => {
-        const n = o[t].length, on = cella && cella.corso === r.corso && cella.turno === t;
-        return `<td class="num${t === 'NO' ? ' no' : ''}${t === '' ? ' nd' : ''}">${n ? `<button type="button" class="pros-n${on ? ' on' : ''}" data-cella="${esc(t)}" data-ccorso="${esc(r.corso)}">${n}</button>` : '<span class="zero">·</span>'}</td>`;
-      }).join('')}<td class="num tot">${r.lista.length}</td></tr>`;
-    }).join('')}</tbody></table></div>
-  <p class="pros-nota">Tocca un numero per vedere i nomi. I turni si impostano nella scheda 🔒 Gestione personale.</p>
-  ${vedi ? `<div class="pros-gruppo"><h4>${esc(vedi.tutto ? 'Tutto il personale' : vedi.corso)} · <b>${esc(intest(cella.turno))}</b> <span class="pros-quanti">${nomiCella.length}</span></h4>
-    ${nomiCella.length ? `<div class="pros-tabwrap"><table class="pros-tab pros-tab-r"><tbody>${ordina(nomiCella).map(p => { const t = turni[p.k] || {};
-      return `<tr><td data-l="Personale"><b>${esc(p.cognome)}</b>${f.comando ? '' : `<div class="pros-com">${esc(p.comando)}</div>`}</td><td data-l="Qualifica">${esc(p.qual)}</td>
-      <td data-l="Turno">${esc(NOME_TURNO(t.t || '—'))}${t.s ? '<small>' + esc(t.s) + '</small>' : ''}</td>
-      <td data-l="Cellulare">${p.cell ? `<a href="tel:${esc(p.cell)}">📞 ${esc(p.cell)}</a>` : ''}</td></tr>`; }).join('')}</tbody></table></div>` : ''}</div>` : ''}`
+  <div class="pros-colonne" style="--n:${colonne.length}">
+    ${colonne.map(t => `
+    <div class="pros-col${t === 'NO' ? ' no' : ''}${t === '' ? ' nd' : ''}${t === adesso.sel.l ? ' servizio' : ''}">
+      <h4>${esc(intest(t))} <span class="pros-quanti">${col[t].length}</span>${t === adesso.sel.l ? '<small>in servizio · salta il ' + esc(adesso.sel.n) + '</small>' : ''}</h4>
+      <ol>${ordina(col[t]).map(p => { const tt = turni[p.k] || {}, inSalto = t === adesso.sel.l && tt.s && String(tt.s) === adesso.sel.n;
+        return `<li class="${inSalto ? 'salto' : ''}" title="${esc(p.corsi.join(', '))}"><span class="q">${esc(p.qual)}</span> <span class="n">${esc(p.cognome)}${p.manuale ? ' ✍️' : ''}</span>${tt.s ? `<span class="s">${esc(t + tt.s)}</span>` : ''}${f.comando ? '' : `<span class="c">${esc(p.comando)}</span>`}</li>`; }).join('') || '<li class="vuota">—</li>'}</ol>
+    </div>`).join('')}
+  </div>
+  <p class="pros-nota">${pers.length} persone${f.corso ? ' con ' + esc(f.corso) : ''}. In grigio chi adesso è in salto turno. I turni si impostano nella scheda 🔒 Gestione personale.</p>`
   : `<div class="pros-vuoto">${carico.stato === 'ok' ? 'Nessuna persona con questi filtri.' : carico.stato === 'err' ? 'Dati PUMA non disponibili.' : 'Caricamento…'}</div>`}`;
 }
 function ordina(l) {
@@ -401,6 +439,7 @@ function htmlGestione(corsiDisp, qualDisp, base, stati) {
         <button type="submit" class="pros-btn"${sblocco.stato === 'verifica' ? ' disabled' : ''}>${sblocco.stato === 'verifica' ? '⏳ Verifico…' : 'Sblocca'}</button>
         ${sblocco.stato === 'err' ? '<span class="pros-sync err">⚠️ ' + esc(sblocco.errore) + '</span>' : ''}</form>`;
   const dis = aperto ? '' : ' disabled';
+  const tuttiCorsi = Array.from(new Set(righe.flatMap(p => p.corsi))).sort((a, b) => a.localeCompare(b, 'it'));
   return `
   <div class="pros-avviso">🚧 Sezione in costruzione. Personale e corsi arrivano da PUMA; <b>turno e salto turno</b> non sono su PUMA: si impostano qui e si salvano sul foglio Google (DB_Turni_Personale), così li ritrovano tutti i PC.</div>
   ${lucchetto}
@@ -419,14 +458,16 @@ function htmlGestione(corsiDisp, qualDisp, base, stati) {
     <button type="button" class="pros-btn" id="pros-importa"${dis}>📂 Importa turni</button>
     <button type="button" class="pros-btn danger" id="pros-reset">🗑️ Reset dati</button>
     <input type="file" id="pros-file" accept=".json,application/json" hidden>
+    <button type="button" class="pros-btn pri" id="pros-man-nuovo"${dis}>➕ Aggiungi nominativo</button>
   </div>
+  ${aperto && modMan ? htmlFormManuale(tuttiCorsi) : ''}
   ${elenco.length ? `
   <div class="pros-tabwrap"><table class="pros-tab${aperto ? '' : ' bloccata'}">
     <thead><tr><th>Personale</th><th>Qual.</th><th>Corsi</th><th>Cellulare</th><th>Turno</th><th>Salto</th></tr></thead>
     <tbody>${elenco.map(p => {
       const t = turni[p.k] || {};
       return `<tr data-k="${esc(p.k)}" class="${t.t === 'NO' ? 'st-no' : t.t ? '' : 'st-nd'}">
-        <td data-l="Personale"><b>${esc(p.cognome)}</b> ${esc(p.nome)}${f.comando ? '' : `<div class="pros-com">${esc(p.comando)}</div>`}</td>
+        <td data-l="Personale"><b>${esc(p.cognome)}</b> ${esc(p.nome)}${p.manuale ? ` <span class="pros-man">✍️ aggiunto a mano</span>${aperto ? ` <button type="button" class="pros-mini" data-man-mod="${esc(p.k)}" title="Modifica">✏️</button> <button type="button" class="pros-mini danger" data-man-del="${esc(p.k)}" title="Elimina">🗑️</button>` : ''}` : ''}${f.comando ? '' : `<div class="pros-com">${esc(p.comando)}</div>`}</td>
         <td data-l="Qualifica">${esc(p.qual)}</td>
         <td data-l="Corsi">${p.corsi.map(c => `<span class="pros-chip${c === f.corso ? ' on' : ''}" title="${esc(c)}">${esc(siglaCorso(c))}</span>`).join('') || '<span class="pros-nota">—</span>'}</td>
         <td data-l="Cellulare">${p.cell ? `<a href="tel:${esc(p.cell)}">${esc(p.cell)}</a>` : ''}</td>
@@ -437,6 +478,32 @@ function htmlGestione(corsiDisp, qualDisp, base, stati) {
     : `<div class="pros-vuoto">${carico.stato === 'ok' ? 'Nessuna persona con questi filtri.' : carico.stato === 'err' ? 'Dati PUMA non disponibili.' : 'Caricamento…'}</div>`}`;
 }
 
+// modulo per aggiungere (o modificare) un nominativo che non e' su PUMA
+const QUAL_MAN = ['VF', 'VE', 'VESC', 'VC', 'CS', 'CSE', 'CR', 'IA', 'DS', 'D'];
+function htmlFormManuale(tuttiCorsi) {
+  const v = modMan !== 'nuovo' && turni[modMan] ? turni[modMan] : {};
+  const com = v.com || f.comando || comandoDefault() || '';
+  const scelti = new Set(corsiDaTesto(v.corsi));
+  const extra = Array.from(scelti).filter(c => !tuttiCorsi.includes(c));
+  return `<form class="pros-box pros-man-form" id="pros-man-form" autocomplete="off">
+    <h4>${modMan === 'nuovo' ? '➕ Nuovo nominativo' : '✏️ Modifica nominativo'} <small>(per chi non è su PUMA)</small></h4>
+    <div class="pros-griglia">
+      <label>Cognome e nome <input type="text" name="n" required maxlength="80" value="${esc(v.n || '')}" placeholder="Rossi Mario"></label>
+      <label>Qualifica <select name="q">${QUAL_MAN.map(q => `<option${q === String(v.q || 'VF').toUpperCase() ? ' selected' : ''}>${q}</option>`).join('')}</select></label>
+      <label>Cellulare <input type="tel" name="c" maxlength="20" value="${esc(v.c || '')}" placeholder="333 1234567"></label>
+      <label>Comando <select name="com">${Array.from(new Set(comandi().concat(com ? [com] : []))).sort((a, b) => a.localeCompare(b, 'it')).map(c => `<option${c === com ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select></label>
+      <label>Turno <select name="t"><option value="">—</option>${TURNI.map(x => `<option value="${x}"${x === v.t ? ' selected' : ''}>${NOME_TURNO(x)}</option>`).join('')}</select></label>
+      <label>Salto <select name="s"><option value="">—</option>${SALTI.map(x => `<option${x === String(v.s || '') ? ' selected' : ''}>${x}</option>`).join('')}</select></label>
+    </div>
+    <div class="pros-lab">Corsi</div>
+    <div class="pros-man-corsi">${tuttiCorsi.concat(extra).map(c => `<label class="pros-chk"><input type="checkbox" name="corso" value="${esc(c)}"${scelti.has(c) ? ' checked' : ''}> ${esc(c)}</label>`).join('')}</div>
+    <label class="pros-man-altro">Altro corso non in elenco <input type="text" name="altro" maxlength="120" placeholder="es. TAS2 (Topografia Applicata al Soccorso)"></label>
+    <div class="pros-barra">
+      <button type="submit" class="pros-btn pri">💾 Salva</button>
+      <button type="button" class="pros-btn" id="pros-man-annulla">Annulla</button>
+    </div>
+  </form>`;
+}
 function selectComando() {
   return `<label>Comando
       <select id="pros-comando"><option value="">Tutti i comandi</option>${comandi().map(c => `<option${c === f.comando ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select></label>`;
@@ -471,11 +538,11 @@ function htmlRichiamo(corsiDisp, qualDisp, base, stati) {
   const totale = GRUPPI_RICHIAMO.reduce((n, k) => n + g[k].length, 0);
   const riga = p => {
     const t = turni[p.k] || {};
-    return `<tr><td data-l="Personale"><b>${esc(p.cognome)}</b> ${esc(p.nome)}${f.comando ? '' : `<div class="pros-com">${esc(p.comando)}</div>`}</td>
-      <td data-l="Qualifica">${esc(p.qual)}</td>
-      <td data-l="Turno">${esc(NOME_TURNO(t.t || ''))}${t.s ? '<small>' + esc(t.s) + '</small>' : ''}</td>
-      <td data-l="Corsi">${p.corsi.map(c => `<span class="pros-chip${c === f.corso ? ' on' : ''}" title="${esc(c)}">${esc(siglaCorso(c))}</span>`).join('') || '<span class="pros-nota">—</span>'}</td>
-      <td data-l="Cellulare">${p.cell ? `<a href="tel:${esc(p.cell)}">📞 ${esc(p.cell)}</a>` : ''}</td></tr>`;
+    return `<tr><td data-l="Qualifica" class="q">${esc(p.qual)}</td>
+      <td data-l="Nome" title="${esc(p.corsi.join(', '))}"><b>${esc(p.cognome)}</b> ${esc(p.nome)}${p.manuale ? ' ✍️' : ''}${f.comando ? '' : `<div class="pros-com">${esc(p.comando)}</div>`}</td>
+      <td data-l="Numero">${p.cell ? `<a href="tel:${esc(p.cell)}">📞 ${esc(p.cell)}</a>` : '<span class="pros-nota">—</span>'}</td>
+      <td data-l="Turno" class="c">${esc(NOME_TURNO(t.t || '—'))}</td>
+      <td data-l="Salto" class="c">${esc(t.s || '—')}</td></tr>`;
   };
   return `
   <div class="pros-testa">
@@ -496,7 +563,7 @@ function htmlRichiamo(corsiDisp, qualDisp, base, stati) {
   ${GRUPPI_RICHIAMO.map(k => `
   <div class="pros-gruppo pros-g-${k}">
     <h4>${tit[k]} <span class="pros-quanti">${g[k].length}</span></h4>
-    ${g[k].length ? `<div class="pros-tabwrap"><table class="pros-tab pros-tab-r"><tbody>${g[k].map(riga).join('')}</tbody></table></div>`
+    ${g[k].length ? `<div class="pros-tabwrap"><table class="pros-tab pros-tab-r"><thead><tr><th>Qualifica</th><th>Nome</th><th>Numero</th><th>Turno</th><th>Salto</th></tr></thead><tbody>${ordina(g[k]).map(riga).join('')}</tbody></table></div>`
       : '<div class="pros-nota pros-nessuno">Nessuno' + (carico.stato === 'ok' ? '' : ' (in attesa dei dati PUMA)') + '</div>'}
   </div>`).join('')}`;
 }
@@ -504,8 +571,8 @@ function esportaRichiamo() {
   const T = turnoAlMomento(Date.now() + f.quando * 3600e3), g = elencoRichiamo(T), tit = titoliRichiamo(T);
   const q = v => '"' + String(v == null ? '' : v).replace(/<[^>]+>/g, '').replace(/"/g, '""') + '"';
   const out = [[quandoTesto(T) + ' - ' + etichettaTurno(T.sel) + (f.corso ? ' - corso ' + f.corso : '')].map(q).join(';'),
-    ['Gruppo', 'Personale', 'Qualifica', 'Comando', 'Turno', 'Salto', 'Cellulare', 'Corsi'].map(q).join(';')];
-  GRUPPI_RICHIAMO.forEach(k => g[k].forEach(p => { const t = turni[p.k] || {}; out.push([tit[k], p.cognome, p.qual, p.comando, NOME_TURNO(t.t || ''), t.s || '', p.cell, p.corsi.join(' | ')].map(q).join(';')); }));
+    ['Gruppo', 'Qualifica', 'Nome', 'Numero', 'Turno', 'Salto', 'Comando', 'Corsi'].map(q).join(';')];
+  GRUPPI_RICHIAMO.forEach(k => ordina(g[k]).forEach(p => { const t = turni[p.k] || {}; out.push([tit[k], p.qual, p.cognome, p.cell, NOME_TURNO(t.t || ''), t.s || '', p.comando, p.corsi.join(' | ')].map(q).join(';')); }));
   scarica('richiamo_' + T.roma.iso + '_' + String(T.roma.h).padStart(2, '0') + '.csv', '\ufeff' + out.join('\r\n'), 'text/csv;charset=utf-8');
 }
 
@@ -554,7 +621,15 @@ function eventi() {
     }
     if (b.dataset.quando !== undefined) { f.quando = +b.dataset.quando; disegna(); return; }
     if (b.dataset.stato) { f.stato = f.stato === b.dataset.stato ? '' : b.dataset.stato; salvaFiltri(); disegna(); return; }
+    if (b.dataset.manMod) { modMan = b.dataset.manMod; disegna(); scorriForm(); return; }
+    if (b.dataset.manDel) {
+      const v = turni[b.dataset.manDel];
+      if (v && confirm('Eliminare ' + (v.n || 'questo nominativo') + ' dal personale aggiunto a mano?')) { eliminaManuale(b.dataset.manDel); if (modMan === b.dataset.manDel) modMan = null; disegna(); }
+      return;
+    }
     switch (b.id) {
+      case 'pros-man-nuovo': modMan = 'nuovo'; disegna(); scorriForm(); break;
+      case 'pros-man-annulla': modMan = null; disegna(); break;
       case 'pros-aggiorna': carica(); break;
       case 'pros-blocca': blocca(); break;
       case 'pros-csv-richiamo': esportaRichiamo(); break;
@@ -588,6 +663,18 @@ function eventi() {
     }
   });
   root.addEventListener('submit', e => {
+    if (e.target.id === 'pros-man-form') {
+      e.preventDefault();
+      const fd = new FormData(e.target), n = String(fd.get('n') || '').trim().replace(/\s+/g, ' ');
+      if (!n) return;
+      const corsi = fd.getAll('corso').map(String);
+      String(fd.get('altro') || '').split(/[,;]/).map(x => x.trim()).filter(Boolean).forEach(x => { if (!corsi.includes(x)) corsi.push(x); });
+      const com = String(fd.get('com') || '');
+      const k = modMan === 'nuovo' ? chiaveManuale(n, com) : modMan;
+      salvaManuale(k, {n: titolo(n), q: String(fd.get('q') || ''), c: String(fd.get('c') || '').replace(/[^\d+ ]/g, '').trim(), com, t: String(fd.get('t') || ''), s: String(fd.get('s') || ''), corsi});
+      modMan = null; disegna();
+      return;
+    }
     if (e.target.id !== 'pros-sblocca') return;
     e.preventDefault();
     const x = root.querySelector('#pros-pwd'); sblocca(x ? x.value : '');
@@ -621,7 +708,7 @@ function avvia() {
   root = document.getElementById('pros-app');
   if (!root || avviato) return;
   avviato = true;
-  eventi(); disegna();
+  ricomponi(); eventi(); disegna();
   // si legge PUMA solo quando la scheda viene aperta la prima volta: sono migliaia di righe
   const sez = document.getElementById('prospetto-disponibilita');
   const parti = () => { if (carico.stato === 'vuoto') carica(); };

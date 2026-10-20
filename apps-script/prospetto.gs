@@ -14,10 +14,13 @@
  *
  * Ogni voce ha l'ora dell'ultima modifica (Aggiornato, in ms): vince la piu' recente, quindi piu' PC
  * possono lavorare insieme. Una voce con turno vuoto e' una cancellazione e resta come riga vuota.
- * Nel foglio NON si scrivono cellulare, codice fiscale o email: solo nome, cognome, comando, turno e salto.
+ * Per il personale di PUMA nel foglio NON si scrivono cellulare, codice fiscale o email: solo nominativo,
+ * comando, turno e salto. Per i nominativi aggiunti a mano (non presenti su PUMA, colonna Manuale = 1)
+ * si scrivono anche qualifica, cellulare e corsi, perche' non stanno da nessun'altra parte; Manuale = 0 vuol dire
+ * eliminato. ATTENZIONE: come i turni, questi dati si leggono senza password da chi conosce l'indirizzo della Web App.
  */
 const TP_FOGLIO_ = "DB_Turni_Personale";
-const TP_INT_ = ["Chiave", "Comando", "Cognome", "Nome", "Turno", "Salto", "Aggiornato"];
+const TP_INT_ = ["Chiave", "Comando", "Cognome", "Nome", "Turno", "Salto", "Aggiornato", "Manuale", "Qualifica", "Cellulare", "Corsi"];
 const TP_PASSWORD_ = "cambiami";   // <-- METTI QUI LA PASSWORD DELLA GESTIONE PERSONALE
 const TP_TURNI_ = ["", "A", "B", "C", "D", "G", "NO"];   // NO = Non Operativo
 const TP_SALTI_ = ["", "1", "2", "3", "4", "5", "6", "7", "8"];
@@ -30,7 +33,13 @@ function tpFoglio_() {
     sh = ss.insertSheet(TP_FOGLIO_);
     sh.appendRow(TP_INT_);
     sh.setFrozenRows(1);
-    sh.getRange("A:F").setNumberFormat("@");   // tutto testo: il salto "4" non diventa un numero
+    sh.getRange("A:F").setNumberFormat("@"); sh.getRange("H:K").setNumberFormat("@");   // tutto testo: il salto "4" non diventa un numero
+  }
+  // foglio creato con la prima versione (7 colonne): si allunga l'intestazione
+  const n = sh.getLastColumn();
+  if (n < TP_INT_.length) {
+    sh.getRange(1, 1, 1, TP_INT_.length).setValues([TP_INT_]);
+    sh.getRange("H:K").setNumberFormat("@");   // cellulare come testo
   }
   return sh;
 }
@@ -49,7 +58,9 @@ function turniPersonaleGet_(q) {
     const r = dati[i], k = r[0];
     if (!k) continue;
     if (comando && k.split("|")[2] !== comando) continue;
-    turni[k] = {t: r[4], s: r[5], ts: Number(r[6]) || 0};
+    const v = {t: r[4], s: r[5], ts: Number(r[6]) || 0};
+    if (r[7] === "1" || r[7] === "0") Object.assign(v, {m: r[7], n: r[2], com: r[1], q: r[8] || "", c: r[9] || "", corsi: r[10] || ""});
+    turni[k] = v;
   }
   return {ok: true, turni: turni, ora: Date.now()};
 }
@@ -84,7 +95,10 @@ function turniPersonalePost_(p) {
       const t = String(v.t || ""), s = (t === "G" || t === "NO") ? "" : String(v.s || "");
       const ts = Math.min(Number(v.ts) || 0, Date.now() + 60000);
       if (!TP_CHIAVE_RE_.test(k) || TP_TURNI_.indexOf(t) < 0 || TP_SALTI_.indexOf(s) < 0 || !ts) { ignorati++; return; }
-      const valori = [k, tpTesto_(v.comando, 80), tpTesto_(v.cognome, 60), tpTesto_(v.nome, 60), t, s, ts];
+      const man = v.m === "1" || v.m === "0" ? v.m : "";
+      const valori = [k, tpTesto_(v.comando, 80), tpTesto_(v.cognome, 80), tpTesto_(v.nome, 60), t, s, ts, man,
+        man ? tpTesto_(v.q, 20) : "", man ? tpTesto_(String(v.c || "").replace(/[^\d+ ]/g, ""), 20) : "",
+        man ? tpTesto_(Array.isArray(v.corsi) ? v.corsi.join(" | ") : v.corsi, 1500) : ""];
       const n = riga[k];
       if (n) {
         if (Number(dati[n - 1][6]) >= ts) { ignorati++; return; }   // sul foglio c'e' gia' una modifica piu' recente
