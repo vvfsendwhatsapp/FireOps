@@ -8475,3 +8475,27 @@ button.pros-chip.on { background: var(--pros-g); color: #000; }
 .pros-tab-r td small { margin-left: 2px; color: var(--text-muted); }
 .pros-tab-r td:nth-child(1) { width: 32%; } .pros-tab-r td:nth-child(2), .pros-tab-r td:nth-child(3) { width: 7%; white-space: nowrap; }
 .pros-tab-r td a { white-space: nowrap; }
+/* Prospetto: matrice corsi × turni, lucchetto della Gestione personale */
+.pros-matrice th, .pros-matrice td { white-space: nowrap; }
+.pros-matrice tbody th { text-align: left; font-weight: 500; padding: 6px 8px; border-bottom: 1px solid var(--border-color); max-width: 340px; overflow: hidden; text-overflow: ellipsis; }
+.pros-matrice tr.tutto th, .pros-matrice tr.tutto td { background: rgba(255, 215, 0, .06); font-weight: 700; }
+.pros-matrice .num { text-align: center; width: 64px; }
+.pros-matrice thead .no, .pros-matrice thead .nd { color: #ffb36b; }
+.pros-matrice .tot { font-weight: 700; color: var(--text-main); }
+.pros-matrice .zero { color: var(--border-color); }
+.pros-n { min-width: 34px; padding: 3px 8px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--light-bg); color: var(--text-main); font-weight: 700; cursor: pointer; }
+.pros-n:hover { border-color: var(--primary-color); }
+.pros-n.on { background: var(--primary-color); border-color: var(--primary-color); color: #000; }
+.pros-lucchetto { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 12px; margin-bottom: 8px; border-radius: 6px; border: 1px solid #6a4b24; background: rgba(255, 159, 28, .07); font-size: 13px; }
+.pros-lucchetto.ok { border-color: #2f6b45; background: rgba(47, 191, 113, .07); }
+#pros-app .pros-lucchetto input[type=password] { background: var(--dark-color); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 4px; padding: 6px 8px; font-size: 13px; width: 160px; }
+.pros-tab.bloccata select { opacity: .55; cursor: not-allowed; }
+.pros-tab tr.st-no td:first-child { box-shadow: inset 3px 0 0 #ff9f1c; }
+.pros-tab tr.st-nd td:first-child { box-shadow: inset 3px 0 0 #555; }
+@media (max-width: 700px) {
+  .pros-matrice thead { display: table-header-group; }
+  .pros-matrice, .pros-matrice tbody { display: table; } .pros-matrice tr { display: table-row; } .pros-matrice td, .pros-matrice th { display: table-cell; padding: 4px; }
+  .pros-matrice td::before { content: none; }
+  .pros-matrice .num { width: auto; }
+  .pros-matrice tbody th { max-width: 120px; white-space: normal; font-size: 12px; }
+}

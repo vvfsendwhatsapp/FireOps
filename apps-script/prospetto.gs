@@ -8,7 +8,9 @@
  *      if (payload.foglio === "DB_Turni_Personale") return rispostaJson_(turniPersonalePost_(payload));
  * 2) Dentro doGet(e), in cima, aggiungere:
  *      if (e.parameter && e.parameter.turniPersonale !== undefined) return rispostaJson_(turniPersonaleGet_(e.parameter));
- * 3) Distribuisci di nuovo la Web App ("Gestisci distribuzioni" > matita > "Nuova versione"), accesso "Chiunque".
+ * 3) Cambia la password qui sotto (TP_PASSWORD_): serve nella scheda "Gestione personale" per modificare turni e salti.
+ *    Leggere i turni resta libero; scriverli si puo' solo con la password, che controlla questo script (non la pagina).
+ * 4) Distribuisci di nuovo la Web App ("Gestisci distribuzioni" > matita > "Nuova versione"), accesso "Chiunque".
  *
  * Ogni voce ha l'ora dell'ultima modifica (Aggiornato, in ms): vince la piu' recente, quindi piu' PC
  * possono lavorare insieme. Una voce con turno vuoto e' una cancellazione e resta come riga vuota.
@@ -16,7 +18,8 @@
  */
 const TP_FOGLIO_ = "DB_Turni_Personale";
 const TP_INT_ = ["Chiave", "Comando", "Cognome", "Nome", "Turno", "Salto", "Aggiornato"];
-const TP_TURNI_ = ["", "A", "B", "C", "D", "G"];
+const TP_PASSWORD_ = "cambiami";   // <-- METTI QUI LA PASSWORD DELLA GESTIONE PERSONALE
+const TP_TURNI_ = ["", "A", "B", "C", "D", "G", "NO"];   // NO = Non Operativo
 const TP_SALTI_ = ["", "1", "2", "3", "4", "5", "6", "7", "8"];
 const TP_CHIAVE_RE_ = /^[a-z0-9]{1,60}\|[a-z0-9]{0,60}\|[a-z0-9]{0,60}$/;
 
@@ -51,8 +54,14 @@ function turniPersonaleGet_(q) {
   return {ok: true, turni: turni, ora: Date.now()};
 }
 
-// POST {foglio: "DB_Turni_Personale", voci: [{k, comando, cognome, nome, t, s, ts}]}
+// POST {foglio: "DB_Turni_Personale", password, voci: [{k, comando, cognome, nome, t, s, ts}]}
+//      {foglio: "DB_Turni_Personale", password, verifica: true}  → controlla solo la password
 function turniPersonalePost_(p) {
+  if (String(p.password || "") !== TP_PASSWORD_ || TP_PASSWORD_ === "cambiami") {
+    Utilities.sleep(800);   // rallenta chi prova password a raffica
+    return {ok: false, errore: TP_PASSWORD_ === "cambiami" ? "password non ancora impostata nello script" : "password errata"};
+  }
+  if (p.verifica) return {ok: true};
   // la stessa persona due volte nello stesso invio: vale la modifica piu' recente
   const unica = {};
   (Array.isArray(p.voci) ? p.voci.slice(0, 1000) : []).forEach(v => {
@@ -72,7 +81,7 @@ function turniPersonalePost_(p) {
     const nuove = [];
     voci.forEach(v => {
       const k = String(v.k || "");
-      const t = String(v.t || ""), s = t === "G" ? "" : String(v.s || "");
+      const t = String(v.t || ""), s = (t === "G" || t === "NO") ? "" : String(v.s || "");
       const ts = Math.min(Number(v.ts) || 0, Date.now() + 60000);
       if (!TP_CHIAVE_RE_.test(k) || TP_TURNI_.indexOf(t) < 0 || TP_SALTI_.indexOf(s) < 0 || !ts) { ignorati++; return; }
       const valori = [k, tpTesto_(v.comando, 80), tpTesto_(v.cognome, 60), tpTesto_(v.nome, 60), t, s, ts];

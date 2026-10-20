@@ -12,8 +12,10 @@
  *  - Filtra per comando, un corso alla volta (elenco a comparsa), qualifica e testo.
  *  - Turno e salto turno su PUMA non ci sono: si impostano qui, persona per persona, e si salvano
  *    sul foglio Google "DB_Turni_Personale" (apps-script/prospetto.gs, Web App di Messaggistica),
- *    con una copia locale per lavorare anche senza rete. Con la data e la fascia scelte, la sequenza
- *    dei turni di fireops-core.js dice chi e' in servizio, chi e' di salto e chi e' libero.
+ *    con una copia locale per lavorare anche senza rete. Modificare turni e salti richiede la password
+ *    (scheda "Gestione personale"), che controlla lo script sul foglio.
+ *  - Schede: Prospetto (corsi × turni A, B, C, D, G, N.O.), Gestione personale (turni e salti, con password),
+ *    Richiamo specializzati (adesso / +12 / +24 ore: turno libero e salti del turno, del precedente e del seguente).
  */
 (function () {
 'use strict';
@@ -35,10 +37,13 @@ const LS_TURNI = 'fireops_prospetto_turni';   // copia locale {chiavePersona: {t
 const LS_CODA = 'fireops_prospetto_coda';     // chiavi modificate e non ancora salvate sul foglio
 const SYNC_MS = 120000;                       // ogni quanto si rilegge il foglio
 const LS_FILTRI = 'fireops_prospetto_filtri';
-const TURNI = ['A', 'B', 'C', 'D', 'G'];
+const TURNI = ['A', 'B', 'C', 'D', 'G', 'NO'];          // NO = Non Operativo
+const NOME_TURNO = t => t === 'NO' ? 'N.O.' : t;
+const SENZA_SALTO = t => t === 'G' || t === 'NO';
+const SS_PWD = 'fireops_prospetto_pwd';                   // password della Gestione personale (solo per questa sessione)
 const SALTI = ['1', '2', '3', '4', '5', '6', '7', '8'];
 const ORDINE_QUAL = ['D', 'DS', 'IA', 'CR', 'CSE', 'CS', 'VC', 'VESC', 'VE', 'VF'];
-const NOMI_STATO = {servizio: 'In servizio', salto: 'Salto turno', libero: 'Libero', nd: 'Turno da impostare'};
+const NOMI_STATO = {servizio: 'In servizio', salto: 'Salto turno', libero: 'Libero', no: 'Non operativo', nd: 'Turno da impostare'};
 
 /* ============================== STATO ============================== */
 
@@ -49,9 +54,13 @@ let turni = leggi(LS_TURNI, {});
 let coda = leggi(LS_CODA, []);                // [chiave, ...]
 let sync = {stato: '', errore: '', ora: null};
 let nomi = {};                                // chiave → {comando, cognome, nome} per l'invio al foglio
-const f = Object.assign({comando: '', data: '', fascia: fasciaAdesso(), corso: '', qual: '', testo: '', stato: '', scheda: 'prospetto', quando: 0},
+let pwd = (() => { try { return sessionStorage.getItem(SS_PWD) || ''; } catch (e) { return ''; } })();
+let sblocco = {stato: pwd ? 'ok' : '', errore: ''};   // '', 'verifica', 'ok', 'err'
+let cella = null;                                     // prospetto: {corso, turno} di cui mostrare i nomi
+const f = Object.assign({comando: '', data: '', fascia: fasciaAdesso(), corso: '', qual: '', testo: '', stato: '', scheda: 'prospetto', quando: 0, senzaTurno: false},
   leggi(LS_FILTRI, {}), {data: dataAdesso(), fascia: fasciaAdesso()});
 delete f.corsi; delete f.tutti;   // filtri della prima versione (piu' corsi insieme)
+f.stato = '';   // il filtro per stato della prima versione non c'e' piu'
 
 /* ============================== UTILITA' ============================== */
 
@@ -168,8 +177,22 @@ async function scaricaTurni() {
 }
 let timerInvio = null, inviando = false;
 function programmaInvio() { clearTimeout(timerInvio); timerInvio = setTimeout(invia, 1500); }
+function salvaPwd(v) { pwd = v || ''; try { if (pwd) sessionStorage.setItem(SS_PWD, pwd); else sessionStorage.removeItem(SS_PWD); } catch (e) { /* niente */ } }
+async function sblocca(v) {
+  if (!v) return;
+  sblocco = {stato: 'verifica', errore: ''}; disegna();
+  try {
+    await chiedi(WEBAPP, {method: 'POST', headers: {'Content-Type': 'text/plain;charset=utf-8'}, body: JSON.stringify({foglio: 'DB_Turni_Personale', password: v, verifica: true})}, 20000);
+    salvaPwd(v); sblocco = {stato: 'ok', errore: ''};
+    if (coda.length) invia();
+  } catch (e) {
+    salvaPwd(''); sblocco = {stato: 'err', errore: e.name === 'AbortError' ? 'tempo scaduto' : (e.message || String(e))};
+  }
+  disegna();
+}
+function blocca() { salvaPwd(''); sblocco = {stato: '', errore: ''}; disegna(); }
 async function invia() {
-  if (inviando || !coda.length) return;
+  if (inviando || !coda.length || !pwd) return;   // senza password le modifiche restano in attesa
   inviando = true;
   const chiavi = coda.slice(0, 500);
   const voci = chiavi.map(k => {
@@ -178,18 +201,21 @@ async function invia() {
   });
   sync.stato = 'invio'; disegna();
   try {
-    await chiedi(WEBAPP, {method: 'POST', headers: {'Content-Type': 'text/plain;charset=utf-8'}, body: JSON.stringify({foglio: 'DB_Turni_Personale', voci})}, 30000);
+    await chiedi(WEBAPP, {method: 'POST', headers: {'Content-Type': 'text/plain;charset=utf-8'}, body: JSON.stringify({foglio: 'DB_Turni_Personale', password: pwd, voci})}, 30000);
     coda = coda.filter(k => !chiavi.includes(k)); scrivi(LS_CODA, coda);
     sync = {stato: coda.length ? 'attesa' : 'ok', errore: '', ora: new Date()};
   } catch (e) {
-    sync = {stato: 'err', errore: e.name === 'AbortError' ? 'tempo scaduto' : (e.message || String(e)), ora: sync.ora};
+    const msg = e.name === 'AbortError' ? 'tempo scaduto' : (e.message || String(e));
+    if (/password/i.test(msg)) { salvaPwd(''); sblocco = {stato: 'err', errore: msg}; }   // password cambiata nello script: si richiede
+    sync = {stato: 'err', errore: msg, ora: sync.ora};
   } finally { inviando = false; }
   disegna();
   if (coda.length && sync.stato !== 'err') programmaInvio();
 }
 // modifica di turno/salto di una persona: copia locale subito, foglio appena possibile
 function impostaTurno(k, t, s) {
-  turni[k] = {t: t || '', s: t === 'G' ? '' : (s || ''), ts: Date.now()};
+  if (!pwd) return;
+  turni[k] = {t: t || '', s: SENZA_SALTO(t) ? '' : (s || ''), ts: Date.now()};
   scrivi(LS_TURNI, turni); metti(k); programmaInvio();
 }
 
@@ -215,6 +241,7 @@ function siglaFascia() {
 function statoPersona(p, sigla) {
   const t = turni[p.k];
   if (!t || !t.t) return 'nd';
+  if (t.t === 'NO') return 'no';
   if (t.t === 'G') {
     const gs = new Date(f.data + 'T12:00:00Z').getUTCDay();
     return (f.fascia === 'giorno' && gs >= 1 && gs <= 5) ? 'servizio' : 'libero';
@@ -259,6 +286,7 @@ function turnoAlMomento(ms) {
 function gruppoRichiamo(p, T) {
   const t = turni[p.k];
   if (!t || !t.t) return 'nd';
+  if (t.t === 'NO') return 'no';                  // non operativo: non si richiama
   if (t.t === 'G') return T.gServizio ? 'servizio' : 'libero';
   const s = String(t.s || '');
   if (t.t === T.sel.l) return s && s === T.sel.n ? 'saltoSel' : 'servizio';
@@ -293,88 +321,117 @@ function filtrati(sigla) {
 
 function disegna() {
   if (!root) return;
-  const sigla = siglaFascia();
-  const elenco = filtrati(sigla);
   const base = delComando();
   const corsiDisp = Array.from(new Set(base.flatMap(p => p.corsi))).sort((a, b) => a.localeCompare(b, 'it'));
   const qualDisp = Array.from(new Set(base.map(p => p.qual).filter(Boolean))).sort((a, b) => {
     const qa = ORDINE_QUAL.indexOf(a), qb = ORDINE_QUAL.indexOf(b); return (qa < 0 ? 99 : qa) - (qb < 0 ? 99 : qb) || a.localeCompare(b);
   });
-  const conta = {servizio: 0, salto: 0, libero: 0, nd: 0};
-  const senzaStato = (() => { const s = f.stato; f.stato = ''; const l = filtrati(sigla); f.stato = s; return l; })();
-  senzaStato.forEach(p => conta[statoPersona(p, sigla)]++);
-
-  // corsi fra chi e' in servizio
-  const perCorso = {};
-  senzaStato.filter(p => statoPersona(p, sigla) === 'servizio').forEach(p => p.corsi.forEach(c => { perCorso[c] = (perCorso[c] || 0) + 1; }));
-  const corsiServizio = Object.entries(perCorso).sort((a, b) => b[1] - a[1]);
-
   const statoCarico = carico.stato === 'carico' ? '<span class="pros-sync">⏳ Lettura da PUMA…</span>'
     : carico.stato === 'err' ? '<span class="pros-sync err">⚠️ PUMA non raggiungibile: ' + esc(carico.errore) + '</span>'
     : carico.ora ? '<span class="pros-sync ok">✓ PUMA · ' + righe.length + ' persone · ' + carico.ora.toLocaleTimeString('it-IT', {hour: '2-digit', minute: '2-digit'}) + '</span>' : '';
   const ora = d => d ? ' · ' + d.toLocaleTimeString('it-IT', {hour: '2-digit', minute: '2-digit'}) : '';
-  const statoSync = sync.stato === 'err' ? '<span class="pros-sync err">⚠️ Foglio turni non raggiungibile (' + esc(sync.errore) + ')' + (coda.length ? ': ' + coda.length + ' modifiche in attesa' : '') + '</span>'
+  const statoSync = sync.stato === 'err' ? '<span class="pros-sync err">⚠️ Foglio turni: ' + esc(sync.errore) + (coda.length ? ' (' + coda.length + ' modifiche in attesa)' : '') + '</span>'
     : sync.stato === 'invio' ? '<span class="pros-sync">⏳ Salvo i turni sul foglio…</span>'
-    : coda.length ? '<span class="pros-sync">⏳ ' + coda.length + ' modifiche da salvare</span>'
+    : coda.length ? '<span class="pros-sync">⏳ ' + coda.length + ' modifiche da salvare' + (pwd ? '' : ' (sblocca la Gestione personale)') + '</span>'
     : sync.stato === 'ok' ? '<span class="pros-sync ok">✓ Turni sul foglio' + ora(sync.ora) + '</span>' : '';
-
-  const lettera = sigla.charAt(0).toUpperCase(), num = sigla.slice(1);
+  const stati = statoCarico + statoSync;
   const schede = `<div class="pros-schede" role="tablist">
     <button type="button" class="pros-scheda${f.scheda === 'prospetto' ? ' on' : ''}" data-scheda="prospetto">📋 Prospetto disponibilità</button>
+    <button type="button" class="pros-scheda${f.scheda === 'gestione' ? ' on' : ''}" data-scheda="gestione">${pwd ? '🔓' : '🔒'} Gestione personale</button>
     <button type="button" class="pros-scheda${f.scheda === 'richiamo' ? ' on' : ''}" data-scheda="richiamo">📞 Richiamo specializzati</button>
   </div>`;
-  if (f.scheda === 'richiamo') { root.innerHTML = schede + htmlRichiamo(corsiDisp, qualDisp, base, statoCarico + statoSync); return; }
-  root.innerHTML = schede + `
-  <div class="pros-avviso">🚧 Sezione in costruzione. Personale e corsi arrivano da PUMA; <b>turno e salto turno</b> non sono su PUMA: si impostano qui e si salvano sul foglio Google (DB_Turni_Personale), così li ritrovano tutti i PC.</div>
+  const corpo = f.scheda === 'richiamo' ? htmlRichiamo(corsiDisp, qualDisp, base, stati)
+    : f.scheda === 'gestione' ? htmlGestione(corsiDisp, qualDisp, base, stati)
+    : htmlProspetto(corsiDisp, qualDisp, base, stati);
+  root.innerHTML = schede + corpo;
+}
+
+/* ---------- scheda PROSPETTO: corsi × turni (A, B, C, D, G, N.O.) ---------- */
+const COLONNE = ['A', 'B', 'C', 'D', 'G', 'NO', ''];   // '' = turno non impostato
+function htmlProspetto(corsiDisp, qualDisp, base, stati) {
+  const pers = base.filter(p => !f.qual || p.qual === f.qual);
+  const turnoDi = p => { const t = turni[p.k]; return t && TURNI.includes(t.t) ? t.t : ''; };
+  const righeP = (f.corso ? [f.corso] : corsiDisp).map(c => ({corso: c, lista: pers.filter(p => p.corsi.includes(c))}));
+  if (!f.corso) righeP.unshift({corso: '', lista: pers, tutto: true});
+  const conta = lista => { const o = {}; COLONNE.forEach(t => { o[t] = []; }); lista.forEach(p => o[turnoDi(p)].push(p)); return o; };
+  const vedi = cella && righeP.find(r => r.corso === cella.corso);
+  const nomiCella = vedi ? conta(vedi.lista)[cella.turno] || [] : [];
+  const intest = t => t === '' ? 'Senza turno' : NOME_TURNO(t);
+  return `
   <div class="pros-testa">
-    <label>Comando
-      <select id="pros-comando"><option value="">Tutti i comandi</option>${comandi().map(c => `<option${c === f.comando ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select></label>
-    <label>Data <input type="date" id="pros-data" value="${esc(f.data)}"></label>
-    <div class="pros-fasce">
-      <button type="button" class="pros-fascia${f.fascia === 'giorno' ? ' on' : ''}" data-fascia="giorno">☀️ Giorno 08-20</button>
-      <button type="button" class="pros-fascia${f.fascia === 'notte' ? ' on' : ''}" data-fascia="notte">🌙 Notte 20-08</button>
-    </div>
-    <div class="pros-sigla">${sigla ? `In servizio: <b>turno ${esc(lettera)}</b>, salta il <b>${esc(num)}</b> <span>(${esc(sigla)})</span>` : 'Turno non calcolabile'}</div>
-    <div class="pros-stati">${statoCarico}${statoSync}</div>
+    ${selectComando()}
+    <label>Qualifica <select id="pros-qual"><option value="">Tutte</option>${qualDisp.map(q => `<option${q === f.qual ? ' selected' : ''}>${esc(q)}</option>`).join('')}</select></label>
+    <div class="pros-stati">${stati}</div>
   </div>
+  ${selectCorso(corsiDisp, base)}
+  ${pers.length ? `
+  <div class="pros-tabwrap"><table class="pros-tab pros-matrice">
+    <thead><tr><th>Corso</th>${COLONNE.map(t => `<th class="num${t === 'NO' ? ' no' : ''}${t === '' ? ' nd' : ''}">${intest(t)}</th>`).join('')}<th class="num">Totale</th></tr></thead>
+    <tbody>${righeP.map(r => {
+      const o = conta(r.lista);
+      return `<tr${r.tutto ? ' class="tutto"' : ''}><th title="${esc(r.corso)}">${r.tutto ? 'Tutto il personale' : esc(r.corso)}</th>${COLONNE.map(t => {
+        const n = o[t].length, on = cella && cella.corso === r.corso && cella.turno === t;
+        return `<td class="num${t === 'NO' ? ' no' : ''}${t === '' ? ' nd' : ''}">${n ? `<button type="button" class="pros-n${on ? ' on' : ''}" data-cella="${esc(t)}" data-ccorso="${esc(r.corso)}">${n}</button>` : '<span class="zero">·</span>'}</td>`;
+      }).join('')}<td class="num tot">${r.lista.length}</td></tr>`;
+    }).join('')}</tbody></table></div>
+  <p class="pros-nota">Tocca un numero per vedere i nomi. I turni si impostano nella scheda 🔒 Gestione personale.</p>
+  ${vedi ? `<div class="pros-gruppo"><h4>${esc(vedi.tutto ? 'Tutto il personale' : vedi.corso)} · <b>${esc(intest(cella.turno))}</b> <span class="pros-quanti">${nomiCella.length}</span></h4>
+    ${nomiCella.length ? `<div class="pros-tabwrap"><table class="pros-tab pros-tab-r"><tbody>${ordina(nomiCella).map(p => { const t = turni[p.k] || {};
+      return `<tr><td data-l="Personale"><b>${esc(p.cognome)}</b>${f.comando ? '' : `<div class="pros-com">${esc(p.comando)}</div>`}</td><td data-l="Qualifica">${esc(p.qual)}</td>
+      <td data-l="Turno">${esc(NOME_TURNO(t.t || '—'))}${t.s ? '<small>' + esc(t.s) + '</small>' : ''}</td>
+      <td data-l="Cellulare">${p.cell ? `<a href="tel:${esc(p.cell)}">📞 ${esc(p.cell)}</a>` : ''}</td></tr>`; }).join('')}</tbody></table></div>` : ''}</div>` : ''}`
+  : `<div class="pros-vuoto">${carico.stato === 'ok' ? 'Nessuna persona con questi filtri.' : carico.stato === 'err' ? 'Dati PUMA non disponibili.' : 'Caricamento…'}</div>`}`;
+}
+function ordina(l) {
+  return l.slice().sort((a, b) => {
+    const qa = ORDINE_QUAL.indexOf(a.qual), qb = ORDINE_QUAL.indexOf(b.qual);
+    return (qa < 0 ? 99 : qa) - (qb < 0 ? 99 : qb) || a.cognome.localeCompare(b.cognome, 'it');
+  });
+}
 
-  <div class="pros-box pros-box-corso">
-    <label class="pros-corso">Corso
-      <select id="pros-corso"${corsiDisp.length ? '' : ' disabled'}>
-        <option value="">${corsiDisp.length ? 'Tutti i corsi (' + corsiDisp.length + ')' : (carico.stato === 'ok' ? 'Nessun corso registrato' : 'In attesa dei dati PUMA')}</option>
-        ${corsiDisp.map(c => `<option value="${esc(c)}"${c === f.corso ? ' selected' : ''}>${esc(c)} — ${base.filter(p => p.corsi.includes(c)).length}</option>`).join('')}
-      </select></label>
+/* ---------- scheda GESTIONE PERSONALE: turno e salto, modificabili con la password ---------- */
+function htmlGestione(corsiDisp, qualDisp, base, stati) {
+  let elenco = filtrati('');
+  if (f.senzaTurno) elenco = elenco.filter(p => !(turni[p.k] && turni[p.k].t));
+  const aperto = !!pwd;
+  const lucchetto = aperto
+    ? `<div class="pros-lucchetto ok">🔓 Modifiche abilitate in questa sessione <button type="button" class="pros-mini" id="pros-blocca">🔒 Blocca</button></div>`
+    : `<form class="pros-lucchetto" id="pros-sblocca" autocomplete="off">🔒 Per modificare turni e salti inserisci la password
+        <input type="password" id="pros-pwd" placeholder="Password" autocomplete="current-password"${sblocco.stato === 'verifica' ? ' disabled' : ''}>
+        <button type="submit" class="pros-btn"${sblocco.stato === 'verifica' ? ' disabled' : ''}>${sblocco.stato === 'verifica' ? '⏳ Verifico…' : 'Sblocca'}</button>
+        ${sblocco.stato === 'err' ? '<span class="pros-sync err">⚠️ ' + esc(sblocco.errore) + '</span>' : ''}</form>`;
+  const dis = aperto ? '' : ' disabled';
+  return `
+  <div class="pros-avviso">🚧 Sezione in costruzione. Personale e corsi arrivano da PUMA; <b>turno e salto turno</b> non sono su PUMA: si impostano qui e si salvano sul foglio Google (DB_Turni_Personale), così li ritrovano tutti i PC.</div>
+  ${lucchetto}
+  <div class="pros-testa">
+    ${selectComando()}
+    <div class="pros-stati">${stati}</div>
   </div>
-
-  <div class="pros-conta">
-    ${['servizio', 'salto', 'libero', 'nd'].map(s => `<button type="button" class="pros-kpi st-${s}${f.stato === s ? ' on' : ''}" data-stato="${s}"><b>${conta[s]}</b><span>${NOMI_STATO[s]}</span></button>`).join('')}
-  </div>
-  ${corsiServizio.length ? `<div class="pros-servizio-corsi"><span class="pros-lab">Corsi fra chi è in servizio:</span> ${corsiServizio.map(([c, n]) => `<span class="pros-chip on" title="${esc(c)}">${esc(siglaCorso(c))} · ${n}</span>`).join('')}</div>` : ''}
-
+  ${selectCorso(corsiDisp, base)}
   <div class="pros-barra">
     <input type="search" id="pros-testo" placeholder="Cerca cognome, nome o cellulare" value="${esc(f.testo)}">
     <select id="pros-qual"><option value="">Tutte le qualifiche</option>${qualDisp.map(q => `<option${q === f.qual ? ' selected' : ''}>${esc(q)}</option>`).join('')}</select>
+    <label class="pros-chk"><input type="checkbox" id="pros-senza"${f.senzaTurno ? ' checked' : ''}> solo senza turno</label>
     <button type="button" class="pros-btn" id="pros-aggiorna">🔄 Aggiorna da PUMA</button>
-    <button type="button" class="pros-btn" id="pros-csv"${elenco.length ? '' : ' disabled'}>⬇️ CSV prospetto</button>
+    <button type="button" class="pros-btn" id="pros-csv"${elenco.length ? '' : ' disabled'}>⬇️ CSV</button>
     <button type="button" class="pros-btn" id="pros-esporta">💾 Esporta turni</button>
-    <button type="button" class="pros-btn" id="pros-importa">📂 Importa turni</button>
+    <button type="button" class="pros-btn" id="pros-importa"${dis}>📂 Importa turni</button>
     <button type="button" class="pros-btn danger" id="pros-reset">🗑️ Reset dati</button>
     <input type="file" id="pros-file" accept=".json,application/json" hidden>
   </div>
-
   ${elenco.length ? `
-  <div class="pros-tabwrap"><table class="pros-tab">
-    <thead><tr><th>Personale</th><th>Qual.</th><th>Corsi</th><th>Cellulare</th><th>Turno</th><th>Salto</th><th>Stato</th></tr></thead>
+  <div class="pros-tabwrap"><table class="pros-tab${aperto ? '' : ' bloccata'}">
+    <thead><tr><th>Personale</th><th>Qual.</th><th>Corsi</th><th>Cellulare</th><th>Turno</th><th>Salto</th></tr></thead>
     <tbody>${elenco.map(p => {
-      const t = turni[p.k] || {}, st = statoPersona(p, sigla);
-      return `<tr class="st-${st}" data-k="${esc(p.k)}">
+      const t = turni[p.k] || {};
+      return `<tr data-k="${esc(p.k)}" class="${t.t === 'NO' ? 'st-no' : t.t ? '' : 'st-nd'}">
         <td data-l="Personale"><b>${esc(p.cognome)}</b> ${esc(p.nome)}${f.comando ? '' : `<div class="pros-com">${esc(p.comando)}</div>`}</td>
         <td data-l="Qualifica">${esc(p.qual)}</td>
         <td data-l="Corsi">${p.corsi.map(c => `<span class="pros-chip${c === f.corso ? ' on' : ''}" title="${esc(c)}">${esc(siglaCorso(c))}</span>`).join('') || '<span class="pros-nota">—</span>'}</td>
         <td data-l="Cellulare">${p.cell ? `<a href="tel:${esc(p.cell)}">${esc(p.cell)}</a>` : ''}</td>
-        <td data-l="Turno"><select data-campo="t"><option value="">—</option>${TURNI.map(x => `<option${x === t.t ? ' selected' : ''}>${x}</option>`).join('')}</select></td>
-        <td data-l="Salto"><select data-campo="s"${t.t === 'G' ? ' disabled' : ''}><option value="">—</option>${SALTI.map(x => `<option${x === String(t.s || '') ? ' selected' : ''}>${x}</option>`).join('')}</select></td>
-        <td data-l="Stato"><span class="pros-stato st-${st}">${NOMI_STATO[st]}</span></td>
+        <td data-l="Turno"><select data-campo="t"${dis}><option value="">—</option>${TURNI.map(x => `<option value="${x}"${x === t.t ? ' selected' : ''}>${NOME_TURNO(x)}</option>`).join('')}</select></td>
+        <td data-l="Salto"><select data-campo="s"${SENZA_SALTO(t.t) || !aperto ? ' disabled' : ''}><option value="">—</option>${SALTI.map(x => `<option${x === String(t.s || '') ? ' selected' : ''}>${x}</option>`).join('')}</select></td>
       </tr>`;
     }).join('')}</tbody></table></div>`
     : `<div class="pros-vuoto">${carico.stato === 'ok' ? 'Nessuna persona con questi filtri.' : carico.stato === 'err' ? 'Dati PUMA non disponibili.' : 'Caricamento…'}</div>`}`;
@@ -416,7 +473,7 @@ function htmlRichiamo(corsiDisp, qualDisp, base, stati) {
     const t = turni[p.k] || {};
     return `<tr><td data-l="Personale"><b>${esc(p.cognome)}</b> ${esc(p.nome)}${f.comando ? '' : `<div class="pros-com">${esc(p.comando)}</div>`}</td>
       <td data-l="Qualifica">${esc(p.qual)}</td>
-      <td data-l="Turno">${esc(t.t || '')}${t.s ? '<small>' + esc(t.s) + '</small>' : ''}</td>
+      <td data-l="Turno">${esc(NOME_TURNO(t.t || ''))}${t.s ? '<small>' + esc(t.s) + '</small>' : ''}</td>
       <td data-l="Corsi">${p.corsi.map(c => `<span class="pros-chip${c === f.corso ? ' on' : ''}" title="${esc(c)}">${esc(siglaCorso(c))}</span>`).join('') || '<span class="pros-nota">—</span>'}</td>
       <td data-l="Cellulare">${p.cell ? `<a href="tel:${esc(p.cell)}">📞 ${esc(p.cell)}</a>` : ''}</td></tr>`;
   };
@@ -433,7 +490,7 @@ function htmlRichiamo(corsiDisp, qualDisp, base, stati) {
   ${selectCorso(corsiDisp, base)}
   <div class="pros-barra">
     <select id="pros-qual"><option value="">Tutte le qualifiche</option>${qualDisp.map(q => `<option${q === f.qual ? ' selected' : ''}>${esc(q)}</option>`).join('')}</select>
-    <span class="pros-nota">${totale} richiamabili${f.corso ? ' con ' + esc(siglaCorso(f.corso)) : ''}${g.nd.length ? ' · <b>' + g.nd.length + '</b> senza turno impostato (scheda Prospetto)' : ''}</span>
+    <span class="pros-nota">${totale} richiamabili${f.corso ? ' con ' + esc(siglaCorso(f.corso)) : ''}${g.nd.length ? ' · <b>' + g.nd.length + '</b> senza turno impostato (scheda Gestione personale)' : ''}</span>
     <button type="button" class="pros-btn" id="pros-csv-richiamo"${totale ? '' : ' disabled'}>⬇️ CSV richiamo</button>
   </div>
   ${GRUPPI_RICHIAMO.map(k => `
@@ -448,7 +505,7 @@ function esportaRichiamo() {
   const q = v => '"' + String(v == null ? '' : v).replace(/<[^>]+>/g, '').replace(/"/g, '""') + '"';
   const out = [[quandoTesto(T) + ' - ' + etichettaTurno(T.sel) + (f.corso ? ' - corso ' + f.corso : '')].map(q).join(';'),
     ['Gruppo', 'Personale', 'Qualifica', 'Comando', 'Turno', 'Salto', 'Cellulare', 'Corsi'].map(q).join(';')];
-  GRUPPI_RICHIAMO.forEach(k => g[k].forEach(p => { const t = turni[p.k] || {}; out.push([tit[k], p.cognome, p.qual, p.comando, t.t || '', t.s || '', p.cell, p.corsi.join(' | ')].map(q).join(';')); }));
+  GRUPPI_RICHIAMO.forEach(k => g[k].forEach(p => { const t = turni[p.k] || {}; out.push([tit[k], p.cognome, p.qual, p.comando, NOME_TURNO(t.t || ''), t.s || '', p.cell, p.corsi.join(' | ')].map(q).join(';')); }));
   scarica('richiamo_' + T.roma.iso + '_' + String(T.roma.h).padStart(2, '0') + '.csv', '\ufeff' + out.join('\r\n'), 'text/csv;charset=utf-8');
 }
 
@@ -463,14 +520,15 @@ function scarica(nome, testo, tipo) {
 function esportaCSV() {
   const sigla = siglaFascia();
   const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
-  const righeCsv = [['Cognome', 'Nome', 'Qualifica', 'Comando', 'Cellulare', 'Corsi', 'Turno', 'Salto', 'Stato'].map(q).join(';')];
-  filtrati(sigla).forEach(p => { const t = turni[p.k] || {}; righeCsv.push([p.cognome, p.nome, p.qual, p.comando, p.cell, p.corsi.join(' | '), t.t || '', t.s || '', NOMI_STATO[statoPersona(p, sigla)]].map(q).join(';')); });
-  scarica('prospetto_' + f.data + '_' + f.fascia + '.csv', '﻿' + righeCsv.join('\r\n'), 'text/csv;charset=utf-8');
+  const righeCsv = [['Personale', 'Qualifica', 'Comando', 'Cellulare', 'Corsi', 'Turno', 'Salto'].map(q).join(';')];
+  filtrati(sigla).forEach(p => { const t = turni[p.k] || {}; righeCsv.push([p.cognome, p.qual, p.comando, p.cell, p.corsi.join(' | '), NOME_TURNO(t.t || ''), t.s || ''].map(q).join(';')); });
+  scarica('personale_turni_' + oggiISO() + '.csv', '﻿' + righeCsv.join('\r\n'), 'text/csv;charset=utf-8');
 }
 function importa(file) {
   const r = new FileReader();
   r.onload = () => {
     try {
+      if (!pwd) throw new Error('sblocca prima la Gestione personale con la password');
       const d = JSON.parse(r.result), dati = d && d.turni ? d.turni : d;
       if (!dati || typeof dati !== 'object') throw new Error('file non valido');
       let n = 0;
@@ -490,10 +548,15 @@ function eventi() {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.fascia) { f.fascia = b.dataset.fascia; disegna(); return; }
     if (b.dataset.scheda) { f.scheda = b.dataset.scheda; salvaFiltri(); disegna(); return; }
+    if (b.dataset.cella !== undefined) {
+      const c = {corso: b.dataset.ccorso, turno: b.dataset.cella};
+      cella = cella && cella.corso === c.corso && cella.turno === c.turno ? null : c; disegna(); return;
+    }
     if (b.dataset.quando !== undefined) { f.quando = +b.dataset.quando; disegna(); return; }
     if (b.dataset.stato) { f.stato = f.stato === b.dataset.stato ? '' : b.dataset.stato; salvaFiltri(); disegna(); return; }
     switch (b.id) {
       case 'pros-aggiorna': carica(); break;
+      case 'pros-blocca': blocca(); break;
       case 'pros-csv-richiamo': esportaRichiamo(); break;
       case 'pros-csv': esportaCSV(); break;
       case 'pros-esporta': scarica('fireops_turni_personale_' + oggiISO() + '.json', JSON.stringify({tipo: 'fireops-prospetto-turni', creato: new Date().toISOString(), turni}, null, 1), 'application/json'); break;
@@ -511,8 +574,9 @@ function eventi() {
   });
   root.addEventListener('change', e => {
     const t = e.target;
-    if (t.id === 'pros-comando') { f.comando = t.value; f.corso = ''; f.qual = ''; salvaFiltri(); disegna(); scaricaTurni(); return; }
-    if (t.id === 'pros-corso') { f.corso = t.value; salvaFiltri(); disegna(); return; }
+    if (t.id === 'pros-comando') { f.comando = t.value; f.corso = ''; f.qual = ''; cella = null; salvaFiltri(); disegna(); scaricaTurni(); return; }
+    if (t.id === 'pros-corso') { f.corso = t.value; cella = null; salvaFiltri(); disegna(); return; }
+    if (t.id === 'pros-senza') { f.senzaTurno = t.checked; disegna(); return; }
     if (t.id === 'pros-data') { if (t.value) { f.data = t.value; disegna(); } return; }
     if (t.id === 'pros-qual') { f.qual = t.value; salvaFiltri(); disegna(); return; }
     if (t.id === 'pros-file') { if (t.files[0]) importa(t.files[0]); t.value = ''; return; }
@@ -522,6 +586,11 @@ function eventi() {
       v[t.dataset.campo] = t.value;
       impostaTurno(k, v.t, v.s); disegna();
     }
+  });
+  root.addEventListener('submit', e => {
+    if (e.target.id !== 'pros-sblocca') return;
+    e.preventDefault();
+    const x = root.querySelector('#pros-pwd'); sblocca(x ? x.value : '');
   });
   root.addEventListener('input', e => {
     if (e.target.id === 'pros-testo') {
