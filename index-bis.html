@@ -388,6 +388,19 @@
             </div>
         </section>
 
+        <!-- PROSPETTO DISPONIBILITA' (solo BIS, in costruzione) -->
+        <section id="prospetto-disponibilita" class="page-section">
+            <div class="pagina-box pagina-box-larga">
+                <div class="pagina-box-header pagina-box-header-con-nota">
+                    <p class="pagina-nota pagina-nota-inline">Personale da PUMA filtrato per corsi, con turno e salto turno:
+                        chi è in servizio nella data e nella fascia scelte.</p>
+                    <button class="btn-toggle-radar btn-fullscreen-pagina" type="button"
+                        title="Espandi a schermo intero">⛶ Espandi</button>
+                </div>
+                <div id="pros-app"></div>
+            </div>
+        </section>
+
         <!-- HOME -->
         <section id="homepage" class="page-section">
             <p class="pagina-nota">
@@ -1375,6 +1388,7 @@
                 "qrcode.js",
                 "differibili.js",    // BIS: modulo Differibili (non presente in produzione)
                 "sar.js",            // BIS: SAR - Gestione ricerca persona (dopo qrcode.js e fireops-sfondi.js)
+                "prospetto.js",      // BIS: Prospetto disponibilità (personale PUMA per corsi + turno/salto), in costruzione
                 "normative-ricerca.js",
                 "qrcoder.js",
                 "utilizzo.js"
