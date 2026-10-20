@@ -324,14 +324,17 @@ function turnoAlMomento(ms) {
   [sel, prec, succ].forEach(x => { x.sigla = siglaDi(x.iso, x.fascia); x.l = x.sigla.charAt(0); x.n = x.sigla.slice(1); });
   const liberi = ['A', 'B', 'C', 'D'].filter(l => ![sel.l, prec.l, succ.l].includes(l));
   const gs = new Date(iso + 'T12:00:00Z').getUTCDay();
-  return {ms, roma: r, sel, prec, succ, liberi, gServizio: fascia === 'giorno' && gs >= 1 && gs <= 5};
+  // giornalieri G: richiamabili di giorno (tutti i giorni) e il sabato notte; non le altre notti,
+  // per lo stacco di 12 ore prima del rientro (finestra del fine settimana: sabato 08:00 - domenica 20:00)
+  const gRichiamo = fascia === 'giorno' || gs === 6;
+  return {ms, roma: r, sel, prec, succ, liberi, gServizio: fascia === 'giorno' && gs >= 1 && gs <= 5, gRichiamo};
 }
 // gruppo di richiamo di una persona: libero, saltoSel, saltoPrec, saltoSucc, oppure non richiamabile
 function gruppoRichiamo(p, T) {
   const t = turni[p.k];
   if (!t || !t.t) return 'nd';
   if (t.t === 'NO') return 'no';                  // non operativo: non si richiama
-  if (t.t === 'G') return T.gServizio ? 'servizio' : 'libero';
+  if (t.t === 'G') return T.gRichiamo ? 'libero' : 'stacco';
   const s = String(t.s || '');
   if (t.t === T.sel.l) return s && s === T.sel.n ? 'saltoSel' : 'servizio';
   if (t.t === T.prec.l) return s && s === T.prec.n ? 'saltoPrec' : 'smontante';
@@ -526,7 +529,7 @@ function elencoRichiamo(T) {
 }
 function titoliRichiamo(T) {
   return {
-    libero: 'Personale in turno libero: <b>' + (T.liberi.join(', ') || '—') + '</b> (tutti i salti)' + (T.gServizio ? '' : ' e giornalieri G'),
+    libero: 'Personale in turno libero: <b>' + (T.liberi.join(', ') || '—') + '</b> (tutti i salti)' + (T.gRichiamo ? ' e giornalieri G' : ''),
     saltoSel: 'Personale in salto turno del turno selezionato: <b>' + esc(T.sel.sigla) + '</b>',
     saltoPrec: 'Personale in salto turno del turno precedente: <b>' + esc(T.prec.sigla) + '</b>',
     saltoSucc: 'Personale in salto turno del turno seguente: <b>' + esc(T.succ.sigla) + '</b>'
