@@ -5,9 +5,10 @@
  * Stile:      style.css, sezione "PROSPETTO DISPONIBILITA'"
  *
  * COSA FA
- *  - Legge da PUMA (foglio "PUMA VVF Database Personale", scheda "Profilazione") il personale
- *    con qualifica, comando e corsi in possesso. Dal foglio si chiedono SOLO le colonne che servono
- *    (nome, cognome, cellulare, ente, qualifica, comando, corsi): codice fiscale ed email non arrivano.
+ *  - Legge da PUMA (foglio "PUMA VVF Database Personale", scheda "Elenco_Personale", tutti i comandi)
+ *    il personale con qualifica, comando e corsi in possesso; per chi si e' registrato piu' volte vale
+ *    la registrazione piu' recente. L'email non si chiede; il codice fiscale (attaccato al nominativo
+ *    nella colonna B) serve solo a riconoscere i doppioni e viene scartato subito.
  *  - Filtra per comando, un corso alla volta (elenco a comparsa), qualifica e testo.
  *  - Turno e salto turno su PUMA non ci sono: si impostano qui, persona per persona, e si salvano
  *    sul foglio Google "DB_Turni_Personale" (apps-script/prospetto.gs, Web App di Messaggistica),
@@ -22,11 +23,12 @@ if (NS.Prospetto) return;
 /* ============================== COSTANTI ============================== */
 
 const SHEET_ID = '1WHGKaawomU_jMuO6FnwzYidou-fmpc0ndeE0aiEMYP4';
-const SCHEDA = 'Profilazione';
-// B Nome · C Cognome · F Cellulare · G Ente · H Qualifica · I Comando · K Corsi
-const QUERY = 'select B,C,F,G,H,I,K';
-const URL_PUMA = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:csv&headers=1&sheet=' +
-  encodeURIComponent(SCHEDA) + '&tq=' + encodeURIComponent(QUERY);
+// scheda "Elenco_Personale": tutti i comandi, una riga per registrazione, la piu' recente in alto
+const GID = '84413100';
+// A Data · B "Cognome Nome - Codice Fiscale" · C Comando · D Qualifica · F Cellulare · G Corsi (l'email, colonna E, non si chiede)
+const QUERY = 'select A,B,C,D,F,G';
+const URL_PUMA = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:csv&headers=1&gid=' + GID +
+  '&tq=' + encodeURIComponent(QUERY);
 
 const WEBAPP = 'https://script.google.com/macros/s/AKfycbyp6jQ331Yk5q7_hkM74ZyhUh1c3zQUJG7SpuoE18HslBO36YKSTYIQf-z7gSwXR4Yv/exec';
 const LS_TURNI = 'fireops_prospetto_turni';   // copia locale {chiavePersona: {t: 'A', s: '4', ts: ms}}
@@ -65,8 +67,7 @@ function fasciaAdesso() { const h = oraRoma(); return (h >= 8 && h < 20) ? 'gior
 function dataAdesso() { return oraRoma() < 8 ? new Date(Date.now() - 864e5).toLocaleDateString('sv-SE', {timeZone: 'Europe/Rome'}) : oggiISO(); }
 function salvaFiltri() { scrivi(LS_FILTRI, {comando: f.comando, corso: f.corso, qual: f.qual, stato: f.stato}); }
 // chiave della persona: cognome|nome|comando (niente cellulare: la chiave finisce sul foglio)
-function chiave(p) { return (norm(p.cognome) + '|' + norm(p.nome) + '|' + normComando(p.comando)).slice(0, 180); }
-function chiaveVecchia(p) { return norm(p.cognome) + '|' + norm(p.nome) + '|' + String(p.cell || '').replace(/\D/g, '').slice(-10); }
+function chiave(p) { return norm(p.cognome).slice(0, 60) + '|' + norm(p.nome).slice(0, 60) + '|' + normComando(p.comando).slice(0, 60); }
 function titolo(s) { return String(s || '').trim().toLowerCase().replace(/(^|[\s'’-])(\p{L})/gu, (m, a, b) => a + b.toUpperCase()); }
 
 // CSV con virgolette (formato gviz)
@@ -108,25 +109,23 @@ async function carica() {
     const testo = await r.text();
     if (/^\s*</.test(testo)) throw new Error('il foglio PUMA non e\' leggibile (non condiviso con link?)');
     const tab = parseCSV(testo);
-    const mappa = new Map();
+    const mappa = new Map(), visti = new Set();
     tab.slice(1).forEach(c => {
-      const p = {nome: titolo(c[0]), cognome: titolo(c[1]), cell: String(c[2] || '').replace(/[^\d+]/g, ''), ente: (c[3] || '').trim(),
-        qual: (c[4] || '').trim().toUpperCase(), comando: (c[5] || '').trim().replace(/\s+/g, ' '), corsi: dividiCorsi(c[6])};
-      if (!p.cognome && !p.nome) return;
+      // "Cognome Nome - CODICEFISCALE": il codice fiscale serve solo a riconoscere le registrazioni
+      // ripetute della stessa persona e poi si butta (non si mostra, non si salva)
+      const nc = String(c[1] || ''), i = nc.lastIndexOf(' - ');
+      const nominativo = (i > 0 ? nc.slice(0, i) : nc).trim(), cf = (i > 0 ? nc.slice(i + 3) : '').trim().toUpperCase();
+      if (!nominativo) return;
+      const id = cf || norm(nominativo);
+      if (visti.has(id)) return;              // c'e' gia' la registrazione piu' recente (il foglio e' ordinato dalla piu' nuova)
+      visti.add(id);
+      const p = {cognome: titolo(nominativo), nome: '', cell: String(c[4] || '').replace(/[^\d+]/g, ''),
+        qual: (c[3] || '').trim().toUpperCase(), comando: (c[2] || '').trim().replace(/\s+/g, ' '), corsi: dividiCorsi(c[5])};
       p.k = chiave(p);
-      const kc = p.k;
-      // la stessa persona puo' essersi registrata piu' volte: vale l'ultima riga, i corsi si sommano
-      const prec = mappa.get(kc);
-      if (prec) p.corsi = Array.from(new Set(prec.corsi.concat(p.corsi)));
-      mappa.set(kc, p);
+      if (!mappa.has(p.k)) mappa.set(p.k, p);
     });
     righe = Array.from(mappa.values());
-    // turni salvati con la chiave della prima versione (con il cellulare): si spostano sulla nuova
-    righe.forEach(p => {
-      nomi[p.k] = {comando: p.comando, cognome: p.cognome, nome: p.nome};
-      const v = chiaveVecchia(p);
-      if (v !== p.k && turni[v] && !turni[p.k]) { turni[p.k] = Object.assign({}, turni[v], {ts: Date.now()}); delete turni[v]; metti(p.k); }
-    });
+    righe.forEach(p => { nomi[p.k] = {comando: p.comando, cognome: p.cognome, nome: p.nome}; });
     scrivi(LS_TURNI, turni);
     carico = {stato: 'ok', errore: '', ora: new Date()};
     if (!f.comando) f.comando = comandoDefault();
