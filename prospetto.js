@@ -41,7 +41,7 @@ const LS_FILTRI = 'fireops_prospetto_filtri';
 const TURNI = ['A', 'B', 'C', 'D', 'G', 'NO'];          // NO = Non Operativo
 const NOME_TURNO = t => t === 'NO' ? 'N.O.' : t;
 const SENZA_SALTO = t => t === 'G' || t === 'NO';
-const SS_PWD = 'fireops_prospetto_pwd';                   // password della Gestione personale (solo per questa sessione)
+const SS_PWD = 'fireops_prospetto_pwd2';                  // password per Comando della Gestione personale (solo per questa sessione)
 const SALTI = ['1', '2', '3', '4', '5', '6', '7', '8'];
 const ORDINE_QUAL = ['D', 'DS', 'IA', 'CR', 'CSE', 'CS', 'VC', 'VESC', 'VE', 'VF'];
 const NOMI_STATO = {servizio: 'In servizio', salto: 'Salto turno', libero: 'Libero', no: 'Non operativo', nd: 'Turno da impostare'};
@@ -57,8 +57,13 @@ let turni = leggi(LS_TURNI, {});
 let coda = leggi(LS_CODA, []);                // [chiave, ...]
 let sync = {stato: '', errore: '', ora: null};
 let nomi = {};                                // chiave → {comando, cognome, nome} per l'invio al foglio
-let pwd = (() => { try { return sessionStorage.getItem(SS_PWD) || ''; } catch (e) { return ''; } })();
-let sblocco = {stato: pwd ? 'ok' : '', errore: ''};   // '', 'verifica', 'ok', 'err'
+// password per Comando: {comandoNormalizzato: password, '*': password generale}; restano solo in questa sessione
+let pwds = (() => { try { return JSON.parse(sessionStorage.getItem(SS_PWD) || '{}') || {}; } catch (e) { return {}; } })();
+let sblocco = {stato: '', errore: ''};   // '', 'verifica', 'ok', 'err'
+function comandoDiChiave(k) { return String(k || '').split('|')[2] || ''; }
+function pwdPer(cn) { return pwds[cn] || pwds['*'] || ''; }
+function puoModificare(k) { return !!pwdPer(comandoDiChiave(k)); }
+function sbloccato() { return !!pwdPer(normComando(f.comando)); }
 let cella = null;                                     // prospetto: {corso, turno} di cui mostrare i nomi
 const f = Object.assign({comando: '', data: '', fascia: fasciaAdesso(), corso: '', qual: '', testo: '', stato: '', scheda: 'prospetto', quando: 0, senzaTurno: false},
   leggi(LS_FILTRI, {}), {data: dataAdesso(), fascia: fasciaAdesso()});
@@ -170,7 +175,7 @@ function chiaveManuale(nominativo, comando) {
   return norm(nominativo).slice(0, 50) + '|m' + Date.now().toString(36) + '|' + normComando(comando).slice(0, 60);
 }
 function salvaManuale(k, d) {
-  if (!pwd) return false;
+  if (!puoModificare(k)) return false;
   const prima = turni[k] || {};
   turni[k] = {t: d.t || '', s: SENZA_SALTO(d.t) ? '' : (d.s || ''), ts: Date.now(), m: '1',
     n: d.n, com: d.com, q: d.q, c: d.c, corsi: d.corsi};
@@ -179,7 +184,7 @@ function salvaManuale(k, d) {
   return true;
 }
 function eliminaManuale(k) {
-  if (!pwd || !turni[k] || turni[k].m !== '1') return;
+  if (!puoModificare(k) || !turni[k] || turni[k].m !== '1') return;
   turni[k] = Object.assign({}, turni[k], {m: '0', t: '', s: '', ts: Date.now()});
   scrivi(LS_TURNI, turni); metti(k); ricomponi(); programmaInvio();
 }
@@ -222,47 +227,56 @@ let timerInvio = null, inviando = false;
 // ridisegno chiesto dalla sincronizzazione: non mentre si compila il modulo del nominativo (si perderebbe quanto scritto)
 function ridisegna() { if (modMan && root && root.querySelector('#pros-man-form')) return; disegna(); }
 function programmaInvio() { clearTimeout(timerInvio); timerInvio = setTimeout(invia, 1500); }
-function salvaPwd(v) { pwd = v || ''; try { if (pwd) sessionStorage.setItem(SS_PWD, pwd); else sessionStorage.removeItem(SS_PWD); } catch (e) { /* niente */ } }
+function salvaPwds() { try { sessionStorage.setItem(SS_PWD, JSON.stringify(pwds)); } catch (e) { /* niente */ } }
 async function sblocca(v) {
+  const cn = normComando(f.comando);
   if (!v) return;
   sblocco = {stato: 'verifica', errore: ''}; disegna();
   try {
-    await chiedi(WEBAPP, {method: 'POST', headers: {'Content-Type': 'text/plain;charset=utf-8'}, body: JSON.stringify({foglio: 'DB_Turni_Personale', password: v, verifica: true})}, 20000);
-    salvaPwd(v); sblocco = {stato: 'ok', errore: ''};
+    const j = await chiedi(WEBAPP, {method: 'POST', headers: {'Content-Type': 'text/plain;charset=utf-8'}, body: JSON.stringify({foglio: 'DB_Turni_Personale', comando: cn, password: v, verifica: true})}, 20000);
+    pwds[j.generale ? '*' : cn] = v; salvaPwds(); sblocco = {stato: 'ok', errore: ''};
     if (coda.length) invia();
   } catch (e) {
-    salvaPwd(''); sblocco = {stato: 'err', errore: e.name === 'AbortError' ? 'tempo scaduto' : (e.message || String(e))};
+    sblocco = {stato: 'err', errore: e.name === 'AbortError' ? 'tempo scaduto' : (e.message || String(e))};
   }
   disegna();
 }
-function blocca() { salvaPwd(''); sblocco = {stato: '', errore: ''}; modMan = null; disegna(); }
+// blocca il Comando scelto (e la password generale, se c'era)
+function blocca() { delete pwds[normComando(f.comando)]; delete pwds['*']; salvaPwds(); sblocco = {stato: '', errore: ''}; modMan = null; disegna(); }
 function scorriForm() { const x = root.querySelector('#pros-man-form'); if (x) { x.scrollIntoView({block: 'nearest'}); const i = x.querySelector('input[name=n]'); if (i) i.focus(); } }
 async function invia() {
-  if (inviando || !coda.length || !pwd) return;   // senza password le modifiche restano in attesa
+  if (inviando || !coda.length) return;
+  // le modifiche partono Comando per Comando, ognuno con la sua password; senza password restano in attesa
+  const gruppi = {};
+  coda.forEach(k => { const cn = comandoDiChiave(k); if (pwdPer(cn)) (gruppi[cn] = gruppi[cn] || []).push(k); });
+  if (!Object.keys(gruppi).length) return;
   inviando = true;
-  const chiavi = coda.slice(0, 500);
-  const voci = chiavi.map(k => {
-    const v = turni[k] || {t: '', s: '', ts: Date.now()}, n = nomi[k] || {};
-    const voce = {k, comando: n.comando || v.com || '', cognome: n.cognome || v.n || '', nome: n.nome || '', t: v.t || '', s: v.s || '', ts: v.ts || Date.now()};
-    if (v.m === '1' || v.m === '0') Object.assign(voce, {m: v.m, comando: v.com || '', cognome: v.n || '', q: v.q || '', c: v.c || '', corsi: corsiDaTesto(v.corsi)});
-    return voce;
-  });
   sync.stato = 'invio'; ridisegna();
-  try {
-    await chiedi(WEBAPP, {method: 'POST', headers: {'Content-Type': 'text/plain;charset=utf-8'}, body: JSON.stringify({foglio: 'DB_Turni_Personale', password: pwd, voci})}, 30000);
-    coda = coda.filter(k => !chiavi.includes(k)); scrivi(LS_CODA, coda);
-    sync = {stato: coda.length ? 'attesa' : 'ok', errore: '', ora: new Date()};
-  } catch (e) {
-    const msg = e.name === 'AbortError' ? 'tempo scaduto' : (e.message || String(e));
-    if (/password/i.test(msg)) { salvaPwd(''); sblocco = {stato: 'err', errore: msg}; }   // password cambiata nello script: si richiede
-    sync = {stato: 'err', errore: msg, ora: sync.ora};
-  } finally { inviando = false; }
+  let errore = '';
+  for (const [cn, tutte] of Object.entries(gruppi)) {
+    const chiavi = tutte.slice(0, 500);
+    const voci = chiavi.map(k => {
+      const v = turni[k] || {t: '', s: '', ts: Date.now()}, n = nomi[k] || {};
+      const voce = {k, comando: n.comando || v.com || '', cognome: n.cognome || v.n || '', nome: n.nome || '', t: v.t || '', s: v.s || '', ts: v.ts || Date.now()};
+      if (v.m === '1' || v.m === '0') Object.assign(voce, {m: v.m, comando: v.com || '', cognome: v.n || '', q: v.q || '', c: v.c || '', corsi: corsiDaTesto(v.corsi)});
+      return voce;
+    });
+    try {
+      await chiedi(WEBAPP, {method: 'POST', headers: {'Content-Type': 'text/plain;charset=utf-8'}, body: JSON.stringify({foglio: 'DB_Turni_Personale', comando: cn, password: pwdPer(cn), voci})}, 30000);
+      coda = coda.filter(k => !chiavi.includes(k)); scrivi(LS_CODA, coda);
+    } catch (e) {
+      errore = e.name === 'AbortError' ? 'tempo scaduto' : (e.message || String(e));
+      if (/password/i.test(errore)) { delete pwds[pwds[cn] ? cn : '*']; salvaPwds(); sblocco = {stato: 'err', errore}; }   // password cambiata sul foglio: si richiede
+    }
+  }
+  inviando = false;
+  sync = errore ? {stato: 'err', errore, ora: sync.ora} : {stato: coda.length ? 'attesa' : 'ok', errore: '', ora: new Date()};
   ridisegna();
-  if (coda.length && sync.stato !== 'err') programmaInvio();
+  if (!errore && coda.some(k => pwdPer(comandoDiChiave(k)))) programmaInvio();
 }
 // modifica di turno/salto di una persona: copia locale subito, foglio appena possibile
 function impostaTurno(k, t, s) {
-  if (!pwd) return;
+  if (!puoModificare(k)) return;
   turni[k] = Object.assign({}, turni[k], {t: t || '', s: SENZA_SALTO(t) ? '' : (s || ''), ts: Date.now()});
   scrivi(LS_TURNI, turni); metti(k); programmaInvio();
 }
@@ -383,11 +397,11 @@ function disegna() {
   const ora = d => d ? ' · ' + d.toLocaleTimeString('it-IT', {hour: '2-digit', minute: '2-digit'}) : '';
   const statoSync = sync.stato === 'err' ? '<span class="pros-sync err">⚠️ Foglio turni: ' + esc(sync.errore) + (coda.length ? ' (' + coda.length + ' modifiche in attesa)' : '') + '</span>'
     : sync.stato === 'invio' ? '<span class="pros-sync">⏳ Salvo i turni sul foglio…</span>'
-    : coda.length ? '<span class="pros-sync">⏳ ' + coda.length + ' modifiche da salvare' + (pwd ? '' : ' (sblocca la Gestione personale)') + '</span>'
+    : coda.length ? '<span class="pros-sync">⏳ ' + coda.length + ' modifiche da salvare' + (coda.some(k => !pwdPer(comandoDiChiave(k))) ? ' (sblocca il Comando nella Gestione personale)' : '') + '</span>'
     : sync.stato === 'ok' ? '<span class="pros-sync ok">✓ Turni sul foglio' + ora(sync.ora) + '</span>' : '';
   const stati = statoCarico + statoSync;
   const schede = `<div class="pros-schede" role="tablist">
-    <button type="button" class="pros-scheda${f.scheda === 'gestione' ? ' on' : ''}" data-scheda="gestione">${pwd ? '🔓' : '🔒'} Gestione personale</button>
+    <button type="button" class="pros-scheda${f.scheda === 'gestione' ? ' on' : ''}" data-scheda="gestione">${sbloccato() ? '🔓' : '🔒'} Gestione personale</button>
     <button type="button" class="pros-scheda${f.scheda === 'prospetto' ? ' on' : ''}" data-scheda="prospetto">📋 Prospetto disponibilità</button>
     <button type="button" class="pros-scheda${f.scheda === 'richiamo' ? ' on' : ''}" data-scheda="richiamo">📞 Richiamo specializzati</button>
   </div>`;
@@ -438,10 +452,11 @@ function ordina(l) {
 function htmlGestione(corsiDisp, qualDisp, base, stati) {
   let elenco = filtrati('');
   if (f.senzaTurno) elenco = elenco.filter(p => !(turni[p.k] && turni[p.k].t));
-  const aperto = !!pwd;
+  const cn = normComando(f.comando), aperto = sbloccato();
   const lucchetto = aperto
-    ? `<div class="pros-lucchetto ok">🔓 Modifiche abilitate in questa sessione <button type="button" class="pros-mini" id="pros-blocca">🔒 Blocca</button></div>`
-    : `<form class="pros-lucchetto" id="pros-sblocca" autocomplete="off">🔒 Per modificare turni e salti inserisci la password
+    ? `<div class="pros-lucchetto ok">🔓 Modifiche abilitate per ${pwds['*'] ? 'tutti i Comandi (password generale)' : esc(f.comando)} in questa sessione <button type="button" class="pros-mini" id="pros-blocca">🔒 Blocca</button></div>`
+    : !cn ? `<div class="pros-lucchetto">🔒 Scegli un Comando qui sotto per sbloccare le modifiche con la sua password.</div>`
+    : `<form class="pros-lucchetto" id="pros-sblocca" autocomplete="off">🔒 Per modificare turni e salti di <b>${esc(f.comando)}</b> inserisci la password del Comando
         <input type="password" id="pros-pwd" placeholder="Password" autocomplete="current-password"${sblocco.stato === 'verifica' ? ' disabled' : ''}>
         <button type="submit" class="pros-btn"${sblocco.stato === 'verifica' ? ' disabled' : ''}>${sblocco.stato === 'verifica' ? '⏳ Verifico…' : 'Sblocca'}</button>
         ${sblocco.stato === 'err' ? '<span class="pros-sync err">⚠️ ' + esc(sblocco.errore) + '</span>' : ''}</form>`;
@@ -498,7 +513,7 @@ function htmlFormManuale(tuttiCorsi) {
       <label>Cognome e nome <input type="text" name="n" required maxlength="80" value="${esc(v.n || '')}" placeholder="Rossi Mario"></label>
       <label>Qualifica <select name="q">${QUAL_MAN.map(q => `<option${q === String(v.q || 'VF').toUpperCase() ? ' selected' : ''}>${q}</option>`).join('')}</select></label>
       <label>Cellulare <input type="tel" name="c" maxlength="20" value="${esc(v.c || '')}" placeholder="333 1234567"></label>
-      <label>Comando <select name="com">${Array.from(new Set(comandi().concat(com ? [com] : []))).sort((a, b) => a.localeCompare(b, 'it')).map(c => `<option${c === com ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select></label>
+      <label>Comando <select name="com">${Array.from(new Set(comandi().concat(com ? [com] : []))).filter(c => pwdPer(normComando(c))).sort((a, b) => a.localeCompare(b, 'it')).map(c => `<option${c === com ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select></label>
       <label>Turno <select name="t"><option value="">—</option>${TURNI.map(x => `<option value="${x}"${x === v.t ? ' selected' : ''}>${NOME_TURNO(x)}</option>`).join('')}</select></label>
       <label>Salto <select name="s"><option value="">—</option>${SALTI.map(x => `<option${x === String(v.s || '') ? ' selected' : ''}>${x}</option>`).join('')}</select></label>
     </div>
@@ -602,7 +617,7 @@ function importa(file) {
   const r = new FileReader();
   r.onload = () => {
     try {
-      if (!pwd) throw new Error('sblocca prima la Gestione personale con la password');
+      if (!sbloccato()) throw new Error('sblocca prima il Comando nella Gestione personale con la sua password');
       const d = JSON.parse(r.result), dati = d && d.turni ? d.turni : d;
       if (!dati || typeof dati !== 'object') throw new Error('file non valido');
       let n = 0;
@@ -656,7 +671,7 @@ function eventi() {
   });
   root.addEventListener('change', e => {
     const t = e.target;
-    if (t.id === 'pros-comando') { f.comando = t.value; f.corso = ''; f.qual = ''; cella = null; salvaFiltri(); disegna(); scaricaTurni(); return; }
+    if (t.id === 'pros-comando') { sblocco = {stato: '', errore: ''}; f.comando = t.value; f.corso = ''; f.qual = ''; cella = null; salvaFiltri(); disegna(); scaricaTurni(); return; }
     if (t.id === 'pros-corso') { f.corso = t.value; cella = null; salvaFiltri(); disegna(); return; }
     if (t.id === 'pros-senza') { f.senzaTurno = t.checked; disegna(); return; }
     if (t.id === 'pros-data') { if (t.value) { f.data = t.value; disegna(); } return; }

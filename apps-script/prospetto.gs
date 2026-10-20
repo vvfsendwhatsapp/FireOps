@@ -8,7 +8,11 @@
  *      if (payload.foglio === "DB_Turni_Personale") return rispostaJson_(turniPersonalePost_(payload));
  * 2) Dentro doGet(e), in cima, aggiungere:
  *      if (e.parameter && e.parameter.turniPersonale !== undefined) return rispostaJson_(turniPersonaleGet_(e.parameter));
- * 3) Cambia la password qui sotto (TP_PASSWORD_): serve nella scheda "Gestione personale" per modificare turni e salti.
+ * 3) Password: ogni Comando ha la sua, sul foglio "DB_Password_Comandi" (nascosto e protetto: lo modifica solo
+ *    il proprietario del file). Per crearlo esegui UNA volta dall'editor la funzione preparaFoglioPassword()
+ *    (menu in alto: scegli la funzione e premi "Esegui"): crea il foglio con tutti i Comandi, lo nasconde e lo
+ *    protegge. Poi scrivi le password nella colonna B (un Comando senza password non si puo' modificare).
+ *    TP_PASSWORD_ qui sotto e' la password GENERALE (vale per tutti i Comandi): lasciala "cambiami" per non averla.
  *    Leggere i turni resta libero; scriverli si puo' solo con la password, che controlla questo script (non la pagina).
  * 4) Distribuisci di nuovo la Web App ("Gestisci distribuzioni" > matita > "Nuova versione"), accesso "Chiunque".
  *
@@ -21,7 +25,9 @@
  */
 const TP_FOGLIO_ = "DB_Turni_Personale";
 const TP_INT_ = ["Chiave", "Comando", "Cognome", "Nome", "Turno", "Salto", "Aggiornato", "Manuale", "Qualifica", "Cellulare", "Corsi"];
-const TP_PASSWORD_ = "cambiami";   // <-- METTI QUI LA PASSWORD DELLA GESTIONE PERSONALE
+const TP_PASSWORD_ = "cambiami";   // password GENERALE, vale per tutti i Comandi ("cambiami" = nessuna)
+const TP_FOGLIO_PWD_ = "DB_Password_Comandi";
+const TP_COMANDI_ = ["Agrigento", "Alessandria", "Ancona", "Aosta", "Arezzo", "Ascoli Piceno", "Asti", "Avellino", "Bari", "Barletta-Andria-Trani", "Belluno", "Benevento", "Bergamo", "Biella", "Bologna", "Bolzano", "Brescia", "Brindisi", "Cagliari", "Caltanissetta", "Campobasso", "Caserta", "Catania", "Catanzaro", "Chieti", "Como", "Cosenza", "Cremona", "Crotone", "Cuneo", "Enna", "Fermo", "Ferrara", "Firenze", "Foggia", "Forlì-Cesena", "Frosinone", "Genova", "Gorizia", "Grosseto", "Imperia", "Isernia", "L'Aquila", "La Spezia", "Latina", "Lecce", "Lecco", "Livorno", "Lodi", "Lombardia COR AIB CURNO", "Lucca", "Macerata", "Mantova", "Massa-Carrara", "Matera", "Messina", "Milano", "Modena", "Monza e della Brianza", "Napoli", "Novara", "Nuoro", "Oristano", "Padova", "Palermo", "Parma", "Pavia", "Perugia", "Pesaro e Urbino", "Pescara", "Piacenza", "Pisa", "Pistoia", "Pordenone", "Potenza", "Prato", "Ragusa", "Ravenna", "Reggio Calabria", "Reggio Emilia", "Rieti", "Rimini", "Roma", "Rovigo", "Salerno", "Sassari", "Savona", "Siena", "Siracusa", "Sondrio", "Taranto", "Teramo", "Terni", "Torino", "Trapani", "Trento", "Treviso", "Trieste", "Udine", "Varese", "Venezia", "Verbano-Cusio-Ossola", "Vercelli", "Verona", "Vibo Valentia", "Vicenza", "Viterbo"];
 const TP_TURNI_ = ["", "A", "B", "C", "D", "G", "NO"];   // NO = Non Operativo
 const TP_SALTI_ = ["", "1", "2", "3", "4", "5", "6", "7", "8"];
 const TP_CHIAVE_RE_ = /^[a-z0-9]{1,60}\|[a-z0-9]{0,60}\|[a-z0-9]{0,60}$/;
@@ -67,12 +73,57 @@ function turniPersonaleGet_(q) {
 
 // POST {foglio: "DB_Turni_Personale", password, voci: [{k, comando, cognome, nome, t, s, ts}]}
 //      {foglio: "DB_Turni_Personale", password, verifica: true}  → controlla solo la password
-function turniPersonalePost_(p) {
-  if (String(p.password || "") !== TP_PASSWORD_ || TP_PASSWORD_ === "cambiami") {
-    Utilities.sleep(800);   // rallenta chi prova password a raffica
-    return {ok: false, errore: TP_PASSWORD_ === "cambiami" ? "password non ancora impostata nello script" : "password errata"};
+// stessa normalizzazione della pagina (normComando in prospetto.js): "Comando Forlì-Cesena" -> "forlicesena"
+function tpComando_(s) {
+  return String(s || "").replace(/^\s*(comando|direzione)\s+(provinciale\s+)?(vvf\s+)?(di\s+)?/i, "")
+    .toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "").slice(0, 60);
+}
+
+// password del Comando dal foglio nascosto (vuota = Comando non abilitato)
+function tpPasswordComando_(cn) {
+  const sh = SpreadsheetApp.openById("1rcBe5m4StM4KAG5YBEK5BLCIkSQBHLkKhaH7b_Qvb3c").getSheetByName(TP_FOGLIO_PWD_);
+  if (!sh || !cn) return "";
+  const dati = sh.getDataRange().getDisplayValues();
+  for (let i = 1; i < dati.length; i++) if (tpComando_(dati[i][0]) === cn) return String(dati[i][1] || "").trim();
+  return "";
+}
+
+// DA ESEGUIRE UNA VOLTA DALL'EDITOR: crea "DB_Password_Comandi" con tutti i Comandi, lo nasconde e lo protegge
+function preparaFoglioPassword() {
+  const ss = SpreadsheetApp.openById("1rcBe5m4StM4KAG5YBEK5BLCIkSQBHLkKhaH7b_Qvb3c");
+  let sh = ss.getSheetByName(TP_FOGLIO_PWD_);
+  if (!sh) {
+    sh = ss.insertSheet(TP_FOGLIO_PWD_);
+    sh.getRange(1, 1, 1, 3).setValues([["Comando", "Password", "Note"]]).setFontWeight("bold");
+    sh.setFrozenRows(1);
+    sh.getRange("A:C").setNumberFormat("@");
+    sh.getRange(2, 1, TP_COMANDI_.length, 1).setValues(TP_COMANDI_.map(c => [c]));
+    sh.autoResizeColumn(1);
   }
-  if (p.verifica) return {ok: true};
+  sh.hideSheet();
+  // protezione: resta modificabile solo dal proprietario del file
+  const prot = sh.protect().setDescription("Password Prospetto disponibilità: solo proprietario");
+  const me = Session.getEffectiveUser();
+  prot.addEditor(me);
+  prot.removeEditors(prot.getEditors().filter(u => u.getEmail() !== me.getEmail()));
+  if (prot.canDomainEdit()) prot.setDomainEdit(false);
+  return "Foglio " + TP_FOGLIO_PWD_ + " pronto: nascosto e protetto. Scrivi le password nella colonna B.";
+}
+
+// POST {foglio: "DB_Turni_Personale", comando, password, voci: [{k, comando, cognome, nome, t, s, ts, ...}]}
+//      {foglio: "DB_Turni_Personale", comando, password, verifica: true}  → controlla solo la password
+// La password vale per il suo Comando: si scrivono solo le voci di quel Comando (terza parte della chiave).
+// La password generale (TP_PASSWORD_) vale per tutti.
+function turniPersonalePost_(p) {
+  const cn = tpComando_(p.comando), pw = String(p.password || "");
+  const generale = TP_PASSWORD_ !== "cambiami" && pw === TP_PASSWORD_;
+  const delComando = !!cn && !!pw && pw === tpPasswordComando_(cn);
+  if (!generale && !delComando) {
+    Utilities.sleep(800);   // rallenta chi prova password a raffica
+    if (!cn && TP_PASSWORD_ === "cambiami") return {ok: false, errore: "scegli un Comando"};
+    return {ok: false, errore: cn && !tpPasswordComando_(cn) && !generale ? "nessuna password impostata per questo Comando" : "password errata"};
+  }
+  if (p.verifica) return {ok: true, generale: generale};
   // la stessa persona due volte nello stesso invio: vale la modifica piu' recente
   const unica = {};
   (Array.isArray(p.voci) ? p.voci.slice(0, 1000) : []).forEach(v => {
@@ -95,6 +146,7 @@ function turniPersonalePost_(p) {
       const t = String(v.t || ""), s = (t === "G" || t === "NO") ? "" : String(v.s || "");
       const ts = Math.min(Number(v.ts) || 0, Date.now() + 60000);
       if (!TP_CHIAVE_RE_.test(k) || TP_TURNI_.indexOf(t) < 0 || TP_SALTI_.indexOf(s) < 0 || !ts) { ignorati++; return; }
+      if (!generale && k.split("|")[2] !== cn) { ignorati++; return; }   // voce di un altro Comando: non con questa password
       const man = v.m === "1" || v.m === "0" ? v.m : "";
       const valori = [k, tpTesto_(v.comando, 80), tpTesto_(v.cognome, 80), tpTesto_(v.nome, 60), t, s, ts, man,
         man ? tpTesto_(v.q, 20) : "", man ? tpTesto_(String(v.c || "").replace(/[^\d+ ]/g, ""), 20) : "",
