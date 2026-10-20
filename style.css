@@ -8397,7 +8397,11 @@ select:focus {
 .pros-fascia.on { background: var(--pros-g); border-color: var(--pros-g); color: #000; }
 .pros-sigla { font-size: 13px; padding-bottom: 6px; }
 .pros-sigla span { color: var(--text-muted); font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
-.pros-sync { font-size: 12px; color: var(--text-muted); padding-bottom: 6px; margin-left: auto; }
+.pros-stati { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; margin-left: auto; padding-bottom: 6px; }
+.pros-sync { font-size: 12px; color: var(--text-muted); }
+.pros-box-corso { padding: 8px 12px; }
+.pros-corso { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .03em; font-weight: 600; }
+.pros-corso select { flex: 1 1 auto; min-width: 0; text-transform: none; letter-spacing: 0; font-weight: 400; }
 .pros-sync.ok { color: #6bd68a; } .pros-sync.err { color: #ffb36b; }
 .pros-box { background: var(--surface-color); border: 1px solid var(--border-color); border-radius: 6px; padding: 10px 12px; margin-bottom: 8px; }
 .pros-box-t { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; margin-bottom: 6px; }
@@ -8445,6 +8449,7 @@ button.pros-chip.on { background: var(--pros-g); color: #000; }
 .pros-stato.st-nd { border-color: #a0702a; color: #ffb36b; }
 .pros-vuoto { padding: 18px 8px; text-align: center; color: var(--text-muted); font-size: 13px; border: 1px dashed var(--border-color); border-radius: 6px; }
 @media (max-width: 700px) {
+  .pros-stati { align-items: flex-start; margin-left: 0; }
   .pros-conta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .pros-tab thead { display: none; }
   .pros-tab, .pros-tab tbody, .pros-tab tr, .pros-tab td { display: block; width: 100%; box-sizing: border-box; }

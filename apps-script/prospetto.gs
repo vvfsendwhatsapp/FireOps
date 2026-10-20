@@ -1,0 +1,93 @@
+/* FireOps - "Prospetto disponibilità": turno e salto turno del personale (su PUMA non ci sono).
+ * Foglio: "DB_Turni_Personale", una riga per persona (Chiave = cognome|nome|comando, normalizzati).
+ * Da incollare nello stesso progetto Apps Script della Web App usata da Messaggistica, Locator e SAR
+ * (quella con URL ...AKfycbyp6jQ331Yk5q7_hkM74ZyhUh1c3zQUJG7SpuoE18HslBO36YKSTYIQf-z7gSwXR4Yv/exec).
+ * rispostaJson_() c'e' gia' (utilizzo.gs): non va copiata di nuovo.
+ *
+ * 1) Dentro doPost(e), dove si smista per "foglio", aggiungere:
+ *      if (payload.foglio === "DB_Turni_Personale") return rispostaJson_(turniPersonalePost_(payload));
+ * 2) Dentro doGet(e), in cima, aggiungere:
+ *      if (e.parameter && e.parameter.turniPersonale !== undefined) return rispostaJson_(turniPersonaleGet_(e.parameter));
+ * 3) Distribuisci di nuovo la Web App ("Gestisci distribuzioni" > matita > "Nuova versione"), accesso "Chiunque".
+ *
+ * Ogni voce ha l'ora dell'ultima modifica (Aggiornato, in ms): vince la piu' recente, quindi piu' PC
+ * possono lavorare insieme. Una voce con turno vuoto e' una cancellazione e resta come riga vuota.
+ * Nel foglio NON si scrivono cellulare, codice fiscale o email: solo nome, cognome, comando, turno e salto.
+ */
+const TP_FOGLIO_ = "DB_Turni_Personale";
+const TP_INT_ = ["Chiave", "Comando", "Cognome", "Nome", "Turno", "Salto", "Aggiornato"];
+const TP_TURNI_ = ["", "A", "B", "C", "D", "G"];
+const TP_SALTI_ = ["", "1", "2", "3", "4", "5", "6", "7", "8"];
+const TP_CHIAVE_RE_ = /^[a-z0-9]{1,60}\|[a-z0-9]{0,60}\|[a-z0-9]{0,60}$/;
+
+function tpFoglio_() {
+  const ss = SpreadsheetApp.openById("1rcBe5m4StM4KAG5YBEK5BLCIkSQBHLkKhaH7b_Qvb3c");
+  let sh = ss.getSheetByName(TP_FOGLIO_);
+  if (!sh) {
+    sh = ss.insertSheet(TP_FOGLIO_);
+    sh.appendRow(TP_INT_);
+    sh.setFrozenRows(1);
+    sh.getRange("A:F").setNumberFormat("@");   // tutto testo: il salto "4" non diventa un numero
+  }
+  return sh;
+}
+
+function tpTesto_(v, max) {
+  const s = String(v == null ? "" : v).replace(/[\r\n\t]+/g, " ").trim().slice(0, max);
+  return /^[=+\-@]/.test(s) ? "'" + s : s;   // niente formule scritte da fuori
+}
+
+// GET ?turniPersonale=<comando normalizzato, vuoto = tutti>
+function turniPersonaleGet_(q) {
+  const comando = String(q.turniPersonale || "").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 60);
+  const dati = tpFoglio_().getDataRange().getDisplayValues();
+  const turni = {};
+  for (let i = 1; i < dati.length; i++) {
+    const r = dati[i], k = r[0];
+    if (!k) continue;
+    if (comando && k.split("|")[2] !== comando) continue;
+    turni[k] = {t: r[4], s: r[5], ts: Number(r[6]) || 0};
+  }
+  return {ok: true, turni: turni, ora: Date.now()};
+}
+
+// POST {foglio: "DB_Turni_Personale", voci: [{k, comando, cognome, nome, t, s, ts}]}
+function turniPersonalePost_(p) {
+  // la stessa persona due volte nello stesso invio: vale la modifica piu' recente
+  const unica = {};
+  (Array.isArray(p.voci) ? p.voci.slice(0, 1000) : []).forEach(v => {
+    const k = String((v && v.k) || "");
+    if (!unica[k] || (Number(v.ts) || 0) > (Number(unica[k].ts) || 0)) unica[k] = v;
+  });
+  const voci = Object.keys(unica).map(k => unica[k]);
+  if (!voci.length) return {ok: true, salvati: 0};
+  const lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    const sh = tpFoglio_();
+    const dati = sh.getDataRange().getValues();
+    const riga = {};
+    for (let i = 1; i < dati.length; i++) if (dati[i][0]) riga[String(dati[i][0])] = i + 1;
+    let salvati = 0, ignorati = 0;
+    const nuove = [];
+    voci.forEach(v => {
+      const k = String(v.k || "");
+      const t = String(v.t || ""), s = t === "G" ? "" : String(v.s || "");
+      const ts = Math.min(Number(v.ts) || 0, Date.now() + 60000);
+      if (!TP_CHIAVE_RE_.test(k) || TP_TURNI_.indexOf(t) < 0 || TP_SALTI_.indexOf(s) < 0 || !ts) { ignorati++; return; }
+      const valori = [k, tpTesto_(v.comando, 80), tpTesto_(v.cognome, 60), tpTesto_(v.nome, 60), t, s, ts];
+      const n = riga[k];
+      if (n) {
+        if (Number(dati[n - 1][6]) >= ts) { ignorati++; return; }   // sul foglio c'e' gia' una modifica piu' recente
+        sh.getRange(n, 1, 1, valori.length).setValues([valori]);
+      } else {
+        nuove.push(valori);
+      }
+      salvati++;
+    });
+    if (nuove.length) sh.getRange(sh.getLastRow() + 1, 1, nuove.length, TP_INT_.length).setValues(nuove);
+    return {ok: true, salvati: salvati, ignorati: ignorati};
+  } finally {
+    lock.releaseLock();
+  }
+}

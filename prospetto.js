@@ -8,9 +8,10 @@
  *  - Legge da PUMA (foglio "PUMA VVF Database Personale", scheda "Profilazione") il personale
  *    con qualifica, comando e corsi in possesso. Dal foglio si chiedono SOLO le colonne che servono
  *    (nome, cognome, cellulare, ente, qualifica, comando, corsi): codice fiscale ed email non arrivano.
- *  - Filtra per comando, corsi (almeno uno / tutti), qualifica e testo.
- *  - Turno e salto turno su PUMA non ci sono: si impostano qui, persona per persona, e restano
- *    su questo PC (esportabili/importabili in JSON). Con la data e la fascia scelte, la sequenza
+ *  - Filtra per comando, un corso alla volta (elenco a comparsa), qualifica e testo.
+ *  - Turno e salto turno su PUMA non ci sono: si impostano qui, persona per persona, e si salvano
+ *    sul foglio Google "DB_Turni_Personale" (apps-script/prospetto.gs, Web App di Messaggistica),
+ *    con una copia locale per lavorare anche senza rete. Con la data e la fascia scelte, la sequenza
  *    dei turni di fireops-core.js dice chi e' in servizio, chi e' di salto e chi e' libero.
  */
 (function () {
@@ -27,7 +28,10 @@ const QUERY = 'select B,C,F,G,H,I,K';
 const URL_PUMA = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:csv&headers=1&sheet=' +
   encodeURIComponent(SCHEDA) + '&tq=' + encodeURIComponent(QUERY);
 
-const LS_TURNI = 'fireops_prospetto_turni';   // {chiavePersona: {t: 'A', s: '4'}}
+const WEBAPP = 'https://script.google.com/macros/s/AKfycbyp6jQ331Yk5q7_hkM74ZyhUh1c3zQUJG7SpuoE18HslBO36YKSTYIQf-z7gSwXR4Yv/exec';
+const LS_TURNI = 'fireops_prospetto_turni';   // copia locale {chiavePersona: {t: 'A', s: '4', ts: ms}}
+const LS_CODA = 'fireops_prospetto_coda';     // chiavi modificate e non ancora salvate sul foglio
+const SYNC_MS = 120000;                       // ogni quanto si rilegge il foglio
 const LS_FILTRI = 'fireops_prospetto_filtri';
 const TURNI = ['A', 'B', 'C', 'D', 'G'];
 const SALTI = ['1', '2', '3', '4', '5', '6', '7', '8'];
@@ -40,8 +44,12 @@ let root = null;
 let righe = [];            // personale letto da PUMA (deduplicato)
 let carico = {stato: 'vuoto', errore: '', ora: null};
 let turni = leggi(LS_TURNI, {});
-const f = Object.assign({comando: '', data: '', fascia: fasciaAdesso(), corsi: [], tutti: false, qual: '', testo: '', stato: ''},
+let coda = leggi(LS_CODA, []);                // [chiave, ...]
+let sync = {stato: '', errore: '', ora: null};
+let nomi = {};                                // chiave → {comando, cognome, nome} per l'invio al foglio
+const f = Object.assign({comando: '', data: '', fascia: fasciaAdesso(), corso: '', qual: '', testo: '', stato: ''},
   leggi(LS_FILTRI, {}), {data: dataAdesso(), fascia: fasciaAdesso()});
+delete f.corsi; delete f.tutti;   // filtri della prima versione (piu' corsi insieme)
 
 /* ============================== UTILITA' ============================== */
 
@@ -55,8 +63,10 @@ function oraRoma() { return +new Date().toLocaleString('en-GB', {timeZone: 'Euro
 function fasciaAdesso() { const h = oraRoma(); return (h >= 8 && h < 20) ? 'giorno' : 'notte'; }
 // fra mezzanotte e le 8 il turno di notte in corso e' quello montato la sera prima
 function dataAdesso() { return oraRoma() < 8 ? new Date(Date.now() - 864e5).toLocaleDateString('sv-SE', {timeZone: 'Europe/Rome'}) : oggiISO(); }
-function salvaFiltri() { scrivi(LS_FILTRI, {comando: f.comando, corsi: f.corsi, tutti: f.tutti, qual: f.qual, stato: f.stato}); }
-function chiave(p) { return norm(p.cognome) + '|' + norm(p.nome) + '|' + String(p.cell || '').replace(/\D/g, '').slice(-10); }
+function salvaFiltri() { scrivi(LS_FILTRI, {comando: f.comando, corso: f.corso, qual: f.qual, stato: f.stato}); }
+// chiave della persona: cognome|nome|comando (niente cellulare: la chiave finisce sul foglio)
+function chiave(p) { return (norm(p.cognome) + '|' + norm(p.nome) + '|' + normComando(p.comando)).slice(0, 180); }
+function chiaveVecchia(p) { return norm(p.cognome) + '|' + norm(p.nome) + '|' + String(p.cell || '').replace(/\D/g, '').slice(-10); }
 function titolo(s) { return String(s || '').trim().toLowerCase().replace(/(^|[\s'’-])(\p{L})/gu, (m, a, b) => a + b.toUpperCase()); }
 
 // CSV con virgolette (formato gviz)
@@ -104,19 +114,84 @@ async function carica() {
         qual: (c[4] || '').trim().toUpperCase(), comando: (c[5] || '').trim().replace(/\s+/g, ' '), corsi: dividiCorsi(c[6])};
       if (!p.cognome && !p.nome) return;
       p.k = chiave(p);
-      const kc = p.k + '#' + normComando(p.comando);
+      const kc = p.k;
       // la stessa persona puo' essersi registrata piu' volte: vale l'ultima riga, i corsi si sommano
       const prec = mappa.get(kc);
       if (prec) p.corsi = Array.from(new Set(prec.corsi.concat(p.corsi)));
       mappa.set(kc, p);
     });
     righe = Array.from(mappa.values());
+    // turni salvati con la chiave della prima versione (con il cellulare): si spostano sulla nuova
+    righe.forEach(p => {
+      nomi[p.k] = {comando: p.comando, cognome: p.cognome, nome: p.nome};
+      const v = chiaveVecchia(p);
+      if (v !== p.k && turni[v] && !turni[p.k]) { turni[p.k] = Object.assign({}, turni[v], {ts: Date.now()}); delete turni[v]; metti(p.k); }
+    });
+    scrivi(LS_TURNI, turni);
     carico = {stato: 'ok', errore: '', ora: new Date()};
     if (!f.comando) f.comando = comandoDefault();
   } catch (e) {
     carico = {stato: 'err', errore: e.message || String(e), ora: carico.ora};
   }
   disegna();
+  if (carico.stato === 'ok') { scaricaTurni(); invia(); }
+}
+
+/* ============================== FOGLIO TURNI (Apps Script) ============================== */
+
+function metti(k) { if (!coda.includes(k)) coda.push(k); scrivi(LS_CODA, coda); }
+async function chiedi(url, opz, ms) {
+  const ctrl = new AbortController(), tm = setTimeout(() => ctrl.abort(), ms || 20000);
+  try {
+    const r = await fetch(url, Object.assign({signal: ctrl.signal}, opz));
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    if (!j || !j.ok) throw new Error((j && j.errore) || 'risposta non valida');
+    return j;
+  } finally { clearTimeout(tm); }
+}
+// legge dal foglio i turni del comando scelto; per ogni persona vince la modifica piu' recente
+async function scaricaTurni() {
+  try {
+    const j = await chiedi(WEBAPP + '?turniPersonale=' + encodeURIComponent(normComando(f.comando)) + '&_=' + Date.now(), {cache: 'no-store'});
+    let cambi = 0;
+    Object.entries(j.turni || {}).forEach(([k, v]) => {
+      const loc = turni[k];
+      if (coda.includes(k) && loc && (loc.ts || 0) >= (v.ts || 0)) return;   // la mia modifica deve ancora partire
+      if (!loc || (v.ts || 0) > (loc.ts || 0)) { turni[k] = {t: v.t || '', s: v.s || '', ts: v.ts || 0}; cambi++; }
+    });
+    if (cambi) scrivi(LS_TURNI, turni);
+    sync = {stato: coda.length ? 'attesa' : 'ok', errore: '', ora: new Date()};
+  } catch (e) {
+    sync = {stato: 'err', errore: e.name === 'AbortError' ? 'tempo scaduto' : (e.message || String(e)), ora: sync.ora};
+  }
+  disegna();
+}
+let timerInvio = null, inviando = false;
+function programmaInvio() { clearTimeout(timerInvio); timerInvio = setTimeout(invia, 1500); }
+async function invia() {
+  if (inviando || !coda.length) return;
+  inviando = true;
+  const chiavi = coda.slice(0, 500);
+  const voci = chiavi.map(k => {
+    const v = turni[k] || {t: '', s: '', ts: Date.now()}, n = nomi[k] || {};
+    return {k, comando: n.comando || '', cognome: n.cognome || '', nome: n.nome || '', t: v.t || '', s: v.s || '', ts: v.ts || Date.now()};
+  });
+  sync.stato = 'invio'; disegna();
+  try {
+    await chiedi(WEBAPP, {method: 'POST', headers: {'Content-Type': 'text/plain;charset=utf-8'}, body: JSON.stringify({foglio: 'DB_Turni_Personale', voci})}, 30000);
+    coda = coda.filter(k => !chiavi.includes(k)); scrivi(LS_CODA, coda);
+    sync = {stato: coda.length ? 'attesa' : 'ok', errore: '', ora: new Date()};
+  } catch (e) {
+    sync = {stato: 'err', errore: e.name === 'AbortError' ? 'tempo scaduto' : (e.message || String(e)), ora: sync.ora};
+  } finally { inviando = false; }
+  disegna();
+  if (coda.length && sync.stato !== 'err') programmaInvio();
+}
+// modifica di turno/salto di una persona: copia locale subito, foglio appena possibile
+function impostaTurno(k, t, s) {
+  turni[k] = {t: t || '', s: t === 'G' ? '' : (s || ''), ts: Date.now()};
+  scrivi(LS_TURNI, turni); metti(k); programmaInvio();
 }
 
 function comandoDefault() {
@@ -157,10 +232,7 @@ function filtrati(sigla) {
   const testo = norm(f.testo);
   return delComando().filter(p => {
     if (f.qual && p.qual !== f.qual) return false;
-    if (f.corsi.length) {
-      const ha = c => p.corsi.includes(c);
-      if (f.tutti ? !f.corsi.every(ha) : !f.corsi.some(ha)) return false;
-    }
+    if (f.corso && !p.corsi.includes(f.corso)) return false;
     if (testo && !norm(p.cognome + p.nome + p.cell).includes(testo)) return false;
     if (f.stato && statoPersona(p, sigla) !== f.stato) return false;
     return true;
@@ -193,10 +265,15 @@ function disegna() {
   const statoCarico = carico.stato === 'carico' ? '<span class="pros-sync">⏳ Lettura da PUMA…</span>'
     : carico.stato === 'err' ? '<span class="pros-sync err">⚠️ PUMA non raggiungibile: ' + esc(carico.errore) + '</span>'
     : carico.ora ? '<span class="pros-sync ok">✓ PUMA · ' + righe.length + ' persone · ' + carico.ora.toLocaleTimeString('it-IT', {hour: '2-digit', minute: '2-digit'}) + '</span>' : '';
+  const ora = d => d ? ' · ' + d.toLocaleTimeString('it-IT', {hour: '2-digit', minute: '2-digit'}) : '';
+  const statoSync = sync.stato === 'err' ? '<span class="pros-sync err">⚠️ Foglio turni non raggiungibile (' + esc(sync.errore) + ')' + (coda.length ? ': ' + coda.length + ' modifiche in attesa' : '') + '</span>'
+    : sync.stato === 'invio' ? '<span class="pros-sync">⏳ Salvo i turni sul foglio…</span>'
+    : coda.length ? '<span class="pros-sync">⏳ ' + coda.length + ' modifiche da salvare</span>'
+    : sync.stato === 'ok' ? '<span class="pros-sync ok">✓ Turni sul foglio' + ora(sync.ora) + '</span>' : '';
 
   const lettera = sigla.charAt(0).toUpperCase(), num = sigla.slice(1);
   root.innerHTML = `
-  <div class="pros-avviso">🚧 Sezione in costruzione. Personale e corsi arrivano da PUMA; <b>turno e salto turno</b> non sono su PUMA e si impostano qui: restano su questo PC (esporta il file per portarli su un altro).</div>
+  <div class="pros-avviso">🚧 Sezione in costruzione. Personale e corsi arrivano da PUMA; <b>turno e salto turno</b> non sono su PUMA: si impostano qui e si salvano sul foglio Google (DB_Turni_Personale), così li ritrovano tutti i PC.</div>
   <div class="pros-testa">
     <label>Comando
       <select id="pros-comando"><option value="">Tutti i comandi</option>${comandi().map(c => `<option${c === f.comando ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select></label>
@@ -206,18 +283,15 @@ function disegna() {
       <button type="button" class="pros-fascia${f.fascia === 'notte' ? ' on' : ''}" data-fascia="notte">🌙 Notte 20-08</button>
     </div>
     <div class="pros-sigla">${sigla ? `In servizio: <b>turno ${esc(lettera)}</b>, salta il <b>${esc(num)}</b> <span>(${esc(sigla)})</span>` : 'Turno non calcolabile'}</div>
-    ${statoCarico}
+    <div class="pros-stati">${statoCarico}${statoSync}</div>
   </div>
 
-  <div class="pros-box">
-    <div class="pros-box-t"><h4>Corsi <small>${f.corsi.length ? '(' + f.corsi.length + ' scelti)' : '— tocca per filtrare'}</small></h4>
-      <div class="pros-modo">
-        <label class="pros-chk"><input type="radio" name="pros-modo" value="uno"${f.tutti ? '' : ' checked'}> almeno uno</label>
-        <label class="pros-chk"><input type="radio" name="pros-modo" value="tutti"${f.tutti ? ' checked' : ''}> tutti quelli scelti</label>
-        ${f.corsi.length ? '<button type="button" class="pros-mini" id="pros-corsi-via">✕ Togli filtro</button>' : ''}
-      </div></div>
-    <div class="pros-corsi">${corsiDisp.length ? corsiDisp.map(c => `<button type="button" class="pros-chip${f.corsi.includes(c) ? ' on' : ''}" data-corso="${esc(c)}" title="${esc(c)}">${esc(siglaCorso(c))}</button>`).join('')
-      : '<span class="pros-nota">' + (carico.stato === 'ok' ? 'Nessun corso registrato per questo comando.' : 'In attesa dei dati PUMA.') + '</span>'}</div>
+  <div class="pros-box pros-box-corso">
+    <label class="pros-corso">Corso
+      <select id="pros-corso"${corsiDisp.length ? '' : ' disabled'}>
+        <option value="">${corsiDisp.length ? 'Tutti i corsi (' + corsiDisp.length + ')' : (carico.stato === 'ok' ? 'Nessun corso registrato' : 'In attesa dei dati PUMA')}</option>
+        ${corsiDisp.map(c => `<option value="${esc(c)}"${c === f.corso ? ' selected' : ''}>${esc(c)} — ${base.filter(p => p.corsi.includes(c)).length}</option>`).join('')}
+      </select></label>
   </div>
 
   <div class="pros-conta">
@@ -244,7 +318,7 @@ function disegna() {
       return `<tr class="st-${st}" data-k="${esc(p.k)}">
         <td data-l="Personale"><b>${esc(p.cognome)}</b> ${esc(p.nome)}${f.comando ? '' : `<div class="pros-com">${esc(p.comando)}</div>`}</td>
         <td data-l="Qualifica">${esc(p.qual)}</td>
-        <td data-l="Corsi">${p.corsi.map(c => `<span class="pros-chip${f.corsi.includes(c) ? ' on' : ''}" title="${esc(c)}">${esc(siglaCorso(c))}</span>`).join('') || '<span class="pros-nota">—</span>'}</td>
+        <td data-l="Corsi">${p.corsi.map(c => `<span class="pros-chip${c === f.corso ? ' on' : ''}" title="${esc(c)}">${esc(siglaCorso(c))}</span>`).join('') || '<span class="pros-nota">—</span>'}</td>
         <td data-l="Cellulare">${p.cell ? `<a href="tel:${esc(p.cell)}">${esc(p.cell)}</a>` : ''}</td>
         <td data-l="Turno"><select data-campo="t"><option value="">—</option>${TURNI.map(x => `<option${x === t.t ? ' selected' : ''}>${x}</option>`).join('')}</select></td>
         <td data-l="Salto"><select data-campo="s"${t.t === 'G' ? ' disabled' : ''}><option value="">—</option>${SALTI.map(x => `<option${x === String(t.s || '') ? ' selected' : ''}>${x}</option>`).join('')}</select></td>
@@ -276,8 +350,12 @@ function importa(file) {
       const d = JSON.parse(r.result), dati = d && d.turni ? d.turni : d;
       if (!dati || typeof dati !== 'object') throw new Error('file non valido');
       let n = 0;
-      Object.entries(dati).forEach(([k, v]) => { if (v && TURNI.includes(v.t)) { turni[k] = {t: v.t, s: SALTI.includes(String(v.s)) ? String(v.s) : ''}; n++; } });
-      scrivi(LS_TURNI, turni); disegna(); alert('Importati i turni di ' + n + ' persone.');
+      const valide = new Set(righe.map(p => p.k));
+      Object.entries(dati).forEach(([k, v]) => {
+        if (!v || !TURNI.includes(v.t) || !valide.has(k)) return;   // solo persone presenti su PUMA, con la chiave attuale
+        impostaTurno(k, v.t, SALTI.includes(String(v.s)) ? String(v.s) : ''); n++;
+      });
+      disegna(); alert('Importati i turni di ' + n + ' persone: vengono salvati anche sul foglio.');
     } catch (e) { alert('Importazione non riuscita: ' + e.message); }
   };
   r.readAsText(file);
@@ -287,38 +365,35 @@ function eventi() {
   root.addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.fascia) { f.fascia = b.dataset.fascia; disegna(); return; }
-    if (b.dataset.corso) { const c = b.dataset.corso, i = f.corsi.indexOf(c); if (i < 0) f.corsi.push(c); else f.corsi.splice(i, 1); salvaFiltri(); disegna(); return; }
     if (b.dataset.stato) { f.stato = f.stato === b.dataset.stato ? '' : b.dataset.stato; salvaFiltri(); disegna(); return; }
     switch (b.id) {
-      case 'pros-corsi-via': f.corsi = []; salvaFiltri(); disegna(); break;
       case 'pros-aggiorna': carica(); break;
       case 'pros-csv': esportaCSV(); break;
       case 'pros-esporta': scarica('fireops_turni_personale_' + oggiISO() + '.json', JSON.stringify({tipo: 'fireops-prospetto-turni', creato: new Date().toISOString(), turni}, null, 1), 'application/json'); break;
       case 'pros-importa': root.querySelector('#pros-file').click(); break;
       case 'pros-reset':
-        if (confirm('Cancellare da questo PC tutti i turni e salti turno impostati e i filtri?')) {
-          turni = {}; scrivi(LS_TURNI, turni);
-          Object.assign(f, {corsi: [], tutti: false, qual: '', testo: '', stato: '', data: dataAdesso(), fascia: fasciaAdesso(), comando: comandoDefault()});
+        // azzera filtri e copia locale; i turni sul foglio restano e si riscaricano
+        if (confirm('Azzerare filtri e copia locale dei turni? I turni salvati sul foglio Google restano e vengono riscaricati.' + (coda.length ? '\n\nATTENZIONE: ' + coda.length + ' modifiche non ancora salvate sul foglio andranno perse.' : ''))) {
+          turni = {}; coda = []; scrivi(LS_TURNI, turni); scrivi(LS_CODA, coda);
+          Object.assign(f, {corso: '', qual: '', testo: '', stato: '', data: dataAdesso(), fascia: fasciaAdesso(), comando: comandoDefault()});
           try { localStorage.removeItem(LS_FILTRI); } catch (er) { /* niente */ }
-          disegna();
+          disegna(); scaricaTurni();
         }
         break;
     }
   });
   root.addEventListener('change', e => {
     const t = e.target;
-    if (t.id === 'pros-comando') { f.comando = t.value; f.corsi = []; f.qual = ''; salvaFiltri(); disegna(); return; }
+    if (t.id === 'pros-comando') { f.comando = t.value; f.corso = ''; f.qual = ''; salvaFiltri(); disegna(); scaricaTurni(); return; }
+    if (t.id === 'pros-corso') { f.corso = t.value; salvaFiltri(); disegna(); return; }
     if (t.id === 'pros-data') { if (t.value) { f.data = t.value; disegna(); } return; }
     if (t.id === 'pros-qual') { f.qual = t.value; salvaFiltri(); disegna(); return; }
-    if (t.name === 'pros-modo') { f.tutti = t.value === 'tutti'; salvaFiltri(); disegna(); return; }
     if (t.id === 'pros-file') { if (t.files[0]) importa(t.files[0]); t.value = ''; return; }
     const tr = t.closest('tr[data-k]');
     if (tr && t.dataset.campo) {
       const k = tr.dataset.k, v = Object.assign({t: '', s: ''}, turni[k]);
       v[t.dataset.campo] = t.value;
-      if (v.t === 'G') v.s = '';
-      if (!v.t && !v.s) delete turni[k]; else turni[k] = v;
-      scrivi(LS_TURNI, turni); disegna();
+      impostaTurno(k, v.t, v.s); disegna();
     }
   });
   root.addEventListener('input', e => {
@@ -327,7 +402,15 @@ function eventi() {
       disegna(); const x = root.querySelector('#pros-testo'); if (x) { x.focus(); x.setSelectionRange(pos, pos); }
     }
   });
-  document.addEventListener('fireops:comando-attivo-cambiato', () => { const c = comandoDefault(); if (c) { f.comando = c; f.corsi = []; f.qual = ''; salvaFiltri(); disegna(); } });
+  document.addEventListener('fireops:comando-attivo-cambiato', () => { const c = comandoDefault(); if (c) { f.comando = c; f.corso = ''; f.qual = ''; salvaFiltri(); disegna(); scaricaTurni(); } });
+  window.addEventListener('online', () => { if (coda.length) invia(); });
+  // il foglio si rilegge ogni tanto (altri PC possono aver cambiato i turni) e si ritenta l'invio
+  setInterval(() => {
+    if (carico.stato !== 'ok' || document.hidden) return;
+    if (coda.length) invia();
+    const sez = document.getElementById('prospetto-disponibilita');
+    if (sez && sez.offsetParent !== null) scaricaTurni();
+  }, SYNC_MS);
 }
 
 /* ============================== AVVIO ============================== */
@@ -347,6 +430,6 @@ function avvia() {
   } else parti();
 }
 
-NS.Prospetto = {avvia, carica, _dati: () => ({righe, turni, f, carico})};
+NS.Prospetto = {avvia, carica, scaricaTurni, _dati: () => ({righe, turni, f, carico, coda, sync})};
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', avvia); else avvia();
 })();
