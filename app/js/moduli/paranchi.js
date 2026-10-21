@@ -136,7 +136,7 @@ FireOps.registra({
   init(root) {
     "use strict";
     const $ = s => root.querySelector(s);
-    const G = 9.80665, R = 4.5, VW = 100, VH = 130, HIT = 20;
+    const G = 9.80665, R = 4.5, VW = 100, VH = 142, HIT = 20;
     const fmt = (v, d) => Number(v).toLocaleString("it-IT", {minimumFractionDigits: d, maximumFractionDigits: d});
     const kN = v => fmt(v / 1000, 2), daN = v => fmt(v / 10, 0);
 
@@ -392,8 +392,20 @@ FireOps.registra({
           ctx.fillStyle = "#ffd700"; ctx.fillRect(X(it.x) - 24, Y(it.y) - 12, 48, 24);
           ctx.fillStyle = "#000"; ctx.font = "bold 11px sans-serif"; ctx.fillText((Number($("#pa-kg").value) || 0) + " kg", X(it.x), Y(it.y)); ctx.font = "11px sans-serif";
         } else if (it.t === "op") {
-          ctx.fillStyle = "#2f9e5b"; ctx.beginPath(); ctx.moveTo(X(it.x) - 11, Y(it.y) - 9); ctx.lineTo(X(it.x) + 11, Y(it.y) - 9); ctx.lineTo(X(it.x), Y(it.y) + 11); ctx.fill();
-          ctx.fillStyle = "#2f9e5b"; ctx.fillText("Operatori", X(it.x), Y(it.y) - 16);
+          // pompiere che tira: le mani sono sul capo della corda (centro del punto)
+          const cx = 0, cy = 0;
+          ctx.save(); ctx.translate(X(it.x), Y(it.y)); ctx.scale(1.4, 1.4);
+          ctx.lineCap = "round"; ctx.lineJoin = "round";
+          ctx.strokeStyle = "#2f9e5b"; ctx.lineWidth = 5;
+          ctx.beginPath(); ctx.moveTo(cx + 3, cy - 10); ctx.lineTo(cx + 4, cy + 12); ctx.stroke();                     // busto
+          ctx.lineWidth = 4;
+          ctx.beginPath(); ctx.moveTo(cx + 4, cy + 12); ctx.lineTo(cx - 3, cy + 30); ctx.moveTo(cx + 4, cy + 12); ctx.lineTo(cx + 12, cy + 30); ctx.stroke();   // gambe
+          ctx.lineWidth = 3.5;
+          ctx.beginPath(); ctx.moveTo(cx + 3, cy - 7); ctx.lineTo(cx + 1, cy - 1); ctx.lineTo(cx, cy); ctx.moveTo(cx + 3, cy - 5); ctx.lineTo(cx + 6, cy + 3); ctx.lineTo(cx, cy + 3); ctx.stroke();   // braccia
+          ctx.fillStyle = "#f1c9a5"; ctx.beginPath(); ctx.arc(cx + 3, cy - 16, 5, 0, 7); ctx.fill();                  // testa
+          ctx.fillStyle = "#d62828"; ctx.beginPath(); ctx.arc(cx + 3, cy - 17, 6.5, Math.PI, 2 * Math.PI); ctx.fill(); // elmo
+          ctx.fillRect(cx - 5, cy - 17.5, 17, 2.5); ctx.fillStyle = "#ffd700"; ctx.fillRect(cx - 1, cy - 22, 8, 2);   // tesa e fascia
+          ctx.fillStyle = "#2f9e5b"; ctx.font = "bold 10px sans-serif"; ctx.fillText("Operatori", cx + 3, cy - 33); ctx.font = "11px sans-serif"; ctx.restore();
         }
         if (it.id === sel || it.id === fissa || (tracc && tracc.includes(it.id))) {
           ctx.strokeStyle = "#ffd700"; ctx.lineWidth = 2; ctx.setLineDash([3, 2]);
