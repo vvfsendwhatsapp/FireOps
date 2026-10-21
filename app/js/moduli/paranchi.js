@@ -144,7 +144,9 @@ FireOps.registra({
     const HINT = "<b>1</b> Aggiungi punti e trascinali. <b>2</b> Fissa ogni carrucola: trascinala vicino a un ancoraggio o al carico (si aggancia), oppure toccala e usa “Fissa a…”. <b>3</b> “Disegna corda” e tocca i punti nell’ordine di passaggio.";
     let fissa = null, menu = null, menuC = null, pressT = null, nuova = false, ins = null, nsel = null;
     const isP = it => !!it && (it.t === "pul" || it.t === "pul2");
-    const byId = id => items.find(i => i.id === id);
+    const base = id => String(id).split(":")[0], sh = id => String(id).split(":")[1] || null;   // un nodo di corda puo' essere "i7:A" = puleggia A della doppia
+    const byId = id => items.find(i => i.id === base(id));
+    const nomeNodo = id => { const it = byId(id); return it ? nome(it) + (sh(id) || "") : "?"; };
     const nome = it => it.t === "car" ? "Carico" : it.t === "op" ? "Operatori" : it.nome;
     function add(t, x, y, extra) {
       const it = Object.assign({id: "i" + (++uid), t, x, y, f: "", p: true, e: 0.6, v: "cam"}, extra || {});
@@ -298,7 +300,7 @@ FireOps.registra({
       const m = {}, n = {};
       corde.forEach((c, ri) => c.forEach((id, j) => {
         const it = byId(id);
-        if (it && it.t === "pul2" && j > 0 && j < c.length - 1) { n[id] = (n[id] || 0) + 1; m[ri + ":" + j] = n[id] % 2 === 1 ? -1 : 1; }
+        if (it && it.t === "pul2" && !sh(id) && j > 0 && j < c.length - 1) { n[id] = (n[id] || 0) + 1; m[ri + ":" + j] = n[id] % 2 === 1 ? -1 : 1; }
       }));
       return m;
     }
@@ -308,7 +310,7 @@ FireOps.registra({
         if (!p) return null;
         if (j === 0 || j === nodi.length - 1 || !(isP(p) || p.t === "blo" || p.t === "dis") || (p.t === "blo" && !p.p)) return {p, i: [p.x, p.y], o: [p.x, p.y], arco: null};   // il bloccante puro prende la corda e la lascia passare dritta
         const pv = nodi[j - 1], nx = nodi[j + 1];
-        const rr = rg(p), cxs = p.t === "pul2" ? p.x + (ass[ri + ":" + j] || -1) * 1.15 * rr : p.x;
+        const rr = rg(p), cxs = p.t === "pul2" ? p.x + (sh(c[j]) ? (sh(c[j]) === "A" ? -1 : 1) : (ass[ri + ":" + j] || -1)) * 1.15 * rr : p.x;
         const sin = pv && pv.x > (p.t === "pul2" ? cxs : p.x) + 0.01 ? 1 : -1;
         const aIn = sin > 0 ? 0 : Math.PI;
         const sotto = pv && nx ? (pv.y + nx.y) / 2 < p.y : true;
@@ -350,7 +352,7 @@ FireOps.registra({
           const forma = () => { ctx.beginPath(); [cx - d, cx + d].forEach(x => { ctx.moveTo(x + pr, cy); ctx.arc(x, cy, pr, 0, 7); }); ctx.moveTo(cx - d - pr * 0.75, cy + pr * 0.65); ctx.lineTo(cx + d + pr * 0.75, cy + pr * 0.65); ctx.lineTo(cx, cy + pr * 2.1); ctx.closePath(); };
           ctx.lineJoin = "round"; ctx.lineWidth = 5; forma(); ctx.stroke(); forma(); ctx.fill();    // carcassa a cuore
           ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(cx - d, cy, b, 0, 7); ctx.moveTo(cx + d + b, cy); ctx.arc(cx + d, cy, b, 0, 7); ctx.stroke();   // le due pulegge
-          ctx.fillStyle = txt; ctx.font = "bold 10px sans-serif"; ctx.fillText(it.nome, cx, cy + pr * 1.0); ctx.font = "11px sans-serif";
+          ctx.fillStyle = txt; ctx.font = "bold 9px sans-serif"; ctx.fillText(it.nome + "A", cx - d, cy); ctx.fillText(it.nome + "B", cx + d, cy); ctx.font = "11px sans-serif";
           return;
         }
         ctx.beginPath();
@@ -426,7 +428,7 @@ FireOps.registra({
           ctx.fillRect(cx - 5, cy - 17.5, 17, 2.5); ctx.fillStyle = "#ffd700"; ctx.fillRect(cx - 1, cy - 22, 8, 2);   // tesa e fascia
           ctx.fillStyle = "#2f9e5b"; ctx.font = "bold 10px sans-serif"; ctx.fillText("Operatori", cx + 3, cy - 33); ctx.font = "11px sans-serif"; ctx.restore();
         }
-        if (it.id === sel || it.id === fissa || (tracc && tracc.includes(it.id))) {
+        if (it.id === sel || it.id === fissa || (tracc && tracc.some(x => base(x) === it.id))) {
           ctx.strokeStyle = "#ffd700"; ctx.lineWidth = 2; ctx.setLineDash([3, 2]);
           ctx.beginPath(); ctx.arc(X(it.x), Y(it.y), (it.t === "car" ? 28 : 19), 0, 7); ctx.stroke(); ctx.setLineDash([]);
         }
@@ -436,7 +438,7 @@ FireOps.registra({
     // ---------- pannelli ----------
     function stato(it) {   // spiega perche' un punto senza fulcro non e' bloccato
       const legata = [], passa = [];
-      corde.forEach((c, i) => { if (c[0] === it.id || c[c.length - 1] === it.id) legata.push(i + 1); if (c.slice(1, -1).includes(it.id)) passa.push(i + 1); });
+      corde.forEach((c, i) => { if (base(c[0]) === it.id || base(c[c.length - 1]) === it.id) legata.push(i + 1); if (c.slice(1, -1).some(x => base(x) === it.id)) passa.push(i + 1); });
       if (legata.length) return "<b>non fissata a niente</b>: la tiene la corda " + legata.join(", ") + " (è legata lì). Se è una carrucola mobile va bene così.";
       if (passa.length && it.t === "blo") return "<b>sulla corda " + passa.join(", ") + "</b>: la corda passa dritta nel bloccante e il tiro non cambia. Per vincolarlo premi “Fissa a…” (ancoraggio, carico o carrucola).";
       if (passa.length) return "<b>non fissata a niente</b>: la tiene solo la corda " + passa.join(", ") + " che ci passa. È giusto per una carrucola mobile; per una fissa premi “Fissa a…”.";
@@ -464,7 +466,7 @@ FireOps.registra({
       $("#pa-corde").innerHTML = '<div class="nota" style="margin-bottom:4px">Corde, dal capo morto al capo di tiro. Tocca un punto della corda per spostarlo, toglierlo o inserire altri punti dopo di lui.</div>' + corde.map((c, i) => {
         const inMod = tracc === c;
         let h = '<div class="el"><div class="elh"><b>Corda ' + (i + 1) + (inMod ? " · in modifica" : "") + '</b><span class="ctl"><button type="button" data-a="mod" data-i="' + i + '" aria-label="Modifica corda">✎</button><button type="button" data-a="inv" data-i="' + i + '" aria-label="Inverti">⇄</button><button type="button" data-a="del" data-i="' + i + '" aria-label="Elimina corda">✕</button></span></div>';
-        h += '<div class="chips nodi" style="margin-top:6px">' + (c.length ? c.map((id, k) => { const o = byId(id); return '<button type="button" data-i="' + i + '" data-k="' + k + '" aria-pressed="' + String(!!nsel && nsel.i === i && nsel.k === k) + '">' + (k + 1) + " " + (o ? nome(o) : "?") + "</button>"; }).join("") : '<span class="nota">nessun punto</span>') + "</div>";
+        h += '<div class="chips nodi" style="margin-top:6px">' + (c.length ? c.map((id, k) => { const o = byId(id); return '<button type="button" data-i="' + i + '" data-k="' + k + '" aria-pressed="' + String(!!nsel && nsel.i === i && nsel.k === k) + '">' + (k + 1) + " " + nomeNodo(id) + "</button>"; }).join("") : '<span class="nota">nessun punto</span>') + "</div>";
         if (nsel && nsel.i === i && c[nsel.k]) {
           h += '<div class="ctl" style="margin-top:6px;flex-wrap:wrap"><button type="button" data-n="su" data-i="' + i + '" aria-label="Sposta prima">◀</button><button type="button" data-n="giu" data-i="' + i + '" aria-label="Sposta dopo">▶</button><button type="button" data-n="ins" data-i="' + i + '" style="min-width:auto;padding:0 12px">＋ Inserisci dopo</button><button type="button" data-n="del" data-i="' + i + '" aria-label="Togli punto">✕</button></div>';
         }
@@ -524,7 +526,7 @@ FireOps.registra({
         b.hidden = false;
       } else if (tracc) {
         const i = corde.indexOf(tracc) + 1;
-        const testo = ins !== null ? "Inserisci nella corda " + i + " dopo il punto " + (ins + 1) + ": tocca i punti" : "Corda " + i + ": " + (tracc.length ? tracc.map(id => nome(byId(id))).join(" → ") : "tocca il capo morto");
+        const testo = ins !== null ? "Inserisci nella corda " + i + " dopo il punto " + (ins + 1) + ": tocca i punti" : "Corda " + i + ": " + (tracc.length ? tracc.map(nomeNodo).join(" → ") : "tocca il capo morto");
         b.innerHTML = "<span>" + testo + "</span>" + (tracc.length ? '<button type="button" data-b="undo" aria-label="Togli ultimo">↶</button>' : "") +
           '<button type="button" class="acc" data-b="finec">Fine</button>' + (nuova ? '<button type="button" data-b="annc">Annulla</button>' : "");
         b.hidden = false;
@@ -632,8 +634,9 @@ FireOps.registra({
       }
       if (tracc) {
         if (it) {
-          if (ins !== null) { tracc.splice(ins + 1, 0, it.id); ins++; }
-          else if (tracc[tracc.length - 1] !== it.id) tracc.push(it.id);
+          const nid = it.t === "pul2" ? it.id + (x < it.x ? ":A" : ":B") : it.id;   // sulla doppia si sceglie la puleggia A o B
+          if (ins !== null) { tracc.splice(ins + 1, 0, nid); ins++; }
+          else if (tracc[tracc.length - 1] !== nid) tracc.push(nid);
           tutto();
         }
         return;
@@ -693,7 +696,7 @@ FireOps.registra({
     $("#pa-cd").addEventListener("click", () => {
       if (!tracc) {
         corde.push([]); tracc = corde[corde.length - 1]; nuova = true; ins = null; nsel = null; sel = null; fissa = null; chiudiMenu(); $("#pa-cd").textContent = "Fine corda";
-        $("#pa-hint").textContent = "Tocca in ordine: capo morto, carrucole e bloccanti attraversati, e per ultimo il capo di tiro (Operatori, oppure il punto a cui è legata). Puoi modificarla dopo.";
+        $("#pa-hint").textContent = "Tocca in ordine: capo morto, carrucole e bloccanti attraversati, e per ultimo il capo di tiro (Operatori, oppure il punto a cui è legata). Sulla carrucola doppia tocca la puleggia A (sinistra) o B (destra). Puoi modificarla dopo.";
         tutto();
       } else chiudiCorda(true);
     });
@@ -727,7 +730,7 @@ FireOps.registra({
         const id = it.id;
         items = items.filter(i => i.id !== id);
         items.forEach(i => { if (i.f === id) i.f = ""; });
-        corde = corde.map(c => c.filter(x => x !== id)).filter(c => c.length >= 2);
+        corde = corde.map(c => c.filter(x => base(x) !== id)).filter(c => c.length >= 2);
         if (sel === id) sel = null;
       }
       chiudiMenu(); tutto();
@@ -747,7 +750,7 @@ FireOps.registra({
       const id = sel;
       items = items.filter(i => i.id !== id);
       items.forEach(i => { if (i.f === id) i.f = ""; });
-      corde = corde.map(c => c.filter(x => x !== id)).filter(c => c.length >= 2);
+      corde = corde.map(c => c.filter(x => base(x) !== id)).filter(c => c.length >= 2);
       sel = null; tutto();
     });
     function entraModifica(i, inserisciDopo) {
