@@ -59,7 +59,9 @@ FireOps.registra({
 .pg-paranchi .tab td:last-child { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
 .pg-paranchi .sez { margin: 12px 0 6px; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-dim); }
 .pg-paranchi .tb { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.pg-paranchi .tb#pa-add { grid-template-columns: 1fr 1fr 1fr; }
+.pg-paranchi .tb#pa-add { grid-template-columns: repeat(6, 1fr); }
+.pg-paranchi .tb#pa-add button { grid-column: span 2; }
+.pg-paranchi .tb#pa-add button:nth-child(n+4) { grid-column: span 3; }
 .pg-paranchi .tb.tre { grid-template-columns: 2fr 1fr 1fr; }
 .pg-paranchi .tb button { min-height: 48px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
 .pg-paranchi .tb button i { width: 12px; height: 12px; border-radius: 50%; flex: none; }
@@ -450,7 +452,7 @@ FireOps.registra({
       let h = '<div class="el"><div class="elh"><b>' + nome(it) + '</b>' + ((it.t === "car" || it.t === "op") ? "" : '<span class="ctl"><button type="button" id="pa-sx" aria-label="Elimina">✕</button></span>') + '</div>';
       if (isP(it) || it.t === "blo" || it.t === "dis") {
         const fo = it.f ? (it.f === "car" ? "il carico" : (byId(it.f) || {nome: "?"}).nome) : null;
-        h += '<p class="nota" style="margin-top:8px">Fulcro: ' + (fo ? "<b>fissata a " + fo + "</b>" : stato(it)) + '</p>' +
+        h += '<p class="nota" style="margin-top:8px">Fulcro: ' + (fo ? "<b>fissata a " + fo + "</b>" : stato(it)) + (it.t === "pul2" ? " Il fulcro è unico: vale per " + it.nome + "A e " + it.nome + "B insieme." : "") + '</p>' +
           '<div class="chips"><button type="button" id="pa-sc" class="acc">' + (fissa === it.id ? "Tocca il punto…" : "Fissa a…") + '</button>' + (it.f ? '<button type="button" id="pa-sl">Libera</button>' : "") + '</div>';
       }
       if (it.t === "blo") h += '<p class="nota">Il bloccante morde la corda e la lascia passare dritta, senza puleggia e senza perdite.</p>';
@@ -571,7 +573,7 @@ FireOps.registra({
     function apriMenu(it) {
       if (!(isP(it) || it.t === "blo" || it.t === "dis" || it.t === "anc")) return;
       menu = it.id;
-      let h = "<b>" + nome(it) + "</b>";
+      let h = "<b>" + nome(it) + (it.t === "pul2" ? " (A + B, un solo fulcro)" : "") + "</b>";
       if (it.t !== "anc") {
         h += '<button type="button" class="acc" data-m="fissa">Fissa a…</button>';
         if (it.f) h += '<button type="button" data-m="libera">Libera (togli fulcro)</button>';
