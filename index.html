@@ -30,7 +30,14 @@
 
     <title>FireOps VVF</title>
     <link rel="icon" type="image/png" href="images/logo.png">
-    <script src="versione.js?v=0"></script>
+    <!-- versione.js va sempre scaricato fresco, mai dalla cache: è la base
+         con cui il browser decide se mostrare la barra "Aggiorna" e con
+         cosa invalidare gli altri script. Un v= fisso (com'era prima)
+         poteva restare in cache per qualche minuto: dopo "Aggiorna" la
+         pagina si ricaricava leggendo ancora la versione vecchia, e la
+         barra riappariva subito. Con un timestamp sempre diverso nell'URL
+         il browser non lo mette mai in cache. -->
+    <script>document.write('<script src="versione.js?nocache=' + Date.now() + '"><\/script>')</script>
 
     <!-- Tutto lo stile sta in style.css: nessun blocco <style> in questa
          pagina. Se serve una regola nuova, va in fondo a style.css, nella
