@@ -160,10 +160,25 @@ FireOps.registra({
       });
       // corda del pescante: dal punto fisso lungo la portante, nel carrello, poi giu' fino alla vittima (e su per il tipo 2 e 3)
       {
-        const fx = i.pm === "3" ? i.L : 0, fz = i.pm === "3" ? -i.D : 0;
-        s += '<path d="M' + X(fx) + " " + Y(fz) + "L" + X(rec.x) + " " + Y(rec.zc) + '" stroke="#4A93C8" stroke-width="2" stroke-dasharray="2 3" fill="none"/>';
-        s += '<path d="M' + X(rec.x) + " " + Y(rec.zc) + "L" + X(i.xv) + " " + Y(i.zv) + '" stroke="#4A93C8" stroke-width="2" fill="none"/>';
-        if (i.pm !== "1") s += '<path d="M' + (X(rec.x) + 5) + " " + Y(rec.zc) + "L" + (X(i.xv) + 5) + " " + Y(i.zv) + '" stroke="#4A93C8" stroke-width="2" fill="none"/>';
+        const dalB = i.pm === "3", ax = X(dalB ? i.L : 0), ay = Y(dalB ? -i.D : 0), cx = X(rec.x), cy = Y(rec.zc);
+        let px = ax, py = ay;   // punto da cui parte la corda del pescante
+        if (!dalB) {   // pescante diretto fissato in A: un palo che sporge verso il vuoto
+          px = ax + 16; py = ay - 30;
+          s += '<path d="M' + ax + " " + ay + "L" + ax + " " + (ay - 30) + "L" + px + " " + py + '" stroke="#c77dff" stroke-width="4" fill="none" stroke-linejoin="round"/><circle cx="' + px + '" cy="' + py + '" r="3.5" fill="#c77dff"/><text x="' + (px + 8) + '" y="' + (py - 4) + '" fill="#c77dff" font-size="10" font-weight="700">pescante</text>';
+        } else {   // gru edile accanto a B: torre, braccio verso la luce
+          const tx = ax - 4, ty = ay - 66;
+          s += '<path d="M' + tx + " " + ay + "L" + tx + " " + ty + "M" + (tx + 12) + " " + ty + "L" + (tx - 50) + " " + ty + '" stroke="#c77dff" stroke-width="4" fill="none"/><path d="M' + (tx - 3) + " " + ty + "L" + tx + " " + (ty - 10) + "L" + (tx + 3) + " " + ty + '" stroke="#c77dff" stroke-width="2" fill="none"/><text x="' + (tx - 14) + '" y="' + (ty - 8) + '" fill="#c77dff" font-size="10" font-weight="700" text-anchor="middle">gru edile</text>';
+          s += '<path d="M' + (tx - 50) + " " + ty + "L" + (tx - 50) + " " + (ty + 8) + '" stroke="#c77dff" stroke-width="2"/>';
+        }
+        s += '<path d="M' + px + " " + py + "L" + cx + " " + cy + '" stroke="#4A93C8" stroke-width="2" stroke-dasharray="2 3" fill="none"/>';
+        s += '<path d="M' + cx + " " + cy + "L" + X(i.xv) + " " + Y(i.zv) + '" stroke="#4A93C8" stroke-width="2" fill="none"/>';
+        if (i.pm !== "1") {   // carrucola sul soccorritore: la corda gira e risale al carrello
+          s += '<path d="M' + (cx + 6) + " " + cy + "L" + (X(i.xv) + 6) + " " + Y(i.zv) + '" stroke="#4A93C8" stroke-width="2" fill="none"/><circle cx="' + (X(i.xv) + 3) + '" cy="' + (Y(i.zv) + 2) + '" r="4.5" fill="none" stroke="#4A93C8" stroke-width="2"/>';
+        }
+        // traenti: dal carrello ai due capi, sotto le portanti, con gli operatori
+        const xa = X(0), ya = Y(0) + 7, xb = X(i.L), yb = Y(-i.D) + 7;
+        s += '<path d="M' + xa + " " + ya + "L" + cx + " " + (cy + 7) + "L" + xb + " " + yb + '" stroke="#3fa66b" stroke-width="2" stroke-dasharray="6 3" fill="none"/>';
+        s += '<text x="' + (xa + 6) + '" y="' + (ya + 14) + '" fill="#3fa66b" font-size="10" font-weight="700">traente A</text><text x="' + (xb - 6) + '" y="' + (yb + 14) + '" fill="#3fa66b" font-size="10" font-weight="700" text-anchor="end">traente B</text>';
       }
       // carrello e vittima
       s += '<rect x="' + (X(rec.x) - 7) + '" y="' + (Y(rec.zc) - 5) + '" width="14" height="10" rx="2" fill="#ffd700"/>';
