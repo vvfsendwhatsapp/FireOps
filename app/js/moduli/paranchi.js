@@ -82,7 +82,7 @@ FireOps.registra({
   <div class="chips" id="pa-pre" aria-label="Sistemi pronti"></div>
   <div class="cvwrap"><canvas id="pa-cv" class="pi" role="img" aria-label="Disegno del sistema di recupero: trascina carrucole, bloccanti e ancoraggi. Tieni premuto su un punto per il menu."></canvas><div id="pa-ban" hidden></div><div id="pa-menu" hidden></div></div>
   <div class="chips" id="pa-add" style="margin-top:10px">
-    <button type="button" data-t="anc">+ Ancoraggio</button><button type="button" data-t="pul">+ Carrucola</button><button type="button" data-t="blo" data-p="0">+ Bloccante a camma</button><button type="button" data-t="blo" data-p="1">+ Bloccante con puleggia</button><button type="button" data-t="dis">+ Discensore</button><button type="button" id="pa-cd" class="acc">Disegna corda</button>
+    <button type="button" data-t="anc">+ Ancoraggio</button><button type="button" data-t="pul">+ Carrucola</button><button type="button" data-t="blo" data-p="0">+ Bloccante a camma</button><button type="button" data-t="blo" data-p="1">+ Bloccante con puleggia</button><button type="button" data-t="dis" data-v="cam">+ Discensore a camma</button><button type="button" data-t="dis" data-v="pul">+ Discensore con puleggia</button><button type="button" id="pa-cd" class="acc">Disegna corda</button>
   </div>
   <div class="chips" style="margin-top:8px"><button type="button" id="pa-calc" class="acc">Calcola vantaggio</button><button type="button" id="pa-reset">Reset</button></div>
   <div class="avv" id="pa-mini" style="border-color:var(--line);background:var(--panel-2)"></div>
@@ -136,7 +136,7 @@ FireOps.registra({
     const byId = id => items.find(i => i.id === id);
     const nome = it => it.t === "car" ? "Carico" : it.t === "op" ? "Operatori" : it.nome;
     function add(t, x, y, extra) {
-      const it = Object.assign({id: "i" + (++uid), t, x, y, f: "", p: true, e: 0.6}, extra || {});
+      const it = Object.assign({id: "i" + (++uid), t, x, y, f: "", p: true, e: 0.6, v: "cam"}, extra || {});
       if (t === "anc") it.nome = "A" + (++cnt.anc);
       if (t === "pul") it.nome = "C" + (++cnt.pul);
       if (t === "blo") it.nome = "B" + (++cnt.blo);
@@ -286,7 +286,7 @@ FireOps.registra({
       const nodi = c.map(byId);
       return nodi.map((p, j) => {
         if (!p) return null;
-        if (j === 0 || j === nodi.length - 1 || !(p.t === "pul" || p.t === "blo" || p.t === "dis") || (p.t === "blo" && !p.p)) return {p, i: [p.x, p.y], o: [p.x, p.y], arco: null};   // il bloccante puro prende la corda e la lascia passare dritta
+        if (j === 0 || j === nodi.length - 1 || !(p.t === "pul" || p.t === "blo" || p.t === "dis") || (p.t === "blo" && !p.p) || (p.t === "dis" && p.v === "cam")) return {p, i: [p.x, p.y], o: [p.x, p.y], arco: null};   // il bloccante puro prende la corda e la lascia passare dritta
         const pv = nodi[j - 1], nx = nodi[j + 1];
         const sin = pv && pv.x > p.x + 0.01 ? 1 : -1;
         const aIn = sin > 0 ? 0 : Math.PI;
@@ -323,7 +323,7 @@ FireOps.registra({
         if (it.t !== "pul" && it.t !== "blo" && it.t !== "dis") return;
         ctx.fillStyle = bg; ctx.strokeStyle = it.t === "pul" ? "#4A93C8" : it.t === "dis" ? "#ff6b6b" : "#c77dff"; ctx.lineWidth = 2.4;
         ctx.beginPath();
-        if ((it.t === "blo" && !it.p) || it.t === "dis") ctx.rect(X(it.x - R), Y(it.y - R), 2 * R * u, 2 * R * u); else ctx.arc(X(it.x), Y(it.y), R * u, 0, 7);
+        if ((it.t === "blo" && !it.p) || (it.t === "dis" && it.v === "cam")) ctx.rect(X(it.x - R), Y(it.y - R), 2 * R * u, 2 * R * u); else ctx.arc(X(it.x), Y(it.y), R * u, 0, 7);
         ctx.fill(); ctx.stroke();
         ctx.fillStyle = txt; ctx.fillText(it.nome, X(it.x), Y(it.y));
       });
@@ -398,7 +398,8 @@ FireOps.registra({
           '<div class="chips"><button type="button" id="pa-sc" class="acc">' + (fissa === it.id ? "Tocca il punto…" : "Fissa a…") + '</button>' + (it.f ? '<button type="button" id="pa-sl">Libera</button>' : "") + '</div>';
       }
       if (it.t === "blo") h += '<div class="chips" style="margin-top:8px"><button type="button" data-bt="1" aria-pressed="' + it.p + '">Con puleggia</button><button type="button" data-bt="0" aria-pressed="' + !it.p + '">A camma</button></div><p class="nota">Con puleggia: la corda gira intorno e il bloccante trattiene il carico (conta come un passaggio). A camma: morde la corda e la lascia passare dritta.</p>';
-      if (it.t === "dis") h += '<label for="pa-se" style="margin-top:8px">Rendimento di passaggio del discensore (0,1–1)</label><input type="number" id="pa-se" inputmode="decimal" min="0.1" max="1" step="0.05" value="' + it.e + '"><p class="nota">Il discensore conta come un passaggio con questo rendimento (più basso = più attrito). Con attriti disattivati vale 1.</p>';
+      if (it.t === "dis") h += '<div class="chips" style="margin-top:8px"><button type="button" data-dt="pul" aria-pressed="' + (it.v === "pul") + '">Con puleggia</button><button type="button" data-dt="cam" aria-pressed="' + (it.v !== "pul") + '">A camma</button></div>';
+      if (it.t === "dis") h += '<label for="pa-se" style="margin-top:8px">Rendimento di passaggio del discensore (0,1–1)</label><input type="number" id="pa-se" inputmode="decimal" min="0.1" max="1" step="0.05" value="' + it.e + '"><p class="nota">Con puleggia: la corda gira intorno (rendimento di partenza 0,85). A camma: autofrenante, la corda passa dritta (rendimento di partenza 0,6). Il rendimento è modificabile; senza attriti vale 1.</p>';
       if (it.t === "car") h += '<p class="nota">Il peso si imposta in “Dati”.</p>';
       if (it.t === "op") h += '<p class="nota">Capo di tiro: la corda deve finire qui.</p>';
       box.innerHTML = h + "</div>";
@@ -520,6 +521,7 @@ FireOps.registra({
         if (it.f) h += '<button type="button" data-m="libera">Libera (togli fulcro)</button>';
       }
       if (it.t === "blo") h += '<div class="rg"><button type="button" data-m="bpul" aria-pressed="' + it.p + '">Con puleggia</button><button type="button" data-m="bcam" aria-pressed="' + !it.p + '">A camma</button></div>';
+      if (it.t === "dis") h += '<div class="rg"><button type="button" data-m="dpul" aria-pressed="' + (it.v === "pul") + '">Con puleggia</button><button type="button" data-m="dcam" aria-pressed="' + (it.v !== "pul") + '">A camma</button></div>';
       if (it.t === "dis") h += '<div class="rg"><button type="button" data-m="em" aria-label="Meno rendimento">−</button><span>rendimento ' + fmt(it.e, 2) + '</span><button type="button" data-m="ep" aria-label="Più rendimento">+</button></div>';
       if (it.t === "pul" || it.t === "blo") h += '<button type="button" data-m="tdis">Trasforma in discensore</button>';
       if (it.t === "dis" || it.t === "blo") h += '<button type="button" data-m="tpul">Trasforma in carrucola</button>';
@@ -614,7 +616,7 @@ FireOps.registra({
     $("#pa-add").addEventListener("click", e => {
       const b = e.target.closest("button[data-t]"); if (!b) return;
       const t = b.dataset.t, n = items.filter(i => i.t === t).length;
-      const it = add(t, 50 + (n % 4) * 8 - 12, t === "anc" ? 8 : 40 + (n % 5) * 8, t === "blo" ? {p: b.dataset.p === "1"} : {});
+      const it = add(t, 50 + (n % 4) * 8 - 12, t === "anc" ? 8 : 40 + (n % 5) * 8, t === "blo" ? {p: b.dataset.p === "1"} : t === "dis" ? {v: b.dataset.v, e: b.dataset.v === "pul" ? 0.85 : 0.6} : {});
       sel = it.id; tutto();
     });
     $("#pa-reset").addEventListener("click", () => {
@@ -661,7 +663,8 @@ FireOps.registra({
       if (m === "libera") it.f = "";
       else if (m === "bpul") it.p = true;
       else if (m === "bcam") it.p = false;
-      else if (m === "tdis") { it.t = "dis"; it.nome = "D" + (++cnt.dis); it.e = it.e || 0.6; }
+      else if (m === "dpul" || m === "dcam") { const nv = m === "dpul" ? "pul" : "cam"; if (it.v !== nv) { if (Math.abs(it.e - (it.v === "pul" ? 0.85 : 0.6)) < 1e-6) it.e = nv === "pul" ? 0.85 : 0.6; it.v = nv; } }
+      else if (m === "tdis") { it.t = "dis"; it.nome = "D" + (++cnt.dis); it.v = it.v || "cam"; it.e = it.e || 0.6; }
       else if (m === "tpul") { it.t = "pul"; it.nome = "C" + (++cnt.pul); }
       else if (m === "em" || m === "ep") { it.e = Math.round(Math.min(1, Math.max(0.1, it.e + (m === "ep" ? 0.05 : -0.05))) * 100) / 100; apriMenu(it); tutto(); return; }
       else if (m === "elimina") {
@@ -683,6 +686,8 @@ FireOps.registra({
       const itc = byId(sel);
       const bt = e.target.closest("button[data-bt]");
       if (itc && bt) { itc.p = bt.dataset.bt === "1"; tutto(); return; }
+      const dtb = e.target.closest("button[data-dt]");
+      if (itc && dtb) { const nv = dtb.dataset.dt; if (itc.v !== nv) { if (Math.abs(itc.e - (itc.v === "pul" ? 0.85 : 0.6)) < 1e-6) itc.e = nv === "pul" ? 0.85 : 0.6; itc.v = nv; } tutto(); return; }
       if (itc && e.target.closest("#pa-sc")) { if (fissa === itc.id) { fissa = null; $("#pa-hint").innerHTML = HINT; tutto(); } else avviaFissa(itc); return; }
       if (itc && e.target.closest("#pa-sl")) { itc.f = ""; tutto(); return; }
       if (!e.target.closest("#pa-sx")) return;
