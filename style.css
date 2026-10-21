@@ -8052,6 +8052,10 @@ select:focus {
     opacity: 1;
 }
 
+/* Convertitore: con il traffico acceso la carta sotto va in grigio attenuato,
+   cosi' verde, giallo e rosso delle code si leggono subito */
+#coord-mappa.coord-traffico-on .leaflet-tile-pane { filter: grayscale(1) contrast(.85) brightness(1.06); }
+
 /* ==========================================================
    SAR - GESTIONE RICERCA (sar.js, solo index-bis.html)
    ========================================================== */

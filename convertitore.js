@@ -1396,6 +1396,9 @@ function iconaFrecciaDirezione(colore, azimutGradi) {
             if (contenitore) contenitore.classList.toggle("tile-scure", scura);
         }
 
+        // traffico acceso: colori adatti al nuovo fondo, stessi 10 minuti
+        if (traffico) accendiTraffico(true);
+
         const btn = document.getElementById("btn-coord-tema");
         if (!btn) return;
         btn.textContent = temaCoordScelto === "chiara" ? "☀️ Tema Chiaro" : "🌙 Tema Scuro";
@@ -1533,8 +1536,19 @@ function iconaFrecciaDirezione(colore, azimutGradi) {
     const TOMTOM_KEY = "pHLQV3MSilIBQTG5ttCLwL5jW46atpG8";                       // ← chiave API TomTom
     const TRAFFICO_RAGGIO_KM = 15;               // mezzo lato del riquadro attorno al target
     const TRAFFICO_DURATA_MS = 10 * 60 * 1000;   // si spegne da solo dopo 10 minuti
-    let sfondiCoord = null;
-    let traffico = null;                         // {strati: [...], riquadro, scade, timer, tick}
+    // var e non let: applicaTemaCoord() li legge e puo' girare prima di queste righe
+    var sfondiCoord = null;
+    var traffico = null;                         // {strati: [...], riquadro, scade, timer, tick}
+    var trafficoSoloCode = false;                // true = solo i tratti rallentati (niente verde)
+
+    // Colori: su carta scura o satellite si usano gli stili TomTom per fondi scuri
+    function stiliTraffico() {
+        const scuro = chiaveBaseAttiva === "satellite" || temaCoordScelto === "scura";
+        return {
+            flusso: trafficoSoloCode ? "relative-delay" : (scuro ? "relative0-dark" : "relative0"),
+            eventi: scuro ? "s0-dark" : "s0",
+        };
+    }
 
     function riquadroTraffico(t) {
         const dLat = TRAFFICO_RAGGIO_KM / 110.574;
@@ -1548,12 +1562,18 @@ function iconaFrecciaDirezione(colore, azimutGradi) {
             if (coordMappaLeaflet) traffico.strati.forEach(l => coordMappaLeaflet.removeLayer(l));
             traffico = null;
         }
+        trafficoSoloCode = false;
+        if (coordMappaLeaflet) coordMappaLeaflet.getContainer().classList.remove("coord-traffico-on");
         if (sfondiCoord) sfondiCoord.aggiornaLivelli();
     }
 
-    function accendiTraffico() {
+    // mantieni = stessi 10 minuti (cambio colori o "solo code"); altrimenti ripartono
+    function accendiTraffico(mantieni) {
         if (!coordMappaLeaflet || !coordinateTargetCorrenti || !TOMTOM_KEY) return;
+        const scadenza = mantieni && traffico ? traffico.scade : Date.now() + TRAFFICO_DURATA_MS;
+        const soloCode = trafficoSoloCode;
         spegniTraffico();
+        trafficoSoloCode = soloCode;
         if (!coordMappaLeaflet.getPane("traffico")) {
             coordMappaLeaflet.createPane("traffico").style.zIndex = 260;   // sopra sfondi ed etichette, sotto percorsi e marker
             coordMappaLeaflet.getPane("traffico").style.pointerEvents = "none";
@@ -1562,14 +1582,18 @@ function iconaFrecciaDirezione(colore, azimutGradi) {
         const k = encodeURIComponent(TOMTOM_KEY);
         // "bounds": Leaflet chiede a TomTom solo i riquadri dentro la zona
         const comuni = { pane: "traffico", bounds: riquadro, minZoom: 9, maxZoom: 19, maxNativeZoom: 18, updateWhenIdle: true, attribution: "Traffico © TomTom" };
+        const stili = stiliTraffico();
+        const spessore = stili.flusso === "relative-delay" ? "&thickness=8" : "";
         const strati = [
-            L.tileLayer(`https://api.tomtom.com/traffic/map/4/tile/flow/relative0/{z}/{x}/{y}.png?key=${k}&tileSize=256`, Object.assign({ opacity: 0.9 }, comuni)),
-            L.tileLayer(`https://api.tomtom.com/traffic/map/4/tile/incidents/s0/{z}/{x}/{y}.png?key=${k}&tileSize=256&t=-1`, comuni),
+            L.tileLayer(`https://api.tomtom.com/traffic/map/4/tile/flow/${stili.flusso}/{z}/{x}/{y}.png?key=${k}&tileSize=256${spessore}`, Object.assign({ opacity: 1 }, comuni)),
+            L.tileLayer(`https://api.tomtom.com/traffic/map/4/tile/incidents/${stili.eventi}/{z}/{x}/{y}.png?key=${k}&tileSize=256&t=-1`, comuni),
             L.rectangle(riquadro, { color: "#ffd700", weight: 1.5, dashArray: "6 6", fill: false, interactive: false }),
         ];
         strati.forEach(l => l.addTo(coordMappaLeaflet));
-        traffico = { strati, riquadro, scade: Date.now() + TRAFFICO_DURATA_MS };
-        traffico.timer = setTimeout(spegniTraffico, TRAFFICO_DURATA_MS);
+        traffico = { strati, riquadro, scade: scadenza };
+        traffico.timer = setTimeout(spegniTraffico, Math.max(1000, scadenza - Date.now()));
+        // carta sotto in grigio attenuato: i colori del traffico risaltano
+        coordMappaLeaflet.getContainer().classList.add("coord-traffico-on");
         traffico.tick = setInterval(() => sfondiCoord && sfondiCoord.aggiornaLivelli(), 30000);
         if (sfondiCoord) sfondiCoord.aggiornaLivelli();
     }
@@ -1595,6 +1619,15 @@ function iconaFrecciaDirezione(colore, azimutGradi) {
         },
         alterna: () => { if (traffico) spegniTraffico(); else accendiTraffico(); },
     };
+    const livelloSoloCode = {
+        icona: "🐢",
+        breve: "Solo code",
+        stato: () => traffico
+            ? { on: trafficoSoloCode, etichetta: trafficoSoloCode ? "solo tratti rallentati" : "mostra anche il verde: tocca per nasconderlo",
+                titolo: "Mostra solo i tratti rallentati o bloccati" }
+            : { disabilitato: true, titolo: "Accendi prima Traffico + eventi" },
+        alterna: () => { if (!traffico) return; trafficoSoloCode = !trafficoSoloCode; accendiTraffico(true); },
+    };
 
     function assicuraMappaCoordInizializzata() {
         if (coordMappaLeaflet) return;
@@ -1608,7 +1641,7 @@ function iconaFrecciaDirezione(colore, azimutGradi) {
             sfondiCoord = FireOpsSfondi.aggiungi(coordMappaLeaflet, {
                 posizione: "bottomleft",
                 imposta: k => impostaCartaBase(k === "sat" ? "satellite" : k),
-                livelli: [livelloTraffico],
+                livelli: [livelloTraffico, livelloSoloCode],
             });
         } else {
             creaSelettoreCarta(contenitore);
