@@ -1522,6 +1522,80 @@ function iconaFrecciaDirezione(colore, azimutGradi) {
     // Il tramonto arriva anche se nessuno tocca nulla
     setInterval(aggiornaRigheEffemeridi, 60000);
 
+    // ==========================================================
+    // TRAFFICO + EVENTI (TomTom Traffic, piano gratuito)
+    // Solo qui nel Convertitore, solo dopo aver convertito le coordinate,
+    // solo in un riquadro attorno al target e per 10 minuti: la quota
+    // gratuita (200.000 riquadri al mese) si consuma solo quando serve.
+    // La chiave si crea su developer.tomtom.com; va limitata al dominio
+    // vvfsendwhatsapp.github.io, perché in una pagina pubblica si vede.
+    // ==========================================================
+    const TOMTOM_KEY = "";                       // ← chiave API TomTom
+    const TRAFFICO_RAGGIO_KM = 15;               // mezzo lato del riquadro attorno al target
+    const TRAFFICO_DURATA_MS = 10 * 60 * 1000;   // si spegne da solo dopo 10 minuti
+    let sfondiCoord = null;
+    let traffico = null;                         // {strati: [...], riquadro, scade, timer, tick}
+
+    function riquadroTraffico(t) {
+        const dLat = TRAFFICO_RAGGIO_KM / 110.574;
+        const dLon = TRAFFICO_RAGGIO_KM / (111.320 * Math.cos(t.lat * Math.PI / 180));
+        return L.latLngBounds([t.lat - dLat, t.lon - dLon], [t.lat + dLat, t.lon + dLon]);
+    }
+
+    function spegniTraffico() {
+        if (traffico) {
+            clearTimeout(traffico.timer); clearInterval(traffico.tick);
+            if (coordMappaLeaflet) traffico.strati.forEach(l => coordMappaLeaflet.removeLayer(l));
+            traffico = null;
+        }
+        if (sfondiCoord) sfondiCoord.aggiornaLivelli();
+    }
+
+    function accendiTraffico() {
+        if (!coordMappaLeaflet || !coordinateTargetCorrenti || !TOMTOM_KEY) return;
+        spegniTraffico();
+        if (!coordMappaLeaflet.getPane("traffico")) {
+            coordMappaLeaflet.createPane("traffico").style.zIndex = 260;   // sopra sfondi ed etichette, sotto percorsi e marker
+            coordMappaLeaflet.getPane("traffico").style.pointerEvents = "none";
+        }
+        const riquadro = riquadroTraffico(coordinateTargetCorrenti);
+        const k = encodeURIComponent(TOMTOM_KEY);
+        // "bounds": Leaflet chiede a TomTom solo i riquadri dentro la zona
+        const comuni = { pane: "traffico", bounds: riquadro, minZoom: 9, maxZoom: 19, maxNativeZoom: 18, updateWhenIdle: true, attribution: "Traffico © TomTom" };
+        const strati = [
+            L.tileLayer(`https://api.tomtom.com/traffic/map/4/tile/flow/relative0/{z}/{x}/{y}.png?key=${k}&tileSize=256`, Object.assign({ opacity: 0.9 }, comuni)),
+            L.tileLayer(`https://api.tomtom.com/traffic/map/4/tile/incidents/s0/{z}/{x}/{y}.png?key=${k}&tileSize=256&t=-1`, comuni),
+            L.rectangle(riquadro, { color: "#ffd700", weight: 1.5, dashArray: "6 6", fill: false, interactive: false }),
+        ];
+        strati.forEach(l => l.addTo(coordMappaLeaflet));
+        traffico = { strati, riquadro, scade: Date.now() + TRAFFICO_DURATA_MS };
+        traffico.timer = setTimeout(spegniTraffico, TRAFFICO_DURATA_MS);
+        traffico.tick = setInterval(() => sfondiCoord && sfondiCoord.aggiornaLivelli(), 30000);
+        if (sfondiCoord) sfondiCoord.aggiornaLivelli();
+    }
+
+    // Nuovo target con il traffico acceso: la zona segue il target e i 10 minuti ripartono
+    function aggiornaZonaTraffico() {
+        if (traffico) accendiTraffico();
+        else if (sfondiCoord) sfondiCoord.aggiornaLivelli();
+    }
+
+    const livelloTraffico = {
+        icona: "🚦",
+        breve: "Traffico + eventi",
+        stato: () => {
+            if (traffico) {
+                const min = Math.max(1, Math.ceil((traffico.scade - Date.now()) / 60000));
+                return { on: true, etichetta: "attivo · si spegne fra " + min + " min", titolo: "Tocca per spegnere",
+                    nota: "Code e chiusure entro " + TRAFFICO_RAGGIO_KM + " km dal target (riquadro tratteggiato). Fonte TomTom." };
+            }
+            if (!TOMTOM_KEY) return { disabilitato: true, titolo: "Manca la chiave TomTom", nota: "Non disponibile: manca la chiave TomTom (TOMTOM_KEY in convertitore.js)." };
+            if (!coordinateTargetCorrenti) return { disabilitato: true, titolo: "Converti prima le coordinate", nota: "Si attiva dopo aver convertito le coordinate." };
+            return { titolo: "Code, incidenti e chiusure attorno al target per 10 minuti", etichetta: "attorno al target, 10 min" };
+        },
+        alterna: () => { if (traffico) spegniTraffico(); else accendiTraffico(); },
+    };
+
     function assicuraMappaCoordInizializzata() {
         if (coordMappaLeaflet) return;
         const contenitore = document.getElementById("coord-mappa");
@@ -1531,9 +1605,10 @@ function iconaFrecciaDirezione(colore, azimutGradi) {
         /* Selettore sfondi condiviso di FireOps (sfondo + uno in trasparenza
            sopra); il vecchio selettore a destra resta solo come ripiego */
         if (window.FireOpsSfondi) {
-            FireOpsSfondi.aggiungi(coordMappaLeaflet, {
+            sfondiCoord = FireOpsSfondi.aggiungi(coordMappaLeaflet, {
                 posizione: "bottomleft",
                 imposta: k => impostaCartaBase(k === "sat" ? "satellite" : k),
+                livelli: [livelloTraffico],
             });
         } else {
             creaSelettoreCarta(contenitore);
@@ -1627,6 +1702,7 @@ document.addEventListener("fireops:comando-attivo-cambiato", (e) => {
         azzeraPercorso({ mantieniTipologia: false });
 
         coordinateTargetCorrenti = null;
+        spegniTraffico();
         if (coordMappaLeaflet && coordMarkerTarget) coordMappaLeaflet.removeLayer(coordMarkerTarget);
         coordMarkerTarget = null;
         rimuoviRepartiVoloDallaMappa();
@@ -1661,6 +1737,7 @@ document.addEventListener("fireops:comando-attivo-cambiato", (e) => {
 
         coordinateTargetCorrenti = { lat, lon };
         coordMappaLeaflet.setView([lat, lon], 15);
+        aggiornaZonaTraffico();
 
         if (coordMarkerTarget) coordMappaLeaflet.removeLayer(coordMarkerTarget);
         coordMarkerTarget = L.marker([lat, lon], { icon: iconaMarkerGenerica(COLORE_TARGET) })

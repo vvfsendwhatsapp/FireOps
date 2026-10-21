@@ -13,8 +13,14 @@
  *     sostituisci: [vecchioSfondo],   // sfondi propri del modulo da togliere
  *     imposta: chiave => {...},       // facoltativo: il modulo cambia lo sfondo da sé
  *     onCambio: chiave => {...},      // facoltativo: avviso dopo ogni cambio
- *     posizione: 'topright'
+ *     posizione: 'topright',
+ *     livelli: [{                       // facoltativo: livelli extra del modulo (es. traffico nel Convertitore)
+ *       icona: '🚦', breve: 'Traffico + eventi',
+ *       stato: () => ({on, disabilitato, titolo, nota}),   // letto a ogni aggiornamento del pannello
+ *       alterna: () => {...}                              // tocco sul pulsante
+ *     }]
  *   });
+ *   api.aggiornaLivelli() ridisegna i pulsanti dei livelli extra quando il modulo cambia stato.
  * Non serve Leaflet al caricamento del file: l'app lo carica solo quando
  * apre una mappa, quindi tutto ciò che usa L sta dentro aggiungi().
  */
@@ -82,7 +88,11 @@
     '.fos-cur{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:11px;color:#9aa3ad}' +
     '.fos-cur input{flex:1;min-width:0;accent-color:#c8102e}' +
     '.fos-cur output{width:34px;text-align:right;color:#e8eaed;font-variant-numeric:tabular-nums}' +
-    '.fos-cur.spento{opacity:.4}';
+    '.fos-cur.spento{opacity:.4}' +
+    '.fos-liv button{flex:1 1 100%;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 6px;white-space:normal}' +
+    '.fos-liv button b{display:inline;font-size:15px}' +
+    '.fos-liv button small{display:block;font-size:10.5px;opacity:.85}' +
+    '.fos-liv-nota{font-size:11px;color:#9aa3ad;margin-top:4px;line-height:1.35}';
 
   function stile() {
     if (document.getElementById('fireops-sfondi-css')) return;
@@ -109,6 +119,7 @@
       opacita: typeof pref.opacita === 'number' ? pref.opacita : 0.5
     };
     var proprio = typeof opz.imposta === 'function';   // il modulo gestisce lo sfondo da sé
+    var livelli = Array.isArray(opz.livelli) ? opz.livelli : [];
     var lBase = null, lEtichette = [], lSopra = null;
 
     (opz.sostituisci || []).forEach(function (l) { if (l && map.hasLayer(l)) map.removeLayer(l); });
@@ -149,6 +160,9 @@
             '<div class="fos-sc fos-sopra"><button type="button" data-s=""><b>∅</b>Nessuno</button>' +
               CHIAVI.map(function (k) { return bott(k, 's'); }).join('') + '</div>' +
             '<label class="fos-cur"><span>Trasparente</span><input type="range" min="0" max="100" step="5"><span>Opaco</span><output></output></label>' +
+            (livelli.length ? '<div class="fos-lbl">Livelli</div>' + livelli.map(function (l, i) {
+              return '<div class="fos-sc fos-liv"><button type="button" data-l="' + i + '"></button></div><div class="fos-liv-nota" data-ln="' + i + '"></div>';
+            }).join('') : '') +
           '</div>';
         L.DomEvent.disableClickPropagation(box);
         L.DomEvent.disableScrollPropagation(box);
@@ -164,12 +178,22 @@
           out.textContent = cur.value + '%';
           box.querySelector('.fos-cur').classList.toggle('spento', !lSopra);
           cur.disabled = !lSopra;
+          livelli.forEach(function (l, i) {
+            var st = l.stato() || {}, b = box.querySelector('[data-l="' + i + '"]'), n = box.querySelector('[data-ln="' + i + '"]');
+            b.innerHTML = '<b>' + (l.icona || '') + '</b><span>' + (l.breve || '') + (st.etichetta ? '<small>' + st.etichetta + '</small>' : '') + '</span>';
+            b.classList.toggle('on', !!st.on);
+            b.disabled = !!st.disabilitato && !st.on;
+            b.title = st.titolo || '';
+            n.textContent = st.nota || '';
+            n.style.display = st.nota ? '' : 'none';
+          });
         }
         box.addEventListener('click', function (e) {
           var t = e.target.closest('button');
           if (!t) return;
           if (t.classList.contains('fos-btn')) { box.classList.add('aperto'); return; }
           if (t.classList.contains('fos-x')) { box.classList.remove('aperto'); return; }
+          if (t.dataset.l !== undefined) { livelli[+t.dataset.l].alterna(); aggiorna(); return; }
           if (t.dataset.b !== undefined) api.imposta(t.dataset.b);
           else if (t.dataset.s !== undefined) api.sopra(t.dataset.s);
         });
@@ -206,6 +230,7 @@
         salva(stato);
         if (ctl._aggiorna) ctl._aggiorna();
       },
+      aggiornaLivelli: function () { if (ctl._aggiorna) ctl._aggiorna(); },
       controllo: ctl
     };
 
