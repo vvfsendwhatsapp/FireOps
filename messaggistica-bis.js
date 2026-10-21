@@ -192,15 +192,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         selectAnnoIntervento.addEventListener("change", generaMessaggioMessaggistica);
 
-        // Messaggio unico: il link con numero e anno d'intervento e' SEMPRE incluso
-        // e obbligatorio. La scelta Con/Senza non serve piu' e viene nascosta.
-        chkLinkCoordinate.checked = true;
-        btnLinkCon.classList.add("attivo");
-        btnLinkSenza.classList.remove("attivo");
-        const campoConSenza = btnLinkCon.closest(".msg-campo");
-        if (campoConSenza) campoConSenza.style.display = "none";
-
-        aggiornaAbilitazioneCampi(); // stato iniziale: link sempre attivo
+        aggiornaAbilitazioneCampi(); // stato iniziale coerente con l'HTML ("Senza" attivo)
         validaCampiMessaggistica(); // colora Con/Senza fin da subito, coerente con gli altri campi
     }
     initLinkCoordinateUI();
@@ -351,7 +343,7 @@ Per tutte le richieste di soccorso chiami il
 *{{NUM}}*
 🇪🇺🇮🇹
 
-Per l'invio delle coordinate:
+Per l'invio della posizione:
 1. Clicchi sulla "graffetta" (Android) 📎 o sul "più" (Apple) ➕
 2. Clicchi su "Posizione" ⛳
 3. Se necessario segua le indicazioni del dispositivo per consentire a WhatsApp di accedere alla posizione 🆗️
@@ -374,7 +366,7 @@ For all emergency requests, call
 *{{NUM}}*
 🇪🇺🇮🇹
 
-To send coordinates:
+To send your location:
 1. Click on the "paperclip" (Android) 📎 or the "plus" (Apple) ➕
 2. Click on "Location" ⛳
 3. If necessary, follow the device's prompts to allow WhatsApp to access your location 🆗️
@@ -397,7 +389,7 @@ Para cualquier solicitud de emergencia, llame al
 *{{NUM}}*
 🇪🇺🇮🇹
 
-Para enviar coordenadas:
+Para enviar la ubicación:
 1. Haga clic en el icono del clip (Android) 📎 o en el signo más (+) (Apple) ➕
 2. Haga clic en "Ubicación" ⛳
 3. Si es necesario, siga las instrucciones del dispositivo para permitir que WhatsApp acceda a su ubicación 🆗️
@@ -423,7 +415,7 @@ Pour toute urgence, appelez le
 
 🇪🇺🇮🇹
 
-Pour envoyer vos coordonnées :
+Pour envoyer votre position :
 
 1. Cliquez sur le trombone (Android) 📎 ou le plus (Apple) ➕
 
@@ -455,7 +447,7 @@ Për të gjitha kërkesat emergjente, telefononi
 *{{NUM}}*
 🇪🇺🇮🇹
 
-Për të dërguar koordinatat:
+Për të dërguar vendndodhjen:
 1. Klikoni mbi "kapësen e letrës" (Android) 📎 ose "plus" (Apple) ➕
 2. Klikoni mbi "Vendndodhjen" ⛳
 3. Nëse është e nevojshme, ndiqni udhëzimet e pajisjes për të lejuar WhatsApp të hyjë në vendndodhjen tuaj 🆗️
@@ -480,7 +472,7 @@ Për të dërguar koordinatat:
 *{{NUM}}*
 🇪🇺🇮🇹
 
-لإرسال الإحداثيات:
+لإرسال الموقع:
 
 ١. انقر على رمز المشبك (أندرويد) 📎 أو رمز الزائد (آبل) ➕
 
@@ -508,7 +500,7 @@ Për të dërguar koordinatat:
 *{{NUM}}*
 🇪🇺🇮🇹
 
-За да изпратите координати:
+За да изпратите местоположението:
 1. Кликнете върху „кламер“ (Android) 📎 или „плюс“ (Apple) ➕
 2. Кликнете върху „Местоположение“ ⛳
 3. Ако е необходимо, следвайте инструкциите на устройството, за да позволите на WhatsApp достъп до вашето местоположение 🆗️
@@ -531,7 +523,7 @@ V případě nouze volejte
 *{{NUM}}*
 🇪🇺🇮🇹
 
-Odeslání souřadnic:
+Odeslání polohy:
 1. Klikněte na „sponku“ (Android) 📎 nebo „plus“ (Apple) ➕
 2. Klikněte na „Poloha“ ⛳
 3. V případě potřeby postupujte podle pokynů na zařízení, abyste povolili aplikaci WhatsApp přístup k vaší poloze 🆗️
@@ -554,7 +546,7 @@ Odeslání souřadnic:
 *{{NUM}}*
 🇪🇺🇮🇹
 
-发 送 坐 标：
+发 送 位 置：
 1. 单 击 “回 形 针”（Android）📎 或 “加 号”（Apple）➕
 2. 单 击“位置” ⛳
 3. 如 有 必 要，请 按 照 设 备 的 说 明 进 行 操 作，以 允 许 WhatsApp 访 问 您 的 位 置 location️
@@ -577,7 +569,7 @@ Za sve hitne zahtjeve nazovite
 *{{NUM}}*
 🇪🇺🇮🇹
 
-Za slanje koordinata:
+Za slanje lokacije:
 1. Kliknite na "spajalicu" (Android) 📎 ili "plus" (Apple) ➕
 2. Kliknite na "Lokacija" ⛳
 3. Ako je potrebno, slijedite upute uređaja kako biste WhatsAppu omogućili pristup vašoj lokaciji 🆗️
@@ -600,7 +592,7 @@ Ved alle nødsituationer, ring
 *{{NUM}}*
 🇪🇺🇮🇹
 
-S dan sender du koordinater:
+Sådan sender du din placering:
 1. Klik på "papirklipsen" (Android) 📎 eller "plusset" (Apple) ➕
 2. Klik på "Placering" ⛳
 3. Følg om nødvendigt enhedens instruktioner for at give WhatsApp adgang til din placering 🆗️
@@ -623,7 +615,7 @@ Kõikide hädaolukordade korral helistage numbril
 *{{NUM}}*
 🇪🇺🇮🇹
 
-Koordinaatide saatmiseks:
+Asukoha saatmiseks:
 1. Klõpsake kirjaklambril (Android) 📎 või plussmärgil (Apple) ➕
 2. Klõpsake valikul „Asukoht" ⛳
 3. Vajadusel järgige seadme juhiseid, et lubada WhatsAppil teie asukohale juurde pääseda 🆗️
@@ -646,7 +638,7 @@ Hätätilanteissa soita numeroon
 *{{NUM}}*
 🇪🇺🇮🇹
 
-Lähetä koordinaatit seuraavasti:
+Lähetä sijaintisi seuraavasti:
 1. Napsauta "paperiliitintä" (Android) 📎 tai "plus"-merkkiä (Apple) ➕
 2. Napsauta "Sijainti" ⛳
 3. Tarvittaessa seuraa laitteen ohjeita, jotta WhatsApp voi käyttää sijaintiasi 🆗️
@@ -669,7 +661,7 @@ Lähetä koordinaatit seuraavasti:
 *{{NUM}}*
 🇪🇺🇮🇹
 
-Για να στείλετε συντεταγμένες:
+Για να στείλετε την τοποθεσία σας:
 1. Κάντε κλικ στον "συνδετήρα" (Android) 📎 ή στο "συν" (Apple) ➕
 2. Κάντε κλικ στην "Τοποθεσία" ⛳
 3. Εάν είναι απαραίτητο, ακολουθήστε τις οδηγίες της συσκευής για να επιτρέψετε στο WhatsApp να έχει πρόσβαση στην τοποθεσία σας 🆗️
@@ -692,7 +684,7 @@ I gcás gach iarratais éigeandála, glaoigh ar
 *{{NUM}}*
 🇪🇺🇮🇹
 
-Chun comhordanáidí a sheoladh:
+Chun do shuíomh a sheoladh:
 1. Cliceáil ar an "gearrthóg páipéir" (Android) 📎 nó an "móide" (Apple) ➕
 2. Cliceáil ar "Suíomh" ⛳
 3. Más gá, lean leideanna an fheiste chun ligean do WhatsApp rochtain a fháil ar do shuíomh 🆗️
@@ -715,7 +707,7 @@ Visiem ārkārtas pieprasījumiem zvaniet uz numuru
 *{{NUM}}*
 🇪🇺🇮🇹
 
-Lai nosūtītu koordinātas:
+Lai nosūtītu atrašanās vietu:
 1. Noklikšķiniet uz "saspraudes" (Android) 📎 vai "plus" (Apple) ➕
 2. Noklikšķiniet uz "Atrašanās vieta" ⛳
 3. Ja nepieciešams, izpildiet ierīces norādījumus, lai atļautu WhatsApp piekļūt jūsu atrašanās vietai 🆗️
@@ -738,7 +730,7 @@ Dėl visų skubių užklausų skambinkite
 *{{NUM}}*
 🇪🇺🇮🇹
 
-Norėdami išsiųsti koordinates:
+Norėdami išsiųsti buvimo vietą:
 1. Spustelėkite „sąvaržėlę“ („Android“) 📎 arba „pliusą“ („Apple“) ➕
 2. Spustelėkite „Vieta“ ⛳
 3. Jei reikia, vykdykite įrenginio nurodymus, kad leistumėte „WhatsApp“ pasiekti jūsų buvimo vietą 🆗️
@@ -761,7 +753,7 @@ Għal kull talba ta' emerġenza, ċempel
 *{{NUM}}*
 🇪🇺🇮🇹
 
-Biex tibgħat koordinati:
+Biex tibgħat il-pożizzjoni:
 1. Ikklikkja fuq il-"paperclip" (Android) 📎 jew il-"plus" (Apple) ➕
 2. Ikklikkja fuq "Location" ⛳
 3. Jekk meħtieġ, segwi l-istruzzjonijiet tal-apparat biex tippermetti lil WhatsApp jaċċessa l-lokazzjoni tiegħek 🆗️
@@ -784,7 +776,7 @@ Voor alle noodgevallen, bel
 *{{NUM}}*
 🇪🇺🇮🇹
 
-Om coördinaten te verzenden:
+Om uw locatie te verzenden:
 1. Klik op het paperclip-icoon (Android) 📎 of het plusteken (Apple) ➕
 2. Klik op 'Locatie' ⛳
 3. Volg indien nodig de aanwijzingen van uw apparaat om WhatsApp toegang te geven tot uw locatie 🆗️
@@ -807,7 +799,7 @@ W nagłych wypadkach prosimy dzwonić pod numer
 *{{NUM}}*
 🇪🇺🇮🇹
 
-Aby wysłać współrzędne:
+Aby wysłać lokalizację:
 1. Kliknij „spinacz” (Android) 📎 lub „plus” (Apple) ➕
 2. Kliknij „Lokalizacja” ⛳
 3. W razie potrzeby postępuj zgodnie z instrukcjami urządzenia, aby zezwolić WhatsApp na dostęp do Twojej lokalizacji 🆗️
@@ -830,7 +822,7 @@ Para todas as solicitações de emergência, ligue para
 *{{NUM}}*
 🇪🇺🇮🇹
 
-Para enviar as coordenadas:
+Para enviar a localização:
 1. Clique no ícone de clipe de papel (Android) 📎 ou no ícone de mais (Apple) ➕
 2. Clique em "Localização" ⛳
 3. Se necessário, siga as instruções do dispositivo para permitir que o WhatsApp acesse sua localização 🆗️
@@ -853,7 +845,7 @@ Pentru toate solicitările de urgență, sunați
 *{{NUM}}*
 🇪🇺🇮🇹
 
-Pentru a trimite coordonate:
+Pentru a trimite locația:
 1. Faceți clic pe „agrafă” (Android) 📎 sau pe „plus” (Apple) ➕
 2. Faceți clic pe „Locație” ⛳
 3. Dacă este necesar, urmați instrucțiunile dispozitivului pentru a permite WhatsApp să acceseze locația dvs. 🆗️
@@ -877,7 +869,7 @@ Pentru a trimite coordonate:
 *Н-Н-Н*
 🇪🇺🇮🇹
 
-Чтобы отправить координаты:
+Чтобы отправить местоположение:
 1. Нажмите на значок «скрепка» (Android) 📎 или «плюс» (Apple) ➕
 2. Нажмите на «Местоположение» ⛳
 3. При необходимости следуйте инструкциям устройства, чтобы разрешить WhatsApp доступ к вашему местоположению 🆗️
@@ -900,7 +892,7 @@ V prípade všetkých núdzových požiadaviek volajte na číslo
 *{{NUM}}*
 🇪🇺🇮🇹
 
-Ak chcete odoslať súradnice:
+Ak chcete odoslať polohu:
 1. Kliknite na „sponku“ (Android) 📎 alebo „plus“ (Apple) ➕
 2. Kliknite na „Poloha“ ⛳
 3. V prípade potreby postupujte podľa pokynov na zariadení, aby ste povolili aplikácii WhatsApp prístup k vašej polohe 🆗️
@@ -923,7 +915,7 @@ Za vse nujne primere pokličite
 *{{NUM}}*
 🇪🇺🇮🇹
 
-Za pošiljanje koordinat:
+Za pošiljanje lokacije:
 1. Kliknite na "sponko za papir" (Android) 📎 ali "plus" (Apple) ➕
 2. Kliknite na "Lokacija" ⛳
 3. Po potrebi sledite navodilom naprave, da WhatsAppu omogočite dostop do vaše lokacije 🆗️
@@ -946,7 +938,7 @@ För alla nödförfrågningar, ring
 *{{NUM}}*
 🇪🇺🇮🇹
 
-För att skicka koordinater:
+För att skicka din plats:
 1. Klicka på "gem" (Android) 📎 eller "plus" (Apple) ➕
 2. Klicka på "Plats" ⛳
 3. Om det behövs, följ enhetens anvisningar för att tillåta WhatsApp att komma åt din plats 🆗️
@@ -970,7 +962,7 @@ Für alle Notfälle rufen Sie bitte an:
 *{{NUM}}*
 🇪🇺🇮🇹
 
-So senden Sie Ihre Koordinaten:
+So senden Sie Ihren Standort:
 1. Tippen Sie auf die Büroklammer (Android) 📎 oder das Pluszeichen (Apple) ➕.
 2. Tippen Sie auf „Standort" ⛳.
 3. Folgen Sie gegebenenfalls den Anweisungen Ihres Geräts, um WhatsApp den Zugriff auf Ihren Standort zu erlauben 🆗️.
@@ -993,7 +985,7 @@ Minden vészhelyzeti kérés esetén hívja a következő számot:
 *{{NUM}}*
 🇪🇺🇮🇹
 
-Koordináták küldéséhez:
+Tartózkodási helye küldéséhez:
 1. Kattintson a "gemkapocs" (Android) 📎 vagy a "plusz" (Apple) ikonra ➕
 2. Kattintson a "Helyszín" ⛳ elemre
 3. Szükség esetén kövesse az eszköz utasításait, hogy engedélyezze a WhatsAppnak a tartózkodási helyének elérését 🆗️
