@@ -44,7 +44,7 @@
         {nome: "Paranchi e vantaggio meccanico", ico: "⚙️", href: "#/paranchi", desc: "Vantaggio con gli attriti, disposizione in pianta, forze sugli ancoraggi e schema"},
         {nome: "Palo pescante 3D", ico: "🏗️", href: "#/palo", desc: "Pianta, quote e angoli degli ancoraggi, vista 3D, compressione e tiri"},
         {nome: "Scala appoggiata al muro", ico: "🪜", href: "#/scala", desc: "Piede minimo contro il ribaltamento con sistema discensore 2:1"},
-        {nome: "Teleferica", ico: "🚠", href: "#/teleferica", desc: "In costruzione"}
+        {nome: "Teleferica", ico: "🚠", href: "#/teleferica", desc: "Portanti, freccia, allungamenti, traenti e pescante"}
       ]},
     {id: "misura", nome: "Misura", ico: ICONE.altezza, colore: "var(--ics-pianificazione)", testo: "#fff",
       sotto: "Alberi, altezze, distanze e aree",
@@ -97,8 +97,7 @@
   // "segnaposto": modulo non ancora pronto, la pagina mostra solo l'avviso.
   const MODULI = {
     paranchi: {nome: "SAF - Paranchi", sotto: "Vantaggio meccanico e forze sugli ancoraggi", padre: "saf"},
-    teleferica: {nome: "SAF - Teleferica", sotto: "In costruzione", padre: "saf",
-      segnaposto: "Il modulo Teleferica è in costruzione."},
+    teleferica: {nome: "SAF - Teleferica", sotto: "Portanti, freccia, allungamenti e pescante", padre: "saf"},
     scala: {nome: "SAF - Scala appoggiata", sotto: "Piede minimo contro il ribaltamento", padre: "saf"},
     palo: {nome: "SAF - Palo pescante 3D", sotto: "Forze su palo, tiranti e ancoraggi", padre: "saf"},
     taglio: {nome: "Taglio alberi", sotto: "Scarico e sequenza di taglio", padre: "misura"},
