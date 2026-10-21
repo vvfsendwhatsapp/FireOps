@@ -131,7 +131,7 @@ FireOps.registra({
 
     let items = [], corde = [], sel = null, tracc = null, uid = 0, cnt = {anc: 0, pul: 0, blo: 0, dis: 0};
     const HINT = "<b>1</b> Aggiungi punti e trascinali. <b>2</b> Fissa ogni carrucola: trascinala vicino a un ancoraggio o al carico (si aggancia), oppure toccala e usa “Fissa a…”. <b>3</b> “Disegna corda” e tocca i punti nell’ordine di passaggio.";
-    let fissa = null, menu = null, pressT = null, nuova = false, ins = null, nsel = null;
+    let fissa = null, menu = null, menuC = null, pressT = null, nuova = false, ins = null, nsel = null;
     const byId = id => items.find(i => i.id === id);
     const nome = it => it.t === "car" ? "Carico" : it.t === "op" ? "Operatori" : it.nome;
     function add(t, x, y, extra) {
@@ -309,7 +309,7 @@ FireOps.registra({
       // corde
       corde.forEach((c, ri) => {
         const g = geom(c); if (g.length < 2 || g.some(x => !x)) return;
-        ctx.strokeStyle = "#e8734a"; ctx.lineWidth = 2.6; ctx.beginPath();
+        ctx.strokeStyle = ri === menuC ? "#ffb27a" : "#e8734a"; ctx.lineWidth = ri === menuC ? 5 : 2.6; ctx.beginPath();
         ctx.moveTo(X(g[0].o[0]), Y(g[0].o[1]));
         for (let j = 1; j < g.length; j++) {
           ctx.lineTo(X(g[j].i[0]), Y(g[j].i[1]));
@@ -363,6 +363,7 @@ FireOps.registra({
       const legata = [], passa = [];
       corde.forEach((c, i) => { if (c[0] === it.id || c[c.length - 1] === it.id) legata.push(i + 1); if (c.slice(1, -1).includes(it.id)) passa.push(i + 1); });
       if (legata.length) return "<b>non fissata a niente</b>: la tiene la corda " + legata.join(", ") + " (è legata lì). Se è una carrucola mobile va bene così.";
+      if (passa.length && it.t === "blo") return "<b>sulla corda " + passa.join(", ") + "</b>: la corda passa dritta nel bloccante e il tiro non cambia. Per vincolarlo premi “Fissa a…” (ancoraggio, carico o carrucola).";
       if (passa.length) return "<b>non fissata a niente</b>: la tiene solo la corda " + passa.join(", ") + " che ci passa. È giusto per una carrucola mobile; per una fissa premi “Fissa a…”.";
       return "<b>non fissata a niente</b>: premi “Fissa a…” per attaccarla a un ancoraggio, al carico o a un’altra carrucola.";
     }
@@ -443,7 +444,7 @@ FireOps.registra({
       const b = $("#pa-ban");
       if (fissa) {
         const it = byId(fissa);
-        b.innerHTML = "<span>Tocca l’ancoraggio, il carico o la carrucola a cui fissare <b>" + (it ? nome(it) : "") + "</b></span><button type=\"button\" data-b=\"annf\">Annulla</button>";
+        b.innerHTML = "<span>Tocca l’ancoraggio, il carico o la carrucola a cui fissare <b>" + (it ? nome(it) : "") + "</b>" + (it && it.t === "blo" ? ", oppure un punto sulla corda" : "") + "</span><button type=\"button\" data-b=\"annf\">Annulla</button>";
         b.hidden = false;
       } else if (tracc) {
         const i = corde.indexOf(tracc) + 1;
@@ -453,7 +454,42 @@ FireOps.registra({
         b.hidden = false;
       } else b.hidden = true;
     }
-    function chiudiMenu() { $("#pa-menu").hidden = true; menu = null; }
+    function percorso(c) {   // punti disegnati della corda, con l'indice del nodo da cui parte ogni tratto
+      const g = geom(c); if (g.length < 2 || g.some(x => !x)) return [];
+      const pts = [{p: g[0].o, k: 0}];
+      for (let j = 1; j < g.length; j++) {
+        pts.push({p: g[j].i, k: j - 1});
+        if (g[j].arco) g[j].arco.forEach(q => pts.push({p: q, k: j}));
+        if (j < g.length - 1) pts.push({p: g[j].o, k: j});
+      }
+      return pts;
+    }
+    function trovaCorda(x, y) {
+      const r = cv.getBoundingClientRect(), tol = 14 * VW / r.width;
+      let best = null, bd = tol;
+      corde.forEach((c, i) => {
+        const P = percorso(c);
+        for (let a = 0; a + 1 < P.length; a++) {
+          const [ax, ay] = P[a].p, [bx, by] = P[a + 1].p, dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy;
+          const t = l2 ? Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / l2)) : 0;
+          const px = ax + t * dx, py = ay + t * dy, d = Math.hypot(x - px, y - py);
+          if (d < bd) { bd = d; best = {i, k: P[a].k, x: px, y: py}; }
+        }
+      });
+      return best;
+    }
+    function apriMenuCorda(rc) {
+      chiudiMenu(); menuC = rc.i; sel = null;
+      const m = $("#pa-menu");
+      m.innerHTML = "<b>Corda " + (rc.i + 1) + "</b>" +
+        '<button type="button" class="acc" data-m="rmod">Modifica corda</button><button type="button" data-m="rinv">Inverti (capo morto ⇄ capo di tiro)</button><button type="button" data-m="rdel">Elimina corda</button><button type="button" data-m="chiudi">Chiudi</button>';
+      m.hidden = false;
+      const cw = cv.clientWidth, ch = cv.clientHeight, u = cw / VW;
+      m.style.left = Math.max(4, Math.min(cw - m.offsetWidth - 4, rc.x * u + 12)) + "px";
+      m.style.top = Math.max(4, Math.min(ch - m.offsetHeight - 4, rc.y * u - 20)) + "px";
+      tutto();
+    }
+    function chiudiMenu() { const era = menuC !== null; $("#pa-menu").hidden = true; menu = null; menuC = null; if (era) calcola(); }
     function apriMenu(it) {
       if (!(it.t === "pul" || it.t === "blo" || it.t === "dis" || it.t === "anc")) return;
       menu = it.id;
@@ -489,12 +525,21 @@ FireOps.registra({
     let drag = null;
     cv.addEventListener("pointerdown", e => {
       const [x, y] = pos(e), it = trova(x, y);
-      if (menu) { chiudiMenu(); }
+      if (menu || menuC !== null) { chiudiMenu(); }
       if (fissa) {
         const src = byId(fissa);
+        const rc = !it && src && src.t === "blo" ? trovaCorda(x, y) : null;
         if (it && src && it.id !== fissa && (it.t === "anc" || it.t === "car" || it.t === "pul" || it.t === "blo" || it.t === "dis")) {
           src.f = it.t === "car" ? "car" : it.id;
           $("#pa-hint").textContent = nome(src) + " fissata a " + nome(it) + ".";
+        } else if (rc) {
+          corde.forEach(c => { const q = c.indexOf(src.id); if (q > 0 && q < c.length - 1) c.splice(q, 1); });
+          const c = corde[rc.i], k = Math.min(rc.k, c.length - 2), kk = c.indexOf(src.id);
+          if (kk < 0 && c.length >= 2) {
+            c.splice(Math.max(1, k + 1), 0, src.id);
+            src.x = rc.x; src.y = rc.y;
+            $("#pa-hint").textContent = nome(src) + " fissato sulla corda " + (rc.i + 1) + ": la corda ci passa dritta.";
+          }
         } else $("#pa-hint").innerHTML = HINT;
         fissa = null; tutto(); return;
       }
@@ -506,7 +551,12 @@ FireOps.registra({
         }
         return;
       }
-      if (!it) { if (sel) { sel = null; tutto(); } return; }
+      if (!it) {
+        const rc = trovaCorda(x, y);
+        if (rc) { apriMenuCorda(rc); return; }
+        if (sel) { sel = null; tutto(); }
+        return;
+      }
       drag = {it, dx: it.x - x, dy: it.y - y, mosso: false};
       cv.setPointerCapture(e.pointerId);
       if (sel !== it.id) { sel = it.id; pannelloSel(); calcola(); }
@@ -569,7 +619,15 @@ FireOps.registra({
       } else chiudiCorda(b.dataset.b === "finec");
     });
     $("#pa-menu").addEventListener("click", e => {
-      const b = e.target.closest("button[data-m]"), it = menu && byId(menu); if (!b || !it) return;
+      const b = e.target.closest("button[data-m]"); if (!b) return;
+      if (menuC !== null) {
+        const i = menuC, m = b.dataset.m; chiudiMenu();
+        if (m === "rmod" && corde[i]) { if (tracc) chiudiCorda(true); entraModifica(i, null); }
+        else if (m === "rinv" && corde[i]) { if (tracc) chiudiCorda(true); corde[i].reverse(); tutto(); }
+        else if (m === "rdel" && corde[i]) { if (tracc) chiudiCorda(true); corde.splice(i, 1); nsel = null; tutto(); }
+        return;
+      }
+      const it = menu && byId(menu); if (!it) return;
       const m = b.dataset.m;
       if (m === "fissa") { sel = it.id; avviaFissa(it); return; }
       if (m === "libera") it.f = "";
