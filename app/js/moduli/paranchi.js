@@ -217,12 +217,24 @@ FireOps.registra({
     }
     const vs = (a, b) => { const d = a.y - b.y; return d > 0.5 ? 1 : d < -0.5 ? -1 : 0; };
     const fatt = (it, eta) => !it ? 1 : it.t === "pul" || (it.t === "blo" && it.p) ? 1 / eta : it.t === "dis" ? (eta >= 1 ? 1 : 1 / it.e) : 1;
+    // bloccante che morde la corda (non fissato a un punto fermo): la corda si interrompe li' e le due parti sono legate al bloccante
+    const morde = it => it && it.t === "blo" && !it.p && corpo(it) !== "fix";
     function risolvi(eta, W) {
-      const nR = corde.length;
-      if (!nR) return {err: "Disegna la corda: tocca “Disegna corda” e poi i punti in ordine, dal capo morto al capo di tiro."};
+      const eff = [], orig = [], primo = [], ultimo = [];
+      corde.forEach((c, oi) => {
+        let cur = c.length ? [c[0]] : [];
+        primo[oi] = eff.length;
+        for (let j = 1; j < c.length; j++) {
+          cur.push(c[j]);
+          if (j < c.length - 1 && morde(byId(c[j]))) { eff.push(cur); orig.push(oi); cur = [c[j]]; }
+        }
+        eff.push(cur); orig.push(oi); ultimo[oi] = eff.length - 1;
+      });
+      const nR = eff.length;
+      if (!corde.length) return {err: "Disegna la corda: tocca “Disegna corda” e poi i punti in ordine, dal capo morto al capo di tiro."};
       const righe = {car: new Array(nR).fill(0)}, forza = {}, coefs = [];
       let orizz = 0;
-      corde.forEach((c, ri) => {
+      eff.forEach((c, ri) => {
         const nodi = c.map(byId);
         if (nodi.length < 2 || nodi.some(n => !n)) { coefs.push([]); return; }
         const cf = []; let f = 1;
@@ -245,7 +257,7 @@ FireOps.registra({
       for (let j = 0; j < nR; j++) if (chiavi.some(k => Math.abs(righe[k][j]) > 1e-9)) colu.push(j);
       const op = corde.findIndex(c => { const l = byId(c[c.length - 1]); return l && l.t === "op"; });
       if (op < 0) return {err: "Nessuna corda arriva agli operatori: termina una corda sul punto “Operatori”."};
-      if (!colu.includes(op)) return {err: "La corda degli operatori non è collegata al carico: controlla i collegamenti."};
+      if (!colu.includes(ultimo[op])) return {err: "La corda degli operatori non è collegata al carico: controlla i collegamenti."};
       if (!righe.car.some(v => Math.abs(v) > 1e-9)) return {err: "Il carico non è sostenuto da nessuna corda."};
       if (chiavi.length !== colu.length) return {err: "Sistema non determinato: " + chiavi.length + " corpi mobili (carico e carrucole libere) e " + colu.length + " corde. Servono tante corde quanti sono i corpi mobili."};
       const n = chiavi.length;
@@ -260,9 +272,11 @@ FireOps.registra({
       const T = new Array(nR).fill(0);
       colu.forEach((j, i) => { T[j] = M[i][n] / M[i][i]; });
       if (T.some(t => t < -1e-6)) return {err: "Disposizione impossibile: una corda dovrebbe spingere. Controlla da che parte stanno i punti e i fulcri."};
-      const seg = corde.map((c, ri) => coefs[ri].map(f => f * T[ri]));
+      const seg = corde.map(() => []);
+      eff.forEach((c, ri) => { coefs[ri].forEach(f => seg[orig[ri]].push(f * T[ri])); });
+      const Tr = corde.map((c, oi) => T[primo[oi]]);
       const tiro = seg[op][seg[op].length - 1];
-      return {T, seg, tiro, forza, op, orizz};
+      return {T, Tr, seg, tiro, forza, op, orizz};
     }
 
     // ---------- disegno ----------
@@ -424,7 +438,7 @@ FireOps.registra({
           '<div class="vcell g"><div class="k">Corda da recuperare per ' + fmt(h, 1) + ' m di sollevamento</div><div class="v">' + fmt(h * vmTeo, 1) + ' <small>m</small></div></div>';
         let righe = '<tr><td>Carico sollevato</td><td>' + kN(W) + ' kN</td></tr>';
         corde.forEach((c, i) => {
-          const s = re.seg[i]; if (!s || !s.length || !(re.T[i] > 0)) return;
+          const s = re.seg[i]; if (!s || !s.length || !(re.Tr[i] > 0)) return;
           righe += '<tr><td>Corda ' + (i + 1) + '<br><small style="color:var(--text-dim)">capo morto ' + kN(s[0]) + ' kN · capo di tiro ' + kN(s[s.length - 1]) + ' kN</small></td><td>' + daN(s[s.length - 1]) + ' daN</td></tr>';
         });
         items.forEach(it => {
