@@ -85,7 +85,6 @@ FireOps.registra({
   html: `
 <div class="blocco">
   <h2 class="tit">Disegno del sistema</h2>
-  <div class="chips" id="pa-pre" aria-label="Sistemi pronti"></div>
   <div class="cvwrap"><canvas id="pa-cv" class="pi" role="img" aria-label="Disegno del sistema di recupero: trascina carrucole, bloccanti e ancoraggi. Tieni premuto su un punto per il menu."></canvas><div id="pa-ban" hidden></div><div id="pa-menu" hidden></div></div>
   <div class="avv" id="pa-mini" style="border-color:var(--line);background:var(--panel-2);margin:8px 0 0"></div>
   <div class="sez">Aggiungi</div>
@@ -207,7 +206,7 @@ FireOps.registra({
     // sistema di partenza: carico appeso a una corda che passa nel discensore fissato all'ancoraggio, e gli operatori tirano
     function avvio() {
       azzera();
-      const car = add("car", 35, 88), anc = add("anc", 38, 10), dis = add("dis", 38, 26, {f: anc.id}), op = add("op", 41, 118);
+      const car = add("car", 31.7, 88), anc = add("anc", 38, 10), dis = add("dis", 38, 26, {f: anc.id}), op = add("op", 44.3, 118);
       corde.push([car.id, dis.id, op.id]);
     }
     const PRESET = [["1:1", [1]], ["1:2", [2]], ["1:3", [3]], ["1:4", [4]], ["1:5", [5]], ["1:4 comp.", [2, 2]], ["1:6 comp.", [3, 2]], ["1:9 comp.", [3, 3]]];
@@ -292,6 +291,7 @@ FireOps.registra({
 
     // ---------- disegno ----------
     const lung = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+    const rg = it => it.t === "dis" && it.v === "cam" ? 1.4 * R : R;   // raggio del giro della corda: la camma e' piu' grande
     function geom(c) {   // punti di passaggio di una corda
       const nodi = c.map(byId);
       return nodi.map((p, j) => {
@@ -301,9 +301,10 @@ FireOps.registra({
         const sin = pv && pv.x > p.x + 0.01 ? 1 : -1;
         const aIn = sin > 0 ? 0 : Math.PI;
         const sotto = pv && nx ? (pv.y + nx.y) / 2 < p.y : true;
+        const rr = rg(p);
         const sg = (sotto ? 1 : -1) * (aIn === Math.PI ? -1 : 1);
         const arco = [];
-        for (let k = 0; k <= 12; k++) { const a = aIn + sg * Math.PI * k / 12; arco.push([p.x + R * Math.cos(a), p.y + R * Math.sin(a)]); }
+        for (let k = 0; k <= 12; k++) { const a = aIn + sg * Math.PI * k / 12; arco.push([p.x + rr * Math.cos(a), p.y + rr * Math.sin(a)]); }
         return {p, i: arco[0], o: arco[12], arco, sotto};
       });
     }
@@ -337,13 +338,13 @@ FireOps.registra({
         ctx.beginPath();
         if (it.t === "dis" && it.v === "cam") {
           // camma: goccia asimmetrica, la corda le gira intorno all'esterno
-          const r = 0.7 * R * u, L = 0.97 * R * u, al = (via[it.id] === false ? Math.PI / 2 - 0.5 : -Math.PI / 2 + 0.5), ph = Math.acos(r / L), cx = X(it.x), cy = Y(it.y);
+          const r = 0.68 * rg(it) * u, L = 0.97 * rg(it) * u, al = (via[it.id] === false ? Math.PI / 2 - 0.5 : -Math.PI / 2 + 0.5), ph = Math.acos(r / L), cx = X(it.x), cy = Y(it.y);
           ctx.moveTo(cx + L * Math.cos(al), cy + L * Math.sin(al));
           ctx.lineTo(cx + r * Math.cos(al + ph), cy + r * Math.sin(al + ph));
           ctx.arc(cx, cy, r, al + ph, al - ph + 2 * Math.PI);
           ctx.closePath();
           ctx.fill(); ctx.stroke();
-          ctx.fillStyle = txt; ctx.font = "9px sans-serif"; ctx.fillText(it.nome, cx, cy + (via[it.id] === false ? -2 : 2)); ctx.font = "11px sans-serif";
+          ctx.fillStyle = txt; ctx.font = "bold 10px sans-serif"; ctx.fillText(it.nome, cx, cy + (via[it.id] === false ? -3 : 3)); ctx.font = "11px sans-serif";
           return;
         }
         if (it.t === "blo" && !it.p) ctx.rect(X(it.x - R), Y(it.y - R), 2 * R * u, 2 * R * u); else ctx.arc(X(it.x), Y(it.y), R * u, 0, 7);
@@ -581,6 +582,7 @@ FireOps.registra({
       const u = r.width / VW;
       items.forEach(it => {
         let d = Math.hypot(it.x - x, it.y - y);
+        if (it.t === "op") { const ay = (it.y - y) * u; d = Math.hypot(Math.max(0, Math.abs(it.x - x) * u - 16), Math.max(0, ay > 46 ? ay - 46 : ay < -44 ? -44 - ay : 0)) / u; }   // il pompiere si afferra da tutta la figura
         if (it.t === "car") d = Math.hypot(Math.max(0, Math.abs(it.x - x) * u - 24), Math.max(0, Math.abs(it.y - y) * u - 12)) / u;   // il peso e' un rettangolo: si afferra da tutta la sagoma
         if (d < rad && d < bd) { bd = d; best = it; }
       });
@@ -752,12 +754,6 @@ FireOps.registra({
       tutto();
     });
 
-    $("#pa-pre").innerHTML = PRESET.map((p, i) => '<button type="button" data-i="' + i + '">' + p[0] + "</button>").join("");
-    $("#pa-pre").addEventListener("click", e => {
-      const b = e.target.closest("button"); if (!b) return;
-      if (tracc) { tracc = null; nuova = false; ins = null; $("#pa-cd").textContent = "Disegna corda"; }
-      sistema(PRESET[Number(b.dataset.i)][1]); tutto();
-    });
     $("#pa-tipo").addEventListener("change", () => {
       const v = $("#pa-tipo").value;
       if (v !== "x") $("#pa-eta").value = v;
