@@ -406,7 +406,7 @@ FireOps.registra({
           ctx.lineWidth = 1.2; ctx.beginPath(); [-0.5, 0, 0.5].forEach(q => { ctx.moveTo(cx + q * w, cy - h); ctx.lineTo(cx + q * w, cy + h); }); ctx.stroke();   // spire della corda sul tamburo
           ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(cx + w, cy); ctx.lineTo(cx + w + 10, cy - 10); ctx.stroke();   // manovella
           ctx.fillStyle = "#ff9f1c"; ctx.beginPath(); ctx.arc(cx + w + 10, cy - 10, 3.5, 0, 7); ctx.fill();
-          ctx.fillStyle = txt; ctx.font = "bold 10px sans-serif"; ctx.fillText(it.nome, cx, cy - h - 8); ctx.fillText("1:" + it.rap, cx, cy + h + 9); ctx.font = "11px sans-serif";
+          ctx.fillStyle = txt; ctx.font = "bold 10px sans-serif"; ctx.fillText(it.nome + (it.mod ? " " + it.mod : ""), cx, cy - h - 8); ctx.fillText("1:" + it.rap, cx, cy + h + 9); ctx.font = "11px sans-serif";
           return;
         }
         ctx.fillStyle = bg; ctx.strokeStyle = isP(it) ? "#4A93C8" : it.t === "dis" ? "#ff6b6b" : "#c77dff"; ctx.lineWidth = 2.4;
@@ -544,7 +544,7 @@ FireOps.registra({
       }
       if (it.t === "blo") h += '<p class="nota">Il bloccante morde la corda e la lascia passare dritta, senza puleggia e senza perdite.</p>';
       if (isP(it)) h += '<label for="pa-ser" style="margin-top:8px">Rendimento di questa carrucola (vuoto = come le altre, ' + fmt(etaG(), 2) + ')</label><input type="number" id="pa-ser" inputmode="decimal" min="0.1" max="1" step="0.01" placeholder="' + fmt(etaG(), 2) + '" value="' + (it.er || "") + '">';
-      if (it.t === "arg") h += '<div class="chips" style="margin-top:8px"><button type="button" data-ar="3" aria-pressed="' + (it.rap === 3) + '">Rapporto 1:3</button><button type="button" data-ar="6" aria-pressed="' + (it.rap === 6) + '">Rapporto 1:6</button></div><label for="pa-rap" style="margin-top:8px">Rapporto manovella 1:</label><input type="number" id="pa-rap" inputmode="decimal" min="1" max="50" step="0.5" value="' + it.rap + '"><label for="pa-se" style="margin-top:8px">Rendimento dell’argano (0,1–1)</label><input type="number" id="pa-se" inputmode="decimal" min="0.1" max="1" step="0.05" value="' + it.e + '"><p class="nota">Argano manuale: la corda si avvolge sul tamburo e gli operatori girano la manovella. Con rapporto 1:' + it.rap + ' la forza sulla manovella è ' + it.rap + ' volte più piccola, ma il carico si muove ' + it.rap + ' volte più lentamente. Mettilo nella corda subito prima degli operatori e fissalo a un ancoraggio.</p>';
+      if (it.t === "arg") h += '<div class="chips" style="margin-top:8px"><button type="button" data-am="" aria-pressed="' + (!it.mod) + '">Generico</button><button type="button" data-am="Ortles" aria-pressed="' + (it.mod === "Ortles") + '">Kong Ortles</button><button type="button" data-am="LokHead" aria-pressed="' + (it.mod === "LokHead") + '">Harken LokHead</button></div><div class="chips" style="margin-top:8px"><button type="button" data-ar="3" aria-pressed="' + (it.rap === 3) + '">1ª marcia 1:3</button><button type="button" data-ar="6" aria-pressed="' + (it.rap === 6) + '">2ª marcia 1:6</button></div><label for="pa-rap" style="margin-top:8px">Rapporto manovella 1:</label><input type="number" id="pa-rap" inputmode="decimal" min="1" max="50" step="0.5" value="' + it.rap + '"><label for="pa-se" style="margin-top:8px">Rendimento dell’argano (0,1–1)</label><input type="number" id="pa-se" inputmode="decimal" min="0.1" max="1" step="0.05" value="' + it.e + '"><p class="nota">Argano manuale: la corda si avvolge sul tamburo e gli operatori girano la manovella. Con rapporto 1:' + it.rap + ' la forza sulla manovella è ' + it.rap + ' volte più piccola, ma il carico si muove ' + it.rap + ' volte più lentamente. Mettilo nella corda subito prima degli operatori e fissalo a un ancoraggio.</p>';
       if (it.t === "dis") h += '<div class="chips" style="margin-top:8px"><button type="button" data-dt="pul" aria-pressed="' + (it.v === "pul") + '">Con puleggia</button><button type="button" data-dt="cam" aria-pressed="' + (it.v !== "pul") + '">A camma</button></div>';
       if (it.t === "dis") h += '<label for="pa-se" style="margin-top:8px">Rendimento di passaggio del discensore (0,1–1)</label><input type="number" id="pa-se" inputmode="decimal" min="0.1" max="1" step="0.05" value="' + it.e + '"><p class="nota">Con puleggia: la corda gira intorno (rendimento di partenza 0,85). A camma: autofrenante, la corda passa dritta (rendimento di partenza 0,6). Il rendimento è modificabile; senza attriti vale 1.</p>';
       if (it.t === "car") h += '<p class="nota">Il peso si imposta in “Dati”.</p>';
@@ -885,6 +885,8 @@ FireOps.registra({
     $("#pa-sel").addEventListener("click", e => {
       const itc = byId(sel);
       const dtb = e.target.closest("button[data-dt]");
+      const amb = e.target.closest("button[data-am]");
+      if (itc && amb) { itc.mod = amb.dataset.am; tutto(); return; }
       const arb = e.target.closest("button[data-ar]");
       if (itc && arb) { itc.rap = Number(arb.dataset.ar); tutto(); return; }
       if (itc && dtb) { const nv = dtb.dataset.dt; if (itc.v !== nv) { itc.e = nv === "pul" ? 0.85 : 0.6; itc.v = nv; } tutto(); return; }
