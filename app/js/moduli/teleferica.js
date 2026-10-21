@@ -56,24 +56,28 @@ FireOps.registra({
     <div><label for="tf-zv">Quota rispetto ad A (m, negativa = sotto)</label><input type="number" id="tf-zv" inputmode="decimal" step="0.5" value="-18"></div>
   </div>
   <p class="nota" id="tf-vnota"></p>
-  <div style="margin-top:10px"><label for="tf-xc">Posizione del carrello: <b id="tf-xcl"></b></label>
-    <input type="range" id="tf-xc" min="0" max="100" step="1" value="65"></div>
-  <p class="nota" style="margin-top:0">La vittima può stare anche più in basso del punto più basso della linea: la corda di calata parte dal carrello, o dal pescante.</p>
+  <div style="margin-top:10px"><label for="tf-xc">Traslazione: posizione del carrello <b id="tf-xcl"></b></label>
+    <input type="range" id="tf-xc" min="0" max="100" step="1" value="50"></div>
+  <p class="nota" style="margin-top:0">Il recupero si fa con il carrello sulla verticale della vittima (anche più in basso del punto più basso della linea); poi soccorritore e vittima vengono traslati sulla linea. Il cursore sceglie dove guardare il carrello durante la traslazione.</p>
 </div>
 
 <div class="blocco">
   <h2 class="tit">Portanti e carico</h2>
   <div class="riga">
-    <div><label for="tf-Q">Carico sul carrello (kg)</label><input type="number" id="tf-Q" inputmode="decimal" min="20" max="600" step="5" value="200"></div>
+    <div><label for="tf-Ws">Soccorritore (kg)</label><input type="number" id="tf-Ws" inputmode="decimal" min="30" max="250" step="5" value="100"></div>
+    <div><label for="tf-Wv">Vittima (kg)</label><input type="number" id="tf-Wv" inputmode="decimal" min="0" max="250" step="5" value="100"></div>
+  </div>
+  <p class="nota" style="margin-top:4px">Sul carrello, a recupero fatto, ci sono soccorritore e vittima: <b id="tf-Qt">200 kg</b>. Stanno sempre sulla verticale del carrello.</p>
+  <div class="riga">
     <div><label for="tf-T0">Tesatura di ogni portante (kg)</label><input type="number" id="tf-T0" inputmode="decimal" min="20" max="2000" step="10" value="300"></div>
+    <div><label for="tf-e">Allungamento della corda (%)</label><input type="number" id="tf-e" inputmode="decimal" min="0.5" max="20" step="0.5" value="5"></div>
   </div>
   <p class="nota" style="margin-top:4px">Tesatura a mano: due operatori con mezzo barcaiolo e una taglia danno circa 300 kg su ogni portante.</p>
   <div class="riga">
-    <div><label for="tf-e">Allungamento della corda (%)</label><input type="number" id="tf-e" inputmode="decimal" min="0.5" max="20" step="0.5" value="5"></div>
     <div><label for="tf-F">… al carico di riferimento (kg)</label><input type="number" id="tf-F" inputmode="decimal" min="20" max="500" step="10" value="150"></div>
+    <div><label for="tf-w">Peso della corda (kg/m)</label><input type="number" id="tf-w" inputmode="decimal" min="0.02" max="0.3" step="0.005" value="0.075"></div>
   </div>
   <div class="riga">
-    <div><label for="tf-w">Peso della corda (kg/m)</label><input type="number" id="tf-w" inputmode="decimal" min="0.02" max="0.3" step="0.005" value="0.075"></div>
     <div><label for="tf-m">Margine per nodi e ancoraggi (m, per capo)</label><input type="number" id="tf-m" inputmode="decimal" min="0" max="20" step="0.5" value="3"></div>
   </div>
 </div>
@@ -87,7 +91,6 @@ FireOps.registra({
       <option value="3">3 · Gru edile: come il 2, ma la corda è fissata in B</option>
     </select></div></div>
   <div class="riga">
-    <div><label for="tf-Ws">Soccorritore sulla corda (kg)</label><input type="number" id="tf-Ws" inputmode="decimal" min="30" max="250" step="5" value="100"></div>
     <div><label for="tf-pm2">Margine corda (m)</label><input type="number" id="tf-pm2" inputmode="decimal" min="0" max="30" step="0.5" value="5"></div>
   </div>
   <p class="nota" id="tf-pnota"></p>
@@ -132,9 +135,9 @@ FireOps.registra({
       return {L, D, C, EA, S0, Su, f0, H0, T0, sotto};
     }
 
-    function disegna(i, k, ris) {
+    function disegna(i, k, ris, rec) {
       const pad = 4;
-      const pts = [[0, 0], [i.L, -i.D], [i.xv, i.zv], [ris.x, ris.zc]];
+      const pts = [[0, 0], [i.L, -i.D], [i.xv, i.zv], [rec.x, rec.zc], [ris.x, ris.zc]];
       let x0 = Math.min(...pts.map(p => p[0])) - pad, x1 = Math.max(...pts.map(p => p[0])) + pad, y0 = Math.min(...pts.map(p => p[1])) - pad, y1 = Math.max(...pts.map(p => p[1])) + pad;
       const W = 600, sc = Math.min(W / (x1 - x0), 400 / (y1 - y0)), Hh = (y1 - y0) * sc + 20;
       const X = x => 10 + (x - x0) * sc, Y = y => 10 + (y1 - y) * sc;
@@ -144,18 +147,20 @@ FireOps.registra({
       for (let n = 0; n <= 40; n++) { const x = i.L * n / 40, y = -i.D * x / i.L - 4 * k.f0 * (x / i.L) * (1 - x / i.L); d0 += (n ? "L" : "M") + X(x).toFixed(1) + " " + Y(y).toFixed(1); }
       s += '<path d="' + d0 + '" fill="none" stroke="#8b96a3" stroke-width="1.6" stroke-dasharray="5 4"/>';
       // portante sotto carico
-      s += '<path d="M' + X(0).toFixed(1) + " " + Y(0).toFixed(1) + "L" + X(ris.x).toFixed(1) + " " + Y(ris.zc).toFixed(1) + "L" + X(i.L).toFixed(1) + " " + Y(-i.D).toFixed(1) + '" fill="none" stroke="#e8734a" stroke-width="2.6"/>';
+      s += '<path d="M' + X(0).toFixed(1) + " " + Y(0).toFixed(1) + "L" + X(rec.x).toFixed(1) + " " + Y(rec.zc).toFixed(1) + "L" + X(i.L).toFixed(1) + " " + Y(-i.D).toFixed(1) + '" fill="none" stroke="#e8734a" stroke-width="2.6"/>';
+      s += '<path d="M' + X(0).toFixed(1) + " " + Y(0).toFixed(1) + "L" + X(ris.x).toFixed(1) + " " + Y(ris.zc).toFixed(1) + "L" + X(i.L).toFixed(1) + " " + Y(-i.D).toFixed(1) + '" fill="none" stroke="#e8734a" stroke-width="1.2" stroke-dasharray="3 3" opacity=".7"/>';
       // ancoraggi
       [[0, 0, "A"], [i.L, -i.D, "B"]].forEach(a => { s += '<path d="M' + (X(a[0]) - 8) + " " + (Y(a[1]) + 12) + "L" + X(a[0]) + " " + Y(a[1]) + "L" + (X(a[0]) + 8) + " " + (Y(a[1]) + 12) + 'Z" fill="#8b96a3"/><text x="' + (X(a[0]) - (a[2] === "A" ? 14 : -14)) + '" y="' + (Y(a[1]) - 6) + '" fill="#8b96a3" font-size="13" font-weight="700" text-anchor="middle">' + a[2] + "</text>"; });
       // corda del pescante: dal punto fisso lungo la portante, nel carrello, poi giu' fino alla vittima (e su per il tipo 2 e 3)
       {
         const fx = i.pm === "3" ? i.L : 0, fz = i.pm === "3" ? -i.D : 0;
-        s += '<path d="M' + X(fx) + " " + Y(fz) + "L" + X(ris.x) + " " + Y(ris.zc) + '" stroke="#4A93C8" stroke-width="2" stroke-dasharray="2 3" fill="none"/>';
-        s += '<path d="M' + X(ris.x) + " " + Y(ris.zc) + "L" + X(i.xv) + " " + Y(i.zv) + '" stroke="#4A93C8" stroke-width="2" fill="none"/>';
-        if (i.pm !== "1") s += '<path d="M' + (X(ris.x) + 5) + " " + Y(ris.zc) + "L" + (X(i.xv) + 5) + " " + Y(i.zv) + '" stroke="#4A93C8" stroke-width="2" fill="none"/>';
+        s += '<path d="M' + X(fx) + " " + Y(fz) + "L" + X(rec.x) + " " + Y(rec.zc) + '" stroke="#4A93C8" stroke-width="2" stroke-dasharray="2 3" fill="none"/>';
+        s += '<path d="M' + X(rec.x) + " " + Y(rec.zc) + "L" + X(i.xv) + " " + Y(i.zv) + '" stroke="#4A93C8" stroke-width="2" fill="none"/>';
+        if (i.pm !== "1") s += '<path d="M' + (X(rec.x) + 5) + " " + Y(rec.zc) + "L" + (X(i.xv) + 5) + " " + Y(i.zv) + '" stroke="#4A93C8" stroke-width="2" fill="none"/>';
       }
       // carrello e vittima
-      s += '<rect x="' + (X(ris.x) - 7) + '" y="' + (Y(ris.zc) - 5) + '" width="14" height="10" rx="2" fill="#ffd700"/>';
+      s += '<rect x="' + (X(rec.x) - 7) + '" y="' + (Y(rec.zc) - 5) + '" width="14" height="10" rx="2" fill="#ffd700"/>';
+      s += '<rect x="' + (X(ris.x) - 7) + '" y="' + (Y(ris.zc) - 5) + '" width="14" height="10" rx="2" fill="none" stroke="#ffd700" stroke-dasharray="3 2"/><text x="' + X(ris.x) + '" y="' + (Y(ris.zc) - 10) + '" fill="#ffd700" font-size="10" text-anchor="middle">traslazione</text>';
       s += '<circle cx="' + X(i.xv) + '" cy="' + (Y(i.zv) - 6) + '" r="6" fill="#ff9f1c"/><text x="' + (X(i.xv) - 10) + '" y="' + (Y(i.zv) + 14) + '" fill="#ff9f1c" font-size="11" font-weight="700" text-anchor="end">soccorritore</text>';
       s += '<circle cx="' + (X(i.xv) + 22) + '" cy="' + (Y(i.zv) - 5) + '" r="5" fill="#3fa66b"/><text x="' + (X(i.xv) + 30) + '" y="' + (Y(i.zv) + 4) + '" fill="#3fa66b" font-size="12" font-weight="700">vittima</text>';
       s += "</svg>";
@@ -165,44 +170,47 @@ FireOps.registra({
     function aggiorna() {
       const i = {
         L: Math.max(3, num("#tf-L", 40)), D: num("#tf-D", 0), xv: num("#tf-xv", 20), zv: num("#tf-zv", -10),
-        Q: Math.max(1, num("#tf-Q", 200)), T0: Math.max(1, num("#tf-T0", 300)), e: Math.max(0.1, num("#tf-e", 5)), F: Math.max(1, num("#tf-F", 150)), w: Math.max(0.001, num("#tf-w", 0.075)), m: Math.max(0, num("#tf-m", 3)),
-        pm: $("#tf-pm").value, pm2: num("#tf-pm2", 5), Ws: Math.max(1, num("#tf-Ws", 100))
+        Ws: Math.max(1, num("#tf-Ws", 100)), Wv: Math.max(0, num("#tf-Wv", 100)), T0: Math.max(1, num("#tf-T0", 300)), e: Math.max(0.1, num("#tf-e", 5)), F: Math.max(1, num("#tf-F", 150)), w: Math.max(0.001, num("#tf-w", 0.075)), m: Math.max(0, num("#tf-m", 3)),
+        pm: $("#tf-pm").value, pm2: num("#tf-pm2", 5)
       };
-      const xcRaw = num("#tf-xc", 50) / 100 * i.L, k = calcola(i), ris = k.sotto(xcRaw);
-      $("#tf-xcl").textContent = fmt(ris.x, 1) + " m da A";
+      i.Q = i.Ws + i.Wv; $("#tf-Qt").textContent = fmt(i.Q, 0) + " kg";
+      const xcRaw = num("#tf-xc", 50) / 100 * i.L, k = calcola(i), ris = k.sotto(xcRaw), rec = k.sotto(i.xv);   // ris: carrello in traslazione, rec: carrello sulla verticale della vittima
+      $("#tf-xcl").textContent = "· " + fmt(ris.x, 1) + " m da A";
       $("#tf-vnota").textContent = i.xv < 0 || i.xv > i.L ? "La vittima è fuori dalla luce tra A e B: il carrello si ferma al più vicino." : "";
       const av = [];
       // lunghezze
       const kg = n => fmt(n / G, 0), pc = (a, b) => fmt(100 * a / b, 1);
       const mid = k.sotto(i.L / 2), Sload = mid.l1 + mid.l2;
       const lungP = k.Su + 2 * i.m, tr = Sload + 2 * i.m;   // ogni traente copre tutta la luce (come le portanti), legato al carrello e ai due capi
-      const quotaCarrello = ris.zc, calata = quotaCarrello - i.zv;
+      const quotaCarrello = rec.zc, calata = quotaCarrello - i.zv;
+      let TAm = 0, TBm = 0, HAm = 0, VAm = 0, VBm = 0, dMax = 0, TMax = 0;   // massimi lungo la traslazione (compreso il punto di recupero)
+      [rec, ris].concat(Array.from({length: 41}, (_, n) => k.sotto(0.5 + (i.L - 1) * n / 40))).forEach(q => { if (q.TA > TAm) { TAm = q.TA; VAm = Math.abs(q.VA); HAm = q.H; } if (q.TB > TBm) { TBm = q.TB; VBm = Math.abs(q.VB); } dMax = Math.max(dMax, q.d); TMax = Math.max(TMax, q.TA, q.TB); });
       // pescante: la corda parte dal punto fisso (A nei tipi 1 e 2, B nel tipo 3), corre lungo la portante fino alla carrucola del carrello e scende
-      const dalB = i.pm === "3", tratto = dalB ? ris.l2 : ris.l1, nCalata = i.pm === "1" ? 1 : 2, drop = Math.max(0, calata);
-      const corda = tratto + nCalata * drop + i.pm2, tiroRec = i.Ws * G / (i.pm === "1" ? 1 : 2);
+      const dalB = i.pm === "3", tratto = dalB ? rec.l2 : rec.l1, nCalata = i.pm === "1" ? 1 : 2, drop = Math.max(0, calata);
+      const corda = tratto + nCalata * drop + i.pm2, div = i.pm === "1" ? 1 : 2, tiroDisc = i.Ws * G / div, tiroRis = i.Q * G / div;
       const cordaTxt = "da " + (dalB ? "B" : "A") + " al carrello " + fmt(tratto, 1) + " m, " + (nCalata === 1 ? "calata " + fmt(drop, 1) + " m" : "calata e risalita " + fmt(drop, 1) + " m + " + fmt(drop, 1) + " m") + ", margine " + fmt(i.pm2, 1) + " m";
       $("#tf-pnota").textContent = i.pm === "1" ? "Corda fissata in A, passa nella carrucola del carrello e scende: il soccorritore arriva alla vittima, che non è collegata al carrello. Vantaggio 1:1." : i.pm === "2" ? "Come il tipo 1, ma sul soccorritore c’è una carrucola: la corda scende, gira e risale fino al carrello dove si fissa. Vantaggio 1:2." : "Come il tipo 2, ma la corda passa nel carrello e va fissata in B (gru edile). Vantaggio 1:2.";
       if (calata < 0) av.push("La vittima è più in alto del carrello (" + fmt(-calata, 1) + " m): serve un recupero verso l’alto.");
-      if (ris.TA / G * 1 > 1000 || ris.TB / G > 1000) av.push("Tensione molto alta su una portante: verifica il carico di rottura della corda e degli ancoraggi.");
+      if (TMax / G > 1000) av.push("Tensione molto alta su una portante: verifica il carico di rottura della corda e degli ancoraggi.");
       const freccia = ris.d, fr = pc(freccia, i.L);
       const al0 = k.S0 - k.Su, alC = Sload - k.Su;
       const cell = (t, v, u, sub, cls) => '<div class="vcell' + (cls ? " " + cls : "") + '"><div class="k">' + t + '</div><div class="v">' + v + (u ? " <small>" + u + "</small>" : "") + "</div>" + (sub ? '<div class="k">' + sub + "</div>" : "") + "</div>";
       $("#tf-av").innerHTML = av.map(t => '<div class="avv' + (/fuori|non si cala|molto alta/.test(t) ? " rosso" : "") + '">' + t + "</div>").join("");
       $("#tf-r").innerHTML =
-        cell("Freccia sotto carico (rispetto alla corda)", fmt(freccia, 2), "m", fr + " % della distanza") +
+        cell("Recupero: carrello sulla verticale della vittima", fmt(rec.zc, 2), "m", "quota rispetto ad A · freccia " + fmt(rec.d, 2) + " m (" + pc(rec.d, i.L) + " %) · tensione " + kg(Math.max(rec.TA, rec.TB)) + " kg") +
+        cell("Traslazione: freccia sotto carico al carrello", fmt(ris.d, 2), "m", pc(ris.d, i.L) + " % della distanza · tensione " + kg(Math.max(ris.TA, ris.TB)) + " kg") +
+        cell("Freccia massima lungo la linea", fmt(dMax, 2), "m", pc(dMax, i.L) + " % della distanza · tensione massima " + kg(TMax) + " kg (tesatura a vuoto " + fmt(i.T0, 0) + " kg)") +
         cell("Freccia a vuoto (peso corda, al centro)", fmt(k.f0, 2), "m", pc(k.f0, i.L) + " %") +
-        cell("Tensione portante (lato più carico)", kg(Math.max(ris.TA, ris.TB)), "kg", "tesatura a vuoto " + fmt(i.T0, 0) + " kg") +
-        cell("Quota del carrello", fmt(quotaCarrello, 2), "m", "rispetto ad A · scende " + fmt(ris.d, 2) + " m sotto la corda") +
         cell("Allungamento a tesatura (per portante)", fmt(al0 * 100, 0), "cm", pc(al0, k.Su) + " % della lunghezza a riposo") +
         cell("Allungamento sotto carico (per portante)", fmt(alC * 100, 0), "cm", pc(alC, k.Su) + " % della lunghezza a riposo") +
         cell("Lunghezza di ogni portante a riposo", fmt(k.Su, 1), "m", "corda tesa " + fmt(k.S0, 1) + " m · distanza A–B " + fmt(k.C, 1) + " m") +
         cell("Portante da tagliare (con nodi)", fmt(lungP, 1), "m", "più " + fmt(i.m, 1) + " m per capo · ne servono 2") +
         cell("Traenti del carrello (2)", fmt(tr, 1), "m", "ciascuno, come le portanti · legati al carrello, uno tira verso A e uno verso B · in tutto " + fmt(2 * tr, 0) + " m") +
-        cell("Forza sull’ancoraggio A", kg(2 * ris.TA), "kg", "due portanti · orizz. " + kg(2 * ris.H) + " kg, vert. " + kg(2 * Math.abs(ris.VA)) + " kg") +
-        cell("Forza sull’ancoraggio B", kg(2 * ris.TB), "kg", "due portanti · orizz. " + kg(2 * ris.H) + " kg, vert. " + kg(2 * Math.abs(ris.VB)) + " kg") +
-        cell("Tiro sulla corda del pescante", kg(tiroRec), "kg", i.pm === "1" ? "1:1" : "1:2 (carrucola sul soccorritore)") +
+        cell("Forza massima sull’ancoraggio A", kg(2 * TAm), "kg", "due portanti · orizz. " + kg(2 * HAm) + " kg, vert. " + kg(2 * VAm) + " kg") +
+        cell("Forza massima sull’ancoraggio B", kg(2 * TBm), "kg", "due portanti · carrello a " + fmt(i.Q, 0) + " kg") +
+        cell("Tiro sulla corda del pescante", kg(tiroDisc) + " → " + kg(tiroRis), "kg", "discesa con il soccorritore → risalita con la vittima · " + (div === 1 ? "1:1" : "1:2, carrucola sul soccorritore")) +
         cell("Corda minima del pescante (tipo " + i.pm + ")", fmt(corda, 1), "m", cordaTxt, "g");
-      disegna(i, k, ris);
+      disegna(i, k, ris, rec);
     }
     root.addEventListener("input", aggiorna);
     root.addEventListener("change", aggiorna);
