@@ -70,6 +70,7 @@ FireOps.registra({
 .pg-paranchi #pa-menu button.acc { background: var(--yellow); color: #000; border-color: var(--yellow); font-weight: 700; }
 .pg-paranchi #pa-menu .rg { display: flex; gap: 6px; align-items: center; }
 .pg-paranchi #pa-menu .rg button { flex: 1; text-align: center; }
+.pg-paranchi #pa-menu button[aria-pressed="true"] { background: var(--yellow); color: #000; border-color: var(--yellow); font-weight: 700; }
 .pg-paranchi #pa-menu .rg span { flex: 2; text-align: center; font-size: 14px; }
 .pg-paranchi .chips button.acc { background: var(--yellow); color: #000; border-color: var(--yellow); }
 .pg-paranchi canvas.pi { height: auto; }
@@ -81,7 +82,7 @@ FireOps.registra({
   <div class="chips" id="pa-pre" aria-label="Sistemi pronti"></div>
   <div class="cvwrap"><canvas id="pa-cv" class="pi" role="img" aria-label="Disegno del sistema di recupero: trascina carrucole, bloccanti e ancoraggi. Tieni premuto su un punto per il menu."></canvas><div id="pa-ban" hidden></div><div id="pa-menu" hidden></div></div>
   <div class="chips" id="pa-add" style="margin-top:10px">
-    <button type="button" data-t="anc">+ Ancoraggio</button><button type="button" data-t="pul">+ Carrucola</button><button type="button" data-t="blo" data-p="0">+ Bloccante</button><button type="button" data-t="blo" data-p="1">+ Carrucola bloccante</button><button type="button" data-t="dis">+ Discensore</button><button type="button" id="pa-cd" class="acc">Disegna corda</button>
+    <button type="button" data-t="anc">+ Ancoraggio</button><button type="button" data-t="pul">+ Carrucola</button><button type="button" data-t="blo" data-p="0">+ Bloccante a camma</button><button type="button" data-t="blo" data-p="1">+ Bloccante con puleggia</button><button type="button" data-t="dis">+ Discensore</button><button type="button" id="pa-cd" class="acc">Disegna corda</button>
   </div>
   <div class="chips" style="margin-top:8px"><button type="button" id="pa-calc" class="acc">Calcola vantaggio</button><button type="button" id="pa-reset">Reset</button></div>
   <div class="avv" id="pa-mini" style="border-color:var(--line);background:var(--panel-2)"></div>
@@ -396,7 +397,7 @@ FireOps.registra({
         h += '<p class="nota" style="margin-top:8px">Fulcro: ' + (fo ? "<b>fissata a " + fo + "</b>" : stato(it)) + '</p>' +
           '<div class="chips"><button type="button" id="pa-sc" class="acc">' + (fissa === it.id ? "Tocca il punto…" : "Fissa a…") + '</button>' + (it.f ? '<button type="button" id="pa-sl">Libera</button>' : "") + '</div>';
       }
-      if (it.t === "blo") h += '<label class="chk"><input type="checkbox" id="pa-sp"' + (it.p ? " checked" : "") + '> Con puleggia (conta come un passaggio)</label>';
+      if (it.t === "blo") h += '<div class="chips" style="margin-top:8px"><button type="button" data-bt="1" aria-pressed="' + it.p + '">Con puleggia</button><button type="button" data-bt="0" aria-pressed="' + !it.p + '">A camma</button></div><p class="nota">Con puleggia: la corda gira intorno e il bloccante trattiene il carico (conta come un passaggio). A camma: morde la corda e la lascia passare dritta.</p>';
       if (it.t === "dis") h += '<label for="pa-se" style="margin-top:8px">Rendimento di passaggio del discensore (0,1–1)</label><input type="number" id="pa-se" inputmode="decimal" min="0.1" max="1" step="0.05" value="' + it.e + '"><p class="nota">Il discensore conta come un passaggio con questo rendimento (più basso = più attrito). Con attriti disattivati vale 1.</p>';
       if (it.t === "car") h += '<p class="nota">Il peso si imposta in “Dati”.</p>';
       if (it.t === "op") h += '<p class="nota">Capo di tiro: la corda deve finire qui.</p>';
@@ -518,7 +519,7 @@ FireOps.registra({
         h += '<button type="button" class="acc" data-m="fissa">Fissa a…</button>';
         if (it.f) h += '<button type="button" data-m="libera">Libera (togli fulcro)</button>';
       }
-      if (it.t === "blo") h += '<button type="button" data-m="pul">' + (it.p ? "Con puleggia: sì (tocca per no)" : "Con puleggia: no (tocca per sì)") + "</button>";
+      if (it.t === "blo") h += '<div class="rg"><button type="button" data-m="bpul" aria-pressed="' + it.p + '">Con puleggia</button><button type="button" data-m="bcam" aria-pressed="' + !it.p + '">A camma</button></div>';
       if (it.t === "dis") h += '<div class="rg"><button type="button" data-m="em" aria-label="Meno rendimento">−</button><span>rendimento ' + fmt(it.e, 2) + '</span><button type="button" data-m="ep" aria-label="Più rendimento">+</button></div>';
       if (it.t === "pul" || it.t === "blo") h += '<button type="button" data-m="tdis">Trasforma in discensore</button>';
       if (it.t === "dis" || it.t === "blo") h += '<button type="button" data-m="tpul">Trasforma in carrucola</button>';
@@ -658,7 +659,8 @@ FireOps.registra({
       const m = b.dataset.m;
       if (m === "fissa") { sel = it.id; avviaFissa(it); return; }
       if (m === "libera") it.f = "";
-      else if (m === "pul") it.p = !it.p;
+      else if (m === "bpul") it.p = true;
+      else if (m === "bcam") it.p = false;
       else if (m === "tdis") { it.t = "dis"; it.nome = "D" + (++cnt.dis); it.e = it.e || 0.6; }
       else if (m === "tpul") { it.t = "pul"; it.nome = "C" + (++cnt.pul); }
       else if (m === "em" || m === "ep") { it.e = Math.round(Math.min(1, Math.max(0.1, it.e + (m === "ep" ? 0.05 : -0.05))) * 100) / 100; apriMenu(it); tutto(); return; }
@@ -679,6 +681,8 @@ FireOps.registra({
     });
     $("#pa-sel").addEventListener("click", e => {
       const itc = byId(sel);
+      const bt = e.target.closest("button[data-bt]");
+      if (itc && bt) { itc.p = bt.dataset.bt === "1"; tutto(); return; }
       if (itc && e.target.closest("#pa-sc")) { if (fissa === itc.id) { fissa = null; $("#pa-hint").innerHTML = HINT; tutto(); } else avviaFissa(itc); return; }
       if (itc && e.target.closest("#pa-sl")) { itc.f = ""; tutto(); return; }
       if (!e.target.closest("#pa-sx")) return;
