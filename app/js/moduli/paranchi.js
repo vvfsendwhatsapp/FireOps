@@ -144,7 +144,7 @@ FireOps.registra({
 
     let items = [], corde = [], sel = null, tracc = null, uid = 0, cnt = {anc: 0, pul: 0, blo: 0, dis: 0};
     const HINT = "<b>1</b> Aggiungi punti e trascinali. <b>2</b> Fissa ogni carrucola: trascinala vicino a un ancoraggio o al carico (si aggancia), oppure toccala e usa “Fissa a…”. <b>3</b> “Disegna corda” e tocca i punti nell’ordine di passaggio.";
-    let menuK = 0, punto = null, fissa = null, menu = null, menuC = null, pressT = null, nuova = false, ins = null, nsel = null;
+    let ultRis = null, dragM = null, menuK = 0, punto = null, fissa = null, menu = null, menuC = null, pressT = null, nuova = false, ins = null, nsel = null;
     const isP = it => !!it && (it.t === "pul" || it.t === "pul2");
     const base = id => String(id).split(":")[0], sh = id => String(id).split(":")[1] || null;   // un nodo di corda puo' essere "i7:A" = puleggia A della doppia
     const byId = id => items.find(i => i.id === base(id));
@@ -361,6 +361,18 @@ FireOps.registra({
       if (re && re.voci) re.voci.forEach(v => { if (!v.fix || !(re.T[v.ri] > 0)) return; const o = byId(v.id); if (o && radice(o) === it) { fx += v.f * re.T[v.ri] * v.e[0]; fy += v.f * re.T[v.ri] * v.e[1]; } });
       return [fx, fy];
     }
+    function mezzerie() {   // pallino a meta' di ogni tratto di corda (da trascinare su una carrucola)
+      const out = [];
+      if (tracc) return out;
+      corde.forEach((c, i) => {
+        const g = geom(c); if (g.length < 2 || g.some(q => !q)) return;
+        for (let k = 0; k + 1 < g.length; k++) {
+          const a = g[k].o, b = g[k + 1].i; if (Math.hypot(b[0] - a[0], b[1] - a[1]) < 9) continue;
+          out.push({i, k, x: (a[0] + b[0]) / 2, y: (a[1] + b[1]) / 2});
+        }
+      });
+      return out;
+    }
     function disegna(ris) {
       const cv = $("#pa-cv"), w = cv.clientWidth || 320, h = Math.round(w * VH / VW), pr = window.devicePixelRatio || 1;
       if (cv.width !== Math.round(w * pr) || cv.height !== Math.round(h * pr)) { cv.width = Math.round(w * pr); cv.height = Math.round(h * pr); cv.style.height = h + "px"; }
@@ -437,7 +449,7 @@ FireOps.registra({
           for (let k = 0; k < g.length - 1; k++) {
             const a = g[k].o, b = g[k + 1].i, t = ris.seg[ri][k];
             if (!(t > 0) || Math.hypot(a[0] - b[0], a[1] - b[1]) < 9) continue;
-            const mx = X((a[0] + b[0]) / 2), my = Y((a[1] + b[1]) / 2), s = chili(t) + " kg";
+            const mx = X(a[0] + (b[0] - a[0]) * 0.28), my = Y(a[1] + (b[1] - a[1]) * 0.28), s = chili(t) + " kg";   // il pallino di mezzeria sta a meta'
             let an = Math.atan2(b[1] - a[1], b[0] - a[0]); if (an > Math.PI / 2 || an < -Math.PI / 2) an += Math.PI;   // il testo segue l'asse della corda
             ctx.save(); ctx.translate(mx, my); ctx.rotate(an);
             ctx.fillStyle = bg; ctx.fillRect(-21, -7, 42, 14);
@@ -445,6 +457,12 @@ FireOps.registra({
           }
           ctx.font = "11px sans-serif";
         }
+      });
+      mezzerie().forEach(m => {   // pallini di mezzeria
+        const mo = dragM && dragM.i === m.i && dragM.k === m.k;
+        if (mo) { ctx.setLineDash([4, 4]); ctx.strokeStyle = "#ffd700"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(X(m.x), Y(m.y)); ctx.lineTo(X(dragM.x), Y(dragM.y)); ctx.stroke(); ctx.setLineDash([]); }
+        const qx = X(mo ? dragM.x : m.x), qy = Y(mo ? dragM.y : m.y);
+        ctx.fillStyle = mo ? "#ffd700" : "#10141a"; ctx.strokeStyle = "#ffd700"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(qx, qy, mo ? 11 : 7, 0, 7); ctx.fill(); ctx.stroke();
       });
       // corda in tracciamento
       if (tracc && tracc.length) {
@@ -544,7 +562,7 @@ FireOps.registra({
       if (re.err || id.err) {
         $("#pa-ris").innerHTML = ""; $("#pa-anc").innerHTML = ""; $("#pa-mini").innerHTML = "Vantaggio non calcolabile: vedi l’avviso sotto.";
         avv.push(re.err || id.err);
-        disegna(null);
+        ultRis = null; disegna(null);
       } else {
         const vmTeo = W / id.tiro, vmReale = W / re.tiro, ideale = id.tiro;
         const vt = Math.abs(vmTeo - Math.round(vmTeo)) < 0.005 ? String(Math.round(vmTeo)) : fmt(vmTeo, 2);
@@ -580,7 +598,7 @@ FireOps.registra({
         if (eta < 0.8 && vmTeo >= 4) avv.push("Con questi rendimenti i sistemi con molti capi perdono molto: valuta carrucole su cuscinetti.");
         if (re.tiro / G > 60) avv.push("Il tiro supera 60 kg: serve più di una persona o un sistema con più vantaggio.");
         if (re.orizz) avv.push("Qualche tratto di corda è di traverso rispetto alla trazione del suo blocco: nel calcolo non conta. Controlla la disposizione.");
-        disegna(re);
+        ultRis = re; disegna(re);
       }
       $("#pa-avv").innerHTML = avv.map(t => '<div class="avv">' + t + '</div>').join("");
     }
@@ -725,6 +743,9 @@ FireOps.registra({
         return;
       }
       if (!it) {
+        const r0 = cv.getBoundingClientRect(), tolm = 16 * VW / r0.width;
+        const mz = mezzerie().find(m => Math.hypot(m.x - x, m.y - y) < tolm);
+        if (mz) { dragM = {i: mz.i, k: mz.k, x: mz.x, y: mz.y}; cv.setPointerCapture(e.pointerId); $("#pa-hint").textContent = "Trascina il pallino sopra la carrucola in cui far passare la corda, poi rilascia."; tutto(); return; }
         const rc = trovaCorda(x, y);
         if (rc) { apriMenuCorda(rc); return; }
         if (sel) { sel = null; tutto(); }
@@ -737,6 +758,7 @@ FireOps.registra({
       pressT = setTimeout(() => { if (drag && !drag.mosso) { const t = drag.it; drag = null; apriMenu(t); } }, 450);
     });
     cv.addEventListener("pointermove", e => {
+      if (dragM) { const [x, y] = pos(e); dragM.x = x; dragM.y = y; disegna(ultRis); return; }
       if (!drag) return;
       const [x, y] = pos(e);
       if (!drag.mosso && Math.hypot(x + drag.dx - drag.it.x, y + drag.dy - drag.it.y) < 1.2) return;
@@ -747,6 +769,18 @@ FireOps.registra({
     cv.addEventListener("contextmenu", e => e.preventDefault());
     const fine = () => {
       clearTimeout(pressT);
+      if (dragM) {
+        const d = dragM; dragM = null;
+        let best = null, bd = 9;
+        items.forEach(o => { if (!(isP(o) || o.t === "blo" || o.t === "dis")) return; const k = Math.hypot(o.x - d.x, o.y - d.y); if (k < bd) { bd = k; best = o; } });
+        const c = corde[d.i];
+        if (best && c) {
+          const nid = best.t === "pul2" ? best.id + (Math.hypot(d.x - sheaveC(best, -1)[0], d.y - sheaveC(best, -1)[1]) <= Math.hypot(d.x - sheaveC(best, 1)[0], d.y - sheaveC(best, 1)[1]) ? ":A" : ":B") : best.id;
+          c.splice(d.k + 1, 0, nid);
+          $("#pa-hint").textContent = "La corda " + (d.i + 1) + " ora passa su " + nomeNodo(nid) + ".";
+        } else $("#pa-hint").innerHTML = HINT;
+        tutto(); return;
+      }
       const d = drag; drag = null;
       if (d && d.mosso && (isP(d.it) || d.it.t === "blo" || d.it.t === "dis") && !d.it.f) {
         let best = null, bd = 8;
