@@ -1060,7 +1060,7 @@ const T1={
   altro:{n:'Altro',h:'Altezza',top:'punto più alto',base:'punto a terra sotto il punto alto',tgt:'Tocca il punto a terra sotto il punto da misurare.'}
 };
 const hasArea=t=>t!=='teleferica';   // il punto alto di una teleferica non cade: niente raggio di proiezione
-const m1={type:'pianta',obs:null,tgt:null,D:null,dMode:'map',s:{zero:null,beta:null,alpha:null},margin:1,ui:null,flow:null,steps:null,fitted:false};
+const m1={type:'pianta',method:'dist',obs:null,tgt:null,D:null,dMode:'map',s:{zero:null,beta:null,alpha:null},margin:1,ui:null,flow:null,steps:null,fitted:false};
 
 function m1Calc(){
   const D=m1.D,b=m1.s.beta,a=m1.s.alpha;
@@ -1075,18 +1075,34 @@ function m1SetD(D,mode){
   if(document.activeElement!==$('#m1-d'))$('#m1-d').value=D>0?D.toFixed(1):'';
   if(document.activeElement!==$('#m1-p'))$('#m1-p').value=D>0?(Math.round(D/PASSO*10)/10):'';
   if(document.activeElement!==$('#m1-b'))$('#m1-b').value=D>0?(Math.round(D/FT*10)/10):'';
-  $('#m1-dsrc').textContent=D>0?(mode==='map'?'Calcolata dai punti impostati (mappa, GPS o coordinate): distanza tra la tua posizione e il target.':'Valore inserito a mano.'):'Imposta target e posizione sulla mappa, oppure scrivi la distanza.';
-  $('#m1-dmap').hidden=!(mode==='manual'&&m1.obs&&m1.tgt);
+  const c=$('#m1-dcalc');
+  if(c)c.innerHTML=D>0?'<b>'+fmt(D,1)+' m</b> · '+fmt(D/PASSO,0)+' passi · '+fmt(D/FT,0)+' tacco-punta':'<span style="color:var(--dim)">Imposta il target e la tua posizione.</span>';
+}
+/* i due metodi: "dist" = target + distanza scritta; "pos" = target + posizione (la distanza si calcola dai due punti) */
+function m1DistDaPunti(){m1SetD(m1.tgt&&m1.obs?distLL(m1.obs,m1.tgt):null,'map');}
+function m1Method(m){
+  m1.method=m;
+  $$('#m1-meth button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
+  const pos=m==='pos';
+  $('#m1-ocard').hidden=!pos;$('#m1-dcard').hidden=pos;$('#m1-dcalcw').hidden=!pos;
+  $('#m1-slot2').hidden=!pos;
+  $('#m1-methsub').textContent=pos
+    ?'Imposti il target e il punto da cui misuri, nello stesso modo: la distanza si calcola dai due punti.'
+    :'Imposti il target e scrivi la distanza da cui lo misuri (metri, passi o tacco-punta).';
+  $('#m1-go2').textContent=pos?'Avanti: la mia posizione':'Avanti: distanza';
+  if(pos)m1DistDaPunti();else if(m1.dMode==='map')m1SetD(null,'manual');
+  if(m1.steps)m1.steps.refresh&&m1.steps.refresh();
+  if(m1.ui&&m1.ui.map){if(pos&&m1.obs)m1.ui.setPoint('obs',m1.obs);else m1.ui.removePoint('obs');m1Render();}
 }
 function m1Render(){
   const T=T1[m1.type],r=m1Calc(),ok=r&&!r.err,D=m1.D;
   $('#m1-sd').textContent=D>0?fmt(D,1)+' m':'—';
   $('#m1-shl').textContent=T.h;
   $('#m1-sh').textContent=ok?fmt(r.H,1)+' m':'—';
-  m1.steps.mark(1,!!m1.tgt);m1.steps.mark(2,D>0);m1.steps.mark(3,m1.s.beta!=null&&m1.s.alpha!=null);m1.steps.mark(4,!!ok);
+  m1.steps.mark(1,!!m1.tgt);m1.steps.mark(2,D>0&&(m1.method==='dist'||!!m1.obs));m1.steps.mark(3,m1.s.beta!=null&&m1.s.alpha!=null);m1.steps.mark(4,!!ok);
   // mappa: linea e aree
   const g=m1.ui.group;g.clearLayers();
-  if(m1.obs&&m1.tgt)L.polyline([m1.obs,m1.tgt],{color:'#ffd400',weight:3,dashArray:'6 6'}).addTo(g);
+  if(m1.method==='pos'&&m1.obs&&m1.tgt)L.polyline([m1.obs,m1.tgt],{color:'#ffd400',weight:3,dashArray:'6 6'}).addTo(g);
   if(ok&&m1.tgt&&hasArea(m1.type)){
     L.circle(m1.tgt,{radius:r.H,color:'#d8262f',weight:3,fillColor:'#d8262f',fillOpacity:.2}).addTo(g);
     if(m1.margin>1)L.circle(m1.tgt,{radius:r.H*m1.margin,color:'#ffd400',weight:2,dashArray:'8 6',fill:false}).addTo(g);
@@ -1094,7 +1110,7 @@ function m1Render(){
   // pannello risultato
   const res=$('#m1-res');let h='';
   if(!r){
-    h=`<div class="note">Imposta la pianta (passo 1), la tua posizione e la distanza (passo 2) e gli angoli verticali (passo 3) per vedere altezza e area.</div>`;
+    h=`<div class="note">Imposta il target (passo 1), la distanza o la tua posizione (passo 2) e gli angoli verticali (passo 3) per vedere altezza e area.</div>`;
   }else if(r.err){
     h=`<div class="note warn">${r.err}</div>`;
   }else{
@@ -1129,7 +1145,7 @@ function m1Render(){
       </dl>
       ${stat}
       ${m1.tgt?'':'<div class="note warn">Imposta il target sulla mappa per disegnare l’area.</div>'}
-    </div>`:`<div class="note stat">Per ${T.n.toLowerCase()} non c’è un’area di proiezione: il punto alto non cade. Sulla mappa restano il punto a terra e la tua posizione, a ${fmt(D,1)} m in orizzontale.</div>`}
+    </div>`:`<div class="note stat">Per ${T.n.toLowerCase()} non c’è un’area di proiezione: il punto alto non cade. Sulla mappa resta il punto a terra, a ${fmt(D,1)} m in orizzontale da dove misuri.</div>`}
     <div class="row"><button type="button" class="btn" id="m1-exp">Esporta GeoJSON</button><button type="button" class="btn" id="m1-new">Nuova misura</button></div>`;
   }
   res.innerHTML=h;
@@ -1139,7 +1155,7 @@ function m1Export(){
   const r=m1Calc();
   if(!r||r.err||!m1.tgt){toast('Servono il target sulla mappa e una misura completa.');return;}
   const f=[{type:'Feature',properties:{ruolo:'target',tipo:m1.type,altezza_m:+r.H.toFixed(2)},geometry:{type:'Point',coordinates:[m1.tgt[1],m1.tgt[0]]}}];
-  if(m1.obs)f.push({type:'Feature',properties:{ruolo:'osservatore',distanza_orizzontale_m:+m1.D.toFixed(1)},geometry:{type:'Point',coordinates:[m1.obs[1],m1.obs[0]]}});
+  if(m1.method==='pos'&&m1.obs)f.push({type:'Feature',properties:{ruolo:'osservatore',distanza_orizzontale_m:+m1.D.toFixed(1)},geometry:{type:'Point',coordinates:[m1.obs[1],m1.obs[0]]}});
   if(hasArea(m1.type))f.push({type:'Feature',properties:{ruolo:'area_proiezione',raggio_m:+r.H.toFixed(2),area_m2:+(Math.PI*r.H*r.H).toFixed(1)},geometry:{type:'Polygon',coordinates:[ring(m1.tgt,r.H)]}});
   if(hasArea(m1.type)&&m1.margin>1)f.push({type:'Feature',properties:{ruolo:'fascia_rispetto',raggio_m:+(r.H*m1.margin).toFixed(2)},geometry:{type:'Polygon',coordinates:[ring(m1.tgt,r.H*m1.margin)]}});
   download(JSON.stringify({type:'FeatureCollection',features:f},null,1),'fireops-trigo-altezza-'+stamp()+'.geojson','application/geo+json');
@@ -1152,6 +1168,16 @@ function m1CWrite(k){
   el.removeAttribute('aria-invalid');
 }
 function m1CLabel(){$('#m1-ctl').textContent=m1.type==='teleferica'?'Punto a terra sotto il punto alto (target)':'Target (base dell’oggetto)';}
+const m1Card=(k,title,lblId,lbl,sub,gpsTip)=>`<div class="card"><h3>${title}</h3>
+      <label class="f" for="${m1CId(k).slice(1)}" id="${lblId}">${lbl}</label>
+      <div class="row">
+        <input id="${m1CId(k).slice(1)}" class="m1c" inputmode="decimal" placeholder="41.8902, 12.4922 · link Maps · DMS" autocomplete="off">
+        <button type="button" class="btn pri m1gps" data-k="${k}" aria-label="${gpsTip}" title="${gpsTip}" style="flex:0 0 auto;width:48px;min-width:48px;padding:0;border-radius:50%;font-size:20px;line-height:1">◎</button>
+        <select class="m1zone fit" aria-label="Fuso UTM" hidden>${[31,32,33,34,35].map(z=>`<option value="${z}" ${z===32?'selected':''}>Fuso ${z}</option>`).join('')}</select>
+        <select class="m1fmt fit" aria-label="Formato coordinate"><option value="dd">Lat, Lon</option><option value="utm">UTM</option></select>
+      </div>
+      <p class="sub">${sub}</p>
+    </div>`;
 function initM1(){
   const v=$('#tg-altezza');
   v.innerHTML=`<div class="steps"></div>
@@ -1161,42 +1187,28 @@ function initM1(){
     <div class="card"><h3>Che cosa misuri?</h3>
       <div class="chips" id="m1-types">${Object.keys(T1).map(k=>`<button type="button" class="btn sm ${k===m1.type?'on':''}" data-t="${k}">${T1[k].n}</button>`).join('')}</div>
     </div>
-    <div id="m1-slot1"></div>
-    <div class="card"><h3>Coordinate della pianta</h3>
-      <label class="f" for="m1-ct" id="m1-ctl"></label>
-      <div class="row">
-        <input id="m1-ct" class="m1c" inputmode="decimal" placeholder="41.8902, 12.4922 · link Maps · DMS" autocomplete="off">
-        <select class="m1zone fit" aria-label="Fuso UTM" hidden>${[31,32,33,34,35].map(z=>`<option value="${z}" ${z===32?'selected':''}>Fuso ${z}</option>`).join('')}</select>
-        <select class="m1fmt fit" aria-label="Formato coordinate"><option value="dd">Lat, Lon</option><option value="utm">UTM</option></select>
-      </div>
-      <button type="button" class="btn sm" id="m1-where" style="margin-top:8px">◎ Dove sono (centra la mappa)</button>
-      <p class="sub" id="m1-cinfo">Tocca la mappa sulla base, oppure scrivi le coordinate.</p>
+    <div class="card"><h3>Metodo</h3>
+      <div class="seg" id="m1-meth"><button type="button" data-m="dist" class="${m1.method==='dist'?'on':''}">Target + distanza</button><button type="button" data-m="pos" class="${m1.method==='pos'?'on':''}">Target + posizione</button></div>
+      <p class="sub" id="m1-methsub"></p>
     </div>
-    <button type="button" class="btn pri big" data-go="2">Avanti: posizione della misura</button>
+    ${m1Card('tgt','Target','m1-ctl','Target (base dell’oggetto)','Tocca la mappa sulla base, usa il GPS (se sei sul punto) o scrivi le coordinate.','Usa la mia posizione GPS come target')}
+    <div id="m1-slot1"></div>
+    <button type="button" class="btn sm" id="m1-where" style="margin:8px 0">◎ Dove sono (centra la mappa)</button>
+    <button type="button" class="btn pri big" data-go="2" id="m1-go2">Avanti</button>
   </div>
 
   <div class="panel" data-s="2" hidden>
+    <div id="m1-ocard">${m1Card('obs','La mia posizione','m1-col','Posizione da cui misuri','Tocca la mappa dove ti trovi, usa il GPS o scrivi le coordinate: come per il target.','Usa la mia posizione GPS')}</div>
     <div id="m1-slot2"></div>
-    <div class="card"><h3>La mia posizione</h3>
-      <label class="f" for="m1-co">Coordinate (osservatore)</label>
-      <div class="row">
-        <input id="m1-co" class="m1c" inputmode="decimal" placeholder="41.8902, 12.4922 · link Maps · DMS" autocomplete="off">
-        <button type="button" class="btn pri" id="m1-gps" aria-label="Usa la mia posizione GPS" title="Usa la mia posizione GPS" style="flex:0 0 auto;width:48px;min-width:48px;padding:0;border-radius:50%;font-size:20px;line-height:1">◎</button>
-        <select class="m1zone fit" aria-label="Fuso UTM" hidden>${[31,32,33,34,35].map(z=>`<option value="${z}" ${z===32?'selected':''}>Fuso ${z}</option>`).join('')}</select>
-        <select class="m1fmt fit" aria-label="Formato coordinate"><option value="dd">Lat, Lon</option><option value="utm">UTM</option></select>
-      </div>
-      <p class="sub">Tocca la mappa dove ti trovi, usa il GPS o scrivi le coordinate. Con il target impostato la distanza si calcola da sola.</p>
-    </div>
-    <div class="card"><h3>Distanza orizzontale</h3>
+    <div class="card" id="m1-dcard"><h3>Distanza orizzontale</h3>
       <div class="row">
         <div><label class="f" for="m1-d">Metri</label><input id="m1-d" type="number" inputmode="decimal" step="0.1" min="0"></div>
         <div><label class="f" for="m1-p">Passi</label><input id="m1-p" type="number" inputmode="decimal" step="1" min="0"></div>
         <div><label class="f" for="m1-b">Tacco-punta</label><input id="m1-b" type="number" inputmode="decimal" step="1" min="0"></div>
       </div>
-      <p class="sub" id="m1-dsrc"></p>
       <p class="sub">Scrivi la distanza in metri, in passi o in tacco-punta (piedi): gli altri campi si aggiornano. 1 tacco-punta = 31 cm · 1 passo = 2,5 tacco-punta = 77,5 cm.</p>
-      <button type="button" class="btn sm" id="m1-dmap" style="margin-top:8px" hidden>Torna alla distanza da mappa</button>
     </div>
+    <div class="card" id="m1-dcalcw"><h3>Distanza orizzontale</h3><p style="margin:0" id="m1-dcalc"></p><p class="sub">Calcolata dalla distanza tra la tua posizione e il target.</p></div>
     <div class="row nav2"><button type="button" class="btn" data-go="1">Indietro</button><button type="button" class="btn pri" data-go="3">Avanti: angoli verticali</button></div>
   </div>
 
@@ -1215,14 +1227,14 @@ function initM1(){
 
   m1.ui=createMapUI({
     modes:[{key:'tgt',label:'Imposta target'},{key:'obs',label:'Imposta la mia posizione'}],
-    gpsKey:'obs',
+    gpsKey:()=>m1.mapMode||'obs',
     pins:{tgt:{t:'T',bg:'#d8262f',fg:'#fff'},obs:{t:'Io',bg:'#ffd400',fg:'#000'}},
     hints:{tgt:()=>T1[m1.type].tgt,obs:'Tocca la mappa dove ti trovi (oppure usa il GPS).'},
     idleHint:'Imposta il target e la tua posizione: la distanza si calcola da sola. Trascina i segnaposto per correggere.',
     onChange:(k,ll,src)=>{
       m1[k]=ll;
       if(m1c.fmt==='utm'&&src!=='drag'){const z=utmZone(ll[1]);if(z>=31&&z<=35){m1c.zone=z;$$('.m1zone',v).forEach(x=>{x.value=z;});}}
-      if(m1.tgt&&m1.obs)m1SetD(distLL(m1.obs,m1.tgt),'map');
+      if(m1.method==='pos')m1DistDaPunti();
       m1CWrite(k);m1Render();
     }
   },$('#m1-slot1'));
@@ -1232,6 +1244,7 @@ function initM1(){
     const w=m1.ui.wrap;
     $$('[data-mode]',w).forEach(b=>{b.hidden=b.dataset.mode!==k;});
     const g=$('[data-act=gps]',w);if(g)g.hidden=(k!=='obs');
+    m1.mapMode=k;
     const on=$('[data-mode].on',w);
     if(!on||on.dataset.mode!==k)m1.ui.setMode(k);
   };
@@ -1254,14 +1267,24 @@ function initM1(){
     toast('Ricerca posizione GPS…');meStart();
     navigator.geolocation.getCurrentPosition(p=>{const ll=[p.coords.latitude,p.coords.longitude];meDraw(ll,p.coords.accuracy);m1.ui.map.setView(ll,Math.max(m1.ui.map.getZoom(),17));toast('Sei qui (±'+Math.round(p.coords.accuracy)+' m)');},()=>toast('Posizione GPS non disponibile: controlla i permessi.'),{enableHighAccuracy:true,timeout:20000,maximumAge:0});
   });
-  const m1g=$('#m1-gps',v);if(m1g)m1g.addEventListener('click',()=>{const g=$('[data-act=gps]',m1.ui.wrap);if(g)g.click();});
-  m1.steps=setupSteps(v,['Posizione pianta','Posizione misura','Angoli verticali','Risultato'],n=>{
+  const m1UseGps=k=>{
+    if(!navigator.geolocation){toast('GPS non disponibile su questo dispositivo.');return;}
+    toast('Ricerca posizione GPS…');
+    navigator.geolocation.getCurrentPosition(p=>{
+      const ll=[p.coords.latitude,p.coords.longitude];
+      m1[k]=ll;try{m1.ui.setPoint(k,ll);if(m1.ui.map)m1.ui.map.setView(ll,Math.max(m1.ui.map.getZoom(),17));}catch(e){}
+      if(m1.method==='pos')m1DistDaPunti();
+      m1CWrite(k);m1Render();toast((k==='tgt'?'Target':'Posizione')+' acquisita dal GPS (±'+Math.round(p.coords.accuracy)+' m)');
+    },()=>toast('Posizione GPS non disponibile: controlla i permessi.'),{enableHighAccuracy:true,timeout:20000,maximumAge:0});
+  };
+  v.addEventListener('click',e=>{const g=e.target.closest('.m1gps');if(g)m1UseGps(g.dataset.k);});
+  m1.steps=setupSteps(v,['Target','Distanza o posizione','Angoli verticali','Risultato'],n=>{
     if(n===1||n===2)meStart();else meStop();
     if(n===1){placeMap(m1.ui,'m1-slot1');m1Modo('tgt');}
-    if(n===2){placeMap(m1.ui,'m1-slot2');m1Modo('obs');}
+    if(n===2&&m1.method==='pos'){placeMap(m1.ui,'m1-slot2');m1Modo('obs');}
     if(n===4){
       placeMap(m1.ui,'m1-slot4');m1Render();
-      $$('[data-mode]',m1.ui.wrap).forEach(b=>{b.hidden=false;});const g=$('[data-act=gps]',m1.ui.wrap);if(g)g.hidden=false;
+      $$('[data-mode]',m1.ui.wrap).forEach(b=>{b.hidden=(b.dataset.mode==='obs'&&m1.method!=='pos');});const g=$('[data-act=gps]',m1.ui.wrap);if(g)g.hidden=false;
       const r=m1Calc();
       if(r&&!r.err&&m1.tgt&&hasArea(m1.type)){setTimeout(()=>{m1.ui.map.invalidateSize();m1.ui.map.fitBounds(boundsAround(m1.tgt,r.H*Math.max(1,m1.margin)).pad(0.3));},120);}
       else m1.ui.fit();
@@ -1285,6 +1308,7 @@ function initM1(){
   },{go:4,text:'Vedi risultato',msg:'Misura completa.'});
   bindCam('m1',()=>pitchRender('m1',m1.s));
 
+  $('#m1-meth').addEventListener('click',e=>{const b=e.target.closest('[data-m]');if(b)m1Method(b.dataset.m);});
   $('#m1-types').addEventListener('click',e=>{
     const b=e.target.closest('[data-t]');if(!b)return;
     m1.type=b.dataset.t;$$('#m1-types .btn').forEach(x=>x.classList.toggle('on',x===b));
@@ -1293,7 +1317,6 @@ function initM1(){
   $('#m1-d').addEventListener('input',()=>{const x=num('m1-d');m1SetD(x==null?null:x,'manual');m1Render();});
   $('#m1-p').addEventListener('input',()=>{const x=num('m1-p');const d=x==null?null:r2(x*PASSO);m1SetD(d,'manual');m1Render();});
   $('#m1-b').addEventListener('input',()=>{const x=num('m1-b');const d=x==null?null:r2(x*FT);m1SetD(d,'manual');m1Render();});
-  $('#m1-dmap').onclick=()=>{if(m1.obs&&m1.tgt){m1SetD(distLL(m1.obs,m1.tgt),'map');m1Render();}};
   v.addEventListener('click',e=>{
     const sg=e.target.closest('#m1-seg button');
     if(sg){m1.margin=parseFloat(sg.dataset.m);m1Render();return;}
@@ -1322,12 +1345,13 @@ function initM1(){
         if(!ll){t.setAttribute('aria-invalid','true');toast(m1c.fmt==='utm'?'Formato non valido: scrivi Est e Nord, ad esempio 291234 4640123, e controlla il fuso.':'Formato non valido: scrivi latitudine e longitudine, ad esempio 41.8902, 12.4922.');return;}
         m1[k]=ll;m1.ui.setPoint(k,ll);m1.ui.fit();
       }
-      if(m1.tgt&&m1.obs)m1SetD(distLL(m1.obs,m1.tgt),'map');
+      if(m1.method==='pos')m1DistDaPunti();
       m1CWrite(k);m1Render();
     }
   });
   m1CLabel();
-  m1SetD(null,'map');
+  m1SetD(null,'manual');
+  m1Method(m1.method);
   m1.steps.go(1);
   m1Render();
 }
