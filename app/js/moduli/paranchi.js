@@ -355,6 +355,12 @@ FireOps.registra({
         return {p: q.p, i: arco[0], o: arco[12], arco, mid: f1 + dl / 2};
       });
     }
+    const radice = it => { let o = it, n = 0; while (o && o.f && o.f !== "car" && n++ < 20) o = byId(o.f); return o; };
+    function forzaAnc(re, it) {   // forza sulla cerniera: somma vettoriale dei tiri dei punti fissati a lei (y verso il basso)
+      let fx = 0, fy = 0;
+      if (re && re.voci) re.voci.forEach(v => { if (!v.fix || !(re.T[v.ri] > 0)) return; const o = byId(v.id); if (o && radice(o) === it) { fx += v.f * re.T[v.ri] * v.e[0]; fy += v.f * re.T[v.ri] * v.e[1]; } });
+      return [fx, fy];
+    }
     function disegna(ris) {
       const cv = $("#pa-cv"), w = cv.clientWidth || 320, h = Math.round(w * VH / VW), pr = window.devicePixelRatio || 1;
       if (cv.width !== Math.round(w * pr) || cv.height !== Math.round(h * pr)) { cv.width = Math.round(w * pr); cv.height = Math.round(h * pr); cv.style.height = h + "px"; }
@@ -452,6 +458,16 @@ FireOps.registra({
       // ancoraggi, carico, operatori
       items.forEach(it => {
         if (it.t === "anc") {
+          if (ris) {   // risultante sulla cerniera: freccia + valori
+            const [fx, fy] = forzaAnc(ris, it), F = Math.hypot(fx, fy);
+            if (F >= 1) {
+              const ax = X(it.x) + 16, ay = Y(it.y), L = 26, tx = ax + fx / F * L, ty = ay + fy / F * L;
+              ctx.strokeStyle = ctx.fillStyle = "#ff5d8f"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(tx, ty); ctx.stroke();
+              const an = Math.atan2(ty - ay, tx - ax); ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(tx - 8 * Math.cos(an - 0.45), ty - 8 * Math.sin(an - 0.45)); ctx.lineTo(tx - 8 * Math.cos(an + 0.45), ty - 8 * Math.sin(an + 0.45)); ctx.closePath(); ctx.fill();
+              ctx.textAlign = "left"; ctx.font = "bold 11px sans-serif"; ctx.fillText("R " + chili(F) + " kg", ax + 8, ay - 8);
+              ctx.font = "10px sans-serif"; ctx.fillText("V " + chili(Math.abs(fy)) + " · O " + chili(Math.abs(fx)), ax + 8, ay + 6); ctx.textAlign = "center"; ctx.font = "11px sans-serif";
+            }
+          }
           ctx.fillStyle = "#8b96a3"; ctx.fillRect(X(it.x) - 9, Y(it.y) - 9, 18, 18);
           ctx.fillStyle = "#10141a"; ctx.fillText(it.nome, X(it.x), Y(it.y));
         } else if (it.t === "car") {
@@ -546,12 +562,9 @@ FireOps.registra({
           righe += '<tr><td>Corda ' + (i + 1) + '<br><small style="color:var(--text-dim)">capo morto ' + chili(s[0]) + ' kg · capo di tiro ' + chili(s[s.length - 1]) + ' kg</small></td><td>' + chili(s[s.length - 1]) + ' kg</td></tr>';
         });
         // forze sui punti: per i corpi mobili il tiro lungo l'asse; per gli ancoraggi la risultante vettoriale (cerniera: componente verticale e orizzontale, nessun momento)
-        const radice = it => { let o = it, n = 0; while (o && o.f && o.f !== "car" && n++ < 20) o = byId(o.f); return o; };
         items.forEach(it => {
           if (it.t === "anc") {
-            let fx = 0, fy = 0;
-            re.voci.forEach(v => { if (!v.fix || !(re.T[v.ri] > 0)) return; const o = byId(v.id); if (o && radice(o) === it) { fx += v.f * re.T[v.ri] * v.e[0]; fy += v.f * re.T[v.ri] * v.e[1]; } });
-            const F = Math.hypot(fx, fy); if (F < 1) return;
+            const [fx, fy] = forzaAnc(re, it), F = Math.hypot(fx, fy); if (F < 1) return;
             const dir = Math.abs(fx) < 0.02 * F ? "verticale" : "inclinata di " + Math.round(Math.atan2(Math.abs(fx), Math.abs(fy)) * 180 / Math.PI) + "° dalla verticale";
             righe += '<tr><td>' + it.nome + ' <small style="color:var(--text-dim)">ancoraggio (cerniera)</small><br><small style="color:var(--text-dim)">verticale ' + chili(Math.abs(fy)) + ' kg ' + (fy > 0 ? "verso il basso" : "verso l’alto") + ' · orizzontale ' + chili(Math.abs(fx)) + ' kg' + (Math.abs(fx) >= 1 ? (fx > 0 ? " verso destra" : " verso sinistra") : "") + ' · ' + dir + '</small></td><td><b>' + chili(F) + ' kg</b></td></tr>';
             return;
