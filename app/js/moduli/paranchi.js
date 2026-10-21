@@ -232,7 +232,8 @@ FireOps.registra({
       return it.id;
     }
     const vs = (a, b) => { const d = a.y - b.y; return d > 0.5 ? 1 : d < -0.5 ? -1 : 0; };
-    const fatt = (it, eta) => !it ? 1 : isP(it) || (it.t === "blo" && it.p) ? 1 / eta : it.t === "dis" ? (eta >= 1 ? 1 : 1 / it.e) : 1;
+    const etaG = () => Math.min(1, Math.max(0.3, Number($("#pa-eta").value) || 0.95));
+    const fatt = (it, eta) => !it ? 1 : isP(it) || (it.t === "blo" && it.p) ? (eta >= 1 ? 1 : 1 / (it.er || eta)) : it.t === "dis" ? (eta >= 1 ? 1 : 1 / it.e) : 1;
     // bloccante che morde la corda (non fissato a un punto fermo): la corda si interrompe li' e le due parti sono legate al bloccante
     const morde = it => it && it.t === "blo" && !it.p && corpo(it) !== "fix";
     function risolvi(eta, W) {
@@ -498,6 +499,7 @@ FireOps.registra({
           '<div class="chips"><button type="button" id="pa-sc" class="acc">' + (fissa === it.id ? "Tocca il punto…" : "Fissa a…") + '</button>' + (it.f ? '<button type="button" id="pa-sl">Libera</button>' : "") + '</div>';
       }
       if (it.t === "blo") h += '<p class="nota">Il bloccante morde la corda e la lascia passare dritta, senza puleggia e senza perdite.</p>';
+      if (isP(it)) h += '<label for="pa-ser" style="margin-top:8px">Rendimento di questa carrucola (vuoto = come le altre, ' + fmt(etaG(), 2) + ')</label><input type="number" id="pa-ser" inputmode="decimal" min="0.1" max="1" step="0.01" placeholder="' + fmt(etaG(), 2) + '" value="' + (it.er || "") + '">';
       if (it.t === "dis") h += '<div class="chips" style="margin-top:8px"><button type="button" data-dt="pul" aria-pressed="' + (it.v === "pul") + '">Con puleggia</button><button type="button" data-dt="cam" aria-pressed="' + (it.v !== "pul") + '">A camma</button></div>';
       if (it.t === "dis") h += '<label for="pa-se" style="margin-top:8px">Rendimento di passaggio del discensore (0,1–1)</label><input type="number" id="pa-se" inputmode="decimal" min="0.1" max="1" step="0.05" value="' + it.e + '"><p class="nota">Con puleggia: la corda gira intorno (rendimento di partenza 0,85). A camma: autofrenante, la corda passa dritta (rendimento di partenza 0,6). Il rendimento è modificabile; senza attriti vale 1.</p>';
       if (it.t === "car") h += '<p class="nota">Il peso si imposta in “Dati”.</p>';
@@ -630,6 +632,7 @@ FireOps.registra({
       }
       if (it.t === "dis") h += '<div class="rg"><button type="button" data-m="dpul" aria-pressed="' + (it.v === "pul") + '">Con puleggia</button><button type="button" data-m="dcam" aria-pressed="' + (it.v !== "pul") + '">A camma</button></div>';
       if (it.t === "dis") h += '<div class="rg"><button type="button" data-m="em" aria-label="Meno rendimento">−</button><span>rendimento ' + fmt(it.e, 2) + '</span><button type="button" data-m="ep" aria-label="Più rendimento">+</button></div>';
+      if (isP(it)) h += '<div class="rg"><button type="button" data-m="em" aria-label="Meno rendimento">−</button><span>rendimento ' + fmt(it.er || etaG(), 2) + (it.er ? "" : " (comune)") + '</span><button type="button" data-m="ep" aria-label="Più rendimento">+</button></div>' + (it.er ? '<button type="button" data-m="ecom">Rendimento come le altre carrucole</button>' : "");
       if (it.t === "pul") h += '<button type="button" data-m="tdop">Trasforma in carrucola doppia</button>';
       if (it.t === "pul2") h += '<button type="button" data-m="tpul">Trasforma in carrucola singola</button>';
       if (isP(it) || it.t === "blo") h += '<button type="button" data-m="tdis">Trasforma in discensore</button>';
@@ -782,7 +785,8 @@ FireOps.registra({
       else if (m === "tdis") { it.t = "dis"; it.nome = "D" + (++cnt.dis); it.v = it.v || "cam"; it.e = it.v === "pul" ? 0.85 : 0.6; }
       else if (m === "tpul") { if (it.t !== "pul2") it.nome = "C" + (++cnt.pul); it.t = "pul"; }
       else if (m === "tdop") { it.t = "pul2"; }
-      else if (m === "em" || m === "ep") { it.e = Math.round(Math.min(1, Math.max(0.1, it.e + (m === "ep" ? 0.05 : -0.05))) * 100) / 100; apriMenu(it); tutto(); return; }
+      else if (m === "ecom") { delete it.er; const t1 = menuT; apriMenu(it); menuT = t1; tutto(); return; }
+      else if (m === "em" || m === "ep") { const k = isP(it) ? "er" : "e", v0 = isP(it) ? (it.er || etaG()) : it.e; it[k] = Math.round(Math.min(1, Math.max(0.1, v0 + (m === "ep" ? 0.05 : -0.05))) * 100) / 100; const t0 = menuT; apriMenu(it); menuT = t0; tutto(); return; }
       else if (m === "elimina") {
         const id = it.id;
         items = items.filter(i => i.id !== id);
@@ -794,6 +798,7 @@ FireOps.registra({
     });
     $("#pa-sel").addEventListener("change", e => {
       const it = byId(sel); if (!it) return;
+      if (e.target.id === "pa-ser") { const v = parseFloat(String(e.target.value).replace(",", ".")); if (v > 0) it.er = Math.min(1, Math.max(0.1, v)); else delete it.er; }
       if (e.target.id === "pa-se") it.e = Math.min(1, Math.max(0.1, parseFloat(String(e.target.value).replace(",", ".")) || 0.6));
       tutto();
     });
