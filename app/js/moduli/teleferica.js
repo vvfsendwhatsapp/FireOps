@@ -80,31 +80,14 @@ FireOps.registra({
 
 <div class="blocco">
   <h2 class="tit">Pescante</h2>
-  <div class="riga" style="margin-top:0"><div style="grid-column:1/-1"><label for="tf-pm">Modalità</label>
-    <select id="tf-pm"><option value="N">Nessuno: calata dal carrello</option><option value="L">Pescante da un lato</option><option value="G">Gru edile</option></select></div></div>
-  <div id="tf-pl" hidden>
-    <div class="riga">
-      <div><label for="tf-pS">Lato del pescante</label><select id="tf-pS"><option value="A">Su A (a monte)</option><option value="B">Su B (a valle)</option></select></div>
-      <div><label for="tf-pH">Altezza della punta (m)</label><input type="number" id="tf-pH" inputmode="decimal" min="0.5" max="30" step="0.5" value="3"></div>
-    </div>
-    <div class="riga">
-      <div><label for="tf-pR">Sporgenza verso il vuoto (m)</label><input type="number" id="tf-pR" inputmode="decimal" min="0" max="30" step="0.5" value="1.5"></div>
-      <div><label for="tf-pm2">Margine corda (m)</label><input type="number" id="tf-pm2" inputmode="decimal" min="0" max="30" step="0.5" value="5"></div>
-    </div>
-  </div>
-  <div id="tf-gr" hidden>
-    <div class="riga">
-      <div><label for="tf-gx">Posizione della gru, da A (m)</label><input type="number" id="tf-gx" inputmode="decimal" step="0.5" value="46"></div>
-      <div><label for="tf-gz">Quota del piede, rispetto ad A (m)</label><input type="number" id="tf-gz" inputmode="decimal" step="0.5" value="-8"></div>
-    </div>
-    <div class="riga">
-      <div><label for="tf-gH">Altezza sotto il braccio (m)</label><input type="number" id="tf-gH" inputmode="decimal" min="3" max="120" step="1" value="30"></div>
-      <div><label for="tf-gR">Sbraccio massimo (m)</label><input type="number" id="tf-gR" inputmode="decimal" min="3" max="100" step="1" value="30"></div>
-    </div>
-    <div class="riga">
-      <div><label for="tf-gm">Margine corda (m)</label><input type="number" id="tf-gm" inputmode="decimal" min="0" max="30" step="0.5" value="5"></div>
-    </div>
-  </div>
+  <div class="riga" style="margin-top:0"><div style="grid-column:1/-1"><label for="tf-pm">Tipo</label>
+    <select id="tf-pm">
+      <option value="1">1 · Diretto da A: la corda passa nel carrello e scende l’operatore</option>
+      <option value="2">2 · Con carrucola sul soccorritore: la corda risale al carrello</option>
+      <option value="3">3 · Gru edile: come il 2, ma la corda è fissata in B</option>
+    </select></div></div>
+  <div class="riga"><div><label for="tf-pm2">Margine corda (m)</label><input type="number" id="tf-pm2" inputmode="decimal" min="0" max="30" step="0.5" value="5"></div></div>
+  <p class="nota" id="tf-pnota"></p>
 </div>
 
 <div class="blocco">
@@ -149,8 +132,6 @@ FireOps.registra({
     function disegna(i, k, ris) {
       const pad = 4;
       const pts = [[0, 0], [i.L, -i.D], [i.xv, i.zv], [ris.x, ris.zc]];
-      if (i.pm === "L") { const xb = i.pS === "A" ? 0 : i.L, zb = i.pS === "A" ? 0 : -i.D; pts.push([xb + (i.pS === "A" ? i.pR : -i.pR), zb + i.pH]); }
-      if (i.pm === "G") { const dg = i.xv < i.gx ? -1 : 1; pts.push([i.gx, i.gz], [i.gx, i.gz + i.gH], [i.gx + dg * Math.min(i.gR, Math.abs(i.xv - i.gx) + 2), i.gz + i.gH], [i.gx - dg * i.gR * 0.3, i.gz + i.gH]); }
       let x0 = Math.min(...pts.map(p => p[0])) - pad, x1 = Math.max(...pts.map(p => p[0])) + pad, y0 = Math.min(...pts.map(p => p[1])) - pad, y1 = Math.max(...pts.map(p => p[1])) + pad;
       const W = 600, sc = Math.min(W / (x1 - x0), 400 / (y1 - y0)), Hh = (y1 - y0) * sc + 20;
       const X = x => 10 + (x - x0) * sc, Y = y => 10 + (y1 - y) * sc;
@@ -163,17 +144,12 @@ FireOps.registra({
       s += '<path d="M' + X(0).toFixed(1) + " " + Y(0).toFixed(1) + "L" + X(ris.x).toFixed(1) + " " + Y(ris.zc).toFixed(1) + "L" + X(i.L).toFixed(1) + " " + Y(-i.D).toFixed(1) + '" fill="none" stroke="#e8734a" stroke-width="2.6"/>';
       // ancoraggi
       [[0, 0, "A"], [i.L, -i.D, "B"]].forEach(a => { s += '<path d="M' + (X(a[0]) - 8) + " " + (Y(a[1]) + 12) + "L" + X(a[0]) + " " + Y(a[1]) + "L" + (X(a[0]) + 8) + " " + (Y(a[1]) + 12) + 'Z" fill="#8b96a3"/><text x="' + (X(a[0]) - (a[2] === "A" ? 14 : -14)) + '" y="' + (Y(a[1]) - 6) + '" fill="#8b96a3" font-size="13" font-weight="700" text-anchor="middle">' + a[2] + "</text>"; });
-      // pescante
-      if (i.pm === "L") {
-        const xb = i.pS === "A" ? 0 : i.L, zb = i.pS === "A" ? 0 : -i.D, tx = xb + (i.pS === "A" ? i.pR : -i.pR), tz = zb + i.pH;
-        s += '<path d="M' + X(xb) + " " + Y(zb) + "L" + X(tx) + " " + Y(tz) + '" stroke="#c77dff" stroke-width="4" fill="none"/>';
-        s += '<path d="M' + X(xb) + " " + Y(zb) + "L" + X(tx) + " " + Y(tz) + "L" + X(i.xv) + " " + Y(i.zv) + '" stroke="#4A93C8" stroke-width="1.8" fill="none"/>';
-      } else if (i.pm === "G") {
-        const dg = i.xv < i.gx ? -1 : 1;
-        s += '<path d="M' + X(i.gx) + " " + Y(i.gz) + "L" + X(i.gx) + " " + Y(i.gz + i.gH) + "M" + X(i.gx - dg * i.gR * 0.3) + " " + Y(i.gz + i.gH) + "L" + X(i.gx + dg * Math.min(i.gR, Math.abs(i.xv - i.gx) + 2)) + " " + Y(i.gz + i.gH) + '" stroke="#ffd700" stroke-width="4" fill="none"/>';
-        s += '<path d="M' + X(i.xv) + " " + Y(i.gz + i.gH) + "L" + X(i.xv) + " " + Y(i.zv) + '" stroke="#4A93C8" stroke-width="1.8" fill="none"/>';
-      } else {
-        s += '<path d="M' + X(ris.x) + " " + Y(ris.zc) + "L" + X(i.xv) + " " + Y(i.zv) + '" stroke="#4A93C8" stroke-width="1.8" fill="none"/>';
+      // corda del pescante: dal punto fisso lungo la portante, nel carrello, poi giu' fino alla vittima (e su per il tipo 2 e 3)
+      {
+        const fx = i.pm === "3" ? i.L : 0, fz = i.pm === "3" ? -i.D : 0;
+        s += '<path d="M' + X(fx) + " " + Y(fz) + "L" + X(ris.x) + " " + Y(ris.zc) + '" stroke="#4A93C8" stroke-width="2" stroke-dasharray="2 3" fill="none"/>';
+        s += '<path d="M' + X(ris.x) + " " + Y(ris.zc) + "L" + X(i.xv) + " " + Y(i.zv) + '" stroke="#4A93C8" stroke-width="2" fill="none"/>';
+        if (i.pm !== "1") s += '<path d="M' + (X(ris.x) + 5) + " " + Y(ris.zc) + "L" + (X(i.xv) + 5) + " " + Y(i.zv) + '" stroke="#4A93C8" stroke-width="2" fill="none"/>';
       }
       // carrello e vittima
       s += '<rect x="' + (X(ris.x) - 7) + '" y="' + (Y(ris.zc) - 5) + '" width="14" height="10" rx="2" fill="#ffd700"/>';
@@ -187,10 +163,8 @@ FireOps.registra({
       const i = {
         L: Math.max(3, num("#tf-L", 40)), D: num("#tf-D", 0), xv: num("#tf-xv", 20), zv: num("#tf-zv", -10),
         Q: Math.max(1, num("#tf-Q", 200)), T0: Math.max(1, num("#tf-T0", 300)), e: Math.max(0.1, num("#tf-e", 5)), F: Math.max(1, num("#tf-F", 150)), w: Math.max(0.001, num("#tf-w", 0.075)), m: Math.max(0, num("#tf-m", 3)),
-        pm: $("#tf-pm").value, pS: $("#tf-pS").value, pH: num("#tf-pH", 3), pR: num("#tf-pR", 1.5), pm2: num("#tf-pm2", 5),
-        gx: num("#tf-gx", 46), gz: num("#tf-gz", -8), gH: num("#tf-gH", 30), gR: num("#tf-gR", 30), gm: num("#tf-gm", 5)
+        pm: $("#tf-pm").value, pm2: num("#tf-pm2", 5)
       };
-      $("#tf-pl").hidden = i.pm !== "L"; $("#tf-gr").hidden = i.pm !== "G";
       const xcRaw = num("#tf-xc", 50) / 100 * i.L, k = calcola(i), ris = k.sotto(xcRaw);
       $("#tf-xcl").textContent = fmt(ris.x, 1) + " m da A";
       $("#tf-vnota").textContent = i.xv < 0 || i.xv > i.L ? "La vittima è fuori dalla luce tra A e B: il carrello si ferma al più vicino." : "";
@@ -200,22 +174,12 @@ FireOps.registra({
       const mid = k.sotto(i.L / 2), Sload = mid.l1 + mid.l2;
       const lungP = k.Su + 2 * i.m, tr = Sload + 2 * i.m;   // ogni traente copre tutta la luce (come le portanti), legato al carrello e ai due capi
       const quotaCarrello = ris.zc, calata = quotaCarrello - i.zv;
-      // pescante
-      let corda = null, cordaTxt = "";
-      if (i.pm === "L") {
-        const xb = i.pS === "A" ? 0 : i.L, zb = i.pS === "A" ? 0 : -i.D, tx = xb + (i.pS === "A" ? i.pR : -i.pR), tz = zb + i.pH;
-        const a = Math.hypot(tx - xb, tz - zb), b = Math.hypot(i.xv - tx, i.zv - tz);
-        corda = a + b + i.pm2; cordaTxt = "dalla base alla punta " + fmt(a, 1) + " m, dalla punta alla vittima " + fmt(b, 1) + " m, margine " + fmt(i.pm2, 1) + " m";
-        if (i.zv > tz) av.push("La vittima è più in alto della punta del pescante: non si cala, si recupera.");
-      } else if (i.pm === "G") {
-        const top = i.gz + i.gH, dx = Math.abs(i.xv - i.gx);
-        corda = Math.max(0, top - i.zv) + i.gm; cordaTxt = "dal braccio alla vittima " + fmt(Math.max(0, top - i.zv), 1) + " m, margine " + fmt(i.gm, 1) + " m";
-        if (dx > i.gR) av.push("La vittima è fuori dallo sbraccio della gru: " + fmt(dx, 1) + " m, massimo " + fmt(i.gR, 1) + " m.");
-        if (i.zv > top) av.push("La vittima è più in alto del braccio della gru.");
-      } else {
-        corda = Math.max(0, calata) + i.pm2; cordaTxt = "calata dal carrello " + fmt(Math.max(0, calata), 1) + " m, margine " + fmt(i.pm2, 1) + " m";
-        if (calata < 0) av.push("La vittima è più in alto del carrello (" + fmt(-calata, 1) + " m): serve un recupero, non una calata.");
-      }
+      // pescante: la corda parte dal punto fisso (A nei tipi 1 e 2, B nel tipo 3), corre lungo la portante fino alla carrucola del carrello e scende
+      const dalB = i.pm === "3", tratto = dalB ? ris.l2 : ris.l1, nCalata = i.pm === "1" ? 1 : 2, drop = Math.max(0, calata);
+      const corda = tratto + nCalata * drop + i.pm2, tiroRec = i.Q * G / (i.pm === "1" ? 1 : 2);
+      const cordaTxt = "da " + (dalB ? "B" : "A") + " al carrello " + fmt(tratto, 1) + " m, " + (nCalata === 1 ? "calata " + fmt(drop, 1) + " m" : "calata e risalita " + fmt(drop, 1) + " m + " + fmt(drop, 1) + " m") + ", margine " + fmt(i.pm2, 1) + " m";
+      $("#tf-pnota").textContent = i.pm === "1" ? "Corda fissata in A, passa nella carrucola del carrello e scende: l’operatore arriva alla vittima e la recupera sulla stessa corda. Vantaggio 1:1." : i.pm === "2" ? "Come il tipo 1, ma sul soccorritore c’è una carrucola: la corda scende, gira e risale fino al carrello dove si fissa. Vantaggio 1:2." : "Come il tipo 2, ma la corda passa nel carrello e va fissata in B (gru edile). Vantaggio 1:2.";
+      if (calata < 0) av.push("La vittima è più in alto del carrello (" + fmt(-calata, 1) + " m): serve un recupero verso l’alto.");
       if (ris.TA / G * 1 > 1000 || ris.TB / G > 1000) av.push("Tensione molto alta su una portante: verifica il carico di rottura della corda e degli ancoraggi.");
       const freccia = ris.d, fr = pc(freccia, i.L);
       const al0 = k.S0 - k.Su, alC = Sload - k.Su;
@@ -233,7 +197,8 @@ FireOps.registra({
         cell("Traenti del carrello (2)", fmt(tr, 1), "m", "ciascuno, come le portanti · legati al carrello, uno tira verso A e uno verso B · in tutto " + fmt(2 * tr, 0) + " m") +
         cell("Forza sull’ancoraggio A", kg(2 * ris.TA), "kg", "due portanti · orizz. " + kg(2 * ris.H) + " kg, vert. " + kg(2 * Math.abs(ris.VA)) + " kg") +
         cell("Forza sull’ancoraggio B", kg(2 * ris.TB), "kg", "due portanti · orizz. " + kg(2 * ris.H) + " kg, vert. " + kg(2 * Math.abs(ris.VB)) + " kg") +
-        cell(i.pm === "N" ? "Corda minima per la calata" : i.pm === "L" ? "Corda minima del pescante" : "Corda minima con la gru", fmt(corda, 1), "m", cordaTxt, "g");
+        cell("Tiro sulla corda del pescante", kg(tiroRec), "kg", i.pm === "1" ? "1:1" : "1:2 (carrucola sul soccorritore)") +
+        cell("Corda minima del pescante (tipo " + i.pm + ")", fmt(corda, 1), "m", cordaTxt, "g");
       disegna(i, k, ris);
     }
     root.addEventListener("input", aggiorna);
