@@ -73,7 +73,7 @@ FireOps.registra({
 .pg-paranchi #pa-ban span { flex: 1; }
 .pg-paranchi #pa-ban button { pointer-events: auto; min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); color: var(--text); font: inherit; cursor: pointer; }
 .pg-paranchi #pa-ban button.acc { background: var(--yellow); color: #000; border-color: var(--yellow); }
-.pg-paranchi #pa-menu { position: absolute; z-index: 3; display: flex; flex-direction: column; gap: 6px; min-width: 190px; padding: 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); box-shadow: 0 6px 22px rgba(0,0,0,.5); }
+.pg-paranchi #pa-menu { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; position: absolute; z-index: 3; display: flex; flex-direction: column; gap: 6px; min-width: 190px; padding: 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); box-shadow: 0 6px 22px rgba(0,0,0,.5); }
 .pg-paranchi #pa-menu b { font-size: 14px; padding: 0 2px; }
 .pg-paranchi #pa-menu button { min-height: 48px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 15px; text-align: left; cursor: pointer; }
 .pg-paranchi #pa-menu button.acc { background: var(--yellow); color: #000; border-color: var(--yellow); font-weight: 700; }
@@ -608,6 +608,7 @@ FireOps.registra({
       m.style.top = Math.max(4, Math.min(ch - m.offsetHeight - 4, rc.y * u - 20)) + "px";
       tutto();
     }
+    let menuT = 0;   // istante di apertura: i tocchi subito dopo la pressione lunga sul menu vengono ignorati
     function chiudiMenu() { const era = menuC !== null; $("#pa-menu").hidden = true; menu = null; menuC = null; if (era) calcola(); }
     function apriMenu(it) {
       if (!(isP(it) || it.t === "blo" || it.t === "dis" || it.t === "anc")) return;
@@ -626,7 +627,9 @@ FireOps.registra({
       h += '<button type="button" data-m="elimina">Elimina</button><button type="button" data-m="chiudi">Chiudi</button>';
       const m = $("#pa-menu"); m.innerHTML = h; m.hidden = false;
       const cw = cv.clientWidth, ch = cv.clientHeight, u = cw / VW;
-      m.style.left = Math.max(4, Math.min(cw - m.offsetWidth - 4, it.x * u + 16)) + "px";
+      const mw = m.offsetWidth, dx = it.x * u, vicino = Math.max(4, Math.min(cw - mw - 4, dx + 40));   // il menu si apre di lato, non sotto il dito
+      m.style.left = (dx + 40 + mw <= cw - 4 ? vicino : Math.max(4, dx - 40 - mw)) + "px";
+      menuT = Date.now();
       m.style.top = Math.max(4, Math.min(ch - m.offsetHeight - 4, it.y * u - 24)) + "px";
     }
     function avviaFissa(it) {
@@ -749,7 +752,9 @@ FireOps.registra({
         tutto();
       } else chiudiCorda(b.dataset.b === "finec");
     });
+    $("#pa-menu").addEventListener("contextmenu", e => e.preventDefault());
     $("#pa-menu").addEventListener("click", e => {
+      if (Date.now() - menuT < 600) { e.stopPropagation(); return; }
       const b = e.target.closest("button[data-m]"); if (!b) return;
       if (menuC !== null) {
         const i = menuC, m = b.dataset.m; chiudiMenu();
