@@ -131,7 +131,7 @@ FireOps.registra({
 
     let items = [], corde = [], sel = null, tracc = null, uid = 0, cnt = {anc: 0, pul: 0, blo: 0, dis: 0};
     const HINT = "<b>1</b> Aggiungi punti e trascinali. <b>2</b> Fissa ogni carrucola: trascinala vicino a un ancoraggio o al carico (si aggancia), oppure toccala e usa “Fissa a…”. <b>3</b> “Disegna corda” e tocca i punti nell’ordine di passaggio.";
-    let fissa = null, menu = null, pressT = null;
+    let fissa = null, menu = null, pressT = null, nuova = false, ins = null, nsel = null;
     const byId = id => items.find(i => i.id === id);
     const nome = it => it.t === "car" ? "Carico" : it.t === "op" ? "Operatori" : it.nome;
     function add(t, x, y, extra) {
@@ -143,7 +143,7 @@ FireOps.registra({
       items.push(it);
       return it;
     }
-    function azzera() { items = []; corde = []; sel = null; tracc = null; fissa = null; cnt = {anc: 0, pul: 0, blo: 0, dis: 0}; }
+    function azzera() { items = []; corde = []; sel = null; tracc = null; fissa = null; ins = null; nsel = null; nuova = false; cnt = {anc: 0, pul: 0, blo: 0, dis: 0}; }
 
     // ---------- sistemi pronti: tackle a n capi (il capo di tiro esce sempre dal blocco fisso) ----------
     // yF = quota del blocco fisso, yM = quota del blocco mobile; radice = carico (primo stadio) o prima carrucola libera
@@ -308,7 +308,7 @@ FireOps.registra({
       });
       // corde
       corde.forEach((c, ri) => {
-        const g = geom(c); if (g.some(x => !x)) return;
+        const g = geom(c); if (g.length < 2 || g.some(x => !x)) return;
         ctx.strokeStyle = "#e8734a"; ctx.lineWidth = 2.6; ctx.beginPath();
         ctx.moveTo(X(g[0].o[0]), Y(g[0].o[1]));
         for (let j = 1; j < g.length; j++) {
@@ -383,10 +383,17 @@ FireOps.registra({
       if ($("#pa-sf")) $("#pa-sf").value = it.f;
     }
     function elencoCorde() {
-      $("#pa-corde").innerHTML = corde.length ? '<div class="nota" style="margin-bottom:4px">Corde (dal capo morto al capo di tiro):</div>' + corde.map((c, i) =>
-        '<div class="el"><div class="elh"><span>' + (i + 1) + " · " + c.map(id => { const o = byId(id); return o ? nome(o) : "?"; }).join(" → ") + '</span><span class="ctl"><button type="button" data-a="inv" data-i="' + i + '" aria-label="Inverti">⇄</button><button type="button" data-a="del" data-i="' + i + '" aria-label="Elimina corda">✕</button></span></div></div>').join("") : "";
+      if (!corde.length) { $("#pa-corde").innerHTML = ""; return; }
+      $("#pa-corde").innerHTML = '<div class="nota" style="margin-bottom:4px">Corde, dal capo morto al capo di tiro. Tocca un punto della corda per spostarlo, toglierlo o inserire altri punti dopo di lui.</div>' + corde.map((c, i) => {
+        const inMod = tracc === c;
+        let h = '<div class="el"><div class="elh"><b>Corda ' + (i + 1) + (inMod ? " · in modifica" : "") + '</b><span class="ctl"><button type="button" data-a="mod" data-i="' + i + '" aria-label="Modifica corda">✎</button><button type="button" data-a="inv" data-i="' + i + '" aria-label="Inverti">⇄</button><button type="button" data-a="del" data-i="' + i + '" aria-label="Elimina corda">✕</button></span></div>';
+        h += '<div class="chips nodi" style="margin-top:6px">' + (c.length ? c.map((id, k) => { const o = byId(id); return '<button type="button" data-i="' + i + '" data-k="' + k + '" aria-pressed="' + String(!!nsel && nsel.i === i && nsel.k === k) + '">' + (k + 1) + " " + (o ? nome(o) : "?") + "</button>"; }).join("") : '<span class="nota">nessun punto</span>') + "</div>";
+        if (nsel && nsel.i === i && c[nsel.k]) {
+          h += '<div class="ctl" style="margin-top:6px;flex-wrap:wrap"><button type="button" data-n="su" data-i="' + i + '" aria-label="Sposta prima">◀</button><button type="button" data-n="giu" data-i="' + i + '" aria-label="Sposta dopo">▶</button><button type="button" data-n="ins" data-i="' + i + '" style="min-width:auto;padding:0 12px">＋ Inserisci dopo</button><button type="button" data-n="del" data-i="' + i + '" aria-label="Togli punto">✕</button></div>';
+        }
+        return h + "</div>";
+      }).join("");
     }
-
     function calcola() {
       const kg = Math.max(0, Number($("#pa-kg").value) || 0), h = Math.max(0, Number($("#pa-h").value) || 0);
       const eta = Math.min(1, Math.max(0.3, Number($("#pa-eta").value) || 0.95));
@@ -439,8 +446,10 @@ FireOps.registra({
         b.innerHTML = "<span>Tocca l’ancoraggio, il carico o la carrucola a cui fissare <b>" + (it ? nome(it) : "") + "</b></span><button type=\"button\" data-b=\"annf\">Annulla</button>";
         b.hidden = false;
       } else if (tracc) {
-        b.innerHTML = "<span>Corda: " + (tracc.length ? tracc.map(id => nome(byId(id))).join(" → ") : "tocca il capo morto") + "</span>" +
-          (tracc.length >= 2 ? '<button type="button" class="acc" data-b="finec">Fine</button>' : "") + '<button type="button" data-b="annc">Annulla</button>';
+        const i = corde.indexOf(tracc) + 1;
+        const testo = ins !== null ? "Inserisci nella corda " + i + " dopo il punto " + (ins + 1) + ": tocca i punti" : "Corda " + i + ": " + (tracc.length ? tracc.map(id => nome(byId(id))).join(" → ") : "tocca il capo morto");
+        b.innerHTML = "<span>" + testo + "</span>" + (tracc.length ? '<button type="button" data-b="undo" aria-label="Togli ultimo">↶</button>' : "") +
+          '<button type="button" class="acc" data-b="finec">Fine</button>' + (nuova ? '<button type="button" data-b="annc">Annulla</button>' : "");
         b.hidden = false;
       } else b.hidden = true;
     }
@@ -490,7 +499,11 @@ FireOps.registra({
         fissa = null; tutto(); return;
       }
       if (tracc) {
-        if (it) { if (tracc[tracc.length - 1] !== it.id) tracc.push(it.id); calcola(); aggBan(); $("#pa-hint").textContent = "Corda: " + tracc.map(id => nome(byId(id))).join(" → ") + ". Tocca il punto successivo, poi “Fine”."; }
+        if (it) {
+          if (ins !== null) { tracc.splice(ins + 1, 0, it.id); ins++; }
+          else if (tracc[tracc.length - 1] !== it.id) tracc.push(it.id);
+          tutto();
+        }
         return;
       }
       if (!it) { if (sel) { sel = null; tutto(); } return; }
@@ -533,20 +546,27 @@ FireOps.registra({
     });
     $("#pa-calc").addEventListener("click", () => { calcola(); $("#pa-mini").scrollIntoView({block: "nearest"}); });
     function chiudiCorda(salva) {
-      if (salva && tracc && tracc.length >= 2) corde.push(tracc.slice());
-      tracc = null; $("#pa-cd").textContent = "Disegna corda"; $("#pa-hint").innerHTML = HINT; tutto();
+      if (tracc) {
+        const i = corde.indexOf(tracc);
+        if (i >= 0 && ((!salva && nuova) || tracc.length < 2)) corde.splice(i, 1);
+      }
+      tracc = null; nuova = false; ins = null; nsel = null;
+      $("#pa-cd").textContent = "Disegna corda"; $("#pa-hint").innerHTML = HINT; tutto();
     }
     $("#pa-cd").addEventListener("click", () => {
       if (!tracc) {
-        tracc = []; sel = null; fissa = null; chiudiMenu(); $("#pa-cd").textContent = "Fine corda";
-        $("#pa-hint").textContent = "Tocca in ordine: capo morto, carrucole e bloccanti attraversati, e per ultimo il capo di tiro (Operatori, oppure il punto a cui è legata).";
+        corde.push([]); tracc = corde[corde.length - 1]; nuova = true; ins = null; nsel = null; sel = null; fissa = null; chiudiMenu(); $("#pa-cd").textContent = "Fine corda";
+        $("#pa-hint").textContent = "Tocca in ordine: capo morto, carrucole e bloccanti attraversati, e per ultimo il capo di tiro (Operatori, oppure il punto a cui è legata). Puoi modificarla dopo.";
         tutto();
       } else chiudiCorda(true);
     });
     $("#pa-ban").addEventListener("click", e => {
       const b = e.target.closest("button[data-b]"); if (!b) return;
       if (b.dataset.b === "annf") { fissa = null; $("#pa-hint").innerHTML = HINT; tutto(); }
-      else chiudiCorda(b.dataset.b === "finec");
+      else if (b.dataset.b === "undo") {
+        if (tracc) { if (ins !== null && ins >= 0) { tracc.splice(ins, 1); ins--; } else tracc.pop(); }
+        tutto();
+      } else chiudiCorda(b.dataset.b === "finec");
     });
     $("#pa-menu").addEventListener("click", e => {
       const b = e.target.closest("button[data-m]"), it = menu && byId(menu); if (!b || !it) return;
@@ -581,17 +601,36 @@ FireOps.registra({
       corde = corde.map(c => c.filter(x => x !== id)).filter(c => c.length >= 2);
       sel = null; tutto();
     });
+    function entraModifica(i, inserisciDopo) {
+      tracc = corde[i]; nuova = false; ins = inserisciDopo; sel = null; fissa = null; chiudiMenu();
+      $("#pa-cd").textContent = "Fine corda";
+      $("#pa-hint").textContent = ins === null ? "Modifica corda " + (i + 1) + ": tocca i punti da aggiungere in fondo." : "Tocca i punti da inserire nella corda " + (i + 1) + ", uno dopo l’altro.";
+      tutto();
+    }
     $("#pa-corde").addEventListener("click", e => {
-      const b = e.target.closest("button[data-a]"); if (!b) return;
-      const i = Number(b.dataset.i);
-      if (b.dataset.a === "del") corde.splice(i, 1); else corde[i].reverse();
+      const n = e.target.closest("button[data-n]"), a = e.target.closest("button[data-a]"), kk = e.target.closest("button[data-k]");
+      if (kk) { const i = Number(kk.dataset.i), k = Number(kk.dataset.k); nsel = nsel && nsel.i === i && nsel.k === k ? null : {i, k}; elencoCorde(); return; }
+      if (n && nsel) {
+        const i = Number(n.dataset.i), c = corde[i]; if (!c) return;
+        if (n.dataset.n === "su" && nsel.k > 0) { [c[nsel.k - 1], c[nsel.k]] = [c[nsel.k], c[nsel.k - 1]]; nsel.k--; }
+        else if (n.dataset.n === "giu" && nsel.k < c.length - 1) { [c[nsel.k + 1], c[nsel.k]] = [c[nsel.k], c[nsel.k + 1]]; nsel.k++; }
+        else if (n.dataset.n === "del") { c.splice(nsel.k, 1); nsel = null; if (ins !== null && tracc === c) ins = null; }
+        else if (n.dataset.n === "ins") { const k = nsel.k; nsel = null; entraModifica(i, k); return; }
+        tutto(); return;
+      }
+      if (!a) return;
+      const i = Number(a.dataset.i);
+      if (a.dataset.a === "mod") { if (tracc === corde[i]) chiudiCorda(true); else { if (tracc) chiudiCorda(true); entraModifica(i, null); } return; }
+      if (tracc) chiudiCorda(true);
+      nsel = null;
+      if (a.dataset.a === "del") corde.splice(i, 1); else corde[i].reverse();
       tutto();
     });
 
     $("#pa-pre").innerHTML = PRESET.map((p, i) => '<button type="button" data-i="' + i + '">' + p[0] + "</button>").join("");
     $("#pa-pre").addEventListener("click", e => {
       const b = e.target.closest("button"); if (!b) return;
-      if (tracc) { tracc = null; $("#pa-cd").textContent = "Disegna corda"; }
+      if (tracc) { tracc = null; nuova = false; ins = null; $("#pa-cd").textContent = "Disegna corda"; }
       sistema(PRESET[Number(b.dataset.i)][1]); tutto();
     });
     $("#pa-tipo").addEventListener("change", () => {
