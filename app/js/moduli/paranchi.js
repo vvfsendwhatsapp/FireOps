@@ -291,7 +291,7 @@ FireOps.registra({
 
     // ---------- disegno ----------
     const lung = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
-    const rg = it => it.t === "dis" && it.v === "cam" ? 1.4 * R : R;   // raggio del giro della corda: la camma e' piu' grande
+    const rg = it => it.t === "dis" && it.v === "cam" ? 1.4 * R : 1.2 * R;   // raggio del giro della corda: la camma e' piu' grande
     function geom(c) {   // punti di passaggio di una corda
       const nodi = c.map(byId);
       return nodi.map((p, j) => {
@@ -347,7 +347,7 @@ FireOps.registra({
           ctx.fillStyle = txt; ctx.font = "bold 10px sans-serif"; ctx.fillText(it.nome, cx, cy + (via[it.id] === false ? -3 : 3)); ctx.font = "11px sans-serif";
           return;
         }
-        if (it.t === "blo" && !it.p) ctx.rect(X(it.x - R), Y(it.y - R), 2 * R * u, 2 * R * u); else ctx.arc(X(it.x), Y(it.y), R * u, 0, 7);
+        if (it.t === "blo" && !it.p) ctx.rect(X(it.x - R), Y(it.y - R), 2 * R * u, 2 * R * u); else ctx.arc(X(it.x), Y(it.y), 0.72 * rg(it) * u, 0, 7);   // il corpo e' piu' piccolo del giro: la corda passa all'esterno
         ctx.fill(); ctx.stroke();
         ctx.fillStyle = txt; ctx.fillText(it.nome, X(it.x), Y(it.y));
       });
