@@ -59,6 +59,7 @@ FireOps.registra({
 .pg-paranchi .tab td:last-child { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
 .pg-paranchi .sez { margin: 12px 0 6px; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-dim); }
 .pg-paranchi .tb { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pg-paranchi .tb#pa-add { grid-template-columns: 1fr 1fr 1fr; }
 .pg-paranchi .tb.tre { grid-template-columns: 2fr 1fr 1fr; }
 .pg-paranchi .tb button { min-height: 48px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
 .pg-paranchi .tb button i { width: 12px; height: 12px; border-radius: 50%; flex: none; }
@@ -89,7 +90,7 @@ FireOps.registra({
   <div class="avv" id="pa-mini" style="border-color:var(--line);background:var(--panel-2);margin:8px 0 0"></div>
   <div class="sez">Aggiungi</div>
   <div class="tb" id="pa-add">
-    <button type="button" data-t="anc"><i style="background:#8b96a3"></i>Ancoraggio</button><button type="button" data-t="pul"><i style="background:#4A93C8"></i>Carrucola</button><button type="button" data-t="blo"><i style="background:#c77dff"></i>Bloccante</button><button type="button" data-t="dis"><i style="background:#ff6b6b"></i>Discensore</button>
+    <button type="button" data-t="anc"><i style="background:#8b96a3"></i>Ancoraggio</button><button type="button" data-t="pul"><i style="background:#4A93C8"></i>Carrucola</button><button type="button" data-t="pul2"><i style="background:#4A93C8"></i>Doppia</button><button type="button" data-t="blo"><i style="background:#c77dff"></i>Bloccante</button><button type="button" data-t="dis"><i style="background:#ff6b6b"></i>Discensore</button>
   </div>
   <div class="sez">Corda e calcolo</div>
   <div class="tb tre">
@@ -142,12 +143,13 @@ FireOps.registra({
     let items = [], corde = [], sel = null, tracc = null, uid = 0, cnt = {anc: 0, pul: 0, blo: 0, dis: 0};
     const HINT = "<b>1</b> Aggiungi punti e trascinali. <b>2</b> Fissa ogni carrucola: trascinala vicino a un ancoraggio o al carico (si aggancia), oppure toccala e usa “Fissa a…”. <b>3</b> “Disegna corda” e tocca i punti nell’ordine di passaggio.";
     let fissa = null, menu = null, menuC = null, pressT = null, nuova = false, ins = null, nsel = null;
+    const isP = it => !!it && (it.t === "pul" || it.t === "pul2");
     const byId = id => items.find(i => i.id === id);
     const nome = it => it.t === "car" ? "Carico" : it.t === "op" ? "Operatori" : it.nome;
     function add(t, x, y, extra) {
       const it = Object.assign({id: "i" + (++uid), t, x, y, f: "", p: true, e: 0.6, v: "cam"}, extra || {});
       if (t === "anc") it.nome = "A" + (++cnt.anc);
-      if (t === "pul") it.nome = "C" + (++cnt.pul);
+      if (t === "pul" || t === "pul2") it.nome = "C" + (++cnt.pul);
       if (t === "blo") { it.nome = "B" + (++cnt.blo); it.p = false; }
       if (t === "dis") it.nome = "D" + (++cnt.dis);
       items.push(it);
@@ -226,7 +228,7 @@ FireOps.registra({
       return it.id;
     }
     const vs = (a, b) => { const d = a.y - b.y; return d > 0.5 ? 1 : d < -0.5 ? -1 : 0; };
-    const fatt = (it, eta) => !it ? 1 : it.t === "pul" || (it.t === "blo" && it.p) ? 1 / eta : it.t === "dis" ? (eta >= 1 ? 1 : 1 / it.e) : 1;
+    const fatt = (it, eta) => !it ? 1 : isP(it) || (it.t === "blo" && it.p) ? 1 / eta : it.t === "dis" ? (eta >= 1 ? 1 : 1 / it.e) : 1;
     // bloccante che morde la corda (non fissato a un punto fermo): la corda si interrompe li' e le due parti sono legate al bloccante
     const morde = it => it && it.t === "blo" && !it.p && corpo(it) !== "fix";
     function risolvi(eta, W) {
@@ -292,19 +294,27 @@ FireOps.registra({
     // ---------- disegno ----------
     const lung = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
     const rg = it => it.t === "dis" && it.v === "cam" ? 1.4 * R : 1.2 * R;   // raggio del giro della corda: la camma e' piu' grande
+    function assegna() {   // carrucola doppia: il 1° passaggio usa la puleggia di sinistra, il 2° quella di destra, e cosi' via
+      const m = {}, n = {};
+      corde.forEach((c, ri) => c.forEach((id, j) => {
+        const it = byId(id);
+        if (it && it.t === "pul2" && j > 0 && j < c.length - 1) { n[id] = (n[id] || 0) + 1; m[ri + ":" + j] = n[id] % 2 === 1 ? -1 : 1; }
+      }));
+      return m;
+    }
     function geom(c) {   // punti di passaggio di una corda
-      const nodi = c.map(byId);
+      const nodi = c.map(byId), ass = assegna(), ri = corde.indexOf(c);
       return nodi.map((p, j) => {
         if (!p) return null;
-        if (j === 0 || j === nodi.length - 1 || !(p.t === "pul" || p.t === "blo" || p.t === "dis") || (p.t === "blo" && !p.p)) return {p, i: [p.x, p.y], o: [p.x, p.y], arco: null};   // il bloccante puro prende la corda e la lascia passare dritta
+        if (j === 0 || j === nodi.length - 1 || !(isP(p) || p.t === "blo" || p.t === "dis") || (p.t === "blo" && !p.p)) return {p, i: [p.x, p.y], o: [p.x, p.y], arco: null};   // il bloccante puro prende la corda e la lascia passare dritta
         const pv = nodi[j - 1], nx = nodi[j + 1];
-        const sin = pv && pv.x > p.x + 0.01 ? 1 : -1;
+        const rr = rg(p), cxs = p.t === "pul2" ? p.x + (ass[ri + ":" + j] || -1) * 1.15 * rr : p.x;
+        const sin = pv && pv.x > (p.t === "pul2" ? cxs : p.x) + 0.01 ? 1 : -1;
         const aIn = sin > 0 ? 0 : Math.PI;
         const sotto = pv && nx ? (pv.y + nx.y) / 2 < p.y : true;
-        const rr = rg(p);
         const sg = (sotto ? 1 : -1) * (aIn === Math.PI ? -1 : 1);
         const arco = [];
-        for (let k = 0; k <= 12; k++) { const a = aIn + sg * Math.PI * k / 12; arco.push([p.x + rr * Math.cos(a), p.y + rr * Math.sin(a)]); }
+        for (let k = 0; k <= 12; k++) { const a = aIn + sg * Math.PI * k / 12; arco.push([cxs + rr * Math.cos(a), p.y + rr * Math.sin(a)]); }
         return {p, i: arco[0], o: arco[12], arco, sotto};
       });
     }
@@ -333,8 +343,16 @@ FireOps.registra({
       corde.forEach(c => geom(c).forEach(g => { if (g && g.arco) via[g.p.id] = g.sotto; }));
       // carrucole e bloccanti
       items.forEach(it => {
-        if (it.t !== "pul" && it.t !== "blo" && it.t !== "dis") return;
-        ctx.fillStyle = bg; ctx.strokeStyle = it.t === "pul" ? "#4A93C8" : it.t === "dis" ? "#ff6b6b" : "#c77dff"; ctx.lineWidth = 2.4;
+        if (!isP(it) && it.t !== "blo" && it.t !== "dis") return;
+        ctx.fillStyle = bg; ctx.strokeStyle = isP(it) ? "#4A93C8" : it.t === "dis" ? "#ff6b6b" : "#c77dff"; ctx.lineWidth = 2.4;
+        if (it.t === "pul2") {
+          const rr = rg(it), b = 0.72 * rr * u, d = 1.15 * rr * u, pr = b + 3, cx = X(it.x), cy = Y(it.y);
+          const forma = () => { ctx.beginPath(); [cx - d, cx + d].forEach(x => { ctx.moveTo(x + pr, cy); ctx.arc(x, cy, pr, 0, 7); }); ctx.moveTo(cx - d - pr * 0.75, cy + pr * 0.65); ctx.lineTo(cx + d + pr * 0.75, cy + pr * 0.65); ctx.lineTo(cx, cy + pr * 2.1); ctx.closePath(); };
+          ctx.lineJoin = "round"; ctx.lineWidth = 5; forma(); ctx.stroke(); forma(); ctx.fill();    // carcassa a cuore
+          ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(cx - d, cy, b, 0, 7); ctx.moveTo(cx + d + b, cy); ctx.arc(cx + d, cy, b, 0, 7); ctx.stroke();   // le due pulegge
+          ctx.fillStyle = txt; ctx.font = "bold 10px sans-serif"; ctx.fillText(it.nome, cx, cy + pr * 1.0); ctx.font = "11px sans-serif";
+          return;
+        }
         ctx.beginPath();
         if (it.t === "dis" && it.v === "cam") {
           // camma: goccia asimmetrica, la corda le gira intorno all'esterno
@@ -428,7 +446,7 @@ FireOps.registra({
       const it = sel && byId(sel), box = $("#pa-sel");
       if (!it) { box.innerHTML = ""; return; }
       let h = '<div class="el"><div class="elh"><b>' + nome(it) + '</b>' + ((it.t === "car" || it.t === "op") ? "" : '<span class="ctl"><button type="button" id="pa-sx" aria-label="Elimina">✕</button></span>') + '</div>';
-      if (it.t === "pul" || it.t === "blo" || it.t === "dis") {
+      if (isP(it) || it.t === "blo" || it.t === "dis") {
         const fo = it.f ? (it.f === "car" ? "il carico" : (byId(it.f) || {nome: "?"}).nome) : null;
         h += '<p class="nota" style="margin-top:8px">Fulcro: ' + (fo ? "<b>fissata a " + fo + "</b>" : stato(it)) + '</p>' +
           '<div class="chips"><button type="button" id="pa-sc" class="acc">' + (fissa === it.id ? "Tocca il punto…" : "Fissa a…") + '</button>' + (it.f ? '<button type="button" id="pa-sl">Libera</button>' : "") + '</div>';
@@ -480,7 +498,7 @@ FireOps.registra({
           righe += '<tr><td>Corda ' + (i + 1) + '<br><small style="color:var(--text-dim)">capo morto ' + kN(s[0]) + ' kN · capo di tiro ' + kN(s[s.length - 1]) + ' kN</small></td><td>' + daN(s[s.length - 1]) + ' daN</td></tr>';
         });
         items.forEach(it => {
-          if (!(it.t === "pul" || it.t === "blo" || it.t === "dis" || it.t === "anc")) return;
+          if (!(isP(it) || it.t === "blo" || it.t === "dis" || it.t === "anc")) return;
           let F = 0;
           const v = re.forza[it.id];
           if (v) F = v.reduce((a, c, ri) => a + c * re.T[ri], 0);
@@ -549,7 +567,7 @@ FireOps.registra({
     }
     function chiudiMenu() { const era = menuC !== null; $("#pa-menu").hidden = true; menu = null; menuC = null; if (era) calcola(); }
     function apriMenu(it) {
-      if (!(it.t === "pul" || it.t === "blo" || it.t === "dis" || it.t === "anc")) return;
+      if (!(isP(it) || it.t === "blo" || it.t === "dis" || it.t === "anc")) return;
       menu = it.id;
       let h = "<b>" + nome(it) + "</b>";
       if (it.t !== "anc") {
@@ -558,7 +576,9 @@ FireOps.registra({
       }
       if (it.t === "dis") h += '<div class="rg"><button type="button" data-m="dpul" aria-pressed="' + (it.v === "pul") + '">Con puleggia</button><button type="button" data-m="dcam" aria-pressed="' + (it.v !== "pul") + '">A camma</button></div>';
       if (it.t === "dis") h += '<div class="rg"><button type="button" data-m="em" aria-label="Meno rendimento">−</button><span>rendimento ' + fmt(it.e, 2) + '</span><button type="button" data-m="ep" aria-label="Più rendimento">+</button></div>';
-      if (it.t === "pul" || it.t === "blo") h += '<button type="button" data-m="tdis">Trasforma in discensore</button>';
+      if (it.t === "pul") h += '<button type="button" data-m="tdop">Trasforma in carrucola doppia</button>';
+      if (it.t === "pul2") h += '<button type="button" data-m="tpul">Trasforma in carrucola singola</button>';
+      if (isP(it) || it.t === "blo") h += '<button type="button" data-m="tdis">Trasforma in discensore</button>';
       if (it.t === "dis" || it.t === "blo") h += '<button type="button" data-m="tpul">Trasforma in carrucola</button>';
       h += '<button type="button" data-m="elimina">Elimina</button><button type="button" data-m="chiudi">Chiudi</button>';
       const m = $("#pa-menu"); m.innerHTML = h; m.hidden = false;
@@ -583,6 +603,7 @@ FireOps.registra({
       items.forEach(it => {
         let d = Math.hypot(it.x - x, it.y - y);
         if (it.t === "op") { const ay = (it.y - y) * u; d = Math.hypot(Math.max(0, Math.abs(it.x - x) * u - 16), Math.max(0, ay > 46 ? ay - 46 : ay < -44 ? -44 - ay : 0)) / u; }   // il pompiere si afferra da tutta la figura
+        if (it.t === "pul2") d = Math.hypot(Math.max(0, Math.abs(it.x - x) * u - 24), (it.y - y) * u + 6) / u;   // la doppia e' larga: si afferra da tutta la sagoma
         if (it.t === "car") d = Math.hypot(Math.max(0, Math.abs(it.x - x) * u - 24), Math.max(0, Math.abs(it.y - y) * u - 12)) / u;   // il peso e' un rettangolo: si afferra da tutta la sagoma
         if (d < rad && d < bd) { bd = d; best = it; }
       });
@@ -595,7 +616,7 @@ FireOps.registra({
       if (fissa) {
         const src = byId(fissa);
         const rc = !it && src && src.t === "blo" ? trovaCorda(x, y) : null;
-        if (it && src && it.id !== fissa && (it.t === "anc" || it.t === "car" || it.t === "pul" || it.t === "blo" || it.t === "dis")) {
+        if (it && src && it.id !== fissa && (it.t === "anc" || it.t === "car" || isP(it) || it.t === "blo" || it.t === "dis")) {
           src.f = it.t === "car" ? "car" : it.id;
           $("#pa-hint").textContent = nome(src) + " fissata a " + nome(it) + ".";
         } else if (rc) {
@@ -641,7 +662,7 @@ FireOps.registra({
     const fine = () => {
       clearTimeout(pressT);
       const d = drag; drag = null;
-      if (d && d.mosso && (d.it.t === "pul" || d.it.t === "blo" || d.it.t === "dis") && !d.it.f) {
+      if (d && d.mosso && (isP(d.it) || d.it.t === "blo" || d.it.t === "dis") && !d.it.f) {
         let best = null, bd = 8;
         items.forEach(o => { if (o === d.it || !(o.t === "anc" || o.t === "car")) return; const k = Math.hypot(o.x - d.it.x, o.y - d.it.y); if (k < bd) { bd = k; best = o; } });
         if (best) { d.it.f = best.t === "car" ? "car" : best.id; $("#pa-hint").textContent = nome(d.it) + " fissata a " + nome(best) + "."; tutto(); }
@@ -699,7 +720,8 @@ FireOps.registra({
       if (m === "libera") it.f = "";
       else if (m === "dpul" || m === "dcam") { const nv = m === "dpul" ? "pul" : "cam"; if (it.v !== nv) { if (Math.abs(it.e - (it.v === "pul" ? 0.85 : 0.6)) < 1e-6) it.e = nv === "pul" ? 0.85 : 0.6; it.v = nv; } }
       else if (m === "tdis") { it.t = "dis"; it.nome = "D" + (++cnt.dis); it.v = it.v || "cam"; it.e = it.e || 0.6; }
-      else if (m === "tpul") { it.t = "pul"; it.nome = "C" + (++cnt.pul); }
+      else if (m === "tpul") { if (it.t !== "pul2") it.nome = "C" + (++cnt.pul); it.t = "pul"; }
+      else if (m === "tdop") { it.t = "pul2"; }
       else if (m === "em" || m === "ep") { it.e = Math.round(Math.min(1, Math.max(0.1, it.e + (m === "ep" ? 0.05 : -0.05))) * 100) / 100; apriMenu(it); tutto(); return; }
       else if (m === "elimina") {
         const id = it.id;
