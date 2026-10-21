@@ -88,7 +88,7 @@ FireOps.registra({
     <select id="tf-pm">
       <option value="1">1 · Diretto da A: la corda passa nel carrello e scende l’operatore</option>
       <option value="2">2 · Con carrucola sul soccorritore: la corda risale al carrello</option>
-      <option value="3">3 · Gru edile: come il 2, ma la corda è fissata in B</option>
+      <option value="3">3 · Gru edile da A: come il 2, ma la corda prosegue dal carrello e si fissa in B</option>
     </select></div></div>
   <div class="riga">
     <div><label for="tf-pm2">Margine corda (m)</label><input type="number" id="tf-pm2" inputmode="decimal" min="0" max="30" step="0.5" value="5"></div>
@@ -139,8 +139,8 @@ FireOps.registra({
       const pad = 4;
       const pts = [[0, 0], [i.L, -i.D], [i.xv, i.zv], [rec.x, rec.zc], [ris.x, ris.zc]];
       let x0 = Math.min(...pts.map(p => p[0])) - pad, x1 = Math.max(...pts.map(p => p[0])) + pad, y0 = Math.min(...pts.map(p => p[1])) - pad, y1 = Math.max(...pts.map(p => p[1])) + pad;
-      const W = 600, sc = Math.min(W / (x1 - x0), 400 / (y1 - y0)), Hh = (y1 - y0) * sc + 20;
-      const X = x => 10 + (x - x0) * sc, Y = y => 10 + (y1 - y) * sc;
+      const W = 600, sc = Math.min(W / (x1 - x0), 400 / (y1 - y0)), top = i.pm === "3" ? 84 : i.pm === "1" ? 44 : 14, Hh = (y1 - y0) * sc + 10 + top;   // spazio in alto per il pescante o la gru (disegnati in pixel)
+      const X = x => 10 + (x - x0) * sc, Y = y => top + (y1 - y) * sc;
       let s = '<svg viewBox="0 0 ' + (W + 20) + ' ' + Hh.toFixed(0) + '" role="img" aria-label="Schema laterale della teleferica">';
       // portante a vuoto (parabola)
       let d0 = "";
@@ -160,17 +160,18 @@ FireOps.registra({
       });
       // corda del pescante: dal punto fisso lungo la portante, nel carrello, poi giu' fino alla vittima (e su per il tipo 2 e 3)
       {
-        const dalB = i.pm === "3", ax = X(dalB ? i.L : 0), ay = Y(dalB ? -i.D : 0), cx = X(rec.x), cy = Y(rec.zc);
+        const gru = i.pm === "3", ax = X(0), ay = Y(0), cx = X(rec.x), cy = Y(rec.zc);
         let px = ax, py = ay;   // punto da cui parte la corda del pescante
-        if (!dalB) {   // pescante diretto fissato in A: un palo che sporge verso il vuoto
+        if (!gru) {   // pescante diretto fissato in A: un palo che sporge verso il vuoto
           px = ax + 16; py = ay - 30;
           s += '<path d="M' + ax + " " + ay + "L" + ax + " " + (ay - 30) + "L" + px + " " + py + '" stroke="#c77dff" stroke-width="4" fill="none" stroke-linejoin="round"/><circle cx="' + px + '" cy="' + py + '" r="3.5" fill="#c77dff"/><text x="' + (px + 8) + '" y="' + (py - 4) + '" fill="#c77dff" font-size="10" font-weight="700">pescante</text>';
-        } else {   // gru edile accanto a B: torre, braccio verso la luce
-          const tx = ax - 4, ty = ay - 66;
-          s += '<path d="M' + tx + " " + ay + "L" + tx + " " + ty + "M" + (tx + 12) + " " + ty + "L" + (tx - 50) + " " + ty + '" stroke="#c77dff" stroke-width="4" fill="none"/><path d="M' + (tx - 3) + " " + ty + "L" + tx + " " + (ty - 10) + "L" + (tx + 3) + " " + ty + '" stroke="#c77dff" stroke-width="2" fill="none"/><text x="' + (tx - 14) + '" y="' + (ty - 8) + '" fill="#c77dff" font-size="10" font-weight="700" text-anchor="middle">gru edile</text>';
-          s += '<path d="M' + (tx - 50) + " " + ty + "L" + (tx - 50) + " " + (ty + 8) + '" stroke="#c77dff" stroke-width="2"/>';
+        } else {   // gru edile in A: torre e braccio verso la luce; la corda parte dalla punta del braccio
+          const tx = ax + 2, ty = ay - 66;
+          s += '<path d="M' + tx + " " + ay + "L" + tx + " " + ty + "M" + (tx - 12) + " " + ty + "L" + (tx + 50) + " " + ty + '" stroke="#c77dff" stroke-width="4" fill="none"/><path d="M' + (tx - 3) + " " + ty + "L" + tx + " " + (ty - 10) + "L" + (tx + 3) + " " + ty + '" stroke="#c77dff" stroke-width="2" fill="none"/><text x="' + (tx + 14) + '" y="' + (ty - 8) + '" fill="#c77dff" font-size="10" font-weight="700" text-anchor="middle">gru edile</text>';
+          px = tx + 50; py = ty + 8; s += '<path d="M' + px + " " + ty + "L" + px + " " + py + '" stroke="#c77dff" stroke-width="2"/>';
         }
         s += '<path d="M' + px + " " + py + "L" + cx + " " + cy + '" stroke="#4A93C8" stroke-width="2" stroke-dasharray="2 3" fill="none"/>';
+        if (gru) s += '<path d="M' + cx + " " + cy + "L" + X(i.L) + " " + Y(-i.D) + '" stroke="#4A93C8" stroke-width="2" stroke-dasharray="2 3" fill="none"/><text x="' + (X(i.L) - 6) + '" y="' + (Y(-i.D) - 6) + '" fill="#4A93C8" font-size="10" font-weight="700" text-anchor="end">corda fissata in B</text>';
         s += '<path d="M' + cx + " " + cy + "L" + X(i.xv) + " " + Y(i.zv) + '" stroke="#4A93C8" stroke-width="2" fill="none"/>';
         if (i.pm !== "1") {   // carrucola sul soccorritore: la corda gira e risale al carrello
           s += '<path d="M' + (cx + 6) + " " + cy + "L" + (X(i.xv) + 6) + " " + Y(i.zv) + '" stroke="#4A93C8" stroke-width="2" fill="none"/><circle cx="' + (X(i.xv) + 3) + '" cy="' + (Y(i.zv) + 2) + '" r="4.5" fill="none" stroke="#4A93C8" stroke-width="2"/>';
@@ -208,10 +209,10 @@ FireOps.registra({
       let TAm = 0, TBm = 0, HAm = 0, VAm = 0, VBm = 0, dMax = 0, TMax = 0;   // massimi lungo la traslazione (compreso il punto di recupero)
       [rec, ris].concat(Array.from({length: 41}, (_, n) => k.sotto(0.5 + (i.L - 1) * n / 40))).forEach(q => { if (q.TA > TAm) { TAm = q.TA; VAm = Math.abs(q.VA); HAm = q.H; } if (q.TB > TBm) { TBm = q.TB; VBm = Math.abs(q.VB); } dMax = Math.max(dMax, q.d); TMax = Math.max(TMax, q.TA, q.TB); });
       // pescante: la corda parte dal punto fisso (A nei tipi 1 e 2, B nel tipo 3), corre lungo la portante fino alla carrucola del carrello e scende
-      const dalB = i.pm === "3", tratto = dalB ? rec.l2 : rec.l1, nCalata = i.pm === "1" ? 1 : 2, drop = Math.max(0, calata);
+      const gruB = i.pm === "3", tratto = gruB ? rec.l1 + rec.l2 : rec.l1, nCalata = i.pm === "1" ? 1 : 2, drop = Math.max(0, calata);
       const corda = tratto + nCalata * drop + i.pm2, div = i.pm === "1" ? 1 : 2, tiroDisc = i.Ws * G / div, tiroRis = i.Q * G / div;
-      const cordaTxt = "da " + (dalB ? "B" : "A") + " al carrello " + fmt(tratto, 1) + " m, " + (nCalata === 1 ? "calata " + fmt(drop, 1) + " m" : "calata e risalita " + fmt(drop, 1) + " m + " + fmt(drop, 1) + " m") + ", margine " + fmt(i.pm2, 1) + " m";
-      $("#tf-pnota").textContent = i.pm === "1" ? "Corda fissata in A, passa nella carrucola del carrello e scende: il soccorritore arriva alla vittima, che non è collegata al carrello. Vantaggio 1:1." : i.pm === "2" ? "Come il tipo 1, ma sul soccorritore c’è una carrucola: la corda scende, gira e risale fino al carrello dove si fissa. Vantaggio 1:2." : "Come il tipo 2, ma la corda passa nel carrello e va fissata in B (gru edile). Vantaggio 1:2.";
+      const cordaTxt = (gruB ? "da A al carrello " + fmt(rec.l1, 1) + " m e dal carrello a B " + fmt(rec.l2, 1) + " m, " : "da A al carrello " + fmt(tratto, 1) + " m, ") + (nCalata === 1 ? "calata " + fmt(drop, 1) + " m" : "calata e risalita " + fmt(drop, 1) + " m + " + fmt(drop, 1) + " m") + ", margine " + fmt(i.pm2, 1) + " m";
+      $("#tf-pnota").textContent = i.pm === "1" ? "Corda fissata in A, passa nella carrucola del carrello e scende: il soccorritore arriva alla vittima, che non è collegata al carrello. Vantaggio 1:1." : i.pm === "2" ? "Come il tipo 1, ma sul soccorritore c’è una carrucola: la corda scende, gira e risale fino al carrello dove si fissa. Vantaggio 1:2." : "Gru edile in A: la corda parte dal braccio della gru, passa nel carrello, scende, gira sulla carrucola del soccorritore e risale al carrello, poi prosegue lungo la portante e si fissa in B. Vantaggio 1:2";
       if (calata < 0) av.push("La vittima è più in alto del carrello (" + fmt(-calata, 1) + " m): serve un recupero verso l’alto.");
       if (TMax / G > 1000) av.push("Tensione molto alta su una portante: verifica il carico di rottura della corda e degli ancoraggi.");
       const freccia = ris.d, fr = pc(freccia, i.L);
