@@ -251,7 +251,7 @@ FireOps.registra({
       const nodi = c.map(byId);
       return nodi.map((p, j) => {
         if (!p) return null;
-        if (j === 0 || j === nodi.length - 1 || !(p.t === "pul" || p.t === "blo" || p.t === "dis")) return {p, i: [p.x, p.y], o: [p.x, p.y], arco: null};
+        if (j === 0 || j === nodi.length - 1 || !(p.t === "pul" || p.t === "blo" || p.t === "dis") || (p.t === "blo" && !p.p)) return {p, i: [p.x, p.y], o: [p.x, p.y], arco: null};   // il bloccante puro prende la corda e la lascia passare dritta
         const pv = nodi[j - 1], nx = nodi[j + 1];
         const sin = pv && pv.x > p.x + 0.01 ? 1 : -1;
         const aIn = sin > 0 ? 0 : Math.PI;
