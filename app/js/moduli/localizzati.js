@@ -3083,6 +3083,9 @@ assign initialcost =
         la = parseFloat(la); lo = parseFloat(lo);
         return isFinite(la) && isFinite(lo) && Math.abs(la) <= 90 && Math.abs(lo) <= 180 ? {lat: la, lon: lo} : null;
       };
+      /* 0. coordinate etichettate ("Lat. = 43,9448 Long. = 11,90802"), come nei messaggi di intervento */
+      const et = t.match(/\blat(?:itudine)?\.?\s*[=:]?\s*(-?\d{1,2}(?:[.,]\d+)?)[\s,;]+lon(?:g|gitudine)?\.?\s*[=:]?\s*(-?\d{1,3}(?:[.,]\d+)?)/i);
+      if (et) { const c = ok(et[1].replace(",", "."), et[2].replace(",", ".")); if (c) return {coords: c}; }
       /* 1. link di mappe (Google, OSM, Apple, Bing, Waze, geo:, ...) */
       if (/:\/\/|geo:|www\.|maps/i.test(t)) {
         const pats = [
@@ -3299,4 +3302,4 @@ assign initialcost =
     });
   
   }
-});
+});

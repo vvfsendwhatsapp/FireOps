@@ -305,13 +305,11 @@
           const pt = puntoDaTesto(m.message);
           const altro = (!m.photo && m.media) ? '<div class="msg-t" style="color:var(--text-dim)">📎 Allegato: aprilo in Telegram.</div>' : "";
           return '<div class="msg"><div class="msg-h"><span>' + quando(m.date) + (m.editDate ? " · modificato" : "") + '</span><a href="' + linkMsg(m) + '" target="_blank" rel="noopener">Apri in Telegram</a></div>' +
-            (m.message ? '<div class="msg-t">' + linkify(m.message) + "</div>" : "") + (pt ? '<button type="button" class="btn sm" style="margin-top:8px" data-punto="' + pt.lat + "," + pt.lon + '">📍 Apri il punto in app (' + pt.lat.toFixed(5) + ", " + pt.lon.toFixed(5) + ")</button>" : "") + foto + altro + "</div>";
+            (m.message ? '<div class="msg-t">' + linkify(m.message) + "</div>" : "") + foto + altro + "</div>";
         }).join("");
         box._msgs = msgs;
       }
       $("#tg-list").addEventListener("click", async e => {
-        const bp = e.target.closest("[data-punto]");
-        if (bp) { FireOps.apriInLocalizzati(bp.dataset.punto.replace(",", ", ")); return; }
         const b = e.target.closest("[data-foto]"); if (!b) return;
         const m = ($("#tg-list")._msgs || []).find(x => String(x.id) === b.dataset.foto);
         if (!m) return;
