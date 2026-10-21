@@ -3229,13 +3229,16 @@ assign initialcost =
     document.getElementById("pasteClipBtn").addEventListener("click", async function () {
       const statusEl = document.getElementById("statusMsg");
       try {
-        if (!navigator.clipboard || !navigator.clipboard.readText) {
+        let text = "";
+        try { if (window.FireOpsAndroid && FireOpsAndroid.appunti) text = FireOpsAndroid.appunti(); } catch (e) {}
+        if (!text && navigator.clipboard && navigator.clipboard.readText) text = await navigator.clipboard.readText();
+        else if (!text) {
           statusEl.classList.remove("hidden");
           statusEl.classList.add("error");
-          statusEl.textContent = "La lettura degli appunti non è supportata da questo browser.";
+          statusEl.textContent = "Lettura appunti non disponibile: tieni premuto nel campo sopra e scegli Incolla.";
+          document.getElementById("targetInput").focus();
           return;
         }
-        const text = await navigator.clipboard.readText();
         if (!text || !text.trim()) {
           statusEl.classList.remove("hidden");
           statusEl.classList.add("error");
@@ -3247,7 +3250,8 @@ assign initialcost =
       } catch (err) {
         statusEl.classList.remove("hidden");
         statusEl.classList.add("error");
-        statusEl.textContent = "Impossibile accedere agli appunti. Concedi i permessi al browser.";
+        statusEl.textContent = "Impossibile leggere gli appunti: tieni premuto nel campo sopra e scegli Incolla.";
+        document.getElementById("targetInput").focus();
       }
     });
 

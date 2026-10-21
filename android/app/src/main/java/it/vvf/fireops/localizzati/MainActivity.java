@@ -13,6 +13,7 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.webkit.GeolocationPermissions;
+import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
@@ -56,6 +57,20 @@ public class MainActivity extends Activity {
         s.setMediaPlaybackRequiresUserGesture(false);
         s.setLoadWithOverviewMode(true);
         s.setCacheMode(WebSettings.LOAD_DEFAULT);
+
+        web.addJavascriptInterface(new Object() {
+            @JavascriptInterface
+            public String appunti() {
+                try {
+                    ClipboardManager cm = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+                    if (cm == null || !cm.hasPrimaryClip()) return "";
+                    ClipData d = cm.getPrimaryClip();
+                    if (d == null || d.getItemCount() == 0) return "";
+                    CharSequence c = d.getItemAt(0).coerceToText(MainActivity.this);
+                    return c == null ? "" : c.toString();
+                } catch (Exception e) { return ""; }
+            }
+        }, "FireOpsAndroid");
 
         web.setWebViewClient(new WebViewClient() {
             @Override
