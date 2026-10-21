@@ -1,15 +1,14 @@
 /* FireOps VVF - modulo "paranchi" (funzione SAF)
- * Vantaggio meccanico dei sistemi di recupero: teorico e reale (con gli attriti delle pulegge),
- * tiro da fare, forze sugli ancoraggi e schema disegnato.
+ * Si disegna il sistema di recupero con carrucole, bloccanti, ancoraggi, carico e operatori, si traccia la corda
+ * (capo morto -> carrucole -> capo di tiro) e si ricavano vantaggio teorico e reale, tiro e forze sui punti.
  *
- * Modello: ogni stadio ha n capi di corda che sostengono il blocco mobile. Il capo morto sta sul blocco
- * mobile se n e' dispari, sul blocco fisso se n e' pari; il capo di tiro esce sempre dal blocco fisso.
- * Ogni passaggio su carrucola moltiplica il tiro per 1/eta (eta = rendimento). Lungo la corda, dal capo morto
- * al capo di tiro, si incontrano n carrucole, quindi il carico e' W = T * (eta + eta^2 + ... + eta^n).
- * Negli stadi composti il tiro dello stadio al carico e' il carico dello stadio in testa.
- * Disposizione in pianta: il carico pende dal rinvio al ciglio E (origine); da E la corda va al paranco, ancorato in A
- * (con A2 se composto); il capo di tiro va agli operatori, eventualmente passando da un rinvio R.
- * Le forze sui punti sono somme vettoriali in 3D (posizione in pianta + quota), quindi dipendono dagli angoli tra le corde.
+ * Modello (corde ideali, tratti paralleli alla verticale del disegno):
+ *  - ogni corda ha un capo morto (primo punto) e un capo di tiro (ultimo punto); il tiro cresce di 1/eta a ogni
+ *    passaggio su carrucola (o bloccante con puleggia), andando dal capo morto al capo di tiro;
+ *  - un corpo e' il carico (con le carrucole fissate a lui), oppure una carrucola libera (con quelle fissate a lei);
+ *    ogni corpo libero e' in equilibrio verticale: somma dei tratti che lo tirano in su - in giu = peso (solo il carico);
+ *  - le incognite sono i tiri delle corde: sistema lineare, risolto con eliminazione di Gauss;
+ *  - vantaggio = peso / tiro al capo che va agli operatori; teorico con eta = 1, reale con l'eta scelto.
  */
 FireOps.registra({
   id: "paranchi",
@@ -58,22 +57,21 @@ FireOps.registra({
 .pg-paranchi .tab { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .pg-paranchi .tab td { padding: 6px 4px; border-top: 1px solid var(--line); }
 .pg-paranchi .tab td:last-child { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+.pg-paranchi .chips button.acc { background: var(--yellow); color: #000; border-color: var(--yellow); }
+.pg-paranchi canvas.pi { height: auto; }
 `,
 
   html: `
 <div class="blocco">
-  <h2 class="tit">Schema</h2>
-  <div class="schemi" id="pa-sch"></div>
-  <p class="nota">Il blocco in alto è fisso, quello in basso è mobile (sul carico). Il quadratino è il capo morto, la freccia è il capo di tiro.</p>
-</div><div class="blocco">
-  <h2 class="tit">Sistema: catena di blocchi</h2>
+  <h2 class="tit">Disegno del sistema</h2>
   <div class="chips" id="pa-pre" aria-label="Sistemi pronti"></div>
-  <p class="nota" style="margin-top:10px">Dal carico verso gli operatori, in serie: il capo di tiro di un blocco va al blocco successivo. Aggiungi, sposta ▲▼ o togli ✕ i blocchi.</p>
-  <div id="pa-cat"></div>
+  <canvas id="pa-cv" class="pi" role="img" aria-label="Disegno del sistema di recupero: trascina carrucole, bloccanti e ancoraggi"></canvas>
   <div class="chips" id="pa-add" style="margin-top:10px">
-    <button type="button" data-t="p" data-n="2">+ Paranco 1:2</button><button type="button" data-t="p" data-n="3">+ Paranco 1:3</button><button type="button" data-t="p" data-n="4">+ Paranco 1:4</button><button type="button" data-t="p" data-n="5">+ Paranco 1:5</button><button type="button" data-t="r">+ Rinvio 1:1</button><button type="button" data-t="b">+ Bloccante</button>
+    <button type="button" data-t="anc">+ Ancoraggio</button><button type="button" data-t="pul">+ Carrucola</button><button type="button" data-t="blo">+ Bloccante</button><button type="button" id="pa-cd" class="acc">Disegna corda</button>
   </div>
-  <p class="nota">Rinvio 1:1: una carrucola che cambia direzione (non dà vantaggio, costa un passaggio). Bloccante: ritenuta del carico (capture); se ha la puleggia conta come un passaggio, altrimenti non perde nulla. </p>
+  <p class="nota" id="pa-hint">Trascina i punti per posizionarli. Tocca un punto per cambiarne il fulcro. Le carrucole sono attraversate dalla corda con ingresso da un lato e uscita dall’altro.</p>
+  <div id="pa-sel"></div>
+  <div id="pa-corde"></div>
 </div>
 
 <div class="blocco">
@@ -102,175 +100,396 @@ FireOps.registra({
 </div>
 
 <div class="blocco">
-  <h2 class="tit">Tiro in ogni blocco</h2>
+  <h2 class="tit">Tiri e forze sui punti</h2>
   <table class="tab" id="pa-anc"></table>
-  <p class="nota">Tensione della corda che entra (lato carico) e che esce (lato operatori) da ciascun blocco. Valori indicativi, non sostituiscono la verifica del tuo istruttore SAF.</p>
+  <p class="nota">Forza verticale su ogni punto (somma dei tratti di corda che lo tirano). Valori indicativi: non sostituiscono la verifica del tuo istruttore SAF.</p>
 </div>
 `,
 
   init(root) {
     "use strict";
     const $ = s => root.querySelector(s);
-    const G = 9.80665;
-    const P = n => ({t: "p", n}), RIN = {t: "r"}, BLO = {t: "b", p: true};
-    const PRESET = [
-      ["1:1", [RIN]], ["1:2", [P(2)]], ["1:3", [P(3)]], ["1:4", [P(4)]], ["1:5", [P(5)]],
-      ["1:4 comp.", [P(2), P(2)]], ["1:6 comp.", [P(3), P(2)]], ["1:9 comp.", [P(3), P(3)]],
-      ["1:3 + bloccante", [BLO, P(3)]]
-    ];
-    const MAXEL = 8;
-    let catena = [];
-    const nuovo = (def, i) => Object.assign({}, def);
-    const sig = c => c.map(e => e.t + (e.n || "")).join();
-    const nomeEl = e => e.t === "p" ? "Paranco 1:" + e.n : e.t === "r" ? "Rinvio 1:1" : "Bloccante";
-    const colEl = e => e.t === "p" ? "#ffd700" : e.t === "r" ? "#4A93C8" : "#c77dff";
-
-    // Tiro T necessario per un carico L con n capi e rendimento eta (la formula e' nel commento in testa)
-    function tiro(L, n, eta) {
-      if (eta >= 0.9999) return L / n;
-      return L * (1 - eta) / (eta * (1 - Math.pow(eta, n)));
-    }
-
-    function schema(n) {
-      const sp = Math.max(18, Math.min(30, 140 / n)), x0 = 24, W = x0 * 2 + sp * (n + 1);
-      const yT = 40, yB = 150, r = Math.min(8, sp / 2 - 2);
-      const xs = i => x0 + i * sp;
-      let s = '<svg viewBox="0 0 ' + W + ' 235" role="img" aria-label="Schema del paranco a ' + n + ' capi">';
-      s += '<rect x="' + (xs(0) - 12) + '" y="' + (yT - 22) + '" width="' + (sp * (n + 1) + 24) + '" height="10" rx="3" fill="#8b96a3"/>';
-      s += '<rect x="' + (xs(0) - 12) + '" y="' + (yB + 14) + '" width="' + (sp * n + 24) + '" height="10" rx="3" fill="#ffd700"/>';
-      s += '<path d="M' + (xs(0) + sp * (n - 1) / 2) + ' ' + (yB + 24) + 'v18" stroke="#eceff3" stroke-width="2"/><text x="' + (xs(0) + sp * (n - 1) / 2) + '" y="' + (yB + 54) + '" font-size="12" fill="#eceff3" text-anchor="middle" font-weight="700">carico</text>';
-      s += '<g fill="none" stroke="#e8734a" stroke-width="2.2" stroke-linecap="round">';
-      const giu = k => (n % 2 === 0) === (k % 2 === 0);   // il capo k scende?
-      for (let k = 0; k < n; k++) {
-        s += '<path d="M' + xs(k) + ' ' + yT + 'V' + yB + '"/>';
-        if (k < n - 1) {
-          const sopra = !giu(k), y = sopra ? yT : yB;
-          s += '<path d="M' + xs(k) + ' ' + y + 'A' + sp / 2 + ' ' + sp / 2 + ' 0 0 ' + (sopra ? 1 : 0) + ' ' + xs(k + 1) + ' ' + y + '"/>';
-        }
-      }
-      // uscita: ultimo capo sale, passa su una carrucola in alto e scende verso chi tira
-      const xu = xs(n - 1);
-      s += '<path d="M' + xu + ' ' + yT + 'A' + sp / 2 + ' ' + sp / 2 + ' 0 0 1 ' + (xu + sp) + ' ' + yT + 'V' + (yB + 40) + '"/>';
-      s += '</g>';
-      // carrucole
-      s += '<g fill="#10141a" stroke="#eceff3" stroke-width="1.6">';
-      for (let k = 0; k < n - 1; k++) {
-        const sopra = !giu(k);
-        s += '<circle cx="' + (xs(k) + sp / 2) + '" cy="' + (sopra ? yT : yB) + '" r="' + r + '"/>';
-      }
-      s += '<circle cx="' + (xu + sp / 2) + '" cy="' + yT + '" r="' + r + '"/></g>';
-      // capo morto
-      const mortoSopra = n % 2 === 0;
-      s += '<rect x="' + (xs(0) - 4) + '" y="' + ((mortoSopra ? yT : yB) - 4) + '" width="8" height="8" fill="#eceff3"/>';
-      // freccia di tiro
-      const xh = xu + sp;
-      s += '<path d="M' + xh + ' ' + (yB + 44) + 'l-6 -10h12z" fill="#2f9e5b"/><text x="' + xh + '" y="' + (yB + 58) + '" font-size="12" fill="#2f9e5b" text-anchor="middle" font-weight="700">tiro</text>';
-      s += '</svg>';
-      return s;
-    }
-
+    const G = 9.80665, R = 4.5, VW = 100, VH = 130, HIT = 20;
     const fmt = (v, d) => Number(v).toLocaleString("it-IT", {minimumFractionDigits: d, maximumFractionDigits: d});
+    const kN = v => fmt(v / 1000, 2), daN = v => fmt(v / 10, 0);
 
-    const RAD = Math.PI / 180;
-    const nm = id => { const v = parseFloat($(id).value); return isFinite(v) ? v : 0; };
-    function leggi() {
-      catena.forEach((e, i) => { const c = $("#pa-k" + i + "p"); if (c) e.p = c.checked; });
+    let items = [], corde = [], sel = null, tracc = null, uid = 0, cnt = {anc: 0, pul: 0, blo: 0};
+    const byId = id => items.find(i => i.id === id);
+    const nome = it => it.t === "car" ? "Carico" : it.t === "op" ? "Operatori" : it.nome;
+    function add(t, x, y, extra) {
+      const it = Object.assign({id: "i" + (++uid), t, x, y, f: "", p: true}, extra || {});
+      if (t === "anc") it.nome = "A" + (++cnt.anc);
+      if (t === "pul") it.nome = "C" + (++cnt.pul);
+      if (t === "blo") it.nome = "B" + (++cnt.blo);
+      items.push(it);
+      return it;
     }
-    function build() {
-      $("#pa-cat").innerHTML = catena.map((e, i) =>
-        '<div class="el"><div class="elh"><b style="color:' + colEl(e) + '">' + (i + 1) + " · " + nomeEl(e) + '</b><span class="ctl">' +
-        '<button type="button" data-i="' + i + '" data-a="su" aria-label="Sposta verso il carico">▲</button>' +
-        '<button type="button" data-i="' + i + '" data-a="giu" aria-label="Sposta verso gli operatori">▼</button>' +
-        '<button type="button" data-i="' + i + '" data-a="del" aria-label="Togli">✕</button></span></div>' +
-        (e.t === "b" ? '<label class="chk"><input type="checkbox" id="pa-k' + i + 'p"' + (e.p ? " checked" : "") + '> Con puleggia (conta come un passaggio)</label>' : "") +
-        '</div>').join("") ||
-        '<p class="nota">Nessun blocco: la corda va dal ciglio direttamente agli operatori.</p>';
+    function azzera() { items = []; corde = []; sel = null; tracc = null; cnt = {anc: 0, pul: 0, blo: 0}; }
+
+    // ---------- sistemi pronti: tackle a n capi (il capo di tiro esce sempre dal blocco fisso) ----------
+    // yF = quota del blocco fisso, yM = quota del blocco mobile; radice = carico (primo stadio) o prima carrucola libera
+    function tackle(n, xc, yF, yM, car) {
+      const xs = k => xc + (k - n / 2) * 2 * R;
+      const su = k => (n - 1 - k) % 2 === 0;
+      const dF = yF < yM ? -1 : 1;
+      const anc = add("anc", xc, yF + dF * 12);
+      let root = car, moving = [];
+      const nodi = [];
+      const turni = [];
+      for (let k = 0; k < n - 1; k++) turni.push({k, fisso: su(k)});
+      const pf = [], pm = [];
+      turni.forEach(t => {
+        const x = (xs(t.k) + xs(t.k + 1)) / 2;
+        if (t.fisso) pf[t.k] = add("pul", x, yF, {f: anc.id});
+        else {
+          const m = add("pul", x, yM, {});
+          if (!root) { root = m; } else m.f = root.id;
+          pm[t.k] = m;
+        }
+      });
+      const ex = add("pul", (xs(n - 1) + xs(n)) / 2, yF, {f: anc.id});
+      if (car) {
+        car.x = n % 2 ? xs(0) : (pm.filter(Boolean).length ? pm.filter(Boolean).reduce((a, m) => a + m.x, 0) / pm.filter(Boolean).length : xs(0));
+        car.y = yM + 16;
+        pm.forEach(m => { if (m) m.f = "car"; });
+      }
+      nodi.push(n % 2 ? (car ? car.id : root.id) : anc.id);
+      for (let k = 0; k < n - 1; k++) nodi.push((su(k) ? pf[k] : pm[k]).id);
+      nodi.push(ex.id);
+      return {nodi, root, ex, xout: xs(n)};
+    }
+    function sistema(stadi) {
+      azzera();
+      const car = add("car", 25, 88);
+      const n1 = stadi[0];
+      const t1 = tackle(n1, 25, 18, 66, car);
+      if (stadi.length === 1) {
+        const op = add("op", t1.xout, 122);
+        corde.push(t1.nodi.concat(op.id));
+      } else {
+        const t2 = tackle(stadi[1], 72, 100, 52, null);
+        const op = add("op", t2.xout, 124);
+        corde.push(t1.nodi.concat(t2.root.id));
+        corde.push(t2.nodi.concat(op.id));
+      }
+      sel = null;
+    }
+    const PRESET = [["1:1", [1]], ["1:2", [2]], ["1:3", [3]], ["1:4", [4]], ["1:5", [5]], ["1:4 comp.", [2, 2]], ["1:6 comp.", [3, 2]], ["1:9 comp.", [3, 3]]];
+
+    // ---------- calcolo ----------
+    function corpo(it) {
+      let cur = it;
+      for (let g = 0; g < 12; g++) {
+        if (cur.t === "anc" || cur.t === "op") return "fix";
+        if (cur.t === "car") return "car";
+        if (!cur.f) return cur.id;
+        if (cur.f === "car") return "car";
+        const nx = byId(cur.f);
+        if (!nx) return cur.id;
+        cur = nx;
+      }
+      return it.id;
+    }
+    const vs = (a, b) => { const d = a.y - b.y; return d > 0.5 ? 1 : d < -0.5 ? -1 : 0; };
+    const passa = it => it && (it.t === "pul" || (it.t === "blo" && it.p));
+    function risolvi(eta, W) {
+      const nR = corde.length;
+      if (!nR) return {err: "Disegna la corda: tocca “Disegna corda” e poi i punti in ordine, dal capo morto al capo di tiro."};
+      const righe = {car: new Array(nR).fill(0)}, forza = {}, coefs = [];
+      let orizz = 0;
+      corde.forEach((c, ri) => {
+        const nodi = c.map(byId);
+        if (nodi.length < 2 || nodi.some(n => !n)) { coefs.push([]); return; }
+        const cf = []; let f = 1;
+        for (let k = 0; k < nodi.length - 1; k++) {
+          if (k > 0 && passa(nodi[k])) f /= eta;
+          cf.push(f);
+          const a = nodi[k], b = nodi[k + 1];
+          [[a, b], [b, a]].forEach(([x, y]) => {
+            const v = vs(x, y);
+            if (!v) { orizz++; return; }
+            const key = corpo(x);
+            if (key !== "fix") { (righe[key] = righe[key] || new Array(nR).fill(0))[ri] += f * v; }
+            (forza[x.id] = forza[x.id] || new Array(nR).fill(0))[ri] += f * v;
+          });
+        }
+        coefs.push(cf);
+      });
+      const chiavi = Object.keys(righe).filter(k => k === "car" || righe[k].some(v => Math.abs(v) > 1e-9));
+      const colu = [];
+      for (let j = 0; j < nR; j++) if (chiavi.some(k => Math.abs(righe[k][j]) > 1e-9)) colu.push(j);
+      const op = corde.findIndex(c => { const l = byId(c[c.length - 1]); return l && l.t === "op"; });
+      if (op < 0) return {err: "Nessuna corda arriva agli operatori: termina una corda sul punto “Operatori”."};
+      if (!colu.includes(op)) return {err: "La corda degli operatori non è collegata al carico: controlla i collegamenti."};
+      if (!righe.car.some(v => Math.abs(v) > 1e-9)) return {err: "Il carico non è sostenuto da nessuna corda."};
+      if (chiavi.length !== colu.length) return {err: "Sistema non determinato: " + chiavi.length + " corpi mobili (carico e carrucole libere) e " + colu.length + " corde. Servono tante corde quanti sono i corpi mobili."};
+      const n = chiavi.length;
+      const M = chiavi.map(k => colu.map(j => righe[k][j]).concat(k === "car" ? W : 0));
+      for (let c = 0; c < n; c++) {
+        let p = c;
+        for (let r = c + 1; r < n; r++) if (Math.abs(M[r][c]) > Math.abs(M[p][c])) p = r;
+        if (Math.abs(M[p][c]) < 1e-9) return {err: "Sistema non risolvibile: i collegamenti lasciano un corpo non vincolato."};
+        [M[c], M[p]] = [M[p], M[c]];
+        for (let r = 0; r < n; r++) if (r !== c) { const q = M[r][c] / M[c][c]; for (let j = c; j <= n; j++) M[r][j] -= q * M[c][j]; }
+      }
+      const T = new Array(nR).fill(0);
+      colu.forEach((j, i) => { T[j] = M[i][n] / M[i][i]; });
+      if (T.some(t => t < -1e-6)) return {err: "Disposizione impossibile: una corda dovrebbe spingere. Controlla da che parte stanno i punti e i fulcri."};
+      const seg = corde.map((c, ri) => coefs[ri].map(f => f * T[ri]));
+      const tiro = seg[op][seg[op].length - 1];
+      return {T, seg, tiro, forza, op, orizz};
+    }
+
+    // ---------- disegno ----------
+    const lung = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+    function geom(c) {   // punti di passaggio di una corda
+      const nodi = c.map(byId);
+      return nodi.map((p, j) => {
+        if (!p) return null;
+        if (j === 0 || j === nodi.length - 1 || !(p.t === "pul" || p.t === "blo")) return {p, i: [p.x, p.y], o: [p.x, p.y], arco: null};
+        const pv = nodi[j - 1], nx = nodi[j + 1];
+        const sin = pv && pv.x > p.x + 0.01 ? 1 : -1;
+        const aIn = sin > 0 ? 0 : Math.PI;
+        const sotto = pv && nx ? (pv.y + nx.y) / 2 < p.y : true;
+        const sg = (sotto ? 1 : -1) * (aIn === Math.PI ? -1 : 1);
+        const arco = [];
+        for (let k = 0; k <= 12; k++) { const a = aIn + sg * Math.PI * k / 12; arco.push([p.x + R * Math.cos(a), p.y + R * Math.sin(a)]); }
+        return {p, i: arco[0], o: arco[12], arco};
+      });
+    }
+    function disegna(ris) {
+      const cv = $("#pa-cv"), w = cv.clientWidth || 320, h = Math.round(w * VH / VW), pr = window.devicePixelRatio || 1;
+      if (cv.width !== Math.round(w * pr) || cv.height !== Math.round(h * pr)) { cv.width = Math.round(w * pr); cv.height = Math.round(h * pr); cv.style.height = h + "px"; }
+      const ctx = cv.getContext("2d"); ctx.setTransform(pr, 0, 0, pr, 0, 0); ctx.clearRect(0, 0, w, h);
+      const u = w / VW, cs = getComputedStyle(root);
+      const txt = cs.getPropertyValue("--text").trim() || "#eceff3", dim = cs.getPropertyValue("--text-dim").trim() || "#8b96a3", bg = cs.getPropertyValue("--bg").trim() || "#10141a", ln = cs.getPropertyValue("--line").trim() || "#2a3139";
+      const X = x => x * u, Y = y => y * u;
+      ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.font = "11px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      // griglia leggera
+      ctx.strokeStyle = ln; ctx.lineWidth = 0.5;
+      for (let x = 10; x < VW; x += 10) { ctx.beginPath(); ctx.moveTo(X(x), 0); ctx.lineTo(X(x), h); ctx.stroke(); }
+      for (let y = 10; y < VH; y += 10) { ctx.beginPath(); ctx.moveTo(0, Y(y)); ctx.lineTo(w, Y(y)); ctx.stroke(); }
+      // fulcri
+      ctx.setLineDash([4, 3]); ctx.strokeStyle = dim; ctx.lineWidth = 1.2;
+      items.forEach(it => {
+        if (!it.f) return;
+        const t = it.f === "car" ? items.find(i => i.t === "car") : byId(it.f);
+        if (!t) return;
+        ctx.beginPath(); ctx.moveTo(X(it.x), Y(it.y)); ctx.lineTo(X(t.x), Y(t.y)); ctx.stroke();
+      });
+      ctx.setLineDash([]);
+      // carrucole e bloccanti
+      items.forEach(it => {
+        if (it.t !== "pul" && it.t !== "blo") return;
+        ctx.fillStyle = bg; ctx.strokeStyle = it.t === "pul" ? "#4A93C8" : "#c77dff"; ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        if (it.t === "blo" && !it.p) ctx.rect(X(it.x - R), Y(it.y - R), 2 * R * u, 2 * R * u); else ctx.arc(X(it.x), Y(it.y), R * u, 0, 7);
+        ctx.fill(); ctx.stroke();
+        ctx.fillStyle = txt; ctx.fillText(it.nome, X(it.x), Y(it.y));
+      });
+      // corde
+      corde.forEach((c, ri) => {
+        const g = geom(c); if (g.some(x => !x)) return;
+        ctx.strokeStyle = "#e8734a"; ctx.lineWidth = 2.6; ctx.beginPath();
+        ctx.moveTo(X(g[0].o[0]), Y(g[0].o[1]));
+        for (let j = 1; j < g.length; j++) {
+          ctx.lineTo(X(g[j].i[0]), Y(g[j].i[1]));
+          if (g[j].arco) g[j].arco.forEach(q => ctx.lineTo(X(q[0]), Y(q[1])));
+        }
+        ctx.stroke();
+        const L = g[g.length - 1].i, P = g[g.length - 2].o, an = Math.atan2(L[1] - P[1], L[0] - P[0]);
+        ctx.fillStyle = "#e8734a"; ctx.beginPath();
+        ctx.moveTo(X(L[0]) - 9 * Math.cos(an) + 5 * Math.sin(an), Y(L[1]) - 9 * Math.sin(an) - 5 * Math.cos(an));
+        ctx.lineTo(X(L[0]), Y(L[1]));
+        ctx.lineTo(X(L[0]) - 9 * Math.cos(an) - 5 * Math.sin(an), Y(L[1]) - 9 * Math.sin(an) + 5 * Math.cos(an)); ctx.fill();
+        if (ris && ris.seg && ris.seg[ri]) {
+          ctx.font = "bold 10px sans-serif";
+          for (let k = 0; k < g.length - 1; k++) {
+            const a = g[k].o, b = g[k + 1].i, t = ris.seg[ri][k];
+            if (!(t > 0) || Math.hypot(a[0] - b[0], a[1] - b[1]) < 9) continue;
+            const mx = X((a[0] + b[0]) / 2), my = Y((a[1] + b[1]) / 2), s = kN(t);
+            ctx.fillStyle = bg; ctx.fillRect(mx - 17, my - 7, 34, 14);
+            ctx.fillStyle = "#ff9f1c"; ctx.fillText(s, mx, my);
+          }
+          ctx.font = "11px sans-serif";
+        }
+      });
+      // corda in tracciamento
+      if (tracc && tracc.length) {
+        ctx.setLineDash([5, 4]); ctx.strokeStyle = "#ffd700"; ctx.lineWidth = 2.2; ctx.beginPath();
+        tracc.map(byId).forEach((p, j) => { if (!p) return; j ? ctx.lineTo(X(p.x), Y(p.y)) : ctx.moveTo(X(p.x), Y(p.y)); });
+        ctx.stroke(); ctx.setLineDash([]);
+      }
+      // ancoraggi, carico, operatori
+      items.forEach(it => {
+        if (it.t === "anc") {
+          ctx.fillStyle = "#8b96a3"; ctx.fillRect(X(it.x) - 9, Y(it.y) - 9, 18, 18);
+          ctx.fillStyle = "#10141a"; ctx.fillText(it.nome, X(it.x), Y(it.y));
+        } else if (it.t === "car") {
+          ctx.fillStyle = "#ffd700"; ctx.fillRect(X(it.x) - 24, Y(it.y) - 12, 48, 24);
+          ctx.fillStyle = "#000"; ctx.font = "bold 11px sans-serif"; ctx.fillText((Number($("#pa-kg").value) || 0) + " kg", X(it.x), Y(it.y)); ctx.font = "11px sans-serif";
+        } else if (it.t === "op") {
+          ctx.fillStyle = "#2f9e5b"; ctx.beginPath(); ctx.moveTo(X(it.x) - 11, Y(it.y) - 9); ctx.lineTo(X(it.x) + 11, Y(it.y) - 9); ctx.lineTo(X(it.x), Y(it.y) + 11); ctx.fill();
+          ctx.fillStyle = "#2f9e5b"; ctx.fillText("Operatori", X(it.x), Y(it.y) - 16);
+        }
+        if (it.id === sel || (tracc && tracc.includes(it.id))) {
+          ctx.strokeStyle = "#ffd700"; ctx.lineWidth = 2; ctx.setLineDash([3, 2]);
+          ctx.beginPath(); ctx.arc(X(it.x), Y(it.y), (it.t === "car" ? 28 : 19), 0, 7); ctx.stroke(); ctx.setLineDash([]);
+        }
+      });
+    }
+
+    // ---------- pannelli ----------
+    function pannelloSel() {
+      const it = sel && byId(sel), box = $("#pa-sel");
+      if (!it) { box.innerHTML = ""; return; }
+      let h = '<div class="el"><div class="elh"><b>' + nome(it) + '</b>' + ((it.t === "car" || it.t === "op") ? "" : '<span class="ctl"><button type="button" id="pa-sx" aria-label="Elimina">✕</button></span>') + '</div>';
+      if (it.t === "pul" || it.t === "blo") {
+        h += '<label for="pa-sf" style="margin-top:8px">Fulcro (a cosa è fissata)</label><select id="pa-sf"><option value="">Libero (si muove con la corda)</option><option value="car">Carico</option>' +
+          items.filter(o => o.id !== it.id && (o.t === "anc" || o.t === "pul" || o.t === "blo")).map(o => '<option value="' + o.id + '">' + o.nome + '</option>').join("") + '</select>';
+      }
+      if (it.t === "blo") h += '<label class="chk"><input type="checkbox" id="pa-sp"' + (it.p ? " checked" : "") + '> Con puleggia (conta come un passaggio)</label>';
+      if (it.t === "car") h += '<p class="nota">Il peso si imposta in “Dati”.</p>';
+      if (it.t === "op") h += '<p class="nota">Capo di tiro: la corda deve finire qui.</p>';
+      box.innerHTML = h + "</div>";
+      if ($("#pa-sf")) $("#pa-sf").value = it.f;
+    }
+    function elencoCorde() {
+      $("#pa-corde").innerHTML = corde.length ? '<div class="nota" style="margin-bottom:4px">Corde (dal capo morto al capo di tiro):</div>' + corde.map((c, i) =>
+        '<div class="el"><div class="elh"><span>' + (i + 1) + " · " + c.map(id => { const o = byId(id); return o ? nome(o) : "?"; }).join(" → ") + '</span><span class="ctl"><button type="button" data-a="inv" data-i="' + i + '" aria-label="Inverti">⇄</button><button type="button" data-a="del" data-i="' + i + '" aria-label="Elimina corda">✕</button></span></div></div>').join("") : "";
     }
 
     function calcola() {
-      leggi();
       const kg = Math.max(0, Number($("#pa-kg").value) || 0), h = Math.max(0, Number($("#pa-h").value) || 0);
       const eta = Math.min(1, Math.max(0.3, Number($("#pa-eta").value) || 0.95));
-      const W = kg * G;                          // N
-      const Tn = W / eta;                        // tiro nella corda che dal ciglio (rinvio al ciglio) va al primo blocco
-      let L = Tn, vmTeo = 1;
-      const out = [];
-      catena.forEach(e => {
-        let T;
-        if (e.t === "p") { T = tiro(L, e.n, eta); vmTeo *= e.n; }
-        else if (e.t === "r") T = L / eta;
-        else T = e.p ? L / eta : L;
-        out.push({carico: L, tiro: T});
-        L = T;
-      });
-      const Tf = L;
-      const vmReale = W > 0 ? W / Tf : vmTeo;
-      const corda = h * vmTeo;
-      const ideale = W / vmTeo;
-      const kN = v => fmt(v / 1000, 2);
-      const daN = v => fmt(v / 10, 0);
-
-      $("#pa-ris").innerHTML =
-        '<div class="vcell"><div class="k">Vantaggio teorico</div><div class="v">1:' + vmTeo + '</div></div>' +
-        '<div class="vcell"><div class="k">Vantaggio reale</div><div class="v">1:' + fmt(vmReale, 2) + '</div></div>' +
-        '<div class="vcell"><div class="k">Tiro da fare</div><div class="v">' + daN(Tf) + ' <small>daN</small></div><div class="k">' + kN(Tf) + ' kN, circa ' + fmt(Tf / G, 0) + ' kg</div></div>' +
-        '<div class="vcell"><div class="k">Perdita per attriti</div><div class="v">' + fmt(ideale > 0 ? (Tf / ideale - 1) * 100 : 0, 0) + ' <small>%</small></div><div class="k">tiro senza attriti: ' + daN(ideale) + ' daN</div></div>' +
-        '<div class="vcell g"><div class="k">Corda da recuperare per ' + fmt(h, 1) + ' m di sollevamento</div><div class="v">' + fmt(corda, 1) + ' <small>m</small></div></div>';
-
-      let righe = '<tr><td>Carico sollevato</td><td>' + kN(W) + ' kN</td></tr>' +
-        '<tr><td>Corda dal ciglio al 1° blocco</td><td>' + kN(Tn) + ' kN</td></tr>';
-      catena.forEach((e, i) => {
-        righe += '<tr><td>' + (i + 1) + ' · ' + nomeEl(e) + '<br><small style="color:var(--text-dim)">entra ' + kN(out[i].carico) + ' kN · esce ' + kN(out[i].tiro) + ' kN</small></td><td>' + daN(out[i].tiro) + ' daN</td></tr>';
-      });
-      $("#pa-anc").innerHTML = righe;
+      const W = kg * G;
+      const re = risolvi(eta, W), id = risolvi(1, W);
       const avv = [];
-      if (eta < 0.8 && vmTeo >= 4) avv.push("Con questi rendimenti i sistemi con molti capi perdono molto: valuta carrucole su cuscinetti.");
-      if (Tf / G > 60) avv.push("Il tiro supera 60 kg: serve più di una persona o un sistema con più vantaggio.");
+      if (re.err || id.err) {
+        $("#pa-ris").innerHTML = ""; $("#pa-anc").innerHTML = "";
+        avv.push(re.err || id.err);
+        disegna(null);
+      } else {
+        const vmTeo = W / id.tiro, vmReale = W / re.tiro, ideale = id.tiro;
+        const vt = Math.abs(vmTeo - Math.round(vmTeo)) < 0.005 ? String(Math.round(vmTeo)) : fmt(vmTeo, 2);
+        $("#pa-ris").innerHTML =
+          '<div class="vcell"><div class="k">Vantaggio teorico</div><div class="v">1:' + vt + '</div></div>' +
+          '<div class="vcell"><div class="k">Vantaggio reale</div><div class="v">1:' + fmt(vmReale, 2) + '</div></div>' +
+          '<div class="vcell"><div class="k">Tiro da fare</div><div class="v">' + daN(re.tiro) + ' <small>daN</small></div><div class="k">' + kN(re.tiro) + ' kN, circa ' + fmt(re.tiro / G, 0) + ' kg</div></div>' +
+          '<div class="vcell"><div class="k">Perdita per attriti</div><div class="v">' + fmt(ideale > 0 ? (re.tiro / ideale - 1) * 100 : 0, 0) + ' <small>%</small></div><div class="k">tiro senza attriti: ' + daN(ideale) + ' daN</div></div>' +
+          '<div class="vcell g"><div class="k">Corda da recuperare per ' + fmt(h, 1) + ' m di sollevamento</div><div class="v">' + fmt(h * vmTeo, 1) + ' <small>m</small></div></div>';
+        let righe = '<tr><td>Carico sollevato</td><td>' + kN(W) + ' kN</td></tr>';
+        corde.forEach((c, i) => {
+          const s = re.seg[i]; if (!s || !s.length || !(re.T[i] > 0)) return;
+          righe += '<tr><td>Corda ' + (i + 1) + '<br><small style="color:var(--text-dim)">capo morto ' + kN(s[0]) + ' kN · capo di tiro ' + kN(s[s.length - 1]) + ' kN</small></td><td>' + daN(s[s.length - 1]) + ' daN</td></tr>';
+        });
+        items.forEach(it => {
+          if (!(it.t === "pul" || it.t === "blo" || it.t === "anc")) return;
+          let F = 0;
+          const v = re.forza[it.id];
+          if (v) F = v.reduce((a, c, ri) => a + c * re.T[ri], 0);
+          if (it.t === "anc") {      // forza sull'ancoraggio: somma di quanto trattengono i punti fissati a lui
+            items.forEach(o => { if (o.f === it.id && re.forza[o.id]) F += re.forza[o.id].reduce((a, c, ri) => a + c * re.T[ri], 0); });
+          }
+          if (Math.abs(F) < 1) return;
+          righe += '<tr><td>' + it.nome + (it.t !== "anc" ? '<br><small style="color:var(--text-dim)">fulcro: ' + (it.f ? (it.f === "car" ? "carico" : (byId(it.f) || {nome: "?"}).nome) : "libero") + '</small>' : "") + '</td><td>' + kN(Math.abs(F)) + ' kN</td></tr>';
+        });
+        $("#pa-anc").innerHTML = righe;
+        if (eta < 0.8 && vmTeo >= 4) avv.push("Con questi rendimenti i sistemi con molti capi perdono molto: valuta carrucole su cuscinetti.");
+        if (re.tiro / G > 60) avv.push("Il tiro supera 60 kg: serve più di una persona o un sistema con più vantaggio.");
+        if (re.orizz) avv.push("Qualche tratto di corda è orizzontale: nel calcolo conta solo la componente verticale, quindi disegnalo in verticale.");
+        disegna(re);
+      }
       $("#pa-avv").innerHTML = avv.map(t => '<div class="avv">' + t + '</div>').join("");
-
-      const pp = catena.filter(e => e.t === "p");
-      $("#pa-sch").innerHTML = pp.length ? pp.map(e =>
-        '<figure>' + schema(e.n) + '<figcaption>' + nomeEl(e) + '</figcaption></figure>').join("") : '<p class="nota">Nessun paranco nella catena.</p>';
-      [...$("#pa-pre").children].forEach((b, i) => b.setAttribute("aria-pressed", String(sig(PRESET[i][1]) === sig(catena))));
     }
+    function tutto() { pannelloSel(); elencoCorde(); calcola(); }
 
-    // preset e catena
-    $("#pa-pre").innerHTML = PRESET.map((p, i) => '<button type="button" data-i="' + i + '" aria-pressed="false">' + p[0] + "</button>").join("");
+    // ---------- interazione ----------
+    const cv = $("#pa-cv");
+    const pos = e => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * VW / r.width, (e.clientY - r.top) * VW / r.width]; };
+    const trova = (x, y) => {
+      const r = cv.getBoundingClientRect(), k = VW / r.width, rad = HIT * k;
+      let best = null, bd = 1e9;
+      items.forEach(it => { const d = Math.hypot(it.x - x, it.y - y); if (d < rad && d < bd) { bd = d; best = it; } });
+      return best;
+    };
+    let drag = null;
+    cv.addEventListener("pointerdown", e => {
+      const [x, y] = pos(e), it = trova(x, y);
+      if (tracc) {
+        if (it) { if (tracc[tracc.length - 1] !== it.id) tracc.push(it.id); calcola(); $("#pa-hint").textContent = "Corda: " + tracc.map(id => nome(byId(id))).join(" → ") + ". Tocca il punto successivo, poi “Fine corda”."; }
+        return;
+      }
+      if (!it) { if (sel) { sel = null; tutto(); } return; }
+      drag = {it, dx: it.x - x, dy: it.y - y, mosso: false};
+      cv.setPointerCapture(e.pointerId);
+      if (sel !== it.id) { sel = it.id; pannelloSel(); calcola(); }
+    });
+    cv.addEventListener("pointermove", e => {
+      if (!drag) return;
+      const [x, y] = pos(e);
+      drag.mosso = true;
+      drag.it.x = Math.max(3, Math.min(VW - 3, x + drag.dx)); drag.it.y = Math.max(3, Math.min(VH - 3, y + drag.dy));
+      calcola();
+    });
+    const fine = () => { drag = null; };
+    cv.addEventListener("pointerup", fine); cv.addEventListener("pointercancel", fine);
+
+    $("#pa-add").addEventListener("click", e => {
+      const b = e.target.closest("button[data-t]"); if (!b) return;
+      const t = b.dataset.t, n = items.filter(i => i.t === t).length;
+      const it = add(t, 50 + (n % 4) * 8 - 12, t === "anc" ? 8 : 40 + (n % 5) * 8);
+      sel = it.id; tutto();
+    });
+    $("#pa-cd").addEventListener("click", () => {
+      const b = $("#pa-cd");
+      if (!tracc) {
+        tracc = []; sel = null; b.textContent = "Fine corda";
+        $("#pa-hint").textContent = "Tocca in ordine: capo morto, carrucole e bloccanti attraversati, e per ultimo il capo di tiro (Operatori, oppure il punto a cui è legata).";
+        tutto();
+      } else {
+        if (tracc.length >= 2) corde.push(tracc.slice());
+        tracc = null; b.textContent = "Disegna corda";
+        $("#pa-hint").textContent = "Trascina i punti per posizionarli. Tocca un punto per cambiarne il fulcro. Le carrucole sono attraversate dalla corda con ingresso da un lato e uscita dall’altro.";
+        tutto();
+      }
+    });
+    $("#pa-sel").addEventListener("change", e => {
+      const it = byId(sel); if (!it) return;
+      if (e.target.id === "pa-sf") it.f = e.target.value;
+      if (e.target.id === "pa-sp") it.p = e.target.checked;
+      tutto();
+    });
+    $("#pa-sel").addEventListener("click", e => {
+      if (!e.target.closest("#pa-sx")) return;
+      const id = sel;
+      items = items.filter(i => i.id !== id);
+      items.forEach(i => { if (i.f === id) i.f = ""; });
+      corde = corde.map(c => c.filter(x => x !== id)).filter(c => c.length >= 2);
+      sel = null; tutto();
+    });
+    $("#pa-corde").addEventListener("click", e => {
+      const b = e.target.closest("button[data-a]"); if (!b) return;
+      const i = Number(b.dataset.i);
+      if (b.dataset.a === "del") corde.splice(i, 1); else corde[i].reverse();
+      tutto();
+    });
+
+    $("#pa-pre").innerHTML = PRESET.map((p, i) => '<button type="button" data-i="' + i + '">' + p[0] + "</button>").join("");
     $("#pa-pre").addEventListener("click", e => {
       const b = e.target.closest("button"); if (!b) return;
-      catena = PRESET[Number(b.dataset.i)][1].map((d, i) => nuovo(d, i));
-      build(); calcola();
+      if (tracc) { tracc = null; $("#pa-cd").textContent = "Disegna corda"; }
+      sistema(PRESET[Number(b.dataset.i)][1]); tutto();
     });
-    $("#pa-add").addEventListener("click", e => {
-      const b = e.target.closest("button"); if (!b) return;
-      leggi();
-      if (catena.length >= MAXEL) return;
-      const def = b.dataset.t === "p" ? P(Number(b.dataset.n)) : b.dataset.t === "r" ? RIN : BLO;
-      catena.push(nuovo(def, catena.length));
-      build(); calcola();
-    });
-    $("#pa-cat").addEventListener("click", e => {
-      const b = e.target.closest("button[data-a]"); if (!b) return;
-      leggi();
-      const i = Number(b.dataset.i);
-      if (b.dataset.a === "del") catena.splice(i, 1);
-      else {
-        const j = b.dataset.a === "su" ? i - 1 : i + 1;
-        if (j < 0 || j >= catena.length) return;
-        [catena[i], catena[j]] = [catena[j], catena[i]];
-      }
-      build(); calcola();
-    });
-    catena = [nuovo(P(3), 0)];
-    build();
     $("#pa-tipo").addEventListener("change", () => {
       const v = $("#pa-tipo").value;
       if (v !== "x") $("#pa-eta").value = v;
       calcola();
     });
     $("#pa-eta").addEventListener("input", () => { $("#pa-tipo").value = "x"; });
-    root.addEventListener("input", calcola);
-    root.addEventListener("change", calcola);
-    calcola();
+    root.addEventListener("input", e => { if (e.target.closest("#pa-sel")) return; calcola(); });
+    window.addEventListener("resize", () => calcola());
+    sistema([3]);
+    tutto();
   }
 });
