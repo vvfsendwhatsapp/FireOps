@@ -892,7 +892,7 @@ FireOps.registra({
       const itc = byId(sel);
       const dtb = e.target.closest("button[data-dt]");
       const amb = e.target.closest("button[data-am]");
-      if (itc && amb) { itc.mod = amb.dataset.am; tutto(); return; }
+      if (itc && amb) { itc.mod = amb.dataset.am; if (itc.mod === "Ortles") itc.k = 42; else if (itc.mod === "LokHead") itc.k = 40; tutto(); return; }   // costanti velocità × vantaggio: Kong Ortles 42, Harken LokHead 40
       const arb = e.target.closest("button[data-ar]");
       if (itc && arb) { itc.rap = Number(arb.dataset.ar); tutto(); return; }
       if (itc && dtb) { const nv = dtb.dataset.dt; if (itc.v !== nv) { itc.e = nv === "pul" ? 0.85 : 0.6; itc.v = nv; } tutto(); return; }
