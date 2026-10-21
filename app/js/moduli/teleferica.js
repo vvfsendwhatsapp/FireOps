@@ -76,12 +76,13 @@ FireOps.registra({
 
 <div class="blocco">
   <h2 class="tit">Corde e allungamenti</h2>
+  <p class="nota" style="margin-top:0">Corda semistatica Ø 10,5 mm, per portanti e traenti.</p>
   <div class="riga">
     <div><label for="tf-e">Allungamento della corda (%)</label><input type="number" id="tf-e" inputmode="decimal" min="0.5" max="20" step="0.5" value="5"></div>
     <div><label for="tf-F">… al carico di riferimento (kg)</label><input type="number" id="tf-F" inputmode="decimal" min="20" max="500" step="10" value="150"></div>
   </div>
   <div class="riga">
-    <div><label for="tf-w">Peso della corda (kg/m)</label><input type="number" id="tf-w" inputmode="decimal" min="0.02" max="0.3" step="0.005" value="0.075"></div>
+    <div><label for="tf-w">Peso della corda Ø 10,5 mm (kg/m)</label><input type="number" id="tf-w" inputmode="decimal" min="0.02" max="0.3" step="0.001" value="0.068"></div>
     <div><label for="tf-m">Margine per nodi e ancoraggi (m, per capo)</label><input type="number" id="tf-m" inputmode="decimal" min="0" max="20" step="0.5" value="3"></div>
   </div>
 </div>
@@ -205,7 +206,7 @@ FireOps.registra({
     function aggiorna() {
       const i = {
         L: Math.max(3, num("#tf-L", 40)), D: num("#tf-D", 0), xv: num("#tf-xv", 20), zv: num("#tf-zv", -10),
-        Ws: Math.max(1, num("#tf-Ws", 100)), Wv: Math.max(0, num("#tf-Wv", 100)), T0: Math.max(1, num("#tf-T0", 300)), e: Math.max(0.1, num("#tf-e", 5)), F: Math.max(1, num("#tf-F", 150)), w: Math.max(0.001, num("#tf-w", 0.075)), m: Math.max(0, num("#tf-m", 3)),
+        Ws: Math.max(1, num("#tf-Ws", 100)), Wv: Math.max(0, num("#tf-Wv", 100)), T0: Math.max(1, num("#tf-T0", 300)), e: Math.max(0.1, num("#tf-e", 5)), F: Math.max(1, num("#tf-F", 150)), w: Math.max(0.001, num("#tf-w", 0.068)), m: Math.max(0, num("#tf-m", 3)),
         pm: $("#tf-pm").value, pm2: num("#tf-pm2", 5)
       };
       i.Q = i.Ws + i.Wv; $("#tf-Qt").textContent = fmt(i.Q, 0) + " kg";
