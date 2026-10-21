@@ -3081,7 +3081,7 @@ assign initialcost =
       const N = "(-?\\d+(?:\\.\\d+)?)";
       const ok = (la, lo) => {
         la = parseFloat(la); lo = parseFloat(lo);
-        return isFinite(la) && isFinite(lo) && Math.abs(la) <= 90 && Math.abs(lo) <= 180 ? {lat: la, lon: lo} : null;
+        return isFinite(la) && isFinite(lo) && (la !== 0 || lo !== 0) && Math.abs(la) <= 90 && Math.abs(lo) <= 180 ? {lat: la, lon: lo} : null;
       };
       /* 0. coordinate etichettate ("Lat. = 43,9448 Long. = 11,90802"), come nei messaggi di intervento */
       const et = t.match(/\blat(?:itudine)?\.?\s*[=:]?\s*(-?\d{1,2}(?:[.,]\d+)?)[\s,;]+lon(?:g|gitudine)?\.?\s*[=:]?\s*(-?\d{1,3}(?:[.,]\d+)?)/i);
@@ -3154,6 +3154,22 @@ assign initialcost =
           if (est) coords = est.coords;
         }
       }
+      if (coords && coords.lat === 0 && coords.lon === 0) coords = null;
+      if (!coords) {
+        /* geo:0,0?q=indirizzo (es. "Apri con" di Telegram): niente coordinate, solo l'indirizzo */
+        const mg = String(inputVal || "").match(/geo:0,0\?q=([^&\s]+)/i);
+        if (mg) {
+          let ind = mg[1]; try { ind = decodeURIComponent(ind.replace(/\+/g, " ")); } catch (e) {}
+          statusEl.textContent = "Il link contiene solo l'indirizzo, non le coordinate: lo cerco sulla mappa…";
+          const g = await geocodeItalyPlace(ind);
+          if (g) coords = g;
+          else {
+            statusEl.classList.add("error");
+            statusEl.textContent = "Questo link contiene solo l'indirizzo (" + ind + "), senza coordinate. Seleziona il testo del messaggio e usa Condividi > FireOps, oppure incollalo: le coordinate Lat/Long sono nel testo.";
+            return;
+          }
+        }
+      }
       if (!coords || !inItaly(coords)) {
         statusEl.classList.add("error");
         statusEl.textContent = "Formato non riconosciuto o punto fuori dall'Italia. Verifica i dati inseriti.";
@@ -3190,7 +3206,9 @@ assign initialcost =
         if (!c) c = parseCoordinatesInput(v);
         if (!c) { const e = estraiCoordinateDaTesto(v); if (e && e.coords) c = e.coords; else if (e && e.error) err = e.error; }
       } catch (e) {}
-      if (c) el.textContent = "✓ Rilevato: " + c.lat.toFixed(6) + ", " + c.lon.toFixed(6) + (inItaly(c) ? "" : " (fuori dall'Italia)");
+      if (c && c.lat === 0 && c.lon === 0) c = null;
+      if (/geo:0,0\?q=/i.test(v)) el.textContent = "Solo indirizzo, senza coordinate: lo cerco sulla mappa.";
+      else if (c) el.textContent = "✓ Rilevato: " + c.lat.toFixed(6) + ", " + c.lon.toFixed(6) + (inItaly(c) ? "" : " (fuori dall'Italia)");
       else if (OLC_SHORT_RE.test(v)) el.textContent = "Codice OLC corto: si userà la località di riferimento.";
       else el.textContent = err || "Nessuna coordinata riconosciuta (ancora)…";
     });
