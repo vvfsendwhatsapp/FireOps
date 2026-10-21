@@ -250,6 +250,7 @@ FireOps.registra({
       if (!corde.length) return {err: "Disegna la corda: tocca “Disegna corda” e poi i punti in ordine, dal capo morto al capo di tiro."};
       const righe = {car: new Array(nR).fill(0)}, forza = {}, coefs = [];
       let orizz = 0;
+      const voci = [];   // ogni estremita' di tratto: {ri, f, it, key, e}
       eff.forEach((c, ri) => {
         const nodi = c.map(byId);
         if (nodi.length < 2 || nodi.some(n => !n)) { coefs.push([]); return; }
@@ -257,16 +258,24 @@ FireOps.registra({
         for (let k = 0; k < nodi.length - 1; k++) {
           if (k > 0) f *= fatt(nodi[k], eta);
           cf.push(f);
-          const a = nodi[k], b = nodi[k + 1];
-          [[a, b], [b, a]].forEach(([x, y]) => {
-            const v = vs(x, y);
-            if (!v) { orizz++; return; }
-            const key = corpo(x);
-            if (key !== "fix") { (righe[key] = righe[key] || new Array(nR).fill(0))[ri] += f * v; }
-            (forza[x.id] = forza[x.id] || new Array(nR).fill(0))[ri] += f * v;
-          });
+          const a = nodi[k], b = nodi[k + 1], l = Math.hypot(b.x - a.x, b.y - a.y) || 1, e = [(b.x - a.x) / l, (b.y - a.y) / l];
+          voci.push({ri, f, it: a, key: corpo(a), e}, {ri, f, it: b, key: corpo(b), e: [-e[0], -e[1]]});
         }
         coefs.push(cf);
+      });
+      // asse di ogni corpo = direzione dello strappo complessivo (vale in qualunque orientamento del disegno):
+      // un tratto conta +1 se tira lungo l'asse, -1 se contro, 0 se e' di traverso
+      const kc = v => v.key === "fix" ? "f:" + v.it.id : v.key, asse = {};
+      voci.forEach(v => { const k = kc(v); asse[k] = asse[k] || [0, 0]; asse[k][0] += v.e[0]; asse[k][1] += v.e[1]; });
+      Object.keys(asse).forEach(k => {
+        const a = asse[k], l = Math.hypot(a[0], a[1]);
+        if (l < 1e-6) { const q = voci.find(v => kc(v) === k); asse[k] = q ? q.e : [0, -1]; } else asse[k] = [a[0] / l, a[1] / l];
+      });
+      voci.forEach(v => {
+        const a = asse[kc(v)], d = v.e[0] * a[0] + v.e[1] * a[1], sg = d > 0.12 ? 1 : d < -0.12 ? -1 : 0;
+        if (!sg) { orizz++; return; }
+        if (v.key !== "fix") (righe[v.key] = righe[v.key] || new Array(nR).fill(0))[v.ri] += v.f * sg;
+        (forza[v.it.id] = forza[v.it.id] || new Array(nR).fill(0))[v.ri] += v.f * sg;
       });
       const chiavi = Object.keys(righe).filter(k => k === "car" || righe[k].some(v => Math.abs(v) > 1e-9));
       const colu = [];
@@ -306,20 +315,43 @@ FireOps.registra({
       }));
       return m;
     }
-    function geom(c) {   // punti di passaggio di una corda
-      const nodi = c.map(byId), ass = assegna(), ri = corde.indexOf(c);
-      return nodi.map((p, j) => {
-        if (!p) return null;
-        if (j === 0 || j === nodi.length - 1 || !(isP(p) || p.t === "blo" || p.t === "dis") || (p.t === "blo" && !p.p)) return {p, i: [p.x, p.y], o: [p.x, p.y], arco: null};   // il bloccante puro prende la corda e la lascia passare dritta
-        const pv = nodi[j - 1], nx = nodi[j + 1];
-        const rr = rg(p), cxs = p.t === "pul2" ? p.x + (sh(c[j]) ? (sh(c[j]) === "A" ? -1 : 1) : (ass[ri + ":" + j] || -1)) * 1.15 * rr : p.x;
-        const sin = p.t === "pul2" ? -1 : (pv && pv.x > p.x + 0.01 ? 1 : -1);   // sulla doppia la corda entra da sinistra ed esce a destra: A fuori->centro, B centro->fuori
-        const aIn = sin > 0 ? 0 : Math.PI;
-        const sotto = pv && nx ? (pv.y + nx.y) / 2 < p.y : true;
-        const sg = (sotto ? 1 : -1) * (aIn === Math.PI ? -1 : 1);
+    const tipAng = it => {   // direzione della punta della doppia: verso il suo fulcro (in basso se non e' fissata)
+      const tg = it.f === "car" ? items.find(i => i.t === "car") : (it.f ? byId(it.f) : null);
+      return tg && (tg.x !== it.x || tg.y !== it.y) ? Math.atan2(tg.y - it.y, tg.x - it.x) : Math.PI / 2;
+    };
+    const sheaveC = (it, side) => { const th = tipAng(it) - Math.PI / 2, d = 1.15 * rg(it); return [it.x + side * d * Math.cos(th), it.y + side * d * Math.sin(th)]; };
+    function geom(c) {   // punti di passaggio di una corda: tangenti vere tra le pulegge, qualunque sia l'orientamento
+      const ri = corde.indexOf(c), ass = assegna(), n = c.length;
+      const info = c.map((id, j) => {
+        const p = byId(id); if (!p) return null;
+        const circ = j > 0 && j < n - 1 && (isP(p) || p.t === "dis");
+        let C = [p.x, p.y];
+        if (circ && p.t === "pul2") C = sheaveC(p, sh(id) ? (sh(id) === "A" ? -1 : 1) : (ass[ri + ":" + j] || -1));
+        return {p, C, circ, r: circ ? rg(p) : 0, w: 1};
+      });
+      if (info.some(q => !q)) return info.map(q => q ? {p: q.p, i: q.C, o: q.C, arco: null} : null);
+      info.forEach((q, j) => {   // verso di avvolgimento: orario se la corda gira a destra
+        if (!q.circ) return;
+        const P = info[j - 1].C, N = info[j + 1].C, cr = (q.C[0] - P[0]) * (N[1] - q.C[1]) - (q.C[1] - P[1]) * (N[0] - q.C[0]);
+        q.w = cr >= 0 ? 1 : -1;
+      });
+      const T = [];
+      for (let k = 0; k < n - 1; k++) {
+        const A = info[k], B = info[k + 1], w1 = A.circ ? A.w : 0, w2 = B.circ ? B.w : 0, r1 = A.r, r2 = B.r;
+        const D = [B.C[0] - A.C[0], B.C[1] - A.C[1]], L = Math.hypot(D[0], D[1]), cc = w2 * r2 - w1 * r1;
+        if (L < 1e-6 || Math.abs(cc) >= L) { T.push([A.C, B.C]); continue; }
+        const th = Math.atan2(D[1], D[0]) - Math.asin(cc / L), nR = [-Math.sin(th), Math.cos(th)];
+        T.push([[A.C[0] - w1 * r1 * nR[0], A.C[1] - w1 * r1 * nR[1]], [B.C[0] - w2 * r2 * nR[0], B.C[1] - w2 * r2 * nR[1]]]);
+      }
+      return info.map((q, j) => {
+        const i = j > 0 ? T[j - 1][1] : q.C, o = j < n - 1 ? T[j][0] : q.C;
+        if (!q.circ) return {p: q.p, i, o, arco: null};
+        const f1 = Math.atan2(i[1] - q.C[1], i[0] - q.C[0]), f2 = Math.atan2(o[1] - q.C[1], o[0] - q.C[0]);
+        let dl = f2 - f1; const TP = 2 * Math.PI;
+        dl = q.w > 0 ? ((dl % TP) + TP) % TP : -((((-dl) % TP) + TP) % TP);
         const arco = [];
-        for (let k = 0; k <= 12; k++) { const a = aIn + sg * Math.PI * k / 12; arco.push([cxs + rr * Math.cos(a), p.y + rr * Math.sin(a)]); }
-        return {p, i: arco[0], o: arco[12], arco, sotto};
+        for (let k = 0; k <= 12; k++) { const a = f1 + dl * k / 12; arco.push([q.C[0] + q.r * Math.cos(a), q.C[1] + q.r * Math.sin(a)]); }
+        return {p: q.p, i: arco[0], o: arco[12], arco, mid: f1 + dl / 2};
       });
     }
     function disegna(ris) {
@@ -344,30 +376,33 @@ FireOps.registra({
       });
       ctx.setLineDash([]);
       const via = {};   // da che parte gira la corda sui discensori (sotto = true)
-      corde.forEach(c => geom(c).forEach(g => { if (g && g.arco) via[g.p.id] = g.sotto; }));
+      corde.forEach(c => geom(c).forEach(g => { if (g && g.arco) via[g.p.id] = g.mid; }));
       // carrucole e bloccanti
       items.forEach(it => {
         if (!isP(it) && it.t !== "blo" && it.t !== "dis") return;
         ctx.fillStyle = bg; ctx.strokeStyle = isP(it) ? "#4A93C8" : it.t === "dis" ? "#ff6b6b" : "#c77dff"; ctx.lineWidth = 2.4;
         if (it.t === "pul2") {
-          const rr = rg(it), b = 0.72 * rr * u, d = 1.15 * rr * u, pr = b + 3, cx = X(it.x), cy = Y(it.y);
-          const tg = it.f === "car" ? items.find(i => i.t === "car") : (it.f ? byId(it.f) : null), dv = tg && tg.y < it.y ? -1 : 1;   // la punta guarda il fulcro: se sta sopra, la doppia e' capovolta
-          const forma = () => { ctx.beginPath(); [cx - d, cx + d].forEach(x => { ctx.moveTo(x + pr, cy); ctx.arc(x, cy, pr, 0, 7); }); ctx.moveTo(cx - d - pr * 0.75, cy + dv * pr * 0.65); ctx.lineTo(cx + d + pr * 0.75, cy + dv * pr * 0.65); ctx.lineTo(cx, cy + dv * pr * 2.1); ctx.closePath(); };
+          const rr = rg(it), b = 0.72 * rr * u, d = 1.15 * rr * u, pr = b + 3, th = tipAng(it) - Math.PI / 2;   // la punta guarda il fulcro, in qualunque direzione
+          ctx.save(); ctx.translate(X(it.x), Y(it.y)); ctx.rotate(th);
+          const forma = () => { ctx.beginPath(); [-d, d].forEach(x => { ctx.moveTo(x + pr, 0); ctx.arc(x, 0, pr, 0, 7); }); ctx.moveTo(-d - pr * 0.75, pr * 0.65); ctx.lineTo(d + pr * 0.75, pr * 0.65); ctx.lineTo(0, pr * 2.1); ctx.closePath(); };
           ctx.lineJoin = "round"; ctx.lineWidth = 5; forma(); ctx.stroke(); forma(); ctx.fill();    // carcassa a cuore
-          ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(cx - d, cy, b, 0, 7); ctx.moveTo(cx + d + b, cy); ctx.arc(cx + d, cy, b, 0, 7); ctx.stroke();   // le due pulegge
-          ctx.fillStyle = txt; ctx.font = "bold 9px sans-serif"; ctx.fillText(it.nome + "A", cx - d, cy); ctx.fillText(it.nome + "B", cx + d, cy); ctx.font = "11px sans-serif";
+          ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(-d, 0, b, 0, 7); ctx.moveTo(d + b, 0); ctx.arc(d, 0, b, 0, 7); ctx.stroke();   // le due pulegge
+          ctx.restore();
+          ctx.fillStyle = txt; ctx.font = "bold 9px sans-serif";
+          [-1, 1].forEach(sd => { const q = sheaveC(it, sd); ctx.fillText(it.nome + (sd < 0 ? "A" : "B"), X(q[0]), Y(q[1])); });
+          ctx.font = "11px sans-serif";
           return;
         }
         ctx.beginPath();
         if (it.t === "dis" && it.v === "cam") {
           // camma: goccia asimmetrica, la corda le gira intorno all'esterno
-          const r = 0.68 * rg(it) * u, L = 0.97 * rg(it) * u, al = (via[it.id] === false ? Math.PI / 2 - 0.5 : -Math.PI / 2 + 0.5), ph = Math.acos(r / L), cx = X(it.x), cy = Y(it.y);
+          const r = 0.68 * rg(it) * u, L = 0.97 * rg(it) * u, mid = via[it.id] === undefined ? -Math.PI / 2 : via[it.id], al = mid + (Math.sin(mid) < 0 ? 0.5 : -0.5), ph = Math.acos(r / L), cx = X(it.x), cy = Y(it.y);
           ctx.moveTo(cx + L * Math.cos(al), cy + L * Math.sin(al));
           ctx.lineTo(cx + r * Math.cos(al + ph), cy + r * Math.sin(al + ph));
           ctx.arc(cx, cy, r, al + ph, al - ph + 2 * Math.PI);
           ctx.closePath();
           ctx.fill(); ctx.stroke();
-          ctx.fillStyle = txt; ctx.font = "bold 10px sans-serif"; ctx.fillText(it.nome, cx, cy + (via[it.id] === false ? -3 : 3)); ctx.font = "11px sans-serif";
+          ctx.fillStyle = txt; ctx.font = "bold 10px sans-serif"; ctx.fillText(it.nome, cx, cy + (Math.sin(mid) > 0 ? -3 : 3)); ctx.font = "11px sans-serif";
           return;
         }
         if (it.t === "blo" && !it.p) ctx.rect(X(it.x - R), Y(it.y - R), 2 * R * u, 2 * R * u); else ctx.arc(X(it.x), Y(it.y), 0.72 * rg(it) * u, 0, 7);   // il corpo e' piu' piccolo del giro: la corda passa all'esterno
@@ -518,7 +553,7 @@ FireOps.registra({
         $("#pa-anc").innerHTML = righe;
         if (eta < 0.8 && vmTeo >= 4) avv.push("Con questi rendimenti i sistemi con molti capi perdono molto: valuta carrucole su cuscinetti.");
         if (re.tiro / G > 60) avv.push("Il tiro supera 60 kg: serve più di una persona o un sistema con più vantaggio.");
-        if (re.orizz) avv.push("Qualche tratto di corda è orizzontale: nel calcolo conta solo la componente verticale, quindi disegnalo in verticale.");
+        if (re.orizz) avv.push("Qualche tratto di corda è di traverso rispetto alla trazione del suo blocco: nel calcolo non conta. Controlla la disposizione.");
         disegna(re);
       }
       $("#pa-avv").innerHTML = avv.map(t => '<div class="avv">' + t + '</div>').join("");
@@ -610,7 +645,7 @@ FireOps.registra({
       items.forEach(it => {
         let d = Math.hypot(it.x - x, it.y - y);
         if (it.t === "op") { const ay = (it.y - y) * u; d = Math.hypot(Math.max(0, Math.abs(it.x - x) * u - 16), Math.max(0, ay > 46 ? ay - 46 : ay < -44 ? -44 - ay : 0)) / u; }   // il pompiere si afferra da tutta la figura
-        if (it.t === "pul2") d = Math.hypot(Math.max(0, Math.abs(it.x - x) * u - 24), (it.y - y) * u + 6) / u;   // la doppia e' larga: si afferra da tutta la sagoma
+        if (it.t === "pul2") d = Math.min(d, Math.hypot(sheaveC(it, -1)[0] - x, sheaveC(it, -1)[1] - y), Math.hypot(sheaveC(it, 1)[0] - x, sheaveC(it, 1)[1] - y));   // la doppia e' larga: si afferra da tutta la sagoma
         if (it.t === "car") d = Math.hypot(Math.max(0, Math.abs(it.x - x) * u - 24), Math.max(0, Math.abs(it.y - y) * u - 12)) / u;   // il peso e' un rettangolo: si afferra da tutta la sagoma
         if (d < rad && d < bd) { bd = d; best = it; }
       });
@@ -639,7 +674,7 @@ FireOps.registra({
       }
       if (tracc) {
         if (it) {
-          const nid = it.t === "pul2" ? it.id + (x < it.x ? ":A" : ":B") : it.id;   // sulla doppia si sceglie la puleggia A o B
+          const nid = it.t === "pul2" ? it.id + (Math.hypot(x - sheaveC(it, -1)[0], y - sheaveC(it, -1)[1]) <= Math.hypot(x - sheaveC(it, 1)[0], y - sheaveC(it, 1)[1]) ? ":A" : ":B") : it.id;   // sulla doppia si sceglie la puleggia A o B
           if (ins !== null) { tracc.splice(ins + 1, 0, nid); ins++; }
           else if (tracc[tracc.length - 1] !== nid) tracc.push(nid);
           tutto();
