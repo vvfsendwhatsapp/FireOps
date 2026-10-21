@@ -767,8 +767,8 @@ FireOps.registra({
       const m = b.dataset.m;
       if (m === "fissa") { sel = it.id; avviaFissa(it); return; }
       if (m === "libera") it.f = "";
-      else if (m === "dpul" || m === "dcam") { const nv = m === "dpul" ? "pul" : "cam"; if (it.v !== nv) { if (Math.abs(it.e - (it.v === "pul" ? 0.85 : 0.6)) < 1e-6) it.e = nv === "pul" ? 0.85 : 0.6; it.v = nv; } }
-      else if (m === "tdis") { it.t = "dis"; it.nome = "D" + (++cnt.dis); it.v = it.v || "cam"; it.e = it.e || 0.6; }
+      else if (m === "dpul" || m === "dcam") { const nv = m === "dpul" ? "pul" : "cam"; if (it.v !== nv) { it.e = nv === "pul" ? 0.85 : 0.6; it.v = nv; } }
+      else if (m === "tdis") { it.t = "dis"; it.nome = "D" + (++cnt.dis); it.v = it.v || "cam"; it.e = it.v === "pul" ? 0.85 : 0.6; }
       else if (m === "tpul") { if (it.t !== "pul2") it.nome = "C" + (++cnt.pul); it.t = "pul"; }
       else if (m === "tdop") { it.t = "pul2"; }
       else if (m === "em" || m === "ep") { it.e = Math.round(Math.min(1, Math.max(0.1, it.e + (m === "ep" ? 0.05 : -0.05))) * 100) / 100; apriMenu(it); tutto(); return; }
@@ -789,7 +789,7 @@ FireOps.registra({
     $("#pa-sel").addEventListener("click", e => {
       const itc = byId(sel);
       const dtb = e.target.closest("button[data-dt]");
-      if (itc && dtb) { const nv = dtb.dataset.dt; if (itc.v !== nv) { if (Math.abs(itc.e - (itc.v === "pul" ? 0.85 : 0.6)) < 1e-6) itc.e = nv === "pul" ? 0.85 : 0.6; itc.v = nv; } tutto(); return; }
+      if (itc && dtb) { const nv = dtb.dataset.dt; if (itc.v !== nv) { itc.e = nv === "pul" ? 0.85 : 0.6; itc.v = nv; } tutto(); return; }
       if (itc && e.target.closest("#pa-sc")) { if (fissa === itc.id) { fissa = null; $("#pa-hint").innerHTML = HINT; tutto(); } else avviaFissa(itc); return; }
       if (itc && e.target.closest("#pa-sl")) { itc.f = ""; tutto(); return; }
       if (!e.target.closest("#pa-sx")) return;
