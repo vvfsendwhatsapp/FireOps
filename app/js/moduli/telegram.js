@@ -148,6 +148,13 @@
 
   const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
   const linkify = s => esc(s).replace(/(https?:\/\/[^\s<]+)/g, u => '<a href="' + u + '" target="_blank" rel="noopener">' + u + "</a>");
+  // coordinate WGS84 decimali nel testo dell'intervento: "Lat. = 43,9448 Long. = 11,90802" (anche con punto decimale, due punti, virgola)
+  const puntoDaTesto = t => {
+    const m = String(t || "").match(/\blat(?:itudine)?\.?\s*[=:]?\s*(-?\d{1,2}(?:[.,]\d+)?)[\s,;]+lon(?:g|gitudine)?\.?\s*[=:]?\s*(-?\d{1,3}(?:[.,]\d+)?)/i);
+    if (!m) return null;
+    const la = parseFloat(m[1].replace(",", ".")), lo = parseFloat(m[2].replace(",", "."));
+    return isFinite(la) && isFinite(lo) && Math.abs(la) <= 90 && Math.abs(lo) <= 180 ? {lat: la, lon: lo} : null;
+  };
   const quando = sec => {
     const d = new Date(sec * 1000), p = n => String(n).padStart(2, "0");
     const oggi = new Date();
@@ -295,13 +302,16 @@
         if (!msgs.length) { box.innerHTML = '<div class="vuoto">Nessun messaggio.</div>'; return; }
         box.innerHTML = msgs.map(m => {
           const foto = m.photo ? (fotoUrl[m.id] ? '<img src="' + fotoUrl[m.id] + '" alt="">' : '<button type="button" class="btn sm" data-foto="' + m.id + '">Mostra foto</button>') : "";
+          const pt = puntoDaTesto(m.message);
           const altro = (!m.photo && m.media) ? '<div class="msg-t" style="color:var(--text-dim)">📎 Allegato: aprilo in Telegram.</div>' : "";
           return '<div class="msg"><div class="msg-h"><span>' + quando(m.date) + (m.editDate ? " · modificato" : "") + '</span><a href="' + linkMsg(m) + '" target="_blank" rel="noopener">Apri in Telegram</a></div>' +
-            (m.message ? '<div class="msg-t">' + linkify(m.message) + "</div>" : "") + foto + altro + "</div>";
+            (m.message ? '<div class="msg-t">' + linkify(m.message) + "</div>" : "") + (pt ? '<button type="button" class="btn sm" style="margin-top:8px" data-punto="' + pt.lat + "," + pt.lon + '">📍 Apri il punto in app (' + pt.lat.toFixed(5) + ", " + pt.lon.toFixed(5) + ")</button>" : "") + foto + altro + "</div>";
         }).join("");
         box._msgs = msgs;
       }
       $("#tg-list").addEventListener("click", async e => {
+        const bp = e.target.closest("[data-punto]");
+        if (bp) { FireOps.apriInLocalizzati(bp.dataset.punto.replace(",", ", ")); return; }
         const b = e.target.closest("[data-foto]"); if (!b) return;
         const m = ($("#tg-list")._msgs || []).find(x => String(x.id) === b.dataset.foto);
         if (!m) return;

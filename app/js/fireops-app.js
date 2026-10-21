@@ -690,6 +690,8 @@
     consumaAutoLocalizzati: () => { const v = autoLocalizzati; autoLocalizzati = false; return v; },
     // testo ricevuto da "Condividi": si legge una volta sola
     consumaCondiviso: () => { const v = condiviso; condiviso = ""; return v; },
+    // da un altro modulo (es. Telegram): apre Localizzati sul testo o sulle coordinate indicate
+    apriInLocalizzati: txt => { condiviso = String(txt || ""); location.hash = "#/localizzati"; },
     qualifiche: QUALIFICHE,
     vai: id => { location.hash = id ? "#/" + id : "#/"; },
     // dati personali salvati in locale dall'Area personale ({} se vuoti)
