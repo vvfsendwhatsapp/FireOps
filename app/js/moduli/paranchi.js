@@ -623,8 +623,21 @@ FireOps.registra({
     let menuT = 0;   // istante di apertura: i tocchi subito dopo la pressione lunga sul menu vengono ignorati
     function chiudiMenu() { const era = menuC !== null || punto !== null; punto = null; $("#pa-menu").hidden = true; menu = null; menuC = null; if (era) calcola(); }
     function apriMenu(it) {
-      if (!(isP(it) || it.t === "blo" || it.t === "dis" || it.t === "anc")) return;
+      if (!(isP(it) || it.t === "blo" || it.t === "dis" || it.t === "anc" || it.t === "car")) return;
       menu = it.id;
+      if (it.t === "car") {   // il carico si puo' scollegare dalle carrucole fissate a lui e dalla corda
+        const att = items.filter(o => o.f === "car"), inC = corde.filter(c => c.some(x => base(x) === it.id)).length;
+        let hc = "<b>Carico</b>";
+        hc += att.length ? '<button type="button" class="acc" data-m="clib">Scollega ' + att.map(o => o.nome).join(", ") + ' dal carico</button>' : '<p class="nota" style="margin:0">Nessuna carrucola o bloccante è fissato al carico.</p>';
+        hc += inC ? '<button type="button" data-m="ccor">Togli il carico dalla corda</button>' : "";
+        hc += '<button type="button" data-m="chiudi">Chiudi</button>';
+        const mc = $("#pa-menu"); mc.innerHTML = hc; mc.hidden = false;
+        const cw = cv.clientWidth, ch = cv.clientHeight, u = cw / VW, mw = mc.offsetWidth, dx = it.x * u;
+        mc.style.left = (dx + 40 + mw <= cw - 4 ? dx + 40 : Math.max(4, dx - 40 - mw)) + "px";
+        mc.style.top = Math.max(4, Math.min(ch - mc.offsetHeight - 4, it.y * u - 24)) + "px";
+        menuT = Date.now();
+        return;
+      }
       let h = "<b>" + nome(it) + (it.t === "pul2" ? " (A + B, un solo fulcro)" : "") + "</b>";
       if (it.t !== "anc") {
         h += '<button type="button" class="acc" data-m="fissa">Fissa a…</button>';
@@ -780,7 +793,9 @@ FireOps.registra({
       const it = menu && byId(menu); if (!it) return;
       const m = b.dataset.m;
       if (m === "fissa") { sel = it.id; avviaFissa(it); return; }
-      if (m === "libera") it.f = "";
+      if (m === "clib") items.forEach(o => { if (o.f === "car") o.f = ""; });
+      else if (m === "ccor") { corde = corde.map(c => c.filter(x => base(x) !== it.id)).filter(c => c.length >= 2); nsel = null; tracc = null; }
+      else if (m === "libera") it.f = "";
       else if (m === "dpul" || m === "dcam") { const nv = m === "dpul" ? "pul" : "cam"; if (it.v !== nv) { it.e = nv === "pul" ? 0.85 : 0.6; it.v = nv; } }
       else if (m === "tdis") { it.t = "dis"; it.nome = "D" + (++cnt.dis); it.v = it.v || "cam"; it.e = it.v === "pul" ? 0.85 : 0.6; }
       else if (m === "tpul") { if (it.t !== "pul2") it.nome = "C" + (++cnt.pul); it.t = "pul"; }
