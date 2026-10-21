@@ -140,7 +140,7 @@ FireOps.registra({
     const $ = s => root.querySelector(s);
     const G = 9.80665, R = 4.5, VW = 100, VH = 142, HIT = 20;
     const fmt = (v, d) => Number(v).toLocaleString("it-IT", {minimumFractionDigits: d, maximumFractionDigits: d});
-    const kN = v => fmt(v / 1000, 2), daN = v => fmt(v / 10, 0);
+    const kN = v => fmt(v / 1000, 2), daN = v => fmt(v / 10, 0), chili = v => fmt(v / G, 0);   // le forze sono in newton; a video in kg (chili forza) e, dove serve, in daN
 
     let items = [], corde = [], sel = null, tracc = null, uid = 0, cnt = {anc: 0, pul: 0, blo: 0, dis: 0};
     const HINT = "<b>1</b> Aggiungi punti e trascinali. <b>2</b> Fissa ogni carrucola: trascinala vicino a un ancoraggio o al carico (si aggancia), oppure toccala e usa “Fissa a…”. <b>3</b> “Disegna corda” e tocca i punti nell’ordine di passaggio.";
@@ -301,7 +301,7 @@ FireOps.registra({
       eff.forEach((c, ri) => { coefs[ri].forEach(f => seg[orig[ri]].push(f * T[ri])); });
       const Tr = corde.map((c, oi) => T[primo[oi]]);
       const tiro = seg[op][seg[op].length - 1];
-      return {T, Tr, seg, tiro, forza, op, orizz};
+      return {T, Tr, seg, tiro, forza, op, orizz, voci: voci.map(v => ({ri: v.ri, f: v.f, id: v.it.id, e: v.e, fix: v.key === "fix"}))};
     }
 
     // ---------- disegno ----------
@@ -430,10 +430,10 @@ FireOps.registra({
           for (let k = 0; k < g.length - 1; k++) {
             const a = g[k].o, b = g[k + 1].i, t = ris.seg[ri][k];
             if (!(t > 0) || Math.hypot(a[0] - b[0], a[1] - b[1]) < 9) continue;
-            const mx = X((a[0] + b[0]) / 2), my = Y((a[1] + b[1]) / 2), s = kN(t);
+            const mx = X((a[0] + b[0]) / 2), my = Y((a[1] + b[1]) / 2), s = chili(t) + " kg";
             let an = Math.atan2(b[1] - a[1], b[0] - a[0]); if (an > Math.PI / 2 || an < -Math.PI / 2) an += Math.PI;   // il testo segue l'asse della corda
             ctx.save(); ctx.translate(mx, my); ctx.rotate(an);
-            ctx.fillStyle = bg; ctx.fillRect(-17, -7, 34, 14);
+            ctx.fillStyle = bg; ctx.fillRect(-21, -7, 42, 14);
             ctx.fillStyle = "#ff9f1c"; ctx.fillText(s, 0, 0); ctx.restore();
           }
           ctx.font = "11px sans-serif";
@@ -528,28 +528,35 @@ FireOps.registra({
         const vmTeo = W / id.tiro, vmReale = W / re.tiro, ideale = id.tiro;
         const vt = Math.abs(vmTeo - Math.round(vmTeo)) < 0.005 ? String(Math.round(vmTeo)) : fmt(vmTeo, 2);
         const pc = fmt(ideale > 0 ? (re.tiro / ideale - 1) * 100 : 0, 0);
-        $("#pa-mini").innerHTML = "Senza attriti: <b>1:" + vt + "</b> (tiro " + daN(ideale) + " daN)<br>Con attriti (" + fmt(eta, 2) + "): <b>1:" + fmt(vmReale, 2) + "</b> (tiro " + daN(re.tiro) + " daN)";
+        $("#pa-mini").innerHTML = "Senza attriti: <b>1:" + vt + "</b> (tiro " + chili(ideale) + " kg · " + daN(ideale) + " daN)<br>Con attriti (" + fmt(eta, 2) + "): <b>1:" + fmt(vmReale, 2) + "</b> (tiro " + chili(re.tiro) + " kg · " + daN(re.tiro) + " daN)";
         $("#pa-ris").innerHTML =
-          '<div class="vcell"><div class="k">Senza attriti (rendimento 1)</div><div class="v">1:' + vt + '</div><div class="k">tiro ' + daN(ideale) + ' daN · ' + kN(ideale) + ' kN</div></div>' +
-          '<div class="vcell"><div class="k">Con attriti (rendimento ' + fmt(eta, 2) + ')</div><div class="v">1:' + fmt(vmReale, 2) + '</div><div class="k">tiro ' + daN(re.tiro) + ' daN · ' + kN(re.tiro) + ' kN</div></div>' +
-          '<div class="vcell"><div class="k">Tiro da fare (con attriti)</div><div class="v">' + daN(re.tiro) + ' <small>daN</small></div><div class="k">circa ' + fmt(re.tiro / G, 0) + ' kg</div></div>' +
+          '<div class="vcell"><div class="k">Senza attriti (rendimento 1)</div><div class="v">1:' + vt + '</div><div class="k">tiro ' + chili(ideale) + ' kg · ' + daN(ideale) + ' daN</div></div>' +
+          '<div class="vcell"><div class="k">Con attriti (rendimento ' + fmt(eta, 2) + ')</div><div class="v">1:' + fmt(vmReale, 2) + '</div><div class="k">tiro ' + chili(re.tiro) + ' kg · ' + daN(re.tiro) + ' daN</div></div>' +
+          '<div class="vcell"><div class="k">Tiro da fare (con attriti)</div><div class="v">' + chili(re.tiro) + ' <small>kg</small></div><div class="k">' + daN(re.tiro) + ' daN</div></div>' +
           '<div class="vcell"><div class="k">Perdita per attriti</div><div class="v">' + pc + ' <small>%</small></div></div>' +
           '<div class="vcell g"><div class="k">Corda da recuperare per ' + fmt(h, 1) + ' m di sollevamento</div><div class="v">' + fmt(h * vmTeo, 1) + ' <small>m</small></div></div>';
-        let righe = '<tr><td>Carico sollevato</td><td>' + kN(W) + ' kN</td></tr>';
+        let righe = '<tr><td>Carico sollevato</td><td>' + chili(W) + ' kg</td></tr>';
         corde.forEach((c, i) => {
           const s = re.seg[i]; if (!s || !s.length || !(re.Tr[i] > 0)) return;
-          righe += '<tr><td>Corda ' + (i + 1) + '<br><small style="color:var(--text-dim)">capo morto ' + kN(s[0]) + ' kN · capo di tiro ' + kN(s[s.length - 1]) + ' kN</small></td><td>' + daN(s[s.length - 1]) + ' daN</td></tr>';
+          righe += '<tr><td>Corda ' + (i + 1) + '<br><small style="color:var(--text-dim)">capo morto ' + chili(s[0]) + ' kg · capo di tiro ' + chili(s[s.length - 1]) + ' kg</small></td><td>' + chili(s[s.length - 1]) + ' kg</td></tr>';
         });
+        // forze sui punti: per i corpi mobili il tiro lungo l'asse; per gli ancoraggi la risultante vettoriale (cerniera: componente verticale e orizzontale, nessun momento)
+        const radice = it => { let o = it, n = 0; while (o && o.f && o.f !== "car" && n++ < 20) o = byId(o.f); return o; };
         items.forEach(it => {
-          if (!(isP(it) || it.t === "blo" || it.t === "dis" || it.t === "anc")) return;
+          if (it.t === "anc") {
+            let fx = 0, fy = 0;
+            re.voci.forEach(v => { if (!v.fix || !(re.T[v.ri] > 0)) return; const o = byId(v.id); if (o && radice(o) === it) { fx += v.f * re.T[v.ri] * v.e[0]; fy += v.f * re.T[v.ri] * v.e[1]; } });
+            const F = Math.hypot(fx, fy); if (F < 1) return;
+            const dir = Math.abs(fx) < 0.02 * F ? "verticale" : "inclinata di " + Math.round(Math.atan2(Math.abs(fx), Math.abs(fy)) * 180 / Math.PI) + "° dalla verticale";
+            righe += '<tr><td>' + it.nome + ' <small style="color:var(--text-dim)">ancoraggio (cerniera)</small><br><small style="color:var(--text-dim)">verticale ' + chili(Math.abs(fy)) + ' kg ' + (fy > 0 ? "verso il basso" : "verso l’alto") + ' · orizzontale ' + chili(Math.abs(fx)) + ' kg' + (Math.abs(fx) >= 1 ? (fx > 0 ? " verso destra" : " verso sinistra") : "") + ' · ' + dir + '</small></td><td><b>' + chili(F) + ' kg</b></td></tr>';
+            return;
+          }
+          if (!(isP(it) || it.t === "blo" || it.t === "dis")) return;
           let F = 0;
           const v = re.forza[it.id];
           if (v) F = v.reduce((a, c, ri) => a + c * re.T[ri], 0);
-          if (it.t === "anc") {      // forza sull'ancoraggio: somma di quanto trattengono i punti fissati a lui
-            items.forEach(o => { if (o.f === it.id && re.forza[o.id]) F += re.forza[o.id].reduce((a, c, ri) => a + c * re.T[ri], 0); });
-          }
           if (Math.abs(F) < 1) return;
-          righe += '<tr><td>' + it.nome + (it.t !== "anc" ? '<br><small style="color:var(--text-dim)">fulcro: ' + (it.f ? (it.f === "car" ? "carico" : (byId(it.f) || {nome: "?"}).nome) : "mobile, retta dalla corda") + '</small>' : "") + '</td><td>' + kN(Math.abs(F)) + ' kN</td></tr>';
+          righe += '<tr><td>' + it.nome + '<br><small style="color:var(--text-dim)">fulcro: ' + (it.f ? (it.f === "car" ? "carico" : (byId(it.f) || {nome: "?"}).nome) : "mobile, retta dalla corda") + '</small></td><td>' + chili(Math.abs(F)) + ' kg</td></tr>';
         });
         $("#pa-anc").innerHTML = righe;
         if (eta < 0.8 && vmTeo >= 4) avv.push("Con questi rendimenti i sistemi con molti capi perdono molto: valuta carrucole su cuscinetti.");
