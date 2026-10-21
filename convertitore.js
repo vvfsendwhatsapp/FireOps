@@ -1195,6 +1195,7 @@ if (contenitoreFormCoord) {
     let repartiMostrati = [];
     let layerRepartiVolo = null;
     let ultimoPuntoCambio = null;
+    let ultimeSbarre = [];
 
         // Quale punto si sta per posare col prossimo clic: null, "target"
     // (mirino rosso) o "partenza" (mirino giallo). Un clic posa, poi si
@@ -1603,7 +1604,7 @@ document.addEventListener("fireops:comando-attivo-cambiato", (e) => {
         ultimoPuntoPartenza = null;
         popupPuntoPartenza = null;
         ultimoGeojsonPercorso = null;
-        ultimoPuntoCambio = null;
+        ultimoPuntoCambio = null; ultimeSbarre = [];
 
         if (coordMappaLeaflet) {
             if (coordLineaPercorso) { coordMappaLeaflet.removeLayer(coordLineaPercorso); coordLineaPercorso = null; }
@@ -1780,7 +1781,7 @@ function calcolaAzimut(lat1, lon1, lat2, lon2) {
 }
 
 async function disegnaLineaDiretta(latPartenza, lonPartenza, latArrivo, lonArrivo, azimut, distanzaAriaKm, quote) {
-    ultimoPuntoCambio = null;   // in linea d'aria non c'è cambio di mezzo
+    ultimoPuntoCambio = null; ultimeSbarre = [];   // in linea d'aria non c'è cambio di mezzo
     if (coordLineaPercorso) coordMappaLeaflet.removeLayer(coordLineaPercorso);
     coordLineaPercorso = L.polyline(
         [[latPartenza, lonPartenza], [latArrivo, lonArrivo]],
@@ -1945,6 +1946,19 @@ document.querySelectorAll(".btn-coord-profilo-percorso").forEach(b => {
     function costruisciKml(geojson, nomePercorso) {
         const coords = coordinatePercorso(geojson);
         const coordinateTesto = coords.map(c => `${c[0]},${c[1]},${c[2] || 0}`).join(" ");
+        const ic = "https://maps.google.com/mapfiles/kml/";
+        const punto = (nome, desc, p, icona) => `    <Placemark>
+      <name>${nome}</name>
+      <description>${desc}</description>
+      <Style><IconStyle><Icon><href>${ic}${icona}</href></Icon></IconStyle></Style>
+      <Point><coordinates>${Number(p.lon).toFixed(6)},${Number(p.lat).toFixed(6)},0</coordinates></Point>
+    </Placemark>`;
+        const punti = [];
+        if (ultimoPuntoPartenza) punti.push(punto("Squadra VF", "Partenza", ultimoPuntoPartenza, "shapes/firedept.png"));
+        if (ultimoPuntoCambio) punti.push(punto("Punto di cambio", "Si lascia il mezzo, si prosegue a piedi", ultimoPuntoCambio, "shapes/hiker.png"));
+        ultimeSbarre.forEach((sb, i) => punti.push(punto(`Sbarra ${i + 1}`, `${String(sb.tag || "").replace(/[<>&]/g, "")} - prevedere apertura o chiave`, sb, "shapes/caution.png")));
+        // punto di arrivo: il target, anche se la traccia si ferma sulla strada piu' vicina
+        if (coordinateTargetCorrenti) punti.push(punto("Arrivo (target)", "Punto di arrivo / target intervento", coordinateTargetCorrenti, "paddle/red-circle.png"));
         return `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
@@ -1957,6 +1971,7 @@ document.querySelectorAll(".btn-coord-profilo-percorso").forEach(b => {
         <coordinates>${coordinateTesto}</coordinates>
       </LineString>
     </Placemark>
+${punti.join("\n")}
   </Document>
 </kml>`;
     }
@@ -1989,9 +2004,15 @@ document.querySelectorAll(".btn-coord-profilo-percorso").forEach(b => {
     <sym>Parking Area</sym>
   </wpt>`);
         }
+        ultimeSbarre.forEach((sb, i) => {
+            waypoint.push(`  <wpt lat="${sb.lat}" lon="${sb.lon}">
+    <name>Sbarra ${i + 1}</name>
+    <sym>Danger Area</sym>
+  </wpt>`);
+        });
         if (coordinateTargetCorrenti) {
             waypoint.push(`  <wpt lat="${coordinateTargetCorrenti.lat}" lon="${coordinateTargetCorrenti.lon}">
-    <name>Target intervento</name>
+    <name>Arrivo (target intervento)</name>
     <sym>Danger Area</sym>
   </wpt>`);
         }
@@ -2412,6 +2433,7 @@ assign initialcost =
         const fermoPrima = modalita === "auto" && coordAuto.length > 0 && restanteM > SOGLIA_TRATTO_PIEDI_M;
         ultimoPuntoCambio = (haCambio || fermoPrima) ? fineAuto : null;
         const sbarre = (auto && auto.profiloSoccorso) ? sbarreDalPercorso(propAuto) : [];
+        ultimeSbarre = sbarre;
 
         // Disegno: mezzo pieno, piedi puntinato, cambio e sbarre segnati
         const aLatLng = c => [c[1], c[0]];

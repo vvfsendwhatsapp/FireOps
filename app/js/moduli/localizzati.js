@@ -1002,6 +1002,7 @@ body.map-open {
         <div class="route-info hidden" id="routeInfo"></div>
         <div class="route-export hidden" id="routeExport">
           <button type="button" id="routeKml" title="Traccia e punti per Locus Map, Google Earth, OruxMaps">💾 KML (Locus Map)</button>
+          <button type="button" id="routeGpx" title="Traccia e punti (partenza, cambio, sbarre, arrivo) per GPS da montagna e app outdoor">🛰️ GPX</button>
           <button type="button" id="routeAR" class="route-btn ar">📷 Guida in realtà aumentata</button>
         </div>
         <button type="button" id="openMapsTarget" class="maps-btn target">
@@ -2461,7 +2462,7 @@ assign initialcost =
       if (p.cambio) parti.push(punto(p.haCambio ? "Punto di cambio" : "Fine percorribilita' mezzo",
         p.haCambio ? "Si lascia il mezzo, si prosegue a piedi" : "Il mezzo si ferma qui", p.cambio.lat, p.cambio.lon, "cambio"));
       p.sbarre.forEach((sb, i) => parti.push(punto("Sbarra " + (i + 1), sb.tag + " - prevedere apertura o chiave", sb.lat, sb.lon, "sbarra")));
-      parti.push(punto("Target", "Target intervento", p.target.lat, p.target.lon, "target"));
+      parti.push(punto("Arrivo (target)", "Punto di arrivo / target intervento", p.target.lat, p.target.lon, "target"));
       const ic = "https://maps.google.com/mapfiles/kml/";
       return '<?xml version="1.0" encoding="UTF-8"?>\n<kml xmlns="http://www.opengis.net/kml/2.2">\n  <Document>\n    <name>' + xml(nome) + "</name>\n" +
         "    <description>" + xml("Distanza " + (p.kmAuto + p.kmPiedi).toFixed(2) + " km, tempo circa " + testoDurata(p.minTot) + ". Calcolato da FireOps VVF (BRouter).") + "</description>\n" +
@@ -2473,11 +2474,27 @@ assign initialcost =
         icona("target", "ff4747e8", ic + "paddle/red-circle.png") + "\n" +
         parti.join("\n") + "\n  </Document>\n</kml>\n";
     }
-    async function esportaKml() {
+    /* GPX 1.1: stesse tracce e stessi punti del KML (partenza, cambio, sbarre e punto di arrivo) */
+    function gpxPercorso(p) {
+      const xml = t => String(t).replace(/[<>&"]/g, c => ({"<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;"}[c]));
+      const quando = new Date().toLocaleString("it-IT", {day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"});
+      const nome = TITOLI_PERCORSO[p.modalita].replace(/^\S+\s/, "") + " FireOps " + quando;
+      const wpt = (nome, lat, lon, sym) => '  <wpt lat="' + lat.toFixed(6) + '" lon="' + lon.toFixed(6) + '"><name>' + xml(nome) + "</name><sym>" + sym + "</sym></wpt>";
+      const trk = (nome, c) => '  <trk><name>' + xml(nome) + "</name><trkseg>\n" + c.map(x => '    <trkpt lat="' + x[1] + '" lon="' + x[0] + '">' + (isFinite(parseFloat(x[2])) ? "<ele>" + parseFloat(x[2]).toFixed(1) + "</ele>" : "") + "</trkpt>").join("\n") + "\n  </trkseg></trk>";
+      const parti = [wpt("Squadra VF", p.partenza.lat, p.partenza.lon, "Flag, Blue")];
+      if (p.cambio) parti.push(wpt(p.haCambio ? "Punto di cambio" : "Fine percorribilita' mezzo", p.cambio.lat, p.cambio.lon, "Parking Area"));
+      p.sbarre.forEach((sb, i) => parti.push(wpt("Sbarra " + (i + 1), sb.lat, sb.lon, "Danger Area")));
+      parti.push(wpt("Arrivo (target)", p.target.lat, p.target.lon, "Flag, Red"));
+      if (p.coordAuto.length) parti.push(trk("Mezzo VF", p.coordAuto));
+      if (p.coordPiedi.length) parti.push(trk("A piedi", p.coordPiedi));
+      return '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="FireOps VVF" xmlns="http://www.topografix.com/GPX/1/1">\n  <metadata><name>' + xml(nome) + "</name><time>" + new Date().toISOString() + "</time></metadata>\n" + parti.join("\n") + "\n</gpx>\n";
+    }
+    async function esportaKml(formato) {
       if (!ultimoPercorso) return;
+      const gpx = formato === "gpx";
       const d = new Date(), z = n => String(n).padStart(2, "0");
-      const nomeFile = "percorso-fireops-" + d.getFullYear() + z(d.getMonth() + 1) + z(d.getDate()) + "-" + z(d.getHours()) + z(d.getMinutes()) + ".kml";
-      const blob = new Blob([kmlPercorso(ultimoPercorso)], {type: "application/vnd.google-earth.kml+xml"});
+      const nomeFile = "percorso-fireops-" + d.getFullYear() + z(d.getMonth() + 1) + z(d.getDate()) + "-" + z(d.getHours()) + z(d.getMinutes()) + (gpx ? ".gpx" : ".kml");
+      const blob = gpx ? new Blob([gpxPercorso(ultimoPercorso)], {type: "application/gpx+xml"}) : new Blob([kmlPercorso(ultimoPercorso)], {type: "application/vnd.google-earth.kml+xml"});
       try {
         const file = new File([blob], nomeFile, {type: blob.type});
         if (navigator.canShare && navigator.canShare({files: [file]})) {
@@ -2493,7 +2510,8 @@ assign initialcost =
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(a.href), 4000);
     }
-    document.getElementById("routeKml").addEventListener("click", esportaKml);
+    document.getElementById("routeKml").addEventListener("click", () => esportaKml("kml"));
+    document.getElementById("routeGpx").addEventListener("click", () => esportaKml("gpx"));
 
     document.getElementById("routeMix").addEventListener("click", function () {calcolaPercorso("soccorso");});
     document.getElementById("routeFoot").addEventListener("click", function () {calcolaPercorso("piedi");});
