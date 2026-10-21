@@ -343,7 +343,7 @@ Per tutte le richieste di soccorso chiami il
 *{{NUM}}*
 🇪🇺🇮🇹
 
-Per l'invio delle coordinate:
+Per l'invio della posizione:
 1. Clicchi sulla "graffetta" (Android) 📎 o sul "più" (Apple) ➕
 2. Clicchi su "Posizione" ⛳
 3. Se necessario segua le indicazioni del dispositivo per consentire a WhatsApp di accedere alla posizione 🆗️
@@ -366,7 +366,7 @@ For all emergency requests, call
 *{{NUM}}*
 🇪🇺🇮🇹
 
-To send coordinates:
+To send your location:
 1. Click on the "paperclip" (Android) 📎 or the "plus" (Apple) ➕
 2. Click on "Location" ⛳
 3. If necessary, follow the device's prompts to allow WhatsApp to access your location 🆗️
@@ -389,7 +389,7 @@ Para cualquier solicitud de emergencia, llame al
 *{{NUM}}*
 🇪🇺🇮🇹
 
-Para enviar coordenadas:
+Para enviar la ubicación:
 1. Haga clic en el icono del clip (Android) 📎 o en el signo más (+) (Apple) ➕
 2. Haga clic en "Ubicación" ⛳
 3. Si es necesario, siga las instrucciones del dispositivo para permitir que WhatsApp acceda a su ubicación 🆗️
@@ -415,7 +415,7 @@ Pour toute urgence, appelez le
 
 🇪🇺🇮🇹
 
-Pour envoyer vos coordonnées :
+Pour envoyer votre position :
 
 1. Cliquez sur le trombone (Android) 📎 ou le plus (Apple) ➕
 
@@ -447,7 +447,7 @@ Për të gjitha kërkesat emergjente, telefononi
 *{{NUM}}*
 🇪🇺🇮🇹
 
-Për të dërguar koordinatat:
+Për të dërguar vendndodhjen:
 1. Klikoni mbi "kapësen e letrës" (Android) 📎 ose "plus" (Apple) ➕
 2. Klikoni mbi "Vendndodhjen" ⛳
 3. Nëse është e nevojshme, ndiqni udhëzimet e pajisjes për të lejuar WhatsApp të hyjë në vendndodhjen tuaj 🆗️
@@ -472,7 +472,7 @@ Për të dërguar koordinatat:
 *{{NUM}}*
 🇪🇺🇮🇹
 
-لإرسال الإحداثيات:
+لإرسال الموقع:
 
 ١. انقر على رمز المشبك (أندرويد) 📎 أو رمز الزائد (آبل) ➕
 
@@ -500,7 +500,7 @@ Për të dërguar koordinatat:
 *{{NUM}}*
 🇪🇺🇮🇹
 
-За да изпратите координати:
+За да изпратите местоположението:
 1. Кликнете върху „кламер“ (Android) 📎 или „плюс“ (Apple) ➕
 2. Кликнете върху „Местоположение“ ⛳
 3. Ако е необходимо, следвайте инструкциите на устройството, за да позволите на WhatsApp достъп до вашето местоположение 🆗️
@@ -523,7 +523,7 @@ V případě nouze volejte
 *{{NUM}}*
 🇪🇺🇮🇹
 
-Odeslání souřadnic:
+Odeslání polohy:
 1. Klikněte na „sponku“ (Android) 📎 nebo „plus“ (Apple) ➕
 2. Klikněte na „Poloha“ ⛳
 3. V případě potřeby postupujte podle pokynů na zařízení, abyste povolili aplikaci WhatsApp přístup k vaší poloze 🆗️
@@ -546,7 +546,7 @@ Odeslání souřadnic:
 *{{NUM}}*
 🇪🇺🇮🇹
 
-发 送 坐 标：
+发 送 位 置：
 1. 单 击 “回 形 针”（Android）📎 或 “加 号”（Apple）➕
 2. 单 击“位置” ⛳
 3. 如 有 必 要，请 按 照 设 备 的 说 明 进 行 操 作，以 允 许 WhatsApp 访 问 您 的 位 置 location️
@@ -569,7 +569,7 @@ Za sve hitne zahtjeve nazovite
 *{{NUM}}*
 🇪🇺🇮🇹
 
-Za slanje koordinata:
+Za slanje lokacije:
 1. Kliknite na "spajalicu" (Android) 📎 ili "plus" (Apple) ➕
 2. Kliknite na "Lokacija" ⛳
 3. Ako je potrebno, slijedite upute uređaja kako biste WhatsAppu omogućili pristup vašoj lokaciji 🆗️
@@ -592,7 +592,7 @@ Ved alle nødsituationer, ring
 *{{NUM}}*
 🇪🇺🇮🇹
 
-S dan sender du koordinater:
+Sådan sender du din placering:
 1. Klik på "papirklipsen" (Android) 📎 eller "plusset" (Apple) ➕
 2. Klik på "Placering" ⛳
 3. Følg om nødvendigt enhedens instruktioner for at give WhatsApp adgang til din placering 🆗️
@@ -615,7 +615,7 @@ Kõikide hädaolukordade korral helistage numbril
 *{{NUM}}*
 🇪🇺🇮🇹
 
-Koordinaatide saatmiseks:
+Asukoha saatmiseks:
 1. Klõpsake kirjaklambril (Android) 📎 või plussmärgil (Apple) ➕
 2. Klõpsake valikul „Asukoht" ⛳
 3. Vajadusel järgige seadme juhiseid, et lubada WhatsAppil teie asukohale juurde pääseda 🆗️
@@ -638,7 +638,7 @@ Hätätilanteissa soita numeroon
 *{{NUM}}*
 🇪🇺🇮🇹
 
-Lähetä koordinaatit seuraavasti:
+Lähetä sijaintisi seuraavasti:
 1. Napsauta "paperiliitintä" (Android) 📎 tai "plus"-merkkiä (Apple) ➕
 2. Napsauta "Sijainti" ⛳
 3. Tarvittaessa seuraa laitteen ohjeita, jotta WhatsApp voi käyttää sijaintiasi 🆗️
@@ -661,7 +661,7 @@ Lähetä koordinaatit seuraavasti:
 *{{NUM}}*
 🇪🇺🇮🇹
 
-Για να στείλετε συντεταγμένες:
+Για να στείλετε την τοποθεσία σας:
 1. Κάντε κλικ στον "συνδετήρα" (Android) 📎 ή στο "συν" (Apple) ➕
 2. Κάντε κλικ στην "Τοποθεσία" ⛳
 3. Εάν είναι απαραίτητο, ακολουθήστε τις οδηγίες της συσκευής για να επιτρέψετε στο WhatsApp να έχει πρόσβαση στην τοποθεσία σας 🆗️
@@ -684,7 +684,7 @@ I gcás gach iarratais éigeandála, glaoigh ar
 *{{NUM}}*
 🇪🇺🇮🇹
 
-Chun comhordanáidí a sheoladh:
+Chun do shuíomh a sheoladh:
 1. Cliceáil ar an "gearrthóg páipéir" (Android) 📎 nó an "móide" (Apple) ➕
 2. Cliceáil ar "Suíomh" ⛳
 3. Más gá, lean leideanna an fheiste chun ligean do WhatsApp rochtain a fháil ar do shuíomh 🆗️
@@ -707,7 +707,7 @@ Visiem ārkārtas pieprasījumiem zvaniet uz numuru
 *{{NUM}}*
 🇪🇺🇮🇹
 
-Lai nosūtītu koordinātas:
+Lai nosūtītu atrašanās vietu:
 1. Noklikšķiniet uz "saspraudes" (Android) 📎 vai "plus" (Apple) ➕
 2. Noklikšķiniet uz "Atrašanās vieta" ⛳
 3. Ja nepieciešams, izpildiet ierīces norādījumus, lai atļautu WhatsApp piekļūt jūsu atrašanās vietai 🆗️
@@ -730,7 +730,7 @@ Dėl visų skubių užklausų skambinkite
 *{{NUM}}*
 🇪🇺🇮🇹
 
-Norėdami išsiųsti koordinates:
+Norėdami išsiųsti buvimo vietą:
 1. Spustelėkite „sąvaržėlę“ („Android“) 📎 arba „pliusą“ („Apple“) ➕
 2. Spustelėkite „Vieta“ ⛳
 3. Jei reikia, vykdykite įrenginio nurodymus, kad leistumėte „WhatsApp“ pasiekti jūsų buvimo vietą 🆗️
@@ -753,7 +753,7 @@ Għal kull talba ta' emerġenza, ċempel
 *{{NUM}}*
 🇪🇺🇮🇹
 
-Biex tibgħat koordinati:
+Biex tibgħat il-pożizzjoni:
 1. Ikklikkja fuq il-"paperclip" (Android) 📎 jew il-"plus" (Apple) ➕
 2. Ikklikkja fuq "Location" ⛳
 3. Jekk meħtieġ, segwi l-istruzzjonijiet tal-apparat biex tippermetti lil WhatsApp jaċċessa l-lokazzjoni tiegħek 🆗️
@@ -776,7 +776,7 @@ Voor alle noodgevallen, bel
 *{{NUM}}*
 🇪🇺🇮🇹
 
-Om coördinaten te verzenden:
+Om uw locatie te verzenden:
 1. Klik op het paperclip-icoon (Android) 📎 of het plusteken (Apple) ➕
 2. Klik op 'Locatie' ⛳
 3. Volg indien nodig de aanwijzingen van uw apparaat om WhatsApp toegang te geven tot uw locatie 🆗️
@@ -799,7 +799,7 @@ W nagłych wypadkach prosimy dzwonić pod numer
 *{{NUM}}*
 🇪🇺🇮🇹
 
-Aby wysłać współrzędne:
+Aby wysłać lokalizację:
 1. Kliknij „spinacz” (Android) 📎 lub „plus” (Apple) ➕
 2. Kliknij „Lokalizacja” ⛳
 3. W razie potrzeby postępuj zgodnie z instrukcjami urządzenia, aby zezwolić WhatsApp na dostęp do Twojej lokalizacji 🆗️
@@ -822,7 +822,7 @@ Para todas as solicitações de emergência, ligue para
 *{{NUM}}*
 🇪🇺🇮🇹
 
-Para enviar as coordenadas:
+Para enviar a localização:
 1. Clique no ícone de clipe de papel (Android) 📎 ou no ícone de mais (Apple) ➕
 2. Clique em "Localização" ⛳
 3. Se necessário, siga as instruções do dispositivo para permitir que o WhatsApp acesse sua localização 🆗️
@@ -845,7 +845,7 @@ Pentru toate solicitările de urgență, sunați
 *{{NUM}}*
 🇪🇺🇮🇹
 
-Pentru a trimite coordonate:
+Pentru a trimite locația:
 1. Faceți clic pe „agrafă” (Android) 📎 sau pe „plus” (Apple) ➕
 2. Faceți clic pe „Locație” ⛳
 3. Dacă este necesar, urmați instrucțiunile dispozitivului pentru a permite WhatsApp să acceseze locația dvs. 🆗️
@@ -869,7 +869,7 @@ Pentru a trimite coordonate:
 *Н-Н-Н*
 🇪🇺🇮🇹
 
-Чтобы отправить координаты:
+Чтобы отправить местоположение:
 1. Нажмите на значок «скрепка» (Android) 📎 или «плюс» (Apple) ➕
 2. Нажмите на «Местоположение» ⛳
 3. При необходимости следуйте инструкциям устройства, чтобы разрешить WhatsApp доступ к вашему местоположению 🆗️
@@ -892,7 +892,7 @@ V prípade všetkých núdzových požiadaviek volajte na číslo
 *{{NUM}}*
 🇪🇺🇮🇹
 
-Ak chcete odoslať súradnice:
+Ak chcete odoslať polohu:
 1. Kliknite na „sponku“ (Android) 📎 alebo „plus“ (Apple) ➕
 2. Kliknite na „Poloha“ ⛳
 3. V prípade potreby postupujte podľa pokynov na zariadení, aby ste povolili aplikácii WhatsApp prístup k vašej polohe 🆗️
@@ -915,7 +915,7 @@ Za vse nujne primere pokličite
 *{{NUM}}*
 🇪🇺🇮🇹
 
-Za pošiljanje koordinat:
+Za pošiljanje lokacije:
 1. Kliknite na "sponko za papir" (Android) 📎 ali "plus" (Apple) ➕
 2. Kliknite na "Lokacija" ⛳
 3. Po potrebi sledite navodilom naprave, da WhatsAppu omogočite dostop do vaše lokacije 🆗️
@@ -938,7 +938,7 @@ För alla nödförfrågningar, ring
 *{{NUM}}*
 🇪🇺🇮🇹
 
-För att skicka koordinater:
+För att skicka din plats:
 1. Klicka på "gem" (Android) 📎 eller "plus" (Apple) ➕
 2. Klicka på "Plats" ⛳
 3. Om det behövs, följ enhetens anvisningar för att tillåta WhatsApp att komma åt din plats 🆗️
@@ -962,7 +962,7 @@ Für alle Notfälle rufen Sie bitte an:
 *{{NUM}}*
 🇪🇺🇮🇹
 
-So senden Sie Ihre Koordinaten:
+So senden Sie Ihren Standort:
 1. Tippen Sie auf die Büroklammer (Android) 📎 oder das Pluszeichen (Apple) ➕.
 2. Tippen Sie auf „Standort" ⛳.
 3. Folgen Sie gegebenenfalls den Anweisungen Ihres Geräts, um WhatsApp den Zugriff auf Ihren Standort zu erlauben 🆗️.
@@ -985,7 +985,7 @@ Minden vészhelyzeti kérés esetén hívja a következő számot:
 *{{NUM}}*
 🇪🇺🇮🇹
 
-Koordináták küldéséhez:
+Tartózkodási helye küldéséhez:
 1. Kattintson a "gemkapocs" (Android) 📎 vagy a "plusz" (Apple) ikonra ➕
 2. Kattintson a "Helyszín" ⛳ elemre
 3. Szükség esetén kövesse az eszköz utasításait, hogy engedélyezze a WhatsAppnak a tartózkodási helyének elérését 🆗️
@@ -1003,34 +1003,67 @@ Koordináták küldéséhez:
     // identicamente per tutte le 27 lingue, comprese quelle con formattazione
     // diversa (righe vuote extra in francese/arabo, virgolette diverse ecc.).
     const ISTRUZIONI_LINK = {
-        it: 'Per l\'invio delle coordinate:\n1. Clicca sul link 🔗\n2. Autorizzi l\'accesso alla posizione se richiesto ✅',
-        en: 'To send coordinates:\n1. Click on the link 🔗\n2. Allow location access if prompted ✅',
-        es: 'Para enviar coordenadas:\n1. Haga clic en el enlace 🔗\n2. Permita el acceso a la ubicación si se solicita ✅',
-        fr: 'Pour envoyer vos coordonnées :\n1. Cliquez sur le lien 🔗\n2. Autorisez l\'accès à la position si demandé ✅',
-        sq: 'Për të dërguar koordinatat:\n1. Klikoni mbi lidhjen 🔗\n2. Lejoni qasjen në vendndodhje nëse kërkohet ✅',
-        ar: 'لإرسال الإحداثيات:\n١. انقر على الرابط 🔗\n٢. اسمح بالوصول إلى الموقع إذا طُلب ذلك ✅',
-        bg: 'За да изпратите координати:\n1. Кликнете върху връзката 🔗\n2. Разрешете достъп до местоположението, ако бъдете попитани ✅',
-        cs: 'Odeslání souřadnic:\n1. Klikněte na odkaz 🔗\n2. Povolte přístup k poloze, pokud budete vyzváni ✅',
-        "zh-CN": '发 送 坐 标：\n1. 点 击 链 接 🔗\n2. 如 有 提 示，请 允 许 访 问 位 置 ✅',
-        hr: 'Za slanje koordinata:\n1. Kliknite na poveznicu 🔗\n2. Dopustite pristup lokaciji ako se to zatraži ✅',
-        da: 'Sådan sender du koordinater:\n1. Klik på linket 🔗\n2. Tillad adgang til placering, hvis du bliver bedt om det ✅',
-        et: 'Koordinaatide saatmiseks:\n1. Klõpsake lingil 🔗\n2. Lubage asukohale juurdepääs, kui seda küsitakse ✅',
-        fi: 'Lähetä koordinaatit seuraavasti:\n1. Napsauta linkkiä 🔗\n2. Salli sijainnin käyttö, jos sitä pyydetään ✅',
-        el: 'Για να στείλετε συντεταγμένες:\n1. Κάντε κλικ στον σύνδεσμο 🔗\n2. Επιτρέψτε την πρόσβαση στην τοποθεσία εάν σας ζητηθεί ✅',
-        ga: 'Chun comhordanáidí a sheoladh:\n1. Cliceáil ar an nasc 🔗\n2. Ceadaigh rochtain ar an suíomh má iarrtar é ✅',
-        lv: 'Lai nosūtītu koordinātas:\n1. Noklikšķiniet uz saites 🔗\n2. Atļaujiet piekļuvi atrašanās vietai, ja tas tiek pieprasīts ✅',
-        lt: 'Norėdami išsiųsti koordinates:\n1. Spustelėkite nuorodą 🔗\n2. Leiskite pasiekti buvimo vietą, jei bus paprašyta ✅',
-        mt: 'Biex tibgħat koordinati:\n1. Ikklikkja fuq il-link 🔗\n2. Ippermetti l-aċċess għal-lokazzjoni jekk mitlub ✅',
-        nl: 'Om coördinaten te verzenden:\n1. Klik op de link 🔗\n2. Sta toegang tot locatie toe indien gevraagd ✅',
-        pl: 'Aby wysłać współrzędne:\n1. Kliknij link 🔗\n2. Zezwól na dostęp do lokalizacji, jeśli zostaniesz o to poproszony ✅',
-        pt: 'Para enviar as coordenadas:\n1. Clique no link 🔗\n2. Permita o acesso à localização, se solicitado ✅',
-        ro: 'Pentru a trimite coordonate:\n1. Faceți clic pe link 🔗\n2. Permiteți accesul la locație dacă vi se solicită ✅',
-        ru: 'Чтобы отправить координаты:\n1. Нажмите на ссылку 🔗\n2. Разрешите доступ к местоположению, если будет предложено ✅',
-        sk: 'Ak chcete odoslať súradnice:\n1. Kliknite na odkaz 🔗\n2. Povoľte prístup k polohe, ak sa zobrazí výzva ✅',
-        sl: 'Za pošiljanje koordinat:\n1. Kliknite na povezavo 🔗\n2. Če boste pozvani, dovolite dostop do lokacije ✅',
-        sv: 'För att skicka koordinater:\n1. Klicka på länken 🔗\n2. Tillåt platsåtkomst om du blir tillfrågad ✅',
-        de: 'So senden Sie Ihre Koordinaten:\n1. Klicken Sie auf den Link 🔗\n2. Erlauben Sie den Zugriff auf den Standort, falls Sie dazu aufgefordert werden ✅',
-        hu: 'Koordináták küldéséhez:\n1. Kattintson a linkre 🔗\n2. Engedélyezze a helyhozzáférést, ha erre kéri a rendszer ✅'
+        it: 'Per l\'invio delle coordinate:\n1. Clicchi sul link 🔗\n2. Autorizzi l\'accesso alla posizione se richiesto ✅\n3. Tenga aperta la pagina, il sistema provvederà automaticamente a trasmettere la posizione! ✈️',
+        en: 'To send coordinates:\n1. Click on the link 🔗\n2. Allow location access if prompted ✅\n3. Keep the page open, the system will automatically transmit your location! ✈️',
+        es: 'Para enviar coordenadas:\n1. Haga clic en el enlace 🔗\n2. Permita el acceso a la ubicación si se solicita ✅\n3. Mantenga la página abierta; el sistema transmitirá la ubicación automáticamente ✈️',
+        fr: 'Pour envoyer vos coordonnées :\n1. Cliquez sur le lien 🔗\n2. Autorisez l\'accès à la position si demandé ✅\n3. Laissez la page ouverte, le système transmettra automatiquement la position ✈️',
+        sq: 'Për të dërguar koordinatat:\n1. Klikoni mbi lidhjen 🔗\n2. Lejoni qasjen në vendndodhje nëse kërkohet ✅\n3. Mbajeni faqen hapur, sistemi do ta transmetojë automatikisht vendndodhjen ✈️',
+        ar: 'لإرسال الإحداثيات:\n١. انقر على الرابط 🔗\n٢. اسمح بالوصول إلى الموقع إذا طُلب ذلك ✅\n٣. اترك الصفحة مفتوحة، سيقوم النظام بنقل موقعك تلقائيًا ✈️',
+        bg: 'За да изпратите координати:\n1. Кликнете върху връзката 🔗\n2. Разрешете достъп до местоположението, ако бъдете попитани ✅\n3. Оставете страницата отворена, системата автоматично ще предаде местоположението ✈️',
+        cs: 'Odeslání souřadnic:\n1. Klikněte na odkaz 🔗\n2. Povolte přístup k poloze, pokud budete vyzváni ✅\n3. Nechte stránku otevřenou, systém automaticky odešle polohu ✈️',
+        "zh-CN": '发 送 坐 标：\n1. 点 击 链 接 🔗\n2. 如 有 提 示，请 允 许 访 问 位 置 ✅\n3. 请 保 持 页 面 打 开，系 统 将 自 动 传 输 位 置！✈️',
+        hr: 'Za slanje koordinata:\n1. Kliknite na poveznicu 🔗\n2. Dopustite pristup lokaciji ako se to zatraži ✅\n3. Ostavite stranicu otvorenu, sustav će automatski prenijeti lokaciju ✈️',
+        da: 'Sådan sender du koordinater:\n1. Klik på linket 🔗\n2. Tillad adgang til placering, hvis du bliver bedt om det ✅\n3. Lad siden være åben, systemet sender automatisk placeringen ✈️',
+        et: 'Koordinaatide saatmiseks:\n1. Klõpsake lingil 🔗\n2. Lubage asukohale juurdepääs, kui seda küsitakse ✅\n3. Hoidke leht avatuna, süsteem saadab asukoha automaatselt ✈️',
+        fi: 'Lähetä koordinaatit seuraavasti:\n1. Napsauta linkkiä 🔗\n2. Salli sijainnin käyttö, jos sitä pyydetään ✅\n3. Pidä sivu auki, järjestelmä lähettää sijainnin automaattisesti ✈️',
+        el: 'Για να στείλετε συντεταγμένες:\n1. Κάντε κλικ στον σύνδεσμο 🔗\n2. Επιτρέψτε την πρόσβαση στην τοποθεσία εάν σας ζητηθεί ✅\n3. Αφήστε τη σελίδα ανοιχτή, το σύστημα θα μεταδώσει αυτόματα την τοποθεσία ✈️',
+        ga: 'Chun comhordanáidí a sheoladh:\n1. Cliceáil ar an nasc 🔗\n2. Ceadaigh rochtain ar an suíomh má iarrtar é ✅\n3. Fág an leathanach ar oscailt, seolfaidh an córas an suíomh go huathoibríoch ✈️',
+        lv: 'Lai nosūtītu koordinātas:\n1. Noklikšķiniet uz saites 🔗\n2. Atļaujiet piekļuvi atrašanās vietai, ja tas tiek pieprasīts ✅\n3. Atstājiet lapu atvērtu, sistēma automātiski pārsūtīs atrašanās vietu ✈️',
+        lt: 'Norėdami išsiųsti koordinates:\n1. Spustelėkite nuorodą 🔗\n2. Leiskite pasiekti buvimo vietą, jei bus paprašyta ✅\n3. Palikite puslapį atvertą, sistema automatiškai persiųs buvimo vietą ✈️',
+        mt: 'Biex tibgħat koordinati:\n1. Ikklikkja fuq il-link 🔗\n2. Ippermetti l-aċċess għal-lokazzjoni jekk mitlub ✅\n3. Ħalli l-paġna miftuħa, is-sistema tibgħat il-pożizzjoni awtomatikament ✈️',
+        nl: 'Om coördinaten te verzenden:\n1. Klik op de link 🔗\n2. Sta toegang tot locatie toe indien gevraagd ✅\n3. Houd de pagina open, het systeem verzendt de locatie automatisch ✈️',
+        pl: 'Aby wysłać współrzędne:\n1. Kliknij link 🔗\n2. Zezwól na dostęp do lokalizacji, jeśli zostaniesz o to poproszony ✅\n3. Nie zamykaj strony, system automatycznie wyśle lokalizację ✈️',
+        pt: 'Para enviar as coordenadas:\n1. Clique no link 🔗\n2. Permita o acesso à localização, se solicitado ✅\n3. Mantenha a página aberta, o sistema transmitirá a localização automaticamente ✈️',
+        ro: 'Pentru a trimite coordonate:\n1. Faceți clic pe link 🔗\n2. Permiteți accesul la locație dacă vi se solicită ✅\n3. Lăsați pagina deschisă, sistemul va transmite automat locația ✈️',
+        ru: 'Чтобы отправить координаты:\n1. Нажмите на ссылку 🔗\n2. Разрешите доступ к местоположению, если будет предложено ✅\n3. Оставьте страницу открытой, система автоматически передаст местоположение ✈️',
+        sk: 'Ak chcete odoslať súradnice:\n1. Kliknite na odkaz 🔗\n2. Povoľte prístup k polohe, ak sa zobrazí výzva ✅\n3. Nechajte stránku otvorenú, systém automaticky odošle polohu ✈️',
+        sl: 'Za pošiljanje koordinat:\n1. Kliknite na povezavo 🔗\n2. Če boste pozvani, dovolite dostop do lokacije ✅\n3. Pustite stran odprto, sistem bo samodejno posredoval lokacijo ✈️',
+        sv: 'För att skicka koordinater:\n1. Klicka på länken 🔗\n2. Tillåt platsåtkomst om du blir tillfrågad ✅\n3. Håll sidan öppen, systemet skickar automatiskt din position ✈️',
+        de: 'So senden Sie Ihre Koordinaten:\n1. Klicken Sie auf den Link 🔗\n2. Erlauben Sie den Zugriff auf den Standort, falls Sie dazu aufgefordert werden ✅\n3. Lassen Sie die Seite geöffnet, das System übermittelt den Standort automatisch ✈️',
+        hu: 'Koordináták küldéséhez:\n1. Kattintson a linkre 🔗\n2. Engedélyezze a helyhozzáférést, ha erre kéri a rendszer ✅\n3. Hagyja nyitva az oldalt, a rendszer automatikusan továbbítja a helyzetet ✈️'
+    };
+
+    // Riga che introduce le istruzioni manuali, mostrate sotto il link come
+    // alternativa. Lingue non elencate ricadono sull'inglese (le 28 lingue del messaggio sono tutte presenti).
+    const ISTRUZIONI_ALTERNATIVA = {
+        it: "➖ In alternativa al link, può inviare la posizione anche così:",
+        en: "➖ As an alternative to the link, you can also send your location this way:",
+        es: "➖ Como alternativa al enlace, también puede enviar la ubicación así:",
+        fr: "➖ En alternative au lien, vous pouvez aussi envoyer votre position ainsi :",
+        sq: "➖ Si alternativë ndaj lidhjes, mund ta dërgoni vendndodhjen edhe kështu:",
+        ar: "➖ كبديل للرابط، يمكنك أيضًا إرسال موقعك بهذه الطريقة:",
+        bg: "➖ Като алтернатива на връзката можете да изпратите местоположението си и по този начин:",
+        cs: "➖ Jako alternativu k odkazu můžete polohu odeslat také takto:",
+        "zh-CN": "➖ 除 链 接 外，您 也 可 以 这 样 发 送 位 置：",
+        hr: "➖ Kao alternativu poveznici, lokaciju možete poslati i ovako:",
+        da: "➖ Som alternativ til linket kan du også sende din placering på denne måde:",
+        et: "➖ Lingi asemel saate asukoha saata ka nii:",
+        fi: "➖ Linkin vaihtoehtona voit lähettää sijaintisi myös näin:",
+        el: "➖ Ως εναλλακτική στον σύνδεσμο, μπορείτε να στείλετε την τοποθεσία σας και ως εξής:",
+        ga: "➖ Mar mhalairt ar an nasc, is féidir leat do shuíomh a sheoladh mar seo freisin:",
+        lv: "➖ Kā alternatīvu saitei varat nosūtīt savu atrašanās vietu arī šādi:",
+        lt: "➖ Vietoje nuorodos savo buvimo vietą galite išsiųsti ir taip:",
+        mt: "➖ Bħala alternattiva għall-link, tistgħu tibagħtu l-pożizzjoni wkoll hekk:",
+        nl: "➖ Als alternatief voor de link kunt u uw locatie ook zo sturen:",
+        pl: "➖ Zamiast linku możesz wysłać lokalizację także w ten sposób:",
+        pt: "➖ Em alternativa ao link, pode também enviar a localização assim:",
+        ro: "➖ Ca alternativă la link, puteți trimite locația și astfel:",
+        ru: "➖ Вместо ссылки вы также можете отправить местоположение так:",
+        sk: "➖ Ako alternatívu k odkazu môžete polohu odoslať aj takto:",
+        sl: "➖ Kot alternativo povezavi lahko lokacijo pošljete tudi tako:",
+        sv: "➖ Som alternativ till länken kan du också skicka din position på detta sätt:",
+        de: "➖ Alternativ zum Link können Sie Ihren Standort auch so senden:",
+        hu: "➖ A link helyett a helyzetét így is elküldheti:"
     };
 
     // Individua il blocco "bandiere → istruzioni manuali → frase di chiusura"
@@ -1053,10 +1086,18 @@ Koordináták küldéséhez:
 
         if (link) {
             const istruzioniLink = ISTRUZIONI_LINK[codiceLingua] || ISTRUZIONI_LINK.it;
-            testo = testo.replace(
-                BLOCCO_ISTRUZIONI_RE,
-                "🇪🇺🇮🇹\n\n" + link + "\n\n" + istruzioniLink + "\n\n"
-            );
+            const alternativa = ISTRUZIONI_ALTERNATIVA[codiceLingua] || ISTRUZIONI_ALTERNATIVA.en;
+            // Messaggio unico: prima le istruzioni brevi (1-2-3, l'ultima
+            // dice di lasciare la pagina aperta), poi il link a cui si
+            // riferiscono, poi — come alternativa — le istruzioni manuali
+            // (graffetta/Posizione).
+            testo = testo.replace(BLOCCO_ISTRUZIONI_RE, blocco => {
+                // toglie la prima riga ("Per l'invio delle coordinate:"): la sostituisce la riga "In alternativa"
+                const manuale = blocco.slice("🇪🇺🇮🇹\n\n".length).replace(/\s+$/, "").replace(/^[^\n]*\r?\n/, "");
+                // 🅰️/🅱️ marcano le due parti del metodo "con link": 🅰️ il link
+                // e le istruzioni brevi, 🅱️ l'alternativa manuale.
+                return "🇪🇺🇮🇹\n\n🅰️ " + istruzioniLink + "\n\n" + link + "\n\n🅱️ " + alternativa.replace(/^➖\s*/, "") + "\n" + manuale + "\n\n";
+            });
         }
 
         return testo;
