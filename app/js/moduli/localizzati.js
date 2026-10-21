@@ -1964,8 +1964,8 @@ body.map-open {
         const newAcc = pos.coords.accuracy;
         const newAlt = pos.coords.altitude;
 
-        if (newAcc <= bestAccuracy) {
-          bestAccuracy = newAcc;
+        if (newAcc <= bestAccuracy || newAcc <= 50) {
+          bestAccuracy = Math.max(newAcc, 20);
           userPos = {lat: pos.coords.latitude, lon: pos.coords.longitude};
           userAccuracy = newAcc;
           if (newAlt !== null) userAltitude = newAlt;
@@ -1991,12 +1991,11 @@ body.map-open {
         }
       }, function (err) { }, {enableHighAccuracy: true, timeout: 5000, maximumAge: 0});
 
-      trackingTimeoutId = setTimeout(function () {
-        if (watchId !== null) {
-          navigator.geolocation.clearWatch(watchId);
-          watchId = null;
-        }
-      }, 60000);
+    }
+
+    /* il tracciamento resta attivo mentre ci si sposta; si ferma uscendo dal modulo */
+    function stopGpsTracking() {
+      if (watchId !== null) { try { navigator.geolocation.clearWatch(watchId); } catch (e) {} watchId = null; }
     }
 
     async function refreshPosition() {
@@ -2897,10 +2896,11 @@ assign initialcost =
     document.getElementById("resetDataBtn").addEventListener("click", function () {
       if (confirm("Cancellare posizione, punto target e percorso?")) resetApp();
     });
-    FireOps.onHide("localizzati", function () {if (arStop) arStop();});
+    FireOps.onHide("localizzati", function () {if (arStop) arStop(); stopGpsTracking();});
     FireOps.onLogo("localizzati", resetApp);
     FireOps.onShow("localizzati", function () {
       if (map) setTimeout(function () {map.invalidateSize();}, 60);
+      if (watchId === null && userPos && !document.getElementById("result-section").classList.contains("hidden")) startGpsTracking();
       // arrivo dal comando nell'intestazione: localizza subito se non c'è già un risultato
       if (FireOps.consumaAutoLocalizzati() &&
           document.getElementById("result-section").classList.contains("hidden")) {
@@ -3179,7 +3179,7 @@ assign initialcost =
       targetPos = coords;
       clearRoute();
       fetchTargetElevation(targetPos.lat, targetPos.lon);
-      statusEl.textContent = "Elaborazione coordinate e avvio tracking GPS (1 min)...";
+      statusEl.textContent = "Elaborazione coordinate e avvio tracking GPS ...";
 
       startGpsTracking();
 
@@ -3259,7 +3259,7 @@ assign initialcost =
       const btn = this;
       const statusEl = document.getElementById("statusMsg");
       statusEl.classList.remove("hidden", "error");
-      statusEl.textContent = "Localizzazione in corso e tracking attivo per 1 min...";
+      statusEl.textContent = "Localizzazione in corso e tracking attivo...";
       btn.classList.add("loading");
       targetPos = null;
 
