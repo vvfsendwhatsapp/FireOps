@@ -151,6 +151,13 @@ FireOps.registra({
       s += '<path d="M' + X(0).toFixed(1) + " " + Y(0).toFixed(1) + "L" + X(ris.x).toFixed(1) + " " + Y(ris.zc).toFixed(1) + "L" + X(i.L).toFixed(1) + " " + Y(-i.D).toFixed(1) + '" fill="none" stroke="#e8734a" stroke-width="1.2" stroke-dasharray="3 3" opacity=".7"/>';
       // ancoraggi
       [[0, 0, "A"], [i.L, -i.D, "B"]].forEach(a => { s += '<path d="M' + (X(a[0]) - 8) + " " + (Y(a[1]) + 12) + "L" + X(a[0]) + " " + Y(a[1]) + "L" + (X(a[0]) + 8) + " " + (Y(a[1]) + 12) + 'Z" fill="#8b96a3"/><text x="' + (X(a[0]) - (a[2] === "A" ? 14 : -14)) + '" y="' + (Y(a[1]) - 6) + '" fill="#8b96a3" font-size="13" font-weight="700" text-anchor="middle">' + a[2] + "</text>"; });
+      // risultanti sugli ancoraggi (due portanti, carrello sulla verticale della vittima): freccia nella direzione della forza
+      [[0, 0, "A", 1, rec.H, rec.yp / rec.x * rec.H], [i.L, -i.D, "B", -1, rec.H, (rec.yp + i.D) / (i.L - rec.x) * rec.H]].forEach(a => {
+        const fz = a[5] * 2, F = Math.hypot(a[3] * a[4] * 2, fz); if (!(F > 0)) return;
+        const ux = a[3] * a[4] * 2 / F, uy = -fz / F, x0 = X(a[0]), y0 = Y(a[1]), x1 = x0 + ux * 34, y1 = y0 + uy * 34, an = Math.atan2(y1 - y0, x1 - x0);
+        s += '<path d="M' + x0 + " " + y0 + "L" + x1 + " " + y1 + '" stroke="#ff5d8f" stroke-width="3" fill="none"/><path d="M' + x1 + " " + y1 + "L" + (x1 - 9 * Math.cos(an - 0.45)) + " " + (y1 - 9 * Math.sin(an - 0.45)) + "L" + (x1 - 9 * Math.cos(an + 0.45)) + " " + (y1 - 9 * Math.sin(an + 0.45)) + 'Z" fill="#ff5d8f"/>';
+        s += '<text x="' + (a[3] > 0 ? x0 + 6 : x0 - 6) + '" y="' + (y0 - 22) + '" fill="#ff5d8f" font-size="11" font-weight="700" text-anchor="' + (a[3] > 0 ? "start" : "end") + '">R ' + (F / G).toFixed(0) + ' kg</text><text x="' + (a[3] > 0 ? x0 + 6 : x0 - 6) + '" y="' + (y0 - 10) + '" fill="#ff5d8f" font-size="10" text-anchor="' + (a[3] > 0 ? "start" : "end") + '">O ' + (a[4] * 2 / G).toFixed(0) + " · V " + (Math.abs(fz) / G).toFixed(0) + "</text>";
+      });
       // corda del pescante: dal punto fisso lungo la portante, nel carrello, poi giu' fino alla vittima (e su per il tipo 2 e 3)
       {
         const fx = i.pm === "3" ? i.L : 0, fz = i.pm === "3" ? -i.D : 0;
