@@ -500,6 +500,8 @@ FireOps.registra({
       }
       if (it.t === "blo") h += '<button type="button" data-m="pul">' + (it.p ? "Con puleggia: sì (tocca per no)" : "Con puleggia: no (tocca per sì)") + "</button>";
       if (it.t === "dis") h += '<div class="rg"><button type="button" data-m="em" aria-label="Meno rendimento">−</button><span>rendimento ' + fmt(it.e, 2) + '</span><button type="button" data-m="ep" aria-label="Più rendimento">+</button></div>';
+      if (it.t === "pul" || it.t === "blo") h += '<button type="button" data-m="tdis">Trasforma in discensore</button>';
+      if (it.t === "dis" || it.t === "blo") h += '<button type="button" data-m="tpul">Trasforma in carrucola</button>';
       h += '<button type="button" data-m="elimina">Elimina</button><button type="button" data-m="chiudi">Chiudi</button>';
       const m = $("#pa-menu"); m.innerHTML = h; m.hidden = false;
       const cw = cv.clientWidth, ch = cv.clientHeight, u = cw / VW;
@@ -632,6 +634,8 @@ FireOps.registra({
       if (m === "fissa") { sel = it.id; avviaFissa(it); return; }
       if (m === "libera") it.f = "";
       else if (m === "pul") it.p = !it.p;
+      else if (m === "tdis") { it.t = "dis"; it.nome = "D" + (++cnt.dis); it.e = it.e || 0.6; }
+      else if (m === "tpul") { it.t = "pul"; it.nome = "C" + (++cnt.pul); }
       else if (m === "em" || m === "ep") { it.e = Math.round(Math.min(1, Math.max(0.1, it.e + (m === "ep" ? 0.05 : -0.05))) * 100) / 100; apriMenu(it); tutto(); return; }
       else if (m === "elimina") {
         const id = it.id;
