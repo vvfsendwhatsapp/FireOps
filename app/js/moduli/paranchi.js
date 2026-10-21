@@ -363,8 +363,9 @@ FireOps.registra({
     }
     function mezzerie() {   // pallino a meta' di ogni tratto di corda (da trascinare su una carrucola)
       const out = [];
-      if (tracc) return out;
+      if (!tracc || nuova) return out;   // i pallini compaiono solo in "Modifica corda", sulla corda che stai modificando
       corde.forEach((c, i) => {
+        if (c !== tracc) return;
         const g = geom(c); if (g.length < 2 || g.some(q => !q)) return;
         for (let k = 0; k + 1 < g.length; k++) {
           const a = g[k].o, b = g[k + 1].i; if (Math.hypot(b[0] - a[0], b[1] - a[1]) < 9) continue;
@@ -716,6 +717,11 @@ FireOps.registra({
     cv.addEventListener("pointerdown", e => {
       const [x, y] = pos(e), it = trova(x, y);
       if (menu || menuC !== null) { chiudiMenu(); }
+      if (!it && !fissa) {
+        const r0 = cv.getBoundingClientRect(), tolm = 16 * VW / r0.width;
+        const mz = mezzerie().find(m => Math.hypot(m.x - x, m.y - y) < tolm);
+        if (mz) { dragM = {i: mz.i, k: mz.k, x: mz.x, y: mz.y}; cv.setPointerCapture(e.pointerId); $("#pa-hint").textContent = "Trascina il pallino sopra la carrucola in cui far passare la corda, poi rilascia."; tutto(); return; }
+      }
       if (fissa) {
         const src = byId(fissa);
         const rc = !it && src && src.t === "blo" ? trovaCorda(x, y) : null;
@@ -743,9 +749,6 @@ FireOps.registra({
         return;
       }
       if (!it) {
-        const r0 = cv.getBoundingClientRect(), tolm = 16 * VW / r0.width;
-        const mz = mezzerie().find(m => Math.hypot(m.x - x, m.y - y) < tolm);
-        if (mz) { dragM = {i: mz.i, k: mz.k, x: mz.x, y: mz.y}; cv.setPointerCapture(e.pointerId); $("#pa-hint").textContent = "Trascina il pallino sopra la carrucola in cui far passare la corda, poi rilascia."; tutto(); return; }
         const rc = trovaCorda(x, y);
         if (rc) { apriMenuCorda(rc); return; }
         if (sel) { sel = null; tutto(); }
@@ -776,7 +779,7 @@ FireOps.registra({
         const c = corde[d.i];
         if (best && c) {
           const nid = best.t === "pul2" ? best.id + (Math.hypot(d.x - sheaveC(best, -1)[0], d.y - sheaveC(best, -1)[1]) <= Math.hypot(d.x - sheaveC(best, 1)[0], d.y - sheaveC(best, 1)[1]) ? ":A" : ":B") : best.id;
-          c.splice(d.k + 1, 0, nid);
+          c.splice(d.k + 1, 0, nid); if (ins !== null && ins > d.k) ins++;
           $("#pa-hint").textContent = "La corda " + (d.i + 1) + " ora passa su " + nomeNodo(nid) + ".";
         } else $("#pa-hint").innerHTML = HINT;
         tutto(); return;
@@ -880,7 +883,7 @@ FireOps.registra({
     function entraModifica(i, inserisciDopo) {
       tracc = corde[i]; nuova = false; ins = inserisciDopo; sel = null; fissa = null; chiudiMenu();
       $("#pa-cd").textContent = "Fine corda";
-      $("#pa-hint").textContent = ins === null ? "Modifica corda " + (i + 1) + ": tocca i punti da aggiungere in fondo." : "Tocca i punti da inserire nella corda " + (i + 1) + ", uno dopo l’altro.";
+      $("#pa-hint").textContent = ins === null ? "Modifica corda " + (i + 1) + ": tocca i punti da aggiungere in fondo, oppure trascina un pallino giallo (metà tratto) su una carrucola per farci passare la corda." : "Tocca i punti da inserire nella corda " + (i + 1) + ", uno dopo l’altro.";
       tutto();
     }
     $("#pa-corde").addEventListener("click", e => {
