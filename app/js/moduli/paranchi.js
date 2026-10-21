@@ -59,9 +59,7 @@ FireOps.registra({
 .pg-paranchi .tab td:last-child { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
 .pg-paranchi .sez { margin: 12px 0 6px; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-dim); }
 .pg-paranchi .tb { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.pg-paranchi .tb#pa-add { grid-template-columns: repeat(6, 1fr); }
-.pg-paranchi .tb#pa-add button { grid-column: span 2; }
-.pg-paranchi .tb#pa-add button:nth-child(n+4) { grid-column: span 3; }
+.pg-paranchi .tb#pa-add { grid-template-columns: repeat(3, 1fr); }
 .pg-paranchi .tb.tre { grid-template-columns: 2fr 1fr 1fr; }
 .pg-paranchi .tb button { min-height: 48px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
 .pg-paranchi .tb button i { width: 12px; height: 12px; border-radius: 50%; flex: none; }
@@ -92,7 +90,7 @@ FireOps.registra({
   <div class="avv" id="pa-mini" style="border-color:var(--line);background:var(--panel-2);margin:8px 0 0"></div>
   <div class="sez">Aggiungi</div>
   <div class="tb" id="pa-add">
-    <button type="button" data-t="anc"><i style="background:#8b96a3"></i>Ancoraggio</button><button type="button" data-t="pul"><i style="background:#4A93C8"></i>Carrucola</button><button type="button" data-t="pul2"><i style="background:#4A93C8"></i>Doppia</button><button type="button" data-t="blo"><i style="background:#c77dff"></i>Bloccante</button><button type="button" data-t="dis"><i style="background:#ff6b6b"></i>Discensore</button>
+    <button type="button" data-t="anc"><i style="background:#8b96a3"></i>Ancoraggio</button><button type="button" data-t="pul"><i style="background:#4A93C8"></i>Carrucola</button><button type="button" data-t="pul2"><i style="background:#4A93C8"></i>Doppia</button><button type="button" data-t="blo"><i style="background:#c77dff"></i>Bloccante</button><button type="button" data-t="dis"><i style="background:#ff6b6b"></i>Discensore</button><button type="button" data-t="arg"><i style="background:#ff9f1c"></i>Argano</button>
   </div>
   <div class="sez">Corda e calcolo</div>
   <div class="tb tre">
@@ -142,7 +140,7 @@ FireOps.registra({
     const fmt = (v, d) => Number(v).toLocaleString("it-IT", {minimumFractionDigits: d, maximumFractionDigits: d});
     const kN = v => fmt(v / 1000, 2), daN = v => fmt(v / 10, 0), chili = v => fmt(v / G, 0);   // le forze sono in newton; a video in kg (chili forza) e, dove serve, in daN
 
-    let items = [], corde = [], sel = null, tracc = null, uid = 0, cnt = {anc: 0, pul: 0, blo: 0, dis: 0};
+    let items = [], corde = [], sel = null, tracc = null, uid = 0, cnt = {anc: 0, pul: 0, blo: 0, dis: 0, arg: 0};
     const HINT = "<b>1</b> Aggiungi punti e trascinali. <b>2</b> Fissa ogni carrucola: trascinala vicino a un ancoraggio o al carico (si aggancia), oppure toccala e usa “Fissa a…”. <b>3</b> “Disegna corda” e tocca i punti nell’ordine di passaggio.";
     let ultRis = null, dragM = null, menuK = 0, punto = null, fissa = null, menu = null, menuC = null, pressT = null, nuova = false, ins = null, nsel = null;
     const isP = it => !!it && (it.t === "pul" || it.t === "pul2");
@@ -156,10 +154,11 @@ FireOps.registra({
       if (t === "pul" || t === "pul2") it.nome = "C" + (++cnt.pul);
       if (t === "blo") { it.nome = "B" + (++cnt.blo); it.p = false; }
       if (t === "dis") it.nome = "D" + (++cnt.dis);
+      if (t === "arg") { it.nome = "AR" + (++cnt.arg); it.rap = 3; it.e = 0.9; }   // argano manuale: rapporto 1:rap sulla manovella
       items.push(it);
       return it;
     }
-    function azzera() { items = []; corde = []; sel = null; tracc = null; fissa = null; ins = null; nsel = null; nuova = false; cnt = {anc: 0, pul: 0, blo: 0, dis: 0}; }
+    function azzera() { items = []; corde = []; sel = null; tracc = null; fissa = null; ins = null; nsel = null; nuova = false; cnt = {anc: 0, pul: 0, blo: 0, dis: 0, arg: 0}; }
 
     // ---------- sistemi pronti: tackle a n capi (il capo di tiro esce sempre dal blocco fisso) ----------
     // yF = quota del blocco fisso, yM = quota del blocco mobile; radice = carico (primo stadio) o prima carrucola libera
@@ -233,7 +232,7 @@ FireOps.registra({
     }
     const vs = (a, b) => { const d = a.y - b.y; return d > 0.5 ? 1 : d < -0.5 ? -1 : 0; };
     const etaG = () => Math.min(1, Math.max(0.3, Number($("#pa-eta").value) || 0.95));
-    const fatt = (it, eta) => !it ? 1 : isP(it) || (it.t === "blo" && it.p) ? (eta >= 1 ? 1 : 1 / (it.er || eta)) : it.t === "dis" ? (eta >= 1 ? 1 : 1 / it.e) : 1;
+    const fatt = (it, eta) => !it ? 1 : isP(it) || (it.t === "blo" && it.p) ? (eta >= 1 ? 1 : 1 / (it.er || eta)) : it.t === "dis" ? (eta >= 1 ? 1 : 1 / it.e) : it.t === "arg" ? (eta >= 1 ? 1 / it.rap : 1 / (it.rap * it.e)) : 1;
     // bloccante che morde la corda (non fissato a un punto fermo): la corda si interrompe li' e le due parti sono legate al bloccante
     const morde = it => it && it.t === "blo" && !it.p && corpo(it) !== "fix";
     function risolvi(eta, W) {
@@ -399,7 +398,17 @@ FireOps.registra({
       corde.forEach(c => geom(c).forEach(g => { if (g && g.arco) via[g.p.id] = g.mid; }));
       // carrucole e bloccanti
       items.forEach(it => {
-        if (!isP(it) && it.t !== "blo" && it.t !== "dis") return;
+        if (!isP(it) && it.t !== "blo" && it.t !== "dis" && it.t !== "arg") return;
+        if (it.t === "arg") {   // argano manuale: tamburo con manovella
+          const cx = X(it.x), cy = Y(it.y), w = 1.5 * R * u, h = 1.1 * R * u;
+          ctx.fillStyle = bg; ctx.strokeStyle = "#ff9f1c"; ctx.lineWidth = 2.4;
+          ctx.beginPath(); ctx.rect(cx - w, cy - h, 2 * w, 2 * h); ctx.fill(); ctx.stroke();
+          ctx.lineWidth = 1.2; ctx.beginPath(); [-0.5, 0, 0.5].forEach(q => { ctx.moveTo(cx + q * w, cy - h); ctx.lineTo(cx + q * w, cy + h); }); ctx.stroke();   // spire della corda sul tamburo
+          ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(cx + w, cy); ctx.lineTo(cx + w + 10, cy - 10); ctx.stroke();   // manovella
+          ctx.fillStyle = "#ff9f1c"; ctx.beginPath(); ctx.arc(cx + w + 10, cy - 10, 3.5, 0, 7); ctx.fill();
+          ctx.fillStyle = txt; ctx.font = "bold 10px sans-serif"; ctx.fillText(it.nome, cx, cy - h - 8); ctx.fillText("1:" + it.rap, cx, cy + h + 9); ctx.font = "11px sans-serif";
+          return;
+        }
         ctx.fillStyle = bg; ctx.strokeStyle = isP(it) ? "#4A93C8" : it.t === "dis" ? "#ff6b6b" : "#c77dff"; ctx.lineWidth = 2.4;
         if (it.t === "pul2") {
           const rr = rg(it), b = 0.72 * rr * u, d = 1.15 * rr * u, pr = b + 3, th = tipAng(it) - Math.PI / 2;   // la punta guarda il fulcro, in qualunque direzione
@@ -528,13 +537,14 @@ FireOps.registra({
       const it = sel && byId(sel), box = $("#pa-sel");
       if (!it) { box.innerHTML = ""; return; }
       let h = '<div class="el"><div class="elh"><b>' + nome(it) + '</b>' + ((it.t === "car" || it.t === "op") ? "" : '<span class="ctl"><button type="button" id="pa-sx" aria-label="Elimina">✕</button></span>') + '</div>';
-      if (isP(it) || it.t === "blo" || it.t === "dis") {
+      if (isP(it) || it.t === "blo" || it.t === "dis" || it.t === "arg") {
         const fo = it.f ? (it.f === "car" ? "il carico" : (byId(it.f) || {nome: "?"}).nome) : null;
         h += '<p class="nota" style="margin-top:8px">Fulcro: ' + (fo ? "<b>fissata a " + fo + "</b>" : stato(it)) + (it.t === "pul2" ? " Il fulcro è unico: vale per " + it.nome + "A e " + it.nome + "B insieme." : "") + '</p>' +
           '<div class="chips"><button type="button" id="pa-sc" class="acc">' + (fissa === it.id ? "Tocca il punto…" : "Fissa a…") + '</button>' + (it.f ? '<button type="button" id="pa-sl">Libera</button>' : "") + '</div>';
       }
       if (it.t === "blo") h += '<p class="nota">Il bloccante morde la corda e la lascia passare dritta, senza puleggia e senza perdite.</p>';
       if (isP(it)) h += '<label for="pa-ser" style="margin-top:8px">Rendimento di questa carrucola (vuoto = come le altre, ' + fmt(etaG(), 2) + ')</label><input type="number" id="pa-ser" inputmode="decimal" min="0.1" max="1" step="0.01" placeholder="' + fmt(etaG(), 2) + '" value="' + (it.er || "") + '">';
+      if (it.t === "arg") h += '<div class="chips" style="margin-top:8px"><button type="button" data-ar="3" aria-pressed="' + (it.rap === 3) + '">Rapporto 1:3</button><button type="button" data-ar="6" aria-pressed="' + (it.rap === 6) + '">Rapporto 1:6</button></div><label for="pa-se" style="margin-top:8px">Rendimento dell’argano (0,1–1)</label><input type="number" id="pa-se" inputmode="decimal" min="0.1" max="1" step="0.05" value="' + it.e + '"><p class="nota">Argano manuale: la corda si avvolge sul tamburo e gli operatori girano la manovella. Con rapporto 1:' + it.rap + ' la forza sulla manovella è ' + it.rap + ' volte più piccola, ma il carico si muove ' + it.rap + ' volte più lentamente. Mettilo nella corda subito prima degli operatori e fissalo a un ancoraggio.</p>';
       if (it.t === "dis") h += '<div class="chips" style="margin-top:8px"><button type="button" data-dt="pul" aria-pressed="' + (it.v === "pul") + '">Con puleggia</button><button type="button" data-dt="cam" aria-pressed="' + (it.v !== "pul") + '">A camma</button></div>';
       if (it.t === "dis") h += '<label for="pa-se" style="margin-top:8px">Rendimento di passaggio del discensore (0,1–1)</label><input type="number" id="pa-se" inputmode="decimal" min="0.1" max="1" step="0.05" value="' + it.e + '"><p class="nota">Con puleggia: la corda gira intorno (rendimento di partenza 0,85). A camma: autofrenante, la corda passa dritta (rendimento di partenza 0,6). Il rendimento è modificabile; senza attriti vale 1.</p>';
       if (it.t === "car") h += '<p class="nota">Il peso si imposta in “Dati”.</p>';
@@ -566,13 +576,15 @@ FireOps.registra({
         ultRis = null; disegna(null);
       } else {
         const vmTeo = W / id.tiro, vmReale = W / re.tiro, ideale = id.tiro;
+        const argani = items.filter(o => o.t === "arg" && corde.some(c => c.some(x => base(x) === o.id)));
         const vt = Math.abs(vmTeo - Math.round(vmTeo)) < 0.005 ? String(Math.round(vmTeo)) : fmt(vmTeo, 2);
         const pc = fmt(ideale > 0 ? (re.tiro / ideale - 1) * 100 : 0, 0);
-        $("#pa-mini").innerHTML = "Senza attriti: <b>1:" + vt + "</b> (tiro " + chili(ideale) + " kg · " + daN(ideale) + " daN)<br>Con attriti (" + fmt(eta, 2) + "): <b>1:" + fmt(vmReale, 2) + "</b> (tiro " + chili(re.tiro) + " kg · " + daN(re.tiro) + " daN)";
+        $("#pa-mini").innerHTML = "Senza attriti: <b>1:" + vt + "</b> (tiro " + chili(ideale) + " kg · " + daN(ideale) + " daN)<br>Con attriti (" + fmt(eta, 2) + "): <b>1:" + fmt(vmReale, 2) + "</b> (tiro " + chili(re.tiro) + " kg · " + daN(re.tiro) + " daN)" + (argani.length ? "<br>Alla manovella (" + argani.map(o => o.nome + " 1:" + o.rap).join(", ") + "): <b>" + chili(re.tiro) + " kg</b>" : "");
         $("#pa-ris").innerHTML =
           '<div class="vcell"><div class="k">Senza attriti (rendimento 1)</div><div class="v">1:' + vt + '</div><div class="k">tiro ' + chili(ideale) + ' kg · ' + daN(ideale) + ' daN</div></div>' +
           '<div class="vcell"><div class="k">Con attriti (rendimento ' + fmt(eta, 2) + ')</div><div class="v">1:' + fmt(vmReale, 2) + '</div><div class="k">tiro ' + chili(re.tiro) + ' kg · ' + daN(re.tiro) + ' daN</div></div>' +
           '<div class="vcell"><div class="k">Tiro da fare (con attriti)</div><div class="v">' + chili(re.tiro) + ' <small>kg</small></div><div class="k">' + daN(re.tiro) + ' daN</div></div>' +
+          (argani.length ? '<div class="vcell"><div class="k">Forza alla manovella (' + argani.map(o => o.nome + ' 1:' + o.rap).join(', ') + ')</div><div class="v">' + chili(re.tiro) + ' <small>kg</small></div><div class="k">il carico sale ' + fmt(vmTeo, 1) + ' volte più piano di come giri la manovella</div></div>' : '') +
           '<div class="vcell"><div class="k">Perdita per attriti</div><div class="v">' + pc + ' <small>%</small></div></div>' +
           '<div class="vcell g"><div class="k">Corda da recuperare per ' + fmt(h, 1) + ' m di sollevamento</div><div class="v">' + fmt(h * vmTeo, 1) + ' <small>m</small></div></div>';
         let righe = '<tr><td>Carico sollevato</td><td>' + chili(W) + ' kg</td></tr>';
@@ -588,7 +600,7 @@ FireOps.registra({
             righe += '<tr><td>' + it.nome + ' <small style="color:var(--text-dim)">ancoraggio (cerniera)</small><br><small style="color:var(--text-dim)">verticale ' + chili(Math.abs(fy)) + ' kg ' + (fy > 0 ? "verso il basso" : "verso l’alto") + ' · orizzontale ' + chili(Math.abs(fx)) + ' kg' + (Math.abs(fx) >= 1 ? (fx > 0 ? " verso destra" : " verso sinistra") : "") + ' · ' + dir + '</small></td><td><b>' + chili(F) + ' kg</b></td></tr>';
             return;
           }
-          if (!(isP(it) || it.t === "blo" || it.t === "dis")) return;
+          if (!(isP(it) || it.t === "blo" || it.t === "dis" || it.t === "arg")) return;
           let F = 0;
           const v = re.forza[it.id];
           if (v) F = v.reduce((a, c, ri) => a + c * re.T[ri], 0);
@@ -655,7 +667,7 @@ FireOps.registra({
     let menuT = 0;   // istante di apertura: i tocchi subito dopo la pressione lunga sul menu vengono ignorati
     function chiudiMenu() { const era = menuC !== null || punto !== null; punto = null; $("#pa-menu").hidden = true; menu = null; menuC = null; if (era) calcola(); }
     function apriMenu(it) {
-      if (!(isP(it) || it.t === "blo" || it.t === "dis" || it.t === "anc" || it.t === "car")) return;
+      if (!(isP(it) || it.t === "blo" || it.t === "dis" || it.t === "arg" || it.t === "anc" || it.t === "car")) return;
       menu = it.id;
       if (it.t === "car") {   // il carico si puo' scollegare dalle carrucole fissate a lui e dalla corda
         const att = items.filter(o => o.f === "car"), inC = corde.filter(c => c.some(x => base(x) === it.id)).length;
@@ -675,6 +687,7 @@ FireOps.registra({
         h += '<button type="button" class="acc" data-m="fissa">Fissa a…</button>';
         if (it.f) h += '<button type="button" data-m="libera">Libera (togli fulcro)</button>';
       }
+      if (it.t === "arg") h += '<div class="rg"><button type="button" data-m="r3" aria-pressed="' + (it.rap === 3) + '">1:3</button><button type="button" data-m="r6" aria-pressed="' + (it.rap === 6) + '">1:6</button></div><div class="rg"><button type="button" data-m="em" aria-label="Meno rendimento">−</button><span>rendimento ' + fmt(it.e, 2) + '</span><button type="button" data-m="ep" aria-label="Più rendimento">+</button></div>';
       if (it.t === "dis") h += '<div class="rg"><button type="button" data-m="dpul" aria-pressed="' + (it.v === "pul") + '">Con puleggia</button><button type="button" data-m="dcam" aria-pressed="' + (it.v !== "pul") + '">A camma</button></div>';
       if (it.t === "dis") h += '<div class="rg"><button type="button" data-m="em" aria-label="Meno rendimento">−</button><span>rendimento ' + fmt(it.e, 2) + '</span><button type="button" data-m="ep" aria-label="Più rendimento">+</button></div>';
       if (isP(it)) h += '<div class="rg"><button type="button" data-m="em" aria-label="Meno rendimento">−</button><span>rendimento ' + fmt(it.er || etaG(), 2) + (it.er ? "" : " (comune)") + '</span><button type="button" data-m="ep" aria-label="Più rendimento">+</button></div>' + (it.er ? '<button type="button" data-m="ecom">Rendimento come le altre carrucole</button>' : "");
@@ -775,7 +788,7 @@ FireOps.registra({
       if (dragM) {
         const d = dragM; dragM = null;
         let best = null, bd = 9;
-        items.forEach(o => { if (!(isP(o) || o.t === "blo" || o.t === "dis")) return; const k = Math.hypot(o.x - d.x, o.y - d.y); if (k < bd) { bd = k; best = o; } });
+        items.forEach(o => { if (!(isP(o) || o.t === "blo" || o.t === "dis" || o.t === "arg")) return; const k = Math.hypot(o.x - d.x, o.y - d.y); if (k < bd) { bd = k; best = o; } });
         const c = corde[d.i];
         if (best && c) {
           const nid = best.t === "pul2" ? best.id + (Math.hypot(d.x - sheaveC(best, -1)[0], d.y - sheaveC(best, -1)[1]) <= Math.hypot(d.x - sheaveC(best, 1)[0], d.y - sheaveC(best, 1)[1]) ? ":A" : ":B") : best.id;
@@ -785,7 +798,7 @@ FireOps.registra({
         tutto(); return;
       }
       const d = drag; drag = null;
-      if (d && d.mosso && (isP(d.it) || d.it.t === "blo" || d.it.t === "dis") && !d.it.f) {
+      if (d && d.mosso && (isP(d.it) || d.it.t === "blo" || d.it.t === "dis" || d.it.t === "arg") && !d.it.f) {
         let best = null, bd = 8;
         items.forEach(o => { if (o === d.it || !(o.t === "anc" || o.t === "car")) return; const k = Math.hypot(o.x - d.it.x, o.y - d.it.y); if (k < bd) { bd = k; best = o; } });
         if (best) { d.it.f = best.t === "car" ? "car" : best.id; $("#pa-hint").textContent = nome(d.it) + " fissata a " + nome(best) + "."; tutto(); }
@@ -843,7 +856,8 @@ FireOps.registra({
       const it = menu && byId(menu); if (!it) return;
       const m = b.dataset.m;
       if (m === "fissa") { sel = it.id; avviaFissa(it); return; }
-      if (m === "clib") items.forEach(o => { if (o.f === "car") o.f = ""; });
+      if (m === "r3" || m === "r6") it.rap = m === "r3" ? 3 : 6;
+      else if (m === "clib") items.forEach(o => { if (o.f === "car") o.f = ""; });
       else if (m === "ccor") { corde = corde.map(c => c.filter(x => base(x) !== it.id)).filter(c => c.length >= 2); nsel = null; tracc = null; }
       else if (m === "libera") it.f = "";
       else if (m === "dpul" || m === "dcam") { const nv = m === "dpul" ? "pul" : "cam"; if (it.v !== nv) { it.e = nv === "pul" ? 0.85 : 0.6; it.v = nv; } }
@@ -870,6 +884,8 @@ FireOps.registra({
     $("#pa-sel").addEventListener("click", e => {
       const itc = byId(sel);
       const dtb = e.target.closest("button[data-dt]");
+      const arb = e.target.closest("button[data-ar]");
+      if (itc && arb) { itc.rap = Number(arb.dataset.ar); tutto(); return; }
       if (itc && dtb) { const nv = dtb.dataset.dt; if (itc.v !== nv) { itc.e = nv === "pul" ? 0.85 : 0.6; itc.v = nv; } tutto(); return; }
       if (itc && e.target.closest("#pa-sc")) { if (fissa === itc.id) { fissa = null; $("#pa-hint").innerHTML = HINT; tutto(); } else avviaFissa(itc); return; }
       if (itc && e.target.closest("#pa-sl")) { itc.f = ""; tutto(); return; }
