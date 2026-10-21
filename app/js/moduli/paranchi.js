@@ -527,7 +527,12 @@ FireOps.registra({
     const trova = (x, y) => {
       const r = cv.getBoundingClientRect(), k = VW / r.width, rad = HIT * k;
       let best = null, bd = 1e9;
-      items.forEach(it => { const d = Math.hypot(it.x - x, it.y - y); if (d < rad && d < bd) { bd = d; best = it; } });
+      const u = r.width / VW;
+      items.forEach(it => {
+        let d = Math.hypot(it.x - x, it.y - y);
+        if (it.t === "car") d = Math.hypot(Math.max(0, Math.abs(it.x - x) * u - 24), Math.max(0, Math.abs(it.y - y) * u - 12)) / u;   // il peso e' un rettangolo: si afferra da tutta la sagoma
+        if (d < rad && d < bd) { bd = d; best = it; }
+      });
       return best;
     };
     let drag = null;
