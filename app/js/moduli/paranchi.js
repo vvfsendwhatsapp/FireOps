@@ -281,7 +281,7 @@ FireOps.registra({
       const colu = [];
       for (let j = 0; j < nR; j++) if (chiavi.some(k => Math.abs(righe[k][j]) > 1e-9)) colu.push(j);
       const op = corde.findIndex(c => { const l = byId(c[c.length - 1]); return l && l.t === "op"; });
-      if (op < 0) return {err: "Nessuna corda arriva agli operatori: termina una corda sul punto “Operatori”."};
+      if (op < 0) return {err: "Nessuna corda finisce sugli operatori: l’ultimo punto della corda (capo di tiro) deve essere “Operatori”. Se l’hai disegnata dagli operatori al carico, usa ⇄ per invertirla."};
       if (!colu.includes(ultimo[op])) return {err: "La corda degli operatori non è collegata al carico: controlla i collegamenti."};
       if (!righe.car.some(v => Math.abs(v) > 1e-9)) return {err: "Il carico non è sostenuto da nessuna corda."};
       if (chiavi.length !== colu.length) return {err: "Sistema non determinato: " + chiavi.length + " corpi mobili (carico e carrucole libere) e " + colu.length + " corde. Servono tante corde quanti sono i corpi mobili."};
@@ -565,6 +565,10 @@ FireOps.registra({
       }).join("");
     }
     function calcola() {
+      corde.forEach((c, i) => {   // una corda disegnata partendo dagli operatori va letta al contrario: gli operatori sono sempre il capo di tiro
+        const p0 = byId(c[0]), p1 = byId(c[c.length - 1]);
+        if (c !== tracc && c.length > 1 && p0 && p0.t === "op" && !(p1 && p1.t === "op")) { c.reverse(); $("#pa-hint").textContent = "Corda " + (i + 1) + " girata: gli operatori sono il capo di tiro, in fondo alla corda."; }
+      });
       const kg = Math.max(0, Number($("#pa-kg").value) || 0), h = Math.max(0, Number($("#pa-h").value) || 0);
       const eta = Math.min(1, Math.max(0.3, Number($("#pa-eta").value) || 0.95));
       const W = kg * G;
