@@ -313,7 +313,7 @@ FireOps.registra({
         if (j === 0 || j === nodi.length - 1 || !(isP(p) || p.t === "blo" || p.t === "dis") || (p.t === "blo" && !p.p)) return {p, i: [p.x, p.y], o: [p.x, p.y], arco: null};   // il bloccante puro prende la corda e la lascia passare dritta
         const pv = nodi[j - 1], nx = nodi[j + 1];
         const rr = rg(p), cxs = p.t === "pul2" ? p.x + (sh(c[j]) ? (sh(c[j]) === "A" ? -1 : 1) : (ass[ri + ":" + j] || -1)) * 1.15 * rr : p.x;
-        const sin = pv && pv.x > (p.t === "pul2" ? cxs : p.x) + 0.01 ? 1 : -1;
+        const sin = p.t === "pul2" ? -1 : (pv && pv.x > p.x + 0.01 ? 1 : -1);   // sulla doppia la corda entra da sinistra ed esce a destra: A fuori->centro, B centro->fuori
         const aIn = sin > 0 ? 0 : Math.PI;
         const sotto = pv && nx ? (pv.y + nx.y) / 2 < p.y : true;
         const sg = (sotto ? 1 : -1) * (aIn === Math.PI ? -1 : 1);
@@ -351,7 +351,8 @@ FireOps.registra({
         ctx.fillStyle = bg; ctx.strokeStyle = isP(it) ? "#4A93C8" : it.t === "dis" ? "#ff6b6b" : "#c77dff"; ctx.lineWidth = 2.4;
         if (it.t === "pul2") {
           const rr = rg(it), b = 0.72 * rr * u, d = 1.15 * rr * u, pr = b + 3, cx = X(it.x), cy = Y(it.y);
-          const forma = () => { ctx.beginPath(); [cx - d, cx + d].forEach(x => { ctx.moveTo(x + pr, cy); ctx.arc(x, cy, pr, 0, 7); }); ctx.moveTo(cx - d - pr * 0.75, cy + pr * 0.65); ctx.lineTo(cx + d + pr * 0.75, cy + pr * 0.65); ctx.lineTo(cx, cy + pr * 2.1); ctx.closePath(); };
+          const tg = it.f === "car" ? items.find(i => i.t === "car") : (it.f ? byId(it.f) : null), dv = tg && tg.y < it.y ? -1 : 1;   // la punta guarda il fulcro: se sta sopra, la doppia e' capovolta
+          const forma = () => { ctx.beginPath(); [cx - d, cx + d].forEach(x => { ctx.moveTo(x + pr, cy); ctx.arc(x, cy, pr, 0, 7); }); ctx.moveTo(cx - d - pr * 0.75, cy + dv * pr * 0.65); ctx.lineTo(cx + d + pr * 0.75, cy + dv * pr * 0.65); ctx.lineTo(cx, cy + dv * pr * 2.1); ctx.closePath(); };
           ctx.lineJoin = "round"; ctx.lineWidth = 5; forma(); ctx.stroke(); forma(); ctx.fill();    // carcassa a cuore
           ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(cx - d, cy, b, 0, 7); ctx.moveTo(cx + d + b, cy); ctx.arc(cx + d, cy, b, 0, 7); ctx.stroke();   // le due pulegge
           ctx.fillStyle = txt; ctx.font = "bold 9px sans-serif"; ctx.fillText(it.nome + "A", cx - d, cy); ctx.fillText(it.nome + "B", cx + d, cy); ctx.font = "11px sans-serif";
@@ -394,8 +395,10 @@ FireOps.registra({
             const a = g[k].o, b = g[k + 1].i, t = ris.seg[ri][k];
             if (!(t > 0) || Math.hypot(a[0] - b[0], a[1] - b[1]) < 9) continue;
             const mx = X((a[0] + b[0]) / 2), my = Y((a[1] + b[1]) / 2), s = kN(t);
-            ctx.fillStyle = bg; ctx.fillRect(mx - 17, my - 7, 34, 14);
-            ctx.fillStyle = "#ff9f1c"; ctx.fillText(s, mx, my);
+            let an = Math.atan2(b[1] - a[1], b[0] - a[0]); if (an > Math.PI / 2 || an < -Math.PI / 2) an += Math.PI;   // il testo segue l'asse della corda
+            ctx.save(); ctx.translate(mx, my); ctx.rotate(an);
+            ctx.fillStyle = bg; ctx.fillRect(-17, -7, 34, 14);
+            ctx.fillStyle = "#ff9f1c"; ctx.fillText(s, 0, 0); ctx.restore();
           }
           ctx.font = "11px sans-serif";
         }
