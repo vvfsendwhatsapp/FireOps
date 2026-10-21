@@ -57,6 +57,20 @@ FireOps.registra({
 .pg-paranchi .tab { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .pg-paranchi .tab td { padding: 6px 4px; border-top: 1px solid var(--line); }
 .pg-paranchi .tab td:last-child { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+.pg-paranchi .cvwrap { position: relative; }
+.pg-paranchi canvas.pi { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.pg-paranchi #pa-ban { position: absolute; left: 6px; right: 6px; top: 6px; z-index: 2; display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid var(--yellow); border-radius: 8px; background: rgba(16,20,26,.92); color: var(--text); font-size: 12.5px; line-height: 1.3; pointer-events: none; }
+.pg-paranchi #pa-ban[hidden], .pg-paranchi #pa-menu[hidden] { display: none; }
+.pg-paranchi #pa-ban span { flex: 1; }
+.pg-paranchi #pa-ban button { pointer-events: auto; min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); color: var(--text); font: inherit; cursor: pointer; }
+.pg-paranchi #pa-ban button.acc { background: var(--yellow); color: #000; border-color: var(--yellow); }
+.pg-paranchi #pa-menu { position: absolute; z-index: 3; display: flex; flex-direction: column; gap: 6px; min-width: 190px; padding: 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); box-shadow: 0 6px 22px rgba(0,0,0,.5); }
+.pg-paranchi #pa-menu b { font-size: 14px; padding: 0 2px; }
+.pg-paranchi #pa-menu button { min-height: 48px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 15px; text-align: left; cursor: pointer; }
+.pg-paranchi #pa-menu button.acc { background: var(--yellow); color: #000; border-color: var(--yellow); font-weight: 700; }
+.pg-paranchi #pa-menu .rg { display: flex; gap: 6px; align-items: center; }
+.pg-paranchi #pa-menu .rg button { flex: 1; text-align: center; }
+.pg-paranchi #pa-menu .rg span { flex: 2; text-align: center; font-size: 14px; }
 .pg-paranchi .chips button.acc { background: var(--yellow); color: #000; border-color: var(--yellow); }
 .pg-paranchi canvas.pi { height: auto; }
 `,
@@ -65,7 +79,7 @@ FireOps.registra({
 <div class="blocco">
   <h2 class="tit">Disegno del sistema</h2>
   <div class="chips" id="pa-pre" aria-label="Sistemi pronti"></div>
-  <canvas id="pa-cv" class="pi" role="img" aria-label="Disegno del sistema di recupero: trascina carrucole, bloccanti e ancoraggi"></canvas>
+  <div class="cvwrap"><canvas id="pa-cv" class="pi" role="img" aria-label="Disegno del sistema di recupero: trascina carrucole, bloccanti e ancoraggi. Tieni premuto su un punto per il menu."></canvas><div id="pa-ban" hidden></div><div id="pa-menu" hidden></div></div>
   <div class="chips" id="pa-add" style="margin-top:10px">
     <button type="button" data-t="anc">+ Ancoraggio</button><button type="button" data-t="pul">+ Carrucola</button><button type="button" data-t="blo" data-p="0">+ Bloccante</button><button type="button" data-t="blo" data-p="1">+ Carrucola bloccante</button><button type="button" data-t="dis">+ Discensore</button><button type="button" id="pa-cd" class="acc">Disegna corda</button>
   </div>
@@ -117,7 +131,7 @@ FireOps.registra({
 
     let items = [], corde = [], sel = null, tracc = null, uid = 0, cnt = {anc: 0, pul: 0, blo: 0, dis: 0};
     const HINT = "<b>1</b> Aggiungi punti e trascinali. <b>2</b> Fissa ogni carrucola: trascinala vicino a un ancoraggio o al carico (si aggancia), oppure toccala e usa “Fissa a…”. <b>3</b> “Disegna corda” e tocca i punti nell’ordine di passaggio.";
-    let fissa = null;
+    let fissa = null, menu = null, pressT = null;
     const byId = id => items.find(i => i.id === id);
     const nome = it => it.t === "car" ? "Carico" : it.t === "op" ? "Operatori" : it.nome;
     function add(t, x, y, extra) {
@@ -418,7 +432,41 @@ FireOps.registra({
       }
       $("#pa-avv").innerHTML = avv.map(t => '<div class="avv">' + t + '</div>').join("");
     }
-    function tutto() { pannelloSel(); elencoCorde(); calcola(); }
+    function aggBan() {
+      const b = $("#pa-ban");
+      if (fissa) {
+        const it = byId(fissa);
+        b.innerHTML = "<span>Tocca l’ancoraggio, il carico o la carrucola a cui fissare <b>" + (it ? nome(it) : "") + "</b></span><button type=\"button\" data-b=\"annf\">Annulla</button>";
+        b.hidden = false;
+      } else if (tracc) {
+        b.innerHTML = "<span>Corda: " + (tracc.length ? tracc.map(id => nome(byId(id))).join(" → ") : "tocca il capo morto") + "</span>" +
+          (tracc.length >= 2 ? '<button type="button" class="acc" data-b="finec">Fine</button>' : "") + '<button type="button" data-b="annc">Annulla</button>';
+        b.hidden = false;
+      } else b.hidden = true;
+    }
+    function chiudiMenu() { $("#pa-menu").hidden = true; menu = null; }
+    function apriMenu(it) {
+      if (!(it.t === "pul" || it.t === "blo" || it.t === "dis" || it.t === "anc")) return;
+      menu = it.id;
+      let h = "<b>" + nome(it) + "</b>";
+      if (it.t !== "anc") {
+        h += '<button type="button" class="acc" data-m="fissa">Fissa a…</button>';
+        if (it.f) h += '<button type="button" data-m="libera">Libera (togli fulcro)</button>';
+      }
+      if (it.t === "blo") h += '<button type="button" data-m="pul">' + (it.p ? "Con puleggia: sì (tocca per no)" : "Con puleggia: no (tocca per sì)") + "</button>";
+      if (it.t === "dis") h += '<div class="rg"><button type="button" data-m="em" aria-label="Meno rendimento">−</button><span>rendimento ' + fmt(it.e, 2) + '</span><button type="button" data-m="ep" aria-label="Più rendimento">+</button></div>';
+      h += '<button type="button" data-m="elimina">Elimina</button><button type="button" data-m="chiudi">Chiudi</button>';
+      const m = $("#pa-menu"); m.innerHTML = h; m.hidden = false;
+      const cw = cv.clientWidth, ch = cv.clientHeight, u = cw / VW;
+      m.style.left = Math.max(4, Math.min(cw - m.offsetWidth - 4, it.x * u + 16)) + "px";
+      m.style.top = Math.max(4, Math.min(ch - m.offsetHeight - 4, it.y * u - 24)) + "px";
+    }
+    function avviaFissa(it) {
+      fissa = it.id; chiudiMenu();
+      $("#pa-hint").innerHTML = "Tocca l’ancoraggio, il carico o la carrucola a cui è fissata <b>" + nome(it) + "</b>.";
+      tutto();
+    }
+    function tutto() { pannelloSel(); elencoCorde(); calcola(); aggBan(); }
 
     // ---------- interazione ----------
     const cv = $("#pa-cv");
@@ -432,6 +480,7 @@ FireOps.registra({
     let drag = null;
     cv.addEventListener("pointerdown", e => {
       const [x, y] = pos(e), it = trova(x, y);
+      if (menu) { chiudiMenu(); }
       if (fissa) {
         const src = byId(fissa);
         if (it && src && it.id !== fissa && (it.t === "anc" || it.t === "car" || it.t === "pul" || it.t === "blo" || it.t === "dis")) {
@@ -441,22 +490,27 @@ FireOps.registra({
         fissa = null; tutto(); return;
       }
       if (tracc) {
-        if (it) { if (tracc[tracc.length - 1] !== it.id) tracc.push(it.id); calcola(); $("#pa-hint").textContent = "Corda: " + tracc.map(id => nome(byId(id))).join(" → ") + ". Tocca il punto successivo, poi “Fine corda”."; }
+        if (it) { if (tracc[tracc.length - 1] !== it.id) tracc.push(it.id); calcola(); aggBan(); $("#pa-hint").textContent = "Corda: " + tracc.map(id => nome(byId(id))).join(" → ") + ". Tocca il punto successivo, poi “Fine”."; }
         return;
       }
       if (!it) { if (sel) { sel = null; tutto(); } return; }
       drag = {it, dx: it.x - x, dy: it.y - y, mosso: false};
       cv.setPointerCapture(e.pointerId);
       if (sel !== it.id) { sel = it.id; pannelloSel(); calcola(); }
+      clearTimeout(pressT);
+      pressT = setTimeout(() => { if (drag && !drag.mosso) { const t = drag.it; drag = null; apriMenu(t); } }, 450);
     });
     cv.addEventListener("pointermove", e => {
       if (!drag) return;
       const [x, y] = pos(e);
-      drag.mosso = true;
+      if (!drag.mosso && Math.hypot(x + drag.dx - drag.it.x, y + drag.dy - drag.it.y) < 1.2) return;
+      drag.mosso = true; clearTimeout(pressT);
       drag.it.x = Math.max(3, Math.min(VW - 3, x + drag.dx)); drag.it.y = Math.max(3, Math.min(VH - 3, y + drag.dy));
       calcola();
     });
+    cv.addEventListener("contextmenu", e => e.preventDefault());
     const fine = () => {
+      clearTimeout(pressT);
       const d = drag; drag = null;
       if (d && d.mosso && (d.it.t === "pul" || d.it.t === "blo" || d.it.t === "dis") && !d.it.f) {
         let best = null, bd = 8;
@@ -473,23 +527,42 @@ FireOps.registra({
       sel = it.id; tutto();
     });
     $("#pa-reset").addEventListener("click", () => {
-      azzera(); add("car", 25, 88); add("op", 75, 122);
+      azzera(); chiudiMenu(); add("car", 25, 88); add("op", 75, 122);
       $("#pa-cd").textContent = "Disegna corda"; $("#pa-hint").innerHTML = "Sistema azzerato. " + HINT;
       tutto();
     });
     $("#pa-calc").addEventListener("click", () => { calcola(); $("#pa-mini").scrollIntoView({block: "nearest"}); });
+    function chiudiCorda(salva) {
+      if (salva && tracc && tracc.length >= 2) corde.push(tracc.slice());
+      tracc = null; $("#pa-cd").textContent = "Disegna corda"; $("#pa-hint").innerHTML = HINT; tutto();
+    }
     $("#pa-cd").addEventListener("click", () => {
-      const b = $("#pa-cd");
       if (!tracc) {
-        tracc = []; sel = null; b.textContent = "Fine corda";
+        tracc = []; sel = null; fissa = null; chiudiMenu(); $("#pa-cd").textContent = "Fine corda";
         $("#pa-hint").textContent = "Tocca in ordine: capo morto, carrucole e bloccanti attraversati, e per ultimo il capo di tiro (Operatori, oppure il punto a cui è legata).";
         tutto();
-      } else {
-        if (tracc.length >= 2) corde.push(tracc.slice());
-        tracc = null; b.textContent = "Disegna corda";
-        $("#pa-hint").innerHTML = HINT;
-        tutto();
+      } else chiudiCorda(true);
+    });
+    $("#pa-ban").addEventListener("click", e => {
+      const b = e.target.closest("button[data-b]"); if (!b) return;
+      if (b.dataset.b === "annf") { fissa = null; $("#pa-hint").innerHTML = HINT; tutto(); }
+      else chiudiCorda(b.dataset.b === "finec");
+    });
+    $("#pa-menu").addEventListener("click", e => {
+      const b = e.target.closest("button[data-m]"), it = menu && byId(menu); if (!b || !it) return;
+      const m = b.dataset.m;
+      if (m === "fissa") { sel = it.id; avviaFissa(it); return; }
+      if (m === "libera") it.f = "";
+      else if (m === "pul") it.p = !it.p;
+      else if (m === "em" || m === "ep") { it.e = Math.round(Math.min(1, Math.max(0.1, it.e + (m === "ep" ? 0.05 : -0.05))) * 100) / 100; apriMenu(it); tutto(); return; }
+      else if (m === "elimina") {
+        const id = it.id;
+        items = items.filter(i => i.id !== id);
+        items.forEach(i => { if (i.f === id) i.f = ""; });
+        corde = corde.map(c => c.filter(x => x !== id)).filter(c => c.length >= 2);
+        if (sel === id) sel = null;
       }
+      chiudiMenu(); tutto();
     });
     $("#pa-sel").addEventListener("change", e => {
       const it = byId(sel); if (!it) return;
@@ -499,11 +572,7 @@ FireOps.registra({
     });
     $("#pa-sel").addEventListener("click", e => {
       const itc = byId(sel);
-      if (itc && e.target.closest("#pa-sc")) {
-        fissa = fissa === itc.id ? null : itc.id;
-        $("#pa-hint").innerHTML = fissa ? "Tocca l’ancoraggio, il carico o la carrucola a cui è fissata <b>" + nome(itc) + "</b>. Tocca uno spazio vuoto per annullare." : HINT;
-        tutto(); return;
-      }
+      if (itc && e.target.closest("#pa-sc")) { if (fissa === itc.id) { fissa = null; $("#pa-hint").innerHTML = HINT; tutto(); } else avviaFissa(itc); return; }
       if (itc && e.target.closest("#pa-sl")) { itc.f = ""; tutto(); return; }
       if (!e.target.closest("#pa-sx")) return;
       const id = sel;
