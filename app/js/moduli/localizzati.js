@@ -3141,9 +3141,11 @@ assign initialcost =
         }
         coords = shortRes.coords;
       } else {
-        coords = parseCoordinatesInput(inputVal);
+        const lungo = String(inputVal || "").trim().length > 40;
+        const est0 = lungo ? estraiCoordinateDaTesto(inputVal) : null;
+        coords = est0 && est0.coords ? est0.coords : parseCoordinatesInput(inputVal);
         if (!coords) {
-          const est = estraiCoordinateDaTesto(inputVal);
+          const est = est0 || estraiCoordinateDaTesto(inputVal);
           if (est && est.error) {
             statusEl.classList.add("error");
             statusEl.textContent = est.error;
@@ -3184,12 +3186,21 @@ assign initialcost =
       if (!v) { el.textContent = ""; return; }
       let c = null, err = "";
       try {
-        c = parseCoordinatesInput(v);
+        if (v.length > 40) { const e0 = estraiCoordinateDaTesto(v); if (e0 && e0.coords) c = e0.coords; }
+        if (!c) c = parseCoordinatesInput(v);
         if (!c) { const e = estraiCoordinateDaTesto(v); if (e && e.coords) c = e.coords; else if (e && e.error) err = e.error; }
       } catch (e) {}
       if (c) el.textContent = "✓ Rilevato: " + c.lat.toFixed(6) + ", " + c.lon.toFixed(6) + (inItaly(c) ? "" : " (fuori dall'Italia)");
       else if (OLC_SHORT_RE.test(v)) el.textContent = "Codice OLC corto: si userà la località di riferimento.";
       else el.textContent = err || "Nessuna coordinata riconosciuta (ancora)…";
+    });
+
+    /* incollando un link o un intero messaggio nel campo, parte subito la ricerca */
+    document.getElementById("targetInput").addEventListener("paste", function () {
+      const el = this;
+      setTimeout(function () {
+        if (el.value.trim().length > 6) processTargetInput(el.value);
+      }, 60);
     });
 
     document.getElementById("targetGoBtn").addEventListener("click", async function () {
