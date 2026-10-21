@@ -1530,7 +1530,7 @@ function iconaFrecciaDirezione(colore, azimutGradi) {
     // La chiave si crea su developer.tomtom.com; va limitata al dominio
     // vvfsendwhatsapp.github.io, perché in una pagina pubblica si vede.
     // ==========================================================
-    const TOMTOM_KEY = "";                       // ← chiave API TomTom
+    const TOMTOM_KEY = "pHLQV3MSilIBQTG5ttCLwL5jW46atpG8";                       // ← chiave API TomTom
     const TRAFFICO_RAGGIO_KM = 15;               // mezzo lato del riquadro attorno al target
     const TRAFFICO_DURATA_MS = 10 * 60 * 1000;   // si spegne da solo dopo 10 minuti
     let sfondiCoord = null;
