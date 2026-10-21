@@ -345,13 +345,20 @@ FireOps.registra({
     }
 
     // ---------- pannelli ----------
+    function stato(it) {   // spiega perche' un punto senza fulcro non e' bloccato
+      const legata = [], passa = [];
+      corde.forEach((c, i) => { if (c[0] === it.id || c[c.length - 1] === it.id) legata.push(i + 1); if (c.slice(1, -1).includes(it.id)) passa.push(i + 1); });
+      if (legata.length) return "<b>non fissata a niente</b>: la tiene la corda " + legata.join(", ") + " (è legata lì). Se è una carrucola mobile va bene così.";
+      if (passa.length) return "<b>non fissata a niente</b>: la tiene solo la corda " + passa.join(", ") + " che ci passa. È giusto per una carrucola mobile; per una fissa premi “Fissa a…”.";
+      return "<b>non fissata a niente</b>: premi “Fissa a…” per attaccarla a un ancoraggio, al carico o a un’altra carrucola.";
+    }
     function pannelloSel() {
       const it = sel && byId(sel), box = $("#pa-sel");
       if (!it) { box.innerHTML = ""; return; }
       let h = '<div class="el"><div class="elh"><b>' + nome(it) + '</b>' + ((it.t === "car" || it.t === "op") ? "" : '<span class="ctl"><button type="button" id="pa-sx" aria-label="Elimina">✕</button></span>') + '</div>';
       if (it.t === "pul" || it.t === "blo" || it.t === "dis") {
         const fo = it.f ? (it.f === "car" ? "il carico" : (byId(it.f) || {nome: "?"}).nome) : null;
-        h += '<p class="nota" style="margin-top:8px">Fulcro: ' + (fo ? "<b>fissata a " + fo + "</b>" : "<b>libera</b> (si muove con la corda)") + '</p>' +
+        h += '<p class="nota" style="margin-top:8px">Fulcro: ' + (fo ? "<b>fissata a " + fo + "</b>" : stato(it)) + '</p>' +
           '<div class="chips"><button type="button" id="pa-sc" class="acc">' + (fissa === it.id ? "Tocca il punto…" : "Fissa a…") + '</button>' + (it.f ? '<button type="button" id="pa-sl">Libera</button>' : "") + '</div>';
       }
       if (it.t === "blo") h += '<label class="chk"><input type="checkbox" id="pa-sp"' + (it.p ? " checked" : "") + '> Con puleggia (conta come un passaggio)</label>';
@@ -401,7 +408,7 @@ FireOps.registra({
             items.forEach(o => { if (o.f === it.id && re.forza[o.id]) F += re.forza[o.id].reduce((a, c, ri) => a + c * re.T[ri], 0); });
           }
           if (Math.abs(F) < 1) return;
-          righe += '<tr><td>' + it.nome + (it.t !== "anc" ? '<br><small style="color:var(--text-dim)">fulcro: ' + (it.f ? (it.f === "car" ? "carico" : (byId(it.f) || {nome: "?"}).nome) : "libero") + '</small>' : "") + '</td><td>' + kN(Math.abs(F)) + ' kN</td></tr>';
+          righe += '<tr><td>' + it.nome + (it.t !== "anc" ? '<br><small style="color:var(--text-dim)">fulcro: ' + (it.f ? (it.f === "car" ? "carico" : (byId(it.f) || {nome: "?"}).nome) : "mobile, retta dalla corda") + '</small>' : "") + '</td><td>' + kN(Math.abs(F)) + ' kN</td></tr>';
         });
         $("#pa-anc").innerHTML = righe;
         if (eta < 0.8 && vmTeo >= 4) avv.push("Con questi rendimenti i sistemi con molti capi perdono molto: valuta carrucole su cuscinetti.");
