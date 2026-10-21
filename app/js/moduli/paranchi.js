@@ -69,7 +69,9 @@ FireOps.registra({
   <div class="chips" id="pa-add" style="margin-top:10px">
     <button type="button" data-t="anc">+ Ancoraggio</button><button type="button" data-t="pul">+ Carrucola</button><button type="button" data-t="blo">+ Bloccante</button><button type="button" id="pa-cd" class="acc">Disegna corda</button>
   </div>
-  <p class="nota" id="pa-hint">Trascina i punti per posizionarli. Tocca un punto per cambiarne il fulcro. Le carrucole sono attraversate dalla corda con ingresso da un lato e uscita dall’altro.</p>
+  <div class="chips" style="margin-top:8px"><button type="button" id="pa-calc" class="acc">Calcola vantaggio</button><button type="button" id="pa-reset">Reset</button></div>
+  <div class="avv" id="pa-mini" style="border-color:var(--line);background:var(--panel-2)"></div>
+  <p class="nota" id="pa-hint"><b>1</b> Aggiungi punti e trascinali. <b>2</b> Fissa ogni carrucola: trascinala vicino a un ancoraggio o al carico (si aggancia), oppure toccala e usa “Fissa a…”. <b>3</b> “Disegna corda” e tocca i punti nell’ordine di passaggio.</p>
   <div id="pa-sel"></div>
   <div id="pa-corde"></div>
 </div>
@@ -114,6 +116,8 @@ FireOps.registra({
     const kN = v => fmt(v / 1000, 2), daN = v => fmt(v / 10, 0);
 
     let items = [], corde = [], sel = null, tracc = null, uid = 0, cnt = {anc: 0, pul: 0, blo: 0};
+    const HINT = "<b>1</b> Aggiungi punti e trascinali. <b>2</b> Fissa ogni carrucola: trascinala vicino a un ancoraggio o al carico (si aggancia), oppure toccala e usa “Fissa a…”. <b>3</b> “Disegna corda” e tocca i punti nell’ordine di passaggio.";
+    let fissa = null;
     const byId = id => items.find(i => i.id === id);
     const nome = it => it.t === "car" ? "Carico" : it.t === "op" ? "Operatori" : it.nome;
     function add(t, x, y, extra) {
@@ -124,7 +128,7 @@ FireOps.registra({
       items.push(it);
       return it;
     }
-    function azzera() { items = []; corde = []; sel = null; tracc = null; cnt = {anc: 0, pul: 0, blo: 0}; }
+    function azzera() { items = []; corde = []; sel = null; tracc = null; fissa = null; cnt = {anc: 0, pul: 0, blo: 0}; }
 
     // ---------- sistemi pronti: tackle a n capi (il capo di tiro esce sempre dal blocco fisso) ----------
     // yF = quota del blocco fisso, yM = quota del blocco mobile; radice = carico (primo stadio) o prima carrucola libera
@@ -332,7 +336,7 @@ FireOps.registra({
           ctx.fillStyle = "#2f9e5b"; ctx.beginPath(); ctx.moveTo(X(it.x) - 11, Y(it.y) - 9); ctx.lineTo(X(it.x) + 11, Y(it.y) - 9); ctx.lineTo(X(it.x), Y(it.y) + 11); ctx.fill();
           ctx.fillStyle = "#2f9e5b"; ctx.fillText("Operatori", X(it.x), Y(it.y) - 16);
         }
-        if (it.id === sel || (tracc && tracc.includes(it.id))) {
+        if (it.id === sel || it.id === fissa || (tracc && tracc.includes(it.id))) {
           ctx.strokeStyle = "#ffd700"; ctx.lineWidth = 2; ctx.setLineDash([3, 2]);
           ctx.beginPath(); ctx.arc(X(it.x), Y(it.y), (it.t === "car" ? 28 : 19), 0, 7); ctx.stroke(); ctx.setLineDash([]);
         }
@@ -345,8 +349,9 @@ FireOps.registra({
       if (!it) { box.innerHTML = ""; return; }
       let h = '<div class="el"><div class="elh"><b>' + nome(it) + '</b>' + ((it.t === "car" || it.t === "op") ? "" : '<span class="ctl"><button type="button" id="pa-sx" aria-label="Elimina">✕</button></span>') + '</div>';
       if (it.t === "pul" || it.t === "blo") {
-        h += '<label for="pa-sf" style="margin-top:8px">Fulcro (a cosa è fissata)</label><select id="pa-sf"><option value="">Libero (si muove con la corda)</option><option value="car">Carico</option>' +
-          items.filter(o => o.id !== it.id && (o.t === "anc" || o.t === "pul" || o.t === "blo")).map(o => '<option value="' + o.id + '">' + o.nome + '</option>').join("") + '</select>';
+        const fo = it.f ? (it.f === "car" ? "il carico" : (byId(it.f) || {nome: "?"}).nome) : null;
+        h += '<p class="nota" style="margin-top:8px">Fulcro: ' + (fo ? "<b>fissata a " + fo + "</b>" : "<b>libera</b> (si muove con la corda)") + '</p>' +
+          '<div class="chips"><button type="button" id="pa-sc" class="acc">' + (fissa === it.id ? "Tocca il punto…" : "Fissa a…") + '</button>' + (it.f ? '<button type="button" id="pa-sl">Libera</button>' : "") + '</div>';
       }
       if (it.t === "blo") h += '<label class="chk"><input type="checkbox" id="pa-sp"' + (it.p ? " checked" : "") + '> Con puleggia (conta come un passaggio)</label>';
       if (it.t === "car") h += '<p class="nota">Il peso si imposta in “Dati”.</p>';
@@ -366,17 +371,19 @@ FireOps.registra({
       const re = risolvi(eta, W), id = risolvi(1, W);
       const avv = [];
       if (re.err || id.err) {
-        $("#pa-ris").innerHTML = ""; $("#pa-anc").innerHTML = "";
+        $("#pa-ris").innerHTML = ""; $("#pa-anc").innerHTML = ""; $("#pa-mini").innerHTML = "Vantaggio non calcolabile: vedi l’avviso sotto.";
         avv.push(re.err || id.err);
         disegna(null);
       } else {
         const vmTeo = W / id.tiro, vmReale = W / re.tiro, ideale = id.tiro;
         const vt = Math.abs(vmTeo - Math.round(vmTeo)) < 0.005 ? String(Math.round(vmTeo)) : fmt(vmTeo, 2);
+        const pc = fmt(ideale > 0 ? (re.tiro / ideale - 1) * 100 : 0, 0);
+        $("#pa-mini").innerHTML = "Senza attriti: <b>1:" + vt + "</b> (tiro " + daN(ideale) + " daN)<br>Con attriti (" + fmt(eta, 2) + "): <b>1:" + fmt(vmReale, 2) + "</b> (tiro " + daN(re.tiro) + " daN)";
         $("#pa-ris").innerHTML =
-          '<div class="vcell"><div class="k">Vantaggio teorico</div><div class="v">1:' + vt + '</div></div>' +
-          '<div class="vcell"><div class="k">Vantaggio reale</div><div class="v">1:' + fmt(vmReale, 2) + '</div></div>' +
-          '<div class="vcell"><div class="k">Tiro da fare</div><div class="v">' + daN(re.tiro) + ' <small>daN</small></div><div class="k">' + kN(re.tiro) + ' kN, circa ' + fmt(re.tiro / G, 0) + ' kg</div></div>' +
-          '<div class="vcell"><div class="k">Perdita per attriti</div><div class="v">' + fmt(ideale > 0 ? (re.tiro / ideale - 1) * 100 : 0, 0) + ' <small>%</small></div><div class="k">tiro senza attriti: ' + daN(ideale) + ' daN</div></div>' +
+          '<div class="vcell"><div class="k">Senza attriti (rendimento 1)</div><div class="v">1:' + vt + '</div><div class="k">tiro ' + daN(ideale) + ' daN · ' + kN(ideale) + ' kN</div></div>' +
+          '<div class="vcell"><div class="k">Con attriti (rendimento ' + fmt(eta, 2) + ')</div><div class="v">1:' + fmt(vmReale, 2) + '</div><div class="k">tiro ' + daN(re.tiro) + ' daN · ' + kN(re.tiro) + ' kN</div></div>' +
+          '<div class="vcell"><div class="k">Tiro da fare (con attriti)</div><div class="v">' + daN(re.tiro) + ' <small>daN</small></div><div class="k">circa ' + fmt(re.tiro / G, 0) + ' kg</div></div>' +
+          '<div class="vcell"><div class="k">Perdita per attriti</div><div class="v">' + pc + ' <small>%</small></div></div>' +
           '<div class="vcell g"><div class="k">Corda da recuperare per ' + fmt(h, 1) + ' m di sollevamento</div><div class="v">' + fmt(h * vmTeo, 1) + ' <small>m</small></div></div>';
         let righe = '<tr><td>Carico sollevato</td><td>' + kN(W) + ' kN</td></tr>';
         corde.forEach((c, i) => {
@@ -416,6 +423,14 @@ FireOps.registra({
     let drag = null;
     cv.addEventListener("pointerdown", e => {
       const [x, y] = pos(e), it = trova(x, y);
+      if (fissa) {
+        const src = byId(fissa);
+        if (it && src && it.id !== fissa && (it.t === "anc" || it.t === "car" || it.t === "pul" || it.t === "blo")) {
+          src.f = it.t === "car" ? "car" : it.id;
+          $("#pa-hint").textContent = nome(src) + " fissata a " + nome(it) + ".";
+        } else $("#pa-hint").innerHTML = HINT;
+        fissa = null; tutto(); return;
+      }
       if (tracc) {
         if (it) { if (tracc[tracc.length - 1] !== it.id) tracc.push(it.id); calcola(); $("#pa-hint").textContent = "Corda: " + tracc.map(id => nome(byId(id))).join(" → ") + ". Tocca il punto successivo, poi “Fine corda”."; }
         return;
@@ -432,7 +447,14 @@ FireOps.registra({
       drag.it.x = Math.max(3, Math.min(VW - 3, x + drag.dx)); drag.it.y = Math.max(3, Math.min(VH - 3, y + drag.dy));
       calcola();
     });
-    const fine = () => { drag = null; };
+    const fine = () => {
+      const d = drag; drag = null;
+      if (d && d.mosso && (d.it.t === "pul" || d.it.t === "blo") && !d.it.f) {
+        let best = null, bd = 8;
+        items.forEach(o => { if (o === d.it || !(o.t === "anc" || o.t === "car")) return; const k = Math.hypot(o.x - d.it.x, o.y - d.it.y); if (k < bd) { bd = k; best = o; } });
+        if (best) { d.it.f = best.t === "car" ? "car" : best.id; $("#pa-hint").textContent = nome(d.it) + " fissata a " + nome(best) + "."; tutto(); }
+      }
+    };
     cv.addEventListener("pointerup", fine); cv.addEventListener("pointercancel", fine);
 
     $("#pa-add").addEventListener("click", e => {
@@ -441,6 +463,12 @@ FireOps.registra({
       const it = add(t, 50 + (n % 4) * 8 - 12, t === "anc" ? 8 : 40 + (n % 5) * 8);
       sel = it.id; tutto();
     });
+    $("#pa-reset").addEventListener("click", () => {
+      azzera(); add("car", 25, 88); add("op", 75, 122);
+      $("#pa-cd").textContent = "Disegna corda"; $("#pa-hint").innerHTML = "Sistema azzerato. " + HINT;
+      tutto();
+    });
+    $("#pa-calc").addEventListener("click", () => { calcola(); $("#pa-mini").scrollIntoView({block: "nearest"}); });
     $("#pa-cd").addEventListener("click", () => {
       const b = $("#pa-cd");
       if (!tracc) {
@@ -450,17 +478,23 @@ FireOps.registra({
       } else {
         if (tracc.length >= 2) corde.push(tracc.slice());
         tracc = null; b.textContent = "Disegna corda";
-        $("#pa-hint").textContent = "Trascina i punti per posizionarli. Tocca un punto per cambiarne il fulcro. Le carrucole sono attraversate dalla corda con ingresso da un lato e uscita dall’altro.";
+        $("#pa-hint").innerHTML = HINT;
         tutto();
       }
     });
     $("#pa-sel").addEventListener("change", e => {
       const it = byId(sel); if (!it) return;
-      if (e.target.id === "pa-sf") it.f = e.target.value;
       if (e.target.id === "pa-sp") it.p = e.target.checked;
       tutto();
     });
     $("#pa-sel").addEventListener("click", e => {
+      const itc = byId(sel);
+      if (itc && e.target.closest("#pa-sc")) {
+        fissa = fissa === itc.id ? null : itc.id;
+        $("#pa-hint").innerHTML = fissa ? "Tocca l’ancoraggio, il carico o la carrucola a cui è fissata <b>" + nome(itc) + "</b>. Tocca uno spazio vuoto per annullare." : HINT;
+        tutto(); return;
+      }
+      if (itc && e.target.closest("#pa-sl")) { itc.f = ""; tutto(); return; }
       if (!e.target.closest("#pa-sx")) return;
       const id = sel;
       items = items.filter(i => i.id !== id);
@@ -489,6 +523,7 @@ FireOps.registra({
     $("#pa-eta").addEventListener("input", () => { $("#pa-tipo").value = "x"; });
     root.addEventListener("input", e => { if (e.target.closest("#pa-sel")) return; calcola(); });
     window.addEventListener("resize", () => calcola());
+    $("#pa-hint").innerHTML = HINT;
     sistema([3]);
     tutto();
   }
