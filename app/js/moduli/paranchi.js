@@ -68,7 +68,7 @@ FireOps.registra({
 .pg-paranchi .tb button.acc { background: var(--yellow); color: #000; border-color: var(--yellow); }
 .pg-paranchi .cvwrap { position: relative; }
 .pg-paranchi canvas.pi { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
-.pg-paranchi #pa-ban { position: absolute; left: 6px; right: 6px; top: 6px; z-index: 2; display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid var(--yellow); border-radius: 8px; background: rgba(16,20,26,.92); color: var(--text); font-size: 12.5px; line-height: 1.3; pointer-events: none; }
+.pg-paranchi #pa-ban { position: static; margin: 0 0 6px; z-index: 2; display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid var(--yellow); border-radius: 8px; background: rgba(16,20,26,.92); color: var(--text); font-size: 12.5px; line-height: 1.3; pointer-events: none; }
 .pg-paranchi #pa-ban[hidden], .pg-paranchi #pa-menu[hidden] { display: none; }
 .pg-paranchi #pa-ban span { flex: 1; }
 .pg-paranchi #pa-ban button { pointer-events: auto; min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); color: var(--text); font: inherit; cursor: pointer; }
@@ -88,7 +88,7 @@ FireOps.registra({
   html: `
 <div class="blocco">
   <h2 class="tit">Disegno del sistema</h2>
-  <div class="cvwrap"><canvas id="pa-cv" class="pi" role="img" aria-label="Disegno del sistema di recupero: trascina carrucole, bloccanti e ancoraggi. Tieni premuto su un punto per il menu."></canvas><div id="pa-ban" hidden></div><div id="pa-menu" hidden></div></div>
+  <div class="cvwrap"><div id="pa-ban" hidden></div><canvas id="pa-cv" class="pi" role="img" aria-label="Disegno del sistema di recupero: trascina carrucole, bloccanti e ancoraggi. Tieni premuto su un punto per il menu."></canvas><div id="pa-menu" hidden></div></div>
   <div class="avv" id="pa-mini" style="border-color:var(--line);background:var(--panel-2);margin:8px 0 0"></div>
   <div class="sez">Aggiungi</div>
   <div class="tb" id="pa-add">
@@ -396,13 +396,14 @@ FireOps.registra({
         ctx.beginPath();
         if (it.t === "dis" && it.v === "cam") {
           // camma: goccia asimmetrica, la corda le gira intorno all'esterno
-          const r = 0.68 * rg(it) * u, L = 0.97 * rg(it) * u, mid = via[it.id] === undefined ? -Math.PI / 2 : via[it.id], al = mid + (Math.sin(mid) < 0 ? 0.5 : -0.5), ph = Math.acos(r / L), cx = X(it.x), cy = Y(it.y);
+          const r = 0.68 * rg(it) * u, L = 0.97 * rg(it) * u, mid = via[it.id] === undefined ? -Math.PI / 2 : via[it.id], al = mid + Math.PI + (Math.sin(mid) < 0 ? -0.5 : 0.5),   // la punta sta dalla parte opposta a dove gira la corda
+             ph = Math.acos(r / L), cx = X(it.x), cy = Y(it.y);
           ctx.moveTo(cx + L * Math.cos(al), cy + L * Math.sin(al));
           ctx.lineTo(cx + r * Math.cos(al + ph), cy + r * Math.sin(al + ph));
           ctx.arc(cx, cy, r, al + ph, al - ph + 2 * Math.PI);
           ctx.closePath();
           ctx.fill(); ctx.stroke();
-          ctx.fillStyle = txt; ctx.font = "bold 10px sans-serif"; ctx.fillText(it.nome, cx, cy + (Math.sin(mid) > 0 ? -3 : 3)); ctx.font = "11px sans-serif";
+          ctx.fillStyle = txt; ctx.font = "bold 10px sans-serif"; ctx.fillText(it.nome, cx, cy + (Math.sin(mid) > 0 ? 3 : -3)); ctx.font = "11px sans-serif";
           return;
         }
         if (it.t === "blo" && !it.p) ctx.rect(X(it.x - R), Y(it.y - R), 2 * R * u, 2 * R * u); else ctx.arc(X(it.x), Y(it.y), 0.72 * rg(it) * u, 0, 7);   // il corpo e' piu' piccolo del giro: la corda passa all'esterno
