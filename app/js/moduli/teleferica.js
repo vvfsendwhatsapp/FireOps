@@ -88,7 +88,7 @@ FireOps.registra({
     <select id="tf-pm">
       <option value="1">1 · Diretto da A: la corda passa nel carrello e scende l’operatore</option>
       <option value="2">2 · Con carrucola sul soccorritore: la corda risale al carrello</option>
-      <option value="3">3 · Fissa in A e in B: A → carrello → carrucola soccorritore → carrello → B</option>
+      <option value="3">3 · Gru edile: A → carrello → carrucola soccorritore → carrello → B</option>
     </select></div></div>
   <div class="riga">
     <div><label for="tf-pm2">Margine corda (m)</label><input type="number" id="tf-pm2" inputmode="decimal" min="0" max="30" step="0.5" value="5"></div>
@@ -206,10 +206,10 @@ FireOps.registra({
       let TAm = 0, TBm = 0, HAm = 0, VAm = 0, VBm = 0, dMax = 0, TMax = 0;   // massimi lungo la traslazione (compreso il punto di recupero)
       [rec, ris].concat(Array.from({length: 41}, (_, n) => k.sotto(0.5 + (i.L - 1) * n / 40))).forEach(q => { if (q.TA > TAm) { TAm = q.TA; VAm = Math.abs(q.VA); HAm = q.H; } if (q.TB > TBm) { TBm = q.TB; VBm = Math.abs(q.VB); } dMax = Math.max(dMax, q.d); TMax = Math.max(TMax, q.TA, q.TB); });
       // pescante: la corda parte dal punto fisso (A nei tipi 1 e 2, B nel tipo 3), corre lungo la portante fino alla carrucola del carrello e scende
-      const gruB = i.pm === "3", tratto = gruB ? rec.l1 + rec.l2 : rec.l1, nCalata = i.pm === "1" ? 1 : 2, drop = Math.max(0, calata);
+      const gruB = i.pm === "3", lMax = Math.max(rec.l1 + rec.l2, ...Array.from({length: 41}, (_, n) => { const q = k.sotto(0.5 + (i.L - 1) * n / 40); return q.l1 + q.l2; })), tratto = gruB ? lMax : rec.l1, nCalata = i.pm === "1" ? 1 : 2, drop = Math.max(0, calata);
       const corda = tratto + nCalata * drop + i.pm2, div = i.pm === "1" ? 1 : 2, tiroDisc = i.Ws * G / div, tiroRis = i.Q * G / div;
-      const cordaTxt = (gruB ? "da A al carrello " + fmt(rec.l1, 1) + " m e dal carrello a B " + fmt(rec.l2, 1) + " m, " : "da A al carrello " + fmt(tratto, 1) + " m, ") + (nCalata === 1 ? "calata " + fmt(drop, 1) + " m" : "calata e risalita " + fmt(drop, 1) + " m + " + fmt(drop, 1) + " m") + ", margine " + fmt(i.pm2, 1) + " m";
-      $("#tf-pnota").textContent = i.pm === "1" ? "Corda fissata in A, passa nella carrucola del carrello e scende: il soccorritore arriva alla vittima, che non è collegata al carrello. Vantaggio 1:1." : i.pm === "2" ? "Come il tipo 1, ma sul soccorritore c’è una carrucola: la corda scende, gira e risale fino al carrello dove si fissa. Vantaggio 1:2." : "Corda fissata in A e in B: parte da A, passa nel carrello, scende alla carrucola del soccorritore, risale al carrello e va a B. Vantaggio 1:2. Con la corda fissa ai due capi la traslazione avviene a quota costante: soccorritore e vittima restano alla stessa distanza sotto il carrello";
+      const cordaTxt = (gruB ? "da A al carrello e a B " + fmt(lMax, 1) + " m (il valore più lungo lungo la traslazione), " : "da A al carrello " + fmt(tratto, 1) + " m, ") + (nCalata === 1 ? "calata " + fmt(drop, 1) + " m" : "calata e risalita " + fmt(drop, 1) + " m + " + fmt(drop, 1) + " m") + ", margine " + fmt(i.pm2, 1) + " m";
+      $("#tf-pnota").textContent = i.pm === "1" ? "Corda fissata in A, passa nella carrucola del carrello e scende: il soccorritore arriva alla vittima, che non è collegata al carrello. Vantaggio 1:1." : i.pm === "2" ? "Come il tipo 1, ma sul soccorritore c’è una carrucola: la corda scende, gira e risale fino al carrello dove si fissa. Vantaggio 1:2." : "Gru edile: la corda è fissata in A e in B: parte da A, passa nel carrello, scende alla carrucola del soccorritore, risale al carrello e va a B. Vantaggio 1:2. Con la corda fissa ai due capi la traslazione avviene a quota costante: soccorritore e vittima restano alla stessa distanza sotto il carrello";
       if (calata < 0) av.push("La vittima è più in alto del carrello (" + fmt(-calata, 1) + " m): serve un recupero verso l’alto.");
       if (TMax / G > 1000) av.push("Tensione molto alta su una portante: verifica il carico di rottura della corda e degli ancoraggi.");
       const freccia = ris.d, fr = pc(freccia, i.L);
@@ -229,7 +229,9 @@ FireOps.registra({
         cell("Forza massima sull’ancoraggio A", kg(2 * TAm), "kg", "due portanti · orizz. " + kg(2 * HAm) + " kg, vert. " + kg(2 * VAm) + " kg") +
         cell("Forza massima sull’ancoraggio B", kg(2 * TBm), "kg", "due portanti · carrello a " + fmt(i.Q, 0) + " kg") +
         cell("Tiro sulla corda del pescante", kg(tiroDisc) + " → " + kg(tiroRis), "kg", "discesa con il soccorritore → risalita con la vittima · " + (div === 1 ? "1:1" : "1:2, carrucola sul soccorritore")) +
-        cell("Corda minima del pescante (tipo " + i.pm + ")", fmt(corda, 1), "m", cordaTxt, "g");
+        cell("Corda minima del pescante (tipo " + i.pm + ")", fmt(corda, 1), "m", cordaTxt, "g") +
+        cell("Per mandare giù soccorritore e vittima", fmt(nCalata * drop, 1), "m", "corda da lasciar scorrere dal capo, oltre al tratto in linea · " + (nCalata === 1 ? "il soccorritore scende con un solo capo" : "due capi: la carrucola scende di " + fmt(drop, 1) + " m")) +
+        cell("Per tirare su", fmt(nCalata * drop, 1), "m", "da recuperare con " + fmt(tiroRis / G, 0) + " kg di tiro (soccorritore + vittima " + fmt(i.Q, 0) + " kg" + (div === 2 ? ", vantaggio 1:2" : "") + ")");
       disegna(i, k, ris, rec);
     }
     root.addEventListener("input", aggiorna);
