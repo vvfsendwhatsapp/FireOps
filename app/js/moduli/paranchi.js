@@ -62,16 +62,6 @@ FireOps.registra({
 
   html: `
 <div class="blocco">
-  <h2 class="tit">Pianta del sistema di recupero</h2>
-  <canvas id="pa-pi" class="pi" role="img" aria-label="Pianta del sistema di recupero: trascina gli ancoraggi"></canvas>
-  <p class="nota">Il carico pende dal ciglio (quadrato). Le frecce arancioni sono le risultanti sui punti (in pianta, con i kN). Trascina i punti sulla pianta (o scrivi distanza e direzione nel blocco Sistema), poi alzali o abbassali con + e −: l’altezza è rispetto al ciglio. Direzione: 0° verso il vuoto, 90° a sinistra guardando il vuoto, 180° dietro il ciglio.</p>
-  <div class="riga4"><b style="color:#2f9e5b">Operatori</b>
-    <div><label for="pa-od">Distanza dal ciglio (m)</label><input type="number" id="pa-od" inputmode="decimal" step="1" value="180" aria-label="Direzione di tiro"></div>
-    <div><label for="pa-os">Direzione (°)</label><input type="number" id="pa-os" inputmode="decimal" min="-90" max="90" step="1" value="0" aria-label="Pendenza di tiro"></div>
-    <span style="font-size:11.5px;color:var(--text-dim)">direzione e pendenza (°) del tiro</span></div>
-</div>
-
-<div class="blocco">
   <h2 class="tit">Schema</h2>
   <div class="schemi" id="pa-sch"></div>
   <p class="nota">Il blocco in alto è fisso, quello in basso è mobile (sul carico). Il quadratino è il capo morto, la freccia è il capo di tiro.</p>
@@ -83,7 +73,7 @@ FireOps.registra({
   <div class="chips" id="pa-add" style="margin-top:10px">
     <button type="button" data-t="p" data-n="2">+ Paranco 1:2</button><button type="button" data-t="p" data-n="3">+ Paranco 1:3</button><button type="button" data-t="p" data-n="4">+ Paranco 1:4</button><button type="button" data-t="p" data-n="5">+ Paranco 1:5</button><button type="button" data-t="r">+ Rinvio 1:1</button><button type="button" data-t="b">+ Bloccante</button>
   </div>
-  <p class="nota">Rinvio 1:1: una carrucola che cambia direzione (non dà vantaggio, costa un passaggio). Bloccante: ritenuta del carico (capture); se ha la puleggia conta come un passaggio, altrimenti non perde nulla. Ogni blocco ha il suo punto in pianta.</p>
+  <p class="nota">Rinvio 1:1: una carrucola che cambia direzione (non dà vantaggio, costa un passaggio). Bloccante: ritenuta del carico (capture); se ha la puleggia conta come un passaggio, altrimenti non perde nulla. </p>
 </div>
 
 <div class="blocco">
@@ -102,9 +92,6 @@ FireOps.registra({
       </select></div>
     <div><label for="pa-eta">Rendimento per passaggio</label><input type="number" id="pa-eta" inputmode="decimal" min="0.3" max="1" step="0.01" value="0.95"></div>
   </div>
-  <div class="riga uno">
-    <div><label for="pa-r">Resistenza minima del punto di ancoraggio (kN)</label><input type="number" id="pa-r" inputmode="decimal" min="1" step="1" value="22"></div>
-  </div>
   <p class="nota">I rendimenti sono valori indicativi: dipendono da carrucola, corda e diametro. Cambiali se conosci i tuoi.</p>
 </div>
 
@@ -115,12 +102,10 @@ FireOps.registra({
 </div>
 
 <div class="blocco">
-  <h2 class="tit">Forze sui punti</h2>
+  <h2 class="tit">Tiro in ogni blocco</h2>
   <table class="tab" id="pa-anc"></table>
-  <p class="nota">Somma vettoriale delle corde che arrivano al punto: l’angolo tra le corde conta, più è stretto più il punto è caricato. Il coefficiente è rispetto alla resistenza che hai indicato. I valori non sostituiscono la verifica del tuo istruttore SAF.</p>
+  <p class="nota">Tensione della corda che entra (lato carico) e che esce (lato operatori) da ciascun blocco. Valori indicativi, non sostituiscono la verifica del tuo istruttore SAF.</p>
 </div>
-
-
 `,
 
   init(root) {
@@ -134,9 +119,8 @@ FireOps.registra({
       ["1:3 + bloccante", [BLO, P(3)]]
     ];
     const MAXEL = 8;
-    const ANG = [0, -20, 20, -40, 40, -60, 60, -80];
     let catena = [];
-    const nuovo = (def, i) => Object.assign({d: 5 + 3 * i, a: 180 + ANG[i % 8], z: 0}, def);
+    const nuovo = (def, i) => Object.assign({}, def);
     const sig = c => c.map(e => e.t + (e.n || "")).join();
     const nomeEl = e => e.t === "p" ? "Paranco 1:" + e.n : e.t === "r" ? "Rinvio 1:1" : "Bloccante";
     const colEl = e => e.t === "p" ? "#ffd700" : e.t === "r" ? "#4A93C8" : "#c77dff";
@@ -188,15 +172,9 @@ FireOps.registra({
     const fmt = (v, d) => Number(v).toLocaleString("it-IT", {minimumFractionDigits: d, maximumFractionDigits: d});
 
     const RAD = Math.PI / 180;
-    let pianta = null;
     const nm = id => { const v = parseFloat($(id).value); return isFinite(v) ? v : 0; };
-    const posEl = e => { const d = Math.max(0.3, e.d), an = e.a * RAD; return [d * Math.cos(an), d * Math.sin(an), e.z]; };
     function leggi() {
-      catena.forEach((e, i) => {
-        if (!$("#pa-k" + i + "d")) return;
-        e.d = nm("#pa-k" + i + "d"); e.a = nm("#pa-k" + i + "a"); e.z = nm("#pa-k" + i + "z");
-        if (e.t === "b") e.p = $("#pa-k" + i + "p").checked;
-      });
+      catena.forEach((e, i) => { const c = $("#pa-k" + i + "p"); if (c) e.p = c.checked; });
     }
     function build() {
       $("#pa-cat").innerHTML = catena.map((e, i) =>
@@ -205,32 +183,14 @@ FireOps.registra({
         '<button type="button" data-i="' + i + '" data-a="giu" aria-label="Sposta verso gli operatori">▼</button>' +
         '<button type="button" data-i="' + i + '" data-a="del" aria-label="Togli">✕</button></span></div>' +
         (e.t === "b" ? '<label class="chk"><input type="checkbox" id="pa-k' + i + 'p"' + (e.p ? " checked" : "") + '> Con puleggia (conta come un passaggio)</label>' : "") +
-        '<div class="riga4">' +
-        '<div><label for="pa-k' + i + 'd">Distanza dal ciglio (m)</label><input type="number" id="pa-k' + i + 'd" inputmode="decimal" min="0.3" step="0.1" value="' + e.d + '"></div>' +
-        '<div><label for="pa-k' + i + 'a">Direzione (°)</label><input type="number" id="pa-k' + i + 'a" inputmode="decimal" step="1" value="' + e.a + '"></div>' +
-        '<div class="zc"><label for="pa-k' + i + 'z">Quota, altezza sul ciglio (m)</label><input type="number" id="pa-k' + i + 'z" inputmode="decimal" step="0.1" value="' + e.z + '"></div></div></div>').join("") ||
+        '</div>').join("") ||
         '<p class="nota">Nessun blocco: la corda va dal ciglio direttamente agli operatori.</p>';
-      root.querySelectorAll('#pa-cat input[id$="z"]').forEach(inp => {
-        const w = document.createElement("div"); w.className = "st";
-        inp.parentNode.insertBefore(w, inp);
-        const bm = document.createElement("button"), bp = document.createElement("button");
-        bm.type = bp.type = "button"; bm.textContent = "−"; bp.textContent = "+"; bm.setAttribute("aria-label", "Abbassa"); bp.setAttribute("aria-label", "Solleva");
-        const passo = d => () => { inp.value = String(Math.round((nm("#" + inp.id) + d) * 10) / 10); calcola(); };
-        bm.addEventListener("click", passo(-0.5)); bp.addEventListener("click", passo(0.5));
-        w.append(bm, inp, bp);
-      });
     }
-    const dir = (a, b) => { const v = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; };
-    const per = (v, k) => [v[0] * k, v[1] * k, v[2] * k];
-    const somma = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
-    const modulo = v => Math.hypot(v[0], v[1], v[2]);
-    const angolo = (u, v) => Math.acos(Math.max(-1, Math.min(1, u[0] * v[0] + u[1] * v[1] + u[2] * v[2]))) / RAD;
 
     function calcola() {
       leggi();
       const kg = Math.max(0, Number($("#pa-kg").value) || 0), h = Math.max(0, Number($("#pa-h").value) || 0);
       const eta = Math.min(1, Math.max(0.3, Number($("#pa-eta").value) || 0.95));
-      const R = Math.max(0, Number($("#pa-r").value) || 0);
       const W = kg * G;                          // N
       const Tn = W / eta;                        // tiro nella corda che dal ciglio (rinvio al ciglio) va al primo blocco
       let L = Tn, vmTeo = 1;
@@ -257,59 +217,16 @@ FireOps.registra({
         '<div class="vcell"><div class="k">Perdita per attriti</div><div class="v">' + fmt(ideale > 0 ? (Tf / ideale - 1) * 100 : 0, 0) + ' <small>%</small></div><div class="k">tiro senza attriti: ' + daN(ideale) + ' daN</div></div>' +
         '<div class="vcell g"><div class="k">Corda da recuperare per ' + fmt(h, 1) + ' m di sollevamento</div><div class="v">' + fmt(corda, 1) + ' <small>m</small></div></div>';
 
-      // ---- geometria in pianta e forze sui punti ----
-      const E = [0, 0, 0], PT = catena.map(posEl);
-      const od = nm("#pa-od") * RAD, os = Math.max(-90, Math.min(90, nm("#pa-os"))) * RAD;
-      const uop = [Math.cos(os) * Math.cos(od), Math.cos(os) * Math.sin(od), Math.sin(os)];
-      const nodi = [];     // {nome, pos, F, ang}
-      const giu = [0, 0, -1];
-      const dE = PT.length ? dir(E, PT[0]) : uop;
-      nodi.push({nome: "Ciglio (rinvio, carico appeso)", id: "e", pos: E, F: somma(per(giu, W), per(dE, Tn)), ang: angolo(giu, dE)});
+      let righe = '<tr><td>Carico sollevato</td><td>' + kN(W) + ' kN</td></tr>' +
+        '<tr><td>Corda dal ciglio al 1° blocco</td><td>' + kN(Tn) + ' kN</td></tr>';
       catena.forEach((e, i) => {
-        const prec = i ? PT[i - 1] : E;
-        const dsu = dir(PT[i], prec), dha = i < catena.length - 1 ? dir(PT[i], PT[i + 1]) : uop;
-        nodi.push({nome: (i + 1) + " · " + nomeEl(e), id: "k" + i, pos: PT[i], col: colEl(e),
-          F: somma(per(dsu, out[i].carico), per(dha, out[i].tiro)), ang: angolo(dsu, dha)});
+        righe += '<tr><td>' + (i + 1) + ' · ' + nomeEl(e) + '<br><small style="color:var(--text-dim)">entra ' + kN(out[i].carico) + ' kN · esce ' + kN(out[i].tiro) + ' kN</small></td><td>' + daN(out[i].tiro) + ' daN</td></tr>';
       });
-      let righe = "";
-      nodi.forEach(n => {
-        n.mod = modulo(n.F);
-        const sf = R > 0 && n.id !== "e" ? fmt(R * 1000 / n.mod, 1) : "";
-        righe += '<tr><td>' + n.nome + '<br><small style="color:var(--text-dim)">angolo tra le corde ' + fmt(n.ang, 0) + '°' + (sf ? " · coeff. " + sf : "") + '</small></td><td>' + kN(n.mod) + ' kN</td></tr>';
-      });
-      righe += '<tr><td>Carico sollevato</td><td>' + kN(W) + ' kN</td></tr>';
       $("#pa-anc").innerHTML = righe;
-
       const avv = [];
       if (eta < 0.8 && vmTeo >= 4) avv.push("Con questi rendimenti i sistemi con molti capi perdono molto: valuta carrucole su cuscinetti.");
       if (Tf / G > 60) avv.push("Il tiro supera 60 kg: serve più di una persona o un sistema con più vantaggio.");
-      nodi.forEach(n => { if (n.id !== "e" && n.ang < 30) avv.push(n.nome + ": le due corde formano solo " + fmt(n.ang, 0) + "°, il punto è caricato quasi come la somma dei due tiri."); });
-      nodi.forEach(n => { if (n.id !== "e" && R > 0 && n.mod / 1000 > R / 3) avv.push(n.nome + ": il carico supera un terzo della resistenza indicata (" + fmt(R, 0) + " kN)."); });
       $("#pa-avv").innerHTML = avv.map(t => '<div class="avv">' + t + '</div>').join("");
-
-      if (pianta) {
-        const lung = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
-        const pr = (n, col, nome) => ({id: n.id, x: n.pos[0], y: n.pos[1], col, nome, sotto: kN(n.mod) + " kN · " + (n.pos[2] >= 0 ? "+" : "") + fmt(n.pos[2], 1) + " m"});
-        const pts = [{id: "e", x: 0, y: 0, fisso: true, col: "#e8734a", nome: "Ciglio", sotto: "carico " + kN(W) + " kN", ly: 30}];
-        const lin = [];
-        catena.forEach((e, i) => pts.push(pr(nodi[i + 1], colEl(e), (i + 1) + "·" + (e.t === "p" ? "1:" + e.n : e.t === "r" ? "Rinvio" : "Bloccante"))));
-        const seq = [E].concat(PT);
-        const ids = ["e"].concat(PT.map((_, i) => "k" + i));
-        for (let i = 0; i < seq.length - 1; i++) lin.push({a: ids[i], b: ids[i + 1], col: "#e8734a", lw: 2.5, testo: fmt(lung(seq[i], seq[i + 1]), 1) + " m"});
-        const ult = seq[seq.length - 1], lp = Math.max(0.8, 2.5 * Math.cos(os));
-        pts.push({id: "o", x: ult[0] + lp * Math.cos(od), y: ult[1] + lp * Math.sin(od), fisso: true, col: "#2f9e5b", nome: "Tiro", sotto: kN(Tf) + " kN"});
-        lin.push({a: ids[ids.length - 1], b: "o", col: "#2f9e5b", lw: 3, freccia: true});
-        // risultante su ciglio, ancoraggi e rinvio: proiezione in pianta della somma delle corde
-        const fmax = Math.max(1, ...nodi.map(n => n.mod));
-        nodi.forEach((n, i) => {
-          const fh = Math.hypot(n.F[0], n.F[1]);
-          if (fh < 1) return;
-          const l = Math.max(0.4, 2.2 * fh / fmax);
-          pts.push({id: "fa" + i, x: n.pos[0] + l * n.F[0] / fh, y: n.pos[1] + l * n.F[1] / fh, fisso: true, col: "#ff9f1c", nome: "", sotto: "", nascosto: true});
-          lin.push({a: [n.pos[0], n.pos[1]], b: "fa" + i, col: "#ff9f1c", lw: 3.5, freccia: true, testo: kN(n.mod) + " kN"});
-        });
-        pianta.set(pts, lin);
-      }
 
       const pp = catena.filter(e => e.t === "p");
       $("#pa-sch").innerHTML = pp.length ? pp.map(e =>
@@ -352,18 +269,8 @@ FireOps.registra({
       calcola();
     });
     $("#pa-eta").addEventListener("input", () => { $("#pa-tipo").value = "x"; });
-    const sincro = (id, x, y) => {
-      const an = Math.atan2(y, x) / RAD;
-      $("#pa-" + id + "d").value = fmt(Math.hypot(x, y), 1).replace(",", ".");
-      $("#pa-" + id + "a").value = String(Math.round(an < 0 ? an + 360 : an));
-      calcola();
-    };
-    const avviaPianta = () => { pianta = SafPianta.crea($("#pa-pi"), {onMove: sincro}); calcola(); };
     root.addEventListener("input", calcola);
     root.addEventListener("change", calcola);
-    window.addEventListener("resize", () => { if (pianta) pianta.disegna(); });
     calcola();
-    if (window.SafPianta) avviaPianta();
-    else { const sc = document.createElement("script"); sc.src = "js/saf-pianta.js?v=" + (window.FIREOPS_VERSIONE || ""); sc.onload = avviaPianta; document.head.appendChild(sc); }
   }
 });
