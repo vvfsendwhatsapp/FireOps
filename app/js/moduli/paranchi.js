@@ -296,7 +296,7 @@ FireOps.registra({
       const nodi = c.map(byId);
       return nodi.map((p, j) => {
         if (!p) return null;
-        if (j === 0 || j === nodi.length - 1 || !(p.t === "pul" || p.t === "blo" || p.t === "dis") || (p.t === "blo" && !p.p) || (p.t === "dis" && p.v === "cam")) return {p, i: [p.x, p.y], o: [p.x, p.y], arco: null};   // il bloccante puro prende la corda e la lascia passare dritta
+        if (j === 0 || j === nodi.length - 1 || !(p.t === "pul" || p.t === "blo" || p.t === "dis") || (p.t === "blo" && !p.p)) return {p, i: [p.x, p.y], o: [p.x, p.y], arco: null};   // il bloccante puro prende la corda e la lascia passare dritta
         const pv = nodi[j - 1], nx = nodi[j + 1];
         const sin = pv && pv.x > p.x + 0.01 ? 1 : -1;
         const aIn = sin > 0 ? 0 : Math.PI;
@@ -304,7 +304,7 @@ FireOps.registra({
         const sg = (sotto ? 1 : -1) * (aIn === Math.PI ? -1 : 1);
         const arco = [];
         for (let k = 0; k <= 12; k++) { const a = aIn + sg * Math.PI * k / 12; arco.push([p.x + R * Math.cos(a), p.y + R * Math.sin(a)]); }
-        return {p, i: arco[0], o: arco[12], arco};
+        return {p, i: arco[0], o: arco[12], arco, sotto};
       });
     }
     function disegna(ris) {
@@ -328,12 +328,25 @@ FireOps.registra({
         ctx.beginPath(); ctx.moveTo(X(it.x), Y(it.y)); ctx.lineTo(X(t.x), Y(t.y)); ctx.stroke();
       });
       ctx.setLineDash([]);
+      const via = {};   // da che parte gira la corda sui discensori (sotto = true)
+      corde.forEach(c => geom(c).forEach(g => { if (g && g.arco) via[g.p.id] = g.sotto; }));
       // carrucole e bloccanti
       items.forEach(it => {
         if (it.t !== "pul" && it.t !== "blo" && it.t !== "dis") return;
         ctx.fillStyle = bg; ctx.strokeStyle = it.t === "pul" ? "#4A93C8" : it.t === "dis" ? "#ff6b6b" : "#c77dff"; ctx.lineWidth = 2.4;
         ctx.beginPath();
-        if ((it.t === "blo" && !it.p) || (it.t === "dis" && it.v === "cam")) ctx.rect(X(it.x - R), Y(it.y - R), 2 * R * u, 2 * R * u); else ctx.arc(X(it.x), Y(it.y), R * u, 0, 7);
+        if (it.t === "dis" && it.v === "cam") {
+          // camma: goccia asimmetrica, la corda le gira intorno all'esterno
+          const r = 0.7 * R * u, L = 0.97 * R * u, al = (via[it.id] === false ? Math.PI / 2 - 0.5 : -Math.PI / 2 + 0.5), ph = Math.acos(r / L), cx = X(it.x), cy = Y(it.y);
+          ctx.moveTo(cx + L * Math.cos(al), cy + L * Math.sin(al));
+          ctx.lineTo(cx + r * Math.cos(al + ph), cy + r * Math.sin(al + ph));
+          ctx.arc(cx, cy, r, al + ph, al - ph + 2 * Math.PI);
+          ctx.closePath();
+          ctx.fill(); ctx.stroke();
+          ctx.fillStyle = txt; ctx.font = "9px sans-serif"; ctx.fillText(it.nome, cx, cy + (via[it.id] === false ? -2 : 2)); ctx.font = "11px sans-serif";
+          return;
+        }
+        if (it.t === "blo" && !it.p) ctx.rect(X(it.x - R), Y(it.y - R), 2 * R * u, 2 * R * u); else ctx.arc(X(it.x), Y(it.y), R * u, 0, 7);
         ctx.fill(); ctx.stroke();
         ctx.fillStyle = txt; ctx.fillText(it.nome, X(it.x), Y(it.y));
       });
