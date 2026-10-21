@@ -954,7 +954,12 @@ function chips() {
 
 function lista() {
   const el = $('list');
-  if (!shown.length) { el.innerHTML = '<div class="empty">Nessuna sede con questi filtri.</div>'; return; }
+  if (!shown.length) {
+    const att = filtriAttivi();
+    el.innerHTML = `<div class="empty">Nessuna sede con questi filtri.${att.length ? `<br><small>Filtri attivi: ${att.map(esc).join(' · ')}</small>` : ''}
+      <br><br><button class="btn" id="mostratutte">Mostra tutte le sedi</button></div>`;
+    return;
+  }
   el.innerHTML = shown.slice(0, limit).map((s, i) =>
     `<div class="item ${aperta === s ? 'sel' : ''}" data-i="${i}"><span class="dot" style="background:${COL[s.e.tipo] || COL.altro}"></span>
       <div><div class="n">${esc(titolo(s.e))}</div><div class="s">${esc(TIPI[s.e.tipo])} · ${esc(luogo(s.e))}</div></div>
@@ -1298,6 +1303,25 @@ $('near').addEventListener('click', () => {
     map.fitBounds(L.latLngBounds([state.me, ...shown.slice(0, 5).map(s => [s.lat, s.lon])]).pad(0.2), {maxZoom: 13});
   }, err => toast('Posizione non disponibile: ' + err.message, 4000), {enableHighAccuracy: true, timeout: 15000});
 });
+// filtri che possono nascondere le sedi (salvati nel browser: alla riapertura della pagina restano attivi)
+function filtriAttivi() {
+  const f = [];
+  if (state.q) f.push('ricerca "' + state.q + '"');
+  if (state.reg) f.push(state.reg);
+  if (state.prov) f.push('provincia ' + state.prov);
+  if (state.stato) f.push($('stato').selectedOptions[0] ? $('stato').selectedOptions[0].textContent : state.stato);
+  if ((state.sel || []).length) f.push('solo ' + state.sel.map(t => TIPI[t] || t).join(', '));
+  if (state.noConcl) f.push('Comandi conclusi nascosti');
+  return f;
+}
+// azzera solo i filtri (non tocca le correzioni in coda)
+function azzeraFiltri() {
+  Object.assign(state, {q: '', reg: '', prov: '', stato: '', sel: [], noConcl: false});
+  $('q').value = ''; $('reg').value = ''; $('stato').value = ''; opzioniProvince();
+  aggiorna(false); map.fitBounds(ITALIA);
+}
+$('list').addEventListener('click', e => { if (e.target.id === 'mostratutte') { azzeraFiltri(); toast('Filtri azzerati'); } });
+
 $('reset').addEventListener('click', () => {
   if (coda.length) {
     const msg = APPS_SCRIPT_URL
@@ -1346,6 +1370,12 @@ Promise.all([scarica().then(async r => {
   $('reg').value = state.reg; $('q').value = state.q; $('stato').value = state.stato || '';
   opzioniProvince();
   aggiorna(!!(state.reg || state.prov));
+  // filtri salvati da una visita precedente che nascondono tutto: li azzero e lo dico
+  if (!shown.length && SEDI.length && filtriAttivi().length && !u.has('prov') && !u.has('reg') && !u.has('q')) {
+    const era = filtriAttivi().join(' · ');
+    azzeraFiltri();
+    toast('Filtri salvati azzerati (' + era + '): nascondevano tutte le sedi', 6000);
+  }
   invia();
 }).catch(e => {
   console.error(e);
