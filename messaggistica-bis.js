@@ -1094,7 +1094,9 @@ Tartózkodási helye küldéséhez:
             testo = testo.replace(BLOCCO_ISTRUZIONI_RE, blocco => {
                 // toglie la prima riga ("Per l'invio delle coordinate:"): la sostituisce la riga "In alternativa"
                 const manuale = blocco.slice("🇪🇺🇮🇹\n\n".length).replace(/\s+$/, "").replace(/^[^\n]*\r?\n/, "");
-                return "🇪🇺🇮🇹\n\n" + istruzioniLink + "\n\n" + link + "\n\n" + alternativa + "\n" + manuale + "\n\n";
+                // 🅰️/🅱️ marcano le due parti del metodo "con link": 🅰️ il link
+                // e le istruzioni brevi, 🅱️ l'alternativa manuale.
+                return "🇪🇺🇮🇹\n\n🅰️ " + istruzioniLink + "\n\n" + link + "\n\n🅱️ " + alternativa.replace(/^➖\s*/, "") + "\n" + manuale + "\n\n";
             });
         }
 
