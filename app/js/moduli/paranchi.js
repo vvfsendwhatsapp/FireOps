@@ -57,6 +57,12 @@ FireOps.registra({
 .pg-paranchi .tab { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .pg-paranchi .tab td { padding: 6px 4px; border-top: 1px solid var(--line); }
 .pg-paranchi .tab td:last-child { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+.pg-paranchi .sez { margin: 12px 0 6px; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-dim); }
+.pg-paranchi .tb { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pg-paranchi .tb.tre { grid-template-columns: 2fr 1fr 1fr; }
+.pg-paranchi .tb button { min-height: 48px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); color: var(--text); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.pg-paranchi .tb button i { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+.pg-paranchi .tb button.acc { background: var(--yellow); color: #000; border-color: var(--yellow); }
 .pg-paranchi .cvwrap { position: relative; }
 .pg-paranchi canvas.pi { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 .pg-paranchi #pa-ban { position: absolute; left: 6px; right: 6px; top: 6px; z-index: 2; display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid var(--yellow); border-radius: 8px; background: rgba(16,20,26,.92); color: var(--text); font-size: 12.5px; line-height: 1.3; pointer-events: none; }
@@ -81,11 +87,15 @@ FireOps.registra({
   <h2 class="tit">Disegno del sistema</h2>
   <div class="chips" id="pa-pre" aria-label="Sistemi pronti"></div>
   <div class="cvwrap"><canvas id="pa-cv" class="pi" role="img" aria-label="Disegno del sistema di recupero: trascina carrucole, bloccanti e ancoraggi. Tieni premuto su un punto per il menu."></canvas><div id="pa-ban" hidden></div><div id="pa-menu" hidden></div></div>
-  <div class="chips" id="pa-add" style="margin-top:10px">
-    <button type="button" data-t="anc">+ Ancoraggio</button><button type="button" data-t="pul">+ Carrucola</button><button type="button" data-t="blo">+ Bloccante</button><button type="button" data-t="dis" data-v="cam">+ Discensore a camma</button><button type="button" data-t="dis" data-v="pul">+ Discensore con puleggia</button><button type="button" id="pa-cd" class="acc">Disegna corda</button>
+  <div class="avv" id="pa-mini" style="border-color:var(--line);background:var(--panel-2);margin:8px 0 0"></div>
+  <div class="sez">Aggiungi</div>
+  <div class="tb" id="pa-add">
+    <button type="button" data-t="anc"><i style="background:#8b96a3"></i>Ancoraggio</button><button type="button" data-t="pul"><i style="background:#4A93C8"></i>Carrucola</button><button type="button" data-t="blo"><i style="background:#c77dff"></i>Bloccante</button><button type="button" data-t="dis"><i style="background:#ff6b6b"></i>Discensore</button>
   </div>
-  <div class="chips" style="margin-top:8px"><button type="button" id="pa-calc" class="acc">Calcola vantaggio</button><button type="button" id="pa-reset">Reset</button></div>
-  <div class="avv" id="pa-mini" style="border-color:var(--line);background:var(--panel-2)"></div>
+  <div class="sez">Corda e calcolo</div>
+  <div class="tb tre">
+    <button type="button" id="pa-cd" class="acc">Disegna corda</button><button type="button" id="pa-calc">Calcola</button><button type="button" id="pa-reset">Reset</button>
+  </div>
   <p class="nota" id="pa-hint"><b>1</b> Aggiungi punti e trascinali. <b>2</b> Fissa ogni carrucola: trascinala vicino a un ancoraggio o al carico (si aggancia), oppure toccala e usa “Fissa a…”. <b>3</b> “Disegna corda” e tocca i punti nell’ordine di passaggio.</p>
   <div id="pa-sel"></div>
   <div id="pa-corde"></div>
@@ -197,7 +207,7 @@ FireOps.registra({
     // sistema di partenza: carico appeso a una corda che passa nel discensore fissato all'ancoraggio, e gli operatori tirano
     function avvio() {
       azzera();
-      const car = add("car", 33.5, 88), anc = add("anc", 38, 10), dis = add("dis", 38, 26, {f: anc.id}), op = add("op", 42.5, 118);
+      const car = add("car", 35, 88), anc = add("anc", 38, 10), dis = add("dis", 38, 26, {f: anc.id}), op = add("op", 41, 118);
       corde.push([car.id, dis.id, op.id]);
     }
     const PRESET = [["1:1", [1]], ["1:2", [2]], ["1:3", [3]], ["1:4", [4]], ["1:5", [5]], ["1:4 comp.", [2, 2]], ["1:6 comp.", [3, 2]], ["1:9 comp.", [3, 3]]];
@@ -615,7 +625,7 @@ FireOps.registra({
     $("#pa-add").addEventListener("click", e => {
       const b = e.target.closest("button[data-t]"); if (!b) return;
       const t = b.dataset.t, n = items.filter(i => i.t === t).length;
-      const it = add(t, 50 + (n % 4) * 8 - 12, t === "anc" ? 8 : 40 + (n % 5) * 8, t === "dis" ? {v: b.dataset.v, e: b.dataset.v === "pul" ? 0.85 : 0.6} : {});
+      const it = add(t, 50 + (n % 4) * 8 - 12, t === "anc" ? 8 : 40 + (n % 5) * 8, t === "dis" ? {v: "cam", e: 0.6} : {});
       sel = it.id; tutto();
     });
     $("#pa-reset").addEventListener("click", () => {
