@@ -198,7 +198,7 @@ FireOps.registra({
       // lunghezze
       const kg = n => fmt(n / G, 0), pc = (a, b) => fmt(100 * a / b, 1);
       const mid = k.sotto(i.L / 2), Sload = mid.l1 + mid.l2;
-      const lungP = k.Su + 2 * i.m, tr = Sload + 5, trAnello = 2 * Sload + 2 * 5;
+      const lungP = k.Su + 2 * i.m, tr = Sload + 2 * i.m;   // ogni traente copre tutta la luce (come le portanti), legato al carrello e ai due capi
       const quotaCarrello = ris.zc, calata = quotaCarrello - i.zv;
       // pescante
       let corda = null, cordaTxt = "";
@@ -230,7 +230,7 @@ FireOps.registra({
         cell("Allungamento sotto carico (per portante)", fmt(alC * 100, 0), "cm", pc(alC, k.Su) + " % della lunghezza a riposo") +
         cell("Lunghezza di ogni portante a riposo", fmt(k.Su, 1), "m", "corda tesa " + fmt(k.S0, 1) + " m · distanza A–B " + fmt(k.C, 1) + " m") +
         cell("Portante da tagliare (con nodi)", fmt(lungP, 1), "m", "più " + fmt(i.m, 1) + " m per capo · ne servono 2") +
-        cell("Traente del carrello", fmt(tr, 1), "m", "un capo per lato · oppure ad anello " + fmt(trAnello, 0) + " m") +
+        cell("Traenti del carrello (2)", fmt(tr, 1), "m", "ciascuno, come le portanti · legati al carrello, uno tira verso A e uno verso B · in tutto " + fmt(2 * tr, 0) + " m") +
         cell("Forza sull’ancoraggio A", kg(2 * ris.TA), "kg", "due portanti · orizz. " + kg(2 * ris.H) + " kg, vert. " + kg(2 * Math.abs(ris.VA)) + " kg") +
         cell("Forza sull’ancoraggio B", kg(2 * ris.TB), "kg", "due portanti · orizz. " + kg(2 * ris.H) + " kg, vert. " + kg(2 * Math.abs(ris.VB)) + " kg") +
         cell(i.pm === "N" ? "Corda minima per la calata" : i.pm === "L" ? "Corda minima del pescante" : "Corda minima con la gru", fmt(corda, 1), "m", cordaTxt, "g");
