@@ -144,7 +144,7 @@ FireOps.registra({
 
     let items = [], corde = [], sel = null, tracc = null, uid = 0, cnt = {anc: 0, pul: 0, blo: 0, dis: 0};
     const HINT = "<b>1</b> Aggiungi punti e trascinali. <b>2</b> Fissa ogni carrucola: trascinala vicino a un ancoraggio o al carico (si aggancia), oppure toccala e usa “Fissa a…”. <b>3</b> “Disegna corda” e tocca i punti nell’ordine di passaggio.";
-    let fissa = null, menu = null, menuC = null, pressT = null, nuova = false, ins = null, nsel = null;
+    let menuK = 0, punto = null, fissa = null, menu = null, menuC = null, pressT = null, nuova = false, ins = null, nsel = null;
     const isP = it => !!it && (it.t === "pul" || it.t === "pul2");
     const base = id => String(id).split(":")[0], sh = id => String(id).split(":")[1] || null;   // un nodo di corda puo' essere "i7:A" = puleggia A della doppia
     const byId = id => items.find(i => i.id === base(id));
@@ -445,6 +445,9 @@ FireOps.registra({
         tracc.map(byId).forEach((p, j) => { if (!p) return; j ? ctx.lineTo(X(p.x), Y(p.y)) : ctx.moveTo(X(p.x), Y(p.y)); });
         ctx.stroke(); ctx.setLineDash([]);
       }
+      if (punto) {   // punto scelto sulla corda (mezzeria da passare in una carrucola)
+        ctx.strokeStyle = "#ffd700"; ctx.fillStyle = "rgba(255,215,0,.25)"; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(X(punto.x), Y(punto.y), 9, 0, 7); ctx.fill(); ctx.stroke();
+      }
       // ancoraggi, carico, operatori
       items.forEach(it => {
         if (it.t === "anc") {
@@ -605,10 +608,10 @@ FireOps.registra({
       return best;
     }
     function apriMenuCorda(rc) {
-      chiudiMenu(); menuC = rc.i; sel = null;
+      chiudiMenu(); menuC = rc.i; menuK = rc.k; punto = {x: rc.x, y: rc.y}; sel = null; tutto();
       const m = $("#pa-menu");
       m.innerHTML = "<b>Corda " + (rc.i + 1) + "</b>" +
-        '<button type="button" class="acc" data-m="rmod">Modifica corda</button><button type="button" data-m="rinv">Inverti (capo morto ⇄ capo di tiro)</button><button type="button" data-m="rdel">Elimina corda</button><button type="button" data-m="chiudi">Chiudi</button>';
+        '<button type="button" class="acc" data-m="rins">Passa in una carrucola qui</button><button type="button" data-m="rmod">Modifica corda</button><button type="button" data-m="rinv">Inverti (capo morto ⇄ capo di tiro)</button><button type="button" data-m="rdel">Elimina corda</button><button type="button" data-m="chiudi">Chiudi</button>';
       m.hidden = false;
       const cw = cv.clientWidth, ch = cv.clientHeight, u = cw / VW;
       m.style.left = Math.max(4, Math.min(cw - m.offsetWidth - 4, rc.x * u + 12)) + "px";
@@ -616,7 +619,7 @@ FireOps.registra({
       tutto();
     }
     let menuT = 0;   // istante di apertura: i tocchi subito dopo la pressione lunga sul menu vengono ignorati
-    function chiudiMenu() { const era = menuC !== null; $("#pa-menu").hidden = true; menu = null; menuC = null; if (era) calcola(); }
+    function chiudiMenu() { const era = menuC !== null || punto !== null; punto = null; $("#pa-menu").hidden = true; menu = null; menuC = null; if (era) calcola(); }
     function apriMenu(it) {
       if (!(isP(it) || it.t === "blo" || it.t === "dis" || it.t === "anc")) return;
       menu = it.id;
@@ -764,8 +767,9 @@ FireOps.registra({
       if (Date.now() - menuT < 600) { e.stopPropagation(); return; }
       const b = e.target.closest("button[data-m]"); if (!b) return;
       if (menuC !== null) {
-        const i = menuC, m = b.dataset.m; chiudiMenu();
-        if (m === "rmod" && corde[i]) { if (tracc) chiudiCorda(true); entraModifica(i, null); }
+        const i = menuC, m = b.dataset.m, kk = menuK; chiudiMenu();
+        if (m === "rins" && corde[i]) { if (tracc && tracc !== corde[i]) chiudiCorda(true); entraModifica(i, kk); $("#pa-hint").innerHTML = "Tocca la carrucola (o il bloccante) da inserire nella corda " + (i + 1) + " in quel punto, poi <b>Fine</b>."; }
+        else if (m === "rmod" && corde[i]) { if (tracc) chiudiCorda(true); entraModifica(i, null); }
         else if (m === "rinv" && corde[i]) { if (tracc) chiudiCorda(true); corde[i].reverse(); tutto(); }
         else if (m === "rdel" && corde[i]) { if (tracc) chiudiCorda(true); corde.splice(i, 1); nsel = null; tutto(); }
         return;
