@@ -193,6 +193,12 @@ FireOps.registra({
       }
       sel = null;
     }
+    // sistema di partenza: carico appeso a una corda che passa nel discensore fissato all'ancoraggio, e gli operatori tirano
+    function avvio() {
+      azzera();
+      const car = add("car", 33.5, 88), anc = add("anc", 38, 10), dis = add("dis", 38, 26, {f: anc.id}), op = add("op", 42.5, 118);
+      corde.push([car.id, dis.id, op.id]);
+    }
     const PRESET = [["1:1", [1]], ["1:2", [2]], ["1:3", [3]], ["1:4", [4]], ["1:5", [5]], ["1:4 comp.", [2, 2]], ["1:6 comp.", [3, 2]], ["1:9 comp.", [3, 3]]];
 
     // ---------- calcolo ----------
@@ -592,8 +598,8 @@ FireOps.registra({
       sel = it.id; tutto();
     });
     $("#pa-reset").addEventListener("click", () => {
-      azzera(); chiudiMenu(); add("car", 25, 88); add("op", 75, 122);
-      $("#pa-cd").textContent = "Disegna corda"; $("#pa-hint").innerHTML = "Sistema azzerato. " + HINT;
+      chiudiMenu(); avvio();
+      $("#pa-cd").textContent = "Disegna corda"; $("#pa-hint").innerHTML = "Sistema riportato alla partenza. " + HINT;
       tutto();
     });
     $("#pa-calc").addEventListener("click", () => { calcola(); $("#pa-mini").scrollIntoView({block: "nearest"}); });
@@ -704,7 +710,7 @@ FireOps.registra({
     root.addEventListener("input", e => { if (e.target.closest("#pa-sel")) return; calcola(); });
     window.addEventListener("resize", () => calcola());
     $("#pa-hint").innerHTML = HINT;
-    sistema([3]);
+    avvio();
     tutto();
   }
 });
