@@ -86,7 +86,10 @@ FireOps.registra({
       <option value="2">2 · Con carrucola sul soccorritore: la corda risale al carrello</option>
       <option value="3">3 · Gru edile: come il 2, ma la corda è fissata in B</option>
     </select></div></div>
-  <div class="riga"><div><label for="tf-pm2">Margine corda (m)</label><input type="number" id="tf-pm2" inputmode="decimal" min="0" max="30" step="0.5" value="5"></div></div>
+  <div class="riga">
+    <div><label for="tf-Ws">Soccorritore sulla corda (kg)</label><input type="number" id="tf-Ws" inputmode="decimal" min="30" max="250" step="5" value="100"></div>
+    <div><label for="tf-pm2">Margine corda (m)</label><input type="number" id="tf-pm2" inputmode="decimal" min="0" max="30" step="0.5" value="5"></div>
+  </div>
   <p class="nota" id="tf-pnota"></p>
 </div>
 
@@ -153,8 +156,8 @@ FireOps.registra({
       }
       // carrello e vittima
       s += '<rect x="' + (X(ris.x) - 7) + '" y="' + (Y(ris.zc) - 5) + '" width="14" height="10" rx="2" fill="#ffd700"/>';
-      s += '<circle cx="' + X(i.xv) + '" cy="' + (Y(i.zv) - 6) + '" r="6" fill="#3fa66b"/><path d="M' + X(i.xv) + " " + Y(i.zv) + "m0 0l0-1" + '" stroke="#3fa66b"/>';
-      s += '<text x="' + (X(i.xv) + 10) + '" y="' + (Y(i.zv) + 4) + '" fill="#3fa66b" font-size="12" font-weight="700">vittima</text>';
+      s += '<circle cx="' + X(i.xv) + '" cy="' + (Y(i.zv) - 6) + '" r="6" fill="#ff9f1c"/><text x="' + (X(i.xv) - 10) + '" y="' + (Y(i.zv) + 14) + '" fill="#ff9f1c" font-size="11" font-weight="700" text-anchor="end">soccorritore</text>';
+      s += '<circle cx="' + (X(i.xv) + 22) + '" cy="' + (Y(i.zv) - 5) + '" r="5" fill="#3fa66b"/><text x="' + (X(i.xv) + 30) + '" y="' + (Y(i.zv) + 4) + '" fill="#3fa66b" font-size="12" font-weight="700">vittima</text>';
       s += "</svg>";
       $("#tf-sv").innerHTML = s;
     }
@@ -163,7 +166,7 @@ FireOps.registra({
       const i = {
         L: Math.max(3, num("#tf-L", 40)), D: num("#tf-D", 0), xv: num("#tf-xv", 20), zv: num("#tf-zv", -10),
         Q: Math.max(1, num("#tf-Q", 200)), T0: Math.max(1, num("#tf-T0", 300)), e: Math.max(0.1, num("#tf-e", 5)), F: Math.max(1, num("#tf-F", 150)), w: Math.max(0.001, num("#tf-w", 0.075)), m: Math.max(0, num("#tf-m", 3)),
-        pm: $("#tf-pm").value, pm2: num("#tf-pm2", 5)
+        pm: $("#tf-pm").value, pm2: num("#tf-pm2", 5), Ws: Math.max(1, num("#tf-Ws", 100))
       };
       const xcRaw = num("#tf-xc", 50) / 100 * i.L, k = calcola(i), ris = k.sotto(xcRaw);
       $("#tf-xcl").textContent = fmt(ris.x, 1) + " m da A";
@@ -176,9 +179,9 @@ FireOps.registra({
       const quotaCarrello = ris.zc, calata = quotaCarrello - i.zv;
       // pescante: la corda parte dal punto fisso (A nei tipi 1 e 2, B nel tipo 3), corre lungo la portante fino alla carrucola del carrello e scende
       const dalB = i.pm === "3", tratto = dalB ? ris.l2 : ris.l1, nCalata = i.pm === "1" ? 1 : 2, drop = Math.max(0, calata);
-      const corda = tratto + nCalata * drop + i.pm2, tiroRec = i.Q * G / (i.pm === "1" ? 1 : 2);
+      const corda = tratto + nCalata * drop + i.pm2, tiroRec = i.Ws * G / (i.pm === "1" ? 1 : 2);
       const cordaTxt = "da " + (dalB ? "B" : "A") + " al carrello " + fmt(tratto, 1) + " m, " + (nCalata === 1 ? "calata " + fmt(drop, 1) + " m" : "calata e risalita " + fmt(drop, 1) + " m + " + fmt(drop, 1) + " m") + ", margine " + fmt(i.pm2, 1) + " m";
-      $("#tf-pnota").textContent = i.pm === "1" ? "Corda fissata in A, passa nella carrucola del carrello e scende: l’operatore arriva alla vittima e la recupera sulla stessa corda. Vantaggio 1:1." : i.pm === "2" ? "Come il tipo 1, ma sul soccorritore c’è una carrucola: la corda scende, gira e risale fino al carrello dove si fissa. Vantaggio 1:2." : "Come il tipo 2, ma la corda passa nel carrello e va fissata in B (gru edile). Vantaggio 1:2.";
+      $("#tf-pnota").textContent = i.pm === "1" ? "Corda fissata in A, passa nella carrucola del carrello e scende: il soccorritore arriva alla vittima, che non è collegata al carrello. Vantaggio 1:1." : i.pm === "2" ? "Come il tipo 1, ma sul soccorritore c’è una carrucola: la corda scende, gira e risale fino al carrello dove si fissa. Vantaggio 1:2." : "Come il tipo 2, ma la corda passa nel carrello e va fissata in B (gru edile). Vantaggio 1:2.";
       if (calata < 0) av.push("La vittima è più in alto del carrello (" + fmt(-calata, 1) + " m): serve un recupero verso l’alto.");
       if (ris.TA / G * 1 > 1000 || ris.TB / G > 1000) av.push("Tensione molto alta su una portante: verifica il carico di rottura della corda e degli ancoraggi.");
       const freccia = ris.d, fr = pc(freccia, i.L);
