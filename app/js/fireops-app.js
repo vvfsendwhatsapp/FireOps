@@ -175,18 +175,22 @@
 
   $("fohInput").addEventListener("input", aggiornaDial);
   // il tasto SO in alto non chiama: scrive il numero della sala operativa nel campo, poi si sceglie con quale dei quattro tasti usarlo
-  $("fohPosSo").addEventListener("click", function (e) {
-    e.preventDefault();
-    const n = this.dataset.num;
+  // scrive il numero nel campo dell'intestazione e aggiorna subito i quattro tasti
+  function impostaNumero(n) {
     if (!n) return;
     const inp = $("fohInput");
     inp.value = n;
-    aggiornaDial();                       // aggiorna i quattro tasti subito, senza aspettare l'evento
+    aggiornaDial();
     inp.dispatchEvent(new Event("input", {bubbles: true}));
+  }
+
+  $("fohPosSo").addEventListener("click", function (e) {
+    e.preventDefault();
+    impostaNumero(this.dataset.num);
   });
   aggiornaDial();
 
-  window.FireOpsDial = {telHref, prefisso: () => prefisso};
+  window.FireOpsDial = {telHref, prefisso: () => prefisso, imposta: impostaNumero};
 
   // altezza dell'intestazione fissa: serve ai pulsanti che restano agganciati sotto di essa (Localizzati)
   (function () {

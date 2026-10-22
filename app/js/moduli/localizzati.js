@@ -1386,7 +1386,19 @@ body.map-open {
       return window.FireOpsDial ? FireOpsDial.telHref(num) : "tel:" + (num || "").toString().replace(/[^0-9+]/g, "");
     }
 
+    // i numeri SO non chiamano: finiscono nel campo in alto, da dove si sceglie 4146, senza 4146, WhatsApp o Telegram
+    ["rTelComandoWrap", "rTelDirezioneWrap"].forEach(id => {
+      document.getElementById(id).addEventListener("click", function (e) {
+        const a = e.target.closest("a[data-num]");
+        if (!a) return;
+        e.preventDefault();
+        if (window.FireOpsDial && FireOpsDial.imposta) FireOpsDial.imposta(a.dataset.num);
+        window.scrollTo({top: 0, behavior: "smooth"});
+      });
+    });
+
     function refreshPhoneLinks() {
+      return;
       if (!currentRecord) return;
       const tscA = document.querySelector("#rTelComandoWrap a.value-link");
       if (tscA && currentRecord.tsc) tscA.href = telHref(currentRecord.tsc);
@@ -1953,11 +1965,11 @@ body.map-open {
 
       const tsc = document.getElementById("rTelComandoWrap");
       tsc.innerHTML = record.tsc
-        ? '<a class="value-link" href="' + telHref(record.tsc) + '">' + record.tsc + PHONE_SVG + '</a>'
+        ? '<a class="value-link" href="javascript:void(0)" data-num="' + record.tsc + '" title="Scrive il numero nel campo in alto">' + record.tsc + PHONE_SVG + '</a>'
         : "—";
       const tsd = document.getElementById("rTelDirezioneWrap");
       tsd.innerHTML = record.tsd
-        ? '<a class="value-link" href="' + telHref(record.tsd) + '">' + record.tsd + PHONE_SVG + '</a>'
+        ? '<a class="value-link" href="javascript:void(0)" data-num="' + record.tsd + '" title="Scrive il numero nel campo in alto">' + record.tsd + PHONE_SVG + '</a>'
         : "—";
 
       const a = fmtAddr(record.ind);
