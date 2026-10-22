@@ -1053,8 +1053,6 @@ body.map-open {
         </div>
         <div class="route-row">
           <button type="button" id="routeMix" class="route-btn mix">🚒 Soccorso<small>mezzo VF fin dove arriva, poi a piedi</small></button>
-          <button type="button" id="routeCar" class="route-btn car">🚒 Solo mezzo<small>sbarre e divieti superati</small></button>
-          <button type="button" id="routeFoot" class="route-btn foot">🥾 Solo piedi<small>sentieri e piste</small></button>
         </div>
         <div class="route-hint">Sulla carta: linea piena = mezzo, puntinata = a piedi, 🥾 = punto di cambio, 🚧 = sbarre</div>
         <div class="route-info hidden" id="routeInfo"></div>
@@ -2386,7 +2384,7 @@ assign initialcost =
 
     async function calcolaPercorso(modalita) {
       const info = document.getElementById("routeInfo");
-      const btns = [document.getElementById("routeFoot"), document.getElementById("routeCar"), document.getElementById("routeMix")];
+      const btns = [document.getElementById("routeMix")];
       info.classList.remove("hidden", "error");
       if (!targetPos) return;
       if (!userPos) {
@@ -2575,8 +2573,6 @@ assign initialcost =
     document.getElementById("routeGpx").addEventListener("click", () => esportaKml("gpx"));
 
     document.getElementById("routeMix").addEventListener("click", function () {calcolaPercorso("soccorso");});
-    document.getElementById("routeFoot").addEventListener("click", function () {calcolaPercorso("piedi");});
-    document.getElementById("routeCar").addEventListener("click", function () {calcolaPercorso("auto");});
     /* ================= GUIDA IN REALTÀ AUMENTATA =================
      * Camera posteriore + GPS + sensori di orientamento: il percorso calcolato viene disegnato sul terreno
      * davanti a te (nastro con frecce), con i segnali del punto di cambio, delle sbarre e del target.
