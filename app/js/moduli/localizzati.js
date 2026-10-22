@@ -591,6 +591,11 @@ body.map-open {
       background: #000;
       border: 1px solid var(--red);
 }
+.pg-localizzati .map-legend i.ln { width: 20px; height: 0; border-radius: 0; border-top: 3px solid #ffd700; background: none; margin: 0 2px; }
+.pg-localizzati .map-legend i.ln.gl { border-top: 3px dashed #ffd700; }
+.pg-localizzati .map-legend i.ln.rs { border-top: 3px dashed #e84747; }
+.pg-localizzati .map-legend i.ln.ar { border-top: 2px solid #e8a33d; }
+.pg-localizzati .map-legend i.ln.hd { border-top: 3px solid #ffd700; box-shadow: 0 0 0 1px #10141a; }
 .pg-localizzati .map-legend i.rombo { border-radius: 0; width: 9px; height: 9px; transform: rotate(45deg); background: #8a94a3; border: 2px solid #ffd700; margin: 0 3px; box-shadow: 0 0 0 1px #000; }
 .pg-localizzati .map-legend i.rombo.int { border-color: #e84747; }
 .pg-localizzati .map-legend i.rombo.sel { border-color: #000; }
@@ -1104,6 +1109,10 @@ body.map-open {
           <span id="legSel" class="hidden"><i class="rombo sel"></i>Comando sel</span>
           <span id="legendUser" class="hidden"><i class="dot-user"></i>La tua posizione</span>
           <span id="legendModo" class="hidden">🧭 Freccia fissa</span>
+          <span id="legLnPos" class="hidden"><i class="ln gl"></i>Posizione → comando</span>
+          <span id="legLnTgt" class="hidden"><i class="ln rs"></i>Comando → target</span>
+          <span id="legLnPT" class="hidden"><i class="ln ar"></i>Posizione → target</span>
+          <span id="legLnHdg" class="hidden"><i class="ln hd"></i>Direzione telefono</span>
           <span id="legendPausa" class="hidden">⏸ GPS in pausa</span>
           <span id="legendTarget" class="hidden"><i class="dot-target"></i>Target</span>
         </div>
@@ -1493,6 +1502,8 @@ body.map-open {
     // Semiasse dalla mia posizione fino oltre il bordo della mappa, nella direzione del telefono
     function drawHeadingRay() {
       // la mappa deve avere già centro e zoom, altrimenti Leaflet lancia un errore
+      const legH = document.getElementById("legLnHdg");
+      if (legH) legH.classList.toggle("hidden", !(userPos && heading != null));
       if (!map || !map._loaded || !userPos || heading == null) {
         if (map && hdgLine) {map.removeLayer(hdgCasing); map.removeLayer(hdgLine); hdgCasing = hdgLine = null;}
         if (hdgMarks) hdgMarks.clearLayers();
@@ -1759,6 +1770,9 @@ body.map-open {
       }
 
       document.getElementById("mapTargetBtn").classList.toggle("hidden", !target);
+      document.getElementById("legLnPos").classList.toggle("hidden", !pos);
+      document.getElementById("legLnTgt").classList.toggle("hidden", !target);
+      document.getElementById("legLnPT").classList.toggle("hidden", !(pos && target));
 
       drawHeadingRay();   // segue la nuova posizione (o sparisce se non c'è GPS)
 
