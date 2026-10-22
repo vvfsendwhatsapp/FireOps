@@ -255,11 +255,11 @@ FireOps.registra({
       color: var(--text-dim);
 }
 .pg-localizzati .result-top {
-      padding: 16px 14px;
+      padding: 12px 14px 4px;
       display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 10px;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 4px;
 }
 .pg-localizzati .result-top .name {
       font-size: 24px;
@@ -267,28 +267,35 @@ FireOps.registra({
       letter-spacing: .2px;
 }
 .pg-localizzati .result-top .dist {
-      text-align: right;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0 16px;
+      text-align: left;
       font-family: var(--mono);
       font-size: 15px;
       color: var(--red);
-      white-space: nowrap;
 }
+.pg-localizzati .result-top .dist:empty { display: none; }
 .pg-localizzati .result-top .dist .leg {
       display: block;
-      margin-bottom: 3px;
+      flex: 0 0 100%;
+      margin-bottom: 0;
       font-family: var(--sans);
       font-size: 11.5px;
       color: var(--text-dim);
 }
 .pg-localizzati .result-top .dist .val {
       display: block;
+      font-size: 17px;
+      font-weight: 700;
 }
 .pg-localizzati .result-top .dist .az {
       display: block;
-      margin-top: 3px;
-      font-size: 13px;
+      margin-top: 0;
+      font-size: 15px;
       color: inherit;
-      text-align: right;
+      text-align: left;
 }
 .pg-localizzati .result-top .dist.is-target {
       color: #e84747;
