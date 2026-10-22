@@ -1988,7 +1988,7 @@ body.map-open {
       const modo = azioneAttiva === "coord" ? "coord" : (azioneAttiva === "cerca" ? "cerca" : "gps");
       pannelliPerModo();
       const tag = document.getElementById("rCmdTag");
-      tag.textContent = modo === "coord" ? "INT" : (modo === "gps" ? "Posizione" : "Comando");
+      tag.textContent = modo === "coord" ? "Comando INT" : (modo === "gps" ? "Comando qui" : "Comando sel");
       const pannello = document.querySelector(".pg-localizzati .cmd-panel");
       pannello.classList.remove("modo-coord", "modo-gps", "modo-cerca");
       pannello.classList.add("modo-" + modo);
