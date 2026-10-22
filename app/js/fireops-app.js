@@ -134,8 +134,7 @@
   // Componi + 4146
   // =====================================================================
   const PREFIX = "41460039";
-  let prefisso = true;
-  try { prefisso = localStorage.getItem("fireops_prefix") !== "0"; } catch (e) { }
+  const prefisso = true;                       // i numeri nelle pagine (SO, centralini) si compongono con il 4146 davanti
 
   const cifre = v => (v || "").toString().replace(/[^0-9]/g, "");
   function nazionale(d) {
@@ -146,12 +145,13 @@
 
   function telHref(num) {
     const raw = (num || "").toString();
-    if (!prefisso) return "tel:" + raw.replace(/[^0-9+]/g, "");
     return "tel:" + PREFIX + nazionale(cifre(raw));
   }
 
+  // Quattro tasti, attivi solo con un numero scritto: 4146 + numero, numero senza 4146, WhatsApp, Telegram
   function aggiornaDial() {
-    const d = cifre($("fohInput").value);
+    const raw = $("fohInput").value;
+    const d = cifre(raw);
     const ok = d.length > 0;
     const n = nazionale(d);
     const set = (id, href) => {
@@ -160,22 +160,24 @@
       a.classList.toggle("off", !ok);
     };
     set("fohCall", telHref(d));
+    set("fohCall0", "tel:" + raw.replace(/[^0-9+]/g, ""));
     set("fohWa", "https://wa.me/39" + n);
     set("fohTg", "https://t.me/+39" + n);
   }
 
-  $("fohPfx").setAttribute("aria-pressed", prefisso ? "true" : "false");
-  $("fohPfx").addEventListener("click", function () {
-    prefisso = !prefisso;
-    this.setAttribute("aria-pressed", prefisso ? "true" : "false");
-    try { localStorage.setItem("fireops_prefix", prefisso ? "1" : "0"); } catch (e) { }
-    aggiornaDial();
-    document.dispatchEvent(new CustomEvent("fireops:prefisso", {detail: {attivo: prefisso}}));
-  });
   $("fohInput").addEventListener("input", aggiornaDial);
   aggiornaDial();
 
   window.FireOpsDial = {telHref, prefisso: () => prefisso};
+
+  // altezza dell'intestazione fissa: serve ai pulsanti che restano agganciati sotto di essa (Localizzati)
+  (function () {
+    const h = document.querySelector(".foh");
+    const imposta = () => { if (h) document.documentElement.style.setProperty("--foh-h", h.offsetHeight + "px"); };
+    imposta();
+    window.addEventListener("resize", imposta);
+    if (window.ResizeObserver && h) new ResizeObserver(imposta).observe(h);
+  })();
 
   // =====================================================================
   // Dati comuni (caricati una volta, condivisi tra i moduli)

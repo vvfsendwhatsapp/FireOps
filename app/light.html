@@ -17,6 +17,7 @@
   <style>/* FireOps VVF Lite: intestazione azzurra per distinguerla dall'app completa */
     .foh { background: #29a3e6 !important; border-top: 0 !important; border-bottom: 3px solid #0e3f66 !important; }
     .foh-t h1 { color: #04223a !important; }
+    .foh-tg { box-shadow: inset 0 0 0 2px #04223a; }
     .foh-t p, .foh-pos, .foh-pos-cmd { color: #07304f !important; }</style>
 </head>
 
@@ -44,33 +45,6 @@
             <circle cx="12" cy="12" r="10" /><path d="M12 11v6" /><circle cx="12" cy="7.5" r=".6" fill="currentColor" />
           </svg>
         </a>
-        <button type="button" class="foh-pfx" id="fohPfx" aria-pressed="true"
-          title="Antepone 4146 solo in fase di composizione"><i></i>4146 📞</button>
-      </div>
-      <div class="foh-dial">
-        <input type="tel" id="fohInput" placeholder="Componi un numero" inputmode="tel" autocomplete="off"
-          aria-label="Numero da comporre">
-        <a class="foh-btn foh-call off" id="fohCall" href="javascript:void(0)" aria-label="Chiama" title="Chiama">
-          <svg width="19" height="19" viewBox="0 0 24 24" fill="none">
-            <path d="M6 3h4l2 5-2.5 1.5a11 11 0 005 5L16 12l5 2v4a2 2 0 01-2 2C10.6 20 4 13.4 4 5a2 2 0 012-2z"
-              stroke="currentColor" stroke-width="2" />
-          </svg>
-        </a>
-        <a class="foh-btn foh-wa off" id="fohWa" href="javascript:void(0)" target="_blank" rel="noopener"
-          aria-label="WhatsApp" title="WhatsApp">
-          <svg width="19" height="19" viewBox="0 0 24 24">
-            <path d="M12 3C7 3 3 6.6 3 11c0 2.1 1 4 2.6 5.4L5 21l4.8-1.8c.7.2 1.4.3 2.2.3 5 0 9-3.6 9-8S17 3 12 3z"
-              fill="currentColor" />
-          </svg>
-        </a>
-        <a class="foh-btn foh-tg off" id="fohTg" href="javascript:void(0)" target="_blank" rel="noopener"
-          aria-label="Telegram" title="Telegram">
-          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-            stroke-linecap="round" stroke-linejoin="round">
-            <path d="M22 2L11 13" />
-            <path d="M22 2l-7 20-4-9-9-4z" />
-          </svg>
-        </a>
       </div>
       <!-- Autoposizionamento: comando competente rilevato all'apertura -->
       <div class="foh-pos" id="fohPos" aria-live="polite">
@@ -85,6 +59,16 @@
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
             stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 11-3-6.7L21 8" /><path d="M21 3v5h-5" /></svg>
         </button>
+      </div>
+      <div class="foh-dial">
+        <input type="tel" id="fohInput" placeholder="Componi un numero" inputmode="tel" autocomplete="off"
+          aria-label="Numero da comporre">
+      </div>
+      <div class="foh-acts">
+        <a class="foh-btn foh-call off" id="fohCall" href="javascript:void(0)" aria-label="Chiama con 4146" title="Chiama con 4146 davanti"><svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M6 3h4l2 5-2.5 1.5a11 11 0 005 5L16 12l5 2v4a2 2 0 01-2 2C10.6 20 4 13.4 4 5a2 2 0 012-2z" stroke="currentColor" stroke-width="2" /></svg><span>4146 + n°</span></a>
+        <a class="foh-btn foh-call0 off" id="fohCall0" href="javascript:void(0)" aria-label="Chiama senza 4146" title="Chiama senza 4146"><svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M6 3h4l2 5-2.5 1.5a11 11 0 005 5L16 12l5 2v4a2 2 0 01-2 2C10.6 20 4 13.4 4 5a2 2 0 012-2z" stroke="currentColor" stroke-width="2" /></svg><span>Senza 4146</span></a>
+        <a class="foh-btn foh-wa off" id="fohWa" href="javascript:void(0)" target="_blank" rel="noopener" aria-label="WhatsApp" title="WhatsApp"><svg width="19" height="19" viewBox="0 0 24 24"><path d="M12 3C7 3 3 6.6 3 11c0 2.1 1 4 2.6 5.4L5 21l4.8-1.8c.7.2 1.4.3 2.2.3 5 0 9-3.6 9-8S17 3 12 3z" fill="currentColor" /></svg><span>WhatsApp</span></a>
+        <a class="foh-btn foh-tg off" id="fohTg" href="javascript:void(0)" target="_blank" rel="noopener" aria-label="Telegram" title="Telegram"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13" /><path d="M22 2l-7 20-4-9-9-4z" /></svg><span>Telegram</span></a>
       </div>
     </div>
   </div>

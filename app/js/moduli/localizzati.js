@@ -138,7 +138,11 @@ FireOps.registra({
 .pg-localizzati .locate-btn.loading {
       opacity: .7;
 }
-.pg-localizzati .act3 { margin: 0 0 10px; min-height: 56px; }
+.pg-localizzati #locate-section { display: contents; }
+.pg-localizzati .wrap { max-width: 100%; overflow-x: clip; }
+/* il pulsante aperto resta agganciato sotto l'intestazione mentre il resto scorre; i chiusi stanno fermi in alto */
+.pg-localizzati .act3-grp.on { position: sticky; top: var(--foh-h, 130px); z-index: 40; background: var(--bg); padding: 8px 0 8px; margin-bottom: 4px; }
+.pg-localizzati .act3 { margin: 0 0 10px; min-height: 56px; padding-left: 40px; padding-right: 40px; }
 .pg-localizzati .act3.coord { background: #d8262f; color: #fff; }
 .pg-localizzati .act3.coord:active { background: #a81b23; }
 .pg-localizzati .act3.coord svg path, .pg-localizzati .act3.coord svg circle, .pg-localizzati .act3.coord svg rect { stroke: #fff !important; }
@@ -152,7 +156,11 @@ FireOps.registra({
 .pg-localizzati .act3.on .chev { transform: translateY(-50%) rotate(180deg); }
 .pg-localizzati .act3.on { outline: 2px solid #fff; outline-offset: -4px; }
 .pg-localizzati .act3.cmd.on { outline-color: #10141a; }
-.pg-localizzati .act3-reset { display: block; width: 100%; min-height: 48px; margin: -4px 0 10px; padding: 10px 14px; font-size: 14.5px; font-weight: 700; color: var(--text, #eceff3); background: var(--panel-2, #1d242e); border: 1px dashed var(--text-dim, #8b95a3); border-radius: 4px; cursor: pointer; }
+.pg-localizzati .act3-grp { display: flex; gap: 8px; align-items: stretch; margin: 0 0 10px; }
+.pg-localizzati .act3-grp .act3 { flex: 1 1 auto; min-width: 0; margin: 0; }
+.pg-localizzati .act3-reset { flex: none; width: 64px; min-height: 56px; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; font-size: 22px; line-height: 1; font-weight: 700; color: var(--text, #eceff3); background: var(--panel-2, #1d242e); border: 1px dashed var(--text-dim, #8b95a3); border-radius: 4px; cursor: pointer; }
+.pg-localizzati .act3-reset small { font-size: 10.5px; font-weight: 700; }
+.pg-localizzati .act3-reset.hidden { display: none !important; }
 .pg-localizzati .act3-reset:active { background: var(--line, #2a323d); }
 .pg-localizzati .link-btn {
       display: block;
@@ -965,12 +973,14 @@ body.map-open {
   <div class="wrap">
 
     <section id="locate-section">
+      <div class="act3-grp" id="grpCoord">
       <button class="locate-btn act3 coord" id="coordBtn">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0119 9.5C19 14.8 12 21 12 21z" stroke="white" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="9.5" r="2.6" stroke="white" stroke-width="2"/></svg>
         Inserisci coordinate
         <span class="chev" aria-hidden="true">▾</span>
       </button>
-      <button type="button" class="act3-reset hidden" id="resetCoord">↺ Reset coordinate: cambia i dati</button>
+      <button type="button" class="act3-reset hidden" id="resetCoord" title="Reset coordinate: cambia i dati" aria-label="Reset coordinate: cambia i dati">↺<small>Reset</small></button>
+      </div>
       <div class="panel hidden" id="coordPanel" style="margin: 0 0 10px;">
         <div class="row-group-label target">Inserisci coordinate, OLC o link Maps</div>
         <div class="target-input-box">
@@ -990,6 +1000,7 @@ body.map-open {
         </div>
       </div>
 
+      <div class="act3-grp" id="grpGps">
       <button class="locate-btn act3" id="locateBtn">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
           <circle cx="12" cy="12" r="3.2" stroke="white" stroke-width="2" />
@@ -998,13 +1009,16 @@ body.map-open {
         Trova la mia posizione
         <span class="chev" aria-hidden="true">▾</span>
       </button>
-      <button type="button" class="act3-reset hidden" id="resetGps">↺ Reset posizione: nuova lettura GPS</button>
+      <button type="button" class="act3-reset hidden" id="resetGps" title="Reset posizione: nuova lettura GPS" aria-label="Reset posizione: nuova lettura GPS">↺<small>Reset</small></button>
+      </div>
+      <div class="act3-grp" id="grpCerca">
       <button class="locate-btn act3 cmd" id="toggleSearchBtn">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         Cerca un comando diverso
         <span class="chev" aria-hidden="true">▾</span>
       </button>
-      <button type="button" class="act3-reset hidden" id="resetCerca">↺ Reset comando: sceglierne un altro</button>
+      <button type="button" class="act3-reset hidden" id="resetCerca" title="Reset comando: sceglierne un altro" aria-label="Reset comando: sceglierne un altro">↺<small>Reset</small></button>
+      </div>
       <div class="status-msg hidden" id="statusMsg"></div>
     </section>
 
@@ -3359,6 +3373,9 @@ assign initialcost =
         $(mappa[k]).classList.toggle("on", attivo === k);
         $(mappa[k]).classList.toggle("hidden", !!attivo && attivo !== k);
         $(resetId[k]).classList.toggle("hidden", attivo !== k);
+        const g = $({coord: "grpCoord", gps: "grpGps", cerca: "grpCerca"}[k]);
+        g.classList.toggle("on", attivo === k);
+        g.classList.toggle("hidden", !!attivo && attivo !== k);
       });
     }
     /* richiude il risultato (o il riquadro) e riporta i tre pulsanti */

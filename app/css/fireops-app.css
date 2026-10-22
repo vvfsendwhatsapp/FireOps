@@ -38,6 +38,8 @@ body {
 [hidden], .hidden { display: none !important; }
 
 /* ---------- Intestazione comune ---------- */
+html, body { overflow-x: clip; max-width: 100%; }
+
 .foh {
   position: sticky;
   top: 0;
@@ -117,7 +119,7 @@ body {
 .foh-pfx::after { content: "OFF"; font-size: 10px; font-weight: 800; letter-spacing: .3px; padding: 2px 6px; border-radius: 9px; background: var(--line); color: var(--text-dim); }
 .foh-pfx[aria-pressed="true"]::after { content: "ON"; background: #000; color: var(--yellow); }
 
-.foh-dial { display: flex; gap: 6px; margin-top: 10px; }
+.foh-dial { display: flex; gap: 6px; margin-top: 8px; }
 
 .foh-dial input {
   flex: 1;
@@ -134,18 +136,29 @@ body {
 .foh-dial input::placeholder { font-family: var(--sans); color: var(--text-dim); }
 .foh-dial input:focus { outline: none; border-color: var(--yellow); }
 
+.foh-acts { display: flex; gap: 6px; margin-top: 8px; }
+
 .foh-btn {
-  flex: none;
-  width: 48px;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 52px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 3px;
   border-radius: 6px;
   text-decoration: none;
   color: #fff;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1;
 }
+.foh-btn svg { flex: none; }
+.foh-btn span { white-space: nowrap; }
 
 .foh-call { background: var(--yellow); color: #000; }
+.foh-call0 { background: var(--panel-2); border: 1px solid var(--yellow); color: var(--yellow); }
 .foh-wa { background: var(--wa); }
 .foh-tg { background: var(--tg); }
 .foh-btn.off { opacity: .3; pointer-events: none; }
