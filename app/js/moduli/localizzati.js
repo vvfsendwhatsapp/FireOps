@@ -791,8 +791,8 @@ body.map-open {
 .pg-localizzati .nav-cmd-btn:active {
       background: var(--red-dim);
 }
-.pg-localizzati .cmd-actions { display: flex; gap: 8px; margin: 10px 0 4px; }
-.pg-localizzati .cmd-actions .nav-cmd-btn { flex: 1 1 0; min-width: 0; box-sizing: border-box; justify-content: center; min-height: 48px; padding: 8px 10px; border: 1px solid transparent; border-radius: 12px; font-size: 13.5px; }
+.pg-localizzati .cmd-actions { display: flex; gap: 8px; margin: 10px 12px 6px; }
+.pg-localizzati .cmd-actions .nav-cmd-btn { flex: 1 1 0; min-width: 0; box-sizing: border-box; justify-content: center; min-height: 52px; padding: 10px 14px; border: 1px solid transparent; border-radius: 12px; font-size: 15.5px; }
 .pg-localizzati .nav-cmd-btn.alt { background: var(--panel-2, #1d242e); color: var(--text, #eceff3); border: 1px solid var(--line, #2a323d); }
 .pg-localizzati .nav-cmd-btn.alt:active { background: var(--line, #2a323d); }
 .pg-localizzati .place-modal {
@@ -1102,8 +1102,7 @@ body.map-open {
           <div class="dist" id="rDist"></div>
         </div>
         <div class="cmd-actions">
-          <button type="button" id="navToComando" class="nav-cmd-btn" title="Naviga alla sede del Comando con Google Maps">🧭 Naviga</button>
-          <button type="button" id="planToComando" class="nav-cmd-btn alt" title="Usa il Comando come target e pianifica il percorso">🗺 Pianifica a Comando</button>
+          <button type="button" id="navToComando" class="nav-cmd-btn" title="Naviga alla sede del Comando con Google Maps">🧭 Naviga al comando VVF</button>
         </div>
         <div class="result-addr" id="rCmdAddr"></div>
         <div class="result-sub" id="rSub"></div>
@@ -2871,18 +2870,6 @@ assign initialcost =
       updateMap(currentRecord, userPos, targetPos);
       return true;
     }
-
-    document.getElementById("planToComando").addEventListener("click", function () {
-      if (!comandoComeTarget()) return;
-      document.getElementById("targetInfoPanel").scrollIntoView({behavior: "smooth", block: "start"});
-      if (userPos) calcolaPercorso("soccorso");
-      else {
-        const info = document.getElementById("routeInfo");
-        info.classList.remove("hidden");
-        info.classList.add("error");
-        info.textContent = "Posizione GPS non ancora ricevuta: attendi la lettura, poi scegli Soccorso, Solo mezzo o Solo piedi.";
-      }
-    });
 
     // Il logo nell'intestazione azzera la pagina; la casetta porta alla home
     function resetApp() {
