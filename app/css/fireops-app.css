@@ -237,6 +237,9 @@ html, body { overflow-x: clip; max-width: 100%; }
 }
 
 .foh-pos-so {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   flex: none;
   padding: 4px 10px;
   border-radius: 12px;

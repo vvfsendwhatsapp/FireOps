@@ -166,6 +166,15 @@
   }
 
   $("fohInput").addEventListener("input", aggiornaDial);
+  // il tasto SO in alto non chiama: scrive il numero della sala operativa nel campo, poi si sceglie con quale dei quattro tasti usarlo
+  $("fohPosSo").addEventListener("click", function (e) {
+    e.preventDefault();
+    const n = this.dataset.num;
+    if (!n) return;
+    const inp = $("fohInput");
+    inp.value = n;
+    inp.dispatchEvent(new Event("input"));
+  });
   aggiornaDial();
 
   window.FireOpsDial = {telHref, prefisso: () => prefisso};
@@ -662,8 +671,10 @@
     const so = $("fohPosSo");
     so.hidden = !c.tsc;
     if (c.tsc) {
-      so.href = telHref(c.tsc);
-      so.title = "Chiama la SO di " + c.c + " (" + c.tsc + ")";
+      so.href = "javascript:void(0)";
+      so.dataset.num = c.tsc;
+      so.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 3h4l2 5-2.5 1.5a11 11 0 005 5L16 12l5 2v4a2 2 0 01-2 2C10.6 20 4 13.4 4 5a2 2 0 012-2z" stroke="currentColor" stroke-width="2.2"/></svg>SO';
+      so.title = "Scrive il numero della SO di " + c.c + " (" + c.tsc + ") nel campo sotto";
     }
   }
 
