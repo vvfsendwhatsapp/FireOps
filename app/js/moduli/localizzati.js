@@ -811,10 +811,7 @@ body.map-open {
 .pg-localizzati .pan-det > summary::after { content: "▾"; font-size: 16px; margin-left: 8px; transition: transform .15s; }
 .pg-localizzati .pan-det[open] > summary::after { transform: rotate(180deg); }
 .pg-localizzati .cmd-tag { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #e84747; margin-bottom: 2px; }
-.pg-localizzati .cmd-panel.modo-coord { border-left-color: #e84747; }
-.pg-localizzati .cmd-panel.modo-gps { border-left-color: #ffd700; }
 .pg-localizzati .cmd-panel.modo-gps .cmd-tag { color: #ffd700; }
-.pg-localizzati .cmd-panel.modo-cerca { border-left-color: #9aa5b4; }
 .pg-localizzati .cmd-panel.modo-cerca .cmd-tag { color: #9aa5b4; }
 .pg-localizzati .cmd-dove { margin: 12px 14px 12px 14px; border: 1px solid var(--line, #2a323d); border-radius: 12px; background: var(--panel-2, #1d242e); }
 .pg-localizzati .cmd-dove > summary { list-style: none; cursor: pointer; min-height: 52px; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; font-size: 15.5px; font-weight: 600; color: var(--text, #eceff3); }
