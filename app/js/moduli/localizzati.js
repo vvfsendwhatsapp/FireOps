@@ -805,12 +805,13 @@ body.map-open {
       min-width: 0;
 }
 .pg-localizzati .cmd-tag { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--red, #e84747); margin-bottom: 2px; }
-.pg-localizzati .cmd-dove { margin: 8px 0; border: 1px solid var(--line, #2a323d); border-radius: 12px; background: var(--panel-2, #1d242e); }
-.pg-localizzati .cmd-dove > summary { list-style: none; cursor: pointer; min-height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; font-size: 14px; color: var(--muted, #9aa5b4); }
+.pg-localizzati .cmd-dove { margin: 12px 14px 12px 14px; border: 1px solid var(--line, #2a323d); border-radius: 12px; background: var(--panel-2, #1d242e); }
+.pg-localizzati .cmd-dove > summary { list-style: none; cursor: pointer; min-height: 52px; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; font-size: 15.5px; font-weight: 600; color: var(--text, #eceff3); }
 .pg-localizzati .cmd-dove > summary::-webkit-details-marker { display: none; }
 .pg-localizzati .cmd-dove > summary::after { content: "▾"; font-size: 16px; transition: transform .15s; }
 .pg-localizzati .cmd-dove[open] > summary::after { transform: rotate(180deg); }
-.pg-localizzati .cmd-dove > .cmd-actions, .pg-localizzati .cmd-dove > .result-addr { margin: 0 10px 10px; }
+.pg-localizzati .cmd-dove > .cmd-actions { margin: 0 12px 12px; }
+.pg-localizzati .cmd-dove > .result-addr { margin: 0 16px 14px; padding: 0; }
 .pg-localizzati .nav-cmd-btn {
       display: inline-flex;
       align-items: center;
