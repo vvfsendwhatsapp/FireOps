@@ -190,7 +190,7 @@
   });
   aggiornaDial();
 
-  window.FireOpsDial = {telHref, prefisso: () => prefisso, imposta: impostaNumero};
+  window.FireOpsDial = {telHref, prefisso: () => prefisso, imposta: impostaNumero, comandoQui: () => (posUltima && posUltima.comando) || null};
 
   // altezza dell'intestazione fissa: serve ai pulsanti che restano agganciati sotto di essa (Localizzati)
   (function () {

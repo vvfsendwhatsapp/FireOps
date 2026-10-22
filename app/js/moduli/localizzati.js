@@ -255,34 +255,32 @@ FireOps.registra({
       color: var(--text-dim);
 }
 .pg-localizzati .result-top {
-      padding: 12px 14px 4px;
+      padding: 10px 14px 2px;
       display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      gap: 4px;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
 }
+.pg-localizzati .result-top .result-name-wrap { flex-direction: column; align-items: flex-start; gap: 0; }
 .pg-localizzati .result-top .name {
-      font-size: 24px;
+      font-size: 20px;
       font-weight: 700;
       letter-spacing: .2px;
+      line-height: 1.15;
 }
 .pg-localizzati .result-top .dist {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: baseline;
-      gap: 0 16px;
-      text-align: left;
+      text-align: right;
       font-family: var(--mono);
-      font-size: 15px;
+      font-size: 14px;
       color: var(--red);
+      white-space: nowrap;
 }
 .pg-localizzati .result-top .dist:empty { display: none; }
 .pg-localizzati .result-top .dist .leg {
       display: block;
-      flex: 0 0 100%;
-      margin-bottom: 0;
+      margin-bottom: 1px;
       font-family: var(--sans);
-      font-size: 11.5px;
+      font-size: 11px;
       color: var(--text-dim);
 }
 .pg-localizzati .result-top .dist .val {
@@ -293,9 +291,9 @@ FireOps.registra({
 .pg-localizzati .result-top .dist .az {
       display: block;
       margin-top: 0;
-      font-size: 15px;
+      font-size: 13px;
       color: inherit;
-      text-align: left;
+      text-align: right;
 }
 .pg-localizzati .result-top .dist.is-target {
       color: #e84747;
@@ -583,6 +581,9 @@ body.map-open {
       background: #000;
       border: 1px solid var(--red);
 }
+.pg-localizzati .map-legend i.rombo { border-radius: 0; width: 9px; height: 9px; transform: rotate(45deg); background: #8a94a3; border: 2px solid #ffd700; margin: 0 2px; }
+.pg-localizzati .map-legend i.rombo.int { border-color: #e84747; }
+.pg-localizzati .map-legend i.rombo.sel { border-color: #e6e9ee; }
 .pg-localizzati .map-legend i.dot-user {
       background: var(--red);
 }
@@ -820,8 +821,8 @@ body.map-open {
 .pg-localizzati .cmd-tag { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #e84747; margin-bottom: 2px; }
 .pg-localizzati .cmd-panel.modo-gps .cmd-tag { color: #ffd700; }
 .pg-localizzati .cmd-panel.modo-cerca .cmd-tag { color: #9aa5b4; }
-.pg-localizzati .cmd-dove { margin: 12px 14px 12px 14px; border: 1px solid var(--line, #2a323d); border-radius: 12px; background: var(--panel-2, #1d242e); }
-.pg-localizzati .cmd-dove > summary { list-style: none; cursor: pointer; min-height: 52px; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; font-size: 15.5px; font-weight: 600; color: var(--text, #eceff3); }
+.pg-localizzati .cmd-dove { margin: 2px 14px 10px 14px; border: 1px solid var(--line, #2a323d); border-radius: 12px; background: var(--panel-2, #1d242e); }
+.pg-localizzati .cmd-dove > summary { list-style: none; cursor: pointer; min-height: 40px; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; padding: 6px 14px; font-size: 14px; font-weight: 600; color: var(--text, #eceff3); }
 .pg-localizzati .cmd-dove > summary::-webkit-details-marker { display: none; }
 .pg-localizzati .cmd-dove > summary::after { content: "▾"; font-size: 16px; transition: transform .15s; }
 .pg-localizzati .cmd-dove[open] > summary::after { transform: rotate(180deg); }
@@ -1082,7 +1083,9 @@ body.map-open {
             aria-label="Ingrandisci mappa"></button>
         </div>
         <div class="map-legend" id="mapLegend">
-          <span><i class="dot-comando"></i>Comando</span>
+          <span id="legQui"><i class="rombo qui"></i>Comando qui</span>
+          <span id="legInt" class="hidden"><i class="rombo int"></i>Comando INT</span>
+          <span id="legSel" class="hidden"><i class="rombo sel"></i>Comando sel</span>
           <span id="legendUser" class="hidden"><i class="dot-user"></i>La tua posizione</span>
           <span id="legendTarget" class="hidden"><i class="dot-target"></i>Target</span>
         </div>
@@ -1431,6 +1434,7 @@ body.map-open {
     /* ---- Mappa Leaflet ---- */
     let map = null;
     let comandoMarker = null;
+    let comandoQuiMarker = null;
     let userMarker = null;
     let targetMarker = null;
     let linkLines = [];
@@ -1533,9 +1537,11 @@ body.map-open {
     }
     document.addEventListener("click", startCompass, true);
 
-    function comandoIcon() {
+    // Comandi: sempre un rombo grigio; il bordo dice a cosa si riferisce (giallo = qui, rosso = intervento, chiaro = scelto)
+    const BORDO_CMD = {qui: "#ffd700", int: "#e84747", sel: "#e6e9ee"};
+    function comandoIcon(tipo) {
       const svg = '<svg width="26" height="26" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">'
-        + '<rect x="3" y="3" width="18" height="18" transform="rotate(45 12 12)" fill="#000000" stroke="#ffd700" stroke-width="2.5"/>'
+        + '<rect x="3" y="3" width="18" height="18" transform="rotate(45 12 12)" fill="#8a94a3" stroke="' + (BORDO_CMD[tipo] || BORDO_CMD.qui) + '" stroke-width="2.5"/>'
         + '</svg>';
       return L.divIcon({className: "", html: svg, iconSize: [26, 26], iconAnchor: [13, 13], popupAnchor: [0, -10]});
     }
@@ -1619,9 +1625,23 @@ body.map-open {
         "<b>" + record.c + "</b><br>📻 Comando <span class='ch'>" + (record.rc || "—") +
         "</span> · DR <span class='ch'>" + (record.rd || "—") + "</span>";
 
-      comandoMarker = L.marker([record.lat, record.lon], {icon: comandoIcon()})
+      if (comandoQuiMarker) {map.removeLayer(comandoQuiMarker); comandoQuiMarker = null;}
+      const modoMappa = azioneAttiva === "coord" ? "coord" : (azioneAttiva === "cerca" ? "cerca" : "gps");
+      const tipoCmd = modoMappa === "coord" ? "int" : (modoMappa === "cerca" ? "sel" : "qui");
+      // tasto 1: anche il comando della mia posizione (se diverso dall'intervento); tasto 2: solo il mio comando
+      const quiRec = (modoMappa === "coord" && window.FireOpsDial && FireOpsDial.comandoQui) ? FireOpsDial.comandoQui() : null;
+      if (quiRec && quiRec.lat != null && quiRec.c !== record.c) {
+        comandoQuiMarker = L.marker([quiRec.lat, quiRec.lon], {icon: comandoIcon("qui")})
+          .addTo(map)
+          .bindPopup("Comando qui: " + quiRec.c);
+      }
+      comandoMarker = L.marker([record.lat, record.lon], {icon: comandoIcon(tipoCmd)})
         .addTo(map)
-        .bindPopup("Comando " + record.c);
+        .bindPopup((tipoCmd === "int" ? "Comando INT: " : tipoCmd === "sel" ? "Comando sel: " : "Comando qui: ") + record.c);
+      const mostraLeg = (id, on) => document.getElementById(id).classList.toggle("hidden", !on);
+      mostraLeg("legQui", tipoCmd === "qui" || !!comandoQuiMarker);
+      mostraLeg("legInt", tipoCmd === "int");
+      mostraLeg("legSel", tipoCmd === "sel");
 
       const legendUser = document.getElementById("legendUser");
       const legendTarget = document.getElementById("legendTarget");
@@ -1636,10 +1656,11 @@ body.map-open {
         legendUser.classList.remove("hidden");
         boundsArray.push([pos.lat, pos.lon]);
 
-        const l1 = L.polyline([[pos.lat, pos.lon], [record.lat, record.lon]], {
+        const baseL = comandoQuiMarker ? FireOpsDial.comandoQui() : record;
+        const l1 = L.polyline([[pos.lat, pos.lon], [baseL.lat, baseL.lon]], {
           color: "#ffd700", weight: 2.5, dashArray: "4,6", opacity: 0.85
         }).addTo(map);
-        lineLabel(l1, pos, record, "cmd-me");          // mia pos. -> Comando
+        lineLabel(l1, pos, baseL, "cmd-me");          // mia pos. -> Comando
         linkLines.push(l1);
       } else {
         legendUser.classList.add("hidden");
