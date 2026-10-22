@@ -152,6 +152,8 @@ FireOps.registra({
 .pg-localizzati .act3.on .chev { transform: translateY(-50%) rotate(180deg); }
 .pg-localizzati .act3.on { outline: 2px solid #fff; outline-offset: -4px; }
 .pg-localizzati .act3.cmd.on { outline-color: #10141a; }
+.pg-localizzati .act3-reset { display: block; width: 100%; min-height: 48px; margin: -4px 0 10px; padding: 10px 14px; font-size: 14.5px; font-weight: 700; color: var(--text, #eceff3); background: var(--panel-2, #1d242e); border: 1px dashed var(--text-dim, #8b95a3); border-radius: 4px; cursor: pointer; }
+.pg-localizzati .act3-reset:active { background: var(--line, #2a323d); }
 .pg-localizzati .link-btn {
       display: block;
       width: 100%;
@@ -968,6 +970,7 @@ body.map-open {
         Inserisci coordinate
         <span class="chev" aria-hidden="true">▾</span>
       </button>
+      <button type="button" class="act3-reset hidden" id="resetCoord">↺ Reset coordinate: cambia i dati</button>
       <div class="panel hidden" id="coordPanel" style="margin: 0 0 10px;">
         <div class="row-group-label target">Inserisci coordinate, OLC o link Maps</div>
         <div class="target-input-box">
@@ -995,11 +998,13 @@ body.map-open {
         Trova la mia posizione
         <span class="chev" aria-hidden="true">▾</span>
       </button>
+      <button type="button" class="act3-reset hidden" id="resetGps">↺ Reset posizione: nuova lettura GPS</button>
       <button class="locate-btn act3 cmd" id="toggleSearchBtn">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         Cerca un comando diverso
         <span class="chev" aria-hidden="true">▾</span>
       </button>
+      <button type="button" class="act3-reset hidden" id="resetCerca">↺ Reset comando: sceglierne un altro</button>
       <div class="status-msg hidden" id="statusMsg"></div>
     </section>
 
@@ -3349,9 +3354,11 @@ assign initialcost =
       else if (coordAperto) attivo = "coord";
       else if (cercaAperto) attivo = "cerca";
       const mappa = {coord: "coordBtn", gps: "locateBtn", cerca: "toggleSearchBtn"};
+      const resetId = {coord: "resetCoord", gps: "resetGps", cerca: "resetCerca"};
       Object.keys(mappa).forEach(k => {
         $(mappa[k]).classList.toggle("on", attivo === k);
         $(mappa[k]).classList.toggle("hidden", !!attivo && attivo !== k);
+        $(resetId[k]).classList.toggle("hidden", attivo !== k);
       });
     }
     /* richiude il risultato (o il riquadro) e riporta i tre pulsanti */
@@ -3369,6 +3376,24 @@ assign initialcost =
       window.scrollTo({top: 0, behavior: "smooth"});
     }
     window.__aggiornaPulsantiLocalizzati = aggiornaPulsanti;
+    /* un tasto Reset per ognuno dei tre: azzera i dati e ripropone la stessa scelta, pronta per nuovi dati */
+    document.getElementById("resetCoord").addEventListener("click", function () {
+      resetApp();
+      document.getElementById("coordPanel").classList.remove("hidden");
+      document.getElementById("targetDetect").textContent = "";
+      aggiornaPulsanti();
+      document.getElementById("targetInput").focus();
+    });
+    document.getElementById("resetCerca").addEventListener("click", function () {
+      resetApp();
+      document.getElementById("search-section").classList.remove("hidden");
+      aggiornaPulsanti();
+      mostraElenco();
+    });
+    document.getElementById("resetGps").addEventListener("click", function () {
+      resetApp();
+      document.getElementById("locateBtn").click();
+    });
     document.getElementById("toggleSearchBtn").addEventListener("click", function () {
       if (!document.getElementById("result-section").classList.contains("hidden")) { chiudiRisultato(); return; }
       const sec = document.getElementById("search-section"), apri = sec.classList.contains("hidden");
