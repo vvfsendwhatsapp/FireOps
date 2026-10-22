@@ -261,6 +261,30 @@
     return cacheComandi;
   }
 
+  // Direzioni regionali: db/direzioni.json (con "Coordinate DIR"), nel formato corto dei comandi
+  let cacheDirezioni = null;
+  function direzioni() {
+    if (!cacheDirezioni) {
+      cacheDirezioni = json("direzioni.json").then(d => {
+        const righe = Array.isArray(d) ? d : [];
+        return righe.map(x => {
+          const m = String(x["Coordinate DIR"] || "").split(",").map(t => parseFloat(t));
+          const ind = String(x["Indirizzo Direzione"] || "");
+          const parti = ind.split(",").map(t => t.trim());
+          const nome = String(x["Direzione VVF"] || "").trim();
+          return {
+            c: "Direzione regionale " + nome, dz: nome, rg: nome,
+            pr: (parti[parti.length - 1] || "").toUpperCase(), cm: parti[parti.length - 2] || "",
+            lat: m[0], lon: m[1], ind, rc: radio(x["Canale Radio Direzione"]), rd: radio(x["Canale Radio Direzione"]),
+            tsc: x["Telefono SO Direzione"] || "", tsd: x["Telefono SO Direzione"] || "", tc: "", nue: "",
+            esc: x["email SO Direzione"] || "", ecom: x["email Direzione"] || "", web: "", olc: "", conf: [], eDirezione: true
+          };
+        }).filter(r => r.dz && isFinite(r.lat) && isFinite(r.lon));
+      }).catch(err => { cacheDirezioni = null; throw err; });
+    }
+    return cacheDirezioni;
+  }
+
   // Carica una sola volta script e fogli di stile esterni (es. Leaflet)
   const caricati = {};
   function carica(url) {
@@ -693,6 +717,7 @@
     leaflet,
     json,
     comandi,
+    direzioni,
     onShow: (id, fn) => { (hookShow[id] = hookShow[id] || []).push(fn); },
     onLogo: (id, fn) => { (hookLogo[id] = hookLogo[id] || []).push(fn); },
     onHide: (id, fn) => { (hookHide[id] = hookHide[id] || []).push(fn); },

@@ -3350,18 +3350,9 @@ assign initialcost =
     const searchResults = document.getElementById("searchResults");
     /* Direzione regionale come "comando" scelto a mano: usa le coordinate del comando della sua città */
     let DIREZIONI = null;
-    function direzioni() {
+    async function direzioni() {
       if (DIREZIONI) return DIREZIONI;
-      const viste = {};
-      COMANDI.forEach(r => { if (r.dz && !viste[r.dz]) viste[r.dz] = r; });
-      DIREZIONI = Object.keys(viste).map(nome => {
-        const r = viste[nome], parti = String(r.indd || "").split(",").map(t => t.trim());
-        const sigla = (parti[parti.length - 1] || "").toUpperCase(), citta = norm(parti[parti.length - 2] || "");
-        const ref = COMANDI.find(x => x.pr === sigla && norm(x.cm) === citta) || COMANDI.find(x => x.pr === sigla) || r;
-        return {c: "Direzione regionale " + nome, dz: nome, pr: ref.pr, rg: ref.rg, cm: parti[parti.length - 2] || ref.cm,
-          lat: ref.lat, lon: ref.lon, ind: r.indd || "", rc: r.rd, rd: r.rd, tsc: r.tsd, tsd: r.tsd, tc: "", nue: r.nue,
-          esc: r.esd, ecom: r.ed, web: r.webd, olc: "", conf: [], eDirezione: true};
-      });
+      try { DIREZIONI = await FireOps.direzioni(); } catch (e) { DIREZIONI = []; }
       return DIREZIONI;
     }
     /* elenco completo (comandi e direzioni), raggruppato per direzione; con testo nel campo si filtra */
@@ -3371,7 +3362,7 @@ assign initialcost =
       const q = norm(searchInput.value);
       const ok = r => !q || norm(r.c).includes(q) || norm(r.cm).includes(q) || norm(r.pr).includes(q) || norm(r.rg).includes(q) || norm(r.dz).includes(q);
       const gruppi = {};
-      direzioni().forEach(d => { (gruppi[d.dz] = gruppi[d.dz] || {dir: d, com: []}); });
+      (await direzioni()).forEach(d => { (gruppi[d.dz] = gruppi[d.dz] || {dir: d, com: []}); });
       COMANDI.forEach(r => { if (gruppi[r.dz]) gruppi[r.dz].com.push(r); });
       searchResults.innerHTML = "";
       let n = 0;
