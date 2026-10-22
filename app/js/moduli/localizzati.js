@@ -142,8 +142,8 @@ FireOps.registra({
 .pg-localizzati .act3.coord { background: #d8262f; color: #fff; }
 .pg-localizzati .act3.coord:active { background: #a81b23; }
 .pg-localizzati .act3.coord svg path, .pg-localizzati .act3.coord svg circle, .pg-localizzati .act3.coord svg rect { stroke: #fff !important; }
-.pg-localizzati .act3.cmd { background: #6b7684; color: #fff; }
-.pg-localizzati .act3.cmd:active { background: #55606d; }
+.pg-localizzati .act3.cmd { background: #cfd5dd; color: #10141a; }
+.pg-localizzati .act3.cmd:active { background: #aeb6c1; }
 .pg-localizzati #locateBtn.act3 { background: #ffd400; color: #000; }
 .pg-localizzati #locateBtn.act3:active { background: #d9b500; }
 .pg-localizzati .act3.cmd svg path, .pg-localizzati .act3.cmd svg circle { stroke: currentColor !important; }
