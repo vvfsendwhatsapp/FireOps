@@ -1960,12 +1960,11 @@ body.map-open {
       }
       document.getElementById("rComando").textContent = record.c;
       // distingue il comando dell'intervento (target scelto) da quello della propria posizione (in alto)
-      const sfx = targetPos ? " intervento" : "";
-      document.getElementById("rCmdTag").textContent = (record.eDirezione ? "Direzione" : "Comando") + (targetPos ? " intervento" : " della mia posizione");
-      document.getElementById("lblRadioC").textContent = "Canale radio Comando" + sfx;
-      document.getElementById("lblRadioD").textContent = "Canale radio Direzione" + (targetPos ? " intervento" : " reg.");
-      document.getElementById("lblSoC").textContent = "SO Comando" + sfx;
-      document.getElementById("lblSoD").textContent = "SO Direzione" + (targetPos ? " intervento" : " reg.");
+      document.getElementById("rCmdTag").textContent = targetPos ? "INT" : "Posizione";
+      document.getElementById("lblRadioC").textContent = "Radio Comando";
+      document.getElementById("lblRadioD").textContent = "Radio Direzione";
+      document.getElementById("lblSoC").textContent = "SO Comando";
+      document.getElementById("lblSoD").textContent = "SO Direzione";
       document.getElementById("rDist").textContent = (distanceKm != null) ? fmtDist(distanceKm) : "";
       document.getElementById("rSub").textContent = record.rg + " · Direzione regionale " + record.dz;
 
