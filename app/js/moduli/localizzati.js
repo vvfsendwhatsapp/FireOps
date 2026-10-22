@@ -140,10 +140,10 @@ FireOps.registra({
       opacity: .7;
 }
 .pg-localizzati #locate-section { display: contents; }
-.pg-localizzati .wrap { max-width: 100%; overflow-x: clip; }
+.pg-localizzati .wrap { max-width: 100%; overflow-x: clip; padding-top: 16px; }
 /* il pulsante aperto resta agganciato sotto l'intestazione mentre il resto scorre; i chiusi stanno fermi in alto */
-.pg-localizzati .act3-grp.on { position: sticky; top: var(--foh-h, 130px); z-index: 40; background: var(--bg); padding: 8px 0 8px; margin-bottom: 4px; }
-.pg-localizzati .act3 { margin: 0 0 10px; min-height: 56px; padding-left: 40px; padding-right: 40px; }
+.pg-localizzati .act3-grp.on { position: sticky; top: var(--foh-h, 130px); z-index: 40; background: var(--bg); padding: 16px 0 8px; margin-top: -16px; margin-bottom: 4px; }
+.pg-localizzati .act3 { margin: 0 0 10px; min-height: 56px; padding-left: 12px; padding-right: 38px; }
 .pg-localizzati .act3.coord { background: #d8262f; color: #fff; }
 .pg-localizzati .act3.coord:active { background: #a81b23; }
 .pg-localizzati .act3.coord svg path, .pg-localizzati .act3.coord svg circle, .pg-localizzati .act3.coord svg rect { stroke: #fff !important; }
