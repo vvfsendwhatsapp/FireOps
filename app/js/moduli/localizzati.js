@@ -138,6 +138,14 @@ FireOps.registra({
 .pg-localizzati .locate-btn.loading {
       opacity: .7;
 }
+.pg-localizzati .act3 { margin: 0 0 10px; min-height: 56px; }
+.pg-localizzati .act3.coord { background: #1e88e5; color: #fff; }
+.pg-localizzati .act3.coord:active { background: #1565c0; }
+.pg-localizzati .act3.coord svg path, .pg-localizzati .act3.coord svg circle, .pg-localizzati .act3.coord svg rect { stroke: #fff !important; }
+.pg-localizzati .act3.cmd { background: var(--panel-2, #1d242e); color: var(--text, #eceff3); border: 1px solid var(--line, #2a323d); }
+.pg-localizzati .act3.cmd:active { background: var(--line, #2a323d); }
+.pg-localizzati .act3.cmd svg path, .pg-localizzati .act3.cmd svg circle { stroke: currentColor !important; }
+.pg-localizzati .act3.on { outline: 2px solid #fff; outline-offset: -4px; }
 .pg-localizzati .link-btn {
       display: block;
       width: 100%;
@@ -934,15 +942,11 @@ body.map-open {
   <div class="wrap">
 
     <section id="locate-section">
-      <button class="locate-btn" id="locateBtn">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-          <circle cx="12" cy="12" r="3.2" stroke="white" stroke-width="2" />
-          <path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="white" stroke-width="2" stroke-linecap="round" />
-        </svg>
-        Trova la mia posizione
+      <button class="locate-btn act3 coord" id="coordBtn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0119 9.5C19 14.8 12 21 12 21z" stroke="white" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="9.5" r="2.6" stroke="white" stroke-width="2"/></svg>
+        Inserisci coordinate
       </button>
-
-      <div class="panel" style="margin-top: 10px;">
+      <div class="panel hidden" id="coordPanel" style="margin: 0 0 10px;">
         <div class="row-group-label target">Inserisci coordinate, OLC o link Maps</div>
         <div class="target-input-box">
           <div class="target-input-row">
@@ -961,7 +965,17 @@ body.map-open {
         </div>
       </div>
 
-      <button class="link-btn" id="toggleSearchBtn">oppure cerca un comando manualmente</button>
+      <button class="locate-btn act3" id="locateBtn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="3.2" stroke="white" stroke-width="2" />
+          <path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="white" stroke-width="2" stroke-linecap="round" />
+        </svg>
+        Trova la mia posizione
+      </button>
+      <button class="locate-btn act3 cmd" id="toggleSearchBtn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Cerca un comando diverso
+      </button>
       <div class="status-msg hidden" id="statusMsg"></div>
     </section>
 
@@ -2909,6 +2923,7 @@ assign initialcost =
       // testo o link ricevuto da "Condividi > FireOps": lo inserisce e lo elabora
       const cond = FireOps.consumaCondiviso && FireOps.consumaCondiviso();
       if (cond) {
+        document.getElementById("coordPanel").classList.remove("hidden");
         document.getElementById("targetInput").value = cond;
         document.getElementById("targetInput").dispatchEvent(new Event("input"));
         processTargetInput(cond);
@@ -3300,8 +3315,20 @@ assign initialcost =
     });
 
     document.getElementById("toggleSearchBtn").addEventListener("click", function () {
-      document.getElementById("search-section").classList.remove("hidden");
-      document.getElementById("searchInput").focus();
+      const sec = document.getElementById("search-section"), apri = sec.classList.contains("hidden");
+      sec.classList.toggle("hidden", !apri);
+      document.getElementById("coordPanel").classList.add("hidden");
+      document.getElementById("coordBtn").classList.remove("on");
+      this.classList.toggle("on", apri);
+      if (apri) document.getElementById("searchInput").focus();
+    });
+    document.getElementById("coordBtn").addEventListener("click", function () {
+      const pn = document.getElementById("coordPanel"), apri = pn.classList.contains("hidden");
+      pn.classList.toggle("hidden", !apri);
+      document.getElementById("search-section").classList.add("hidden");
+      document.getElementById("toggleSearchBtn").classList.remove("on");
+      this.classList.toggle("on", apri);
+      if (apri) document.getElementById("targetInput").focus();
     });
 
     document.getElementById("backToSearchBtn").addEventListener("click", function () {
