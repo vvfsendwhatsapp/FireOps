@@ -147,7 +147,11 @@ FireOps.registra({
 .pg-localizzati #locateBtn.act3 { background: #ffd400; color: #000; }
 .pg-localizzati #locateBtn.act3:active { background: #d9b500; }
 .pg-localizzati .act3.cmd svg path, .pg-localizzati .act3.cmd svg circle { stroke: currentColor !important; }
+.pg-localizzati .act3 { position: relative; }
+.pg-localizzati .act3 .chev { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); font-size: 20px; line-height: 1; transition: transform .15s; }
+.pg-localizzati .act3.on .chev { transform: translateY(-50%) rotate(180deg); }
 .pg-localizzati .act3.on { outline: 2px solid #fff; outline-offset: -4px; }
+.pg-localizzati .act3.cmd.on { outline-color: #10141a; }
 .pg-localizzati .link-btn {
       display: block;
       width: 100%;
@@ -962,6 +966,7 @@ body.map-open {
       <button class="locate-btn act3 coord" id="coordBtn">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0119 9.5C19 14.8 12 21 12 21z" stroke="white" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="9.5" r="2.6" stroke="white" stroke-width="2"/></svg>
         Inserisci coordinate
+        <span class="chev" aria-hidden="true">▾</span>
       </button>
       <div class="panel hidden" id="coordPanel" style="margin: 0 0 10px;">
         <div class="row-group-label target">Inserisci coordinate, OLC o link Maps</div>
@@ -992,6 +997,7 @@ body.map-open {
       <button class="locate-btn act3 cmd" id="toggleSearchBtn">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         Cerca un comando diverso
+        <span class="chev" aria-hidden="true">▾</span>
       </button>
       <div class="status-msg hidden" id="statusMsg"></div>
     </section>
@@ -2908,7 +2914,9 @@ assign initialcost =
 
       document.getElementById("result-section").classList.add("hidden");
       document.getElementById("search-section").classList.add("hidden");
+      document.getElementById("coordPanel").classList.add("hidden");
       document.getElementById("locate-section").classList.remove("hidden");
+      if (window.__aggiornaPulsantiLocalizzati) window.__aggiornaPulsantiLocalizzati();
       window.scrollTo({top: 0, behavior: "smooth"});
     }
 
@@ -2929,6 +2937,8 @@ assign initialcost =
       const cond = FireOps.consumaCondiviso && FireOps.consumaCondiviso();
       if (cond) {
         document.getElementById("coordPanel").classList.remove("hidden");
+        document.getElementById("search-section").classList.add("hidden");
+        if (window.__aggiornaPulsantiLocalizzati) window.__aggiornaPulsantiLocalizzati();
         document.getElementById("targetInput").value = cond;
         document.getElementById("targetInput").dispatchEvent(new Event("input"));
         processTargetInput(cond);
@@ -3319,20 +3329,29 @@ assign initialcost =
       }, {enableHighAccuracy: true, timeout: 12000, maximumAge: 60000});
     });
 
+    /* i tre pulsanti: aprendone uno (rosso o grigio) gli altri si chiudono e spariscono; la freccia sul pulsante aperto lo richiude */
+    function aggiornaPulsanti() {
+      const coordAperto = !document.getElementById("coordPanel").classList.contains("hidden");
+      const cercaAperto = !document.getElementById("search-section").classList.contains("hidden");
+      document.getElementById("coordBtn").classList.toggle("on", coordAperto);
+      document.getElementById("toggleSearchBtn").classList.toggle("on", cercaAperto);
+      document.getElementById("coordBtn").classList.toggle("hidden", cercaAperto);
+      document.getElementById("toggleSearchBtn").classList.toggle("hidden", coordAperto);
+      document.getElementById("locateBtn").classList.toggle("hidden", coordAperto || cercaAperto);
+    }
+    window.__aggiornaPulsantiLocalizzati = aggiornaPulsanti;
     document.getElementById("toggleSearchBtn").addEventListener("click", function () {
       const sec = document.getElementById("search-section"), apri = sec.classList.contains("hidden");
       sec.classList.toggle("hidden", !apri);
       document.getElementById("coordPanel").classList.add("hidden");
-      document.getElementById("coordBtn").classList.remove("on");
-      this.classList.toggle("on", apri);
+      aggiornaPulsanti();
       if (apri) mostraElenco();
     });
     document.getElementById("coordBtn").addEventListener("click", function () {
       const pn = document.getElementById("coordPanel"), apri = pn.classList.contains("hidden");
       pn.classList.toggle("hidden", !apri);
       document.getElementById("search-section").classList.add("hidden");
-      document.getElementById("toggleSearchBtn").classList.remove("on");
-      this.classList.toggle("on", apri);
+      aggiornaPulsanti();
       if (apri) document.getElementById("targetInput").focus();
     });
 
@@ -3343,6 +3362,8 @@ assign initialcost =
       document.getElementById("result-section").classList.add("hidden");
       document.getElementById("locate-section").classList.remove("hidden");
       document.getElementById("search-section").classList.remove("hidden");
+      document.getElementById("coordPanel").classList.add("hidden");
+      aggiornaPulsanti();
       mostraElenco();
     });
 
