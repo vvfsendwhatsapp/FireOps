@@ -581,7 +581,7 @@ body.map-open {
       background: #000;
       border: 1px solid var(--red);
 }
-.pg-localizzati .map-legend i.rombo { border-radius: 0; width: 9px; height: 9px; transform: rotate(45deg); background: #8a94a3; border: 2px solid #ffd700; margin: 0 2px; }
+.pg-localizzati .map-legend i.rombo { border-radius: 0; width: 9px; height: 9px; transform: rotate(45deg); background: #8a94a3; border: 2px solid #ffd700; margin: 0 3px; box-shadow: 0 0 0 1px #000; }
 .pg-localizzati .map-legend i.rombo.int { border-color: #e84747; }
 .pg-localizzati .map-legend i.rombo.sel { border-color: #000; }
 .pg-localizzati .map-legend i.dot-user {
@@ -1540,8 +1540,12 @@ body.map-open {
     // Comandi: sempre un rombo grigio; il bordo dice a cosa si riferisce (giallo = qui, rosso = intervento, chiaro = scelto)
     const BORDO_CMD = {qui: "#ffd700", int: "#e84747", sel: "#000000"};
     function comandoIcon(tipo) {
-      const svg = '<svg width="26" height="26" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">'
-        + '<rect x="3" y="3" width="18" height="18" transform="rotate(45 12 12)" fill="#8a94a3" stroke="' + (BORDO_CMD[tipo] || BORDO_CMD.qui) + '" stroke-width="2.5"/>'
+      const col = BORDO_CMD[tipo] || BORDO_CMD.qui;
+      // rombo disegnato come poligono (niente rotazione = bordi netti), con un filo nero fuori dal bordo colorato
+      const pt = "13,2.5 23.5,13 13,23.5 2.5,13";
+      const svg = '<svg width="26" height="26" viewBox="0 0 26 26" xmlns="http://www.w3.org/2000/svg" shape-rendering="geometricPrecision">'
+        + '<polygon points="' + pt + '" fill="none" stroke="#000" stroke-width="5.5" stroke-linejoin="miter"/>'
+        + '<polygon points="' + pt + '" fill="#8a94a3" stroke="' + col + '" stroke-width="3.5" stroke-linejoin="miter"/>'
         + '</svg>';
       return L.divIcon({className: "", html: svg, iconSize: [26, 26], iconAnchor: [13, 13], popupAnchor: [0, -10]});
     }
