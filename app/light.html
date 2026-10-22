@@ -7,16 +7,17 @@
   <title>FireOps VVF Lite</title>
   <link rel="icon" type="image/png" href="https://vvfsendwhatsapp.github.io/FireOps/images/logo.png">
   <link rel="apple-touch-icon" href="https://vvfsendwhatsapp.github.io/FireOps/images/logo.png">
-  <meta name="theme-color" content="#10141a">
+  <meta name="theme-color" content="#0e3f66">
   <link rel="manifest" href="manifest-light.webmanifest">
   <script>if ("serviceWorker" in navigator) window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });</script>
   <script>window.FIREOPS_LIGHT = true;</script>
   <!-- versione.js si scarica sempre fresco e decide la versione di tutti gli altri file -->
   <script>document.write('<script src="js/versione.js?t=' + Date.now() + '"><\/script>');</script>
   <script>document.write('<link rel="stylesheet" href="css/fireops-app.css?v=' + (window.FIREOPS_VERSIONE || Date.now()) + '">');</script>
-  <style>/* FireOps VVF Lite: riga azzurra in alto per distinguerla dall'app completa */
-    .foh { border-top: 5px solid #29a3e6; }
-    .foh-t h1 { color: #4db8f0; }</style>
+  <style>/* FireOps VVF Lite: intestazione azzurra per distinguerla dall'app completa */
+    .foh { background: #0e3f66 !important; border-top: 0 !important; border-bottom: 4px solid #29a3e6 !important; }
+    .foh-t h1 { color: #fff !important; }
+    .foh-t p, .foh-pos { color: #cfe8fb !important; }</style>
 </head>
 
 <body>
