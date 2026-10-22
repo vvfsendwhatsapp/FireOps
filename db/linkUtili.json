@@ -1,14 +1,13 @@
 [
   { "Categoria": "Mappe", "Sottocategoria": "SAR", "Nome": "GeoPortale ArcGis", "URL": "https://vvfsctas.maps.arcgis.com/" },
   { "Categoria": "Mappe", "Sottocategoria": "SAR", "Nome": "Antenne LTE", "URL": "https://lteitaly.it/it/" },
-  { "Categoria": "Mappe", "Sottocategoria": "SAR", "Nome": "BR-OpenStreetMap", "URL": "https://brouter.de/brouter-web/#map=9/{{LAT}}/{{LNG}}/Standard&lonlats={{LAT}},{{LNG}}" },
-  { "Categoria": "Mappe", "Sottocategoria": "SAR", "Nome": "BR-OpenTopoMap", "URL": "https://brouter.de/brouter-web/#map=9/{{LAT}}/{{LNG}}/OpenTopoMap&lonlats={{LAT}},{{LNG}}" },
-  { "Categoria": "Mappe", "Sottocategoria": "SAR", "Nome": "FatMap 3D", "URL": "https://fatmap.com/adventure-studio/@{{LAT}},{{LNG}},200000,-90,0,0,topoThunderforest" },
+  { "Categoria": "Mappe", "Sottocategoria": "SAR", "Nome": "BR-OpenStreetMap", "URL": "https://brouter.de/brouter-web/#map=9/{{LAT}}/{{LNG}}/Standard&lonlats={{LNG}},{{LAT}}" },
+  { "Categoria": "Mappe", "Sottocategoria": "SAR", "Nome": "BR-OpenTopoMap", "URL": "https://brouter.de/brouter-web/#map=9/{{LAT}}/{{LNG}}/OpenTopoMap&lonlats={{LNG}},{{LAT}}" },
   { "Categoria": "Mappe", "Sottocategoria": "SAR", "Nome": "GeoLoc", "URL": "https://sso.vigilfuoco.it/cas/login?service=https%3A%2F%2Fgeoloc.vvf.to.it%2Fsso.php" },
   { "Categoria": "Mappe", "Sottocategoria": "SAR", "Nome": "Google MAPS", "URL": "https://www.google.com/maps/@?api=1&map_action=map&center={{LAT}},{{LNG}}&zoom=9" },
   { "Categoria": "Mappe", "Sottocategoria": "SAR", "Nome": "HERE WeGo - Traffico e Chiusure", "URL": "https://wego.here.com/traffic/explore?map={{LAT}},{{LNG}},9,traffic" },
   { "Categoria": "Mappe", "Sottocategoria": "SAR", "Nome": "Locus Map Web", "URL": "https://web.locusmap.app/it/plan?lat={{LAT}}&lng={{LNG}}&z=9&map=hikeBike" },
-  { "Categoria": "Mappe", "Sottocategoria": "SAR", "Nome": "OpenStreetMap Umanitario", "URL": "https://www.openstreetmap.org/#map=9/{{LAT}}/{{LNG}}layers=H" },
+  { "Categoria": "Mappe", "Sottocategoria": "SAR", "Nome": "OpenStreetMap Umanitario", "URL": "https://www.openstreetmap.org/#map=9/{{LAT}}/{{LNG}}&layers=H" },
   { "Categoria": "Mappe", "Sottocategoria": "SAR", "Nome": "Strava", "URL": "https://www.strava.com/heatmap#9.00/{{LNG}}/{{LAT}}/hot/all" },
   { "Categoria": "Mappe", "Sottocategoria": "SAR", "Nome": "Windy - Meteo", "URL": "https://www.windy.com/?{{LAT}},{{LNG}},9" },
   { "Categoria": "Mappe", "Sottocategoria": "SAR", "Nome": "Tratte Autostradali", "URL": "http://www.automap.it" },
@@ -43,11 +42,11 @@
   { "Categoria": "Sala Operativa", "Sottocategoria": "SO Demo", "Nome": "SOVVF DEMO", "URL": "https://sso.vigilfuoco.it/cas-test/login?service=https://sovvf-test.dipvvf.it/auth" },
   { "Categoria": "Sala Operativa", "Sottocategoria": "SO Demo", "Nome": "SUPREME BLU DEMO", "URL": "http://supreme-demo.dipvvf.it" },
 
-  { "Categoria": "Sala Operativa", "Sottocategoria": "NBCR", "Nome": "ARERA GAS", "URL": "https://www.arera.it/it/index.htm" },
+  { "Categoria": "Sala Operativa", "Sottocategoria": "NBCR", "Nome": "ARERA GAS", "URL": "https://www.arera.it/" },
   { "Categoria": "Sala Operativa", "Sottocategoria": "NBCR", "Nome": "Centro Nazionale Sostanze Chimiche", "URL": "https://cnsc.iss.it/?page_id=399" },
   { "Categoria": "Sala Operativa", "Sottocategoria": "NBCR", "Nome": "Database delle Schede ERIC", "URL": "https://www.ericards.net/psp/ericards.psp_search?p_lang=6" },
   { "Categoria": "Sala Operativa", "Sottocategoria": "NBCR", "Nome": "FederChimica", "URL": "https://setemergenze.federchimica.it" },
-  { "Categoria": "Sala Operativa", "Sottocategoria": "NBCR", "Nome": "ilo.org - Schede Sostanze Pericolose", "URL": "http://ilo.org/dyn/icsc/showcard.listcards3?p_lang=it" },
+  { "Categoria": "Sala Operativa", "Sottocategoria": "NBCR", "Nome": "ilo.org - Schede Sostanze Pericolose", "URL": "https://chemicalsafety.ilo.org/dyn/icsc/showcard.listcards3?p_lang=it" },
   { "Categoria": "Sala Operativa", "Sottocategoria": "NBCR", "Nome": "Informazioni sulle sostanze chimiche UE", "URL": "https://echa.europa.eu/it/information-on-chemicals" },
   { "Categoria": "Sala Operativa", "Sottocategoria": "NBCR", "Nome": "P.E. Rischio Incidente Rilevante", "URL": "https://www.rischioindustriale.isprambiente.gov.it/seveso-query-105/Default.php" },
   { "Categoria": "Sala Operativa", "Sottocategoria": "NBCR", "Nome": "SIGEM-SIMMA", "URL": "http://intranet.dipvvf.it/Sigemweb/Ricerca/Ricerca.aspx" },
@@ -57,7 +56,7 @@
   { "Categoria": "Sala Operativa", "Sottocategoria": "Incidenti", "Nome": "Schede di Soccorso EURONCAP", "URL": "https://rescue.euroncap.com/" },
   { "Categoria": "Sala Operativa", "Sottocategoria": "Incidenti", "Nome": "RescueSheet.info", "URL": "http://www.rescuesheet.info/seite_3.html" },
   { "Categoria": "Sala Operativa", "Sottocategoria": "Incidenti", "Nome": "Database1", "URL": "https://www.tcs.ch/it/test-consigli/consigli/tutti-i-temi/schede-soccorso.php" },
-  { "Categoria": "Sala Operativa", "Sottocategoria": "Incidenti", "Nome": "Database2", "URL": "https://www.vdik.de/en/topics/safety-and-traffic/rescue-data-sheets/?utm_source=chatgpt.com" },
+  { "Categoria": "Sala Operativa", "Sottocategoria": "Incidenti", "Nome": "Database2", "URL": "https://www.vdik.de/en/topics/safety-and-traffic/rescue-data-sheets/" },
 
   { "Categoria": "Funzioni Intranet DipVVF", "Sottocategoria": "Varie", "Nome": "Intranet DipVVF.it", "URL": "http://intranet.dipvvf.it" },
   { "Categoria": "Funzioni Intranet DipVVF", "Sottocategoria": "Varie", "Nome": "Gestione Password", "URL": "http://accounts.dipvvf.it" },
@@ -74,7 +73,7 @@
   
   { "Categoria": "Funzioni Intranet DipVVF", "Sottocategoria": "Mail", "Nome": "Vigili@", "URL": "http://protocollo.dipvvf.it" },
   { "Categoria": "Funzioni Intranet DipVVF", "Sottocategoria": "Mail", "Nome": "Webmail Vigilfuoco", "URL": "https://webmail.vigilfuoco.it" },
-  { "Categoria": "Funzioni Intranet DipVVF", "Sottocategoria": "Mail", "Nome": "Legalmail Vigilfuoco (PEC)", "URL": "https://webmail.cert.vigilfuoco.it/webmail/?ts=1690996532#/login" },
+  { "Categoria": "Funzioni Intranet DipVVF", "Sottocategoria": "Mail", "Nome": "Legalmail Vigilfuoco (PEC)", "URL": "https://webmail.cert.vigilfuoco.it/webmail/#/login" },
   
   { "Categoria": "Comunicazione in Emergenza", "Sottocategoria": "Varie", "Nome": "VigilfuocoTV", "URL": "http://www.vigilfuoco.tv" },
   { "Categoria": "Comunicazione in Emergenza", "Sottocategoria": "Varie", "Nome": "MediavigilfuocoTV", "URL": "http://media.vigilfuoco.tv" },
@@ -85,5 +84,5 @@
   { "Categoria": "Varie", "Sottocategoria": "", "Nome": "Fogli di Google", "URL": "https://docs.google.com/spreadsheets/u/0/" },
   { "Categoria": "Varie", "Sottocategoria": "", "Nome": "Documenti di Google", "URL": "https://docs.google.com/document/u/0/" },
   { "Categoria": "Varie", "Sottocategoria": "", "Nome": "Google Traduttore", "URL": "https://translate.google.it/?hl=it&tab=rT" },
-  { "Categoria": "Varie", "Sottocategoria": "", "Nome": "Telegram", "URL": "https://web.telegram.org/z" }
+  { "Categoria": "Varie", "Sottocategoria": "", "Nome": "Telegram", "URL": "https://web.telegram.org/a/" }
 ]
