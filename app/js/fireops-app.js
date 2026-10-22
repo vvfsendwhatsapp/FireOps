@@ -154,15 +154,23 @@
     const d = cifre(raw);
     const ok = d.length > 0;
     const n = nazionale(d);
-    const set = (id, href) => {
+    const set = (id, href, attivo) => {
       const a = $(id);
-      a.href = ok ? href : "javascript:void(0)";
-      a.classList.toggle("off", !ok);
+      const on = ok && attivo !== false;
+      a.href = on ? href : "javascript:void(0)";
+      a.classList.toggle("off", !on);
     };
+    // WhatsApp e Telegram hanno senso solo per i cellulari (3xx) o per numeri esteri; i fissi (0...) restano spenti
+    const estero = /^\s*(\+|00)/.test(raw) && !/^\s*(\+|00)\s*39/.test(raw);
+    const cellulare = /^3\d{8,9}$/.test(n) || (estero && d.length >= 8);
+    const num = estero ? d.replace(/^00/, "") : "39" + n;
     set("fohCall", telHref(d));
     set("fohCall0", "tel:" + raw.replace(/[^0-9+]/g, ""));
-    set("fohWa", "https://wa.me/39" + n);
-    set("fohTg", "https://t.me/+39" + n);
+    set("fohWa", "https://wa.me/" + num, cellulare);
+    set("fohTg", "https://t.me/+" + num, cellulare);
+    const nota = ok && !cellulare ? "Solo per cellulari: un numero fisso non ha WhatsApp o Telegram" : "";
+    $("fohWa").title = nota || "WhatsApp";
+    $("fohTg").title = nota || "Telegram";
   }
 
   $("fohInput").addEventListener("input", aggiornaDial);
