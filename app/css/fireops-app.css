@@ -113,6 +113,9 @@ body {
 
 .foh-pfx i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
 .foh-pfx[aria-pressed="true"] { background: var(--yellow); border-color: var(--yellow); color: #000; }
+/* stato in chiaro: ON (prefisso 4146 attivo) / OFF */
+.foh-pfx::after { content: "OFF"; font-size: 10px; font-weight: 800; letter-spacing: .3px; padding: 2px 6px; border-radius: 9px; background: var(--line); color: var(--text-dim); }
+.foh-pfx[aria-pressed="true"]::after { content: "ON"; background: #000; color: var(--yellow); }
 
 .foh-dial { display: flex; gap: 6px; margin-top: 10px; }
 
@@ -236,15 +239,15 @@ body {
 
 .foh-pos-ref {
   flex: none;
-  width: 30px;
-  height: 30px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: none;
-  border: 1px solid var(--line);
-  color: var(--text-dim);
+  background: var(--yellow);
+  border: 1px solid var(--yellow);
+  color: #000;
   cursor: pointer;
 }
 
