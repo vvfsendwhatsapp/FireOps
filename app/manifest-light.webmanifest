@@ -1,7 +1,7 @@
 {
-  "name": "FireOps Light",
-  "short_name": "FireOps Light",
-  "description": "FireOps Light - numeri e percorsi",
+  "name": "FireOps VVF Lite",
+  "short_name": "FireOps VVF Lite",
+  "description": "FireOps VVF Lite - numeri e percorsi",
   "start_url": "./light.html",
   "scope": "./",
   "display": "standalone",

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">FireOps Light</string>
-    <string name="apri_localizzati">FireOps Light</string>
+    <string name="app_name">FireOps VVF Lite</string>
+    <string name="apri_localizzati">FireOps VVF Lite</string>
     <string name="pagina_base" translatable="false">https://vvfsendwhatsapp.github.io/FireOps/app/light.html</string>
 </resources>

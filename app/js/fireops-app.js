@@ -371,7 +371,7 @@
 
   // Titolo sempre nella forma "FireOps VVF - <sezione>" (home: "App")
   function impostaTitolo(titolo, sotto) {
-    const t = (LIGHT ? "FireOps Light - " : "FireOps VVF - ") + titolo;
+    const t = LIGHT ? "FireOps VVF Lite" : "FireOps VVF - " + titolo;
     $("fohTitolo").textContent = t;
     $("fohTitolo").title = t;
     $("fohSotto").textContent = sotto || "";
