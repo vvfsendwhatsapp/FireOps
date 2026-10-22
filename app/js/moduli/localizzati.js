@@ -528,7 +528,7 @@ body.map-open {
 .pg-localizzati .leaflet-control-attribution {
       font-size: 10px !important;
 }
-.pg-localizzati .map-expand-btn, .pg-localizzati .map-center-btn, .pg-localizzati .map-target-btn {
+.pg-localizzati .map-expand-btn, .pg-localizzati .map-center-btn, .pg-localizzati .map-target-btn, .pg-localizzati .map-pause-btn {
       position: absolute;
       top: 10px;
       z-index: 1200;
@@ -553,6 +553,9 @@ body.map-open {
 .pg-localizzati .map-target-btn {
       right: 94px;
 }
+.pg-localizzati .map-pause-btn { right: 136px; font-size: 15px; line-height: 1; }
+.pg-localizzati .map-wrap:has(.map-target-btn.hidden) .map-pause-btn { right: 94px; }
+.pg-localizzati .map-pause-btn.in-pausa { background: #ffd700; color: #10141a; border-color: #ffd700; }
 .pg-localizzati .map-expand-btn:active, .pg-localizzati .map-center-btn:active, .pg-localizzati .map-target-btn:active {
       background: var(--panel-2);
 }
@@ -1079,6 +1082,8 @@ body.map-open {
               <path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
             </svg>
           </button>
+          <button type="button" id="mapPauseBtn" class="map-pause-btn" title="Metti in pausa il rilevamento della posizione"
+            aria-label="Pausa rilevamento posizione">⏸</button>
           <button type="button" id="mapExpandBtn" class="map-expand-btn" title="Ingrandisci mappa"
             aria-label="Ingrandisci mappa"></button>
         </div>
@@ -1087,6 +1092,7 @@ body.map-open {
           <span id="legInt" class="hidden"><i class="rombo int"></i>Comando INT</span>
           <span id="legSel" class="hidden"><i class="rombo sel"></i>Comando sel</span>
           <span id="legendUser" class="hidden"><i class="dot-user"></i>La tua posizione</span>
+          <span id="legendPausa" class="hidden">⏸ GPS in pausa</span>
           <span id="legendTarget" class="hidden"><i class="dot-target"></i>Target</span>
         </div>
       </div>
@@ -1712,6 +1718,16 @@ body.map-open {
 
     const ZOOM_CIVICI = 19;   // massimo della mappa: si leggono i numeri civici
 
+    document.getElementById("mapPauseBtn").addEventListener("click", function () {
+      gpsInPausa = !gpsInPausa;
+      if (gpsInPausa) stopGpsTracking(); else startGpsTracking();
+      this.textContent = gpsInPausa ? "▶" : "⏸";
+      this.classList.toggle("in-pausa", gpsInPausa);
+      this.title = gpsInPausa ? "Riprendi il rilevamento della posizione" : "Metti in pausa il rilevamento della posizione";
+      this.setAttribute("aria-label", this.title);
+      document.getElementById("legendPausa").classList.toggle("hidden", !gpsInPausa);
+    });
+
     // Mirino: centra sulla mia posizione (senza GPS, sul Comando)
     document.getElementById("mapCenterBtn").addEventListener("click", function () {
       if (!map || !currentRecord) return;
@@ -2101,8 +2117,10 @@ body.map-open {
       showResult(record, dist, null, "manual");
     }
 
+    let gpsInPausa = false;   // il rilevamento resta attivo finché l'app è aperta, salvo pausa scelta
+
     function startGpsTracking() {
-      if (!navigator.geolocation) return;
+      if (!navigator.geolocation || gpsInPausa) return;
       if (watchId !== null) navigator.geolocation.clearWatch(watchId);
       if (trackingTimeoutId !== null) clearTimeout(trackingTimeoutId);
 
@@ -3006,6 +3024,10 @@ assign initialcost =
     // Il logo nell'intestazione azzera la pagina; la casetta porta alla home
     function resetApp() {
       clearRoute();
+      gpsInPausa = false;
+      const bp = document.getElementById("mapPauseBtn");
+      bp.textContent = "⏸"; bp.classList.remove("in-pausa");
+      document.getElementById("legendPausa").classList.add("hidden");
       if (watchId !== null) {navigator.geolocation.clearWatch(watchId); watchId = null;}
       if (trackingTimeoutId !== null) {clearTimeout(trackingTimeoutId); trackingTimeoutId = null;}
       currentRecord = null;
@@ -3038,7 +3060,7 @@ assign initialcost =
     FireOps.onLogo("localizzati", resetApp);
     FireOps.onShow("localizzati", function () {
       if (map) setTimeout(function () {map.invalidateSize();}, 60);
-      if (watchId === null && userPos && !document.getElementById("result-section").classList.contains("hidden")) startGpsTracking();
+      if (watchId === null && !gpsInPausa && userPos && !document.getElementById("result-section").classList.contains("hidden")) startGpsTracking();
       // arrivo dal comando nell'intestazione: localizza subito se non c'è già un risultato
       if (FireOps.consumaAutoLocalizzati() &&
           document.getElementById("result-section").classList.contains("hidden")) {
