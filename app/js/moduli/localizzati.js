@@ -553,6 +553,10 @@ body.map-open {
 .pg-localizzati .map-target-btn {
       right: 94px;
 }
+.pg-localizzati .map-nord { position: absolute; left: 10px; top: 118px; z-index: 1200; width: 34px; height: 46px; display: flex; flex-direction: column; align-items: center; pointer-events: none; }
+.pg-localizzati .map-nord.hidden { display: none; }
+.pg-localizzati .map-nord svg { background: rgba(16,20,26,.72); border-radius: 50%; }
+.pg-localizzati .map-nord b { font-size: 11px; line-height: 1; color: #10141a; text-shadow: 0 0 3px #fff, 0 0 3px #fff; margin-top: 1px; }
 .pg-localizzati .map-mode-btn { right: 178px; font-size: 16px; line-height: 1; }
 .pg-localizzati .map-wrap:has(.map-target-btn.hidden) .map-mode-btn { right: 136px; }
 .pg-localizzati .map-mode-btn.freccia { background: #ffd700; color: #10141a; border-color: #ffd700; }
@@ -1088,6 +1092,7 @@ body.map-open {
           </button>
           <button type="button" id="mapPauseBtn" class="map-pause-btn" title="Metti in pausa il rilevamento della posizione"
             aria-label="Pausa rilevamento posizione">⏸</button>
+          <div id="mapNord" class="map-nord hidden" title="Nord" aria-label="Indicatore del nord"><svg viewBox="0 0 34 34" width="34" height="34"><g id="mapNordFreccia"><polygon points="17,3 23,18 17,15 11,18" fill="#e84747" stroke="#10141a" stroke-width="1.2" stroke-linejoin="round"/><polygon points="17,31 23,18 17,15 11,18" fill="#e6e9ee" stroke="#10141a" stroke-width="1.2" stroke-linejoin="round"/></g></svg><b>N</b></div>
           <button type="button" id="mapModeBtn" class="map-mode-btn" title="Mappa fissa: tocca per Freccia fissa"
             aria-label="Modalità mappa">🗺</button>
           <button type="button" id="mapExpandBtn" class="map-expand-btn" title="Ingrandisci mappa"
@@ -1554,6 +1559,10 @@ body.map-open {
           pane.style.transformOrigin = "";
         }
       }
+      const nord = document.getElementById("mapNord");
+      nord.classList.toggle("hidden", modoMappa !== "freccia");
+      document.getElementById("mapNordFreccia").style.transform = "rotate(" + mapRot + "deg)";
+      document.getElementById("mapNordFreccia").style.transformOrigin = "17px 17px";
       aggiornaFreccia();
     }
 
@@ -1759,6 +1768,7 @@ body.map-open {
       }
 
       if (!fit) return;   // aggiornamento da tracking: non toccare zoom/pan dell'utente
+      if (modoMappa === "freccia" && pos) return;   // freccia fissa: la mappa segue la mia posizione, niente adattamento
 
       map.invalidateSize();
       if (boundsArray.length > 1) {
