@@ -583,7 +583,7 @@ body.map-open {
 }
 .pg-localizzati .map-legend i.rombo { border-radius: 0; width: 9px; height: 9px; transform: rotate(45deg); background: #8a94a3; border: 2px solid #ffd700; margin: 0 2px; }
 .pg-localizzati .map-legend i.rombo.int { border-color: #e84747; }
-.pg-localizzati .map-legend i.rombo.sel { border-color: #e6e9ee; }
+.pg-localizzati .map-legend i.rombo.sel { border-color: #000; }
 .pg-localizzati .map-legend i.dot-user {
       background: var(--red);
 }
@@ -1538,7 +1538,7 @@ body.map-open {
     document.addEventListener("click", startCompass, true);
 
     // Comandi: sempre un rombo grigio; il bordo dice a cosa si riferisce (giallo = qui, rosso = intervento, chiaro = scelto)
-    const BORDO_CMD = {qui: "#ffd700", int: "#e84747", sel: "#e6e9ee"};
+    const BORDO_CMD = {qui: "#ffd700", int: "#e84747", sel: "#000000"};
     function comandoIcon(tipo) {
       const svg = '<svg width="26" height="26" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">'
         + '<rect x="3" y="3" width="18" height="18" transform="rotate(45 12 12)" fill="#8a94a3" stroke="' + (BORDO_CMD[tipo] || BORDO_CMD.qui) + '" stroke-width="2.5"/>'
