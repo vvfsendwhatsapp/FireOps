@@ -119,6 +119,14 @@
     personale: {nome: "Area personale", sotto: "I tuoi dati, solo su questo telefono"}
   };
 
+  // FireOps Light (light.html): solo il compositore dei numeri e Localizzati con il pianificatore del percorso
+  const LIGHT = !!window.FIREOPS_LIGHT;
+  if (LIGHT) {
+    Object.keys(MODULI).forEach(k => { if (k !== "localizzati") delete MODULI[k]; });
+    Object.keys(HUBS).forEach(k => delete HUBS[k]);
+    for (let i = FUNZIONI.length - 1; i >= 0; i--) if (FUNZIONI[i].id !== "localizzati") FUNZIONI.splice(i, 1);
+  }
+
   const $ = id => document.getElementById(id);
   const esc = s => String(s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
 
@@ -363,7 +371,7 @@
 
   // Titolo sempre nella forma "FireOps VVF - <sezione>" (home: "App")
   function impostaTitolo(titolo, sotto) {
-    const t = "FireOps VVF - " + titolo;
+    const t = (LIGHT ? "FireOps Light - " : "FireOps VVF - ") + titolo;
     $("fohTitolo").textContent = t;
     $("fohTitolo").title = t;
     $("fohSotto").textContent = sotto || "";
@@ -444,6 +452,7 @@
   // Navigazione con #/modulo: il tasto indietro del telefono riporta alla home
   function daHash() {
     const id = (location.hash.match(/^#\/([\w-]+)/) || [])[1] || null;
+    if (LIGHT && id !== "localizzati") { location.replace(location.pathname + location.search + "#/localizzati"); return; }
     mostra(id);
   }
   window.addEventListener("hashchange", daHash);
@@ -754,6 +763,7 @@
     }
   } catch (e) { /* ignora */ }
 
+  if (LIGHT) { ['fohInfo', 'fohHome'].forEach(i => { const e = $(i); if (e) e.style.display = 'none'; }); }
   daHash();
   localizza();                  // autoposizionamento all'apertura
 })();

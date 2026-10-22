@@ -1,0 +1,35 @@
+{
+  "name": "FireOps Light",
+  "short_name": "FireOps Light",
+  "description": "FireOps Light - numeri e percorsi",
+  "start_url": "./light.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#10141a",
+  "theme_color": "#10141a",
+  "lang": "it",
+  "icons": [
+    {
+      "src": "../images/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "../images/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "share_target": {
+    "action": "./light.html",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
+}
