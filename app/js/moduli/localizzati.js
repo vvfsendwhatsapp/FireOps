@@ -804,6 +804,7 @@ body.map-open {
       gap: 6px 12px;
       min-width: 0;
 }
+.pg-localizzati .cmd-tag { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--red, #e84747); margin-bottom: 2px; }
 .pg-localizzati .cmd-dove { margin: 8px 0; border: 1px solid var(--line, #2a323d); border-radius: 12px; background: var(--panel-2, #1d242e); }
 .pg-localizzati .cmd-dove > summary { list-style: none; cursor: pointer; min-height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; font-size: 14px; color: var(--muted, #9aa5b4); }
 .pg-localizzati .cmd-dove > summary::-webkit-details-marker { display: none; }
@@ -1143,6 +1144,7 @@ body.map-open {
       <div class="panel cmd-panel">
         <div class="result-top">
           <div class="result-name-wrap">
+            <div class="cmd-tag" id="rCmdTag"></div>
             <div class="name" id="rComando">—</div>
           </div>
           <div class="dist" id="rDist"></div>
@@ -1157,19 +1159,19 @@ body.map-open {
         <div class="result-sub" id="rSub"></div>
         <div class="method-badge" id="rMethod"></div>
         <div class="data-row">
-          <div class="label">Canale radio Comando</div>
+          <div class="label" id="lblRadioC">Canale radio Comando</div>
           <div class="value"><span id="rRadioComando">—</span></div>
         </div>
         <div class="data-row">
-          <div class="label">Canale radio Direzione reg.</div>
+          <div class="label" id="lblRadioD">Canale radio Direzione reg.</div>
           <div class="value"><span id="rRadioDirezione">—</span></div>
         </div>
         <div class="data-row">
-          <div class="label">SO Comando</div>
+          <div class="label" id="lblSoC">SO Comando</div>
           <div class="value" id="rTelComandoWrap">—</div>
         </div>
         <div class="data-row">
-          <div class="label">SO Direzione reg.</div>
+          <div class="label" id="lblSoD">SO Direzione reg.</div>
           <div class="value" id="rTelDirezioneWrap">—</div>
         </div>
         <div class="cmd-conf hidden" id="confinantiPanel">
@@ -1957,6 +1959,13 @@ body.map-open {
         gpsPanel.classList.add("hidden");
       }
       document.getElementById("rComando").textContent = record.c;
+      // distingue il comando dell'intervento (target scelto) da quello della propria posizione (in alto)
+      const sfx = targetPos ? " intervento" : "";
+      document.getElementById("rCmdTag").textContent = (record.eDirezione ? "Direzione" : "Comando") + (targetPos ? " intervento" : " della mia posizione");
+      document.getElementById("lblRadioC").textContent = "Canale radio Comando" + sfx;
+      document.getElementById("lblRadioD").textContent = "Canale radio Direzione" + (targetPos ? " intervento" : " reg.");
+      document.getElementById("lblSoC").textContent = "SO Comando" + sfx;
+      document.getElementById("lblSoD").textContent = "SO Direzione" + (targetPos ? " intervento" : " reg.");
       document.getElementById("rDist").textContent = (distanceKm != null) ? fmtDist(distanceKm) : "";
       document.getElementById("rSub").textContent = record.rg + " · Direzione regionale " + record.dz;
 

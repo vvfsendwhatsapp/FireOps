@@ -672,10 +672,10 @@
       mostraScelta("Scegli il comando…");
       $("fohPosSel").title = "Comando scelto a mano. Tocca ⟳ per riprovare con la posizione.";
     } else {
-      statoPos("ok", "Comando <b>" + esc(c.c) + "</b>" + (p.metodo === "vicinanza" ? " (stima)" : ""));
+      statoPos("ok", "Comando qui <b>" + esc(c.c) + "</b>" + (p.metodo === "vicinanza" ? " (stima)" : ""));
       $("fohPosCmd").title = p.metodo === "vicinanza"
         ? "Provincia non verificata via rete: comando con sede più vicina. Tocca per i dettagli."
-        : "Comando competente per la tua posizione. Tocca per i dettagli.";
+        : "Comando competente per la TUA posizione (non per l'intervento). Tocca per i dettagli.";
     }
     const ch = $("fohPosCh");
     ch.hidden = !c.rc;
