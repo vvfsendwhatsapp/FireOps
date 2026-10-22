@@ -1,6 +1,6 @@
 {
-  "name": "FireOps VVF",
-  "short_name": "FireOps",
+  "name": "FireOps VVF Pro",
+  "short_name": "FireOps Pro",
   "description": "FireOps VVF - App per la sala operativa",
   "start_url": "./user.html",
   "scope": "./",

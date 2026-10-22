@@ -419,7 +419,7 @@
 
   // Titolo sempre nella forma "FireOps VVF - <sezione>" (home: "App")
   function impostaTitolo(titolo, sotto) {
-    const t = LIGHT ? "FireOps VVF Lite" : "FireOps VVF - " + titolo;
+    const t = LIGHT ? "FireOps VVF Lite" : (titolo === "Home" ? "FireOps VVF Pro" : "FireOps VVF Pro - " + titolo);
     $("fohTitolo").textContent = t;
     $("fohTitolo").title = t;
     $("fohSotto").textContent = sotto || "";
@@ -450,7 +450,7 @@
       $("view-mod").hidden = true;
       $("view-home").hidden = false;
       $("fohHome").hidden = true;
-      impostaTitolo("App", "Sala operativa · tasti funzione");
+      impostaTitolo("Home", "Sala operativa · tasti funzione");
       window.scrollTo(0, 0);
       return;
     }
