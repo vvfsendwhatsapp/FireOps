@@ -993,6 +993,7 @@ body.map-open {
           <path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="white" stroke-width="2" stroke-linecap="round" />
         </svg>
         Trova la mia posizione
+        <span class="chev" aria-hidden="true">▾</span>
       </button>
       <button class="locate-btn act3 cmd" id="toggleSearchBtn">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5L21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -1238,6 +1239,7 @@ body.map-open {
     await assicuraLeaflet();
 
     // ---- Elenco comandi: condiviso dall'app (db/comandi.json, caricato una volta sola) ----
+    let azioneAttiva = null;   // quale dei tre pulsanti ha prodotto il risultato: coord, gps, cerca
     let COMANDI = [];
     const comandiPronti = FireOps.comandi().then(d => { COMANDI = d; return true; }).catch(() => false);
 
@@ -1880,9 +1882,12 @@ body.map-open {
 
     function showResult(record, distanceKm, nearbyList, method) {
       currentRecord = record;
-      document.getElementById("locate-section").classList.add("hidden");
+      if (!azioneAttiva) azioneAttiva = "gps";
+      document.getElementById("locate-section").classList.remove("hidden");
       document.getElementById("search-section").classList.add("hidden");
+      document.getElementById("coordPanel").classList.add("hidden");
       document.getElementById("result-section").classList.remove("hidden");
+      if (window.__aggiornaPulsantiLocalizzati) window.__aggiornaPulsantiLocalizzati();
       document.getElementById("navToComando").textContent = record.eDirezione ? "🧭 Naviga alla direzione regionale" : "🧭 Naviga al comando VVF";
 
       const targetPanel = document.getElementById("targetInfoPanel");
@@ -2915,6 +2920,7 @@ assign initialcost =
       document.getElementById("result-section").classList.add("hidden");
       document.getElementById("search-section").classList.add("hidden");
       document.getElementById("coordPanel").classList.add("hidden");
+      azioneAttiva = null;
       document.getElementById("locate-section").classList.remove("hidden");
       if (window.__aggiornaPulsantiLocalizzati) window.__aggiornaPulsantiLocalizzati();
       window.scrollTo({top: 0, behavior: "smooth"});
@@ -3158,6 +3164,7 @@ assign initialcost =
     }
 
     async function processTargetInput(inputVal) {
+      azioneAttiva = "coord";
       const statusEl = document.getElementById("statusMsg");
       statusEl.classList.remove("hidden", "error");
 
@@ -3286,6 +3293,8 @@ assign initialcost =
     });
 
     document.getElementById("locateBtn").addEventListener("click", function () {
+      if (!document.getElementById("result-section").classList.contains("hidden")) { chiudiRisultato(); return; }
+      azioneAttiva = "gps";
       const btn = this;
       const statusEl = document.getElementById("statusMsg");
       statusEl.classList.remove("hidden", "error");
@@ -3331,16 +3340,37 @@ assign initialcost =
 
     /* i tre pulsanti: aprendone uno (rosso o grigio) gli altri si chiudono e spariscono; la freccia sul pulsante aperto lo richiude */
     function aggiornaPulsanti() {
-      const coordAperto = !document.getElementById("coordPanel").classList.contains("hidden");
-      const cercaAperto = !document.getElementById("search-section").classList.contains("hidden");
-      document.getElementById("coordBtn").classList.toggle("on", coordAperto);
-      document.getElementById("toggleSearchBtn").classList.toggle("on", cercaAperto);
-      document.getElementById("coordBtn").classList.toggle("hidden", cercaAperto);
-      document.getElementById("toggleSearchBtn").classList.toggle("hidden", coordAperto);
-      document.getElementById("locateBtn").classList.toggle("hidden", coordAperto || cercaAperto);
+      const $ = id => document.getElementById(id);
+      const risultato = !$("result-section").classList.contains("hidden");
+      const coordAperto = !$("coordPanel").classList.contains("hidden");
+      const cercaAperto = !$("search-section").classList.contains("hidden");
+      let attivo = null;                                   // il pulsante aperto: gli altri spariscono
+      if (risultato) attivo = azioneAttiva || "gps";
+      else if (coordAperto) attivo = "coord";
+      else if (cercaAperto) attivo = "cerca";
+      const mappa = {coord: "coordBtn", gps: "locateBtn", cerca: "toggleSearchBtn"};
+      Object.keys(mappa).forEach(k => {
+        $(mappa[k]).classList.toggle("on", attivo === k);
+        $(mappa[k]).classList.toggle("hidden", !!attivo && attivo !== k);
+      });
+    }
+    /* richiude il risultato (o il riquadro) e riporta i tre pulsanti */
+    function chiudiRisultato() {
+      if (watchId !== null) {navigator.geolocation.clearWatch(watchId); watchId = null;}
+      if (trackingTimeoutId !== null) {clearTimeout(trackingTimeoutId); trackingTimeoutId = null;}
+      clearRoute();
+      azioneAttiva = null;
+      document.getElementById("result-section").classList.add("hidden");
+      document.getElementById("coordPanel").classList.add("hidden");
+      document.getElementById("search-section").classList.add("hidden");
+      document.getElementById("locate-section").classList.remove("hidden");
+      document.getElementById("statusMsg").classList.add("hidden");
+      aggiornaPulsanti();
+      window.scrollTo({top: 0, behavior: "smooth"});
     }
     window.__aggiornaPulsantiLocalizzati = aggiornaPulsanti;
     document.getElementById("toggleSearchBtn").addEventListener("click", function () {
+      if (!document.getElementById("result-section").classList.contains("hidden")) { chiudiRisultato(); return; }
       const sec = document.getElementById("search-section"), apri = sec.classList.contains("hidden");
       sec.classList.toggle("hidden", !apri);
       document.getElementById("coordPanel").classList.add("hidden");
@@ -3348,6 +3378,7 @@ assign initialcost =
       if (apri) mostraElenco();
     });
     document.getElementById("coordBtn").addEventListener("click", function () {
+      if (!document.getElementById("result-section").classList.contains("hidden")) { chiudiRisultato(); return; }
       const pn = document.getElementById("coordPanel"), apri = pn.classList.contains("hidden");
       pn.classList.toggle("hidden", !apri);
       document.getElementById("search-section").classList.add("hidden");
@@ -3356,13 +3387,8 @@ assign initialcost =
     });
 
     document.getElementById("backToSearchBtn").addEventListener("click", function () {
-      if (watchId !== null) {navigator.geolocation.clearWatch(watchId); watchId = null;}
-      if (trackingTimeoutId !== null) {clearTimeout(trackingTimeoutId); trackingTimeoutId = null;}
-      clearRoute();
-      document.getElementById("result-section").classList.add("hidden");
-      document.getElementById("locate-section").classList.remove("hidden");
+      chiudiRisultato();
       document.getElementById("search-section").classList.remove("hidden");
-      document.getElementById("coordPanel").classList.add("hidden");
       aggiornaPulsanti();
       mostraElenco();
     });
@@ -3402,7 +3428,7 @@ assign initialcost =
           const item = document.createElement("div");
           item.className = "search-item" + (rec.eDirezione ? " dir" : "");
           item.innerHTML = '<span class="sname">' + (rec.eDirezione ? "🏛 " : "") + rec.c + '</span><span class="sprov">' + rec.pr + '</span>';
-          item.onclick = () => {selectComando(rec, userPos, targetPos); searchResults.classList.add("hidden"); searchInput.value = "";};
+          item.onclick = () => {azioneAttiva = "cerca"; selectComando(rec, userPos, targetPos); searchResults.classList.add("hidden"); searchInput.value = "";};
           searchResults.appendChild(item);
         });
       });
