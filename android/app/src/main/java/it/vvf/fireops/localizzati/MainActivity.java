@@ -78,6 +78,7 @@ public class MainActivity extends Activity {
             public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest r) {
                 Uri u = r.getUrl();
                 if (HOST.equals(u.getHost())) return false;
+                if ("tel".equals(u.getScheme())) { chiama(u); return true; }
                 apriFuori(u);
                 return true;
             }
@@ -230,6 +231,37 @@ public class MainActivity extends Activity {
     }
 
     /** Link esterni al sito: si aprono con un'altra app, mai con questa (evita il giro su se stessa). */
+    private Uri numeroInSospeso;
+
+    /** Avvia la chiamata subito con l'app telefono predefinita (senza scelta app); se manca il permesso lo chiede. */
+    private void chiama(Uri u) {
+        if (checkSelfPermission(Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
+            try {
+                Intent c = new Intent(Intent.ACTION_CALL, u);
+                startActivity(c);
+                return;
+            } catch (Exception ignora) { }
+        } else {
+            numeroInSospeso = u;
+            requestPermissions(new String[]{Manifest.permission.CALL_PHONE}, 2);
+            return;
+        }
+        try { startActivity(new Intent(Intent.ACTION_DIAL, u)); } catch (Exception ignora) { }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int codice, String[] perm, int[] esiti) {
+        super.onRequestPermissionsResult(codice, perm, esiti);
+        if (codice == 2 && numeroInSospeso != null) {
+            Uri u = numeroInSospeso;
+            numeroInSospeso = null;
+            try {
+                boolean ok = esiti.length > 0 && esiti[0] == PackageManager.PERMISSION_GRANTED;
+                startActivity(new Intent(ok ? Intent.ACTION_CALL : Intent.ACTION_DIAL, u));
+            } catch (Exception ignora) { }
+        }
+    }
+
     private void apriFuori(Uri u) {
         try {
             Intent v = new Intent(Intent.ACTION_VIEW, u);
