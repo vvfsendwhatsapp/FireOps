@@ -142,7 +142,7 @@ FireOps.registra({
 .pg-localizzati #locate-section { display: contents; }
 .pg-localizzati .wrap { max-width: 100%; overflow-x: clip; padding-top: 16px; }
 /* il pulsante aperto resta agganciato sotto l'intestazione mentre il resto scorre; i chiusi stanno fermi in alto */
-.pg-localizzati .act3-grp.on { position: sticky; top: var(--foh-h, 130px); z-index: 40; background: var(--bg); padding: 16px 0 8px; margin-top: -16px; margin-bottom: 4px; }
+.pg-localizzati .act3-grp.on { position: sticky; top: var(--foh-h, 130px); z-index: 1300; background: var(--bg); padding: 16px 0 8px; margin-top: -16px; margin-bottom: 4px; }
 .pg-localizzati .act3 { margin: 0 0 10px; min-height: 56px; padding-left: 12px; padding-right: 38px; }
 .pg-localizzati .act3.coord { background: #d8262f; color: #fff; }
 .pg-localizzati .act3.coord:active { background: #a81b23; }
@@ -489,6 +489,8 @@ FireOps.registra({
 .pg-localizzati .ar-bot button:active { background: #ffd700; color: #000; }
 .pg-localizzati .map-wrap {
       position: relative;
+      z-index: 0;            /* contiene gli z-index interni di Leaflet (400-1000): la mappa passa dietro al tasto fisso */
+      isolation: isolate;
 }
 .pg-localizzati #resultMap {
       width: 100%;
