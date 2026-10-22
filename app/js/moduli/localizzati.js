@@ -1082,45 +1082,6 @@ body.map-open {
         </div>
       </div>
 
-      <div class="panel cmd-panel">
-        <div class="result-top">
-          <div class="result-name-wrap">
-            <div class="cmd-tag" id="rCmdTag"></div>
-            <div class="name" id="rComando">—</div>
-          </div>
-          <div class="dist" id="rDist"></div>
-        </div>
-        <details class="cmd-dove" id="cmdDove">
-          <summary>📍 Dove si trova · Naviga</summary>
-          <div class="cmd-actions">
-            <button type="button" id="navToComando" class="nav-cmd-btn" title="Naviga alla sede del Comando con Google Maps">🧭 Naviga al comando VVF</button>
-          </div>
-          <div class="result-addr" id="rCmdAddr"></div>
-        </details>
-        <div class="result-sub" id="rSub"></div>
-        <div class="method-badge" id="rMethod"></div>
-        <div class="data-row">
-          <div class="label" id="lblRadioC">Canale radio Comando</div>
-          <div class="value"><span id="rRadioComando">—</span></div>
-        </div>
-        <div class="data-row">
-          <div class="label" id="lblRadioD">Canale radio Direzione reg.</div>
-          <div class="value"><span id="rRadioDirezione">—</span></div>
-        </div>
-        <div class="data-row">
-          <div class="label" id="lblSoC">SO Comando</div>
-          <div class="value" id="rTelComandoWrap">—</div>
-        </div>
-        <div class="data-row">
-          <div class="label" id="lblSoD">SO Direzione reg.</div>
-          <div class="value" id="rTelDirezioneWrap">—</div>
-        </div>
-        <div class="cmd-conf hidden" id="confinantiPanel">
-          <div class="cmd-conf-label">Comandi confinanti</div>
-          <div class="chips" id="confinantiChips"></div>
-        </div>
-      </div>
-
       <!-- Pannello coordinate Target (se inserito) -->
       <div class="panel side-tgt hidden" id="targetInfoPanel">
         <details class="pan-det" id="tgtDet"><summary class="row-group-label target">Punto Target / Evento</summary>
@@ -1190,6 +1151,45 @@ body.map-open {
           <span id="refreshGpsLabel">Aggiorna posizione</span>
         </button>
         </details>
+      </div>
+
+      <div class="panel cmd-panel">
+        <div class="result-top">
+          <div class="result-name-wrap">
+            <div class="cmd-tag" id="rCmdTag"></div>
+            <div class="name" id="rComando">—</div>
+          </div>
+          <div class="dist" id="rDist"></div>
+        </div>
+        <details class="cmd-dove" id="cmdDove">
+          <summary>📍 Dove si trova · Naviga</summary>
+          <div class="cmd-actions">
+            <button type="button" id="navToComando" class="nav-cmd-btn" title="Naviga alla sede del Comando con Google Maps">🧭 Naviga al comando VVF</button>
+          </div>
+          <div class="result-addr" id="rCmdAddr"></div>
+        </details>
+        <div class="result-sub" id="rSub"></div>
+        <div class="method-badge" id="rMethod"></div>
+        <div class="data-row">
+          <div class="label" id="lblRadioC">Canale radio Comando</div>
+          <div class="value"><span id="rRadioComando">—</span></div>
+        </div>
+        <div class="data-row">
+          <div class="label" id="lblRadioD">Canale radio Direzione reg.</div>
+          <div class="value"><span id="rRadioDirezione">—</span></div>
+        </div>
+        <div class="data-row">
+          <div class="label" id="lblSoC">SO Comando</div>
+          <div class="value" id="rTelComandoWrap">—</div>
+        </div>
+        <div class="data-row">
+          <div class="label" id="lblSoD">SO Direzione reg.</div>
+          <div class="value" id="rTelDirezioneWrap">—</div>
+        </div>
+        <div class="cmd-conf hidden" id="confinantiPanel">
+          <div class="cmd-conf-label">Comandi confinanti</div>
+          <div class="chips" id="confinantiChips"></div>
+        </div>
       </div>
 
       <div class="border-note hidden" id="borderNote"></div>
@@ -1933,6 +1933,13 @@ body.map-open {
 
     const PHONE_SVG = ' <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 3h4l2 5-2.5 1.5a11 11 0 005 5L16 12l5 2v4a2 2 0 01-2 2C10.6 20 4 13.4 4 5a2 2 0 012-2z" stroke="currentColor" stroke-width="1.6"/></svg>';
 
+    // Tasto 1 (coordinate): target + posizione + comando; tasto 2 (GPS): posizione + comando; tasto 3 (cerca): solo comando
+    function pannelliPerModo() {
+      const m = azioneAttiva === "coord" ? "coord" : (azioneAttiva === "cerca" ? "cerca" : "gps");
+      document.getElementById("targetInfoPanel").classList.toggle("hidden", !(m === "coord" && targetPos));
+      document.getElementById("gpsInfoPanel").classList.toggle("hidden", m === "cerca" || !userPos);
+    }
+
     function showResult(record, distanceKm, nearbyList, method) {
       currentRecord = record;
       if (!azioneAttiva) azioneAttiva = "gps";
@@ -1973,6 +1980,7 @@ body.map-open {
       document.getElementById("rComando").textContent = record.c;
       // distingue il comando dell'intervento (target scelto) da quello della propria posizione (in alto)
       const modo = azioneAttiva === "coord" ? "coord" : (azioneAttiva === "cerca" ? "cerca" : "gps");
+      pannelliPerModo();
       const tag = document.getElementById("rCmdTag");
       tag.textContent = modo === "coord" ? "INT" : (modo === "gps" ? "Posizione" : "Comando");
       const pannello = document.querySelector(".pg-localizzati .cmd-panel");
@@ -2079,7 +2087,7 @@ body.map-open {
 
           const rs = document.getElementById("result-section");
           if (!rs.classList.contains("hidden")) {
-            document.getElementById("gpsInfoPanel").classList.remove("hidden");
+            pannelliPerModo();
             document.getElementById("rGpsCoords").textContent = userPos.lat.toFixed(6) + "°, " + userPos.lon.toFixed(6) + "°";
             document.getElementById("rGpsAccuracy").textContent = Math.round(userAccuracy) + " metri";
             if (userAltitude !== null) {
