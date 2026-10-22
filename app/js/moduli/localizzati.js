@@ -499,7 +499,7 @@ FireOps.registra({
 }
 .pg-localizzati #resultMap {
       width: 100%;
-      height: 220px;
+      height: 330px;
       background: #e5e3df;
 }
 .pg-localizzati .map-wrap.map-fullscreen {
