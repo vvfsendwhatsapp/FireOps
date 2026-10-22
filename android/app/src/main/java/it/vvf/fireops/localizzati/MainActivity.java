@@ -34,7 +34,7 @@ import java.util.Locale;
 public class MainActivity extends Activity {
 
     static final String HOST = "vvfsendwhatsapp.github.io";
-    static final String BASE = "https://" + HOST + "/FireOps/app/user.html";
+    private String BASE;
 
     private WebView web;
     private ValueCallback<Uri[]> sceltaFile;   // campo "scegli file" della pagina (galleria in Foto)
@@ -43,6 +43,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
+        BASE = getString(R.string.pagina_base);
         getWindow().setStatusBarColor(Color.parseColor("#10141a"));
         getWindow().setNavigationBarColor(Color.parseColor("#10141a"));
 
