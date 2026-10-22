@@ -173,7 +173,8 @@
     if (!n) return;
     const inp = $("fohInput");
     inp.value = n;
-    inp.dispatchEvent(new Event("input"));
+    aggiornaDial();                       // aggiorna i quattro tasti subito, senza aspettare l'evento
+    inp.dispatchEvent(new Event("input", {bubbles: true}));
   });
   aggiornaDial();
 
