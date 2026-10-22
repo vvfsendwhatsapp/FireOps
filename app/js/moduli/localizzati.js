@@ -139,11 +139,13 @@ FireOps.registra({
       opacity: .7;
 }
 .pg-localizzati .act3 { margin: 0 0 10px; min-height: 56px; }
-.pg-localizzati .act3.coord { background: #1e88e5; color: #fff; }
-.pg-localizzati .act3.coord:active { background: #1565c0; }
+.pg-localizzati .act3.coord { background: #d8262f; color: #fff; }
+.pg-localizzati .act3.coord:active { background: #a81b23; }
 .pg-localizzati .act3.coord svg path, .pg-localizzati .act3.coord svg circle, .pg-localizzati .act3.coord svg rect { stroke: #fff !important; }
-.pg-localizzati .act3.cmd { background: var(--panel-2, #1d242e); color: var(--text, #eceff3); border: 1px solid var(--line, #2a323d); }
-.pg-localizzati .act3.cmd:active { background: var(--line, #2a323d); }
+.pg-localizzati .act3.cmd { background: #6b7684; color: #fff; }
+.pg-localizzati .act3.cmd:active { background: #55606d; }
+.pg-localizzati #locateBtn.act3 { background: #ffd400; color: #000; }
+.pg-localizzati #locateBtn.act3:active { background: #d9b500; }
 .pg-localizzati .act3.cmd svg path, .pg-localizzati .act3.cmd svg circle { stroke: currentColor !important; }
 .pg-localizzati .act3.on { outline: 2px solid #fff; outline-offset: -4px; }
 .pg-localizzati .link-btn {
