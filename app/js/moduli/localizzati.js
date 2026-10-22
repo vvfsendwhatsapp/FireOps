@@ -33,7 +33,8 @@ FireOps.registra({
       color: var(--text);
       font-family: var(--sans);
       -webkit-font-smoothing: antialiased;
-      min-height: 100vh;
+      min-height: calc(100vh - var(--foh-h, 213px));
+      min-height: calc(100dvh - var(--foh-h, 213px));
       padding-bottom: 64px;
 }
 .pg-localizzati .wrap {
