@@ -1089,7 +1089,7 @@ body.map-open {
           <button type="button" id="mapPauseBtn" class="map-pause-btn" title="Metti in pausa il rilevamento della posizione"
             aria-label="Pausa rilevamento posizione">⏸</button>
           <button type="button" id="mapModeBtn" class="map-mode-btn" title="Mappa fissa: tocca per Freccia fissa"
-            aria-label="Modalità mappa">🧭</button>
+            aria-label="Modalità mappa">🗺</button>
           <button type="button" id="mapExpandBtn" class="map-expand-btn" title="Ingrandisci mappa"
             aria-label="Ingrandisci mappa"></button>
         </div>
@@ -1787,6 +1787,7 @@ body.map-open {
       modoMappa = m;
       const b = document.getElementById("mapModeBtn");
       b.classList.toggle("freccia", m === "freccia");
+      b.textContent = m === "freccia" ? "🧭" : "🗺";
       b.title = m === "freccia" ? "Freccia fissa: tocca per Mappa fissa" : "Mappa fissa: tocca per Freccia fissa";
       document.getElementById("legendModo").classList.toggle("hidden", m !== "freccia");
       if (map) {
