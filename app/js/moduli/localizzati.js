@@ -804,6 +804,12 @@ body.map-open {
       gap: 6px 12px;
       min-width: 0;
 }
+.pg-localizzati .cmd-dove { margin: 8px 0; border: 1px solid var(--line, #2a323d); border-radius: 12px; background: var(--panel-2, #1d242e); }
+.pg-localizzati .cmd-dove > summary { list-style: none; cursor: pointer; min-height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; font-size: 14px; color: var(--muted, #9aa5b4); }
+.pg-localizzati .cmd-dove > summary::-webkit-details-marker { display: none; }
+.pg-localizzati .cmd-dove > summary::after { content: "▾"; font-size: 16px; transition: transform .15s; }
+.pg-localizzati .cmd-dove[open] > summary::after { transform: rotate(180deg); }
+.pg-localizzati .cmd-dove > .cmd-actions, .pg-localizzati .cmd-dove > .result-addr { margin: 0 10px 10px; }
 .pg-localizzati .nav-cmd-btn {
       display: inline-flex;
       align-items: center;
@@ -1141,10 +1147,13 @@ body.map-open {
           </div>
           <div class="dist" id="rDist"></div>
         </div>
-        <div class="cmd-actions">
-          <button type="button" id="navToComando" class="nav-cmd-btn" title="Naviga alla sede del Comando con Google Maps">🧭 Naviga al comando VVF</button>
-        </div>
-        <div class="result-addr" id="rCmdAddr"></div>
+        <details class="cmd-dove" id="cmdDove">
+          <summary>📍 Dove si trova · Naviga</summary>
+          <div class="cmd-actions">
+            <button type="button" id="navToComando" class="nav-cmd-btn" title="Naviga alla sede del Comando con Google Maps">🧭 Naviga al comando VVF</button>
+          </div>
+          <div class="result-addr" id="rCmdAddr"></div>
+        </details>
         <div class="result-sub" id="rSub"></div>
         <div class="method-badge" id="rMethod"></div>
         <div class="data-row">
@@ -1906,6 +1915,7 @@ body.map-open {
       document.getElementById("coordPanel").classList.add("hidden");
       document.getElementById("result-section").classList.remove("hidden");
       if (window.__aggiornaPulsantiLocalizzati) window.__aggiornaPulsantiLocalizzati();
+      document.getElementById("cmdDove").open = false;
       document.getElementById("navToComando").textContent = record.eDirezione ? "🧭 Naviga alla direzione regionale" : "🧭 Naviga al comando VVF";
 
       const targetPanel = document.getElementById("targetInfoPanel");
