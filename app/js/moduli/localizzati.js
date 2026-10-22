@@ -804,6 +804,10 @@ body.map-open {
       gap: 6px 12px;
       min-width: 0;
 }
+.pg-localizzati .pan-det > summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; min-height: 44px; box-sizing: border-box; }
+.pg-localizzati .pan-det > summary::-webkit-details-marker { display: none; }
+.pg-localizzati .pan-det > summary::after { content: "▾"; font-size: 16px; margin-left: 8px; transition: transform .15s; }
+.pg-localizzati .pan-det[open] > summary::after { transform: rotate(180deg); }
 .pg-localizzati .cmd-tag { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #e84747; margin-bottom: 2px; }
 .pg-localizzati .cmd-dove { margin: 12px 14px 12px 14px; border: 1px solid var(--line, #2a323d); border-radius: 12px; background: var(--panel-2, #1d242e); }
 .pg-localizzati .cmd-dove > summary { list-style: none; cursor: pointer; min-height: 52px; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; font-size: 15.5px; font-weight: 600; color: var(--text, #eceff3); }
@@ -1039,45 +1043,6 @@ body.map-open {
     </section>
 
     <section id="result-section" class="hidden">
-      <!-- Pannello coordinate Target (se inserito) -->
-      <div class="panel side-tgt hidden" id="targetInfoPanel">
-        <div class="row-group-label target">Punto Target / Evento</div>
-        <div class="data-row">
-          <div class="label">Coordinate Target</div>
-          <div class="value copyable" id="rTargetCoords" title="Tocca per copiare">—</div>
-        </div>
-        <div class="data-row">
-          <div class="label">Distanza mia pos. → target</div>
-          <div class="value" id="rTargetDist">—</div>
-        </div>
-        <div class="data-row">
-          <div class="label">Azimut mia pos. → target</div>
-          <div class="value" id="rTargetAz">—</div>
-        </div>
-        <div class="data-row" id="targetAltRow">
-          <div class="label">Quota <span class="src-tag calc"
-              title="Stimata da modello digitale del terreno (Open-Meteo)">calcolata</span></div>
-          <div class="value" id="rTargetAlt">—</div>
-        </div>
-        <div class="route-row">
-          <button type="button" id="routeMix" class="route-btn mix">🚒 Soccorso<small>mezzo VF fin dove arriva, poi a piedi</small></button>
-        </div>
-        <div class="route-hint">Sulla carta: linea piena = mezzo, puntinata = a piedi, 🥾 = punto di cambio, 🚧 = sbarre</div>
-        <div class="route-info hidden" id="routeInfo"></div>
-        <div class="route-export hidden" id="routeExport">
-          <button type="button" id="routeKml" title="Traccia e punti per Locus Map, Google Earth, OruxMaps">💾 KML (Locus Map)</button>
-          <button type="button" id="routeGpx" title="Traccia e punti (partenza, cambio, sbarre, arrivo) per GPS da montagna e app outdoor">🛰️ GPX</button>
-          <button type="button" id="routeAR" class="route-btn ar">📷 Guida in realtà aumentata</button>
-        </div>
-        <button type="button" id="openMapsTarget" class="maps-btn target">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 11l19-9-9 19-2-8-8-2z" />
-          </svg>
-          Naviga al target con Google Maps
-        </button>
-      </div>
-
       <div class="panel">
         <div class="map-wrap">
           <div id="resultMap"></div>
@@ -1110,36 +1075,6 @@ body.map-open {
           <span id="legendUser" class="hidden"><i class="dot-user"></i>La tua posizione</span>
           <span id="legendTarget" class="hidden"><i class="dot-target"></i>Target</span>
         </div>
-      </div>
-
-      <!-- Pannello coordinate GPS rilevate -->
-      <div class="panel side-gps hidden" id="gpsInfoPanel">
-        <div class="row-group-label gps">Posizione GPS rilevata</div>
-        <div class="data-row">
-          <div class="label">Coordinate GPS</div>
-          <div class="value copyable" id="rGpsCoords" title="Tocca per copiare">—</div>
-        </div>
-        <div class="data-row" id="gpsAccuracyRow">
-          <div class="label">Precisione</div>
-          <div class="value" id="rGpsAccuracy">—</div>
-        </div>
-        <div class="data-row hidden" id="gpsAltitudeRow">
-          <div class="label">Quota <span class="src-tag rx" title="Misurata dal ricevitore GPS del dispositivo">ricevuta
-              GPS</span></div>
-          <div class="value" id="rGpsAltitude">—</div>
-        </div>
-        <div class="data-row">
-          <div class="label">Azimut mia pos. → Comando</div>
-          <div class="value" id="rCmdAz">—</div>
-        </div>
-        <button type="button" id="refreshGpsBtn" class="refresh-gps-btn">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 12a9 9 0 11-3-6.7L21 8" />
-            <path d="M21 3v5h-5" />
-          </svg>
-          <span id="refreshGpsLabel">Aggiorna posizione</span>
-        </button>
       </div>
 
       <div class="panel cmd-panel">
@@ -1179,6 +1114,77 @@ body.map-open {
           <div class="cmd-conf-label">Comandi confinanti</div>
           <div class="chips" id="confinantiChips"></div>
         </div>
+      </div>
+
+      <!-- Pannello coordinate Target (se inserito) -->
+      <div class="panel side-tgt hidden" id="targetInfoPanel">
+        <details class="pan-det" id="tgtDet"><summary class="row-group-label target">Punto Target / Evento</summary>
+        <div class="data-row">
+          <div class="label">Coordinate Target</div>
+          <div class="value copyable" id="rTargetCoords" title="Tocca per copiare">—</div>
+        </div>
+        <div class="data-row">
+          <div class="label">Distanza mia pos. → target</div>
+          <div class="value" id="rTargetDist">—</div>
+        </div>
+        <div class="data-row">
+          <div class="label">Azimut mia pos. → target</div>
+          <div class="value" id="rTargetAz">—</div>
+        </div>
+        <div class="data-row" id="targetAltRow">
+          <div class="label">Quota <span class="src-tag calc"
+              title="Stimata da modello digitale del terreno (Open-Meteo)">calcolata</span></div>
+          <div class="value" id="rTargetAlt">—</div>
+        </div>
+        <div class="route-row">
+          <button type="button" id="routeMix" class="route-btn mix">🚒 Soccorso<small>mezzo VF fin dove arriva, poi a piedi</small></button>
+        </div>
+        <div class="route-hint">Sulla carta: linea piena = mezzo, puntinata = a piedi, 🥾 = punto di cambio, 🚧 = sbarre</div>
+        <div class="route-info hidden" id="routeInfo"></div>
+        <div class="route-export hidden" id="routeExport">
+          <button type="button" id="routeKml" title="Traccia e punti per Locus Map, Google Earth, OruxMaps">💾 KML (Locus Map)</button>
+          <button type="button" id="routeGpx" title="Traccia e punti (partenza, cambio, sbarre, arrivo) per GPS da montagna e app outdoor">🛰️ GPX</button>
+          <button type="button" id="routeAR" class="route-btn ar">📷 Guida in realtà aumentata</button>
+        </div>
+        <button type="button" id="openMapsTarget" class="maps-btn target">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 11l19-9-9 19-2-8-8-2z" />
+          </svg>
+          Naviga al target con Google Maps
+        </button>
+        </details>
+      </div>
+
+      <!-- Pannello coordinate GPS rilevate -->
+      <div class="panel side-gps hidden" id="gpsInfoPanel">
+        <details class="pan-det" id="gpsDet"><summary class="row-group-label gps">Posizione GPS rilevata</summary>
+        <div class="data-row">
+          <div class="label">Coordinate GPS</div>
+          <div class="value copyable" id="rGpsCoords" title="Tocca per copiare">—</div>
+        </div>
+        <div class="data-row" id="gpsAccuracyRow">
+          <div class="label">Precisione</div>
+          <div class="value" id="rGpsAccuracy">—</div>
+        </div>
+        <div class="data-row hidden" id="gpsAltitudeRow">
+          <div class="label">Quota <span class="src-tag rx" title="Misurata dal ricevitore GPS del dispositivo">ricevuta
+              GPS</span></div>
+          <div class="value" id="rGpsAltitude">—</div>
+        </div>
+        <div class="data-row">
+          <div class="label">Azimut mia pos. → Comando</div>
+          <div class="value" id="rCmdAz">—</div>
+        </div>
+        <button type="button" id="refreshGpsBtn" class="refresh-gps-btn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12a9 9 0 11-3-6.7L21 8" />
+            <path d="M21 3v5h-5" />
+          </svg>
+          <span id="refreshGpsLabel">Aggiorna posizione</span>
+        </button>
+        </details>
       </div>
 
       <div class="border-note hidden" id="borderNote"></div>
@@ -2415,6 +2421,7 @@ assign initialcost =
 
     async function calcolaPercorso(modalita) {
       const info = document.getElementById("routeInfo");
+      document.getElementById("tgtDet").open = true;
       const btns = [document.getElementById("routeMix")];
       info.classList.remove("hidden", "error");
       if (!targetPos) return;
