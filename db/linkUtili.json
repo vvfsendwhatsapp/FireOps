@@ -13,7 +13,7 @@
   { "Categoria": "Mappe", "Sottocategoria": "SAR", "Nome": "Windy - Meteo", "URL": "https://www.windy.com/?{{LAT}},{{LNG}},9" },
   { "Categoria": "Mappe", "Sottocategoria": "SAR", "Nome": "Tratte Autostradali", "URL": "http://www.automap.it" },
 
-  { "Categoria": "Mappe", "Sottocategoria": "Velivoli", "Nome": "AFM.dipvvf.it", "URL": "https://it.flightaware.com/" },
+  { "Categoria": "Mappe", "Sottocategoria": "Velivoli", "Nome": "AFM.dipvvf.it", "URL": "https://afm.dipvvf.it/" },
   { "Categoria": "Mappe", "Sottocategoria": "Velivoli", "Nome": "FlightAware", "URL": "https://it.flightaware.com/" },
   { "Categoria": "Mappe", "Sottocategoria": "Velivoli", "Nome": "FlightRadar24", "URL": "http://www.flightradar24.com" },
   { "Categoria": "Mappe", "Sottocategoria": "Velivoli", "Nome": "Flotta Aerea", "URL": "https://flottaaerea.vigilfuoco.it/" },
