@@ -411,10 +411,25 @@ FireOps.registra({
       border: 1px solid var(--line);
       border-radius: 4px;
       overflow: hidden;
-      max-height: 280px;
+      max-height: 60vh;
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
 }
+.pg-localizzati .search-grp {
+      position: sticky;
+      top: 0;
+      padding: 8px 14px;
+      font-size: 11.5px;
+      font-weight: 800;
+      letter-spacing: .6px;
+      text-transform: uppercase;
+      background: var(--panel-2);
+      color: var(--text-dim);
+      border-top: 1px solid var(--line);
+}
+.pg-localizzati .search-item.dir .sname { font-weight: 700; color: #ffd700; }
 .pg-localizzati .search-item {
+      min-height: 48px;
       padding: 12px 14px;
       border-top: 1px solid var(--line);
       cursor: pointer;
@@ -983,7 +998,7 @@ body.map-open {
 
     <section id="search-section" class="hidden">
       <div class="search-wrap">
-        <input type="text" class="search-input" id="searchInput" placeholder="Cerca per comando o comune...">
+        <input type="text" class="search-input" id="searchInput" placeholder="Filtra per comando, comune, provincia o regione">
         <div class="search-results hidden" id="searchResults"></div>
       </div>
     </section>
@@ -1862,6 +1877,7 @@ body.map-open {
       document.getElementById("locate-section").classList.add("hidden");
       document.getElementById("search-section").classList.add("hidden");
       document.getElementById("result-section").classList.remove("hidden");
+      document.getElementById("navToComando").textContent = record.eDirezione ? "🧭 Naviga alla direzione regionale" : "🧭 Naviga al comando VVF";
 
       const targetPanel = document.getElementById("targetInfoPanel");
       const gpsPanel = document.getElementById("gpsInfoPanel");
@@ -3309,7 +3325,7 @@ assign initialcost =
       document.getElementById("coordPanel").classList.add("hidden");
       document.getElementById("coordBtn").classList.remove("on");
       this.classList.toggle("on", apri);
-      if (apri) document.getElementById("searchInput").focus();
+      if (apri) mostraElenco();
     });
     document.getElementById("coordBtn").addEventListener("click", function () {
       const pn = document.getElementById("coordPanel"), apri = pn.classList.contains("hidden");
@@ -3327,28 +3343,62 @@ assign initialcost =
       document.getElementById("result-section").classList.add("hidden");
       document.getElementById("locate-section").classList.remove("hidden");
       document.getElementById("search-section").classList.remove("hidden");
-      document.getElementById("searchInput").focus();
+      mostraElenco();
     });
 
     const searchInput = document.getElementById("searchInput");
     const searchResults = document.getElementById("searchResults");
-    searchInput.addEventListener("input", async function () {
-      const q = norm(this.value);
-      if (q.length < 2) {searchResults.classList.add("hidden"); searchResults.innerHTML = ""; return;}
+    /* Direzione regionale come "comando" scelto a mano: usa le coordinate del comando della sua città */
+    let DIREZIONI = null;
+    function direzioni() {
+      if (DIREZIONI) return DIREZIONI;
+      const viste = {};
+      COMANDI.forEach(r => { if (r.dz && !viste[r.dz]) viste[r.dz] = r; });
+      DIREZIONI = Object.keys(viste).map(nome => {
+        const r = viste[nome], parti = String(r.indd || "").split(",").map(t => t.trim());
+        const sigla = (parti[parti.length - 1] || "").toUpperCase(), citta = norm(parti[parti.length - 2] || "");
+        const ref = COMANDI.find(x => x.pr === sigla && norm(x.cm) === citta) || COMANDI.find(x => x.pr === sigla) || r;
+        return {c: "Direzione regionale " + nome, dz: nome, pr: ref.pr, rg: ref.rg, cm: parti[parti.length - 2] || ref.cm,
+          lat: ref.lat, lon: ref.lon, ind: r.indd || "", rc: r.rd, rd: r.rd, tsc: r.tsd, tsd: r.tsd, tc: "", nue: r.nue,
+          esc: r.esd, ecom: r.ed, web: r.webd, olc: "", conf: [], eDirezione: true};
+      });
+      return DIREZIONI;
+    }
+    /* elenco completo (comandi e direzioni), raggruppato per direzione; con testo nel campo si filtra */
+    async function mostraElenco() {
       await comandiPronti;
       if (!COMANDI.length) {comandiNonDisponibili(); return;}
-      const matches = COMANDI.filter(r => norm(r.c).includes(q) || norm(r.cm).includes(q) || norm(r.pr).includes(q)).slice(0, 8);
+      const q = norm(searchInput.value);
+      const ok = r => !q || norm(r.c).includes(q) || norm(r.cm).includes(q) || norm(r.pr).includes(q) || norm(r.rg).includes(q) || norm(r.dz).includes(q);
+      const gruppi = {};
+      direzioni().forEach(d => { (gruppi[d.dz] = gruppi[d.dz] || {dir: d, com: []}); });
+      COMANDI.forEach(r => { if (gruppi[r.dz]) gruppi[r.dz].com.push(r); });
       searchResults.innerHTML = "";
-      if (!matches.length) {searchResults.classList.add("hidden"); return;}
-      searchResults.classList.remove("hidden");
-      matches.forEach(rec => {
-        const item = document.createElement("div");
-        item.className = "search-item";
-        item.innerHTML = '<span class="sname">' + rec.c + '</span><span class="sprov">' + rec.pr + ' · ' + rec.rg + '</span>';
-        item.onclick = () => {selectComando(rec, userPos, targetPos); searchResults.classList.add("hidden"); searchInput.value = "";};
-        searchResults.appendChild(item);
+      let n = 0;
+      Object.keys(gruppi).sort((a, b) => a.localeCompare(b, "it")).forEach(nome => {
+        const g = gruppi[nome];
+        const righe = [];
+        if (ok(g.dir)) righe.push(g.dir);
+        g.com.sort((a, b) => a.c.localeCompare(b.c, "it")).forEach(r => { if (ok(r)) righe.push(r); });
+        if (!righe.length) return;
+        const h = document.createElement("div");
+        h.className = "search-grp";
+        h.textContent = nome;
+        searchResults.appendChild(h);
+        righe.forEach(rec => {
+          n++;
+          const item = document.createElement("div");
+          item.className = "search-item" + (rec.eDirezione ? " dir" : "");
+          item.innerHTML = '<span class="sname">' + (rec.eDirezione ? "🏛 " : "") + rec.c + '</span><span class="sprov">' + rec.pr + '</span>';
+          item.onclick = () => {selectComando(rec, userPos, targetPos); searchResults.classList.add("hidden"); searchInput.value = "";};
+          searchResults.appendChild(item);
+        });
       });
-    });
+      searchResults.classList.toggle("hidden", !n);
+      if (!n) { const e = document.createElement("div"); e.className = "search-item"; e.textContent = "Nessun comando trovato."; searchResults.appendChild(e); searchResults.classList.remove("hidden"); }
+    }
+    window.__mostraElencoComandi = mostraElenco;
+    searchInput.addEventListener("input", mostraElenco);
   
   }
 });

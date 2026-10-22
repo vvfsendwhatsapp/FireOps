@@ -233,6 +233,10 @@
       ecom: x["email Comando"] || "",
       web: x["sito web Comando"] || "",
       olc: x["OLC"] || "",
+      indd: x["Indirizzo Direzione"] || "",             // dati della Direzione regionale, per l'elenco di Localizzati
+      esd: x["email SO Direzione"] || "",
+      ed: x["email Direzione"] || "",
+      webd: x["sito web DIREZIONE"] || "",
       conf
     };
   }
