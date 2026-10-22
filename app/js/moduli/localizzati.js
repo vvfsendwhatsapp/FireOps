@@ -1710,11 +1710,13 @@ body.map-open {
       setTimeout(function () {map.invalidateSize();}, 60);
     }
 
+    const ZOOM_CIVICI = 19;   // massimo della mappa: si leggono i numeri civici
+
     // Mirino: centra sulla mia posizione (senza GPS, sul Comando)
     document.getElementById("mapCenterBtn").addEventListener("click", function () {
       if (!map || !currentRecord) return;
       if (userPos) {
-        map.setView([userPos.lat, userPos.lon], Math.max(map.getZoom(), 16));
+        map.setView([userPos.lat, userPos.lon], ZOOM_CIVICI);
       } else {
         map.setView([currentRecord.lat, currentRecord.lon], 13);
       }
@@ -1723,7 +1725,7 @@ body.map-open {
     // Segnaposto rosso: centra sul target
     document.getElementById("mapTargetBtn").addEventListener("click", function () {
       if (!map || !targetPos) return;
-      map.setView([targetPos.lat, targetPos.lon], Math.max(map.getZoom(), 16));
+      map.setView([targetPos.lat, targetPos.lon], ZOOM_CIVICI);
     });
 
     const EXPAND_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9V3h6M3 3l6 6M21 9V3h-6M21 3l-6 6M3 15v6h6M3 21l6-6M21 15v6h-6M21 21l-6-6"/></svg>';
