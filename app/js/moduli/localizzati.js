@@ -528,7 +528,7 @@ body.map-open {
 .pg-localizzati .leaflet-control-attribution {
       font-size: 10px !important;
 }
-.pg-localizzati .map-expand-btn, .pg-localizzati .map-center-btn, .pg-localizzati .map-target-btn, .pg-localizzati .map-pause-btn {
+.pg-localizzati .map-expand-btn, .pg-localizzati .map-center-btn, .pg-localizzati .map-target-btn, .pg-localizzati .map-pause-btn, .pg-localizzati .map-mode-btn {
       position: absolute;
       top: 10px;
       z-index: 1200;
@@ -553,6 +553,9 @@ body.map-open {
 .pg-localizzati .map-target-btn {
       right: 94px;
 }
+.pg-localizzati .map-mode-btn { right: 178px; font-size: 16px; line-height: 1; }
+.pg-localizzati .map-wrap:has(.map-target-btn.hidden) .map-mode-btn { right: 136px; }
+.pg-localizzati .map-mode-btn.freccia { background: #ffd700; color: #10141a; border-color: #ffd700; }
 .pg-localizzati .map-pause-btn { right: 136px; font-size: 15px; line-height: 1; }
 .pg-localizzati .map-wrap:has(.map-target-btn.hidden) .map-pause-btn { right: 94px; }
 .pg-localizzati .map-pause-btn.in-pausa { background: #ffd700; color: #10141a; border-color: #ffd700; }
@@ -993,6 +996,7 @@ body.map-open {
 }
 .pg-localizzati .u-ico.has-hdg .u-hdg { display: block;
 }
+.pg-localizzati .u-ico.has-hdg .u-dot { display: none; }
 .pg-localizzati .u-dot { position: absolute; left: 13px; top: 13px;
 }
 `,
@@ -1084,6 +1088,8 @@ body.map-open {
           </button>
           <button type="button" id="mapPauseBtn" class="map-pause-btn" title="Metti in pausa il rilevamento della posizione"
             aria-label="Pausa rilevamento posizione">⏸</button>
+          <button type="button" id="mapModeBtn" class="map-mode-btn" title="Mappa fissa: tocca per Freccia fissa"
+            aria-label="Modalità mappa">🧭</button>
           <button type="button" id="mapExpandBtn" class="map-expand-btn" title="Ingrandisci mappa"
             aria-label="Ingrandisci mappa"></button>
         </div>
@@ -1092,6 +1098,7 @@ body.map-open {
           <span id="legInt" class="hidden"><i class="rombo int"></i>Comando INT</span>
           <span id="legSel" class="hidden"><i class="rombo sel"></i>Comando sel</span>
           <span id="legendUser" class="hidden"><i class="dot-user"></i>La tua posizione</span>
+          <span id="legendModo" class="hidden">🧭 Freccia fissa</span>
           <span id="legendPausa" class="hidden">⏸ GPS in pausa</span>
           <span id="legendTarget" class="hidden"><i class="dot-target"></i>Target</span>
         </div>
@@ -1407,6 +1414,10 @@ body.map-open {
     let userAccuracy = null;
     let userAltitude = null;
     let targetPos = null;
+    let bussolaViva = false;   // true se arrivano eventi dalla bussola (altrimenti si usa la direzione di marcia del GPS)
+    let modoMappa = "fissa";   // "fissa": nord in alto, si muove il triangolo; "freccia": il triangolo resta in alto, ruota la mappa
+    let mapRot = 0;            // rotazione applicata alla mappa, in gradi
+    const SCALA_FRECCIA = 1.5; // ingrandimento che copre gli angoli vuoti quando la mappa ruota
     let watchId = null;
     let trackingTimeoutId = null;
 
@@ -1452,6 +1463,8 @@ body.map-open {
       const html = '<div class="u-ico">' +
         '<svg class="u-dot" width="18" height="18" viewBox="0 0 18 18">' +
         '<circle cx="9" cy="9" r="7" fill="#ffd700" stroke="#10141a" stroke-width="2.5"/></svg>' +
+        '<svg class="u-hdg" width="44" height="44" viewBox="0 0 44 44" shape-rendering="geometricPrecision">' +
+        '<polygon points="22,6 33,35 22,29 11,35" fill="#ffd700" stroke="#10141a" stroke-width="3" stroke-linejoin="round"/></svg>' +
         '</div>';
       return L.divIcon({className: "", html: html, iconSize: [44, 44], iconAnchor: [22, 22], popupAnchor: [0, -12]});
     }
@@ -1511,7 +1524,37 @@ body.map-open {
     // la bussola manda decine di eventi al secondo: si ridisegna al massimo una volta per frame
     function applyHeading() {
       if (hdgRaf) return;
-      hdgRaf = requestAnimationFrame(function () {hdgRaf = null; drawHeadingRay();});
+      hdgRaf = requestAnimationFrame(function () {hdgRaf = null; drawHeadingRay(); applicaRotazioneMappa();});
+    }
+
+    // Freccia sull'icona: ruota col telefono; in "freccia fissa" la mappa ruota al contrario e il triangolo resta in alto
+    function aggiornaFreccia() {
+      if (!userMarker) return;
+      const el = userMarker.getElement();
+      const ico = el && el.querySelector(".u-ico");
+      if (!ico) return;
+      ico.classList.toggle("has-hdg", heading != null);
+      const h = ico.querySelector(".u-hdg");
+      if (h) h.style.transform = "rotate(" + (heading || 0) + "deg)";   // nel riferimento della mappa: se la mappa ruota di -heading, a schermo resta in alto
+    }
+
+    function applicaRotazioneMappa() {
+      if (map && map._loaded) {
+        const pane = map.getPane("mapPane");
+        if (modoMappa === "freccia") {
+          const sz = map.getSize();
+          mapRot = -(heading || 0);
+          pane.style.transformOrigin = (sz.x / 2) + "px " + (sz.y / 2) + "px";
+          pane.style.rotate = mapRot + "deg";
+          pane.style.scale = String(SCALA_FRECCIA);
+        } else {
+          mapRot = 0;
+          pane.style.rotate = "";
+          pane.style.scale = "";
+          pane.style.transformOrigin = "";
+        }
+      }
+      aggiornaFreccia();
     }
 
     function screenAngle() {
@@ -1523,6 +1566,7 @@ body.map-open {
       if (typeof e.webkitCompassHeading === "number") h = e.webkitCompassHeading;   // iOS
       else if (e.absolute && e.alpha != null) h = 360 - e.alpha;                    // Android
       if (h == null) return;
+      bussolaViva = true;
       heading = (h + screenAngle() + 360) % 360;
       applyHeading();
     }
@@ -1575,6 +1619,10 @@ body.map-open {
       let ang = Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI;
       if (ang > 90) ang -= 180;          // testo mai capovolto
       if (ang < -90) ang += 180;
+      if (mapRot) {
+        const tot = (((ang + mapRot) % 360) + 540) % 360 - 180;
+        if (tot > 90 || tot < -90) ang += 180;
+      }
 
       const mid = map.unproject(a.add(b).divideBy(2), 12);
       const html = '<div class="ll-wrap ' + cls + '" style="transform:translate(-50%,-50%) rotate(' + ang + 'deg)">' +
@@ -1617,7 +1665,7 @@ body.map-open {
         };
         radioCtrl.addTo(map);
 
-        map.on("zoomend moveend resize", drawHeadingRay);
+        map.on("zoomend moveend resize", function () {drawHeadingRay(); if (modoMappa === "freccia") applicaRotazioneMappa();});
 
       }
 
@@ -1636,10 +1684,10 @@ body.map-open {
         "</span> · DR <span class='ch'>" + (record.rd || "—") + "</span>";
 
       if (comandoQuiMarker) {map.removeLayer(comandoQuiMarker); comandoQuiMarker = null;}
-      const modoMappa = azioneAttiva === "coord" ? "coord" : (azioneAttiva === "cerca" ? "cerca" : "gps");
-      const tipoCmd = modoMappa === "coord" ? "int" : (modoMappa === "cerca" ? "sel" : "qui");
+      const modoRisultato = azioneAttiva === "coord" ? "coord" : (azioneAttiva === "cerca" ? "cerca" : "gps");
+      const tipoCmd = modoRisultato === "coord" ? "int" : (modoRisultato === "cerca" ? "sel" : "qui");
       // tasto 1: anche il comando della mia posizione (se diverso dall'intervento); tasto 2: solo il mio comando
-      const quiRec = (modoMappa === "coord" && window.FireOpsDial && FireOpsDial.comandoQui) ? FireOpsDial.comandoQui() : null;
+      const quiRec = (modoRisultato === "coord" && window.FireOpsDial && FireOpsDial.comandoQui) ? FireOpsDial.comandoQui() : null;
       if (quiRec && quiRec.lat != null && quiRec.c !== record.c) {
         comandoQuiMarker = L.marker([quiRec.lat, quiRec.lon], {icon: comandoIcon("qui")})
           .addTo(map)
@@ -1663,6 +1711,7 @@ body.map-open {
           .addTo(map)
           .bindPopup("La tua posizione GPS");
         applyHeading();
+        aggiornaFreccia();
         legendUser.classList.remove("hidden");
         boundsArray.push([pos.lat, pos.lon]);
 
@@ -1704,6 +1753,11 @@ body.map-open {
 
       drawHeadingRay();   // segue la nuova posizione (o sparisce se non c'è GPS)
 
+      if (modoMappa === "freccia" && pos) {
+        map.setView([pos.lat, pos.lon], Math.max(map.getZoom(), 17), {animate: false});
+        applicaRotazioneMappa();
+      }
+
       if (!fit) return;   // aggiornamento da tracking: non toccare zoom/pan dell'utente
 
       map.invalidateSize();
@@ -1726,6 +1780,26 @@ body.map-open {
       this.title = gpsInPausa ? "Riprendi il rilevamento della posizione" : "Metti in pausa il rilevamento della posizione";
       this.setAttribute("aria-label", this.title);
       document.getElementById("legendPausa").classList.toggle("hidden", !gpsInPausa);
+    });
+
+    // Mappa fissa (si muove il triangolo) <-> Freccia fissa (il triangolo resta in alto, si muove e ruota la mappa)
+    function impostaModoMappa(m) {
+      modoMappa = m;
+      const b = document.getElementById("mapModeBtn");
+      b.classList.toggle("freccia", m === "freccia");
+      b.title = m === "freccia" ? "Freccia fissa: tocca per Mappa fissa" : "Mappa fissa: tocca per Freccia fissa";
+      document.getElementById("legendModo").classList.toggle("hidden", m !== "freccia");
+      if (map) {
+        if (m === "freccia") {map.dragging.disable(); if (userPos) map.setView([userPos.lat, userPos.lon], Math.max(map.getZoom(), 17), {animate: false});}
+        else map.dragging.enable();
+        applicaRotazioneMappa();
+        drawHeadingRay();
+        if (currentRecord) updateMap(currentRecord, userPos, targetPos, false);
+      }
+    }
+    document.getElementById("mapModeBtn").addEventListener("click", function () {
+      if (modoMappa !== "freccia" && !userPos) return;   // serve la posizione per seguirla
+      impostaModoMappa(modoMappa === "freccia" ? "fissa" : "freccia");
     });
 
     // Mirino: centra sulla mia posizione (senza GPS, sul Comando)
@@ -2129,6 +2203,10 @@ body.map-open {
       watchId = navigator.geolocation.watchPosition(function (pos) {
         const newAcc = pos.coords.accuracy;
         const newAlt = pos.coords.altitude;
+        if (!bussolaViva && typeof pos.coords.heading === "number" && !isNaN(pos.coords.heading)) {
+          heading = pos.coords.heading;   // senza bussola: direzione di marcia (solo in movimento)
+          applyHeading();
+        }
 
         if (newAcc <= bestAccuracy || newAcc <= 50) {
           bestAccuracy = Math.max(newAcc, 20);
@@ -3024,6 +3102,7 @@ assign initialcost =
     // Il logo nell'intestazione azzera la pagina; la casetta porta alla home
     function resetApp() {
       clearRoute();
+      if (modoMappa !== "fissa") impostaModoMappa("fissa");
       gpsInPausa = false;
       const bp = document.getElementById("mapPauseBtn");
       bp.textContent = "⏸"; bp.classList.remove("in-pausa");
