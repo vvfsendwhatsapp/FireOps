@@ -1700,8 +1700,8 @@ body.map-open {
       linkLines = [];
 
       radioCtrl.getContainer().innerHTML =
-        "<b>" + record.c + "</b><br>CH.com <span class='ch'>" + (record.rc || "—") +
-        "</span> · CH.dir <span class='ch'>" + (record.rd || "—") + "</span>";
+        "<b>" + record.c + "</b><br>CH Com <span class='ch'>" + (record.rc || "—") +
+        "</span> · CH Dir <span class='ch'>" + (record.rd || "—") + "</span>";
 
       if (comandoQuiMarker) {map.removeLayer(comandoQuiMarker); comandoQuiMarker = null;}
       const modoRisultato = azioneAttiva === "coord" ? "coord" : (azioneAttiva === "cerca" ? "cerca" : "gps");
