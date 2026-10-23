@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- colore dello schermo di avvio: scuro per FireOps VVF Pro, azzurro per Lite (vedi src/light) -->
-    <color name="sfondo_avvio">#10141A</color>
+    <!-- schermata di avvio e icona: giallo per FireOps VVF Pro, azzurro per Lite (vedi src/light) -->
+    <color name="sfondo_avvio">#FFD700</color>
+    <color name="testo_avvio">#10141A</color>
 </resources>

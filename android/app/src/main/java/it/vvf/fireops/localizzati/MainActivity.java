@@ -21,6 +21,15 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.view.Gravity;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.os.Handler;
+import android.util.TypedValue;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -37,6 +46,7 @@ public class MainActivity extends Activity {
     private String BASE;
 
     private WebView web;
+    private View avvio;
     private ValueCallback<Uri[]> sceltaFile;   // campo "scegli file" della pagina (galleria in Foto)
     private static final int RICHIESTA_FILE = 77;
 
@@ -49,7 +59,13 @@ public class MainActivity extends Activity {
 
         web = new WebView(this);
         web.setBackgroundColor(Color.parseColor("#10141a"));
-        setContentView(web);
+        FrameLayout radice = new FrameLayout(this);
+        radice.addView(web, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        avvio = creaSchermataAvvio();
+        radice.addView(avvio, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        setContentView(radice);
+        // se la pagina tarda o non arriva, la schermata di avvio sparisce comunque
+        new Handler().postDelayed(new Runnable() { @Override public void run() { nascondiAvvio(); } }, 7000);
 
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);
@@ -74,6 +90,11 @@ public class MainActivity extends Activity {
         }, "FireOpsAndroid");
 
         web.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageFinished(WebView v, String url) {
+                nascondiAvvio();
+            }
+
             @Override
             public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest r) {
                 Uri u = r.getUrl();
@@ -234,6 +255,37 @@ public class MainActivity extends Activity {
     private Uri numeroInSospeso;
 
     /** Avvia la chiamata subito con l'app telefono predefinita (senza scelta app); se manca il permesso lo chiede. */
+    /** Schermata di avvio con logo e nome dell'app (Pro o Lite), sopra la pagina finche' non e' pronta. */
+    private View creaSchermataAvvio() {
+        LinearLayout l = new LinearLayout(this);
+        l.setOrientation(LinearLayout.VERTICAL);
+        l.setGravity(Gravity.CENTER);
+        l.setBackgroundColor(getResources().getColor(R.color.sfondo_avvio));
+        l.setClickable(true);
+        ImageView logo = new ImageView(this);
+        logo.setImageResource(R.drawable.ic_launcher_fg);
+        int dp = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 150, getResources().getDisplayMetrics());
+        l.addView(logo, new LinearLayout.LayoutParams(dp, dp));
+        TextView nome = new TextView(this);
+        nome.setText(getString(R.string.app_name));
+        nome.setTextColor(getResources().getColor(R.color.testo_avvio));
+        nome.setTextSize(TypedValue.COMPLEX_UNIT_SP, 24);
+        nome.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        nome.setGravity(Gravity.CENTER);
+        nome.setPadding(0, dp / 8, 0, 0);
+        l.addView(nome, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        return l;
+    }
+
+    private void nascondiAvvio() {
+        final View v = avvio;
+        if (v == null) return;
+        avvio = null;
+        v.animate().alpha(0f).setDuration(250).withEndAction(new Runnable() {
+            @Override public void run() { v.setVisibility(View.GONE); }
+        }).start();
+    }
+
     private void chiama(Uri u) {
         if (checkSelfPermission(Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
             try {
