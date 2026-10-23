@@ -547,11 +547,14 @@ body.map-open {
 .pg-localizzati .map-expand-btn {
       right: 10px;
 }
+/* zoom + e − a metà altezza sul lato sinistro; subito sotto, vicini, "sulla mia posizione" e "sul target" */
+.pg-localizzati .leaflet-top.leaflet-left { top: 50%; transform: translateY(-50%); margin-top: -16px; }
+.pg-localizzati .leaflet-left .leaflet-control { margin-left: 10px; }
 .pg-localizzati .map-center-btn {
-      right: 52px;
+      right: auto; left: 10px; top: calc(50% + 6px);
 }
 .pg-localizzati .map-target-btn {
-      right: 94px;
+      right: auto; left: 10px; top: calc(50% + 48px);
 }
 .pg-localizzati .map-route-btn { position: absolute; top: 52px; right: 10px; z-index: 1200; width: 34px; height: 34px; border-radius: 4px; background: var(--panel); border: 1px solid #e84747; color: var(--text); display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; font-size: 16px; line-height: 1; }
 .pg-localizzati .map-sotto-btn { top: 94px; border-color: #7b4bc4; }
@@ -566,11 +569,9 @@ body.map-open {
 .pg-localizzati .map-nord.hidden { display: none; }
 .pg-localizzati .map-nord svg { background: rgba(16,20,26,.72); border-radius: 50%; }
 .pg-localizzati .map-nord b { font-size: 11px; line-height: 1; color: #10141a; text-shadow: 0 0 3px #fff, 0 0 3px #fff; margin-top: 1px; }
-.pg-localizzati .map-mode-btn { right: 136px; font-size: 16px; line-height: 1; }
-.pg-localizzati .map-wrap:has(.map-target-btn.hidden) .map-mode-btn { right: 94px; }
+.pg-localizzati .map-mode-btn { right: 52px; font-size: 16px; line-height: 1; }
 .pg-localizzati .map-mode-btn.freccia { background: #ffd700; color: #10141a; border-color: #ffd700; }
-.pg-localizzati .map-pause-btn { right: 178px; width: auto; min-width: 34px; padding: 0 8px; gap: 4px; font-size: 13px; font-weight: 700; line-height: 1; white-space: nowrap; }
-.pg-localizzati .map-wrap:has(.map-target-btn.hidden) .map-pause-btn { right: 136px; }
+.pg-localizzati .map-pause-btn { right: 94px; width: auto; min-width: 34px; padding: 0 8px; gap: 4px; font-size: 13px; font-weight: 700; line-height: 1; white-space: nowrap; }
 .pg-localizzati .map-pause-btn.in-pausa { background: #ffd700; color: #10141a; border-color: #ffd700; }
 .pg-localizzati .map-expand-btn:active, .pg-localizzati .map-center-btn:active, .pg-localizzati .map-target-btn:active {
       background: var(--panel-2);
