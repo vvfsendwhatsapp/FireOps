@@ -13,75 +13,23 @@
 (function () {
   "use strict";
 
-  // Personale del turno B: "Cognome Nome" e qualifica (senza patenti). Da spostare in db/ quando ci sarà un file condiviso.
-  const TURNO_B = [
-    ["ANGELONE LEONARDO", "VF"],
-    ["ANTONIOLI MARCO", "CS"],
-    ["ARFELLI STEFANO", "CR"],
-    ["BALDACCI ANDREA", "VE"],
-    ["BALZANI ANDREA", "CS"],
-    ["BARDI ALFIERO", "CS"],
-    ["BATTISTINI CHRISTIAN", "CS"],
-    ["BAZZOCCHI MASSIMO", "CR"],
-    ["BERTOZZI CLAUDIO", "VC"],
-    ["BONETTI MASSIMILIANO", "CS"],
-    ["CANDUCCI DENIS", "VC"],
-    ["CAPACCI LUCA", "VE"],
-    ["CASTAGNOLI MARCO", "VC"],
-    ["CASTROGIOVANNI ANDRE", "VE"],
-    ["CECCARONI STEFANO", "VC"],
-    ["D'ATTARDI GIOVANNI", "VF"],
-    ["DALLA BELLA MARCO", "VE"],
-    ["DE LORENZI ENRICO", "VE"],
-    ["DE VITO ISRAEL", "CS"],
-    ["DI CANDIA MICHELE", "VE"],
-    ["DI CAPRIO GIOVANNI", "VE"],
-    ["DI NICOLA MASSIMO", "VC"],
-    ["DOGANA MARCO", "VC"],
-    ["FORTE GIANNI", "VF"],
-    ["GHETTI GABRIELE", "VC"],
-    ["GIARDINI LUCA", "CSE"],
-    ["GIULIANINI MAURO", "VC"],
-    ["GIUNCHI CLAUDIO", "VE"],
-    ["GORI FABIO", "VE"],
-    ["GRAZIANI CRISTIAN", "VC"],
-    ["GUIDI MARCO", "CSE"],
-    ["LA ROCCA VINCENZO", "VF"],
-    ["LEONI VINCENZO", "CSE"],
-    ["LIPPOLIS NICOLA", "VF"],
-    ["MANUZZI GIANLUCA", "CR"],
-    ["MANUZZI MICHELE", "VF"],
-    ["MARALDI MAURO", "CS"],
-    ["MARGHERITA MARCO", "VC"],
-    ["MARIANI MASSIMO", "VF"],
-    ["MARINO ANTONIO", "VE"],
-    ["MONCASTELLI ROBERTO", "CR"],
-    ["MONTI DANILO", "VC"],
-    ["MONTINI LORENZO", "VE"],
-    ["MORRI MAURO", "VF"],
-    ["OLIVUCCI ROBERT", "VE"],
-    ["PASSERI MIRKO", "VF"],
-    ["PELIZZA ANDREA", "VE"],
-    ["PENTOLI LUCA", "VE"],
-    ["PENTOLI MASSIMILIANO", "CSE"],
-    ["POLVERELLI IVAN", "VF"],
-    ["RIDOLFO DORIANO", "VF"],
-    ["RUFFILLI MASSIMILIANO", "CS"],
-    ["RUGGIERO FRANCESCO", "VE"],
-    ["SARDI SAMUELE", "VF"],
-    ["SPADAFINA FRANCESCO", "VF"],
-    ["TASSINARI PAOLO", "VC"],
-    ["TEDALDI NICOLA", "VC"],
-    ["VANDI CLAUDIO", "CSE"],
-    ["VANIGLINI ALAN", "CS"],
-    ["VITALI GIUSEPPE", "CSE"],
-    ["ZANELLI FABIO", "VC"],
-    ["ZOFFOLI NICOLO'", "VF"]
-  ];
-  // "DE LORENZI ENRICO" -> "De Lorenzi Enrico (VE)"; "NICOLO'" -> "Nicolò"
-  const nominativo = (nome, qual) => nome.replace(/\s+/g, " ").trim().toLowerCase()
-    .replace(/(^|[ '])([a-zàèéìòù])/g, (m, a, b) => a + b.toUpperCase()).replace(/o'$/, "ò") + " (" + qual + ")";
-  const PERSONALE = TURNO_B.map(([n, q]) => nominativo(n, q));
+  // Nominativi: nessun elenco condiviso nel codice. Ognuno ha i propri, salvati solo su questo telefono
+  // e aggiunti di volta in volta quando li scrive; se esistono vengono proposti.
+  const CHIAVE_NOMINATIVI = "fireops_nominativi";
+  function leggiNominativi() {
+    try { const v = JSON.parse(localStorage.getItem(CHIAVE_NOMINATIVI) || "[]"); return Array.isArray(v) ? v.filter(x => typeof x === "string" && x.trim()) : []; }
+    catch (e) { return []; }
+  }
+  function salvaNominativo(n) {
+    n = String(n || "").replace(/\s+/g, " ").trim();
+    if (!n) return;
+    try {
+      const l = leggiNominativi();
+      if (l.some(x => x.toLowerCase() === n.toLowerCase())) return;
+      l.push(n); l.sort((x, y) => x.localeCompare(y, "it"));
+      localStorage.setItem(CHIAVE_NOMINATIVI, JSON.stringify(l));
+    } catch (e) { /* memoria del telefono non disponibile: si scrive a mano */ }
+  }
   const MOTIVI_TIMBRATURA = {dimenticanza: "Dimenticanza", senzabadge: "Senza badge"};
 
   const TIPOLOGIE = [
@@ -302,10 +250,7 @@
 .pg-comunicazioni .radio input { width: 22px; height: 22px; flex: none; accent-color: var(--yellow); }
 .pg-comunicazioni .radio.selected { border-color: var(--yellow); }
 
-/* nominativi: menu del turno B, con "Altro" in fondo */
 .pg-comunicazioni .person-fields { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
-.pg-comunicazioni .person-sel { display: block; width: 100%; min-width: 0; min-height: 46px; padding: 10px 12px; font-size: 16px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; color: var(--text); font-family: var(--sans); }
-.pg-comunicazioni .person-sel:focus { outline: none; border-color: var(--cm-warn); }
 
 .pg-comunicazioni .hidden { display: none !important; }
 `;
@@ -1062,33 +1007,27 @@
     }));
 
     /* ---------- righe dinamiche ---------- */
-    const personaleOptions = '<option value="">Scegli nominativo</option>'
-      + PERSONALE.map(n => '<option value="' + n.replace(/"/g, "&quot;") + '">' + n + "</option>").join("")
-      + '<option value="__altro__">Altro</option>';
-    // L'elenco dei nominativi compare solo per il turno B di Forlì-Cesena: altrimenti si scrive a mano
-    function usaElenco() { return val("fcTurnoL") === "B" && !!home.rec && /forl/i.test(home.rec.c || ""); }
-    function applyRowMode(row) {
-      const sel = row.querySelector(".person-sel"), inp = row.querySelector(".person-input");
-      if (usaElenco()) { sel.classList.remove("hidden"); inp.classList.toggle("hidden", sel.value !== "__altro__"); }
-      else { sel.classList.add("hidden"); inp.classList.remove("hidden"); }
+    // Suggerimenti: i nominativi già salvati su questo telefono (nessun elenco condiviso)
+    function aggiornaSuggerimenti() {
+      const dl = root.querySelector("#fcNominativiDl");
+      if (dl) dl.innerHTML = leggiNominativi().map(n => '<option value="' + n.replace(/"/g, "&quot;") + '"></option>').join("");
     }
-    function refreshPersonRows() { root.querySelectorAll(".person-row").forEach(applyRowMode); }
+    function refreshPersonRows() { aggiornaSuggerimenti(); }
     function addPersonRow(targetId) {
       const list = $(targetId);
+      if (!root.querySelector("#fcNominativiDl")) {
+        const dl = document.createElement("datalist"); dl.id = "fcNominativiDl"; root.appendChild(dl);
+      }
       const row = document.createElement("div");
       row.className = "person-row";
-      row.innerHTML = '<div class="person-fields"><select class="person-sel" aria-label="Nominativo">' + personaleOptions + '</select>'
-        + '<input type="text" class="person-input hidden" placeholder="Nome Cognome (qualifica)" autocapitalize="words" enterkeyhint="done" aria-label="Nominativo (altro)"></div>'
+      row.innerHTML = '<div class="person-fields"><input type="text" class="person-input" list="fcNominativiDl" placeholder="Nome Cognome (qualifica)" autocapitalize="words" autocomplete="off" enterkeyhint="done" aria-label="Nominativo"></div>'
         + '<button type="button" class="row-remove-btn" aria-label="Rimuovi">\u2715</button>';
-      const sel = row.querySelector(".person-sel"), inp = row.querySelector(".person-input");
-      sel.addEventListener("change", () => {
-        const altro = sel.value === "__altro__";
-        inp.classList.toggle("hidden", !altro);
-        if (altro) inp.focus();
-      });
+      const inp = row.querySelector(".person-input");
+      inp.addEventListener("focus", aggiornaSuggerimenti);
+      inp.addEventListener("change", () => salvaNominativo(inp.value));
       row.querySelector(".row-remove-btn").addEventListener("click", () => row.remove());
       list.appendChild(row);
-      applyRowMode(row);
+      aggiornaSuggerimenti();
       return row;
     }
     function addTimbraturaRow(targetId) {
@@ -1127,7 +1066,7 @@
         // la riga nuova va in vista e, per i nominativi, apre subito la tastiera
         if (row) {
           row.scrollIntoView({block: "center", behavior: "smooth"});
-          const f = row.querySelector(".person-sel");
+          const f = row.querySelector(".person-input");
           if (f) f.focus({preventScroll: true});
         }
       });
@@ -1143,9 +1082,9 @@
 
     function getPersonList(listId) {
       return Array.from(root.querySelectorAll("#" + listId + " .person-row")).map(r => {
-        const sel = r.querySelector(".person-sel"), inp = r.querySelector(".person-input");
-        if (sel.classList.contains("hidden")) return inp.value.trim();
-        return sel.value === "__altro__" ? inp.value.trim() : sel.value;
+        const v = r.querySelector(".person-input").value.trim();
+        salvaNominativo(v);
+        return v;
       }).filter(Boolean);
     }
 

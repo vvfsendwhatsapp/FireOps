@@ -75,7 +75,13 @@ Gli altri moduli li usano per precompilare i moduli (ad esempio Comunicazioni).<
   </div>
   <div class="fld"><label class="f" for="pe-sede">Sede</label>
     <input id="pe-sede" data-k="sede" autocomplete="off" autocapitalize="characters" placeholder="es. CENTRALE"></div>
-  <p class="nota">Con turno B e comando di Forlì-Cesena, in Comunicazioni compare l’elenco dei nominativi del turno. Negli altri casi i nominativi si scrivono a mano.</p>
+</div>
+
+<div class="card">
+  <h3>Nominativi salvati</h3>
+  <p class="nota">In Comunicazioni i nominativi che scrivi si salvano qui, solo su questo telefono, e vengono proposti la volta dopo. Non c’è nessun elenco condiviso.</p>
+  <div id="pe-nomi"></div>
+  <div class="acts" style="margin-top:10px"><button type="button" class="btn danger" id="pe-nomi-canc">Cancella tutti i nominativi</button></div>
 </div>
 
 <div class="acts">
@@ -133,6 +139,29 @@ Gli altri moduli li usano per precompilare i moduli (ad esempio Comunicazioni).<
         const pos = p || FireOps.posizione();
         if (pos && pos.comando) { sel.value = pos.comando.c; salva("Comando impostato: " + pos.comando.c); }
         else stato("Posizione non disponibile: scegli il comando dall’elenco.", false);
+      });
+
+      const NOMI = "fireops_nominativi";
+      const nomi = () => { try { const v = JSON.parse(localStorage.getItem(NOMI) || "[]"); return Array.isArray(v) ? v : []; } catch (e) { return []; } };
+      const scriviNomi = l => { try { localStorage.setItem(NOMI, JSON.stringify(l)); } catch (e) { } };
+      const disegnaNomi = () => {
+        const box = $("#pe-nomi"), l = nomi();
+        box.innerHTML = "";
+        if (!l.length) { box.innerHTML = '<p class="nota">Nessun nominativo salvato.</p>'; return; }
+        l.forEach((n, i) => {
+          const r = document.createElement("div");
+          r.style.cssText = "display:flex;align-items:center;gap:8px;min-height:48px";
+          const t = document.createElement("span"); t.style.flex = "1"; t.textContent = n;
+          const b = document.createElement("button"); b.type = "button"; b.className = "btn"; b.textContent = "✕"; b.setAttribute("aria-label", "Togli " + n);
+          b.addEventListener("click", () => { const x = nomi(); x.splice(i, 1); scriviNomi(x); disegnaNomi(); });
+          r.append(t, b); box.appendChild(r);
+        });
+      };
+      disegnaNomi();
+      $("#pe-nomi-canc").addEventListener("click", () => {
+        if (!confirm("Cancellare tutti i nominativi salvati su questo telefono?")) return;
+        try { localStorage.removeItem(NOMI); } catch (e) { }
+        disegnaNomi(); stato("Nominativi cancellati.", true);
       });
 
       $("#pe-canc").addEventListener("click", () => {
