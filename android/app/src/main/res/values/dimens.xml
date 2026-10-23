@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- il logo del Pro riempie tutta l'immagine: più piccolo, per apparire grande quanto quello del Lite -->
-    <dimen name="logo_avvio">120dp</dimen>
+    <!-- logo dello schermo di avvio: Pro e Lite hanno la stessa dimensione -->
+    <dimen name="logo_avvio">150dp</dimen>
 </resources>
