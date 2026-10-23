@@ -2754,7 +2754,9 @@ assign initialcost =
         info.textContent = "Posizione GPS non ancora ricevuta: attendi la lettura o usa \"Aggiorna posizione\".";
         return;
       }
-      btns.forEach(b => {b.disabled = true; b.classList.toggle("attivo", b.id === BOTTONE_PERCORSO[modalita]);});
+      // il tasto non resta "acceso": è un'azione che si può ripetere; solo durante il calcolo è fermo e dice "Calcolo…"
+      const etichetta = btns.map(b => b.innerHTML);
+      btns.forEach(b => {b.disabled = true; if (b.id === "routeMix") b.innerHTML = "⏳ Calcolo in corso…<small>mezzo VF fin dove arriva, poi a piedi</small>";});
       document.getElementById("routeExport").classList.add("hidden");
       ultimoPercorso = null;
       info.textContent = "Calcolo del percorso…";
@@ -2863,7 +2865,7 @@ assign initialcost =
         info.classList.add("error");
         info.textContent = "Percorso non disponibile (" + (e.name === "AbortError" ? "tempo scaduto" : e.message) + ").";
       } finally {
-        btns.forEach(b => b.disabled = false);
+        btns.forEach((b, i) => {b.disabled = false; b.classList.remove("attivo"); b.innerHTML = etichetta[i];});
       }
     }
 
