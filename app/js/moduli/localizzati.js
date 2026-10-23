@@ -2519,17 +2519,96 @@ assign initialcost =
     function propGeojson(g) {return (g && g.features && g.features[0] && g.features[0].properties) || {};}
 
     // sbarre e cancelli attraversati, dalla tabella "messages" (coordinate in milionesimi di grado)
-    // libreria condivisa del repo (root del sito): sottopassi e altezze dal calcolo delle competenze, per ora Forlì-Cesena
-    function sottopassiSulPercorso(coords) {
-      const usa = () => window.FireOpsSottopassi.sulPercorso(coords);
-      if (window.FireOpsSottopassi) return usa();
+    // Sottopassi e limiti di altezza lungo il tratto col mezzo. Prima la verifica ONLINE su OpenStreetMap (Overpass),
+    // valida ovunque; se non risponde, l'archivio del repo (db/competenze, per ora solo Forlì-Cesena).
+    const OVERPASS_URL = "https://overpass-api.de/api/interpreter";
+    const ALTEZZA_MEZZO_M = 3.5;
+    function caricaLibSottopassi() {
+      if (window.FireOpsSottopassi) return Promise.resolve();
       return new Promise((ok, ko) => {
         const sc = document.createElement("script");
         sc.src = "../fireops-sottopassi.js?v=" + (window.FIREOPS_VERSIONE || Date.now());
-        sc.onload = () => window.FireOpsSottopassi ? ok(usa()) : ko(new Error("libreria assente"));
+        sc.onload = () => window.FireOpsSottopassi ? ok() : ko(new Error("libreria assente"));
         sc.onerror = () => ko(new Error("libreria non caricata"));
         document.head.appendChild(sc);
       });
+    }
+    async function sottopassiOnline(coords) {
+      const ll = coords.map(c => [c[1], c[0]]);
+      const n = Math.min(ll.length, 180), passo = n > 1 ? (ll.length - 1) / (n - 1) : 1;
+      const linea = Array.from({length: n}, (_, i) => ll[Math.round(i * passo)]).map(q => q[0].toFixed(5) + "," + q[1].toFixed(5)).join(",");
+      const A = "(around:15," + linea + ")";
+      const q = "[out:json][timeout:20];(" +
+        "way" + A + '["highway"]["tunnel"~"^(yes|building_passage|avalanche_protector)$"];' +
+        "way" + A + '["highway"]["covered"="yes"];' +
+        "way" + A + '["highway"]["maxheight"]; way' + A + '["highway"]["maxheight:physical"];' +
+        "node" + A + '["maxheight"]; node' + A + '["maxheight:physical"]; node' + A + '["barrier"="height_restrictor"];' +
+        ");out tags geom;";
+      const ac = new AbortController(), tmo = setTimeout(() => ac.abort(), 20000);
+      let j;
+      try {
+        const r = await fetch(OVERPASS_URL, {method: "POST", body: "data=" + encodeURIComponent(q), signal: ac.signal});
+        if (!r.ok) throw new Error("Overpass HTTP " + r.status);
+        j = await r.json();
+      } finally { clearTimeout(tmo); }
+      const kx = 111320 * Math.cos(ll[0][0] * Math.PI / 180), ky = 110540;
+      const P = (lat, lon) => [lon * kx, lat * ky];
+      const R = ll.map(x => P(x[0], x[1]));
+      const seg = (pt, a, b) => {
+        const dx = b[0] - a[0], dy = b[1] - a[1], l = dx * dx + dy * dy;
+        const t = l ? Math.max(0, Math.min(1, ((pt[0] - a[0]) * dx + (pt[1] - a[1]) * dy) / l)) : 0;
+        return {d: Math.hypot(a[0] + t * dx - pt[0], a[1] + t * dy - pt[1]), dir: Math.atan2(dy, dx)};
+      };
+      const vicino = pt => { let best = {d: Infinity, dir: 0}; for (let i = 0; i + 1 < R.length; i++) { const s = seg(pt, R[i], R[i + 1]); if (s.d < best.d) best = s; } return best; };
+      const diff = (x, y) => { let d = Math.abs(x - y) % Math.PI; if (d > Math.PI / 2) d = Math.PI - d; return d * 180 / Math.PI; };
+      const metri = v => { const m = String(v || "").trim().toLowerCase().replace(",", ".").match(/^(\d+(?:\.\d+)?)\s*(m)?$/); return m ? parseFloat(m[1]) : null; };
+      const out = [];
+      for (const e of j.elements || []) {
+        const t = e.tags || {};
+        let lat, lon, lung = 0;
+        if (e.type === "node") {
+          if (vicino(P(e.lat, e.lon)).d > 10) continue;
+          lat = e.lat; lon = e.lon;
+        } else {
+          const g = (e.geometry || []).map(x => P(x.lat, x.lon));
+          if (g.length < 2) continue;
+          let tot = 0, dentro = 0, bd = Infinity, best = null;
+          for (let i = 1; i < g.length; i++) {
+            const l = Math.hypot(g[i][0] - g[i - 1][0], g[i][1] - g[i - 1][1]), dv = Math.atan2(g[i][1] - g[i - 1][1], g[i][0] - g[i - 1][0]);
+            const k = Math.max(1, Math.ceil(l / 5));
+            tot += l;
+            for (let m = 0; m < k; m++) {
+              const f = (m + 0.5) / k, pt = [g[i - 1][0] + f * (g[i][0] - g[i - 1][0]), g[i - 1][1] + f * (g[i][1] - g[i - 1][1])];
+              const v = vicino(pt);
+              if (v.d <= 12 && diff(v.dir, dv) <= 35) {
+                dentro += l / k;
+                if (v.d < bd) { bd = v.d; best = e.geometry[i - 1]; }
+              }
+            }
+          }
+          // la via deve correre lungo il percorso, non solo incrociarlo (un ponte scavalcato non è un ostacolo)
+          if (!best || dentro < Math.min(20, 0.6 * tot)) continue;
+          lat = best.lat; lon = best.lon; lung = Math.round(tot);
+        }
+        const h = metri(t["maxheight:physical"]) != null ? metri(t["maxheight:physical"]) : metri(t.maxheight);
+        const tipo = e.type === "node" ? (t.barrier === "height_restrictor" ? "barriera di altezza" : "limite di altezza")
+          : t.tunnel === "building_passage" ? "passaggio sotto edificio"
+          : t.tunnel ? (lung > 300 ? "galleria" : "sottopasso") : t.covered === "yes" ? "tratto coperto" : "limite di altezza";
+        out.push({lat, lon, p: {tipo, nome: t.name || t.ref || "", altezza_m: h, critico: h != null && h < ALTEZZA_MEZZO_M,
+          allagabile: t.flood_prone === "yes", lunghezza_m: lung || null, altezza_mezzo_m: ALTEZZA_MEZZO_M,
+          osm: "https://www.openstreetmap.org/" + e.type + "/" + e.id}});
+      }
+      const pos = tt => { const pt = P(tt.lat, tt.lon); let bi = 0, bd = Infinity; R.forEach((r, i) => { const d = Math.hypot(r[0] - pt[0], r[1] - pt[1]); if (d < bd) { bd = d; bi = i; } }); return bi; };
+      out.forEach(o => { o.ordine = pos(o); });
+      return out.sort((x, y) => x.ordine - y.ordine);
+    }
+    async function sottopassiSulPercorso(coords) {
+      await caricaLibSottopassi();
+      try { return {lista: await sottopassiOnline(coords), fonte: "online"}; }
+      catch (err) {
+        console.warn("Verifica online dei sottopassi non riuscita, uso l'archivio:", err);
+        return {lista: await window.FireOpsSottopassi.sulPercorso(coords), fonte: "archivio"};
+      }
     }
     function sbarreDalPercorso(prop) {
       const m = prop && prop.messages;
@@ -2654,9 +2733,9 @@ assign initialcost =
         const fermoPrima = modalita === "auto" && coordAuto.length > 0 && restanteM > SOGLIA_TRATTO_PIEDI_M;
         const sbarre = (auto && auto.profiloSoccorso) ? sbarreDalPercorso(propAuto) : [];
         // sottopassi e limiti di altezza lungo il tratto col mezzo (dati OSM in db/competenze; se mancano, nessun avviso)
-        let sottopassi = [], sottopassiOk = true;
+        let sottopassi = [], sottopassiOk = true, fonteSotto = "";
         if (coordAuto.length) {
-          try { sottopassi = await sottopassiSulPercorso(coordAuto); } catch (err) { sottopassiOk = false; console.warn("Sottopassi non verificabili:", err); }
+          try { const rs = await sottopassiSulPercorso(coordAuto); sottopassi = rs.lista; fonteSotto = rs.fonte; } catch (err) { sottopassiOk = false; console.warn("Sottopassi non verificabili:", err); }
         }
 
         // disegno: mezzo pieno, piedi puntinato, cambio e sbarre segnati
@@ -2713,10 +2792,11 @@ assign initialcost =
         if (sbarre.length) righe.push("🚧 Sbarre/cancelli: " + sbarre.length);
         if (sottopassi.length) {
           const crit = sottopassi.filter(t => t.p.critico);
-          righe.push("⛔ <strong>Sottopassi / limiti di altezza sul percorso: " + sottopassi.length + "</strong>" + (crit.length ? ' — <span class="rt-avviso">il mezzo NON passa in ' + crit.length + "</span>" : ""));
+          righe.push("⛔ <strong>Sottopassi / limiti di altezza sul percorso: " + sottopassi.length + "</strong>" + (fonteSotto === "archivio" ? " (archivio offline, solo Forlì-Cesena)" : "") + (crit.length ? ' — <span class="rt-avviso">il mezzo NON passa in ' + crit.length + "</span>" : ""));
           sottopassi.slice(0, 6).forEach(t => righe.push("&nbsp;&nbsp;• " + window.FireOpsSottopassi.testo(t.p).replace(/[<>&]/g, "")));
           if (sottopassi.length > 6) righe.push("&nbsp;&nbsp;• … e altri " + (sottopassi.length - 6) + " (vedi la mappa)");
         } else if (coordAuto.length && !sottopassiOk) righe.push('<span class="rt-avviso">⚠️ Sottopassi non verificabili (dati non raggiunti).</span>');
+        else if (coordAuto.length && fonteSotto === "archivio") righe.push("Sottopassi: nessuno nell’archivio offline (solo Forlì-Cesena; la verifica online non ha risposto).");
         const salitaTot = Math.round(dis.salita + disAuto.salita), discTot = Math.round(dis.discesa + disAuto.discesa);
         if (salitaTot || discTot) righe.push("Dislivello: +" + salitaTot + " m / −" + discTot + " m");
         if (cambio) righe.push("🥾 <strong>" + (haCambio ? "Punto di cambio " : "Il mezzo si ferma a ") + cambio.lat.toFixed(6) + ", " + cambio.lon.toFixed(6) + "</strong> " +
