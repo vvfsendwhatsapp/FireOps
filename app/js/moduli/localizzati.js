@@ -1079,6 +1079,7 @@ body.map-open {
             <div><span style="display:inline-block;width:16px;border-top:3px dotted #e84747"></span> A piedi</div>
             <div><span style="font-size:12px">🥾</span> Punto di cambio</div>
             <div><span style="display:inline-block;width:14px;height:6px;background:repeating-linear-gradient(45deg,#e84747 0 3px,#fff 3px 6px)"></span> Sbarra / cancello</div>
+            <div><span style="display:inline-block;min-width:22px;padding:0 3px;border-radius:3px;background:#c8102e;color:#fff;font:700 9px/14px system-ui;text-align:center">⛔h</span> Sottopasso (rosso = il mezzo non passa)</div>
           </div>
           <button type="button" id="mapTargetBtn" class="map-target-btn hidden" title="Centra sul target"
             aria-label="Centra sul target">
@@ -2518,6 +2519,18 @@ assign initialcost =
     function propGeojson(g) {return (g && g.features && g.features[0] && g.features[0].properties) || {};}
 
     // sbarre e cancelli attraversati, dalla tabella "messages" (coordinate in milionesimi di grado)
+    // libreria condivisa del repo (root del sito): sottopassi e altezze dal calcolo delle competenze, per ora Forlì-Cesena
+    function sottopassiSulPercorso(coords) {
+      const usa = () => window.FireOpsSottopassi.sulPercorso(coords);
+      if (window.FireOpsSottopassi) return usa();
+      return new Promise((ok, ko) => {
+        const sc = document.createElement("script");
+        sc.src = "../fireops-sottopassi.js?v=" + (window.FIREOPS_VERSIONE || Date.now());
+        sc.onload = () => window.FireOpsSottopassi ? ok(usa()) : ko(new Error("libreria assente"));
+        sc.onerror = () => ko(new Error("libreria non caricata"));
+        document.head.appendChild(sc);
+      });
+    }
     function sbarreDalPercorso(prop) {
       const m = prop && prop.messages;
       if (!Array.isArray(m) || m.length < 2) return [];
@@ -2640,6 +2653,11 @@ assign initialcost =
         const haCambio = coordAuto.length > 0 && coordPiedi.length > 0;
         const fermoPrima = modalita === "auto" && coordAuto.length > 0 && restanteM > SOGLIA_TRATTO_PIEDI_M;
         const sbarre = (auto && auto.profiloSoccorso) ? sbarreDalPercorso(propAuto) : [];
+        // sottopassi e limiti di altezza lungo il tratto col mezzo (dati OSM in db/competenze; se mancano, nessun avviso)
+        let sottopassi = [], sottopassiOk = true;
+        if (coordAuto.length) {
+          try { sottopassi = await sottopassiSulPercorso(coordAuto); } catch (err) { sottopassiOk = false; console.warn("Sottopassi non verificabili:", err); }
+        }
 
         // disegno: mezzo pieno, piedi puntinato, cambio e sbarre segnati
         const aLatLng = c => [c[1], c[0]];
@@ -2660,6 +2678,10 @@ assign initialcost =
           layers.push(L.marker([sb.lat, sb.lon], {title: "Sbarra / cancello", icon: L.divIcon({className: "", iconSize: [22, 8], iconAnchor: [11, 4],
             html: '<div style="width:22px;height:8px;background:repeating-linear-gradient(45deg,#e84747 0 5px,#fff 5px 10px);border:1px solid #121212;border-radius:2px;box-shadow:0 0 4px rgba(0,0,0,.6)"></div>'})})
             .bindPopup("<b>Sbarra / cancello</b><br>" + sb.tag.replace(/[<>&"]/g, "") + "<br>Prevedere apertura o chiave"));
+        });
+        sottopassi.forEach(t => {
+          layers.push(L.marker([t.lat, t.lon], {zIndexOffset: 1500, title: window.FireOpsSottopassi.testo(t.p), icon: window.FireOpsSottopassi.icona(t.p)})
+            .bindPopup(window.FireOpsSottopassi.popup(t.p)));
         });
         if (routeLayer && map) map.removeLayer(routeLayer);
         routeLayer = L.featureGroup(layers).addTo(map);
@@ -2689,6 +2711,12 @@ assign initialcost =
           righe.push("🥾 A piedi: " + kmPiedi.toFixed(2) + " km · " + testoDurata(minPiedi));
         }
         if (sbarre.length) righe.push("🚧 Sbarre/cancelli: " + sbarre.length);
+        if (sottopassi.length) {
+          const crit = sottopassi.filter(t => t.p.critico);
+          righe.push("⛔ <strong>Sottopassi / limiti di altezza sul percorso: " + sottopassi.length + "</strong>" + (crit.length ? ' — <span class="rt-avviso">il mezzo NON passa in ' + crit.length + "</span>" : ""));
+          sottopassi.slice(0, 6).forEach(t => righe.push("&nbsp;&nbsp;• " + window.FireOpsSottopassi.testo(t.p).replace(/[<>&]/g, "")));
+          if (sottopassi.length > 6) righe.push("&nbsp;&nbsp;• … e altri " + (sottopassi.length - 6) + " (vedi la mappa)");
+        } else if (coordAuto.length && !sottopassiOk) righe.push('<span class="rt-avviso">⚠️ Sottopassi non verificabili (dati non raggiunti).</span>');
         const salitaTot = Math.round(dis.salita + disAuto.salita), discTot = Math.round(dis.discesa + disAuto.discesa);
         if (salitaTot || discTot) righe.push("Dislivello: +" + salitaTot + " m / −" + discTot + " m");
         if (cambio) righe.push("🥾 <strong>" + (haCambio ? "Punto di cambio " : "Il mezzo si ferma a ") + cambio.lat.toFixed(6) + ", " + cambio.lon.toFixed(6) + "</strong> " +
