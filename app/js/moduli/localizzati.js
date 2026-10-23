@@ -1098,8 +1098,8 @@ body.map-open {
             <div><span style="display:inline-block;min-width:22px;padding:0 3px;border-radius:3px;background:#7b4bc4;color:#fff;font:700 9px/14px system-ui;text-align:center">⛔h</span> Sottopasso / limite di altezza (m)</div>
             </div>
           </div>
-          <button type="button" id="mapRouteBtn" class="map-route-btn hidden" title="Calcola il percorso di soccorso"
-            aria-label="Calcola il percorso di soccorso">🚒</button>
+          <button type="button" id="mapRouteBtn" class="map-route-btn hidden" title="Ricalcola il percorso di soccorso"
+            aria-label="Ricalcola il percorso di soccorso">🚒</button>
           <button type="button" id="mapSottoBtn" class="map-route-btn map-sotto-btn hidden" title="Verifica i sottopassi sul percorso"
             aria-label="Verifica i sottopassi sul percorso">⛔</button>
           <button type="button" id="mapTargetBtn" class="map-target-btn hidden" title="Centra sul target"
@@ -1161,7 +1161,7 @@ body.map-open {
           <div class="value" id="rTargetAlt">—</div>
         </div>
         <div class="route-row">
-          <button type="button" id="routeMix" class="route-btn mix">🚒 Soccorso<small>mezzo VF fin dove arriva, poi a piedi</small></button>
+          <button type="button" id="routeMix" class="route-btn mix">🔄 Ricalcola percorso di soccorso<small>mezzo VF fin dove arriva, poi a piedi</small></button>
         </div>
         <div class="route-hint">Sulla carta: linea piena = mezzo, puntinata = a piedi, 🥾 = punto di cambio, 🚧 = sbarre</div>
         <div class="route-info hidden" id="routeInfo"></div>
