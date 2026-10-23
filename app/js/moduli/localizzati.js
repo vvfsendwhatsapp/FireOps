@@ -1079,7 +1079,7 @@ body.map-open {
             <div><span style="display:inline-block;width:16px;border-top:3px dotted #e84747"></span> A piedi</div>
             <div><span style="font-size:12px">🥾</span> Punto di cambio</div>
             <div><span style="display:inline-block;width:14px;height:6px;background:repeating-linear-gradient(45deg,#e84747 0 3px,#fff 3px 6px)"></span> Sbarra / cancello</div>
-            <div><span style="display:inline-block;min-width:22px;padding:0 3px;border-radius:3px;background:#c8102e;color:#fff;font:700 9px/14px system-ui;text-align:center">⛔h</span> Sottopasso (rosso = il mezzo non passa)</div>
+            <div><span style="display:inline-block;min-width:22px;padding:0 3px;border-radius:3px;background:#7b4bc4;color:#fff;font:700 9px/14px system-ui;text-align:center">⛔h</span> Sottopasso / limite di altezza (m)</div>
           </div>
           <button type="button" id="mapTargetBtn" class="map-target-btn hidden" title="Centra sul target"
             aria-label="Centra sul target">
@@ -2594,7 +2594,7 @@ assign initialcost =
         const tipo = e.type === "node" ? (t.barrier === "height_restrictor" ? "barriera di altezza" : "limite di altezza")
           : t.tunnel === "building_passage" ? "passaggio sotto edificio"
           : t.tunnel ? (lung > 300 ? "galleria" : "sottopasso") : t.covered === "yes" ? "tratto coperto" : "limite di altezza";
-        out.push({lat, lon, p: {tipo, nome: t.name || t.ref || "", altezza_m: h, critico: h != null && h < ALTEZZA_MEZZO_M,
+        out.push({lat, lon, p: {tipo, nome: t.name || t.ref || "", altezza_m: h, critico: false,
           allagabile: t.flood_prone === "yes", lunghezza_m: lung || null, altezza_mezzo_m: ALTEZZA_MEZZO_M,
           osm: "https://www.openstreetmap.org/" + e.type + "/" + e.id}});
       }
@@ -2607,7 +2607,9 @@ assign initialcost =
       try { return {lista: await sottopassiOnline(coords), fonte: "online"}; }
       catch (err) {
         console.warn("Verifica online dei sottopassi non riuscita, uso l'archivio:", err);
-        return {lista: await window.FireOpsSottopassi.sulPercorso(coords), fonte: "archivio"};
+        const l = await window.FireOpsSottopassi.sulPercorso(coords);
+        l.forEach(t => { t.p = Object.assign({}, t.p, {critico: false}); });   // l'app segnala soltanto: il verdetto spetta all'operatore
+        return {lista: l, fonte: "archivio"};
       }
     }
     function sbarreDalPercorso(prop) {
@@ -2791,8 +2793,8 @@ assign initialcost =
         }
         if (sbarre.length) righe.push("🚧 Sbarre/cancelli: " + sbarre.length);
         if (sottopassi.length) {
-          const crit = sottopassi.filter(t => t.p.critico);
-          righe.push("⛔ <strong>Sottopassi / limiti di altezza sul percorso: " + sottopassi.length + "</strong>" + (fonteSotto === "archivio" ? " (archivio offline, solo Forlì-Cesena)" : "") + (crit.length ? ' — <span class="rt-avviso">il mezzo NON passa in ' + crit.length + "</span>" : ""));
+          righe.push("⛔ <strong>Sottopassi / limiti di altezza sul percorso: " + sottopassi.length + "</strong>" + (fonteSotto === "archivio" ? " (archivio offline, solo Forlì-Cesena)" : ""));
+          righe.push('<span class="rt-nota">Solo segnalazione: confronta l’altezza con quella del tuo mezzo e, se serve, ricalcola.</span>');
           sottopassi.slice(0, 6).forEach(t => righe.push("&nbsp;&nbsp;• " + window.FireOpsSottopassi.testo(t.p).replace(/[<>&]/g, "")));
           if (sottopassi.length > 6) righe.push("&nbsp;&nbsp;• … e altri " + (sottopassi.length - 6) + " (vedi la mappa)");
         } else if (coordAuto.length && !sottopassiOk) righe.push('<span class="rt-avviso">⚠️ Sottopassi non verificabili (dati non raggiunti).</span>');
