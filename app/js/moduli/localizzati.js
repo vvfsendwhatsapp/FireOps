@@ -1218,6 +1218,7 @@ body.map-open {
         <details class="cmd-dove" id="cmdDove">
           <summary>📍 Dove si trova · Naviga</summary>
           <div class="cmd-actions">
+            <button type="button" id="arComando" class="nav-cmd-btn" title="Freccia in realtà aumentata verso il Comando">📷 Guida al comando in realtà aumentata</button>
             <button type="button" id="navToComando" class="nav-cmd-btn" title="Naviga alla sede del Comando con Google Maps">🧭 Naviga al comando VVF</button>
           </div>
           <div class="result-addr" id="rCmdAddr"></div>
@@ -2967,7 +2968,14 @@ assign initialcost =
     // il percorso da disegnare è l'ultimo calcolato (lo stesso dell'esportazione KML)
     function arCostruisciPercorso() {
       const u = ultimoPercorso;
-      if (!u) return null;
+      if (!u) {
+        // senza percorso calcolato: solo la freccia verso il target, se c'è, altrimenti verso il Comando
+        const d = targetPos ? {lat: targetPos.lat, lon: targetPos.lon, comando: false}
+          : (currentRecord ? {lat: currentRecord.lat, lon: currentRecord.lon, comando: true} : null);
+        if (!d) return null;
+        return {pts: [{lat: d.lat, lon: d.lon, seg: "a"}, {lat: d.lat, lon: d.lon, seg: "a"}], cambioIdx: null, sbarre: [],
+          target: {lat: d.lat, lon: d.lon}, diretto: true, comando: d.comando};
+      }
       const pts = u.coordAuto.map(function (c) {return {lat: c[1], lon: c[0], seg: "a"};});
       u.coordPiedi.forEach(function (c, i) {if (!(i === 0 && pts.length)) pts.push({lat: c[1], lon: c[0], seg: "p"});});
       if (pts.length < 2) return null;
@@ -3065,7 +3073,8 @@ assign initialcost =
       const pins = [];
       if (arRoute.cambioIdx != null) pins.push({k: "cambio", p: arRoute.pts[arRoute.cambioIdx], t: "🅿 Lascia il mezzo", col: "#ffd700", tc: "#10141a", edge: true});
       arRoute.sbarre.forEach(function (s) {pins.push({k: "sbarra", p: s, t: "🚧 Sbarra", col: "#fff", tc: "#e84747", edge: false});});
-      pins.push({k: "target", p: arRoute.target, t: "🎯 Target", col: "#e84747", tc: "#fff", edge: true});
+      if (arRoute.comando) pins.push({k: "target", p: arRoute.target, t: "🏢 Comando", col: "#ffd700", tc: "#10141a", edge: true});
+      else pins.push({k: "target", p: arRoute.target, t: "🎯 Target", col: "#e84747", tc: "#fff", edge: true});
 
       let opened = true;
 
@@ -3180,7 +3189,7 @@ assign initialcost =
           if (fill) {g.fillStyle = fill; g.fill();}
           if (stroke) {g.strokeStyle = stroke; g.lineWidth = 2 * dpr; g.stroke();}
         };
-        for (let i = seq.length - 2; i >= 0; i--) {                       // dal lontano al vicino
+        for (let i = arRoute.diretto ? -1 : seq.length - 2; i >= 0; i--) {   // dal lontano al vicino
           const a = seq[i], b = seq[i + 1];
           const ca = toCam(a.e, a.n, 0), cb = toCam(b.e, b.n, 0);
           const cl = arClipT(ca.z, cb.z, AR_NEAR);
@@ -3196,7 +3205,7 @@ assign initialcost =
           poly(q, piedi ? "rgba(63,166,107,.62)" : "rgba(255,215,0,.55)", piedi ? "rgba(255,255,255,.9)" : "rgba(16,20,26,.8)");
         }
         // frecce sul terreno, ogni 7 m nei primi 70 m
-        for (let s = near.s + 4; s < Math.min(sEnd, near.s + 70); s += 7) {
+        for (let s = near.s + 4; !arRoute.diretto && s < Math.min(sEnd, near.s + 70); s += 7) {
           const p = arAt(loc, cum, s), p2 = arAt(loc, cum, s + 1.5);
           const L = Math.hypot(p2.e - p.e, p2.n - p.n) || 1, de = (p2.e - p.e) / L, dn = (p2.n - p.n) / L;
           const tri = [[p.e + de * 1.4, p.n + dn * 1.4], [p.e - de * 0.7 - dn * 0.8, p.n - dn * 0.7 + de * 0.8], [p.e - de * 0.7 + dn * 0.8, p.n - dn * 0.7 - de * 0.8]].map(function (v) {return toCam(v[0], v[1], 0.02);});
@@ -3243,12 +3252,19 @@ assign initialcost =
           const sMeta = target === "cambio" ? sCambio : cum[cum.length - 1];
           const ahead = fuori ? {e: near.e, n: near.n} : arAt(loc, cum, near.s + 20);
           const brg = (Math.atan2(ahead.e - me.e, ahead.n - me.n) * 180 / Math.PI + 360) % 360;
-          const rel = arDiffAng(camAz, brg);
+          // la freccia mira sempre al target (rossa); senza target, al Comando (gialla)
+          const pT = arEnu(o.lat, o.lon, arRoute.target.lat, arRoute.target.lon);
+          const brgT = (Math.atan2(pT.e - me.e, pT.n - me.n) * 180 / Math.PI + 360) % 360;
+          const distT = Math.hypot(pT.e - me.e, pT.n - me.n);
+          const rel = arDiffAng(camAz, brgT);
+          top.arrow.style.background = arRoute.comando ? "rgba(255,215,0,.95)" : "rgba(232,71,71,.96)";
+          top.arrow.style.color = arRoute.comando ? "#10141a" : "#fff";
           top.arrow.style.transform = "rotate(" + (rel - 90 + 0) + "deg)";
           const rem = fuori ? near.d : Math.max(0, sMeta - near.s);
           const fmt = function (m) {return m >= 1000 ? (m / 1000).toFixed(1) + " km" : Math.round(m) + " m";};
-          top.next.textContent = fuori ? "Fuori percorso: " + fmt(near.d) + " dalla linea" : (target === "cambio" ? "Lascia il mezzo tra " : "Target tra ") + fmt(rem);
-          top.next.style.color = fuori ? "#ffb4a2" : "#fff";
+          if (arRoute.diretto) top.next.textContent = (arRoute.comando ? "Comando a " : "Target a ") + fmt(distT) + " (in linea d’aria)";
+          else top.next.textContent = fuori ? "Fuori percorso: " + fmt(near.d) + " dalla linea" : (target === "cambio" ? "Lascia il mezzo tra " : "Target tra ") + fmt(rem);
+          top.next.style.color = fuori && !arRoute.diretto ? "#ffb4a2" : "#fff";
           top.sub.textContent = (Math.abs(rel) < 12 ? "Davanti a te" : (rel > 0 ? "Gira a destra " : "Gira a sinistra ") + Math.round(Math.abs(rel)) + "°") +
             " · GPS ±" + (pos.acc != null ? Math.round(pos.acc) : "?") + " m" + (gpsAllineato ? " · bussola allineata al GPS" : " · cammina: la bussola si allinea col GPS");
           nextPin = meta || null;
@@ -3276,6 +3292,10 @@ assign initialcost =
     }
 
     document.getElementById("routeAR").addEventListener("click", arStart);
+    document.getElementById("arComando").addEventListener("click", function () {
+      // dal Comando: se c'è un target vale il target (con il suo percorso), altrimenti la freccia punta al Comando
+      arStart();
+    });
 
     document.getElementById("navToComando").addEventListener("click", function () {
       if (!currentRecord) return;
