@@ -10,8 +10,8 @@ android {
         applicationId "it.vvf.fireops.localizzati"
         minSdk 24
         targetSdk 34
-        versionCode 1
-        versionName "1.0"
+        versionCode (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInteger()
+        versionName "2026.10." + (System.getenv("GITHUB_RUN_NUMBER") ?: "0")
     }
 
     flavorDimensions "versione"
