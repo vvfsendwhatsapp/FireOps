@@ -553,6 +553,13 @@ body.map-open {
 .pg-localizzati .map-target-btn {
       right: 94px;
 }
+.pg-localizzati .map-route-btn { position: absolute; top: 52px; right: 10px; z-index: 1200; width: 34px; height: 34px; border-radius: 4px; background: var(--panel); border: 1px solid #e84747; color: var(--text); display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; font-size: 16px; line-height: 1; }
+.pg-localizzati .map-route-btn:disabled { opacity: .5; }
+.pg-localizzati .map-route-btn.hidden { display: none; }
+.pg-localizzati .route-legenda .leg-testa { pointer-events: auto; cursor: pointer; font-weight: 700; justify-content: space-between; min-height: 22px; }
+.pg-localizzati .route-legenda .leg-corpo { display: block; margin-top: 4px; }
+.pg-localizzati .route-legenda.chiusa .leg-corpo { display: none; }
+.pg-localizzati .route-legenda { pointer-events: auto; }
 .pg-localizzati .map-nord { position: absolute; left: 10px; top: 118px; z-index: 1200; width: 34px; height: 46px; display: flex; flex-direction: column; align-items: center; pointer-events: none; }
 .pg-localizzati .map-nord.hidden { display: none; }
 .pg-localizzati .map-nord svg { background: rgba(16,20,26,.72); border-radius: 50%; }
@@ -1075,12 +1082,17 @@ body.map-open {
         <div class="map-wrap">
           <div id="resultMap"></div>
           <div class="route-legenda hidden" id="routeLegenda">
+            <div class="leg-testa" id="routeLegTesta" role="button" tabindex="0" aria-expanded="true"><span>Legenda</span><span id="routeLegFreccia">▾</span></div>
+            <div class="leg-corpo">
             <div><span style="display:inline-block;width:16px;border-top:4px solid #e84747"></span> Mezzo VF</div>
             <div><span style="display:inline-block;width:16px;border-top:3px dotted #e84747"></span> A piedi</div>
             <div><span style="font-size:12px">🥾</span> Punto di cambio</div>
             <div><span style="display:inline-block;width:14px;height:6px;background:repeating-linear-gradient(45deg,#e84747 0 3px,#fff 3px 6px)"></span> Sbarra / cancello</div>
             <div><span style="display:inline-block;min-width:22px;padding:0 3px;border-radius:3px;background:#7b4bc4;color:#fff;font:700 9px/14px system-ui;text-align:center">⛔h</span> Sottopasso / limite di altezza (m)</div>
+            </div>
           </div>
+          <button type="button" id="mapRouteBtn" class="map-route-btn hidden" title="Calcola il percorso di soccorso"
+            aria-label="Calcola il percorso di soccorso">🚒</button>
           <button type="button" id="mapTargetBtn" class="map-target-btn hidden" title="Centra sul target"
             aria-label="Centra sul target">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e84747" stroke-width="2"
@@ -1245,7 +1257,6 @@ body.map-open {
     <div class="ar-bot">
       <button type="button" id="arClose">✕ Chiudi</button>
       <button type="button" id="arMinus" aria-label="Sposta a sinistra">◀ 5°</button>
-      <button type="button" id="arAlign">🎯 Allinea</button>
       <button type="button" id="arPlus" aria-label="Sposta a destra">5° ▶</button>
     </div>
   </div>
@@ -1771,6 +1782,7 @@ body.map-open {
       }
 
       document.getElementById("mapTargetBtn").classList.toggle("hidden", !target);
+      document.getElementById("mapRouteBtn").classList.toggle("hidden", !target);
       document.getElementById("legLnPos").classList.toggle("hidden", !pos);
       document.getElementById("legLnTgt").classList.toggle("hidden", !target);
       document.getElementById("legLnPT").classList.toggle("hidden", !(pos && target));
@@ -2238,6 +2250,7 @@ body.map-open {
           bestAccuracy = Math.max(newAcc, 20);
           userPos = {lat: pos.coords.latitude, lon: pos.coords.longitude};
           userAccuracy = newAcc;
+          autoPercorso();
           if (newAlt !== null) userAltitude = newAlt;
 
           const rs = document.getElementById("result-section");
@@ -2685,10 +2698,33 @@ assign initialcost =
           ';display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 0 6px rgba(0,0,0,.6)">🥾</div>'});
     }
 
-    async function calcolaPercorso(modalita) {
+    // Sottopassi: arrivano dopo il disegno del percorso (la rete può essere lenta), senza bloccare il resto
+    async function completaSottopassi(promessa, gruppo) {
+      const box = document.getElementById("routeSotto");
+      try {
+        const rs = await promessa;
+        if (routeLayer !== gruppo || !box) return;            // nel frattempo il percorso è cambiato
+        const sp = rs.lista, SP = window.FireOpsSottopassi;
+        sp.forEach(t => L.marker([t.lat, t.lon], {zIndexOffset: 1500, title: SP.testo(t.p), icon: SP.icona(t.p)}).bindPopup(SP.popup(t.p)).addTo(gruppo));
+        const arch = rs.fonte === "archivio";
+        const r = [];
+        if (sp.length) {
+          r.push("⛔ <strong>Sottopassi / limiti di altezza sul percorso: " + sp.length + "</strong>" + (arch ? " (archivio offline, solo Forlì-Cesena)" : ""));
+          r.push('<span class="rt-nota">Solo segnalazione: confronta l’altezza con quella del tuo mezzo e, se serve, ricalcola.</span>');
+          sp.slice(0, 6).forEach(t => r.push("&nbsp;&nbsp;• " + SP.testo(t.p).replace(/[<>&]/g, "")));
+          if (sp.length > 6) r.push("&nbsp;&nbsp;• … e altri " + (sp.length - 6) + " (vedi la mappa)");
+        } else r.push(arch ? "Sottopassi: nessuno nell’archivio offline (solo Forlì-Cesena; la verifica online non ha risposto)." : "Sottopassi / limiti di altezza: nessuno segnalato su OpenStreetMap.");
+        box.innerHTML = r.join("<br>");
+      } catch (err) {
+        console.warn("Sottopassi non verificabili:", err);
+        if (box && routeLayer === gruppo) box.innerHTML = '<span class="rt-avviso">⚠️ Sottopassi non verificabili (dati non raggiunti).</span>';
+      }
+    }
+
+    async function calcolaPercorso(modalita, auto) {
       const info = document.getElementById("routeInfo");
-      document.getElementById("tgtDet").open = true;
-      const btns = [document.getElementById("routeMix")];
+      if (!auto) document.getElementById("tgtDet").open = true;
+      const btns = [document.getElementById("routeMix"), document.getElementById("mapRouteBtn")];
       info.classList.remove("hidden", "error");
       if (!targetPos) return;
       if (!userPos) {
@@ -2717,6 +2753,11 @@ assign initialcost =
           : {lat: latP, lon: lonP};
         const restanteM = haversine(fineAuto.lat, fineAuto.lon, latT, lonT) * 1000;
 
+        // sottopassi e limiti di altezza sul tratto col mezzo: la richiesta parte subito, in parallelo al tratto a piedi,
+        // e si attende solo dopo aver disegnato il percorso
+        const pSotto = coordAuto.length ? sottopassiSulPercorso(coordAuto) : null;
+        if (pSotto) pSotto.catch(() => { });
+
         // 2 - a piedi: dal punto di cambio (o dalla posizione, in "solo piedi")
         let coordPiedi = [], propPiedi = {};
         if (conPiedi && restanteM > SOGLIA_TRATTO_PIEDI_M) {
@@ -2734,12 +2775,6 @@ assign initialcost =
         const haCambio = coordAuto.length > 0 && coordPiedi.length > 0;
         const fermoPrima = modalita === "auto" && coordAuto.length > 0 && restanteM > SOGLIA_TRATTO_PIEDI_M;
         const sbarre = (auto && auto.profiloSoccorso) ? sbarreDalPercorso(propAuto) : [];
-        // sottopassi e limiti di altezza lungo il tratto col mezzo (dati OSM in db/competenze; se mancano, nessun avviso)
-        let sottopassi = [], sottopassiOk = true, fonteSotto = "";
-        if (coordAuto.length) {
-          try { const rs = await sottopassiSulPercorso(coordAuto); sottopassi = rs.lista; fonteSotto = rs.fonte; } catch (err) { sottopassiOk = false; console.warn("Sottopassi non verificabili:", err); }
-        }
-
         // disegno: mezzo pieno, piedi puntinato, cambio e sbarre segnati
         const aLatLng = c => [c[1], c[0]];
         const layers = [];
@@ -2760,15 +2795,11 @@ assign initialcost =
             html: '<div style="width:22px;height:8px;background:repeating-linear-gradient(45deg,#e84747 0 5px,#fff 5px 10px);border:1px solid #121212;border-radius:2px;box-shadow:0 0 4px rgba(0,0,0,.6)"></div>'})})
             .bindPopup("<b>Sbarra / cancello</b><br>" + sb.tag.replace(/[<>&"]/g, "") + "<br>Prevedere apertura o chiave"));
         });
-        sottopassi.forEach(t => {
-          layers.push(L.marker([t.lat, t.lon], {zIndexOffset: 1500, title: window.FireOpsSottopassi.testo(t.p), icon: window.FireOpsSottopassi.icona(t.p)})
-            .bindPopup(window.FireOpsSottopassi.popup(t.p)));
-        });
         if (routeLayer && map) map.removeLayer(routeLayer);
         routeLayer = L.featureGroup(layers).addTo(map);
         document.getElementById("routeLegenda").classList.remove("hidden");
         map.fitBounds(routeLayer.getBounds(), {padding: [40, 40]});
-        document.getElementById("resultMap").scrollIntoView({behavior: "smooth", block: "center"});
+        if (!auto) document.getElementById("resultMap").scrollIntoView({behavior: "smooth", block: "center"});
 
         // misure e tempi
         const kmAuto = (parseFloat(propAuto["track-length"]) || 0) / 1000;
@@ -2792,13 +2823,7 @@ assign initialcost =
           righe.push("🥾 A piedi: " + kmPiedi.toFixed(2) + " km · " + testoDurata(minPiedi));
         }
         if (sbarre.length) righe.push("🚧 Sbarre/cancelli: " + sbarre.length);
-        if (sottopassi.length) {
-          righe.push("⛔ <strong>Sottopassi / limiti di altezza sul percorso: " + sottopassi.length + "</strong>" + (fonteSotto === "archivio" ? " (archivio offline, solo Forlì-Cesena)" : ""));
-          righe.push('<span class="rt-nota">Solo segnalazione: confronta l’altezza con quella del tuo mezzo e, se serve, ricalcola.</span>');
-          sottopassi.slice(0, 6).forEach(t => righe.push("&nbsp;&nbsp;• " + window.FireOpsSottopassi.testo(t.p).replace(/[<>&]/g, "")));
-          if (sottopassi.length > 6) righe.push("&nbsp;&nbsp;• … e altri " + (sottopassi.length - 6) + " (vedi la mappa)");
-        } else if (coordAuto.length && !sottopassiOk) righe.push('<span class="rt-avviso">⚠️ Sottopassi non verificabili (dati non raggiunti).</span>');
-        else if (coordAuto.length && fonteSotto === "archivio") righe.push("Sottopassi: nessuno nell’archivio offline (solo Forlì-Cesena; la verifica online non ha risposto).");
+        if (pSotto) righe.push('<div id="routeSotto">⏳ Verifica sottopassi in corso…</div>');
         const salitaTot = Math.round(dis.salita + disAuto.salita), discTot = Math.round(dis.discesa + disAuto.discesa);
         if (salitaTot || discTot) righe.push("Dislivello: +" + salitaTot + " m / −" + discTot + " m");
         if (cambio) righe.push("🥾 <strong>" + (haCambio ? "Punto di cambio " : "Il mezzo si ferma a ") + cambio.lat.toFixed(6) + ", " + cambio.lon.toFixed(6) + "</strong> " +
@@ -2813,6 +2838,7 @@ assign initialcost =
           partenza: {lat: latP, lon: lonP}, target: {lat: latT, lon: lonT}, cambio: cambio, haCambio: haCambio,
           kmAuto: kmAuto, kmPiedi: kmPiedi, minAuto: minAuto, minPiedi: minPiedi, minTot: minTot};
         document.getElementById("routeExport").classList.remove("hidden");
+        if (pSotto) completaSottopassi(pSotto, routeLayer);
       } catch (e) {
         info.classList.add("error");
         info.textContent = "Percorso non disponibile (" + (e.name === "AbortError" ? "tempo scaduto" : e.message) + ").";
@@ -2893,11 +2919,33 @@ assign initialcost =
     document.getElementById("routeGpx").addEventListener("click", () => esportaKml("gpx"));
 
     document.getElementById("routeMix").addEventListener("click", function () {calcolaPercorso("soccorso");});
+    // legenda comprimibile (la scelta resta in memoria)
+    (function () {
+      const leg = document.getElementById("routeLegenda"), testa = document.getElementById("routeLegTesta"), fr = document.getElementById("routeLegFreccia");
+      const applica = chiusa => { leg.classList.toggle("chiusa", chiusa); fr.textContent = chiusa ? "▸" : "▾"; testa.setAttribute("aria-expanded", String(!chiusa)); };
+      let chiusa = false;
+      try { chiusa = localStorage.getItem("fireops_legenda_chiusa") === "1"; } catch (e) { }
+      applica(chiusa);
+      const inverti = () => { chiusa = !chiusa; applica(chiusa); try { localStorage.setItem("fireops_legenda_chiusa", chiusa ? "1" : "0"); } catch (e) { } };
+      testa.addEventListener("click", inverti);
+      testa.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); inverti(); } });
+    })();
+    document.getElementById("mapRouteBtn").addEventListener("click", function () {calcolaPercorso("soccorso");});
+
+    // Percorso di soccorso calcolato da solo: appena ci sono target e posizione, una volta per target
+    let chiaveAuto = null, autoInCorso = false;
+    function autoPercorso() {
+      if (!targetPos || !userPos || autoInCorso) return;
+      const k = targetPos.lat.toFixed(6) + "," + targetPos.lon.toFixed(6);
+      if (k === chiaveAuto) return;
+      chiaveAuto = k; autoInCorso = true;
+      Promise.resolve(calcolaPercorso("soccorso", true)).finally(() => { autoInCorso = false; });
+    }
     /* ================= GUIDA IN REALTÀ AUMENTATA =================
      * Camera posteriore + GPS + sensori di orientamento: il percorso calcolato viene disegnato sul terreno
      * davanti a te (nastro con frecce), con i segnali del punto di cambio, delle sbarre e del target.
-     * Indicativo: GPS ±5-10 m e bussola ±10-20°. Se la bussola è storta: "Allinea" (inquadra il punto
-     * indicato e tocca) oppure ±5°.
+     * Indicativo: GPS ±5-10 m e bussola ±10-20°. La bussola si allinea da sola alla direzione di marcia
+     * data dal GPS appena ci si muove (nessun gesto manuale); ◀ ▶ restano per un ritocco fine di 5°.
      */
     let arRoute = null;       // {pts:[{lat,lon,seg}], cambioIdx, sbarre:[{lat,lon}], target:{lat,lon}}
     let arStop = null;
@@ -3009,7 +3057,7 @@ assign initialcost =
 
       // ---- sensori ----
       const ori = {a: 0, b: 90, g: 0, ok: false, cmp: null, off: null, abs: false};
-      let yawOff = 0;
+      let yawOff = 0, gpsAllineato = false, ultimoGps = null;
       const sm = function (cur, nw, k, circ) {
         if (cur === null || cur === undefined) return nw;
         if (!circ) return cur + (nw - cur) * k;
@@ -3047,6 +3095,23 @@ assign initialcost =
       if (navigator.geolocation) {
         gpsId = navigator.geolocation.watchPosition(function (p) {
           pos = {lat: p.coords.latitude, lon: p.coords.longitude, acc: p.coords.accuracy};
+          // direzione di marcia dal GPS: quella del sensore, se valida, altrimenti dallo spostamento fra due letture
+          let rotta = null;
+          const v = p.coords.speed;
+          if (typeof p.coords.heading === "number" && isFinite(p.coords.heading) && v != null && v > 0.8) rotta = p.coords.heading;
+          else if (ultimoGps) {
+            const d = arEnu(ultimoGps.lat, ultimoGps.lon, pos.lat, pos.lon), m = Math.hypot(d.e, d.n);
+            if (m >= 4 && m > 1.5 * Math.max(ultimoGps.acc || 0, pos.acc || 0) * 0.5) rotta = (Math.atan2(d.e, d.n) * 180 / Math.PI + 360) % 360;
+          }
+          if (!ultimoGps || Math.hypot(arEnu(ultimoGps.lat, ultimoGps.lon, pos.lat, pos.lon).e, arEnu(ultimoGps.lat, ultimoGps.lon, pos.lat, pos.lon).n) >= 4) ultimoGps = {lat: pos.lat, lon: pos.lon, acc: pos.acc};
+          // in cammino con il telefono in piedi davanti a sé, la fotocamera guarda dove si va: la bussola si corregge su quella rotta
+          if (rotta !== null && ori.ok && fb > 50 && fb < 125) {
+            const az = arAzimuth(arRot((fa + yawOff + 360) % 360, fb, fg)), diff = arDiffAng(az, rotta);
+            if (Math.abs(diff) < 80) {
+              yawOff = (yawOff - diff * (gpsAllineato ? 0.2 : 0.7) + 720) % 360;
+              gpsAllineato = true;
+            }
+          }
         }, function () {showMsg("Posizione GPS non disponibile.");}, {enableHighAccuracy: true, maximumAge: 1000, timeout: 20000});
       }
 
@@ -3171,25 +3236,14 @@ assign initialcost =
           top.next.textContent = fuori ? "Fuori percorso: " + fmt(near.d) + " dalla linea" : (target === "cambio" ? "Lascia il mezzo tra " : "Target tra ") + fmt(rem);
           top.next.style.color = fuori ? "#ffb4a2" : "#fff";
           top.sub.textContent = (Math.abs(rel) < 12 ? "Davanti a te" : (rel > 0 ? "Gira a destra " : "Gira a sinistra ") + Math.round(Math.abs(rel)) + "°") +
-            " · GPS ±" + (pos.acc != null ? Math.round(pos.acc) : "?") + " m" + (ori.abs || yawOff ? "" : " · bussola non calibrata: usa Allinea");
+            " · GPS ±" + (pos.acc != null ? Math.round(pos.acc) : "?") + " m" + (gpsAllineato ? " · bussola allineata al GPS" : " · cammina: la bussola si allinea col GPS");
           nextPin = meta || null;
         }
       }
       raf = requestAnimationFrame(frame);
 
-      // allineamento: inquadra il punto indicato e tocca → la bussola si corregge
-      const align = function () {
-        if (!ori.ok || !pos || !nextPin) return;
-        const R = arRot((fa + yawOff + 360) % 360, fb, fg), az = arAzimuth(R);
-        const pe = arEnu(o.lat, o.lon, nextPin.p.lat, nextPin.p.lon), me = arEnu(o.lat, o.lon, pos.lat, pos.lon);
-        const brg = (Math.atan2(pe.e - me.e, pe.n - me.n) * 180 / Math.PI + 360) % 360;
-        yawOff = (yawOff + (az - brg) + 720) % 360;
-        showMsg("Bussola allineata su: " + nextPin.t.replace(/^\S+\s/, "") + ".");
-        setTimeout(function () {msg.classList.add("hidden");}, 2500);
-      };
       const nudge = function (d) {yawOff = (yawOff + d + 360) % 360;};
-      const bAlign = document.getElementById("arAlign"), bM = document.getElementById("arMinus"), bP = document.getElementById("arPlus"), bC = document.getElementById("arClose");
-      bAlign.onclick = align;
+      const bM = document.getElementById("arMinus"), bP = document.getElementById("arPlus"), bC = document.getElementById("arClose");
       bM.onclick = function () {nudge(-5);};    // ◀ sposta la scena a sinistra
       bP.onclick = function () {nudge(5);};     // ▶ sposta la scena a destra
       const stop = function () {
@@ -3222,9 +3276,10 @@ assign initialcost =
       if (!currentRecord) return false;
       targetPos = {lat: currentRecord.lat, lon: currentRecord.lon};
       document.getElementById("targetInput").value = targetPos.lat.toFixed(6) + ", " + targetPos.lon.toFixed(6);
-      clearRoute();
+      clearRoute(); chiaveAuto = null;
       fetchTargetElevation(targetPos.lat, targetPos.lon);
       startGpsTracking();
+      autoPercorso();
       const tp = document.getElementById("targetInfoPanel");
       tp.classList.remove("hidden");
       document.getElementById("rTargetCoords").textContent = targetPos.lat.toFixed(6) + "°, " + targetPos.lon.toFixed(6) + "°";
@@ -3555,11 +3610,12 @@ assign initialcost =
       }
 
       targetPos = coords;
-      clearRoute();
+      clearRoute(); chiaveAuto = null;
       fetchTargetElevation(targetPos.lat, targetPos.lon);
       statusEl.textContent = "Elaborazione coordinate e avvio tracking GPS ...";
 
       startGpsTracking();
+      autoPercorso();
 
       const geoRec = await reverseGeocodeProvincia(targetPos.lat, targetPos.lon);
       statusEl.classList.add("hidden");
