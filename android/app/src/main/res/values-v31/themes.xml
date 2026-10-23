@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 12+: lo schermo di avvio di sistema prende lo stesso colore dell'icona -->
+    <style name="TemaApp" parent="android:Theme.DeviceDefault.NoActionBar">
+        <item name="android:windowBackground">@color/sfondo_avvio</item>
+        <item name="android:windowSplashScreenBackground">@color/sfondo_avvio</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@color/sfondo_avvio</item>
+    </style>
+</resources>
