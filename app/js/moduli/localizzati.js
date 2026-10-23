@@ -554,6 +554,8 @@ body.map-open {
       right: 94px;
 }
 .pg-localizzati .map-route-btn { position: absolute; top: 52px; right: 10px; z-index: 1200; width: 34px; height: 34px; border-radius: 4px; background: var(--panel); border: 1px solid #e84747; color: var(--text); display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; font-size: 16px; line-height: 1; }
+.pg-localizzati .map-sotto-btn { top: 94px; border-color: #7b4bc4; }
+.pg-localizzati .btn-sotto { min-height: 44px; padding: 0 12px; border-radius: 8px; border: 1px solid #7b4bc4; background: var(--panel-2, #222); color: inherit; font: 700 13px system-ui; cursor: pointer; }
 .pg-localizzati .map-route-btn:disabled { opacity: .5; }
 .pg-localizzati .map-route-btn.hidden { display: none; }
 .pg-localizzati .route-legenda .leg-testa { pointer-events: auto; cursor: pointer; font-weight: 700; justify-content: space-between; min-height: 22px; }
@@ -564,11 +566,11 @@ body.map-open {
 .pg-localizzati .map-nord.hidden { display: none; }
 .pg-localizzati .map-nord svg { background: rgba(16,20,26,.72); border-radius: 50%; }
 .pg-localizzati .map-nord b { font-size: 11px; line-height: 1; color: #10141a; text-shadow: 0 0 3px #fff, 0 0 3px #fff; margin-top: 1px; }
-.pg-localizzati .map-mode-btn { right: 178px; font-size: 16px; line-height: 1; }
-.pg-localizzati .map-wrap:has(.map-target-btn.hidden) .map-mode-btn { right: 136px; }
+.pg-localizzati .map-mode-btn { right: 136px; font-size: 16px; line-height: 1; }
+.pg-localizzati .map-wrap:has(.map-target-btn.hidden) .map-mode-btn { right: 94px; }
 .pg-localizzati .map-mode-btn.freccia { background: #ffd700; color: #10141a; border-color: #ffd700; }
-.pg-localizzati .map-pause-btn { right: 136px; font-size: 15px; line-height: 1; }
-.pg-localizzati .map-wrap:has(.map-target-btn.hidden) .map-pause-btn { right: 94px; }
+.pg-localizzati .map-pause-btn { right: 178px; width: auto; min-width: 34px; padding: 0 8px; gap: 4px; font-size: 13px; font-weight: 700; line-height: 1; white-space: nowrap; }
+.pg-localizzati .map-wrap:has(.map-target-btn.hidden) .map-pause-btn { right: 136px; }
 .pg-localizzati .map-pause-btn.in-pausa { background: #ffd700; color: #10141a; border-color: #ffd700; }
 .pg-localizzati .map-expand-btn:active, .pg-localizzati .map-center-btn:active, .pg-localizzati .map-target-btn:active {
       background: var(--panel-2);
@@ -1093,6 +1095,8 @@ body.map-open {
           </div>
           <button type="button" id="mapRouteBtn" class="map-route-btn hidden" title="Calcola il percorso di soccorso"
             aria-label="Calcola il percorso di soccorso">🚒</button>
+          <button type="button" id="mapSottoBtn" class="map-route-btn map-sotto-btn hidden" title="Verifica i sottopassi sul percorso"
+            aria-label="Verifica i sottopassi sul percorso">⛔</button>
           <button type="button" id="mapTargetBtn" class="map-target-btn hidden" title="Centra sul target"
             aria-label="Centra sul target">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e84747" stroke-width="2"
@@ -1109,7 +1113,7 @@ body.map-open {
             </svg>
           </button>
           <button type="button" id="mapPauseBtn" class="map-pause-btn" title="Metti in pausa il rilevamento della posizione"
-            aria-label="Pausa rilevamento posizione">⏸</button>
+            aria-label="Pausa rilevamento posizione">⏸ GPS</button>
           <div id="mapNord" class="map-nord hidden" title="Nord" aria-label="Indicatore del nord"><svg viewBox="0 0 34 34" width="34" height="34"><g id="mapNordFreccia"><polygon points="17,3 23,18 17,15 11,18" fill="#e84747" stroke="#10141a" stroke-width="1.2" stroke-linejoin="round"/><polygon points="17,31 23,18 17,15 11,18" fill="#e6e9ee" stroke="#10141a" stroke-width="1.2" stroke-linejoin="round"/></g></svg><b>N</b></div>
           <button type="button" id="mapModeBtn" class="map-mode-btn" title="Mappa fissa: tocca per Freccia fissa"
             aria-label="Modalità mappa">🗺</button>
@@ -1812,7 +1816,7 @@ body.map-open {
     document.getElementById("mapPauseBtn").addEventListener("click", function () {
       gpsInPausa = !gpsInPausa;
       if (gpsInPausa) stopGpsTracking(); else startGpsTracking();
-      this.textContent = gpsInPausa ? "▶" : "⏸";
+      this.textContent = gpsInPausa ? "▶ GPS" : "⏸ GPS";
       this.classList.toggle("in-pausa", gpsInPausa);
       this.title = gpsInPausa ? "Riprendi il rilevamento della posizione" : "Metti in pausa il rilevamento della posizione";
       this.setAttribute("aria-label", this.title);
@@ -2412,6 +2416,7 @@ body.map-open {
       ultimoPercorso = null;
       document.getElementById("routeExport").classList.add("hidden");
       document.getElementById("routeLegenda").classList.add("hidden");
+      document.getElementById("mapSottoBtn").classList.add("hidden");
       document.querySelectorAll(".pg-localizzati .route-btn").forEach(b => b.classList.remove("attivo"));
       const info = document.getElementById("routeInfo");
       info.classList.add("hidden");
@@ -2699,6 +2704,14 @@ assign initialcost =
     }
 
     // Sottopassi: arrivano dopo il disegno del percorso (la rete può essere lenta), senza bloccare il resto
+    function verificaSottopassi() {
+      const u = ultimoPercorso, box = document.getElementById("routeSotto");
+      if (!u || !u.coordAuto.length || !box || u.sottoInCorso) return;
+      u.sottoInCorso = true;
+      box.innerHTML = "⏳ Verifica sottopassi in corso…";
+      document.getElementById("tgtDet").open = true;
+      completaSottopassi(sottopassiSulPercorso(u.coordAuto), routeLayer).finally(() => { u.sottoInCorso = false; });
+    }
     async function completaSottopassi(promessa, gruppo) {
       const box = document.getElementById("routeSotto");
       try {
@@ -2753,10 +2766,8 @@ assign initialcost =
           : {lat: latP, lon: lonP};
         const restanteM = haversine(fineAuto.lat, fineAuto.lon, latT, lonT) * 1000;
 
-        // sottopassi e limiti di altezza sul tratto col mezzo: la richiesta parte subito, in parallelo al tratto a piedi,
-        // e si attende solo dopo aver disegnato il percorso
-        const pSotto = coordAuto.length ? sottopassiSulPercorso(coordAuto) : null;
-        if (pSotto) pSotto.catch(() => { });
+        // sottopassi e limiti di altezza sul tratto col mezzo: si verificano a richiesta (tasto), non a ogni calcolo
+        const haSotto = coordAuto.length > 0;
 
         // 2 - a piedi: dal punto di cambio (o dalla posizione, in "solo piedi")
         let coordPiedi = [], propPiedi = {};
@@ -2823,7 +2834,7 @@ assign initialcost =
           righe.push("🥾 A piedi: " + kmPiedi.toFixed(2) + " km · " + testoDurata(minPiedi));
         }
         if (sbarre.length) righe.push("🚧 Sbarre/cancelli: " + sbarre.length);
-        if (pSotto) righe.push('<div id="routeSotto">⏳ Verifica sottopassi in corso…</div>');
+        if (haSotto) righe.push('<div id="routeSotto"><button type="button" class="btn-sotto" id="routeSottoBtn">⛔ Verifica sottopassi sul percorso</button></div>');
         const salitaTot = Math.round(dis.salita + disAuto.salita), discTot = Math.round(dis.discesa + disAuto.discesa);
         if (salitaTot || discTot) righe.push("Dislivello: +" + salitaTot + " m / −" + discTot + " m");
         if (cambio) righe.push("🥾 <strong>" + (haCambio ? "Punto di cambio " : "Il mezzo si ferma a ") + cambio.lat.toFixed(6) + ", " + cambio.lon.toFixed(6) + "</strong> " +
@@ -2838,7 +2849,7 @@ assign initialcost =
           partenza: {lat: latP, lon: lonP}, target: {lat: latT, lon: lonT}, cambio: cambio, haCambio: haCambio,
           kmAuto: kmAuto, kmPiedi: kmPiedi, minAuto: minAuto, minPiedi: minPiedi, minTot: minTot};
         document.getElementById("routeExport").classList.remove("hidden");
-        if (pSotto) completaSottopassi(pSotto, routeLayer);
+        document.getElementById("mapSottoBtn").classList.toggle("hidden", !haSotto);
       } catch (e) {
         info.classList.add("error");
         info.textContent = "Percorso non disponibile (" + (e.name === "AbortError" ? "tempo scaduto" : e.message) + ").";
@@ -2930,6 +2941,8 @@ assign initialcost =
       testa.addEventListener("click", inverti);
       testa.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); inverti(); } });
     })();
+    document.getElementById("routeInfo").addEventListener("click", e => { if (e.target.closest && e.target.closest("#routeSottoBtn")) verificaSottopassi(); });
+    document.getElementById("mapSottoBtn").addEventListener("click", verificaSottopassi);
     document.getElementById("mapRouteBtn").addEventListener("click", function () {calcolaPercorso("soccorso");});
 
     // Percorso di soccorso calcolato da solo: appena ci sono target e posizione, una volta per target
@@ -3295,7 +3308,7 @@ assign initialcost =
       if (modoMappa !== "fissa") impostaModoMappa("fissa");
       gpsInPausa = false;
       const bp = document.getElementById("mapPauseBtn");
-      bp.textContent = "⏸"; bp.classList.remove("in-pausa");
+      bp.textContent = "⏸ GPS"; bp.classList.remove("in-pausa");
       document.getElementById("legendPausa").classList.add("hidden");
       if (watchId !== null) {navigator.geolocation.clearWatch(watchId); watchId = null;}
       if (trackingTimeoutId !== null) {clearTimeout(trackingTimeoutId); trackingTimeoutId = null;}
