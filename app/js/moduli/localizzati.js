@@ -1738,6 +1738,8 @@ body.map-open {
           .addTo(map)
           .bindPopup("Comando qui: " + quiRec.c);
       }
+      // il comando del target è diverso dal mio ("qui"): la barretta laterale dell'etichetta diventa rossa invece che gialla
+      radioCtrl.getContainer().style.borderLeftColor = comandoQuiMarker ? "#e84747" : "";
       comandoMarker = L.marker([record.lat, record.lon], {icon: comandoIcon(tipoCmd)})
         .addTo(map)
         .bindPopup((tipoCmd === "int" ? "Comando INT: " : tipoCmd === "sel" ? "Comando sel: " : "Comando qui: ") + record.c);
