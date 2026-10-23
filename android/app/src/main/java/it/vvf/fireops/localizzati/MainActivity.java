@@ -264,7 +264,7 @@ public class MainActivity extends Activity {
         l.setClickable(true);
         ImageView logo = new ImageView(this);
         logo.setImageResource(R.drawable.ic_launcher_fg);
-        int dp = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 150, getResources().getDisplayMetrics());
+        int dp = getResources().getDimensionPixelSize(R.dimen.logo_avvio);
         l.addView(logo, new LinearLayout.LayoutParams(dp, dp));
         TextView nome = new TextView(this);
         nome.setText(getString(R.string.app_name));
