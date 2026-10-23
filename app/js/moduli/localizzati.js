@@ -1207,11 +1207,11 @@ body.map-open {
         <div class="result-sub" id="rSub"></div>
         <div class="method-badge" id="rMethod"></div>
         <div class="data-row">
-          <div class="label" id="lblRadioC">CH Comando</div>
+          <div class="label" id="lblRadioC">📻 CH.com</div>
           <div class="value"><span id="rRadioComando">—</span></div>
         </div>
         <div class="data-row">
-          <div class="label" id="lblRadioD">CH Direzione</div>
+          <div class="label" id="lblRadioD">📻 CH.dir</div>
           <div class="value"><span id="rRadioDirezione">—</span></div>
         </div>
         <div class="data-row">
@@ -1700,8 +1700,8 @@ body.map-open {
       linkLines = [];
 
       radioCtrl.getContainer().innerHTML =
-        "<b>" + record.c + "</b><br>CH Comando <span class='ch'>" + (record.rc || "—") +
-        "</span> · DR <span class='ch'>" + (record.rd || "—") + "</span>";
+        "<b>" + record.c + "</b><br>CH.com <span class='ch'>" + (record.rc || "—") +
+        "</span> · CH.dir <span class='ch'>" + (record.rd || "—") + "</span>";
 
       if (comandoQuiMarker) {map.removeLayer(comandoQuiMarker); comandoQuiMarker = null;}
       const modoRisultato = azioneAttiva === "coord" ? "coord" : (azioneAttiva === "cerca" ? "cerca" : "gps");
@@ -2134,8 +2134,8 @@ body.map-open {
       const pannello = document.querySelector(".pg-localizzati .cmd-panel");
       pannello.classList.remove("modo-coord", "modo-gps", "modo-cerca");
       pannello.classList.add("modo-" + modo);
-      document.getElementById("lblRadioC").textContent = "CH Comando";
-      document.getElementById("lblRadioD").textContent = "CH Direzione";
+      document.getElementById("lblRadioC").textContent = "📻 CH.com";
+      document.getElementById("lblRadioD").textContent = "📻 CH.dir";
       document.getElementById("lblSoC").textContent = "SO Comando";
       document.getElementById("lblSoD").textContent = "SO Direzione";
       document.getElementById("rDist").textContent = (distanceKm != null) ? fmtDist(distanceKm) : "";
