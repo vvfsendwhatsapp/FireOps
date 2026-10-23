@@ -476,6 +476,8 @@ FireOps.registra({
 }
 .pg-localizzati .route-btn.ar { border-color: #ffd700; color: #ffd700; }
 .pg-localizzati .ar-ov { position: fixed; inset: 0; z-index: 4000; background: #000; color: #fff; overflow: hidden; }
+.pg-localizzati .ar-cam { position: absolute; left: 0; right: 0; top: 0; height: 66.667%; overflow: hidden; background: #000; }
+.pg-localizzati .ar-mappa { position: absolute; left: 0; right: 0; bottom: 0; height: 33.333%; border-top: 3px solid #ffd700; background: #1b2026; z-index: 1; }
 .pg-localizzati .ar-ov video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .pg-localizzati .ar-ov canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .pg-localizzati .ar-top { position: absolute; left: 0; right: 0; top: 0; display: flex; align-items: center; gap: 12px;
@@ -1257,15 +1259,18 @@ body.map-open {
   </div>
 
   <div class="ar-ov hidden" id="arOv">
-    <video id="arVideo" playsinline muted autoplay></video>
-    <canvas id="arCv"></canvas>
-    <div class="ar-top"><div id="arArrow">➤</div><div class="ar-txt"><b id="arNext">—</b><span id="arSub"></span></div></div>
-    <div class="ar-msg hidden" id="arMsg"></div>
-    <div class="ar-bot">
-      <button type="button" id="arClose">✕ Chiudi</button>
-      <button type="button" id="arMinus" aria-label="Sposta a sinistra">◀ 5°</button>
-      <button type="button" id="arPlus" aria-label="Sposta a destra">5° ▶</button>
+    <div class="ar-cam" id="arCam">
+      <video id="arVideo" playsinline muted autoplay></video>
+      <canvas id="arCv"></canvas>
+      <div class="ar-top"><div id="arArrow">➤</div><div class="ar-txt"><b id="arNext">—</b><span id="arSub"></span></div></div>
+      <div class="ar-msg hidden" id="arMsg"></div>
+      <div class="ar-bot">
+        <button type="button" id="arClose">✕ Chiudi</button>
+        <button type="button" id="arMinus" aria-label="Sposta a sinistra">◀ 5°</button>
+        <button type="button" id="arPlus" aria-label="Sposta a destra">5° ▶</button>
+      </div>
     </div>
+    <div class="ar-mappa" id="arMap" aria-label="Mappa del percorso"></div>
   </div>
   <div class="place-modal hidden" id="placeModal">
     <div class="place-box">
@@ -3057,7 +3062,7 @@ assign initialcost =
     function arStart() {
       arRoute = arCostruisciPercorso();
       if (!arRoute) return;
-      const ov = document.getElementById("arOv"), vid = document.getElementById("arVideo"), cv = document.getElementById("arCv");
+      const ov = document.getElementById("arOv"), cam = document.getElementById("arCam"), vid = document.getElementById("arVideo"), cv = document.getElementById("arCv");
       const g = cv.getContext("2d");
       const msg = document.getElementById("arMsg");
       const top = {arrow: document.getElementById("arArrow"), next: document.getElementById("arNext"), sub: document.getElementById("arSub")};
@@ -3154,10 +3159,38 @@ assign initialcost =
       let raf = 0, lastHud = 0, nextPin = null;
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const resize = function () {
-        cv.width = Math.round(ov.clientWidth * dpr); cv.height = Math.round(ov.clientHeight * dpr);
+        cv.width = Math.round(cam.clientWidth * dpr); cv.height = Math.round(cam.clientHeight * dpr);
       };
       resize();
-      window.addEventListener("resize", resize);
+      const onResize = function () { resize(); if (mini) mini.invalidateSize(); };
+      window.addEventListener("resize", onResize);
+
+      // ---- mappa del percorso, nel terzo basso dello schermo ----
+      let mini = null, miniMe = null, miniSeguo = true, miniFit = 0;
+      try {
+        if (typeof L !== "undefined") {
+          mini = L.map("arMap", {zoomControl: false, attributionControl: false, maxZoom: 19, zoomSnap: 0.5});
+          let tile = null;
+          if (map) map.eachLayer(function (l) {if (!tile && l instanceof L.TileLayer) tile = l;});
+          (tile ? L.tileLayer(tile._url, tile.options) : L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 19})).addTo(mini);
+          const ptsMezzo = arRoute.pts.filter(function (q) {return q.seg === "a";}).map(function (q) {return [q.lat, q.lon];});
+          const ptsPiedi = arRoute.pts.filter(function (q) {return q.seg === "p";}).map(function (q) {return [q.lat, q.lon];});
+          if (!arRoute.diretto) {
+            if (ptsMezzo.length > 1) L.polyline(ptsMezzo, {color: "#e84747", weight: 5, opacity: .9}).addTo(mini);
+            if (ptsPiedi.length > 1) L.polyline(ptsPiedi, {color: "#3fa66b", weight: 5, opacity: .95, dashArray: "2 8", lineCap: "round"}).addTo(mini);
+          }
+          pins.forEach(function (pn) {
+            L.circleMarker([pn.p.lat, pn.p.lon], {radius: pn.k === "target" ? 8 : 6, color: "#fff", weight: 2, fillColor: pn.col === "#fff" ? "#e84747" : pn.col, fillOpacity: 1}).addTo(mini);
+          });
+          const dest = arRoute.target;
+          mini.setView([dest.lat, dest.lon], 15, {animate: false});
+          miniMe = L.marker([dest.lat, dest.lon], {zIndexOffset: 1000, icon: L.divIcon({className: "", iconSize: [26, 26], iconAnchor: [13, 13],
+            html: '<div id="arMiniMe" style="width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#ffd700;text-shadow:0 0 3px #000,0 0 3px #000;transition:transform .2s linear">➤</div>'})}).addTo(mini);
+          mini.on("dragstart", function () {miniSeguo = false;});
+          mini.on("click", function () {miniSeguo = true;});
+          setTimeout(function () {if (mini) mini.invalidateSize();}, 80);
+        }
+      } catch (e) { console.warn("Mappa AR non disponibile:", e); mini = null; }
 
       const R2 = function () {return arRot((fa + yawOff + 360) % 360, fb, fg);};
 
@@ -3269,6 +3302,16 @@ assign initialcost =
           top.sub.textContent = (Math.abs(rel) < 12 ? "Davanti a te" : (rel > 0 ? "Gira a destra " : "Gira a sinistra ") + Math.round(Math.abs(rel)) + "°") +
             " · GPS ±" + (pos.acc != null ? Math.round(pos.acc) : "?") + " m" + (gpsAllineato ? " · bussola allineata al GPS" : " · cammina: la bussola si allinea col GPS");
           nextPin = meta || null;
+          if (mini && miniMe) {
+            miniMe.setLatLng([pos.lat, pos.lon]);
+            const ic = document.getElementById("arMiniMe");
+            if (ic) ic.style.transform = "rotate(" + (camAz - 90) + "deg)";
+            // la mappa inquadra me e il target (più vicino sono, più ingrandisce); se la sposti con il dito smette, un tocco la riaggancia
+            if (miniSeguo && now - miniFit > 2000) {
+              miniFit = now;
+              try {mini.fitBounds(L.latLngBounds([[pos.lat, pos.lon], [arRoute.target.lat, arRoute.target.lon]]), {padding: [34, 34], maxZoom: 18, animate: false});} catch (e) { console.warn("fitBounds AR:", e); }
+            }
+          }
         }
       }
       raf = requestAnimationFrame(frame);
@@ -3281,7 +3324,8 @@ assign initialcost =
         opened = false;
         cancelAnimationFrame(raf);
         window.removeEventListener(evName, onOri);
-        window.removeEventListener("resize", resize);
+        window.removeEventListener("resize", onResize);
+        if (mini) { try {mini.remove();} catch (e) { } mini = null; }
         if (gpsId !== null) navigator.geolocation.clearWatch(gpsId);
         if (stream) stream.getTracks().forEach(function (t) {t.stop();});
         vid.srcObject = null;
