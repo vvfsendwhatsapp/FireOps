@@ -984,6 +984,8 @@ body.map-open {
       font-size: 12px;
       line-height: 1.45;
 }
+.pg-localizzati .map-radio.diverso { border-left-color: #e84747; }
+.pg-localizzati .map-radio.diverso .ch { color: #ff5c5c; }
 .pg-localizzati .map-radio .ch {
       font-family: var(--mono);
       font-weight: 700;
@@ -1739,7 +1741,7 @@ body.map-open {
           .bindPopup("Comando qui: " + quiRec.c);
       }
       // il comando del target è diverso dal mio ("qui"): la barretta laterale dell'etichetta diventa rossa invece che gialla
-      radioCtrl.getContainer().style.borderLeftColor = comandoQuiMarker ? "#e84747" : "";
+      radioCtrl.getContainer().classList.toggle("diverso", !!comandoQuiMarker);
       comandoMarker = L.marker([record.lat, record.lon], {icon: comandoIcon(tipoCmd)})
         .addTo(map)
         .bindPopup((tipoCmd === "int" ? "Comando INT: " : tipoCmd === "sel" ? "Comando sel: " : "Comando qui: ") + record.c);
