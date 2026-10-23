@@ -156,6 +156,7 @@
     const n = nazionale(d);
     const set = (id, href, attivo) => {
       const a = $(id);
+      if (!a) return;                         // nella versione Lite non c'è il tasto Telegram
       const on = ok && attivo !== false;
       a.href = on ? href : "javascript:void(0)";
       a.classList.toggle("off", !on);
@@ -170,7 +171,7 @@
     set("fohTg", "https://t.me/+" + num, cellulare);
     const nota = ok && !cellulare ? "Solo per cellulari: un numero fisso non ha WhatsApp o Telegram" : "";
     $("fohWa").title = nota || "WhatsApp";
-    $("fohTg").title = nota || "Telegram";
+    if ($("fohTg")) $("fohTg").title = nota || "Telegram";
   }
 
   $("fohInput").addEventListener("input", aggiornaDial);
