@@ -112,7 +112,6 @@
     comunicazioni: {nome: "Comunicazioni", sotto: "Missioni per soccorso e mancate timbrature"},
     rapporti: {nome: "Rapporti d’intervento", sotto: "In preparazione",
       segnaposto: "I rapporti d’intervento arriveranno in un prossimo aggiornamento."},
-    telegram: {nome: "Telegram", sotto: "Messaggi del canale"},
     utilizzo: {nome: "Info Comandi", sotto: "Chi usa FireOps desktop"},
     personale: {nome: "Area personale", sotto: "I tuoi dati, solo su questo telefono"}
   };
