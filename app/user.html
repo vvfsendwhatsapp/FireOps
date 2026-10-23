@@ -7,12 +7,17 @@
   <title>FireOps VVF Pro</title>
   <link rel="icon" type="image/png" href="https://vvfsendwhatsapp.github.io/FireOps/images/logo.png">
   <link rel="apple-touch-icon" href="https://vvfsendwhatsapp.github.io/FireOps/images/logo.png">
-  <meta name="theme-color" content="#10141a">
+  <meta name="theme-color" content="#e0a800">
   <link rel="manifest" href="manifest.webmanifest">
   <script>if ("serviceWorker" in navigator) window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });</script>
   <!-- versione.js si scarica sempre fresco e decide la versione di tutti gli altri file -->
   <script>document.write('<script src="js/versione.js?t=' + Date.now() + '"><\/script>');</script>
   <script>document.write('<link rel="stylesheet" href="css/fireops-app.css?v=' + (window.FIREOPS_VERSIONE || Date.now()) + '">');</script>
+  <style>/* FireOps VVF Pro: intestazione giallo oro, come l'icona dell'app */
+    .foh { background: #e0a800 !important; border-top: 0 !important; border-bottom: 3px solid #5c4200 !important; }
+    .foh-t h1 { color: #241800 !important; }
+    .foh-tg { box-shadow: inset 0 0 0 2px #241800; }
+    .foh-t p, .foh-pos, .foh-pos-cmd { color: #33230a !important; }</style>
 </head>
 
 <body>
