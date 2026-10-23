@@ -1166,7 +1166,7 @@ body.map-open {
         <div class="route-hint">Sulla carta: linea piena = mezzo, puntinata = a piedi, 🥾 = punto di cambio, 🚧 = sbarre</div>
         <div class="route-info hidden" id="routeInfo"></div>
         <div class="route-export hidden" id="routeExport">
-          <button type="button" id="routeKml" title="Traccia e punti per Locus Map, Google Earth, OruxMaps">💾 KML (Locus Map)</button>
+          <button type="button" id="routeKml" title="Traccia e punti in formato KML">💾 KML</button>
           <button type="button" id="routeGpx" title="Traccia e punti (partenza, cambio, sbarre, arrivo) per GPS da montagna e app outdoor">🛰️ GPX</button>
           <button type="button" id="routeAR" class="route-btn ar">📷 Guida in realtà aumentata</button>
         </div>
