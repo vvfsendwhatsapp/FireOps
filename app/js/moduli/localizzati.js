@@ -477,6 +477,7 @@ FireOps.registra({
 .pg-localizzati .route-btn.ar { border-color: #ffd700; color: #ffd700; }
 .pg-localizzati .ar-ov { position: fixed; inset: 0; z-index: 4000; background: #000; color: #fff; overflow: hidden; }
 .pg-localizzati .ar-cam { position: absolute; left: 0; right: 0; top: 0; height: 66.667%; overflow: hidden; background: #000; }
+.pg-localizzati .ar-cursore { position: absolute; left: 50%; top: 50%; width: 34px; height: 34px; margin: -17px 0 0 -17px; z-index: 1000; pointer-events: none; filter: drop-shadow(0 0 3px rgba(0,0,0,.8)); }
 .pg-localizzati .ar-mappa { position: absolute; left: 0; right: 0; bottom: 0; height: 33.333%; border-top: 3px solid #ffd700; background: #1b2026; z-index: 1; }
 .pg-localizzati .ar-ov video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .pg-localizzati .ar-ov canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -3166,10 +3167,10 @@ assign initialcost =
       window.addEventListener("resize", onResize);
 
       // ---- mappa del percorso, nel terzo basso dello schermo ----
-      let mini = null, miniMe = null, miniSeguo = true, miniFit = 0;
+      let mini = null, miniFit = 0, miniRot = null, miniZoom = 16;
       try {
         if (typeof L !== "undefined") {
-          mini = L.map("arMap", {zoomControl: false, attributionControl: false, maxZoom: 19, zoomSnap: 0.5});
+          mini = L.map("arMap", {zoomControl: false, attributionControl: false, maxZoom: 19, zoomSnap: 0.25, dragging: false, touchZoom: false, scrollWheelZoom: false, doubleClickZoom: false, boxZoom: false, keyboard: false, tap: false});
           let tile = null;
           if (map) map.eachLayer(function (l) {if (!tile && l instanceof L.TileLayer) tile = l;});
           (tile ? L.tileLayer(tile._url, tile.options) : L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 19})).addTo(mini);
@@ -3184,10 +3185,11 @@ assign initialcost =
           });
           const dest = arRoute.target;
           mini.setView([dest.lat, dest.lon], 15, {animate: false});
-          miniMe = L.marker([dest.lat, dest.lon], {zIndexOffset: 1000, icon: L.divIcon({className: "", iconSize: [26, 26], iconAnchor: [13, 13],
-            html: '<div id="arMiniMe" style="width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#ffd700;text-shadow:0 0 3px #000,0 0 3px #000;transition:transform .2s linear">➤</div>'})}).addTo(mini);
-          mini.on("dragstart", function () {miniSeguo = false;});
-          mini.on("click", function () {miniSeguo = true;});
+          // cursore FISSO al centro (non ruota): è la mappa che ruota, con davanti a me sempre in alto
+          const cur = document.createElement("div");
+          cur.className = "ar-cursore";
+          cur.innerHTML = '<svg viewBox="0 0 24 24" width="34" height="34"><path d="M12 2 L20 21 L12 16.5 L4 21 Z" fill="#ffd700" stroke="#10141a" stroke-width="2" stroke-linejoin="round"/></svg>';
+          document.getElementById("arMap").appendChild(cur);
           setTimeout(function () {if (mini) mini.invalidateSize();}, 80);
         }
       } catch (e) { console.warn("Mappa AR non disponibile:", e); mini = null; }
@@ -3208,6 +3210,14 @@ assign initialcost =
         const me = arEnu(o.lat, o.lon, pos.lat, pos.lon);            // io, nel sistema locale
         const near = arNearest(loc, cum, me);
         const camAz = arAzimuth(R);
+        if (mini && mini._loaded) {          // rotazione fluida della mappa: davanti a me in alto
+          const tgt = -camAz, d = ((tgt - (miniRot === null ? tgt : miniRot)) % 360 + 540) % 360 - 180;
+          miniRot = miniRot === null ? tgt : miniRot + d * 0.35;
+          const sz = mini.getSize(), pane = mini.getPane("mapPane");
+          pane.style.transformOrigin = (sz.x / 2) + "px " + (sz.y / 2) + "px";
+          pane.style.rotate = miniRot + "deg";
+          pane.style.scale = "1.8";
+        }
         const toCam = function (e, n, u) {return arCam(R, {e: e - me.e, n: n - me.n, u: u - AR_CAM_H}, scr);};
 
         // nastro del percorso, da dove sono a 450 m avanti
@@ -3302,15 +3312,14 @@ assign initialcost =
           top.sub.textContent = (Math.abs(rel) < 12 ? "Davanti a te" : (rel > 0 ? "Gira a destra " : "Gira a sinistra ") + Math.round(Math.abs(rel)) + "°") +
             " · GPS ±" + (pos.acc != null ? Math.round(pos.acc) : "?") + " m" + (gpsAllineato ? " · bussola allineata al GPS" : " · cammina: la bussola si allinea col GPS");
           nextPin = meta || null;
-          if (mini && miniMe) {
-            miniMe.setLatLng([pos.lat, pos.lon]);
-            const ic = document.getElementById("arMiniMe");
-            if (ic) ic.style.transform = "rotate(" + (camAz - 90) + "deg)";
-            // la mappa inquadra me e il target (più vicino sono, più ingrandisce); se la sposti con il dito smette, un tocco la riaggancia
-            if (miniSeguo && now - miniFit > 2000) {
+          if (mini) {
+            // mappa "davanti in alto": centrata su di me, ruotata come la fotocamera; il cursore resta fermo
+            if (now - miniFit > 2000) {      // lo zoom cerca di tenere dentro anche il target
               miniFit = now;
-              try {mini.fitBounds(L.latLngBounds([[pos.lat, pos.lon], [arRoute.target.lat, arRoute.target.lon]]), {padding: [34, 34], maxZoom: 18, animate: false});} catch (e) { console.warn("fitBounds AR:", e); }
+              const d = Math.max(60, distT) * 1.15, dLat = d / 110574, dLon = d / (111320 * Math.cos(pos.lat * Math.PI / 180));
+              try {miniZoom = Math.max(12, Math.min(18, mini.getBoundsZoom(L.latLngBounds([[pos.lat - dLat, pos.lon - dLon], [pos.lat + dLat, pos.lon + dLon]]), false, L.point(30, 30))));} catch (e) { }
             }
+            mini.setView([pos.lat, pos.lon], miniZoom, {animate: false});
           }
         }
       }
