@@ -679,7 +679,7 @@
     }
     const ch = $("fohPosCh");
     ch.hidden = !c.rc;
-    ch.textContent = c.rc ? "📻 CH " + c.rc : "";
+    ch.textContent = c.rc ? "CH " + c.rc : "";
     ch.title = "Canale radio Comando" + (c.rd ? " · DR " + c.rd : "");
     const so = $("fohPosSo");
     so.hidden = !c.tsc;
