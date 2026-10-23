@@ -2,6 +2,8 @@ plugins {
     id 'com.android.application'
 }
 
+def numeroCompilazione = Integer.parseInt(System.getenv("GITHUB_RUN_NUMBER") ?: "1")
+
 android {
     namespace 'it.vvf.fireops.localizzati'
     compileSdk 34
@@ -10,8 +12,8 @@ android {
         applicationId "it.vvf.fireops.localizzati"
         minSdk 24
         targetSdk 34
-        versionCode (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInteger()
-        versionName "2026.10." + (System.getenv("GITHUB_RUN_NUMBER") ?: "0")
+        versionCode numeroCompilazione
+        versionName "2026.10." + numeroCompilazione
     }
 
     flavorDimensions "versione"
