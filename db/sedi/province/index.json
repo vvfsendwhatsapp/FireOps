@@ -339,8 +339,8 @@
   "sigla": "KR",
   "provincia": "Crotone",
   "regione": "Calabria",
-  "sedi": 2,
-  "convalidate": 0,
+  "sedi": 4,
+  "convalidate": 4,
   "file": "province/KR.geojson"
  },
  {
@@ -363,7 +363,7 @@
   "sigla": "LI",
   "provincia": "Livorno",
   "regione": "Toscana",
-  "sedi": 12,
+  "sedi": 10,
   "convalidate": 10,
   "file": "province/LI.geojson"
  },
@@ -419,8 +419,8 @@
   "sigla": "MI",
   "provincia": "Milano",
   "regione": "Lombardia",
-  "sedi": 44,
-  "convalidate": 0,
+  "sedi": 22,
+  "convalidate": 22,
   "file": "province/MI.geojson"
  },
  {
@@ -587,8 +587,8 @@
   "sigla": "PZ",
   "provincia": "Potenza",
   "regione": "Basilicata",
-  "sedi": 11,
-  "convalidate": 10,
+  "sedi": 12,
+  "convalidate": 12,
   "file": "province/PZ.geojson"
  },
  {
@@ -603,8 +603,8 @@
   "sigla": "RC",
   "provincia": "Reggio Calabria",
   "regione": "Calabria",
-  "sedi": 8,
-  "convalidate": 0,
+  "sedi": 13,
+  "convalidate": 13,
   "file": "province/RC.geojson"
  },
  {
@@ -683,8 +683,8 @@
   "sigla": "SP",
   "provincia": "La Spezia",
   "regione": "Liguria",
-  "sedi": 6,
-  "convalidate": 6,
+  "sedi": 7,
+  "convalidate": 5,
   "file": "province/SP.geojson"
  },
  {
