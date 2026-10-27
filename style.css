@@ -8723,3 +8723,34 @@ button.pros-chip.on { background: var(--pros-g); color: #000; }
 #pros-app .pros-col .pros-magt li, #pros-app .pros-col .pros-magt li:nth-child(even) { background: transparent; font-weight: 600; border-bottom: 0; }
 #pros-app .pros-col .pros-magt li .rl { display: none; }
 @media (max-width: 700px) { #pros-app .pros-fascia-settore .riga { grid-template-columns: 1fr; } #pros-app .pros-fascia-settore .ruolo { border-right: 0; padding-bottom: 0; } }
+
+/* Prospetto disponibilità: ancora un po' piu' scuro; tocco sul nome = numero */
+#pros-app {
+  --surface-color: #d5dae1; --light-bg: #c9cfd7; --dark-color: #e6e9ed; --border-color: #a9b3bf;
+  background: #b4bcc6; border-color: #9ea8b4;
+}
+#pros-app .pros-testa, #pros-app .pros-box, #pros-app .pros-gruppo, #pros-app .pros-tabwrap { background: #d5dae1; }
+#pros-app select, #pros-app input[type=date], #pros-app input[type=search], #pros-app input[type=text], #pros-app input[type=tel],
+#pros-app input[type=password], #pros-app .pros-lucchetto input[type=password] { background: #e6e9ed; border-color: #9ea8b4; }
+#pros-app .pros-scheda { background: #c4cbd4; border-color: #a9b3bf; }
+#pros-app .pros-scheda:hover { background: #dde1e6; }
+#pros-app .pros-btn, #pros-app .pros-mini, #pros-app .pros-fascia { background: #e0e4e9; border-color: #9ea8b4; }
+#pros-app .pros-tab th { background: #c9cfd7; }
+#pros-app .pros-tab tbody tr:nth-child(odd) td { background: #d5dae1; }
+#pros-app .pros-tab tbody tr:nth-child(even) td { background: #cad0d8; }
+#pros-app .pros-chip { background: #c9cfd7; }
+#pros-app .pros-settore { background: #dde1e6; }
+#pros-app .pros-avviso { background: #efe3b8; } #pros-app .pros-lucchetto { background: #f0dcc0; } #pros-app .pros-lucchetto.ok { background: #cfe8d8; }
+#pros-app .pros-col.t-A  { --tb: #ecc7c8; --tb2: #e3b5b7; }
+#pros-app .pros-col.t-B  { --tb: #c6d5ee; --tb2: #b5c8e7; }
+#pros-app .pros-col.t-C  { --tb: #c3e2d0; --tb2: #b0d8c0; }
+#pros-app .pros-col.t-D  { --tb: #efd0b3; --tb2: #e7c19e; }
+#pros-app .pros-col.t-G  { --tb: #d4c8ec; --tb2: #c6b7e4; }
+#pros-app .pros-col.t-NO { --tb: #cdd2d9; --tb2: #c0c6ce; }
+#pros-app .pros-col.t-nd { --tb: #d3d7dd; --tb2: #c7ccd3; }
+#pros-app .pros-fascia-settore { background: #e6d6a6; } #pros-app .pros-fascia-settore .riga:nth-child(even) { background: #ddcb95; }
+#pros-app .pros-col li.pros-cliccabile { cursor: pointer; }
+#pros-app .pros-col li.aperto { outline: 2px solid var(--tc); outline-offset: -2px; }
+#pros-app .pros-col li .tel { flex-basis: 100%; display: flex; align-items: center; gap: 6px; padding: 3px 0 1px; }
+#pros-app .pros-col li .tel a { font-weight: 700; color: #1d2733; white-space: nowrap; }
+#pros-app .pros-col li .tel .pros-mini { padding: 1px 6px; }

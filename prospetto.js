@@ -95,6 +95,7 @@ function testoRuoli(p, settore) {
   const r = ruoliDi(p);
   return Object.entries(r).filter(([st]) => !settore || st === settore).flatMap(([st, l]) => l.map(x => NOME_RUOLO[x] + ' ' + st)).join(', ');
 }
+let numeriAperti = new Set();   // prospetto: persone di cui si vede il numero (tocco sul nome)
 let modRuoli = null;       // gestione: chiave della persona di cui si stanno modificando i ruoli per settore
 const NOMI_STATO = {servizio: 'In servizio', salto: 'Salto turno', libero: 'Libero', no: 'Non operativo', nd: 'Turno da impostare'};
 
@@ -498,7 +499,8 @@ function htmlProspetto(corsiDisp, qualDisp, base, stati) {
   const turnoTesto = p => { const t = turni[p.k] || {}; return t.t ? NOME_TURNO(t.t) + (t.s || '') : '—'; };
   const voce = (p, t, extra) => {
     const tt = turni[p.k] || {}, inSalto = t === adesso.sel.l && tt.s && String(tt.s) === adesso.sel.n;
-    return `<li class="${inSalto ? 'salto' : ''}${extra ? ' ' + extra : ''}" title="${esc(p.corsi.join(', '))}"><span class="q">${esc(p.qual)}</span> <span class="n">${esc(p.cognome)}${p.manuale ? ' ✍️' : ''}</span>${tt.s && t !== 'NO' ? `<span class="s">${esc(t + tt.s)}</span>` : ''}${t === 'NO' && tt.t && tt.t !== 'NO' ? `<span class="s" title="Turno ${esc(NOME_TURNO(tt.t))}${tt.s ? ', salto ' + esc(tt.s) : ''}: non operativo per ${esc(NOME_SETTORE[settore] || '')}">${esc(NOME_TURNO(tt.t) + (tt.s || ''))}</span>` : ''}<span class="rl">${htmlRuoli(p, settore)}</span>${f.comando ? '' : `<span class="c">${esc(p.comando)}</span>`}</li>`;
+    const aperto = numeriAperti.has(p.k);
+    return `<li class="pros-cliccabile${inSalto ? ' salto' : ''}${extra ? ' ' + extra : ''}${aperto ? ' aperto' : ''}" data-num="${esc(p.k)}" title="${esc((p.cell ? 'Tocca per il numero · ' : '') + p.corsi.join(', '))}"><span class="q">${esc(p.qual)}</span> <span class="n">${esc(p.cognome)}${p.manuale ? ' ✍️' : ''}</span>${tt.s && t !== 'NO' ? `<span class="s">${esc(t + tt.s)}</span>` : ''}${t === 'NO' && tt.t && tt.t !== 'NO' ? `<span class="s" title="Turno ${esc(NOME_TURNO(tt.t))}${tt.s ? ', salto ' + esc(tt.s) : ''}: non operativo per ${esc(NOME_SETTORE[settore] || '')}">${esc(NOME_TURNO(tt.t) + (tt.s || ''))}</span>` : ''}<span class="rl">${htmlRuoli(p, settore)}</span>${f.comando ? '' : `<span class="c">${esc(p.comando)}</span>`}${aperto ? `<span class="tel">${p.cell ? `<a href="tel:${esc(p.cell)}">📞 ${esc(p.cell)}</a> <button type="button" class="pros-mini" data-copia="${esc(p.cell)}" title="Copia il numero">📋</button>` : '<span class="pros-nota">numero non presente su PUMA</span>'}</span>` : ''}</li>`;
   };
   const righeFascia = [['FUN', 'Funzionari del settore'], ['ROP', 'Responsabile operativo provinciale'], ['MAG', 'Magazziniere generale']]
     .map(([r, tit]) => [tit, fascia.filter(p => ORDINE_RUOLI[rangoRuolo(p, settore)] === r)]);
@@ -752,7 +754,20 @@ function importa(file) {
 
 function eventi() {
   root.addEventListener('click', e => {
-    const b = e.target.closest('button'); if (!b) return;
+    if (e.target.closest('a')) return;   // il link tel: chiama e basta
+    const b = e.target.closest('button');
+    if (!b) {
+      const li = e.target.closest('li[data-num]');
+      if (li) { const k = li.dataset.num; if (numeriAperti.has(k)) numeriAperti.delete(k); else numeriAperti.add(k); disegna(); }
+      return;
+    }
+    if (b.dataset.copia) {
+      const v = b.dataset.copia;
+      const fatto = () => { b.textContent = '✅'; setTimeout(() => { b.textContent = '📋'; }, 1200); };
+      if (NS.copiaTesto) NS.copiaTesto(e, v);   // stessa copia del resto del sito (anche nell'app Android)
+      else if (navigator.clipboard) navigator.clipboard.writeText(v).then(fatto, () => {});
+      return;
+    }
     if (b.dataset.fascia) { f.fascia = b.dataset.fascia; disegna(); return; }
     if (b.dataset.scheda) { f.scheda = b.dataset.scheda; salvaFiltri(); disegna(); return; }
     if (b.dataset.cella !== undefined) {
