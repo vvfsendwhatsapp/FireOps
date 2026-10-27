@@ -8703,3 +8703,4 @@ button.pros-chip.on { background: var(--pros-g); color: #000; }
 #pros-app .pros-col li:hover:not(.vuota) { background: #f6ecc4; }
 #pros-app .pros-col li .c, #pros-app .pros-col li .s { color: #4a5563; }
 #pros-app .pros-col.servizio { box-shadow: 0 0 0 3px color-mix(in srgb, var(--tc) 55%, transparent), 0 4px 12px rgba(16, 24, 40, .12); }
+.pros-ruolo.r-FUN { color: #fff; border-color: #a33a3a; background: #b8433f; }

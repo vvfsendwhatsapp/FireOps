@@ -73,7 +73,15 @@ function settoreDi(corso) {
 }
 function settoriDi(p) { return Array.from(new Set(p.corsi.map(settoreDi).filter(Boolean))); }
 // RUOLI per settore: una persona puo' averne piu' d'uno; N.O. (non operativo per quel settore) esclude gli altri
-const RUOLI = [['MAG', 'Magazziniere', 'Mag.'], ['MAGT', 'Magazziniere di turno', 'Mag. turno'], ['ROP', 'Responsabile operativo provinciale', 'ROP'], ['NO', 'Non operativo', 'N.O.']];
+// in quest'ordine anche negli elenchi: col settore scelto, prima il funzionario, poi ROP, magazziniere generale, magazziniere di turno
+const RUOLI = [['FUN', 'Funzionario di settore', 'Funz.'], ['ROP', 'Responsabile operativo provinciale', 'ROP'], ['MAG', 'Magazziniere generale', 'Mag. gen.'], ['MAGT', 'Magazziniere di turno', 'Mag. turno'], ['NO', 'Non operativo', 'N.O.']];
+const ORDINE_RUOLI = ['FUN', 'ROP', 'MAG', 'MAGT'];
+// posizione di una persona negli elenchi del settore scelto: il suo ruolo piu' alto (99 = nessun ruolo)
+function rangoRuolo(p, settore) {
+  if (!settore) return 99;
+  const l = ruoliDi(p, settore), i = ORDINE_RUOLI.findIndex(x => l.includes(x));
+  return i < 0 ? 99 : i;
+}
 const NOME_RUOLO = Object.fromEntries(RUOLI.map(([k, n]) => [k, n]));
 const SIGLA_RUOLO = Object.fromEntries(RUOLI.map(([k, , s]) => [k, s]));
 function ruoliDi(p, settore) { const r = (turni[p.k] || {}).r || {}; return settore ? (r[settore] || []) : r; }
@@ -429,16 +437,14 @@ function quandoTesto(T) {
 function delComando() { const n = normComando(f.comando); return n ? righe.filter(p => normComando(p.comando) === n) : righe; }
 function filtrati(sigla) {
   const testo = norm(f.testo);
-  return delComando().filter(p => {
+  const l = delComando().filter(p => {
     if (f.qual && p.qual !== f.qual) return false;
     if (f.corso && !p.corsi.includes(f.corso)) return false;
     if (testo && !norm(p.cognome + p.nome + p.cell).includes(testo)) return false;
     if (f.stato && statoPersona(p, sigla) !== f.stato) return false;
     return true;
-  }).sort((a, b) => {
-    const qa = ORDINE_QUAL.indexOf(a.qual), qb = ORDINE_QUAL.indexOf(b.qual);
-    return (qa < 0 ? 99 : qa) - (qb < 0 ? 99 : qb) || a.cognome.localeCompare(b.cognome, 'it') || a.nome.localeCompare(b.nome, 'it');
   });
+  return ordina(l);
 }
 
 /* ============================== DISEGNO ============================== */
@@ -502,8 +508,13 @@ function htmlProspetto(corsiDisp, qualDisp, base, stati) {
   <p class="pros-nota">${pers.length} persone${f.corso ? ' con ' + esc(f.corso) + ' (settore ' + esc(NOME_SETTORE[settore] || '—') + '): chi è non operativo per il settore sta nella colonna N.O.' : ''}. In grigio chi adesso è in salto turno. Turni, salti e ruoli si impostano nella scheda 🔒 Gestione personale.</p>`
   : `<div class="pros-vuoto">${carico.stato === 'ok' ? 'Nessuna persona con questi filtri.' : carico.stato === 'err' ? 'Dati PUMA non disponibili.' : 'Caricamento…'}</div>`}`;
 }
+// ordine degli elenchi: col corso scelto prima i ruoli del settore (funzionario, ROP, mag. generale, mag. di turno),
+// poi per qualifica e cognome
 function ordina(l) {
+  const settore = settoreDi(f.corso);
   return l.slice().sort((a, b) => {
+    const ra = rangoRuolo(a, settore), rb = rangoRuolo(b, settore);
+    if (ra !== rb) return ra - rb;
     const qa = ORDINE_QUAL.indexOf(a.qual), qb = ORDINE_QUAL.indexOf(b.qual);
     return (qa < 0 ? 99 : qa) - (qb < 0 ? 99 : qb) || a.cognome.localeCompare(b.cognome, 'it');
   });
