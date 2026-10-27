@@ -8545,7 +8545,7 @@ button.pros-chip.on { background: var(--pros-g); color: #000; }
   .pros-tab tbody tr:nth-child(even) td { background: transparent; }
 }
 
-/* LINK UTILI (BIS): ricerca, filtri a chip, tessere con descrizione, preferiti */
+/* LINK UTILI (BIS): ricerca, filtri a chip, tessere con descrizione */
 .lu-barra { position: sticky; top: 0; z-index: 2; background: var(--surface-color); padding: 4px 0 8px; }
 .lu-cerca { width: 100%; box-sizing: border-box; padding: 10px 12px; font-size: 15px; background: var(--dark-color); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 6px; }
 .lu-cerca:focus { outline: none; border-color: var(--primary-color); }
@@ -8558,19 +8558,16 @@ button.pros-chip.on { background: var(--pros-g); color: #000; }
 .lu-sottocategoria { margin: 10px 0 6px; font-size: 11.5px; font-weight: bold; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); }
 .lu-griglia { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 8px; }
 .lu-tessera { position: relative; display: flex; }
-.lu-link { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 2px; min-height: 44px; padding: 8px 36px 8px 12px; background: var(--dark-color); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-main); text-decoration: none; transition: border-color .15s, background .15s; }
+.lu-link { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 2px; min-height: 44px; padding: 8px 12px; background: var(--dark-color); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-main); text-decoration: none; transition: border-color .15s, background .15s; }
 .lu-link:hover { border-color: var(--primary-color); background: rgba(255, 215, 0, .06); }
 .lu-nome { font-size: 13.5px; font-weight: bold; }
 .lu-nota { font-size: 11.5px; color: var(--text-muted); line-height: 1.3; }
 .lu-badge { margin-left: 5px; font-size: 11px; font-weight: normal; }
 .lu-disabilitato { opacity: .45; cursor: not-allowed; }
 .lu-disabilitato:hover { border-color: var(--border-color); background: var(--dark-color); }
-.lu-stella { position: absolute; top: 0; right: 0; bottom: 0; width: 34px; background: none; border: none; color: var(--text-muted); font-size: 17px; cursor: pointer; }
-.lu-stella.attiva, .lu-stella:hover { color: var(--primary-color); }
 @media (max-width: 600px) {
   .lu-griglia { grid-template-columns: 1fr 1fr; gap: 6px; }
-  .lu-link { padding: 7px 30px 7px 9px; }
-  .lu-stella { width: 28px; }
+  .lu-link { padding: 7px 9px; }
   .lu-nota { display: none; }
 }
 
@@ -8660,12 +8657,3 @@ button.pros-chip.on { background: var(--pros-g); color: #000; }
 #pros-app .pros-chk { text-transform: none; letter-spacing: 0; color: var(--text-main); }
 #pros-app input[type=checkbox], #pros-app input[type=radio] { color-scheme: light; accent-color: #e0a800; width: 16px; height: 16px; }
 #pros-app .pros-col li .rl { padding-left: 0; }
-/* Link utili (BIS): riga ricerca + tasto con/senza preferiti */
-.lu-riga { display: flex; gap: 8px; align-items: stretch; }
-.lu-riga .lu-cerca { flex: 1; min-width: 0; }
-.lu-solopref { flex: 0 0 auto; padding: 0 14px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--dark-color); color: var(--text-muted); font-size: 14px; font-weight: bold; cursor: pointer; white-space: nowrap; }
-.lu-solopref.attiva { background: var(--primary-color); border-color: var(--primary-color); color: #000; }
-@media (max-width: 600px) { .lu-solopref { padding: 0 10px; font-size: 13px; } }
-/* Link utili (BIS): preferiti disattivati, niente spazio per la stellina */
-.lu-senza-pref .lu-link { padding-right: 12px; }
-.lu-senza-pref .lu-legenda-pref { display: none; }
