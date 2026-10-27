@@ -484,8 +484,10 @@ function htmlProspetto(corsiDisp, qualDisp, base, stati) {
   // (anche senza il corso preciso), i magazzinieri di turno in testa alla colonna del loro turno
   const ruoloAlto = p => settore && !nonOperativo(p, settore) && rangoRuolo(p, settore) <= 2;
   const fascia = settore ? ordina(base.filter(ruoloAlto)) : [];
-  const inFascia = new Set(fascia.map(p => p.k));
-  const pers = base.filter(p => !inFascia.has(p.k) && (!f.qual || p.qual === f.qual) && (!f.corso || p.corsi.includes(f.corso)));
+  // nelle colonne c'e' anche chi sta nella fascia (il funzionario giornaliero va sotto G) e chiunque abbia
+  // un ruolo nel settore, anche senza il corso preciso
+  const conRuolo = p => !!settore && ruoliDi(p, settore).some(x => x !== 'NO');
+  const pers = base.filter(p => conRuolo(p) || ((!f.qual || p.qual === f.qual) && (!f.corso || p.corsi.includes(f.corso))));
   // con un corso scelto, chi e' non operativo per il suo settore va nella colonna N.O.
   const turnoDi = p => { if (nonOperativo(p, settore)) return 'NO'; const t = turni[p.k]; return t && TURNI.includes(t.t) ? t.t : ''; };
   const col = {}; COLONNE.forEach(t => { col[t] = []; });
@@ -528,7 +530,7 @@ function htmlProspetto(corsiDisp, qualDisp, base, stati) {
       <ol class="pros-resto">${resto.map(p => voce(p, t)).join('') || '<li class="vuota">—</li>'}</ol>
     </div>`; }).join('')}
   </div>
-  <p class="pros-nota">${pers.length + fascia.length} persone${f.corso ? ' con ' + esc(f.corso) + ' (settore ' + esc(NOME_SETTORE[settore] || '—') + '): in alto funzionari, ROP e magazziniere generale del settore; in testa a ogni turno il magazziniere di turno; chi è non operativo per il settore sta nella colonna N.O.' : ''}. In grigio chi adesso è in salto turno. Turni, salti e ruoli si impostano nella scheda 🔒 Gestione personale.</p>`
+  <p class="pros-nota">${pers.length} persone${f.corso ? ' con ' + esc(f.corso) + ' (settore ' + esc(NOME_SETTORE[settore] || '—') + '): in alto funzionari, ROP e magazziniere generale del settore (presenti anche nella colonna del loro turno); in testa a ogni turno il magazziniere di turno; chi è non operativo per il settore sta nella colonna N.O.' : ''}. In grigio chi adesso è in salto turno. Turni, salti e ruoli si impostano nella scheda 🔒 Gestione personale.</p>`
   : `<div class="pros-vuoto">${carico.stato === 'ok' ? 'Nessuna persona con questi filtri.' : carico.stato === 'err' ? 'Dati PUMA non disponibili.' : 'Caricamento…'}</div>`}`;
 }
 // ordine degli elenchi: col corso scelto prima i ruoli del settore (funzionario, ROP, mag. generale, mag. di turno),
