@@ -8754,3 +8754,6 @@ button.pros-chip.on { background: var(--pros-g); color: #000; }
 #pros-app .pros-col li .tel { flex-basis: 100%; display: flex; align-items: center; gap: 6px; padding: 3px 0 1px; }
 #pros-app .pros-col li .tel a { font-weight: 700; color: #1d2733; white-space: nowrap; }
 #pros-app .pros-col li .tel .pros-mini { padding: 1px 6px; }
+/* Prospetto: Comando e Corso sulla stessa riga */
+#pros-app .pros-corso-riga { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--text-muted); flex: 1 1 320px; min-width: 0; max-width: 560px; }
+#pros-app .pros-corso-riga select { width: 100%; }

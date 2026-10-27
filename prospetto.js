@@ -513,11 +513,11 @@ function htmlProspetto(corsiDisp, qualDisp, base, stati) {
   return `
   <div class="pros-testa">
     ${selectComando()}
+    ${selectCorso(corsiDisp, base)}
     <label>Qualifica <select id="pros-qual"><option value="">Tutte</option>${qualDisp.map(q => `<option${q === f.qual ? ' selected' : ''}>${esc(q)}</option>`).join('')}</select></label>
     <div class="pros-sigla">Adesso: <b>${esc(etichettaTurno(adesso.sel))}</b></div>
     <div class="pros-stati">${stati}</div>
   </div>
-  ${selectCorso(corsiDisp, base)}
   ${htmlFascia}
   ${pers.length || fascia.length ? `
   <div class="pros-colonne" style="--n:${colonne.length}">
@@ -566,9 +566,9 @@ function htmlGestione(corsiDisp, qualDisp, base, stati) {
   ${lucchetto}
   <div class="pros-testa">
     ${selectComando()}
+    ${selectCorso(corsiDisp, base)}
     <div class="pros-stati">${stati}</div>
   </div>
-  ${selectCorso(corsiDisp, base)}
   <div class="pros-barra">
     <input type="search" id="pros-testo" placeholder="Cerca cognome, nome o cellulare" value="${esc(f.testo)}">
     <select id="pros-qual"><option value="">Tutte le qualifiche</option>${qualDisp.map(q => `<option${q === f.qual ? ' selected' : ''}>${esc(q)}</option>`).join('')}</select>
@@ -648,14 +648,13 @@ function selectComando() {
   return `<label>Comando
       <select id="pros-comando"><option value="">Tutti i comandi</option>${comandi().map(c => `<option${c === f.comando ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select></label>`;
 }
+// sta nella stessa riga del Comando, dentro la testata
 function selectCorso(corsiDisp, base) {
-  return `<div class="pros-box pros-box-corso">
-    <label class="pros-corso">Corso
+  return `<label class="pros-corso-riga">Corso
       <select id="pros-corso"${corsiDisp.length ? '' : ' disabled'}>
         <option value="">${corsiDisp.length ? 'Tutti i corsi (' + corsiDisp.length + ')' : (carico.stato === 'ok' ? 'Nessun corso registrato' : 'In attesa dei dati PUMA')}</option>
         ${corsiDisp.map(c => `<option value="${esc(c)}"${c === f.corso ? ' selected' : ''}>${esc(c)} — ${base.filter(p => p.corsi.includes(c)).length}</option>`).join('')}
-      </select></label>
-  </div>`;
+      </select></label>`;
 }
 const GRUPPI_RICHIAMO = ['libero', 'saltoSel', 'saltoPrec', 'saltoSucc'];
 function elencoRichiamo(T) {
@@ -688,6 +687,7 @@ function htmlRichiamo(corsiDisp, qualDisp, base, stati) {
   return `
   <div class="pros-testa">
     ${selectComando()}
+    ${selectCorso(corsiDisp, base)}
     <div class="pros-fasce">
       ${[[0, 'Adesso'], [12, '+12 ore'], [24, '+24 ore']].map(([h, n]) => `<button type="button" class="pros-fascia${f.quando === h ? ' on' : ''}" data-quando="${h}">${n}</button>`).join('')}
     </div>
@@ -695,7 +695,6 @@ function htmlRichiamo(corsiDisp, qualDisp, base, stati) {
       <span>· prima ${esc(T.prec.sigla)} · dopo ${esc(T.succ.sigla)}</span></div>
     <div class="pros-stati">${stati}</div>
   </div>
-  ${selectCorso(corsiDisp, base)}
   <div class="pros-barra">
     <select id="pros-qual"><option value="">Tutte le qualifiche</option>${qualDisp.map(q => `<option${q === f.qual ? ' selected' : ''}>${esc(q)}</option>`).join('')}</select>
     <span class="pros-nota">${totale} richiamabili${f.corso ? ' con ' + esc(siglaCorso(f.corso)) + ' (esclusi i non operativi del settore ' + esc(settoreDi(f.corso) || '—') + ')' : ''}${g.nd.length ? ' · <b>' + g.nd.length + '</b> senza turno impostato (scheda Gestione personale)' : ''}</span>
