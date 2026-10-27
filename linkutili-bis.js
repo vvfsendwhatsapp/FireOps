@@ -32,9 +32,10 @@
         return url.split("{{LAT}}").join(parti[0]).split("{{LNG}}").join(parti[1]);
     }
 
-    // Stato della pagina (solo comodità per chi la usa: preferiti e filtro restano nel browser)
+    // Stato della pagina (solo comodità per chi la usa: preferiti e filtri restano nel browser)
     const LU_CHIAVE_PREF = "fireops-linkutili-preferiti";
     const LU_CHIAVE_FILTRO = "fireops-linkutili-filtro";
+    const LU_CHIAVE_SOLOPREF = "fireops-linkutili-solopreferiti";
     function luLeggi(chiave, predef) {
         try { const v = localStorage.getItem(chiave); return v ? JSON.parse(v) : predef; } catch (e) { return predef; }
     }
@@ -42,6 +43,8 @@
         try { localStorage.setItem(chiave, JSON.stringify(valore)); } catch (e) { /* storage non disponibile */ }
     }
     const luEsc = t => String(t || "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[c]));
+    // minuscolo e senza accenti, così "velivolo" trova anche "Velivòli"
+    const luNorm = t => String(t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
     let luElenco = [];
     let luTesto = "";
 
@@ -55,19 +58,27 @@
             return;
         }
 
-        // Struttura fissa (ricerca + filtri) costruita una volta sola; il resto si ridisegna
+        // Struttura fissa (ricerca, tasto preferiti, filtri) costruita una volta sola; il resto si ridisegna
         if (!container.querySelector(".lu-barra")) {
             container.innerHTML = `
                 <div class="lu-barra">
-                    <input type="search" class="lu-cerca" placeholder="Cerca un link (nome o descrizione)…" aria-label="Cerca link">
+                    <div class="lu-riga">
+                        <input type="search" class="lu-cerca" placeholder="Cerca (es. elicottero, targa, ONU)" aria-label="Cerca link">
+                        <button type="button" class="lu-solopref" aria-pressed="false" title="Mostra solo i preferiti">★ Preferiti</button>
+                    </div>
                     <div class="lu-chips"></div>
                 </div>
-                <p class="lu-legenda"><span class="lu-badge">📍</span> si apre sulle coordinate del Comando attivo · <span class="lu-badge">🔒</span> rete VVF · tocca ☆ per i preferiti</p>
+                <p class="lu-legenda"><span class="lu-badge">📍</span> si apre sulle coordinate del Comando attivo · <span class="lu-badge">🔒</span> rete VVF · tocca ☆ su un link per i preferiti</p>
                 <div class="lu-elenco"></div>`;
             const cerca = container.querySelector(".lu-cerca");
             cerca.value = luTesto;
             cerca.addEventListener("input", () => { luTesto = cerca.value; luDisegna(container); });
             container.addEventListener("click", ev => {
+                if (ev.target.closest(".lu-solopref")) {
+                    luScrivi(LU_CHIAVE_SOLOPREF, !luLeggi(LU_CHIAVE_SOLOPREF, false));
+                    luDisegna(container);
+                    return;
+                }
                 const chip = ev.target.closest(".lu-chip");
                 if (chip) {
                     luScrivi(LU_CHIAVE_FILTRO, chip.dataset.filtro);
@@ -93,17 +104,26 @@
 
     function luDisegna(container) {
         const pref = luLeggi(LU_CHIAVE_PREF, []).filter(n => luElenco.some(v => v["Nome"] === n));
-        const gruppi = luRaggruppa(luElenco);
-        const categorie = [...gruppi.keys()];
+        const soloPref = luLeggi(LU_CHIAVE_SOLOPREF, false) === true;
+        const categorieTutte = [...luRaggruppa(luElenco).keys()];
         let filtro = luLeggi(LU_CHIAVE_FILTRO, "Tutti");
-        if (filtro !== "Tutti" && filtro !== "Preferiti" && !categorie.includes(filtro)) filtro = "Tutti";
-        if (filtro === "Preferiti" && pref.length === 0) filtro = "Tutti";
-        const testo = luTesto.trim().toLowerCase();
+        if (filtro !== "Tutti" && !categorieTutte.includes(filtro)) filtro = "Tutti";
+        const parole = luNorm(luTesto).split(/\s+/).filter(Boolean);
 
-        // Filtri a "chip": Tutti, Preferiti (se ce ne sono), poi le categorie
-        const chips = ["Tutti", ...(pref.length ? ["Preferiti"] : []), ...categorie];
-        container.querySelector(".lu-chips").innerHTML = chips.map(c =>
-            `<button type="button" class="lu-chip${c === filtro && !testo ? " attiva" : ""}" data-filtro="${luEsc(c)}">${c === "Preferiti" ? "★ " : ""}${luEsc(c)}</button>`
+        // Tasto con/senza preferiti
+        const tasto = container.querySelector(".lu-solopref");
+        tasto.classList.toggle("attiva", soloPref);
+        tasto.setAttribute("aria-pressed", soloPref ? "true" : "false");
+        tasto.title = soloPref ? "Mostra tutti i link" : "Mostra solo i preferiti";
+
+        // Base: tutti i link o solo i preferiti (nell'ordine in cui li hai aggiunti)
+        const base = soloPref ? pref.map(n => luElenco.find(v => v["Nome"] === n)).filter(Boolean) : luElenco;
+
+        // Filtri a "chip": Tutti, poi le categorie presenti nella base
+        const categorie = [...luRaggruppa(base).keys()];
+        if (filtro !== "Tutti" && !categorie.includes(filtro)) filtro = "Tutti";
+        container.querySelector(".lu-chips").innerHTML = ["Tutti", ...categorie].map(c =>
+            `<button type="button" class="lu-chip${c === filtro && !parole.length ? " attiva" : ""}" data-filtro="${luEsc(c)}">${luEsc(c)}</button>`
         ).join("");
 
         const tessera = voce => {
@@ -122,24 +142,29 @@
             return `<div class="lu-tessera">${link}<button type="button" class="lu-stella${isPref ? " attiva" : ""}" data-nome="${luEsc(nome)}" title="${isPref ? "Togli dai preferiti" : "Aggiungi ai preferiti"}" aria-label="Preferito">${isPref ? "★" : "☆"}</button></div>`;
         };
         const griglia = voci => `<div class="lu-griglia">${voci.map(tessera).join("")}</div>`;
-        const vociPref = () => pref.map(n => luElenco.find(v => v["Nome"] === n)).filter(Boolean);
 
         let html = "";
-        if (testo) {
-            // Ricerca: risultati in un'unica griglia, su tutte le categorie
-            const trovati = luElenco.filter(v => [v["Nome"], v["Nota"], v["Categoria"], v["Sottocategoria"]].join(" ").toLowerCase().includes(testo));
-            html = trovati.length ? griglia(trovati) : `<p class="pagina-nota">Nessun link trovato per “${luEsc(luTesto.trim())}”.</p>`;
-        } else if (filtro === "Preferiti") {
-            html = griglia(vociPref());
+        if (soloPref && base.length === 0) {
+            html = `<p class="pagina-nota">Nessun preferito ancora: togli ★ Preferiti e tocca ☆ sui link che usi di più.</p>`;
+        } else if (parole.length) {
+            // Ricerca per parole chiave: ogni parola scritta deve comparire in nome, descrizione,
+            // parole chiave o categoria. Cerca nella base (tutti o solo preferiti), su ogni categoria.
+            const trovati = base.filter(v => {
+                const testoVoce = luNorm([v["Nome"], v["Nota"], v["Parole"], v["Categoria"], v["Sottocategoria"]].join(" "));
+                return parole.every(p => testoVoce.includes(p));
+            });
+            html = trovati.length
+                ? griglia(trovati)
+                : `<p class="pagina-nota">Nessun link trovato per “${luEsc(luTesto.trim())}”${soloPref ? " tra i preferiti: togli ★ Preferiti per cercare in tutti" : ""}.</p>`;
+        } else if (soloPref && filtro === "Tutti") {
+            // Solo preferiti: un'unica griglia compatta, nell'ordine in cui li hai aggiunti
+            html = griglia(base);
         } else {
-            if (filtro === "Tutti" && pref.length) {
-                html += `<h4 class="lu-categoria">★ Preferiti</h4>` + griglia(vociPref());
-            }
-            gruppi.forEach((sottogruppi, categoria) => {
+            luRaggruppa(base).forEach((sottogruppi, categoria) => {
                 if (filtro !== "Tutti" && filtro !== categoria) return;
                 html += `<h4 class="lu-categoria">${luEsc(categoria)}</h4>`;
                 sottogruppi.forEach((voci, sotto) => {
-                    if (sotto) html += `<h5 class="lu-sottocategoria">${luEsc(sotto)}</h5>`;
+                    if (sotto && !soloPref) html += `<h5 class="lu-sottocategoria">${luEsc(sotto)}</h5>`;
                     html += griglia(voci);
                 });
             });

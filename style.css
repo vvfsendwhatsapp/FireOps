@@ -8660,3 +8660,9 @@ button.pros-chip.on { background: var(--pros-g); color: #000; }
 #pros-app .pros-chk { text-transform: none; letter-spacing: 0; color: var(--text-main); }
 #pros-app input[type=checkbox], #pros-app input[type=radio] { color-scheme: light; accent-color: #e0a800; width: 16px; height: 16px; }
 #pros-app .pros-col li .rl { padding-left: 0; }
+/* Link utili (BIS): riga ricerca + tasto con/senza preferiti */
+.lu-riga { display: flex; gap: 8px; align-items: stretch; }
+.lu-riga .lu-cerca { flex: 1; min-width: 0; }
+.lu-solopref { flex: 0 0 auto; padding: 0 14px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--dark-color); color: var(--text-muted); font-size: 14px; font-weight: bold; cursor: pointer; white-space: nowrap; }
+.lu-solopref.attiva { background: var(--primary-color); border-color: var(--primary-color); color: #000; }
+@media (max-width: 600px) { .lu-solopref { padding: 0 10px; font-size: 13px; } }
