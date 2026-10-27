@@ -8666,3 +8666,6 @@ button.pros-chip.on { background: var(--pros-g); color: #000; }
 .lu-solopref { flex: 0 0 auto; padding: 0 14px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--dark-color); color: var(--text-muted); font-size: 14px; font-weight: bold; cursor: pointer; white-space: nowrap; }
 .lu-solopref.attiva { background: var(--primary-color); border-color: var(--primary-color); color: #000; }
 @media (max-width: 600px) { .lu-solopref { padding: 0 10px; font-size: 13px; } }
+/* Link utili (BIS): preferiti disattivati, niente spazio per la stellina */
+.lu-senza-pref .lu-link { padding-right: 12px; }
+.lu-senza-pref .lu-legenda-pref { display: none; }
