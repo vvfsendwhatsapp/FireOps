@@ -1367,6 +1367,11 @@ const CHIAVE_STORAGE_PANNELLI = "fireops_pagine_pannelli";
         "convertitore": {
             chiudi: "✖ Chiudi convertitore",
             titolo: "Chiudi il convertitore e torna alla vista a due colonne"
+        },
+        // solo in index-bis.html: in produzione la sezione non c'e' e la voce non scatta mai
+        "prospetto-disponibilita": {
+            chiudi: "✖ Chiudi prospetto",
+            titolo: "Chiudi il Prospetto disponibilità e torna alla vista a due colonne"
         }
     };
 
