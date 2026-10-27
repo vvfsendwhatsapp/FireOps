@@ -479,8 +479,13 @@ function disegna() {
 /* ---------- scheda PROSPETTO: colonne A, B, C, D, G, N.O. con sotto qualifica e nominativo ---------- */
 const COLONNE = ['A', 'B', 'C', 'D', 'G', 'NO', ''];   // '' = turno non impostato
 function htmlProspetto(corsiDisp, qualDisp, base, stati) {
-  const pers = base.filter(p => (!f.qual || p.qual === f.qual) && (!f.corso || p.corsi.includes(f.corso)));
   const settore = settoreDi(f.corso);
+  // con un settore scelto: funzionari, ROP e magazzinieri generali del settore vanno nella FASCIA in alto
+  // (anche senza il corso preciso), i magazzinieri di turno in testa alla colonna del loro turno
+  const ruoloAlto = p => settore && !nonOperativo(p, settore) && rangoRuolo(p, settore) <= 2;
+  const fascia = settore ? ordina(base.filter(ruoloAlto)) : [];
+  const inFascia = new Set(fascia.map(p => p.k));
+  const pers = base.filter(p => !inFascia.has(p.k) && (!f.qual || p.qual === f.qual) && (!f.corso || p.corsi.includes(f.corso)));
   // con un corso scelto, chi e' non operativo per il suo settore va nella colonna N.O.
   const turnoDi = p => { if (nonOperativo(p, settore)) return 'NO'; const t = turni[p.k]; return t && TURNI.includes(t.t) ? t.t : ''; };
   const col = {}; COLONNE.forEach(t => { col[t] = []; });
@@ -488,6 +493,19 @@ function htmlProspetto(corsiDisp, qualDisp, base, stati) {
   const adesso = turnoAlMomento(Date.now());
   const intest = t => t === '' ? 'Senza turno' : NOME_TURNO(t);
   const colonne = COLONNE.filter(t => t !== '' || col[''].length);
+  const turnoTesto = p => { const t = turni[p.k] || {}; return t.t ? NOME_TURNO(t.t) + (t.s || '') : '—'; };
+  const voce = (p, t, extra) => {
+    const tt = turni[p.k] || {}, inSalto = t === adesso.sel.l && tt.s && String(tt.s) === adesso.sel.n;
+    return `<li class="${inSalto ? 'salto' : ''}${extra ? ' ' + extra : ''}" title="${esc(p.corsi.join(', '))}"><span class="q">${esc(p.qual)}</span> <span class="n">${esc(p.cognome)}${p.manuale ? ' ✍️' : ''}</span>${tt.s && t !== 'NO' ? `<span class="s">${esc(t + tt.s)}</span>` : ''}${t === 'NO' && tt.t && tt.t !== 'NO' ? `<span class="s" title="Turno ${esc(NOME_TURNO(tt.t))}${tt.s ? ', salto ' + esc(tt.s) : ''}: non operativo per ${esc(NOME_SETTORE[settore] || '')}">${esc(NOME_TURNO(tt.t) + (tt.s || ''))}</span>` : ''}<span class="rl">${htmlRuoli(p, settore)}</span>${f.comando ? '' : `<span class="c">${esc(p.comando)}</span>`}</li>`;
+  };
+  const righeFascia = [['FUN', 'Funzionari del settore'], ['ROP', 'Responsabile operativo provinciale'], ['MAG', 'Magazziniere generale']]
+    .map(([r, tit]) => [tit, fascia.filter(p => ORDINE_RUOLI[rangoRuolo(p, settore)] === r)]);
+  const htmlFascia = settore ? `
+  <div class="pros-fascia-settore">
+    <div class="tit">Settore <b>${esc(NOME_SETTORE[settore])}</b></div>
+    ${righeFascia.map(([tit, l]) => `
+    <div class="riga"><div class="ruolo">${esc(tit)}</div><div class="nomi">${l.length ? l.map(p => `<span class="pers" title="${esc(p.corsi.join(', '))}"><span class="q">${esc(p.qual)}</span> <b>${esc(p.cognome)}</b>${p.manuale ? ' ✍️' : ''} <span class="t">${esc(turnoTesto(p))}</span>${p.cell ? ` <a href="tel:${esc(p.cell)}">📞 ${esc(p.cell)}</a>` : ''}${f.comando ? '' : ` <span class="c">${esc(p.comando)}</span>`}</span>`).join('') : '<span class="pros-nota">— non assegnato (scheda Gestione personale, ✏️ Ruoli)</span>'}</div></div>`).join('')}
+  </div>` : '';
   return `
   <div class="pros-testa">
     ${selectComando()}
@@ -496,16 +514,21 @@ function htmlProspetto(corsiDisp, qualDisp, base, stati) {
     <div class="pros-stati">${stati}</div>
   </div>
   ${selectCorso(corsiDisp, base)}
-  ${pers.length ? `
+  ${htmlFascia}
+  ${pers.length || fascia.length ? `
   <div class="pros-colonne" style="--n:${colonne.length}">
-    ${colonne.map(t => `
+    ${colonne.map(t => {
+      // in testa alla colonna il magazziniere di turno del settore, poi il resto del personale
+      const magt = settore ? ordina(col[t].filter(p => ruoliDi(p, settore).includes('MAGT'))) : [];
+      const resto = ordina(col[t].filter(p => !magt.includes(p)));
+      return `
     <div class="pros-col t-${t || 'nd'}${t === 'NO' ? ' no' : ''}${t === '' ? ' nd' : ''}${t === adesso.sel.l ? ' servizio' : ''}">
       <h4>${esc(intest(t))} <span class="pros-quanti">${col[t].length}</span>${t === adesso.sel.l ? '<small>in servizio · salta il ' + esc(adesso.sel.n) + '</small>' : ''}</h4>
-      <ol>${ordina(col[t]).map(p => { const tt = turni[p.k] || {}, inSalto = t === adesso.sel.l && tt.s && String(tt.s) === adesso.sel.n;
-        return `<li class="${inSalto ? 'salto' : ''}" title="${esc(p.corsi.join(', '))}"><span class="q">${esc(p.qual)}</span> <span class="n">${esc(p.cognome)}${p.manuale ? ' ✍️' : ''}</span>${tt.s && t !== 'NO' ? `<span class="s">${esc(t + tt.s)}</span>` : ''}${t === 'NO' && tt.t && tt.t !== 'NO' ? `<span class="s" title="Turno ${esc(NOME_TURNO(tt.t))}${tt.s ? ', salto ' + esc(tt.s) : ''}: non operativo per ${esc(NOME_SETTORE[settore] || '')}">${esc(NOME_TURNO(tt.t) + (tt.s || ''))}</span>` : ''}<span class="rl">${htmlRuoli(p, settore)}</span>${f.comando ? '' : `<span class="c">${esc(p.comando)}</span>`}</li>`; }).join('') || '<li class="vuota">—</li>'}</ol>
-    </div>`).join('')}
+      ${settore && !['NO', ''].includes(t) ? `<div class="pros-magt"><div class="et">Magazziniere di turno</div>${magt.length ? `<ol>${magt.map(p => voce(p, t, 'magt')).join('')}</ol>` : '<div class="vuoto">—</div>'}</div>` : ''}
+      <ol class="pros-resto">${resto.map(p => voce(p, t)).join('') || '<li class="vuota">—</li>'}</ol>
+    </div>`; }).join('')}
   </div>
-  <p class="pros-nota">${pers.length} persone${f.corso ? ' con ' + esc(f.corso) + ' (settore ' + esc(NOME_SETTORE[settore] || '—') + '): chi è non operativo per il settore sta nella colonna N.O.' : ''}. In grigio chi adesso è in salto turno. Turni, salti e ruoli si impostano nella scheda 🔒 Gestione personale.</p>`
+  <p class="pros-nota">${pers.length + fascia.length} persone${f.corso ? ' con ' + esc(f.corso) + ' (settore ' + esc(NOME_SETTORE[settore] || '—') + '): in alto funzionari, ROP e magazziniere generale del settore; in testa a ogni turno il magazziniere di turno; chi è non operativo per il settore sta nella colonna N.O.' : ''}. In grigio chi adesso è in salto turno. Turni, salti e ruoli si impostano nella scheda 🔒 Gestione personale.</p>`
   : `<div class="pros-vuoto">${carico.stato === 'ok' ? 'Nessuna persona con questi filtri.' : carico.stato === 'err' ? 'Dati PUMA non disponibili.' : 'Caricamento…'}</div>`}`;
 }
 // ordine degli elenchi: col corso scelto prima i ruoli del settore (funzionario, ROP, mag. generale, mag. di turno),

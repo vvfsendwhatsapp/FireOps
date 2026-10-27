@@ -8704,3 +8704,22 @@ button.pros-chip.on { background: var(--pros-g); color: #000; }
 #pros-app .pros-col li .c, #pros-app .pros-col li .s { color: #4a5563; }
 #pros-app .pros-col.servizio { box-shadow: 0 0 0 3px color-mix(in srgb, var(--tc) 55%, transparent), 0 4px 12px rgba(16, 24, 40, .12); }
 .pros-ruolo.r-FUN { color: #fff; border-color: #a33a3a; background: #b8433f; }
+/* Prospetto: fascia del settore (funzionari, ROP, magazziniere generale) e magazziniere di turno in testa alle colonne */
+#pros-app .pros-fascia-settore { margin-bottom: 8px; border-radius: 8px; overflow: hidden; border: 1px solid #8a6d1f; background: #f3e7c4; box-shadow: 0 1px 3px rgba(16, 24, 40, .12); }
+#pros-app .pros-fascia-settore .tit { padding: 6px 12px; background: #3b4452; color: #fff; font-size: 13px; letter-spacing: .02em; }
+#pros-app .pros-fascia-settore .tit b { color: #ffd54a; }
+#pros-app .pros-fascia-settore .riga { display: grid; grid-template-columns: 240px 1fr; border-top: 1px solid #e0cf9a; }
+#pros-app .pros-fascia-settore .riga:nth-child(even) { background: #efe0b4; }
+#pros-app .pros-fascia-settore .ruolo { padding: 7px 12px; font-weight: 700; font-size: 13px; color: #5c4307; border-right: 1px solid #e0cf9a; }
+#pros-app .pros-fascia-settore .nomi { display: flex; flex-wrap: wrap; gap: 4px 18px; padding: 6px 12px; align-items: center; font-size: 13px; }
+#pros-app .pros-fascia-settore .pers .q { color: #8a5a00; font-weight: 700; font-size: 12px; }
+#pros-app .pros-fascia-settore .pers .t { font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; color: #4a5563; background: rgba(255, 255, 255, .6); padding: 0 5px; border-radius: 4px; }
+#pros-app .pros-fascia-settore .pers a { color: #1d2733; white-space: nowrap; }
+#pros-app .pros-fascia-settore .pers .c { font-size: 11px; color: #5a6778; }
+#pros-app .pros-magt { background: color-mix(in srgb, var(--tc) 30%, #fff); border-bottom: 2px solid var(--tc); }
+#pros-app .pros-magt .et { padding: 3px 10px 0; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: color-mix(in srgb, var(--tc) 80%, #000); }
+#pros-app .pros-magt .vuoto { padding: 2px 10px 5px; color: #5a6778; font-size: 12px; }
+#pros-app .pros-magt ol { padding: 0 0 2px; }
+#pros-app .pros-col .pros-magt li, #pros-app .pros-col .pros-magt li:nth-child(even) { background: transparent; font-weight: 600; border-bottom: 0; }
+#pros-app .pros-col .pros-magt li .rl { display: none; }
+@media (max-width: 700px) { #pros-app .pros-fascia-settore .riga { grid-template-columns: 1fr; } #pros-app .pros-fascia-settore .ruolo { border-right: 0; padding-bottom: 0; } }
