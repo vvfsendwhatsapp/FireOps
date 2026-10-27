@@ -8667,3 +8667,39 @@ button.pros-chip.on { background: var(--pros-g); color: #000; }
 .lu-chip[style*="--lu-col"].attiva { background: var(--lu-col); border-color: var(--lu-col); color: #000; }
 .lu-chip.attiva .lu-pallino { background: #000; }
 @media (max-width: 600px) { .lu-gruppo { padding: 8px 8px 10px; } }
+
+/* Prospetto disponibilità: grigio meno abbagliante e colonne dei turni a colori pieni */
+#pros-app {
+  --surface-color: #e9ecf0; --light-bg: #dde2e8; --dark-color: #f4f6f8; --border-color: #c3cbd5;
+  background: #cfd5dd; border-color: #b9c2cd;
+}
+#pros-app .pros-testa, #pros-app .pros-box, #pros-app .pros-gruppo, #pros-app .pros-tabwrap { background: #e9ecf0; }
+#pros-app select, #pros-app input[type=date], #pros-app input[type=search], #pros-app input[type=text], #pros-app input[type=tel],
+#pros-app input[type=password], #pros-app .pros-lucchetto input[type=password] { background: #f4f6f8; border-color: #b6c0cc; }
+#pros-app .pros-scheda { background: #dbe0e7; border-color: #c3cbd5; }
+#pros-app .pros-scheda:hover { background: #eef1f4; }
+#pros-app .pros-btn, #pros-app .pros-mini, #pros-app .pros-fascia { background: #eef1f4; border-color: #b6c0cc; }
+#pros-app .pros-tab th { background: #dde2e8; }
+#pros-app .pros-tab tbody tr:nth-child(odd) td { background: #e9ecf0; }
+#pros-app .pros-tab tbody tr:nth-child(even) td { background: #dfe3e9; }
+#pros-app .pros-tab tbody tr:hover td { background: #f6ecc4; }
+#pros-app .pros-chip { background: #dde2e8; }
+#pros-app .pros-settore { background: #eef1f4; }
+/* colonne: ogni turno con il suo colore, intestazione piena e righe nella stessa tinta */
+#pros-app .pros-col { --tc: #6b7684; --tb: #e4e7eb; --tb2: #d9dde2; border: 1px solid color-mix(in srgb, var(--tc) 45%, #b9c2cd); border-top: 0; background: var(--tb); }
+#pros-app .pros-col.t-A  { --tc: #d64045; --tb: #f6dcdd; --tb2: #efcbcd; }
+#pros-app .pros-col.t-B  { --tc: #2d6fd6; --tb: #dbe6f7; --tb2: #cad9f1; }
+#pros-app .pros-col.t-C  { --tc: #1f9d55; --tb: #d8efe2; --tb2: #c6e6d3; }
+#pros-app .pros-col.t-D  { --tc: #e07a1f; --tb: #f8e3cf; --tb2: #f1d4b9; }
+#pros-app .pros-col.t-G  { --tc: #7b57c9; --tb: #e5ddf5; --tb2: #d8cdef; }
+#pros-app .pros-col.t-NO { --tc: #5f6b7a; --tb: #dfe3e8; --tb2: #d2d8df; }
+#pros-app .pros-col.t-nd { --tc: #8a94a2; --tb: #e6e9ed; --tb2: #dadfe5; }
+#pros-app .pros-col h4, #pros-app .pros-col.no h4, #pros-app .pros-col.nd h4 { background: var(--tc); color: #fff; border-bottom: 0; }
+#pros-app .pros-col h4 .pros-quanti { background: rgba(255, 255, 255, .25); color: #fff; }
+#pros-app .pros-col h4 small { color: #fff; opacity: .95; }
+#pros-app .pros-col li { border-bottom-color: color-mix(in srgb, var(--tc) 15%, transparent); }
+#pros-app .pros-col li:nth-child(odd):not(.vuota) { background: var(--tb); }
+#pros-app .pros-col li:nth-child(even):not(.vuota) { background: var(--tb2); }
+#pros-app .pros-col li:hover:not(.vuota) { background: #f6ecc4; }
+#pros-app .pros-col li .c, #pros-app .pros-col li .s { color: #4a5563; }
+#pros-app .pros-col.servizio { box-shadow: 0 0 0 3px color-mix(in srgb, var(--tc) 55%, transparent), 0 4px 12px rgba(16, 24, 40, .12); }
