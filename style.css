@@ -8573,3 +8573,90 @@ button.pros-chip.on { background: var(--pros-g); color: #000; }
   .lu-stella { width: 28px; }
   .lu-nota { display: none; }
 }
+
+/* ==========================================================
+   PROSPETTO DISPONIBILITA' — TEMA CHIARO (più luminoso)
+   Le variabili del sito sono ridefinite solo dentro #pros-app: il resto di FireOps resta scuro.
+   ========================================================== */
+#pros-app {
+  --surface-color: #ffffff; --light-bg: #f2f5f9; --dark-color: #ffffff; --border-color: #d6dde6;
+  --text-main: #1d2733; --text-muted: #5a6778; --primary-color: #f2b705; --pros-g: #f2b705;
+  --pros-testo-acc: #8a5a00; --pros-ok: #198a4a; --pros-err: #c0392b; --pros-warn: #b45f06; --pros-viola: #6b46c1; --pros-rosa: #b0308f;
+  background: linear-gradient(180deg, #f7f9fc 0%, #eef2f7 100%); color: var(--text-main);
+  padding: 12px; border-radius: 10px; border: 1px solid #dfe5ec;
+}
+#pros-app select, #pros-app input[type=date], #pros-app input[type=search], #pros-app input[type=text], #pros-app input[type=tel],
+#pros-app input[type=password], #pros-app .pros-lucchetto input[type=password] { color-scheme: light; background: #fff; color: var(--text-main); border-color: #c9d2dd; }
+#pros-app select:focus, #pros-app input:focus { border-color: #e0a800; box-shadow: 0 0 0 3px rgba(242, 183, 5, .25); }
+#pros-app .pros-testa, #pros-app .pros-box, #pros-app .pros-gruppo, #pros-app .pros-col, #pros-app .pros-tabwrap { box-shadow: 0 1px 2px rgba(16, 24, 40, .06); }
+#pros-app .pros-testa { border-left-color: #f2b705; }
+#pros-app .pros-sync.ok { color: var(--pros-ok); } #pros-app .pros-sync.err { color: var(--pros-err); }
+#pros-app .pros-avviso { background: #fff8e1; border-color: #f0c64c; color: #6b5a26; } #pros-app .pros-avviso b { color: #4a3d12; }
+/* schede */
+#pros-app .pros-schede { border-bottom: 2px solid #e2e8f0; gap: 6px; }
+#pros-app .pros-scheda { color: #4a5868; background: #e9eef4; border: 1px solid #dbe2ea; border-bottom: 0; }
+#pros-app .pros-scheda:hover { background: #fff; color: #1d2733; }
+#pros-app .pros-scheda.on, #pros-app .pros-scheda.on:hover { background: #f2b705; border-color: #f2b705; color: #1d2733; box-shadow: 0 -2px 6px rgba(242, 183, 5, .35); }
+/* pulsanti */
+#pros-app .pros-btn, #pros-app .pros-mini, #pros-app .pros-fascia { background: #fff; color: #1d2733; border-color: #cfd8e3; }
+#pros-app .pros-btn:hover:not(:disabled), #pros-app .pros-mini:hover { border-color: #e0a800; background: #fffbea; }
+#pros-app .pros-btn.pri, #pros-app .pros-fascia.on { background: #f2b705; border-color: #e0a800; color: #1d2733; }
+#pros-app .pros-btn.danger, #pros-app .pros-mini.danger { color: var(--pros-err); border-color: #efb4ab; }
+/* lucchetto */
+#pros-app .pros-lucchetto { background: #fff4e5; border-color: #f5c27a; color: #6b4210; }
+#pros-app .pros-lucchetto.ok { background: #e8f7ee; border-color: #8fd3ab; color: #145c33; }
+/* tabelle */
+#pros-app .pros-tab th { background: #f1f4f8; color: #4a5868; }
+#pros-app .pros-tab tbody tr:nth-child(even) td { background: #f6f8fb; }
+#pros-app .pros-tab tbody tr:hover td { background: #fff7d6; }
+#pros-app .pros-tab-r td.q, #pros-app .pros-col li .q { color: var(--pros-testo-acc); }
+#pros-app .pros-gruppo h4 b { color: var(--pros-testo-acc); }
+#pros-app .pros-chip { background: #f3f6fa; color: #4a5868; border-color: #d6dde6; }
+#pros-app .pros-chip.on { background: #fff3c4; border-color: #e0a800; color: #6b4a00; }
+#pros-app .pros-quanti { background: #eef2f7; color: #1d2733; }
+#pros-app .pros-man { color: var(--pros-viola); }
+#pros-app .pros-tab tr.st-no td:first-child { box-shadow: inset 4px 0 0 #f2994a; }
+#pros-app .pros-tab tr.st-nd td:first-child { box-shadow: inset 4px 0 0 #b8c2cf; }
+#pros-app .pros-g-libero { border-left: 5px solid #27ae60; } #pros-app .pros-g-saltoSel { border-left: 5px solid #d63384; }
+#pros-app .pros-g-saltoPrec { border-left: 5px solid #2f80ed; } #pros-app .pros-g-saltoSucc { border-left: 5px solid #f2994a; }
+/* colonne dei turni, ciascuna col suo colore */
+#pros-app .pros-col { --tc: #7d8794; border: 1px solid #dfe5ec; border-top: 4px solid var(--tc); background: #fff; overflow: hidden; }
+#pros-app .pros-col.t-A { --tc: #e5484d; } #pros-app .pros-col.t-B { --tc: #2f80ed; } #pros-app .pros-col.t-C { --tc: #27ae60; }
+#pros-app .pros-col.t-D { --tc: #f2994a; } #pros-app .pros-col.t-G { --tc: #8e6cd8; } #pros-app .pros-col.t-NO { --tc: #7d8794; } #pros-app .pros-col.t-nd { --tc: #b8c2cf; }
+#pros-app .pros-col h4 { color: var(--tc); background: color-mix(in srgb, var(--tc) 10%, #fff); border-bottom-color: #e6ebf1; font-size: 17px; }
+#pros-app .pros-col.no h4, #pros-app .pros-col.nd h4 { color: #5a6778; }
+#pros-app .pros-col.servizio { border-color: var(--tc); box-shadow: 0 0 0 2px color-mix(in srgb, var(--tc) 35%, transparent), 0 4px 12px rgba(16, 24, 40, .08); }
+#pros-app .pros-col h4 small { color: var(--pros-ok); font-weight: 600; }
+#pros-app .pros-col li { border-bottom-color: #eef1f5; }
+#pros-app .pros-col li:nth-child(even):not(.vuota) { background: #f6f8fb; }
+#pros-app .pros-col li:hover:not(.vuota) { background: #fff7d6; }
+#pros-app .pros-col li.salto { opacity: .5; } #pros-app .pros-col li.salto .s { color: var(--pros-rosa); }
+#pros-app .pros-col li .rl { flex-basis: 100%; padding-left: 44px; display: flex; flex-wrap: wrap; gap: 3px; }
+#pros-app .pros-col li .rl:empty { display: none; }
+/* ruoli per settore */
+.pros-ruolo { display: inline-block; padding: 1px 6px; margin: 1px 2px 1px 0; border-radius: 9px; font-size: 10.5px; font-weight: 700; white-space: nowrap; border: 1px solid; }
+.pros-ruolo.r-MAG { color: #1f5fbf; border-color: #9cc0f2; background: #eaf2fe; }
+.pros-ruolo.r-MAGT { color: #0f7b6c; border-color: #8fd5c9; background: #e6f7f4; }
+.pros-ruolo.r-ROP { color: #8a5a00; border-color: #f0c64c; background: #fff6d6; }
+.pros-ruolo.r-NO { color: #6b7684; border-color: #c4ccd6; background: #eef1f5; }
+.pros-ruoli-cella { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; }
+#pros-app .pros-tab tr.aperta td { background: #fffbea !important; }
+#pros-app .pros-riga-ruoli td { background: #fffdf4 !important; padding: 0; }
+.pros-ruoli-box { padding: 10px 12px 12px; border-top: 2px solid #f2b705; }
+.pros-ruoli-tit { margin-bottom: 8px; font-size: 13px; }
+.pros-settore { display: grid; grid-template-columns: minmax(150px, 230px) 1fr; align-items: center; gap: 4px 12px; padding: 6px 8px; border-radius: 6px; margin-bottom: 4px; background: #fff; border: 1px solid #e6ebf1; }
+.pros-settore.ha { border-color: #f0c64c; background: #fffaf0; }
+.pros-settore.no { background: #f1f3f6; border-color: #cfd6df; }
+.pros-settore .nome small { color: #5a6778; font-size: 11.5px; }
+.pros-settore .scelte { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.pros-settore .scelte .pros-chk input:disabled + * , .pros-settore .scelte .pros-chk:has(input:disabled) { opacity: .45; }
+.pros-ruoli-box details { margin-top: 6px; } .pros-ruoli-box summary { cursor: pointer; font-size: 12.5px; color: #4a5868; margin-bottom: 4px; }
+@media (max-width: 700px) {
+  #pros-app { padding: 8px; }
+  .pros-settore { grid-template-columns: 1fr; }
+  #pros-app .pros-riga-ruoli td::before { content: none; }
+  #pros-app .pros-tab tbody tr:nth-child(even) { background: #f6f8fb; }
+}
+#pros-app .pros-chk { text-transform: none; letter-spacing: 0; color: var(--text-main); }
+#pros-app input[type=checkbox], #pros-app input[type=radio] { color-scheme: light; accent-color: #e0a800; width: 16px; height: 16px; }
+#pros-app .pros-col li .rl { padding-left: 0; }

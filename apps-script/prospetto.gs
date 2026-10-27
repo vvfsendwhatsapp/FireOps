@@ -21,10 +21,14 @@
  * Per il personale di PUMA nel foglio NON si scrivono cellulare, codice fiscale o email: solo nominativo,
  * comando, turno e salto. Per i nominativi aggiunti a mano (non presenti su PUMA, colonna Manuale = 1)
  * si scrivono anche qualifica, cellulare e corsi, perche' non stanno da nessun'altra parte; Manuale = 0 vuol dire
- * eliminato. ATTENZIONE: come i turni, questi dati si leggono senza password da chi conosce l'indirizzo della Web App.
+ * eliminato. La colonna Ruoli tiene i ruoli per settore (Magazziniere, Mag. di turno, ROP, Non operativo) in JSON.
+ * ATTENZIONE: come i turni, questi dati si leggono senza password da chi conosce l'indirizzo della Web App.
  */
 const TP_FOGLIO_ = "DB_Turni_Personale";
-const TP_INT_ = ["Chiave", "Comando", "Cognome", "Nome", "Turno", "Salto", "Aggiornato", "Manuale", "Qualifica", "Cellulare", "Corsi"];
+const TP_INT_ = ["Chiave", "Comando", "Cognome", "Nome", "Turno", "Salto", "Aggiornato", "Manuale", "Qualifica", "Cellulare", "Corsi", "Ruoli"];
+// ruoli per settore (colonna Ruoli, JSON {"SAF": ["MAG", "ROP"], "NBCR": ["NO"]})
+const TP_SETTORI_ = ["SAF", "SSA", "USAR", "TPSS", "OSO", "TAS", "CFBT", "NBCR", "APR", "K9", "PT", "MMT", "PN"];
+const TP_RUOLI_ = ["MAG", "MAGT", "ROP", "NO"];
 const TP_PASSWORD_ = "cambiami";   // password GENERALE, vale per tutti i Comandi ("cambiami" = nessuna)
 const TP_FOGLIO_PWD_ = "DB_Password_Comandi";
 const TP_COMANDI_ = ["Agrigento", "Alessandria", "Ancona", "Aosta", "Arezzo", "Ascoli Piceno", "Asti", "Avellino", "Bari", "Barletta-Andria-Trani", "Belluno", "Benevento", "Bergamo", "Biella", "Bologna", "Bolzano", "Brescia", "Brindisi", "Cagliari", "Caltanissetta", "Campobasso", "Caserta", "Catania", "Catanzaro", "Chieti", "Como", "Cosenza", "Cremona", "Crotone", "Cuneo", "Enna", "Fermo", "Ferrara", "Firenze", "Foggia", "Forlì-Cesena", "Frosinone", "Genova", "Gorizia", "Grosseto", "Imperia", "Isernia", "L'Aquila", "La Spezia", "Latina", "Lecce", "Lecco", "Livorno", "Lodi", "Lombardia COR AIB CURNO", "Lucca", "Macerata", "Mantova", "Massa-Carrara", "Matera", "Messina", "Milano", "Modena", "Monza e della Brianza", "Napoli", "Novara", "Nuoro", "Oristano", "Padova", "Palermo", "Parma", "Pavia", "Perugia", "Pesaro e Urbino", "Pescara", "Piacenza", "Pisa", "Pistoia", "Pordenone", "Potenza", "Prato", "Ragusa", "Ravenna", "Reggio Calabria", "Reggio Emilia", "Rieti", "Rimini", "Roma", "Rovigo", "Salerno", "Sassari", "Savona", "Siena", "Siracusa", "Sondrio", "Taranto", "Teramo", "Terni", "Torino", "Trapani", "Trento", "Treviso", "Trieste", "Udine", "Varese", "Venezia", "Verbano-Cusio-Ossola", "Vercelli", "Verona", "Vibo Valentia", "Vicenza", "Viterbo"];
@@ -39,15 +43,26 @@ function tpFoglio_() {
     sh = ss.insertSheet(TP_FOGLIO_);
     sh.appendRow(TP_INT_);
     sh.setFrozenRows(1);
-    sh.getRange("A:F").setNumberFormat("@"); sh.getRange("H:K").setNumberFormat("@");   // tutto testo: il salto "4" non diventa un numero
+    sh.getRange("A:F").setNumberFormat("@"); sh.getRange("H:L").setNumberFormat("@");   // tutto testo: il salto "4" non diventa un numero
   }
   // foglio creato con la prima versione (7 colonne): si allunga l'intestazione
   const n = sh.getLastColumn();
   if (n < TP_INT_.length) {
     sh.getRange(1, 1, 1, TP_INT_.length).setValues([TP_INT_]);
-    sh.getRange("H:K").setNumberFormat("@");   // cellulare come testo
+    sh.getRange("H:L").setNumberFormat("@");   // cellulare e ruoli come testo
   }
   return sh;
+}
+
+// ruoli ricevuti dalla pagina: solo settori e ruoli noti; N.O. esclude gli altri ruoli del settore
+function tpRuoli_(r) {
+  if (!r || typeof r !== "object") return "";
+  const out = {};
+  TP_SETTORI_.forEach(st => {
+    const l = Array.isArray(r[st]) ? r[st].map(String).filter(x => TP_RUOLI_.indexOf(x) >= 0) : [];
+    if (l.length) out[st] = l.indexOf("NO") >= 0 ? ["NO"] : TP_RUOLI_.filter(x => l.indexOf(x) >= 0);
+  });
+  return Object.keys(out).length ? JSON.stringify(out) : "";
 }
 
 function tpTesto_(v, max) {
@@ -66,6 +81,7 @@ function turniPersonaleGet_(q) {
     if (comando && k.split("|")[2] !== comando) continue;
     const v = {t: r[4], s: r[5], ts: Number(r[6]) || 0};
     if (r[7] === "1" || r[7] === "0") Object.assign(v, {m: r[7], n: r[2], com: r[1], q: r[8] || "", c: r[9] || "", corsi: r[10] || ""});
+    if (r[11]) { try { v.r = JSON.parse(r[11]); } catch (e) { /* cella rovinata: si ignora */ } }
     turni[k] = v;
   }
   return {ok: true, turni: turni, ora: Date.now()};
@@ -150,7 +166,7 @@ function turniPersonalePost_(p) {
       const man = v.m === "1" || v.m === "0" ? v.m : "";
       const valori = [k, tpTesto_(v.comando, 80), tpTesto_(v.cognome, 80), tpTesto_(v.nome, 60), t, s, ts, man,
         man ? tpTesto_(v.q, 20) : "", man ? tpTesto_(String(v.c || "").replace(/[^\d+ ]/g, ""), 20) : "",
-        man ? tpTesto_(Array.isArray(v.corsi) ? v.corsi.join(" | ") : v.corsi, 1500) : ""];
+        man ? tpTesto_(Array.isArray(v.corsi) ? v.corsi.join(" | ") : v.corsi, 1500) : "", tpRuoli_(v.r)];
       const n = riga[k];
       if (n) {
         if (Number(dati[n - 1][6]) >= ts) { ignorati++; return; }   // sul foglio c'e' gia' una modifica piu' recente
