@@ -102,6 +102,7 @@ const NOMI_STATO = {servizio: 'In servizio', salto: 'Salto turno', libero: 'Libe
 /* ============================== STATO ============================== */
 
 let root = null;
+let nRegistrazioni = 0;     // righe lette da PUMA (una persona puo' essersi registrata piu' volte)
 let righePuma = [];        // personale letto da PUMA (deduplicato)
 let righe = [];            // PUMA + nominativi aggiunti a mano (vedi ricomponi)
 let modMan = null;         // gestione: chiave del nominativo manuale in modifica, 'nuovo' per uno nuovo
@@ -198,6 +199,7 @@ async function carica() {
       if (!mappa.has(p.k)) mappa.set(p.k, p);
     });
     righePuma = Array.from(mappa.values());
+    nRegistrazioni = tab.length - 1;
     ricomponi();
     scrivi(LS_TURNI, turni);
     carico = {stato: 'ok', errore: '', ora: new Date()};
@@ -459,7 +461,7 @@ function disegna() {
   });
   const statoCarico = carico.stato === 'carico' ? '<span class="pros-sync">⏳ Lettura da PUMA…</span>'
     : carico.stato === 'err' ? '<span class="pros-sync err">⚠️ PUMA non raggiungibile: ' + esc(carico.errore) + '</span>'
-    : carico.ora ? '<span class="pros-sync ok">✓ PUMA · ' + righe.length + ' persone · ' + carico.ora.toLocaleTimeString('it-IT', {hour: '2-digit', minute: '2-digit'}) + '</span>' : '';
+    : carico.ora ? '<span class="pros-sync ok" title="Su PUMA ci sono ' + nRegistrazioni + ' registrazioni: chi si e\' registrato piu\' volte conta una volta sola">✓ PUMA · ' + righePuma.length + ' persone (' + nRegistrazioni + ' registrazioni)' + (righe.length > righePuma.length ? ' + ' + (righe.length - righePuma.length) + ' a mano' : '') + ' · ' + carico.ora.toLocaleTimeString('it-IT', {hour: '2-digit', minute: '2-digit'}) + '</span>' : '';
   const ora = d => d ? ' · ' + d.toLocaleTimeString('it-IT', {hour: '2-digit', minute: '2-digit'}) : '';
   const statoSync = sync.stato === 'err' ? '<span class="pros-sync err">⚠️ Foglio turni: ' + esc(sync.errore) + (coda.length ? ' (' + coda.length + ' modifiche in attesa)' : '') + '</span>'
     : sync.stato === 'invio' ? '<span class="pros-sync">⏳ Salvo i turni sul foglio…</span>'
@@ -494,7 +496,7 @@ function htmlProspetto(corsiDisp, qualDisp, base, stati) {
   const col = {}; COLONNE.forEach(t => { col[t] = []; });
   pers.forEach(p => col[turnoDi(p)].push(p));
   const adesso = turnoAlMomento(Date.now());
-  const intest = t => t === '' ? 'Senza turno' : NOME_TURNO(t);
+  const intest = t => t === '' ? 'Senza turno' : t === 'NO' ? 'Non operativo' : NOME_TURNO(t);
   const colonne = COLONNE.filter(t => t !== '' || col[''].length);
   const turnoTesto = p => { const t = turni[p.k] || {}; return t.t ? NOME_TURNO(t.t) + (t.s || '') : '—'; };
   const voce = (p, t, extra) => {
@@ -592,7 +594,7 @@ function htmlGestione(corsiDisp, qualDisp, base, stati) {
         <td data-l="Qualifica">${esc(p.qual)}</td>
         <td data-l="Corsi">${p.corsi.map(c => `<span class="pros-chip${c === f.corso ? ' on' : ''}" title="${esc(c)}">${esc(siglaCorso(c))}</span>`).join('') || '<span class="pros-nota">—</span>'}</td>
         <td data-l="Cellulare">${p.cell ? `<a href="tel:${esc(p.cell)}">${esc(p.cell)}</a>` : ''}</td>
-        <td data-l="Turno"><select data-campo="t"${dis}><option value="">—</option>${TURNI.map(x => `<option value="${x}"${x === t.t ? ' selected' : ''}>${NOME_TURNO(x)}</option>`).join('')}</select></td>
+        <td data-l="Turno"><select data-campo="t"${dis}><option value="">—</option>${TURNI.map(x => `<option value="${x}"${x === t.t ? ' selected' : ''}>${x === 'NO' ? 'N.O. – Non operativo' : NOME_TURNO(x)}</option>`).join('')}</select></td>
         <td data-l="Salto"><select data-campo="s"${SENZA_SALTO(t.t) || !aperto ? ' disabled' : ''}><option value="">—</option>${SALTI.map(x => `<option${x === String(t.s || '') ? ' selected' : ''}>${x}</option>`).join('')}</select></td>
         <td data-l="Ruoli"><div class="pros-ruoli-cella">${htmlRuoli(p, '') || '<span class="pros-nota">—</span>'}${aperto ? ` <button type="button" class="pros-mini" data-ruoli="${esc(p.k)}" title="Ruoli per settore">${modRuoli === p.k ? '✕ Chiudi' : '✏️ Ruoli'}</button>` : ''}</div></td>
       </tr>${aperto && modRuoli === p.k ? htmlRigaRuoli(p) : ''}`;
@@ -632,7 +634,7 @@ function htmlFormManuale(tuttiCorsi) {
       <label>Qualifica <select name="q">${QUAL_MAN.map(q => `<option${q === String(v.q || 'VF').toUpperCase() ? ' selected' : ''}>${q}</option>`).join('')}</select></label>
       <label>Cellulare <input type="tel" name="c" maxlength="20" value="${esc(v.c || '')}" placeholder="333 1234567"></label>
       <label>Comando <select name="com">${Array.from(new Set(comandi().concat(com ? [com] : []))).filter(c => pwdPer(normComando(c))).sort((a, b) => a.localeCompare(b, 'it')).map(c => `<option${c === com ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select></label>
-      <label>Turno <select name="t"><option value="">—</option>${TURNI.map(x => `<option value="${x}"${x === v.t ? ' selected' : ''}>${NOME_TURNO(x)}</option>`).join('')}</select></label>
+      <label>Turno <select name="t"><option value="">—</option>${TURNI.map(x => `<option value="${x}"${x === v.t ? ' selected' : ''}>${x === 'NO' ? 'N.O. – Non operativo' : NOME_TURNO(x)}</option>`).join('')}</select></label>
       <label>Salto <select name="s"><option value="">—</option>${SALTI.map(x => `<option${x === String(v.s || '') ? ' selected' : ''}>${x}</option>`).join('')}</select></label>
     </div>
     <div class="pros-lab">Corsi</div>
