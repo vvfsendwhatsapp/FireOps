@@ -83,6 +83,24 @@
         luDisegna(container);
     }
 
+    // Un colore per ogni macro categoria: filtro, titolo e bordo dei link
+    const LU_COLORI = {
+        "Mappe e posizione": "#4caf50",
+        "Velivoli, natanti, satelliti": "#29b6f6",
+        "Sala Operativa": "#ef5350",
+        "Sostanze pericolose (NBCR)": "#ff9800",
+        "Veicoli e incidenti": "#ba68c8",
+        "Personale e amministrazione": "#7986cb",
+        "Comunicazione in Emergenza": "#f06292",
+        "Strumenti": "#9e9e9e"
+    };
+    const LU_RISERVA = ["#26a69a", "#d4e157", "#8d6e63", "#78909c"];
+    function luColore(categoria, categorie) {
+        if (LU_COLORI[categoria]) return LU_COLORI[categoria];
+        const i = Math.max(0, categorie.indexOf(categoria));
+        return LU_RISERVA[i % LU_RISERVA.length];
+    }
+
     function luDisegna(container) {
         let filtro = luLeggi(LU_CHIAVE_FILTRO, "Tutti");
         const gruppiTutti = luRaggruppa(luElenco);
@@ -90,8 +108,9 @@
         if (filtro !== "Tutti" && !categorie.includes(filtro)) filtro = "Tutti";
         const parole = luNorm(luTesto).split(/\s+/).filter(Boolean);
 
+        const col = c => luColore(c, categorie);
         container.querySelector(".lu-chips").innerHTML = ["Tutti", ...categorie].map(c =>
-            `<button type="button" class="lu-chip${c === filtro && !parole.length ? " attiva" : ""}" data-filtro="${luEsc(c)}">${luEsc(c)}</button>`
+            `<button type="button" class="lu-chip${c === filtro && !parole.length ? " attiva" : ""}" data-filtro="${luEsc(c)}"${c === "Tutti" ? "" : ` style="--lu-col:${col(c)}"`}>${c === "Tutti" ? "" : "<span class=\"lu-pallino\"></span>"}${luEsc(c)}</button>`
         ).join("");
 
         const tessera = voce => {
@@ -106,7 +125,7 @@
             const link = url
                 ? `<a class="lu-link" href="${luEsc(url)}" target="_blank" rel="noopener">${corpo}</a>`
                 : `<span class="lu-link lu-disabilitato" title="${conCoord ? "Seleziona prima un Comando" : "URL non ancora inserito"}">${corpo}</span>`;
-            return `<div class="lu-tessera">${link}</div>`;
+            return `<div class="lu-tessera" style="--lu-col:${col(voce["Categoria"] || "Altro")}">${link}</div>`;
         };
         const griglia = voci => `<div class="lu-griglia">${voci.map(tessera).join("")}</div>`;
 
@@ -122,11 +141,13 @@
         } else {
             gruppiTutti.forEach((sottogruppi, categoria) => {
                 if (filtro !== "Tutti" && filtro !== categoria) return;
+                html += `<section class="lu-gruppo" style="--lu-col:${col(categoria)}">`;
                 html += `<h4 class="lu-categoria">${luEsc(categoria)}</h4>`;
                 sottogruppi.forEach((voci, sotto) => {
                     if (sotto) html += `<h5 class="lu-sottocategoria">${luEsc(sotto)}</h5>`;
                     html += griglia(voci);
                 });
+                html += `</section>`;
             });
         }
         container.querySelector(".lu-elenco").innerHTML = html;

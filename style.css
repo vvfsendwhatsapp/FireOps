@@ -8657,3 +8657,13 @@ button.pros-chip.on { background: var(--pros-g); color: #000; }
 #pros-app .pros-chk { text-transform: none; letter-spacing: 0; color: var(--text-main); }
 #pros-app input[type=checkbox], #pros-app input[type=radio] { color-scheme: light; accent-color: #e0a800; width: 16px; height: 16px; }
 #pros-app .pros-col li .rl { padding-left: 0; }
+/* Link utili (BIS): colori per macro categoria (--lu-col impostato da linkutili-bis.js) */
+.lu-gruppo { margin: 14px 0; padding: 10px 12px 12px; border-left: 4px solid var(--lu-col); border-radius: 6px; background: color-mix(in srgb, var(--lu-col) 7%, transparent); }
+.lu-gruppo .lu-categoria { margin: 0 0 6px; color: var(--lu-col); border-bottom-color: color-mix(in srgb, var(--lu-col) 35%, transparent); }
+.lu-tessera .lu-link { border-left: 4px solid var(--lu-col, var(--border-color)); }
+.lu-tessera .lu-link:hover { border-color: var(--lu-col, var(--primary-color)); background: color-mix(in srgb, var(--lu-col, #ffd700) 12%, var(--dark-color)); }
+.lu-pallino { display: inline-block; width: 9px; height: 9px; margin-right: 6px; border-radius: 50%; background: var(--lu-col); vertical-align: 0; }
+.lu-chip[style*="--lu-col"] { border-color: color-mix(in srgb, var(--lu-col) 55%, var(--border-color)); }
+.lu-chip[style*="--lu-col"].attiva { background: var(--lu-col); border-color: var(--lu-col); color: #000; }
+.lu-chip.attiva .lu-pallino { background: #000; }
+@media (max-width: 600px) { .lu-gruppo { padding: 8px 8px 10px; } }
