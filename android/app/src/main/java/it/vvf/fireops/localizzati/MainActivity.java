@@ -76,6 +76,17 @@ public class MainActivity extends Activity {
         s.setCacheMode(WebSettings.LOAD_DEFAULT);
 
         web.addJavascriptInterface(new Object() {
+            /** Copia negli appunti dal sistema: non dipende dal focus della pagina né dai permessi del WebView. */
+            @JavascriptInterface
+            public boolean copia(final String testo) {
+                try {
+                    ClipboardManager cm = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+                    if (cm == null || testo == null) return false;
+                    cm.setPrimaryClip(ClipData.newPlainText("FireOps", testo));
+                    return true;
+                } catch (Exception e) { return false; }
+            }
+
             @JavascriptInterface
             public String appunti() {
                 try {

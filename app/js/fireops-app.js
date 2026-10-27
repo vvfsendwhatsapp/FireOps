@@ -12,6 +12,17 @@
 (function () {
   "use strict";
 
+  // Nell'app Android la copia negli appunti passa dal sistema (FireOpsAndroid.copia): il WebView può rifiutare
+  // navigator.clipboard.writeText se la pagina non ha il focus. Vale per tutti i moduli che copiano testo.
+  try {
+    if (window.FireOpsAndroid && typeof window.FireOpsAndroid.copia === "function") {
+      const nativo = t => window.FireOpsAndroid.copia(String(t == null ? "" : t));
+      const scrivi = t => nativo(t) ? Promise.resolve() : Promise.reject(new Error("copia non riuscita"));
+      if (navigator.clipboard) navigator.clipboard.writeText = scrivi;
+      else Object.defineProperty(navigator, "clipboard", {value: {writeText: scrivi}, configurable: true});
+    }
+  } catch (e) { /* si resta con la copia del browser */ }
+
   const VERSIONE = window.FIREOPS_VERSIONE || String(Date.now());   // da js/versione.js
   const DB = "../db/";                          // cartella dati del repo FireOps
   const DB_FALLBACK = "https://vvfsendwhatsapp.github.io/FireOps/db/";
