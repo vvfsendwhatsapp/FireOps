@@ -8,6 +8,8 @@
 
 
 
+/* Versione della PRODUZIONE (index.html). La BIS ha la sua in versione-bis.js:
+   questo numero si cambia solo quando la modifica deve arrivare in index.html. */
 const FIREOPS_VERSIONE = "202610272145";
 window.FIREOPS_VERSIONE = FIREOPS_VERSIONE;
 

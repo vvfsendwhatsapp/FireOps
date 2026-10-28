@@ -30,9 +30,10 @@
 
     <title>FireOps VVF (BIS - Test)</title>
     <link rel="icon" type="image/png" href="images/logo.png">
-    <!-- versione.js va sempre scaricato fresco, mai dalla cache: vedi la
-         stessa nota in index.html. -->
-    <script>document.write('<script src="versione.js?nocache=' + Date.now() + '"><\/script>')</script>
+    <!-- BIS ha la sua versione (versione-bis.js), separata da quella di
+         produzione: aggiornare la BIS non fa comparire "Aggiorna" in
+         index.html. Va scaricato sempre fresco: vedi la nota in index.html. -->
+    <script>document.write('<script src="versione-bis.js?nocache=' + Date.now() + '"><\/script>')</script>
 
     <!-- Tutto lo stile sta in style.css: nessun blocco <style> in questa
          pagina. Se serve una regola nuova, va in fondo a style.css, nella

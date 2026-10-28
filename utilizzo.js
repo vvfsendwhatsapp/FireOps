@@ -12,6 +12,8 @@
   const CHIAVE_PING = "fireops_utilizzo_ping";
   const ORE_TRA_PING = 6;
   const versione = String(window.FIREOPS_VERSIONE || "n/d");
+  // index-bis.html legge versione-bis.js, la produzione versione.js
+  const FILE_VERSIONE = window.FIREOPS_VERSIONE_FILE || "versione.js";
   const mobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 
   const esc = s => String(s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
@@ -102,7 +104,7 @@
   async function controllaVersione() {
     if (document.hidden) return;
     try {
-      const r = await fetch("versione.js?t=" + Date.now(), {cache: "no-store"});
+      const r = await fetch(FILE_VERSIONE + "?t=" + Date.now(), {cache: "no-store"});
       if (!r.ok) return;
       const m = (await r.text()).match(/FIREOPS_VERSIONE\s*=\s*["']([^"']+)["']/);
       if (m && m[1] !== versione) mostraBarra();
