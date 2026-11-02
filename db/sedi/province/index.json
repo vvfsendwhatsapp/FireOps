@@ -532,7 +532,7 @@
   "provincia": "Pisa",
   "regione": "Toscana",
   "sedi": 10,
-  "convalidate": 10,
+  "convalidate": 9,
   "file": "province/PI.geojson"
  },
  {
