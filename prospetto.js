@@ -517,7 +517,23 @@ function disegna() {
     : f.scheda === 'gestione' ? htmlGestione(corsiDisp, qualDisp, base, stati)
     : htmlProspetto(corsiDisp, qualDisp, base, stati);
   root.innerHTML = schede + corpo;
+  pareggiaTeste();
 }
+// stessa altezza per le intestazioni delle colonne e per i riquadri in testa (responsabile e magazziniere
+// di turno), cosi' il personale sotto parte alla stessa altezza in tutti i turni
+function pareggiaTeste() {
+  const cont = root && root.querySelector('.pros-colonne');
+  if (!cont) return;
+  ['.pros-col > h4', '.pros-magt.rdt', '.pros-magt.mt'].forEach(sel => {
+    const el = Array.from(cont.querySelectorAll(sel));
+    el.forEach(x => { x.style.minHeight = ''; });
+    if (getComputedStyle(cont).gridTemplateColumns.split(' ').length < 2) return;   // telefono: colonne una sotto l'altra
+    const h = Math.max(0, ...el.map(x => x.offsetHeight));
+    el.forEach(x => { x.style.minHeight = h + 'px'; });
+  });
+}
+let timerPareggia = null;
+window.addEventListener('resize', () => { clearTimeout(timerPareggia); timerPareggia = setTimeout(pareggiaTeste, 150); });
 
 /* ---------- scheda PROSPETTO: colonne A, B, C, D, G, N.O. con sotto qualifica e nominativo ---------- */
 const COLONNE = ['A', 'B', 'C', 'D', 'G', 'NO', ''];   // '' = turno non impostato

@@ -8778,3 +8778,13 @@ button.pros-chip.on { background: var(--pros-g); color: #000; }
 .pros-nocorso { display: inline-block; margin-left: 4px; padding: 0 5px; border-radius: 8px; font-size: 10px; font-weight: 700; color: #8a2a2a; background: #f6dcdc; border: 1px solid #e0a8a8; white-space: nowrap; vertical-align: middle; }
 #pros-app .pros-col li.nocorso { opacity: .7; font-style: italic; }
 #pros-app .pros-tab select[data-qual] { min-width: 64px; }
+/* Prospetto specializzati: riquadri in testa alle colonne con sfondo proprio, altezze pareggiate da pareggiaTeste() */
+#pros-app .pros-col > h4 { box-sizing: border-box; align-content: flex-start; }
+#pros-app .pros-magt { box-sizing: border-box; border-left: 5px solid var(--tc); }
+#pros-app .pros-magt.rdt { background: #fff2c4; border-bottom: 1px solid #d9c27a; }
+#pros-app .pros-magt.mt { background: #e4f1fb; border-bottom: 3px solid var(--tc); }
+#pros-app .pros-magt .et { color: #3b4452; }
+#pros-app .pros-magt.rdt .et::before { content: "★ "; color: #b8860b; }
+#pros-app .pros-magt.mt .et::before { content: "▣ "; color: #2d6fa8; }
+#pros-app .pros-col .pros-magt li, #pros-app .pros-col .pros-magt li:nth-child(even) { background: transparent; }
+#pros-app .pros-col .pros-magt li:not(.vuota), #pros-app .pros-col .pros-magt li:nth-child(odd):not(.vuota), #pros-app .pros-col .pros-magt li:nth-child(even):not(.vuota) { background: transparent; }
