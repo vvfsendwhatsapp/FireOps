@@ -1371,7 +1371,7 @@ const CHIAVE_STORAGE_PANNELLI = "fireops_pagine_pannelli";
         // solo in index-bis.html: in produzione la sezione non c'e' e la voce non scatta mai
         "prospetto-disponibilita": {
             chiudi: "✖ Chiudi prospetto",
-            titolo: "Chiudi il Prospetto disponibilità e torna alla vista a due colonne"
+            titolo: "Chiudi il Prospetto specializzati e torna alla vista a due colonne"
         }
     };
 

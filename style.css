@@ -8757,3 +8757,20 @@ button.pros-chip.on { background: var(--pros-g); color: #000; }
 /* Prospetto: Comando e Corso sulla stessa riga */
 #pros-app .pros-corso-riga { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--text-muted); flex: 1 1 320px; min-width: 0; max-width: 560px; }
 #pros-app .pros-corso-riga select { width: 100%; }
+
+/* Prospetto specializzati: ruoli per singolo corso, corsi aggiunti a mano, responsabile di turno */
+#pros-app .pros-settore.corso { margin-left: 22px; background: #e6e9ed; border-style: dashed; }
+#pros-app .pros-settore.corso.ha { background: #f6ecc4; border-style: solid; }
+#pros-app .pros-settore.corso.no { background: #d2d8df; border-style: solid; }
+#pros-app .pros-settore.corso .nome { font-size: 12.5px; }
+#pros-app .pros-cx { margin-top: 10px; padding-top: 8px; border-top: 1px dashed #a9b3bf; }
+#pros-app .pros-cx-elenco { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 8px; }
+#pros-app .pros-cx-nuovo { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+#pros-app .pros-cx-nuovo select { flex: 1 1 260px; min-width: 0; }
+#pros-app .pros-cx-nuovo input { flex: 1 1 220px; min-width: 0; }
+#pros-app .pros-x { border: 0; background: transparent; cursor: pointer; padding: 0 0 0 4px; font-weight: 700; color: #8a2a2a; }
+.pros-ruolo.r-RDT { color: #6b3fa0; border-color: #c3a8e6; background: #f1eafb; }
+#pros-app .pros-magt.rdt { background: color-mix(in srgb, var(--tc) 42%, #fff); border-bottom: 1px solid var(--tc); }
+#pros-app .pros-solo-corso { margin: -2px 0 6px 22px; }
+#pros-app .pros-solo-corso > summary { cursor: pointer; font-size: 12px; color: #4a5868; padding: 2px 0; }
+#pros-app .pros-solo-corso .pros-settore.corso { margin-left: 0; }

@@ -1,5 +1,5 @@
 /*!
- * FireOps VVF — prospetto.js — Prospetto disponibilità (solo index-bis.html, IN COSTRUZIONE)
+ * FireOps VVF — prospetto.js — Prospetto specializzati (ex Prospetto disponibilità; solo index-bis.html, IN COSTRUZIONE)
  * Dipendenze: fireops-core.js (window.FireOps.turniDelGiorno) · script.js (window.FireOpsComandoAttivo)
  * Markup:     sezione #prospetto-disponibilita di index-bis.html (il contenuto lo costruisce questo file in #pros-app)
  * Stile:      style.css, sezione "PROSPETTO DISPONIBILITA'"
@@ -74,8 +74,13 @@ function settoreDi(corso) {
 function settoriDi(p) { return Array.from(new Set(p.corsi.map(settoreDi).filter(Boolean))); }
 // RUOLI per settore: una persona puo' averne piu' d'uno; N.O. (non operativo per quel settore) esclude gli altri
 // in quest'ordine anche negli elenchi: col settore scelto, prima il funzionario, poi ROP, magazziniere generale, magazziniere di turno
-const RUOLI = [['FUN', 'Funzionario di settore', 'Funz.'], ['ROP', 'Responsabile operativo provinciale', 'ROP'], ['MAG', 'Magazziniere generale', 'Mag. gen.'], ['MAGT', 'Magazziniere di turno', 'Mag. turno'], ['NO', 'Non operativo', 'N.O.']];
-const ORDINE_RUOLI = ['FUN', 'ROP', 'MAG', 'MAGT'];
+const RUOLI = [['FUN', 'Funzionario di settore', 'Funz.'], ['ROP', 'Responsabile operativo provinciale', 'ROP'], ['MAG', 'Magazziniere generale', 'Mag. gen.'],
+  ['RDT', 'Responsabile di turno', 'Resp. turno'], ['MAGT', 'Magazziniere di turno', 'Mag. turno'], ['NO', 'Non operativo', 'N.O.']];
+const ORDINE_RUOLI = ['FUN', 'ROP', 'MAG', 'RDT', 'MAGT'];
+// I ruoli si danno per SETTORE (chiave "SAF") oppure per un SINGOLO CORSO (chiave "c:" + nome del corso):
+// cosi' si nomina p.es. un ROP solo per SAF BASICO, o si mette una persona non operativa solo per un'abilitazione.
+const PRE_CORSO = 'c:';
+function etichettaChiave(k) { return k.startsWith(PRE_CORSO) ? siglaCorso(k.slice(PRE_CORSO.length)) : k; }
 // posizione di una persona negli elenchi del settore scelto: il suo ruolo piu' alto (99 = nessun ruolo)
 function rangoRuolo(p, settore) {
   if (!settore) return 99;
@@ -84,16 +89,25 @@ function rangoRuolo(p, settore) {
 }
 const NOME_RUOLO = Object.fromEntries(RUOLI.map(([k, n]) => [k, n]));
 const SIGLA_RUOLO = Object.fromEntries(RUOLI.map(([k, , s]) => [k, s]));
-function ruoliDi(p, settore) { const r = (turni[p.k] || {}).r || {}; return settore ? (r[settore] || []) : r; }
+// senza settore: tutti i ruoli grezzi {chiave: [...]}; con il settore: quelli del settore piu' quelli del corso
+// scelto (se il corso e' di quel settore). N.O. vince sugli altri.
+function ruoliDi(p, settore, corso) {
+  const r = (turni[p.k] || {}).r || {};
+  if (!settore) return r;
+  if (corso === undefined) corso = f.corso && settoreDi(f.corso) === settore ? f.corso : '';
+  const l = (r[settore] || []).concat(corso ? (r[PRE_CORSO + corso] || []) : []);
+  return l.includes('NO') ? ['NO'] : RUOLI.map(x => x[0]).filter(x => l.includes(x));
+}
 function nonOperativo(p, settore) { return !!settore && ruoliDi(p, settore).includes('NO'); }
 // etichette dei ruoli: per un settore solo i suoi, senza settore tutti con la sigla del settore
 function htmlRuoli(p, settore) {
   if (settore) return ruoliDi(p, settore).map(x => `<span class="pros-ruolo r-${x}" title="${esc(NOME_RUOLO[x] + ' · ' + NOME_SETTORE[settore])}">${esc(SIGLA_RUOLO[x])}</span>`).join('');
-  return Object.entries(ruoliDi(p)).flatMap(([st, l]) => l.map(x => `<span class="pros-ruolo r-${x}" title="${esc(NOME_RUOLO[x] + ' · ' + (NOME_SETTORE[st] || st))}">${esc(SIGLA_RUOLO[x])} ${esc(st)}</span>`)).join('');
+  return Object.entries(ruoliDi(p)).flatMap(([st, l]) => l.map(x => `<span class="pros-ruolo r-${x}" title="${esc(NOME_RUOLO[x] + ' · ' + (NOME_SETTORE[st] || (st.startsWith(PRE_CORSO) ? 'solo ' + st.slice(PRE_CORSO.length) : st)))}">${esc(SIGLA_RUOLO[x])} ${esc(etichettaChiave(st))}</span>`)).join('');
 }
 function testoRuoli(p, settore) {
   const r = ruoliDi(p);
-  return Object.entries(r).filter(([st]) => !settore || st === settore).flatMap(([st, l]) => l.map(x => NOME_RUOLO[x] + ' ' + st)).join(', ');
+  return Object.entries(r).filter(([st]) => !settore || st === settore || (st.startsWith(PRE_CORSO) && settoreDi(st.slice(PRE_CORSO.length)) === settore))
+    .flatMap(([st, l]) => l.map(x => NOME_RUOLO[x] + ' ' + etichettaChiave(st))).join(', ');
 }
 let numeriAperti = new Set();   // prospetto: persone di cui si vede il numero (tocco sul nome)
 let modRuoli = null;       // gestione: chiave della persona di cui si stanno modificando i ruoli per settore
@@ -195,6 +209,7 @@ async function carica() {
       visti.add(id);
       const p = {cognome: titolo(nominativo), nome: '', cell: String(c[4] || '').replace(/[^\d+]/g, ''),
         qual: (c[3] || '').trim().toUpperCase(), comando: (c[2] || '').trim().replace(/\s+/g, ' '), corsi: dividiCorsi(c[5])};
+      p.corsiPuma = p.corsi;
       p.k = chiave(p);
       if (!mappa.has(p.k)) mappa.set(p.k, p);
     });
@@ -223,6 +238,9 @@ function ricomponi() {
     k, manuale: true, cognome: v.n || '', nome: '', cell: v.c || '', qual: String(v.q || '').toUpperCase(), comando: v.com || '', corsi: corsiDaTesto(v.corsi)
   }));
   const pumaK = new Set(righePuma.map(p => p.k));
+  // corsi aggiunti a mano dalla Gestione personale: si sommano a quelli di PUMA
+  righePuma.forEach(p => { const cx = corsiDaTesto((turni[p.k] || {}).cx); p.corsi = cx.length ? Array.from(new Set((p.corsiPuma || p.corsi).concat(cx))) : (p.corsiPuma || p.corsi); p.cx = cx; });
+  man.forEach(p => { const cx = corsiDaTesto((turni[p.k] || {}).cx); if (cx.length) p.corsi = Array.from(new Set(p.corsi.concat(cx))); p.cx = cx; });
   righe = righePuma.concat(man.filter(p => !pumaK.has(p.k)));
   righe.forEach(p => { nomi[p.k] = {comando: p.comando, cognome: p.cognome, nome: p.nome}; });
 }
@@ -269,6 +287,7 @@ async function scaricaTurni() {
       if (!loc || (v.ts || 0) > (loc.ts || 0)) {
         turni[k] = {t: v.t || '', s: v.s || '', ts: v.ts || 0};
         if (v.r && typeof v.r === 'object' && Object.keys(v.r).length) turni[k].r = v.r;
+        if (v.cx) turni[k].cx = corsiDaTesto(v.cx);
         if (v.m === '1' || v.m === '0') Object.assign(turni[k], {m: v.m, n: v.n || '', com: v.com || '', q: v.q || '', c: v.c || '', corsi: corsiDaTesto(v.corsi)});
         cambi++;
       }
@@ -318,8 +337,8 @@ async function invia() {
     const chiavi = tutte.slice(0, 500);
     const voci = chiavi.map(k => {
       const v = turni[k] || {t: '', s: '', ts: Date.now()}, n = nomi[k] || {};
-      const voce = {k, comando: n.comando || v.com || '', cognome: n.cognome || v.n || '', nome: n.nome || '', t: v.t || '', s: v.s || '', ts: v.ts || Date.now(), r: v.r || {}};
-      if (v.m === '1' || v.m === '0') Object.assign(voce, {m: v.m, comando: v.com || '', cognome: v.n || '', q: v.q || '', c: v.c || '', corsi: corsiDaTesto(v.corsi)});
+      const voce = {k, comando: n.comando || v.com || '', cognome: n.cognome || v.n || '', nome: n.nome || '', t: v.t || '', s: v.s || '', ts: v.ts || Date.now(), r: v.r || {}, cx: corsiDaTesto(v.cx)};
+      if (v.m === '1' || v.m === '0') Object.assign(voce, {m: v.m, comando: v.com || '', cognome: v.n || '', q: v.q || '', c: v.c || '', corsi: Array.from(new Set(corsiDaTesto(v.corsi).concat(corsiDaTesto(v.cx))))});
       return voce;
     });
     try {
@@ -343,6 +362,13 @@ function impostaRuoli(k, settore, lista) {
   if (l.length) r[settore] = l; else delete r[settore];
   turni[k] = Object.assign({t: '', s: ''}, turni[k], {r, ts: Date.now()});
   scrivi(LS_TURNI, turni); metti(k); programmaInvio();
+}
+// corsi aggiunti a mano a una persona (anche a chi e' su PUMA)
+function impostaCorsiExtra(k, lista) {
+  if (!puoModificare(k)) return;
+  const l = Array.from(new Set(lista.map(x => String(x).trim()).filter(Boolean))).slice(0, 40);
+  turni[k] = Object.assign({t: '', s: ''}, turni[k], {cx: l, ts: Date.now()});
+  scrivi(LS_TURNI, turni); metti(k); ricomponi(); programmaInvio();
 }
 // modifica di turno/salto di una persona: copia locale subito, foglio appena possibile
 function impostaTurno(k, t, s) {
@@ -447,7 +473,8 @@ function filtrati(sigla) {
     if (f.stato && statoPersona(p, sigla) !== f.stato) return false;
     return true;
   });
-  return ordina(l);
+  // ordine alfabetico (cognome e nome); prospetto e richiamo riordinano per ruolo con ordina()
+  return l.sort((a, b) => a.cognome.localeCompare(b.cognome, 'it') || a.nome.localeCompare(b.nome, 'it'));
 }
 
 /* ============================== DISEGNO ============================== */
@@ -470,7 +497,7 @@ function disegna() {
   const stati = statoCarico + statoSync;
   const schede = `<div class="pros-schede" role="tablist">
     <button type="button" class="pros-scheda${f.scheda === 'gestione' ? ' on' : ''}" data-scheda="gestione">${sbloccato() ? '🔓' : '🔒'} Gestione personale</button>
-    <button type="button" class="pros-scheda${f.scheda === 'prospetto' ? ' on' : ''}" data-scheda="prospetto">📋 Prospetto disponibilità</button>
+    <button type="button" class="pros-scheda${f.scheda === 'prospetto' ? ' on' : ''}" data-scheda="prospetto">📋 Prospetto specializzati</button>
     <button type="button" class="pros-scheda${f.scheda === 'richiamo' ? ' on' : ''}" data-scheda="richiamo">📞 Richiamo specializzati</button>
   </div>`;
   const corpo = f.scheda === 'richiamo' ? htmlRichiamo(corsiDisp, qualDisp, base, stati)
@@ -502,7 +529,7 @@ function htmlProspetto(corsiDisp, qualDisp, base, stati) {
   const voce = (p, t, extra) => {
     const tt = turni[p.k] || {}, inSalto = t === adesso.sel.l && tt.s && String(tt.s) === adesso.sel.n;
     const aperto = numeriAperti.has(p.k);
-    return `<li class="pros-cliccabile${inSalto ? ' salto' : ''}${extra ? ' ' + extra : ''}${aperto ? ' aperto' : ''}" data-num="${esc(p.k)}" title="${esc((p.cell ? 'Tocca per il numero · ' : '') + p.corsi.join(', '))}"><span class="q">${esc(p.qual)}</span> <span class="n">${esc(p.cognome)}${p.manuale ? ' ✍️' : ''}</span>${tt.s && t !== 'NO' ? `<span class="s">${esc(t + tt.s)}</span>` : ''}${t === 'NO' && tt.t && tt.t !== 'NO' ? `<span class="s" title="Turno ${esc(NOME_TURNO(tt.t))}${tt.s ? ', salto ' + esc(tt.s) : ''}: non operativo per ${esc(NOME_SETTORE[settore] || '')}">${esc(NOME_TURNO(tt.t) + (tt.s || ''))}</span>` : ''}<span class="rl">${htmlRuoli(p, settore)}</span>${f.comando ? '' : `<span class="c">${esc(p.comando)}</span>`}${aperto ? `<span class="tel">${p.cell ? `<a href="tel:${esc(p.cell)}">📞 ${esc(p.cell)}</a> <button type="button" class="pros-mini" data-copia="${esc(p.cell)}" title="Copia il numero">📋</button>` : '<span class="pros-nota">numero non presente su PUMA</span>'}</span>` : ''}</li>`;
+    return `<li class="pros-cliccabile${inSalto ? ' salto' : ''}${extra ? ' ' + extra : ''}${aperto ? ' aperto' : ''}" data-num="${esc(p.k)}" title="${esc((p.cell ? 'Tocca per il numero · ' : '') + p.corsi.join(', '))}"><span class="q">${esc(p.qual)}</span> <span class="n">${esc(p.cognome)}${p.manuale ? ' ✍️' : ''}</span>${tt.s && t !== 'NO' ? `<span class="s">${esc(t + tt.s)}</span>` : ''}${t === 'NO' && tt.t && tt.t !== 'NO' ? `<span class="s" title="Turno ${esc(NOME_TURNO(tt.t))}${tt.s ? ', salto ' + esc(tt.s) : ''}: non operativo per ${esc(NOME_SETTORE[settore] || '')}">${esc(NOME_TURNO(tt.t) + (tt.s || ''))}</span>` : ''}${f.comando ? '' : `<span class="c">${esc(p.comando)}</span>`}${aperto ? `<span class="tel">${p.cell ? `<a href="tel:${esc(p.cell)}">📞 ${esc(p.cell)}</a> <button type="button" class="pros-mini" data-copia="${esc(p.cell)}" title="Copia il numero">📋</button>` : '<span class="pros-nota">numero non presente su PUMA</span>'}</span>` : ''}</li>`;
   };
   const righeFascia = [['FUN', 'Funzionari del settore'], ['ROP', 'Responsabile operativo provinciale'], ['MAG', 'Magazziniere generale']]
     .map(([r, tit]) => [tit, fascia.filter(p => ORDINE_RUOLI[rangoRuolo(p, settore)] === r)]);
@@ -524,17 +551,19 @@ function htmlProspetto(corsiDisp, qualDisp, base, stati) {
   ${pers.length || fascia.length ? `
   <div class="pros-colonne" style="--n:${colonne.length}">
     ${colonne.map(t => {
-      // in testa alla colonna il magazziniere di turno del settore, poi il resto del personale
+      // in testa alla colonna responsabile di turno e magazziniere di turno del settore, poi il resto del personale
+      const rdt = settore ? ordina(col[t].filter(p => ruoliDi(p, settore).includes('RDT'))) : [];
       const magt = settore ? ordina(col[t].filter(p => ruoliDi(p, settore).includes('MAGT'))) : [];
-      const resto = ordina(col[t].filter(p => !magt.includes(p)));
+      const resto = ordina(col[t].filter(p => !magt.includes(p) && !rdt.includes(p)));
+      const testa = (et, l, cl) => `<div class="pros-magt ${cl}"><div class="et">${et}</div>${l.length ? `<ol>${l.map(p => voce(p, t, 'magt')).join('')}</ol>` : '<div class="vuoto">—</div>'}</div>`;
       return `
     <div class="pros-col t-${t || 'nd'}${t === 'NO' ? ' no' : ''}${t === '' ? ' nd' : ''}${t === adesso.sel.l ? ' servizio' : ''}">
       <h4>${esc(intest(t))} <span class="pros-quanti">${col[t].length}</span>${t === adesso.sel.l ? '<small>in servizio · salta il ' + esc(adesso.sel.n) + '</small>' : ''}</h4>
-      ${settore && !['NO', ''].includes(t) ? `<div class="pros-magt"><div class="et">Magazziniere di turno</div>${magt.length ? `<ol>${magt.map(p => voce(p, t, 'magt')).join('')}</ol>` : '<div class="vuoto">—</div>'}</div>` : ''}
+      ${settore && !['NO', ''].includes(t) ? testa('Responsabile di turno', rdt, 'rdt') + testa('Magazziniere di turno', magt, 'mt') : ''}
       <ol class="pros-resto">${resto.map(p => voce(p, t)).join('') || '<li class="vuota">—</li>'}</ol>
     </div>`; }).join('')}
   </div>
-  <p class="pros-nota">${pers.length} persone${f.corso ? ' con ' + esc(f.corso) + ' (settore ' + esc(NOME_SETTORE[settore] || '—') + '): in alto funzionari, ROP e magazziniere generale del settore (presenti anche nella colonna del loro turno); in testa a ogni turno il magazziniere di turno; chi è non operativo per il settore sta nella colonna N.O.' : ''}. In grigio chi adesso è in salto turno. Turni, salti e ruoli si impostano nella scheda 🔒 Gestione personale.</p>`
+  <p class="pros-nota">${pers.length} persone${f.corso ? ' con ' + esc(f.corso) + ' (settore ' + esc(NOME_SETTORE[settore] || '—') + '): in alto funzionari, ROP e magazziniere generale del settore (presenti anche nella colonna del loro turno); in testa a ogni turno il responsabile e il magazziniere di turno; chi è non operativo per il settore o per quel corso sta nella colonna Non operativo' : ''}. In grigio chi adesso è in salto turno. Turni, salti e ruoli si impostano nella scheda 🔒 Gestione personale.</p>`
   : `<div class="pros-vuoto">${carico.stato === 'ok' ? 'Nessuna persona con questi filtri.' : carico.stato === 'err' ? 'Dati PUMA non disponibili.' : 'Caricamento…'}</div>`}`;
 }
 // ordine degli elenchi: col corso scelto prima i ruoli del settore (funzionario, ROP, mag. generale, mag. di turno),
@@ -606,18 +635,38 @@ function htmlGestione(corsiDisp, qualDisp, base, stati) {
 function htmlRigaRuoli(p) {
   const propri = settoriDi(p), r = ruoliDi(p);
   const altri = SETTORI.map(x => x[0]).filter(k => !propri.includes(k));
-  const riga = k => {
+  // una riga di scelte: chiave = settore ("SAF") o singolo corso ("c:SAF (...) BASICO")
+  const riga = (k, titolo, sotto, classe) => {
     const l = r[k] || [], no = l.includes('NO');
-    return `<div class="pros-settore${no ? ' no' : ''}${l.length && !no ? ' ha' : ''}" data-settore="${k}">
-      <div class="nome"><b>${esc(k)}</b> <small>${esc(NOME_SETTORE[k].replace(/^\S+\s*/, '').replace(/[()]/g, ''))}</small></div>
+    return `<div class="pros-settore${classe ? ' ' + classe : ''}${no ? ' no' : ''}${l.length && !no ? ' ha' : ''}" data-settore="${esc(k)}">
+      <div class="nome">${titolo} <small>${esc(sotto)}</small></div>
       <div class="scelte">${RUOLI.map(([x, n]) => `<label class="pros-chk r-${x}"><input type="checkbox" data-ruolo="${x}"${l.includes(x) ? ' checked' : ''}${no && x !== 'NO' ? ' disabled' : ''}> ${esc(n)}</label>`).join('')}</div>
     </div>`;
   };
+  // le righe dei singoli corsi stanno chiuse sotto il settore (aperte se uno di quei corsi ha gia' un ruolo)
+  const settore = k => {
+    const corsi = p.corsi.filter(c => settoreDi(c) === k);
+    const aperto = corsi.some(c => r[PRE_CORSO + c]);
+    return riga(k, `<b>${esc(k)}</b>`, NOME_SETTORE[k].replace(/^\S+\s*/, '').replace(/[()]/g, ''), '') +
+      (corsi.length ? `<details class="pros-solo-corso"${aperto ? ' open' : ''}><summary>↳ ruoli solo per un corso di ${esc(k)} (${corsi.length})</summary>${corsi.map(c => riga(PRE_CORSO + c, `↳ solo <b>${esc(siglaCorso(c))}</b>`, p.cx.includes(c) ? 'corso aggiunto a mano' : '', 'corso')).join('')}</details>` : '');
+  };
+  const senzaSettore = p.corsi.filter(c => !settoreDi(c));
+  const tutti = Array.from(new Set(righe.flatMap(x => x.corsi))).filter(c => !p.corsi.includes(c)).sort((a, b) => a.localeCompare(b, 'it'));
   return `<tr class="pros-riga-ruoli" data-k="${esc(p.k)}"><td colspan="7">
     <div class="pros-ruoli-box">
-      <div class="pros-ruoli-tit">Ruoli per settore di <b>${esc(p.cognome)}</b> <span class="pros-nota">— "Non operativo" toglie la persona dal prospetto e dal richiamo di quel settore</span></div>
-      ${propri.length ? propri.map(riga).join('') : '<div class="pros-nota">Nessun settore dai corsi di PUMA.</div>'}
-      ${altri.length ? `<details${altri.some(k => r[k]) ? ' open' : ''}><summary>Altri settori (senza corsi)</summary>${altri.map(riga).join('')}</details>` : ''}
+      <div class="pros-ruoli-tit">Ruoli di <b>${esc(p.cognome)}</b> <span class="pros-nota">— per tutto il settore o solo per un corso (righe ↳). "Non operativo" toglie la persona dal prospetto e dal richiamo di quel settore o di quel corso</span></div>
+      ${propri.length ? propri.map(settore).join('') : '<div class="pros-nota">Nessun settore dai corsi.</div>'}
+      ${senzaSettore.map(c => riga(PRE_CORSO + c, `<b>${esc(siglaCorso(c))}</b>`, 'corso senza settore', 'corso')).join('')}
+      ${altri.length ? `<details${altri.some(k => r[k]) ? ' open' : ''}><summary>Altri settori (senza corsi)</summary>${altri.map(k => riga(k, `<b>${esc(k)}</b>`, NOME_SETTORE[k].replace(/^\S+\s*/, '').replace(/[()]/g, ''), '')).join('')}</details>` : ''}
+      <div class="pros-cx">
+        <div class="pros-ruoli-tit">Corsi aggiunti a mano <span class="pros-nota">— oltre a quelli di PUMA</span></div>
+        <div class="pros-cx-elenco">${p.cx.length ? p.cx.map(c => `<span class="pros-chip on">${esc(c)} <button type="button" class="pros-x" data-cx-del="${esc(c)}" title="Togli questo corso">✕</button></span>`).join('') : '<span class="pros-nota">nessuno</span>'}</div>
+        <div class="pros-cx-nuovo">
+          <select class="pros-cx-sel"><option value="">— scegli un corso —</option>${tutti.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select>
+          <input type="text" class="pros-cx-testo" maxlength="120" placeholder="oppure scrivi un corso non in elenco">
+          <button type="button" class="pros-btn pri" data-cx-add="1">➕ Aggiungi corso</button>
+        </div>
+      </div>
     </div></td></tr>`;
 }
 // modulo per aggiungere (o modificare) un nominativo che non e' su PUMA
@@ -777,6 +826,16 @@ function eventi() {
     }
     if (b.dataset.quando !== undefined) { f.quando = +b.dataset.quando; disegna(); return; }
     if (b.dataset.stato) { f.stato = f.stato === b.dataset.stato ? '' : b.dataset.stato; salvaFiltri(); disegna(); return; }
+    if (b.dataset.cxAdd || b.dataset.cxDel) {
+      const tr2 = b.closest('tr[data-k]'); if (!tr2) return;
+      const k = tr2.dataset.k, att = corsiDaTesto((turni[k] || {}).cx);
+      if (b.dataset.cxDel) { impostaCorsiExtra(k, att.filter(c => c !== b.dataset.cxDel)); disegna(); return; }
+      const sel = tr2.querySelector('.pros-cx-sel'), txt = tr2.querySelector('.pros-cx-testo');
+      const nuovo = String((txt && txt.value.trim()) || (sel && sel.value) || '').replace(/\s+/g, ' ');
+      if (!nuovo) return;
+      impostaCorsiExtra(k, att.concat([nuovo])); disegna();
+      return;
+    }
     if (b.dataset.ruoli) { modRuoli = modRuoli === b.dataset.ruoli ? null : b.dataset.ruoli; disegna(); return; }
     if (b.dataset.manMod) { modMan = b.dataset.manMod; disegna(); scorriForm(); return; }
     if (b.dataset.manDel) {

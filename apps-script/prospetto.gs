@@ -1,4 +1,4 @@
-/* FireOps - "Prospetto disponibilità": turno e salto turno del personale (su PUMA non ci sono).
+/* FireOps - "Prospetto specializzati": turno e salto turno del personale (su PUMA non ci sono).
  * Foglio: "DB_Turni_Personale", una riga per persona (Chiave = cognome|nome|comando, normalizzati).
  * Da incollare nello stesso progetto Apps Script della Web App usata da Messaggistica, Locator e SAR
  * (quella con URL ...AKfycbyp6jQ331Yk5q7_hkM74ZyhUh1c3zQUJG7SpuoE18HslBO36YKSTYIQf-z7gSwXR4Yv/exec).
@@ -21,14 +21,14 @@
  * Per il personale di PUMA nel foglio NON si scrivono cellulare, codice fiscale o email: solo nominativo,
  * comando, turno e salto. Per i nominativi aggiunti a mano (non presenti su PUMA, colonna Manuale = 1)
  * si scrivono anche qualifica, cellulare e corsi, perche' non stanno da nessun'altra parte; Manuale = 0 vuol dire
- * eliminato. La colonna Ruoli tiene i ruoli per settore (Funzionario di settore, ROP, Magazziniere generale, Mag. di turno, Non operativo) in JSON.
+ * eliminato. Per il personale di PUMA la colonna Corsi tiene i corsi aggiunti a mano. La colonna Ruoli tiene i ruoli per settore (Funzionario di settore, ROP, Magazziniere generale, Mag. di turno, Non operativo) in JSON.
  * ATTENZIONE: come i turni, questi dati si leggono senza password da chi conosce l'indirizzo della Web App.
  */
 const TP_FOGLIO_ = "DB_Turni_Personale";
 const TP_INT_ = ["Chiave", "Comando", "Cognome", "Nome", "Turno", "Salto", "Aggiornato", "Manuale", "Qualifica", "Cellulare", "Corsi", "Ruoli"];
 // ruoli per settore (colonna Ruoli, JSON {"SAF": ["MAG", "ROP"], "NBCR": ["NO"]})
 const TP_SETTORI_ = ["SAF", "SSA", "USAR", "TPSS", "OSO", "TAS", "CFBT", "NBCR", "APR", "K9", "PT", "MMT", "PN"];
-const TP_RUOLI_ = ["FUN", "ROP", "MAG", "MAGT", "NO"];   // funzionario di settore, ROP, magazziniere generale, mag. di turno, non operativo
+const TP_RUOLI_ = ["FUN", "ROP", "MAG", "RDT", "MAGT", "NO"];   // funzionario di settore, ROP, magazziniere generale, responsabile di turno, mag. di turno, non operativo
 const TP_PASSWORD_ = "cambiami";   // password GENERALE, vale per tutti i Comandi ("cambiami" = nessuna)
 const TP_FOGLIO_PWD_ = "DB_Password_Comandi";
 const TP_COMANDI_ = ["Agrigento", "Alessandria", "Ancona", "Aosta", "Arezzo", "Ascoli Piceno", "Asti", "Avellino", "Bari", "Barletta-Andria-Trani", "Belluno", "Benevento", "Bergamo", "Biella", "Bologna", "Bolzano", "Brescia", "Brindisi", "Cagliari", "Caltanissetta", "Campobasso", "Caserta", "Catania", "Catanzaro", "Chieti", "Como", "Cosenza", "Cremona", "Crotone", "Cuneo", "Enna", "Fermo", "Ferrara", "Firenze", "Foggia", "Forlì-Cesena", "Frosinone", "Genova", "Gorizia", "Grosseto", "Imperia", "Isernia", "L'Aquila", "La Spezia", "Latina", "Lecce", "Lecco", "Livorno", "Lodi", "Lombardia COR AIB CURNO", "Lucca", "Macerata", "Mantova", "Massa-Carrara", "Matera", "Messina", "Milano", "Modena", "Monza e della Brianza", "Napoli", "Novara", "Nuoro", "Oristano", "Padova", "Palermo", "Parma", "Pavia", "Perugia", "Pesaro e Urbino", "Pescara", "Piacenza", "Pisa", "Pistoia", "Pordenone", "Potenza", "Prato", "Ragusa", "Ravenna", "Reggio Calabria", "Reggio Emilia", "Rieti", "Rimini", "Roma", "Rovigo", "Salerno", "Sassari", "Savona", "Siena", "Siracusa", "Sondrio", "Taranto", "Teramo", "Terni", "Torino", "Trapani", "Trento", "Treviso", "Trieste", "Udine", "Varese", "Venezia", "Verbano-Cusio-Ossola", "Vercelli", "Verona", "Vibo Valentia", "Vicenza", "Viterbo"];
@@ -58,9 +58,13 @@ function tpFoglio_() {
 function tpRuoli_(r) {
   if (!r || typeof r !== "object") return "";
   const out = {};
-  TP_SETTORI_.forEach(st => {
-    const l = Array.isArray(r[st]) ? r[st].map(String).filter(x => TP_RUOLI_.indexOf(x) >= 0) : [];
-    if (l.length) out[st] = l.indexOf("NO") >= 0 ? ["NO"] : TP_RUOLI_.filter(x => l.indexOf(x) >= 0);
+  // chiavi: un settore ("SAF") oppure un singolo corso ("c:" + nome del corso)
+  Object.keys(r).slice(0, 80).forEach(k => {
+    const chiave = String(k);
+    const valida = TP_SETTORI_.indexOf(chiave) >= 0 || (/^c:/.test(chiave) && chiave.length <= 130 && !/[\r\n]/.test(chiave));
+    if (!valida) return;
+    const l = Array.isArray(r[k]) ? r[k].map(String).filter(x => TP_RUOLI_.indexOf(x) >= 0) : [];
+    if (l.length) out[chiave] = l.indexOf("NO") >= 0 ? ["NO"] : TP_RUOLI_.filter(x => l.indexOf(x) >= 0);
   });
   return Object.keys(out).length ? JSON.stringify(out) : "";
 }
@@ -81,6 +85,7 @@ function turniPersonaleGet_(q) {
     if (comando && k.split("|")[2] !== comando) continue;
     const v = {t: r[4], s: r[5], ts: Number(r[6]) || 0};
     if (r[7] === "1" || r[7] === "0") Object.assign(v, {m: r[7], n: r[2], com: r[1], q: r[8] || "", c: r[9] || "", corsi: r[10] || ""});
+    else if (r[10]) v.cx = r[10];   // personale di PUMA: nella colonna Corsi ci sono i corsi aggiunti a mano
     if (r[11]) { try { v.r = JSON.parse(r[11]); } catch (e) { /* cella rovinata: si ignora */ } }
     turni[k] = v;
   }
@@ -118,7 +123,7 @@ function preparaFoglioPassword() {
   }
   sh.hideSheet();
   // protezione: resta modificabile solo dal proprietario del file
-  const prot = sh.protect().setDescription("Password Prospetto disponibilità: solo proprietario");
+  const prot = sh.protect().setDescription("Password Prospetto specializzati: solo proprietario");
   const me = Session.getEffectiveUser();
   prot.addEditor(me);
   prot.removeEditors(prot.getEditors().filter(u => u.getEmail() !== me.getEmail()));
@@ -166,7 +171,8 @@ function turniPersonalePost_(p) {
       const man = v.m === "1" || v.m === "0" ? v.m : "";
       const valori = [k, tpTesto_(v.comando, 80), tpTesto_(v.cognome, 80), tpTesto_(v.nome, 60), t, s, ts, man,
         man ? tpTesto_(v.q, 20) : "", man ? tpTesto_(String(v.c || "").replace(/[^\d+ ]/g, ""), 20) : "",
-        man ? tpTesto_(Array.isArray(v.corsi) ? v.corsi.join(" | ") : v.corsi, 1500) : "", tpRuoli_(v.r)];
+        man ? tpTesto_(Array.isArray(v.corsi) ? v.corsi.join(" | ") : v.corsi, 1500) : tpTesto_(Array.isArray(v.cx) ? v.cx.join(" | ") : (v.cx || ""), 1500),
+        tpRuoli_(v.r)];
       const n = riga[k];
       if (n) {
         if (Number(dati[n - 1][6]) >= ts) { ignorati++; return; }   // sul foglio c'e' gia' una modifica piu' recente
