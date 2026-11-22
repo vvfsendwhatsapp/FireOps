@@ -21,7 +21,7 @@
  * Per il personale di PUMA nel foglio NON si scrivono cellulare, codice fiscale o email: solo nominativo,
  * comando, turno e salto. Per i nominativi aggiunti a mano (non presenti su PUMA, colonna Manuale = 1)
  * si scrivono anche qualifica, cellulare e corsi, perche' non stanno da nessun'altra parte; Manuale = 0 vuol dire
- * eliminato. Per il personale di PUMA la colonna Corsi tiene i corsi aggiunti a mano. La colonna Ruoli tiene i ruoli per settore (Funzionario di settore, ROP, Magazziniere generale, Mag. di turno, Non operativo) in JSON.
+ * eliminato. Per il personale di PUMA la colonna Corsi tiene i corsi aggiunti a mano.  Per il personale di PUMA la colonna Qualifica tiene la qualifica corretta a mano (vuota = quella di PUMA). La colonna Ruoli tiene i ruoli per settore (Funzionario di settore, ROP, Magazziniere generale, Mag. di turno, Non operativo) in JSON.
  * ATTENZIONE: come i turni, questi dati si leggono senza password da chi conosce l'indirizzo della Web App.
  */
 const TP_FOGLIO_ = "DB_Turni_Personale";
@@ -85,7 +85,10 @@ function turniPersonaleGet_(q) {
     if (comando && k.split("|")[2] !== comando) continue;
     const v = {t: r[4], s: r[5], ts: Number(r[6]) || 0};
     if (r[7] === "1" || r[7] === "0") Object.assign(v, {m: r[7], n: r[2], com: r[1], q: r[8] || "", c: r[9] || "", corsi: r[10] || ""});
-    else if (r[10]) v.cx = r[10];   // personale di PUMA: nella colonna Corsi ci sono i corsi aggiunti a mano
+    else {
+      if (r[10]) v.cx = r[10];   // personale di PUMA: nella colonna Corsi ci sono i corsi aggiunti a mano
+      if (r[8]) v.qx = r[8];     // ... e nella colonna Qualifica la qualifica corretta a mano
+    }
     if (r[11]) { try { v.r = JSON.parse(r[11]); } catch (e) { /* cella rovinata: si ignora */ } }
     turni[k] = v;
   }
@@ -170,7 +173,7 @@ function turniPersonalePost_(p) {
       if (!generale && k.split("|")[2] !== cn) { ignorati++; return; }   // voce di un altro Comando: non con questa password
       const man = v.m === "1" || v.m === "0" ? v.m : "";
       const valori = [k, tpTesto_(v.comando, 80), tpTesto_(v.cognome, 80), tpTesto_(v.nome, 60), t, s, ts, man,
-        man ? tpTesto_(v.q, 20) : "", man ? tpTesto_(String(v.c || "").replace(/[^\d+ ]/g, ""), 20) : "",
+        man ? tpTesto_(v.q, 20) : tpTesto_(v.qx || "", 20), man ? tpTesto_(String(v.c || "").replace(/[^\d+ ]/g, ""), 20) : "",
         man ? tpTesto_(Array.isArray(v.corsi) ? v.corsi.join(" | ") : v.corsi, 1500) : tpTesto_(Array.isArray(v.cx) ? v.cx.join(" | ") : (v.cx || ""), 1500),
         tpRuoli_(v.r)];
       const n = riga[k];

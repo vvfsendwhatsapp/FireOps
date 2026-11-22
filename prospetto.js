@@ -208,7 +208,7 @@ async function carica() {
       if (visti.has(id)) return;              // c'e' gia' la registrazione piu' recente (il foglio e' ordinato dalla piu' nuova)
       visti.add(id);
       const p = {cognome: titolo(nominativo), nome: '', cell: String(c[4] || '').replace(/[^\d+]/g, ''),
-        qual: (c[3] || '').trim().toUpperCase(), comando: (c[2] || '').trim().replace(/\s+/g, ' '), corsi: dividiCorsi(c[5])};
+        qual: (c[3] || '').trim().toUpperCase(), qualPuma: (c[3] || '').trim().toUpperCase(), comando: (c[2] || '').trim().replace(/\s+/g, ' '), corsi: dividiCorsi(c[5])};
       p.corsiPuma = p.corsi;
       p.k = chiave(p);
       if (!mappa.has(p.k)) mappa.set(p.k, p);
@@ -239,6 +239,7 @@ function ricomponi() {
   }));
   const pumaK = new Set(righePuma.map(p => p.k));
   // corsi aggiunti a mano dalla Gestione personale: si sommano a quelli di PUMA
+  righePuma.forEach(p => { const qx = (turni[p.k] || {}).qx; p.qual = qx || p.qualPuma || p.qual; });
   righePuma.forEach(p => { const cx = corsiDaTesto((turni[p.k] || {}).cx); p.corsi = cx.length ? Array.from(new Set((p.corsiPuma || p.corsi).concat(cx))) : (p.corsiPuma || p.corsi); p.cx = cx; });
   man.forEach(p => { const cx = corsiDaTesto((turni[p.k] || {}).cx); if (cx.length) p.corsi = Array.from(new Set(p.corsi.concat(cx))); p.cx = cx; });
   righe = righePuma.concat(man.filter(p => !pumaK.has(p.k)));
@@ -288,6 +289,7 @@ async function scaricaTurni() {
         turni[k] = {t: v.t || '', s: v.s || '', ts: v.ts || 0};
         if (v.r && typeof v.r === 'object' && Object.keys(v.r).length) turni[k].r = v.r;
         if (v.cx) turni[k].cx = corsiDaTesto(v.cx);
+        if (v.qx) turni[k].qx = String(v.qx).toUpperCase();
         if (v.m === '1' || v.m === '0') Object.assign(turni[k], {m: v.m, n: v.n || '', com: v.com || '', q: v.q || '', c: v.c || '', corsi: corsiDaTesto(v.corsi)});
         cambi++;
       }
@@ -337,7 +339,7 @@ async function invia() {
     const chiavi = tutte.slice(0, 500);
     const voci = chiavi.map(k => {
       const v = turni[k] || {t: '', s: '', ts: Date.now()}, n = nomi[k] || {};
-      const voce = {k, comando: n.comando || v.com || '', cognome: n.cognome || v.n || '', nome: n.nome || '', t: v.t || '', s: v.s || '', ts: v.ts || Date.now(), r: v.r || {}, cx: corsiDaTesto(v.cx)};
+      const voce = {k, comando: n.comando || v.com || '', cognome: n.cognome || v.n || '', nome: n.nome || '', t: v.t || '', s: v.s || '', ts: v.ts || Date.now(), r: v.r || {}, cx: corsiDaTesto(v.cx), qx: v.qx || ''};
       if (v.m === '1' || v.m === '0') Object.assign(voce, {m: v.m, comando: v.com || '', cognome: v.n || '', q: v.q || '', c: v.c || '', corsi: Array.from(new Set(corsiDaTesto(v.corsi).concat(corsiDaTesto(v.cx))))});
       return voce;
     });
@@ -362,6 +364,17 @@ function impostaRuoli(k, settore, lista) {
   if (l.length) r[settore] = l; else delete r[settore];
   turni[k] = Object.assign({t: '', s: ''}, turni[k], {r, ts: Date.now()});
   scrivi(LS_TURNI, turni); metti(k); programmaInvio();
+}
+// qualifica: per chi e' su PUMA si salva solo se diversa da quella di PUMA; per i nominativi a mano cambia la loro
+function impostaQualifica(k, q) {
+  if (!puoModificare(k)) return;
+  const v = Object.assign({t: '', s: ''}, turni[k], {ts: Date.now()});
+  const p = righe.find(x => x.k === k);
+  if (v.m === '1') v.q = q;
+  else if (p && q === p.qualPuma) delete v.qx;
+  else v.qx = q;
+  turni[k] = v;
+  scrivi(LS_TURNI, turni); metti(k); ricomponi(); programmaInvio();
 }
 // corsi aggiunti a mano a una persona (anche a chi e' su PUMA)
 function impostaCorsiExtra(k, lista) {
@@ -514,14 +527,19 @@ function htmlProspetto(corsiDisp, qualDisp, base, stati) {
   // (anche senza il corso preciso), i magazzinieri di turno in testa alla colonna del loro turno
   const ruoloAlto = p => settore && !nonOperativo(p, settore) && rangoRuolo(p, settore) <= 2;
   const fascia = settore ? ordina(base.filter(ruoloAlto)) : [];
-  // nelle colonne c'e' anche chi sta nella fascia (il funzionario giornaliero va sotto G) e chiunque abbia
-  // un ruolo nel settore, anche senza il corso preciso
+  // nelle colonne (e nei conteggi) solo chi HA il corso scelto: chi ha un ruolo nel settore ma non il corso
+  // compare nella fascia o in testa alla colonna del suo turno con l'etichetta "senza corso", e non si conta
   const conRuolo = p => !!settore && ruoliDi(p, settore).some(x => x !== 'NO');
-  const pers = base.filter(p => conRuolo(p) || ((!f.qual || p.qual === f.qual) && (!f.corso || p.corsi.includes(f.corso))));
+  const haCorso = p => !f.corso || p.corsi.includes(f.corso);
+  const pers = base.filter(p => (!f.qual || p.qual === f.qual) && haCorso(p));
+  const senzaCorso = settore ? base.filter(p => conRuolo(p) && !haCorso(p)) : [];
   // con un corso scelto, chi e' non operativo per il suo settore va nella colonna N.O.
   const turnoDi = p => { if (nonOperativo(p, settore)) return 'NO'; const t = turni[p.k]; return t && TURNI.includes(t.t) ? t.t : ''; };
   const col = {}; COLONNE.forEach(t => { col[t] = []; });
   pers.forEach(p => col[turnoDi(p)].push(p));
+  const scCol = {}; COLONNE.forEach(t => { scCol[t] = []; });
+  senzaCorso.forEach(p => scCol[turnoDi(p)].push(p));
+  const etSenzaCorso = p => haCorso(p) ? '' : ' <span class="pros-nocorso" title="Ha il ruolo nel settore ma non il corso ' + esc(f.corso) + ': non conta nel prospetto">senza corso</span>';
   const adesso = turnoAlMomento(Date.now());
   const intest = t => t === '' ? 'Senza turno' : t === 'NO' ? 'Non operativo' : NOME_TURNO(t);
   const colonne = COLONNE.filter(t => t !== '' || col[''].length);
@@ -529,7 +547,7 @@ function htmlProspetto(corsiDisp, qualDisp, base, stati) {
   const voce = (p, t, extra) => {
     const tt = turni[p.k] || {}, inSalto = t === adesso.sel.l && tt.s && String(tt.s) === adesso.sel.n;
     const aperto = numeriAperti.has(p.k);
-    return `<li class="pros-cliccabile${inSalto ? ' salto' : ''}${extra ? ' ' + extra : ''}${aperto ? ' aperto' : ''}" data-num="${esc(p.k)}" title="${esc((p.cell ? 'Tocca per il numero · ' : '') + p.corsi.join(', '))}"><span class="q">${esc(p.qual)}</span> <span class="n">${esc(p.cognome)}${p.manuale ? ' ✍️' : ''}</span>${tt.s && t !== 'NO' ? `<span class="s">${esc(t + tt.s)}</span>` : ''}${t === 'NO' && tt.t && tt.t !== 'NO' ? `<span class="s" title="Turno ${esc(NOME_TURNO(tt.t))}${tt.s ? ', salto ' + esc(tt.s) : ''}: non operativo per ${esc(NOME_SETTORE[settore] || '')}">${esc(NOME_TURNO(tt.t) + (tt.s || ''))}</span>` : ''}${f.comando ? '' : `<span class="c">${esc(p.comando)}</span>`}${aperto ? `<span class="tel">${p.cell ? `<a href="tel:${esc(p.cell)}">📞 ${esc(p.cell)}</a> <button type="button" class="pros-mini" data-copia="${esc(p.cell)}" title="Copia il numero">📋</button>` : '<span class="pros-nota">numero non presente su PUMA</span>'}</span>` : ''}</li>`;
+    return `<li class="pros-cliccabile${inSalto ? ' salto' : ''}${extra ? ' ' + extra : ''}${aperto ? ' aperto' : ''}" data-num="${esc(p.k)}" title="${esc((p.cell ? 'Tocca per il numero · ' : '') + p.corsi.join(', '))}"><span class="q">${esc(p.qual)}</span> <span class="n">${esc(p.cognome)}${p.manuale ? ' ✍️' : ''}${etSenzaCorso(p)}</span>${tt.s && t !== 'NO' ? `<span class="s">${esc(t + tt.s)}</span>` : ''}${t === 'NO' && tt.t && tt.t !== 'NO' ? `<span class="s" title="Turno ${esc(NOME_TURNO(tt.t))}${tt.s ? ', salto ' + esc(tt.s) : ''}: non operativo per ${esc(NOME_SETTORE[settore] || '')}">${esc(NOME_TURNO(tt.t) + (tt.s || ''))}</span>` : ''}${f.comando ? '' : `<span class="c">${esc(p.comando)}</span>`}${aperto ? `<span class="tel">${p.cell ? `<a href="tel:${esc(p.cell)}">📞 ${esc(p.cell)}</a> <button type="button" class="pros-mini" data-copia="${esc(p.cell)}" title="Copia il numero">📋</button>` : '<span class="pros-nota">numero non presente su PUMA</span>'}</span>` : ''}</li>`;
   };
   const righeFascia = [['FUN', 'Funzionari del settore'], ['ROP', 'Responsabile operativo provinciale'], ['MAG', 'Magazziniere generale']]
     .map(([r, tit]) => [tit, fascia.filter(p => ORDINE_RUOLI[rangoRuolo(p, settore)] === r)]);
@@ -537,7 +555,7 @@ function htmlProspetto(corsiDisp, qualDisp, base, stati) {
   <div class="pros-fascia-settore">
     <div class="tit">Settore <b>${esc(NOME_SETTORE[settore])}</b></div>
     ${righeFascia.map(([tit, l]) => `
-    <div class="riga"><div class="ruolo">${esc(tit)}</div><div class="nomi">${l.length ? l.map(p => `<span class="pers" title="${esc(p.corsi.join(', '))}"><span class="q">${esc(p.qual)}</span> <b>${esc(p.cognome)}</b>${p.manuale ? ' ✍️' : ''} <span class="t">${esc(turnoTesto(p))}</span>${p.cell ? ` <a href="tel:${esc(p.cell)}">📞 ${esc(p.cell)}</a>` : ''}${f.comando ? '' : ` <span class="c">${esc(p.comando)}</span>`}</span>`).join('') : '<span class="pros-nota">— non assegnato (scheda Gestione personale, ✏️ Ruoli)</span>'}</div></div>`).join('')}
+    <div class="riga"><div class="ruolo">${esc(tit)}</div><div class="nomi">${l.length ? l.map(p => `<span class="pers" title="${esc(p.corsi.join(', '))}"><span class="q">${esc(p.qual)}</span> <b>${esc(p.cognome)}</b>${p.manuale ? ' ✍️' : ''}${etSenzaCorso(p)} <span class="t">${esc(turnoTesto(p))}</span>${p.cell ? ` <a href="tel:${esc(p.cell)}">📞 ${esc(p.cell)}</a>` : ''}${f.comando ? '' : ` <span class="c">${esc(p.comando)}</span>`}</span>`).join('') : '<span class="pros-nota">— non assegnato (scheda Gestione personale, ✏️ Ruoli)</span>'}</div></div>`).join('')}
   </div>` : '';
   return `
   <div class="pros-testa">
@@ -548,14 +566,14 @@ function htmlProspetto(corsiDisp, qualDisp, base, stati) {
     <div class="pros-stati">${stati}</div>
   </div>
   ${htmlFascia}
-  ${pers.length || fascia.length ? `
+  ${pers.length || fascia.length || senzaCorso.length ? `
   <div class="pros-colonne" style="--n:${colonne.length}">
     ${colonne.map(t => {
       // in testa alla colonna responsabile di turno e magazziniere di turno del settore, poi il resto del personale
-      const rdt = settore ? ordina(col[t].filter(p => ruoliDi(p, settore).includes('RDT'))) : [];
-      const magt = settore ? ordina(col[t].filter(p => ruoliDi(p, settore).includes('MAGT'))) : [];
+      const inTesta = x => settore ? ordina(col[t].concat(scCol[t]).filter(p => ruoliDi(p, settore).includes(x))) : [];
+      const rdt = inTesta('RDT'), magt = inTesta('MAGT');
       const resto = ordina(col[t].filter(p => !magt.includes(p) && !rdt.includes(p)));
-      const testa = (et, l, cl) => `<div class="pros-magt ${cl}"><div class="et">${et}</div>${l.length ? `<ol>${l.map(p => voce(p, t, 'magt')).join('')}</ol>` : '<div class="vuoto">—</div>'}</div>`;
+      const testa = (et, l, cl) => `<div class="pros-magt ${cl}"><div class="et">${et}</div>${l.length ? `<ol>${l.map(p => voce(p, t, 'magt' + (haCorso(p) ? '' : ' nocorso'))).join('')}</ol>` : '<div class="vuoto">—</div>'}</div>`;
       return `
     <div class="pros-col t-${t || 'nd'}${t === 'NO' ? ' no' : ''}${t === '' ? ' nd' : ''}${t === adesso.sel.l ? ' servizio' : ''}">
       <h4>${esc(intest(t))} <span class="pros-quanti">${col[t].length}</span>${t === adesso.sel.l ? '<small>in servizio · salta il ' + esc(adesso.sel.n) + '</small>' : ''}</h4>
@@ -563,7 +581,7 @@ function htmlProspetto(corsiDisp, qualDisp, base, stati) {
       <ol class="pros-resto">${resto.map(p => voce(p, t)).join('') || '<li class="vuota">—</li>'}</ol>
     </div>`; }).join('')}
   </div>
-  <p class="pros-nota">${pers.length} persone${f.corso ? ' con ' + esc(f.corso) + ' (settore ' + esc(NOME_SETTORE[settore] || '—') + '): in alto funzionari, ROP e magazziniere generale del settore (presenti anche nella colonna del loro turno); in testa a ogni turno il responsabile e il magazziniere di turno; chi è non operativo per il settore o per quel corso sta nella colonna Non operativo' : ''}. In grigio chi adesso è in salto turno. Turni, salti e ruoli si impostano nella scheda 🔒 Gestione personale.</p>`
+  <p class="pros-nota">${pers.length} persone${f.corso ? ' con ' + esc(f.corso) + ' (settore ' + esc(NOME_SETTORE[settore] || '—') + '): in alto funzionari, ROP e magazziniere generale del settore (presenti anche nella colonna del loro turno se hanno il corso; chi ha il ruolo ma non il corso è segnato "senza corso" e non si conta); in testa a ogni turno il responsabile e il magazziniere di turno; chi è non operativo per il settore o per quel corso sta nella colonna Non operativo' : ''}. In grigio chi adesso è in salto turno. Turni, salti e ruoli si impostano nella scheda 🔒 Gestione personale.</p>`
   : `<div class="pros-vuoto">${carico.stato === 'ok' ? 'Nessuna persona con questi filtri.' : carico.stato === 'err' ? 'Dati PUMA non disponibili.' : 'Caricamento…'}</div>`}`;
 }
 // ordine degli elenchi: col corso scelto prima i ruoli del settore (funzionario, ROP, mag. generale, mag. di turno),
@@ -620,7 +638,7 @@ function htmlGestione(corsiDisp, qualDisp, base, stati) {
       const t = turni[p.k] || {};
       return `<tr data-k="${esc(p.k)}" class="${t.t === 'NO' ? 'st-no' : t.t ? '' : 'st-nd'}${modRuoli === p.k ? ' aperta' : ''}">
         <td data-l="Personale"><b>${esc(p.cognome)}</b> ${esc(p.nome)}${p.manuale ? ` <span class="pros-man">✍️ aggiunto a mano</span>${aperto ? ` <button type="button" class="pros-mini" data-man-mod="${esc(p.k)}" title="Modifica">✏️</button> <button type="button" class="pros-mini danger" data-man-del="${esc(p.k)}" title="Elimina">🗑️</button>` : ''}` : ''}${f.comando ? '' : `<div class="pros-com">${esc(p.comando)}</div>`}</td>
-        <td data-l="Qualifica">${esc(p.qual)}</td>
+        <td data-l="Qualifica">${aperto ? `<select data-qual="1" title="${p.qualPuma && p.qual !== p.qualPuma ? 'Su PUMA: ' + esc(p.qualPuma) : 'Qualifica'}">${Array.from(new Set(QUAL_MAN.concat(p.qual ? [p.qual] : []))).map(q => `<option${q === p.qual ? ' selected' : ''}>${esc(q)}</option>`).join('')}</select>${p.qualPuma && p.qual !== p.qualPuma ? `<div class="pros-com">PUMA: ${esc(p.qualPuma)}</div>` : ''}` : esc(p.qual)}</td>
         <td data-l="Corsi">${p.corsi.map(c => `<span class="pros-chip${c === f.corso ? ' on' : ''}" title="${esc(c)}">${esc(siglaCorso(c))}</span>`).join('') || '<span class="pros-nota">—</span>'}</td>
         <td data-l="Cellulare">${p.cell ? `<a href="tel:${esc(p.cell)}">${esc(p.cell)}</a>` : ''}</td>
         <td data-l="Turno"><select data-campo="t"${dis}><option value="">—</option>${TURNI.map(x => `<option value="${x}"${x === t.t ? ' selected' : ''}>${x === 'NO' ? 'N.O. – Non operativo' : NOME_TURNO(x)}</option>`).join('')}</select></td>
@@ -871,6 +889,7 @@ function eventi() {
     if (t.id === 'pros-data') { if (t.value) { f.data = t.value; disegna(); } return; }
     if (t.id === 'pros-qual') { f.qual = t.value; salvaFiltri(); disegna(); return; }
     if (t.id === 'pros-file') { if (t.files[0]) importa(t.files[0]); t.value = ''; return; }
+    if (t.dataset.qual) { const tr3 = t.closest('tr[data-k]'); if (tr3) { impostaQualifica(tr3.dataset.k, t.value); disegna(); } return; }
     if (t.dataset.ruolo) {
       const box = t.closest('.pros-settore'), tr2 = t.closest('tr[data-k]');
       if (!box || !tr2) return;
