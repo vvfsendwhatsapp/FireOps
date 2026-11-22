@@ -1,0 +1,93 @@
+# Pubblica nel progetto Apps Script della Web App (Messaggistica, Locator, SAR, Prospetto) i file
+# apps-script/*.gs del repo, poi aggiorna la distribuzione esistente: l'URL .../exec resta lo stesso.
+#
+# Serve una volta sola (vedi i passaggi nella chat / in fondo a questo file):
+#   Secrets del repo:  CLASPRC_JSON  = contenuto del file .clasprc.json creato da "clasp login"
+#                      SCRIPT_ID     = ID dello script (Apps Script > Impostazioni progetto > ID script)
+#   Proprieta' script: TP_PASSWORD   = password universale del Prospetto specializzati
+#
+# Il progetto online viene prima scaricato (clasp pull): i file che nel repo non ci sono (Codice.gs con
+# doGet/doPost, appsscript.json) restano come sono. Si sovrascrivono SOLO i file elencati in FILE_REPO,
+# e solo se nel progetto esiste gia' un file con quel nome (altrimenti la pubblicazione si ferma, per non
+# creare doppioni con funzioni duplicate).
+name: Apps Script
+
+on:
+  push:
+    branches: [FireOps]
+    paths:
+      - "apps-script/**"
+      - ".github/workflows/apps-script.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: apps-script
+  cancel-in-progress: false
+
+env:
+  FILE_REPO: "prospetto registrazioni utilizzo"
+  # ID della distribuzione della Web App: e' lo stesso codice che sta nell'URL .../macros/s/<ID>/exec
+  DEPLOYMENT_ID: "AKfycbyp6jQ331Yk5q7_hkM74ZyhUh1c3zQUJG7SpuoE18HslBO36YKSTYIQf-z7gSwXR4Yv"
+
+jobs:
+  pubblica:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Installa clasp
+        run: npm install -g @google/clasp@2.4.2
+
+      - name: Credenziali
+        id: cred
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+          SCRIPT_ID: ${{ secrets.SCRIPT_ID }}
+        run: |
+          if [ -z "$CLASPRC_JSON" ] || [ -z "$SCRIPT_ID" ]; then
+            # finche' i secrets non ci sono non si pubblica nulla (e il workflow non risulta fallito)
+            echo "::warning::Mancano i secrets CLASPRC_JSON e/o SCRIPT_ID (Settings > Secrets and variables > Actions): niente pubblicato"
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "ok=true" >> "$GITHUB_OUTPUT"
+          printf '%s' "$CLASPRC_JSON" > "$HOME/.clasprc.json"
+          mkdir -p "$RUNNER_TEMP/gas"
+          printf '{"scriptId":"%s","rootDir":"."}' "$SCRIPT_ID" > "$RUNNER_TEMP/gas/.clasp.json"
+
+      - name: Scarica il progetto online
+        if: steps.cred.outputs.ok == 'true'
+        working-directory: ${{ runner.temp }}/gas
+        run: |
+          clasp pull
+          echo "File nel progetto Apps Script:"
+          ls -1
+
+      - name: Sostituisci i file del repo
+        if: steps.cred.outputs.ok == 'true'
+        working-directory: ${{ runner.temp }}/gas
+        run: |
+          for f in $FILE_REPO; do
+            if [ -f "$f.js" ]; then dest="$f.js"; elif [ -f "$f.gs" ]; then dest="$f.gs"; else
+              echo "::error::Nel progetto Apps Script non c'e' un file chiamato '$f': crealo a mano (anche vuoto) con questo nome, poi rilancia."
+              exit 1
+            fi
+            cp "$GITHUB_WORKSPACE/apps-script/$f.gs" "$dest"
+            echo "aggiornato $dest"
+          done
+
+      - name: Carica e aggiorna la Web App
+        if: steps.cred.outputs.ok == 'true'
+        working-directory: ${{ runner.temp }}/gas
+        run: |
+          clasp push --force
+          clasp deploy --deploymentId "$DEPLOYMENT_ID" --description "repo ${GITHUB_SHA::7}"
+          clasp deployments
+
+      - name: Pulizia credenziali
+        if: always()
+        run: rm -f "$HOME/.clasprc.json"

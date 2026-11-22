@@ -12,7 +12,10 @@
  *    il proprietario del file). Per crearlo esegui UNA volta dall'editor la funzione preparaFoglioPassword()
  *    (menu in alto: scegli la funzione e premi "Esegui"): crea il foglio con tutti i Comandi, lo nasconde e lo
  *    protegge. Poi scrivi le password nella colonna B (un Comando senza password non si puo' modificare).
- *    TP_PASSWORD_ qui sotto e' la password GENERALE (vale per tutti i Comandi): lasciala "cambiami" per non averla.
+ *    La password UNIVERSALE (vale per tutti i Comandi) NON sta nel codice: si mette in Impostazioni progetto >
+ *    Proprieta' script, nome TP_PASSWORD. Senza quella proprieta' la password universale non esiste.
+ *    Cosi' questo file e' identico nel repo e nell'Apps Script e si puo' pubblicare in automatico
+ *    (GitHub Action .github/workflows/apps-script.yml).
  *    Leggere i turni resta libero; scriverli si puo' solo con la password, che controlla questo script (non la pagina).
  * 4) Distribuisci di nuovo la Web App ("Gestisci distribuzioni" > matita > "Nuova versione"), accesso "Chiunque".
  *
@@ -29,7 +32,10 @@ const TP_INT_ = ["Chiave", "Comando", "Cognome", "Nome", "Turno", "Salto", "Aggi
 // ruoli per settore (colonna Ruoli, JSON {"SAF": ["MAG", "ROP"], "NBCR": ["NO"]})
 const TP_SETTORI_ = ["SAF", "SSA", "USAR", "TPSS", "OSO", "TAS", "CFBT", "NBCR", "APR", "K9", "PT", "MMT", "PN"];
 const TP_RUOLI_ = ["FUN", "ROP", "MAG", "RDT", "MAGT", "NO"];   // funzionario di settore, ROP, magazziniere generale, responsabile di turno, mag. di turno, non operativo
-const TP_PASSWORD_ = "cambiami";   // password GENERALE, vale per tutti i Comandi ("cambiami" = nessuna)
+// password universale: dalle Proprieta' script (TP_PASSWORD), mai scritta qui
+function tpPasswordUniversale_() {
+  try { return String(PropertiesService.getScriptProperties().getProperty("TP_PASSWORD") || "").trim(); } catch (e) { return ""; }
+}
 const TP_FOGLIO_PWD_ = "DB_Password_Comandi";
 const TP_COMANDI_ = ["Agrigento", "Alessandria", "Ancona", "Aosta", "Arezzo", "Ascoli Piceno", "Asti", "Avellino", "Bari", "Barletta-Andria-Trani", "Belluno", "Benevento", "Bergamo", "Biella", "Bologna", "Bolzano", "Brescia", "Brindisi", "Cagliari", "Caltanissetta", "Campobasso", "Caserta", "Catania", "Catanzaro", "Chieti", "Como", "Cosenza", "Cremona", "Crotone", "Cuneo", "Enna", "Fermo", "Ferrara", "Firenze", "Foggia", "Forlì-Cesena", "Frosinone", "Genova", "Gorizia", "Grosseto", "Imperia", "Isernia", "L'Aquila", "La Spezia", "Latina", "Lecce", "Lecco", "Livorno", "Lodi", "Lombardia COR AIB CURNO", "Lucca", "Macerata", "Mantova", "Massa-Carrara", "Matera", "Messina", "Milano", "Modena", "Monza e della Brianza", "Napoli", "Novara", "Nuoro", "Oristano", "Padova", "Palermo", "Parma", "Pavia", "Perugia", "Pesaro e Urbino", "Pescara", "Piacenza", "Pisa", "Pistoia", "Pordenone", "Potenza", "Prato", "Ragusa", "Ravenna", "Reggio Calabria", "Reggio Emilia", "Rieti", "Rimini", "Roma", "Rovigo", "Salerno", "Sassari", "Savona", "Siena", "Siracusa", "Sondrio", "Taranto", "Teramo", "Terni", "Torino", "Trapani", "Trento", "Treviso", "Trieste", "Udine", "Varese", "Venezia", "Verbano-Cusio-Ossola", "Vercelli", "Verona", "Vibo Valentia", "Vicenza", "Viterbo"];
 const TP_TURNI_ = ["", "A", "B", "C", "D", "G", "NO"];   // NO = Non Operativo
@@ -137,14 +143,15 @@ function preparaFoglioPassword() {
 // POST {foglio: "DB_Turni_Personale", comando, password, voci: [{k, comando, cognome, nome, t, s, ts, ...}]}
 //      {foglio: "DB_Turni_Personale", comando, password, verifica: true}  → controlla solo la password
 // La password vale per il suo Comando: si scrivono solo le voci di quel Comando (terza parte della chiave).
-// La password generale (TP_PASSWORD_) vale per tutti.
+// La password universale (proprieta' script TP_PASSWORD) vale per tutti.
 function turniPersonalePost_(p) {
   const cn = tpComando_(p.comando), pw = String(p.password || "");
-  const generale = TP_PASSWORD_ !== "cambiami" && pw === TP_PASSWORD_;
+  const universale = tpPasswordUniversale_();
+  const generale = !!universale && pw === universale;
   const delComando = !!cn && !!pw && pw === tpPasswordComando_(cn);
   if (!generale && !delComando) {
     Utilities.sleep(800);   // rallenta chi prova password a raffica
-    if (!cn && TP_PASSWORD_ === "cambiami") return {ok: false, errore: "scegli un Comando"};
+    if (!cn && !universale) return {ok: false, errore: "scegli un Comando"};
     return {ok: false, errore: cn && !tpPasswordComando_(cn) && !generale ? "nessuna password impostata per questo Comando" : "password errata"};
   }
   if (p.verifica) return {ok: true, generale: generale};
