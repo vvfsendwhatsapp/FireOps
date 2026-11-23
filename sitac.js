@@ -4464,8 +4464,11 @@ async function chiediLatoSimbolo(layer){
     aggiornaStato();
   };
   $('bPulisci').onclick = async () => {
-    if (!disegni.getLayers().length && !coni.length) return stato(t('giaVuota'));
+    if (!IMM && !disegni.getLayers().length && !coni.length) return stato(t('giaVuota'));
     if (!await chiedi({testo: t('confPulisci')})) return;
+    /* Doppia conferma: Cancella tutto non si annulla */
+    if (!await chiedi({testo: '\u26a0\ufe0f Sicuro? Si cancella tutto il disegno'
+      + (IMM ? ' e la foto' : '') + ' e non si pu\u00f2 annullare.'})) return;
     disegni.clearLayers(); decori.clearLayers();
     coni.length = 0;
 
@@ -4507,7 +4510,9 @@ async function chiediLatoSimbolo(layer){
        Pulisci campi.
        Il SIMBOLO invece se n'è andato con gli altri, e un dato senza il
        suo segno sulla carta è peggio di nessuno dei due: si riposa. */
-    if (posDos) posaDos(posDos);
+    if (posDos && !IMM) posaDos(posDos);
+    /* SITAC da immagine: via anche la foto (la toglie sitac-immagine.html), e si resta sulla carta */
+    if (IMM){ document.dispatchEvent(new CustomEvent('fireops:sitac-pulita')); aggiornaStato(); return; }
     /* Si torna alla scheda 1: quello che si fa dopo aver svuotato la carta
        è ricominciare, e ricominciare parte da lì. Il fuoco va dato DOPO il
        cambio scheda — su un elemento nascosto il browser lo ignora — e con

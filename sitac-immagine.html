@@ -31,6 +31,8 @@
     #si-barra label, #si-barra button { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; font-size: 13.5px; border-radius: 7px;
       border: 1px solid var(--border-color, #444); background: var(--surface-color, #222); color: var(--text-main, #eee); cursor: pointer; }
     #si-barra .prim { background: #1f7a3a; border-color: #2aa04d; color: #fff; font-weight: bold; }
+    #si-barra .pericolo { border-color: #e53935; color: #ff6b6b; background: transparent; font-weight: bold; }
+    #si-barra .pericolo:hover { background: #e53935; color: #fff; }
     #si-barra .nota { font-size: 12px; color: var(--text-muted, #999); }
     #si-corpo { height: calc(100% - 48px); }
     #si-corpo #sitac-aib { display: block !important; height: 100%; padding: 0 !important; margin: 0 !important; }
@@ -73,6 +75,7 @@
     <button type="button" class="prim" id="si-scatta">📷 Scatta foto</button>
     <input type="file" id="si-file1" accept="image/*" capture="environment" hidden>
     <label>🖼 Dalla galleria / file<input type="file" id="si-file2" accept="image/*" hidden></label>
+    <button type="button" id="si-pulisci" class="pericolo" title="Cancella foto e disegno (chiede due volte)">🗑 Cancella tutto</button>
     <span class="nota" id="si-nota">Tutti gli strumenti della SITAC, sulla foto. Si può anche incollare (Ctrl+V) o trascinare un'immagine.</span>
   </div>
   <!-- Fotocamera dentro la pagina: si scatta senza uscire dalla SITAC (anche nell'app) -->
@@ -178,6 +181,14 @@
         .catch(function () { fermaCam(); $("si-file1").click(); });
     }
     $("si-scatta").onclick = apriCam;
+    /* Cancella tutto: lo stesso di "Cancella tutto" al passo Modifica, con la doppia conferma di sitac.js */
+    $("si-pulisci").onclick = function () { var b = document.getElementById("sitac-bPulisci"); if (b) b.click(); };
+    document.addEventListener("fireops:sitac-pulita", function () {
+      if (foto && istanza) { istanza.map.removeLayer(foto); foto = null; }
+      FireOps.SITAC_IMMAGINE_BOUNDS = null;
+      try { istanza.map.setMaxBounds(null); } catch (e) {}
+      var v = $("si-vuota"); if (v) v.hidden = false;
+    });
     $("si-cam-no").onclick = fermaCam;
     $("si-cam-giro").onclick = function () { fronte = !fronte; apriCam(); };
     $("si-cam-ok").onclick = function () {
