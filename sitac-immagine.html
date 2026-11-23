@@ -41,6 +41,9 @@
     /* Quello che su una foto non ha senso */
     #sitac-bSfondo, #sitac-bGeojson, #sitac-bKml, #sitac-b3d, #sitac-bImporta, #sitac-bCentra,
     .si-nascosto, .leaflet-control-scale, .fireops-sfondi, .sfondi-ctrl { display: none !important; }
+    /* Importa delle aree (GeoJSON da APR) e superficie in ettari: su una foto non hanno senso */
+    #si-corpo .sitac-imp, #si-corpo #sitac-superficie { display: none !important; }
+    #si-corpo .sitac-coppia { display: block !important; }
     #sitac-mappa { background: #0c0c0c !important; }
     #si-vuota { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 500;
       pointer-events: none; color: #bbb; font-size: 15px; text-align: center; line-height: 1.6; }
