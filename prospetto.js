@@ -385,6 +385,15 @@ async function cfgSalva(comando, password, note) {
   } catch (e) { cfg.errore = comando + ': ' + (e.message || String(e)); }
   cfg.salvo = ''; disegna();
 }
+async function cfgSalvaTanti(voci, etichetta) {
+  cfg.salvo = etichetta; cfg.errore = ''; disegna();
+  try {
+    await cfgRichiesta({config: 'scrivi', voci});
+    const j = await cfgRichiesta({config: 'leggi'}); cfg.comandi = j.comandi || cfg.comandi;
+    comandiSP = cfg.comandi.filter(x => x.attivo).map(x => normComando(x.comando)); scrivi(LS_SP, comandiSP); applicaAbilitazione();
+  } catch (e) { cfg.errore = e.message || String(e); }
+  cfg.salvo = ''; disegna();
+}
 function htmlConfig() {
   if (!cfg) return '';
   const t = norm(cfg.filtro || '');
@@ -396,7 +405,7 @@ function htmlConfig() {
       <td><input type="text" class="pros-cfg-pw" value="${esc(c.password)}" placeholder="password (min 4)" autocomplete="off" spellcheck="false"></td>
       <td><input type="text" class="pros-cfg-note" value="${esc(c.note)}" placeholder="note (referente, data…)"></td>
       <td class="pros-cfg-az">${cfg.salvo === c.comando ? '⏳'
-        : `<button type="button" class="pros-mini" data-cfg-salva="1">💾 Salva</button>${c.attivo && attivi > 1 ? '<button type="button" class="pros-mini" data-cfg-off="1">Disattiva</button>' : c.attivo ? '<span class="pros-nota" title="Deve restare almeno un Comando abilitato">ultimo abilitato</span>' : ''}`}</td></tr>`;
+        : `<button type="button" class="pros-mini" data-cfg-salva="1">💾 Salva</button>${c.attivo && attivi > 1 ? '<button type="button" class="pros-mini" data-cfg-off="1">Disattiva</button> <button type="button" class="pros-mini" data-cfg-solo="1" title="Disattiva tutti gli altri Comandi">⭐ Solo questo</button>' : c.attivo ? '<span class="pros-nota" title="Deve restare almeno un Comando abilitato">ultimo abilitato</span>' : ''}`}</td></tr>`;
   return `<div class="pros-cfg">
     <div class="pros-cfg-testa"><b>⚙️ Comandi che usano SP</b> <span>${attivi} abilitati su ${cfg.comandi.length}</span>
       <input type="search" id="pros-cfg-filtro" placeholder="Cerca un Comando…" value="${esc(cfg.filtro || '')}">
@@ -987,6 +996,13 @@ function eventi() {
     if (b.dataset.manDel) {
       const v = turni[b.dataset.manDel];
       if (v && confirm('Eliminare ' + (v.n || 'questo nominativo') + ' dal personale aggiunto a mano?')) { eliminaManuale(b.dataset.manDel); if (modMan === b.dataset.manDel) modMan = null; disegna(); }
+      return;
+    }
+    if (b.dataset.cfgSolo) {
+      const tr = b.closest('tr[data-cfg]'); if (!tr) return;
+      const altri = cfg.comandi.filter(x => x.attivo && x.comando !== tr.dataset.cfg);
+      if (!altri.length || !confirm('Lasciare abilitato a SP solo ' + tr.dataset.cfg + '?\nVengono disattivati (password cancellata) ' + altri.length + ' Comandi:\n' + altri.map(x => x.comando).join(', '))) return;
+      cfgSalvaTanti(altri.map(x => ({comando: x.comando, password: '', note: x.note || ''})), tr.dataset.cfg);
       return;
     }
     if (b.dataset.cfgSalva || b.dataset.cfgOff) {
