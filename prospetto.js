@@ -766,7 +766,7 @@ function htmlGestione(corsiDisp, qualDisp, base, stati) {
   ${aperto && modMan ? htmlFormManuale(tuttiCorsi) : ''}
   ${elenco.length ? `
   <div class="pros-tabwrap"><table class="pros-tab${aperto ? '' : ' bloccata'}">
-    <thead><tr><th>Personale</th><th>Qual.</th><th>Corsi</th><th>Cellulare</th><th>Turno</th><th>Salto</th><th>Ruoli per settore</th></tr></thead>
+    <thead><tr><th>Personale</th><th>Qual.</th><th>Corsi</th><th>Cellulare</th><th class="c">Turno</th><th class="c">Salto</th><th>Ruoli per settore</th></tr></thead>
     <tbody>${elenco.map(p => {
       const t = turni[p.k] || {};
       return `<tr data-k="${esc(p.k)}" class="${t.t === 'NO' ? 'st-no' : t.t ? '' : 'st-nd'}${modRuoli === p.k ? ' aperta' : ''}">
@@ -774,8 +774,8 @@ function htmlGestione(corsiDisp, qualDisp, base, stati) {
         <td data-l="Qualifica">${aperto ? `<select data-qual="1" title="${p.qualPuma && p.qual !== p.qualPuma ? 'Su PUMA: ' + esc(p.qualPuma) : 'Qualifica'}">${Array.from(new Set(QUAL_MAN.concat(p.qual ? [p.qual] : []))).map(q => `<option${q === p.qual ? ' selected' : ''}>${esc(q)}</option>`).join('')}</select>${p.qualPuma && p.qual !== p.qualPuma ? `<div class="pros-com">PUMA: ${esc(p.qualPuma)}</div>` : ''}` : esc(p.qual)}</td>
         <td data-l="Corsi">${p.corsi.map(c => `<span class="pros-chip${c === f.corso ? ' on' : ''}" title="${esc(c)}">${esc(siglaCorso(c))}</span>`).join('') || '<span class="pros-nota">—</span>'}</td>
         <td data-l="Cellulare">${htmlTel(p)}</td>
-        <td data-l="Turno"><select data-campo="t"${dis}><option value="">—</option>${TURNI.map(x => `<option value="${x}"${x === t.t ? ' selected' : ''}>${x === 'NO' ? 'N.O. – Non operativo' : NOME_TURNO(x)}</option>`).join('')}</select></td>
-        <td data-l="Salto"><select data-campo="s"${SENZA_SALTO(t.t) || !aperto ? ' disabled' : ''}><option value="">—</option>${SALTI.map(x => `<option${x === String(t.s || '') ? ' selected' : ''}>${x}</option>`).join('')}</select></td>
+        <td data-l="Turno" class="c"><select data-campo="t"${dis}><option value="">—</option>${TURNI.map(x => `<option value="${x}"${x === t.t ? ' selected' : ''}>${x === 'NO' ? 'N.O. – Non operativo' : NOME_TURNO(x)}</option>`).join('')}</select></td>
+        <td data-l="Salto" class="c"><select data-campo="s"${SENZA_SALTO(t.t) || !aperto ? ' disabled' : ''}><option value="">—</option>${SALTI.map(x => `<option${x === String(t.s || '') ? ' selected' : ''}>${x}</option>`).join('')}</select></td>
         <td data-l="Ruoli"><div class="pros-ruoli-cella">${htmlRuoli(p, '') || '<span class="pros-nota">—</span>'}${aperto ? ` <button type="button" class="pros-mini" data-ruoli="${esc(p.k)}" title="Ruoli per settore">${modRuoli === p.k ? '✕ Chiudi' : '✏️ Ruoli'}</button>` : ''}</div></td>
       </tr>${aperto && modRuoli === p.k ? htmlRigaRuoli(p) : ''}`;
     }).join('')}</tbody></table></div>`
@@ -908,7 +908,7 @@ function htmlRichiamo(corsiDisp, qualDisp, base, stati) {
   ${GRUPPI_RICHIAMO.map(k => `
   <div class="pros-gruppo pros-g-${k}">
     <h4>${tit[k]} <span class="pros-quanti">${g[k].length}</span></h4>
-    ${g[k].length ? `<div class="pros-tabwrap"><table class="pros-tab pros-tab-r"><thead><tr><th>Qualifica</th><th>Nome</th><th>Numero</th><th>Turno</th><th>Salto</th></tr></thead><tbody>${ordina(g[k]).map(riga).join('')}</tbody></table></div>`
+    ${g[k].length ? `<div class="pros-tabwrap"><table class="pros-tab pros-tab-r"><thead><tr><th>Qualifica</th><th>Nome</th><th>Numero</th><th class="c">Turno</th><th class="c">Salto</th></tr></thead><tbody>${ordina(g[k]).map(riga).join('')}</tbody></table></div>`
       : '<div class="pros-nota pros-nessuno">Nessuno' + (carico.stato === 'ok' ? '' : ' (in attesa dei dati PUMA)') + '</div>'}
   </div>`).join('')}`;
 }
