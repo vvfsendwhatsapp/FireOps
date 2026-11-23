@@ -8843,18 +8843,25 @@ body.pros-pop-aperto { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) { .pros-pop-col.adesso h3::before { animation: none; } }
 @media (max-width: 800px) { .pros-pop-colonne.tre { grid-template-columns: 1fr; } }
 
-/* BIS: tasto SP (Specializzati disponibili). Stesso aspetto degli altri
-   tasti della testata; a riconoscerlo bastano quattro quadratini 2x2 coi
-   colori dei turni A, B, C, D, un po' spenti per non gridare. Disegnati
-   col ::before, senza toccare l'HTML. */
-#btn-specializzati.btn-icon-hamburger { gap: 4px; font-size: 14px; letter-spacing: 0; }
-#btn-specializzati.btn-icon-hamburger::before {
-    content: "";
-    flex: 0 0 13px;
-    height: 13px;
+/* BIS: tasto SP (Specializzati disponibili). Il tasto è diviso in quattro
+   quadratini coi colori dei turni A, B, C, D, un po' spenti per non
+   gridare, staccati da un filo del fondo scuro; la scritta SP sta al
+   centro, a cavallo dei quattro. Bordo giallo come gli altri tasti. */
+#btn-specializzati.btn-icon-hamburger {
     background:
-        linear-gradient(#c9484b, #c9484b) 0 0 / 6px 6px no-repeat,
-        linear-gradient(#3b74c4, #3b74c4) 7px 0 / 6px 6px no-repeat,
-        linear-gradient(#2f9257, #2f9257) 0 7px / 6px 6px no-repeat,
-        linear-gradient(#d8873f, #d8873f) 7px 7px / 6px 6px no-repeat;
+        linear-gradient(#c9484b, #c9484b) left 3px top 3px / calc(50% - 4.5px) calc(50% - 4.5px) no-repeat,
+        linear-gradient(#3b74c4, #3b74c4) right 3px top 3px / calc(50% - 4.5px) calc(50% - 4.5px) no-repeat,
+        linear-gradient(#2f9257, #2f9257) left 3px bottom 3px / calc(50% - 4.5px) calc(50% - 4.5px) no-repeat,
+        linear-gradient(#d8873f, #d8873f) right 3px bottom 3px / calc(50% - 4.5px) calc(50% - 4.5px) no-repeat,
+        var(--dark-color);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 900;
+    letter-spacing: .5px;
+    text-shadow: 0 0 3px rgba(0, 0, 0, .9), 0 1px 2px rgba(0, 0, 0, .9);
+}
+#btn-specializzati.btn-icon-hamburger:hover {
+    color: #fff;
+    filter: brightness(1.12);
+    box-shadow: 0 0 0 2px rgba(255, 215, 0, .7);
 }
