@@ -9255,3 +9255,17 @@ body.pros-pop-aperto { overflow: hidden; }
 #sitac-aib.sitac-sez-stretta #sitac-lingue img, #sitac-aib.sitac-sez-stretta #sitac-lingue button { max-height: 22px; }
 #sitac-aib.sitac-sez-stretta .sitac-schede { margin-bottom: 6px; }
 #sitac-app.sitac-mobile .sitac-immagine-frame { height: calc(100dvh - 150px); min-height: 380px; }
+
+/* Prospetto specializzati: configurazione dei Comandi che usano SP (super password) */
+#prospetto-disponibilita .pros-cfg { margin: 10px 0 14px; padding: 12px; border: 2px solid #b8860b; border-radius: 10px; background: rgba(184, 134, 11, .10); }
+#prospetto-disponibilita .pros-cfg-testa { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 6px; }
+#prospetto-disponibilita .pros-cfg-testa input { flex: 1 1 180px; max-width: 280px; }
+#prospetto-disponibilita .pros-cfg-tab { max-height: 420px; overflow: auto; }
+#prospetto-disponibilita .pros-cfg table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+#prospetto-disponibilita .pros-cfg th { position: sticky; top: 0; background: #2a2a2a; color: #ffd700; text-align: left; padding: 6px 8px; font-size: 12px; }
+#prospetto-disponibilita .pros-cfg td { padding: 5px 8px; border-bottom: 1px solid rgba(0, 0, 0, .15); vertical-align: middle; }
+#prospetto-disponibilita .pros-cfg tr.attivo td { background: rgba(47, 191, 113, .14); }
+#prospetto-disponibilita .pros-cfg input { width: 100%; box-sizing: border-box; padding: 5px 7px; font-size: 13px; }
+#prospetto-disponibilita .pros-cfg .pros-cfg-pw { font-family: ui-monospace, Menlo, monospace; }
+#prospetto-disponibilita .pros-cfg-az { white-space: nowrap; }
+#prospetto-disponibilita .pros-cfg-az .pros-mini + .pros-mini { margin-left: 4px; }

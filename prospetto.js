@@ -306,6 +306,7 @@ let timerInvio = null, inviando = false;
 function ridisegna() {
   if (modMan && root && root.querySelector('#pros-man-form')) return;
   if (root && root.contains(document.activeElement) && document.activeElement.tagName === 'SELECT') return;   // menu aperto
+  if (cfg && document.activeElement && document.activeElement.closest && document.activeElement.closest('.pros-cfg')) return;   // si sta scrivendo una password
   disegna();
 }
 function programmaInvio() { clearTimeout(timerInvio); timerInvio = setTimeout(invia, 1500); }
@@ -316,7 +317,9 @@ async function sblocca(v) {
   sblocco = {stato: 'verifica', errore: ''}; disegna();
   try {
     const j = await chiedi(WEBAPP, {method: 'POST', headers: {'Content-Type': 'text/plain;charset=utf-8'}, body: JSON.stringify({foglio: 'DB_Turni_Personale', comando: cn, password: v, verifica: true})}, 20000);
-    pwds[j.generale ? '*' : cn] = v; salvaPwds(); sblocco = {stato: 'ok', errore: ''};
+    pwds[j.generale ? '*' : cn] = v;
+    if (j.super) pwds['**'] = v;   // super password: può anche configurare i Comandi che usano SP
+    salvaPwds(); sblocco = {stato: 'ok', errore: ''};
     if (coda.length) invia();
   } catch (e) {
     sblocco = {stato: 'err', errore: e.name === 'AbortError' ? 'tempo scaduto' : (e.message || String(e))};
@@ -324,7 +327,54 @@ async function sblocca(v) {
   disegna();
 }
 // blocca il Comando scelto (e la password generale, se c'era)
-function blocca() { delete pwds[normComando(f.comando)]; delete pwds['*']; salvaPwds(); sblocco = {stato: '', errore: ''}; modMan = null; modRuoli = null; disegna(); }
+function blocca() { delete pwds[normComando(f.comando)]; delete pwds['*']; delete pwds['**']; cfg = null; salvaPwds(); sblocco = {stato: '', errore: ''}; modMan = null; modRuoli = null; disegna(); }
+/* ---- Configurazione dei Comandi che usano SP (solo con una super password) ----
+   Legge e scrive il foglio nascosto DB_Password_Comandi tramite la Web App: password vuota = Comando non abilitato. */
+let cfg = null;   // null | {stato: 'carico'|'ok'|'err', comandi: [], errore, filtro, salvo}
+async function cfgRichiesta(corpo) {
+  return chiedi(WEBAPP, {method: 'POST', headers: {'Content-Type': 'text/plain;charset=utf-8'},
+    body: JSON.stringify(Object.assign({foglio: 'DB_Turni_Personale', password: pwds['**']}, corpo))}, 25000);
+}
+async function cfgApri() {
+  cfg = {stato: 'carico', comandi: (cfg && cfg.comandi) || [], errore: '', filtro: (cfg && cfg.filtro) || ''}; disegna();
+  try { const j = await cfgRichiesta({config: 'leggi'}); cfg.comandi = j.comandi || []; cfg.stato = 'ok'; }
+  catch (e) { cfg.stato = 'err'; cfg.errore = e.name === 'AbortError' ? 'tempo scaduto' : (e.message || String(e)); }
+  disegna();
+}
+async function cfgSalva(comando, password, note) {
+  cfg.salvo = comando; cfg.errore = ''; disegna();
+  try {
+    await cfgRichiesta({config: 'scrivi', voci: [{comando, password, note}]});
+    const c = cfg.comandi.find(x => x.comando === comando);
+    if (c) Object.assign(c, {password, note, attivo: !!password});
+    else cfg.comandi.push({comando, password, note, attivo: !!password});
+  } catch (e) { cfg.errore = comando + ': ' + (e.message || String(e)); }
+  cfg.salvo = ''; disegna();
+}
+function htmlConfig() {
+  if (!cfg) return '';
+  const t = norm(cfg.filtro || '');
+  const lista = cfg.comandi.filter(c => !t || norm(c.comando).includes(t));
+  const attivi = cfg.comandi.filter(c => c.attivo).length;
+  const riga = c => `<tr data-cfg="${esc(c.comando)}" class="${c.attivo ? 'attivo' : ''}">
+      <td><b>${esc(c.comando)}</b></td>
+      <td>${c.attivo ? '🟢 Usa SP' : '⚪ Non abilitato'}</td>
+      <td><input type="text" class="pros-cfg-pw" value="${esc(c.password)}" placeholder="password (min 4)" autocomplete="off" spellcheck="false"></td>
+      <td><input type="text" class="pros-cfg-note" value="${esc(c.note)}" placeholder="note (referente, data…)"></td>
+      <td class="pros-cfg-az">${cfg.salvo === c.comando ? '⏳'
+        : `<button type="button" class="pros-mini" data-cfg-salva="1">💾 Salva</button>${c.attivo ? '<button type="button" class="pros-mini" data-cfg-off="1">Disattiva</button>' : ''}`}</td></tr>`;
+  return `<div class="pros-cfg">
+    <div class="pros-cfg-testa"><b>⚙️ Comandi che usano SP</b> <span>${attivi} abilitati su ${cfg.comandi.length}</span>
+      <input type="search" id="pros-cfg-filtro" placeholder="Cerca un Comando…" value="${esc(cfg.filtro || '')}">
+      <button type="button" class="pros-mini" id="pros-cfg-ricarica">↻</button>
+      <button type="button" class="pros-mini" id="pros-cfg-chiudi">✕ Chiudi</button></div>
+    <p class="pros-nota">Un Comando con la password può modificare turni, salti e ruoli del suo personale; senza password (vuota) non è abilitato. Le password stanno nel foglio nascosto e protetto, mai sul sito.</p>
+    ${cfg.stato === 'carico' && !cfg.comandi.length ? '<p class="pros-nota">⏳ Carico l’elenco…</p>' : ''}
+    ${cfg.stato === 'err' || cfg.errore ? '<p class="pros-sync err">⚠️ ' + esc(cfg.errore) + '</p>' : ''}
+    ${lista.length ? `<div class="pros-cfg-tab"><table><thead><tr><th>Comando</th><th>Stato</th><th>Password</th><th>Note</th><th></th></tr></thead><tbody>${lista.map(riga).join('')}</tbody></table></div>` : ''}
+  </div>`;
+}
+
 function scorriForm() { const x = root.querySelector('#pros-man-form'); if (x) { x.scrollIntoView({block: 'nearest'}); const i = x.querySelector('input[name=n]'); if (i) i.focus(); } }
 async function invia() {
   if (inviando || !coda.length) return;
@@ -641,7 +691,7 @@ function htmlGestione(corsiDisp, qualDisp, base, stati) {
   if (f.senzaTurno) elenco = elenco.filter(p => !(turni[p.k] && turni[p.k].t));
   const cn = normComando(f.comando), aperto = sbloccato();
   const lucchetto = aperto
-    ? `<div class="pros-lucchetto ok">🔓 Modifiche abilitate per ${pwds['*'] ? 'tutti i Comandi (password generale)' : esc(nomeScelta(f.comando))} in questa sessione <button type="button" class="pros-mini" id="pros-blocca">🔒 Blocca</button></div>`
+    ? `<div class="pros-lucchetto ok">🔓 Modifiche abilitate per ${pwds['**'] ? 'tutti i Comandi (super password)' : pwds['*'] ? 'tutti i Comandi (password generale)' : esc(nomeScelta(f.comando))} in questa sessione ${pwds['**'] ? '<button type="button" class="pros-mini" id="pros-cfg-apri">⚙️ Comandi che usano SP</button> ' : ''}<button type="button" class="pros-mini" id="pros-blocca">🔒 Blocca</button></div>${htmlConfig()}`
     : !cn ? `<div class="pros-lucchetto">🔒 Scegli un Comando qui sotto per sbloccare le modifiche con la sua password.</div>`
     : `<form class="pros-lucchetto" id="pros-sblocca" autocomplete="off">🔒 Per modificare turni e salti di <b>${esc(nomeScelta(f.comando))}</b>${eDirezione(f.comando) ? ' (tutta la regione: serve la password universale)' : ''} inserisci la password del Comando
         <input type="password" id="pros-pwd" placeholder="Password" autocomplete="current-password"${sblocco.stato === 'verifica' ? ' disabled' : ''}>
@@ -904,11 +954,22 @@ function eventi() {
       if (v && confirm('Eliminare ' + (v.n || 'questo nominativo') + ' dal personale aggiunto a mano?')) { eliminaManuale(b.dataset.manDel); if (modMan === b.dataset.manDel) modMan = null; disegna(); }
       return;
     }
+    if (b.dataset.cfgSalva || b.dataset.cfgOff) {
+      const tr = b.closest('tr[data-cfg]'); if (!tr) return;
+      const pw = b.dataset.cfgOff ? '' : tr.querySelector('.pros-cfg-pw').value.replace(/\s/g, '');
+      if (pw && pw.length < 4) { alert('La password deve avere almeno 4 caratteri.'); return; }
+      if (b.dataset.cfgOff && !confirm('Disattivare SP per ' + tr.dataset.cfg + '? La sua password viene cancellata.')) return;
+      cfgSalva(tr.dataset.cfg, pw, tr.querySelector('.pros-cfg-note').value.trim());
+      return;
+    }
     switch (b.id) {
       case 'pros-man-nuovo': modMan = 'nuovo'; disegna(); scorriForm(); break;
       case 'pros-man-annulla': modMan = null; disegna(); break;
       case 'pros-aggiorna': carica(); break;
       case 'pros-blocca': blocca(); break;
+      case 'pros-cfg-apri': cfgApri(); break;
+      case 'pros-cfg-ricarica': cfgApri(); break;
+      case 'pros-cfg-chiudi': cfg = null; disegna(); break;
       case 'pros-csv-richiamo': esportaRichiamo(); break;
       case 'pros-csv': esportaCSV(); break;
       case 'pros-esporta': scarica('fireops_turni_personale_' + oggiISO() + '.json', JSON.stringify({tipo: 'fireops-prospetto-turni', creato: new Date().toISOString(), turni}, null, 1), 'application/json'); break;
@@ -967,6 +1028,11 @@ function eventi() {
     const x = root.querySelector('#pros-pwd'); sblocca(x ? x.value : '');
   });
   root.addEventListener('input', e => {
+    if (e.target.id === 'pros-cfg-filtro' && cfg) {
+      cfg.filtro = e.target.value; const pos = e.target.selectionStart;
+      disegna(); const x = root.querySelector('#pros-cfg-filtro'); if (x) { x.focus(); x.setSelectionRange(pos, pos); }
+      return;
+    }
     if (e.target.id === 'pros-testo') {
       f.testo = e.target.value; const pos = e.target.selectionStart;
       disegna(); const x = root.querySelector('#pros-testo'); if (x) { x.focus(); x.setSelectionRange(pos, pos); }

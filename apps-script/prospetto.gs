@@ -17,6 +17,8 @@
  *    Proprieta' script, nome TP_PASSWORD. Senza quella proprieta' la password universale non esiste.
  *    Cosi' questo file e' identico nel repo e nell'Apps Script e si puo' pubblicare in automatico
  *    (GitHub Action .github/workflows/apps-script.yml).
+ *    Le SUPER password (configurano quali Comandi usano SP e con quale password, dalla pagina) stanno nella
+ *    proprieta' script TP_SUPER, separate da virgola. Valgono anche come password universale.
  *    Leggere i turni resta libero; scriverli si puo' solo con la password, che controlla questo script (non la pagina).
  * 4) Distribuisci di nuovo la Web App ("Gestisci distribuzioni" > matita > "Nuova versione"), accesso "Chiunque".
  *
@@ -36,6 +38,13 @@ const TP_RUOLI_ = ["FUN", "ROP", "MAG", "RDT", "MAGT", "NO"];   // funzionario d
 // password universale: dalle Proprieta' script (TP_PASSWORD), mai scritta qui
 function tpPasswordUniversale_() {
   try { return String(PropertiesService.getScriptProperties().getProperty("TP_PASSWORD") || "").trim(); } catch (e) { return ""; }
+}
+// super password: dalle Proprieta' script (TP_SUPER, separate da virgola), mai scritte qui
+function tpSuperPassword_() {
+  try {
+    return String(PropertiesService.getScriptProperties().getProperty("TP_SUPER") || "")
+      .split(",").map(x => x.trim()).filter(Boolean);
+  } catch (e) { return []; }
 }
 const TP_FOGLIO_PWD_ = "DB_Password_Comandi";
 const TP_COMANDI_ = ["Agrigento", "Alessandria", "Ancona", "Aosta", "Arezzo", "Ascoli Piceno", "Asti", "Avellino", "Bari", "Barletta-Andria-Trani", "Belluno", "Benevento", "Bergamo", "Biella", "Bologna", "Bolzano", "Brescia", "Brindisi", "Cagliari", "Caltanissetta", "Campobasso", "Caserta", "Catania", "Catanzaro", "Chieti", "Como", "Cosenza", "Cremona", "Crotone", "Cuneo", "Enna", "Fermo", "Ferrara", "Firenze", "Foggia", "Forlì-Cesena", "Frosinone", "Genova", "Gorizia", "Grosseto", "Imperia", "Isernia", "L'Aquila", "La Spezia", "Latina", "Lecce", "Lecco", "Livorno", "Lodi", "Lombardia COR AIB CURNO", "Lucca", "Macerata", "Mantova", "Massa-Carrara", "Matera", "Messina", "Milano", "Modena", "Monza e della Brianza", "Napoli", "Novara", "Nuoro", "Oristano", "Padova", "Palermo", "Parma", "Pavia", "Perugia", "Pesaro e Urbino", "Pescara", "Piacenza", "Pisa", "Pistoia", "Pordenone", "Potenza", "Prato", "Ragusa", "Ravenna", "Reggio Calabria", "Reggio Emilia", "Rieti", "Rimini", "Roma", "Rovigo", "Salerno", "Sassari", "Savona", "Siena", "Siracusa", "Sondrio", "Taranto", "Teramo", "Terni", "Torino", "Trapani", "Trento", "Treviso", "Trieste", "Udine", "Varese", "Venezia", "Verbano-Cusio-Ossola", "Vercelli", "Verona", "Vibo Valentia", "Vicenza", "Viterbo"];
@@ -148,14 +157,19 @@ function preparaFoglioPassword() {
 function turniPersonalePost_(p) {
   const cn = tpComando_(p.comando), pw = String(p.password || "");
   const universale = tpPasswordUniversale_();
-  const generale = !!universale && pw === universale;
+  const sup = !!pw && tpSuperPassword_().indexOf(pw) >= 0;
+  const generale = sup || (!!universale && pw === universale);
+  if (p.config) {
+    if (!sup) { Utilities.sleep(800); return {ok: false, errore: "serve una super password"}; }
+    return p.config === "scrivi" ? tpConfigScrivi_(p.voci) : tpConfigLeggi_();
+  }
   const delComando = !!cn && !!pw && pw === tpPasswordComando_(cn);
   if (!generale && !delComando) {
     Utilities.sleep(800);   // rallenta chi prova password a raffica
     if (!cn && !universale) return {ok: false, errore: "scegli un Comando"};
     return {ok: false, errore: cn && !tpPasswordComando_(cn) && !generale ? "nessuna password impostata per questo Comando" : "password errata"};
   }
-  if (p.verifica) return {ok: true, generale: generale};
+  if (p.verifica) return {ok: true, generale: generale, super: sup};
   // la stessa persona due volte nello stesso invio: vale la modifica piu' recente
   const unica = {};
   (Array.isArray(p.voci) ? p.voci.slice(0, 1000) : []).forEach(v => {
@@ -195,6 +209,56 @@ function turniPersonalePost_(p) {
     });
     if (nuove.length) sh.getRange(sh.getLastRow() + 1, 1, nuove.length, TP_INT_.length).setValues(nuove);
     return {ok: true, salvati: salvati, ignorati: ignorati};
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   CONFIGURAZIONE DEI COMANDI CHE USANO SP (solo con una super password)
+   POST {foglio: "DB_Turni_Personale", password: <super>, config: "leggi"}
+        → {ok, comandi: [{comando, password, note, attivo}]}
+   POST {foglio: "DB_Turni_Personale", password: <super>, config: "scrivi", voci: [{comando, password, note}]}
+        → aggiorna (o aggiunge) le righe di DB_Password_Comandi. Password vuota = Comando non abilitato.
+   --------------------------------------------------------------------------- */
+function tpFoglioPwd_() {
+  const ss = SpreadsheetApp.openById("1rcBe5m4StM4KAG5YBEK5BLCIkSQBHLkKhaH7b_Qvb3c");
+  if (!ss.getSheetByName(TP_FOGLIO_PWD_)) preparaFoglioPassword();
+  return ss.getSheetByName(TP_FOGLIO_PWD_);
+}
+function tpConfigLeggi_() {
+  const dati = tpFoglioPwd_().getDataRange().getDisplayValues();
+  const comandi = [];
+  for (let i = 1; i < dati.length; i++) {
+    const c = String(dati[i][0] || "").trim();
+    if (!c) continue;
+    const pw = String(dati[i][1] || "").trim();
+    comandi.push({comando: c, password: pw, note: String(dati[i][2] || ""), attivo: !!pw});
+  }
+  return {ok: true, comandi: comandi};
+}
+function tpConfigScrivi_(voci) {
+  const lista = Array.isArray(voci) ? voci.slice(0, 200) : [];
+  if (!lista.length) return {ok: true, salvati: 0};
+  const lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    const sh = tpFoglioPwd_();
+    const dati = sh.getDataRange().getDisplayValues();
+    const riga = {};
+    for (let i = 1; i < dati.length; i++) if (dati[i][0]) riga[tpComando_(dati[i][0])] = i + 1;
+    let salvati = 0;
+    lista.forEach(v => {
+      const nome = tpTesto_(v && v.comando, 80), cn = tpComando_(nome);
+      if (!cn) return;
+      const pw = String(v.password == null ? "" : v.password).replace(/\s/g, "").slice(0, 40), note = tpTesto_(v.note, 200);
+      if (pw && (pw.length < 4 || /^[=+\-@']/.test(pw))) return;   // troppo corta o con un carattere da formula: si ignora
+      const n = riga[cn];
+      if (n) sh.getRange(n, 2, 1, 2).setValues([[pw, note]]);
+      else { sh.appendRow([nome, pw, note]); riga[cn] = sh.getLastRow(); }
+      salvati++;
+    });
+    return {ok: true, salvati: salvati};
   } finally {
     lock.releaseLock();
   }
