@@ -95,6 +95,9 @@
         </div>
 
         <div class="header-right">
+            <button id="btn-addestramenti" class="btn-icon-hamburger btn-icon-testo" type="button"
+                title="Addestramenti odierni (PUMA)"><img class="addestr-logo-btn" src="images/puma.jpg"
+                    alt="PUMA"><span class="addestr-badge" hidden></span></button>
             <!-- BIS: al posto degli 8 Passi, la finestra rapida degli specializzati disponibili (prospetto.js) -->
             <button id="btn-specializzati" class="btn-icon-hamburger btn-icon-testo" type="button"
                 title="Specializzati disponibili: adesso, tra 12 e tra 24 ore">SP</button>
@@ -1320,6 +1323,15 @@
         </div>
     </div>
 
+    <!-- MODALE GLI PUMA -->
+    <div id="modal-addestramenti" class="modal-overlay" style="display:none;">
+        <div class="modal-content chiudibile modal-content-largo">
+            <span class="modal-close" id="modal-addestramenti-close" title="Chiudi">&times;</span>
+            <h2><img class="addestr-logo-titolo" src="images/puma.jpg" alt=""> Addestramenti odierni (PUMA)</h2>
+            <div id="addestramenti-contenuto"></div>
+        </div>
+    </div>
+
     <!-- MODALE VADEMECUM EVENTO RILEVANTE -->
     <div id="modal-evento-rilevante" class="modal-overlay" style="display:none;">
         <div class="modal-content chiudibile modal-content-largo">
@@ -1380,6 +1392,7 @@
                 "messaggistica-bis.js", // BIS: Messaggistica estratta in modulo a sé, dopo script-bis.js
                 // (che espone window.FireOpsComandi/window.FireOps prima che serva qui)
                 "turnario.js",
+                "addestramenti.js",
                 "convertitore.js",
                 "fireops-sottopassi.js", // ripiego offline per il controllo camion
                 "percorso-camion-bis.js", // BIS/test: controllo camion e sottopassi nel percorso di soccorso

@@ -8843,10 +8843,18 @@ body.pros-pop-aperto { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) { .pros-pop-col.adesso h3::before { animation: none; } }
 @media (max-width: 800px) { .pros-pop-colonne.tre { grid-template-columns: 1fr; } }
 
-/* BIS: tasto SP (Specializzati disponibili) riconoscibile, coi colori dei turni */
-#btn-specializzati.btn-icon-hamburger {
-    background: linear-gradient(135deg, #e5484d 0 25%, #2f80ed 25% 50%, #27ae60 50% 75%, #f2994a 75% 100%) !important;
-    color: #fff !important; border-color: #fff !important; text-shadow: 0 1px 2px rgba(0, 0, 0, .7); font-weight: 900;
-    box-shadow: 0 0 0 2px rgba(255, 255, 255, .25);
+/* BIS: tasto SP (Specializzati disponibili). Stesso aspetto degli altri
+   tasti della testata; a riconoscerlo bastano quattro quadratini 2x2 coi
+   colori dei turni A, B, C, D, un po' spenti per non gridare. Disegnati
+   col ::before, senza toccare l'HTML. */
+#btn-specializzati.btn-icon-hamburger { gap: 4px; font-size: 14px; letter-spacing: 0; }
+#btn-specializzati.btn-icon-hamburger::before {
+    content: "";
+    flex: 0 0 13px;
+    height: 13px;
+    background:
+        linear-gradient(#c9484b, #c9484b) 0 0 / 6px 6px no-repeat,
+        linear-gradient(#3b74c4, #3b74c4) 7px 0 / 6px 6px no-repeat,
+        linear-gradient(#2f9257, #2f9257) 0 7px / 6px 6px no-repeat,
+        linear-gradient(#d8873f, #d8873f) 7px 7px / 6px 6px no-repeat;
 }
-#btn-specializzati.btn-icon-hamburger:hover { filter: brightness(1.15); box-shadow: 0 0 0 3px rgba(255, 215, 0, .7); }
