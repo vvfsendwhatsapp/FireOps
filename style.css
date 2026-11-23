@@ -8866,3 +8866,27 @@ body.pros-pop-aperto { overflow: hidden; }
     box-shadow: 0 0 0 2px rgba(255, 215, 0, .7);
 }
 #pros-app .pros-ordine { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-muted); }
+
+/* BIS — Radio e telefoni: SO attiva, sua Direzione e confinanti ben riconoscibili; riquadro "La tua SO" con TBT */
+html[data-fireops="bis"] #radio-telefoni .rt-tab .rt-attivo td { background: #ffd700 !important; color: #111 !important; font-weight: 700; }
+html[data-fireops="bis"] #radio-telefoni .rt-tab .rt-attivo .telefono-cliccabile { color: #0b3d91 !important; }
+html[data-fireops="bis"] #radio-telefoni .rt-tab .rt-limitrofo td { background: rgba(79, 140, 255, .22) !important; }
+html[data-fireops="bis"] #radio-telefoni .rt-tab .rt-limitrofo .rt-nome { box-shadow: inset 4px 0 0 #4f8cff; }
+html[data-fireops="bis"] #radio-telefoni .rt-tab .rt-della-dir td { background: rgba(47, 191, 113, .16) !important; }
+html[data-fireops="bis"] #radio-telefoni .rt-tab .rt-della-dir .rt-nome { box-shadow: inset 4px 0 0 #2fbf71; }
+html[data-fireops="bis"] #radio-telefoni .rt-tab .rt-dir-mia th, html[data-fireops="bis"] #radio-telefoni .rt-tab .rt-dir-mia td { background: #b8860b !important; color: #fff !important; }
+html[data-fireops="bis"] #radio-telefoni .rt-tab .rt-dir-lim th, html[data-fireops="bis"] #radio-telefoni .rt-tab .rt-dir-lim td { background: #2c4f8a !important; color: #fff !important; }
+.rt-tag { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 8px; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; vertical-align: middle; white-space: nowrap; }
+.rt-tag-mia { background: #111; color: #ffd700; }
+.rt-tag-lim { background: #4f8cff; color: #fff; }
+.rt-tag-dir { background: #2fbf71; color: #08240f; }
+.rt-mio { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; margin: 0 0 10px; padding: 10px 12px; border-radius: 8px; border: 2px solid #ffd700; background: rgba(255, 215, 0, .08); }
+.rt-mio-voce { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.rt-mio-et { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); }
+.rt-mio-ch { font-family: ui-monospace, Menlo, monospace; font-weight: 700; color: #ffd700; font-size: 15px; }
+.rt-mio-limiti { flex-basis: 100%; }
+.rt-mio-lim { padding: 1px 7px; border-radius: 10px; background: rgba(79, 140, 255, .2); border: 1px solid #4f8cff; font-size: 12.5px; }
+.rt-mio-lim b { font-family: ui-monospace, Menlo, monospace; }
+.rt-mio-tbt { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; padding-top: 6px; border-top: 1px dashed rgba(255, 215, 0, .4); font-size: 13px; }
+.rt-mio-tbt b { color: #ffd700; font-family: ui-monospace, Menlo, monospace; font-size: 14px; }
+.riga-tbt th { color: #ffd700 !important; }

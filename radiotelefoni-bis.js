@@ -125,12 +125,29 @@ function nazionali(comandi){
    primo numero che si cerca è quasi sempre di un vicino. */
 function statoAttivo(){
   const a = window.FireOpsComandoAttivo;
+  const lim = new Set(val(a && a[CAMPI.confinanti]).split(';').map(s => s.trim()).filter(Boolean));
+  const eDir = !!(a && a.tipo === 'direzione');
   return {
     nome: val(a && a.Comando),
     regione: val(a && a.Regione),
-    lim: new Set(val(a && a[CAMPI.confinanti]).split(';').map(s => s.trim()).filter(Boolean))
+    lim, eDir, record: a || null, dir: val(a && a[CAMPI.dir]),
+    // con una Direzione regionale attiva: i suoi Comandi e le Direzioni confinanti
+    comDir: new Set(eDir ? (a.comandiDirezione || []) : []),
+    limDir: new Set(eDir ? Array.from(lim).map(n => regione(n)) : [])
   };
 }
+/* Le frequenze TBT di una regione, per la Home di script.js (stessa fonte, una sola). */
+function aeronauticiPer(reg){
+  const r = norm(reg);
+  return {
+    regionale: AERONAUTICI.filter(v => (v.regioni || []).some(y => norm(y) === r)).flatMap(v => v.mhz),
+    nazionale: (AERONAUTICI.find(v => v.naz && !v.mod && !/militare/i.test(v.area || '')) || {}).mhz || [],
+    militare: (AERONAUTICI.find(v => /militare/i.test(v.area || '')) || {}).mhz || [],
+    capitaneria: ((AERONAUTICI.find(v => v.mod === 'FM') || {}).mhz || []).map(f => f + ' FM'),
+    fonte: AERO_FONTE
+  };
+}
+window.FireOpsAeronautici = aeronauticiPer;
 
 function trovaComando(nome){
   const n = norm(nome);
@@ -180,9 +197,13 @@ function cellaNumero(v, schermo){
   return `<td class="rt-num">${schermo ? numeroCopiabile(t) : esc(t)}</td>`;
 }
 
-function rigaDir(g, schermo, segue){
-  return `<tr class="rt-dir${segue ? ' rt-segue' : ''}">`
-    + `<th scope="rowgroup">${esc(nomeDirezione(g.nome, schermo))}`
+function rigaDir(g, schermo, segue, st){
+  const r = regione(g.nome);
+  const mia = !!(schermo && st && st.dir && regione(st.dir) === r);
+  const lim = !!(schermo && st && st.limDir && st.limDir.has(r));
+  const tag = mia ? ` <span class="rt-tag rt-tag-mia">${st.eDir ? 'SO attiva' : 'la tua Direzione'}</span>` : lim ? ' <span class="rt-tag rt-tag-lim">confinante</span>' : '';
+  return `<tr class="rt-dir${segue ? ' rt-segue' : ''}${mia ? ' rt-dir-mia' : ''}${lim ? ' rt-dir-lim' : ''}">`
+    + `<th scope="rowgroup">${esc(nomeDirezione(g.nome, schermo))}${tag}`
     + (segue ? ' <span class="rt-segue-et">segue</span>' : '') + `</th>`
     + `<td class="rt-ch">${esc(oTrattino(g.ch))}</td>`
     + cellaNumero(g.tel, schermo)
@@ -191,11 +212,14 @@ function rigaDir(g, schermo, segue){
 
 function rigaCom(c, st, schermo){
   const nome = val(c.Comando);
-  const classe = (nome === st.nome ? ' rt-attivo' : '') + (st.lim.has(nome) ? ' rt-limitrofo' : '');
+  const attivo = nome === st.nome, lim = st.lim.has(nome), dellaDir = !!(st.comDir && st.comDir.has(nome));
+  const classe = (attivo ? ' rt-attivo' : '') + (lim ? ' rt-limitrofo' : '') + (dellaDir ? ' rt-della-dir' : '');
+  const tag = !schermo ? '' : attivo ? ' <span class="rt-tag rt-tag-mia">SO attiva</span>'
+    : lim ? ' <span class="rt-tag rt-tag-lim">confinante</span>' : dellaDir ? ' <span class="rt-tag rt-tag-dir">della Direzione</span>' : '';
   const cerca = schermo ? ` data-cerca="${esc(norm([nome, c.Provincia, c[CAMPI.comCh],
     c[CAMPI.comTel]].join(' ')))}" data-nome="${esc(nome)}"` : '';
   return `<tr class="rt-com${classe}"${cerca}>`
-    + `<td class="rt-nome">${esc(nome)}</td>`
+    + `<td class="rt-nome">${esc(nome)}${tag}</td>`
     + `<td class="rt-ch">${esc(oTrattino(c[CAMPI.comCh]))}</td>`
     + cellaNumero(c[CAMPI.comTel], schermo)
     + `</tr>`;
@@ -388,9 +412,9 @@ function aggiorna(){
       + `SO di ${esc(st.nome)}</span><span class="rt-legenda-voce">`
       + `<i class="rt-campione rt-campione-lim"></i>Comandi confinanti</span></p>`
     : '';
-  elenco.innerHTML = legenda + `<table class="rt-tab">${COLONNE}${TESTATA}`
+  elenco.innerHTML = riquadroMio(st) + `<table class="rt-tab">${COLONNE}${TESTATA}`
     + gruppi.map(g => `<tbody class="rt-gruppo" data-cerca="${esc(norm([g.nome, g.ch, g.tel].join(' ')))}">`
-      + rigaDir(g, true, false)
+      + rigaDir(g, true, false, st)
       + g.comandi.map(c => rigaCom(c, st, true)).join('')
       + `</tbody>`).join('')
     + `</table><p class="rt-vuoto pagina-nota" hidden></p>`;
@@ -405,6 +429,27 @@ function aggiorna(){
 }
 
 
+
+/* In cima all'elenco, "La tua Sala Operativa": canale e telefono della SO attiva, della sua
+   Direzione, i confinanti col loro canale e la frequenza TBT della regione. */
+function riquadroMio(st){
+  if (!st.nome || !st.record) return '';
+  const a = st.record, comandi = Array.isArray(window.FireOpsComandi) ? window.FireOpsComandi : [];
+  const voce = (et, nome, ch, tel) => `<div class="rt-mio-voce"><span class="rt-mio-et">${et}</span><b>${esc(nome)}</b>`
+    + `<span class="rt-mio-ch">CH ${esc(oTrattino(ch))}</span>${tel ? numeroCopiabile(tel) : ''}</div>`;
+  const lim = Array.from(st.lim).map(n => {
+    const c = comandi.find(x => val(x.Comando) === n) || (window.FireOpsDirezioniAttivabili || []).find(x => val(x.Comando) === n);
+    return `<span class="rt-mio-lim">${esc(n)}${c ? ` <b>${esc(oTrattino(c[CAMPI.comCh]))}</b>` : ''}</span>`;
+  }).join('');
+  const regs = st.eDir ? Array.from(new Set(comandi.filter(c => c[CAMPI.dir] === st.dir).map(c => c.Regione).filter(Boolean))) : (st.regione ? [st.regione] : []);
+  const tbt = regs.map(r => { const f = aeronauticiPer(r).regionale; return `<span><b>${esc(f.length ? f.join(' · ') : 'nessuna regionale: ' + aeronauticiPer(r).nazionale.join(' · '))}</b> ${esc(r)}</span>`; }).join('');
+  return `<div class="rt-mio">`
+    + voce('SO attiva', st.nome, a[CAMPI.comCh], a[CAMPI.comTel])
+    + (st.eDir ? '' : voce('Direzione', 'Direzione ' + regione(st.dir), a[CAMPI.dirCh], a[CAMPI.dirTel]))
+    + (lim ? `<div class="rt-mio-voce rt-mio-limiti"><span class="rt-mio-et">${st.eDir ? 'Direzioni confinanti' : 'Comandi confinanti'}</span>${lim}</div>` : '')
+    + (tbt ? `<div class="rt-mio-tbt"><span class="rt-mio-et">TBT regionale</span>${tbt}</div>` : '')
+    + `</div>`;
+}
 
 /* Se l'elenco non c'è ancora — dati arrivati prima che la sezione fosse
    nel DOM, o un avvio andato storto — il primo gesto lo costruisce. */
@@ -527,4 +572,4 @@ function avvia(){
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', avvia);
 else avvia();
-})();
+})();

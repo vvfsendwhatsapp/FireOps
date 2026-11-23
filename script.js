@@ -23,6 +23,24 @@ document.addEventListener("DOMContentLoaded", () => {
     // ha i Comandi della regione. In produzione questo elenco resta vuoto e nulla cambia.
     const BIS_DIREZIONI = document.documentElement.dataset.fireops === "bis";
     let direzioniComeComandi = [];
+    // BIS: frequenze TBT (terra-bordo-terra) dalla Direttiva COAU, la stessa fonte di radiotelefoni-bis.js
+    // (window.FireOpsAeronautici): un solo elenco da aggiornare ogni anno
+    function regioniDi(c) {
+        if (!c) return [];
+        if (c.tipo === "direzione") return Array.from(new Set(comandiData.filter(x => x["Direzione VVF"] === c["Direzione VVF"]).map(x => x.Regione).filter(Boolean)));
+        return c.Regione ? [c.Regione] : [];
+    }
+    function righeTBT(c) {
+        if (!BIS_DIREZIONI || typeof window.FireOpsAeronautici !== "function") return "";
+        const regs = regioniDi(c);
+        if (!regs.length) return "";
+        const una = window.FireOpsAeronautici(regs[0]);
+        const reg = regs.map(r => { const f = window.FireOpsAeronautici(r).regionale; return (f.length ? f.join(" · ") + " MHz" : "nessuna regionale (usare la nazionale)") + (regs.length > 1 ? " — " + r : ""); }).join("<br>");
+        return `<tr class="riga-tbt"><th>TBT regionale</th><td><b>${reg}</b></td></tr>`
+            + (una.nazionale.length ? `<tr class="riga-tbt"><th>TBT nazionale</th><td>${una.nazionale.join(" · ")} MHz</td></tr>` : "")
+            + (una.militare.length ? `<tr class="riga-tbt"><th>TBT militare (sec.)</th><td>${una.militare.join(" · ")} MHz</td></tr>` : "")
+            + (una.capitaneria.length ? `<tr class="riga-tbt"><th>Capitaneria (CH 16)</th><td>${una.capitaneria.join(" · ")}</td></tr>` : "");
+    }
     const trovaAttivabile = nome => comandiData.find(c => c.Comando === nome) || direzioniComeComandi.find(d => d.Comando === nome);
 
     Promise.all([
@@ -1046,6 +1064,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         <tr><th>TEL SO COM</th><td>${creaCampoCopiabile(comando["Telefono SO Comando"], 'telefono')}</td></tr>
                         <tr><th>CH VHF COM</th><td>${comando["Canale Radio Comando"] || "-"}</td></tr>
                         <tr><th>CHS SO COM</th><td>${comando["CHS Comando"] || "-"}</td></tr>
+                        ${righeTBT(comando)}
                         <tr><th>Email SO Comando</th><td>${creaCampoCopiabile(comando["email SO Comando"], 'email')}</td></tr>
                         <tr><th>PEC SO Comando</th><td>${creaCampoCopiabile(comando["PEC SO Comando"], 'email')}</td></tr>
                         <tr><th>Email Comando</th><td>${creaCampoCopiabile(comando["email Comando"], 'email')}</td></tr>
