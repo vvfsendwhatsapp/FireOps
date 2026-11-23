@@ -304,3 +304,6 @@
 #sitac-app .sitac-freq-riga select { flex: 1 1 auto !important; width: auto !important; }
 #sitac-app .sitac-freq-riga button { flex: 0 0 auto !important; width: auto !important; padding: 6px 14px; }
 #sitac-app .sitac-freq-altra[hidden] { display: none; }
+/* SITAC su pannello stretto o telefono (anche nell'app Pro): i campi uno sotto l'altro.
+   Gli span delle 12 colonne creavano colonne implicite e i campi restavano a metà. */
+#sitac-app.sitac-stretto .sitac-pannello[data-scheda="dati"] .sitac-dati > * { grid-column: 1/-1 !important; }

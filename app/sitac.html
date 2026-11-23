@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="it" data-fireops="bis">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>SITAC · FireOps VVF Pro</title>
+  <link rel="icon" type="image/png" href="../images/logo.png">
+  <meta name="theme-color" content="#e0a800">
+  <link rel="manifest" href="manifest.webmanifest">
+  <!--
+    SITAC nell'app FireOps VVF Pro, anche senza rete.
+    Il markup della SITAC NON è copiato qui: si legge dalla sezione #sitac-aib
+    di ../index-bis.html, così resta sempre allineato a sitac.js (se manca un
+    pulsante, sitac.js non parte). Il service worker (sw.js) tiene in cache
+    questa pagina, index-bis.html, gli script, Leaflet e le tessere della mappa
+    già viste: aperta una volta con la rete, funziona anche offline.
+    Scheda "Foto": scatta o carica una foto e disegnaci sopra frecce e scritte.
+  -->
+  <script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(function () {});</script>
+  <script>document.write('<script src="js/versione.js?t=' + Date.now() + '"><\/script>');</script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.15.0/dist/leaflet-geoman.css">
+  <script>
+    var V = window.FIREOPS_VERSIONE || "0";
+    document.write('<link rel="stylesheet" href="../style.css?v=' + V + '">');
+    document.write('<link rel="stylesheet" href="../style-bis.css?v=' + V + '">');
+  </script>
+  <style>
+    html, body { margin: 0 !important; padding: 0 !important; height: 100%; background: var(--dark-color, #111); }
+    body { display: flex; flex-direction: column; overflow: hidden; }
+    .ps-testa { flex: 0 0 auto; display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+      padding-top: calc(8px + env(safe-area-inset-top)); background: #e0a800; border-bottom: 3px solid #5c4200; color: #241800; }
+    .ps-testa a.ps-home { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px;
+      border-radius: 10px; background: #241800; color: #ffd24a; text-decoration: none; font-size: 20px; flex: 0 0 auto; }
+    .ps-testa h1 { margin: 0; font-size: 18px; line-height: 1.1; color: #241800; }
+    .ps-testa p { margin: 0; font-size: 11.5px; color: #33230a; }
+    .ps-tit { flex: 1; min-width: 0; }
+    .ps-rete { font-size: 11px; font-weight: bold; padding: 3px 8px; border-radius: 10px; background: #241800; color: #8fe39b; white-space: nowrap; }
+    .ps-rete.off { color: #ff8a8a; }
+    .ps-schede { flex: 0 0 auto; display: flex; gap: 0; background: #1a1a1a; border-bottom: 1px solid #333; }
+    .ps-schede button { flex: 1; padding: 11px 6px; font-size: 15px; font-weight: bold; border: 0; background: transparent;
+      color: #bbb; border-bottom: 3px solid transparent; cursor: pointer; }
+    .ps-schede button.attivo { color: #ffd700; border-bottom-color: #ffd700; }
+    .ps-corpo { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 8px; }
+    .ps-corpo[hidden] { display: none; }
+    /* La SITAC prende tutta l'altezza che resta sotto la testata dell'app */
+    #ps-sitac #sitac-aib { display: block !important; }
+    #ps-sitac #sitac-app { height: calc(100dvh - 150px - env(safe-area-inset-top)); min-height: 420px; }
+    #ps-sitac .btn-fullscreen-pagina { display: none !important; }
+    #ps-sitac .pagina-box-header { margin-bottom: 8px !important; flex-wrap: wrap; gap: 6px; }
+    #ps-sitac .sitac-sez-stretta .pagina-nota-inline { flex-basis: 100%; text-align: left; font-size: 12px; }
+    .ps-msg { padding: 20px; color: #ddd; font-size: 15px; }
+
+    /* ---------- FOTO ---------- */
+    #ps-foto { display: flex; flex-direction: column; gap: 8px; }
+    #ps-foto[hidden] { display: none; }
+    .pf-barra { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .pf-barra button, .pf-barra label.pf-btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 12px; font-size: 14px;
+      border-radius: 8px; border: 1px solid #555; background: #222; color: #eee; cursor: pointer; }
+    .pf-barra button.attivo { background: #ffd700; color: #111; border-color: #ffd700; font-weight: bold; }
+    .pf-barra button:disabled { opacity: .4; }
+    .pf-barra .pf-prim { background: #1f7a3a; border-color: #2aa04d; color: #fff; font-weight: bold; }
+    .pf-col { width: 30px; height: 30px; padding: 0 !important; border-radius: 50% !important; border: 2px solid #666 !important; }
+    .pf-col.attivo { outline: 3px solid #fff; outline-offset: 1px; }
+    .pf-sep { width: 1px; height: 28px; background: #444; margin: 0 2px; }
+    .pf-tela { position: relative; flex: 1 1 auto; min-height: 260px; background: #0c0c0c; border: 1px solid #333; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center; overflow: hidden; touch-action: none; }
+    .pf-tela canvas { max-width: 100%; max-height: 100%; touch-action: none; display: block; }
+    .pf-vuota { color: #999; text-align: center; padding: 30px 16px; font-size: 15px; line-height: 1.5; }
+    .pf-nota { font-size: 12px; color: #999; margin: 0; }
+    .pf-spess { display: inline-flex; align-items: center; gap: 6px; color: #ccc; font-size: 13px; }
+  </style>
+</head>
+
+<body>
+  <header class="ps-testa">
+    <a class="ps-home" href="user.html" title="Torna a FireOps Pro" aria-label="Torna a FireOps Pro">‹</a>
+    <div class="ps-tit">
+      <h1>SITAC</h1>
+      <p id="ps-sotto">Situazione tattica · anche senza rete</p>
+    </div>
+    <span class="ps-rete" id="ps-rete">online</span>
+  </header>
+  <nav class="ps-schede">
+    <button type="button" class="attivo" data-ps="sitac">🗺 SITAC</button>
+    <button type="button" data-ps="foto">📷 Foto con frecce</button>
+  </nav>
+
+  <div class="ps-corpo" id="ps-sitac"><p class="ps-msg">Caricamento della SITAC…</p></div>
+
+  <div class="ps-corpo" id="ps-foto" hidden>
+    <div class="pf-barra">
+      <label class="pf-btn pf-prim">📷 Scatta foto<input type="file" id="pf-scatta" accept="image/*" capture="environment" hidden></label>
+      <label class="pf-btn">🖼 Carica foto<input type="file" id="pf-carica" accept="image/*" hidden></label>
+      <span class="pf-sep"></span>
+      <button type="button" data-pf-str="freccia" class="attivo">➜ Freccia</button>
+      <button type="button" data-pf-str="doppia">⟷ Doppia</button>
+      <button type="button" data-pf-str="linea">／ Linea</button>
+      <button type="button" data-pf-str="testo">T Testo</button>
+    </div>
+    <div class="pf-barra">
+      <button type="button" class="pf-col attivo" data-pf-col="#e3001b" style="background:#e3001b" title="Rosso"></button>
+      <button type="button" class="pf-col" data-pf-col="#ffd400" style="background:#ffd400" title="Giallo"></button>
+      <button type="button" class="pf-col" data-pf-col="#1e6fff" style="background:#1e6fff" title="Blu"></button>
+      <button type="button" class="pf-col" data-pf-col="#13a538" style="background:#13a538" title="Verde"></button>
+      <button type="button" class="pf-col" data-pf-col="#ffffff" style="background:#ffffff" title="Bianco"></button>
+      <button type="button" class="pf-col" data-pf-col="#000000" style="background:#000000" title="Nero"></button>
+      <label class="pf-spess">Spessore <input type="range" id="pf-spess" min="2" max="14" value="6"></label>
+      <span class="pf-sep"></span>
+      <button type="button" id="pf-annulla" disabled>↶ Annulla</button>
+      <button type="button" id="pf-pulisci" disabled>🗑 Togli tutto</button>
+      <button type="button" id="pf-salva" class="pf-prim" disabled>💾 Salva / condividi</button>
+    </div>
+    <div class="pf-tela" id="pf-tela">
+      <div class="pf-vuota" id="pf-vuota">Scatta o carica una foto,<br>poi trascina il dito per disegnare le frecce<br>(dalla coda alla punta).</div>
+      <canvas id="pf-canvas" hidden></canvas>
+    </div>
+    <p class="pf-nota">La foto resta su questo telefono: niente viene inviato. "Salva" crea un'immagine con frecce e scritte, da condividere o allegare.</p>
+  </div>
+
+  <script>
+  (function () {
+    "use strict";
+    var V = window.FIREOPS_VERSIONE || "0";
+    var $ = function (id) { return document.getElementById(id); };
+
+    /* ---------- rete ---------- */
+    function rete() { var r = $("ps-rete"); r.textContent = navigator.onLine ? "online" : "offline"; r.classList.toggle("off", !navigator.onLine); }
+    window.addEventListener("online", rete); window.addEventListener("offline", rete); rete();
+
+    /* ---------- schede ---------- */
+    document.querySelector(".ps-schede").addEventListener("click", function (e) {
+      var b = e.target.closest("[data-ps]"); if (!b) return;
+      document.querySelectorAll(".ps-schede button").forEach(function (x) { x.classList.toggle("attivo", x === b); });
+      $("ps-sitac").hidden = b.dataset.ps !== "sitac";
+      $("ps-foto").hidden = b.dataset.ps !== "foto";
+      if (b.dataset.ps === "sitac") { var i = window.FireOps && FireOps.Sitac && FireOps.Sitac.get(); if (i) setTimeout(function () { i.ridisegna(); }, 50); }
+      else adattaTela();
+    });
+
+    /* ---------- script in ordine ---------- */
+    function script(src) {
+      return new Promise(function (ok, ko) {
+        var s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = function () { ko(new Error(src)); };
+        document.head.appendChild(s);
+      });
+    }
+
+    /* Comandi: per il Comando afferente della SITAC (provincia del DOS) e per partire dal proprio Comando */
+    function caricaComandi() {
+      return fetch("../db/comandi.json?v=" + V).then(function (r) { return r.json(); }).then(function (d) {
+        var l = Array.isArray(d) ? d : (d && d.comandi) || [];
+        window.FireOpsComandi = l;
+        var NS = (window.FireOps = window.FireOps || {});
+        NS.comandoPerProvincia = function (sigla, nome) {
+          var s = String(sigla || "").toUpperCase().replace(/^IT-/, "").trim();
+          if (s) { var p = l.find(function (c) { return String(c.Provincia || "").toUpperCase() === s; }); if (p) return p; }
+          var n = String(nome || "").toLowerCase().trim(); if (!n) return null;
+          return l.find(function (c) { return String(c.Comando || "").toLowerCase() === n || String(c.Comune || "").toLowerCase() === n; }) || null;
+        };
+        var man = null; try { man = localStorage.getItem("fireops_comando_manuale"); } catch (e) { }
+        var norm = function (s) { return String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z]/g, ""); };
+        if (man) window.FireOpsComandoAttivo = l.find(function (c) { return norm(c.Comando) === norm(man); }) || null;
+      }).catch(function () { /* senza comandi: la SITAC parte dal centro d'Italia */ });
+    }
+
+    /* Il markup della SITAC si prende da index-bis.html: una sola copia, sempre allineata a sitac.js */
+    function caricaMarkup() {
+      return fetch("../index-bis.html?v=" + V).then(function (r) { return r.text(); }).then(function (t) {
+        var doc = new DOMParser().parseFromString(t, "text/html");
+        var sez = doc.getElementById("sitac-aib");
+        if (!sez) throw new Error("sezione SITAC non trovata");
+        $("ps-sitac").innerHTML = "";
+        $("ps-sitac").appendChild(document.importNode(sez, true));
+      });
+    }
+
+    var CDN = [
+      "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js",
+      "https://unpkg.com/@geoman-io/leaflet-geoman-free@2.15.0/dist/leaflet-geoman.min.js",
+      "https://unpkg.com/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.js"
+    ];
+    var LOCALI = ["../fireops-sfondi.js", "../radiotelefoni-bis.js", "../sitac-simboli.js", "../sitac-vento.js",
+      "../sitac-rilievo.js", "../sitac.js", "../sitac-frequenze-bis.js"];
+
+    Promise.all([caricaComandi(), caricaMarkup()])
+      .then(function () { return CDN.reduce(function (p, s) { return p.then(function () { return script(s); }); }, Promise.resolve()); })
+      .then(function () { return LOCALI.reduce(function (p, s) { return p.then(function () { return script(s + "?v=" + V); }); }, Promise.resolve()); })
+      .then(function () { var i = window.FireOps && FireOps.Sitac && FireOps.Sitac.init(); if (i) i.ridisegna(); })
+      .catch(function (e) {
+        $("ps-sitac").innerHTML = '<p class="ps-msg">⚠️ La SITAC non si è caricata (' + String(e.message || e) + ').<br>'
+          + 'La prima apertura richiede la rete: dopo resta disponibile anche offline.</p>';
+      });
+
+    /* ======================= FOTO CON FRECCE ======================= */
+    var cv = $("pf-canvas"), ctx = cv.getContext("2d"), img = null, segni = [], bozza = null;
+    var strumento = "freccia", colore = "#e3001b";
+    /* Lo spessore si legge come lo si vede a schermo, non nei pixel della foto */
+    var spess = function () { var r = cv.getBoundingClientRect(); return +$("pf-spess").value * (r.width ? cv.width / r.width : 1); };
+
+    function apri(file) {
+      if (!file) return;
+      var url = URL.createObjectURL(file), im = new Image();
+      im.onload = function () {
+        /* Le foto del telefono sono enormi: si riduce a 2400 px sul lato lungo */
+        var k = Math.min(1, 2400 / Math.max(im.width, im.height));
+        var c = document.createElement("canvas"); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+        c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+        img = c; segni = []; cv.width = c.width; cv.height = c.height;
+        cv.hidden = false; $("pf-vuota").hidden = true;
+        URL.revokeObjectURL(url); adattaTela(); disegna(); stato();
+      };
+      im.src = url;
+    }
+    $("pf-scatta").onchange = function (e) { apri(e.target.files[0]); e.target.value = ""; };
+    $("pf-carica").onchange = function (e) { apri(e.target.files[0]); e.target.value = ""; };
+
+    function adattaTela() {
+      if (!img) return;
+      var t = $("pf-tela"), r = t.getBoundingClientRect();
+      var h = Math.max(260, window.innerHeight - r.top - 40);
+      t.style.height = h + "px";
+    }
+    window.addEventListener("resize", adattaTela);
+
+    function punta(c, x1, y1, x2, y2, w) {
+      var a = Math.atan2(y2 - y1, x2 - x1), L = w * 4.2;
+      c.beginPath(); c.moveTo(x2, y2);
+      c.lineTo(x2 - L * Math.cos(a - 0.42), y2 - L * Math.sin(a - 0.42));
+      c.lineTo(x2 - L * Math.cos(a + 0.42), y2 - L * Math.sin(a + 0.42));
+      c.closePath(); c.fill();
+    }
+    function segno(c, s) {
+      c.save(); c.strokeStyle = c.fillStyle = s.col; c.lineWidth = s.w; c.lineCap = "round"; c.lineJoin = "round";
+      /* Bordo scuro sotto: la freccia si legge su qualunque foto */
+      c.shadowColor = "rgba(0,0,0,.55)"; c.shadowBlur = s.w * 0.9;
+      if (s.t === "testo") {
+        c.font = "bold " + Math.round(s.w * 5) + "px Arial, sans-serif"; c.textBaseline = "middle";
+        c.lineWidth = Math.max(2, s.w * 0.6); c.strokeStyle = s.col === "#000000" ? "#fff" : "#000";
+        c.strokeText(s.txt, s.x1, s.y1); c.fillText(s.txt, s.x1, s.y1);
+      } else {
+        var a = Math.atan2(s.y2 - s.y1, s.x2 - s.x1), acc = s.t === "linea" ? 0 : s.w * 3.4;
+        var xa = s.x2 - acc * Math.cos(a), ya = s.y2 - acc * Math.sin(a);
+        var xb = s.t === "doppia" ? s.x1 + acc * Math.cos(a) : s.x1, yb = s.t === "doppia" ? s.y1 + acc * Math.sin(a) : s.y1;
+        c.beginPath(); c.moveTo(xb, yb); c.lineTo(xa, ya); c.stroke();
+        if (s.t !== "linea") punta(c, s.x1, s.y1, s.x2, s.y2, s.w);
+        if (s.t === "doppia") punta(c, s.x2, s.y2, s.x1, s.y1, s.w);
+      }
+      c.restore();
+    }
+    function disegna() {
+      if (!img) return;
+      ctx.clearRect(0, 0, cv.width, cv.height); ctx.drawImage(img, 0, 0);
+      segni.forEach(function (s) { segno(ctx, s); });
+      if (bozza) segno(ctx, bozza);
+    }
+    function stato() {
+      $("pf-annulla").disabled = !segni.length; $("pf-pulisci").disabled = !segni.length; $("pf-salva").disabled = !img;
+    }
+    function punto(e) {
+      var r = cv.getBoundingClientRect();
+      return { x: (e.clientX - r.left) * cv.width / r.width, y: (e.clientY - r.top) * cv.height / r.height };
+    }
+    cv.addEventListener("pointerdown", function (e) {
+      if (!img) return; e.preventDefault();
+      var p = punto(e);
+      if (strumento === "testo") {
+        var t = prompt("Testo da scrivere sulla foto:");
+        if (t && t.trim()) { segni.push({ t: "testo", txt: t.trim(), x1: p.x, y1: p.y, col: colore, w: spess() }); disegna(); stato(); }
+        return;
+      }
+      cv.setPointerCapture(e.pointerId);
+      bozza = { t: strumento, x1: p.x, y1: p.y, x2: p.x, y2: p.y, col: colore, w: spess() };
+    });
+    cv.addEventListener("pointermove", function (e) { if (!bozza) return; var p = punto(e); bozza.x2 = p.x; bozza.y2 = p.y; disegna(); });
+    function fine() {
+      if (!bozza) return;
+      if (Math.hypot(bozza.x2 - bozza.x1, bozza.y2 - bozza.y1) > bozza.w * 3) segni.push(bozza);
+      bozza = null; disegna(); stato();
+    }
+    cv.addEventListener("pointerup", fine); cv.addEventListener("pointercancel", fine);
+
+    document.querySelectorAll("[data-pf-str]").forEach(function (b) {
+      b.onclick = function () { strumento = b.dataset.pfStr; document.querySelectorAll("[data-pf-str]").forEach(function (x) { x.classList.toggle("attivo", x === b); }); };
+    });
+    document.querySelectorAll("[data-pf-col]").forEach(function (b) {
+      b.onclick = function () { colore = b.dataset.pfCol; document.querySelectorAll("[data-pf-col]").forEach(function (x) { x.classList.toggle("attivo", x === b); }); };
+    });
+    $("pf-annulla").onclick = function () { segni.pop(); disegna(); stato(); };
+    $("pf-pulisci").onclick = function () { if (confirm("Togliere tutte le frecce e le scritte?")) { segni = []; disegna(); stato(); } };
+    $("pf-salva").onclick = function () {
+      if (!img) return;
+      var d = new Date(), z = function (n) { return String(n).padStart(2, "0"); };
+      var nome = "SITAC-foto_" + d.getFullYear() + z(d.getMonth() + 1) + z(d.getDate()) + "_" + z(d.getHours()) + z(d.getMinutes()) + ".jpg";
+      cv.toBlob(function (b) {
+        var f = new File([b], nome, { type: "image/jpeg" });
+        if (navigator.canShare && navigator.canShare({ files: [f] })) {
+          navigator.share({ files: [f], title: nome }).catch(function () { });
+        } else {
+          var a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = nome;
+          document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+        }
+      }, "image/jpeg", 0.9);
+    };
+  })();
+  </script>
+</body>
+
+</html>

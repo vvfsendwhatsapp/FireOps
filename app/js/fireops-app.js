@@ -67,6 +67,8 @@
         {nome: "Problema del faro", ico: ICONE.faro, href: "#/trigo/faro", desc: "Distanza, quota o posizione di un punto, con l’alzo"},
         {nome: "Calcola area", ico: ICONE.area, href: "#/trigo/area", desc: "Superfici da foto, pianta a passi o mappa"}
       ]},
+    {id: "sitac", nome: "SITAC", ico: "🗺️", colore: "var(--ics-pianificazione)", testo: "#fff",
+      sotto: "Situazione tattica AIB e foto con le frecce, anche senza rete", href: "sitac.html"},
     {id: "puma", nome: "PUMA", ico: LOGO_PUMA, colore: "var(--ics-logistica)", testo: "#10141a",
       sotto: "Piattaforma Unificata Monitoraggio Addestramenti",
       voci: [
