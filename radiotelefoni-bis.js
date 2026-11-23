@@ -145,7 +145,8 @@ function aeronauticiPer(reg){
     regionale: AERONAUTICI.filter(v => (v.regioni || []).some(y => norm(y) === r)).flatMap(v => v.mhz),
     nazionale: (AERONAUTICI.find(v => v.naz && !v.mod && !/militare/i.test(v.area || '')) || {}).mhz || [],
     militare: (AERONAUTICI.find(v => /militare/i.test(v.area || '')) || {}).mhz || [],
-    capitaneria: ((AERONAUTICI.find(v => v.mod === 'FM') || {}).mhz || []).map(f => f + ' FM'),
+    capitaneria: ((AERONAUTICI.find(v => v.mod === 'FM') || {}).mhz || []).map(f => f + ' MHz FM'),
+    emergenza: EMERGENZA_AERO,
     fonte: AERO_FONTE
   };
 }
@@ -260,8 +261,8 @@ function bloccoNaz(n, schermo){
    TBT nazionale e militare, Capitaneria ed emergenza aeronautica. */
 function vociAeroNaz(){
   const a = aeronauticiPer('');
-  const mhz = (v, mod) => `<span class="rt-naz-dato"><span class="rt-naz-et">${mod || 'MHz'}</span>`
-    + `<b class="rt-naz-ch rt-naz-mhz">${esc(v)}</b></span>`;
+  const mhz = (v, mod) => `<span class="rt-naz-dato"><span class="rt-naz-et">FREQ</span>`
+    + `<b class="rt-naz-ch rt-naz-mhz">${esc(v)}</b><span class="rt-um">${mod || 'MHz AM'}</span></span>`;
   const voce = (nome, desc, v, mod, cl) => `<div class="rt-naz-voce${cl ? ' ' + cl : ''}"><span class="rt-naz-nome">${nome}</span>`
     + `<span class="rt-naz-desc">${desc}</span>${mhz(v, mod)}<span></span></div>`;
   return voce('TBT NAZIONALE', 'Aeromobili AIB, tutto il territorio', a.nazionale.join(' · '))
@@ -425,10 +426,10 @@ function htmlTbt(g){
   });
   const piu = perFq.size > 1;
   const voci = [...perFq.entries()].map(([f, rr]) => f
-    ? `<span class="rt-tbt-voce"><b class="rt-tbt-fq">${esc(f)}</b>${piu ? ` <span class="rt-tbt-reg">${esc(rr.join(', '))}</span>` : ''}</span>`
-    : `<span class="rt-tbt-voce"><b class="rt-tbt-fq">${esc(naz)}</b> <span class="rt-tbt-reg">(nazionale${piu ? ' · ' + esc(rr.join(', ')) : ''})</span></span>`);
+    ? `<span class="rt-tbt-voce"><b class="rt-tbt-fq">${esc(f)}</b> <span class="rt-um">MHz</span>${piu ? ` <span class="rt-tbt-reg">${esc(rr.join(', '))}</span>` : ''}</span>`
+    : `<span class="rt-tbt-voce"><b class="rt-tbt-fq">${esc(naz)}</b> <span class="rt-um">MHz</span> <span class="rt-tbt-reg">(nazionale${piu ? ' · ' + esc(rr.join(', ')) : ''})</span></span>`);
   const soloNaz = !regs.length || [...perFq.keys()].every(f => !f);
-  return voci.join('') + (soloNaz ? '' : `<span class="rt-tbt-voce rt-tbt-piu">+ naz. ${esc(naz)}</span>`);
+  return voci.join('') + (soloNaz ? '' : `<span class="rt-tbt-voce rt-tbt-piu">+ naz. ${esc(naz)} MHz</span>`);
 }
 
 /* Testata della scheda: il nome su tutta la larghezza, sotto canale regionale,

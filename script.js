@@ -35,10 +35,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const regs = regioniDi(c);
         if (!regs.length) return "";
         const una = window.FireOpsAeronautici(regs[0]);
-        const reg = regs.map(r => { const f = window.FireOpsAeronautici(r).regionale; return (f.length ? f.join(" · ") + " MHz" : "nessuna regionale (usare la nazionale)") + (regs.length > 1 ? " — " + r : ""); }).join("<br>");
+        const reg = regs.map(r => { const f = window.FireOpsAeronautici(r).regionale; return (f.length ? f.join(" · ") + " MHz" : una.nazionale.join(" · ") + " MHz (nazionale)") + (regs.length > 1 ? " — " + r : ""); }).join("<br>");
         return `<tr class="riga-tbt"><th>TBT regionale</th><td><b>${reg}</b></td></tr>`
             + (una.nazionale.length ? `<tr class="riga-tbt"><th>TBT nazionale</th><td>${una.nazionale.join(" · ")} MHz</td></tr>` : "")
             + (una.militare.length ? `<tr class="riga-tbt"><th>TBT militare (sec.)</th><td>${una.militare.join(" · ")} MHz</td></tr>` : "")
+            + `<tr class="riga-tbt"><th>Emergenza aeronautica</th><td>${una.emergenza || "121.500"} MHz AM (MAYDAY · PAN PAN)</td></tr>`
             + (una.capitaneria.length ? `<tr class="riga-tbt"><th>Capitaneria (CH 16)</th><td>${una.capitaneria.join(" · ")}</td></tr>` : "");
     }
     const trovaAttivabile = nome => comandiData.find(c => c.Comando === nome) || direzioniComeComandi.find(d => d.Comando === nome);
