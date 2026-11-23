@@ -9269,3 +9269,6 @@ body.pros-pop-aperto { overflow: hidden; }
 #prospetto-disponibilita .pros-cfg .pros-cfg-pw { font-family: ui-monospace, Menlo, monospace; }
 #prospetto-disponibilita .pros-cfg-az { white-space: nowrap; }
 #prospetto-disponibilita .pros-cfg-az .pros-mini + .pros-mini { margin-left: 4px; }
+#prospetto-disponibilita .pros-tel-m, .pros-pop .pros-tel-m { font-family: ui-monospace, Menlo, monospace; white-space: nowrap; opacity: .9; }
+#prospetto-disponibilita .pros-tel-lock, .pros-pop .pros-tel-lock { font-size: 11px; opacity: .7; cursor: help; }
+#prospetto-disponibilita .pros-vedi, .pros-pop .pros-vedi { padding: 0 5px; }

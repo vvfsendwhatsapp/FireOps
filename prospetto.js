@@ -35,6 +35,10 @@ const GID = '84413100';
 const QUERY = 'select A,B,C,D,F,G';
 const URL_PUMA = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:csv&headers=1&gid=' + GID +
   '&tq=' + encodeURIComponent(QUERY);
+/* Prima scelta: l'esportazione CSV del foglio, colonne A:G come sono scritte. gviz invece "indovina" il tipo di
+   ogni colonna: se quasi tutti i cellulari sono numeri, quelli scritti come testo ("+39 …", "366 …") arrivano VUOTI.
+   Se l'esportazione non risponde si torna a gviz. */
+const URL_PUMA_CSV = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/export?format=csv&gid=' + GID + '&range=A1:G';
 
 const WEBAPP = 'https://script.google.com/macros/s/AKfycbyp6jQ331Yk5q7_hkM74ZyhUh1c3zQUJG7SpuoE18HslBO36YKSTYIQf-z7gSwXR4Yv/exec';
 const LS_TURNI = 'fireops_prospetto_turni';   // copia locale {chiavePersona: {t: 'A', s: '4', ts: ms}}
@@ -131,6 +135,21 @@ let sblocco = {stato: '', errore: ''};   // '', 'verifica', 'ok', 'err'
 function comandoDiChiave(k) { return String(k || '').split('|')[2] || ''; }
 function pwdPer(cn) { return pwds[cn] || pwds['*'] || ''; }
 function puoModificare(k) { return !!pwdPer(comandoDiChiave(k)); }
+/* Numeri di telefono: per sicurezza si vedono solo le ultime 4 cifre. Il numero intero (e la chiamata)
+   solo dopo aver sbloccato il Comando con la password, toccando 👁. */
+const numeriVisti = new Set();
+const ultime4 = c => String(c || '').replace(/\D/g, '').slice(-4);
+const telMascherato = c => c ? '••• ' + ultime4(c) : '';
+const telVisibile = p => !!p.cell && puoModificare(p.k) && numeriVisti.has(p.k);
+function htmlTel(p, conCopia) {
+  if (!p.cell) return '';
+  if (telVisibile(p)) return `<a href="tel:${esc(p.cell)}">📞 ${esc(p.cell)}</a> <button type="button" class="pros-mini pros-vedi" data-vedi="${esc(p.k)}" title="Nascondi il numero">🙈</button>`
+    + (conCopia ? ` <button type="button" class="pros-mini" data-copia="${esc(p.cell)}" title="Copia il numero">📋</button>` : '');
+  return `<span class="pros-tel-m" title="Numero nascosto per sicurezza">📞 ${esc(telMascherato(p.cell))}</span>`
+    + (puoModificare(p.k) ? ` <button type="button" class="pros-mini pros-vedi" data-vedi="${esc(p.k)}" title="Mostra il numero">👁</button>`
+      : ' <span class="pros-tel-lock" title="Sblocca il Comando con la password (Gestione personale) per vedere il numero intero">🔒</span>');
+}
+const telCsv = p => !p.cell ? '' : puoModificare(p.k) ? p.cell : telMascherato(p.cell);
 function sbloccato() { return eDirezione(f.comando) ? !!pwds['*'] : !!pwdPer(normComando(f.comando)); }
 let cella = null;                                     // prospetto: {corso, turno} di cui mostrare i nomi
 const f = Object.assign({comando: '', data: '', fascia: fasciaAdesso(), corso: '', qual: '', testo: '', stato: '', scheda: 'prospetto', quando: 0, senzaTurno: false},
@@ -192,11 +211,26 @@ function siglaCorso(c) { const m = String(c).match(/^([^(]+?)\s*\(/); const rest
 async function carica() {
   carico = {stato: 'carico', errore: '', ora: carico.ora}; disegna();
   try {
-    const r = await fetch(URL_PUMA + '&_=' + Date.now(), {cache: 'no-store'});
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    const testo = await r.text();
-    if (/^\s*</.test(testo)) throw new Error('il foglio PUMA non e\' leggibile (non condiviso con link?)');
-    const tab = parseCSV(testo);
+    let tab = null;
+    try {
+      const r = await fetch(URL_PUMA_CSV + '&_=' + Date.now(), {cache: 'no-store'});
+      const t = r.ok ? await r.text() : '';
+      if (t && !/^\s*</.test(t)) tab = parseCSV(t).map(c => [c[0], c[1], c[2], c[3], c[5], c[6]]);   // A,B,C,D,F,G come la query
+    } catch (e) { /* si prova con gviz */ }
+    if (!tab) {
+      const r = await fetch(URL_PUMA + '&_=' + Date.now(), {cache: 'no-store'});
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const testo = await r.text();
+      if (/^\s*</.test(testo)) throw new Error('il foglio PUMA non e\' leggibile (non condiviso con link?)');
+      tab = parseCSV(testo);
+    }
+    const celPer = new Map();   // persona -> numero della registrazione piu' recente che ce l'ha
+    tab.slice(1).forEach(c => {
+      const nc = String(c[1] || ''), i = nc.lastIndexOf(' - ');
+      const id = (i > 0 ? nc.slice(i + 3).trim().toUpperCase() : '') || norm(i > 0 ? nc.slice(0, i) : nc);
+      const cel = String(c[4] || '').replace(/[^\d+]/g, '');
+      if (id && cel.replace(/\D/g, '').length >= 6 && !celPer.has(id)) celPer.set(id, cel);
+    });
     const mappa = new Map(), visti = new Set();
     tab.slice(1).forEach(c => {
       // "Cognome Nome - CODICEFISCALE": il codice fiscale serve solo a riconoscere le registrazioni
@@ -207,7 +241,7 @@ async function carica() {
       const id = cf || norm(nominativo);
       if (visti.has(id)) return;              // c'e' gia' la registrazione piu' recente (il foglio e' ordinato dalla piu' nuova)
       visti.add(id);
-      const p = {cognome: titolo(nominativo), nome: '', cell: String(c[4] || '').replace(/[^\d+]/g, ''),
+      const p = {cognome: titolo(nominativo), nome: '', cell: celPer.get(id) || String(c[4] || '').replace(/[^\d+]/g, ''),
         qual: (c[3] || '').trim().toUpperCase(), qualPuma: (c[3] || '').trim().toUpperCase(), comando: (c[2] || '').trim().replace(/\s+/g, ' '), corsi: dividiCorsi(c[5])};
       p.corsiPuma = p.corsi;
       p.k = chiave(p);
@@ -347,6 +381,7 @@ async function cfgSalva(comando, password, note) {
     await cfgRichiesta({config: 'scrivi', voci: [{comando, password, note}]});
     // si rilegge dal foglio: lo stato a schermo è quello vero, non quello che si sperava di aver scritto
     const j = await cfgRichiesta({config: 'leggi'}); cfg.comandi = j.comandi || cfg.comandi;
+    comandiSP = cfg.comandi.filter(x => x.attivo).map(x => normComando(x.comando)); scrivi(LS_SP, comandiSP); applicaAbilitazione();
   } catch (e) { cfg.errore = comando + ': ' + (e.message || String(e)); }
   cfg.salvo = ''; disegna();
 }
@@ -361,7 +396,7 @@ function htmlConfig() {
       <td><input type="text" class="pros-cfg-pw" value="${esc(c.password)}" placeholder="password (min 4)" autocomplete="off" spellcheck="false"></td>
       <td><input type="text" class="pros-cfg-note" value="${esc(c.note)}" placeholder="note (referente, data…)"></td>
       <td class="pros-cfg-az">${cfg.salvo === c.comando ? '⏳'
-        : `<button type="button" class="pros-mini" data-cfg-salva="1">💾 Salva</button>${c.attivo ? '<button type="button" class="pros-mini" data-cfg-off="1">Disattiva</button>' : ''}`}</td></tr>`;
+        : `<button type="button" class="pros-mini" data-cfg-salva="1">💾 Salva</button>${c.attivo && attivi > 1 ? '<button type="button" class="pros-mini" data-cfg-off="1">Disattiva</button>' : c.attivo ? '<span class="pros-nota" title="Deve restare almeno un Comando abilitato">ultimo abilitato</span>' : ''}`}</td></tr>`;
   return `<div class="pros-cfg">
     <div class="pros-cfg-testa"><b>⚙️ Comandi che usano SP</b> <span>${attivi} abilitati su ${cfg.comandi.length}</span>
       <input type="search" id="pros-cfg-filtro" placeholder="Cerca un Comando…" value="${esc(cfg.filtro || '')}">
@@ -552,7 +587,7 @@ function filtrati(sigla) {
   const l = delComando().filter(p => {
     if (f.qual && p.qual !== f.qual) return false;
     if (f.corso && !p.corsi.includes(f.corso)) return false;
-    if (testo && !norm(p.cognome + p.nome + p.cell).includes(testo)) return false;
+    if (testo && !norm(p.cognome + p.nome + (puoModificare(p.k) ? p.cell : ultime4(p.cell))).includes(testo)) return false;
     if (f.stato && statoPersona(p, sigla) !== f.stato) return false;
     return true;
   });
@@ -635,7 +670,7 @@ function htmlProspetto(corsiDisp, qualDisp, base, stati) {
   const voce = (p, t, extra) => {
     const tt = turni[p.k] || {}, inSalto = t === adesso.sel.l && tt.s && String(tt.s) === adesso.sel.n;
     const aperto = numeriAperti.has(p.k);
-    return `<li class="pros-cliccabile${inSalto ? ' salto' : ''}${extra ? ' ' + extra : ''}${aperto ? ' aperto' : ''}" data-num="${esc(p.k)}" title="${esc((p.cell ? 'Tocca per il numero · ' : '') + p.corsi.join(', '))}"><span class="q">${esc(p.qual)}</span> <span class="n">${esc(p.cognome)}${p.manuale ? ' ✍️' : ''}${etSenzaCorso(p)}</span>${tt.s && t !== 'NO' ? `<span class="s">${esc(t + tt.s)}</span>` : ''}${t === 'NO' && tt.t && tt.t !== 'NO' ? `<span class="s" title="Turno ${esc(NOME_TURNO(tt.t))}${tt.s ? ', salto ' + esc(tt.s) : ''}: non operativo per ${esc(NOME_SETTORE[settore] || '')}">${esc(NOME_TURNO(tt.t) + (tt.s || ''))}</span>` : ''}${f.comando && !eDirezione(f.comando) ? '' : `<span class="c">${esc(p.comando)}</span>`}${aperto ? `<span class="tel">${p.cell ? `<a href="tel:${esc(p.cell)}">📞 ${esc(p.cell)}</a> <button type="button" class="pros-mini" data-copia="${esc(p.cell)}" title="Copia il numero">📋</button>` : '<span class="pros-nota">numero non presente su PUMA</span>'}</span>` : ''}</li>`;
+    return `<li class="pros-cliccabile${inSalto ? ' salto' : ''}${extra ? ' ' + extra : ''}${aperto ? ' aperto' : ''}" data-num="${esc(p.k)}" title="${esc((p.cell ? 'Tocca per il numero · ' : '') + p.corsi.join(', '))}"><span class="q">${esc(p.qual)}</span> <span class="n">${esc(p.cognome)}${p.manuale ? ' ✍️' : ''}${etSenzaCorso(p)}</span>${tt.s && t !== 'NO' ? `<span class="s">${esc(t + tt.s)}</span>` : ''}${t === 'NO' && tt.t && tt.t !== 'NO' ? `<span class="s" title="Turno ${esc(NOME_TURNO(tt.t))}${tt.s ? ', salto ' + esc(tt.s) : ''}: non operativo per ${esc(NOME_SETTORE[settore] || '')}">${esc(NOME_TURNO(tt.t) + (tt.s || ''))}</span>` : ''}${f.comando && !eDirezione(f.comando) ? '' : `<span class="c">${esc(p.comando)}</span>`}${aperto ? `<span class="tel">${p.cell ? htmlTel(p, true) : '<span class="pros-nota">numero non presente su PUMA</span>'}</span>` : ''}</li>`;
   };
   const righeFascia = [['FUN', 'Funzionari del settore'], ['ROP', 'Responsabile operativo provinciale'], ['MAG', 'Magazziniere generale']]
     .map(([r, tit]) => [tit, fascia.filter(p => ORDINE_RUOLI[rangoRuolo(p, settore)] === r)]);
@@ -643,7 +678,7 @@ function htmlProspetto(corsiDisp, qualDisp, base, stati) {
   <div class="pros-fascia-settore">
     <div class="tit">Settore <b>${esc(NOME_SETTORE[settore])}</b></div>
     ${righeFascia.map(([tit, l]) => `
-    <div class="riga"><div class="ruolo">${esc(tit)}</div><div class="nomi">${l.length ? l.map(p => `<span class="pers" title="${esc(p.corsi.join(', '))}"><span class="q">${esc(p.qual)}</span> <b>${esc(p.cognome)}</b>${p.manuale ? ' ✍️' : ''}${etSenzaCorso(p)} <span class="t">${esc(turnoTesto(p))}</span>${p.cell ? ` <a href="tel:${esc(p.cell)}">📞 ${esc(p.cell)}</a>` : ''}${f.comando && !eDirezione(f.comando) ? '' : ` <span class="c">${esc(p.comando)}</span>`}</span>`).join('') : '<span class="pros-nota">— non assegnato (scheda Gestione personale, ✏️ Ruoli)</span>'}</div></div>`).join('')}
+    <div class="riga"><div class="ruolo">${esc(tit)}</div><div class="nomi">${l.length ? l.map(p => `<span class="pers" title="${esc(p.corsi.join(', '))}"><span class="q">${esc(p.qual)}</span> <b>${esc(p.cognome)}</b>${p.manuale ? ' ✍️' : ''}${etSenzaCorso(p)} <span class="t">${esc(turnoTesto(p))}</span>${p.cell ? ' ' + htmlTel(p) : ''}${f.comando && !eDirezione(f.comando) ? '' : ` <span class="c">${esc(p.comando)}</span>`}</span>`).join('') : '<span class="pros-nota">— non assegnato (scheda Gestione personale, ✏️ Ruoli)</span>'}</div></div>`).join('')}
   </div>` : '';
   return `
   <div class="pros-testa">
@@ -729,7 +764,7 @@ function htmlGestione(corsiDisp, qualDisp, base, stati) {
         <td data-l="Personale"><b>${esc(p.cognome)}</b> ${esc(p.nome)}${p.manuale ? ` <span class="pros-man">✍️ aggiunto a mano</span>${aperto ? ` <button type="button" class="pros-mini" data-man-mod="${esc(p.k)}" title="Modifica">✏️</button> <button type="button" class="pros-mini danger" data-man-del="${esc(p.k)}" title="Elimina">🗑️</button>` : ''}` : ''}${f.comando && !eDirezione(f.comando) ? '' : `<div class="pros-com">${esc(p.comando)}</div>`}</td>
         <td data-l="Qualifica">${aperto ? `<select data-qual="1" title="${p.qualPuma && p.qual !== p.qualPuma ? 'Su PUMA: ' + esc(p.qualPuma) : 'Qualifica'}">${Array.from(new Set(QUAL_MAN.concat(p.qual ? [p.qual] : []))).map(q => `<option${q === p.qual ? ' selected' : ''}>${esc(q)}</option>`).join('')}</select>${p.qualPuma && p.qual !== p.qualPuma ? `<div class="pros-com">PUMA: ${esc(p.qualPuma)}</div>` : ''}` : esc(p.qual)}</td>
         <td data-l="Corsi">${p.corsi.map(c => `<span class="pros-chip${c === f.corso ? ' on' : ''}" title="${esc(c)}">${esc(siglaCorso(c))}</span>`).join('') || '<span class="pros-nota">—</span>'}</td>
-        <td data-l="Cellulare">${p.cell ? `<a href="tel:${esc(p.cell)}">${esc(p.cell)}</a>` : ''}</td>
+        <td data-l="Cellulare">${htmlTel(p)}</td>
         <td data-l="Turno"><select data-campo="t"${dis}><option value="">—</option>${TURNI.map(x => `<option value="${x}"${x === t.t ? ' selected' : ''}>${x === 'NO' ? 'N.O. – Non operativo' : NOME_TURNO(x)}</option>`).join('')}</select></td>
         <td data-l="Salto"><select data-campo="s"${SENZA_SALTO(t.t) || !aperto ? ' disabled' : ''}><option value="">—</option>${SALTI.map(x => `<option${x === String(t.s || '') ? ' selected' : ''}>${x}</option>`).join('')}</select></td>
         <td data-l="Ruoli"><div class="pros-ruoli-cella">${htmlRuoli(p, '') || '<span class="pros-nota">—</span>'}${aperto ? ` <button type="button" class="pros-mini" data-ruoli="${esc(p.k)}" title="Ruoli per settore">${modRuoli === p.k ? '✕ Chiudi' : '✏️ Ruoli'}</button>` : ''}</div></td>
@@ -841,7 +876,7 @@ function htmlRichiamo(corsiDisp, qualDisp, base, stati) {
     const t = turni[p.k] || {};
     return `<tr><td data-l="Qualifica" class="q">${esc(p.qual)}</td>
       <td data-l="Nome" title="${esc(p.corsi.join(', '))}"><b>${esc(p.cognome)}</b> ${esc(p.nome)}${p.manuale ? ' ✍️' : ''} ${htmlRuoli(p, settoreDi(f.corso))}${f.comando && !eDirezione(f.comando) ? '' : `<div class="pros-com">${esc(p.comando)}</div>`}</td>
-      <td data-l="Numero">${p.cell ? `<a href="tel:${esc(p.cell)}">📞 ${esc(p.cell)}</a>` : '<span class="pros-nota">—</span>'}</td>
+      <td data-l="Numero">${p.cell ? htmlTel(p) : '<span class="pros-nota">—</span>'}</td>
       <td data-l="Turno" class="c">${esc(NOME_TURNO(t.t || '—'))}</td>
       <td data-l="Salto" class="c">${esc(t.s || '—')}</td></tr>`;
   };
@@ -874,7 +909,7 @@ function esportaRichiamo() {
   const out = [[quandoTesto(T) + ' - ' + etichettaTurno(T.sel) + (f.corso ? ' - corso ' + f.corso : '')].map(q).join(';'),
     ['Gruppo', 'Qualifica', 'Nome', 'Numero', 'Turno', 'Salto', 'Ruoli', 'Comando', 'Corsi'].map(q).join(';')];
   const st = settoreDi(f.corso);
-  GRUPPI_RICHIAMO.forEach(k => ordina(g[k]).forEach(p => { const t = turni[p.k] || {}; out.push([tit[k], p.qual, p.cognome, p.cell, NOME_TURNO(t.t || ''), t.s || '', testoRuoli(p, st), p.comando, p.corsi.join(' | ')].map(q).join(';')); }));
+  GRUPPI_RICHIAMO.forEach(k => ordina(g[k]).forEach(p => { const t = turni[p.k] || {}; out.push([tit[k], p.qual, p.cognome, telCsv(p), NOME_TURNO(t.t || ''), t.s || '', testoRuoli(p, st), p.comando, p.corsi.join(' | ')].map(q).join(';')); }));
   scarica('richiamo_' + T.roma.iso + '_' + String(T.roma.h).padStart(2, '0') + '.csv', '\ufeff' + out.join('\r\n'), 'text/csv;charset=utf-8');
 }
 
@@ -890,7 +925,7 @@ function esportaCSV() {
   const sigla = siglaFascia();
   const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
   const righeCsv = [['Personale', 'Qualifica', 'Comando', 'Cellulare', 'Corsi', 'Turno', 'Salto', 'Ruoli per settore'].map(q).join(';')];
-  filtrati(sigla).forEach(p => { const t = turni[p.k] || {}; righeCsv.push([p.cognome, p.qual, p.comando, p.cell, p.corsi.join(' | '), NOME_TURNO(t.t || ''), t.s || '', testoRuoli(p, '')].map(q).join(';')); });
+  filtrati(sigla).forEach(p => { const t = turni[p.k] || {}; righeCsv.push([p.cognome, p.qual, p.comando, telCsv(p), p.corsi.join(' | '), NOME_TURNO(t.t || ''), t.s || '', testoRuoli(p, '')].map(q).join(';')); });
   scarica('personale_turni_' + oggiISO() + '.csv', '﻿' + righeCsv.join('\r\n'), 'text/csv;charset=utf-8');
 }
 function importa(file) {
@@ -921,6 +956,7 @@ function eventi() {
       if (li) { const k = li.dataset.num; if (numeriAperti.has(k)) numeriAperti.delete(k); else numeriAperti.add(k); disegna(); }
       return;
     }
+    if (b.dataset.vedi) { if (numeriVisti.has(b.dataset.vedi)) numeriVisti.delete(b.dataset.vedi); else numeriVisti.add(b.dataset.vedi); disegna(); return; }
     if (b.dataset.copia) {
       const v = b.dataset.copia;
       const fatto = () => { b.textContent = '✅'; setTimeout(() => { b.textContent = '📋'; }, 1200); };
@@ -957,6 +993,7 @@ function eventi() {
       const tr = b.closest('tr[data-cfg]'); if (!tr) return;
       const pw = b.dataset.cfgOff ? '' : tr.querySelector('.pros-cfg-pw').value.replace(/\s/g, '');
       if (pw && pw.length < 4) { alert('La password deve avere almeno 4 caratteri.'); return; }
+      if (!pw && cfg.comandi.filter(x => x.attivo && x.comando !== tr.dataset.cfg).length === 0) { alert('Deve restare almeno un Comando abilitato a SP.'); return; }
       if (b.dataset.cfgOff && !confirm('Disattivare SP per ' + tr.dataset.cfg + '? La sua password viene cancellata.')) return;
       cfgSalva(tr.dataset.cfg, pw, tr.querySelector('.pros-cfg-note').value.trim());
       return;
@@ -1105,7 +1142,7 @@ function disegnaPopup() {
       <h3>${tit} <span class="pros-quanti">${tot}</span><small>${esc(quandoTesto(T))} · ${esc(etichettaTurno(T.sel))}</small></h3>
       ${GRUPPI_RICHIAMO.map(k => `<div class="pros-pop-gr pros-g-${k}"><div class="gt">${esc(ng[k])} <span>${g[k].length}</span></div>
         ${g[k].length ? `<ul>${ordina(g[k]).map(p => { const t = turni[p.k] || {};
-          return `<li><span class="q">${esc(p.qual)}</span> <b>${esc(p.cognome)}</b>${p.manuale ? ' ✍️' : ''} <span class="t">${esc(NOME_TURNO(t.t || '') + (t.s || ''))}</span>${p.cell ? ` <a href="tel:${esc(p.cell)}">📞 ${esc(p.cell)}</a>` : ''}</li>`; }).join('')}</ul>` : '<div class="vuoto">—</div>'}</div>`).join('')}
+          return `<li><span class="q">${esc(p.qual)}</span> <b>${esc(p.cognome)}</b>${p.manuale ? ' ✍️' : ''} <span class="t">${esc(NOME_TURNO(t.t || '') + (t.s || ''))}</span>${p.cell ? ' ' + htmlTel(p) : ''}</li>`; }).join('')}</ul>` : '<div class="vuoto">—</div>'}</div>`).join('')}
     </div>`; }).join('')}</div>
     <p class="pros-nota">Solo chi ha il corso scelto e un turno impostato; esclusi i non operativi del settore o del corso. Turni e salti si impostano in Prospetto specializzati → Gestione personale.</p>`;
 }
@@ -1153,8 +1190,54 @@ function apriSezione() {
   if (sez) setTimeout(() => sez.scrollIntoView({block: 'start'}), 200);
 }
 function chiudiPopup() { if (popup) popup.hidden = true; document.body.classList.remove('pros-pop-aperto'); }
-document.addEventListener('click', e => { if (e.target.closest('#btn-specializzati')) apriPopup(); });
+document.addEventListener('click', e => {
+  if (e.target.closest('#btn-specializzati')) { apriPopup(); return; }
+  const v = e.target.closest('.pros-pop [data-vedi]');
+  if (v) { if (numeriVisti.has(v.dataset.vedi)) numeriVisti.delete(v.dataset.vedi); else numeriVisti.add(v.dataset.vedi); disegnaPopup(); }
+});
 
 NS.Prospetto = {avvia, carica, scaricaTurni, apriPopup, _turno: turnoAlMomento, _dati: () => ({righe, turni, f, carico, coda, sync})};
+/* ============================== COMANDI ABILITATI A SP ==============================
+ * Un Comando senza password sul foglio (DB_Password_Comandi) non usa SP: per lui spariscono il tasto SP e la
+ * voce "Prospetto specializzati" dai menu. Per una Direzione basta un suo Comando abilitato.
+ * L'elenco (solo i nomi, mai le password) arriva dalla Web App e resta in memoria per l'uso senza rete;
+ * se non si e' mai potuto leggere, non si nasconde niente.
+ */
+const LS_SP = 'fireops_sp_comandi';
+let comandiSP = leggi(LS_SP, null);
+const opzioniTolte = new Map();   // select -> {opt, prima}
+function spAbilitato() {
+  if (!Array.isArray(comandiSP)) return true;
+  const a = window.FireOpsComandoAttivo;
+  if (!a) return true;
+  if (a.tipo === 'direzione') return (a.comandiDirezione || []).some(n => comandiSP.includes(normComando(n)));
+  return comandiSP.includes(normComando(a.Comando));
+}
+function applicaAbilitazione() {
+  const ok = spAbilitato();
+  const btn = document.getElementById('btn-specializzati');
+  if (btn) btn.hidden = !ok;
+  if (!ok && popup) chiudiPopup();
+  document.querySelectorAll('select').forEach(sel => {
+    const opt = sel.querySelector('option[value="prospetto-disponibilita"]');
+    if (!ok && opt) {
+      if (sel.value === 'prospetto-disponibilita') { sel.value = 'homepage'; sel.dispatchEvent(new Event('change', {bubbles: true})); }
+      opzioniTolte.set(sel, {opt, prima: opt.nextSibling}); opt.remove();
+    } else if (ok && !opt && opzioniTolte.has(sel)) {
+      const t = opzioniTolte.get(sel); sel.insertBefore(t.opt, t.prima && t.prima.parentNode === sel ? t.prima : null); opzioniTolte.delete(sel);
+    }
+  });
+}
+async function scaricaComandiSP() {
+  try {
+    const j = await chiedi(WEBAPP + '?turniPersonale=&comandiSP=1&_=' + Date.now(), {cache: 'no-store'}, 15000);
+    if (Array.isArray(j.comandi)) { comandiSP = j.comandi.map(normComando); scrivi(LS_SP, comandiSP); }
+  } catch (e) { /* senza rete: vale l'ultimo elenco letto */ }
+  applicaAbilitazione();
+}
+document.addEventListener('fireops:comando-attivo-cambiato', () => setTimeout(applicaAbilitazione, 0));
+function avviaAbilitazione() { applicaAbilitazione(); scaricaComandiSP(); setTimeout(applicaAbilitazione, 1500); }
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', avviaAbilitazione); else avviaAbilitazione();
+
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', avvia); else avvia();
 })();

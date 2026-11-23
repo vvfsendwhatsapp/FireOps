@@ -91,7 +91,11 @@ function tpTesto_(v, max) {
 }
 
 // GET ?turniPersonale=<comando normalizzato, vuoto = tutti>
+// GET ?turniPersonale=&comandiSP=1  → {ok, comandi: [nomi dei Comandi abilitati]} (senza le password)
 function turniPersonaleGet_(q) {
+  if (q.comandiSP !== undefined) {
+    return {ok: true, comandi: tpConfigLeggi_().comandi.filter(c => c.attivo).map(c => c.comando)};
+  }
   const comando = String(q.turniPersonale || "").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 60);
   const dati = tpFoglio_().getDataRange().getDisplayValues();
   const turni = {};
@@ -250,6 +254,11 @@ function tpConfigScrivi_(voci) {
     const dati = sh.getDataRange().getDisplayValues();
     const righe = {};   // tutte le righe di ciascun Comando: se e' scritto due volte si aggiornano entrambe
     for (let i = 1; i < dati.length; i++) { const cn = tpComando_(dati[i][0]); if (cn) (righe[cn] = righe[cn] || []).push(i + 1); }
+    // deve restare almeno un Comando abilitato: si controlla prima di scrivere
+    const attivi = {};
+    for (let i = 1; i < dati.length; i++) if (dati[i][0] && String(dati[i][1] || "").trim()) attivi[tpComando_(dati[i][0])] = true;
+    lista.forEach(v => { const cn = tpComando_(v && v.comando); if (cn) { if (String((v && v.password) || "").trim()) attivi[cn] = true; else delete attivi[cn]; } });
+    if (!Object.keys(attivi).length) return {ok: false, errore: "deve restare almeno un Comando abilitato"};
     let salvati = 0;
     lista.forEach(v => {
       const nome = tpTesto_(v && v.comando, 80), cn = tpComando_(nome);
