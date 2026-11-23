@@ -173,3 +173,17 @@
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
+/* =========================================================================
+   TASTO PUMA in testata: il logo riempie il tasto, con lo stesso filo di
+   3 px dei quadratini del tasto SP accanto. Il logo è quadrato e il tasto
+   più largo che alto: cover taglia un poco sopra e sotto (il bordo nero
+   del logo), la scritta P.U.M.A. resta intera.
+   ========================================================================= */
+#btn-addestramenti.btn-icon-hamburger { padding: 3px; }
+#btn-addestramenti img.addestr-logo-btn {
+    width: 100%;
+    height: 100%;
+    border-radius: 2px;
+    object-fit: cover;
+}
