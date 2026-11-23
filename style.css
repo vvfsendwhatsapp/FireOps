@@ -8788,3 +8788,37 @@ button.pros-chip.on { background: var(--pros-g); color: #000; }
 #pros-app .pros-magt.mt .et::before { content: "▣ "; color: #2d6fa8; }
 #pros-app .pros-col .pros-magt li, #pros-app .pros-col .pros-magt li:nth-child(even) { background: transparent; }
 #pros-app .pros-col .pros-magt li:not(.vuota), #pros-app .pros-col .pros-magt li:nth-child(odd):not(.vuota), #pros-app .pros-col .pros-magt li:nth-child(even):not(.vuota) { background: transparent; }
+
+/* Finestra rapida "Specializzati disponibili" (tasto SP, prospetto.js) */
+.pros-pop { position: fixed; inset: 0; z-index: 2100; background: rgba(10, 14, 20, .6); display: flex; align-items: flex-start; justify-content: center; padding: 3vh 12px; overflow-y: auto; }
+.pros-pop[hidden] { display: none; }
+body.pros-pop-aperto { overflow: hidden; }
+.pros-pop-box { --tc: #5f6b7a; width: min(1280px, 100%); background: #cfd5dd; color: #1d2733; border-radius: 10px; border: 1px solid #9ea8b4; box-shadow: 0 12px 40px rgba(0, 0, 0, .45); font-size: 14px; }
+.pros-pop-testa { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 10px 14px; background: #3b4452; color: #fff; border-radius: 10px 10px 0 0; position: sticky; top: 0; z-index: 1; }
+.pros-pop-testa .tit { font-weight: 700; font-size: 16px; }
+.pros-pop-testa .tit .pros-pop-com { font-weight: 400; color: #ffd54a; margin-left: 6px; }
+.pros-pop-testa label { display: flex; align-items: center; gap: 8px; flex: 1 1 360px; min-width: 0; font-size: 12px; text-transform: uppercase; letter-spacing: .03em; }
+.pros-pop-testa select { flex: 1 1 auto; min-width: 0; padding: 6px 8px; border-radius: 5px; border: 1px solid #9ea8b4; background: #f4f6f8; color: #1d2733; font-size: 14px; text-transform: none; color-scheme: light; }
+.pros-pop-x { margin-left: auto; background: transparent; border: 1px solid #8b95a3; color: #fff; border-radius: 6px; width: 34px; height: 34px; font-size: 16px; cursor: pointer; }
+.pros-pop-x:hover { background: #c0392b; border-color: #c0392b; }
+.pros-pop-corpo { padding: 12px; }
+.pros-pop-corpo .pros-vuoto { padding: 28px 10px; text-align: center; color: #4a5563; border: 1px dashed #9ea8b4; border-radius: 8px; }
+.pros-pop-colonne { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.pros-pop-col { background: #e3e7ec; border: 1px solid #b6c0cc; border-radius: 8px; overflow: hidden; }
+.pros-pop-col:nth-child(1) { border-top: 5px solid #1f9d55; } .pros-pop-col:nth-child(2) { border-top: 5px solid #2d6fd6; } .pros-pop-col:nth-child(3) { border-top: 5px solid #7b57c9; }
+.pros-pop-col h3 { margin: 0; padding: 8px 10px; font-size: 16px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; background: #d5dae1; }
+.pros-pop-col h3 small { flex-basis: 100%; font-size: 12px; font-weight: 400; color: #4a5563; }
+.pros-pop-col h3 .pros-quanti { margin-left: auto; padding: 1px 9px; border-radius: 10px; background: #3b4452; color: #fff; font-size: 13px; }
+.pros-pop-gr { border-left: 4px solid #9aa6b4; margin: 6px 8px; background: #f1f3f6; border-radius: 4px; }
+.pros-pop-gr.pros-g-libero { border-left-color: #27ae60; } .pros-pop-gr.pros-g-saltoSel { border-left-color: #d63384; }
+.pros-pop-gr.pros-g-saltoPrec { border-left-color: #2f80ed; } .pros-pop-gr.pros-g-saltoSucc { border-left-color: #f2994a; }
+.pros-pop-gr .gt { display: flex; justify-content: space-between; padding: 4px 8px; font-size: 12px; font-weight: 700; color: #3b4452; background: #e6e9ed; }
+.pros-pop-gr ul { list-style: none; margin: 0; padding: 0; }
+.pros-pop-gr li { padding: 4px 8px; font-size: 13px; border-top: 1px solid #e0e4e9; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; }
+.pros-pop-gr li:nth-child(even) { background: #e9ecf0; }
+.pros-pop-gr li .q { min-width: 34px; font-weight: 700; color: #8a5a00; font-size: 12px; }
+.pros-pop-gr li .t { font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: #4a5563; background: #fff; padding: 0 4px; border-radius: 3px; }
+.pros-pop-gr li a { margin-left: auto; color: #1d2733; white-space: nowrap; font-weight: 600; }
+.pros-pop-gr .vuoto { padding: 3px 8px 5px; color: #6b7684; font-size: 12px; }
+.pros-pop-corpo .pros-nota { font-size: 12px; color: #4a5563; margin: 8px 2px 0; }
+@media (max-width: 800px) { .pros-pop-colonne { grid-template-columns: 1fr; } .pros-pop { padding: 0; } .pros-pop-box { border-radius: 0; min-height: 100%; } }

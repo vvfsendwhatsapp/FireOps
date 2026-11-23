@@ -518,6 +518,7 @@ function disegna() {
     : htmlProspetto(corsiDisp, qualDisp, base, stati);
   root.innerHTML = schede + corpo;
   pareggiaTeste();
+  if (popup && !popup.hidden) disegnaPopup();
 }
 // stessa altezza per le intestazioni delle colonne e per i riquadri in testa (responsabile e magazziniere
 // di turno), cosi' il personale sotto parte alla stessa altezza in tutti i turni
@@ -977,6 +978,68 @@ function avvia() {
   } else parti();
 }
 
-NS.Prospetto = {avvia, carica, scaricaTurni, _turno: turnoAlMomento, _dati: () => ({righe, turni, f, carico, coda, sync})};
+/* ============================== FINESTRA RAPIDA "SPECIALIZZATI" ==============================
+ * Tasto SP nell'intestazione di index-bis: una finestra con il corso da scegliere e tre colonne
+ * (adesso, tra 12 ore, tra 24 ore) con il personale richiamabile, come nella scheda Richiamo.
+ * Usa il Comando attivo; il corso scelto qui e' lo stesso del Prospetto.
+ */
+let popup = null;
+function richiamoPer(ore) {
+  const T = turnoAlMomento(Date.now() + ore * 3600e3);
+  const salva = {qual: f.qual, testo: f.testo};
+  f.qual = ''; f.testo = '';
+  const g = elencoRichiamo(T);
+  Object.assign(f, salva);
+  return {T, g};
+}
+function disegnaPopup() {
+  if (!popup) return;
+  const corpo = popup.querySelector('.pros-pop-corpo'), sel = popup.querySelector('#pros-pop-corso'), com = popup.querySelector('.pros-pop-com');
+  if (!f.comando && carico.stato === 'ok') f.comando = comandoDefault();
+  com.textContent = f.comando || 'Tutti i comandi';
+  const base = delComando();
+  const corsiDisp = Array.from(new Set(base.flatMap(p => p.corsi))).sort((a, b) => a.localeCompare(b, 'it'));
+  sel.innerHTML = `<option value="">${corsiDisp.length ? '— scegli il corso —' : (carico.stato === 'ok' ? 'Nessun corso' : 'Lettura da PUMA…')}</option>` +
+    corsiDisp.map(c => `<option value="${esc(c)}"${c === f.corso ? ' selected' : ''}>${esc(c)} — ${base.filter(p => p.corsi.includes(c)).length}</option>`).join('');
+  if (carico.stato !== 'ok') { corpo.innerHTML = `<div class="pros-vuoto">${carico.stato === 'err' ? '⚠️ PUMA non raggiungibile: ' + esc(carico.errore) : '⏳ Lettura del personale da PUMA…'}</div>`; return; }
+  if (!f.corso) { corpo.innerHTML = '<div class="pros-vuoto">Scegli il corso per vedere chi è richiamabile adesso, tra 12 e tra 24 ore.</div>'; return; }
+  const nomiGr = T => ({libero: 'Turno libero ' + (T.liberi.join(', ') || '—') + (T.gRichiamo ? ' e giornalieri' : ''), saltoSel: 'Salto ' + T.sel.sigla + ' (in turno)', saltoPrec: 'Salto ' + T.prec.sigla + ' (turno prima)', saltoSucc: 'Salto ' + T.succ.sigla + ' (turno dopo)'});
+  corpo.innerHTML = `<div class="pros-pop-colonne">${[[0, 'Adesso'], [12, 'Tra 12 ore'], [24, 'Tra 24 ore']].map(([ore, tit]) => {
+    const {T, g} = richiamoPer(ore), ng = nomiGr(T);
+    const tot = GRUPPI_RICHIAMO.reduce((n, k) => n + g[k].length, 0);
+    return `<div class="pros-pop-col">
+      <h3>${tit} <span class="pros-quanti">${tot}</span><small>${esc(quandoTesto(T))} · ${esc(etichettaTurno(T.sel))}</small></h3>
+      ${GRUPPI_RICHIAMO.map(k => `<div class="pros-pop-gr pros-g-${k}"><div class="gt">${esc(ng[k])} <span>${g[k].length}</span></div>
+        ${g[k].length ? `<ul>${ordina(g[k]).map(p => { const t = turni[p.k] || {};
+          return `<li><span class="q">${esc(p.qual)}</span> <b>${esc(p.cognome)}</b>${p.manuale ? ' ✍️' : ''} <span class="t">${esc(NOME_TURNO(t.t || '') + (t.s || ''))}</span>${p.cell ? ` <a href="tel:${esc(p.cell)}">📞 ${esc(p.cell)}</a>` : ''}</li>`; }).join('')}</ul>` : '<div class="vuoto">—</div>'}</div>`).join('')}
+    </div>`; }).join('')}</div>
+    <p class="pros-nota">Solo chi ha il corso scelto e un turno impostato; esclusi i non operativi del settore o del corso. Turni e salti si impostano in Prospetto specializzati → Gestione personale.</p>`;
+}
+function apriPopup() {
+  if (!popup) {
+    popup = document.createElement('div');
+    popup.id = 'pros-popup'; popup.className = 'pros-pop'; popup.hidden = true;
+    popup.innerHTML = `<div class="pros-pop-box" role="dialog" aria-label="Specializzati disponibili">
+      <div class="pros-pop-testa">
+        <div class="tit">Specializzati disponibili <span class="pros-pop-com"></span></div>
+        <label>Corso <select id="pros-pop-corso"></select></label>
+        <button type="button" class="pros-pop-x" title="Chiudi (Esc)">✕</button>
+      </div>
+      <div class="pros-pop-corpo"></div>
+    </div>`;
+    document.body.appendChild(popup);
+    popup.addEventListener('click', e => { if (e.target === popup || e.target.closest('.pros-pop-x')) chiudiPopup(); });
+    popup.querySelector('#pros-pop-corso').addEventListener('change', e => { f.corso = e.target.value; cella = null; salvaFiltri(); disegna(); disegnaPopup(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && popup && !popup.hidden) chiudiPopup(); });
+  }
+  popup.hidden = false;
+  document.body.classList.add('pros-pop-aperto');
+  if (carico.stato === 'vuoto' || carico.stato === 'err') carica(); else scaricaTurni();
+  disegnaPopup();
+}
+function chiudiPopup() { if (popup) popup.hidden = true; document.body.classList.remove('pros-pop-aperto'); }
+document.addEventListener('click', e => { if (e.target.closest('#btn-specializzati')) apriPopup(); });
+
+NS.Prospetto = {avvia, carica, scaricaTurni, apriPopup, _turno: turnoAlMomento, _dati: () => ({righe, turni, f, carico, coda, sync})};
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', avvia); else avvia();
 })();
