@@ -1254,6 +1254,9 @@ function avvia(app){
     if (barra) barra.classList.toggle('sitac-barra-spenta', !datiConvalidati);
     const lin = q('.sitac-scheda-btn[data-scheda="carta"]');
     if (lin) lin.classList.toggle('sitac-scheda-bloccata', !datiConvalidati);
+    /* La vista 3D è quella della SITAC planimetrica: si apre insieme alla carta */
+    const lin3 = q('.sitac-scheda-btn[data-scheda="3d"]');
+    if (lin3) lin3.classList.toggle('sitac-scheda-bloccata', !datiConvalidati);
   }
 
   function convalida(opz){
@@ -4552,7 +4555,7 @@ async function chiediLatoSimbolo(layer){
      L'handshake serve perché la finestra figlia chiede i dati quando è
      pronta: su rete lenta il documento arriva dopo il messaggio, e senza
      risposta resterebbe davanti a una carta vuota. */
-  function apri3D(){
+  function dati3D(){
     const feat = raccogli();
     /* I coni non stanno in `disegni` ma nei decori: sono stime, non
        rilievi, e per questo non finiscono nel GeoJSON esportato. Qui però
@@ -4571,15 +4574,20 @@ async function chiediLatoSimbolo(layer){
       };
       prendi(c.layer);
     });
-    if (!feat.length && !archi.length) return stato(t('nienteExport'));
+    return {fireops:'sitac3d',
+      geojson: {type:'FeatureCollection', features: feat},
+      coni: {type:'FeatureCollection', features: archi},
+      centro: posDos ? [posDos.lng, posDos.lat] : [map.getCenter().lng, map.getCenter().lat]};
+  }
+  function apri3D(){
+    const d = dati3D();
+    if (!d.geojson.features.length && !d.coni.features.length) return stato(t('nienteExport'));
     const w = window.open('sitac-3d.html', 'sitac3d',
       'width=1200,height=800,menubar=no,toolbar=no');
     if (!w) return stato('La finestra 3D è stata bloccata dal browser.');
     const rispondi = ev => {
       if (!ev.data || ev.data.fireops !== 'sitac3d-pronto') return;
-      w.postMessage({fireops:'sitac3d',
-        geojson: {type:'FeatureCollection', features: feat},
-        coni: {type:'FeatureCollection', features: archi}}, '*');
+      w.postMessage(d, '*');
     };
     window.addEventListener('message', rispondi);
     setTimeout(() => window.removeEventListener('message', rispondi), 15000);
@@ -5765,6 +5773,7 @@ async function stampa(){
         convalida({auto:1});
       vaiAScheda(b.dataset.scheda);
       if (b.dataset.scheda === 'carta' && !datiConvalidati) stato(t('cartaBloccata'));
+      if (b.dataset.scheda === '3d' && !datiConvalidati){ vaiAScheda('dati'); stato(t('cartaBloccata')); }
     };
   });
   if (window.ResizeObserver) new ResizeObserver(adatta).observe(app);
@@ -5794,6 +5803,8 @@ async function stampa(){
     lingua: lg => cambiaLingua(lg),
     stato: (tavola, s) => cambiaStato(tavola, s),
     esportaGeoJson: raccogli,
+    dati3D: () => dati3D(),
+    convalidata: () => datiConvalidati,
     vento: () => ventoCono,
     carica,
     pulisci: () => {

@@ -117,7 +117,7 @@
       "https://unpkg.com/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.js"
     ];
     var LOCALI = ["../fireops-sfondi.js", "../radiotelefoni.js", "../sitac-simboli.js", "../sitac-vento.js",
-      "../sitac-rilievo.js", "../sitac.js", "../sitac-frequenze.js", "../sitac-foto.js", "../sitac-mobile.js"];
+      "../sitac-rilievo.js", "../sitac.js", "../sitac-frequenze.js", "../sitac-foto.js", "../sitac-scheda3d.js", "../sitac-mobile.js"];
 
     Promise.all([caricaComandi(), caricaMarkup()])
       .then(function () { return CDN.reduce(function (p, s) { return p.then(function () { return script(s); }); }, Promise.resolve()); })

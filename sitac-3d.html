@@ -88,6 +88,27 @@
     width:1px; height:12px; background:rgba(255,255,255,.7);
     box-shadow:0 0 2px #000; }
 
+  /* Tasti per muoversi: spostare, avvicinare, ruotare, inclinare. Tenendo
+     premuto il movimento continua. Servono soprattutto su telefono e tablet,
+     dove i gesti a due dita per inclinare non sono ovvi. */
+  #muovi {
+    position:absolute; right:12px; bottom:34px; z-index:5;
+    display:grid; grid-template-columns:repeat(3, 40px); grid-auto-rows:auto; gap:4px;
+    background: rgba(31,34,40,.94); border:1px solid var(--bordo); border-radius:10px; padding:6px;
+    box-shadow:0 4px 16px rgba(0,0,0,.5); user-select:none; -webkit-user-select:none; touch-action:none;
+  }
+  #muovi button { width:40px; height:40px; padding:0; border-radius:7px; border:1px solid var(--bordo);
+    background:#2a2e36; color:var(--testo); font-size:18px; line-height:1; cursor:pointer; touch-action:none; }
+  #muovi button:active { background:#cc0000; border-color:#cc0000; }
+  #muovi .sep { grid-column:1 / -1; height:1px; margin:2px 0; background:var(--bordo); align-self:center; }
+  #muovi .vuoto { visibility:hidden; }
+  @media (max-width: 600px) {
+    #comandi { min-width:0; width:150px; padding:8px; }
+    #comandi .nota { display:none; }
+    #comandi button { font-size:11px; padding:5px 7px; }
+    #muovi { grid-template-columns:repeat(3, 36px); right:8px; bottom:30px; }
+    #muovi button { width:36px; height:36px; font-size:16px; }
+  }
   #avviso { position:absolute; inset:0; z-index:9;
     display:flex; align-items:center; justify-content:center;
     background:var(--fondo); font-size:14px; color:var(--spento);
@@ -110,6 +131,21 @@
     quote no. Trascina col tasto destro per inclinare e ruotare.</p>
 </div>
 
+<div id="muovi" aria-label="Muovi la vista 3D">
+  <button type="button" data-m="rotsx" title="Ruota a sinistra">⟲</button>
+  <button type="button" data-m="su" title="Sposta avanti">▲</button>
+  <button type="button" data-m="rotdx" title="Ruota a destra">⟳</button>
+  <button type="button" data-m="sx" title="Sposta a sinistra">◀</button>
+  <button type="button" data-m="centro" title="Inquadra il disegno">◎</button>
+  <button type="button" data-m="dx" title="Sposta a destra">▶</button>
+  <button type="button" data-m="incl" title="Inclina di più (vista più radente)">⤓</button>
+  <button type="button" data-m="giu" title="Sposta indietro">▼</button>
+  <button type="button" data-m="raddr" title="Raddrizza (vista più dall'alto)">⤒</button>
+  <div class="sep"></div>
+  <button type="button" data-m="zin" title="Avvicina">＋</button>
+  <button type="button" data-m="nord" title="Nord in alto">N</button>
+  <button type="button" data-m="zout" title="Allontana">－</button>
+</div>
 <div id="avviso">Attendo i dati dalla SITAC…</div>
 
 <script>
@@ -192,7 +228,9 @@ const map = new maplibregl.Map({
 map.addControl(new maplibregl.NavigationControl({visualizePitch: true}), 'top-right');
 map.addControl(new maplibregl.ScaleControl({maxWidth: 160, unit: 'metric'}), 'bottom-right');
 
+let caricata = false;
 map.on('load', () => {
+  caricata = true;
   map.setTerrain({source: 'dem', exaggeration: ESAGERA});
   /* Il cielo serve a capire dove finisce il terreno: senza, a vista
      radente l'orizzonte è un taglio netto sul vuoto e non si legge più
@@ -202,7 +240,7 @@ map.on('load', () => {
     'fog-color': '#b8c4cf', 'fog-ground-blend': 0.6,
     'sky-horizon-blend': 0.5, 'horizon-fog-blend': 0.5
   });
-  if (datiInAttesa){ disegna(datiInAttesa.fc, datiInAttesa.coni); datiInAttesa = null; }
+  if (datiInAttesa){ disegna(datiInAttesa.fc, datiInAttesa.coni, datiInAttesa.centro); datiInAttesa = null; }
 });
 
 /* -------------------------------------------------------------------
@@ -217,21 +255,27 @@ let pronti = false;
 window.addEventListener('message', ev => {
   const d = ev.data;
   if (!d || d.fireops !== 'sitac3d' || !d.geojson) return;
-  if (map.isStyleLoaded() && map.getTerrain()) disegna(d.geojson, d.coni);
-  else datiInAttesa = {fc: d.geojson, coni: d.coni};
+  /* `caricata` e non getTerrain(): se le tessere del rilievo tardano o mancano
+     il terreno non risulta ancora attivo, e i dati restavano in attesa per sempre */
+  if (caricata || map.isStyleLoaded()) disegna(d.geojson, d.coni, d.centro);
+  else datiInAttesa = {fc: d.geojson, coni: d.coni, centro: d.centro};
 });
 
 /* Handshake: la finestra figlia dice "ci sono" e la madre risponde coi
    dati. Senza, chi apre deve indovinare quando il documento è pronto, e
    su rete lenta il messaggio arriva prima della pagina. */
+/* Finestra a parte (aperta dal passo Importa ed Esporta) o scheda "SITAC 3D" dentro la SITAC (iframe) */
+const madre = window.opener || (window.parent !== window ? window.parent : null);
+const incorporata = !window.opener && window.parent !== window;
 function chiediDati(){
-  if (window.opener) window.opener.postMessage({fireops: 'sitac3d-pronto'}, '*');
+  if (madre) madre.postMessage({fireops: 'sitac3d-pronto'}, '*');
 }
 chiediDati();
 setTimeout(chiediDati, 400);
 setTimeout(() => {
   if (!pronti) $('avviso').textContent =
-    'Nessun dato ricevuto. Riapri la vista 3D dal passo "Importa ed Esporta" della SITAC.';
+    (incorporata ? 'Nessun dato ricevuto dalla SITAC planimetrica: convalida i dati e riapri la scheda.'
+      : 'Nessun dato ricevuto. Riapri la vista 3D dal passo "Importa ed Esporta" della SITAC.');
 }, 4000);
 
 /* -------------------------------------------------------------------
@@ -239,7 +283,8 @@ setTimeout(() => {
    ------------------------------------------------------------------- */
 const marcatori = [];
 
-function disegna(fc, fcConi){
+let giaInquadrato = false;
+function disegna(fc, fcConi, centro){
   pronti = true;
   $('avviso').hidden = true;
   marcatori.forEach(m => m.remove());
@@ -278,9 +323,14 @@ function disegna(fc, fcConi){
     + `${aree.length} aree · ${aerei.length} in volo`
     + ((fcConi && fcConi.features.length) ? ' · coni di propagazione' : '');
 
+  /* La camera si sposta solo la prima volta: riaprendo la scheda dopo aver
+     disegnato altro, la vista resta dove la si era lasciata. */
   if (!estremi.isEmpty()){
     inquadratura = estremi;
-    inquadra();
+    if (!giaInquadrato){ inquadra(); giaInquadrato = true; }
+  } else if (centro && !giaInquadrato){
+    map.jumpTo({center: centro, zoom: 14, pitch: 60});
+    giaInquadrato = true;
   }
 }
 
@@ -428,6 +478,46 @@ function inquadra(){
 }
 
 $('bInquadra').onclick = inquadra;
+
+/* Tasti per muoversi. Spostamento in pixel dello schermo, quindi "avanti"
+   è sempre verso dove si guarda, qualunque sia la rotazione. */
+const PASSO = 90;
+const MOSSE = {
+  su:    () => map.panBy([0, -PASSO], {duration: 180}),
+  giu:   () => map.panBy([0, PASSO], {duration: 180}),
+  sx:    () => map.panBy([-PASSO, 0], {duration: 180}),
+  dx:    () => map.panBy([PASSO, 0], {duration: 180}),
+  zin:   () => map.easeTo({zoom: map.getZoom() + 0.5, duration: 180}),
+  zout:  () => map.easeTo({zoom: map.getZoom() - 0.5, duration: 180}),
+  rotsx: () => map.easeTo({bearing: map.getBearing() - 15, duration: 180}),
+  rotdx: () => map.easeTo({bearing: map.getBearing() + 15, duration: 180}),
+  incl:  () => map.easeTo({pitch: Math.min(80, map.getPitch() + 8), duration: 180}),
+  raddr: () => map.easeTo({pitch: Math.max(0, map.getPitch() - 8), duration: 180}),
+  nord:  () => map.easeTo({bearing: 0, duration: 400}),
+  centro:() => inquadra()
+};
+const RIPETE = ['su', 'giu', 'sx', 'dx', 'zin', 'zout', 'rotsx', 'rotdx', 'incl', 'raddr'];
+let ripeti = null;
+const ferma = () => { clearInterval(ripeti); ripeti = null; };
+document.getElementById('muovi').addEventListener('pointerdown', e => {
+  const b = e.target.closest('button[data-m]');
+  if (!b) return;
+  e.preventDefault();
+  const k = b.dataset.m, f = MOSSE[k];
+  if (!f) return;
+  f();
+  ferma();
+  if (RIPETE.includes(k)) ripeti = setInterval(f, 200);
+});
+['pointerup', 'pointerleave', 'pointercancel', 'blur'].forEach(ev =>
+  (ev === 'blur' ? window : document.getElementById('muovi')).addEventListener(ev, ferma));
+/* Da tastiera: frecce per spostarsi, + e - per lo zoom, Q/E per ruotare, W/S per inclinare */
+document.addEventListener('keydown', e => {
+  if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+  const k = {ArrowUp: 'su', ArrowDown: 'giu', ArrowLeft: 'sx', ArrowRight: 'dx', '+': 'zin', '-': 'zout',
+    q: 'rotsx', e: 'rotdx', w: 'incl', s: 'raddr', n: 'nord'}[e.key];
+  if (k){ e.preventDefault(); MOSSE[k](); }
+});
 $('bNord').onclick = () => map.easeTo({bearing: 0, duration: 600});
 $('bPiatto').onclick = () => {
   const giu = map.getPitch() > 5;

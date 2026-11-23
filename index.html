@@ -173,8 +173,11 @@
                     <button class="sitac-scheda-btn sitac-scheda-bloccata" type="button" data-scheda="carta">
                         <span>2 · SITAC planimetrica</span>
                     </button>
+                    <button class="sitac-scheda-btn sitac-scheda-bloccata" type="button" data-scheda="3d">
+                        <span>3 · SITAC 3D</span>
+                    </button>
                     <button class="sitac-scheda-btn" type="button" data-scheda="foto">
-                        <span>3 · SITAC da immagine</span>
+                        <span>4 · SITAC da immagine</span>
                     </button>
                 </div>
 
@@ -355,8 +358,11 @@
                         <div id="sitac-stato"></div>
                     </div>
 
-                    <!-- SCHEDA 3: SITAC da immagine, una foto su cui disegnare
+                    <!-- SCHEDA 4: SITAC da immagine, una foto su cui disegnare
                      frecce e scritte. Non chiede la posizione del DOS: sitac-foto.js -->
+                    <!-- SCHEDA 3: SITAC 3D, la vista 3D (sitac-3d.html) della SITAC planimetrica; si apre dopo la convalida: sitac-scheda3d.js -->
+                    <div class="sitac-pannello" data-scheda="3d" id="sitac-3d"></div>
+
                     <div class="sitac-pannello" data-scheda="foto" id="sitac-foto"></div>
 
                     <!-- Fuori dai pannelli: la testata serve alla stampa, il modale
@@ -1414,6 +1420,7 @@
                 "sitac.js",
                 "sitac-frequenze.js", // frequenze radio del DOS nella scheda 1 della SITAC
                 "sitac-foto.js",      // scheda 3 della SITAC: SITAC da immagine
+                "sitac-scheda3d.js",  // scheda 3 della SITAC: vista 3D
                 "sitac-mobile.js",    // SITAC sul telefono: carta intera, strumenti dal basso
                 "qrcode.js",
                 "prospetto.js",      // Prospetto specializzati e tasto SP
