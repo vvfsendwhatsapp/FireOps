@@ -150,7 +150,7 @@ function oraRoma() { return +new Date().toLocaleString('en-GB', {timeZone: 'Euro
 function fasciaAdesso() { const h = oraRoma(); return (h >= 8 && h < 20) ? 'giorno' : 'notte'; }
 // fra mezzanotte e le 8 il turno di notte in corso e' quello montato la sera prima
 function dataAdesso() { return oraRoma() < 8 ? new Date(Date.now() - 864e5).toLocaleDateString('sv-SE', {timeZone: 'Europe/Rome'}) : oggiISO(); }
-function salvaFiltri() { scrivi(LS_FILTRI, {comando: f.comando, corso: f.corso, qual: f.qual, stato: f.stato, scheda: f.scheda}); }
+function salvaFiltri() { scrivi(LS_FILTRI, {comando: f.comando, corso: f.corso, qual: f.qual, stato: f.stato, scheda: f.scheda, ordine: f.ordine}); }
 // chiave della persona: cognome|nome|comando (niente cellulare: la chiave finisce sul foglio)
 function chiave(p) { return norm(p.cognome).slice(0, 60) + '|' + norm(p.nome).slice(0, 60) + '|' + normComando(p.comando).slice(0, 60); }
 function titolo(s) { return String(s || '').trim().toLowerCase().replace(/(^|[\s'’-])(\p{L})/gu, (m, a, b) => a + b.toUpperCase()); }
@@ -507,8 +507,9 @@ function filtrati(sigla) {
     if (f.stato && statoPersona(p, sigla) !== f.stato) return false;
     return true;
   });
-  // ordine alfabetico (cognome e nome); prospetto e richiamo riordinano per ruolo con ordina()
-  return l.sort((a, b) => a.cognome.localeCompare(b.cognome, 'it') || a.nome.localeCompare(b.nome, 'it'));
+  // Gestione personale: per qualifica (come prima, predefinito) oppure in ordine alfabetico, a scelta
+  if (f.ordine === 'alfabetico') return l.sort((a, b) => a.cognome.localeCompare(b.cognome, 'it') || a.nome.localeCompare(b.nome, 'it'));
+  return ordina(l);
 }
 
 /* ============================== DISEGNO ============================== */
@@ -659,6 +660,7 @@ function htmlGestione(corsiDisp, qualDisp, base, stati) {
   <div class="pros-barra">
     <input type="search" id="pros-testo" placeholder="Cerca cognome, nome o cellulare" value="${esc(f.testo)}">
     <select id="pros-qual"><option value="">Tutte le qualifiche</option>${qualDisp.map(q => `<option${q === f.qual ? ' selected' : ''}>${esc(q)}</option>`).join('')}</select>
+    <label class="pros-ordine">Ordina <select id="pros-ordine"><option value="qualifica"${f.ordine !== 'alfabetico' ? ' selected' : ''}>per qualifica</option><option value="alfabetico"${f.ordine === 'alfabetico' ? ' selected' : ''}>alfabetico</option></select></label>
     <label class="pros-chk"><input type="checkbox" id="pros-senza"${f.senzaTurno ? ' checked' : ''}> solo senza turno</label>
     <button type="button" class="pros-btn" id="pros-aggiorna">🔄 Aggiorna da PUMA</button>
     <button type="button" class="pros-btn" id="pros-csv"${elenco.length ? '' : ' disabled'}>⬇️ CSV</button>
@@ -927,6 +929,7 @@ function eventi() {
     if (t.id === 'pros-comando') { sblocco = {stato: '', errore: ''}; f.comando = t.value; f.corso = ''; f.qual = ''; cella = null; salvaFiltri(); disegna(); scaricaTurni(); return; }
     if (t.id === 'pros-corso') { f.corso = t.value; cella = null; salvaFiltri(); disegna(); return; }
     if (t.id === 'pros-senza') { f.senzaTurno = t.checked; disegna(); return; }
+    if (t.id === 'pros-ordine') { f.ordine = t.value; salvaFiltri(); disegna(); return; }
     if (t.id === 'pros-data') { if (t.value) { f.data = t.value; disegna(); } return; }
     if (t.id === 'pros-qual') { f.qual = t.value; salvaFiltri(); disegna(); return; }
     if (t.id === 'pros-file') { if (t.files[0]) importa(t.files[0]); t.value = ''; return; }
