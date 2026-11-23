@@ -12,7 +12,7 @@
  *    zone già viste con la rete).
  * Per svuotare tutto basta cambiare CACHE.
  */
-const CACHE = "fireops-pro-v6";
+const CACHE = "fireops-pro-v7";
 const CACHE_TESSERE = "fireops-pro-tessere-v1";
 const MAX_TESSERE = 3000;
 
@@ -20,7 +20,7 @@ const SITAC = [
   "./sitac.html", "./user.html", "./manifest.webmanifest", "./js/versione.js",
   "../index.html", "../style.css", "../db/comandi.json",
   "../fireops-sfondi.js", "../radiotelefoni.js", "../sitac-simboli.js", "../sitac-vento.js",
-  "../sitac-rilievo.js", "../sitac.js", "../sitac-frequenze.js", "../sitac-foto.js", "../sitac-scheda3d.js", "../sitac-mobile.js", "../sitac-immagine.html", "../images/logo.png",
+  "../sitac-rilievo.js", "../sitac.js", "../sitac-frequenze.js", "../sitac-foto.js", "../sitac-scheda3d.js", "../sitac-mobile.js", "../sitac-immagine.html", "../jspdf.umd.min.js", "../images/logo.png",
   "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css",
   "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js",
   "https://unpkg.com/@geoman-io/leaflet-geoman-free@2.15.0/dist/leaflet-geoman.css",

@@ -48,6 +48,18 @@
     #ps-sitac .pagina-box-header { margin-bottom: 8px !important; flex-wrap: wrap; gap: 6px; }
     #ps-sitac .sitac-sez-stretta .pagina-nota-inline { flex-basis: 100%; text-align: left; font-size: 12px; }
     .ps-msg { padding: 20px; color: #ddd; font-size: 15px; }
+    .ps-pieno-btn { width: 38px; height: 38px; border-radius: 10px; border: 0; background: #241800; color: #ffd24a; font-size: 20px; cursor: pointer; flex: 0 0 auto; }
+    /* Tutto schermo: via la testata dell'app, le bandiere e lo sfondo; restano le schede e la carta */
+    #ps-esci { display: none; }
+    body.ps-pieno .ps-testa, body.ps-pieno #sitac-aib .pagina-box-header { display: none !important; }
+    body.ps-pieno #ps-esci { display: block; position: fixed; top: calc(6px + env(safe-area-inset-top)); right: 6px; z-index: 6000;
+      width: 40px; height: 40px; border-radius: 50%; border: 2px solid #ffd24a; background: rgba(36,24,0,.9); color: #ffd24a; font-size: 18px; cursor: pointer; }
+    body.ps-pieno #ps-sitac { padding: 4px !important; }
+    body.ps-pieno #ps-sitac .sitac-schede { padding-right: 48px; }
+    body.ps-pieno #ps-sitac #sitac-app { height: calc(100dvh - 60px - env(safe-area-inset-top)); }
+    body.ps-pieno #ps-sitac #sitac-app.sitac-mobile .sitac-mapwrap { height: calc(100dvh - 140px - env(safe-area-inset-top)); }
+    body.ps-pieno #ps-sitac #sitac-app.sitac-mobile .sitac-immagine-frame,
+    body.ps-pieno #ps-sitac #sitac-app.sitac-mobile .sitac-3d-frame { height: calc(100dvh - 70px - env(safe-area-inset-top)); }
 
   </style>
 </head>
@@ -60,7 +72,9 @@
       <p id="ps-sotto">Situazione tattica · anche senza rete</p>
     </div>
     <span class="ps-rete" id="ps-rete">online</span>
+    <button type="button" class="ps-pieno-btn" id="ps-pieno" title="A tutto schermo" aria-label="A tutto schermo">⛶</button>
   </header>
+  <button type="button" id="ps-esci" title="Esci dal tutto schermo" aria-label="Esci dal tutto schermo">✕</button>
 
   <div class="ps-corpo" id="ps-sitac"><p class="ps-msg">Caricamento della SITAC…</p></div>
 
@@ -73,6 +87,29 @@
     /* ---------- rete ---------- */
     function rete() { var r = $("ps-rete"); r.textContent = navigator.onLine ? "online" : "offline"; r.classList.toggle("off", !navigator.onLine); }
     window.addEventListener("online", rete); window.addEventListener("offline", rete); rete();
+
+    /* Tutto schermo: si chiede quello vero del telefono e, comunque vada (nell'app
+       Android il WebView può rifiutarlo), si toglie tutto quello che non è SITAC. */
+    function ridisegnaSitac() {
+      setTimeout(function () {
+        var i = window.FireOps && FireOps.Sitac && FireOps.Sitac.get && FireOps.Sitac.get(); if (i) i.ridisegna();
+        document.querySelectorAll("#ps-sitac iframe").forEach(function (f) {
+          try { var w = f.contentWindow; if (w.FireOpsSitacImmagine) w.FireOpsSitacImmagine.ridisegna(); w.dispatchEvent(new Event("resize")); } catch (e) {}
+        });
+      }, 120);
+    }
+    function pieno(si) {
+      document.body.classList.toggle("ps-pieno", si);
+      try {
+        if (si && !document.fullscreenElement && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(function () {});
+        if (!si && document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(function () {});
+      } catch (e) {}
+      ridisegnaSitac();
+    }
+    $("ps-pieno").onclick = function () { pieno(true); };
+    $("ps-esci").onclick = function () { pieno(false); };
+    /* uscendo con il tasto indietro del telefono il tutto schermo vero finisce: si esce anche dal nostro */
+    document.addEventListener("fullscreenchange", function () { if (!document.fullscreenElement && document.body.classList.contains("ps-pieno")) { document.body.classList.remove("ps-pieno"); ridisegnaSitac(); } });
 
     /* ---------- script in ordine ---------- */
     function script(src) {

@@ -31,6 +31,8 @@
     #si-barra label, #si-barra button { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; font-size: 13.5px; border-radius: 7px;
       border: 1px solid var(--border-color, #444); background: var(--surface-color, #222); color: var(--text-main, #eee); cursor: pointer; }
     #si-barra .prim { background: #1f7a3a; border-color: #2aa04d; color: #fff; font-weight: bold; }
+    #si-barra .pdf { background: #1e5aa8; border-color: #3b7bd1; color: #fff; font-weight: bold; }
+    #si-barra .pdf:disabled { opacity: .6; }
     #si-barra .pericolo { border-color: #e53935; color: #ff6b6b; background: transparent; font-weight: bold; }
     #si-barra .pericolo:hover { background: #e53935; color: #fff; }
     #si-barra .nota { font-size: 12px; color: var(--text-muted, #999); }
@@ -75,6 +77,7 @@
     <button type="button" class="prim" id="si-scatta">📷 Scatta foto</button>
     <input type="file" id="si-file1" accept="image/*" capture="environment" hidden>
     <label>🖼 Dalla galleria / file<input type="file" id="si-file2" accept="image/*" hidden></label>
+    <button type="button" id="si-pdf" class="pdf" title="PDF con la foto disegnata e i dati del DOS">📄 PDF</button>
     <button type="button" id="si-pulisci" class="pericolo" title="Cancella foto e disegno (chiede due volte)">🗑 Cancella tutto</button>
     <span class="nota" id="si-nota">Tutti gli strumenti della SITAC, sulla foto. Si può anche incollare (Ctrl+V) o trascinare un'immagine.</span>
   </div>
@@ -105,7 +108,7 @@
       "https://unpkg.com/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.js"
     ];
     var LOCALI = ["radiotelefoni.js", "sitac-simboli.js", "sitac-vento.js", "sitac-rilievo.js", "sitac.js", "sitac-frequenze.js", "sitac-mobile.js"];
-    var istanza = null, foto = null;
+    var istanza = null, foto = null, fotoNat = null;
 
     /* Dati della scheda 1 dalla pagina che contiene questa: si copiano i valori, senza eventi */
     var CAMPI = ["sitac-nIntervento", "sitac-qualifica", "sitac-nDos", "sitac-nominativo", "sitac-telefono", "sitac-posizione"];
@@ -149,8 +152,11 @@
         foto.bringToBack();
         map.setMaxBounds(b.pad(0.5));
         map.invalidateSize();
+        map.setMinZoom(0);
         map.fitBounds(b);
-        setTimeout(function () { map.invalidateSize(); map.fitBounds(b); }, 200);
+        /* Zoom bloccato: non si allontana oltre la foto intera (fuori non c'è niente) */
+        setTimeout(function () { map.invalidateSize(); map.fitBounds(b); map.setMinZoom(Math.min(map.getZoom(), map.getBoundsZoom(b))); }, 200);
+        fotoNat = { w: im.width, h: im.height };
         $("si-vuota").hidden = true;
       };
       im.src = url;
@@ -183,10 +189,173 @@
     $("si-scatta").onclick = apriCam;
     /* Cancella tutto: lo stesso di "Cancella tutto" al passo Modifica, con la doppia conferma di sitac.js */
     $("si-pulisci").onclick = function () { var b = document.getElementById("sitac-bPulisci"); if (b) b.click(); };
+    /* ---------------- PDF: foto disegnata, grande, e i dati del DOS ----------------
+       Fatto qui con jsPDF e non con la stampa del browser: nell'app la finestra di
+       stampa non c'è o non funziona. Il disegno si ricompone su un canvas alla
+       risoluzione della foto, sempre intera: lo zoom a schermo non conta. */
+    function carica(src) {
+      return new Promise(function (ok, ko) { var x = document.createElement("script"); x.src = src; x.onload = ok; x.onerror = ko; document.head.appendChild(x); });
+    }
+    function libPdf() {
+      if (window.jspdf && window.jspdf.jsPDF) return Promise.resolve();
+      return carica("jspdf.umd.min.js").catch(function () { return carica("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"); });
+    }
+    function valore(id) { var x = document.getElementById(id); if (!x) return ""; return String(("value" in x ? x.value : x.textContent) || "").trim().replace(/^—$/, ""); }
+    function datiDos() {
+      var senza = document.getElementById("sitac-senzaScheda");
+      var dos = valore("sitac-nDos");
+      return [
+        ["Intervento", senza && senza.checked ? "senza scheda" : valore("sitac-nIntervento")],
+        ["DOS", dos ? "VF " + dos : ""],
+        ["Qualifica e nominativo", [valore("sitac-qualifica"), valore("sitac-nominativo")].filter(Boolean).join(" ")],
+        ["Telefono", valore("sitac-telefono")],
+        ["Posizione DOS", valore("sitac-posizione")],
+        ["Comando", valore("sitac-comando")],
+        ["Frequenze", window.FireOpsSitacFrequenze ? window.FireOpsSitacFrequenze.testo().join("  ·  ") : ""]
+      ].filter(function (r) { return r[1]; });
+    }
+    function svgInImmagine(svg) {
+      return new Promise(function (ok) {
+        var cl = svg.cloneNode(true);
+        cl.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+        var src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(new XMLSerializer().serializeToString(cl));
+        var im = new Image(); im.onload = function () { ok(im); }; im.onerror = function () { ok(null); }; im.src = src;
+      });
+    }
+    /* La foto con tutto quello che c'è sopra, disegnato di nuovo su un canvas grande come la foto */
+    function componi() {
+      var map = istanza.map, b = FireOps.SITAC_IMMAGINE_BOUNDS, img = foto.getElement();
+      var Wn = img.naturalWidth, Hn = img.naturalHeight, Z = 17;
+      var nw = map.project(b.getNorthWest(), Z), se = map.project(b.getSouthEast(), Z);
+      var kx = Wn / (se.x - nw.x), ky = Hn / (se.y - nw.y);
+      var px = function (ll) { var q = map.project(ll, Z); return [(q.x - nw.x) * kx, (q.y - nw.y) * ky]; };
+      /* simboli e spessori grandi come si vedono con la foto intera a schermo */
+      var r = document.getElementById("sitac-mappa").getBoundingClientRect();
+      var f = Math.max(1, Wn / Math.min(r.width || Wn, (r.height || Hn) * Wn / Hn));
+      var cv = document.createElement("canvas"); cv.width = Wn; cv.height = Hn;
+      var g = cv.getContext("2d");
+      g.drawImage(img, 0, 0, Wn, Hn);
+      var strati = [];
+      map.eachLayer(function (l) { if (l !== foto && !l._url) strati.push(l); });
+      strati.sort(function (a, c) { return L.stamp(a) - L.stamp(c); });
+      /* 1) tracciati e aree */
+      strati.forEach(function (l) {
+        if (!(l instanceof L.Path) || !l._map) return;
+        var o = l.options;
+        if (o.stroke === false && !o.fill) return;
+        g.save();
+        g.lineCap = o.lineCap || "round"; g.lineJoin = o.lineJoin || "round";
+        g.beginPath();
+        if (l instanceof L.CircleMarker) {
+          var c0 = px(l.getLatLng()); g.arc(c0[0], c0[1], (l.getRadius ? l.getRadius() : 5) * f, 0, Math.PI * 2);
+        } else {
+          var poli = l instanceof L.Polygon;
+          var giro = function (arr) {
+            if (!arr.length) return;
+            if (arr[0] && arr[0].lat === undefined) { arr.forEach(giro); return; }
+            arr.forEach(function (ll, i) { var p = px(ll); if (i) g.lineTo(p[0], p[1]); else g.moveTo(p[0], p[1]); });
+            if (poli) g.closePath();
+          };
+          giro(l.getLatLngs());
+        }
+        if (o.fill) { g.globalAlpha = o.fillOpacity == null ? 0.2 : o.fillOpacity; g.fillStyle = o.fillColor || o.color; g.fill(o.fillRule || "evenodd"); }
+        if (o.stroke !== false && o.weight) {
+          g.globalAlpha = o.opacity == null ? 1 : o.opacity;
+          g.strokeStyle = o.color || "#3388ff"; g.lineWidth = o.weight * f;
+          if (o.dashArray) g.setLineDash(String(o.dashArray).split(/[ ,]+/).map(function (x) { return (+x || 0) * f; }));
+          g.stroke();
+        }
+        g.restore();
+      });
+      /* 2) simboli: si prende l'SVG che è già a schermo, con la sua rotazione */
+      var lavori = [];
+      strati.forEach(function (l) {
+        if (!(l instanceof L.Marker) || !l._icon || !l._map) return;
+        var ic = l._icon, opz = (l.options.icon && l.options.icon.options) || {};
+        var w = ic.offsetWidth, h = ic.offsetHeight;
+        var an = opz.iconAnchor ? L.point(opz.iconAnchor) : L.point(w / 2, h / 2);
+        var p = px(l.getLatLng()), ox = p[0] - an.x * f, oy = p[1] - an.y * f;
+        var svg = ic.querySelector("svg");
+        if (svg) {
+          var cont = svg.parentElement === ic ? svg : svg.parentElement;
+          var bx = cont.offsetLeft || 0, by = cont.offsetTop || 0, bw = cont.offsetWidth || svg.clientWidth, bh = cont.offsetHeight || svg.clientHeight;
+          var m = /rotate\(([-\d.]+)deg\)/.exec(cont.style.transform || "");
+          var disco = ic.querySelector(".sitac-disco"), conDisco = disco && getComputedStyle(disco).display !== "none";
+          lavori.push(svgInImmagine(svg).then(function (im) {
+            return function () {
+              if (conDisco) { g.save(); g.fillStyle = "rgba(255,255,255,.82)"; g.beginPath(); g.arc(ox + w / 2 * f, oy + h / 2 * f, w * 0.42 * f, 0, Math.PI * 2); g.fill(); g.restore(); }
+              if (!im) return;
+              var cx = ox + (bx + bw / 2) * f, cy = oy + (by + bh / 2) * f;
+              g.save(); g.translate(cx, cy); if (m) g.rotate(+m[1] * Math.PI / 180);
+              g.drawImage(im, -bw / 2 * f, -bh / 2 * f, bw * f, bh * f); g.restore();
+            };
+          }));
+        } else if ((ic.textContent || "").trim()) {
+          var testo = ic.textContent.trim(), cs = getComputedStyle(ic), fs = (parseFloat(cs.fontSize) || 12) * f;
+          lavori.push(Promise.resolve(function () {
+            g.save(); g.font = "bold " + fs + "px Arial, sans-serif"; g.textBaseline = "top";
+            g.lineWidth = fs / 4; g.strokeStyle = "#000"; g.fillStyle = cs.color || "#fff";
+            g.strokeText(testo, ox + 4 * f, oy); g.fillText(testo, ox + 4 * f, oy); g.restore();
+          }));
+        }
+      });
+      return Promise.all(lavori).then(function (fn) { fn.forEach(function (x) { x(); }); return cv; });
+    }
+    function esportaPdf() {
+      if (!foto || !istanza) { alert("Prima scatta o carica una foto."); return; }
+      var btn = $("si-pdf");
+      btn.disabled = true; btn.textContent = "⏳ Preparo il PDF…";
+      var fine = function () { btn.disabled = false; btn.textContent = "📄 PDF"; };
+      libPdf().then(componi).then(function (cv) {
+        fine();
+        var J = window.jspdf.jsPDF, orizz = cv.width >= cv.height;
+        var doc = new J({ orientation: orizz ? "landscape" : "portrait", unit: "mm", format: "a4" });
+        var W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), m = 8;
+        var righe = datiDos();
+        var ora = new Intl.DateTimeFormat("it-IT", { dateStyle: "short", timeStyle: "short", timeZone: "Europe/Rome" }).format(new Date());
+        doc.setFont("helvetica", "bold"); doc.setFontSize(13);
+        doc.text("SITAC da immagine", m, m + 4);
+        doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+        doc.text(ora, W - m, m + 4, { align: "right" });
+        var testaH = 8, datiH = 8 + Math.ceil(righe.length / 2) * 6;
+        var aw = W - 2 * m, ah = H - 2 * m - testaH - datiH - 3;
+        var k = Math.min(aw / cv.width, ah / cv.height), iw = cv.width * k, ih = cv.height * k;
+        doc.addImage(cv.toDataURL("image/jpeg", 0.9), "JPEG", m + (aw - iw) / 2, m + testaH, iw, ih);
+        var y0 = m + testaH + ih + 4;
+        doc.setDrawColor(200, 0, 0); doc.setLineWidth(0.6); doc.line(m, y0, W - m, y0);
+        doc.setFontSize(10); doc.setFont("helvetica", "bold");
+        doc.text("Direttore delle operazioni di spegnimento", m, y0 + 5);
+        doc.setFontSize(9);
+        righe.forEach(function (rg, i) {
+          var col = i % 2, riga = Math.floor(i / 2), xx = m + col * (aw / 2), yy = y0 + 11 + riga * 6;
+          doc.setFont("helvetica", "bold"); doc.text(rg[0] + ":", xx, yy);
+          doc.setFont("helvetica", "normal");
+          doc.text(doc.splitTextToSize(rg[1], aw / 2 - 42)[0], xx + 40, yy);
+        });
+        doc.setFontSize(7); doc.setTextColor(120);
+        doc.text("Immagine non georeferenziata: nessuna misura. FireOps VVF", m, H - 4);
+        var nome = "SITAC-immagine" + (valore("sitac-nIntervento") ? "_" + valore("sitac-nIntervento") : "") + "_" + new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "") + ".pdf";
+        var blob = doc.output("blob"), file = new File([blob], nome, { type: "application/pdf" });
+        var tocco = matchMedia("(pointer:coarse)").matches;
+        if (tocco && navigator.canShare && navigator.canShare({ files: [file] })) {
+          navigator.share({ files: [file], title: nome }).catch(function () { scaricaFile(blob, nome); });
+        } else scaricaFile(blob, nome);
+      }).catch(function (e) {
+        fine();
+        alert("PDF non riuscito: " + (e && e.message ? e.message : e) + (navigator.onLine ? "" : "\nAl primo uso serve la rete."));
+      });
+    }
+    function scaricaFile(blob, nome) {
+      var u = URL.createObjectURL(blob), a = document.createElement("a");
+      a.href = u; a.download = nome; document.body.appendChild(a); a.click();
+      setTimeout(function () { URL.revokeObjectURL(u); a.remove(); }, 4000);
+    }
+    $("si-pdf").onclick = esportaPdf;
     document.addEventListener("fireops:sitac-pulita", function () {
       if (foto && istanza) { istanza.map.removeLayer(foto); foto = null; }
       FireOps.SITAC_IMMAGINE_BOUNDS = null;
-      try { istanza.map.setMaxBounds(null); } catch (e) {}
+      try { istanza.map.setMaxBounds(null); istanza.map.setMinZoom(0); } catch (e) {}
+      fotoNat = null;
       var v = $("si-vuota"); if (v) v.hidden = false;
     });
     $("si-cam-no").onclick = fermaCam;
@@ -206,7 +375,7 @@
     });
     document.addEventListener("dragover", function (e) { e.preventDefault(); });
     document.addEventListener("drop", function (e) { e.preventDefault(); metti(e.dataTransfer.files[0]); });
-    window.FireOpsSitacImmagine = { metti: metti, ridisegna: function () { allinea(); if (istanza) istanza.ridisegna(); } };
+    window.FireOpsSitacImmagine = { componi: function () { return componi(); }, metti: metti, ridisegna: function () { allinea(); if (istanza) istanza.ridisegna(); } };
 
     fetch(((function () { try { return parent.FireOpsSitacMarkup; } catch (e) { return ""; } })() || "index.html") + "?v=" + V).then(function (r) { return r.text(); }).then(function (t) {
       var sez = new DOMParser().parseFromString(t, "text/html").getElementById("sitac-aib");
