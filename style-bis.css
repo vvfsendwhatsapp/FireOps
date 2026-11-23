@@ -264,3 +264,11 @@
 #radio-telefoni .rt-chip.rt-attivo b, #radio-telefoni .rt-chip.rt-attivo .telefono-cliccabile { color: #111; }
 #radio-telefoni .rt-chip.rt-limitrofo { border-color: #4f8cff; background: rgba(79, 140, 255, .18); }
 #radio-telefoni .rt-chip.rt-della-dir { border-color: #2fbf71; background: rgba(47, 191, 113, .15); }
+@media (max-width: 520px) {
+    #radio-telefoni .rt-scheda .rt-c-nome { width: 42%; }
+    #radio-telefoni .rt-scheda .rt-c-ch { width: 20%; }
+    #radio-telefoni .rt-scheda .rt-c-tel { width: 38%; }
+    #radio-telefoni .rt-scheda td { padding: 6px 6px; }
+    #radio-telefoni .rt-scheda td.rt-ch { font-size: 16px; }
+    #radio-telefoni .rt-scheda .telefono-cliccabile { font-size: 13px; }
+}
