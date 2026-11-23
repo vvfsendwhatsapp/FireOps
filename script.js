@@ -1474,6 +1474,13 @@ const CHIAVE_STORAGE_PANNELLI = "fireops_pagine_pannelli";
             titolo: "Chiudi il Prospetto specializzati e torna alla vista a due colonne"
         }
     };
+    // solo BIS: anche Radio e telefoni si apre a tutto schermo, come la SITAC
+    if (document.documentElement.dataset.fireops === "bis") {
+        PAGINE_ESCLUSIVE["radio-telefoni"] = {
+            chiudi: "✖ Chiudi Radio e telefoni",
+            titolo: "Chiudi Radio e telefoni e torna alla vista a due colonne"
+        };
+    }
 
     let idPaginaEsclusiva = null;    // quale pagina è esclusiva adesso
     let latoEsclusiva = null;        // "sinistra" | "destra"
