@@ -139,6 +139,23 @@ document.addEventListener("DOMContentLoaded", () => {
             attivaComando(comandoSalvato);
             modal.style.display = "none";
         }
+
+        // Link con il Comando già scelto: ?comando=Pordenone (anche "Forli-Cesena" senza accento,
+        // o "Direzione Lombardia"). Vale più del Comando della sessione e salta la finestra di scelta.
+        try {
+            const daLink = new URLSearchParams(location.search).get("comando");
+            if (daLink) {
+                const n = t => String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                    .replace(/^\s*comando\s+(provinciale\s+)?(vvf\s+)?(di\s+)?/, "").replace(/[^a-z0-9]/g, "");
+                const cercato = n(daLink);
+                const trovato = comandiData.concat(direzioniComeComandi).find(c => c && n(c.Comando) === cercato);
+                if (trovato) {
+                    attivaComando(trovato.Comando);
+                    selectComando.value = trovato.Comando;
+                    modal.style.display = "none";
+                }
+            }
+        } catch (e) { /* link senza parametri validi: si sceglie come sempre */ }
     })
     .catch(error => {
         console.error("Errore nel caricamento dei dati:", error);
