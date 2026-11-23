@@ -8842,3 +8842,11 @@ body.pros-pop-aperto { overflow: hidden; }
 @keyframes pros-pulsa { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
 @media (prefers-reduced-motion: reduce) { .pros-pop-col.adesso h3::before { animation: none; } }
 @media (max-width: 800px) { .pros-pop-colonne.tre { grid-template-columns: 1fr; } }
+
+/* BIS: tasto SP (Specializzati disponibili) riconoscibile, coi colori dei turni */
+#btn-specializzati.btn-icon-hamburger {
+    background: linear-gradient(135deg, #e5484d 0 25%, #2f80ed 25% 50%, #27ae60 50% 75%, #f2994a 75% 100%) !important;
+    color: #fff !important; border-color: #fff !important; text-shadow: 0 1px 2px rgba(0, 0, 0, .7); font-weight: 900;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, .25);
+}
+#btn-specializzati.btn-icon-hamburger:hover { filter: brightness(1.15); box-shadow: 0 0 0 3px rgba(255, 215, 0, .7); }

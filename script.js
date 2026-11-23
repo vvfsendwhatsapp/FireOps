@@ -147,6 +147,13 @@ document.addEventListener("DOMContentLoaded", () => {
         const nome = d["Direzione VVF"];
         const suoi = comandi.filter(c => c["Direzione VVF"] === nome);
         const base = suoi[0] || {};
+        // Direzioni confinanti: quelle dei Comandi che confinano con i Comandi di questa regione
+        const perNome = new Map(comandi.map(c => [c.Comando, c]));
+        const confinanti = new Set();
+        suoi.forEach(c => String(c["Concatena Comandi Confinanti"] || "").split(";").map(x => x.trim()).filter(Boolean).forEach(n => {
+            const v = perNome.get(n);
+            if (v && v["Direzione VVF"] && v["Direzione VVF"] !== nome) confinanti.add(v["Direzione VVF"]);
+        }));
         const [lat, lon] = String(d["Coordinate DIR"] || "").split(",").map(x => x.trim());
         const r = {};
         // dalla regione: CON, SOCAV, NUE, CHS della Direzione (uguali per tutti i suoi Comandi)
@@ -169,7 +176,7 @@ document.addEventListener("DOMContentLoaded", () => {
             "Coordinate": d["Coordinate DIR"] || "",
             Latitudine: lat || "",
             Longitudine: lon || "",
-            "Concatena Comandi Confinanti": suoi.map(c => c.Comando).join(";")
+            "Concatena Comandi Confinanti": Array.from(confinanti).sort((a, b) => a.localeCompare(b, "it")).map(x => "Direzione " + x).join(";")
         });
         return r;
     }
@@ -248,7 +255,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Cerca un comando per nome esatto all'interno dell'elenco completo
     function trovaComandoPerNome(nome, lista) {
-        return lista.find(c => c.Comando === nome);
+        // BIS: anche "Direzione X" (limitrofi di una Direzione regionale = le Direzioni confinanti)
+        return lista.find(c => c.Comando === nome) || direzioniComeComandi.find(d => d.Comando === nome);
     }
 
     // Cerca una direzione per nome esatto all'interno dell'elenco completo
@@ -1070,7 +1078,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     </tbody>
                 </table>
 
-                <h4>Comandi Limitrofi</h4>
+                <h4>${comando.tipo === "direzione" ? "Direzioni regionali limitrofe" : "Comandi Limitrofi"}</h4>
                 <table id="${p}-sezione-limitrofi" class="riepilogo-tabella-limitrofi sezione-contenuto aperta">
                     <thead>
                         <tr>
