@@ -50,6 +50,13 @@
     #si-vuota { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 500;
       pointer-events: none; color: #bbb; font-size: 15px; text-align: center; line-height: 1.6; }
     #si-vuota[hidden] { display: none; }
+    #si-cam { position: fixed; inset: 0; z-index: 5000; background: #000; display: flex; flex-direction: column; }
+    #si-cam[hidden] { display: none; }
+    #si-cam video { flex: 1 1 auto; width: 100%; min-height: 0; object-fit: contain; background: #000; }
+    .si-cam-barra { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-around; padding: 14px 10px calc(14px + env(safe-area-inset-bottom)); background: #000; }
+    .si-cam-barra button { width: 52px; height: 52px; border-radius: 50%; border: 0; background: #333; color: #fff; font-size: 22px; cursor: pointer; }
+    .si-cam-barra .scatto { width: 74px; height: 74px; background: #fff; box-shadow: 0 0 0 5px rgba(255,255,255,.35); }
+    .si-cam-barra .scatto:active { transform: scale(.92); }
     /* Sul telefono: barra in alto più bassa, carta più alta */
     @media (max-width: 760px) {
       #si-barra { padding: 5px 6px; gap: 5px; }
@@ -63,9 +70,19 @@
 
 <body>
   <div id="si-barra">
-    <label class="prim">📷 Scatta / carica foto<input type="file" id="si-file1" accept="image/*" capture="environment" hidden></label>
+    <button type="button" class="prim" id="si-scatta">📷 Scatta foto</button>
+    <input type="file" id="si-file1" accept="image/*" capture="environment" hidden>
     <label>🖼 Dalla galleria / file<input type="file" id="si-file2" accept="image/*" hidden></label>
     <span class="nota" id="si-nota">Tutti gli strumenti della SITAC, sulla foto. Si può anche incollare (Ctrl+V) o trascinare un'immagine.</span>
+  </div>
+  <!-- Fotocamera dentro la pagina: si scatta senza uscire dalla SITAC (anche nell'app) -->
+  <div id="si-cam" hidden>
+    <video id="si-video" playsinline muted autoplay></video>
+    <div class="si-cam-barra">
+      <button type="button" id="si-cam-no" title="Annulla">✕</button>
+      <button type="button" id="si-cam-ok" class="scatto" title="Scatta" aria-label="Scatta"></button>
+      <button type="button" id="si-cam-giro" title="Cambia fotocamera">🔄</button>
+    </div>
   </div>
   <div id="si-corpo"><p style="padding:20px;color:#ddd">Caricamento…</p></div>
 
@@ -135,6 +152,41 @@
       };
       im.src = url;
     }
+    /* Fotocamera: prima quella nella pagina (getUserMedia), se il telefono o il
+       browser non la concede si apre quella del sistema con il file input. */
+    var flusso = null, fronte = false;
+    function fermaCam() { if (flusso) { flusso.getTracks().forEach(function (t) { t.stop(); }); flusso = null; } $("si-cam").hidden = true; }
+    function apriCam() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { $("si-file1").click(); return; }
+      navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: fronte ? "user" : { ideal: "environment" },
+        width: { ideal: 1920 }, height: { ideal: 1440 } } })
+        .then(function (st) {
+          fermaCam(); flusso = st; $("si-video").srcObject = st; $("si-cam").hidden = false;
+          /* Dentro la SITAC questa pagina è un riquadro più alto dello schermo del telefono:
+             lo si porta in cima e la fotocamera prende solo la parte visibile, così il
+             tasto di scatto non finisce sotto il bordo. */
+          try {
+            var fe = window.frameElement;
+            if (fe) {
+              fe.scrollIntoView({ block: "start" });
+              var h = Math.min(fe.getBoundingClientRect().height, parent.innerHeight);
+              $("si-cam").style.bottom = "auto"; $("si-cam").style.height = h + "px";
+            }
+          } catch (e) { /* pagina aperta da sola: occupa tutta la finestra */ }
+          var v = $("si-video"); if (v.play) v.play().catch(function () {});
+        })
+        .catch(function () { fermaCam(); $("si-file1").click(); });
+    }
+    $("si-scatta").onclick = apriCam;
+    $("si-cam-no").onclick = fermaCam;
+    $("si-cam-giro").onclick = function () { fronte = !fronte; apriCam(); };
+    $("si-cam-ok").onclick = function () {
+      var v = $("si-video"); if (!v.videoWidth) return;
+      var c = document.createElement("canvas"); c.width = v.videoWidth; c.height = v.videoHeight;
+      c.getContext("2d").drawImage(v, 0, 0);
+      c.toBlob(function (b) { fermaCam(); if (b) metti(new File([b], "foto.jpg", { type: "image/jpeg" })); }, "image/jpeg", 0.92);
+    };
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !$("si-cam").hidden) fermaCam(); });
     $("si-file1").onchange = function (e) { metti(e.target.files[0]); e.target.value = ""; };
     $("si-file2").onchange = function (e) { metti(e.target.files[0]); e.target.value = ""; };
     document.addEventListener("paste", function (e) {

@@ -23,6 +23,7 @@ function monta(box){
   box.dataset.pronto = '1';
   const f = document.createElement('iframe');
   f.className = 'sitac-immagine-frame';
+  f.allow = 'camera; fullscreen';   // fotocamera dentro la pagina (Scatta foto)
   f.title = 'SITAC da immagine';
   box.appendChild(f);
   fetch(radice() + 'sitac-immagine.html?v=' + encodeURIComponent(window.FIREOPS_VERSIONE || ''))
