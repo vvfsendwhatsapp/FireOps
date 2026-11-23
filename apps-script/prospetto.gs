@@ -228,12 +228,15 @@ function tpFoglioPwd_() {
 }
 function tpConfigLeggi_() {
   const dati = tpFoglioPwd_().getDataRange().getDisplayValues();
-  const comandi = [];
+  const comandi = [], visti = {};
   for (let i = 1; i < dati.length; i++) {
-    const c = String(dati[i][0] || "").trim();
-    if (!c) continue;
-    const pw = String(dati[i][1] || "").trim();
-    comandi.push({comando: c, password: pw, note: String(dati[i][2] || ""), attivo: !!pw});
+    const c = String(dati[i][0] || "").trim(), cn = tpComando_(c);
+    if (!cn) continue;
+    const pw = String(dati[i][1] || "").trim(), note = String(dati[i][2] || "");
+    // lo stesso Comando su piu' righe (scritto a mano due volte): una voce sola, attiva se una delle righe ha la password
+    if (visti[cn]) { const v = visti[cn]; if (!v.password && pw) { v.password = pw; v.attivo = true; } if (!v.note) v.note = note; continue; }
+    visti[cn] = {comando: c, password: pw, note: note, attivo: !!pw};
+    comandi.push(visti[cn]);
   }
   return {ok: true, comandi: comandi};
 }
@@ -245,17 +248,16 @@ function tpConfigScrivi_(voci) {
   try {
     const sh = tpFoglioPwd_();
     const dati = sh.getDataRange().getDisplayValues();
-    const riga = {};
-    for (let i = 1; i < dati.length; i++) if (dati[i][0]) riga[tpComando_(dati[i][0])] = i + 1;
+    const righe = {};   // tutte le righe di ciascun Comando: se e' scritto due volte si aggiornano entrambe
+    for (let i = 1; i < dati.length; i++) { const cn = tpComando_(dati[i][0]); if (cn) (righe[cn] = righe[cn] || []).push(i + 1); }
     let salvati = 0;
     lista.forEach(v => {
       const nome = tpTesto_(v && v.comando, 80), cn = tpComando_(nome);
       if (!cn) return;
       const pw = String(v.password == null ? "" : v.password).replace(/\s/g, "").slice(0, 40), note = tpTesto_(v.note, 200);
       if (pw && (pw.length < 4 || /^[=+\-@']/.test(pw))) return;   // troppo corta o con un carattere da formula: si ignora
-      const n = riga[cn];
-      if (n) sh.getRange(n, 2, 1, 2).setValues([[pw, note]]);
-      else { sh.appendRow([nome, pw, note]); riga[cn] = sh.getLastRow(); }
+      if (righe[cn]) righe[cn].forEach(n => sh.getRange(n, 2, 1, 2).setValues([[pw, note]]));
+      else { sh.appendRow([nome, pw, note]); righe[cn] = [sh.getLastRow()]; }
       salvati++;
     });
     return {ok: true, salvati: salvati};

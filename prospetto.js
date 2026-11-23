@@ -345,9 +345,8 @@ async function cfgSalva(comando, password, note) {
   cfg.salvo = comando; cfg.errore = ''; disegna();
   try {
     await cfgRichiesta({config: 'scrivi', voci: [{comando, password, note}]});
-    const c = cfg.comandi.find(x => x.comando === comando);
-    if (c) Object.assign(c, {password, note, attivo: !!password});
-    else cfg.comandi.push({comando, password, note, attivo: !!password});
+    // si rilegge dal foglio: lo stato a schermo è quello vero, non quello che si sperava di aver scritto
+    const j = await cfgRichiesta({config: 'leggi'}); cfg.comandi = j.comandi || cfg.comandi;
   } catch (e) { cfg.errore = comando + ': ' + (e.message || String(e)); }
   cfg.salvo = ''; disegna();
 }
