@@ -45,6 +45,14 @@
     #si-vuota { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 500;
       pointer-events: none; color: #bbb; font-size: 15px; text-align: center; line-height: 1.6; }
     #si-vuota[hidden] { display: none; }
+    /* Sul telefono: barra in alto più bassa, carta più alta */
+    @media (max-width: 760px) {
+      #si-barra { padding: 5px 6px; gap: 5px; }
+      #si-barra label { padding: 6px 9px; font-size: 12.5px; }
+      #si-barra .nota { display: none; }
+      #si-corpo { height: calc(100% - 40px); }
+      #sitac-app.sitac-mobile .sitac-mapwrap { height: calc(100dvh - 120px) !important; min-height: 280px; }
+    }
   </style>
 </head>
 
@@ -71,7 +79,7 @@
       "https://unpkg.com/@geoman-io/leaflet-geoman-free@2.15.0/dist/leaflet-geoman.min.js",
       "https://unpkg.com/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.js"
     ];
-    var LOCALI = ["radiotelefoni.js", "sitac-simboli.js", "sitac-vento.js", "sitac-rilievo.js", "sitac.js", "sitac-frequenze.js"];
+    var LOCALI = ["radiotelefoni.js", "sitac-simboli.js", "sitac-vento.js", "sitac-rilievo.js", "sitac.js", "sitac-frequenze.js", "sitac-mobile.js"];
     var istanza = null, foto = null;
 
     /* Dati della scheda 1 dalla pagina che contiene questa: si copiano i valori, senza eventi */

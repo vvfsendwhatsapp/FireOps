@@ -9,7 +9,7 @@
    style.css...) restano condivisi: se una modifica deve stare solo in BIS,
    va fatta su una copia -bis del file (come schede-bis.js,
    messaggistica-bis.js) e le regole CSS solo BIS vanno in style-bis.css. */
-const FIREOPS_VERSIONE = "202611231400";
+const FIREOPS_VERSIONE = "202611231420";
 window.FIREOPS_VERSIONE = FIREOPS_VERSIONE;
 window.FIREOPS_VERSIONE_FILE = "versione-bis.js"; // letto da utilizzo.js per la barra "Aggiorna"
 

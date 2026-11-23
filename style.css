@@ -9212,3 +9212,46 @@ body.pros-pop-aperto { overflow: hidden; }
     #sitac-aib .sitac-scheda-btn { white-space: normal; padding: 6px 6px; font-size: 12px; line-height: 1.2; text-align: center; gap: 4px; flex-wrap: wrap; }
 }
 #sitac-aib.sitac-sez-stretta .sitac-scheda-btn { white-space: normal; padding: 6px 6px; font-size: 12px; line-height: 1.2; text-align: center; gap: 4px; flex-wrap: wrap; }
+
+/* =========================================================================
+   SITAC sul telefono (sitac-mobile.js): carta a tutto spazio, strumenti in
+   un pannello che sale dal basso. Solo con #sitac-app.sitac-mobile.
+   ========================================================================= */
+.sitac-m-strumenti, .sitac-m-chiudi { display: none; }
+#sitac-app.sitac-mobile .sitac-pannello[data-scheda="carta"] { position: relative; }
+#sitac-app.sitac-mobile #sitac-carta { position: relative; flex-direction: column; flex: 1 1 auto; }
+#sitac-app.sitac-mobile .sitac-mapwrap { flex: 1 1 auto; height: calc(100dvh - 230px); min-height: 360px; }
+#sitac-app.sitac-mobile #sitac-barra {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 1200;
+    width: auto; max-width: none; min-width: 0; max-height: 68%;
+    border: 0; border-top: 2px solid var(--primary-color); border-radius: 14px 14px 0 0;
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, .55);
+    padding: 0 10px 24px; overflow-y: auto; overscroll-behavior: contain;
+    transform: translateY(105%); transition: transform .22s ease; visibility: hidden;
+}
+#sitac-app.sitac-mobile.sitac-barra-aperta #sitac-barra { transform: none; visibility: visible; }
+#sitac-app.sitac-mobile .sitac-m-chiudi {
+    display: flex; flex-direction: column; align-items: center; gap: 4px; width: 100%;
+    position: sticky; top: 0; z-index: 2; margin: 0 0 8px; padding: 6px 0 8px;
+    background: var(--dark-color); border: 0; color: var(--text-muted); font-size: 12.5px; cursor: pointer;
+}
+#sitac-app .sitac-m-maniglia { width: 44px; height: 5px; border-radius: 3px; background: #666; }
+#sitac-app.sitac-mobile .sitac-m-strumenti {
+    display: inline-flex; align-items: center; gap: 6px;
+    position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 1100;
+    padding: 12px 22px; border-radius: 26px; font-size: 16px; font-weight: bold;
+    background: var(--primary-color); color: var(--dark-color); border: 0;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .5); width: auto;
+}
+#sitac-app.sitac-mobile .sitac-fisa-testa { min-height: 46px; }
+#sitac-app.sitac-mobile .sitac-fisa-corpo button[data-genere] { min-height: 46px; }
+/* Legenda e stato più piccoli: la carta viene prima */
+#sitac-app.sitac-mobile #sitac-legenda { max-width: 160px; font-size: 11px; top: 6px; right: 6px; }
+#sitac-app.sitac-mobile #sitac-stato { margin: 6px 8px 8px; font-size: 12px; max-height: 56px; overflow: auto; }
+#sitac-app.sitac-mobile .leaflet-control-zoom a { width: 38px; height: 38px; line-height: 38px; font-size: 20px; }
+/* Intestazione della sezione in una riga: niente testo d'aiuto, bandiere e sfondo piccoli */
+#sitac-aib.sitac-sez-stretta .pagina-box-header .pagina-nota-inline { display: none; }
+#sitac-aib.sitac-sez-stretta .pagina-box-header { margin-bottom: 6px !important; gap: 6px; }
+#sitac-aib.sitac-sez-stretta #sitac-lingue img, #sitac-aib.sitac-sez-stretta #sitac-lingue button { max-height: 22px; }
+#sitac-aib.sitac-sez-stretta .sitac-schede { margin-bottom: 6px; }
+#sitac-app.sitac-mobile .sitac-immagine-frame { height: calc(100dvh - 150px); min-height: 380px; }
