@@ -44,6 +44,8 @@
     /* Importa delle aree (GeoJSON da APR) e superficie in ettari: su una foto non hanno senso */
     #si-corpo .sitac-imp, #si-corpo #sitac-superficie { display: none !important; }
     #si-corpo .sitac-coppia { display: block !important; }
+    /* niente misure su una foto: la nota sui perimetri per superficie e perimetro non serve */
+    #si-corpo #sitac-superficie + .sitac-avviso { display: none !important; }
     #sitac-mappa { background: #0c0c0c !important; }
     #si-vuota { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 500;
       pointer-events: none; color: #bbb; font-size: 15px; text-align: center; line-height: 1.6; }
@@ -123,6 +125,7 @@
         var b = L.latLngBounds(map.unproject(L.point(c.x - w / 2, c.y + h / 2), Z), map.unproject(L.point(c.x + w / 2, c.y - h / 2), Z));
         if (foto) map.removeLayer(foto);
         foto = L.imageOverlay(url, b, { interactive: false, pmIgnore: true }).addTo(map);
+        FireOps.SITAC_IMMAGINE_BOUNDS = b;   // la stampa inquadra la foto intera
         foto.bringToBack();
         map.setMaxBounds(b.pad(0.5));
         map.invalidateSize();

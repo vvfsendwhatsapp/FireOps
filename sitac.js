@@ -47,6 +47,9 @@ const NS = (window.FireOps = window.FireOps || {});
 if (NS.Sitac) return;
 
 function avvia(app){
+  /* SITAC da immagine: una foto non è georeferenziata (e spesso è in
+     prospettiva), quindi niente misure, superfici, lunghezze, coordinate né GPS. */
+  const IMM = !!NS.SITAC_IMMAGINE;
   /* Bandiere, descrizione e pulsante Espandi stanno nella riga sopra
      #sitac-app, fuori dal riquadro: le ricerche partono dalla sezione. */
   const radice = app.closest('.page-section') || app;
@@ -3150,7 +3153,7 @@ async function chiediLatoSimbolo(layer){
      per la sua geometria. Il lancio porta anche l'ingombro, che è il dato
      per cui esiste come poligono invece che come simbolo. */
   function misureDi(l){
-    if (!l) return null;
+    if (!l || IMM) return null;
     if (l._genere === 'lancio')
       return t('lancioDi', {a: l._a * 2, b: l._b * 2,
         s: (areaMq(l) / 10000).toFixed(2)});
@@ -4006,7 +4009,7 @@ async function chiediLatoSimbolo(layer){
     segna(2, ventoCono ? `${t('pFatto')} ${ventoCono.velocita} km/h \u2192 ${ventoCono.verso}\u00b0`
       : t('pManca'), !!ventoCono);
 
-    const sf = superfici();
+    const sf = IMM ? {totale: 0, percorsa: 0, attiva: 0} : superfici();
     const nIn = disegni.getLayers().filter(x => x._tipo === 'origine').length;
     segna(3, (nIn || sf.totale)
       ? `${nIn ? t('pInneschi', {n:nIn}) : ''}${nIn && sf.totale ? ' \u00b7 ' : ''}`
@@ -4135,7 +4138,7 @@ async function chiediLatoSimbolo(layer){
   const inKm = m => m < 1000 ? Math.round(m) + ' m' : (m/1000).toFixed(2) + ' km';
 
   function misuraMostra(latlng, pt){
-    if (!misuraBox || !misuraPunti.length) return;
+    if (IMM || !misuraBox || !misuraPunti.length) return;
     const ultimo = misuraPunti[misuraPunti.length - 1];
     const seg = ultimo.distanceTo(latlng);
     let tot = seg;
@@ -4421,10 +4424,11 @@ async function chiediLatoSimbolo(layer){
     if (layer._paese) testo += ` \u2014 ${nmStato(layer._paese)}`;
     if (layer._testo && !AREE[k] && !LIN[k]) testo += ` ${layer._testo}`;
     testo += statoDi(def, layer._stato);
-    if (AREE[k]) testo += '\n' + t('areaDi', {a:(areaMq(layer)/10000).toFixed(2),
+    if (IMM) {}
+    else if (AREE[k]) testo += '\n' + t('areaDi', {a:(areaMq(layer)/10000).toFixed(2),
       p:(perimetroM(layer)/1000).toFixed(2)});
     else if (LIN[k]) testo += '\n' + t('lunghezzaDi', {v:(lunghezzaM(layer)/1000).toFixed(2)});
-    if (layer._genere === 'lancio')
+    if (layer._genere === 'lancio' && !IMM)
       testo += '\n' + t('lancioDi', {a: layer._a * 2, b: layer._b * 2,
         s: (areaMq(layer) / 10000).toFixed(2)});
     layer.unbindTooltip();
@@ -4962,6 +4966,7 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
      i metri quadri servono sotto l'ettaro, dove "0,04 ha" non dice niente
      e "400 m²" sì. Stanno in un riquadro a parte per non affollare la barra. */
   function mostraSuperfici(){
+    if (IMM) return;
     const sf = superfici();
     chiedi({testo:
         `${t('supPercorsa', {v: inHa(sf.percorsa)})} — ${inMq(sf.percorsa)} m²\n`
@@ -4994,7 +4999,7 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
     const aree  = l.filter(x => AREE[x._tipo]).length;
     const punti = l.length - linee - aree;
     let sup = 0, per = 0;
-    l.filter(x => AREE[x._tipo]).forEach(x => { sup += areaMq(x); per += perimetroM(x); });
+    if (!IMM) l.filter(x => AREE[x._tipo]).forEach(x => { sup += areaMq(x); per += perimetroM(x); });
     stato(t('conteggio', {p:punti, l:linee, a:aree})
       + (sup ? t('superficie', {v:(sup/10000).toFixed(1)}) : '')
       + (per ? t('perimetro', {v:(per/1000).toFixed(2)}) : ''));
@@ -5188,7 +5193,7 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
   applicaLingua();
   stato(t('pronto'));
   aggiornaLegenda();
-  centraSuGps(false);
+  if (!IMM) centraSuGps(false);
   /* Il passo 1 si apre da solo: è il primo gesto di ogni SITAC, e trovarlo
      chiuso costa un clic a ogni apertura del modulo. */
   const testa1 = q('#sitac-barra .sitac-fisa-testa');
@@ -5675,6 +5680,11 @@ async function stampa(){
          <h1>Riepilogo dei dati</h1>
          <p>${esc(t('stTitolo'))} \u00b7 ${esc(quando)}</p>
        </header>
+${NS.SITAC_IMMAGINE ? `
+       <p class="sf-nota">SITAC disegnata su un'immagine non georeferenziata: nessuna misura, superficie o coordinata.</p>
+       <h2>${esc(t('stSquadre'))}</h2>${sfTabellaSquadre()}
+        ${sfBloccoLanci()}
+       <h2>${esc(t('stNote'))}</h2>${sfTabellaNote()}` : `
         <h2>Punti d'innesco</h2>${sfTabellaInneschi()}
        <h2>Superfici</h2>${sfTabellaAree()}
        <h2>Vento e pendenza</h2>${sfTabellaVento()}
@@ -5682,7 +5692,7 @@ async function stampa(){
        <h2>${esc(t('stSquadre'))}</h2>${sfTabellaSquadre()}
         ${sfBloccoLanci()}
        <h2>Linee tracciate</h2>${sfTabellaLinee()}
-       <h2>${esc(t('stNote'))}</h2>${sfTabellaNote()}
+       <h2>${esc(t('stNote'))}</h2>${sfTabellaNote()}`}
      </section>`;
 
   /* La mappa viva si sposta dentro il foglio e poi torna esattamente dov'era:
@@ -5716,6 +5726,8 @@ async function stampa(){
     if (!e || !e.isValid()) return;
     b = b.isValid() ? b.extend(e) : L.latLngBounds(e.getSouthWest(), e.getNorthEast());
   });
+  /* Su una foto si stampa la foto intera, non solo la parte disegnata */
+  if (NS.SITAC_IMMAGINE_BOUNDS) b = NS.SITAC_IMMAGINE_BOUNDS;
   if (b.isValid()) map.fitBounds(b, {padding:[28, 28]});
 
   await attendiTile(2500);
