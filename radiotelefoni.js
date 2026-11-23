@@ -42,7 +42,8 @@ const CAMPI = {
 /* Misure del foglio stampato, in millimetri. Devono restare allineate al
    CSS (.rt-foglio): `area` è l'altezza utile per le righe, tolte testata,
    piede e intestazione delle colonne, con un paio di millimetri di scorta;
-   `naz` è quanto occupa il riquadro CON/SOCAV sulla prima facciata. */
+   `naz` è quanto occupa il riquadro CON/SOCAV sulla prima facciata, `aero`
+   quello dei canali aeronautici sulla seconda. */
 const FOGLIO = {area: 250, naz: 24, aero: 34.5, rigaMax: 8};
 const CANALE_NAZIONALE = '100';
 
