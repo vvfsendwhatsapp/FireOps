@@ -18,6 +18,12 @@ document.addEventListener("DOMContentLoaded", () => {
     let linkUtiliData = []; // elenco link utili organizzati per tema, per la pagina "Link Utili"
     let sostanzePericoloseData = []; // database locale schede ICSC (numero, nome, sinonimi)
     let modalChiudibile = false; // true solo quando riaperto manualmente col pulsante ☰
+    // SOLO BIS (<html data-fireops="bis">): al login si possono scegliere anche le Direzioni regionali.
+    // Una Direzione diventa un "Comando attivo" con i dati della sua Sala Operativa; come "limitrofi"
+    // ha i Comandi della regione. In produzione questo elenco resta vuoto e nulla cambia.
+    const BIS_DIREZIONI = document.documentElement.dataset.fireops === "bis";
+    let direzioniComeComandi = [];
+    const trovaAttivabile = nome => comandiData.find(c => c.Comando === nome) || direzioniComeComandi.find(d => d.Comando === nome);
 
     Promise.all([
         fetch("/FireOps/db/comandi.json").then(r => {
@@ -65,12 +71,29 @@ document.addEventListener("DOMContentLoaded", () => {
         linkUtiliData = linkUtili;
 
         selectComando.innerHTML = '<option value="" disabled selected>-- Seleziona Comando --</option>';
+        if (BIS_DIREZIONI) {
+            direzioniComeComandi = direzioni.map(d => direzioneComeComando(d, comandi));
+            window.FireOpsDirezioniAttivabili = direzioniComeComandi;
+        }
+        const gruppoComandi = BIS_DIREZIONI ? document.createElement("optgroup") : selectComando;
+        if (BIS_DIREZIONI) { gruppoComandi.label = "Comandi"; selectComando.appendChild(gruppoComandi); }
         comandi.forEach(c => {
             const option = document.createElement("option");
             option.value = c.Comando;
             option.textContent = c.Comando;
-            selectComando.appendChild(option);
+            gruppoComandi.appendChild(option);
         });
+        if (BIS_DIREZIONI && direzioniComeComandi.length) {
+            const gruppoDir = document.createElement("optgroup");
+            gruppoDir.label = "Direzioni regionali";
+            direzioniComeComandi.forEach(d => {
+                const option = document.createElement("option");
+                option.value = d.Comando;
+                option.textContent = d.Comando;
+                gruppoDir.appendChild(option);
+            });
+            selectComando.appendChild(gruppoDir);
+        }
         selectComando.disabled = false;
 
         // Popola i selettori della pagina Messaggistica (prefisso e lingua)
@@ -93,7 +116,7 @@ document.addEventListener("DOMContentLoaded", () => {
         renderLinkUtili(linkUtiliData);
 
         const comandoSalvato = sessionStorage.getItem(CHIAVE_STORAGE);
-        if (comandoSalvato && comandiData.some(c => c.Comando === comandoSalvato)) {
+        if (comandoSalvato && trovaAttivabile(comandoSalvato)) {
             attivaComando(comandoSalvato);
             modal.style.display = "none";
         }
@@ -119,14 +142,47 @@ document.addEventListener("DOMContentLoaded", () => {
             console.error("Database sostanze pericolose non disponibile:", err);
         });
 
+    // BIS: una Direzione regionale con la forma di un record di comandi.json
+    function direzioneComeComando(d, comandi) {
+        const nome = d["Direzione VVF"];
+        const suoi = comandi.filter(c => c["Direzione VVF"] === nome);
+        const base = suoi[0] || {};
+        const [lat, lon] = String(d["Coordinate DIR"] || "").split(",").map(x => x.trim());
+        const r = {};
+        // dalla regione: CON, SOCAV, NUE, CHS della Direzione (uguali per tutti i suoi Comandi)
+        ["Regione", "Centro Operativo Nazionale VVF", "Telefono SO CON", "email SO CON", "Indirizzo CON", "Canale Radio CON", "CHS CON",
+         "Centro Assistenza al Volo", "Telefono SOCAV", "Indirizzo SOCAV", "email SOCAV", "CHS Direzione", "Regioni NUE"].forEach(k => { if (base[k] !== undefined) r[k] = base[k]; });
+        Object.assign(r, d);
+        Object.assign(r, {
+            Comando: "Direzione " + nome,
+            tipo: "direzione",
+            comandiDirezione: suoi.map(c => c.Comando),
+            "Direzione VVF": nome,
+            "Telefono SO Comando": d["Telefono SO Direzione"] || "",
+            "email SO Comando": d["email SO Direzione"] || "",
+            "PEC SO Comando": d["PEC SO Direzione"] || "",
+            "email Comando": d["email Direzione"] || "",
+            "PEC Comando": d["PEC Direzione"] || "",
+            "Canale Radio Comando": d["Canale Radio Direzione"] || "",
+            "CHS Comando": base["CHS Direzione"] || "",
+            "Indirizzo Completo": d["Indirizzo Direzione"] || "",
+            "Coordinate": d["Coordinate DIR"] || "",
+            Latitudine: lat || "",
+            Longitudine: lon || "",
+            "Concatena Comandi Confinanti": suoi.map(c => c.Comando).join(";")
+        });
+        return r;
+    }
+
     function attivaComando(nomeComando) {
         sessionStorage.setItem(CHIAVE_STORAGE, nomeComando);
-        displayComando.textContent = `Sala Operativa - Comando VVF ${nomeComando}`;
+        displayComando.textContent = /^Direzione /.test(nomeComando)
+            ? `Sala Operativa - ${nomeComando}` : `Sala Operativa - Comando VVF ${nomeComando}`;
 
         const homeNomeComando = document.getElementById("home-nome-comando");
         if (homeNomeComando) homeNomeComando.textContent = nomeComando;
 
-        const comandoSelezionato = comandiData.find(c => c.Comando === nomeComando);
+        const comandoSelezionato = trovaAttivabile(nomeComando);
         renderRiepilogoComando(comandoSelezionato, comandiData, direzioniData, conData, socavData);
         aggiornaMappaEMeteo(comandoSelezionato);
         // Il messaggio precompilato dipende dal Comando attivo: messaggistica-bis.js

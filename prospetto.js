@@ -131,7 +131,7 @@ let sblocco = {stato: '', errore: ''};   // '', 'verifica', 'ok', 'err'
 function comandoDiChiave(k) { return String(k || '').split('|')[2] || ''; }
 function pwdPer(cn) { return pwds[cn] || pwds['*'] || ''; }
 function puoModificare(k) { return !!pwdPer(comandoDiChiave(k)); }
-function sbloccato() { return !!pwdPer(normComando(f.comando)); }
+function sbloccato() { return eDirezione(f.comando) ? !!pwds['*'] : !!pwdPer(normComando(f.comando)); }
 let cella = null;                                     // prospetto: {corso, turno} di cui mostrare i nomi
 const f = Object.assign({comando: '', data: '', fascia: fasciaAdesso(), corso: '', qual: '', testo: '', stato: '', scheda: 'prospetto', quando: 0, senzaTurno: false},
   leggi(LS_FILTRI, {}), {data: dataAdesso(), fascia: fasciaAdesso()});
@@ -280,7 +280,7 @@ async function chiedi(url, opz, ms) {
 // legge dal foglio i turni del comando scelto; per ogni persona vince la modifica piu' recente
 async function scaricaTurni() {
   try {
-    const j = await chiedi(WEBAPP + '?turniPersonale=' + encodeURIComponent(normComando(f.comando)) + '&_=' + Date.now(), {cache: 'no-store'});
+    const j = await chiedi(WEBAPP + '?turniPersonale=' + encodeURIComponent(eDirezione(f.comando) ? '' : normComando(f.comando)) + '&_=' + Date.now(), {cache: 'no-store'});
     let cambi = 0;
     Object.entries(j.turni || {}).forEach(([k, v]) => {
       const loc = turni[k];
@@ -311,7 +311,7 @@ function ridisegna() {
 function programmaInvio() { clearTimeout(timerInvio); timerInvio = setTimeout(invia, 1500); }
 function salvaPwds() { try { sessionStorage.setItem(SS_PWD, JSON.stringify(pwds)); } catch (e) { /* niente */ } }
 async function sblocca(v) {
-  const cn = normComando(f.comando);
+  const cn = eDirezione(f.comando) ? '' : normComando(f.comando);   // regione intera: solo la password universale
   if (!v) return;
   sblocco = {stato: 'verifica', errore: ''}; disegna();
   try {
@@ -390,8 +390,26 @@ function impostaTurno(k, t, s) {
   scrivi(LS_TURNI, turni); metti(k); programmaInvio();
 }
 
+/* DIREZIONI REGIONALI: nel menu Comando c'e' anche "Direzione X – tutta la regione" (valore "DIR:X"):
+ * il personale registrato presso la Direzione piu' quello di tutti i Comandi della regione.
+ * E' la scelta predefinita quando in BIS si entra con una Direzione regionale. */
+const PRE_DIR = 'DIR:';
+function eDirezione(v) { return String(v || '').startsWith(PRE_DIR); }
+function direzioniRegionali() {
+  const s = new Set();
+  (window.FireOpsComandi || []).forEach(c => { if (c['Direzione VVF']) s.add(c['Direzione VVF']); });
+  return Array.from(s).sort((a, b) => a.localeCompare(b, 'it'));
+}
+function comandiDellaDirezione(dir) {
+  const n = new Set((window.FireOpsComandi || []).filter(c => c['Direzione VVF'] === dir).map(c => normComando(c.Comando)));
+  n.add(normComando('Direzione ' + dir));
+  return n;
+}
+function nomeScelta(v) { return !v ? 'Tutti i comandi' : eDirezione(v) ? 'Direzione ' + v.slice(PRE_DIR.length) + ' – tutta la regione' : v; }
 function comandoDefault() {
-  const a = window.FireOpsComandoAttivo, n = a && normComando(a.Comando);
+  const a = window.FireOpsComandoAttivo;
+  if (a && a.tipo === 'direzione' && a['Direzione VVF']) return PRE_DIR + a['Direzione VVF'];
+  const n = a && normComando(a.Comando);
   if (!n) return '';
   const trovato = comandi().find(c => normComando(c) === n);
   return trovato || '';
@@ -476,7 +494,10 @@ function quandoTesto(T) {
 
 /* ============================== FILTRI ============================== */
 
-function delComando() { const n = normComando(f.comando); return n ? righe.filter(p => normComando(p.comando) === n) : righe; }
+function delComando() {
+  if (eDirezione(f.comando)) { const set = comandiDellaDirezione(f.comando.slice(PRE_DIR.length)); return righe.filter(p => set.has(normComando(p.comando))); }
+  const n = normComando(f.comando); return n ? righe.filter(p => normComando(p.comando) === n) : righe;
+}
 function filtrati(sigla) {
   const testo = norm(f.testo);
   const l = delComando().filter(p => {
@@ -564,7 +585,7 @@ function htmlProspetto(corsiDisp, qualDisp, base, stati) {
   const voce = (p, t, extra) => {
     const tt = turni[p.k] || {}, inSalto = t === adesso.sel.l && tt.s && String(tt.s) === adesso.sel.n;
     const aperto = numeriAperti.has(p.k);
-    return `<li class="pros-cliccabile${inSalto ? ' salto' : ''}${extra ? ' ' + extra : ''}${aperto ? ' aperto' : ''}" data-num="${esc(p.k)}" title="${esc((p.cell ? 'Tocca per il numero · ' : '') + p.corsi.join(', '))}"><span class="q">${esc(p.qual)}</span> <span class="n">${esc(p.cognome)}${p.manuale ? ' ✍️' : ''}${etSenzaCorso(p)}</span>${tt.s && t !== 'NO' ? `<span class="s">${esc(t + tt.s)}</span>` : ''}${t === 'NO' && tt.t && tt.t !== 'NO' ? `<span class="s" title="Turno ${esc(NOME_TURNO(tt.t))}${tt.s ? ', salto ' + esc(tt.s) : ''}: non operativo per ${esc(NOME_SETTORE[settore] || '')}">${esc(NOME_TURNO(tt.t) + (tt.s || ''))}</span>` : ''}${f.comando ? '' : `<span class="c">${esc(p.comando)}</span>`}${aperto ? `<span class="tel">${p.cell ? `<a href="tel:${esc(p.cell)}">📞 ${esc(p.cell)}</a> <button type="button" class="pros-mini" data-copia="${esc(p.cell)}" title="Copia il numero">📋</button>` : '<span class="pros-nota">numero non presente su PUMA</span>'}</span>` : ''}</li>`;
+    return `<li class="pros-cliccabile${inSalto ? ' salto' : ''}${extra ? ' ' + extra : ''}${aperto ? ' aperto' : ''}" data-num="${esc(p.k)}" title="${esc((p.cell ? 'Tocca per il numero · ' : '') + p.corsi.join(', '))}"><span class="q">${esc(p.qual)}</span> <span class="n">${esc(p.cognome)}${p.manuale ? ' ✍️' : ''}${etSenzaCorso(p)}</span>${tt.s && t !== 'NO' ? `<span class="s">${esc(t + tt.s)}</span>` : ''}${t === 'NO' && tt.t && tt.t !== 'NO' ? `<span class="s" title="Turno ${esc(NOME_TURNO(tt.t))}${tt.s ? ', salto ' + esc(tt.s) : ''}: non operativo per ${esc(NOME_SETTORE[settore] || '')}">${esc(NOME_TURNO(tt.t) + (tt.s || ''))}</span>` : ''}${f.comando && !eDirezione(f.comando) ? '' : `<span class="c">${esc(p.comando)}</span>`}${aperto ? `<span class="tel">${p.cell ? `<a href="tel:${esc(p.cell)}">📞 ${esc(p.cell)}</a> <button type="button" class="pros-mini" data-copia="${esc(p.cell)}" title="Copia il numero">📋</button>` : '<span class="pros-nota">numero non presente su PUMA</span>'}</span>` : ''}</li>`;
   };
   const righeFascia = [['FUN', 'Funzionari del settore'], ['ROP', 'Responsabile operativo provinciale'], ['MAG', 'Magazziniere generale']]
     .map(([r, tit]) => [tit, fascia.filter(p => ORDINE_RUOLI[rangoRuolo(p, settore)] === r)]);
@@ -572,7 +593,7 @@ function htmlProspetto(corsiDisp, qualDisp, base, stati) {
   <div class="pros-fascia-settore">
     <div class="tit">Settore <b>${esc(NOME_SETTORE[settore])}</b></div>
     ${righeFascia.map(([tit, l]) => `
-    <div class="riga"><div class="ruolo">${esc(tit)}</div><div class="nomi">${l.length ? l.map(p => `<span class="pers" title="${esc(p.corsi.join(', '))}"><span class="q">${esc(p.qual)}</span> <b>${esc(p.cognome)}</b>${p.manuale ? ' ✍️' : ''}${etSenzaCorso(p)} <span class="t">${esc(turnoTesto(p))}</span>${p.cell ? ` <a href="tel:${esc(p.cell)}">📞 ${esc(p.cell)}</a>` : ''}${f.comando ? '' : ` <span class="c">${esc(p.comando)}</span>`}</span>`).join('') : '<span class="pros-nota">— non assegnato (scheda Gestione personale, ✏️ Ruoli)</span>'}</div></div>`).join('')}
+    <div class="riga"><div class="ruolo">${esc(tit)}</div><div class="nomi">${l.length ? l.map(p => `<span class="pers" title="${esc(p.corsi.join(', '))}"><span class="q">${esc(p.qual)}</span> <b>${esc(p.cognome)}</b>${p.manuale ? ' ✍️' : ''}${etSenzaCorso(p)} <span class="t">${esc(turnoTesto(p))}</span>${p.cell ? ` <a href="tel:${esc(p.cell)}">📞 ${esc(p.cell)}</a>` : ''}${f.comando && !eDirezione(f.comando) ? '' : ` <span class="c">${esc(p.comando)}</span>`}</span>`).join('') : '<span class="pros-nota">— non assegnato (scheda Gestione personale, ✏️ Ruoli)</span>'}</div></div>`).join('')}
   </div>` : '';
   return `
   <div class="pros-testa">
@@ -619,9 +640,9 @@ function htmlGestione(corsiDisp, qualDisp, base, stati) {
   if (f.senzaTurno) elenco = elenco.filter(p => !(turni[p.k] && turni[p.k].t));
   const cn = normComando(f.comando), aperto = sbloccato();
   const lucchetto = aperto
-    ? `<div class="pros-lucchetto ok">🔓 Modifiche abilitate per ${pwds['*'] ? 'tutti i Comandi (password generale)' : esc(f.comando)} in questa sessione <button type="button" class="pros-mini" id="pros-blocca">🔒 Blocca</button></div>`
+    ? `<div class="pros-lucchetto ok">🔓 Modifiche abilitate per ${pwds['*'] ? 'tutti i Comandi (password generale)' : esc(nomeScelta(f.comando))} in questa sessione <button type="button" class="pros-mini" id="pros-blocca">🔒 Blocca</button></div>`
     : !cn ? `<div class="pros-lucchetto">🔒 Scegli un Comando qui sotto per sbloccare le modifiche con la sua password.</div>`
-    : `<form class="pros-lucchetto" id="pros-sblocca" autocomplete="off">🔒 Per modificare turni e salti di <b>${esc(f.comando)}</b> inserisci la password del Comando
+    : `<form class="pros-lucchetto" id="pros-sblocca" autocomplete="off">🔒 Per modificare turni e salti di <b>${esc(nomeScelta(f.comando))}</b>${eDirezione(f.comando) ? ' (tutta la regione: serve la password universale)' : ''} inserisci la password del Comando
         <input type="password" id="pros-pwd" placeholder="Password" autocomplete="current-password"${sblocco.stato === 'verifica' ? ' disabled' : ''}>
         <button type="submit" class="pros-btn"${sblocco.stato === 'verifica' ? ' disabled' : ''}>${sblocco.stato === 'verifica' ? '⏳ Verifico…' : 'Sblocca'}</button>
         ${sblocco.stato === 'err' ? '<span class="pros-sync err">⚠️ ' + esc(sblocco.errore) + '</span>' : ''}</form>`;
@@ -654,7 +675,7 @@ function htmlGestione(corsiDisp, qualDisp, base, stati) {
     <tbody>${elenco.map(p => {
       const t = turni[p.k] || {};
       return `<tr data-k="${esc(p.k)}" class="${t.t === 'NO' ? 'st-no' : t.t ? '' : 'st-nd'}${modRuoli === p.k ? ' aperta' : ''}">
-        <td data-l="Personale"><b>${esc(p.cognome)}</b> ${esc(p.nome)}${p.manuale ? ` <span class="pros-man">✍️ aggiunto a mano</span>${aperto ? ` <button type="button" class="pros-mini" data-man-mod="${esc(p.k)}" title="Modifica">✏️</button> <button type="button" class="pros-mini danger" data-man-del="${esc(p.k)}" title="Elimina">🗑️</button>` : ''}` : ''}${f.comando ? '' : `<div class="pros-com">${esc(p.comando)}</div>`}</td>
+        <td data-l="Personale"><b>${esc(p.cognome)}</b> ${esc(p.nome)}${p.manuale ? ` <span class="pros-man">✍️ aggiunto a mano</span>${aperto ? ` <button type="button" class="pros-mini" data-man-mod="${esc(p.k)}" title="Modifica">✏️</button> <button type="button" class="pros-mini danger" data-man-del="${esc(p.k)}" title="Elimina">🗑️</button>` : ''}` : ''}${f.comando && !eDirezione(f.comando) ? '' : `<div class="pros-com">${esc(p.comando)}</div>`}</td>
         <td data-l="Qualifica">${aperto ? `<select data-qual="1" title="${p.qualPuma && p.qual !== p.qualPuma ? 'Su PUMA: ' + esc(p.qualPuma) : 'Qualifica'}">${Array.from(new Set(QUAL_MAN.concat(p.qual ? [p.qual] : []))).map(q => `<option${q === p.qual ? ' selected' : ''}>${esc(q)}</option>`).join('')}</select>${p.qualPuma && p.qual !== p.qualPuma ? `<div class="pros-com">PUMA: ${esc(p.qualPuma)}</div>` : ''}` : esc(p.qual)}</td>
         <td data-l="Corsi">${p.corsi.map(c => `<span class="pros-chip${c === f.corso ? ' on' : ''}" title="${esc(c)}">${esc(siglaCorso(c))}</span>`).join('') || '<span class="pros-nota">—</span>'}</td>
         <td data-l="Cellulare">${p.cell ? `<a href="tel:${esc(p.cell)}">${esc(p.cell)}</a>` : ''}</td>
@@ -732,7 +753,10 @@ function htmlFormManuale(tuttiCorsi) {
 }
 function selectComando() {
   return `<label>Comando
-      <select id="pros-comando"><option value="">Tutti i comandi</option>${comandi().map(c => `<option${c === f.comando ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select></label>`;
+      <select id="pros-comando"><option value="">Tutti i comandi</option>
+        <optgroup label="Comandi e personale delle Direzioni">${comandi().map(c => `<option${c === f.comando ? ' selected' : ''}>${esc(c)}</option>`).join('')}</optgroup>
+        <optgroup label="Direzioni regionali – tutta la regione">${direzioniRegionali().map(d => `<option value="${esc(PRE_DIR + d)}"${PRE_DIR + d === f.comando ? ' selected' : ''}>Direzione ${esc(d)} – tutta la regione</option>`).join('')}</optgroup>
+      </select></label>`;
 }
 // sta nella stessa riga del Comando, dentro la testata
 function selectCorso(corsiDisp, base) {
@@ -765,7 +789,7 @@ function htmlRichiamo(corsiDisp, qualDisp, base, stati) {
   const riga = p => {
     const t = turni[p.k] || {};
     return `<tr><td data-l="Qualifica" class="q">${esc(p.qual)}</td>
-      <td data-l="Nome" title="${esc(p.corsi.join(', '))}"><b>${esc(p.cognome)}</b> ${esc(p.nome)}${p.manuale ? ' ✍️' : ''} ${htmlRuoli(p, settoreDi(f.corso))}${f.comando ? '' : `<div class="pros-com">${esc(p.comando)}</div>`}</td>
+      <td data-l="Nome" title="${esc(p.corsi.join(', '))}"><b>${esc(p.cognome)}</b> ${esc(p.nome)}${p.manuale ? ' ✍️' : ''} ${htmlRuoli(p, settoreDi(f.corso))}${f.comando && !eDirezione(f.comando) ? '' : `<div class="pros-com">${esc(p.comando)}</div>`}</td>
       <td data-l="Numero">${p.cell ? `<a href="tel:${esc(p.cell)}">📞 ${esc(p.cell)}</a>` : '<span class="pros-nota">—</span>'}</td>
       <td data-l="Turno" class="c">${esc(NOME_TURNO(t.t || '—'))}</td>
       <td data-l="Salto" class="c">${esc(t.s || '—')}</td></tr>`;
@@ -997,7 +1021,7 @@ function disegnaPopup() {
   if (!popup) return;
   const corpo = popup.querySelector('.pros-pop-corpo'), sel = popup.querySelector('#pros-pop-corso'), com = popup.querySelector('.pros-pop-com');
   if (!f.comando && carico.stato === 'ok') f.comando = comandoDefault();
-  com.textContent = f.comando || 'Tutti i comandi';
+  com.textContent = nomeScelta(f.comando);
   const base = delComando();
   const corsiDisp = Array.from(new Set(base.flatMap(p => p.corsi))).sort((a, b) => a.localeCompare(b, 'it'));
   sel.innerHTML = `<option value="">${corsiDisp.length ? '— scegli il corso —' : (carico.stato === 'ok' ? 'Nessun corso' : 'Lettura da PUMA…')}</option>` +
