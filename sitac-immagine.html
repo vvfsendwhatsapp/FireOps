@@ -31,6 +31,12 @@
     #si-barra label, #si-barra button { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; font-size: 13.5px; border-radius: 7px;
       border: 1px solid var(--border-color, #444); background: var(--surface-color, #222); color: var(--text-main, #eee); cursor: pointer; }
     #si-barra .prim { background: #1f7a3a; border-color: #2aa04d; color: #fff; font-weight: bold; }
+    #si-barra .si-scala { cursor: default; gap: 6px; }
+    #si-barra .si-scala input { width: 110px; accent-color: #ffd700; }
+    #si-barra .si-scala b { min-width: 40px; font-size: 12px; color: #ffd700; }
+    /* Grandezza dei simboli: "scale" si somma alla rotazione che il simbolo ha già */
+    #sitac-mappa .sitac-sim .sitac-glifo, #sitac-mappa .sitac-sim .sitac-disco, #sitac-mappa .sitac-etichetta { scale: var(--sim-scala, 1); }
+    #sitac-mappa .sitac-etichetta { transform-origin: left center; }
     #si-barra .pdf { background: #1e5aa8; border-color: #3b7bd1; color: #fff; font-weight: bold; }
     #si-barra .pdf:disabled { opacity: .6; }
     #si-barra .pericolo { border-color: #e53935; color: #ff6b6b; background: transparent; font-weight: bold; }
@@ -77,6 +83,8 @@
     <button type="button" class="prim" id="si-scatta">📷 Scatta foto</button>
     <input type="file" id="si-file1" accept="image/*" capture="environment" hidden>
     <label>🖼 Dalla galleria / file<input type="file" id="si-file2" accept="image/*" hidden></label>
+    <label class="si-scala" title="Grandezza dei simboli sulla foto (anche nel PDF)">🔍 Simboli
+      <input type="range" id="si-scala" min="0.5" max="3" step="0.1" value="1"><b id="si-scala-v">100%</b></label>
     <button type="button" id="si-pdf" class="pdf" title="PDF con la foto disegnata e i dati del DOS">📄 PDF</button>
     <button type="button" id="si-pulisci" class="pericolo" title="Cancella foto e disegno (chiede due volte)">🗑 Cancella tutto</button>
     <span class="nota" id="si-nota">Tutti gli strumenti della SITAC, sulla foto. Si può anche incollare (Ctrl+V) o trascinare un'immagine.</span>
@@ -230,8 +238,8 @@
       var kx = Wn / (se.x - nw.x), ky = Hn / (se.y - nw.y);
       var px = function (ll) { var q = map.project(ll, Z); return [(q.x - nw.x) * kx, (q.y - nw.y) * ky]; };
       /* simboli e spessori grandi come si vedono con la foto intera a schermo */
-      var r = document.getElementById("sitac-mappa").getBoundingClientRect();
-      var f = Math.max(1, Wn / Math.min(r.width || Wn, (r.height || Hn) * Wn / Hn));
+      var a0 = map.latLngToContainerPoint(b.getNorthWest()), a1 = map.latLngToContainerPoint(b.getSouthEast());
+      var f = Math.max(1, Wn / Math.max(1, a1.x - a0.x));
       var cv = document.createElement("canvas"); cv.width = Wn; cv.height = Hn;
       var g = cv.getContext("2d");
       g.drawImage(img, 0, 0, Wn, Hn);
@@ -280,18 +288,20 @@
           var cont = svg.parentElement === ic ? svg : svg.parentElement;
           var bx = cont.offsetLeft || 0, by = cont.offsetTop || 0, bw = cont.offsetWidth || svg.clientWidth, bh = cont.offsetHeight || svg.clientHeight;
           var m = /rotate\(([-\d.]+)deg\)/.exec(cont.style.transform || "");
+          var conScala = ic.classList.contains("sitac-sim");
           var disco = ic.querySelector(".sitac-disco"), conDisco = disco && getComputedStyle(disco).display !== "none";
           lavori.push(svgInImmagine(svg).then(function (im) {
             return function () {
-              if (conDisco) { g.save(); g.fillStyle = "rgba(255,255,255,.82)"; g.beginPath(); g.arc(ox + w / 2 * f, oy + h / 2 * f, w * 0.42 * f, 0, Math.PI * 2); g.fill(); g.restore(); }
+              var S = conScala ? scalaSim : 1;   // come a schermo: la grandezza vale solo per i simboli
+              if (conDisco) { g.save(); g.fillStyle = "rgba(255,255,255,.82)"; g.beginPath(); g.arc(ox + w / 2 * f, oy + h / 2 * f, w * 0.42 * f * S, 0, Math.PI * 2); g.fill(); g.restore(); }
               if (!im) return;
               var cx = ox + (bx + bw / 2) * f, cy = oy + (by + bh / 2) * f;
               g.save(); g.translate(cx, cy); if (m) g.rotate(+m[1] * Math.PI / 180);
-              g.drawImage(im, -bw / 2 * f, -bh / 2 * f, bw * f, bh * f); g.restore();
+              g.drawImage(im, -bw / 2 * f * S, -bh / 2 * f * S, bw * f * S, bh * f * S); g.restore();
             };
           }));
         } else if ((ic.textContent || "").trim()) {
-          var testo = ic.textContent.trim(), cs = getComputedStyle(ic), fs = (parseFloat(cs.fontSize) || 12) * f;
+          var testo = ic.textContent.trim(), cs = getComputedStyle(ic), fs = (parseFloat(cs.fontSize) || 12) * f * (ic.classList.contains("sitac-etichetta") ? scalaSim : 1);
           lavori.push(Promise.resolve(function () {
             g.save(); g.font = "bold " + fs + "px Arial, sans-serif"; g.textBaseline = "top";
             g.lineWidth = fs / 4; g.strokeStyle = "#000"; g.fillStyle = cs.color || "#fff";
@@ -306,7 +316,15 @@
       var btn = $("si-pdf");
       btn.disabled = true; btn.textContent = "⏳ Preparo il PDF…";
       var fine = function () { btn.disabled = false; btn.textContent = "📄 PDF"; };
-      libPdf().then(componi).then(function (cv) {
+      /* Si inquadra la foto intera prima di comporre: le punte delle frecce e i motivi
+         delle linee Leaflet li calcola per lo zoom a schermo, e devono essere quelli
+         della foto intera. Dopo, la vista torna com'era. */
+      var map = istanza.map, prima = { c: map.getCenter(), z: map.getZoom() };
+      libPdf().then(function () {
+        map.fitBounds(FireOps.SITAC_IMMAGINE_BOUNDS, { animate: false });
+        return new Promise(function (ok) { setTimeout(ok, 350); });
+      }).then(componi).then(function (cv) {
+        map.setView(prima.c, prima.z, { animate: false });
         fine();
         var J = window.jspdf.jsPDF, orizz = cv.width >= cv.height;
         var doc = new J({ orientation: orizz ? "landscape" : "portrait", unit: "mm", format: "a4" });
@@ -341,6 +359,7 @@
           navigator.share({ files: [file], title: nome }).catch(function () { scaricaFile(blob, nome); });
         } else scaricaFile(blob, nome);
       }).catch(function (e) {
+        try { map.setView(prima.c, prima.z, { animate: false }); } catch (x) {}
         fine();
         alert("PDF non riuscito: " + (e && e.message ? e.message : e) + (navigator.onLine ? "" : "\nAl primo uso serve la rete."));
       });
@@ -351,6 +370,16 @@
       setTimeout(function () { URL.revokeObjectURL(u); a.remove(); }, 4000);
     }
     $("si-pdf").onclick = esportaPdf;
+    /* Grandezza dei simboli: si ricorda, vale a schermo e nel PDF */
+    var scalaSim = 1;
+    function impostaScala(v) {
+      scalaSim = Math.min(3, Math.max(0.5, +v || 1));
+      document.documentElement.style.setProperty("--sim-scala", scalaSim);
+      $("si-scala").value = scalaSim; $("si-scala-v").textContent = Math.round(scalaSim * 100) + "%";
+      try { localStorage.setItem("fireops_sitac_img_scala", scalaSim); } catch (e) {}
+    }
+    $("si-scala").oninput = function (e) { impostaScala(e.target.value); };
+    try { impostaScala(localStorage.getItem("fireops_sitac_img_scala") || 1); } catch (e) { impostaScala(1); }
     document.addEventListener("fireops:sitac-pulita", function () {
       if (foto && istanza) { istanza.map.removeLayer(foto); foto = null; }
       FireOps.SITAC_IMMAGINE_BOUNDS = null;
