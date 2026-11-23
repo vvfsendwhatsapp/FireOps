@@ -62,6 +62,8 @@ const CANALE_NAZIONALE = '100';
    comandi.json: così la riga della propria regione si accende da sola.
    `breve` è il testo per la carta, dove la colonna è stretta. */
 const AERO_FONTE = 'Direttiva COAU 2026, § 7.2';
+/* Frequenza aeronautica internazionale di emergenza (ICAO, "guard"): MAYDAY e PAN PAN. */
+const EMERGENZA_AERO = '121.500';
 const AERONAUTICI = [
   {mhz: ['122.150', '122.350'], area: 'Tutto il territorio nazionale', breve: 'Nazionale', naz: true},
   {mhz: ['134.550'], regioni: ['Lombardia', 'Emilia-Romagna']},
@@ -248,7 +250,24 @@ function bloccoNaz(n, schermo){
     + `</div><div class="rt-naz-voce"><span class="rt-naz-nome">SOCAV</span>`
     + `<span class="rt-naz-desc">Assistenza al volo</span>`
     + `<span></span>` + tel('TEL', n.socav.tel)
-    + `</div></div>`;
+    + `</div>` + (schermo ? vociAeroNaz() : '') + `</div>`
+    + (schermo ? `<p class="rt-naz-nota">TBT = DOS ↔ aeromobili AIB, VHF AM (${esc(AERO_FONTE)}). `
+      + `Sullo stesso incendio tutti gli aeromobili usano la frequenza della scheda di richiesta di concorso AIB. `
+      + `La frequenza regionale è nella scheda di ogni Direzione.</p>` : '');
+}
+
+/* A video, accanto a CON e SOCAV, le frequenze che valgono ovunque:
+   TBT nazionale e militare, Capitaneria ed emergenza aeronautica. */
+function vociAeroNaz(){
+  const a = aeronauticiPer('');
+  const mhz = (v, mod) => `<span class="rt-naz-dato"><span class="rt-naz-et">${mod || 'MHz'}</span>`
+    + `<b class="rt-naz-ch rt-naz-mhz">${esc(v)}</b></span>`;
+  const voce = (nome, desc, v, mod, cl) => `<div class="rt-naz-voce${cl ? ' ' + cl : ''}"><span class="rt-naz-nome">${nome}</span>`
+    + `<span class="rt-naz-desc">${desc}</span>${mhz(v, mod)}<span></span></div>`;
+  return voce('TBT NAZIONALE', 'Aeromobili AIB, tutto il territorio', a.nazionale.join(' · '))
+    + voce('TBT MILITARE', 'Secondaria, tutto il territorio', a.militare.join(' · '))
+    + voce('EMERGENZA AERO', 'MAYDAY · PAN PAN, frequenza internazionale', EMERGENZA_AERO, 'MHz AM', 'rt-naz-emerg')
+    + voce('CAPITANERIA', 'Primo contatto, canale 16 nautico', '156.800', 'MHz FM');
 }
 
 /* Le frequenze TBT. Si accende la riga della regione del Comando attivo;
@@ -391,15 +410,25 @@ let vista = (() => { try { return localStorage.getItem(LS_VISTA) || 'schede'; } 
 function regioniDi(g){
   return [...new Set(g.comandi.map(c => val(c.Regione)).filter(Boolean))];
 }
+/* TBT di una Direzione: la regionale (una sola voce anche se la Direzione ha
+   più regioni con la stessa frequenza) e sempre anche la nazionale. Dove la
+   Direttiva non dà una regionale (Veneto, Trentino-Alto Adige, Friuli) resta
+   la nazionale, scritta come tale. */
 function htmlTbt(g){
   const regs = regioniDi(g);
-  if (!regs.length) return '<span class="rt-manca">\u2014</span>';
-  return regs.map(r => {
-    const a = aeronauticiPer(r);
-    const f = a.regionale.length ? a.regionale.join(' · ') : '';
-    return `<span class="rt-tbt-voce">${f ? `<b class="rt-tbt-fq">${esc(f)}</b>` : `<span class="rt-tbt-naz">naz. ${esc(a.nazionale.join(' · '))}</span>`}`
-      + (regs.length > 1 ? ` <span class="rt-tbt-reg">${esc(r)}</span>` : '') + `</span>`;
-  }).join('');
+  const naz = aeronauticiPer('').nazionale.join(' · ');
+  const perFq = new Map();
+  regs.forEach(r => {
+    const f = aeronauticiPer(r).regionale.join(' · ');
+    if (!perFq.has(f)) perFq.set(f, []);
+    perFq.get(f).push(r);
+  });
+  const piu = perFq.size > 1;
+  const voci = [...perFq.entries()].map(([f, rr]) => f
+    ? `<span class="rt-tbt-voce"><b class="rt-tbt-fq">${esc(f)}</b>${piu ? ` <span class="rt-tbt-reg">${esc(rr.join(', '))}</span>` : ''}</span>`
+    : `<span class="rt-tbt-voce"><b class="rt-tbt-fq">${esc(naz)}</b> <span class="rt-tbt-reg">(nazionale${piu ? ' · ' + esc(rr.join(', ')) : ''})</span></span>`);
+  const soloNaz = !regs.length || [...perFq.keys()].every(f => !f);
+  return voci.join('') + (soloNaz ? '' : `<span class="rt-tbt-voce rt-tbt-piu">+ naz. ${esc(naz)}</span>`);
 }
 
 /* Testata della scheda: il nome su tutta la larghezza, sotto canale regionale,
@@ -463,7 +492,8 @@ function aggiorna(){
      prima che arrivino i dati. Il riquadro si riscrive solo se cambia la
      regione, e chi l'aveva chiuso lo ritrova chiuso. */
   const boxAero = $('rt-aero');
-  if (boxAero && boxAero.dataset.regione !== st.regione + '|'){
+  if (boxAero) boxAero.innerHTML = '';
+  if (false){
     const chiuso = boxAero.querySelector('details:not([open])');
     boxAero.innerHTML = bloccoAero(st.regione, true);
     if (chiuso) boxAero.querySelector('details').open = false;
@@ -512,13 +542,13 @@ function riquadroMio(st){
     const c = comandi.find(x => val(x.Comando) === n) || (window.FireOpsDirezioniAttivabili || []).find(x => val(x.Comando) === n);
     return `<span class="rt-mio-lim">${esc(n)}${c ? ` <b>${esc(oTrattino(c[CAMPI.comCh]))}</b>` : ''}</span>`;
   }).join('');
-  const regs = st.eDir ? Array.from(new Set(comandi.filter(c => c[CAMPI.dir] === st.dir).map(c => c.Regione).filter(Boolean))) : (st.regione ? [st.regione] : []);
-  const tbt = regs.map(r => { const f = aeronauticiPer(r).regionale; return `<span><b>${esc(f.length ? f.join(' · ') : 'nessuna regionale: ' + aeronauticiPer(r).nazionale.join(' · '))}</b> ${esc(r)}</span>`; }).join('');
+  const gMio = (gruppi || []).find(g => regione(g.nome) === regione(st.dir));
+  const tbt = gMio ? htmlTbt(gMio) : '';
   return `<div class="rt-mio">`
     + voce('SO attiva', st.nome, a[CAMPI.comCh], a[CAMPI.comTel])
     + (st.eDir ? '' : voce('Direzione', 'Direzione ' + regione(st.dir), a[CAMPI.dirCh], a[CAMPI.dirTel]))
     + (lim ? `<div class="rt-mio-voce rt-mio-limiti"><span class="rt-mio-et">${st.eDir ? 'Direzioni confinanti' : 'Comandi confinanti'}</span>${lim}</div>` : '')
-    + (tbt ? `<div class="rt-mio-tbt"><span class="rt-mio-et">TBT regionale</span>${tbt}</div>` : '')
+    + (tbt ? `<div class="rt-mio-tbt"><span class="rt-mio-et">TBT della Direzione</span>${tbt}</div>` : '')
     + `</div>`;
 }
 
