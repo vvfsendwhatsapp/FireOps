@@ -1005,6 +1005,17 @@ document.addEventListener("DOMContentLoaded", () => {
             .map(n => n.trim())
             .filter(n => n.length > 0);
 
+        // una riga della tabella (Comando o Direzione) con i canali VHF
+        const rigaLimitrofo = c => `
+                <tr>
+                    <td class="cliccabile" data-comando="${c.Comando}">${c.Comando}</td>
+                    <td>${c["Canale Radio Comando"] || "-"}</td>
+                    <td class="cliccabile" data-direzione-di="${c.Comando}">${c["Direzione VVF"] || "-"}</td>
+                    <td>${c["Canale Radio Direzione"] || "-"}</td>
+                </tr>`;
+        // BIS, Direzione regionale: prima i Comandi della Direzione, poi le Direzioni limitrofe
+        const comandiDirezioneRighe = comando.tipo === "direzione"
+            ? (comando.comandiDirezione || []).map(n => trovaComandoPerNome(n, tuttiComandi)).filter(Boolean).map(rigaLimitrofo).join("") : "";
         const limitrofiRighe = limitrofiNomi.map(nome => {
             const c = trovaComandoPerNome(nome, tuttiComandi);
             if (!c) {
@@ -1078,6 +1089,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     </tbody>
                 </table>
 
+                ${comando.tipo === "direzione" ? `
+                <h4>Comandi della Direzione</h4>
+                <table id="${p}-sezione-comandi-dir" class="riepilogo-tabella-limitrofi sezione-contenuto aperta">
+                    <thead><tr><th>Comando</th><th>CH VHF COM</th><th>Direzione</th><th>CH VHF DIR</th></tr></thead>
+                    <tbody>${comandiDirezioneRighe || '<tr><td colspan="4">Nessun comando</td></tr>'}</tbody>
+                </table>` : ""}
                 <h4>${comando.tipo === "direzione" ? "Direzioni regionali limitrofe" : "Comandi Limitrofi"}</h4>
                 <table id="${p}-sezione-limitrofi" class="riepilogo-tabella-limitrofi sezione-contenuto aperta">
                     <thead>
@@ -1089,7 +1106,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         </tr>
                     </thead>
                     <tbody>
-                        ${limitrofiRighe || '<tr><td colspan="4">Nessun comando limitrofo disponibile</td></tr>'}
+                        ${limitrofiRighe || `<tr><td colspan="4">${comando.tipo === "direzione" ? "Nessuna Direzione limitrofa" : "Nessun comando limitrofo disponibile"}</td></tr>`}
                     </tbody>
                 </table>
             </div>
