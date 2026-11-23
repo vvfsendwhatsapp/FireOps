@@ -3,8 +3,8 @@
  *
  * Nella scheda 1 della SITAC (intestazione, dati del DOS) aggiunge il campo
  * "Frequenze radio": un elenco a tendina con tutte le frequenze utili
- * (consigliate per il Comando dell'intervento, TBT nazionali, regionali e
- * militari, emergenza aeronautica, Capitaneria, canali VVF) e in fondo
+ * (TBT della regione dell'intervento, TBT nazionali, regionali e militari
+ * della Direttiva COAU, emergenza aeronautica, Capitaneria; niente canali VVF) e in fondo
  * "Altra frequenza…" per scriverne una a mano con il suo uso.
  * Le scelte diventano voci in elenco, ciascuna con un campo "uso" libero.
  *
@@ -69,9 +69,7 @@ function opzioni(){
     const r = aero(reg);
     if (r && r.regionale.length) r.regionale.forEach(f => cons.push([f + ' MHz AM', 'TBT regionale ' + reg]));
     else if (reg) a.nazionale.forEach(f => cons.push([f + ' MHz AM', 'TBT nazionale (nessuna regionale per ' + reg + ')']));
-    if (c['Canale Radio Comando']) cons.push(['CH ' + c['Canale Radio Comando'], 'VHF SO ' + c.Comando]);
-    if (c['Canale Radio Direzione']) cons.push(['CH ' + c['Canale Radio Direzione'], 'VHF ' + (c['Direzione VVF'] || 'Direzione')]);
-    gruppi.push(['Consigliate per ' + c.Comando, cons]);
+    gruppi.push(['TBT della regione (' + c.Comando + ')', cons]);
   }
   gruppi.push(['TBT nazionali (aeromobili AIB)', a.nazionale.map(f => [f + ' MHz AM', 'TBT nazionale'])]);
   gruppi.push(['TBT regionali (Direttiva COAU)', REGIONI_TBT.map(([f, r]) => [f + ' MHz AM', 'TBT regionale ' + r])]);
@@ -79,9 +77,6 @@ function opzioni(){
   gruppi.push(['Emergenza', [
     [EMERGENZA + ' MHz AM', 'Emergenza aeronautica (MAYDAY · PAN PAN)'],
     ['156.800 MHz FM', 'Capitaneria di Porto, canale 16 nautico']
-  ]]);
-  gruppi.push(['Canali VVF', [
-    ['CH 100', 'Canale nazionale VVF (CMR)']
   ]]);
   return gruppi;
 }
@@ -152,7 +147,7 @@ function html(){
     + `<div class="sitac-freq-riga"><select id="sitac-freqScelta"></select>`
     + `<button type="button" id="sitac-freqAggiungi">＋ Aggiungi</button></div>`
     + `<div id="sitac-freqAltra" class="sitac-freq-altra" hidden>`
-    + `<input type="text" id="sitac-freqAltraF" maxlength="20" inputmode="decimal" placeholder="Frequenza (es. 123.450 o CH 12)">`
+    + `<input type="text" id="sitac-freqAltraF" maxlength="20" inputmode="decimal" placeholder="Frequenza in MHz (es. 123.450)">`
     + `<input type="text" id="sitac-freqAltraD" maxlength="60" placeholder="Descrizione (es. TBT elicottero regionale)"></div>`
     + `<div id="sitac-freqElenco" class="sitac-freq-elenco"></div>`;
 }
