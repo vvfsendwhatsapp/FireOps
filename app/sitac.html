@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="it" data-fireops="bis">
+<html lang="it">
 
 <head>
   <meta charset="UTF-8">
@@ -11,11 +11,11 @@
   <!--
     SITAC nell'app FireOps VVF Pro, anche senza rete.
     Il markup della SITAC NON è copiato qui: si legge dalla sezione #sitac-aib
-    di ../index-bis.html, così resta sempre allineato a sitac.js (se manca un
+    di ../index.html, così resta sempre allineato a sitac.js (se manca un
     pulsante, sitac.js non parte). Il service worker (sw.js) tiene in cache
-    questa pagina, index-bis.html, gli script, Leaflet e le tessere della mappa
+    questa pagina, index.html, gli script, Leaflet e le tessere della mappa
     già viste: aperta una volta con la rete, funziona anche offline.
-    La scheda 3 "SITAC da immagine" (foto con frecce) arriva con lo stesso markup: sitac-foto-bis.js.
+    La scheda 3 "SITAC da immagine" (foto con frecce) arriva con lo stesso markup: sitac-foto.js.
   -->
   <script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(function () {});</script>
   <script>document.write('<script src="js/versione.js?t=' + Date.now() + '"><\/script>');</script>
@@ -24,7 +24,6 @@
   <script>
     var V = window.FIREOPS_VERSIONE || "0";
     document.write('<link rel="stylesheet" href="../style.css?v=' + V + '">');
-    document.write('<link rel="stylesheet" href="../style-bis.css?v=' + V + '">');
   </script>
   <style>
     html, body { margin: 0 !important; padding: 0 !important; height: 100%; background: var(--dark-color, #111); }
@@ -101,9 +100,9 @@
       }).catch(function () { /* senza comandi: la SITAC parte dal centro d'Italia */ });
     }
 
-    /* Il markup della SITAC si prende da index-bis.html: una sola copia, sempre allineata a sitac.js */
+    /* Il markup della SITAC si prende da index.html: una sola copia, sempre allineata a sitac.js */
     function caricaMarkup() {
-      return fetch("../index-bis.html?v=" + V).then(function (r) { return r.text(); }).then(function (t) {
+      return fetch("../index.html?v=" + V).then(function (r) { return r.text(); }).then(function (t) {
         var doc = new DOMParser().parseFromString(t, "text/html");
         var sez = doc.getElementById("sitac-aib");
         if (!sez) throw new Error("sezione SITAC non trovata");
@@ -117,8 +116,8 @@
       "https://unpkg.com/@geoman-io/leaflet-geoman-free@2.15.0/dist/leaflet-geoman.min.js",
       "https://unpkg.com/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.js"
     ];
-    var LOCALI = ["../fireops-sfondi.js", "../radiotelefoni-bis.js", "../sitac-simboli.js", "../sitac-vento.js",
-      "../sitac-rilievo.js", "../sitac.js", "../sitac-frequenze-bis.js", "../sitac-foto-bis.js"];
+    var LOCALI = ["../fireops-sfondi.js", "../radiotelefoni.js", "../sitac-simboli.js", "../sitac-vento.js",
+      "../sitac-rilievo.js", "../sitac.js", "../sitac-frequenze.js", "../sitac-foto.js"];
 
     Promise.all([caricaComandi(), caricaMarkup()])
       .then(function () { return CDN.reduce(function (p, s) { return p.then(function () { return script(s); }); }, Promise.resolve()); })

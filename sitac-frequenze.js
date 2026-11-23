@@ -1,5 +1,5 @@
 /*!
- * FireOps VVF — sitac-frequenze-bis.js — Frequenze radio del DOS nella SITAC (solo BIS)
+ * FireOps VVF — sitac-frequenze.js — Frequenze radio del DOS nella SITAC
  *
  * Nella scheda 1 della SITAC (intestazione, dati del DOS) aggiunge il campo
  * "Frequenze radio": un elenco a tendina con tutte le frequenze utili
@@ -13,7 +13,7 @@
  * rileggono all'importazione. In produzione questo file non c'è e sitac.js
  * non cambia comportamento.
  *
- * Le frequenze TBT vengono da window.FireOpsAeronautici (radiotelefoni-bis.js,
+ * Le frequenze TBT vengono da window.FireOpsAeronautici (radiotelefoni.js,
  * Direttiva COAU): una sola fonte da aggiornare.
  */
 (function () {

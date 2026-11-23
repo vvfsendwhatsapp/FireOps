@@ -1,5 +1,5 @@
 /*!
- * FireOps VVF — sitac-foto-bis.js — scheda 3 "SITAC da immagine" (solo BIS)
+ * FireOps VVF — sitac-foto.js — scheda 3 "SITAC da immagine"
  *
  * La scheda ospita sitac-immagine.html in un <iframe>: una seconda SITAC
  * completa, con tutti gli strumenti della tavola, disegnata su una foto
@@ -13,6 +13,9 @@
 
 /* L'iframe usa srcdoc con <base> sulla cartella del sito: così, nell'app Pro
    (app/sitac.html), resta sotto il service worker dell'app e va anche offline. */
+/* Da quale pagina sitac-immagine.html prende il markup della SITAC: la stessa che la contiene */
+window.FireOpsSitacMarkup = /index-bis\.html$/.test(location.pathname) ? 'index-bis.html' : 'index.html';
+
 const radice = () => new URL(/\/app\//.test(location.pathname) ? '../' : './', location.href).href;
 
 function monta(box){
@@ -41,7 +44,7 @@ function cerca(){
   guarda();
   return true;
 }
-/* Nell'app Pro il markup arriva dopo (fetch di index-bis.html): si riprova un po' */
+/* Nell'app Pro il markup arriva dopo (fetch di index.html): si riprova un po' */
 if (!cerca()){
   let n = 0;
   const t = setInterval(() => { if (cerca() || ++n > 60) clearInterval(t); }, 500);

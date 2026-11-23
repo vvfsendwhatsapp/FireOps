@@ -102,8 +102,9 @@
             <button id="btn-addestramenti" class="btn-icon-hamburger btn-icon-testo" type="button"
                 title="Addestramenti odierni (PUMA)"><img class="addestr-logo-btn" src="images/puma.jpg"
                     alt="PUMA"><span class="addestr-badge" hidden></span></button>
-            <button id="btn-otto-passi" class="btn-icon-hamburger btn-icon-testo" type="button"
-                title="Gli 8 Passi">8P</button>
+            <!-- Al posto degli 8 Passi: la finestra rapida degli specializzati disponibili (prospetto.js) -->
+            <button id="btn-specializzati" class="btn-icon-hamburger btn-icon-testo" type="button"
+                title="Specializzati disponibili: adesso, tra 12 e tra 24 ore">SP</button>
             <button id="btn-evento-rilevante" class="btn-icon-hamburger btn-icon-rilevante" type="button"
                 title="Vademecum: determinazione evento rilevante">R</button>
             <a id="btn-protocollo" class="btn-icon-hamburger" href="https://protocollo.dipvvf.it" target="_blank"
@@ -170,7 +171,10 @@
                         <span class="sitac-passo-stato" id="sitac-st1"></span>
                     </button>
                     <button class="sitac-scheda-btn sitac-scheda-bloccata" type="button" data-scheda="carta">
-                        <span data-t="sch2"></span>
+                        <span>2 · SITAC planimetrica</span>
+                    </button>
+                    <button class="sitac-scheda-btn" type="button" data-scheda="foto">
+                        <span>3 · SITAC da immagine</span>
                     </button>
                 </div>
 
@@ -350,6 +354,10 @@
                          viene chiesto. -->
                         <div id="sitac-stato"></div>
                     </div>
+
+                    <!-- SCHEDA 3: SITAC da immagine, una foto su cui disegnare
+                     frecce e scritte. Non chiede la posizione del DOS: sitac-foto.js -->
+                    <div class="sitac-pannello" data-scheda="foto" id="sitac-foto"></div>
 
                     <!-- Fuori dai pannelli: la testata serve alla stampa, il modale
                      serve da entrambe le schede -->
@@ -1052,9 +1060,11 @@
                 <div class="pagina-box-header pagina-box-header-con-nota">
                     <h3>Radio e telefoni</h3>
                     <p class="pagina-nota pagina-nota-inline">Canali VHF e telefoni delle sale operative di tutti i
-                        Comandi e le Direzioni.<br>Il
+                        Comandi e le Direzioni, e i canali aeronautici TBT per gli incendi boschivi.<br>Il
                         foglio stampato è un A4: nella finestra di stampa scegli fronte e retro, lato lungo.</p>
                     <button type="button" id="rt-bStampa" class="btn-toggle-radar">🖨 Stampa fronte e retro</button>
+                    <button class="btn-toggle-radar btn-fullscreen-pagina" type="button"
+                        title="Espandi a schermo intero">⛶ Espandi</button>
                 </div>
                 <label for="rt-cerca">Cerca una sala operativa</label>
                 <input type="text" id="rt-cerca" list="rt-comandi-list" autocomplete="off"
@@ -1064,10 +1074,26 @@
                     <input type="checkbox" id="rt-solo-vicini">
                     Mostra solo il Comando selezionato e i confinanti
                 </label>
-                <div id="rt-nazionali"></div>
+                <div class="rt-alto">
+                    <div id="rt-nazionali"></div>
+                    <div id="rt-aero"></div>
+                </div>
                 <div id="rt-elenco">
                     <p class="pagina-nota">L'elenco si compila appena è scelto il Comando attivo.</p>
                 </div>
+            </div>
+        </section>
+
+        <!-- PROSPETTO SPECIALIZZATI (prospetto.js) -->
+        <section id="prospetto-disponibilita" class="page-section">
+            <div class="pagina-box pagina-box-larga">
+                <div class="pagina-box-header pagina-box-header-con-nota">
+                    <p class="pagina-nota pagina-nota-inline">Personale da PUMA per corsi e turni (A, B, C, D, G, N.O.), gestione
+                        di turni e salti con password e richiamo degli specializzati.</p>
+                    <button class="btn-toggle-radar btn-fullscreen-pagina" type="button"
+                        title="Espandi a schermo intero">⛶ Espandi</button>
+                </div>
+                <div id="pros-app"></div>
             </div>
         </section>
 
@@ -1386,7 +1412,10 @@
                 "sitac-vento.js",
                 "sitac-rilievo.js",
                 "sitac.js",
+                "sitac-frequenze.js", // frequenze radio del DOS nella scheda 1 della SITAC
+                "sitac-foto.js",      // scheda 3 della SITAC: SITAC da immagine
                 "qrcode.js",
+                "prospetto.js",      // Prospetto specializzati e tasto SP
                 "normative-ricerca.js",
                 "qrcoder.js",
                 "utilizzo.js"

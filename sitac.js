@@ -1330,7 +1330,7 @@ function avvia(app){
     nominativo: inNominativo.value.trim() || null,
     telefono: inTelefono.value.trim() || null,
     posizione: inPosizione.value || null,
-    /* Solo BIS (sitac-frequenze-bis.js): le frequenze radio scelte dal DOS */
+    /* Solo BIS (sitac-frequenze.js): le frequenze radio scelte dal DOS */
     ...(window.FireOpsSitacFrequenze ? {frequenze: window.FireOpsSitacFrequenze.lista()} : {}),
     
     /* L'ora della REDAZIONE, non quella della stampa o dell'export: una

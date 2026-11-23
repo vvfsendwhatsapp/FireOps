@@ -8868,14 +8868,14 @@ body.pros-pop-aperto { overflow: hidden; }
 #pros-app .pros-ordine { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-muted); }
 
 /* BIS — Radio e telefoni: SO attiva, sua Direzione e confinanti ben riconoscibili; riquadro "La tua SO" con TBT */
-html[data-fireops="bis"] #radio-telefoni .rt-tab .rt-attivo td { background: #ffd700 !important; color: #111 !important; font-weight: 700; }
-html[data-fireops="bis"] #radio-telefoni .rt-tab .rt-attivo .telefono-cliccabile { color: #0b3d91 !important; }
-html[data-fireops="bis"] #radio-telefoni .rt-tab .rt-limitrofo td { background: rgba(79, 140, 255, .22) !important; }
-html[data-fireops="bis"] #radio-telefoni .rt-tab .rt-limitrofo .rt-nome { box-shadow: inset 4px 0 0 #4f8cff; }
-html[data-fireops="bis"] #radio-telefoni .rt-tab .rt-della-dir td { background: rgba(47, 191, 113, .16) !important; }
-html[data-fireops="bis"] #radio-telefoni .rt-tab .rt-della-dir .rt-nome { box-shadow: inset 4px 0 0 #2fbf71; }
-html[data-fireops="bis"] #radio-telefoni .rt-tab .rt-dir-mia th, html[data-fireops="bis"] #radio-telefoni .rt-tab .rt-dir-mia td { background: #b8860b !important; color: #fff !important; }
-html[data-fireops="bis"] #radio-telefoni .rt-tab .rt-dir-lim th, html[data-fireops="bis"] #radio-telefoni .rt-tab .rt-dir-lim td { background: #2c4f8a !important; color: #fff !important; }
+#radio-telefoni .rt-tab .rt-attivo td { background: #ffd700 !important; color: #111 !important; font-weight: 700; }
+#radio-telefoni .rt-tab .rt-attivo .telefono-cliccabile { color: #0b3d91 !important; }
+#radio-telefoni .rt-tab .rt-limitrofo td { background: rgba(79, 140, 255, .22) !important; }
+#radio-telefoni .rt-tab .rt-limitrofo .rt-nome { box-shadow: inset 4px 0 0 #4f8cff; }
+#radio-telefoni .rt-tab .rt-della-dir td { background: rgba(47, 191, 113, .16) !important; }
+#radio-telefoni .rt-tab .rt-della-dir .rt-nome { box-shadow: inset 4px 0 0 #2fbf71; }
+#radio-telefoni .rt-tab .rt-dir-mia th, #radio-telefoni .rt-tab .rt-dir-mia td { background: #b8860b !important; color: #fff !important; }
+#radio-telefoni .rt-tab .rt-dir-lim th, #radio-telefoni .rt-tab .rt-dir-lim td { background: #2c4f8a !important; color: #fff !important; }
 .rt-tag { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 8px; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; vertical-align: middle; white-space: nowrap; }
 .rt-tag-mia { background: #111; color: #ffd700; }
 .rt-tag-lim { background: #4f8cff; color: #fff; }
@@ -8890,3 +8890,325 @@ html[data-fireops="bis"] #radio-telefoni .rt-tab .rt-dir-lim th, html[data-fireo
 .rt-mio-tbt { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; padding-top: 6px; border-top: 1px dashed rgba(255, 215, 0, .4); font-size: 13px; }
 .rt-mio-tbt b { color: #ffd700; font-family: ui-monospace, Menlo, monospace; font-size: 14px; }
 .riga-tbt th { color: #ffd700 !important; }
+
+/* ====== Da style-bis.css (passate in produzione il 23/11/2026): TBT, Radio e telefoni a tutto schermo, tasto PUMA, SITAC frequenze e scheda 3 ====== */
+
+
+/* =========================================================================
+   RADIO E TELEFONI — canali aeronautici TBT (radiotelefoni-bis.js)
+   Solo BIS finché il riquadro non passa in produzione: allora queste
+   regole vanno in fondo al blocco RADIO E TELEFONI di style.css.
+   ========================================================================= */
+
+/* ---------- a video ---------- */
+
+/* Canali aeronautici TBT: lo stesso riquadro di CON e SOCAV, con le
+   frequenze in Courier giallo come i canali VHF. La riga della propria
+   regione prende il fondo tenue del Comando attivo. */
+#radio-telefoni .rt-aero {
+    background: var(--dark-color);
+    border: 1px solid var(--primary-color);
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin: 0 0 16px;
+}
+
+#radio-telefoni .rt-aero > summary {
+    cursor: pointer;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 12px;
+}
+
+#radio-telefoni .rt-aero > summary::marker { color: var(--primary-color); }
+#radio-telefoni .rt-aero[open] > summary { margin-bottom: 8px; }
+
+#radio-telefoni .rt-aero-tit {
+    color: var(--primary-color);
+    font-weight: bold;
+    font-size: 14px;
+}
+
+#radio-telefoni .rt-aero-sub {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+#radio-telefoni .rt-aero-elenco {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 0 18px;
+}
+
+#radio-telefoni .rt-aero-voce {
+    display: grid;
+    grid-template-columns: 104px minmax(0, 1fr);
+    align-items: baseline;
+    gap: 10px;
+    padding: 5px 6px;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 13px;
+}
+
+#radio-telefoni .rt-aero-voce.rt-attivo {
+    background: rgba(255, 215, 0, .16);
+    font-weight: bold;
+}
+
+#radio-telefoni .rt-aero-mhz {
+    font-family: "Courier New", monospace;
+    font-size: 17px;
+    font-weight: bold;
+    color: var(--primary-color);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+/* A video le coppie di frequenze vanno una sotto l'altra, come nella
+   Direttiva: affiancate non entrano nella colonna. */
+#radio-telefoni .rt-aero-fq { display: block; }
+#radio-telefoni .rt-aero-sep { display: none; }
+
+/* Il * in testa al foglio dà Arial a ogni elemento: le frequenze dentro
+   .rt-aero-mhz il Courier devono chiederlo, a video e su carta. */
+.rt-aero-fq, .rt-aero-sep { font-family: inherit; }
+
+#radio-telefoni .rt-aero-mod {
+    font-family: Arial, sans-serif;
+    font-size: 11px;
+    padding: 0 4px;
+    border: 1px solid var(--primary-color);
+    border-radius: 3px;
+    vertical-align: 2px;
+}
+
+#radio-telefoni .rt-aero-nota {
+    margin: 8px 0 0;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+/* ---------- su carta ---------- */
+
+/* Canali aeronautici TBT, in testa alla seconda facciata: un riquadro
+   come quello di CON e SOCAV, cinque frequenze per colonna. Altezza più
+   margine (32 + 2,5) è FOGLIO.aero in radiotelefoni.js. */
+.rt-foglio .rt-aero {
+    box-sizing: border-box;
+    height: 32mm;
+    margin-bottom: 2.5mm;
+    padding: 1.2mm 3mm 1mm;
+    display: flex;
+    flex-direction: column;
+    border: .3mm solid #999;
+    border-radius: 1mm;
+    overflow: hidden;
+}
+
+.rt-foglio .rt-aero-testa {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 3mm;
+    margin-bottom: .6mm;
+}
+
+.rt-foglio .rt-aero-tit { font-weight: 700; color: #af2b1e; font-size: 3.3mm; }
+.rt-foglio .rt-aero-sub { color: #555; font-size: 2.5mm; }
+
+.rt-foglio .rt-aero-elenco {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: repeat(5, minmax(0, 1fr));
+    grid-auto-flow: column;
+    column-gap: 6mm;
+}
+
+.rt-foglio .rt-aero-voce {
+    display: grid;
+    grid-template-columns: 36mm minmax(0, 1fr);
+    align-items: center;
+    gap: 2mm;
+    padding: 0 1mm;
+    font-size: 2.9mm;
+    line-height: 1;
+    white-space: nowrap;
+    border-bottom: .2mm solid #ccc;
+}
+
+.rt-foglio .rt-aero-voce:nth-child(5n) { border-bottom: none; }
+
+.rt-foglio .rt-aero-area { overflow: hidden; text-overflow: ellipsis; }
+
+.rt-foglio .rt-aero-mhz {
+    font-family: "Courier New", monospace;
+    font-weight: 700;
+    font-size: 3.3mm;
+}
+
+.rt-foglio .rt-aero-mod { font-family: Arial, sans-serif; font-size: 2.4mm; font-weight: 700; }
+
+/* La propria regione: i filetti neri e il grassetto della propria SO */
+.rt-foglio .rt-aero-voce.rt-attivo {
+    font-weight: 700;
+    box-shadow: inset 0 .4mm 0 #111, inset 0 -.4mm 0 #111;
+}
+
+.rt-foglio .rt-aero-nota {
+    margin: .6mm 0 0;
+    font-size: 2.4mm;
+    color: #555;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* =========================================================================
+   TASTO PUMA in testata: il logo riempie il tasto, con lo stesso filo di
+   3 px dei quadratini del tasto SP accanto. Il logo è quadrato e il tasto
+   più largo che alto: cover taglia un poco sopra e sotto (il bordo nero
+   del logo), la scritta P.U.M.A. resta intera.
+   ========================================================================= */
+#btn-addestramenti.btn-icon-hamburger { padding: 3px; }
+#btn-addestramenti img.addestr-logo-btn {
+    width: 100%;
+    height: 100%;
+    border-radius: 2px;
+    object-fit: cover;
+}
+
+/* =========================================================================
+   RADIO E TELEFONI a tutto schermo — schede per Direzione / tabella Direzioni
+   ========================================================================= */
+#radio-telefoni .rt-alto { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 16px; align-items: start; }
+#radio-telefoni #rt-aero:empty { display: none; }
+#radio-telefoni .rt-alto .rt-naz { margin: 0 0 4px; }
+#radio-telefoni .rt-naz-mhz { font-size: 18px; white-space: nowrap; }
+#radio-telefoni .rt-naz-emerg .rt-naz-nome,
+#radio-telefoni .rt-naz-emerg .rt-naz-mhz { color: #ff5a5a; }
+#radio-telefoni .rt-naz-nota { margin: 6px 0 14px; font-size: 12px; color: var(--text-muted); }
+#radio-telefoni .rt-tbt-piu { font-size: 11.5px; opacity: .8; }
+#radio-telefoni .rt-vista { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 12px; }
+#radio-telefoni .rt-vista .attivo { background: var(--primary-color); color: var(--dark-color); font-weight: bold; }
+
+/* Schede: una per Direzione, affiancate quante ce ne stanno */
+#radio-telefoni .rt-schede {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(360px, 100%), 1fr));
+    gap: 14px;
+    align-items: start;
+}
+#radio-telefoni .rt-scheda {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: var(--dark-color);
+}
+#radio-telefoni .rt-scheda .rt-c-nome { width: 50%; }
+#radio-telefoni .rt-scheda .rt-dir th { white-space: normal; }
+#radio-telefoni .rt-dati-dir { display: flex; flex-wrap: wrap; gap: 2px 16px; align-items: baseline; }
+#radio-telefoni .rt-dati-dir .telefono-cliccabile { color: var(--dark-color); font-weight: bold; }
+#radio-telefoni .rt-scheda tr.rt-dir-mia .telefono-cliccabile, #radio-telefoni .rt-scheda tr.rt-dir-lim .telefono-cliccabile { color: #fff; }
+#radio-telefoni .rt-scheda .rt-c-ch { width: 15%; }
+#radio-telefoni .rt-scheda .rt-c-tel { width: 35%; }
+#radio-telefoni .rt-scheda tr.rt-dir-tbt td {
+    background: rgba(255, 215, 0, .82);
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: normal;
+    padding-top: 0;
+    font-size: 13px;
+    white-space: normal;
+}
+#radio-telefoni .rt-scheda tr.rt-dir-tbt.rt-dir-mia td { background: #9a7209 !important; color: #fff !important; }
+#radio-telefoni .rt-scheda tr.rt-dir-tbt.rt-dir-lim td { background: #3b6fd1 !important; color: #fff !important; }
+#radio-telefoni .rt-scheda tr.rt-dir-tbt.rt-dir-mia .rt-tbt-fq,
+#radio-telefoni .rt-scheda tr.rt-dir-tbt.rt-dir-lim .rt-tbt-fq { color: #fff; }
+#radio-telefoni .rt-scheda:has(tr.rt-dir-mia) { border: 2px solid #b8860b; box-shadow: 0 0 0 2px rgba(255, 215, 0, .25); }
+#radio-telefoni .rt-scheda:has(tr.rt-dir-lim) { border: 2px solid #4f8cff; }
+
+#radio-telefoni .rt-tbt-et { font-size: 10.5px; font-weight: bold; letter-spacing: .05em; margin-right: 8px; opacity: .8; }
+#radio-telefoni .rt-tbt-voce { display: inline-block; margin-right: 12px; white-space: nowrap; }
+#radio-telefoni .rt-tbt-fq { font-family: "Courier New", monospace; font-size: 15px; }
+#radio-telefoni .rt-tbt-naz { font-style: italic; }
+#radio-telefoni .rt-tbt-reg { font-size: 11px; opacity: .85; }
+
+/* Tabella Direzioni: una riga per Direzione, Comandi in fondo come "chip" */
+#radio-telefoni .rt-tab-dir th, #radio-telefoni .rt-tab-dir td { vertical-align: top; white-space: normal; }
+#radio-telefoni .rt-tab-dir tbody tr > * { border-bottom: 1px solid var(--border-color); padding: 8px 10px; }
+#radio-telefoni .rt-tab-dir tbody:nth-of-type(even) tr > * { background: rgba(255, 255, 255, .03); }
+#radio-telefoni .rt-tab-dir .rt-tdir-nome { color: var(--primary-color); font-weight: bold; text-transform: uppercase; font-size: 13px; }
+#radio-telefoni .rt-tab-dir .rt-tdir-tbt .rt-tbt-fq { color: var(--primary-color); }
+#radio-telefoni .rt-tab-dir .rt-tbt-voce { display: block; }
+#radio-telefoni .rt-tab-dir tr.rt-dir-mia > * { background: rgba(184, 134, 11, .35) !important; color: inherit !important; }
+#radio-telefoni .rt-tab-dir tr.rt-dir-lim > * { background: rgba(79, 140, 255, .18) !important; color: inherit !important; }
+#radio-telefoni .rt-chip {
+    display: inline-flex; align-items: baseline; gap: 5px;
+    margin: 0 6px 5px 0; padding: 2px 8px;
+    border: 1px solid var(--border-color); border-radius: 12px;
+    font-size: 12.5px; white-space: nowrap;
+}
+#radio-telefoni .rt-chip b { font-family: "Courier New", monospace; color: var(--primary-color); font-size: 14px; }
+#radio-telefoni .rt-chip .telefono-cliccabile { font-size: 12px; }
+#radio-telefoni .rt-chip.rt-attivo { background: #ffd700; color: #111; border-color: #ffd700; font-weight: bold; }
+#radio-telefoni .rt-chip.rt-attivo b, #radio-telefoni .rt-chip.rt-attivo .telefono-cliccabile { color: #111; }
+#radio-telefoni .rt-chip.rt-limitrofo { border-color: #4f8cff; background: rgba(79, 140, 255, .18); }
+#radio-telefoni .rt-chip.rt-della-dir { border-color: #2fbf71; background: rgba(47, 191, 113, .15); }
+@media (max-width: 520px) {
+    #radio-telefoni .rt-scheda .rt-c-nome { width: 42%; }
+    #radio-telefoni .rt-scheda .rt-c-ch { width: 20%; }
+    #radio-telefoni .rt-scheda .rt-c-tel { width: 38%; }
+    #radio-telefoni .rt-scheda td { padding: 6px 6px; }
+    #radio-telefoni .rt-scheda td.rt-ch { font-size: 16px; }
+    #radio-telefoni .rt-scheda .telefono-cliccabile { font-size: 13px; }
+}
+#radio-telefoni .rt-um { font-size: 11px; font-weight: normal; margin-left: 3px; opacity: .85; text-transform: none; letter-spacing: 0; }
+
+/* =========================================================================
+   SITAC — frequenze radio del DOS (sitac-frequenze-bis.js)
+   ========================================================================= */
+#sitac-app .sitac-pannello[data-scheda="dati"] [data-c="freq"] { grid-column: 1/13; }
+#sitac-app.sitac-stretto .sitac-pannello[data-scheda="dati"] [data-c="freq"] { grid-column: 1/-1; }
+#sitac-app .sitac-freq-riga { display: flex; gap: 8px; }
+#sitac-app .sitac-freq-riga select { flex: 1; min-width: 0; }
+#sitac-app .sitac-freq-riga button { white-space: nowrap; }
+#sitac-app .sitac-freq-altra { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+#sitac-app .sitac-freq-altra input { flex: 1 1 200px; }
+#sitac-app .sitac-freq-elenco { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+#sitac-app .sitac-freq-voce {
+    display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(140px, 1fr) auto;
+    align-items: center; gap: 4px 12px;
+    padding: 6px 10px; border: 1px solid var(--border-color); border-left: 4px solid var(--primary-color);
+    border-radius: 6px; background: var(--dark-color);
+}
+#sitac-app .sitac-freq-voce b { font-family: "Courier New", monospace; font-size: 17px; color: var(--primary-color); white-space: nowrap; }
+#sitac-app .sitac-freq-d { font-size: 13px; color: var(--text-muted); }
+#sitac-app .sitac-freq-voce input { padding: 5px 8px; font-size: 13px; }
+#sitac-app .sitac-freq-voce button { background: none; border: 1px solid var(--danger-color); color: var(--danger-color); border-radius: 4px; padding: 2px 8px; cursor: pointer; }
+#sitac-app .sitac-freq-vuoto { margin: 0; font-size: 12px; color: var(--text-muted); }
+#sitac-app.sitac-stretto .sitac-freq-voce { grid-template-columns: auto minmax(0, 1fr) auto; }
+#sitac-app.sitac-stretto .sitac-freq-voce input { grid-column: 1/-1; grid-row: 2; }
+#sitac-app .sitac-freq-riga select { flex: 1 1 auto !important; width: auto !important; }
+#sitac-app .sitac-freq-riga button { flex: 0 0 auto !important; width: auto !important; padding: 6px 14px; }
+#sitac-app .sitac-freq-altra[hidden] { display: none; }
+/* SITAC su pannello stretto o telefono (anche nell'app Pro): i campi uno sotto l'altro.
+   Gli span delle 12 colonne creavano colonne implicite e i campi restavano a metà. */
+#sitac-app.sitac-stretto .sitac-pannello[data-scheda="dati"] .sitac-dati > * { grid-column: 1/-1 !important; }
+
+/* =========================================================================
+   SITAC — scheda 3 "SITAC da immagine" (sitac-foto-bis.js + sitac-immagine.html)
+   ========================================================================= */
+#sitac-app .sitac-pannello[data-scheda="foto"] { padding: 0; }
+#sitac-app .sitac-immagine-frame { flex: 1 1 auto; width: 100%; height: 100%; min-height: 420px; border: 0; display: block; background: #111; }
+
+/* Tre linguette: su schermo stretto vanno a capo invece di sfondare la pagina */
+#sitac-aib .sitac-scheda-btn { min-width: 0; }
+@media (max-width: 700px) {
+    #sitac-aib .sitac-scheda-btn { white-space: normal; padding: 6px 6px; font-size: 12px; line-height: 1.2; text-align: center; gap: 4px; flex-wrap: wrap; }
+}
+#sitac-aib.sitac-sez-stretta .sitac-scheda-btn { white-space: normal; padding: 6px 6px; font-size: 12px; line-height: 1.2; text-align: center; gap: 4px; flex-wrap: wrap; }

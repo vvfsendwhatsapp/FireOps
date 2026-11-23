@@ -1,16 +1,16 @@
 <!DOCTYPE html>
-<html lang="it" data-fireops="bis">
+<html lang="it">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SITAC da immagine · FireOps</title>
   <!--
-    SITAC da immagine (solo BIS). Sta dentro un <iframe> nella scheda 3 della
-    SITAC (sitac-foto-bis.js), sul sito e nell'app Pro.
+    SITAC da immagine. Sta dentro un <iframe> nella scheda 3 della
+    SITAC (sitac-foto.js), sul sito e nell'app Pro.
     È una SECONDA SITAC completa, con tutti gli strumenti della tavola (frecce,
     assi, linee, punti, mezzi, moduli, squadre, azioni, note, modifica, stampa),
-    ma al posto della mappa c'è una foto. Il markup si legge da index-bis.html
+    ma al posto della mappa c'è una foto. Il markup si legge da index.html (o index-bis.html, vedi sitac-foto.js)
     come fa app/sitac.html; sitac.js con NS.SITAC_IMMAGINE parte senza mappa e
     con la carta già aperta. Restano fuori quello che ha senso solo su una carta
     geografica: vento locale e pendenza dal web, coni di propagazione, sfondi,
@@ -22,7 +22,6 @@
   <script>
     var V = (function () { try { return parent.FIREOPS_VERSIONE; } catch (e) { return ""; } })() || String(Date.now());
     document.write('<link rel="stylesheet" href="style.css?v=' + V + '">');
-    document.write('<link rel="stylesheet" href="style-bis.css?v=' + V + '">');
     window.FireOps = { SITAC_IMMAGINE: true };
   </script>
   <style>
@@ -72,7 +71,7 @@
       "https://unpkg.com/@geoman-io/leaflet-geoman-free@2.15.0/dist/leaflet-geoman.min.js",
       "https://unpkg.com/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.js"
     ];
-    var LOCALI = ["radiotelefoni-bis.js", "sitac-simboli.js", "sitac-vento.js", "sitac-rilievo.js", "sitac.js", "sitac-frequenze-bis.js"];
+    var LOCALI = ["radiotelefoni.js", "sitac-simboli.js", "sitac-vento.js", "sitac-rilievo.js", "sitac.js", "sitac-frequenze.js"];
     var istanza = null, foto = null;
 
     /* Dati della scheda 1 dalla pagina che contiene questa: si copiano i valori, senza eventi */
@@ -91,6 +90,16 @@
       ["sitac-st2", "sitac-st4"].forEach(function (id) {
         var t = document.getElementById(id), f = t && t.closest(".sitac-fisa"); if (f) f.classList.add("si-nascosto");
       });
+    }
+
+    /* Il passo 10 qui ha solo la Stampa: niente "Importa ed esporta". La lingua
+       riscrive i titoli, quindi si rimette a ogni cambio. */
+    function soloStampa() {
+      var t = document.querySelector('#si-corpo .sitac-passo-tit[data-t="p10"]');
+      if (!t) return;
+      var giusto = function () { if (t.textContent !== "Stampa") t.textContent = "Stampa"; };
+      giusto();
+      new MutationObserver(giusto).observe(t, { childList: true, characterData: true, subtree: true });
     }
 
     function metti(file) {
@@ -122,7 +131,7 @@
     document.addEventListener("drop", function (e) { e.preventDefault(); metti(e.dataTransfer.files[0]); });
     window.FireOpsSitacImmagine = { metti: metti, ridisegna: function () { allinea(); if (istanza) istanza.ridisegna(); } };
 
-    fetch("index-bis.html?v=" + V).then(function (r) { return r.text(); }).then(function (t) {
+    fetch(((function () { try { return parent.FireOpsSitacMarkup; } catch (e) { return ""; } })() || "index.html") + "?v=" + V).then(function (r) { return r.text(); }).then(function (t) {
       var sez = new DOMParser().parseFromString(t, "text/html").getElementById("sitac-aib");
       if (!sez) throw new Error("sezione SITAC non trovata");
       $("si-corpo").innerHTML = "";
@@ -137,6 +146,7 @@
         istanza = FireOps.Sitac.init();
         if (!istanza) throw new Error("SITAC non avviata");
         nascondiPassi();
+        soloStampa();
         var v = document.createElement("div"); v.id = "si-vuota";
         v.innerHTML = "Scatta o carica una foto qui sopra:<br>poi usa gli strumenti della SITAC a sinistra.";
         $("sitac-mappa").appendChild(v);

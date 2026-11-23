@@ -18,12 +18,12 @@ document.addEventListener("DOMContentLoaded", () => {
     let linkUtiliData = []; // elenco link utili organizzati per tema, per la pagina "Link Utili"
     let sostanzePericoloseData = []; // database locale schede ICSC (numero, nome, sinonimi)
     let modalChiudibile = false; // true solo quando riaperto manualmente col pulsante ☰
-    // SOLO BIS (<html data-fireops="bis">): al login si possono scegliere anche le Direzioni regionali.
+    // Al login si possono scegliere anche le Direzioni regionali (BIS e produzione).
     // Una Direzione diventa un "Comando attivo" con i dati della sua Sala Operativa; come "limitrofi"
     // ha i Comandi della regione. In produzione questo elenco resta vuoto e nulla cambia.
-    const BIS_DIREZIONI = document.documentElement.dataset.fireops === "bis";
+    const BIS_DIREZIONI = true; // dal 23/11/2026 anche in produzione (era solo <html data-fireops="bis">)
     let direzioniComeComandi = [];
-    // BIS: frequenze TBT (terra-bordo-terra) dalla Direttiva COAU, la stessa fonte di radiotelefoni-bis.js
+    // BIS: frequenze TBT (terra-bordo-terra) dalla Direttiva COAU, la stessa fonte di radiotelefoni.js
     // (window.FireOpsAeronautici): un solo elenco da aggiornare ogni anno
     function regioniDi(c) {
         if (!c) return [];
@@ -1469,14 +1469,13 @@ const CHIAVE_STORAGE_PANNELLI = "fireops_pagine_pannelli";
             chiudi: "✖ Chiudi convertitore",
             titolo: "Chiudi il convertitore e torna alla vista a due colonne"
         },
-        // solo in index-bis.html: in produzione la sezione non c'e' e la voce non scatta mai
+        // Prospetto specializzati (prospetto.js), BIS e produzione
         "prospetto-disponibilita": {
             chiudi: "✖ Chiudi prospetto",
             titolo: "Chiudi il Prospetto specializzati e torna alla vista a due colonne"
         }
     };
-    // solo BIS: anche Radio e telefoni si apre a tutto schermo, come la SITAC
-    if (document.documentElement.dataset.fireops === "bis") {
+    {   // Radio e telefoni a tutto schermo (BIS e produzione)
         PAGINE_ESCLUSIVE["radio-telefoni"] = {
             chiudi: "✖ Chiudi Radio e telefoni",
             titolo: "Chiudi Radio e telefoni e torna alla vista a due colonne"

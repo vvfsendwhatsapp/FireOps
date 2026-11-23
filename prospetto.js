@@ -1,7 +1,7 @@
 /*!
- * FireOps VVF — prospetto.js — Prospetto specializzati (ex Prospetto disponibilità; solo index-bis.html, IN COSTRUZIONE)
+ * FireOps VVF — prospetto.js — Prospetto specializzati (ex Prospetto disponibilità; index.html e index-bis.html)
  * Dipendenze: fireops-core.js (window.FireOps.turniDelGiorno) · script.js (window.FireOpsComandoAttivo)
- * Markup:     sezione #prospetto-disponibilita di index-bis.html (il contenuto lo costruisce questo file in #pros-app)
+ * Markup:     sezione #prospetto-disponibilita di index.html / index-bis.html (il contenuto lo costruisce questo file in #pros-app)
  * Stile:      style.css, sezione "PROSPETTO DISPONIBILITA'"
  *
  * COSA FA
@@ -650,7 +650,7 @@ function htmlGestione(corsiDisp, qualDisp, base, stati) {
   const dis = aperto ? '' : ' disabled';
   const tuttiCorsi = Array.from(new Set(righe.flatMap(p => p.corsi))).sort((a, b) => a.localeCompare(b, 'it'));
   return `
-  <div class="pros-avviso">🚧 Sezione in costruzione. Personale e corsi arrivano da PUMA; <b>turno e salto turno</b> non sono su PUMA: si impostano qui e si salvano sul foglio Google (DB_Turni_Personale), così li ritrovano tutti i PC.</div>
+  <div class="pros-avviso">Personale e corsi arrivano da PUMA; <b>turno e salto turno</b> non sono su PUMA: si impostano qui e si salvano sul foglio Google (DB_Turni_Personale), così li ritrovano tutti i PC.</div>
   ${lucchetto}
   <div class="pros-testa">
     ${selectComando()}
@@ -1006,7 +1006,7 @@ function avvia() {
 }
 
 /* ============================== FINESTRA RAPIDA "SPECIALIZZATI" ==============================
- * Tasto SP nell'intestazione di index-bis: una finestra con il corso da scegliere e tre colonne
+ * Tasto SP nell'intestazione (al posto degli 8 Passi): una finestra con il corso da scegliere e tre colonne
  * (adesso, tra 12 ore, tra 24 ore) con il personale richiamabile, come nella scheda Richiamo.
  * Usa il Comando attivo; il corso scelto qui e' lo stesso del Prospetto.
  */
