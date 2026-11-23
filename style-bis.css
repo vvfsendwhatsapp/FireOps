@@ -276,3 +276,31 @@
     #radio-telefoni .rt-scheda .telefono-cliccabile { font-size: 13px; }
 }
 #radio-telefoni .rt-um { font-size: 11px; font-weight: normal; margin-left: 3px; opacity: .85; text-transform: none; letter-spacing: 0; }
+
+/* =========================================================================
+   SITAC — frequenze radio del DOS (sitac-frequenze-bis.js)
+   ========================================================================= */
+#sitac-app .sitac-pannello[data-scheda="dati"] [data-c="freq"] { grid-column: 1/13; }
+#sitac-app.sitac-stretto .sitac-pannello[data-scheda="dati"] [data-c="freq"] { grid-column: 1/-1; }
+#sitac-app .sitac-freq-riga { display: flex; gap: 8px; }
+#sitac-app .sitac-freq-riga select { flex: 1; min-width: 0; }
+#sitac-app .sitac-freq-riga button { white-space: nowrap; }
+#sitac-app .sitac-freq-altra { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+#sitac-app .sitac-freq-altra input { flex: 1 1 200px; }
+#sitac-app .sitac-freq-elenco { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+#sitac-app .sitac-freq-voce {
+    display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(140px, 1fr) auto;
+    align-items: center; gap: 4px 12px;
+    padding: 6px 10px; border: 1px solid var(--border-color); border-left: 4px solid var(--primary-color);
+    border-radius: 6px; background: var(--dark-color);
+}
+#sitac-app .sitac-freq-voce b { font-family: "Courier New", monospace; font-size: 17px; color: var(--primary-color); white-space: nowrap; }
+#sitac-app .sitac-freq-d { font-size: 13px; color: var(--text-muted); }
+#sitac-app .sitac-freq-voce input { padding: 5px 8px; font-size: 13px; }
+#sitac-app .sitac-freq-voce button { background: none; border: 1px solid var(--danger-color); color: var(--danger-color); border-radius: 4px; padding: 2px 8px; cursor: pointer; }
+#sitac-app .sitac-freq-vuoto { margin: 0; font-size: 12px; color: var(--text-muted); }
+#sitac-app.sitac-stretto .sitac-freq-voce { grid-template-columns: auto minmax(0, 1fr) auto; }
+#sitac-app.sitac-stretto .sitac-freq-voce input { grid-column: 1/-1; grid-row: 2; }
+#sitac-app .sitac-freq-riga select { flex: 1 1 auto !important; width: auto !important; }
+#sitac-app .sitac-freq-riga button { flex: 0 0 auto !important; width: auto !important; padding: 6px 14px; }
+#sitac-app .sitac-freq-altra[hidden] { display: none; }

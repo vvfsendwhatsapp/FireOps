@@ -1294,6 +1294,7 @@ function avvia(app){
     [inIntervento, inDos, inNominativo, inTelefono, inPosizione]
       .forEach(c => { c.value = ''; });
     inQualifica.value = '';
+    if (window.FireOpsSitacFrequenze) window.FireOpsSitacFrequenze.imposta([]);
     chkScheda.checked = false;
     numeroMesso = '';
     posDos = null;
@@ -1329,6 +1330,8 @@ function avvia(app){
     nominativo: inNominativo.value.trim() || null,
     telefono: inTelefono.value.trim() || null,
     posizione: inPosizione.value || null,
+    /* Solo BIS (sitac-frequenze-bis.js): le frequenze radio scelte dal DOS */
+    ...(window.FireOpsSitacFrequenze ? {frequenze: window.FireOpsSitacFrequenze.lista()} : {}),
     
     /* L'ora della REDAZIONE, non quella della stampa o dell'export: una
        SITAC dice quando è stata fatta, non quando è stata riletta. */
@@ -4775,6 +4778,8 @@ ${cartella(t('kmlSimboli'), f => SIM[f.properties.tipo] || f.properties.tipo ===
       if (p.qualifica)  inQualifica.value  = String(p.qualifica);
       if (p.nominativo) inNominativo.value = String(p.nominativo);
       if (p.telefono)   inTelefono.value   = String(p.telefono);
+      if (Array.isArray(p.frequenze) && window.FireOpsSitacFrequenze)
+        window.FireOpsSitacFrequenze.imposta(p.frequenze);
       if (Array.isArray(p.note))
         p.note.forEach(n => { if (n && n.testo)
           note.push({id: ++nNota, testo: String(n.testo),
@@ -5250,7 +5255,9 @@ function sfBloccoDos(){
   return sfCampo(t('nQualifica'), i.qualifica)
     + sfCampo(t('nNominativo'), i.nominativo)
     + sfCampo(t('nDos'), i.dos)
-    + sfCampo(t('nTelefono'), i.telefono);
+    + sfCampo(t('nTelefono'), i.telefono)
+    + (window.FireOpsSitacFrequenze && window.FireOpsSitacFrequenze.testo().length
+      ? sfCampo('Frequenze', window.FireOpsSitacFrequenze.testo().join('; ')) : '');
 }
 
 /* Il nome del file lo decide il titolo del documento: la finestra di stampa
