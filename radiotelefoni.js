@@ -2,7 +2,8 @@
  * FireOps VVF — radiotelefoni.js — Radio e telefoni delle Sale Operative
  *
  * Elenco nazionale delle SO dei Comandi e delle Direzioni con canale VHF
- * e telefono, raggruppato per Direzione, più CON e SOCAV. A video si
+ * e telefono, raggruppato per Direzione, più CON e SOCAV e i canali
+ * aeronautici Terra-Bordo-Terra della Direttiva COAU. A video si
  * cerca e si copia il numero con un clic; su carta esce su un solo foglio
  * A4 fronte e retro, da tenere accanto alla consolle.
  *
@@ -11,6 +12,8 @@
  * comandi.json: un secondo fetch prima o poi andrebbe fuori passo. Anche
  * le Direzioni si leggono da lì, perché ogni riga di Comando porta canale
  * e telefono della propria Direzione: direzioni.json non serve.
+ * I canali aeronautici TBT (DOS ↔ aeromobili AIB) non sono in comandi.json:
+ * vengono dalla Direttiva COAU e stanno in AERONAUTICI, qui sotto.
  * Le selettive (CHS) per ora restano fuori. Per rimetterle: una colonna in
  * COLONNE e TESTATA, una cella in rigaDir e rigaCom, e le larghezze nel CSS.
  * Se due Comandi della stessa Direzione riportano valori diversi vince il
@@ -40,8 +43,33 @@ const CAMPI = {
    CSS (.rt-foglio): `area` è l'altezza utile per le righe, tolte testata,
    piede e intestazione delle colonne, con un paio di millimetri di scorta;
    `naz` è quanto occupa il riquadro CON/SOCAV sulla prima facciata. */
-const FOGLIO = {area: 250, naz: 24, rigaMax: 8};
+const FOGLIO = {area: 250, naz: 24, aero: 34.5, rigaMax: 8};
 const CANALE_NAZIONALE = '100';
+
+/* CANALI AERONAUTICI TBT — Direttiva COAU 2026, § 7.2.
+   Frequenze VHF aeronautiche (AM, spaziatura 25 kHz) per i collegamenti
+   Terra-Bordo-Terra fra DOS e Comandante / Capo equipaggio degli
+   aeromobili AIB. Non stanno in comandi.json perché non sono di un
+   Comando: sono della Direttiva, e si cambiano qui quando esce quella
+   dell'anno nuovo. Le regioni sono scritte come nel campo Regione di
+   comandi.json: così la riga della propria regione si accende da sola.
+   `breve` è il testo per la carta, dove la colonna è stretta. */
+const AERO_FONTE = 'Direttiva COAU 2026, § 7.2';
+const AERONAUTICI = [
+  {mhz: ['122.150', '122.350'], area: 'Tutto il territorio nazionale', breve: 'Nazionale', naz: true},
+  {mhz: ['134.550'], regioni: ['Lombardia', 'Emilia-Romagna']},
+  {mhz: ['128.500'], regioni: ["Valle d'Aosta", 'Piemonte', 'Liguria', 'Sicilia'],
+    breve: "V. d'Aosta, Piemonte, Liguria, Sicilia"},
+  {mhz: ['118.775'], regioni: ['Toscana', 'Umbria']},
+  {mhz: ['118.525'], regioni: ['Sardegna', 'Calabria', 'Puglia', 'Basilicata']},
+  {mhz: ['119.025'], regioni: ['Lazio']},
+  {mhz: ['118.625'], regioni: ['Campania']},
+  {mhz: ['118.925'], regioni: ['Abruzzo', 'Molise', 'Marche']},
+  {mhz: ['141.100', '142.500'], area: 'Tutto il territorio nazionale — militare, secondaria',
+    breve: 'Nazionale, militare (secondaria)'},
+  {mhz: ['156.800'], mod: 'FM', area: 'Primo contatto con la Capitaneria di Porto (canale 16 nautico)',
+    breve: 'Cap. di Porto, 1° contatto (ch 16)'}
+];
 
 const val = v => (v == null ? '' : String(v).trim());
 const esc = s => val(s).replace(/[<>&"]/g,
@@ -92,6 +120,7 @@ function statoAttivo(){
   const a = window.FireOpsComandoAttivo;
   return {
     nome: val(a && a.Comando),
+    regione: val(a && a.Regione),
     lim: new Set(val(a && a[CAMPI.confinanti]).split(';').map(s => s.trim()).filter(Boolean))
   };
 }
@@ -191,6 +220,44 @@ function bloccoNaz(n, schermo){
     + `</div></div>`;
 }
 
+/* Le frequenze TBT. Si accende la riga della regione del Comando attivo;
+   se la Direttiva non le assegna una frequenza propria (Veneto, Friuli,
+   Trentino-Alto Adige) si accende la nazionale e la nota lo dice, perché
+   una riga spenta lascerebbe il dubbio che il dato manchi. */
+function voceAccesa(v, regione){
+  const r = norm(regione);
+  if (!r) return false;
+  if (AERONAUTICI.some(x => (x.regioni || []).some(y => norm(y) === r)))
+    return (v.regioni || []).some(y => norm(y) === r);
+  return !!v.naz;
+}
+
+function bloccoAero(regione, schermo){
+  const senzaPropria = val(regione) && !AERONAUTICI.some(x =>
+    (x.regioni || []).some(y => norm(y) === norm(regione)));
+  const nota = 'Sullo stesso incendio tutti gli aeromobili usano la frequenza della scheda di '
+    + 'richiesta di concorso AIB.'
+    + (senzaPropria ? ` Per ${esc(regione)} la Direttiva non assegna una frequenza regionale.` : '');
+  const voce = v => {
+    const testo = schermo ? (v.area || v.regioni.join(', ')) : (v.breve || v.area || v.regioni.join(', '));
+    return `<div class="rt-aero-voce${voceAccesa(v, regione) ? ' rt-attivo' : ''}">`
+      + `<span class="rt-aero-mhz">` + v.mhz.map((f, i) => `<span class="rt-aero-fq">${esc(f)}`
+        + (v.mod && i === v.mhz.length - 1 ? ` <span class="rt-aero-mod">${esc(v.mod)}</span>` : '')
+        + `</span>`).join('<span class="rt-aero-sep"> · </span>') + `</span>`
+      + `<span class="rt-aero-area">${esc(testo)}</span></div>`;
+  };
+  const titolo = `<span class="rt-aero-tit">Canali aeronautici TBT</span>`
+    + `<span class="rt-aero-sub">DOS ↔ aeromobili AIB · VHF AM, MHz · ${esc(AERO_FONTE)}</span>`;
+  const elenco = `<div class="rt-aero-elenco">${AERONAUTICI.map(voce).join('')}</div>`;
+  /* A video è un <details> aperto: chi non fa AIB lo chiude con un
+     clic e l'elenco delle SO risale. */
+  return schermo
+    ? `<details class="rt-aero" open><summary>${titolo}</summary>${elenco}`
+      + `<p class="rt-aero-nota">${nota}</p></details>`
+    : `<div class="rt-aero"><div class="rt-aero-testa">${titolo}</div>${elenco}`
+      + `<p class="rt-aero-nota">${nota}</p></div>`;
+}
+
 /* =====================================================================
    IMPAGINAZIONE DEL FOGLIO
    ===================================================================== */
@@ -223,13 +290,14 @@ function stendi(righe, limiti){
 
 /* Si cerca il numero di righe per colonna più basso con cui tutto entra:
    è quello che dà le righe più alte e il testo più grande. La prima
-   facciata ne perde qualcuna al riquadro nazionale. */
+   facciata ne perde qualcuna al riquadro nazionale, la seconda a quello
+   dei canali aeronautici. */
 function impagina(gruppi){
   const righe = righeDi(gruppi);
   for (let b = Math.max(3, Math.ceil(righe.length / 4)); b <= righe.length + 8; b++){
     const riga = Math.min(FOGLIO.rigaMax, FOGLIO.area / b);
-    const sottratte = Math.ceil(FOGLIO.naz / riga);
-    const col = stendi(righe, [b - sottratte, b - sottratte, b, b]);
+    const sNaz = Math.ceil(FOGLIO.naz / riga), sAero = Math.ceil(FOGLIO.aero / riga);
+    const col = stendi(righe, [b - sNaz, b - sNaz, b - sAero, b - sAero]);
     if (col) return {col, riga, perColonna: b, totale: righe.length};
   }
   return null;
@@ -264,7 +332,7 @@ function htmlStampa(gruppi, naz, st){
 
   return `<section class="rt-foglio" style="${stile}">${testa(1)}${bloccoNaz(naz, false)}`
     + `<div class="rt-f-colonne">${tabella(imp.col[0])}${tabella(imp.col[1])}</div>${piede}</section>`
-    + `<section class="rt-foglio" style="${stile}">${testa(2)}`
+    + `<section class="rt-foglio" style="${stile}">${testa(2)}${bloccoAero(st.regione, false)}`
     + `<div class="rt-f-colonne">${tabella(imp.col[2])}${tabella(imp.col[3])}</div>${piede}</section>`;
 }
 
@@ -285,11 +353,21 @@ let gruppi = null, naz = null;
 function aggiorna(){
   const elenco = $('rt-elenco'), boxNaz = $('rt-nazionali');
   if (!elenco || !boxNaz) return false;
+  const st = statoAttivo();
+  /* I canali aeronautici non dipendono da comandi.json: ci sono anche
+     prima che arrivino i dati. Il riquadro si riscrive solo se cambia la
+     regione, e chi l'aveva chiuso lo ritrova chiuso. */
+  const boxAero = $('rt-aero');
+  if (boxAero && boxAero.dataset.regione !== st.regione + '|'){
+    const chiuso = boxAero.querySelector('details:not([open])');
+    boxAero.innerHTML = bloccoAero(st.regione, true);
+    if (chiuso) boxAero.querySelector('details').open = false;
+    boxAero.dataset.regione = st.regione + '|';
+  }
   const comandi = Array.isArray(window.FireOpsComandi) ? window.FireOpsComandi : [];
   if (!comandi.length) return false;
   gruppi = raggruppa(comandi);
   naz = nazionali(comandi);
-  const st = statoAttivo();
   const cbVicini = $('rt-solo-vicini');
   if (cbVicini){
     cbVicini.disabled = !st.nome;
@@ -437,8 +515,9 @@ function avvia(){
 }
 
 /* Esposte per le prove: nessun effetto sulla pagina. */
-(window.FireOps = window.FireOps || {}).RadioTelefoniInterni = {raggruppa, impagina, stendi, righeDi, htmlStampa, nazionali};
+(window.FireOps = window.FireOps || {}).RadioTelefoniInterni = {raggruppa, impagina, stendi, righeDi, htmlStampa, nazionali,
+  bloccoAero, voceAccesa, AERONAUTICI};
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', avvia);
 else avvia();
-})();
+})();
