@@ -8822,3 +8822,6 @@ body.pros-pop-aperto { overflow: hidden; }
 .pros-pop-gr .vuoto { padding: 3px 8px 5px; color: #6b7684; font-size: 12px; }
 .pros-pop-corpo .pros-nota { font-size: 12px; color: #4a5563; margin: 8px 2px 0; }
 @media (max-width: 800px) { .pros-pop-colonne { grid-template-columns: 1fr; } .pros-pop { padding: 0; } .pros-pop-box { border-radius: 0; min-height: 100%; } }
+.pros-pop-apri { margin-left: auto; padding: 7px 12px; border-radius: 6px; border: 1px solid #e0a800; background: #f2b705; color: #1d2733; font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap; }
+.pros-pop-apri:hover { background: #ffd23f; }
+.pros-pop-apri + .pros-pop-x { margin-left: 0; }

@@ -1023,12 +1023,16 @@ function apriPopup() {
       <div class="pros-pop-testa">
         <div class="tit">Specializzati disponibili <span class="pros-pop-com"></span></div>
         <label>Corso <select id="pros-pop-corso"></select></label>
+        <button type="button" class="pros-pop-apri" title="Apre il Prospetto specializzati nel pannello sinistro e chiude questa finestra">📋 Apri Prospetto specializzati</button>
         <button type="button" class="pros-pop-x" title="Chiudi (Esc)">✕</button>
       </div>
       <div class="pros-pop-corpo"></div>
     </div>`;
     document.body.appendChild(popup);
-    popup.addEventListener('click', e => { if (e.target === popup || e.target.closest('.pros-pop-x')) chiudiPopup(); });
+    popup.addEventListener('click', e => {
+      if (e.target.closest('.pros-pop-apri')) { apriSezione(); return; }
+      if (e.target === popup || e.target.closest('.pros-pop-x')) chiudiPopup();
+    });
     popup.querySelector('#pros-pop-corso').addEventListener('change', e => { f.corso = e.target.value; cella = null; salvaFiltri(); disegna(); disegnaPopup(); });
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && popup && !popup.hidden) chiudiPopup(); });
   }
@@ -1036,6 +1040,19 @@ function apriPopup() {
   document.body.classList.add('pros-pop-aperto');
   if (carico.stato === 'vuoto' || carico.stato === 'err') carica(); else scaricaTurni();
   disegnaPopup();
+}
+// porta il Prospetto specializzati nel pannello sinistro (se non e' gia' aperto) sulla scheda Prospetto, col corso scelto
+function apriSezione() {
+  const sez = document.getElementById('prospetto-disponibilita');
+  const sel = document.getElementById('select-pannello-sinistra');
+  const giaAperta = sez && sez.closest('.pannello');
+  if (!giaAperta && sel) {
+    sel.value = 'prospetto-disponibilita';
+    sel.dispatchEvent(new Event('change', {bubbles: true}));
+  }
+  f.scheda = 'prospetto'; salvaFiltri(); disegna();
+  chiudiPopup();
+  if (sez) setTimeout(() => sez.scrollIntoView({block: 'start'}), 200);
 }
 function chiudiPopup() { if (popup) popup.hidden = true; document.body.classList.remove('pros-pop-aperto'); }
 document.addEventListener('click', e => { if (e.target.closest('#btn-specializzati')) apriPopup(); });
