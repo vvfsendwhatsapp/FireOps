@@ -1006,10 +1006,10 @@ function disegnaPopup() {
   if (!f.corso) { corpo.innerHTML = '<div class="pros-vuoto">Scegli il corso per vedere chi è richiamabile adesso, tra 12 e tra 24 ore.</div>'; return; }
   const nomiGr = T => ({libero: 'Turno libero ' + (T.liberi.join(', ') || '—') + (T.gRichiamo ? ' e giornalieri' : ''), saltoSel: 'Salto ' + T.sel.sigla + ' (in turno)', saltoPrec: 'Salto ' + T.prec.sigla + ' (turno prima)', saltoSucc: 'Salto ' + T.succ.sigla + ' (turno dopo)'});
   const momenti = [[0, 'Adesso'], [12, 'Tra 12 ore'], [24, 'Tra 24 ore']].filter(([ore]) => popQuando === 'tutti' || String(ore) === popQuando);
-  corpo.innerHTML = `<div class="pros-pop-colonne${momenti.length === 1 ? ' una' : ''}">${momenti.map(([ore, tit]) => {
+  corpo.innerHTML = `<div class="pros-pop-colonne${momenti.length === 1 ? ' una' : ''}${momenti.length === 3 ? ' tre' : ''}">${momenti.map(([ore, tit]) => {
     const {T, g} = richiamoPer(ore), ng = nomiGr(T);
     const tot = GRUPPI_RICHIAMO.reduce((n, k) => n + g[k].length, 0);
-    return `<div class="pros-pop-col">
+    return `<div class="pros-pop-col${ore === 0 ? ' adesso' : ''}">
       <h3>${tit} <span class="pros-quanti">${tot}</span><small>${esc(quandoTesto(T))} · ${esc(etichettaTurno(T.sel))}</small></h3>
       ${GRUPPI_RICHIAMO.map(k => `<div class="pros-pop-gr pros-g-${k}"><div class="gt">${esc(ng[k])} <span>${g[k].length}</span></div>
         ${g[k].length ? `<ul>${ordina(g[k]).map(p => { const t = turni[p.k] || {};

@@ -8830,3 +8830,15 @@ body.pros-pop-aperto { overflow: hidden; }
 .pros-pop-colonne.una { grid-template-columns: minmax(0, 1fr); }
 .pros-pop-colonne.una .pros-pop-gr ul { columns: 2 320px; column-gap: 12px; }
 .pros-pop-colonne.una .pros-pop-gr li { break-inside: avoid; }
+/* Finestra Specializzati: la colonna "Adesso" in evidenza */
+.pros-pop-colonne.tre { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+.pros-pop-col.adesso { border: 3px solid #1f9d55; border-top-width: 3px; background: #eef8f2; box-shadow: 0 0 0 3px rgba(31, 157, 85, .25), 0 6px 18px rgba(16, 24, 40, .25); }
+.pros-pop-col.adesso h3 { background: #1f9d55; color: #fff; font-size: 19px; }
+.pros-pop-col.adesso h3 small { color: #e6f6ec; font-size: 13px; }
+.pros-pop-col.adesso h3 .pros-quanti { background: #fff; color: #145c33; }
+.pros-pop-col.adesso h3::before { content: "● "; color: #b9f5cf; animation: pros-pulsa 1.6s ease-in-out infinite; }
+.pros-pop-col.adesso .pros-pop-gr li { font-size: 14px; }
+.pros-pop-colonne.tre .pros-pop-col:not(.adesso) { opacity: .92; }
+@keyframes pros-pulsa { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+@media (prefers-reduced-motion: reduce) { .pros-pop-col.adesso h3::before { animation: none; } }
+@media (max-width: 800px) { .pros-pop-colonne.tre { grid-template-columns: 1fr; } }
