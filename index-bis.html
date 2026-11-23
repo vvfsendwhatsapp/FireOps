@@ -167,7 +167,10 @@
                         <span class="sitac-passo-stato" id="sitac-st1"></span>
                     </button>
                     <button class="sitac-scheda-btn sitac-scheda-bloccata" type="button" data-scheda="carta">
-                        <span data-t="sch2"></span>
+                        <span>2 · SITAC planimetrica</span>
+                    </button>
+                    <button class="sitac-scheda-btn" type="button" data-scheda="foto">
+                        <span>3 · SITAC da immagine</span>
                     </button>
                 </div>
 
@@ -347,6 +350,10 @@
                          viene chiesto. -->
                         <div id="sitac-stato"></div>
                     </div>
+
+                    <!-- SCHEDA 3 (solo BIS): SITAC da immagine, una foto su cui disegnare
+                     frecce e scritte. Non chiede la posizione del DOS: sitac-foto-bis.js -->
+                    <div class="sitac-pannello" data-scheda="foto" id="sitac-foto"></div>
 
                     <!-- Fuori dai pannelli: la testata serve alla stampa, il modale
                      serve da entrambe le schede -->
@@ -1411,6 +1418,7 @@
                 "sitac-rilievo.js",
                 "sitac.js",
                 "sitac-frequenze-bis.js", // BIS: frequenze radio del DOS nella scheda 1 della SITAC
+                "sitac-foto-bis.js",     // BIS: scheda 3 della SITAC, foto con frecce e scritte
                 "qrcode.js",
                 "differibili.js",    // BIS: modulo Differibili (non presente in produzione)
                 "sar.js",            // BIS: SAR - Gestione ricerca persona (dopo qrcode.js e fireops-sfondi.js)
