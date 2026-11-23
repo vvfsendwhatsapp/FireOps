@@ -1,4 +1,5 @@
 /* FireOps - "Prospetto specializzati": turno e salto turno del personale (su PUMA non ci sono).
+ * Pubblicato in automatico dal repo con la GitHub Action "Apps Script" (prima prova: 23/11/2026).
  * Foglio: "DB_Turni_Personale", una riga per persona (Chiave = cognome|nome|comando, normalizzati).
  * Da incollare nello stesso progetto Apps Script della Web App usata da Messaggistica, Locator e SAR
  * (quella con URL ...AKfycbyp6jQ331Yk5q7_hkM74ZyhUh1c3zQUJG7SpuoE18HslBO36YKSTYIQf-z7gSwXR4Yv/exec).
