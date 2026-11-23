@@ -9281,3 +9281,5 @@ body.pros-pop-aperto { overflow: hidden; }
 /* Prospetto: colonne Turno e Salto centrate, intestazione e celle allineate */
 #prospetto-disponibilita .pros-tab th.c, #prospetto-disponibilita .pros-tab td.c { text-align: center; vertical-align: middle; }
 #prospetto-disponibilita .pros-tab td.c select { margin: 0 auto; display: block; text-align: center; text-align-last: center; }
+/* Tasto SP nascosto ai Comandi non abilitati: lo stile del tasto (display:flex) non deve vincere su [hidden] */
+#btn-specializzati[hidden] { display: none !important; }

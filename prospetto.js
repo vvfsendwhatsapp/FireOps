@@ -1232,7 +1232,7 @@ function spAbilitato() {
 function applicaAbilitazione() {
   const ok = spAbilitato();
   const btn = document.getElementById('btn-specializzati');
-  if (btn) btn.hidden = !ok;
+  if (btn) { btn.hidden = !ok; btn.style.display = ok ? '' : 'none'; }
   if (!ok && popup) chiudiPopup();
   document.querySelectorAll('select').forEach(sel => {
     const opt = sel.querySelector('option[value="prospetto-disponibilita"]');
