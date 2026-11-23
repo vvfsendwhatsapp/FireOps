@@ -8825,3 +8825,8 @@ body.pros-pop-aperto { overflow: hidden; }
 .pros-pop-apri { margin-left: auto; padding: 7px 12px; border-radius: 6px; border: 1px solid #e0a800; background: #f2b705; color: #1d2733; font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap; }
 .pros-pop-apri:hover { background: #ffd23f; }
 .pros-pop-apri + .pros-pop-x { margin-left: 0; }
+.pros-pop-testa label.pros-pop-quando { flex: 0 0 auto; }
+.pros-pop-testa label.pros-pop-quando select { flex: 0 0 auto; }
+.pros-pop-colonne.una { grid-template-columns: minmax(0, 1fr); }
+.pros-pop-colonne.una .pros-pop-gr ul { columns: 2 320px; column-gap: 12px; }
+.pros-pop-colonne.una .pros-pop-gr li { break-inside: avoid; }

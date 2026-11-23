@@ -984,6 +984,7 @@ function avvia() {
  * Usa il Comando attivo; il corso scelto qui e' lo stesso del Prospetto.
  */
 let popup = null;
+let popQuando = 'tutti';   // finestra: 'tutti' = tre colonne, oppure '0' / '12' / '24' = una sola
 function richiamoPer(ore) {
   const T = turnoAlMomento(Date.now() + ore * 3600e3);
   const salva = {qual: f.qual, testo: f.testo};
@@ -1004,7 +1005,8 @@ function disegnaPopup() {
   if (carico.stato !== 'ok') { corpo.innerHTML = `<div class="pros-vuoto">${carico.stato === 'err' ? '⚠️ PUMA non raggiungibile: ' + esc(carico.errore) : '⏳ Lettura del personale da PUMA…'}</div>`; return; }
   if (!f.corso) { corpo.innerHTML = '<div class="pros-vuoto">Scegli il corso per vedere chi è richiamabile adesso, tra 12 e tra 24 ore.</div>'; return; }
   const nomiGr = T => ({libero: 'Turno libero ' + (T.liberi.join(', ') || '—') + (T.gRichiamo ? ' e giornalieri' : ''), saltoSel: 'Salto ' + T.sel.sigla + ' (in turno)', saltoPrec: 'Salto ' + T.prec.sigla + ' (turno prima)', saltoSucc: 'Salto ' + T.succ.sigla + ' (turno dopo)'});
-  corpo.innerHTML = `<div class="pros-pop-colonne">${[[0, 'Adesso'], [12, 'Tra 12 ore'], [24, 'Tra 24 ore']].map(([ore, tit]) => {
+  const momenti = [[0, 'Adesso'], [12, 'Tra 12 ore'], [24, 'Tra 24 ore']].filter(([ore]) => popQuando === 'tutti' || String(ore) === popQuando);
+  corpo.innerHTML = `<div class="pros-pop-colonne${momenti.length === 1 ? ' una' : ''}">${momenti.map(([ore, tit]) => {
     const {T, g} = richiamoPer(ore), ng = nomiGr(T);
     const tot = GRUPPI_RICHIAMO.reduce((n, k) => n + g[k].length, 0);
     return `<div class="pros-pop-col">
@@ -1023,6 +1025,9 @@ function apriPopup() {
       <div class="pros-pop-testa">
         <div class="tit">Specializzati disponibili <span class="pros-pop-com"></span></div>
         <label>Corso <select id="pros-pop-corso"></select></label>
+        <label class="pros-pop-quando">Quando <select id="pros-pop-quando">
+          <option value="tutti">Adesso, 12 e 24 ore</option><option value="0">Adesso</option><option value="12">Tra 12 ore</option><option value="24">Tra 24 ore</option>
+        </select></label>
         <button type="button" class="pros-pop-apri" title="Apre il Prospetto specializzati nel pannello sinistro e chiude questa finestra">📋 Apri Prospetto specializzati</button>
         <button type="button" class="pros-pop-x" title="Chiudi (Esc)">✕</button>
       </div>
@@ -1033,6 +1038,7 @@ function apriPopup() {
       if (e.target.closest('.pros-pop-apri')) { apriSezione(); return; }
       if (e.target === popup || e.target.closest('.pros-pop-x')) chiudiPopup();
     });
+    popup.querySelector('#pros-pop-quando').addEventListener('change', e => { popQuando = e.target.value; disegnaPopup(); });
     popup.querySelector('#pros-pop-corso').addEventListener('change', e => { f.corso = e.target.value; cella = null; salvaFiltri(); disegna(); disegnaPopup(); });
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && popup && !popup.hidden) chiudiPopup(); });
   }
