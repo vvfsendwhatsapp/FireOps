@@ -1987,6 +1987,26 @@ if (contenitoreNormative) {
 aggiornaSelettori();
 salvaPaginePannelli();
 
+    // Link diretto a una sezione: ?pagina=<id> oppure ?p=<id> oppure #<id>, con abbreviazioni
+    // (sp = Prospetto specializzati, sitac, radio). Es. .../FireOps/?p=sp  oppure  .../FireOps/#sp
+    (function apriDaLink() {
+        const ALIAS = { sp: "prospetto-disponibilita", prospetto: "prospetto-disponibilita", specializzati: "prospetto-disponibilita",
+            sitac: "sitac-aib", radio: "radio-telefoni" };
+        let chiesta = "";
+        try {
+            const q = new URLSearchParams(location.search);
+            chiesta = (q.get("pagina") || q.get("p") || location.hash.replace(/^#\/?/, "") || "").trim().toLowerCase();
+        } catch (e) { return; }
+        if (!chiesta) return;
+        const id = ALIAS[chiesta] || chiesta;
+        const apri = () => {
+            const sel = document.getElementById("select-pannello-sinistra");
+            if (!sel || !sel.querySelector(`option[value="${CSS.escape(id)}"]`)) return;
+            if (sel.value !== id) { sel.value = id; sel.dispatchEvent(new Event("change", { bubbles: true })); }
+        };
+        setTimeout(apri, 300);
+    })();
+
     // Wrapper minimo su FireOps.creaCombo: usato da Moduli CMR e da Sostanze
     // Pericolose qui sotto. Una copia identica vive anche in
     // messaggistica-bis.js (per Prefisso/Lingua) — duplicarla è più semplice
