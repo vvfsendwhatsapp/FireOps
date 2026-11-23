@@ -381,6 +381,80 @@ function htmlStampa(gruppi, naz, st){
 const $ = id => document.getElementById(id);
 let gruppi = null, naz = null;
 
+/* A tutto schermo l'elenco si legge in due modi, a scelta (ricordata):
+   "schede" = una scheda per Direzione con i suoi Comandi, affiancate;
+   "tabella" = una riga per Direzione: canale regionale, telefono, TBT e Comandi. */
+const LS_VISTA = 'fireops_rt_vista';
+let vista = (() => { try { return localStorage.getItem(LS_VISTA) || 'schede'; } catch (e) { return 'schede'; } })();
+
+/* Le frequenze TBT delle regioni di una Direzione (Veneto e TAA ne ha due). */
+function regioniDi(g){
+  return [...new Set(g.comandi.map(c => val(c.Regione)).filter(Boolean))];
+}
+function htmlTbt(g){
+  const regs = regioniDi(g);
+  if (!regs.length) return '<span class="rt-manca">\u2014</span>';
+  return regs.map(r => {
+    const a = aeronauticiPer(r);
+    const f = a.regionale.length ? a.regionale.join(' · ') : '';
+    return `<span class="rt-tbt-voce">${f ? `<b class="rt-tbt-fq">${esc(f)}</b>` : `<span class="rt-tbt-naz">naz. ${esc(a.nazionale.join(' · '))}</span>`}`
+      + (regs.length > 1 ? ` <span class="rt-tbt-reg">${esc(r)}</span>` : '') + `</span>`;
+  }).join('');
+}
+
+/* Testata della scheda: il nome su tutta la larghezza, sotto canale regionale,
+   telefono della SO di Direzione e TBT, ciascuno con la sua etichetta. */
+function testaScheda(g, st){
+  const r = regione(g.nome);
+  const mia = !!(st.dir && regione(st.dir) === r), lim = !!(st.limDir && st.limDir.has(r));
+  const cl = (mia ? ' rt-dir-mia' : '') + (lim ? ' rt-dir-lim' : '');
+  const tag = mia ? ` <span class="rt-tag rt-tag-mia">${st.eDir ? 'SO attiva' : 'la tua Direzione'}</span>` : lim ? ' <span class="rt-tag rt-tag-lim">confinante</span>' : '';
+  return `<tr class="rt-dir${cl}"><th scope="rowgroup" colspan="3">${esc(nomeDirezione(g.nome, true))}${tag}</th></tr>`
+    + `<tr class="rt-dir rt-dir-tbt${cl}"><td colspan="3"><span class="rt-dati-dir">`
+    + `<span><span class="rt-tbt-et">CH</span><b class="rt-tbt-fq">${esc(oTrattino(g.ch))}</b></span>`
+    + `<span><span class="rt-tbt-et">TEL SO</span>${g.tel ? numeroCopiabile(g.tel) : '\u2014'}</span>`
+    + `<span><span class="rt-tbt-et">TBT</span>${htmlTbt(g)}</span></span></td></tr>`;
+}
+
+function htmlSchede(st){
+  return `<div class="rt-schede">` + gruppi.map(g =>
+    `<table class="rt-tab rt-scheda">${COLONNE}`
+    + `<tbody class="rt-gruppo" data-cerca="${esc(norm([g.nome, g.ch, g.tel].join(' ')))}">`
+    + testaScheda(g, st)
+    + g.comandi.map(c => rigaCom(c, st, true)).join('')
+    + `</tbody></table>`).join('') + `</div>`;
+}
+
+function htmlTabellaDir(st){
+  const testa = `<thead><tr><th scope="col">Direzione</th><th scope="col" class="rt-ch">CH radio regionale</th>`
+    + `<th scope="col">Telefono SO Direzione</th><th scope="col">TBT regionale</th><th scope="col">Comandi · CH VHF · telefono</th></tr></thead>`;
+  const righe = gruppi.map(g => {
+    const r = regione(g.nome);
+    const mia = !!(st.dir && regione(st.dir) === r), lim = !!(st.limDir && st.limDir.has(r));
+    const tag = mia ? ` <span class="rt-tag rt-tag-mia">${st.eDir ? 'SO attiva' : 'la tua Direzione'}</span>` : lim ? ' <span class="rt-tag rt-tag-lim">confinante</span>' : '';
+    const com = g.comandi.map(c => {
+      const n = val(c.Comando);
+      const cl = n === st.nome ? ' rt-attivo' : st.lim.has(n) ? ' rt-limitrofo' : (st.comDir && st.comDir.has(n)) ? ' rt-della-dir' : '';
+      const tel = val(c[CAMPI.comTel]);
+      return `<span class="rt-chip${cl}" title="${esc(n)}${tel ? ' · ' + esc(tel) : ''}">${esc(n)} <b>${esc(oTrattino(c[CAMPI.comCh]))}</b>`
+        + (tel ? ` ${numeroCopiabile(tel)}` : '') + `</span>`;
+    }).join('');
+    const cerca = norm([g.nome, g.ch, g.tel, ...g.comandi.map(c => [c.Comando, c.Provincia, c[CAMPI.comCh], c[CAMPI.comTel]].join(' '))].join(' '));
+    return `<tbody class="rt-gruppo" data-cerca="${esc(cerca)}" data-nomi="${esc(g.comandi.map(c => val(c.Comando)).join('|'))}">`
+      + `<tr class="${mia ? 'rt-dir-mia' : ''}${lim ? ' rt-dir-lim' : ''}">`
+      + `<th scope="row" class="rt-tdir-nome">${esc(nomeDirezione(g.nome, true))}${tag}</th>`
+      + `<td class="rt-ch">${esc(oTrattino(g.ch))}</td>${cellaNumero(g.tel, true)}`
+      + `<td class="rt-tdir-tbt">${htmlTbt(g)}</td><td class="rt-tdir-com">${com}</td></tr></tbody>`;
+  }).join('');
+  return `<table class="rt-tab rt-tab-dir"><colgroup><col style="width:17%"><col style="width:9%"><col style="width:15%"><col style="width:14%"><col></colgroup>`
+    + testa + righe + `</table>`;
+}
+
+function barraVista(){
+  const b = (v, t) => `<button type="button" class="btn-toggle-radar${vista === v ? ' attivo' : ''}" data-rt-vista="${v}">${t}</button>`;
+  return `<div class="rt-vista">${b('schede', '🗂 Schede per Direzione')}${b('tabella', '📋 Tabella Direzioni')}</div>`;
+}
+
 function aggiorna(){
   const elenco = $('rt-elenco'), boxNaz = $('rt-nazionali');
   if (!elenco || !boxNaz) return false;
@@ -412,12 +486,9 @@ function aggiorna(){
       + `SO di ${esc(st.nome)}</span><span class="rt-legenda-voce">`
       + `<i class="rt-campione rt-campione-lim"></i>Comandi confinanti</span></p>`
     : '';
-  elenco.innerHTML = riquadroMio(st) + `<table class="rt-tab">${COLONNE}${TESTATA}`
-    + gruppi.map(g => `<tbody class="rt-gruppo" data-cerca="${esc(norm([g.nome, g.ch, g.tel].join(' ')))}">`
-      + rigaDir(g, true, false, st)
-      + g.comandi.map(c => rigaCom(c, st, true)).join('')
-      + `</tbody>`).join('')
-    + `</table><p class="rt-vuoto pagina-nota" hidden></p>`;
+  elenco.innerHTML = riquadroMio(st) + barraVista()
+    + (vista === 'tabella' ? htmlTabellaDir(st) : htmlSchede(st))
+    + `<p class="rt-vuoto pagina-nota" hidden></p>`;
   const datalist = $('rt-comandi-list');
   if (datalist){
     datalist.innerHTML = comandi.filter(c => c && val(c.Comando))
@@ -482,6 +553,14 @@ function filtra(){
   let visibili = 0;
   elenco.querySelectorAll('tbody.rt-gruppo').forEach(tb => {
     let qui = 0;
+    if (!tb.querySelector('tr.rt-com')){
+      const nomi = (tb.dataset.nomi || '').split('|');
+      const ok = vic && selezionato ? nomi.some(n => n === nomeSel || lim.has(n))
+        : (!t || (tb.dataset.cerca || '').includes(t));
+      tb.hidden = !ok;
+      if (ok) visibili++;
+      return;
+    }
     tb.querySelectorAll('tr.rt-com').forEach(tr => {
       const nomeRiga = tr.dataset.nome;
       const ok = vic && selezionato
@@ -491,6 +570,8 @@ function filtra(){
       if (ok) qui++;
     });
     tb.hidden = qui === 0;
+    const tab = tb.closest('table.rt-scheda');
+    if (tab) tab.hidden = tb.hidden;
     if (!tb.hidden) visibili++;
   });
   const vuoto = elenco.querySelector('.rt-vuoto');
@@ -542,6 +623,13 @@ function avvia(){
     const t = ev.target;
     if (!t || !t.closest) return;
     if (t.closest('#rt-bStampa')){ stampa(); return; }
+    const bv = t.closest('#radio-telefoni [data-rt-vista]');
+    if (bv){
+      vista = bv.dataset.rtVista;
+      try { localStorage.setItem(LS_VISTA, vista); } catch (e) {}
+      aggiorna();
+      return;
+    }
     const n = t.closest('#radio-telefoni .telefono-cliccabile');
     if (n) copia(ev, n.dataset.copia);
   });

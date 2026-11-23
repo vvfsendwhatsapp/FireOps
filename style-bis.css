@@ -187,3 +187,80 @@
     border-radius: 2px;
     object-fit: cover;
 }
+
+/* =========================================================================
+   RADIO E TELEFONI a tutto schermo — schede per Direzione / tabella Direzioni
+   ========================================================================= */
+#radio-telefoni .rt-alto { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 16px; align-items: start; }
+@media (min-width: 1100px) {
+    #radio-telefoni .rt-alto { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
+    #radio-telefoni .rt-alto .rt-naz { margin: 0 0 16px; }
+}
+#radio-telefoni .rt-vista { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 12px; }
+#radio-telefoni .rt-vista .attivo { background: var(--primary-color); color: var(--dark-color); font-weight: bold; }
+
+/* Schede: una per Direzione, affiancate quante ce ne stanno */
+#radio-telefoni .rt-schede {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(360px, 100%), 1fr));
+    gap: 14px;
+    align-items: start;
+}
+#radio-telefoni .rt-scheda {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: var(--dark-color);
+}
+#radio-telefoni .rt-scheda .rt-c-nome { width: 50%; }
+#radio-telefoni .rt-scheda .rt-dir th { white-space: normal; }
+#radio-telefoni .rt-dati-dir { display: flex; flex-wrap: wrap; gap: 2px 16px; align-items: baseline; }
+#radio-telefoni .rt-dati-dir .telefono-cliccabile { color: var(--dark-color); font-weight: bold; }
+#radio-telefoni .rt-scheda tr.rt-dir-mia .telefono-cliccabile, #radio-telefoni .rt-scheda tr.rt-dir-lim .telefono-cliccabile { color: #fff; }
+#radio-telefoni .rt-scheda .rt-c-ch { width: 15%; }
+#radio-telefoni .rt-scheda .rt-c-tel { width: 35%; }
+#radio-telefoni .rt-scheda tr.rt-dir-tbt td {
+    background: rgba(255, 215, 0, .82);
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: normal;
+    padding-top: 0;
+    font-size: 13px;
+    white-space: normal;
+}
+#radio-telefoni .rt-scheda tr.rt-dir-tbt.rt-dir-mia td { background: #9a7209 !important; color: #fff !important; }
+#radio-telefoni .rt-scheda tr.rt-dir-tbt.rt-dir-lim td { background: #3b6fd1 !important; color: #fff !important; }
+#radio-telefoni .rt-scheda tr.rt-dir-tbt.rt-dir-mia .rt-tbt-fq,
+#radio-telefoni .rt-scheda tr.rt-dir-tbt.rt-dir-lim .rt-tbt-fq { color: #fff; }
+#radio-telefoni .rt-scheda:has(tr.rt-dir-mia) { border: 2px solid #b8860b; box-shadow: 0 0 0 2px rgba(255, 215, 0, .25); }
+#radio-telefoni .rt-scheda:has(tr.rt-dir-lim) { border: 2px solid #4f8cff; }
+
+#radio-telefoni .rt-tbt-et { font-size: 10.5px; font-weight: bold; letter-spacing: .05em; margin-right: 8px; opacity: .8; }
+#radio-telefoni .rt-tbt-voce { display: inline-block; margin-right: 12px; white-space: nowrap; }
+#radio-telefoni .rt-tbt-fq { font-family: "Courier New", monospace; font-size: 15px; }
+#radio-telefoni .rt-tbt-naz { font-style: italic; }
+#radio-telefoni .rt-tbt-reg { font-size: 11px; opacity: .85; }
+
+/* Tabella Direzioni: una riga per Direzione, Comandi in fondo come "chip" */
+#radio-telefoni .rt-tab-dir th, #radio-telefoni .rt-tab-dir td { vertical-align: top; white-space: normal; }
+#radio-telefoni .rt-tab-dir tbody tr > * { border-bottom: 1px solid var(--border-color); padding: 8px 10px; }
+#radio-telefoni .rt-tab-dir tbody:nth-of-type(even) tr > * { background: rgba(255, 255, 255, .03); }
+#radio-telefoni .rt-tab-dir .rt-tdir-nome { color: var(--primary-color); font-weight: bold; text-transform: uppercase; font-size: 13px; }
+#radio-telefoni .rt-tab-dir .rt-tdir-tbt .rt-tbt-fq { color: var(--primary-color); }
+#radio-telefoni .rt-tab-dir .rt-tbt-voce { display: block; }
+#radio-telefoni .rt-tab-dir tr.rt-dir-mia > * { background: rgba(184, 134, 11, .35) !important; color: inherit !important; }
+#radio-telefoni .rt-tab-dir tr.rt-dir-lim > * { background: rgba(79, 140, 255, .18) !important; color: inherit !important; }
+#radio-telefoni .rt-chip {
+    display: inline-flex; align-items: baseline; gap: 5px;
+    margin: 0 6px 5px 0; padding: 2px 8px;
+    border: 1px solid var(--border-color); border-radius: 12px;
+    font-size: 12.5px; white-space: nowrap;
+}
+#radio-telefoni .rt-chip b { font-family: "Courier New", monospace; color: var(--primary-color); font-size: 14px; }
+#radio-telefoni .rt-chip .telefono-cliccabile { font-size: 12px; }
+#radio-telefoni .rt-chip.rt-attivo { background: #ffd700; color: #111; border-color: #ffd700; font-weight: bold; }
+#radio-telefoni .rt-chip.rt-attivo b, #radio-telefoni .rt-chip.rt-attivo .telefono-cliccabile { color: #111; }
+#radio-telefoni .rt-chip.rt-limitrofo { border-color: #4f8cff; background: rgba(79, 140, 255, .18); }
+#radio-telefoni .rt-chip.rt-della-dir { border-color: #2fbf71; background: rgba(47, 191, 113, .15); }
