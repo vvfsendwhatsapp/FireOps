@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="it" data-fireops="bis">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SITAC da immagine · FireOps</title>
+  <!--
+    SITAC da immagine (solo BIS). Sta dentro un <iframe> nella scheda 3 della
+    SITAC (sitac-foto-bis.js), sul sito e nell'app Pro.
+    È una SECONDA SITAC completa, con tutti gli strumenti della tavola (frecce,
+    assi, linee, punti, mezzi, moduli, squadre, azioni, note, modifica, stampa),
+    ma al posto della mappa c'è una foto. Il markup si legge da index-bis.html
+    come fa app/sitac.html; sitac.js con NS.SITAC_IMMAGINE parte senza mappa e
+    con la carta già aperta. Restano fuori quello che ha senso solo su una carta
+    geografica: vento locale e pendenza dal web, coni di propagazione, sfondi,
+    esportazione GeoJSON/KML e SITAC 3D.
+    I dati dell'intervento (scheda 1) si leggono dalla pagina che la contiene.
+  -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@2.15.0/dist/leaflet-geoman.css">
+  <script>
+    var V = (function () { try { return parent.FIREOPS_VERSIONE; } catch (e) { return ""; } })() || String(Date.now());
+    document.write('<link rel="stylesheet" href="style.css?v=' + V + '">');
+    document.write('<link rel="stylesheet" href="style-bis.css?v=' + V + '">');
+    window.FireOps = { SITAC_IMMAGINE: true };
+  </script>
+  <style>
+    html, body { margin: 0 !important; padding: 0 !important; height: 100%; overflow: hidden; background: var(--surface-color, #1b1b1b); }
+    #si-barra { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px 8px; background: var(--dark-color, #111);
+      border-bottom: 1px solid var(--border-color, #333); }
+    #si-barra label, #si-barra button { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; font-size: 13.5px; border-radius: 7px;
+      border: 1px solid var(--border-color, #444); background: var(--surface-color, #222); color: var(--text-main, #eee); cursor: pointer; }
+    #si-barra .prim { background: #1f7a3a; border-color: #2aa04d; color: #fff; font-weight: bold; }
+    #si-barra .nota { font-size: 12px; color: var(--text-muted, #999); }
+    #si-corpo { height: calc(100% - 48px); }
+    #si-corpo #sitac-aib { display: block !important; height: 100%; padding: 0 !important; margin: 0 !important; }
+    #si-corpo #sitac-app { height: 100% !important; min-height: 0 !important; border-radius: 0; border: 0; }
+    /* Solo la carta: niente linguette, niente intestazione della sezione */
+    #si-corpo .sitac-schede, #si-corpo .pagina-box-header, #si-corpo .sitac-pannello[data-scheda="dati"],
+    #si-corpo .sitac-pannello[data-scheda="foto"] { display: none !important; }
+    /* Quello che su una foto non ha senso */
+    #sitac-bSfondo, #sitac-bGeojson, #sitac-bKml, #sitac-b3d, #sitac-bImporta, #sitac-bCentra,
+    .si-nascosto, .leaflet-control-scale, .fireops-sfondi, .sfondi-ctrl { display: none !important; }
+    #sitac-mappa { background: #0c0c0c !important; }
+    #si-vuota { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 500;
+      pointer-events: none; color: #bbb; font-size: 15px; text-align: center; line-height: 1.6; }
+    #si-vuota[hidden] { display: none; }
+  </style>
+</head>
+
+<body>
+  <div id="si-barra">
+    <label class="prim">📷 Scatta / carica foto<input type="file" id="si-file1" accept="image/*" capture="environment" hidden></label>
+    <label>🖼 Dalla galleria / file<input type="file" id="si-file2" accept="image/*" hidden></label>
+    <span class="nota" id="si-nota">Tutti gli strumenti della SITAC, sulla foto. Si può anche incollare (Ctrl+V) o trascinare un'immagine.</span>
+  </div>
+  <div id="si-corpo"><p style="padding:20px;color:#ddd">Caricamento…</p></div>
+
+  <script>
+  (function () {
+    "use strict";
+    var $ = function (id) { return document.getElementById(id); };
+    function script(src) {
+      return new Promise(function (ok, ko) {
+        var s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = function () { ko(new Error(src)); };
+        document.head.appendChild(s);
+      });
+    }
+    var CDN = [
+      "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js",
+      "https://unpkg.com/@geoman-io/leaflet-geoman-free@2.15.0/dist/leaflet-geoman.min.js",
+      "https://unpkg.com/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.js"
+    ];
+    var LOCALI = ["radiotelefoni-bis.js", "sitac-simboli.js", "sitac-vento.js", "sitac-rilievo.js", "sitac.js", "sitac-frequenze-bis.js"];
+    var istanza = null, foto = null;
+
+    /* Dati della scheda 1 dalla pagina che contiene questa: si copiano i valori, senza eventi */
+    var CAMPI = ["sitac-nIntervento", "sitac-qualifica", "sitac-nDos", "sitac-nominativo", "sitac-telefono", "sitac-posizione"];
+    function allinea() {
+      var pd; try { pd = parent.document; } catch (e) { return; }
+      if (!pd || pd === document) return;
+      CAMPI.forEach(function (id) { var a = pd.getElementById(id), b = document.getElementById(id); if (a && b && b.value !== a.value) b.value = a.value; });
+      var a = pd.getElementById("sitac-senzaScheda"), b = document.getElementById("sitac-senzaScheda");
+      if (a && b) b.checked = a.checked;
+      ["sitac-comando", "sitac-provincia"].forEach(function (id) { var x = pd.getElementById(id), y = document.getElementById(id); if (x && y) y.innerHTML = x.innerHTML; });
+    }
+
+    function nascondiPassi() {
+      /* Vento locale (p2) e coni di propagazione (p4): servono una carta geografica */
+      ["sitac-st2", "sitac-st4"].forEach(function (id) {
+        var t = document.getElementById(id), f = t && t.closest(".sitac-fisa"); if (f) f.classList.add("si-nascosto");
+      });
+    }
+
+    function metti(file) {
+      if (!file || !/^image\//.test(file.type) || !istanza) return;
+      var url = URL.createObjectURL(file), im = new Image();
+      im.onload = function () {
+        var map = istanza.map, Z = 17, lato = 1400;
+        var k = lato / Math.max(im.width, im.height), w = im.width * k, h = im.height * k;
+        var c = map.project(L.latLng(42.5, 12.5), Z);
+        var b = L.latLngBounds(map.unproject(L.point(c.x - w / 2, c.y + h / 2), Z), map.unproject(L.point(c.x + w / 2, c.y - h / 2), Z));
+        if (foto) map.removeLayer(foto);
+        foto = L.imageOverlay(url, b, { interactive: false, pmIgnore: true }).addTo(map);
+        foto.bringToBack();
+        map.setMaxBounds(b.pad(0.5));
+        map.invalidateSize();
+        map.fitBounds(b);
+        setTimeout(function () { map.invalidateSize(); map.fitBounds(b); }, 200);
+        $("si-vuota").hidden = true;
+      };
+      im.src = url;
+    }
+    $("si-file1").onchange = function (e) { metti(e.target.files[0]); e.target.value = ""; };
+    $("si-file2").onchange = function (e) { metti(e.target.files[0]); e.target.value = ""; };
+    document.addEventListener("paste", function (e) {
+      var it = [].slice.call((e.clipboardData || {}).items || []).find(function (x) { return /^image\//.test(x.type); });
+      if (it) { e.preventDefault(); metti(it.getAsFile()); }
+    });
+    document.addEventListener("dragover", function (e) { e.preventDefault(); });
+    document.addEventListener("drop", function (e) { e.preventDefault(); metti(e.dataTransfer.files[0]); });
+    window.FireOpsSitacImmagine = { metti: metti, ridisegna: function () { allinea(); if (istanza) istanza.ridisegna(); } };
+
+    fetch("index-bis.html?v=" + V).then(function (r) { return r.text(); }).then(function (t) {
+      var sez = new DOMParser().parseFromString(t, "text/html").getElementById("sitac-aib");
+      if (!sez) throw new Error("sezione SITAC non trovata");
+      $("si-corpo").innerHTML = "";
+      $("si-corpo").appendChild(document.importNode(sez, true));
+      /* La foto della scheda 3 non serve qui dentro */
+      var f = document.querySelector('#si-corpo [data-scheda="foto"]'); if (f) f.innerHTML = "";
+    })
+      .then(function () { return CDN.reduce(function (p, s) { return p.then(function () { return script(s); }); }, Promise.resolve()); })
+      .then(function () { return LOCALI.reduce(function (p, s) { return p.then(function () { return script(s + "?v=" + V); }); }, Promise.resolve()); })
+      .then(function () {
+        allinea();
+        istanza = FireOps.Sitac.init();
+        if (!istanza) throw new Error("SITAC non avviata");
+        nascondiPassi();
+        var v = document.createElement("div"); v.id = "si-vuota";
+        v.innerHTML = "Scatta o carica una foto qui sopra:<br>poi usa gli strumenti della SITAC a sinistra.";
+        $("sitac-mappa").appendChild(v);
+        setTimeout(function () { istanza.ridisegna(); }, 100);
+        window.addEventListener("resize", function () { istanza.ridisegna(); });
+        setInterval(allinea, 3000);
+      })
+      .catch(function (e) {
+        $("si-corpo").innerHTML = '<p style="padding:20px;color:#ddd">⚠️ La SITAC da immagine non si è caricata (' + String(e.message || e) + ').</p>';
+      });
+  })();
+  </script>
+</body>
+
+</html>

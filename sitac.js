@@ -1630,7 +1630,9 @@ function mostraComandoAfferente(sigla, nome){
 
   const partenza = centroComando();
   const map = L.map(q('#sitac-mappa'), {center: partenza || [42.74, 12.74],
-    zoom: partenza ? 12 : 6, zoomControl:true, layers:[sfondi[0].l]});
+    zoom: partenza ? 12 : 6, zoomControl:true,
+    /* SITAC da immagine (solo BIS, sitac-immagine.html): niente mappa sotto, c'è la foto */
+    layers: NS.SITAC_IMMAGINE ? [] : [sfondi[0].l]});
         L.control.scale({imperial:false, maxWidth:220, position:'bottomright'}).addTo(map);
 
     /* Gli agganci della misura vivono qui e non accanto alle sue funzioni:
@@ -5778,6 +5780,14 @@ async function stampa(){
       if (!posizioneOttenuta && !disegni.getLayers().length) map.setView([la, lo], 12);
     } else tornaAlComando();
   });
+
+  /* SITAC da immagine: la foto non ha una posizione da convalidare, gli
+     strumenti si aprono subito. In produzione NS.SITAC_IMMAGINE non c'è. */
+  if (NS.SITAC_IMMAGINE){
+    datiConvalidati = true;
+    mostraBlocco();
+    vaiAScheda('carta');
+  }
 
   return {
     map, disegni, coni,
