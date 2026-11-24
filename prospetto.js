@@ -420,7 +420,7 @@ function htmlConfig() {
   </div>`;
 }
 
-/* Finestra con le abilitazioni di una persona, divise per settore (come i ruoli) */
+/* Finestra con i corsi di una persona, divise per settore (come i ruoli) */
 function mostraAbilitazioni(k) {
   const p = righe.find(x => x.k === k);
   if (!p) return;
@@ -436,12 +436,12 @@ function mostraAbilitazioni(k) {
   const box = document.createElement('div');
   box.id = 'pros-abil-pop';
   box.className = 'pros-abil-pop';
-  box.innerHTML = `<div class="pros-abil-box" role="dialog" aria-label="Abilitazioni">
+  box.innerHTML = `<div class="pros-abil-box" role="dialog" aria-label="Corsi">
     <div class="pros-abil-testa"><div><b>${esc(p.cognome)} ${esc(p.nome)}</b> <span class="q">${esc(p.qual)}</span>
-      <div class="pros-nota">${esc(p.comando)} · ${p.corsi.length} ${p.corsi.length === 1 ? 'abilitazione' : 'abilitazioni'}</div></div>
+      <div class="pros-nota">${esc(p.comando)} · ${p.corsi.length} ${p.corsi.length === 1 ? 'corso' : 'corsi'}</div></div>
       <button type="button" class="pros-mini" data-abil-chiudi="1">✕ Chiudi</button></div>
     <div class="pros-abil-elenco">${ordine.map(s => `<div class="pros-abil-sett"><h4>${esc(s === 'ALTRO' ? 'Altre' : (NOME_SETTORE[s] || s))}</h4><ul>${perSett.get(s).map(c =>
-      `<li class="${c === f.corso ? 'on' : ''}">${esc(c)}${aMano.has(c) ? ' <span class="pros-nota">✍️ aggiunta a mano</span>' : ''}</li>`).join('')}</ul></div>`).join('')}</div>
+      `<li class="${c === f.corso ? 'on' : ''}">${esc(c)}${aMano.has(c) ? ' <span class="pros-nota">✍️ aggiunto a mano</span>' : ''}</li>`).join('')}</ul></div>`).join('')}</div>
   </div>`;
   box.addEventListener('click', e => { if (e.target === box || e.target.closest('[data-abil-chiudi]')) box.remove(); });
   document.body.appendChild(box);
@@ -796,13 +796,13 @@ function htmlGestione(corsiDisp, qualDisp, base, stati) {
   ${aperto && modMan ? htmlFormManuale(tuttiCorsi) : ''}
   ${elenco.length ? `
   <div class="pros-tabwrap"><table class="pros-tab${aperto ? '' : ' bloccata'}">
-    <thead><tr><th>Personale</th><th>Qual.</th><th>Abilitazioni</th><th>Cellulare</th><th class="c">Turno</th><th class="c">Salto</th><th>Ruoli per settore</th></tr></thead>
+    <thead><tr><th>Personale</th><th>Qual.</th><th>Corsi</th><th>Cellulare</th><th class="c">Turno</th><th class="c">Salto</th><th>Ruoli per settore</th></tr></thead>
     <tbody>${elenco.map(p => {
       const t = turni[p.k] || {};
       return `<tr data-k="${esc(p.k)}" class="${t.t === 'NO' ? 'st-no' : t.t ? '' : 'st-nd'}${modRuoli === p.k ? ' aperta' : ''}">
         <td data-l="Personale"><b>${esc(p.cognome)}</b> ${esc(p.nome)}${p.manuale ? ` <span class="pros-man">✍️ aggiunto a mano</span>${aperto ? ` <button type="button" class="pros-mini" data-man-mod="${esc(p.k)}" title="Modifica">✏️</button> <button type="button" class="pros-mini danger" data-man-del="${esc(p.k)}" title="Elimina">🗑️</button>` : ''}` : ''}${f.comando && !eDirezione(f.comando) ? '' : `<div class="pros-com">${esc(p.comando)}</div>`}</td>
         <td data-l="Qualifica">${aperto ? `<select data-qual="1" title="${p.qualPuma && p.qual !== p.qualPuma ? 'Su PUMA: ' + esc(p.qualPuma) : 'Qualifica'}">${Array.from(new Set(QUAL_MAN.concat(p.qual ? [p.qual] : []))).map(q => `<option${q === p.qual ? ' selected' : ''}>${esc(q)}</option>`).join('')}</select>${p.qualPuma && p.qual !== p.qualPuma ? `<div class="pros-com">PUMA: ${esc(p.qualPuma)}</div>` : ''}` : esc(p.qual)}</td>
-        <td data-l="Abilitazioni">${p.corsi.length ? `<button type="button" class="pros-abil${f.corso && p.corsi.includes(f.corso) ? ' on' : ''}" data-abil="${esc(p.k)}" title="Vedi le abilitazioni">🎓 <b>${p.corsi.length}</b> ${p.corsi.length === 1 ? 'abilitazione' : 'abilitazioni'}</button>` : '<span class="pros-nota">—</span>'}</td>
+        <td data-l="Corsi">${p.corsi.length ? `<button type="button" class="pros-abil${f.corso && p.corsi.includes(f.corso) ? ' on' : ''}" data-abil="${esc(p.k)}" title="Vedi i corsi">🎓 <b>${p.corsi.length}</b> ${p.corsi.length === 1 ? 'corso' : 'corsi'}</button>` : '<span class="pros-nota">—</span>'}</td>
         <td data-l="Cellulare">${htmlTel(p)}</td>
         <td data-l="Turno" class="c"><select data-campo="t"${dis}><option value="">—</option>${TURNI.map(x => `<option value="${x}"${x === t.t ? ' selected' : ''}>${x === 'NO' ? 'N.O. – Non operativo' : NOME_TURNO(x)}</option>`).join('')}</select></td>
         <td data-l="Salto" class="c"><select data-campo="s"${SENZA_SALTO(t.t) || !aperto ? ' disabled' : ''}><option value="">—</option>${SALTI.map(x => `<option${x === String(t.s || '') ? ' selected' : ''}>${x}</option>`).join('')}</select></td>
