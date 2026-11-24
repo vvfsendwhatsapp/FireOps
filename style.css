@@ -9314,3 +9314,7 @@ body.pros-pop-aperto { overflow: hidden; }
 .pros-abil-sett li { padding: 6px 10px; border-radius: 6px; font-size: 14px; }
 .pros-abil-sett li:nth-child(odd) { background: #e8ecf1; }
 .pros-abil-sett li.on { background: #fff2c4; font-weight: 700; }
+/* Prospetto: bordino sulle tre linguette (Gestione, Prospetto, Richiamo) */
+#pros-app .pros-scheda { border: 1.5px solid #7a8899; border-bottom: 0; border-radius: 8px 8px 0 0; }
+#pros-app .pros-scheda:hover { border-color: #4a5868; }
+#pros-app .pros-scheda.on, #pros-app .pros-scheda.on:hover { border: 1.5px solid #8a6200; border-bottom: 0; }
