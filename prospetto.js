@@ -113,7 +113,6 @@ function testoRuoli(p, settore) {
   return Object.entries(r).filter(([st]) => !settore || st === settore || (st.startsWith(PRE_CORSO) && settoreDi(st.slice(PRE_CORSO.length)) === settore))
     .flatMap(([st, l]) => l.map(x => NOME_RUOLO[x] + ' ' + etichettaChiave(st))).join(', ');
 }
-let numeriAperti = new Set();   // prospetto: persone di cui si vede il numero (tocco sul nome)
 let modRuoli = null;       // gestione: chiave della persona di cui si stanno modificando i ruoli per settore
 const NOMI_STATO = {servizio: 'In servizio', salto: 'Salto turno', libero: 'Libero', no: 'Non operativo', nd: 'Turno da impostare'};
 
@@ -135,19 +134,24 @@ let sblocco = {stato: '', errore: ''};   // '', 'verifica', 'ok', 'err'
 function comandoDiChiave(k) { return String(k || '').split('|')[2] || ''; }
 function pwdPer(cn) { return pwds[cn] || pwds['*'] || ''; }
 function puoModificare(k) { return !!pwdPer(comandoDiChiave(k)); }
-/* Numeri di telefono: per sicurezza si vedono solo le ultime 4 cifre. Il numero intero (e la chiamata)
-   solo dopo aver sbloccato il Comando con la password, toccando 👁. */
-const numeriVisti = new Set();
+/* Numeri di telefono: al posto del numero c'e' una cornetta. Rossa = numero nascosto, verde = numero
+   in vista. Se ne vede UNO alla volta: aprire un numero chiude quello di prima.
+   Il numero intero (e la chiamata) solo con il Comando sbloccato; altrimenti le ultime 4 cifre. */
+let numeroAperto = null;
 const ultime4 = c => String(c || '').replace(/\D/g, '').slice(-4);
 const telMascherato = c => c ? '••• ' + ultime4(c) : '';
-const telVisibile = p => !!p.cell && puoModificare(p.k) && numeriVisti.has(p.k);
+const ICO_TEL = '<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path fill="currentColor" d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg>';
+function apriNumero(k) { numeroAperto = numeroAperto === k ? null : k; }
 function htmlTel(p, conCopia) {
   if (!p.cell) return '';
-  if (telVisibile(p)) return `<a href="tel:${esc(p.cell)}">📞 ${esc(p.cell)}</a> <button type="button" class="pros-mini pros-vedi" data-vedi="${esc(p.k)}" title="Nascondi il numero">🙈</button>`
-    + (conCopia ? ` <button type="button" class="pros-mini" data-copia="${esc(p.cell)}" title="Copia il numero">📋</button>` : '');
-  return `<span class="pros-tel-m" title="Numero nascosto per sicurezza">📞 ${esc(telMascherato(p.cell))}</span>`
-    + (puoModificare(p.k) ? ` <button type="button" class="pros-mini pros-vedi" data-vedi="${esc(p.k)}" title="Mostra il numero">👁</button>`
-      : ' <span class="pros-tel-lock" title="Sblocca il Comando con la password (Gestione personale) per vedere il numero intero">🔒</span>');
+  const on = numeroAperto === p.k;
+  const btn = `<button type="button" class="pros-cornetta ${on ? 'on' : 'off'}" data-vedi="${esc(p.k)}" aria-pressed="${on}" title="${on ? 'Nascondi il numero' : 'Mostra il numero'}">${ICO_TEL}</button>`;
+  if (!on) return btn;
+  const num = puoModificare(p.k)
+    ? `<a class="pros-tel-num" href="tel:${esc(p.cell)}">${esc(p.cell)}</a>`
+      + (conCopia ? ` <button type="button" class="pros-mini" data-copia="${esc(p.cell)}" title="Copia il numero">📋</button>` : '')
+    : `<span class="pros-tel-m">${esc(telMascherato(p.cell))}</span> <span class="pros-tel-lock" title="Sblocca il Comando con la password (Gestione personale) per vedere il numero intero">🔒</span>`;
+  return btn + ' ' + num;
 }
 const telCsv = p => !p.cell ? '' : puoModificare(p.k) ? p.cell : telMascherato(p.cell);
 function sbloccato() { return eDirezione(f.comando) ? !!pwds['*'] : !!pwdPer(normComando(f.comando)); }
@@ -678,8 +682,8 @@ function htmlProspetto(corsiDisp, qualDisp, base, stati) {
   const turnoTesto = p => { const t = turni[p.k] || {}; return t.t ? NOME_TURNO(t.t) + (t.s || '') : '—'; };
   const voce = (p, t, extra) => {
     const tt = turni[p.k] || {}, inSalto = t === adesso.sel.l && tt.s && String(tt.s) === adesso.sel.n;
-    const aperto = numeriAperti.has(p.k);
-    return `<li class="pros-cliccabile${inSalto ? ' salto' : ''}${extra ? ' ' + extra : ''}${aperto ? ' aperto' : ''}" data-num="${esc(p.k)}" title="${esc((p.cell ? 'Tocca per il numero · ' : '') + p.corsi.join(', '))}"><span class="q">${esc(p.qual)}</span> <span class="n">${esc(p.cognome)}${p.manuale ? ' ✍️' : ''}${etSenzaCorso(p)}</span>${tt.s && t !== 'NO' ? `<span class="s">${esc(t + tt.s)}</span>` : ''}${t === 'NO' && tt.t && tt.t !== 'NO' ? `<span class="s" title="Turno ${esc(NOME_TURNO(tt.t))}${tt.s ? ', salto ' + esc(tt.s) : ''}: non operativo per ${esc(NOME_SETTORE[settore] || '')}">${esc(NOME_TURNO(tt.t) + (tt.s || ''))}</span>` : ''}${f.comando && !eDirezione(f.comando) ? '' : `<span class="c">${esc(p.comando)}</span>`}${aperto ? `<span class="tel">${p.cell ? htmlTel(p, true) : '<span class="pros-nota">numero non presente su PUMA</span>'}</span>` : ''}</li>`;
+    const aperto = numeroAperto === p.k;
+    return `<li class="pros-cliccabile${inSalto ? ' salto' : ''}${extra ? ' ' + extra : ''}${aperto ? ' aperto' : ''}" data-num="${esc(p.k)}" title="${esc((p.cell ? 'Tocca per il numero · ' : '') + p.corsi.join(', '))}"><span class="q">${esc(p.qual)}</span> <span class="n">${esc(p.cognome)}${p.manuale ? ' ✍️' : ''}${etSenzaCorso(p)}</span>${tt.s && t !== 'NO' ? `<span class="s">${esc(t + tt.s)}</span>` : ''}${t === 'NO' && tt.t && tt.t !== 'NO' ? `<span class="s" title="Turno ${esc(NOME_TURNO(tt.t))}${tt.s ? ', salto ' + esc(tt.s) : ''}: non operativo per ${esc(NOME_SETTORE[settore] || '')}">${esc(NOME_TURNO(tt.t) + (tt.s || ''))}</span>` : ''}${f.comando && !eDirezione(f.comando) ? '' : `<span class="c">${esc(p.comando)}</span>`}${p.cell ? `<span class="tel">${htmlTel(p, true)}</span>` : ''}</li>`;
   };
   const righeFascia = [['FUN', 'Funzionari del settore'], ['ROP', 'Responsabile operativo provinciale'], ['MAG', 'Magazziniere generale']]
     .map(([r, tit]) => [tit, fascia.filter(p => ORDINE_RUOLI[rangoRuolo(p, settore)] === r)]);
@@ -962,10 +966,10 @@ function eventi() {
     const b = e.target.closest('button');
     if (!b) {
       const li = e.target.closest('li[data-num]');
-      if (li) { const k = li.dataset.num; if (numeriAperti.has(k)) numeriAperti.delete(k); else numeriAperti.add(k); disegna(); }
+      if (li) { apriNumero(li.dataset.num); disegna(); }
       return;
     }
-    if (b.dataset.vedi) { if (numeriVisti.has(b.dataset.vedi)) numeriVisti.delete(b.dataset.vedi); else numeriVisti.add(b.dataset.vedi); disegna(); return; }
+    if (b.dataset.vedi) { apriNumero(b.dataset.vedi); disegna(); return; }
     if (b.dataset.copia) {
       const v = b.dataset.copia;
       const fatto = () => { b.textContent = '✅'; setTimeout(() => { b.textContent = '📋'; }, 1200); };
@@ -1209,7 +1213,7 @@ function chiudiPopup() { if (popup) popup.hidden = true; document.body.classList
 document.addEventListener('click', e => {
   if (e.target.closest('#btn-specializzati')) { apriPopup(); return; }
   const v = e.target.closest('.pros-pop [data-vedi]');
-  if (v) { if (numeriVisti.has(v.dataset.vedi)) numeriVisti.delete(v.dataset.vedi); else numeriVisti.add(v.dataset.vedi); disegnaPopup(); }
+  if (v) { apriNumero(v.dataset.vedi); disegnaPopup(); }
 });
 
 NS.Prospetto = {avvia, carica, scaricaTurni, apriPopup, _turno: turnoAlMomento, _dati: () => ({righe, turni, f, carico, coda, sync})};

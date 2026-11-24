@@ -9283,3 +9283,16 @@ body.pros-pop-aperto { overflow: hidden; }
 #prospetto-disponibilita .pros-tab td.c select { margin: 0 auto; display: block; text-align: center; text-align-last: center; }
 /* Tasto SP nascosto ai Comandi non abilitati: lo stile del tasto (display:flex) non deve vincere su [hidden] */
 #btn-specializzati[hidden] { display: none !important; }
+/* Prospetto: cornetta al posto del numero. Rossa = nascosto, verde = in vista (uno solo alla volta) */
+.pros-cornetta { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0;
+    border-radius: 50%; border: 0; color: #fff; cursor: pointer; vertical-align: middle; flex: 0 0 auto;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .35); transition: background .15s, transform .1s; }
+.pros-cornetta.off { background: #d32f2f; }
+.pros-cornetta.on { background: #2e9d4a; box-shadow: 0 0 0 3px rgba(46, 157, 74, .35); }
+.pros-cornetta.on svg { transform: rotate(-20deg); }
+.pros-cornetta:active { transform: scale(.92); }
+.pros-tel-num { font-weight: 700; white-space: nowrap; font-family: ui-monospace, Menlo, monospace; }
+#pros-app .pros-col li .tel { flex-basis: auto; margin-left: auto; padding: 0; }
+#pros-app .pros-col li.aperto .tel { flex-basis: 100%; margin-left: 0; padding: 3px 0 1px; }
+#pros-app .pros-col li .tel .pros-cornetta { width: 24px; height: 24px; }
+#pros-app .pros-col li .tel .pros-cornetta svg { width: 13px; height: 13px; }
