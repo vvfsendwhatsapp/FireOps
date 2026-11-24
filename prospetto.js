@@ -451,7 +451,7 @@ function mostraAbilitazioni(k) {
     <div class="pros-abil-testa"><div><b>${esc(p.cognome)} ${esc(p.nome)}</b> <span class="q">${esc(p.qual)}</span>
       <div class="pros-nota">${esc(p.comando)} · ${p.corsi.length} ${p.corsi.length === 1 ? 'corso' : 'corsi'}</div></div>
       <button type="button" class="pros-mini" data-abil-chiudi="1">✕ Chiudi</button></div>
-    <div class="pros-abil-elenco">${ordine.map(s => `<div class="pros-abil-sett"><h4>${esc(s === 'ALTRO' ? 'Altre' : (NOME_SETTORE[s] || s))}</h4><ul>${perSett.get(s).map(c =>
+    <div class="pros-abil-elenco">${ordine.map(s => `<div class="pros-abil-sett"><h4><span>${esc(s === 'ALTRO' ? 'Altri corsi' : (NOME_SETTORE[s] || s))}</span><em>${perSett.get(s).length}</em></h4><ul>${perSett.get(s).map(c =>
       `<li class="${c === f.corso ? 'on' : ''}">${esc(c)}${aMano.has(c) ? ' <span class="pros-nota">✍️ aggiunto a mano</span>' : ''}</li>`).join('')}</ul></div>`).join('')}</div>
   </div>`;
   box.addEventListener('click', e => { if (e.target === box || e.target.closest('[data-abil-chiudi]')) box.remove(); });

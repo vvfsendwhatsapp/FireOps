@@ -9330,3 +9330,11 @@ body.pros-pop-aperto { overflow: hidden; }
 #pros-app .pros-scheda[data-scheda="richiamo"], #pros-app .pros-scheda[data-scheda="richiamo"]:hover,
 #pros-app .pros-scheda[data-scheda="richiamo"].on { border-color: #2f9257; }
 #pros-app .pros-scheda[data-scheda].on { border-width: 3px; border-bottom: 0; }
+/* Finestra dei corsi: la categoria (settore) è una fascia scura, i corsi sotto rientrati con il filetto */
+.pros-abil-sett { margin-top: 12px; }
+.pros-abil-sett h4 { display: flex; align-items: center; justify-content: space-between; margin: 0 0 6px; padding: 7px 10px;
+    background: #2a3442; color: #fff; border-radius: 6px; font-size: 12.5px; letter-spacing: .05em; }
+.pros-abil-sett h4 em { font-style: normal; background: #ffd700; color: #1d2733; border-radius: 10px; padding: 0 8px; font-size: 12px; font-weight: 800; }
+.pros-abil-sett ul { margin: 0 0 0 12px; padding: 0 0 0 10px; border-left: 3px solid #c3ccd6; }
+.pros-abil-sett li { padding: 5px 8px; font-size: 14px; }
+.pros-abil-sett li::before { content: '•'; color: #7a8899; margin-right: 6px; }
