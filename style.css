@@ -9296,3 +9296,21 @@ body.pros-pop-aperto { overflow: hidden; }
 #pros-app .pros-col li.aperto .tel { flex-basis: 100%; margin-left: 0; padding: 3px 0 1px; }
 #pros-app .pros-col li .tel .pros-cornetta { width: 24px; height: 24px; }
 #pros-app .pros-col li .tel .pros-cornetta svg { width: 13px; height: 13px; }
+/* Prospetto: tasto con il numero di abilitazioni e finestra con l'elenco */
+.pros-abil { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 16px; cursor: pointer;
+    border: 1px solid #7a8899; background: #eef1f5; color: #1d2733; font-size: 13px; white-space: nowrap; }
+.pros-abil b { font-size: 15px; }
+.pros-abil:hover { background: #fff; border-color: #1d2733; }
+.pros-abil.on { border-color: #b8860b; box-shadow: 0 0 0 2px rgba(184, 134, 11, .35); }
+.pros-abil-pop { position: fixed; inset: 0; z-index: 7000; background: rgba(0, 0, 0, .55); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.pros-abil-box { background: #f4f6f9; color: #1d2733; border-radius: 12px; width: min(560px, 100%); max-height: 85vh; display: flex; flex-direction: column;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, .5); overflow: hidden; }
+.pros-abil-testa { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; padding: 14px 16px; background: #dde3ea; border-bottom: 1px solid #c3ccd6; }
+.pros-abil-testa b { font-size: 17px; }
+.pros-abil-testa .q { font-weight: 700; color: #8a6200; margin-left: 4px; }
+.pros-abil-elenco { overflow-y: auto; padding: 8px 16px 16px; }
+.pros-abil-sett h4 { margin: 12px 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #5a6778; }
+.pros-abil-sett ul { margin: 0; padding: 0; list-style: none; }
+.pros-abil-sett li { padding: 6px 10px; border-radius: 6px; font-size: 14px; }
+.pros-abil-sett li:nth-child(odd) { background: #e8ecf1; }
+.pros-abil-sett li.on { background: #fff2c4; font-weight: 700; }

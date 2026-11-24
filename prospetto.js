@@ -136,7 +136,7 @@ function pwdPer(cn) { return pwds[cn] || pwds['*'] || ''; }
 function puoModificare(k) { return !!pwdPer(comandoDiChiave(k)); }
 /* Numeri di telefono: al posto del numero c'e' una cornetta. Rossa = numero nascosto, verde = numero
    in vista. Se ne vede UNO alla volta: aprire un numero chiude quello di prima.
-   Il numero intero (e la chiamata) solo con il Comando sbloccato; altrimenti le ultime 4 cifre. */
+   Il numero si vede intero, anche senza password. */
 let numeroAperto = null;
 const ultime4 = c => String(c || '').replace(/\D/g, '').slice(-4);
 const telMascherato = c => c ? '••• ' + ultime4(c) : '';
@@ -147,13 +147,11 @@ function htmlTel(p, conCopia) {
   const on = numeroAperto === p.k;
   const btn = `<button type="button" class="pros-cornetta ${on ? 'on' : 'off'}" data-vedi="${esc(p.k)}" aria-pressed="${on}" title="${on ? 'Nascondi il numero' : 'Mostra il numero'}">${ICO_TEL}</button>`;
   if (!on) return btn;
-  const num = puoModificare(p.k)
-    ? `<a class="pros-tel-num" href="tel:${esc(p.cell)}">${esc(p.cell)}</a>`
-      + (conCopia ? ` <button type="button" class="pros-mini" data-copia="${esc(p.cell)}" title="Copia il numero">📋</button>` : '')
-    : `<span class="pros-tel-m">${esc(telMascherato(p.cell))}</span> <span class="pros-tel-lock" title="Sblocca il Comando con la password (Gestione personale) per vedere il numero intero">🔒</span>`;
+  const num = `<a class="pros-tel-num" href="tel:${esc(p.cell)}">${esc(p.cell)}</a>`
+    + (conCopia ? ` <button type="button" class="pros-mini" data-copia="${esc(p.cell)}" title="Copia il numero">📋</button>` : '');
   return btn + ' ' + num;
 }
-const telCsv = p => !p.cell ? '' : puoModificare(p.k) ? p.cell : telMascherato(p.cell);
+const telCsv = p => p.cell || '';
 function sbloccato() { return eDirezione(f.comando) ? !!pwds['*'] : !!pwdPer(normComando(f.comando)); }
 let cella = null;                                     // prospetto: {corso, turno} di cui mostrare i nomi
 const f = Object.assign({comando: '', data: '', fascia: fasciaAdesso(), corso: '', qual: '', testo: '', stato: '', scheda: 'prospetto', quando: 0, senzaTurno: false},
@@ -422,6 +420,34 @@ function htmlConfig() {
   </div>`;
 }
 
+/* Finestra con le abilitazioni di una persona, divise per settore (come i ruoli) */
+function mostraAbilitazioni(k) {
+  const p = righe.find(x => x.k === k);
+  if (!p) return;
+  const vecchia = document.getElementById('pros-abil-pop'); if (vecchia) vecchia.remove();
+  const perSett = new Map();
+  p.corsi.slice().sort((a, b) => a.localeCompare(b, 'it')).forEach(c => {
+    const s = settoreDi(c) || 'ALTRO';
+    if (!perSett.has(s)) perSett.set(s, []);
+    perSett.get(s).push(c);
+  });
+  const ordine = SETTORI.map(x => x[0]).concat(['ALTRO']).filter(s => perSett.has(s));
+  const aMano = new Set(p.cx || []);
+  const box = document.createElement('div');
+  box.id = 'pros-abil-pop';
+  box.className = 'pros-abil-pop';
+  box.innerHTML = `<div class="pros-abil-box" role="dialog" aria-label="Abilitazioni">
+    <div class="pros-abil-testa"><div><b>${esc(p.cognome)} ${esc(p.nome)}</b> <span class="q">${esc(p.qual)}</span>
+      <div class="pros-nota">${esc(p.comando)} · ${p.corsi.length} ${p.corsi.length === 1 ? 'abilitazione' : 'abilitazioni'}</div></div>
+      <button type="button" class="pros-mini" data-abil-chiudi="1">✕ Chiudi</button></div>
+    <div class="pros-abil-elenco">${ordine.map(s => `<div class="pros-abil-sett"><h4>${esc(s === 'ALTRO' ? 'Altre' : (NOME_SETTORE[s] || s))}</h4><ul>${perSett.get(s).map(c =>
+      `<li class="${c === f.corso ? 'on' : ''}">${esc(c)}${aMano.has(c) ? ' <span class="pros-nota">✍️ aggiunta a mano</span>' : ''}</li>`).join('')}</ul></div>`).join('')}</div>
+  </div>`;
+  box.addEventListener('click', e => { if (e.target === box || e.target.closest('[data-abil-chiudi]')) box.remove(); });
+  document.body.appendChild(box);
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { const x = document.getElementById('pros-abil-pop'); if (x) x.remove(); } });
+
 function scorriForm() { const x = root.querySelector('#pros-man-form'); if (x) { x.scrollIntoView({block: 'nearest'}); const i = x.querySelector('input[name=n]'); if (i) i.focus(); } }
 async function invia() {
   if (inviando || !coda.length) return;
@@ -600,7 +626,7 @@ function filtrati(sigla) {
   const l = delComando().filter(p => {
     if (f.qual && p.qual !== f.qual) return false;
     if (f.corso && !p.corsi.includes(f.corso)) return false;
-    if (testo && !norm(p.cognome + p.nome + (puoModificare(p.k) ? p.cell : ultime4(p.cell))).includes(testo)) return false;
+    if (testo && !norm(p.cognome + p.nome + p.cell).includes(testo)) return false;
     if (f.stato && statoPersona(p, sigla) !== f.stato) return false;
     return true;
   });
@@ -770,13 +796,13 @@ function htmlGestione(corsiDisp, qualDisp, base, stati) {
   ${aperto && modMan ? htmlFormManuale(tuttiCorsi) : ''}
   ${elenco.length ? `
   <div class="pros-tabwrap"><table class="pros-tab${aperto ? '' : ' bloccata'}">
-    <thead><tr><th>Personale</th><th>Qual.</th><th>Corsi</th><th>Cellulare</th><th class="c">Turno</th><th class="c">Salto</th><th>Ruoli per settore</th></tr></thead>
+    <thead><tr><th>Personale</th><th>Qual.</th><th>Abilitazioni</th><th>Cellulare</th><th class="c">Turno</th><th class="c">Salto</th><th>Ruoli per settore</th></tr></thead>
     <tbody>${elenco.map(p => {
       const t = turni[p.k] || {};
       return `<tr data-k="${esc(p.k)}" class="${t.t === 'NO' ? 'st-no' : t.t ? '' : 'st-nd'}${modRuoli === p.k ? ' aperta' : ''}">
         <td data-l="Personale"><b>${esc(p.cognome)}</b> ${esc(p.nome)}${p.manuale ? ` <span class="pros-man">✍️ aggiunto a mano</span>${aperto ? ` <button type="button" class="pros-mini" data-man-mod="${esc(p.k)}" title="Modifica">✏️</button> <button type="button" class="pros-mini danger" data-man-del="${esc(p.k)}" title="Elimina">🗑️</button>` : ''}` : ''}${f.comando && !eDirezione(f.comando) ? '' : `<div class="pros-com">${esc(p.comando)}</div>`}</td>
         <td data-l="Qualifica">${aperto ? `<select data-qual="1" title="${p.qualPuma && p.qual !== p.qualPuma ? 'Su PUMA: ' + esc(p.qualPuma) : 'Qualifica'}">${Array.from(new Set(QUAL_MAN.concat(p.qual ? [p.qual] : []))).map(q => `<option${q === p.qual ? ' selected' : ''}>${esc(q)}</option>`).join('')}</select>${p.qualPuma && p.qual !== p.qualPuma ? `<div class="pros-com">PUMA: ${esc(p.qualPuma)}</div>` : ''}` : esc(p.qual)}</td>
-        <td data-l="Corsi">${p.corsi.map(c => `<span class="pros-chip${c === f.corso ? ' on' : ''}" title="${esc(c)}">${esc(siglaCorso(c))}</span>`).join('') || '<span class="pros-nota">—</span>'}</td>
+        <td data-l="Abilitazioni">${p.corsi.length ? `<button type="button" class="pros-abil${f.corso && p.corsi.includes(f.corso) ? ' on' : ''}" data-abil="${esc(p.k)}" title="Vedi le abilitazioni">🎓 <b>${p.corsi.length}</b> ${p.corsi.length === 1 ? 'abilitazione' : 'abilitazioni'}</button>` : '<span class="pros-nota">—</span>'}</td>
         <td data-l="Cellulare">${htmlTel(p)}</td>
         <td data-l="Turno" class="c"><select data-campo="t"${dis}><option value="">—</option>${TURNI.map(x => `<option value="${x}"${x === t.t ? ' selected' : ''}>${x === 'NO' ? 'N.O. – Non operativo' : NOME_TURNO(x)}</option>`).join('')}</select></td>
         <td data-l="Salto" class="c"><select data-campo="s"${SENZA_SALTO(t.t) || !aperto ? ' disabled' : ''}><option value="">—</option>${SALTI.map(x => `<option${x === String(t.s || '') ? ' selected' : ''}>${x}</option>`).join('')}</select></td>
@@ -970,6 +996,7 @@ function eventi() {
       return;
     }
     if (b.dataset.vedi) { apriNumero(b.dataset.vedi); disegna(); return; }
+    if (b.dataset.abil) { mostraAbilitazioni(b.dataset.abil); return; }
     if (b.dataset.copia) {
       const v = b.dataset.copia;
       const fatto = () => { b.textContent = '✅'; setTimeout(() => { b.textContent = '📋'; }, 1200); };
