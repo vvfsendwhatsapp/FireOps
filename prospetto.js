@@ -657,12 +657,12 @@ function disegna() {
   });
   const statoCarico = carico.stato === 'carico' ? '<span class="pros-sync">⏳ Lettura da PUMA…</span>'
     : carico.stato === 'err' ? '<span class="pros-sync err">⚠️ PUMA non raggiungibile: ' + esc(carico.errore) + '</span>'
-    : carico.ora ? '<span class="pros-sync ok" title="Su PUMA ci sono ' + nRegistrazioni + ' registrazioni: chi si e\' registrato piu\' volte conta una volta sola">✓ PUMA · ' + righePuma.length + ' persone (' + nRegistrazioni + ' registrazioni)' + (righe.length > righePuma.length ? ' + ' + (righe.length - righePuma.length) + ' a mano' : '') + ' · ' + carico.ora.toLocaleTimeString('it-IT', {hour: '2-digit', minute: '2-digit'}) + '</span>' : '';
+    : '';   // a lettura riuscita non si scrive niente: restano solo attesa ed errori
   const ora = d => d ? ' · ' + d.toLocaleTimeString('it-IT', {hour: '2-digit', minute: '2-digit'}) : '';
   const statoSync = sync.stato === 'err' ? '<span class="pros-sync err">⚠️ Foglio turni: ' + esc(sync.errore) + (coda.length ? ' (' + coda.length + ' modifiche in attesa)' : '') + '</span>'
     : sync.stato === 'invio' ? '<span class="pros-sync">⏳ Salvo i turni sul foglio…</span>'
     : coda.length ? '<span class="pros-sync">⏳ ' + coda.length + ' modifiche da salvare' + (coda.some(k => !pwdPer(comandoDiChiave(k))) ? ' (sblocca il Comando nella Gestione personale)' : '') + '</span>'
-    : sync.stato === 'ok' ? '<span class="pros-sync ok">✓ Turni sul foglio' + ora(sync.ora) + '</span>' : '';
+    : '';
   const stati = statoCarico + statoSync;
   const schede = `<div class="pros-schede" role="tablist">
     <button type="button" class="pros-scheda${f.scheda === 'gestione' ? ' on' : ''}" data-scheda="gestione">${sbloccato() ? '🔓' : '🔒'} Gestione personale</button>
