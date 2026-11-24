@@ -9366,3 +9366,39 @@ body.pros-pop-aperto { overflow: hidden; }
 #pros-app .pros-totale .et { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
 #pros-app .pros-totale .dett { font-size: 11.5px; color: #5a6778; }
 @media (max-width: 700px) { #pros-app .pros-fascia-corpo { flex-direction: column; } #pros-app .pros-totale { border-left: 0; border-top: 2px solid rgba(0,0,0,.12); flex-direction: row; gap: 8px; } }
+
+/* ===== Prospetto · Gestione personale: GRIGLIA corsi e funzioni =====
+   Nome fisso a sinistra, intestazioni fisse in alto, colonne che scorrono. */
+#pros-app .pros-vista { display: inline-flex; }
+#pros-app .pros-vista .pros-btn { border-radius: 0; }
+#pros-app .pros-vista .pros-btn:first-child { border-radius: 6px 0 0 6px; }
+#pros-app .pros-vista .pros-btn:last-child { border-radius: 0 6px 6px 0; margin-left: -1px; }
+#pros-app .pros-vista .pros-btn.on { background: #1d2733; color: #ffd700; border-color: #1d2733; }
+#pros-app .pros-griglia-nota { margin: 6px 0; }
+#pros-app .pros-griglia-wrap { max-height: 72vh; overflow: auto; border: 1px solid #c3ccd6; border-radius: 8px; background: #fff; }
+#pros-app .pros-griglia { border-collapse: separate; border-spacing: 0; font-size: 12.5px; color: #1d2733; }
+#pros-app .pros-griglia th, #pros-app .pros-griglia td { border-bottom: 1px solid #e3e8ee; border-right: 1px solid #eef1f4; padding: 0; text-align: center; }
+#pros-app .pros-griglia thead th { position: sticky; z-index: 3; background: #2a3442; color: #fff; }
+#pros-app .pros-griglia thead tr:first-child th { top: 0; height: 26px; font-size: 12px; letter-spacing: .04em; }
+#pros-app .pros-griglia thead tr:nth-child(2) th { top: 26px; height: 118px; vertical-align: bottom; font-weight: 600; }
+#pros-app .pros-griglia thead th.gs.g1, #pros-app .pros-griglia thead th.g1 { background: #3b4757; }
+#pros-app .pros-griglia thead th.gr { background: #5a4a14; }
+#pros-app .pros-griglia thead th.gr.g1 { background: #6b5918; }
+#pros-app .pros-griglia thead th span { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; display: inline-block; padding: 6px 0; max-height: 112px; overflow: hidden; text-overflow: ellipsis; }
+#pros-app .pros-griglia thead th.scelto { background: #b8860b; }
+#pros-app .pros-griglia th.nome { position: sticky; left: 0; z-index: 2; background: #f4f6f9; text-align: left; padding: 4px 10px; white-space: nowrap; min-width: 210px; max-width: 260px; overflow: hidden; text-overflow: ellipsis; border-right: 2px solid #9aa6b2; font-weight: normal; }
+#pros-app .pros-griglia thead th.nome.angolo { z-index: 5; background: #1d2733; color: #ffd700; vertical-align: bottom; }
+#pros-app .pros-griglia th.nome .q { display: inline-block; min-width: 34px; font-weight: 700; color: #8a6200; }
+#pros-app .pros-griglia td { width: 26px; min-width: 26px; height: 28px; }
+#pros-app .pros-griglia td.g1 { background: #f7f8fa; }
+#pros-app .pros-griglia td.ruolo { background: #fffbea; }
+#pros-app .pros-griglia td.ruolo.g1 { background: #fff5d6; }
+#pros-app .pros-griglia .inizio { border-left: 2px solid #9aa6b2; }
+#pros-app .pros-griglia .primo-ruolo { border-left: 1.5px dashed #b8860b; }
+#pros-app .pros-griglia td.si { background: #dff3e4; }
+#pros-app .pros-griglia td.ruolo.si { background: #ffe58a; }
+#pros-app .pros-griglia td.ruolo.no.si { background: #f6c9c9; }
+#pros-app .pros-griglia td.puma input { accent-color: #2e9d4a; opacity: .75; }
+#pros-app .pros-griglia input { width: 16px; height: 16px; margin: 0; cursor: pointer; accent-color: #1e5aa8; }
+#pros-app .pros-griglia input:disabled { cursor: default; }
+#pros-app .pros-griglia tbody tr:hover td, #pros-app .pros-griglia tbody tr:hover th.nome { background-image: linear-gradient(rgba(30, 90, 168, .08), rgba(30, 90, 168, .08)); }

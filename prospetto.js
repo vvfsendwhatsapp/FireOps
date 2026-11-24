@@ -182,7 +182,7 @@ function oraRoma() { return +new Date().toLocaleString('en-GB', {timeZone: 'Euro
 function fasciaAdesso() { const h = oraRoma(); return (h >= 8 && h < 20) ? 'giorno' : 'notte'; }
 // fra mezzanotte e le 8 il turno di notte in corso e' quello montato la sera prima
 function dataAdesso() { return oraRoma() < 8 ? new Date(Date.now() - 864e5).toLocaleDateString('sv-SE', {timeZone: 'Europe/Rome'}) : oggiISO(); }
-function salvaFiltri() { scrivi(LS_FILTRI, {comando: f.comando, corso: f.corso, qual: f.qual, stato: f.stato, scheda: f.scheda, ordine: f.ordine}); }
+function salvaFiltri() { scrivi(LS_FILTRI, {comando: f.comando, corso: f.corso, qual: f.qual, stato: f.stato, scheda: f.scheda, ordine: f.ordine, vista: f.vista}); }
 // chiave della persona: cognome|nome|comando (niente cellulare: la chiave finisce sul foglio)
 function chiave(p) { return norm(p.cognome).slice(0, 60) + '|' + norm(p.nome).slice(0, 60) + '|' + normComando(p.comando).slice(0, 60); }
 function titolo(s) { return String(s || '').trim().toLowerCase().replace(/(^|[\s'’-])(\p{L})/gu, (m, a, b) => a + b.toUpperCase()); }
@@ -672,7 +672,10 @@ function disegna() {
   const corpo = f.scheda === 'richiamo' ? htmlRichiamo(corsiDisp, qualDisp, base, stati)
     : f.scheda === 'gestione' ? htmlGestione(corsiDisp, qualDisp, base, stati)
     : htmlProspetto(corsiDisp, qualDisp, base, stati);
+  const g0 = root.querySelector('.pros-griglia-wrap'), scorr = g0 ? [g0.scrollLeft, g0.scrollTop] : null;
   root.innerHTML = schede + corpo;
+  const g1 = root.querySelector('.pros-griglia-wrap');
+  if (g1 && scorr) { g1.scrollLeft = scorr[0]; g1.scrollTop = scorr[1]; }
   pareggiaTeste();
   if (popup && !popup.hidden) disegnaPopup();
 }
@@ -803,6 +806,7 @@ function htmlGestione(corsiDisp, qualDisp, base, stati) {
     <select id="pros-qual"><option value="">Tutte le qualifiche</option>${qualDisp.map(q => `<option${q === f.qual ? ' selected' : ''}>${esc(q)}</option>`).join('')}</select>
     <label class="pros-ordine">Ordina <select id="pros-ordine"><option value="qualifica"${f.ordine !== 'alfabetico' ? ' selected' : ''}>per qualifica</option><option value="alfabetico"${f.ordine === 'alfabetico' ? ' selected' : ''}>alfabetico</option></select></label>
     <label class="pros-chk"><input type="checkbox" id="pros-senza"${f.senzaTurno ? ' checked' : ''}> solo senza turno</label>
+    <span class="pros-vista"><button type="button" class="pros-btn${f.vista !== 'griglia' ? ' on' : ''}" data-vista="elenco">📋 Elenco</button><button type="button" class="pros-btn${f.vista === 'griglia' ? ' on' : ''}" data-vista="griglia">▦ Griglia corsi e funzioni</button></span>
     <button type="button" class="pros-btn" id="pros-aggiorna">🔄 Aggiorna da PUMA</button>
     <button type="button" class="pros-btn" id="pros-csv"${elenco.length ? '' : ' disabled'}>⬇️ CSV</button>
     <button type="button" class="pros-btn" id="pros-esporta">💾 Esporta turni</button>
@@ -812,7 +816,7 @@ function htmlGestione(corsiDisp, qualDisp, base, stati) {
     <button type="button" class="pros-btn pri" id="pros-man-nuovo"${dis}>➕ Aggiungi nominativo</button>
   </div>
   ${aperto && modMan ? htmlFormManuale(tuttiCorsi) : ''}
-  ${elenco.length ? `
+  ${elenco.length && f.vista === 'griglia' ? htmlGriglia(elenco, tuttiCorsi) : elenco.length ? `
   <div class="pros-tabwrap"><table class="pros-tab${aperto ? '' : ' bloccata'}">
     <thead><tr><th>Personale</th><th>Qual.</th><th>Corsi</th><th class="c">Turno</th><th class="c">Salto</th><th>Ruoli per settore</th></tr></thead>
     <tbody>${elenco.map(p => {
@@ -827,6 +831,55 @@ function htmlGestione(corsiDisp, qualDisp, base, stati) {
       </tr>${aperto && modRuoli === p.k ? htmlRigaRuoli(p) : ''}`;
     }).join('')}</tbody></table></div>`
     : `<div class="pros-vuoto">${carico.stato === 'ok' ? 'Nessuna persona con questi filtri.' : carico.stato === 'err' ? 'Dati PUMA non disponibili.' : 'Caricamento…'}</div>`}`;
+}
+
+/* ---------- GRIGLIA: corsi e funzioni da spuntare, una riga per persona ----------
+   Nome bloccato a sinistra, colonne che scorrono; in alto i settori, sotto i corsi del settore e poi
+   le sue funzioni (Funz., ROP, Mag. gen., Resp. turno, Mag. turno, N.O.). I corsi di PUMA sono spuntati
+   e fissi (si cambiano su PUMA); si aggiungono o tolgono quelli messi a mano. */
+const MAX_GRIGLIA = 400;
+function colonneGriglia(tuttiCorsi) {
+  const per = new Map();
+  tuttiCorsi.forEach(c => { const st = settoreDi(c) || 'ALTRO'; if (!per.has(st)) per.set(st, []); per.get(st).push(c); });
+  return SETTORI.map(x => x[0]).concat(['ALTRO'])
+    .filter(st => per.has(st) || st !== 'ALTRO')
+    .map(st => ({st, corsi: (per.get(st) || []).sort((a, b) => a.localeCompare(b, 'it')), ruoli: st === 'ALTRO' ? [] : RUOLI.map(x => x[0])}))
+    .filter(g => g.corsi.length || g.ruoli.length);
+}
+function htmlGriglia(elenco, tuttiCorsi) {
+  if (elenco.length > MAX_GRIGLIA) return `<div class="pros-vuoto">${elenco.length} persone: troppe per la griglia. Scegli un Comando o filtra per qualifica o nome.</div>`;
+  const gr = colonneGriglia(tuttiCorsi);
+  const testa1 = gr.map((g, i) => `<th class="gs g${i % 2}" colspan="${g.corsi.length + g.ruoli.length}" title="${esc(NOME_SETTORE[g.st] || 'Altri corsi')}">${esc(g.st === 'ALTRO' ? 'Altri' : g.st)}</th>`).join('');
+  const testa2 = gr.map((g, i) => g.corsi.map((c, j) => `<th class="gc g${i % 2}${j === 0 ? ' inizio' : ''}${c === f.corso ? ' scelto' : ''}" title="${esc(c)}"><span>${esc(siglaCorso(c))}</span></th>`).join('')
+    + g.ruoli.map((r, j) => `<th class="gr g${i % 2}${j === 0 && !g.corsi.length ? ' inizio' : ''}${j === 0 ? ' primo-ruolo' : ''}" title="${esc(NOME_RUOLO[r] + ' · ' + (NOME_SETTORE[g.st] || g.st))}"><span>${esc(SIGLA_RUOLO[r])}</span></th>`).join('')).join('');
+  const riga = p => {
+    const ok = puoModificare(p.k), r = (turni[p.k] || {}).r || {};
+    const puma = new Set(p.manuale ? [] : (p.corsiPuma || []));
+    const celle = gr.map((g, i) => g.corsi.map((c, j) => {
+      const ha = p.corsi.includes(c), fisso = puma.has(c);
+      return `<td class="g${i % 2}${j === 0 ? ' inizio' : ''}${ha ? ' si' : ''}${fisso ? ' puma' : ''}"><input type="checkbox" data-gc="${esc(c)}"${ha ? ' checked' : ''}${fisso || !ok ? ' disabled' : ''} title="${esc(c + (fisso ? ' · da PUMA' : ''))}"></td>`;
+    }).join('') + g.ruoli.map((x, j) => {
+      const ha = (r[g.st] || []).includes(x);
+      return `<td class="ruolo g${i % 2}${j === 0 && !g.corsi.length ? ' inizio' : ''}${j === 0 ? ' primo-ruolo' : ''}${ha ? ' si' : ''}${x === 'NO' ? ' no' : ''}"><input type="checkbox" data-gr="${x}" data-gs="${esc(g.st)}"${ha ? ' checked' : ''}${ok ? '' : ' disabled'} title="${esc(NOME_RUOLO[x] + ' · ' + (NOME_SETTORE[g.st] || g.st))}"></td>`;
+    }).join('')).join('');
+    return `<tr data-k="${esc(p.k)}"><th class="nome"><span class="q">${esc(p.qual)}</span> <b>${esc(p.cognome)}</b> ${esc(p.nome)}${p.manuale ? ' ✍️' : ''}</th>${celle}</tr>`;
+  };
+  return `<p class="pros-nota pros-griglia-nota">Spunta corsi e funzioni per ciascuno. I corsi di PUMA sono fissi (✓ verde); si aggiungono quelli mancanti. N.O. = non operativo per tutto il settore. ${sbloccato() ? '' : '<b>🔒 Sblocca il Comando con la password per modificare.</b>'}</p>
+  <div class="pros-griglia-wrap"><table class="pros-griglia">
+    <thead><tr><th class="nome angolo" rowspan="2">Personale</th>${testa1}</tr><tr>${testa2}</tr></thead>
+    <tbody>${elenco.map(riga).join('')}</tbody></table></div>`;
+}
+function cambiaCorsoGriglia(k, corso, si) {
+  const p = righe.find(x => x.k === k);
+  if (!p || !puoModificare(k)) return;
+  if (p.manuale) {
+    const v = turni[k] || {}, l = corsiDaTesto(v.corsi);
+    const nuovi = si ? Array.from(new Set(l.concat([corso]))) : l.filter(c => c !== corso);
+    salvaManuale(k, {n: v.n, q: v.q, c: v.c, com: v.com, t: v.t, s: v.s, corsi: nuovi});
+  } else {
+    const l = corsiDaTesto((turni[k] || {}).cx);
+    impostaCorsiExtra(k, si ? l.concat([corso]) : l.filter(c => c !== corso));
+  }
 }
 
 // riga sotto la persona: per ogni settore Magazziniere / Mag. di turno / ROP / Non operativo
@@ -1033,6 +1086,7 @@ function eventi() {
     }
     if (b.dataset.vedi) { apriNumero(b.dataset.vedi); disegna(); return; }
     if (b.dataset.abil) { mostraAbilitazioni(b.dataset.abil); return; }
+    if (b.dataset.vista) { f.vista = b.dataset.vista; salvaFiltri(); disegna(); return; }
     if (b.dataset.copia) {
       const v = b.dataset.copia;
       const fatto = () => { b.textContent = '✅'; setTimeout(() => { b.textContent = '📋'; }, 1200); };
@@ -1113,6 +1167,21 @@ function eventi() {
     if (t.id === 'pros-data') { if (t.value) { f.data = t.value; disegna(); } return; }
     if (t.id === 'pros-qual') { f.qual = t.value; salvaFiltri(); disegna(); return; }
     if (t.id === 'pros-file') { if (t.files[0]) importa(t.files[0]); t.value = ''; return; }
+    if (t.dataset.gc !== undefined) {
+      const tr4 = t.closest('tr[data-k]'); if (!tr4) return;
+      cambiaCorsoGriglia(tr4.dataset.k, t.dataset.gc, t.checked);
+      t.parentElement.classList.toggle('si', t.checked);
+      return;
+    }
+    if (t.dataset.gr) {
+      const tr5 = t.closest('tr[data-k]'); if (!tr5) return;
+      const st = t.dataset.gs, boxes = Array.from(tr5.querySelectorAll('input[data-gr][data-gs="' + st + '"]'));
+      if (t.checked && t.dataset.gr === 'NO') boxes.forEach(x => { if (x !== t) x.checked = false; });
+      if (t.checked && t.dataset.gr !== 'NO') boxes.forEach(x => { if (x.dataset.gr === 'NO') x.checked = false; });
+      impostaRuoli(tr5.dataset.k, st, boxes.filter(x => x.checked).map(x => x.dataset.gr));
+      boxes.forEach(x => x.parentElement.classList.toggle('si', x.checked));
+      return;
+    }
     if (t.dataset.qual) { const tr3 = t.closest('tr[data-k]'); if (tr3) { impostaQualifica(tr3.dataset.k, t.value); disegna(); } return; }
     if (t.dataset.ruolo) {
       const box = t.closest('.pros-settore'), tr2 = t.closest('tr[data-k]');
