@@ -9318,3 +9318,6 @@ body.pros-pop-aperto { overflow: hidden; }
 #pros-app .pros-scheda { border: 1.5px solid #7a8899; border-bottom: 0; border-radius: 8px 8px 0 0; }
 #pros-app .pros-scheda:hover { border-color: #4a5868; }
 #pros-app .pros-scheda.on, #pros-app .pros-scheda.on:hover { border: 1.5px solid #8a6200; border-bottom: 0; }
+/* Colonna del telefono a larghezza fissa: aprire il numero non sposta la tabella */
+#pros-app .pros-tab th.pros-col-tel, #pros-app .pros-tab td.pros-col-tel { width: 180px; min-width: 180px; max-width: 180px; white-space: nowrap; }
+#pros-app .pros-tab td.pros-col-tel .pros-tel-num { margin-left: 4px; }

@@ -141,7 +141,18 @@ let numeroAperto = null;
 const ultime4 = c => String(c || '').replace(/\D/g, '').slice(-4);
 const telMascherato = c => c ? '••• ' + ultime4(c) : '';
 const ICO_TEL = '<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path fill="currentColor" d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57a1 1 0 0 1-.25 1z"/></svg>';
-function apriNumero(k) { numeroAperto = numeroAperto === k ? null : k; }
+/* Dopo 30 secondi il numero aperto si richiude da solo (cornetta di nuovo rossa) */
+const TEMPO_NUMERO = 30000;
+let timerNumero = null;
+function apriNumero(k) {
+  numeroAperto = numeroAperto === k ? null : k;
+  clearTimeout(timerNumero);
+  if (numeroAperto) timerNumero = setTimeout(() => {
+    numeroAperto = null;
+    if (root) disegna();
+    if (typeof popup !== 'undefined' && popup && !popup.hidden) disegnaPopup();
+  }, TEMPO_NUMERO);
+}
 function htmlTel(p, conCopia) {
   if (!p.cell) return '';
   const on = numeroAperto === p.k;
@@ -796,14 +807,14 @@ function htmlGestione(corsiDisp, qualDisp, base, stati) {
   ${aperto && modMan ? htmlFormManuale(tuttiCorsi) : ''}
   ${elenco.length ? `
   <div class="pros-tabwrap"><table class="pros-tab${aperto ? '' : ' bloccata'}">
-    <thead><tr><th>Personale</th><th>Qual.</th><th>Corsi</th><th>Cellulare</th><th class="c">Turno</th><th class="c">Salto</th><th>Ruoli per settore</th></tr></thead>
+    <thead><tr><th>Personale</th><th>Qual.</th><th>Corsi</th><th class="pros-col-tel">Cellulare</th><th class="c">Turno</th><th class="c">Salto</th><th>Ruoli per settore</th></tr></thead>
     <tbody>${elenco.map(p => {
       const t = turni[p.k] || {};
       return `<tr data-k="${esc(p.k)}" class="${t.t === 'NO' ? 'st-no' : t.t ? '' : 'st-nd'}${modRuoli === p.k ? ' aperta' : ''}">
         <td data-l="Personale"><b>${esc(p.cognome)}</b> ${esc(p.nome)}${p.manuale ? ` <span class="pros-man">✍️ aggiunto a mano</span>${aperto ? ` <button type="button" class="pros-mini" data-man-mod="${esc(p.k)}" title="Modifica">✏️</button> <button type="button" class="pros-mini danger" data-man-del="${esc(p.k)}" title="Elimina">🗑️</button>` : ''}` : ''}${f.comando && !eDirezione(f.comando) ? '' : `<div class="pros-com">${esc(p.comando)}</div>`}</td>
         <td data-l="Qualifica">${aperto ? `<select data-qual="1" title="${p.qualPuma && p.qual !== p.qualPuma ? 'Su PUMA: ' + esc(p.qualPuma) : 'Qualifica'}">${Array.from(new Set(QUAL_MAN.concat(p.qual ? [p.qual] : []))).map(q => `<option${q === p.qual ? ' selected' : ''}>${esc(q)}</option>`).join('')}</select>${p.qualPuma && p.qual !== p.qualPuma ? `<div class="pros-com">PUMA: ${esc(p.qualPuma)}</div>` : ''}` : esc(p.qual)}</td>
         <td data-l="Corsi">${p.corsi.length ? `<button type="button" class="pros-abil${f.corso && p.corsi.includes(f.corso) ? ' on' : ''}" data-abil="${esc(p.k)}" title="Vedi i corsi">🎓 <b>${p.corsi.length}</b> ${p.corsi.length === 1 ? 'corso' : 'corsi'}</button>` : '<span class="pros-nota">—</span>'}</td>
-        <td data-l="Cellulare">${htmlTel(p)}</td>
+        <td data-l="Cellulare" class="pros-col-tel">${htmlTel(p)}</td>
         <td data-l="Turno" class="c"><select data-campo="t"${dis}><option value="">—</option>${TURNI.map(x => `<option value="${x}"${x === t.t ? ' selected' : ''}>${x === 'NO' ? 'N.O. – Non operativo' : NOME_TURNO(x)}</option>`).join('')}</select></td>
         <td data-l="Salto" class="c"><select data-campo="s"${SENZA_SALTO(t.t) || !aperto ? ' disabled' : ''}><option value="">—</option>${SALTI.map(x => `<option${x === String(t.s || '') ? ' selected' : ''}>${x}</option>`).join('')}</select></td>
         <td data-l="Ruoli"><div class="pros-ruoli-cella">${htmlRuoli(p, '') || '<span class="pros-nota">—</span>'}${aperto ? ` <button type="button" class="pros-mini" data-ruoli="${esc(p.k)}" title="Ruoli per settore">${modRuoli === p.k ? '✕ Chiudi' : '✏️ Ruoli'}</button>` : ''}</div></td>
@@ -915,7 +926,7 @@ function htmlRichiamo(corsiDisp, qualDisp, base, stati) {
     const t = turni[p.k] || {};
     return `<tr><td data-l="Qualifica" class="q">${esc(p.qual)}</td>
       <td data-l="Nome" title="${esc(p.corsi.join(', '))}"><b>${esc(p.cognome)}</b> ${esc(p.nome)}${p.manuale ? ' ✍️' : ''} ${htmlRuoli(p, settoreDi(f.corso))}${f.comando && !eDirezione(f.comando) ? '' : `<div class="pros-com">${esc(p.comando)}</div>`}</td>
-      <td data-l="Numero">${p.cell ? htmlTel(p) : '<span class="pros-nota">—</span>'}</td>
+      <td data-l="Numero" class="pros-col-tel">${p.cell ? htmlTel(p) : '<span class="pros-nota">—</span>'}</td>
       <td data-l="Turno" class="c">${esc(NOME_TURNO(t.t || '—'))}</td>
       <td data-l="Salto" class="c">${esc(t.s || '—')}</td></tr>`;
   };
@@ -938,7 +949,7 @@ function htmlRichiamo(corsiDisp, qualDisp, base, stati) {
   ${GRUPPI_RICHIAMO.map(k => `
   <div class="pros-gruppo pros-g-${k}">
     <h4>${tit[k]} <span class="pros-quanti">${g[k].length}</span></h4>
-    ${g[k].length ? `<div class="pros-tabwrap"><table class="pros-tab pros-tab-r"><thead><tr><th>Qualifica</th><th>Nome</th><th>Numero</th><th class="c">Turno</th><th class="c">Salto</th></tr></thead><tbody>${ordina(g[k]).map(riga).join('')}</tbody></table></div>`
+    ${g[k].length ? `<div class="pros-tabwrap"><table class="pros-tab pros-tab-r"><thead><tr><th>Qualifica</th><th>Nome</th><th class="pros-col-tel">Numero</th><th class="c">Turno</th><th class="c">Salto</th></tr></thead><tbody>${ordina(g[k]).map(riga).join('')}</tbody></table></div>`
       : '<div class="pros-nota pros-nessuno">Nessuno' + (carico.stato === 'ok' ? '' : ' (in attesa dei dati PUMA)') + '</div>'}
   </div>`).join('')}`;
 }
