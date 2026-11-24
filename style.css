@@ -9402,3 +9402,20 @@ body.pros-pop-aperto { overflow: hidden; }
 #pros-app .pros-griglia input { width: 16px; height: 16px; margin: 0; cursor: pointer; accent-color: #1e5aa8; }
 #pros-app .pros-griglia input:disabled { cursor: default; }
 #pros-app .pros-griglia tbody tr:hover td, #pros-app .pros-griglia tbody tr:hover th.nome { background-image: linear-gradient(rgba(30, 90, 168, .08), rgba(30, 90, 168, .08)); }
+/* Griglia: casella del corso a tre stati (vuota / ✓ posseduto / N.O. solo per quel corso) */
+#pros-app .pros-griglia .gcorso { width: 24px; height: 22px; padding: 0; border-radius: 4px; border: 1.5px solid #9aa6b2; background: #fff; color: #1d2733;
+    font-size: 11px; font-weight: 800; line-height: 1; cursor: pointer; }
+#pros-app .pros-griglia .gcorso.ha { background: #2e9d4a; border-color: #2e9d4a; color: #fff; font-size: 13px; }
+#pros-app .pros-griglia .gcorso.no { background: #fff; border: 2px solid #d32f2f; color: #d32f2f; font-size: 8.5px; letter-spacing: -.3px; }
+#pros-app .pros-griglia td.puma .gcorso.ha { background: #6fbf86; border-color: #2e9d4a; }
+#pros-app .pros-griglia td.nocorso { background: #fde8e8 !important; }
+#pros-app .pros-griglia .gcorso:disabled { cursor: default; opacity: .8; }
+/* N.O. dell'intero settore: rosso pieno, diverso dal N.O. del singolo corso (bordo rosso) */
+#pros-app .pros-griglia td.no-settore { background: #fbe3e3; }
+#pros-app .pros-griglia td.no-settore input { accent-color: #b71c1c; }
+#pros-app .pros-griglia td.no-settore.si { background: #d32f2f !important; }
+#pros-app .pros-griglia thead th.gr:last-child, #pros-app .pros-griglia thead th.gr[title^="Non operativo"] { background: #7a1f1f; }
+#pros-app .pros-griglia-nota .leg { display: inline-block; padding: 0 5px; border-radius: 4px; font-weight: 800; font-size: 11px; }
+#pros-app .pros-griglia-nota .leg.ha { background: #2e9d4a; color: #fff; }
+#pros-app .pros-griglia-nota .leg.no { border: 2px solid #d32f2f; color: #d32f2f; background: #fff; }
+#pros-app .pros-griglia-nota .leg.nos { background: #d32f2f; color: #fff; }

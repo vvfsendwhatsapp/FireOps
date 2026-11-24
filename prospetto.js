@@ -851,20 +851,22 @@ function htmlGriglia(elenco, tuttiCorsi) {
   const gr = colonneGriglia(tuttiCorsi);
   const testa1 = gr.map((g, i) => `<th class="gs g${i % 2}" colspan="${g.corsi.length + g.ruoli.length}" title="${esc(NOME_SETTORE[g.st] || 'Altri corsi')}">${esc(g.st === 'ALTRO' ? 'Altri' : g.st)}</th>`).join('');
   const testa2 = gr.map((g, i) => g.corsi.map((c, j) => `<th class="gc g${i % 2}${j === 0 ? ' inizio' : ''}${c === f.corso ? ' scelto' : ''}" title="${esc(c)}"><span>${esc(siglaCorso(c))}</span></th>`).join('')
-    + g.ruoli.map((r, j) => `<th class="gr g${i % 2}${j === 0 && !g.corsi.length ? ' inizio' : ''}${j === 0 ? ' primo-ruolo' : ''}" title="${esc(NOME_RUOLO[r] + ' · ' + (NOME_SETTORE[g.st] || g.st))}"><span>${esc(SIGLA_RUOLO[r])}</span></th>`).join('')).join('');
+    + g.ruoli.map((r, j) => `<th class="gr g${i % 2}${j === 0 && !g.corsi.length ? ' inizio' : ''}${j === 0 ? ' primo-ruolo' : ''}" title="${esc((r === 'NO' ? 'Non operativo per TUTTO il settore ' : NOME_RUOLO[r] + ' · ') + (NOME_SETTORE[g.st] || g.st))}"><span>${esc(r === 'NO' ? 'N.O. settore' : SIGLA_RUOLO[r])}</span></th>`).join('')).join('');
   const riga = p => {
     const ok = puoModificare(p.k), r = (turni[p.k] || {}).r || {};
     const puma = new Set(p.manuale ? [] : (p.corsiPuma || []));
     const celle = gr.map((g, i) => g.corsi.map((c, j) => {
-      const ha = p.corsi.includes(c), fisso = puma.has(c);
-      return `<td class="g${i % 2}${j === 0 ? ' inizio' : ''}${ha ? ' si' : ''}${fisso ? ' puma' : ''}"><input type="checkbox" data-gc="${esc(c)}"${ha ? ' checked' : ''}${fisso || !ok ? ' disabled' : ''} title="${esc(c + (fisso ? ' · da PUMA' : ''))}"></td>`;
+      const ha = p.corsi.includes(c), fisso = puma.has(c), no = ha && (r[PRE_CORSO + c] || []).includes('NO');
+      const tit = c + (fisso ? ' · da PUMA' : '') + (no ? ' · NON OPERATIVO per questo corso' : ha ? '' : ' · non posseduto')
+        + (ok ? (no ? ' — tocca per ' + (fisso ? 'renderlo operativo' : 'toglierlo') : ha ? ' — tocca per segnarlo non operativo' : ' — tocca per aggiungerlo') : '');
+      return `<td class="g${i % 2}${j === 0 ? ' inizio' : ''}${ha ? ' si' : ''}${no ? ' nocorso' : ''}${fisso ? ' puma' : ''}"><button type="button" class="gcorso ${no ? 'no' : ha ? 'ha' : 'vuoto'}" data-gc="${esc(c)}"${ok ? '' : ' disabled'} title="${esc(tit)}">${no ? 'N.O.' : ha ? '✓' : ''}</button></td>`;
     }).join('') + g.ruoli.map((x, j) => {
       const ha = (r[g.st] || []).includes(x);
-      return `<td class="ruolo g${i % 2}${j === 0 && !g.corsi.length ? ' inizio' : ''}${j === 0 ? ' primo-ruolo' : ''}${ha ? ' si' : ''}${x === 'NO' ? ' no' : ''}"><input type="checkbox" data-gr="${x}" data-gs="${esc(g.st)}"${ha ? ' checked' : ''}${ok ? '' : ' disabled'} title="${esc(NOME_RUOLO[x] + ' · ' + (NOME_SETTORE[g.st] || g.st))}"></td>`;
+      return `<td class="ruolo${x === 'NO' ? ' no-settore' : ''} g${i % 2}${j === 0 && !g.corsi.length ? ' inizio' : ''}${j === 0 ? ' primo-ruolo' : ''}${ha ? ' si' : ''}${x === 'NO' ? ' no' : ''}"><input type="checkbox" data-gr="${x}" data-gs="${esc(g.st)}"${ha ? ' checked' : ''}${ok ? '' : ' disabled'} title="${esc(NOME_RUOLO[x] + ' · ' + (NOME_SETTORE[g.st] || g.st))}"></td>`;
     }).join('')).join('');
     return `<tr data-k="${esc(p.k)}"><th class="nome"><span class="q">${esc(p.qual)}</span> <b>${esc(p.cognome)}</b> ${esc(p.nome)}${p.manuale ? ' ✍️' : ''}</th>${celle}</tr>`;
   };
-  return `<p class="pros-nota pros-griglia-nota">Spunta corsi e funzioni per ciascuno. I corsi di PUMA sono fissi (✓ verde); si aggiungono quelli mancanti. N.O. = non operativo per tutto il settore. ${sbloccato() ? '' : '<b>🔒 Sblocca il Comando con la password per modificare.</b>'}</p>
+  return `<p class="pros-nota pros-griglia-nota">Tocca la casella di un <b>corso</b>: vuota → <span class="leg ha">✓</span> posseduto → <span class="leg no">N.O.</span> non operativo <b>solo per quel corso</b> → di nuovo vuota (i corsi di PUMA restano: ✓ ↔ N.O.). La colonna <span class="leg nos">N.O. settore</span> rende non operativi per <b>tutto il settore</b>. ${sbloccato() ? '' : '<b>🔒 Sblocca il Comando con la password per modificare.</b>'}</p>
   <div class="pros-griglia-wrap"><table class="pros-griglia">
     <thead><tr><th class="nome angolo" rowspan="2">Personale</th>${testa1}</tr><tr>${testa2}</tr></thead>
     <tbody>${elenco.map(riga).join('')}</tbody></table></div>`;
@@ -1086,6 +1088,18 @@ function eventi() {
     }
     if (b.dataset.vedi) { apriNumero(b.dataset.vedi); disegna(); return; }
     if (b.dataset.abil) { mostraAbilitazioni(b.dataset.abil); return; }
+    if (b.dataset.gc !== undefined) {
+      const trg = b.closest('tr[data-k]'); if (!trg || !puoModificare(trg.dataset.k)) return;
+      const k = trg.dataset.k, c = b.dataset.gc, p = righe.find(x => x.k === k);
+      if (!p) return;
+      const ha = p.corsi.includes(c), no = ((turni[k] || {}).r || {})[PRE_CORSO + c] || [];
+      const fisso = !p.manuale && (p.corsiPuma || []).includes(c);
+      if (!ha) cambiaCorsoGriglia(k, c, true);                                  // vuoto -> posseduto
+      else if (!no.includes('NO')) impostaRuoli(k, PRE_CORSO + c, ['NO']);       // posseduto -> non operativo per il corso
+      else { impostaRuoli(k, PRE_CORSO + c, []); if (!fisso) cambiaCorsoGriglia(k, c, false); }   // -> di nuovo operativo / tolto
+      disegna();
+      return;
+    }
     if (b.dataset.vista) { f.vista = b.dataset.vista; salvaFiltri(); disegna(); return; }
     if (b.dataset.copia) {
       const v = b.dataset.copia;
