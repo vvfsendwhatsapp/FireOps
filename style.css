@@ -9422,3 +9422,21 @@ body.pros-pop-aperto { overflow: hidden; }
 #pros-app .pros-griglia-filtri { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 8px 0 2px; }
 #pros-app .pros-gsett { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; text-transform: uppercase; color: #5a6778; }
 #pros-app .pros-gsett select { min-width: 260px; text-transform: none; font-size: 14px; padding: 6px 8px; }
+/* Griglia: una colonna "Funzioni" per settore con menu a scelta multipla */
+#pros-app .pros-griglia td.gf { width: auto; min-width: 96px; padding: 2px 4px; }
+#pros-app .pros-griglia .gfunz { width: 100%; min-height: 24px; padding: 2px 6px; border-radius: 5px; border: 1.5px dashed #b8a467; background: #fffdf5;
+    color: #7a6a33; font-size: 11px; font-weight: 700; white-space: nowrap; cursor: pointer; display: flex; justify-content: space-between; gap: 4px; align-items: center; }
+#pros-app .pros-griglia .gfunz i { font-style: normal; opacity: .6; }
+#pros-app .pros-griglia .gfunz.ha { border: 1.5px solid #b8860b; background: #ffe58a; color: #1d2733; }
+#pros-app .pros-griglia .gfunz.no { border: 1.5px solid #b71c1c; background: #d32f2f; color: #fff; }
+#pros-app .pros-griglia .gfunz:disabled { cursor: default; opacity: .8; }
+#pros-app .pros-griglia thead th.gf { background: #5a4a14; }
+.pros-menu-funz { position: fixed; z-index: 8000; background: #fff; color: #1d2733; border: 1px solid #9aa6b2; border-radius: 10px; padding: 8px 10px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, .35); display: flex; flex-direction: column; gap: 2px; min-width: 250px; font-size: 14px; }
+.pros-menu-funz .tit { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: #5a6778; margin-bottom: 4px; }
+.pros-menu-funz label { display: flex; align-items: center; gap: 8px; padding: 5px 6px; border-radius: 6px; cursor: pointer; }
+.pros-menu-funz label:hover { background: #eef1f5; }
+.pros-menu-funz label.no { color: #b71c1c; font-weight: 700; border-top: 1px solid #e3e8ee; margin-top: 4px; padding-top: 8px; }
+.pros-menu-funz input { width: 17px; height: 17px; accent-color: #b8860b; }
+.pros-menu-funz label.no input { accent-color: #b71c1c; }
+.pros-menu-funz .pros-mini { align-self: flex-end; margin-top: 6px; }
