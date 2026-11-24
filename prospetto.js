@@ -918,8 +918,26 @@ function titoliRichiamo(T) {
     saltoSucc: 'Personale in salto turno del turno seguente: <b>' + esc(T.succ.sigla) + '</b>'
   };
 }
+function htmlRop(base) {
+/* Il ROP del settore del corso scelto, sempre in cima con il suo numero in chiaro */
+  const settoreR = settoreDi(f.corso);
+  const rop = settoreR ? ordina(base.filter(p => !nonOperativo(p, settoreR) && ruoliDi(p, settoreR, f.corso).includes('ROP'))) : [];
+  return !f.corso ? '' : `<div class="pros-rop">
+    <div class="pros-rop-tit">ROP · Responsabile operativo provinciale <b>${esc(NOME_SETTORE[settoreR] || settoreR || '')}</b></div>
+    ${rop.length ? rop.map(p => { const t = turni[p.k] || {};
+      return `<div class="pros-rop-voce"><span class="q">${esc(p.qual)}</span> <b>${esc(p.cognome)}</b> ${esc(p.nome)}
+        <span class="t">${esc(t.t ? NOME_TURNO(t.t) + (t.s ? ' · salto ' + t.s : '') : 'turno non impostato')}</span>
+        ${p.cell ? `<a class="pros-rop-tel" href="tel:${esc(p.cell)}">📞 ${esc(p.cell)}</a> <button type="button" class="pros-mini" data-copia="${esc(p.cell)}" title="Copia il numero">📋</button>` : '<span class="pros-nota">numero non presente</span>'}</div>`; }).join('')
+      : '<div class="pros-nota">Nessun ROP assegnato per questo settore (scheda 🔒 Gestione personale → ✏️ Ruoli).</div>'}
+  </div>`;
+}
 function htmlRichiamo(corsiDisp, qualDisp, base, stati) {
   const T = turnoAlMomento(Date.now() + f.quando * 3600e3);
+  const boxRop = htmlRop(base);
+  /* Il Comando qui non si sceglie: è quello attivo di FireOps */
+  const cmdFisso = comandoDefault();
+  if (cmdFisso && f.comando !== cmdFisso) { f.comando = cmdFisso; salvaFiltri(); setTimeout(() => { disegna(); scaricaTurni(); }, 0); }
+  const htmlComando = cmdFisso ? `<label>Comando<div class="pros-cmd-fisso" title="Il Comando attivo di FireOps (si cambia dal menu ☰)">${esc(nomeScelta(cmdFisso))}</div></label>` : selectComando();
   const g = elencoRichiamo(T), tit = titoliRichiamo(T);
   const totale = GRUPPI_RICHIAMO.reduce((n, k) => n + g[k].length, 0);
   const riga = p => {
@@ -932,7 +950,7 @@ function htmlRichiamo(corsiDisp, qualDisp, base, stati) {
   };
   return `
   <div class="pros-testa">
-    ${selectComando()}
+    ${htmlComando}
     ${selectCorso(corsiDisp, base)}
     <div class="pros-fasce">
       ${[[0, 'Adesso'], [12, '+12 ore'], [24, '+24 ore']].map(([h, n]) => `<button type="button" class="pros-fascia${f.quando === h ? ' on' : ''}" data-quando="${h}">${n}</button>`).join('')}
@@ -946,6 +964,7 @@ function htmlRichiamo(corsiDisp, qualDisp, base, stati) {
     <span class="pros-nota">${totale} richiamabili${f.corso ? ' con ' + esc(siglaCorso(f.corso)) + ' (esclusi i non operativi del settore ' + esc(settoreDi(f.corso) || '—') + ')' : ''}${g.nd.length ? ' · <b>' + g.nd.length + '</b> senza turno impostato (scheda Gestione personale)' : ''}</span>
     <button type="button" class="pros-btn" id="pros-csv-richiamo"${totale ? '' : ' disabled'}>⬇️ CSV richiamo</button>
   </div>
+  ${boxRop}
   ${GRUPPI_RICHIAMO.map(k => `
   <div class="pros-gruppo pros-g-${k}">
     <h4>${tit[k]} <span class="pros-quanti">${g[k].length}</span></h4>
@@ -1193,7 +1212,7 @@ function disegnaPopup() {
   if (!f.corso) { corpo.innerHTML = '<div class="pros-vuoto">Scegli il corso per vedere chi è richiamabile adesso, tra 12 e tra 24 ore.</div>'; return; }
   const nomiGr = T => ({libero: 'Turno libero ' + (T.liberi.join(', ') || '—') + (T.gRichiamo ? ' e giornalieri' : ''), saltoSel: 'Salto ' + T.sel.sigla + ' (in turno)', saltoPrec: 'Salto ' + T.prec.sigla + ' (turno prima)', saltoSucc: 'Salto ' + T.succ.sigla + ' (turno dopo)'});
   const momenti = [[0, 'Adesso'], [12, 'Tra 12 ore'], [24, 'Tra 24 ore']].filter(([ore]) => popQuando === 'tutti' || String(ore) === popQuando);
-  corpo.innerHTML = `<div class="pros-pop-colonne${momenti.length === 1 ? ' una' : ''}${momenti.length === 3 ? ' tre' : ''}">${momenti.map(([ore, tit]) => {
+  corpo.innerHTML = htmlRop(delComando()) + `<div class="pros-pop-colonne${momenti.length === 1 ? ' una' : ''}${momenti.length === 3 ? ' tre' : ''}">${momenti.map(([ore, tit]) => {
     const {T, g} = richiamoPer(ore), ng = nomiGr(T);
     const tot = GRUPPI_RICHIAMO.reduce((n, k) => n + g[k].length, 0);
     return `<div class="pros-pop-col${ore === 0 ? ' adesso' : ''}">

@@ -9338,3 +9338,18 @@ body.pros-pop-aperto { overflow: hidden; }
 .pros-abil-sett ul { margin: 0 0 0 12px; padding: 0 0 0 10px; border-left: 3px solid #c3ccd6; }
 .pros-abil-sett li { padding: 5px 8px; font-size: 14px; }
 .pros-abil-sett li::before { content: '•'; color: #7a8899; margin-right: 6px; }
+/* Richiamo: Comando fisso (quello attivo) e riquadro del ROP con il numero in chiaro */
+#pros-app .pros-cmd-fisso { padding: 7px 10px; border: 1px solid #c3ccd6; border-radius: 6px; background: #e9eef4; color: #1d2733; font-weight: 700; min-width: 180px; }
+#pros-app .pros-rop { margin: 10px 0 14px; padding: 10px 12px; border: 2px solid #b8860b; border-radius: 10px; background: #fff7dc; color: #1d2733; }
+#pros-app .pros-rop-tit { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #6b4f00; margin-bottom: 6px; }
+#pros-app .pros-rop-voce { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 4px 0; font-size: 15px; }
+#pros-app .pros-rop-voce .q { font-weight: 700; color: #8a6200; }
+#pros-app .pros-rop-voce .t { font-size: 12.5px; color: #5a6778; }
+#pros-app .pros-rop-tel { font-weight: 800; font-size: 16px; color: #0b5a1f; text-decoration: none; background: #d8f3df; border: 1px solid #2e9d4a; border-radius: 16px; padding: 3px 12px; font-family: ui-monospace, Menlo, monospace; }
+/* Riquadro ROP anche nella finestra SP */
+.pros-pop .pros-rop { margin: 10px 0 14px; padding: 10px 12px; border: 2px solid #b8860b; border-radius: 10px; background: #fff7dc; color: #1d2733; }
+.pros-pop .pros-rop-tit { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #6b4f00; margin-bottom: 6px; }
+.pros-pop .pros-rop-voce { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 4px 0; font-size: 15px; }
+.pros-pop .pros-rop-voce .q { font-weight: 700; color: #8a6200; }
+.pros-pop .pros-rop-voce .t { font-size: 12.5px; color: #5a6778; }
+.pros-pop .pros-rop-tel { font-weight: 800; font-size: 16px; color: #0b5a1f; text-decoration: none; background: #d8f3df; border: 1px solid #2e9d4a; border-radius: 16px; padding: 3px 12px; font-family: ui-monospace, Menlo, monospace; }
