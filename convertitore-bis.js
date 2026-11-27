@@ -2989,8 +2989,9 @@ function disegnaGraficoAltimetria(geojson) {
     // Elicottero AW139: valori prudenziali, da tarare col Reparto Volo
     const ELI_MODELLO = "AW139";
     const ELI_CROCIERA_KT = 150;          // crociera AW139 150-165 kt: si tiene il valore basso
-    const ELI_PREPARAZIONE_MIN = 15;      // allertamento, pianificazione, messa in moto e decollo
-    const ELI_AVVICINAMENTO_MIN = 3;      // ricognizione e avvicinamento sul target
+    // Si mostra solo il tempo di volo indicativo: pianificazione e decollo
+    // sono fuori, come da Direttiva OPV-VVF 01 (prontezza max 30')
+    const NOTA_OPV01 = "Direttiva OPV01: previsti massimo 30' per pianificazione e decollo";
     const N_REPARTI_VOLO = 3;
 
     let sediCache = null;
@@ -3055,14 +3056,10 @@ function disegnaGraficoAltimetria(geojson) {
         }
     }
 
+    // Solo volo, in linea d'aria alla crociera: niente pianificazione,
+    // accensione e decollo (vedi NOTA_OPV01)
     function tempiElicottero(distanzaKm) {
-        const volo = Math.max(1, Math.round(distanzaKm / (ELI_CROCIERA_KT * 1.852) * 60));
-        return {
-            preparazione: ELI_PREPARAZIONE_MIN,
-            volo,
-            avvicinamento: ELI_AVVICINAMENTO_MIN,
-            totale: ELI_PREPARAZIONE_MIN + volo + ELI_AVVICINAMENTO_MIN,
-        };
+        return { volo: Math.max(1, Math.round(distanzaKm / (ELI_CROCIERA_KT * 1.852) * 60)) };
     }
 
     const azimutTesto = az => `Az ${String(Math.round(az) % 360).padStart(3, "0")}°`;
@@ -3108,11 +3105,11 @@ function disegnaGraficoAltimetria(geojson) {
             <button type="button" class="reparto-volo-testata spi-volo-testata" data-indice="${i}">
                 <span class="reparto-volo-distintivo">${i + 1}º</span>
                 <span class="nome">${testoSicuro(nomeDelReparto(voce.record, i))}</span>
-                <span class="distanza">${testoDurata(e.totale)}</span>
+                <span class="distanza">~${testoDurata(e.volo)} volo</span>
                 <span class="azimut">${azimutTesto(voce.azimut)}</span>
             </button>
             <div class="spi-dettaglio">${distanzaDoppia(voce.distanzaKm, 1)} in linea d'aria ·
-                ${e.preparazione} min pianificazione e decollo + ${e.volo} min di volo + ${e.avvicinamento} min avvicinamento</div>
+                tempo di volo indicativo stimato a ${ELI_CROCIERA_KT} kt (${NOTA_OPV01})</div>
         </div>`;
     }
 
@@ -3247,9 +3244,8 @@ function disegnaGraficoAltimetria(geojson) {
             <p class="pagina-nota spi-note">Sedi: ordinate per tempo di arrivo al target (uscita + mezzo + eventuale tratto a piedi), con lo stesso
             calcolo del "Percorso di soccorso" (mezzo VVF: ${velocitaMezzo.ordinaria} km/h su strada ordinaria, ${velocitaMezzo.superstrada} in superstrada, ${velocitaMezzo.autostrada} in autostrada; sbarre +${TEMPO_SBARRA_MIN} min);
             più i minuti di uscita della sede (volontari +${minutiUscita("volontario")} min). Escluse aeroportuali, portuali e nuclei.
-            Elicottero: ${ELI_PREPARAZIONE_MIN} min di pianificazione e decollo, crociera ${ELI_CROCIERA_KT} kt
-            in linea d'aria, ${ELI_AVVICINAMENTO_MIN} min di avvicinamento; non conta meteo, spazi aerei,
-            autonomia né disponibilità del mezzo.</p>`);
+            Elicottero: tempo di volo indicativo stimato in linea d'aria alla crociera di ${ELI_CROCIERA_KT} kt
+            (${NOTA_OPV01}); non conta meteo, spazi aerei, autonomia né disponibilità del mezzo.</p>`);
 
         await Promise.all([
             calcolaSediVicine(token, latT, lonT),
@@ -3270,7 +3266,7 @@ function disegnaGraficoAltimetria(geojson) {
 
         const rotta = `${voce.distanzaKm.toFixed(2)} km / ${kmInMiglia(voce.distanzaKm).toFixed(2)} NM`
             + ` — Az ${String(Math.round(voce.azimut)).padStart(3, "0")}°`
-            + (voce.eli ? `<br>🚁 ${ELI_MODELLO}: circa ${testoDurata(voce.eli.totale)} (${voce.eli.preparazione} pianificazione e decollo + ${voce.eli.volo} volo + ${voce.eli.avvicinamento} avvicinamento)` : "")
+            + (voce.eli ? `<br>🚁 ${ELI_MODELLO}: tempo di volo indicativo stimato ~${testoDurata(voce.eli.volo)} a ${ELI_CROCIERA_KT} kt<br><small>(${NOTA_OPV01})</small>` : "")
             + `<br>Quota reparto ${quota(calcoli.quotaReparto)} · target ${quota(calcoli.quotaTarget)} · Δ ${dislivello}`;
 
         const contatti = Object.entries(voce.record)
