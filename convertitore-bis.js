@@ -2940,7 +2940,22 @@ function disegnaGraficoAltimetria(geojson) {
     // (coprono lo scalo), sommozzatori (stanno nella centrale), volo (è
     // l'elenco elicotteri), direzioni, TLC, poli didattici.
     const TIPI_PRIMO_INTERVENTO = new Set(["centrale", "permanente", "volontario", "stagionale", "presidio", "rurale"]);
-    const RITARDO_VOLONTARI_MIN = 5;
+    // Minuti dall'allarme alla partenza, per tipo di sede: si leggono da
+    // db/competenze/config.json (voce "tipi" → uscita_min), così competenze e
+    // convertitore danno gli stessi tempi. Questi sono i valori di riserva.
+    const USCITA_PREDEFINITA_MIN = { volontario: 5 };
+    let uscitaPerTipo = { ...USCITA_PREDEFINITA_MIN };
+    FireOps.caricaJson("/FireOps/db/competenze/config.json").then(cfg => {
+        const tipi = cfg && cfg.tipi;
+        if (!tipi) return;
+        const letti = {};
+        Object.entries(tipi).forEach(([t, v]) => {
+            const n = parseFloat(v && v.uscita_min);
+            if (n >= 0) letti[t] = n;
+        });
+        uscitaPerTipo = letti;
+    }).catch(err => console.warn("Uscita sedi: config competenze non letto, uso i valori predefiniti", err));
+    const minutiUscita = tipo => uscitaPerTipo[tipo] || 0;
     const N_SEDI_PRIMO_INTERVENTO = 6;
     const N_CANDIDATE_PERCORSO = 12;      // le più vicine in linea d'aria, poi si instradano
     const N_RICHIESTE_PARALLELE = 3;      // gentili con brouter.de
@@ -3057,7 +3072,7 @@ function disegnaGraficoAltimetria(geojson) {
             : "strada n.d.");
         dettagli.push(`${distanzaDoppia(voce.sede.distanzaAriaKm, 1)} in aria`);
         const scomposizione = voce.ritardo
-            ? `${testoDurata(t.minutiPercorso)} + ${voce.ritardo} uscita volontari`
+            ? `${testoDurata(t.minutiPercorso)} + ${voce.ritardo} uscita`
             : `${testoDurata(t.minutiPercorso)} di percorso`;
         dettagli.push(scomposizione);
         if (t.sbarre) dettagli.push(`${t.sbarre} sbarr${t.sbarre === 1 ? "a" : "e"}`);
@@ -3132,7 +3147,7 @@ function disegnaGraficoAltimetria(geojson) {
         if (token !== tokenPrimoIntervento) return;
 
         const voci = candidate.map((sede, k) => {
-            const ritardo = sede.tipo === "volontario" ? RITARDO_VOLONTARI_MIN : 0;
+            const ritardo = minutiUscita(sede.tipo);
             return {
                 sede, tempi: tempi[k], ritardo,
                 totale: tempi[k].minutiPercorso + ritardo,
@@ -3203,7 +3218,7 @@ function disegnaGraficoAltimetria(geojson) {
             <div id="spi-volo"><p class="pagina-nota">Caricamento Reparti Volo…</p></div>
             <p class="pagina-nota spi-note">Sedi: ordinate per tempo di arrivo del primo mezzo, con lo stesso
             calcolo del "Percorso di soccorso" (mezzo VVF: ${velocitaMezzo.ordinaria} km/h su strada ordinaria, ${velocitaMezzo.superstrada} in superstrada, ${velocitaMezzo.autostrada} in autostrada; sbarre +${TEMPO_SBARRA_MIN} min);
-            alle sedi volontarie +${RITARDO_VOLONTARI_MIN} min per l'uscita. Escluse aeroportuali, portuali e nuclei.
+            più i minuti di uscita della sede (volontari +${minutiUscita("volontario")} min). Escluse aeroportuali, portuali e nuclei.
             Elicottero: ${ELI_PREPARAZIONE_MIN} min di pianificazione e decollo, crociera ${ELI_CROCIERA_KT} kt
             in linea d'aria, ${ELI_AVVICINAMENTO_MIN} min di avvicinamento; non conta meteo, spazi aerei,
             autonomia né disponibilità del mezzo.</p>`);
@@ -3316,7 +3331,7 @@ function disegnaGraficoAltimetria(geojson) {
             const t = voce.tempi;
             righe.push(`<hr style="border:none;border-top:1px solid #333;margin:6px 0;">`
                 + `🚒 Arrivo ${t.stimato ? "stimato ~" : "circa "}${testoDurata(voce.totale)}`
-                + (voce.ritardo ? ` (${testoDurata(t.minutiPercorso)} + ${voce.ritardo} uscita volontari)` : ""));
+                + (voce.ritardo ? ` (${testoDurata(t.minutiPercorso)} + ${voce.ritardo} uscita)` : ""));
             righe.push(`${t.distanzaStradaKm !== null ? t.distanzaStradaKm.toFixed(1) + " km su strada · " : ""}`
                 + `${sede.distanzaAriaKm.toFixed(1)} km in aria · ${azimutTesto(voce.azimut)}`);
         }

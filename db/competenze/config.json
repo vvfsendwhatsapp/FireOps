@@ -22,28 +22,28 @@
  },
  "tipi": {
   "centrale": {
-   "uscita_min": 2
+   "uscita_min": 0
   },
   "permanente": {
-   "uscita_min": 2
+   "uscita_min": 0
   },
   "aeroportuale": {
-   "uscita_min": 3
+   "uscita_min": 0
   },
   "portuale": {
-   "uscita_min": 3
+   "uscita_min": 0
   },
   "stagionale": {
-   "uscita_min": 3
+   "uscita_min": 0
   },
   "presidio": {
-   "uscita_min": 5
+   "uscita_min": 0
   },
   "rurale": {
-   "uscita_min": 8
+   "uscita_min": 0
   },
   "volontario": {
-   "uscita_min": 10
+   "uscita_min": 5
   }
  },
  "province": {
