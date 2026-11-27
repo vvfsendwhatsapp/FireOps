@@ -2981,9 +2981,9 @@ function disegnaGraficoAltimetria(geojson) {
     }).catch(err => console.warn("Uscita sedi: config competenze non letto, uso i valori predefiniti", err));
     const minutiUscita = tipo => uscitaPerTipo[tipo] || 0;
     const N_SEDI_PRIMO_INTERVENTO = 6;
-    const N_CANDIDATE_PERCORSO = 12;      // le più vicine in linea d'aria, poi si instradano
-    const N_RICHIESTE_PARALLELE = 3;      // gentili con brouter.de
-    const FATTORE_TORTUOSITA_STIMA = 1.4; // ripiego se BRouter non risponde
+    const N_PERCORSI_DA_CALCOLARE = N_SEDI_PRIMO_INTERVENTO + 2;   // le 6 + 2 di margine
+    const N_RICHIESTE_PARALLELE = 4;      // gentili con brouter.de: 8 percorsi in due giri
+    const FATTORE_TORTUOSITA_STIMA = 1.4; // strada/linea d'aria: per scegliere le sedi e come ripiego
     const VELOCITA_STIMA_KMH = 50;
 
     // Elicottero AW139: valori prudenziali, da tarare col Reparto Volo
@@ -3025,22 +3025,6 @@ function disegnaGraficoAltimetria(geojson) {
     function etichettaTipoSede(tipo) {
         const t = TIPI_SEDE[tipo] || TIPI_SEDE.altro;
         return `<span class="spi-tipo" style="--c:${t.colore}">${t.etichetta}</span>`;
-    }
-
-    // Lavori in parallelo ma al massimo n alla volta
-    async function inParallelo(elementi, n, lavoro, avanzamento) {
-        const risultati = new Array(elementi.length);
-        let prossimo = 0, fatti = 0;
-        async function operaio() {
-            while (prossimo < elementi.length) {
-                const k = prossimo++;
-                risultati[k] = await lavoro(elementi[k], k);
-                fatti++;
-                if (avanzamento) avanzamento(fatti, elementi.length);
-            }
-        }
-        await Promise.all(Array.from({ length: Math.min(n, elementi.length) }, operaio));
-        return risultati;
     }
 
     // Percorso di soccorso dalla sede al target: STESSO calcolo del
@@ -3143,19 +3127,18 @@ function disegnaGraficoAltimetria(geojson) {
             return;
         }
 
-        // Le più vicine in linea d'aria, scartando i doppioni del DB
-        // (stessa tipologia a meno di 150 m: OSM a volte ha nodo e area)
-        const ordinate = sedi
+        // Quante sedi instradare: le 6 richieste più 2 di margine, scelte per
+        // tempo STIMATO (linea d'aria × tortuosità a velocità ordinaria, più
+        // l'uscita). Il margine serve perché la strada non segue la linea
+        // d'aria: una sede poco più lontana può arrivare prima (autostrada,
+        // ponte, valle). Una sede oltre l'8ª stimata che batta la 6ª reale è
+        // un caso raro.
+        const stimaMin = s => s.distanzaAriaKm * FATTORE_TORTUOSITA_STIMA / velocitaMezzo.ordinaria * 60 + minutiUscita(s.tipo);
+        const coda = sedi
             .filter(s => TIPI_PRIMO_INTERVENTO.has(s.tipo))
             .map(s => ({ ...s, distanzaAriaKm: distanzaKmHaversine(s.lat, s.lon, latT, lonT) }))
-            .sort((a, b) => a.distanzaAriaKm - b.distanzaAriaKm);
-        const candidate = [];
-        for (const s of ordinate) {
-            if (candidate.some(c => c.tipo === s.tipo && distanzaKmHaversine(c.lat, c.lon, s.lat, s.lon) < 0.15)) continue;
-            candidate.push(s);
-            if (candidate.length >= N_CANDIDATE_PERCORSO) break;
-        }
-        if (!candidate.length) {
+            .sort((a, b) => stimaMin(a) - stimaMin(b));
+        if (!coda.length) {
             const b = box();
             if (b) b.innerHTML = `<p class="pagina-nota">Nessuna sede operativa nel DB.</p>`;
             return;
@@ -3165,23 +3148,40 @@ function disegnaGraficoAltimetria(geojson) {
         // parallelo, o ognuna lo ricaricherebbe per conto suo
         try { await idProfiloSoccorso(); } catch (err) { /* ripiego auto civile dentro percorsoAutoSoccorso */ }
 
-        const avanza = (fatti, totale) => {
+        const calcolate = [];
+        const prese = [];
+        let k = 0;
+        const avanza = () => {
             const b = box();
-            if (b) b.innerHTML = `<p class="pagina-nota">Calcolo dei percorsi di soccorso dalle sedi più vicine… ${fatti}/${totale}</p>`;
+            if (b) b.innerHTML = `<p class="pagina-nota">Calcolo dei percorsi di soccorso dalle sedi più vicine… ${calcolate.length} verificate</p>`;
         };
-        avanza(0, candidate.length);
+        avanza();
+        while (k < coda.length && calcolate.length < N_PERCORSI_DA_CALCOLARE) {
+            // Prossimo gruppo, scartando i doppioni del DB (stessa tipologia a
+            // meno di 150 m: OSM a volte ha sia il nodo sia l'area)
+            const gruppo = [];
+            while (k < coda.length && gruppo.length < N_RICHIESTE_PARALLELE
+                   && calcolate.length + gruppo.length < N_PERCORSI_DA_CALCOLARE) {
+                const s = coda[k++];
+                if (prese.some(c => c.tipo === s.tipo && distanzaKmHaversine(c.lat, c.lon, s.lat, s.lon) < 0.15)) continue;
+                prese.push(s);
+                gruppo.push(s);
+            }
+            const tempi = await Promise.all(gruppo.map(s => tempoSoccorsoDaSede(s, latT, lonT)));
+            if (token !== tokenPrimoIntervento) return;
+            gruppo.forEach((sede, n) => {
+                const ritardo = minutiUscita(sede.tipo);
+                calcolate.push({
+                    sede, tempi: tempi[n], ritardo,
+                    totale: tempi[n].minutiPercorso + ritardo,
+                    azimut: calcolaAzimut(sede.lat, sede.lon, latT, lonT),
+                });
+            });
+            avanza();
+        }
 
-        const tempi = await inParallelo(candidate, N_RICHIESTE_PARALLELE, s => tempoSoccorsoDaSede(s, latT, lonT), avanza);
-        if (token !== tokenPrimoIntervento) return;
-
-        const voci = candidate.map((sede, k) => {
-            const ritardo = minutiUscita(sede.tipo);
-            return {
-                sede, tempi: tempi[k], ritardo,
-                totale: tempi[k].minutiPercorso + ritardo,
-                azimut: calcolaAzimut(sede.lat, sede.lon, latT, lonT),
-            };
-        }).sort((a, b) => a.totale - b.totale).slice(0, N_SEDI_PRIMO_INTERVENTO);
+        const voci = calcolate.sort((a, b) => a.totale - b.totale).slice(0, N_SEDI_PRIMO_INTERVENTO);
+        console.info(`Sedi di primo intervento: ${calcolate.length} percorsi calcolati`);
 
         sediPrimoMostrate = voci;
         const b = box();
