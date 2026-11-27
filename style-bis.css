@@ -1,3 +1,61 @@
 /* Regole CSS solo per index-bis.html, caricate dopo style.css (vedi
    versione-bis.js). Quando una regola passa in produzione, si sposta in
    fondo a style.css e si toglie da qui. */
+
+/* ==========================================================
+   CONVERTITORE — Sedi di primo intervento (convertitore-bis.js)
+   ========================================================== */
+.modal-content .spi-titolo {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: var(--text-muted);
+    margin: 16px 0 8px;
+    text-align: left;
+}
+
+/* Riga di dettaglio sempre visibile sotto la testata: tipo, km, tempi */
+.modal-content .spi-dettaglio {
+    padding: 0 14px 10px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--text-muted);
+    text-align: left;
+}
+
+.modal-content .spi-sede-testata,
+.modal-content .spi-volo-testata {
+    padding-bottom: 6px;
+}
+
+/* Il numero della sede ha il colore della tipologia, come il quadrato sulla carta */
+.modal-content .spi-distintivo-sede {
+    color: #fff;
+}
+
+.spi-tipo {
+    display: inline-block;
+    border: 1px solid var(--c);
+    color: var(--c);
+    border-radius: 999px;
+    padding: 0 7px;
+    font-size: 11px;
+    font-weight: bold;
+    filter: brightness(1.35);
+}
+
+.spi-stima {
+    color: var(--primary-color);
+}
+
+.modal-content .spi-note {
+    margin-top: 14px;
+    font-size: 11px;
+}
+
+/* Nomi delle sedi lunghi: vanno a capo invece di tagliarsi (telefono) */
+.modal-content .spi-sede-testata .nome,
+.modal-content .spi-volo-testata .nome {
+    white-space: normal;
+    overflow: visible;
+}

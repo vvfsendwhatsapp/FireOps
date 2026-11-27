@@ -978,26 +978,39 @@
                         <div id="coord-tab-content-mappa" style="display:none;">
                             <div class="coord-mappa-pulsantiera">
                                 <div class="coord-mappa-griglia">
-                                    <button type="button" class="btn-toggle-radar btn-coord-profilo-percorso"
-                                        data-profilo="trekking" title="Mostra percorso a piedi" disabled>🚶 A
-                                        piedi</button>
-                                    <button type="button" class="btn-toggle-radar btn-coord-profilo-percorso"
-                                        data-profilo="car-fast" title="Mostra percorso in auto" disabled>🚗 In
-                                        auto</button>
-                                    <button type="button" class="btn-toggle-radar btn-coord-profilo-percorso"
-                                        data-profilo="linea-diretta" title="Mostra linea diretta" disabled>📏 Linea
+                                    <button type="button"
+                                        class="btn-toggle-radar btn-coord-profilo-percorso coord-riga-cinque"
+                                        data-profilo="soccorso" disabled
+                                        data-info="PERCORSO DI SOCCORSO&#10;• Mezzo VF fin dove arriva: ignora i divieti di accesso, supera sbarre e cancelli, percorre le piste forestali&#10;• Poi a piedi fino al target (tempo secondo DIN 33466)&#10;&#10;Sulla carta: linea piena = mezzo, puntinata = a piedi, 🥾 = punto di cambio, 🚧 = sbarre">🚒
+                                        Soccorso</button>
+                                    <button type="button"
+                                        class="btn-toggle-radar btn-coord-profilo-percorso coord-riga-cinque"
+                                        data-profilo="auto" disabled
+                                        data-info="SOLO MEZZO&#10;Mezzo VF fin dove arriva, sbarre e divieti superati.&#10;Se non raggiunge il target, mostra dove si ferma.">🚒
+                                        Solo mezzo</button>
+                                    <button type="button"
+                                        class="btn-toggle-radar btn-coord-profilo-percorso coord-riga-cinque"
+                                        data-profilo="piedi" disabled
+                                        data-info="SOLO PIEDI&#10;Tutto a piedi dalla squadra al target, su sentieri e piste.">🥾
+                                        Solo piedi</button>
+                                    <button type="button"
+                                        class="btn-toggle-radar btn-coord-profilo-percorso coord-riga-cinque"
+                                        data-profilo="linea-diretta" disabled
+                                        data-info="LINEA DIRETTA&#10;Distanza e azimut in linea d'aria.">📏 Linea
                                         diretta</button>
-                                    <button id="btn-coord-reparti-volo" class="btn-toggle-radar" type="button"
-                                        disabled>🚁 Reparti Volo</button>
+                                    <button id="btn-coord-reparti-volo" class="btn-toggle-radar coord-riga-cinque"
+                                        type="button" disabled>🚒 Sedi primo intervento</button>
 
-                                    <button id="btn-coord-annulla-percorso" class="btn-toggle-radar" type="button"
+                                    <button id="btn-coord-sedi-vvf" class="btn-toggle-radar coord-riga-cinque" type="button"
+                                        title="Mostra o nasconde sulla mappa tutte le sedi VVF del DB">🏠 Sedi VVF</button>
+                                    <button id="btn-coord-annulla-percorso" class="btn-toggle-radar coord-riga-cinque" type="button"
                                         title="Annulla percorso" disabled>❌ Annulla</button>
-                                    <button id="btn-coord-scarica-kml" class="btn-toggle-radar" type="button"
-                                        title="Esporta percorso KML" disabled>💾 Esporta KML</button>
-                                    <button id="btn-coord-scarica-gpx" class="btn-toggle-radar" type="button"
-                                        title="Esporta percorso GPX" disabled>🛰️ Esporta GPX</button>
-                                    <button id="btn-coord-tema" class="btn-toggle-radar" type="button">☀️
-                                        Chiara</button>
+                                    <button id="btn-coord-scarica-kml" class="btn-toggle-radar coord-riga-cinque" type="button"
+                                        title="Esporta percorso KML" disabled>💾 KML</button>
+                                    <button id="btn-coord-scarica-gpx" class="btn-toggle-radar coord-riga-cinque" type="button"
+                                        title="Esporta percorso GPX" disabled>🛰️ GPX</button>
+                                    <button id="btn-coord-tema" class="btn-toggle-radar coord-riga-cinque" type="button">☀️ Tema
+                                        Chiaro</button>
                                 </div>
                             </div>
 
@@ -1020,6 +1033,9 @@
                                     <div class="coord-mappa-legenda-voce"><span class="coord-mappa-pallino"
                                             style="background:#00b3a4; border-radius:2px; transform:rotate(45deg);"></span>
                                         Reparti Volo più vicini</div>
+                                    <div class="coord-mappa-legenda-voce"><span class="coord-mappa-pallino"
+                                            style="background:#c8102e; border-radius:3px;"></span>
+                                        Sedi di primo intervento (numerate)</div>
                                 </div>
                             </div> <!-- chiusura .coord-mappa-wrapper -->
 
@@ -1365,7 +1381,7 @@
     <div id="modal-reparti-volo" class="modal-overlay" style="display:none;">
         <div class="modal-content chiudibile modal-content-largo">
             <span class="modal-close" id="modal-reparti-volo-close" title="Chiudi">&times;</span>
-            <h2>🚁 Reparti Volo più vicini al target</h2>
+            <h2>🚒 Sedi di primo intervento</h2>
             <div class="reparti-volo-barra">
                 <label for="reparti-volo-unita">Distanze:</label>
                 <select id="reparti-volo-unita">
@@ -1413,7 +1429,7 @@
                 // (che espone window.FireOpsComandi/window.FireOps prima che serva qui)
                 "turnario.js",
                 "addestramenti.js",
-                "convertitore.js",
+                "convertitore-bis.js", // BIS: sedi di primo intervento (DB sedi + Reparti Volo AW139)
                 "fireops-sottopassi.js", // ripiego offline per il controllo camion
                 "percorso-camion-bis.js", // BIS/test: controllo camion e sottopassi nel percorso di soccorso
                 "radiotelefoni.js", // BIS: con i canali aeronautici TBT (Direttiva COAU)
