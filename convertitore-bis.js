@@ -2194,7 +2194,7 @@ ${puntiTraccia}
     // Il total-time di BRouter nasce da un modello fisico pensato per la
     // bici: sui profili a piedi dà tempi poco credibili. Qui:
     //  - a piedi: DIN 33466 (club alpini DAV/SAC)
-    //  - in auto: tratto per tratto dal tipo di strada di OSM
+    //  - col mezzo: tratto per tratto, velocità costanti del camion VVF per tipo di strada
     // I fattori sono moltiplicatori da tarare sull'esperienza della Sala:
     // 1.0 = escursionista allenato senza carico / auto civile senza traffico.
     // ==========================================================
@@ -2272,19 +2272,25 @@ ${puntiTraccia}
         return Math.round(minuti * FATTORE_TEMPO_PIEDI);
     }
 
-    // Velocità MEDIE, non limiti: incroci, curve e centri abitati
-    // compresi. Sulle sterrate conta il grado del fondo (tracktype).
-    const VELOCITA_STRADA_KMH = {
-        motorway: 100, motorway_link: 60,
-        trunk: 80, trunk_link: 50,
-        primary: 60, primary_link: 40,
-        secondary: 50, secondary_link: 35,
-        tertiary: 40, tertiary_link: 30,
-        unclassified: 35, road: 30,
-        residential: 25, living_street: 10, service: 15,
-        track: 15,
-    };
+    // Velocità del MEZZO VVF in soccorso: COSTANTI per tipo di strada, le
+    // stesse del calcolo delle zone di competenza (db/competenze/config.json,
+    // voce "velocita"; script/profilo_camion.py). I limiti segnati non le
+    // abbassano. Le piste forestali, che OSRM non percorre e BRouter sì,
+    // restano a velocità per grado del fondo.
+    const VELOCITA_MEZZO_PREDEFINITE = { ordinaria: 60, autostrada: 90, superstrada: 90, svincolo: 60 };
+    let velocitaMezzo = { ...VELOCITA_MEZZO_PREDEFINITE };
     const VELOCITA_STERRATO_KMH = { grade1: 25, grade2: 20, grade3: 15, grade4: 10, grade5: 8 };
+    const VELOCITA_PISTA_KMH = 15;
+
+    // Un solo posto dove cambiare le velocità: il config delle competenze
+    FireOps.caricaJson("/FireOps/db/competenze/config.json").then(cfg => {
+        const v = cfg && cfg.velocita;
+        if (!v) return;
+        Object.keys(VELOCITA_MEZZO_PREDEFINITE).forEach(k => {
+            const n = parseFloat(v[k]);
+            if (n > 0) velocitaMezzo[k] = n;
+        });
+    }).catch(err => console.warn("Velocità mezzo: config competenze non letto, uso i valori predefiniti", err));
 
     function velocitaTratto(tagTesto) {
         const tag = {};
@@ -2292,15 +2298,12 @@ ${puntiTraccia}
             const i = coppia.indexOf("=");
             if (i > 0) tag[coppia.slice(0, i)] = coppia.slice(i + 1);
         });
-        let v = VELOCITA_STRADA_KMH[tag.highway] || 30;
-        if (tag.highway === "track" && VELOCITA_STERRATO_KMH[tag.tracktype]) {
-            v = VELOCITA_STERRATO_KMH[tag.tracktype];
-        }
-        // Il limite segnato vale solo se numerico ("IT:urban" si ignora);
-        // si viaggia in media sotto il limite, non al limite
-        const limite = parseFloat(tag.maxspeed);
-        if (!Number.isNaN(limite) && limite > 0) v = Math.min(v, limite * 0.85);
-        return Math.max(v, 5);
+        const hw = tag.highway || "";
+        if (hw === "track") return VELOCITA_STERRATO_KMH[tag.tracktype] || VELOCITA_PISTA_KMH;
+        if (hw === "motorway") return velocitaMezzo.autostrada;
+        if (hw === "trunk") return velocitaMezzo.superstrada;
+        if (hw === "motorway_link" || hw === "trunk_link") return velocitaMezzo.svincolo;
+        return velocitaMezzo.ordinaria;
     }
 
     // BRouter mette nella risposta una tabella "messages": prima riga
@@ -3199,7 +3202,7 @@ function disegnaGraficoAltimetria(geojson) {
             <h3 class="spi-titolo">🚁 Reparti Volo — elicottero ${ELI_MODELLO}</h3>
             <div id="spi-volo"><p class="pagina-nota">Caricamento Reparti Volo…</p></div>
             <p class="pagina-nota spi-note">Sedi: ordinate per tempo di arrivo del primo mezzo, con lo stesso
-            calcolo del "Percorso di soccorso" (velocità medie per tipo di strada, sbarre +${TEMPO_SBARRA_MIN} min);
+            calcolo del "Percorso di soccorso" (mezzo VVF: ${velocitaMezzo.ordinaria} km/h su strada ordinaria, ${velocitaMezzo.superstrada} in superstrada, ${velocitaMezzo.autostrada} in autostrada; sbarre +${TEMPO_SBARRA_MIN} min);
             alle sedi volontarie +${RITARDO_VOLONTARI_MIN} min per l'uscita. Escluse aeroportuali, portuali e nuclei.
             Elicottero: ${ELI_PREPARAZIONE_MIN} min di pianificazione e decollo, crociera ${ELI_CROCIERA_KT} kt
             in linea d'aria, ${ELI_AVVICINAMENTO_MIN} min di avvicinamento; non conta meteo, spazi aerei,
