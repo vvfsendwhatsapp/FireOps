@@ -2490,7 +2490,9 @@ assign initialcost =
 
     // Un solo motore per tre modalità: "soccorso" fa mezzo + piedi,
     // "auto" solo il mezzo, "piedi" solo a piedi dalla squadra
-    async function calcolaPercorsoSoccorso(latP, lonP, latT, lonT, azimut, distanzaAriaKm, promessaQuote, modalita = "soccorso") {
+    // Calcolo puro, senza disegnare: lo usano sia il percorso sulla carta sia
+    // l'elenco delle Sedi di primo intervento, così i tempi sono identici.
+    async function calcolaTrattiSoccorso(latP, lonP, latT, lonT, modalita = "soccorso") {
         const conMezzo = modalita !== "piedi";
         const conPiedi = modalita !== "auto";
 
@@ -2532,6 +2534,50 @@ assign initialcost =
             }
         }
 
+        const haCambio = coordAuto.length > 0 && coordPiedi.length > 0;
+        const fermoPrima = modalita === "auto" && coordAuto.length > 0 && restanteM > SOGLIA_TRATTO_PIEDI_M;
+        const sbarre = (auto && auto.profiloSoccorso) ? sbarreDalPercorso(propAuto) : [];
+
+        // Misure e tempi
+        const kmAuto = (parseFloat(propAuto["track-length"]) || 0) / 1000;
+        const kmPiedi = (parseFloat(propPiedi["track-length"]) || 0) / 1000;
+        let minAuto = 0;
+        if (coordAuto.length) {
+            minAuto = tempoAutoMin(propAuto);
+            if (minAuto === null) {
+                const sec = parseFloat(propAuto["total-time"]);
+                minAuto = Number.isNaN(sec) ? 0 : Math.round(sec / 60);
+            }
+            minAuto += sbarre.length * TEMPO_SBARRA_MIN;
+        }
+        const dislPiedi = dislivelliFiltrati(coordPiedi.map(c => parseFloat(c[2])));
+        // Modello CAI sulla traccia con le quote; la DIN 33466 resta come
+        // ripiego se BRouter non ha restituito le quote
+        const minPiedi = coordPiedi.length
+            ? (tempoPiediCAIMin(coordPiedi) ?? tempoPiediMin(kmPiedi, dislPiedi.salita, dislPiedi.discesa) ?? 0)
+            : 0;
+        const minTotale = minAuto + minPiedi + (haCambio ? TEMPO_CAMBIO_MEZZO_MIN : 0);
+
+        return {
+            conMezzo, auto, controlloCamion, coordAuto, propAuto, fineAuto, restanteM,
+            coordPiedi, propPiedi, haCambio, fermoPrima, sbarre,
+            kmAuto, kmPiedi, minAuto, minPiedi, minTotale,
+        };
+    }
+
+    // Minuti di uscita della sede da cui parte il percorso. Lo imposta chi
+    // traccia il percorso da una sede, con le coordinate della sede: vale
+    // finché la partenza resta lì (anche cambiando tipologia di percorso);
+    // da qualsiasi altro punto la squadra è già fuori e l'uscita è 0.
+    let uscitaPartenza = null;   // { lat, lon, minuti } oppure null
+
+    async function calcolaPercorsoSoccorso(latP, lonP, latT, lonT, azimut, distanzaAriaKm, promessaQuote, modalita = "soccorso") {
+        const uscita = (uscitaPartenza && Math.abs(uscitaPartenza.lat - latP) < 1e-7
+            && Math.abs(uscitaPartenza.lon - lonP) < 1e-7) ? uscitaPartenza : null;
+        const r = await calcolaTrattiSoccorso(latP, lonP, latT, lonT, modalita);
+        const { conMezzo, auto, controlloCamion, coordAuto, fineAuto, restanteM, coordPiedi,
+                haCambio, fermoPrima, sbarre, kmAuto, kmPiedi, minAuto, minPiedi } = r;
+
         const quote = await promessaQuote;
         if (!coordAuto.length && !coordPiedi.length) {
             ultimoGeojsonPercorso = null;
@@ -2544,11 +2590,7 @@ assign initialcost =
             return;
         }
 
-        const haCambio = coordAuto.length > 0 && coordPiedi.length > 0;
-        // Solo mezzo che non arriva al target: va detto dove si ferma
-        const fermoPrima = modalita === "auto" && coordAuto.length > 0 && restanteM > SOGLIA_TRATTO_PIEDI_M;
         ultimoPuntoCambio = (haCambio || fermoPrima) ? fineAuto : null;
-        const sbarre = (auto && auto.profiloSoccorso) ? sbarreDalPercorso(propAuto) : [];
         ultimeSbarre = sbarre;
 
         // Disegno: mezzo pieno, piedi puntinato, cambio e sbarre segnati
@@ -2577,27 +2619,6 @@ assign initialcost =
         coordLineaPercorso = gruppo.addTo(coordMappaLeaflet);
         coordMappaLeaflet.fitBounds(gruppo.getBounds(), { padding: [30, 30] });
 
-        // Misure e tempi
-        const kmAuto = (parseFloat(propAuto["track-length"]) || 0) / 1000;
-        const kmPiedi = (parseFloat(propPiedi["track-length"]) || 0) / 1000;
-
-        let minAuto = 0;
-        if (coordAuto.length) {
-            minAuto = tempoAutoMin(propAuto);
-            if (minAuto === null) {
-                const s = parseFloat(propAuto["total-time"]);
-                minAuto = Number.isNaN(s) ? 0 : Math.round(s / 60);
-            }
-            minAuto += sbarre.length * TEMPO_SBARRA_MIN;
-        }
-        const dislPiedi = dislivelliFiltrati(coordPiedi.map(c => parseFloat(c[2])));
-        // Modello CAI sulla traccia con le quote; la DIN 33466 resta come
-        // ripiego se BRouter non ha restituito le quote
-        const minPiedi = coordPiedi.length
-            ? (tempoPiediCAIMin(coordPiedi) ?? tempoPiediMin(kmPiedi, dislPiedi.salita, dislPiedi.discesa) ?? 0)
-            : 0;
-        const minTotale = minAuto + minPiedi + (haCambio ? TEMPO_CAMBIO_MEZZO_MIN : 0);
-
         // Esportazione e altimetria su un'unica traccia continua
         ultimoGeojsonPercorso = {
             type: "FeatureCollection",
@@ -2610,13 +2631,16 @@ assign initialcost =
         const altimetria = disegnaGraficoAltimetria(ultimoGeojsonPercorso);
 
         // In "soccorso" i due tratti si vedono separati; nelle modalità
-        // a tratto unico bastano distanza e tempo totali
+        // a tratto unico bastano distanza e tempo totali. Se si parte da una
+        // sede, l'uscita è una voce a sé e rientra nel tempo totale.
+        const minUscita = (uscita && uscita.minuti && conMezzo) ? uscita.minuti : 0;
         const tratti = [];
-        if (haCambio) {
-            tratti.push(`🚒 Mezzo: ${kmAuto.toFixed(2)} km · ${testoDurata(minAuto)}`);
-            tratti.push(`🥾 A piedi: ${kmPiedi.toFixed(2)} km · ${testoDurata(minPiedi)}`);
+        if (minUscita) tratti.push(`🏠 Uscita dalla sede: ${testoDurata(minUscita)}`);
+        if (haCambio || minUscita) {
+            if (coordAuto.length) tratti.push(`🚒 Mezzo: ${kmAuto.toFixed(2)} km · ${testoDurata(minAuto)}`);
+            if (coordPiedi.length) tratti.push(`🥾 A piedi: ${kmPiedi.toFixed(2)} km · ${testoDurata(minPiedi)}`);
         }
-        if (sbarre.length) tratti.push(`🚧 Sbarre/cancelli: ${sbarre.length}`);
+        if (sbarre.length) tratti.push(`🚧 Sbarre/cancelli: ${sbarre.length} (comprese nel tempo del mezzo)`);
         if (controlloCamion && camion()) tratti.push(...camion().righe(controlloCamion));
 
         let avviso = null;
@@ -2630,7 +2654,7 @@ assign initialcost =
             quotaPartenza: quote.partenza,
             quotaArrivo: quote.arrivo,
             distanzaKm: kmAuto + kmPiedi,
-            tempoMin: minTotale,
+            tempoMin: r.minTotale + minUscita,
             dislivelloPositivo: altimetria ? altimetria.dislivelloPositivo : null,
             dislivelloNegativo: altimetria ? altimetria.dislivelloNegativo : null,
             tratti, avviso,
@@ -3019,34 +3043,30 @@ function disegnaGraficoAltimetria(geojson) {
         return risultati;
     }
 
-    // Percorso di soccorso dalla sede al target, solo tratto col mezzo:
-    // è l'arrivo del primo mezzo che ordina l'elenco
+    // Percorso di soccorso dalla sede al target: STESSO calcolo del
+    // percorso disegnato sulla carta (mezzo + eventuale tratto a piedi,
+    // sbarre, controllo camion), così elenco, popup e riquadro coincidono
     async function tempoSoccorsoDaSede(sede, latT, lonT) {
         try {
-            const { geojson, profiloSoccorso } = await percorsoAutoSoccorso(`${sede.lon},${sede.lat}|${lonT},${latT}`);
-            const f = geojson && geojson.features && geojson.features[0];
-            const prop = f && f.properties;
-            const minuti = tempoAutoMin(prop);
-            if (minuti === null) throw new Error("tempo non ricavabile");
-            const sbarre = profiloSoccorso ? sbarreDalPercorso(prop).length : 0;
-            const coord = f.geometry && f.geometry.coordinates;
-            const fine = coord && coord[coord.length - 1];
-            const restoM = fine ? distanzaKmHaversine(fine[1], fine[0], latT, lonT) * 1000 : 0;
-            const metri = parseFloat(prop["track-length"]);
+            const r = await calcolaTrattiSoccorso(sede.lat, sede.lon, latT, lonT, "soccorso");
+            if (!r.coordAuto.length) throw new Error("tratto col mezzo non calcolato");
             return {
                 stimato: false,
-                profiloSoccorso,
-                minutiPercorso: minuti + sbarre * TEMPO_SBARRA_MIN,
-                distanzaStradaKm: Number.isFinite(metri) ? metri / 1000 : null,
-                sbarre,
-                restoPiediM: restoM > SOGLIA_TRATTO_PIEDI_M ? restoM : 0,
+                profiloSoccorso: !!(r.auto && r.auto.profiloSoccorso),
+                minutiPercorso: r.minTotale,
+                minAuto: r.minAuto,
+                minPiedi: r.minPiedi,
+                distanzaStradaKm: r.kmAuto,
+                kmPiedi: r.kmPiedi,
+                sbarre: r.sbarre.length,
+                restoPiediM: r.restanteM > SOGLIA_TRATTO_PIEDI_M ? r.restanteM : 0,
             };
         } catch (err) {
             console.warn("Sedi di primo intervento: percorso non calcolato per", sede.nome, err.message);
             return {
                 stimato: true,
                 minutiPercorso: Math.round(sede.distanzaAriaKm * FATTORE_TORTUOSITA_STIMA / VELOCITA_STIMA_KMH * 60),
-                distanzaStradaKm: null, sbarre: 0, restoPiediM: 0,
+                minAuto: null, minPiedi: 0, distanzaStradaKm: null, kmPiedi: 0, sbarre: 0, restoPiediM: 0,
             };
         }
     }
@@ -3063,6 +3083,17 @@ function disegnaGraficoAltimetria(geojson) {
 
     const azimutTesto = az => `Az ${String(Math.round(az) % 360).padStart(3, "0")}°`;
 
+    // "uscita 5 min + mezzo 18 min + a piedi 4 min": le stesse voci del riquadro sulla carta
+    function scomposizioneTempi(voce) {
+        const t = voce.tempi;
+        if (t.stimato) return `${testoDurata(t.minutiPercorso)} stimati` + (voce.ritardo ? ` + ${voce.ritardo} uscita` : "");
+        const parti = [];
+        if (voce.ritardo) parti.push(`uscita ${voce.ritardo} min`);
+        parti.push(`mezzo ${testoDurata(t.minAuto)}`);
+        if (t.minPiedi) parti.push(`a piedi ${testoDurata(t.minPiedi)} (${t.kmPiedi.toFixed(2)} km)`);
+        return parti.join(" + ");
+    }
+
     function rigaSede(voce, i) {
         const t = voce.tempi;
         const dettagli = [etichettaTipoSede(voce.sede.tipo)];
@@ -3071,12 +3102,9 @@ function disegnaGraficoAltimetria(geojson) {
             ? `${distanzaDoppia(t.distanzaStradaKm, 1)} su strada`
             : "strada n.d.");
         dettagli.push(`${distanzaDoppia(voce.sede.distanzaAriaKm, 1)} in aria`);
-        const scomposizione = voce.ritardo
-            ? `${testoDurata(t.minutiPercorso)} + ${voce.ritardo} uscita`
-            : `${testoDurata(t.minutiPercorso)} di percorso`;
-        dettagli.push(scomposizione);
+        dettagli.push(scomposizioneTempi(voce));
         if (t.sbarre) dettagli.push(`${t.sbarre} sbarr${t.sbarre === 1 ? "a" : "e"}`);
-        if (t.restoPiediM) dettagli.push(`mezzo a ${Math.round(t.restoPiediM)} m dal target`);
+        if (t.restoPiediM && !t.minPiedi) dettagli.push(`mezzo a ${Math.round(t.restoPiediM)} m dal target`);
         if (t.stimato) dettagli.push(`<span class="spi-stima">tempo stimato: BRouter non ha risposto</span>`);
 
         return `<div class="reparto-volo-scheda">
@@ -3216,7 +3244,7 @@ function disegnaGraficoAltimetria(geojson) {
             <div id="spi-sedi"><p class="pagina-nota">Caricamento sedi…</p></div>
             <h3 class="spi-titolo">🚁 Reparti Volo — elicottero ${ELI_MODELLO}</h3>
             <div id="spi-volo"><p class="pagina-nota">Caricamento Reparti Volo…</p></div>
-            <p class="pagina-nota spi-note">Sedi: ordinate per tempo di arrivo del primo mezzo, con lo stesso
+            <p class="pagina-nota spi-note">Sedi: ordinate per tempo di arrivo al target (uscita + mezzo + eventuale tratto a piedi), con lo stesso
             calcolo del "Percorso di soccorso" (mezzo VVF: ${velocitaMezzo.ordinaria} km/h su strada ordinaria, ${velocitaMezzo.superstrada} in superstrada, ${velocitaMezzo.autostrada} in autostrada; sbarre +${TEMPO_SBARRA_MIN} min);
             più i minuti di uscita della sede (volontari +${minutiUscita("volontario")} min). Escluse aeroportuali, portuali e nuclei.
             Elicottero: ${ELI_PREPARAZIONE_MIN} min di pianificazione e decollo, crociera ${ELI_CROCIERA_KT} kt
@@ -3330,8 +3358,7 @@ function disegnaGraficoAltimetria(geojson) {
         if (voce) {
             const t = voce.tempi;
             righe.push(`<hr style="border:none;border-top:1px solid #333;margin:6px 0;">`
-                + `🚒 Arrivo ${t.stimato ? "stimato ~" : "circa "}${testoDurata(voce.totale)}`
-                + (voce.ritardo ? ` (${testoDurata(t.minutiPercorso)} + ${voce.ritardo} uscita)` : ""));
+                + `🚒 Arrivo ${t.stimato ? "stimato ~" : "circa "}${testoDurata(voce.totale)} (${scomposizioneTempi(voce)})`);
             righe.push(`${t.distanzaStradaKm !== null ? t.distanzaStradaKm.toFixed(1) + " km su strada · " : ""}`
                 + `${sede.distanzaAriaKm.toFixed(1)} km in aria · ${azimutTesto(voce.azimut)}`);
         }
@@ -3341,11 +3368,12 @@ function disegnaGraficoAltimetria(geojson) {
     }
 
     // In "crea percorso" anche una sede è un punto di partenza
-    function usaSedeComePartenza(lat, lon, html) {
+    function usaSedeComePartenza(lat, lon, html, tipo) {
         if (puntoInAttesa !== "partenza" || !coordinateTargetCorrenti) return;
         puntoInAttesa = null;
         aggiornaCursoreMappa();
         popupPuntoPartenza = html;
+        uscitaPartenza = { lat, lon, minuti: minutiUscita(tipo) };
         calcolaEDisegnaPercorso(lat, lon);
     }
 
@@ -3362,7 +3390,7 @@ function disegnaGraficoAltimetria(geojson) {
                 title: `${i + 1}º — ${voce.sede.nome}`,
                 zIndexOffset: 200,
             }).bindPopup(html);
-            m.on("click", () => usaSedeComePartenza(voce.sede.lat, voce.sede.lon, html));
+            m.on("click", () => usaSedeComePartenza(voce.sede.lat, voce.sede.lon, html, voce.sede.tipo));
             return m;
         })).addTo(coordMappaLeaflet);
     }
@@ -3383,6 +3411,7 @@ function disegnaGraficoAltimetria(geojson) {
         evidenziaProfiloPercorso();
         if (contenitoreControlliPercorsoAttivo) contenitoreControlliPercorsoAttivo.classList.add("visibile");
         popupPuntoPartenza = popupSede(voce.sede, voce);
+        uscitaPartenza = { lat: voce.sede.lat, lon: voce.sede.lon, minuti: minutiUscita(voce.sede.tipo) };
         chiudiModaleRepartiVolo();
         impostaSchedaColonnaAttiva("mappa");
         calcolaEDisegnaPercorso(voce.sede.lat, voce.sede.lon);
@@ -3428,7 +3457,7 @@ function disegnaGraficoAltimetria(geojson) {
                     bubblingMouseEvents: false,   // il clic non deve posare punti sulla carta
                 });
                 m.bindPopup(() => popupSede({ ...s, distanzaAriaKm: 0 }, null));
-                m.on("click", () => usaSedeComePartenza(s.lat, s.lon, popupSede(s, null)));
+                m.on("click", () => usaSedeComePartenza(s.lat, s.lon, popupSede(s, null), s.tipo));
                 return m;
             })).addTo(coordMappaLeaflet);
             btnSediVvf.classList.add("attivo");
