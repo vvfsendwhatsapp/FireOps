@@ -3967,42 +3967,133 @@ function disegnaGraficoAltimetria(geojson) {
     });
     
     // ==========================================================
-    // FORMATO "GRADI DECIMALI DA APPUNTI"
+    // FORMATO "GRADI DECIMALI DA APPUNTI" — lettura tollerante
     //
-    // Una casella sola: si incolla la coppia copiata da SO115, da Maps o da
-    // un messaggio, e la conversione parte da sé. Separatore virgola,
-    // decimali col punto — è così che arrivano da tutte le fonti che usiamo.
-    // Il campo NON è .coord-campo-num: quel filtro toglierebbe la virgola,
-    // cioè proprio il carattere che separa le due coordinate.
+    // Una casella sola: si incolla quello che arriva (SO115, Maps, un
+    // messaggio, una mail) e la conversione parte da sé. Si accettano:
+    //  - separatori virgola, punto e virgola, spazi, tab, a capo;
+    //  - decimali col punto o con la virgola (45,123 9,456);
+    //  - etichette lat/lon, latitudine/longitudine, x/y (x = longitudine);
+    //  - lettere di emisfero N S E W O (anche Nord, Sud, Est, Ovest);
+    //  - gradi/primi/secondi con i simboli ° ' " (45°07'12.3"N 9°10'05"E);
+    //  - link di Google Maps (@45.1,9.2 · q=45.1,9.2 · !3d45.1!4d9.2);
+    //  - ordine invertito (longitudine prima): riconosciuto dalle
+    //    etichette o, senza etichette, perché il primo numero sta nelle
+    //    longitudini italiane (6-19) e il secondo nelle latitudini (35-48).
+    // Il campo NON è .coord-campo-num: quel filtro toglierebbe le virgole.
     // ==========================================================
     const TESTO_ERRORE_APPUNTI =
-        "Formato coordinate appunti errato: attesa una coppia \"latitudine, longitudine\" " +
-        "in gradi decimali, esempio 45.123456789012, 9.123456789012";
+        "Coordinate non riconosciute negli appunti: servono due numeri, latitudine e longitudine " +
+        "(es. 45.123456, 9.123456 — vanno bene anche virgola decimale, N/E, x/y, gradi ° ' \" e link di Maps)";
 
-    function leggiCoppiaAppunti(testo) {
-        const parti = String(testo || "").trim().split(/\s*,\s*/);
-        if (parti.length !== 2) return null;
+    const ITALIA_LAT = [35, 48];
+    const ITALIA_LON = [6, 19];
+    const dentro = (v, [a, b]) => v >= a && v <= b;
+    const valida = c => c && Number.isFinite(c.lat) && Number.isFinite(c.lon)
+        && Math.abs(c.lat) <= 90 && Math.abs(c.lon) <= 180;
 
-        const numeri = parti.map(p => (/^[+-]?\d{1,3}(\.\d+)?$/.test(p.trim()) ? parseFloat(p) : NaN));
-        if (numeri.some(Number.isNaN)) return null;
+    function numeroAppunti(t) { return parseFloat(String(t).replace(",", ".")); }
 
-        const [lat, lon] = numeri;
-        if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return null;
-        return { lat, lon };
+    function leggiCoppiaAppunti(testoOriginale) {
+        let t = String(testoOriginale || "")
+            .replace(/[−‒–—]/g, "-")      // meno tipografici
+            .replace(/[   ]/g, " ")
+            .replace(/[º˚]/g, "°").replace(/[′’‘`´]/g, "'").replace(/[″“”]|''/g, '"')
+            .trim();
+        if (!t) return null;
+
+        // 1. Link di Google Maps e simili
+        const url = t.match(/!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/)
+            || t.match(/[?&](?:q|query|ll|destination|daddr|center)=(-?\d+(?:\.\d+)?)\s*(?:,|%2C)\s*(-?\d+(?:\.\d+)?)/i)
+            || t.match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
+        if (url) {
+            const c = { lat: parseFloat(url[1]), lon: parseFloat(url[2]) };
+            if (valida(c)) return c;
+        }
+
+        // 2. Sigle con numeri attaccati (SO115, A14, SP26...) non sono coordinate;
+        //    una lettera di emisfero attaccata al numero (N45.1) invece sì
+        t = t.replace(/\b(?![NSEWO]\d)[A-Za-z]{2,}\d+\w*/g, " ")
+             .replace(/\b(?![NSEWO]\d)[A-DF-MPQRT-VX-Z]\d+\b/gi, " ");
+
+        // 3. Virgola decimale: "45,123,9,456" (tutto attaccato) sono due numeri;
+        //    altrove una virgola fra due cifre è decimale se il testo non usa
+        //    già il punto come decimale
+        const attaccate = t.match(/^(-?\d+),(\d+),(-?\d+),(\d+)$/);
+        if (attaccate) t = `${attaccate[1]}.${attaccate[2]} ${attaccate[3]}.${attaccate[4]}`;
+        else if (!/\d\.\d/.test(t)) t = t.replace(/(\d),(\d)/g, "$1.$2");
+
+        const NUM = "([+-]?\\d+(?:\\.\\d+)?)";
+
+        // 4. Etichette: lat/latitudine/y e lon/lng/longitudine/x
+        const etLat = t.match(new RegExp(`\\b(?:lat(?:itudine|itude)?|y)\\b\\.?\\s*[:=]?\\s*${NUM}`, "i"));
+        const etLon = t.match(new RegExp(`\\b(?:lon(?:gitudine|gitude)?|lng|long|x)\\b\\.?\\s*[:=]?\\s*${NUM}`, "i"));
+        if (etLat || etLon) {
+            const tuttiNumeri = [...t.matchAll(new RegExp(NUM, "g"))].map(m => ({ v: parseFloat(m[1]), i: m.index }));
+            const posizione = m => m.index + m[0].length - m[1].length;
+            const lat = etLat ? parseFloat(etLat[1]) : null;
+            const lon = etLon ? parseFloat(etLon[1]) : null;
+            // Una sola etichetta ("12,13391 y = 44,02339"): l'altro numero è quello rimasto
+            const usate = [etLat, etLon].filter(Boolean).map(posizione);
+            const altro = tuttiNumeri.find(n => !usate.includes(n.i));
+            const c = {
+                lat: lat !== null ? lat : (altro ? altro.v : NaN),
+                lon: lon !== null ? lon : (altro ? altro.v : NaN),
+            };
+            const posLat = etLat ? etLat.index : (altro ? altro.i : 0);
+            const posLon = etLon ? etLon.index : (altro ? altro.i : 0);
+            if (valida(c)) return { ...c, invertite: posLon < posLat };
+        }
+
+        // 5. Coordinate libere, con eventuali ° ' " e lettere di emisfero
+        const EMI = "(N|S|E|W|O|Nord|Sud|Est|Ovest|North|South|East|West)";
+        const re = new RegExp(
+            `(?<![A-Za-z])${EMI}?\\s*${NUM}\\s*(°)?\\s*(?:(\\d+(?:\\.\\d+)?)\\s*'\\s*)?(?:(\\d+(?:\\.\\d+)?)\\s*"\\s*)?${EMI}?(?![A-Za-z])`,
+            "gi");
+        const voci = [];
+        for (const m of t.matchAll(re)) {
+            const [, prima, gradi, , primi, secondi, dopo] = m;
+            let v = Math.abs(parseFloat(gradi)) + (primi ? parseFloat(primi) / 60 : 0) + (secondi ? parseFloat(secondi) / 3600 : 0);
+            if (/^-/.test(gradi)) v = -v;
+            const emi = (dopo || prima || "").charAt(0).toUpperCase();
+            if (emi === "S" || emi === "W" || emi === "O") v = -Math.abs(v);
+            voci.push({ v, tipo: "NS".includes(emi) && emi ? "lat" : ("EWO".includes(emi) && emi ? "lon" : null) });
+        }
+        if (voci.length < 2) return null;
+
+        const latEmi = voci.find(x => x.tipo === "lat");
+        const lonEmi = voci.find(x => x.tipo === "lon");
+        if (latEmi && lonEmi) {
+            const c = { lat: latEmi.v, lon: lonEmi.v };
+            return valida(c) ? { ...c, invertite: voci.indexOf(lonEmi) < voci.indexOf(latEmi) } : null;
+        }
+
+        const [a, b] = voci;
+        if (Math.abs(a.v) > 90 && Math.abs(b.v) <= 90) return valida({ lat: b.v, lon: a.v }) ? { lat: b.v, lon: a.v, invertite: true } : null;
+        if (dentro(a.v, ITALIA_LON) && dentro(b.v, ITALIA_LAT)) return { lat: b.v, lon: a.v, invertite: true };
+        const c = { lat: a.v, lon: b.v };
+        return valida(c) ? c : null;
     }
 
     function convertiDaAppunti() {
         const campo = document.getElementById("coord-appunti");
+        const esito = document.getElementById("coord-appunti-esito");
         const testo = (campo && campo.value || "").trim();
         if (!testo) return;
 
         const coord = leggiCoppiaAppunti(testo);
         if (!coord) {
-            alert("Formato coordinate appunti errato!\n\nAtteso: 45.123456789012, 9.123456789012");
+            if (esito) esito.textContent = "";
             mostraErrore(TESTO_ERRORE_APPUNTI);
             return;
         }
         nascondiErrore();
+        // Si dice cosa si è letto: con una lettura tollerante l'operatore
+        // deve poter controllare a colpo d'occhio
+        if (esito) {
+            esito.textContent = `Letto: latitudine ${coord.lat.toFixed(6)}, longitudine ${coord.lon.toFixed(6)}`
+                + (coord.invertite ? " (erano in ordine longitudine, latitudine)" : "");
+        }
         elaboraCoordinateConvertite(coord.lat, coord.lon);
     }
 
@@ -4011,6 +4102,11 @@ function disegnaGraficoAltimetria(geojson) {
         // Il valore del campo arriva DOPO l'evento paste: si legge al giro
         // successivo dell'event loop, altrimenti si legge il testo di prima
         inputAppunti.addEventListener("paste", () => setTimeout(convertiDaAppunti, 0));
+        // Testo cambiato a mano: il "Letto: ..." di prima non vale più
+        inputAppunti.addEventListener("input", () => {
+            const esito = document.getElementById("coord-appunti-esito");
+            if (esito) esito.textContent = "";
+        });
         inputAppunti.addEventListener("keydown", (e) => {
             if (e.key === "Enter") { e.preventDefault(); convertiDaAppunti(); }
         });

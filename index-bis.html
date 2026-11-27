@@ -723,13 +723,15 @@
                                     </div>
                                 </div>
                                 <div id="coord-input-appunti" class="coord-input-gruppo" style="display:none;">
-                                    <label for="coord-appunti">Coppia latitudine, longitudine</label>
-                                    <input type="text" id="coord-appunti" placeholder="45.123456789012, 9.123456789012"
+                                    <label for="coord-appunti">Coordinate copiate (latitudine e longitudine)</label>
+                                    <input type="text" id="coord-appunti" placeholder="45.123456, 9.123456"
                                         autocomplete="off">
                                     <p class="pagina-nota">
-                                        Incolla la coppia copiata altrove: la conversione parte da sé, senza
-                                        premere nulla. Separatore virgola, punto come separatore decimale.
+                                        Incolla quello che hai copiato: la conversione parte da sé. Vanno bene
+                                        virgola o punto decimale, spazi o punto e virgola, N/E, x/y, gradi ° ' "
+                                        e link di Google Maps; l'ordine longitudine-latitudine viene riconosciuto.
                                     </p>
+                                    <p class="pagina-nota" id="coord-appunti-esito"></p>
                                 </div>
                                 <div id="coord-input-dmm" class="coord-input-gruppo" style="display:none;">
                                     <div class="msg-riga-campi">
