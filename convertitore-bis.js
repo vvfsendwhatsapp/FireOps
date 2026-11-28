@@ -2412,13 +2412,53 @@ assign initialcost =
         return dati.profileid;
     }
 
+    // brouter.de è un server pubblico gratuito: con troppe richieste insieme
+    // (le Sedi di primo intervento ne fanno parecchie) risponde con errori di
+    // sovraccarico. Quindi: al massimo 2 richieste alla volta da tutta la
+    // pagina, e nuovi tentativi con attesa crescente sugli errori
+    // temporanei. Gli errori "veri" (punto fuori dalla rete, nessun
+    // percorso) non si ritentano.
+    const BROUTER_MAX_CONTEMPORANEE = 2;
+    const BROUTER_ATTESE_MS = [1200, 3000];      // due nuovi tentativi
+    let brouterAttive = 0;
+    const brouterInCoda = [];
+    let ultimoErroreBRouter = "";
+
+    async function turnoBRouter() {
+        if (brouterAttive < BROUTER_MAX_CONTEMPORANEE) { brouterAttive++; return; }
+        await new Promise(r => brouterInCoda.push(r));   // il posto lo passa chi finisce
+    }
+    function fineTurnoBRouter() {
+        const prossimo = brouterInCoda.shift();
+        if (prossimo) prossimo(); else brouterAttive--;
+    }
+    const erroreDefinitivo = msg => /not mapped|no track|island|out of range|target.*not|from-position|to-position/i.test(msg);
+
     async function richiestaBRouter(lonlats, profilo, nogos) {
         const url = `https://brouter.de/brouter?lonlats=${lonlats}&profile=${encodeURIComponent(profilo)}&alternativeidx=0&format=geojson`
             + (nogos && nogos.length ? "&nogos=" + nogos.map(n => `${n.lon.toFixed(6)},${n.lat.toFixed(6)},${Math.round(n.r)}`).join("|") : "");
-        const risposta = await fetch(url);
-        const testo = await risposta.text();
-        if (!risposta.ok) throw new Error(testo || "HTTP " + risposta.status);
-        return JSON.parse(testo);
+        for (let tentativo = 0; ; tentativo++) {
+            await turnoBRouter();
+            let errore;
+            try {
+                const risposta = await fetch(url);
+                const testo = await risposta.text();
+                if (risposta.ok) {
+                    try { return JSON.parse(testo); }
+                    catch (e) { errore = new Error("risposta non valida: " + testo.slice(0, 120)); }
+                } else {
+                    errore = new Error((testo || "").trim().slice(0, 200) || "HTTP " + risposta.status);
+                }
+            } catch (e) {
+                errore = new Error("server non raggiungibile (" + e.message + ")");
+            } finally {
+                fineTurnoBRouter();
+            }
+            ultimoErroreBRouter = errore.message;
+            if (erroreDefinitivo(errore.message) || tentativo >= BROUTER_ATTESE_MS.length) throw errore;
+            console.warn(`BRouter: ${errore.message} — nuovo tentativo fra ${BROUTER_ATTESE_MS[tentativo]} ms`);
+            await new Promise(r => setTimeout(r, BROUTER_ATTESE_MS[tentativo]));
+        }
     }
 
     // Prima il profilo soccorso (con un secondo tentativo a profilo
@@ -2665,6 +2705,7 @@ assign initialcost =
     let uscitaPartenza = null;   // { lat, lon, minuti } oppure null
 
     async function calcolaPercorsoSoccorso(latP, lonP, latT, lonT, azimut, distanzaAriaKm, promessaQuote, modalita = "soccorso") {
+        ultimoErroreBRouter = "";
         const uscita = (uscitaPartenza && Math.abs(uscitaPartenza.lat - latP) < 1e-7
             && Math.abs(uscitaPartenza.lon - lonP) < 1e-7) ? uscitaPartenza : null;
         const r = await calcolaTrattiSoccorso(latP, lonP, latT, lonT, modalita);
@@ -2677,7 +2718,9 @@ assign initialcost =
             aggiornaOverlayPercorso(null, {
                 titolo: TITOLI_MODALITA[modalita],
                 azimut, distanzaAriaKm, quotaPartenza: quote.partenza, quotaArrivo: quote.arrivo,
-                avviso: "⚠️ Percorso non calcolabile: BRouter non raggiungibile o punti fuori dalla rete viaria.",
+                avviso: "⚠️ Percorso non calcolabile" + (ultimoErroreBRouter
+                    ? `. BRouter: ${testoSicuro(ultimoErroreBRouter)}`
+                    : ": BRouter non raggiungibile o punti fuori dalla rete viaria."),
             });
             nascondiGraficoAltimetria("Percorso non calcolato: nessun dato altimetrico disponibile.");
             return;
