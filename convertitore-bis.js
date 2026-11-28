@@ -2492,47 +2492,140 @@ assign initialcost =
     // "auto" solo il mezzo, "piedi" solo a piedi dalla squadra
     // Calcolo puro, senza disegnare: lo usano sia il percorso sulla carta sia
     // l'elenco delle Sedi di primo intervento, così i tempi sono identici.
+    // Tratto col mezzo da P ad A, con il controllo camion (sottopassi) della modalità test
+    async function trattoMezzo(latP, lonP, latA, lonA) {
+        let auto = null;
+        try {
+            auto = await percorsoAutoSoccorso(`${lonP},${latP}|${lonA},${latA}`);
+        } catch (err) {
+            console.warn("Tratto col mezzo non calcolabile:", err);
+            return { auto: null, controlloCamion: null };
+        }
+        // Ostacoli per il camion lungo il tratto; quelli che il mezzo non passa
+        // (altezza/larghezza) si evitano ricalcolando con zone vietate (nogos)
+        let controlloCamion = null;
+        if (camion()) {
+            try {
+                const ris = await camion().controlla(coordinatePercorso(auto.geojson), async nogos =>
+                    percorsoAutoSoccorso(`${lonP},${latP}|${lonA},${latA}`, nogos));
+                if (ris) { controlloCamion = ris; if (ris.auto) auto = ris.auto; }
+            } catch (err) { console.warn("Controllo camion non riuscito:", err); }
+        }
+        return { auto, controlloCamion };
+    }
+
+    function fineDelTratto(auto, latP, lonP) {
+        const c = auto ? coordinatePercorso(auto.geojson) : [];
+        return c.length ? { lat: c[c.length - 1][1], lon: c[c.length - 1][0] } : { lat: latP, lon: lonP };
+    }
+
+    async function trattoPiedi(latA, lonA, latT, lonT) {
+        try {
+            return await richiestaBRouter(`${lonA},${latA}|${lonT},${latT}`, PROFILO_PIEDI_BROUTER);
+        } catch (err) {
+            console.warn("Tratto a piedi non calcolabile:", err);
+            return null;
+        }
+    }
+
+    // Minuti del mezzo (sbarre comprese) e a piedi, come nel riquadro
+    function minutiMezzo(auto) {
+        if (!auto) return 0;
+        const prop = (auto.geojson.features && auto.geojson.features[0].properties) || {};
+        let m = tempoAutoMin(prop);
+        if (m === null) { const sec = parseFloat(prop["total-time"]); m = Number.isNaN(sec) ? 0 : Math.round(sec / 60); }
+        return m + (auto.profiloSoccorso ? sbarreDalPercorso(prop).length * TEMPO_SBARRA_MIN : 0);
+    }
+    function minutiPiedi(g) {
+        const c = g ? coordinatePercorso(g) : [];
+        if (!c.length) return 0;
+        const km = (parseFloat(((g.features && g.features[0].properties) || {})["track-length"]) || 0) / 1000;
+        const d = dislivelliFiltrati(c.map(x => parseFloat(x[2])));
+        return tempoPiediCAIMin(c) ?? tempoPiediMin(km, d.salita, d.discesa) ?? 0;
+    }
+    const lunghezzaM = g => (g ? parseFloat(((g.features && g.features[0].properties) || {})["track-length"]) || 0 : 0);
+
+    // Il tratto a piedi corre ancora su strada asfaltata? Allora il mezzo può
+    // andare più avanti. Dalla tabella "messages" del percorso a piedi si
+    // prendono i punti in cui finisce un tratto percorribile dal mezzo:
+    // strade (non sentieri, scale, pedonali) senza fondo sterrato, o piste
+    // con fondo duro (grade1 o asfalto). Coordinate in milionesimi di grado.
+    const STRADE_MEZZO = new Set(["motorway", "motorway_link", "trunk", "trunk_link", "primary", "primary_link",
+        "secondary", "secondary_link", "tertiary", "tertiary_link", "unclassified", "residential",
+        "living_street", "service", "road"]);
+    const FONDI_STERRATI = /^(unpaved|gravel|fine_gravel|dirt|earth|ground|grass|mud|sand|compacted|pebblestone|rock|woodchips)$/;
+    const FONDI_DURI = /^(asphalt|paved|concrete|concrete:plates|paving_stones|sett|cobblestone)$/;
+
+    function trattoPercorribileDalMezzo(tagTesto) {
+        const tag = {};
+        String(tagTesto || "").split(/\s+/).forEach(c => { const k = c.indexOf("="); if (k > 0) tag[c.slice(0, k)] = c.slice(k + 1); });
+        if (STRADE_MEZZO.has(tag.highway)) return !FONDI_STERRATI.test(tag.surface || "");
+        if (tag.highway === "track") return tag.tracktype === "grade1" || FONDI_DURI.test(tag.surface || "");
+        return false;
+    }
+
+    function puntiAvanzamentoMezzo(g) {
+        const prop = g && g.features && g.features[0] && g.features[0].properties;
+        const m = prop && prop.messages;
+        if (!Array.isArray(m) || m.length < 2) return [];
+        const t = m[0];
+        const iLon = t.indexOf("Longitude"), iLat = t.indexOf("Latitude"), iTag = t.indexOf("WayTags");
+        if (iLon < 0 || iLat < 0 || iTag < 0) return [];
+        const righe = m.slice(1).map(r => ({
+            lon: parseFloat(r[iLon]) / 1e6, lat: parseFloat(r[iLat]) / 1e6, ok: trattoPercorribileDalMezzo(r[iTag]),
+        })).filter(r => Number.isFinite(r.lat) && Number.isFinite(r.lon));
+        const punti = [];
+        // il più lontano: l'ultimo punto su strada prima del tratto finale a piedi
+        for (let k = righe.length - 1; k >= 0; k--) if (righe[k].ok) { punti.push(righe[k]); break; }
+        // ripiego: la fine della strada percorsa subito dopo il punto di cambio
+        let k = 0;
+        while (k < righe.length && righe[k].ok) k++;
+        if (k > 0 && !punti.some(p => p === righe[k - 1])) punti.push(righe[k - 1]);
+        return punti;
+    }
+
+    // Calcolo puro, senza disegnare: lo usano sia il percorso sulla carta sia
+    // l'elenco delle Sedi di primo intervento, così i tempi sono identici.
     async function calcolaTrattiSoccorso(latP, lonP, latT, lonT, modalita = "soccorso") {
         const conMezzo = modalita !== "piedi";
         const conPiedi = modalita !== "auto";
 
         // 1 — Col mezzo, verso il target
-        let auto = null;
-        if (conMezzo) {
-            try {
-                auto = await percorsoAutoSoccorso(`${lonP},${latP}|${lonT},${latT}`);
-            } catch (err) {
-                console.warn("Tratto col mezzo non calcolabile:", err);
-            }
-        }
-        // Modalità test: ostacoli per il camion lungo il tratto col mezzo; quelli che il mezzo
-        // non passa (altezza/larghezza) si evitano ricalcolando con zone vietate (nogos)
-        let controlloCamion = null;
-        if (auto && camion()) {
-            try {
-                const ris = await camion().controlla(coordinatePercorso(auto.geojson), async nogos =>
-                    percorsoAutoSoccorso(`${lonP},${latP}|${lonT},${latT}`, nogos));
-                if (ris) { controlloCamion = ris; if (ris.auto) auto = ris.auto; }
-            } catch (err) { console.warn("Controllo camion non riuscito:", err); }
-        }
-        const coordAuto = auto ? coordinatePercorso(auto.geojson) : [];
-        const propAuto = (auto && auto.geojson.features && auto.geojson.features[0].properties) || {};
-        const fineAuto = coordAuto.length
-            ? { lat: coordAuto[coordAuto.length - 1][1], lon: coordAuto[coordAuto.length - 1][0] }
-            : { lat: latP, lon: lonP };
-        const restanteM = distanzaKmHaversine(fineAuto.lat, fineAuto.lon, latT, lonT) * 1000;
+        let { auto, controlloCamion } = conMezzo ? await trattoMezzo(latP, lonP, latT, lonT) : { auto: null, controlloCamion: null };
+        let fineAuto = fineDelTratto(auto, latP, lonP);
+        let restanteM = distanzaKmHaversine(fineAuto.lat, fineAuto.lon, latT, lonT) * 1000;
 
         // 2 — A piedi: dal punto di cambio, o dalla squadra in "solo piedi"
-        let coordPiedi = [], propPiedi = {};
-        if (conPiedi && restanteM > SOGLIA_TRATTO_PIEDI_M) {
-            try {
-                const g = await richiestaBRouter(`${fineAuto.lon},${fineAuto.lat}|${lonT},${latT}`, PROFILO_PIEDI_BROUTER);
-                coordPiedi = coordinatePercorso(g);
-                propPiedi = (g.features && g.features[0].properties) || {};
-            } catch (err) {
-                console.warn("Tratto a piedi non calcolabile:", err);
+        let gPiedi = (conPiedi && restanteM > SOGLIA_TRATTO_PIEDI_M) ? await trattoPiedi(fineAuto.lat, fineAuto.lon, latT, lonT) : null;
+
+        // 3 — Se il tratto a piedi passa ancora su strada asfaltata, il mezzo
+        //     prosegue fin lì: BRouter ferma il mezzo nel punto di strada più
+        //     vicino al target in linea d'aria, che non è sempre il più avanti
+        //     lungo il cammino. Si accetta solo se a piedi resta meno strada
+        //     e il tempo totale non peggiora.
+        if (modalita === "soccorso" && auto && gPiedi) {
+            const totalePrima = minutiMezzo(auto) + minutiPiedi(gPiedi);
+            for (const punto of puntiAvanzamentoMezzo(gPiedi)) {
+                if (distanzaKmHaversine(punto.lat, punto.lon, fineAuto.lat, fineAuto.lon) * 1000 < SOGLIA_TRATTO_PIEDI_M) continue;
+                const nuovo = await trattoMezzo(latP, lonP, punto.lat, punto.lon);
+                if (!nuovo.auto) continue;
+                const nuovaFine = fineDelTratto(nuovo.auto, latP, lonP);
+                const nuovoResto = distanzaKmHaversine(nuovaFine.lat, nuovaFine.lon, latT, lonT) * 1000;
+                const nuoviPiedi = nuovoResto > SOGLIA_TRATTO_PIEDI_M ? await trattoPiedi(nuovaFine.lat, nuovaFine.lon, latT, lonT) : null;
+                if (nuovoResto > SOGLIA_TRATTO_PIEDI_M && !nuoviPiedi) continue;
+                const totaleDopo = minutiMezzo(nuovo.auto) + minutiPiedi(nuoviPiedi);
+                if (lunghezzaM(nuoviPiedi) < lunghezzaM(gPiedi) && totaleDopo <= totalePrima) {
+                    auto = nuovo.auto; controlloCamion = nuovo.controlloCamion;
+                    fineAuto = nuovaFine; restanteM = nuovoResto; gPiedi = nuoviPiedi;
+                    break;
+                }
             }
         }
+
+        const coordAuto = auto ? coordinatePercorso(auto.geojson) : [];
+        const propAuto = (auto && auto.geojson.features && auto.geojson.features[0].properties) || {};
+        const coordPiedi = gPiedi ? coordinatePercorso(gPiedi) : [];
+        const propPiedi = (gPiedi && gPiedi.features && gPiedi.features[0].properties) || {};
 
         const haCambio = coordAuto.length > 0 && coordPiedi.length > 0;
         const fermoPrima = modalita === "auto" && coordAuto.length > 0 && restanteM > SOGLIA_TRATTO_PIEDI_M;
@@ -2640,7 +2733,7 @@ assign initialcost =
             if (coordAuto.length) tratti.push(`🚒 Mezzo: ${kmAuto.toFixed(2)} km · ${testoDurata(minAuto)}`);
             if (coordPiedi.length) tratti.push(`🥾 A piedi: ${kmPiedi.toFixed(2)} km · ${testoDurata(minPiedi)}`);
         }
-        if (sbarre.length) tratti.push(`🚧 Sbarre/cancelli: ${sbarre.length} (comprese nel tempo del mezzo)`);
+        if (sbarre.length) tratti.push(`🚧 Sbarre/cancelli: ${sbarre.length} (+${sbarre.length * TEMPO_SBARRA_MIN} min)`);
         if (controlloCamion && camion()) tratti.push(...camion().righe(controlloCamion));
 
         let avviso = null;
